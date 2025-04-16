@@ -1,0 +1,62 @@
+[
+  {
+    "routine_name": "ensure_primary_email_exists",
+    "routine_definition": "CREATE OR REPLACE FUNCTION public.ensure_primary_email_exists()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\r\nBEGIN\r\n  -- If we just removed the primary email or marked it as removed\r\n  IF (OLD.is_primary AND (NEW.is_removed OR TG_OP = 'DELETE')) THEN\r\n    -- Find another email that's not removed and make it primary\r\n    WITH updated_email AS (\r\n      SELECT id\r\n      FROM user_emails\r\n      WHERE user_id = OLD.user_id\r\n        AND is_removed = FALSE\r\n        AND id != OLD.id\r\n      LIMIT 1\r\n    )\r\n    UPDATE user_emails\r\n    SET is_primary = TRUE\r\n    WHERE id IN (SELECT id FROM updated_email);\r\n  END IF;\r\n  RETURN NEW;\r\nEND;\r\n$function$\n"
+  },
+  {
+    "routine_name": "ensure_primary_wallet_exists",
+    "routine_definition": "CREATE OR REPLACE FUNCTION public.ensure_primary_wallet_exists()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\r\nBEGIN\r\n  -- If we just removed the primary wallet or marked it as removed\r\n  IF (OLD.is_primary AND (NEW.is_removed OR TG_OP = 'DELETE')) THEN\r\n    -- Find another wallet that's not removed and make it primary\r\n    WITH updated AS (\r\n      SELECT id\r\n      FROM wallet_accounts\r\n      WHERE user_id = OLD.user_id\r\n        AND is_removed = FALSE\r\n        AND id != OLD.id\r\n      LIMIT 1\r\n    )\r\n    UPDATE wallet_accounts\r\n    SET is_primary = TRUE\r\n    WHERE id IN (SELECT id FROM updated);\r\n  END IF;\r\n  RETURN NEW;\r\nEND;\r\n$function$\n"
+  },
+  {
+    "routine_name": "ensure_single_primary_email",
+    "routine_definition": "CREATE OR REPLACE FUNCTION public.ensure_single_primary_email()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\r\nBEGIN\r\n  IF NEW.is_primary THEN\r\n    UPDATE user_emails\r\n    SET is_primary = FALSE\r\n    WHERE user_id = NEW.user_id\r\n      AND id != NEW.id\r\n      AND is_primary = TRUE;\r\n  END IF;\r\n  RETURN NEW;\r\nEND;\r\n$function$\n"
+  },
+  {
+    "routine_name": "ensure_single_primary_wallet",
+    "routine_definition": "CREATE OR REPLACE FUNCTION public.ensure_single_primary_wallet()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\r\nBEGIN\r\n  IF NEW.is_primary THEN\r\n    UPDATE wallet_accounts\r\n    SET is_primary = FALSE\r\n    WHERE user_id = NEW.user_id\r\n      AND id != NEW.id\r\n      AND is_primary = TRUE;\r\n  END IF;\r\n  RETURN NEW;\r\nEND;\r\n$function$\n"
+  },
+  {
+    "routine_name": "increment_invite_usage",
+    "routine_definition": "CREATE OR REPLACE FUNCTION public.increment_invite_usage()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\r\nbegin\r\n  if NEW.invited_by_code is not null then\r\n    update public.invitation_codes\r\n    set usage_count = usage_count + 1\r\n    where code = NEW.invited_by_code;\r\n  end if;\r\n  return NEW;\r\nend;\r\n$function$\n"
+  },
+  {
+    "routine_name": "log_changes",
+    "routine_definition": "CREATE OR REPLACE FUNCTION public.log_changes()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\r\nbegin\r\n  -- Ensure the `updated_by` column is populated\r\n  NEW.updated_by = auth.uid(); -- This can be adjusted to pull from `auth.uid()` or any custom field\r\n  \r\n  insert into public.audit_log (\r\n    table_name,\r\n    action,\r\n    record_id,\r\n    user_id,\r\n    old_data,\r\n    new_data\r\n  ) values (\r\n    TG_TABLE_NAME,\r\n    TG_OP,\r\n    (case when TG_OP = 'DELETE' then OLD.id else NEW.id end),\r\n    NEW.updated_by,  -- Log the user who made the change\r\n    to_jsonb(OLD),\r\n    to_jsonb(NEW)\r\n  );\r\n\r\n  return NEW;\r\nend;\r\n$function$\n"
+  },
+  {
+    "routine_name": "set_updated_at",
+    "routine_definition": "CREATE OR REPLACE FUNCTION public.set_updated_at()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\r\nbegin\r\n  -- Set the `updated_at` timestamp and the user who updated the record\r\n  NEW.updated_at = now();\r\n  NEW.updated_by = auth.uid();  -- Assumes `auth.uid()` is the logged-in user\r\n  return NEW;\r\nend;\r\n$function$\n"
+  },
+  {
+    "routine_name": "set_updated_by",
+    "routine_definition": "CREATE OR REPLACE FUNCTION public.set_updated_by()\n RETURNS trigger\n LANGUAGE plpgsql\n SECURITY DEFINER\nAS $function$\r\nbegin\r\n  NEW.updated_by := auth.uid();\r\n  return NEW;\r\nend;\r\n$function$\n"
+  },
+  {
+    "routine_name": "soft_delete_organization_members",
+    "routine_definition": "CREATE OR REPLACE FUNCTION public.soft_delete_organization_members(p_id bigint)\n RETURNS void\n LANGUAGE plpgsql\n SECURITY DEFINER\nAS $function$\r\nbegin\r\n  update organization_members\r\n  set deleted_at = now(),\r\n      status = 'deleted',\r\n      updated_by = auth.uid()\r\n  where id = p_id;\r\nend;\r\n$function$\n"
+  },
+  {
+    "routine_name": "soft_delete_organizations",
+    "routine_definition": "CREATE OR REPLACE FUNCTION public.soft_delete_organizations(p_id bigint)\n RETURNS void\n LANGUAGE plpgsql\n SECURITY DEFINER\nAS $function$\r\nbegin\r\n  update organizations\r\n  set deleted_at = now(),\r\n      status = 'deleted',\r\n      updated_by = auth.uid()\r\n  where id = p_id;\r\nend;\r\n$function$\n"
+  },
+  {
+    "routine_name": "soft_delete_payments",
+    "routine_definition": "CREATE OR REPLACE FUNCTION public.soft_delete_payments(p_id bigint)\n RETURNS void\n LANGUAGE plpgsql\n SECURITY DEFINER\nAS $function$\r\nbegin\r\n  update payments\r\n  set deleted_at = now(),\r\n      status = 'deleted',\r\n      updated_by = auth.uid()\r\n  where id = p_id;\r\nend;\r\n$function$\n"
+  },
+  {
+    "routine_name": "soft_delete_projects",
+    "routine_definition": "CREATE OR REPLACE FUNCTION public.soft_delete_projects(p_id bigint)\n RETURNS void\n LANGUAGE plpgsql\n SECURITY DEFINER\nAS $function$\r\nbegin\r\n  update projects\r\n  set deleted_at = now(),\r\n      status = 'deleted',\r\n      updated_by = auth.uid()\r\n  where id = p_id;\r\nend;\r\n$function$\n"
+  },
+  {
+    "routine_name": "soft_delete_users",
+    "routine_definition": "CREATE OR REPLACE FUNCTION public.soft_delete_users(p_id uuid)\n RETURNS void\n LANGUAGE plpgsql\n SECURITY DEFINER\nAS $function$\r\nbegin\r\n  update users\r\n  set deleted_at = now(),\r\n      status = 'deleted',\r\n      updated_by = auth.uid()\r\n  where user_id = p_id;\r\nend;\r\n$function$\n"
+  },
+  {
+    "routine_name": "soft_delete_wallet_accounts",
+    "routine_definition": "CREATE OR REPLACE FUNCTION public.soft_delete_wallet_accounts(p_id bigint)\n RETURNS void\n LANGUAGE plpgsql\n SECURITY DEFINER\nAS $function$\r\nbegin\r\n  update wallet_accounts\r\n  set deleted_at = now(),\r\n      status = 'deleted',\r\n      updated_by = auth.uid()\r\n  where id = p_id;\r\nend;\r\n$function$\n"
+  },
+  {
+    "routine_name": "soft_delete_wallet_connections",
+    "routine_definition": "CREATE OR REPLACE FUNCTION public.soft_delete_wallet_connections(p_id bigint)\n RETURNS void\n LANGUAGE plpgsql\n SECURITY DEFINER\nAS $function$\r\nbegin\r\n  update wallet_connections\r\n  set deleted_at = now(),\r\n      status = 'deleted',\r\n      updated_by = auth.uid()\r\n  where id = p_id;\r\nend;\r\n$function$\n"
+  }
+]

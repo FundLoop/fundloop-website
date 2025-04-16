@@ -1,0 +1,86 @@
+[
+  {
+    "enum_type": "organization_members_status",
+    "enum_value": "active"
+  },
+  {
+    "enum_type": "organization_members_status",
+    "enum_value": "inactive"
+  },
+  {
+    "enum_type": "organization_members_status",
+    "enum_value": "deleted"
+  },
+  {
+    "enum_type": "organizations_status",
+    "enum_value": "active"
+  },
+  {
+    "enum_type": "organizations_status",
+    "enum_value": "inactive"
+  },
+  {
+    "enum_type": "organizations_status",
+    "enum_value": "deleted"
+  },
+  {
+    "enum_type": "payments_status",
+    "enum_value": "active"
+  },
+  {
+    "enum_type": "payments_status",
+    "enum_value": "inactive"
+  },
+  {
+    "enum_type": "payments_status",
+    "enum_value": "deleted"
+  },
+  {
+    "enum_type": "projects_status",
+    "enum_value": "active"
+  },
+  {
+    "enum_type": "projects_status",
+    "enum_value": "inactive"
+  },
+  {
+    "enum_type": "projects_status",
+    "enum_value": "deleted"
+  },
+  {
+    "enum_type": "users_status",
+    "enum_value": "active"
+  },
+  {
+    "enum_type": "users_status",
+    "enum_value": "inactive"
+  },
+  {
+    "enum_type": "users_status",
+    "enum_value": "deleted"
+  },
+  {
+    "enum_type": "wallet_accounts_status",
+    "enum_value": "active"
+  },
+  {
+    "enum_type": "wallet_accounts_status",
+    "enum_value": "inactive"
+  },
+  {
+    "enum_type": "wallet_accounts_status",
+    "enum_value": "deleted"
+  },
+  {
+    "enum_type": "wallet_connections_status",
+    "enum_value": "active"
+  },
+  {
+    "enum_type": "wallet_connections_status",
+    "enum_value": "inactive"
+  },
+  {
+    "enum_type": "wallet_connections_status",
+    "enum_value": "deleted"
+  }
+]
