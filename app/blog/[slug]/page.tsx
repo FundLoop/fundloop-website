@@ -22,6 +22,7 @@ export default function BlogPostPage() {
 
   const [post, setPost] = useState<BlogPost | null>(null)
   const [loading, setLoading] = useState(true)
+  const [showBack, setShowBack] = useState(true)
   const supabase = createClientComponentClient<Database>()
 
   useEffect(() => {
@@ -51,6 +52,43 @@ export default function BlogPostPage() {
       fetchPost()
     }
   }, [slug, supabase, router])
+
+  // Restore scroll position on mount and save on unmount
+  useEffect(() => {
+    const saved = localStorage.getItem(`blog-scroll-${slug}`)
+    if (saved) {
+      window.scrollTo(0, parseInt(saved, 10))
+    } else {
+      window.scrollTo(0, 0)
+    }
+
+    const saveScroll = () => {
+      localStorage.setItem(`blog-scroll-${slug}`, String(window.scrollY))
+    }
+
+    window.addEventListener("beforeunload", saveScroll)
+
+    return () => {
+      saveScroll()
+      window.removeEventListener("beforeunload", saveScroll)
+    }
+  }, [slug])
+
+  // Show/hide back button based on scroll direction
+  useEffect(() => {
+    let last = window.scrollY
+    const onScroll = () => {
+      const current = window.scrollY
+      if (current > last + 10) {
+        setShowBack(false)
+      } else if (current < last - 10) {
+        setShowBack(true)
+      }
+      last = current
+    }
+    window.addEventListener("scroll", onScroll)
+    return () => window.removeEventListener("scroll", onScroll)
+  }, [])
 
   const formatDate = (dateString: string) => {
     const date = new Date(dateString)
@@ -120,21 +158,23 @@ export default function BlogPostPage() {
 
   return (
     <div className="container mx-auto px-4 py-12">
-      <div className="flex items-center gap-2 mb-8">
-        {origin === "benefits" ? (
-          <Button variant="ghost" size="sm" className="gap-1" onClick={handleBackToBenefits}>
-            <ArrowLeft className="h-4 w-4" />
-            <span>Back to Benefits</span>
-          </Button>
-        ) : (
-          <Button asChild variant="ghost" size="sm" className="gap-1">
-            <Link href="/blog">
+      {showBack && (
+        <div className="flex items-center gap-2 mb-8">
+          {origin === "benefits" ? (
+            <Button variant="ghost" size="sm" className="gap-1" onClick={handleBackToBenefits}>
               <ArrowLeft className="h-4 w-4" />
-              <span>Back to Blog</span>
-            </Link>
-          </Button>
-        )}
-      </div>
+              <span>Back to Benefits</span>
+            </Button>
+          ) : (
+            <Button asChild variant="ghost" size="sm" className="gap-1">
+              <Link href="/blog">
+                <ArrowLeft className="h-4 w-4" />
+                <span>Back to Blog</span>
+              </Link>
+            </Button>
+          )}
+        </div>
+      )}
 
       <article className="max-w-3xl mx-auto">
         {post.picture && (

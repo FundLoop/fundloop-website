@@ -5,7 +5,6 @@ import Link from "next/link"
 import { createClientComponentClient } from "@supabase/auth-helpers-nextjs"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { ArrowLeft } from "lucide-react"
 import type { Database, Tables } from "@/types/supabase"
 
@@ -34,13 +33,9 @@ export default function DocumentationPage() {
     new Set(posts.map((p) => p.category).filter(Boolean)),
   ) as string[]
 
-  const [active, setActive] = useState<string | undefined>(categories[0])
+  const orderedCategories = categories.reverse()
 
-  useEffect(() => {
-    if (categories.length && !active) {
-      setActive(categories[0])
-    }
-  }, [categories, active])
+  const [active, setActive] = useState<string | null>(null)
 
   if (loading) {
     return (
@@ -75,24 +70,24 @@ export default function DocumentationPage() {
           Comprehensive guides and resources for FundLoop.
         </p>
 
-        {categories.length > 0 && (
-          <Tabs
-            value={active}
-            onValueChange={(v) => setActive(v)}
-            className="w-full mb-12"
-          >
-            <TabsList className="grid w-full grid-cols-2 md:grid-cols-4 mb-8">
-              {categories.map((cat) => (
-                <TabsTrigger key={cat} value={cat} className="capitalize">
+        {orderedCategories.length > 0 && (
+          <div className="flex gap-8" onMouseLeave={() => setActive(null)}>
+            <nav className="w-48 space-y-2">
+              {orderedCategories.map((cat) => (
+                <div
+                  key={cat}
+                  onMouseEnter={() => setActive(cat)}
+                  className={`cursor-pointer capitalize px-2 py-1 rounded ${active === cat ? "bg-slate-100 dark:bg-slate-800" : ""}`}
+                >
                   {cat}
-                </TabsTrigger>
+                </div>
               ))}
-            </TabsList>
-            {categories.map((cat) => (
-              <TabsContent key={cat} value={cat}>
+            </nav>
+            <div className="flex-1">
+              {active && (
                 <div className="grid md:grid-cols-2 gap-6">
                   {posts
-                    .filter((p) => p.category === cat)
+                    .filter((p) => p.category === active)
                     .map((post) => (
                       <Card
                         key={post.id}
@@ -118,9 +113,9 @@ export default function DocumentationPage() {
                       </Card>
                     ))}
                 </div>
-              </TabsContent>
-            ))}
-          </Tabs>
+              )}
+            </div>
+          </div>
         )}
       </div>
     </div>
