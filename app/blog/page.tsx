@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react"
 import Link from "next/link"
+import Image from "next/image"
 import { createClientComponentClient } from "@supabase/auth-helpers-nextjs"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -26,7 +27,8 @@ export default function BlogPage() {
         // Simple query for blog posts - no joins
         const { data, error } = await supabase
           .from("blog_posts")
-          .select("id, title, slug, excerpt, published_at")
+          .select("id, title, subtitle, slug, excerpt, picture, published_at")
+          .eq("is_support", false)
           .order("published_at", { ascending: false })
 
         if (error) throw error
@@ -121,21 +123,38 @@ export default function BlogPage() {
       ) : (
         <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
           {filteredPosts.map((post) => (
-            <Card key={post.id} className="flex flex-col h-full">
-              <CardHeader>
-                <CardTitle className="text-xl">
-                  <Link
-                    href={`/blog/${post.slug}?origin=blog`}
-                    className="hover:text-emerald-600 dark:hover:text-emerald-400"
-                  >
+            <Card
+              key={post.id}
+              className="overflow-hidden transition-transform transform hover:scale-105 hover:shadow-lg"
+            >
+              <Link href={`/blog/${post.slug}?origin=blog`} className="block h-full">
+                {post.picture && (
+                  <div className="relative w-full h-40">
+                    <Image
+                      src={post.picture}
+                      alt={post.title}
+                      fill
+                      className="object-cover"
+                    />
+                  </div>
+                )}
+                <CardHeader>
+                  <CardTitle className="text-xl hover:text-emerald-600 dark:hover:text-emerald-400">
                     {post.title}
-                  </Link>
-                </CardTitle>
-                <CardDescription>{formatDate(post.published_at)}</CardDescription>
-              </CardHeader>
-              <CardContent className="flex-grow">
-                <p className="text-sm text-slate-600 dark:text-slate-300">{post.excerpt}</p>
-              </CardContent>
+                  </CardTitle>
+                  {post.subtitle && (
+                    <p className="text-sm text-slate-600 dark:text-slate-300">
+                      {post.subtitle}
+                    </p>
+                  )}
+                  <CardDescription>{formatDate(post.published_at)}</CardDescription>
+                </CardHeader>
+                <CardContent className="flex-grow">
+                  <p className="text-sm text-slate-600 dark:text-slate-300">
+                    {post.excerpt}
+                  </p>
+                </CardContent>
+              </Link>
             </Card>
           ))}
         </div>

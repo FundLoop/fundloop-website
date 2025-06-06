@@ -3,9 +3,11 @@
 import { useEffect, useState, useRef } from "react"
 import { useParams, useRouter, useSearchParams } from "next/navigation"
 import Link from "next/link"
+import Image from "next/image"
 import { createClientComponentClient } from "@supabase/auth-helpers-nextjs"
 import { Button } from "@/components/ui/button"
 import { ArrowLeft } from "lucide-react"
+import Markdown from "@/components/markdown"
 import type { Database, Tables } from "@/types/supabase"
 
 type BlogPost = Tables<"blog_posts">
@@ -29,8 +31,9 @@ export default function BlogPostPage() {
       try {
         const { data, error } = await supabase
           .from("blog_posts")
-          .select("id, title, content, published_at")
+          .select("id, title, subtitle, content, picture, published_at")
           .eq("slug", slug)
+          .eq("is_support", false)
           .single()
 
         if (error) throw error
@@ -134,12 +137,24 @@ export default function BlogPostPage() {
       </div>
 
       <article className="max-w-3xl mx-auto">
+        {post.picture && (
+          <div className="relative w-full h-60 mb-8">
+            <Image src={post.picture} alt={post.title} fill className="object-cover rounded-md" />
+          </div>
+        )}
         <header className="mb-8">
-          <h1 className="text-3xl md:text-4xl font-bold mb-4">{post.title}</h1>
-          <p className="text-slate-600 dark:text-slate-300">{formatDate(post.published_at)}</p>
+          <h1 className="text-3xl md:text-4xl font-bold mb-2">{post.title}</h1>
+          {post.subtitle && (
+            <p className="text-slate-600 dark:text-slate-300 mb-2">{post.subtitle}</p>
+          )}
+          {post.published_at && (
+            <p className="text-slate-600 dark:text-slate-300 text-sm">
+              {formatDate(post.published_at)}
+            </p>
+          )}
         </header>
 
-        <div className="prose dark:prose-invert max-w-none">{post.content}</div>
+        <Markdown content={post.content} />
       </article>
     </div>
   )
