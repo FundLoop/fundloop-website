@@ -17,11 +17,28 @@ create table public.blog_posts (
  slug text not null,
  excerpt text not null,
  content text not null,
- author_id integer not null,
+ author_id integer not null default 1,
  published_at timestamp with time zone null default now(),
  created_at timestamp with time zone null default now(),
  updated_at timestamp with time zone null default now(),
- constraint blog_posts_pkey primary key (id)
+ is_support boolean null default false,
+ category text null,
+ subtitle text null,
+ picture text null,
+ constraint blog_posts_pkey primary key (id),
+constraint blog_posts_author_id_fkey foreign KEY (author_id) references users (id)
+) TABLESPACE pg_default;
+
+
+create table public.support_requests (
+  id bigint generated always as identity not null,
+  name text null,
+  email text null,
+  subject text null,
+  category text null,
+  message text null,
+  created_at timestamp with time zone null default now(),
+  constraint support_requests_pkey primary key (id)
 ) TABLESPACE pg_default;
 
 

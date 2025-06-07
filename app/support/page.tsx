@@ -12,6 +12,8 @@ import { Textarea } from "@/components/ui/textarea"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { toast } from "@/components/ui/use-toast"
 import { ArrowLeft, Mail, MessageSquare, Phone } from "lucide-react"
+import { createClientComponentClient } from "@supabase/auth-helpers-nextjs"
+import type { Database } from "@/types/supabase"
 
 export default function SupportPage() {
   const [isSubmitting, setIsSubmitting] = useState(false)
@@ -22,35 +24,76 @@ export default function SupportPage() {
     category: "",
     message: "",
   })
+  const [errors, setErrors] = useState<Record<string, string>>({})
+  const supabase = createClientComponentClient<Database>()
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { id, value } = e.target
     setFormData((prev) => ({ ...prev, [id]: value }))
+    setErrors((prev) => {
+      const newErr = { ...prev }
+      switch (id) {
+        case "name":
+          if (value.trim()) delete newErr.name
+          break
+        case "email":
+          if (/^\S+@\S+\.\S+$/.test(value)) delete newErr.email
+          break
+        case "subject":
+          if (value.trim()) delete newErr.subject
+          break
+        case "message":
+          if (value.trim()) delete newErr.message
+          break
+      }
+      return newErr
+    })
   }
 
   const handleSelectChange = (value: string) => {
     setFormData((prev) => ({ ...prev, category: value }))
+    setErrors((prev) => {
+      const copy = { ...prev }
+      if (value) delete copy.category
+      return copy
+    })
   }
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
+    const newErrors: Record<string, string> = {}
+    if (!formData.name.trim()) newErrors.name = "Name is required"
+    if (!formData.email.trim()) {
+      newErrors.email = "Email is required"
+    } else if (!/^\S+@\S+\.\S+$/.test(formData.email)) {
+      newErrors.email = "Invalid email address"
+    }
+    if (!formData.subject.trim()) newErrors.subject = "Subject is required"
+    if (!formData.category) newErrors.category = "Category is required"
+    if (!formData.message.trim()) newErrors.message = "Message is required"
+    if (Object.keys(newErrors).length > 0) {
+      setErrors(newErrors)
+      return
+    }
+    setErrors({})
     setIsSubmitting(true)
-
-    // Simulate API call
-    setTimeout(() => {
-      setIsSubmitting(false)
-      toast({
-        title: "Support request submitted",
-        description: "We'll get back to you as soon as possible.",
-      })
-      setFormData({
-        name: "",
-        email: "",
-        subject: "",
-        category: "",
-        message: "",
-      })
-    }, 1500)
+    const { error } = await supabase.from("support_requests").insert({
+      name: formData.name,
+      email: formData.email,
+      subject: formData.subject,
+      category: formData.category,
+      message: formData.message,
+    })
+    setIsSubmitting(false)
+    if (error) {
+      toast({ title: "Submission failed", description: error.message })
+      return
+    }
+    toast({
+      title: "Support request submitted",
+      description: "We'll get back to you as soon as possible.",
+    })
+    setFormData({ name: "", email: "", subject: "", category: "", message: "" })
   }
 
   return (
@@ -80,8 +123,10 @@ export default function SupportPage() {
               <CardDescription>Get help via email</CardDescription>
             </CardHeader>
             <CardContent className="text-center">
-              <p className="text-slate-600 dark:text-slate-300 mb-4">Coming Soon</p>
-              <a href="mailto:support@fundloop.org" className="text-emerald-600 dark:text-emerald-400 font-medium">
+              <a
+                href="mailto:support@fundloop.org?subject=Support%20Request&body=Please%20describe%20your%20issue%20here."
+                className="text-emerald-600 dark:text-emerald-400 font-medium"
+              >
                 support@fundloop.org
               </a>
             </CardContent>
@@ -116,7 +161,6 @@ export default function SupportPage() {
             <CardContent className="text-center">
               <p className="text-slate-600 dark:text-slate-300 mb-4">Coming Soon</p>
               <p className="text-slate-600 dark:text-slate-300 mb-4">Available for premium support customers.</p>
-              <span className="text-emerald-600 dark:text-emerald-400 font-medium">+1 (555) 123-4567</span>
             </CardContent>
           </Card>
         </div>
@@ -138,6 +182,9 @@ export default function SupportPage() {
                     onChange={handleInputChange}
                     required
                   />
+                  {errors.name && (
+                    <p className="text-sm text-red-500">{errors.name}</p>
+                  )}
                 </div>
 
                 <div className="space-y-2">
@@ -150,6 +197,9 @@ export default function SupportPage() {
                     onChange={handleInputChange}
                     required
                   />
+                  {errors.email && (
+                    <p className="text-sm text-red-500">{errors.email}</p>
+                  )}
                 </div>
               </div>
 
@@ -162,7 +212,14 @@ export default function SupportPage() {
                     value={formData.subject}
                     onChange={handleInputChange}
                     required
+                    aria-invalid={!!errors.subject}
+                    aria-describedby="subject-error"
                   />
+                  {errors.subject && (
+                    <p id="subject-error" className="text-sm text-red-500">
+                      {errors.subject}
+                    </p>
+                  )}
                 </div>
 
                 <div className="space-y-2">
@@ -180,6 +237,11 @@ export default function SupportPage() {
                       <SelectItem value="other">Other</SelectItem>
                     </SelectContent>
                   </Select>
+                  {errors.category && (
+                    <p id="category-error" className="text-sm text-red-500">
+                      {errors.category}
+                    </p>
+                  )}
                 </div>
               </div>
 
@@ -192,7 +254,14 @@ export default function SupportPage() {
                   value={formData.message}
                   onChange={handleInputChange}
                   required
+                  aria-invalid={!!errors.message}
+                  aria-describedby="message-error"
                 />
+                {errors.message && (
+                  <p id="message-error" className="text-sm text-red-500">
+                    {errors.message}
+                  </p>
+                )}
               </div>
             </form>
           </CardContent>
@@ -216,6 +285,14 @@ export default function SupportPage() {
           <Button asChild variant="outline">
             <Link href="/faq">View FAQ</Link>
           </Button>
+          <p className="mt-4">
+            <Link
+              href="/documentation"
+              className="text-emerald-600 dark:text-emerald-400 underline"
+            >
+              Documentation
+            </Link>
+          </p>
         </div>
       </div>
     </div>

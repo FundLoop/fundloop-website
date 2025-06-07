@@ -10,10 +10,14 @@ export interface Database {
           slug: string
           excerpt: string
           content: string
-          published_at: string
           author_id: number
+          published_at: string | null
           created_at: string | null
           updated_at: string | null
+          is_support: boolean | null
+          category: string | null
+          subtitle: string | null
+          picture: string | null
         }
         Insert: {
           id?: number
@@ -21,10 +25,14 @@ export interface Database {
           slug: string
           excerpt: string
           content: string
-          published_at: string
-          author_id: number
+          author_id?: number
+          published_at?: string | null
           created_at?: string | null
           updated_at?: string | null
+          is_support?: boolean | null
+          category?: string | null
+          subtitle?: string | null
+          picture?: string | null
         }
         Update: {
           id?: number
@@ -32,10 +40,14 @@ export interface Database {
           slug?: string
           excerpt?: string
           content?: string
-          published_at?: string
           author_id?: number
+          published_at?: string | null
           created_at?: string | null
           updated_at?: string | null
+          is_support?: boolean | null
+          category?: string | null
+          subtitle?: string | null
+          picture?: string | null
         }
         Relationships: [
           {
@@ -687,6 +699,36 @@ export interface Database {
             referencedColumns: ["id"]
           },
         ]
+      }
+      support_requests: {
+        Row: {
+          id: number
+          name: string | null
+          email: string | null
+          subject: string | null
+          category: string | null
+          message: string | null
+          created_at: string | null
+        }
+        Insert: {
+          id?: number
+          name?: string | null
+          email?: string | null
+          subject?: string | null
+          category?: string | null
+          message?: string | null
+          created_at?: string | null
+        }
+        Update: {
+          id?: number
+          name?: string | null
+          email?: string | null
+          subject?: string | null
+          category?: string | null
+          message?: string | null
+          created_at?: string | null
+        }
+        Relationships: []
       }
     }
     Views: {
