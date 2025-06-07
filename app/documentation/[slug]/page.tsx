@@ -3,11 +3,10 @@
 import { useEffect, useState } from "react"
 import { useParams } from "next/navigation"
 import Link from "next/link"
-import Image from "next/image"
 import { createClientComponentClient } from "@supabase/auth-helpers-nextjs"
 import { Button } from "@/components/ui/button"
 import { ArrowLeft } from "lucide-react"
-import Markdown from "@/components/markdown"
+import ArticlePage from "@/components/ArticlePage"
 import type { Database, Tables } from "@/types/supabase"
 
 type DocPost = Tables<"blog_posts">
@@ -82,25 +81,7 @@ export default function DocPostPage() {
           </Link>
         </Button>
       </div>
-      <article className="max-w-3xl mx-auto">
-        {post.picture && (
-          <div className="relative w-full h-60 mb-8">
-            <Image src={post.picture} alt={post.title} fill className="object-cover rounded-md" />
-          </div>
-        )}
-        <header className="mb-8">
-          <h1 className="text-3xl md:text-4xl font-bold mb-2">{post.title}</h1>
-          {post.subtitle && (
-            <p className="text-slate-600 dark:text-slate-300 mb-2">{post.subtitle}</p>
-          )}
-          {post.published_at && (
-            <p className="text-slate-600 dark:text-slate-300 text-sm">
-              {formatDate(post.published_at)}
-            </p>
-          )}
-        </header>
-        <Markdown content={post.content} />
-      </article>
+      <ArticlePage post={post} backHref="/documentation" backText="Back to Support" />
     </div>
   )
 }

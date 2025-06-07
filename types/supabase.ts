@@ -700,6 +700,36 @@ export interface Database {
           },
         ]
       }
+      support_requests: {
+        Row: {
+          id: number
+          name: string | null
+          email: string | null
+          subject: string | null
+          category: string | null
+          message: string | null
+          created_at: string | null
+        }
+        Insert: {
+          id?: number
+          name?: string | null
+          email?: string | null
+          subject?: string | null
+          category?: string | null
+          message?: string | null
+          created_at?: string | null
+        }
+        Update: {
+          id?: number
+          name?: string | null
+          email?: string | null
+          subject?: string | null
+          category?: string | null
+          message?: string | null
+          created_at?: string | null
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never

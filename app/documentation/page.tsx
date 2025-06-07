@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useEffect, useState, useRef } from "react"
 import Link from "next/link"
 import { createClientComponentClient } from "@supabase/auth-helpers-nextjs"
 import { Button } from "@/components/ui/button"
@@ -36,6 +36,29 @@ export default function DocumentationPage() {
   const orderedCategories = categories.reverse()
 
   const [active, setActive] = useState<string | null>(null)
+  const [looping, setLooping] = useState(true)
+  const intervalRef = useRef<NodeJS.Timeout>()
+
+  useEffect(() => {
+    if (!looping || orderedCategories.length === 0) return
+    const start = setTimeout(() => {
+      let idx = 0
+      setActive(orderedCategories[0])
+      intervalRef.current = setInterval(() => {
+        idx = (idx + 1) % orderedCategories.length
+        setActive(orderedCategories[idx])
+      }, 2000)
+    }, 2000)
+    return () => {
+      clearTimeout(start)
+      if (intervalRef.current) clearInterval(intervalRef.current)
+    }
+  }, [looping, orderedCategories])
+
+  const stopLoop = () => {
+    if (intervalRef.current) clearInterval(intervalRef.current)
+    setLooping(false)
+  }
 
   if (loading) {
     return (
@@ -72,11 +95,14 @@ export default function DocumentationPage() {
 
         {orderedCategories.length > 0 && (
           <div className="flex gap-8" onMouseLeave={() => setActive(null)}>
-            <nav className="w-48 space-y-2">
+            <nav className="w-48 space-y-2" onMouseEnter={stopLoop}>
               {orderedCategories.map((cat) => (
                 <div
                   key={cat}
-                  onMouseEnter={() => setActive(cat)}
+                  onMouseEnter={() => {
+                    stopLoop()
+                    setActive(cat)
+                  }}
                   className={`cursor-pointer capitalize px-2 py-1 rounded ${active === cat ? "bg-slate-100 dark:bg-slate-800" : ""}`}
                 >
                   {cat}
@@ -92,8 +118,9 @@ export default function DocumentationPage() {
                       <Card
                         key={post.id}
                         className="overflow-hidden transition-transform transform hover:scale-105 hover:shadow-lg"
+                        onMouseEnter={stopLoop}
                       >
-                        <Link href={`/documentation/${post.slug}`} className="block h-full">
+                        <Link href={`/documentation/${post.slug}`} className="block h-full" onMouseEnter={stopLoop}>
                           <CardHeader>
                             <CardTitle className="text-xl hover:text-emerald-600 dark:hover:text-emerald-400">
                               {post.title}

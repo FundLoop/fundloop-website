@@ -155,3 +155,7 @@ VALUES
   (10, 2023, 380000, 98, 28200, 13.48, NOW(), NOW()),
   (11, 2023, 425000, 105, 32100, 13.24, NOW(), NOW()),
   (12, 2023, 480000, 112, 36500, 13.15, NOW(), NOW());
+
+-- Support Requests
+INSERT INTO support_requests (name, email, subject, category, message, created_at) VALUES ('Test User', 'test@example.com', 'General Question', 'general', 'How do I use FundLoop?', NOW());
+
