@@ -157,25 +157,13 @@ export default function BlogPostPage() {
 
   return (
     <div className="container mx-auto px-4 py-12">
-      {showBack && (
-        <div className="flex items-center gap-2 mb-8">
-          {origin === "benefits" ? (
-            <Button variant="ghost" size="sm" className="gap-1" onClick={handleBackToBenefits}>
-              <ArrowLeft className="h-4 w-4" />
-              <span>Back to Benefits</span>
-            </Button>
-          ) : (
-            <Button asChild variant="ghost" size="sm" className="gap-1">
-              <Link href="/blog">
-                <ArrowLeft className="h-4 w-4" />
-                <span>Back to Blog</span>
-              </Link>
-            </Button>
-          )}
-        </div>
-      )}
-
-      <ArticlePage post={post} backHref="/blog" backText="Back to Blog" showBack={showBack} />
+      <ArticlePage
+        post={post}
+        backHref={origin === "benefits" ? "/" : "/blog"}
+        backText={origin === "benefits" ? "Back to Benefits" : "Back to Blog"}
+        showBack={showBack}
+        onBack={origin === "benefits" ? handleBackToBenefits : undefined}
+      />
     </div>
   )
 }

@@ -11,9 +11,10 @@ interface Props {
   backHref: string
   backText: string
   showBack?: boolean
+  onBack?: () => void
 }
 
-export default function ArticlePage({ post, backHref, backText, showBack = true }: Props) {
+export default function ArticlePage({ post, backHref, backText, showBack = true, onBack }: Props) {
   const formatDate = (dateString: string) => {
     const date = new Date(dateString)
     return new Intl.DateTimeFormat("en-US", {
@@ -27,12 +28,19 @@ export default function ArticlePage({ post, backHref, backText, showBack = true 
     <div className="container mx-auto px-4 py-12">
       {showBack && (
         <div className="flex items-center gap-2 mb-8">
-          <Button asChild variant="ghost" size="sm" className="gap-1">
-            <Link href={backHref}>
+          {onBack ? (
+            <Button variant="ghost" size="sm" className="gap-1" onClick={onBack}>
               <ArrowLeft className="h-4 w-4" />
               <span>{backText}</span>
-            </Link>
-          </Button>
+            </Button>
+          ) : (
+            <Button asChild variant="ghost" size="sm" className="gap-1">
+              <Link href={backHref}>
+                <ArrowLeft className="h-4 w-4" />
+                <span>{backText}</span>
+              </Link>
+            </Button>
+          )}
         </div>
       )}
       <article className="max-w-3xl mx-auto">

@@ -73,14 +73,6 @@ export default function DocPostPage() {
 
   return (
     <div className="container mx-auto px-4 py-12">
-      <div className="flex items-center gap-2 mb-8">
-        <Button asChild variant="ghost" size="sm" className="gap-1">
-          <Link href="/documentation">
-            <ArrowLeft className="h-4 w-4" />
-            <span>Back to Support</span>
-          </Link>
-        </Button>
-      </div>
       <ArticlePage post={post} backHref="/documentation" backText="Back to Support" />
     </div>
   )

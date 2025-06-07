@@ -30,10 +30,33 @@ export default function SupportPage() {
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { id, value } = e.target
     setFormData((prev) => ({ ...prev, [id]: value }))
+    setErrors((prev) => {
+      const newErr = { ...prev }
+      switch (id) {
+        case "name":
+          if (value.trim()) delete newErr.name
+          break
+        case "email":
+          if (/^\S+@\S+\.\S+$/.test(value)) delete newErr.email
+          break
+        case "subject":
+          if (value.trim()) delete newErr.subject
+          break
+        case "message":
+          if (value.trim()) delete newErr.message
+          break
+      }
+      return newErr
+    })
   }
 
   const handleSelectChange = (value: string) => {
     setFormData((prev) => ({ ...prev, category: value }))
+    setErrors((prev) => {
+      const copy = { ...prev }
+      if (value) delete copy.category
+      return copy
+    })
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -159,6 +182,9 @@ export default function SupportPage() {
                     onChange={handleInputChange}
                     required
                   />
+                  {errors.name && (
+                    <p className="text-sm text-red-500">{errors.name}</p>
+                  )}
                 </div>
 
                 <div className="space-y-2">
@@ -171,6 +197,9 @@ export default function SupportPage() {
                     onChange={handleInputChange}
                     required
                   />
+                  {errors.email && (
+                    <p className="text-sm text-red-500">{errors.email}</p>
+                  )}
                 </div>
               </div>
 
