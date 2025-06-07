@@ -37,8 +37,11 @@ create table public.support_requests (
   subject text null,
   category text null,
   message text null,
+  user_id uuid null,
+  ip_address text null,
   created_at timestamp with time zone null default now(),
-  constraint support_requests_pkey primary key (id)
+  constraint support_requests_pkey primary key (id),
+  constraint support_requests_user_id_fkey foreign key (user_id) references users (user_id)
 ) TABLESPACE pg_default;
 
 

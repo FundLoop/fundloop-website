@@ -157,5 +157,6 @@ VALUES
   (12, 2023, 480000, 112, 36500, 13.15, NOW(), NOW());
 
 -- Support Requests
-INSERT INTO support_requests (name, email, subject, category, message, created_at) VALUES ('Test User', 'test@example.com', 'General Question', 'general', 'How do I use FundLoop?', NOW());
+INSERT INTO support_requests (name, email, subject, category, message, user_id, ip_address, created_at)
+VALUES ('Test User', 'test@example.com', 'General Question', 'general', 'How do I use FundLoop?', NULL, '127.0.0.1', NOW());
 

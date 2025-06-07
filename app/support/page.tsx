@@ -77,12 +77,23 @@ export default function SupportPage() {
     }
     setErrors({})
     setIsSubmitting(true)
+    let ip = ""
+    try {
+      const res = await fetch("https://api.ipify.org?format=json")
+      const data = await res.json()
+      ip = data.ip
+    } catch (err) {
+      console.error("Failed to get IP", err)
+    }
+    const { data: { user } } = await supabase.auth.getUser()
     const { error } = await supabase.from("support_requests").insert({
       name: formData.name,
       email: formData.email,
       subject: formData.subject,
       category: formData.category,
       message: formData.message,
+      ip_address: ip || null,
+      user_id: user?.id ?? null,
     })
     setIsSubmitting(false)
     if (error) {

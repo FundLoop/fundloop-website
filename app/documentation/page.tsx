@@ -36,29 +36,25 @@ export default function DocumentationPage() {
   const orderedCategories = categories.reverse()
 
   const [active, setActive] = useState<string | null>(null)
-  const [looping, setLooping] = useState(true)
-  const intervalRef = useRef<NodeJS.Timeout>()
+  const navRef = useRef<HTMLDivElement>(null)
+  const itemRefs = useRef<Record<string, HTMLDivElement | null>>({})
+  const [indicator, setIndicator] = useState({ top: 0, height: 0 })
 
   useEffect(() => {
-    if (!looping || orderedCategories.length === 0) return
-    const start = setTimeout(() => {
-      let idx = 0
+    if (orderedCategories.length > 0) {
       setActive(orderedCategories[0])
-      intervalRef.current = setInterval(() => {
-        idx = (idx + 1) % orderedCategories.length
-        setActive(orderedCategories[idx])
-      }, 2000)
-    }, 2000)
-    return () => {
-      clearTimeout(start)
-      if (intervalRef.current) clearInterval(intervalRef.current)
     }
-  }, [looping, orderedCategories])
+  }, [orderedCategories])
 
-  const stopLoop = () => {
-    if (intervalRef.current) clearInterval(intervalRef.current)
-    setLooping(false)
-  }
+  useEffect(() => {
+    if (!active || !navRef.current) return
+    const el = itemRefs.current[active]
+    if (el) {
+      const parentRect = navRef.current.getBoundingClientRect()
+      const rect = el.getBoundingClientRect()
+      setIndicator({ top: rect.top - parentRect.top, height: rect.height })
+    }
+  }, [active])
 
   if (loading) {
     return (
@@ -95,15 +91,17 @@ export default function DocumentationPage() {
 
         {orderedCategories.length > 0 && (
           <div className="flex gap-8" onMouseLeave={() => setActive(null)}>
-            <nav className="w-48 space-y-2" onMouseEnter={stopLoop}>
+            <nav ref={navRef} className="relative w-48 space-y-2">
+              <span
+                className="absolute left-0 w-full rounded bg-slate-100 dark:bg-slate-800 transition-all"
+                style={{ top: indicator.top, height: indicator.height }}
+              />
               {orderedCategories.map((cat) => (
                 <div
                   key={cat}
-                  onMouseEnter={() => {
-                    stopLoop()
-                    setActive(cat)
-                  }}
-                  className={`cursor-pointer capitalize px-2 py-1 rounded ${active === cat ? "bg-slate-100 dark:bg-slate-800" : ""}`}
+                  ref={(el) => (itemRefs.current[cat] = el)}
+                  onMouseEnter={() => setActive(cat)}
+                  className="cursor-pointer capitalize px-2 py-1 relative z-10"
                 >
                   {cat}
                 </div>
@@ -118,9 +116,8 @@ export default function DocumentationPage() {
                       <Card
                         key={post.id}
                         className="overflow-hidden transition-transform transform hover:scale-105 hover:shadow-lg"
-                        onMouseEnter={stopLoop}
                       >
-                        <Link href={`/documentation/${post.slug}`} className="block h-full" onMouseEnter={stopLoop}>
+                        <Link href={`/documentation/${post.slug}`} className="block h-full">
                           <CardHeader>
                             <CardTitle className="text-xl hover:text-emerald-600 dark:hover:text-emerald-400">
                               {post.title}

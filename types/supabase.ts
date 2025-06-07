@@ -708,6 +708,8 @@ export interface Database {
           subject: string | null
           category: string | null
           message: string | null
+          user_id: string | null
+          ip_address: string | null
           created_at: string | null
         }
         Insert: {
@@ -717,6 +719,8 @@ export interface Database {
           subject?: string | null
           category?: string | null
           message?: string | null
+          user_id?: string | null
+          ip_address?: string | null
           created_at?: string | null
         }
         Update: {
@@ -726,6 +730,8 @@ export interface Database {
           subject?: string | null
           category?: string | null
           message?: string | null
+          user_id?: string | null
+          ip_address?: string | null
           created_at?: string | null
         }
         Relationships: []
