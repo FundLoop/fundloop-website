@@ -23,9 +23,10 @@ create table public.blog_posts (
  updated_at timestamp with time zone null default now(),
  is_support boolean null default false,
  category text null,
- subtitle text null,
- picture text null,
- constraint blog_posts_pkey primary key (id),
+  subtitle text null,
+  picture text null,
+  sort_order_within_category integer null,
+  constraint blog_posts_pkey primary key (id),
 constraint blog_posts_author_id_fkey foreign KEY (author_id) references users (id)
 ) TABLESPACE pg_default;
 

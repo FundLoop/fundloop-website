@@ -18,6 +18,7 @@ export interface Database {
           category: string | null
           subtitle: string | null
           picture: string | null
+          sort_order_within_category: number | null
         }
         Insert: {
           id?: number
@@ -33,6 +34,7 @@ export interface Database {
           category?: string | null
           subtitle?: string | null
           picture?: string | null
+          sort_order_within_category?: number | null
         }
         Update: {
           id?: number
@@ -48,6 +50,7 @@ export interface Database {
           category?: string | null
           subtitle?: string | null
           picture?: string | null
+          sort_order_within_category?: number | null
         }
         Relationships: [
           {
