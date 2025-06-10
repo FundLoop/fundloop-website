@@ -1,5 +1,7 @@
 "use client"
 
+export const revalidate = 300
+
 import { useState, useEffect } from "react"
 import Link from "next/link"
 import { useParams } from "next/navigation"
@@ -12,6 +14,7 @@ import { Badge } from "@/components/ui/badge"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
 import { Separator } from "@/components/ui/separator"
+import { Skeleton } from "@/components/ui/skeleton"
 import { toast } from "@/components/ui/use-toast"
 import { ArrowLeft, Edit2, Check, X, ExternalLink, Building2, Users, Share2, DollarSign } from "lucide-react"
 import { ProjectVisibilityToggle } from "@/components/project-visibility-toggle"
@@ -179,8 +182,13 @@ export default function ProjectDetailPage() {
 
   if (loading) {
     return (
-      <div className="container mx-auto px-4 py-12 flex justify-center">
-        <p>Loading project details...</p>
+      <div className="container mx-auto px-4 py-12">
+        <div className="space-y-4">
+          <Skeleton className="h-8 w-1/3" />
+          <Skeleton className="h-48 w-full" />
+          <Skeleton className="h-4 w-full" />
+          <Skeleton className="h-4 w-5/6" />
+        </div>
       </div>
     )
   }

@@ -662,13 +662,13 @@ export default function ProjectPaymentsPage() {
               <TableCaption>A list of your payment records</TableCaption>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Period</TableHead>
-                  <TableHead>Revenue</TableHead>
-                  <TableHead>Payment</TableHead>
-                  <TableHead>Percentage</TableHead>
-                  <TableHead>Method</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead className="text-right">Actions</TableHead>
+                  <TableHead scope="col">Period</TableHead>
+                  <TableHead scope="col">Revenue</TableHead>
+                  <TableHead scope="col">Payment</TableHead>
+                  <TableHead scope="col">Percentage</TableHead>
+                  <TableHead scope="col">Method</TableHead>
+                  <TableHead scope="col">Status</TableHead>
+                  <TableHead scope="col" className="text-right">Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -681,7 +681,7 @@ export default function ProjectPaymentsPage() {
                 ) : (
                   payments.map((payment) => (
                     <TableRow key={payment.id}>
-                      <TableCell className="font-medium">{payment.payment_method_name}</TableCell>
+                      <TableCell scope="row" className="font-medium">{payment.payment_method_name}</TableCell>
                       <TableCell>
                         {format(new Date(payment.period_start), "MMM d, yyyy")} -{" "}
                         {format(new Date(payment.period_end), "MMM d, yyyy")}
