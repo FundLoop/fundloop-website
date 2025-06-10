@@ -1,7 +1,5 @@
 "use client"
 
-export const revalidate = 300
-
 import { useEffect, useState } from "react"
 import Link from "next/link"
 import { createClientComponentClient } from "@supabase/auth-helpers-nextjs"
