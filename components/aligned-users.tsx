@@ -8,6 +8,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Skeleton } from "@/components/ui/skeleton"
+import { toast } from "@/components/ui/use-toast"
 import type { Database } from "@/types/supabase"
 
 interface User {
@@ -19,6 +20,9 @@ interface User {
   location_id: number | null
   location?: string
   project_count?: number
+  is_full_name_public?: boolean
+  is_location_public?: boolean
+  is_contribution_details_public?: boolean
 }
 
 export default function AlignedUsers() {
@@ -31,10 +35,27 @@ export default function AlignedUsers() {
       setLoading(true)
 
       try {
-        // Simple query for users - no joins, with soft delete filter
+        // Get user ids that participate in at least one project
+        const { data: participants, error: partError } = await supabase
+          .from("user_project_participation")
+          .select("user_id")
+
+        if (partError) throw partError
+
+        const ids = Array.from(new Set(participants?.map((p) => p.user_id)))
+
+        if (ids.length === 0) {
+          setUsers([])
+          return
+        }
+
+        // Query only users that belong to a project
         const { data: userData, error: userError } = await supabase
           .from("users")
-          .select("user_id, full_name, avatar_url, contribution_details, created_at, location_id")
+          .select(
+            "user_id, full_name, avatar_url, contribution_details, created_at, location_id, is_full_name_public, is_location_public, is_contribution_details_public"
+          )
+          .in("user_id", ids)
           .is("deleted_at", null)
           .eq("status", "active")
           .order("created_at", { ascending: false })
@@ -83,6 +104,11 @@ export default function AlignedUsers() {
         setUsers(formattedUsers)
       } catch (err) {
         console.error("Error fetching users:", err)
+        toast({
+          title: "Error",
+          description: "Failed to load community members.",
+          variant: "destructive",
+        })
       } finally {
         setLoading(false)
       }
@@ -159,22 +185,31 @@ export default function AlignedUsers() {
                 ))
             : users.map((user) => (
                 <Card key={user.user_id}>
-                  <CardContent className="p-4 text-center">
-                    <Avatar className="h-16 w-16 mx-auto mb-2">
-                      <AvatarImage
-                        src={user.avatar_url || "/placeholder.svg?height=40&width=40"}
-                        alt={user.full_name}
-                      />
-                      <AvatarFallback>{user.full_name ? user.full_name.substring(0, 2) : "?"}</AvatarFallback>
-                    </Avatar>
-                    <h3 className="font-medium mb-1">{user.full_name}</h3>
-                    <Badge className="mb-2">{user.contribution_details || "Community Member"}</Badge>
-                    <p className="text-xs text-slate-500 dark:text-slate-400 mb-1">{user.location}</p>
-                    <p className="text-xs text-slate-500 dark:text-slate-400 mb-1">
-                      Joined {getTimeAgo(user.created_at)}
-                    </p>
-                    <p className="text-xs font-medium">Active in {user.project_count} projects</p>
-                  </CardContent>
+                  <Link href={`/users/${user.user_id}`}
+                    className="block">
+                    <CardContent className="p-4 text-center">
+                      <Avatar className="h-16 w-16 mx-auto mb-2">
+                        <AvatarImage
+                          src={user.avatar_url || "/placeholder.svg?height=40&width=40"}
+                          alt={user.full_name}
+                        />
+                        <AvatarFallback>{user.full_name ? user.full_name.substring(0, 2) : "?"}</AvatarFallback>
+                      </Avatar>
+                      {user.is_full_name_public !== false && (
+                        <h3 className="font-medium mb-1">{user.full_name}</h3>
+                      )}
+                      {user.is_contribution_details_public !== false && (
+                        <Badge className="mb-2">{user.contribution_details || "Community Member"}</Badge>
+                      )}
+                      {user.is_location_public !== false && (
+                        <p className="text-xs text-slate-500 dark:text-slate-400 mb-1">{user.location}</p>
+                      )}
+                      <p className="text-xs text-slate-500 dark:text-slate-400 mb-1">
+                        Joined {getTimeAgo(user.created_at)}
+                      </p>
+                      <p className="text-xs font-medium">Active in {user.project_count} projects</p>
+                    </CardContent>
+                  </Link>
                 </Card>
               ))}
         </div>

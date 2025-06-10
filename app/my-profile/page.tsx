@@ -48,6 +48,10 @@ export default function MyProfilePage() {
   const [primaryWallet, setPrimaryWallet] = useState<string | null>(null)
   const [primaryWalletName, setPrimaryWalletName] = useState<string | null>(null)
   const [primaryWalletType, setPrimaryWalletType] = useState<string | null>(null)
+  const [fullName, setFullName] = useState<string | null>(null)
+  const [avatar, setAvatar] = useState<string | null>(null)
+  const [location, setLocation] = useState<string | null>(null)
+  const [joined, setJoined] = useState<string | null>(null)
   const [invitationCode, setInvitationCode] = useState<InvitationCode | null>(null)
   const [generatingCode, setGeneratingCode] = useState(false)
   const [inviteLink, setInviteLink] = useState<string>("")
@@ -60,6 +64,38 @@ export default function MyProfilePage() {
         // Fetch emails and wallets
         const emails = await getUserEmails()
         const wallets = await getUserWallets()
+
+        const {
+          data: { user },
+        } = await supabase.auth.getUser()
+
+        if (user) {
+          const { data: profile } = await supabase
+            .from("users")
+            .select(
+              "full_name, avatar_url, created_at, location_id, is_full_name_public, is_location_public"
+            )
+            .eq("user_id", user.id)
+            .single()
+
+          if (profile) {
+            if (profile.is_full_name_public !== false && profile.full_name) {
+              setFullName(profile.full_name)
+            }
+
+            if (profile.location_id && profile.is_location_public !== false) {
+              const { data: loc } = await supabase
+                .from("ref_locations")
+                .select("name")
+                .eq("id", profile.location_id)
+                .single()
+              setLocation(loc?.name || null)
+            }
+
+            setJoined(profile.created_at)
+            setAvatar(profile.avatar_url)
+          }
+        }
 
         // Find primary email
         const primary = emails.find((email) => email.is_primary)
@@ -276,15 +312,19 @@ export default function MyProfilePage() {
           <Card>
             <CardHeader className="text-center">
               <Avatar className="h-24 w-24 mx-auto mb-4">
-                <AvatarImage src="/placeholder.svg?height=100&width=100" alt="Alex Rivera" />
-                <AvatarFallback>AR</AvatarFallback>
+                <AvatarImage src={avatar || "/placeholder.svg?height=100&width=100"} alt={fullName || "User"} />
+                <AvatarFallback>{fullName ? fullName.substring(0,2) : "?"}</AvatarFallback>
               </Avatar>
-              <CardTitle>Alex Rivera</CardTitle>
+              {fullName && <CardTitle>{fullName}</CardTitle>}
               <CardDescription>{primaryEmail}</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               <Badge className="mb-4">Community Moderator</Badge>
-              <p className="text-sm text-slate-600 dark:text-slate-300 mb-6">Barcelona, Spain • Joined 6 months ago</p>
+              {location && joined && (
+                <p className="text-sm text-slate-600 dark:text-slate-300 mb-6">
+                  {location} • Joined {getTimeAgo(joined)}
+                </p>
+              )}
 
               {primaryWallet && (
                 <div className="space-y-1">

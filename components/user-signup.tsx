@@ -3,28 +3,77 @@
 import type React from "react"
 
 import { useState } from "react"
+import { createClientComponentClient } from "@supabase/auth-helpers-nextjs"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Checkbox } from "@/components/ui/checkbox"
 import { toast } from "@/components/ui/use-toast"
+import type { Database } from "@/types/supabase"
 
 export default function UserSignup() {
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const supabase = createClientComponentClient<Database>()
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
+
+    const form = e.target as HTMLFormElement
+    const name = (form.elements.namedItem("user-name") as HTMLInputElement).value.trim()
+    const email = (form.elements.namedItem("user-email") as HTMLInputElement).value.trim()
+    const wallet = (form.elements.namedItem("user-wallet") as HTMLInputElement).value.trim()
+
+    if (!name || !email) {
+      toast({
+        title: "Missing information",
+        description: "Please provide your name and email address.",
+        variant: "destructive",
+      })
+      return
+    }
+
     setIsSubmitting(true)
 
-    // Simulate API call
-    setTimeout(() => {
-      setIsSubmitting(false)
+    try {
+      const {
+        data: { user },
+        error: authError,
+      } = await supabase.auth.getUser()
+      if (authError) throw authError
+
+      const { error } = await supabase.from("users").insert({
+        user_id: user?.id,
+        full_name: name,
+        email,
+      })
+
+      if (wallet && !error) {
+        await supabase.from("wallet_accounts").insert({
+          user_id: user?.id,
+          wallet_address: wallet,
+          wallet_type: "ethereum",
+          is_primary: true,
+        })
+      }
+
+      if (error) throw error
+
       toast({
         title: "User profile created!",
         description: "Welcome to FundLoop. You're now eligible to receive citizen salary payments.",
       })
-    }, 1500)
+      form.reset()
+    } catch (err) {
+      console.error("Error creating profile", err)
+      toast({
+        title: "Error",
+        description: "Failed to create profile. Please try again.",
+        variant: "destructive",
+      })
+    } finally {
+      setIsSubmitting(false)
+    }
   }
 
   return (
@@ -69,17 +118,17 @@ export default function UserSignup() {
               </p>
             </div>
           </div>
+          <CardFooter>
+            <Button
+              type="submit"
+              className="w-full bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-700 hover:to-blue-700"
+              disabled={isSubmitting}
+            >
+              {isSubmitting ? "Creating Profile..." : "Create Profile"}
+            </Button>
+          </CardFooter>
         </form>
       </CardContent>
-      <CardFooter>
-        <Button
-          className="w-full bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-700 hover:to-blue-700"
-          onClick={handleSubmit}
-          disabled={isSubmitting}
-        >
-          {isSubmitting ? "Creating Profile..." : "Create Profile"}
-        </Button>
-      </CardFooter>
     </Card>
   )
 }
