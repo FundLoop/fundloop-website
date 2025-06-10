@@ -567,23 +567,26 @@ export interface Database {
         Row: {
           id: number
           project_id: number
-          user_id: string
           joined_at: string | null
           updated_at: string | null
+          user_id: string
+          is_admin: boolean | null
         }
         Insert: {
           id?: number
           project_id: number
-          user_id: string
           joined_at?: string | null
           updated_at?: string | null
+          user_id?: string
+          is_admin?: boolean | null
         }
         Update: {
           id?: number
           project_id?: number
-          user_id?: string
           joined_at?: string | null
           updated_at?: string | null
+          user_id?: string
+          is_admin?: boolean | null
         }
         Relationships: [
           {
