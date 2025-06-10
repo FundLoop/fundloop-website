@@ -38,15 +38,19 @@ export default function UsersPage() {
 
   useEffect(() => {
     const fetchParticipants = async () => {
-      const { data, error } = await supabase.from("participants").select("user_id")
-      if (error) {
-        console.error("Error fetching participants:", error)
-        setErrorMsg("Failed to load members.")
-        return
-      }
-      if (data) {
+      try {
+        const { data, error } = await supabase.from("participants").select("user_id")
+        if (error) throw error
         const ids = Array.from(new Set(data.map((d) => d.user_id)))
         setAllIds(ids)
+        if (ids.length === 0) {
+          setErrorMsg("No community members yet.")
+        }
+      } catch (err) {
+        console.error("Error fetching participants:", err)
+        setErrorMsg("Failed to load members.")
+      } finally {
+        setLoading(false)
       }
     }
 
@@ -54,7 +58,9 @@ export default function UsersPage() {
   }, [supabase])
 
   useEffect(() => {
-    if (allIds.length === 0) return
+    if (allIds.length === 0) {
+      return
+    }
 
     const fetchUsers = async () => {
       setLoading(true)
@@ -62,6 +68,11 @@ export default function UsersPage() {
       try {
         const limit = 12
         const slice = allIds.slice(page * limit, page * limit + limit)
+
+        if (slice.length === 0) {
+          setLoading(false)
+          return
+        }
 
         const { data: userData, error: userError } = await supabase
           .from("users")
@@ -143,7 +154,13 @@ export default function UsersPage() {
     const observer = new IntersectionObserver(
       (entries) => {
         if (entries[0].isIntersecting) {
-          setPage((p) => p + 1)
+          const limit = 12
+          setPage((p) => {
+            if ((p + 1) * limit <= allIds.length) {
+              return p + 1
+            }
+            return p
+          })
         }
       },
       { threshold: 1 }

@@ -28,6 +28,7 @@ interface User {
 export default function AlignedUsers() {
   const [users, setUsers] = useState<User[]>([])
   const [loading, setLoading] = useState(true)
+  const [errorMsg, setErrorMsg] = useState<string | null>(null)
   const supabase = createClientComponentClient<Database>()
 
   useEffect(() => {
@@ -104,11 +105,7 @@ export default function AlignedUsers() {
         setUsers(formattedUsers)
       } catch (err) {
         console.error("Error fetching users:", err)
-        toast({
-          title: "Error",
-          description: "Failed to load community members.",
-          variant: "destructive",
-        })
+        setErrorMsg("Failed to load community members.")
       } finally {
         setLoading(false)
       }
@@ -169,21 +166,28 @@ export default function AlignedUsers() {
         </div>
 
         <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
-          {loading
-            ? Array(8)
-                .fill(0)
-                .map((_, i) => (
-                  <Card key={i}>
-                    <CardContent className="p-4 text-center">
-                      <Skeleton className="h-16 w-16 rounded-full mx-auto mb-2" />
-                      <Skeleton className="h-5 w-24 mx-auto mb-2" />
-                      <Skeleton className="h-4 w-16 mx-auto mb-2" />
-                      <Skeleton className="h-4 w-20 mx-auto mb-1" />
-                      <Skeleton className="h-4 w-24 mx-auto" />
-                    </CardContent>
-                  </Card>
-                ))
-            : users.map((user) => (
+          {loading ? (
+            Array(8)
+              .fill(0)
+              .map((_, i) => (
+                <Card key={i}>
+                  <CardContent className="p-4 text-center">
+                    <Skeleton className="h-16 w-16 rounded-full mx-auto mb-2" />
+                    <Skeleton className="h-5 w-24 mx-auto mb-2" />
+                    <Skeleton className="h-4 w-16 mx-auto mb-2" />
+                    <Skeleton className="h-4 w-20 mx-auto mb-1" />
+                    <Skeleton className="h-4 w-24 mx-auto" />
+                  </CardContent>
+                </Card>
+              ))
+          ) : errorMsg ? (
+            <p className="col-span-4 text-center text-red-600 dark:text-red-400">
+              {errorMsg}
+            </p>
+          ) : users.length === 0 ? (
+            <p className="col-span-4 text-center">No community members found.</p>
+          ) : (
+            users.map((user) => (
                 <Card key={user.user_id}>
                   <Link href={`/users/${user.user_id}`}
                     className="block">
@@ -211,7 +215,8 @@ export default function AlignedUsers() {
                     </CardContent>
                   </Link>
                 </Card>
-              ))}
+              ))
+          )}
         </div>
       </section>
     </>
