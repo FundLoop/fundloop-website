@@ -582,6 +582,46 @@ export interface Database {
           },
         ]
       }
+      participants: {
+        Row: {
+          id: number
+          project_id: number
+          joined_at: string | null
+          updated_at: string | null
+          user_id: string
+          is_admin: boolean | null
+        }
+        Insert: {
+          id?: number
+          project_id: number
+          joined_at?: string | null
+          updated_at?: string | null
+          user_id?: string
+          is_admin?: boolean | null
+        }
+        Update: {
+          id?: number
+          project_id?: number
+          joined_at?: string | null
+          updated_at?: string | null
+          user_id?: string
+          is_admin?: boolean | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_project_participation_project_id_fkey"
+            columns: ["project_id"]
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "user_project_participation_user_id_fkey"
+            columns: ["user_id"]
+            referencedRelation: "users"
+            referencedColumns: ["user_id"]
+          },
+        ]
+      }
       users: {
         Row: {
           id: number

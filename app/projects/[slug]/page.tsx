@@ -66,6 +66,8 @@ export default function ProjectDetailPage() {
   useEffect(() => {
     const fetchProject = async () => {
       try {
+        setLoading(true)
+
         const { data, error } = await supabase
           .from("projects")
           .select(
@@ -106,15 +108,71 @@ export default function ProjectDetailPage() {
           is_public: data.is_public ?? true,
         }
 
-        setHasAccess(true)
         setProject(formattedProject)
-        setUserRole("admin")
         setEditValues({
           name: formattedProject.name,
           description: formattedProject.description,
           detailed_description: formattedProject.detailed_description,
           website: formattedProject.website,
           category: formattedProject.category,
+        })
+
+        // Fetch participants joined with user details
+        const { data: participantRows } = await supabase
+          .from("participants")
+          .select("is_admin, user_id, users(full_name, avatar_url, status)")
+          .eq("project_id", data.id)
+
+        const activeParticipants =
+          participantRows?.filter((p) => (p as any).users?.status === "active") || []
+
+        setParticipants(
+          activeParticipants.map((p) => ({
+            id: (p as any).user_id,
+            name: (p as any).users.full_name as string,
+            avatar: (p as any).users.avatar_url || "/placeholder.svg?height=40&width=40",
+            role: (p as any).is_admin ? "Admin" : "Member",
+          }))
+        )
+
+        const {
+          data: { user },
+        } = await supabase.auth.getUser()
+
+        const membership = activeParticipants.find((p) => (p as any).user_id === user?.id)
+        setHasAccess(!!membership && !!(membership as any).is_admin)
+        setUserRole((membership as any)?.is_admin ? "admin" : membership ? "member" : null)
+
+        // Fetch payments for financial summary
+        const { data: paymentRows } = await supabase
+          .from("payments")
+          .select("payment_amount")
+          .eq("project_id", data.id)
+          .order("period_start", { ascending: false })
+
+        const epochCount = paymentRows?.length || 0
+        const latestContributed = epochCount > 0 ? paymentRows![0].payment_amount : 0
+        const total = paymentRows?.reduce((sum, p) => sum + (p as any).payment_amount, 0) || 0
+        const avgContributed = epochCount > 0 ? total / epochCount : 0
+
+        const participantCount = activeParticipants.length || 1
+        const avgContributedPerParticipant =
+          epochCount > 0 ? avgContributed / participantCount : 0
+
+        const { data: salaryRow } = await supabase
+          .from("monthly_network_stats")
+          .select("avg_salary")
+          .order("year", { ascending: false })
+          .order("month", { ascending: false })
+          .limit(1)
+          .maybeSingle()
+
+        setFinancials({
+          epochCount,
+          latestContributed,
+          avgContributed,
+          avgContributedPerParticipant,
+          avgSalary: salaryRow?.avg_salary ?? null,
         })
       } catch (error) {
         console.error("Error fetching project:", error)
@@ -131,31 +189,15 @@ export default function ProjectDetailPage() {
     fetchProject()
   }, [slug, supabase])
 
-  const financials = {
-    pledgedPercent: 1,
-    contributed: 12500,
-    participants: 23,
-  }
-
-  const socials: SocialLink[] = [
-    { name: "Twitter", url: "https://twitter.com" },
-    { name: "GitHub", url: "https://github.com" },
-  ]
-
-  const admins: ProjectUser[] = [
-    {
-      id: 1,
-      name: "Jane Doe",
-      avatar: "/placeholder.svg?height=40&width=40",
-      role: "Admin",
-    },
-    {
-      id: 2,
-      name: "John Smith",
-      avatar: "/placeholder.svg?height=40&width=40",
-      role: "Admin",
-    },
-  ]
+  const [socials, setSocials] = useState<SocialLink[]>([])
+  const [participants, setParticipants] = useState<ProjectUser[]>([])
+  const [financials, setFinancials] = useState<{
+    epochCount: number
+    latestContributed: number
+    avgContributed: number
+    avgContributedPerParticipant: number
+    avgSalary: number | null
+  } | null>(null)
 
   const handleEdit = (field: string) => {
     setEditingField(field)
@@ -418,16 +460,32 @@ export default function ProjectDetailPage() {
         </div>
 
         <div className="space-y-6">
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-lg">Financial Summary</CardTitle>
-            </CardHeader>
-            <CardContent className="text-sm space-y-1">
-              <div>Pledged: {financials.pledgedPercent}%</div>
-              <div>Contributed: ${financials.contributed.toLocaleString()}</div>
-              <div>Participants: {financials.participants}</div>
-            </CardContent>
-          </Card>
+          {financials && (
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-lg">Financial Summary</CardTitle>
+              </CardHeader>
+              <CardContent className="text-sm space-y-1">
+                <div>Epochs: {financials.epochCount}</div>
+                <div className="mt-2 font-medium">Latest Epoch</div>
+                <div>Contributed: ${financials.latestContributed.toLocaleString()}</div>
+                {financials.epochCount > 1 && (
+                  <>
+                    <Separator className="my-2" />
+                    <div className="font-medium">Average per Epoch</div>
+                    <div>Contributed: ${financials.avgContributed.toLocaleString(undefined, { maximumFractionDigits: 2 })}</div>
+                    <div>
+                      Avg per Participant: $
+                      {financials.avgContributedPerParticipant.toLocaleString(undefined, { maximumFractionDigits: 2 })}
+                    </div>
+                    {financials.avgSalary !== null && (
+                      <div>Avg Citizen Salary: ${financials.avgSalary.toLocaleString()}</div>
+                    )}
+                  </>
+                )}
+              </CardContent>
+            </Card>
+          )}
 
           {hasAccess && userRole === "admin" && (
             <Card>
@@ -492,7 +550,7 @@ export default function ProjectDetailPage() {
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
-                {admins.map((person) => (
+                {participants.map((person) => (
                   <div key={person.id} className="flex items-center gap-3">
                     <Avatar className="h-8 w-8">
                       <AvatarImage src={person.avatar} alt={person.name} />
