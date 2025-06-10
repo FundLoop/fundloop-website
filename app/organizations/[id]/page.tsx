@@ -21,6 +21,7 @@ interface User {
 
 interface Project {
   id: number
+  slug: string
   name: string
   logo: string
   description: string
@@ -88,6 +89,7 @@ export default function OrganizationDetailPage() {
           projects: [
             {
               id: 1,
+              slug: "ecostream",
               name: "EcoStream",
               logo: "/placeholder.svg?height=40&width=40",
               description: "Sustainable video streaming platform with carbon-neutral infrastructure",
@@ -218,7 +220,7 @@ export default function OrganizationDetailPage() {
               <div className="grid md:grid-cols-2 gap-4">
                 {organization.projects.map((project) => (
                   <Card key={project.id} className="overflow-hidden">
-                    <Link href={`/projects/${project.id}`} className="block">
+                    <Link href={`/projects/${project.slug}`} className="block">
                       <CardHeader className="pb-2">
                         <div className="flex justify-between items-start">
                           <div className="flex items-center gap-2">

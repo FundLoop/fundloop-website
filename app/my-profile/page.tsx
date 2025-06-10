@@ -18,6 +18,7 @@ type User = Tables<"users">
 
 interface Project {
   id: number
+  slug: string
   name: string
   logo: string
   description: string
@@ -80,6 +81,7 @@ export default function MyProfilePage() {
         const mockProjects: Project[] = [
           {
             id: 1,
+            slug: "ecostream",
             name: "EcoStream",
             logo: "/placeholder.svg?height=40&width=40",
             description: "Sustainable video streaming platform with carbon-neutral infrastructure",
@@ -87,6 +89,7 @@ export default function MyProfilePage() {
           },
           {
             id: 3,
+            slug: "nomad-workspace",
             name: "Nomad Workspace",
             logo: "/placeholder.svg?height=40&width=40",
             description: "Global network of sustainable co-working spaces for digital nomads",
@@ -103,6 +106,7 @@ export default function MyProfilePage() {
             projects: [
               {
                 id: 1,
+                slug: "ecostream",
                 name: "EcoStream",
                 logo: "/placeholder.svg?height=40&width=40",
                 description: "Sustainable video streaming platform with carbon-neutral infrastructure",
@@ -118,6 +122,7 @@ export default function MyProfilePage() {
             projects: [
               {
                 id: 3,
+                slug: "nomad-workspace",
                 name: "Nomad Workspace",
                 logo: "/placeholder.svg?height=40&width=40",
                 description: "Global network of sustainable co-working spaces for digital nomads",
@@ -397,7 +402,7 @@ export default function MyProfilePage() {
                 <div className="grid md:grid-cols-2 gap-4">
                   {myProjects.map((project) => (
                     <Card key={project.id} className="overflow-hidden">
-                      <Link href={`/projects/${project.id}`} className="block">
+                      <Link href={`/projects/${project.slug}`} className="block">
                         <CardHeader className="pb-2">
                           <div className="flex justify-between items-start">
                             <div className="flex items-center gap-2">
@@ -464,7 +469,7 @@ export default function MyProfilePage() {
                         <div className="grid md:grid-cols-2 gap-4">
                           {org.projects.map((project) => (
                             <Card key={project.id} className="overflow-hidden">
-                              <Link href={`/projects/${project.id}`} className="block">
+                              <Link href={`/projects/${project.slug}`} className="block">
                                 <CardHeader className="pb-2">
                                   <div className="flex items-center gap-2">
                                     <Avatar className="h-8 w-8">

@@ -84,7 +84,8 @@ interface NewPaymentRow {
 
 export default function ProjectPaymentsPage() {
   const params = useParams()
-  const projectId = params.id as string
+  const slug = params.slug as string
+  const [projectId, setProjectId] = useState<number | null>(null)
 
   const [project, setProject] = useState<Project | null>(null)
   const [paymentMethods, setPaymentMethods] = useState<PaymentMethod[]>([])
@@ -100,7 +101,7 @@ export default function ProjectPaymentsPage() {
 
   useEffect(() => {
     fetchProjectData()
-  }, [projectId])
+  }, [slug])
 
   const fetchProjectData = async () => {
     try {
@@ -133,14 +134,18 @@ export default function ProjectPaymentsPage() {
 
       if (paymentPeriodicitiesError) throw paymentPeriodicitiesError
 
-      // Fetch project
+      // Fetch project by slug to get ID and payment info
       const { data: projectData, error: projectError } = await supabase
         .from("projects")
-        .select("id, name, payment_percentage, payment_periodicity_id, payment_custom_days, default_payment_method_id")
-        .eq("id", Number.parseInt(projectId))
+        .select(
+          "id, slug, name, payment_percentage, payment_periodicity_id, payment_custom_days, default_payment_method_id"
+        )
+        .eq("slug", slug)
         .single()
 
       if (projectError) throw projectError
+
+      setProjectId(projectData.id)
 
       // Fetch payments
       const { data: paymentsData, error: paymentsError } = await supabase
@@ -151,7 +156,7 @@ export default function ProjectPaymentsPage() {
          ref_payment_methods(name, code),
          ref_payment_statuses(name, code)
        `)
-        .eq("project_id", Number.parseInt(projectId))
+        .eq("project_id", projectData.id)
         .order("period_start", { ascending: false })
 
       if (paymentsError) throw paymentsError
@@ -469,7 +474,7 @@ export default function ProjectPaymentsPage() {
     <div className="container mx-auto px-4 py-12">
       <div className="flex items-center gap-2 mb-8">
         <Button asChild variant="ghost" size="sm" className="gap-1">
-          <Link href={`/projects/${projectId}`}>
+          <Link href={`/projects/${slug}`}>
             <ArrowLeft className="h-4 w-4" />
             <span>Back to Project</span>
           </Link>

@@ -3,6 +3,8 @@
 import { useState, useEffect } from "react"
 import Link from "next/link"
 import { useParams } from "next/navigation"
+import { createClientComponentClient } from "@supabase/auth-helpers-nextjs"
+import type { Database } from "@/types/supabase"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
@@ -29,6 +31,7 @@ interface Organization {
 
 interface Project {
   id: number
+  slug: string
   name: string
   logo: string
   description: string
@@ -44,7 +47,8 @@ interface Project {
 
 export default function ProjectDetailPage() {
   const params = useParams()
-  const projectId = params.id as string
+  const slug = params.slug as string
+  const supabase = createClientComponentClient<Database>()
 
   const [project, setProject] = useState<Project | null>(null)
   const [loading, setLoading] = useState(true)
@@ -56,49 +60,55 @@ export default function ProjectDetailPage() {
   useEffect(() => {
     const fetchProject = async () => {
       try {
-        // In a real app, you would fetch from Supabase
-        // For demo purposes, we'll use mock data
-        const mockProject: Project = {
-          id: Number.parseInt(projectId),
-          name: "EcoStream",
-          logo: "/placeholder.svg?height=80&width=80",
-          description: "Sustainable video streaming platform with carbon-neutral infrastructure",
-          category: "Media",
-          users: 12500,
-          joined: "3 months ago",
-          website: "https://ecostream.example.com",
-          detailed_description:
-            "EcoStream is a revolutionary video streaming platform that uses carbon-neutral infrastructure to minimize environmental impact. Our servers are powered by 100% renewable energy, and we plant trees to offset any remaining carbon footprint. We're committed to providing high-quality streaming while protecting the planet.",
-          is_public: true,
-          organization: {
-            id: 1,
-            name: "Eco Innovations Inc.",
-            logo: "/placeholder.svg?height=40&width=40",
-          },
-          team_members: [
-            { id: 1, name: "Alex Rivera", avatar: "/placeholder.svg?height=40&width=40", role: "Founder & CEO" },
-            { id: 2, name: "Jamie Chen", avatar: "/placeholder.svg?height=40&width=40", role: "CTO" },
-            {
-              id: 3,
-              name: "Sam Washington",
-              avatar: "/placeholder.svg?height=40&width=40",
-              role: "Marketing Director",
-            },
-          ],
+        const { data, error } = await supabase
+          .from("projects")
+          .select(
+            "id, slug, name, logo_url, description, detailed_description, website, created_at, category_id, is_public"
+          )
+          .eq("slug", slug)
+          .is("deleted_at", null)
+          .single()
+
+        if (error) throw error
+
+        if (!data) {
+          setProject(null)
+          return
         }
 
-        // Simulate checking if user has access
-        // In a real app, you would check against the user's session
-        setHasAccess(projectId === "1" || projectId === "3")
+        const category = data.category_id
+          ? (
+              await supabase
+                .from("ref_categories")
+                .select("name")
+                .eq("id", data.category_id)
+                .single()
+            ).data?.name || "Uncategorized"
+          : "Uncategorized"
 
-        setProject(mockProject)
-        setUserRole("admin") // Mock user role
+        const formattedProject: Project = {
+          id: data.id,
+          slug: data.slug,
+          name: data.name,
+          logo: data.logo_url || "/placeholder.svg?height=80&width=80",
+          description: data.description,
+          category,
+          users: 0,
+          joined: data.created_at ? new Date(data.created_at).toLocaleDateString() : "Recently",
+          website: data.website || "",
+          detailed_description: data.detailed_description || "",
+          is_public: data.is_public ?? true,
+        }
+
+        setHasAccess(true)
+        setProject(formattedProject)
+        setUserRole("admin")
         setEditValues({
-          name: mockProject.name,
-          description: mockProject.description,
-          detailed_description: mockProject.detailed_description,
-          website: mockProject.website,
-          category: mockProject.category,
+          name: formattedProject.name,
+          description: formattedProject.description,
+          detailed_description: formattedProject.detailed_description,
+          website: formattedProject.website,
+          category: formattedProject.category,
         })
       } catch (error) {
         console.error("Error fetching project:", error)
@@ -113,7 +123,7 @@ export default function ProjectDetailPage() {
     }
 
     fetchProject()
-  }, [projectId])
+  }, [slug, supabase])
 
   const handleEdit = (field: string) => {
     setEditingField(field)
@@ -455,7 +465,7 @@ export default function ProjectDetailPage() {
                 Share Project
               </Button>
               <Button asChild className="w-full mt-2">
-                <Link href={`/projects/${project.id}/payments`}>
+                <Link href={`/projects/${project.slug}/payments`}>
                   <DollarSign className="h-4 w-4 mr-2" />
                   Manage Payments
                 </Link>

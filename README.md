@@ -75,6 +75,10 @@ SQL files in the `database/` directory define the schema and seed data.
 Run them in order using the Supabase SQL editor or `psql` against your
 project database.
 
+Projects are referenced by a unique **slug** rather than a numeric ID. The `slug`
+column is stored in the `projects` table and used in all project URLs
+(`projects/[slug]`).
+
 ## Project Structure
 
 - `app/` – Next.js pages and layouts

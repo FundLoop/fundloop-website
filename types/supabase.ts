@@ -86,6 +86,7 @@ export interface Database {
         Row: {
           id: number
           name: string
+          slug: string
           logo_url: string | null
           description: string | null
           founded: string | null
@@ -190,6 +191,7 @@ export interface Database {
         Row: {
           id: number
           name: string
+          slug: string
           description: string
           detailed_description: string | null
           logo_url: string | null
@@ -207,6 +209,7 @@ export interface Database {
         Insert: {
           id?: number
           name: string
+          slug: string
           description: string
           detailed_description?: string | null
           logo_url?: string | null
@@ -224,6 +227,7 @@ export interface Database {
         Update: {
           id?: number
           name?: string
+          slug?: string
           description?: string
           detailed_description?: string | null
           logo_url?: string | null
