@@ -11,7 +11,7 @@ import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { toast } from "@/components/ui/use-toast"
-import { ArrowLeft, Mail, MessageSquare, Phone } from "lucide-react"
+import { ArrowLeft, Mail, MessageSquare, User } from "lucide-react"
 import { createClientComponentClient } from "@supabase/auth-helpers-nextjs"
 import type { Database } from "@/types/supabase"
 
@@ -119,7 +119,7 @@ export default function SupportPage() {
       </div>
 
       <div className="max-w-5xl mx-auto">
-        <h1 className="text-3xl md:text-4xl font-bold mb-4">Support</h1>
+        <h1 className="text-3xl md:text-4xl font-bold mb-4">Start Here</h1>
         <p className="text-slate-600 dark:text-slate-300 text-lg mb-8">
           Need help with FundLoop? Our support team is here to assist you.
         </p>
@@ -135,7 +135,7 @@ export default function SupportPage() {
             </Button>
           </div>
           <div className="text-center">
-            <h2 className="text-2xl font-bold mb-4">Need more help?</h2>
+            <h2 className="text-2xl font-bold mb-4">Read Our Docs</h2>
             <p className="text-slate-600 dark:text-slate-300 mb-6">
               Explore our documentation for detailed guides and answers.
             </p>
@@ -145,7 +145,22 @@ export default function SupportPage() {
           </div>
         </div>
 
+        <h1 className="text-3xl md:text-4xl font-bold mb-4">Still Need Support?</h1>
+
         <div className="grid md:grid-cols-3 gap-8 mb-12">
+          <Card>
+            <CardHeader className="text-center">
+              <div className="mx-auto bg-emerald-100 dark:bg-emerald-900/30 p-3 rounded-full mb-4 w-12 h-12 flex items-center justify-center">
+                <User className="h-6 w-6 text-emerald-600 dark:text-emerald-400" />
+              </div>
+              <CardTitle>Chat With Our Founder</CardTitle>
+              <CardDescription>Schedule a quick call</CardDescription>
+            </CardHeader>
+            <CardContent className="text-center">
+              <p className="text-slate-600 dark:text-slate-300 mb-4">Coming Soon</p>
+            </CardContent>
+          </Card>
+
           <Card>
             <CardHeader className="text-center">
               <div className="mx-auto bg-emerald-100 dark:bg-emerald-900/30 p-3 rounded-full mb-4 w-12 h-12 flex items-center justify-center">
@@ -169,30 +184,15 @@ export default function SupportPage() {
               <div className="mx-auto bg-emerald-100 dark:bg-emerald-900/30 p-3 rounded-full mb-4 w-12 h-12 flex items-center justify-center">
                 <MessageSquare className="h-6 w-6 text-emerald-600 dark:text-emerald-400" />
               </div>
-              <CardTitle>Live Chat</CardTitle>
+              <CardTitle>Live Chat (coming soon)</CardTitle>
               <CardDescription>Chat with our support team</CardDescription>
             </CardHeader>
             <CardContent className="text-center">
-              <p className="text-slate-600 dark:text-slate-300 mb-4">Coming Soon</p>
               <p className="text-slate-600 dark:text-slate-300 mb-4">Available Monday to Friday, 9am to 5pm UTC.</p>
-              <Button variant="outline" className="gap-1">
+              <Button variant="outline" className="gap-1" disabled>
                 <MessageSquare className="h-4 w-4" />
                 Start Chat
               </Button>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader className="text-center">
-              <div className="mx-auto bg-emerald-100 dark:bg-emerald-900/30 p-3 rounded-full mb-4 w-12 h-12 flex items-center justify-center">
-                <Phone className="h-6 w-6 text-emerald-600 dark:text-emerald-400" />
-              </div>
-              <CardTitle>Phone Support</CardTitle>
-              <CardDescription>Talk to a support agent</CardDescription>
-            </CardHeader>
-            <CardContent className="text-center">
-              <p className="text-slate-600 dark:text-slate-300 mb-4">Coming Soon</p>
-              <p className="text-slate-600 dark:text-slate-300 mb-4">Available for premium support customers.</p>
             </CardContent>
           </Card>
         </div>
@@ -309,26 +309,6 @@ export default function SupportPage() {
           </CardFooter>
         </Card>
 
-        <div className="grid md:grid-cols-2 gap-8 mt-12">
-          <div className="text-center">
-            <h2 className="text-2xl font-bold mb-4">Frequently Asked Questions</h2>
-            <p className="text-slate-600 dark:text-slate-300 mb-6">
-              Find quick answers to common questions in our FAQ section.
-            </p>
-            <Button asChild variant="outline">
-              <Link href="/faq">View FAQ</Link>
-            </Button>
-          </div>
-          <div className="text-center">
-            <h2 className="text-2xl font-bold mb-4">Need more help?</h2>
-            <p className="text-slate-600 dark:text-slate-300 mb-6">
-              Explore our documentation for detailed guides and answers.
-            </p>
-            <Button asChild variant="outline">
-              <Link href="/documentation">View Documentation</Link>
-            </Button>
-          </div>
-        </div>
       </div>
     </div>
   )
