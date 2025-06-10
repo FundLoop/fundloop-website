@@ -37,7 +37,7 @@ export default function AlignedUsers() {
       try {
         // Get user ids that participate in at least one project
         const { data: participants, error: partError } = await supabase
-          .from("user_project_participation")
+          .from("participants")
           .select("user_id")
 
         if (partError) throw partError
@@ -80,7 +80,7 @@ export default function AlignedUsers() {
         }
 
         // Count projects per user in a separate query
-        const { data: projectData } = await supabase.from("user_project_participation").select("user_id, project_id")
+        const { data: projectData } = await supabase.from("participants").select("user_id, project_id")
 
         // Count unique projects per user
         const projectCounts: Record<string, Set<number>> = {}

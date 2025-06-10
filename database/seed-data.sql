@@ -101,35 +101,36 @@ VALUES
   (8, 14300, 143000, 1430, NOW(), NOW()),
   (9, 11200, 112000, 1120, NOW(), NOW());
 
--- User Project Participation
-INSERT INTO user_project_participation (user_id, project_id, role, joined_at, created_at, updated_at)
+
+-- Participants
+INSERT INTO participants (project_id, user_id, joined_at)
 VALUES
-  (1, 1, 'Community Moderator', NOW() - INTERVAL '3 MONTH', NOW(), NOW()),
-  (1, 2, 'Contributor', NOW() - INTERVAL '2 MONTH', NOW(), NOW()),
-  (1, 3, 'Contributor', NOW() - INTERVAL '1 MONTH', NOW(), NOW()),
-  (2, 2, 'Content Creator', NOW() - INTERVAL '4 MONTH', NOW(), NOW()),
-  (2, 4, 'Contributor', NOW() - INTERVAL '3 MONTH', NOW(), NOW()),
-  (3, 3, 'Developer', NOW() - INTERVAL '8 MONTH', NOW(), NOW()),
-  (3, 5, 'Contributor', NOW() - INTERVAL '6 MONTH', NOW(), NOW()),
-  (3, 7, 'Contributor', NOW() - INTERVAL '4 MONTH', NOW(), NOW()),
-  (4, 4, 'Translator', NOW() - INTERVAL '3 MONTH', NOW(), NOW()),
-  (4, 6, 'Contributor', NOW() - INTERVAL '2 MONTH', NOW(), NOW()),
-  (5, 5, 'Educator', NOW() - INTERVAL '5 MONTH', NOW(), NOW()),
-  (5, 8, 'Contributor', NOW() - INTERVAL '3 MONTH', NOW(), NOW()),
-  (6, 6, 'Designer', NOW() - INTERVAL '2 MONTH', NOW(), NOW()),
-  (6, 9, 'Contributor', NOW() - INTERVAL '1 MONTH', NOW(), NOW()),
-  (7, 7, 'Researcher', NOW() - INTERVAL '7 MONTH', NOW(), NOW()),
-  (7, 1, 'Contributor', NOW() - INTERVAL '5 MONTH', NOW(), NOW()),
-  (8, 8, 'Advocate', NOW() - INTERVAL '1 MONTH', NOW(), NOW()),
-  (8, 2, 'Contributor', NOW() - INTERVAL '0.5 MONTH', NOW(), NOW()),
-  (9, 9, 'Writer', NOW() - INTERVAL '9 MONTH', NOW(), NOW()),
-  (9, 3, 'Contributor', NOW() - INTERVAL '7 MONTH', NOW(), NOW()),
-  (10, 1, 'Analyst', NOW() - INTERVAL '5 MONTH', NOW(), NOW()),
-  (10, 4, 'Contributor', NOW() - INTERVAL '3 MONTH', NOW(), NOW()),
-  (11, 2, 'Marketer', NOW() - INTERVAL '3 MONTH', NOW(), NOW()),
-  (11, 5, 'Contributor', NOW() - INTERVAL '2 MONTH', NOW(), NOW()),
-  (12, 3, 'Product Manager', NOW() - INTERVAL '6 MONTH', NOW(), NOW()),
-  (12, 6, 'Contributor', NOW() - INTERVAL '4 MONTH', NOW(), NOW());
+  (1, 1, NOW() - INTERVAL '3 MONTH'),
+  (2, 1, NOW() - INTERVAL '2 MONTH'),
+  (3, 1, NOW() - INTERVAL '1 MONTH'),
+  (2, 2, NOW() - INTERVAL '4 MONTH'),
+  (4, 2, NOW() - INTERVAL '3 MONTH'),
+  (3, 3, NOW() - INTERVAL '8 MONTH'),
+  (5, 3, NOW() - INTERVAL '6 MONTH'),
+  (7, 3, NOW() - INTERVAL '4 MONTH'),
+  (4, 4, NOW() - INTERVAL '3 MONTH'),
+  (6, 4, NOW() - INTERVAL '2 MONTH'),
+  (5, 5, NOW() - INTERVAL '5 MONTH'),
+  (8, 5, NOW() - INTERVAL '3 MONTH'),
+  (6, 6, NOW() - INTERVAL '2 MONTH'),
+  (9, 6, NOW() - INTERVAL '1 MONTH'),
+  (7, 7, NOW() - INTERVAL '7 MONTH'),
+  (1, 7, NOW() - INTERVAL '5 MONTH'),
+  (8, 8, NOW() - INTERVAL '1 MONTH'),
+  (2, 8, NOW() - INTERVAL '0.5 MONTH'),
+  (9, 9, NOW() - INTERVAL '9 MONTH'),
+  (3, 9, NOW() - INTERVAL '7 MONTH'),
+  (1, 10, NOW() - INTERVAL '5 MONTH'),
+  (4, 10, NOW() - INTERVAL '3 MONTH'),
+  (2, 11, NOW() - INTERVAL '3 MONTH'),
+  (5, 11, NOW() - INTERVAL '2 MONTH'),
+  (3, 12, NOW() - INTERVAL '6 MONTH'),
+  (6, 12, NOW() - INTERVAL '4 MONTH');
 
 -- Blog Posts
 INSERT INTO blog_posts (id, title, slug, excerpt, content, author_id, published_at, created_at, updated_at)

@@ -111,60 +111,31 @@ export default function MyProfilePage() {
           setPrimaryWalletType(primaryWallet.wallet_type)
         }
 
-        // In a real app, you would fetch from Supabase
-        // For demo purposes, we'll use mock data
-        const mockProjects: Project[] = [
-          {
-            id: 1,
-            name: "EcoStream",
-            logo: "/placeholder.svg?height=40&width=40",
-            description: "Sustainable video streaming platform with carbon-neutral infrastructure",
-            category: "Media",
-          },
-          {
-            id: 3,
-            name: "Nomad Workspace",
-            logo: "/placeholder.svg?height=40&width=40",
-            description: "Global network of sustainable co-working spaces for digital nomads",
-            category: "Workspace",
-          },
-        ]
+        const { data: participantData } = await supabase
+          .from("participants")
+          .select("project_id")
+          .eq("user_id", user.id)
 
-        const mockOrganizations: Organization[] = [
-          {
-            id: 1,
-            name: "Eco Innovations Inc.",
-            logo: "/placeholder.svg?height=40&width=40",
-            role: "Admin",
-            projects: [
-              {
-                id: 1,
-                name: "EcoStream",
-                logo: "/placeholder.svg?height=40&width=40",
-                description: "Sustainable video streaming platform with carbon-neutral infrastructure",
-                category: "Media",
-              },
-            ],
-          },
-          {
-            id: 2,
-            name: "Digital Nomads Collective",
-            logo: "/placeholder.svg?height=40&width=40",
-            role: "Member",
-            projects: [
-              {
-                id: 3,
-                name: "Nomad Workspace",
-                logo: "/placeholder.svg?height=40&width=40",
-                description: "Global network of sustainable co-working spaces for digital nomads",
-                category: "Workspace",
-              },
-            ],
-          },
-        ]
+        if (participantData && participantData.length > 0) {
+          const projectIds = participantData.map((p) => p.project_id)
+          const { data: projectData } = await supabase
+            .from("projects")
+            .select("id, name, logo_url, description")
+            .in("id", projectIds)
 
-        setMyProjects(mockProjects)
-        setMyOrganizations(mockOrganizations)
+          if (projectData) {
+            const formatted = projectData.map((p) => ({
+              id: p.id,
+              name: p.name,
+              logo: p.logo_url || "/placeholder.svg?height=40&width=40",
+              description: p.description,
+              category: "",
+            }))
+            setMyProjects(formatted)
+          }
+        }
+
+        setMyOrganizations([])
 
         // Fetch invitation code if exists
         await fetchInvitationCode()

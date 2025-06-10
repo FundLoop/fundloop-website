@@ -21,12 +21,19 @@ interface User {
   is_contribution_details_public?: boolean
 }
 
+interface Project {
+  id: number
+  name: string
+  logo_url: string | null
+}
+
 export default function UserProfilePage() {
   const params = useParams()
   const userId = params?.id as string
   const supabase = createClientComponentClient<Database>()
   const [user, setUser] = useState<User | null>(null)
   const [loading, setLoading] = useState(true)
+  const [projects, setProjects] = useState<Project[]>([])
 
   useEffect(() => {
     const fetchUser = async () => {
@@ -57,6 +64,23 @@ export default function UserProfilePage() {
           ...data,
           location,
         })
+
+        const { data: participantData } = await supabase
+          .from("participants")
+          .select("project_id")
+          .eq("user_id", userId)
+
+        if (participantData && participantData.length > 0) {
+          const projectIds = participantData.map((p) => p.project_id)
+          const { data: projectData } = await supabase
+            .from("projects")
+            .select("id, name, logo_url")
+            .in("id", projectIds)
+
+          if (projectData) {
+            setProjects(projectData)
+          }
+        }
       } catch (err) {
         console.error("Error loading profile", err)
         toast({
@@ -101,6 +125,22 @@ export default function UserProfilePage() {
           )}
         </CardContent>
       </Card>
+      {projects.length > 0 && (
+        <div className="max-w-md mx-auto mt-8">
+          <h2 className="text-xl font-bold text-center mb-4">Projects</h2>
+          <ul className="grid grid-cols-2 gap-4">
+            {projects.map((project) => (
+              <li key={project.id} className="flex flex-col items-center">
+                <Avatar className="h-10 w-10 mb-2">
+                  <AvatarImage src={project.logo_url || "/placeholder.svg?height=40&width=40"} alt={project.name} />
+                  <AvatarFallback>{project.name.substring(0, 2)}</AvatarFallback>
+                </Avatar>
+                <span className="text-sm text-center">{project.name}</span>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
     </div>
   )
 }

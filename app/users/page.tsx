@@ -33,12 +33,18 @@ export default function UsersPage() {
   const [allIds, setAllIds] = useState<string[]>([])
   const [searchTerm, setSearchTerm] = useState("")
   const [filteredUsers, setFilteredUsers] = useState<User[]>([])
+  const [errorMsg, setErrorMsg] = useState<string | null>(null)
   const supabase = createClientComponentClient<Database>()
 
   useEffect(() => {
     const fetchParticipants = async () => {
-      const { data, error } = await supabase.from("user_project_participation").select("user_id")
-      if (!error && data) {
+      const { data, error } = await supabase.from("participants").select("user_id")
+      if (error) {
+        console.error("Error fetching participants:", error)
+        setErrorMsg("Failed to load members.")
+        return
+      }
+      if (data) {
         const ids = Array.from(new Set(data.map((d) => d.user_id)))
         setAllIds(ids)
       }
@@ -83,7 +89,7 @@ export default function UsersPage() {
         }
 
         // Count projects per user in a separate query
-        const { data: projectData } = await supabase.from("user_project_participation").select("user_id, project_id")
+        const { data: projectData } = await supabase.from("participants").select("user_id, project_id")
 
         // Count unique projects per user
         const projectCounts: Record<string, Set<number>> = {}
@@ -108,6 +114,7 @@ export default function UsersPage() {
         setFilteredUsers((prev) => [...prev, ...formattedUsers])
       } catch (err) {
         console.error("Error fetching users:", err)
+        setErrorMsg("Failed to load members. Please try again later.")
       } finally {
         setLoading(false)
       }
@@ -194,7 +201,11 @@ export default function UsersPage() {
         </div>
       </div>
 
-      {loading ? (
+      {errorMsg && !loading ? (
+        <div className="text-center py-12 text-red-600 dark:text-red-400">
+          {errorMsg}
+        </div>
+      ) : loading ? (
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
           {Array(8)
             .fill(0)

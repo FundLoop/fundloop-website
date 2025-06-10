@@ -144,7 +144,7 @@ export default function Navbar() {
       if (!profile?.avatar_url) missing.push("profile picture")
 
       const { count: projectCount } = await supabase
-        .from("user_project_participation")
+        .from("participants")
         .select("id", { count: "exact", head: true })
         .eq("user_id", userId)
       if (!projectCount || projectCount === 0) missing.push("project membership")
