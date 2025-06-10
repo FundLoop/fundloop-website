@@ -86,6 +86,7 @@ export interface Database {
         Row: {
           id: number
           name: string
+          slug: string
           logo_url: string | null
           description: string | null
           founded: string | null
@@ -190,6 +191,7 @@ export interface Database {
         Row: {
           id: number
           name: string
+          slug: string
           description: string
           detailed_description: string | null
           logo_url: string | null
@@ -207,6 +209,7 @@ export interface Database {
         Insert: {
           id?: number
           name: string
+          slug: string
           description: string
           detailed_description?: string | null
           logo_url?: string | null
@@ -224,6 +227,7 @@ export interface Database {
         Update: {
           id?: number
           name?: string
+          slug?: string
           description?: string
           detailed_description?: string | null
           logo_url?: string | null
@@ -575,6 +579,46 @@ export interface Database {
             columns: ["user_id"]
             referencedRelation: "users"
             referencedColumns: ["id"]
+          },
+        ]
+      }
+      participants: {
+        Row: {
+          id: number
+          project_id: number
+          joined_at: string | null
+          updated_at: string | null
+          user_id: string
+          is_admin: boolean | null
+        }
+        Insert: {
+          id?: number
+          project_id: number
+          joined_at?: string | null
+          updated_at?: string | null
+          user_id?: string
+          is_admin?: boolean | null
+        }
+        Update: {
+          id?: number
+          project_id?: number
+          joined_at?: string | null
+          updated_at?: string | null
+          user_id?: string
+          is_admin?: boolean | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_project_participation_project_id_fkey"
+            columns: ["project_id"]
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "user_project_participation_user_id_fkey"
+            columns: ["user_id"]
+            referencedRelation: "users"
+            referencedColumns: ["user_id"]
           },
         ]
       }
