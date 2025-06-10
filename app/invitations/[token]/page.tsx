@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react"
 import { useParams, useRouter } from "next/navigation"
+import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { toast } from "@/components/ui/use-toast"
@@ -173,7 +174,7 @@ export default function InvitationPage() {
           </CardHeader>
           <CardFooter>
             <Button asChild className="w-full">
-              <a href="/">Return to Home</a>
+              <Link href="/">Return to Home</Link>
             </Button>
           </CardFooter>
         </Card>
@@ -198,7 +199,7 @@ export default function InvitationPage() {
           </CardHeader>
           <CardFooter>
             <Button asChild className="w-full">
-              <a href={`/organizations/${invitation?.organization_id}`}>Go to Organization</a>
+              <Link href={`/organizations/${invitation?.organization_id}`}>Go to Organization</Link>
             </Button>
           </CardFooter>
         </Card>
@@ -255,7 +256,7 @@ export default function InvitationPage() {
             {processing ? "Accepting..." : "Accept Invitation"}
           </Button>
           <Button asChild variant="outline" className="flex-1" disabled={processing}>
-            <a href="/">Decline</a>
+            <Link href="/">Decline</Link>
           </Button>
         </CardFooter>
       </Card>

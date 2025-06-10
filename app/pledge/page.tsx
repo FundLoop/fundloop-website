@@ -1,4 +1,5 @@
 import type { Metadata } from "next"
+import Link from "next/link"
 
 export const metadata: Metadata = {
   title: "The FundLoop Pledge | FundLoop",
@@ -64,12 +65,12 @@ export default function PledgePage() {
             By signing the FundLoop Pledge, you're joining a movement to create a more equitable digital economy where
             prosperity is shared among all participants.
           </p>
-          <a
+          <Link
             href="/#project-signup"
             className="inline-block px-6 py-3 bg-gradient-to-r from-emerald-600 to-cyan-600 hover:from-emerald-700 hover:to-cyan-700 text-white font-medium rounded-md"
           >
             Register Your Project
-          </a>
+          </Link>
         </div>
       </div>
     </div>
