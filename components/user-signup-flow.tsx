@@ -92,6 +92,7 @@ export default function UserSignupFlow({ onClose }: { onClose: () => void }) {
   const inviteCode = searchParams.get("invite")
 
   const [step, setStep] = useState(1)
+  const [currentUserId, setCurrentUserId] = useState<string | null>(null)
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [userData, setUserData] = useState({
     name: "",
@@ -118,6 +119,25 @@ export default function UserSignupFlow({ onClose }: { onClose: () => void }) {
   const [loadingReferenceData, setLoadingReferenceData] = useState(true)
   const [isValidInviteCode, setIsValidInviteCode] = useState(inviteCode ? true : false)
   const [checkingInviteCode, setCheckingInviteCode] = useState(false)
+
+  useEffect(() => {
+    const loadProgress = async () => {
+      const {
+        data: { user },
+      } = await supabase.auth.getUser()
+      if (!user) return
+      setCurrentUserId(user.id)
+      const { data } = await supabase
+        .from("users")
+        .select("signup_step")
+        .eq("user_id", user.id)
+        .single()
+      if (data?.signup_step && data.signup_step > 1 && data.signup_step < 5) {
+        setStep(data.signup_step)
+      }
+    }
+    loadProgress()
+  }, [])
 
   useEffect(() => {
     fetchReferenceData()
@@ -290,7 +310,10 @@ export default function UserSignupFlow({ onClose }: { onClose: () => void }) {
         insertData.invited_by_code = userData.invitationCode
       }
 
-      const { data, error } = await supabase.from("users").insert([insertData]).select()
+      const { data, error } = await supabase
+        .from("users")
+        .insert([insertData])
+        .select()
 
       if (error) throw error
 
@@ -298,7 +321,7 @@ export default function UserSignupFlow({ onClose }: { onClose: () => void }) {
       if (userData.wallet) {
         const { error: walletError } = await supabase.from("wallet_accounts").insert([
           {
-            user_id: data[0].id, // Use the newly created user's ID
+            user_id: data[0].user_id,
             wallet_address: userData.wallet,
             wallet_type: "ethereum", // Default type
             is_primary: true,
@@ -312,6 +335,12 @@ export default function UserSignupFlow({ onClose }: { onClose: () => void }) {
         title: "Profile created!",
         description: "Let's continue with some additional information.",
       })
+
+      setCurrentUserId(data[0].user_id)
+      await supabase
+        .from("users")
+        .update({ signup_step: 2 })
+        .eq("user_id", data[0].user_id)
 
       setStep(2)
     } catch (error) {
@@ -340,14 +369,14 @@ export default function UserSignupFlow({ onClose }: { onClose: () => void }) {
           location_id: userData.locationId ? Number.parseInt(userData.locationId) : null,
           occupation_id: userData.occupationId ? Number.parseInt(userData.occupationId) : null,
         })
-        .eq("email", userData.email) // Using email as a unique identifier for this example
+        .eq("user_id", currentUserId as string)
 
       if (error) throw error
 
       // Insert user interests
       if (userData.interests.length > 0) {
         const userInterestsData = userData.interests.map((interestId) => ({
-          user_id: 1, // In a real app, this would be the actual user ID
+          user_id: currentUserId,
           interest_id: Number.parseInt(interestId),
         }))
 
@@ -360,6 +389,11 @@ export default function UserSignupFlow({ onClose }: { onClose: () => void }) {
         title: "Demographics saved!",
         description: "Now let's find some projects that match your interests.",
       })
+
+      await supabase
+        .from("users")
+        .update({ signup_step: 3 })
+        .eq("user_id", currentUserId as string)
 
       setStep(3)
     } catch (error) {
@@ -382,7 +416,7 @@ export default function UserSignupFlow({ onClose }: { onClose: () => void }) {
       // Update user in Supabase with selected projects
       const { error } = await supabase.from("user_projects").insert(
         userData.selectedProjects.map((projectId) => ({
-          user_email: userData.email, // Using email as a unique identifier
+          user_id: currentUserId,
           project_id: projectId,
         })),
       )
@@ -393,6 +427,11 @@ export default function UserSignupFlow({ onClose }: { onClose: () => void }) {
         title: "Projects selected!",
         description: "Now let's see how you might contribute to the ecosystem.",
       })
+
+      await supabase
+        .from("users")
+        .update({ signup_step: 4 })
+        .eq("user_id", currentUserId as string)
 
       setStep(4)
     } catch (error) {
@@ -419,14 +458,14 @@ export default function UserSignupFlow({ onClose }: { onClose: () => void }) {
           will_contribute: userData.willContribute,
           contribution_details: userData.willContribute ? userData.contributionDetails : null,
         })
-        .eq("email", userData.email) // Using email as a unique identifier for this example
+        .eq("user_id", currentUserId as string)
 
       if (error) throw error
 
       // Insert user contribution skills
       if (userData.willContribute && userData.contributionSkills.length > 0) {
         const userSkillsData = userData.contributionSkills.map((skillId) => ({
-          user_id: 1, // In a real app, this would be the actual user ID
+          user_id: currentUserId,
           skill_id: Number.parseInt(skillId),
         }))
 
@@ -439,6 +478,11 @@ export default function UserSignupFlow({ onClose }: { onClose: () => void }) {
         title: "Registration complete!",
         description: "Welcome to FundLoop. You're now eligible to receive citizen salary payments.",
       })
+
+      await supabase
+        .from("users")
+        .update({ signup_step: 5 })
+        .eq("user_id", currentUserId as string)
 
       // Close the modal after a short delay
       setTimeout(() => {

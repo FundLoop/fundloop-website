@@ -590,6 +590,8 @@ export interface Database {
           gender_id: number | null
           location_id: number | null
           occupation_id: number | null
+          signup_step: number | null
+          signin_count: number | null
           will_contribute: boolean | null
           contribution_details: string | null
           created_at: string | null
@@ -606,6 +608,8 @@ export interface Database {
           gender_id?: number | null
           location_id?: number | null
           occupation_id?: number | null
+          signup_step?: number | null
+          signin_count?: number | null
           will_contribute?: boolean | null
           contribution_details?: string | null
           created_at?: string | null
@@ -622,6 +626,8 @@ export interface Database {
           gender_id?: number | null
           location_id?: number | null
           occupation_id?: number | null
+          signup_step?: number | null
+          signin_count?: number | null
           will_contribute?: boolean | null
           contribution_details?: string | null
           created_at?: string | null
