@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useMemo, useState } from "react"
+import { useEffect, useMemo, useState, useRef } from "react"
 import Link from "next/link"
 import { ArrowLeft } from "lucide-react"
 import { createClientComponentClient } from "@supabase/auth-helpers-nextjs"
@@ -14,6 +14,7 @@ export default function DocumentationPage() {
   const [posts, setPosts] = useState<DocPost[]>([])
   const [loading, setLoading] = useState(true)
   const [currentSlug, setCurrentSlug] = useState<string | null>(null)
+  const articleRef = useRef<HTMLDivElement>(null)
   const supabase = createClientComponentClient<Database>()
 
   useEffect(() => {
@@ -108,7 +109,7 @@ export default function DocumentationPage() {
             </div>
           ))}
         </nav>
-        <div className="flex-1 overflow-y-auto">
+        <div className="flex-1 overflow-y-auto" ref={articleRef}>
           {loading && <p>Loading...</p>}
           {!loading && currentPost && (
             <>
@@ -118,6 +119,8 @@ export default function DocumentationPage() {
                 backText="Back to Support"
                 showBack={false}
                 showImage={false}
+                dateKey="updated_at"
+                datePrefix="Last edited: "
               />
               <div className="flex justify-between mt-8">
                 <Button
@@ -125,7 +128,7 @@ export default function DocumentationPage() {
                   onClick={() => {
                     if (prevPost) {
                       setCurrentSlug(prevPost.slug)
-                      window.scrollTo(0, 0)
+                      articleRef.current?.scrollTo({ top: 0 })
                     }
                   }}
                   disabled={!prevPost}
@@ -137,7 +140,7 @@ export default function DocumentationPage() {
                   onClick={() => {
                     if (nextPost) {
                       setCurrentSlug(nextPost.slug)
-                      window.scrollTo(0, 0)
+                      articleRef.current?.scrollTo({ top: 0 })
                     }
                   }}
                   disabled={!nextPost}

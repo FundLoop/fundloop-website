@@ -124,6 +124,27 @@ export default function SupportPage() {
           Need help with FundLoop? Our support team is here to assist you.
         </p>
 
+        <div className="grid md:grid-cols-2 gap-8 mb-12">
+          <div className="text-center">
+            <h2 className="text-2xl font-bold mb-4">Frequently Asked Questions</h2>
+            <p className="text-slate-600 dark:text-slate-300 mb-6">
+              Find quick answers to common questions before contacting support.
+            </p>
+            <Button asChild variant="outline">
+              <Link href="/faq">View FAQ</Link>
+            </Button>
+          </div>
+          <div className="text-center">
+            <h2 className="text-2xl font-bold mb-4">Need more help?</h2>
+            <p className="text-slate-600 dark:text-slate-300 mb-6">
+              Explore our documentation for detailed guides and answers.
+            </p>
+            <Button asChild variant="outline">
+              <Link href="/documentation">View Documentation</Link>
+            </Button>
+          </div>
+        </div>
+
         <div className="grid md:grid-cols-3 gap-8 mb-12">
           <Card>
             <CardHeader className="text-center">

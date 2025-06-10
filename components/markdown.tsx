@@ -5,30 +5,47 @@ function escapeHtml(text: string): string {
 }
 
 function renderMarkdown(md: string): string {
-  let html = escapeHtml(md)
+  const lines = md.split(/\n/)
+  let html = ""
+  let inList = false
 
-  html = html.replace(/```([\s\S]*?)```/g, '<pre><code>$1</code></pre>')
-  html = html.replace(/^### (.*)$/gm, '<h3>$1</h3>')
-  html = html.replace(/^## (.*)$/gm, '<h2>$1</h2>')
-  html = html.replace(/^# (.*)$/gm, '<h1>$1</h1>')
-  html = html.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
-  html = html.replace(/\*(.*?)\*/g, '<em>$1</em>')
-  html = html.replace(/`([^`]+)`/g, '<code>$1</code>')
-  html = html.replace(/^- (.*)$/gm, '<li>$1</li>')
-  html = html.replace(/(<li>.*<\/li>)/gs, '<ul>$1</ul>')
+  const closeList = () => {
+    if (inList) {
+      html += "</ul>"
+      inList = false
+    }
+  }
 
-  html = html
-    .split(/\n{2,}/)
-    .map((p) => `<p>${p.trim()}</p>`) 
-    .join("")
+  for (const line of lines) {
+    if (line.startsWith("- ")) {
+      if (!inList) {
+        html += "<ul>"
+        inList = true
+      }
+      html += `<li>${escapeHtml(line.slice(2))}</li>`
+      continue
+    }
 
-  html = html.replace(/<p><(h[1-6])/g, '<$1')
-  html = html.replace(/(<\/h[1-6]>)<\/p>/g, '$1')
-  html = html.replace(/<p><ul>/g, '<ul>')
-  html = html.replace(/<\/ul><\/p>/g, '</ul>')
-  html = html.replace(/<p><pre>/g, '<pre>')
-  html = html.replace(/<\/pre><\/p>/g, '</pre>')
+    closeList()
 
+    if (line.startsWith("### ")) {
+      html += `<h3>${escapeHtml(line.slice(4))}</h3>`
+    } else if (line.startsWith("## ")) {
+      html += `<h2>${escapeHtml(line.slice(3))}</h2>`
+    } else if (line.startsWith("# ")) {
+      html += `<h1>${escapeHtml(line.slice(2))}</h1>`
+    } else if (line.trim() === "") {
+      html += ""
+    } else {
+      let text = escapeHtml(line)
+      text = text.replace(/\*\*(.*?)\*\*/g, "<strong>$1</strong>")
+      text = text.replace(/\*(.*?)\*/g, "<em>$1</em>")
+      text = text.replace(/`([^`]+)`/g, "<code>$1</code>")
+      html += `<p>${text}</p>`
+    }
+  }
+
+  closeList()
   return html
 }
 

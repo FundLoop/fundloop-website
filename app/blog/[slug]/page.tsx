@@ -163,6 +163,7 @@ export default function BlogPostPage() {
         backText={origin === "benefits" ? "Back to Benefits" : "Back to Blog"}
         showBack={showBack}
         onBack={origin === "benefits" ? handleBackToBenefits : undefined}
+        dateKey="created_at"
       />
     </div>
   )

@@ -8,6 +8,9 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Search, ArrowLeft } from "lucide-react"
+
+const DEFAULT_PICTURE =
+  "https://kyxtqnfnksvcaugxwzuj.supabase.co/storage/v1/object/public/blog-pics//introducing-fundloop.png"
 import type { Database, Tables } from "@/types/supabase"
 
 type BlogPost = Tables<"blog_posts">
@@ -128,16 +131,14 @@ export default function BlogPage() {
               className="overflow-hidden transition-transform transform hover:scale-105 hover:shadow-lg"
             >
               <Link href={`/blog/${post.slug}?origin=blog`} className="block h-full">
-                {post.picture && (
-                  <div className="relative w-full h-40">
-                    <Image
-                      src={post.picture}
-                      alt={post.title}
-                      fill
-                      className="object-cover"
-                    />
-                  </div>
-                )}
+                <div className="relative w-full h-40">
+                  <Image
+                    src={post.picture || DEFAULT_PICTURE}
+                    alt={post.title}
+                    fill
+                    className="object-cover"
+                  />
+                </div>
                 <CardHeader>
                   <CardTitle className="text-xl hover:text-emerald-600 dark:hover:text-emerald-400">
                     {post.title}
