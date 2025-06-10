@@ -17,6 +17,7 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import { Badge } from "@/components/ui/badge"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Combobox, type ComboboxOption } from "@/components/ui/combobox"
+import ProjectSignupStep1 from "@/components/project-signup-step1"
 
 // Sample recommended projects
 const recommendedProjects = [
@@ -69,13 +70,27 @@ const validateEmail = (email: string) => {
   return regex.test(email)
 }
 
-export default function ProjectSignupFlow({ onClose }: { onClose: () => void }) {
-  const [step, setStep] = useState(1)
+export default function ProjectSignupFlow({
+  onClose,
+  initialStep = 1,
+  initialProject,
+}: {
+  onClose: () => void
+  initialStep?: number
+  initialProject?: {
+    id: number
+    slug: string
+    name: string
+    website: string
+    description: string
+  }
+}) {
+  const [step, setStep] = useState(initialStep)
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [projectData, setProjectData] = useState({
-    name: "",
-    website: "",
-    description: "",
+    name: initialProject?.name || "",
+    website: initialProject?.website || "",
+    description: initialProject?.description || "",
     email: "",
     logo: null as File | null,
     userName: "", // Add this line
@@ -225,70 +240,6 @@ export default function ProjectSignupFlow({ onClose }: { onClose: () => void }) 
     }
   }
 
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files && e.target.files[0]) {
-      setProjectData((prev) => ({ ...prev, logo: e.target.files![0] }))
-    }
-  }
-
-  const handleSubmitStep1 = async (e: React.FormEvent) => {
-    e.preventDefault()
-    setIsSubmitting(true)
-
-    try {
-      // Create project in Supabase
-      const { data, error } = await supabase
-        .from("projects")
-        .insert([
-          {
-            name: projectData.name,
-            website: projectData.website,
-            description: projectData.description,
-            email: projectData.email,
-            status: projectData.status, // Include status
-            // Logo will be handled separately with storage
-          },
-        ])
-        .select()
-
-      if (error) throw error
-
-      // If we have a logo, upload it to storage
-      if (projectData.logo && data && data[0]) {
-        const projectId = data[0].id
-        const fileExt = projectData.logo.name.split(".").pop()
-        const fileName = `${projectId}.${fileExt}`
-
-        const { error: uploadError } = await supabase.storage.from("project-logos").upload(fileName, projectData.logo)
-
-        if (uploadError) throw uploadError
-
-        // Update project with logo URL
-        const { error: updateError } = await supabase
-          .from("projects")
-          .update({ logo_url: fileName })
-          .eq("id", projectId)
-
-        if (updateError) throw updateError
-      }
-
-      toast({
-        title: "Project registered for step 1!",
-        description: "Let's continue with more details about your project.",
-      })
-
-      setStep(2)
-    } catch (error) {
-      console.error("Error saving project:", error)
-      toast({
-        title: "Error saving project",
-        description: "There was an error saving your project. Please try again.",
-        variant: "destructive",
-      })
-    } finally {
-      setIsSubmitting(false)
-    }
-  }
 
   const handleSubmitStep2 = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -486,139 +437,17 @@ export default function ProjectSignupFlow({ onClose }: { onClose: () => void }) 
 
       {/* Step 1: Basic Information */}
       <TabsContent value="step-1" className="mt-0">
-        <Card className="w-full">
-          <CardHeader>
-            <CardTitle className="text-2xl">Join as a Project</CardTitle>
-            <CardDescription>Sign the 1% pledge and connect your project to the FundLoop ecosystem</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <form id="step1-form" onSubmit={handleSubmitStep1} className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="user-name">Your Full Name</Label>
-                <Input
-                  id="user-name"
-                  placeholder="Your full name"
-                  value={projectData.userName || ""}
-                  onChange={(e) => setProjectData({ ...projectData, userName: e.target.value })}
-                  required
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="project-name">Project Name</Label>
-                <Input
-                  id="project-name"
-                  placeholder="Your project or company name"
-                  value={projectData.name}
-                  onChange={handleInputChange}
-                  required
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="project-website">Website</Label>
-                <Input
-                  id="project-website"
-                  type="url"
-                  placeholder="https://yourproject.com"
-                  value={projectData.website}
-                  onChange={handleInputChange}
-                  required
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="project-description">Description</Label>
-                <Textarea
-                  id="project-description"
-                  placeholder="Briefly describe what your project does"
-                  className="min-h-[100px]"
-                  value={projectData.description}
-                  onChange={handleInputChange}
-                  required
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="project-email">Contact Email</Label>
-                <Input
-                  id="project-email"
-                  type="email"
-                  placeholder="contact@yourproject.com"
-                  value={projectData.email}
-                  onChange={handleInputChange}
-                  required
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label className="text-base">Project Logo</Label>
-                <div className="border-2 border-dashed border-slate-200 dark:border-slate-700 rounded-lg p-6 flex flex-col items-center justify-center gap-2">
-                  <FileUpload className="h-8 w-8 text-slate-400" />
-                  <p className="text-sm text-slate-500 dark:text-slate-400">Drag and drop or click to upload</p>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    type="button"
-                    onClick={() => document.getElementById("logo-upload")?.click()}
-                  >
-                    <Upload className="h-4 w-4 mr-2" />
-                    Select File
-                  </Button>
-                  <input id="logo-upload" type="file" accept="image/*" className="hidden" onChange={handleFileChange} />
-                  {projectData.logo && (
-                    <p className="text-sm text-emerald-600 dark:text-emerald-400 mt-2">
-                      {projectData.logo.name} selected
-                    </p>
-                  )}
-                </div>
-              </div>
-
-              {/* Status Dropdown */}
-              <div className="space-y-2">
-                <Label htmlFor="project-status">Status</Label>
-                <Select
-                  value={projectData.status}
-                  onValueChange={(value) => setProjectData((prev) => ({ ...prev, status: value }))}
-                >
-                  <SelectTrigger id="project-status">
-                    <SelectValue placeholder="Select status" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="active">Active</SelectItem>
-                    <SelectItem value="inactive">Inactive</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div className="flex items-start space-x-2 pt-4">
-                <Checkbox id="pledge" required />
-                <div className="grid gap-1.5 leading-none">
-                  <label
-                    htmlFor="pledge"
-                    className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
-                  >
-                    I pledge to contribute 1% of revenue
-                  </label>
-                  <p className="text-sm text-slate-500 dark:text-slate-400">
-                    Our project commits to anonymously sync our users and contribute 1% of our revenue to the FundLoop
-                    ecosystem to fund the citizen salary program.
-                  </p>
-                </div>
-              </div>
-            </form>
-          </CardContent>
-          <CardFooter>
-            <Button
-              form="step1-form"
-              type="submit"
-              className="w-full bg-gradient-to-r from-emerald-600 to-cyan-600 hover:from-emerald-700 hover:to-cyan-700"
-              disabled={isSubmitting}
-            >
-              {isSubmitting ? "Registering..." : "Continue"}
-            </Button>
-          </CardFooter>
-        </Card>
+        <ProjectSignupStep1
+          onSuccess={(project) => {
+            setProjectData((prev) => ({
+              ...prev,
+              name: project.name,
+              website: project.website,
+              description: project.description,
+            }))
+            setStep(2)
+          }}
+        />
       </TabsContent>
 
       {/* Rest of the steps remain the same */}
