@@ -32,9 +32,9 @@ export default function DocumentationPage() {
   }, [supabase])
 
   const categories = useMemo(() => {
-    return Array.from(new Set(posts.map((p) => p.category).filter(Boolean))).sort(
-      (a, b) => (a ?? "").localeCompare(b ?? "")
-    ) as string[]
+    return Array.from(new Set(posts.map((p) => p.category).filter(Boolean)))
+      .sort((a, b) => (b ?? "").localeCompare(a ?? ""))
+      .filter((c): c is string => Boolean(c))
   }, [posts])
 
   const postsByCategory = useMemo(() => {
@@ -84,8 +84,8 @@ export default function DocumentationPage() {
           </Link>
         </Button>
       </div>
-      <div className="flex gap-8">
-        <nav className="w-64 space-y-4">
+      <div className="grid md:grid-cols-[16rem_1fr] gap-8 h-[calc(100vh-12rem)]">
+        <nav className="overflow-y-auto pr-4 space-y-4">
           {categories.map((cat) => (
             <div key={cat}>
               <p className="font-semibold capitalize mb-1">{cat}</p>
@@ -108,7 +108,7 @@ export default function DocumentationPage() {
             </div>
           ))}
         </nav>
-        <div className="flex-1">
+        <div className="flex-1 overflow-y-auto">
           {loading && <p>Loading...</p>}
           {!loading && currentPost && (
             <>
@@ -117,18 +117,29 @@ export default function DocumentationPage() {
                 backHref="/documentation"
                 backText="Back to Support"
                 showBack={false}
+                showImage={false}
               />
               <div className="flex justify-between mt-8">
                 <Button
                   variant="outline"
-                  onClick={() => prevPost && setCurrentSlug(prevPost.slug)}
+                  onClick={() => {
+                    if (prevPost) {
+                      setCurrentSlug(prevPost.slug)
+                      window.scrollTo(0, 0)
+                    }
+                  }}
                   disabled={!prevPost}
                 >
                   ← Back
                 </Button>
                 <Button
                   variant="outline"
-                  onClick={() => nextPost && setCurrentSlug(nextPost.slug)}
+                  onClick={() => {
+                    if (nextPost) {
+                      setCurrentSlug(nextPost.slug)
+                      window.scrollTo(0, 0)
+                    }
+                  }}
                   disabled={!nextPost}
                 >
                   Next Page →

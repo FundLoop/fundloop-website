@@ -12,9 +12,10 @@ interface Props {
   backText: string
   showBack?: boolean
   onBack?: () => void
+  showImage?: boolean
 }
 
-export default function ArticlePage({ post, backHref, backText, showBack = true, onBack }: Props) {
+export default function ArticlePage({ post, backHref, backText, showBack = true, onBack, showImage = true }: Props) {
   const formatDate = (dateString: string) => {
     const date = new Date(dateString)
     return new Intl.DateTimeFormat("en-US", {
@@ -44,7 +45,7 @@ export default function ArticlePage({ post, backHref, backText, showBack = true,
         </div>
       )}
       <article className="max-w-3xl mx-auto">
-        {post.picture && (
+        {showImage && post.picture && (
           <div className="relative w-full h-60 mb-8">
             <Image src={post.picture} alt={post.title} fill className="object-cover rounded-md" />
           </div>

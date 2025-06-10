@@ -288,22 +288,25 @@ export default function SupportPage() {
           </CardFooter>
         </Card>
 
-        <div className="text-center">
-          <h2 className="text-2xl font-bold mb-4">Frequently Asked Questions</h2>
-          <p className="text-slate-600 dark:text-slate-300 mb-6">
-            Find quick answers to common questions in our FAQ section.
-          </p>
-          <Button asChild variant="outline">
-            <Link href="/faq">View FAQ</Link>
-          </Button>
-          <p className="mt-4">
-            <Link
-              href="/documentation"
-              className="text-emerald-600 dark:text-emerald-400 underline"
-            >
-              Documentation
-            </Link>
-          </p>
+        <div className="grid md:grid-cols-2 gap-8 mt-12">
+          <div className="text-center">
+            <h2 className="text-2xl font-bold mb-4">Frequently Asked Questions</h2>
+            <p className="text-slate-600 dark:text-slate-300 mb-6">
+              Find quick answers to common questions in our FAQ section.
+            </p>
+            <Button asChild variant="outline">
+              <Link href="/faq">View FAQ</Link>
+            </Button>
+          </div>
+          <div className="text-center">
+            <h2 className="text-2xl font-bold mb-4">Need more help?</h2>
+            <p className="text-slate-600 dark:text-slate-300 mb-6">
+              Explore our documentation for detailed guides and answers.
+            </p>
+            <Button asChild variant="outline">
+              <Link href="/documentation">View Documentation</Link>
+            </Button>
+          </div>
         </div>
       </div>
     </div>
