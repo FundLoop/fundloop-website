@@ -14,6 +14,7 @@ import type { Database } from "@/types/supabase"
 // Define a simpler project type without relationships
 interface Project {
   id: number
+  slug: string
   name: string
   logo_url: string | null
   description: string
@@ -37,7 +38,7 @@ export default function AlignedProjects() {
         // Fetch projects with soft delete awareness
         const { data: projectData, error: projectError } = await supabase
           .from("projects")
-          .select("id, name, logo_url, description, category_id, created_at, website")
+          .select("id, slug, name, logo_url, description, category_id, created_at, website")
           .is("deleted_at", null)
           .eq("status", "active")
           .order("created_at", { ascending: false })
@@ -140,7 +141,7 @@ export default function AlignedProjects() {
                 className="overflow-hidden transition-transform transform hover:scale-105 hover:shadow-lg"
               >
                 <div className="block">
-                  <Link href={`/projects/${project.id}`} className="block">
+                  <Link href={`/projects/${project.slug}`} className="block">
                     <CardHeader className="pb-2">
                       <div className="flex justify-between items-start">
                         <div className="flex items-center gap-2">

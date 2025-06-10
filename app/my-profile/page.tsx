@@ -18,6 +18,7 @@ type User = Tables<"users">
 
 interface Project {
   id: number
+  slug: string
   name: string
   logo: string
   description: string
@@ -120,12 +121,13 @@ export default function MyProfilePage() {
           const projectIds = participantData.map((p) => p.project_id)
           const { data: projectData } = await supabase
             .from("projects")
-            .select("id, name, logo_url, description")
+            .select("id, slug, name, logo_url, description")
             .in("id", projectIds)
 
           if (projectData) {
             const formatted = projectData.map((p) => ({
               id: p.id,
+              slug: p.slug,
               name: p.name,
               logo: p.logo_url || "/placeholder.svg?height=40&width=40",
               description: p.description,
@@ -408,7 +410,7 @@ export default function MyProfilePage() {
                 <div className="grid md:grid-cols-2 gap-4">
                   {myProjects.map((project) => (
                     <Card key={project.id} className="overflow-hidden">
-                      <Link href={`/projects/${project.id}`} className="block">
+                      <Link href={`/projects/${project.slug}`} className="block">
                         <CardHeader className="pb-2">
                           <div className="flex justify-between items-start">
                             <div className="flex items-center gap-2">
@@ -475,7 +477,7 @@ export default function MyProfilePage() {
                         <div className="grid md:grid-cols-2 gap-4">
                           {org.projects.map((project) => (
                             <Card key={project.id} className="overflow-hidden">
-                              <Link href={`/projects/${project.id}`} className="block">
+                              <Link href={`/projects/${project.slug}`} className="block">
                                 <CardHeader className="pb-2">
                                   <div className="flex items-center gap-2">
                                     <Avatar className="h-8 w-8">

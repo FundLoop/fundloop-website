@@ -3,6 +3,9 @@
 import type React from "react"
 
 import { useState } from "react"
+import { createClientComponentClient } from "@supabase/auth-helpers-nextjs"
+import type { Database } from "@/types/supabase"
+import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
@@ -15,19 +18,63 @@ import Link from "next/link"
 
 export default function ProjectSignup() {
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const [name, setName] = useState("")
+  const [slug, setSlug] = useState("")
+  const [slugEdited, setSlugEdited] = useState(false)
+  const [website, setWebsite] = useState("")
+  const [description, setDescription] = useState("")
+  const supabase = createClientComponentClient<Database>()
+  const router = useRouter()
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const generateSlug = (value: string) =>
+    value
+      .toLowerCase()
+      .trim()
+      .replace(/[^a-z0-9]+/g, "-")
+      .replace(/^-+|-+$/g, "")
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setIsSubmitting(true)
 
-    // Simulate API call
-    setTimeout(() => {
-      setIsSubmitting(false)
+    const { data: existing } = await supabase
+      .from("projects")
+      .select("slug")
+      .eq("slug", slug)
+      .maybeSingle()
+
+    if (existing) {
       toast({
-        title: "Project registered successfully!",
-        description: "Welcome to the FundLoop ecosystem. You'll receive onboarding information shortly.",
+        title: "Slug already in use",
+        description: (
+          <span>
+            A project with this slug exists.{' '}
+            <Link href={`/projects/${slug}`} className="underline">
+              View project
+            </Link>
+            . Consider choosing a different slug.
+          </span>
+        ),
+        variant: "destructive",
       })
-    }, 1500)
+      setIsSubmitting(false)
+      return
+    }
+
+    const { data, error } = await supabase
+      .from("projects")
+      .insert({ name, slug, website, description })
+      .select()
+      .single()
+
+    if (error || !data) {
+      toast({ title: "Error", description: "Failed to create project", variant: "destructive" })
+      setIsSubmitting(false)
+      return
+    }
+
+    toast({ title: "Project registered successfully!" })
+    router.push(`/projects/${data.slug}`)
   }
 
   return (
@@ -40,12 +87,41 @@ export default function ProjectSignup() {
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-2">
             <Label htmlFor="project-name">Project Name</Label>
-            <Input id="project-name" placeholder="Your project or company name" required />
+            <Input
+              id="project-name"
+              placeholder="Your project or company name"
+              value={name}
+              onChange={(e) => {
+                setName(e.target.value)
+                if (!slugEdited) setSlug(generateSlug(e.target.value))
+              }}
+              required
+            />
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="project-slug">Slug</Label>
+            <Input
+              id="project-slug"
+              value={slug}
+              onChange={(e) => {
+                setSlug(generateSlug(e.target.value))
+                setSlugEdited(true)
+              }}
+              required
+            />
           </div>
 
           <div className="space-y-2">
             <Label htmlFor="project-website">Website</Label>
-            <Input id="project-website" type="url" placeholder="https://yourproject.com" required />
+            <Input
+              id="project-website"
+              type="url"
+              placeholder="https://yourproject.com"
+              value={website}
+              onChange={(e) => setWebsite(e.target.value)}
+              required
+            />
           </div>
 
           <div className="space-y-2">
@@ -54,6 +130,8 @@ export default function ProjectSignup() {
               id="project-description"
               placeholder="Briefly describe what your project does"
               className="min-h-[100px]"
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
               required
             />
           </div>
