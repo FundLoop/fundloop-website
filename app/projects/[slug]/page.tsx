@@ -19,6 +19,11 @@ import { toast } from "@/components/ui/use-toast"
 import { ArrowLeft, Edit2, Check, X, ExternalLink, Building2, Users, Share2, DollarSign } from "lucide-react"
 import { ProjectVisibilityToggle } from "@/components/project-visibility-toggle"
 
+interface SocialLink {
+  name: string
+  url: string
+}
+
 interface ProjectUser {
   id: number
   name: string
@@ -127,6 +132,32 @@ export default function ProjectDetailPage() {
 
     fetchProject()
   }, [slug, supabase])
+
+  const financials = {
+    pledgedPercent: 1,
+    contributed: 12500,
+    participants: 23,
+  }
+
+  const socials: SocialLink[] = [
+    { name: "Twitter", url: "https://twitter.com" },
+    { name: "GitHub", url: "https://github.com" },
+  ]
+
+  const admins: ProjectUser[] = [
+    {
+      id: 1,
+      name: "Jane Doe",
+      avatar: "/placeholder.svg?height=40&width=40",
+      role: "Admin",
+    },
+    {
+      id: 2,
+      name: "John Smith",
+      avatar: "/placeholder.svg?height=40&width=40",
+      role: "Admin",
+    },
+  ]
 
   const handleEdit = (field: string) => {
     setEditingField(field)
@@ -367,18 +398,40 @@ export default function ProjectDetailPage() {
                 </div>
 
                 <div>
-                  <h3 className="text-lg font-medium mb-2">Statistics</h3>
-                  <p className="text-slate-600 dark:text-slate-300">
-                    This project has {project.users.toLocaleString()} active users.
-                  </p>
+                  <h3 className="text-lg font-medium mb-2">Socials</h3>
+                  <div className="flex flex-wrap gap-2">
+                    {socials.map((social) => (
+                      <Badge key={social.name} variant="outline" asChild>
+                        <a
+                          href={social.url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                        >
+                          {social.name}
+                        </a>
+                      </Badge>
+                    ))}
+                  </div>
                 </div>
+
               </div>
             </CardContent>
           </Card>
         </div>
 
         <div className="space-y-6">
-          {hasAccess && (
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-lg">Financial Summary</CardTitle>
+            </CardHeader>
+            <CardContent className="text-sm space-y-1">
+              <div>Pledged: {financials.pledgedPercent}%</div>
+              <div>Contributed: ${financials.contributed.toLocaleString()}</div>
+              <div>Participants: {financials.participants}</div>
+            </CardContent>
+          </Card>
+
+          {hasAccess && userRole === "admin" && (
             <Card>
               <CardHeader>
                 <CardTitle className="text-lg">Project Settings</CardTitle>
@@ -431,6 +484,31 @@ export default function ProjectDetailPage() {
               </CardContent>
             </Card>
           )}
+
+          <Card>
+            <CardHeader>
+              <div className="flex items-center gap-2">
+                <Users className="h-5 w-5 text-slate-500" />
+                <CardTitle className="text-lg">People</CardTitle>
+              </div>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-4">
+                {admins.map((person) => (
+                  <div key={person.id} className="flex items-center gap-3">
+                    <Avatar className="h-8 w-8">
+                      <AvatarImage src={person.avatar} alt={person.name} />
+                      <AvatarFallback>{person.name.substring(0, 2)}</AvatarFallback>
+                    </Avatar>
+                    <div>
+                      <h3 className="font-medium">{person.name}</h3>
+                      <p className="text-xs text-slate-500 dark:text-slate-400">{person.role}</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
 
           {hasAccess && project.team_members && (
             <Card>
