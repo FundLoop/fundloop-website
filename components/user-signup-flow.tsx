@@ -413,8 +413,8 @@ export default function UserSignupFlow({ onClose }: { onClose: () => void }) {
     setIsSubmitting(true)
 
     try {
-      // Update user in Supabase with selected projects
-      const { error } = await supabase.from("user_projects").insert(
+      // Save selected projects as participant records
+      const { error } = await supabase.from("participants").insert(
         userData.selectedProjects.map((projectId) => ({
           user_id: currentUserId,
           project_id: projectId,
