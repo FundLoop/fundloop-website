@@ -8,6 +8,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Skeleton } from "@/components/ui/skeleton"
+import { toast } from "@/components/ui/use-toast"
 import type { Database } from "@/types/supabase"
 
 interface User {
@@ -24,6 +25,7 @@ interface User {
 export default function AlignedUsers() {
   const [users, setUsers] = useState<User[]>([])
   const [loading, setLoading] = useState(true)
+  const [errorMsg, setErrorMsg] = useState<string | null>(null)
   const supabase = createClientComponentClient<Database>()
 
   useEffect(() => {
@@ -31,10 +33,27 @@ export default function AlignedUsers() {
       setLoading(true)
 
       try {
-        // Simple query for users - no joins, with soft delete filter
+        // Get user ids that participate in at least one project
+        const { data: participants, error: partError } = await supabase
+          .from("participants")
+          .select("user_id")
+
+        if (partError) throw partError
+
+        const ids = Array.from(new Set(participants?.map((p) => p.user_id)))
+
+        if (ids.length === 0) {
+          setUsers([])
+          return
+        }
+
+        // Query only users that belong to a project
         const { data: userData, error: userError } = await supabase
           .from("users")
-          .select("user_id, full_name, avatar_url, contribution_details, created_at, location_id")
+          .select(
+            "user_id, full_name, avatar_url, contribution_details, created_at, location_id"
+          )
+          .in("user_id", ids)
           .is("deleted_at", null)
           .eq("status", "active")
           .order("created_at", { ascending: false })
@@ -59,7 +78,7 @@ export default function AlignedUsers() {
         }
 
         // Count projects per user in a separate query
-        const { data: projectData } = await supabase.from("user_project_participation").select("user_id, project_id")
+        const { data: projectData } = await supabase.from("participants").select("user_id, project_id")
 
         // Count unique projects per user
         const projectCounts: Record<string, Set<number>> = {}
@@ -83,6 +102,7 @@ export default function AlignedUsers() {
         setUsers(formattedUsers)
       } catch (err) {
         console.error("Error fetching users:", err)
+        setErrorMsg("Failed to load community members.")
       } finally {
         setLoading(false)
       }
@@ -143,40 +163,51 @@ export default function AlignedUsers() {
         </div>
 
         <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
-          {loading
-            ? Array(8)
-                .fill(0)
-                .map((_, i) => (
-                  <Card key={i}>
-                    <CardContent className="p-4 text-center">
-                      <Skeleton className="h-16 w-16 rounded-full mx-auto mb-2" />
-                      <Skeleton className="h-5 w-24 mx-auto mb-2" />
-                      <Skeleton className="h-4 w-16 mx-auto mb-2" />
-                      <Skeleton className="h-4 w-20 mx-auto mb-1" />
-                      <Skeleton className="h-4 w-24 mx-auto" />
-                    </CardContent>
-                  </Card>
-                ))
-            : users.map((user) => (
-                <Card key={user.user_id}>
+          {loading ? (
+            Array(8)
+              .fill(0)
+              .map((_, i) => (
+                <Card key={i}>
                   <CardContent className="p-4 text-center">
-                    <Avatar className="h-16 w-16 mx-auto mb-2">
-                      <AvatarImage
-                        src={user.avatar_url || "/placeholder.svg?height=40&width=40"}
-                        alt={user.full_name}
-                      />
-                      <AvatarFallback>{user.full_name ? user.full_name.substring(0, 2) : "?"}</AvatarFallback>
-                    </Avatar>
-                    <h3 className="font-medium mb-1">{user.full_name}</h3>
-                    <Badge className="mb-2">{user.contribution_details || "Community Member"}</Badge>
-                    <p className="text-xs text-slate-500 dark:text-slate-400 mb-1">{user.location}</p>
-                    <p className="text-xs text-slate-500 dark:text-slate-400 mb-1">
-                      Joined {getTimeAgo(user.created_at)}
-                    </p>
-                    <p className="text-xs font-medium">Active in {user.project_count} projects</p>
+                    <Skeleton className="h-16 w-16 rounded-full mx-auto mb-2" />
+                    <Skeleton className="h-5 w-24 mx-auto mb-2" />
+                    <Skeleton className="h-4 w-16 mx-auto mb-2" />
+                    <Skeleton className="h-4 w-20 mx-auto mb-1" />
+                    <Skeleton className="h-4 w-24 mx-auto" />
                   </CardContent>
                 </Card>
-              ))}
+              ))
+          ) : errorMsg ? (
+            <p className="col-span-4 text-center text-red-600 dark:text-red-400">
+              {errorMsg}
+            </p>
+          ) : users.length === 0 ? (
+            <p className="col-span-4 text-center">No community members found.</p>
+          ) : (
+            users.map((user) => (
+                <Card key={user.user_id}>
+                  <Link href={`/users/${user.user_id}`}
+                    className="block">
+                    <CardContent className="p-4 text-center">
+                      <Avatar className="h-16 w-16 mx-auto mb-2">
+                        <AvatarImage
+                          src={user.avatar_url || "/placeholder.svg?height=40&width=40"}
+                          alt={user.full_name}
+                        />
+                        <AvatarFallback>{user.full_name ? user.full_name.substring(0, 2) : "?"}</AvatarFallback>
+                      </Avatar>
+                      <h3 className="font-medium mb-1">{user.full_name}</h3>
+                      <Badge className="mb-2">{user.contribution_details || "Community Member"}</Badge>
+                      <p className="text-xs text-slate-500 dark:text-slate-400 mb-1">{user.location}</p>
+                      <p className="text-xs text-slate-500 dark:text-slate-400 mb-1">
+                        Joined {getTimeAgo(user.created_at)}
+                      </p>
+                      <p className="text-xs font-medium">Active in {user.project_count} projects</p>
+                    </CardContent>
+                  </Link>
+                </Card>
+              ))
+          )}
         </div>
       </section>
     </>
