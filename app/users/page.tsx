@@ -20,9 +20,6 @@ interface User {
   location_id: number | null
   location?: string
   project_count?: number
-  is_full_name_public?: boolean
-  is_location_public?: boolean
-  is_contribution_details_public?: boolean
 }
 
 export default function UsersPage() {
@@ -77,7 +74,7 @@ export default function UsersPage() {
         const { data: userData, error: userError } = await supabase
           .from("users")
           .select(
-            "user_id, full_name, avatar_url, contribution_details, created_at, location_id, is_full_name_public, is_location_public, is_contribution_details_public"
+            "user_id, full_name, avatar_url, contribution_details, created_at, location_id"
           )
           .in("user_id", slice)
           .is("deleted_at", null)
@@ -256,17 +253,11 @@ export default function UsersPage() {
                     <AvatarImage src={user.avatar_url || "/placeholder.svg?height=40&width=40"} alt={user.full_name} />
                     <AvatarFallback>{user.full_name.substring(0, 2)}</AvatarFallback>
                   </Avatar>
-                  {user.is_full_name_public !== false && (
-                    <CardTitle className="text-base">{user.full_name}</CardTitle>
-                  )}
+                  <CardTitle className="text-base">{user.full_name}</CardTitle>
                 </CardHeader>
                 <CardContent className="text-center">
-                  {user.is_contribution_details_public !== false && (
-                    <Badge className="mb-2">{user.contribution_details || "Community Member"}</Badge>
-                  )}
-                  {user.is_location_public !== false && (
-                    <p className="text-xs text-slate-500 dark:text-slate-400 mb-1">{user.location}</p>
-                  )}
+                  <Badge className="mb-2">{user.contribution_details || "Community Member"}</Badge>
+                  <p className="text-xs text-slate-500 dark:text-slate-400 mb-1">{user.location}</p>
                   <p className="text-xs text-slate-500 dark:text-slate-400 mb-2">Joined {getTimeAgo(user.created_at)}</p>
                   <p className="text-xs font-medium">Active in {user.project_count} projects</p>
                 </CardContent>

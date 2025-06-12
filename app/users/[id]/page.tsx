@@ -16,9 +16,6 @@ interface User {
   contribution_details: string | null
   created_at: string | null
   location: string | null
-  is_full_name_public?: boolean
-  is_location_public?: boolean
-  is_contribution_details_public?: boolean
 }
 
 interface Project {
@@ -41,7 +38,7 @@ export default function UserProfilePage() {
         const { data, error } = await supabase
           .from("users")
           .select(
-            "user_id, full_name, avatar_url, contribution_details, created_at, location_id, is_full_name_public, is_location_public, is_contribution_details_public"
+            "user_id, full_name, avatar_url, contribution_details, created_at, location_id"
           )
           .eq("user_id", userId)
           .single()
@@ -111,13 +108,11 @@ export default function UserProfilePage() {
             <AvatarImage src={user.avatar_url || "/placeholder.svg?height=100&width=100"} alt={user.full_name} />
             <AvatarFallback>{user.full_name.substring(0,2)}</AvatarFallback>
           </Avatar>
-          {user.is_full_name_public !== false && <CardTitle>{user.full_name}</CardTitle>}
+          <CardTitle>{user.full_name}</CardTitle>
         </CardHeader>
         <CardContent className="text-center space-y-2">
-          {user.is_contribution_details_public !== false && (
-            <Badge className="mb-2">{user.contribution_details || "Community Member"}</Badge>
-          )}
-          {user.is_location_public !== false && user.location && (
+          <Badge className="mb-2">{user.contribution_details || "Community Member"}</Badge>
+          {user.location && (
             <p className="text-sm text-slate-600 dark:text-slate-300">{user.location}</p>
           )}
           {user.created_at && (

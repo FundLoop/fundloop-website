@@ -73,17 +73,17 @@ export default function MyProfilePage() {
           const { data: profile } = await supabase
             .from("users")
             .select(
-              "full_name, avatar_url, created_at, location_id, is_full_name_public, is_location_public"
+              "full_name, avatar_url, created_at, location_id"
             )
             .eq("user_id", user.id)
             .single()
 
           if (profile) {
-            if (profile.is_full_name_public !== false && profile.full_name) {
+            if (profile.full_name) {
               setFullName(profile.full_name)
             }
 
-            if (profile.location_id && profile.is_location_public !== false) {
+            if (profile.location_id) {
               const { data: loc } = await supabase
                 .from("ref_locations")
                 .select("name")
