@@ -112,9 +112,9 @@ export default function APIPage() {
                         <h4 className="font-medium">Projects</h4>
                         <ul className="list-disc list-inside text-slate-600 dark:text-slate-300 space-y-1">
                           <li>GET /projects - List all projects</li>
-                          <li>GET /projects/:id - Get project details</li>
+                          <li>GET /projects/:slug - Get project details</li>
                           <li>POST /projects - Create a new project</li>
-                          <li>PUT /projects/:id - Update project details</li>
+                          <li>PUT /projects/:slug - Update project details</li>
                         </ul>
                       </div>
 

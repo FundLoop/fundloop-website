@@ -8,12 +8,14 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Badge } from "@/components/ui/badge"
 import { Input } from "@/components/ui/input"
-import { Search, Filter, ExternalLink, ArrowLeft } from "lucide-react"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { Search, ExternalLink, ArrowLeft } from "lucide-react"
 import type { Database } from "@/types/supabase"
 
 // Define a simpler project type without relationships
 interface Project {
   id: number
+  slug: string
   name: string
   logo_url: string | null
   description: string
@@ -29,6 +31,9 @@ export default function ProjectsPage() {
   const [loading, setLoading] = useState(true)
   const [searchTerm, setSearchTerm] = useState("")
   const [filteredProjects, setFilteredProjects] = useState<Project[]>([])
+  const [categories, setCategories] = useState<{ id: number; name: string }[]>([])
+  const [categoryFilter, setCategoryFilter] = useState("all")
+  const [sortOrder, setSortOrder] = useState("recent")
   const supabase = createClientComponentClient<Database>()
 
   useEffect(() => {
@@ -39,12 +44,20 @@ export default function ProjectsPage() {
         // Fetch projects with soft delete awareness
         const { data: projectData, error: projectError } = await supabase
           .from("projects")
-          .select("id, name, logo_url, description, category_id, created_at, website")
+          .select("id, slug, name, logo_url, description, category_id, created_at, website")
           .is("deleted_at", null)
           .eq("status", "active")
           .order("created_at", { ascending: false })
 
         if (projectError) throw projectError
+
+        // Fetch all categories for filters
+        const { data: allCategories } = await supabase
+          .from("ref_categories")
+          .select("id, name")
+          .order("name")
+
+        setCategories(allCategories || [])
 
         // Get categories
         const categoryIds = projectData.map((project) => project.category_id).filter((id): id is number => id !== null)
@@ -81,21 +94,33 @@ export default function ProjectsPage() {
     fetchProjects()
   }, [supabase])
 
-  // Filter projects when search term changes
+  // Apply filters and sorting
   useEffect(() => {
-    if (searchTerm.trim() === "") {
-      setFilteredProjects(projects)
-    } else {
+    let result = [...projects]
+
+    if (categoryFilter !== "all") {
+      result = result.filter((p) => p.category_id === Number.parseInt(categoryFilter))
+    }
+
+    if (searchTerm.trim() !== "") {
       const term = searchTerm.toLowerCase()
-      const filtered = projects.filter(
+      result = result.filter(
         (project) =>
           project.name.toLowerCase().includes(term) ||
           project.description.toLowerCase().includes(term) ||
           (project.category && project.category.toLowerCase().includes(term)),
       )
-      setFilteredProjects(filtered)
     }
-  }, [searchTerm, projects])
+
+    result.sort((a, b) => {
+      if (sortOrder === "oldest") {
+        return new Date(a.created_at || 0).getTime() - new Date(b.created_at || 0).getTime()
+      }
+      return new Date(b.created_at || 0).getTime() - new Date(a.created_at || 0).getTime()
+    })
+
+    setFilteredProjects(result)
+  }, [searchTerm, projects, categoryFilter, sortOrder])
 
   const getTimeAgo = (dateString: string | null) => {
     if (!dateString) return "Recently"
@@ -128,8 +153,8 @@ export default function ProjectsPage() {
           </p>
         </div>
 
-        <div className="flex w-full md:w-auto gap-2">
-          <div className="relative w-full md:w-[300px]">
+        <div className="flex w-full md:w-auto gap-2 flex-wrap">
+          <div className="relative w-full md:w-[200px]">
             <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-slate-500 dark:text-slate-400" />
             <Input
               placeholder="Search projects..."
@@ -138,9 +163,28 @@ export default function ProjectsPage() {
               onChange={(e) => setSearchTerm(e.target.value)}
             />
           </div>
-          <Button variant="outline" size="icon">
-            <Filter className="h-4 w-4" />
-          </Button>
+          <Select value={categoryFilter} onValueChange={setCategoryFilter}>
+            <SelectTrigger className="w-[180px]">
+              <SelectValue placeholder="Filter Category" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Categories</SelectItem>
+              {categories.map((cat) => (
+                <SelectItem key={cat.id} value={cat.id.toString()}>
+                  {cat.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <Select value={sortOrder} onValueChange={setSortOrder}>
+            <SelectTrigger className="w-[150px]">
+              <SelectValue placeholder="Sort" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="recent">Newest</SelectItem>
+              <SelectItem value="oldest">Oldest</SelectItem>
+            </SelectContent>
+          </Select>
         </div>
       </div>
 
@@ -185,7 +229,7 @@ export default function ProjectsPage() {
             <Card key={project.id} className="overflow-hidden">
               {/* Project card content */}
               <div className="block">
-                <Link href={`/projects/${project.id}`} className="block">
+                <Link href={`/projects/${project.slug}`} className="block">
                   <CardHeader className="pb-2">
                     <div className="flex justify-between items-start">
                       <div className="flex items-center gap-2">
