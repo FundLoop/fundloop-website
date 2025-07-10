@@ -6,6 +6,7 @@ import Link from "next/link"
 import { createClientComponentClient } from "@supabase/auth-helpers-nextjs"
 import { Button } from "@/components/ui/button"
 import { ArrowLeft } from "lucide-react"
+import ArticlePage from "@/components/ArticlePage"
 import type { Database, Tables } from "@/types/supabase"
 
 type BlogPost = Tables<"blog_posts">
@@ -20,6 +21,7 @@ export default function BlogPostPage() {
 
   const [post, setPost] = useState<BlogPost | null>(null)
   const [loading, setLoading] = useState(true)
+  const [showBack, setShowBack] = useState(true)
   const supabase = createClientComponentClient<Database>()
 
   useEffect(() => {
@@ -29,8 +31,9 @@ export default function BlogPostPage() {
       try {
         const { data, error } = await supabase
           .from("blog_posts")
-          .select("id, title, content, published_at")
+          .select("id, title, subtitle, content, picture, published_at")
           .eq("slug", slug)
+          .eq("is_support", false)
           .single()
 
         if (error) throw error
@@ -48,6 +51,43 @@ export default function BlogPostPage() {
       fetchPost()
     }
   }, [slug, supabase, router])
+
+  // Restore scroll position on mount and save on unmount
+  useEffect(() => {
+    const saved = localStorage.getItem(`blog-scroll-${slug}`)
+    if (saved) {
+      window.scrollTo(0, parseInt(saved, 10))
+    } else {
+      window.scrollTo(0, 0)
+    }
+
+    const saveScroll = () => {
+      localStorage.setItem(`blog-scroll-${slug}`, String(window.scrollY))
+    }
+
+    window.addEventListener("beforeunload", saveScroll)
+
+    return () => {
+      saveScroll()
+      window.removeEventListener("beforeunload", saveScroll)
+    }
+  }, [slug])
+
+  // Show/hide back button based on scroll direction
+  useEffect(() => {
+    let last = window.scrollY
+    const onScroll = () => {
+      const current = window.scrollY
+      if (current > last + 10) {
+        setShowBack(false)
+      } else if (current < last - 10) {
+        setShowBack(true)
+      }
+      last = current
+    }
+    window.addEventListener("scroll", onScroll)
+    return () => window.removeEventListener("scroll", onScroll)
+  }, [])
 
   const formatDate = (dateString: string) => {
     const date = new Date(dateString)
@@ -117,30 +157,14 @@ export default function BlogPostPage() {
 
   return (
     <div className="container mx-auto px-4 py-12">
-      <div className="flex items-center gap-2 mb-8">
-        {origin === "benefits" ? (
-          <Button variant="ghost" size="sm" className="gap-1" onClick={handleBackToBenefits}>
-            <ArrowLeft className="h-4 w-4" />
-            <span>Back to Benefits</span>
-          </Button>
-        ) : (
-          <Button asChild variant="ghost" size="sm" className="gap-1">
-            <Link href="/blog">
-              <ArrowLeft className="h-4 w-4" />
-              <span>Back to Blog</span>
-            </Link>
-          </Button>
-        )}
-      </div>
-
-      <article className="max-w-3xl mx-auto">
-        <header className="mb-8">
-          <h1 className="text-3xl md:text-4xl font-bold mb-4">{post.title}</h1>
-          <p className="text-slate-600 dark:text-slate-300">{formatDate(post.published_at)}</p>
-        </header>
-
-        <div className="prose dark:prose-invert max-w-none">{post.content}</div>
-      </article>
+      <ArticlePage
+        post={post}
+        backHref={origin === "benefits" ? "/" : "/blog"}
+        backText={origin === "benefits" ? "Back to Benefits" : "Back to Blog"}
+        showBack={showBack}
+        onBack={origin === "benefits" ? handleBackToBenefits : undefined}
+        dateKey="created_at"
+      />
     </div>
   )
 }

@@ -11,7 +11,9 @@ import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { toast } from "@/components/ui/use-toast"
-import { ArrowLeft, Mail, MessageSquare, Phone } from "lucide-react"
+import { ArrowLeft, Mail, MessageSquare, User } from "lucide-react"
+import { createClientComponentClient } from "@supabase/auth-helpers-nextjs"
+import type { Database } from "@/types/supabase"
 
 export default function SupportPage() {
   const [isSubmitting, setIsSubmitting] = useState(false)
@@ -22,35 +24,87 @@ export default function SupportPage() {
     category: "",
     message: "",
   })
+  const [errors, setErrors] = useState<Record<string, string>>({})
+  const supabase = createClientComponentClient<Database>()
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { id, value } = e.target
     setFormData((prev) => ({ ...prev, [id]: value }))
+    setErrors((prev) => {
+      const newErr = { ...prev }
+      switch (id) {
+        case "name":
+          if (value.trim()) delete newErr.name
+          break
+        case "email":
+          if (/^\S+@\S+\.\S+$/.test(value)) delete newErr.email
+          break
+        case "subject":
+          if (value.trim()) delete newErr.subject
+          break
+        case "message":
+          if (value.trim()) delete newErr.message
+          break
+      }
+      return newErr
+    })
   }
 
   const handleSelectChange = (value: string) => {
     setFormData((prev) => ({ ...prev, category: value }))
+    setErrors((prev) => {
+      const copy = { ...prev }
+      if (value) delete copy.category
+      return copy
+    })
   }
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
+    const newErrors: Record<string, string> = {}
+    if (!formData.name.trim()) newErrors.name = "Name is required"
+    if (!formData.email.trim()) {
+      newErrors.email = "Email is required"
+    } else if (!/^\S+@\S+\.\S+$/.test(formData.email)) {
+      newErrors.email = "Invalid email address"
+    }
+    if (!formData.subject.trim()) newErrors.subject = "Subject is required"
+    if (!formData.category) newErrors.category = "Category is required"
+    if (!formData.message.trim()) newErrors.message = "Message is required"
+    if (Object.keys(newErrors).length > 0) {
+      setErrors(newErrors)
+      return
+    }
+    setErrors({})
     setIsSubmitting(true)
-
-    // Simulate API call
-    setTimeout(() => {
-      setIsSubmitting(false)
-      toast({
-        title: "Support request submitted",
-        description: "We'll get back to you as soon as possible.",
-      })
-      setFormData({
-        name: "",
-        email: "",
-        subject: "",
-        category: "",
-        message: "",
-      })
-    }, 1500)
+    let ip = ""
+    try {
+      const res = await fetch("https://api.ipify.org?format=json")
+      const data = await res.json()
+      ip = data.ip
+    } catch (err) {
+      console.error("Failed to get IP", err)
+    }
+    const { data: { user } } = await supabase.auth.getUser()
+    const { error } = await supabase.from("support_requests").insert({
+      name: formData.name,
+      email: formData.email,
+      subject: formData.subject,
+      category: formData.category,
+      message: formData.message,
+      ip_address: ip || null,
+      user_id: user?.id ?? null,
+    })
+    setIsSubmitting(false)
+    if (error) {
+      toast({ title: "Submission failed", description: error.message })
+      return
+    }
+    toast({
+      title: "Support request submitted",
+      description: "We'll get back to you as soon as possible.",
+    })
+    setFormData({ name: "", email: "", subject: "", category: "", message: "" })
   }
 
   return (
@@ -65,12 +119,48 @@ export default function SupportPage() {
       </div>
 
       <div className="max-w-5xl mx-auto">
-        <h1 className="text-3xl md:text-4xl font-bold mb-4">Support</h1>
+        <h1 className="text-3xl md:text-4xl font-bold mb-4">Start Here</h1>
         <p className="text-slate-600 dark:text-slate-300 text-lg mb-8">
           Need help with FundLoop? Our support team is here to assist you.
         </p>
 
+        <div className="grid md:grid-cols-2 gap-8 mb-12">
+          <div className="text-center">
+            <h2 className="text-2xl font-bold mb-4">Frequently Asked Questions</h2>
+            <p className="text-slate-600 dark:text-slate-300 mb-6">
+              Find quick answers to common questions before contacting support.
+            </p>
+            <Button asChild variant="outline">
+              <Link href="/faq">View FAQ</Link>
+            </Button>
+          </div>
+          <div className="text-center">
+            <h2 className="text-2xl font-bold mb-4">Read Our Docs</h2>
+            <p className="text-slate-600 dark:text-slate-300 mb-6">
+              Explore our documentation for detailed guides and answers.
+            </p>
+            <Button asChild variant="outline">
+              <Link href="/documentation">View Documentation</Link>
+            </Button>
+          </div>
+        </div>
+
+        <h1 className="text-3xl md:text-4xl font-bold mb-4">Still Need Support?</h1>
+
         <div className="grid md:grid-cols-3 gap-8 mb-12">
+          <Card>
+            <CardHeader className="text-center">
+              <div className="mx-auto bg-emerald-100 dark:bg-emerald-900/30 p-3 rounded-full mb-4 w-12 h-12 flex items-center justify-center">
+                <User className="h-6 w-6 text-emerald-600 dark:text-emerald-400" />
+              </div>
+              <CardTitle>Chat With Our Founder</CardTitle>
+              <CardDescription>Schedule a quick call</CardDescription>
+            </CardHeader>
+            <CardContent className="text-center">
+              <p className="text-slate-600 dark:text-slate-300 mb-4">Coming Soon</p>
+            </CardContent>
+          </Card>
+
           <Card>
             <CardHeader className="text-center">
               <div className="mx-auto bg-emerald-100 dark:bg-emerald-900/30 p-3 rounded-full mb-4 w-12 h-12 flex items-center justify-center">
@@ -80,8 +170,10 @@ export default function SupportPage() {
               <CardDescription>Get help via email</CardDescription>
             </CardHeader>
             <CardContent className="text-center">
-              <p className="text-slate-600 dark:text-slate-300 mb-4">Coming Soon</p>
-              <a href="mailto:support@fundloop.org" className="text-emerald-600 dark:text-emerald-400 font-medium">
+              <a
+                href="mailto:support@fundloop.org?subject=Support%20Request&body=Please%20describe%20your%20issue%20here."
+                className="text-emerald-600 dark:text-emerald-400 font-medium"
+              >
                 support@fundloop.org
               </a>
             </CardContent>
@@ -92,31 +184,15 @@ export default function SupportPage() {
               <div className="mx-auto bg-emerald-100 dark:bg-emerald-900/30 p-3 rounded-full mb-4 w-12 h-12 flex items-center justify-center">
                 <MessageSquare className="h-6 w-6 text-emerald-600 dark:text-emerald-400" />
               </div>
-              <CardTitle>Live Chat</CardTitle>
+              <CardTitle>Live Chat (coming soon)</CardTitle>
               <CardDescription>Chat with our support team</CardDescription>
             </CardHeader>
             <CardContent className="text-center">
-              <p className="text-slate-600 dark:text-slate-300 mb-4">Coming Soon</p>
               <p className="text-slate-600 dark:text-slate-300 mb-4">Available Monday to Friday, 9am to 5pm UTC.</p>
-              <Button variant="outline" className="gap-1">
+              <Button variant="outline" className="gap-1" disabled>
                 <MessageSquare className="h-4 w-4" />
                 Start Chat
               </Button>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader className="text-center">
-              <div className="mx-auto bg-emerald-100 dark:bg-emerald-900/30 p-3 rounded-full mb-4 w-12 h-12 flex items-center justify-center">
-                <Phone className="h-6 w-6 text-emerald-600 dark:text-emerald-400" />
-              </div>
-              <CardTitle>Phone Support</CardTitle>
-              <CardDescription>Talk to a support agent</CardDescription>
-            </CardHeader>
-            <CardContent className="text-center">
-              <p className="text-slate-600 dark:text-slate-300 mb-4">Coming Soon</p>
-              <p className="text-slate-600 dark:text-slate-300 mb-4">Available for premium support customers.</p>
-              <span className="text-emerald-600 dark:text-emerald-400 font-medium">+1 (555) 123-4567</span>
             </CardContent>
           </Card>
         </div>
@@ -138,6 +214,9 @@ export default function SupportPage() {
                     onChange={handleInputChange}
                     required
                   />
+                  {errors.name && (
+                    <p className="text-sm text-red-500">{errors.name}</p>
+                  )}
                 </div>
 
                 <div className="space-y-2">
@@ -150,6 +229,9 @@ export default function SupportPage() {
                     onChange={handleInputChange}
                     required
                   />
+                  {errors.email && (
+                    <p className="text-sm text-red-500">{errors.email}</p>
+                  )}
                 </div>
               </div>
 
@@ -162,7 +244,14 @@ export default function SupportPage() {
                     value={formData.subject}
                     onChange={handleInputChange}
                     required
+                    aria-invalid={!!errors.subject}
+                    aria-describedby="subject-error"
                   />
+                  {errors.subject && (
+                    <p id="subject-error" className="text-sm text-red-500">
+                      {errors.subject}
+                    </p>
+                  )}
                 </div>
 
                 <div className="space-y-2">
@@ -180,6 +269,11 @@ export default function SupportPage() {
                       <SelectItem value="other">Other</SelectItem>
                     </SelectContent>
                   </Select>
+                  {errors.category && (
+                    <p id="category-error" className="text-sm text-red-500">
+                      {errors.category}
+                    </p>
+                  )}
                 </div>
               </div>
 
@@ -192,7 +286,14 @@ export default function SupportPage() {
                   value={formData.message}
                   onChange={handleInputChange}
                   required
+                  aria-invalid={!!errors.message}
+                  aria-describedby="message-error"
                 />
+                {errors.message && (
+                  <p id="message-error" className="text-sm text-red-500">
+                    {errors.message}
+                  </p>
+                )}
               </div>
             </form>
           </CardContent>
@@ -208,15 +309,6 @@ export default function SupportPage() {
           </CardFooter>
         </Card>
 
-        <div className="text-center">
-          <h2 className="text-2xl font-bold mb-4">Frequently Asked Questions</h2>
-          <p className="text-slate-600 dark:text-slate-300 mb-6">
-            Find quick answers to common questions in our FAQ section.
-          </p>
-          <Button asChild variant="outline">
-            <Link href="/faq">View FAQ</Link>
-          </Button>
-        </div>
       </div>
     </div>
   )
