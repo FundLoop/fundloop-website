@@ -132,13 +132,13 @@ VALUES
   (12, 6, 'Contributor', NOW() - INTERVAL '4 MONTH', NOW(), NOW());
 
 -- Blog Posts
-INSERT INTO blog_posts (id, title, slug, excerpt, content, author_id, published_at, created_at, updated_at)
+INSERT INTO blog_posts (id, title, slug, excerpt, content, author_id, published_at, created_at, updated_at, is_support, category, subtitle, picture, sort_order_within_category)
 VALUES
-  (1, 'Introducing FundLoop: A New Economic Model for Digital Communities', 'introducing-fundloop', 'Learn how FundLoop is creating a sustainable economic model for the digital age through mutual prosperity.', 'Full content of the blog post goes here...', 1, NOW() - INTERVAL '2 WEEK', NOW() - INTERVAL '2 WEEK', NOW()),
-  (2, 'Why Projects Are Joining the 1% Pledge Movement', 'why-projects-joining-pledge', 'Discover the benefits that projects are experiencing after joining the FundLoop ecosystem.', 'Full content of the blog post goes here...', 3, NOW() - INTERVAL '1 WEEK', NOW() - INTERVAL '1 WEEK', NOW()),
-  (3, 'The Math Behind Citizen Salaries: How FundLoop Distributes Value', 'math-behind-citizen-salaries', 'A deep dive into how FundLoop calculates and distributes citizen salaries to active members.', 'Full content of the blog post goes here...', 5, NOW() - INTERVAL '3 DAY', NOW() - INTERVAL '3 DAY', NOW()),
-  (4, 'Building a Network State: Lessons from Month One', 'building-network-state-lessons', 'Reflections on the challenges and successes from our first month of building the FundLoop network state.', 'Full content of the blog post goes here...', 9, NOW() - INTERVAL '1 MONTH', NOW() - INTERVAL '1 MONTH', NOW()),
-  (5, 'How to Maximize Your Contributions to the FundLoop Ecosystem', 'maximize-contributions-fundloop', 'Tips and strategies for users to increase their participation and value within the network.', 'Full content of the blog post goes here...', 7, NOW() - INTERVAL '6 WEEK', NOW() - INTERVAL '6 WEEK', NOW());
+  (1, 'Introducing FundLoop: A New Economic Model for Digital Communities', 'introducing-fundloop', 'Learn how FundLoop is creating a sustainable economic model for the digital age through mutual prosperity.', 'Full content of the blog post goes here...', 1, NOW() - INTERVAL '2 WEEK', NOW() - INTERVAL '2 WEEK', NOW(), FALSE, NULL, NULL, '/placeholder.jpg?height=400&width=800', NULL),
+  (2, 'Why Projects Are Joining the 1% Pledge Movement', 'why-projects-joining-pledge', 'Discover the benefits that projects are experiencing after joining the FundLoop ecosystem.', 'Full content of the blog post goes here...', 3, NOW() - INTERVAL '1 WEEK', NOW() - INTERVAL '1 WEEK', NOW(), FALSE, NULL, NULL, '/placeholder.jpg?height=400&width=800', NULL),
+  (3, 'The Math Behind Citizen Salaries: How FundLoop Distributes Value', 'math-behind-citizen-salaries', 'A deep dive into how FundLoop calculates and distributes citizen salaries to active members.', 'Full content of the blog post goes here...', 5, NOW() - INTERVAL '3 DAY', NOW() - INTERVAL '3 DAY', NOW(), FALSE, NULL, NULL, '/placeholder.jpg?height=400&width=800', NULL),
+  (4, 'Building a Network State: Lessons from Month One', 'building-network-state-lessons', 'Reflections on the challenges and successes from our first month of building the FundLoop network state.', 'Full content of the blog post goes here...', 9, NOW() - INTERVAL '1 MONTH', NOW() - INTERVAL '1 MONTH', NOW(), FALSE, NULL, NULL, '/placeholder.jpg?height=400&width=800', NULL),
+  (5, 'How to Maximize Your Contributions to the FundLoop Ecosystem', 'maximize-contributions-fundloop', 'Tips and strategies for users to increase their participation and value within the network.', 'Full content of the blog post goes here...', 7, NOW() - INTERVAL '6 WEEK', NOW() - INTERVAL '6 WEEK', NOW(), FALSE, NULL, NULL, '/placeholder.jpg?height=400&width=800', NULL);
 
 -- Monthly Network Stats (for analytics)
 INSERT INTO monthly_network_stats (month, year, total_funds, project_count, user_count, avg_salary, created_at, updated_at)
@@ -155,3 +155,8 @@ VALUES
   (10, 2023, 380000, 98, 28200, 13.48, NOW(), NOW()),
   (11, 2023, 425000, 105, 32100, 13.24, NOW(), NOW()),
   (12, 2023, 480000, 112, 36500, 13.15, NOW(), NOW());
+
+-- Support Requests
+INSERT INTO support_requests (name, email, subject, category, message, user_id, ip_address, created_at)
+VALUES ('Test User', 'test@example.com', 'General Question', 'general', 'How do I use FundLoop?', NULL, '127.0.0.1', NOW());
+

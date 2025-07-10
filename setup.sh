@@ -12,3 +12,12 @@ pnpm install
 if [ -f .env.example ] && [ ! -f .env.local ]; then
   cp .env.example .env.local
 fi
+
+# Ensure ESLint configuration exists to avoid interactive prompts
+if [ ! -f .eslintrc.json ]; then
+  cat <<'EOF' > .eslintrc.json
+{
+  "extends": "next"
+}
+EOF
+fi
