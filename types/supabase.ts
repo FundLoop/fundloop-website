@@ -559,24 +559,27 @@ export interface Database {
           },
         ]
       }
-      user_project_participation: {
+      participants: {
         Row: {
           id: number
-          user_id: number
           project_id: number
-          created_at: string | null
+          user_id: string
+          joined_at: string | null
+          updated_at: string | null
         }
         Insert: {
           id?: number
-          user_id: number
           project_id: number
-          created_at?: string | null
+          user_id: string
+          joined_at?: string | null
+          updated_at?: string | null
         }
         Update: {
           id?: number
-          user_id?: number
           project_id?: number
-          created_at?: string | null
+          user_id?: string
+          joined_at?: string | null
+          updated_at?: string | null
         }
         Relationships: [
           {
@@ -589,9 +592,61 @@ export interface Database {
             foreignKeyName: "user_project_participation_user_id_fkey"
             columns: ["user_id"]
             referencedRelation: "users"
+            referencedColumns: ["user_id"]
+          },
+        ]
+      }
+      participant_roles: {
+        Row: {
+          id: number
+          participant_id: number
+          role_id: number
+          created_at: string
+        }
+        Insert: {
+          id?: number
+          participant_id: number
+          role_id: number
+          created_at?: string
+        }
+        Update: {
+          id?: number
+          participant_id?: number
+          role_id?: number
+          created_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "participant_roles_participant_id_fkey"
+            columns: ["participant_id"]
+            referencedRelation: "participants"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "participant_roles_role_id_fkey"
+            columns: ["role_id"]
+            referencedRelation: "ref_roles"
             referencedColumns: ["id"]
           },
         ]
+      }
+      ref_roles: {
+        Row: {
+          id: number
+          name: string
+          display_order: number | null
+        }
+        Insert: {
+          id?: number
+          name: string
+          display_order?: number | null
+        }
+        Update: {
+          id?: number
+          name?: string
+          display_order?: number | null
+        }
+        Relationships: []
       }
       users: {
         Row: {
@@ -605,6 +660,8 @@ export interface Database {
           gender_id: number | null
           location_id: number | null
           occupation_id: number | null
+          signup_step: number | null
+          signin_count: number | null
           will_contribute: boolean | null
           contribution_details: string | null
           created_at: string | null
@@ -621,6 +678,8 @@ export interface Database {
           gender_id?: number | null
           location_id?: number | null
           occupation_id?: number | null
+          signup_step?: number | null
+          signin_count?: number | null
           will_contribute?: boolean | null
           contribution_details?: string | null
           created_at?: string | null
@@ -637,6 +696,8 @@ export interface Database {
           gender_id?: number | null
           location_id?: number | null
           occupation_id?: number | null
+          signup_step?: number | null
+          signin_count?: number | null
           will_contribute?: boolean | null
           contribution_details?: string | null
           created_at?: string | null

@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useEffect, useRef, useState } from "react"
 import Link from "next/link"
 import { createClientComponentClient } from "@supabase/auth-helpers-nextjs"
 import { Button } from "@/components/ui/button"
@@ -25,24 +25,60 @@ interface User {
 export default function UsersPage() {
   const [users, setUsers] = useState<User[]>([])
   const [loading, setLoading] = useState(true)
+  const [page, setPage] = useState(0)
+  const loader = useRef<HTMLDivElement | null>(null)
+  const [allIds, setAllIds] = useState<string[]>([])
   const [searchTerm, setSearchTerm] = useState("")
   const [filteredUsers, setFilteredUsers] = useState<User[]>([])
+  const [errorMsg, setErrorMsg] = useState<string | null>(null)
   const supabase = createClientComponentClient<Database>()
 
   useEffect(() => {
+    const fetchParticipants = async () => {
+      try {
+        const { data, error } = await supabase.from("participants").select("user_id")
+        if (error) throw error
+        const ids = Array.from(new Set(data.map((d) => d.user_id)))
+        setAllIds(ids)
+        if (ids.length === 0) {
+          setErrorMsg("No community members yet.")
+        }
+      } catch (err) {
+        console.error("Error fetching participants:", err)
+        setErrorMsg("Failed to load members.")
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    fetchParticipants()
+  }, [supabase])
+
+  useEffect(() => {
+    if (allIds.length === 0) {
+      return
+    }
+
     const fetchUsers = async () => {
       setLoading(true)
 
       try {
-        // Simple query for users - no joins, with soft delete filter
+        const limit = 12
+        const slice = allIds.slice(page * limit, page * limit + limit)
+
+        if (slice.length === 0) {
+          setLoading(false)
+          return
+        }
+
         const { data: userData, error: userError } = await supabase
           .from("users")
-          .select("user_id, full_name, avatar_url, contribution_details, created_at, location_id")
+          .select(
+            "user_id, full_name, avatar_url, contribution_details, created_at, location_id"
+          )
+          .in("user_id", slice)
           .is("deleted_at", null)
           .eq("status", "active")
-          .order("created_at", { ascending: false })
-
-        if (userError) throw userError
 
         // Get location names in a separate query
         const locationIds = userData.map((user) => user.location_id).filter((id): id is number => id !== null)
@@ -61,7 +97,7 @@ export default function UsersPage() {
         }
 
         // Count projects per user in a separate query
-        const { data: projectData } = await supabase.from("user_project_participation").select("user_id, project_id")
+        const { data: projectData } = await supabase.from("participants").select("user_id, project_id")
 
         // Count unique projects per user
         const projectCounts: Record<string, Set<number>> = {}
@@ -82,17 +118,18 @@ export default function UsersPage() {
           project_count: projectCounts[user.user_id] ? projectCounts[user.user_id].size : 0,
         }))
 
-        setUsers(formattedUsers)
-        setFilteredUsers(formattedUsers)
+        setUsers((prev) => [...prev, ...formattedUsers])
+        setFilteredUsers((prev) => [...prev, ...formattedUsers])
       } catch (err) {
         console.error("Error fetching users:", err)
+        setErrorMsg("Failed to load members. Please try again later.")
       } finally {
         setLoading(false)
       }
     }
 
     fetchUsers()
-  }, [supabase])
+  }, [supabase, page, allIds])
 
   // Filter users when search term changes
   useEffect(() => {
@@ -109,6 +146,27 @@ export default function UsersPage() {
       setFilteredUsers(filtered)
     }
   }, [searchTerm, users])
+
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0].isIntersecting) {
+          const limit = 12
+          setPage((p) => {
+            if ((p + 1) * limit <= allIds.length) {
+              return p + 1
+            }
+            return p
+          })
+        }
+      },
+      { threshold: 1 }
+    )
+    if (loader.current) observer.observe(loader.current)
+    return () => {
+      if (loader.current) observer.unobserve(loader.current)
+    }
+  }, [])
 
   const getTimeAgo = (dateString: string | null) => {
     if (!dateString) return "Recently"
@@ -157,7 +215,11 @@ export default function UsersPage() {
         </div>
       </div>
 
-      {loading ? (
+      {errorMsg && !loading ? (
+        <div className="text-center py-12 text-red-600 dark:text-red-400">
+          {errorMsg}
+        </div>
+      ) : loading ? (
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
           {Array(8)
             .fill(0)
@@ -185,23 +247,26 @@ export default function UsersPage() {
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
           {filteredUsers.map((user) => (
             <Card key={user.user_id}>
-              <CardHeader className="pb-2 text-center">
-                <Avatar className="h-16 w-16 mx-auto mb-2">
-                  <AvatarImage src={user.avatar_url || "/placeholder.svg?height=40&width=40"} alt={user.full_name} />
-                  <AvatarFallback>{user.full_name.substring(0, 2)}</AvatarFallback>
-                </Avatar>
-                <CardTitle className="text-base">{user.full_name}</CardTitle>
-              </CardHeader>
-              <CardContent className="text-center">
-                <Badge className="mb-2">{user.contribution_details || "Community Member"}</Badge>
-                <p className="text-xs text-slate-500 dark:text-slate-400 mb-1">{user.location}</p>
-                <p className="text-xs text-slate-500 dark:text-slate-400 mb-2">Joined {getTimeAgo(user.created_at)}</p>
-                <p className="text-xs font-medium">Active in {user.project_count} projects</p>
-              </CardContent>
+              <Link href={`/users/${user.user_id}`} className="block">
+                <CardHeader className="pb-2 text-center">
+                  <Avatar className="h-16 w-16 mx-auto mb-2">
+                    <AvatarImage src={user.avatar_url || "/placeholder.svg?height=40&width=40"} alt={user.full_name} />
+                    <AvatarFallback>{user.full_name.substring(0, 2)}</AvatarFallback>
+                  </Avatar>
+                  <CardTitle className="text-base">{user.full_name}</CardTitle>
+                </CardHeader>
+                <CardContent className="text-center">
+                  <Badge className="mb-2">{user.contribution_details || "Community Member"}</Badge>
+                  <p className="text-xs text-slate-500 dark:text-slate-400 mb-1">{user.location}</p>
+                  <p className="text-xs text-slate-500 dark:text-slate-400 mb-2">Joined {getTimeAgo(user.created_at)}</p>
+                  <p className="text-xs font-medium">Active in {user.project_count} projects</p>
+                </CardContent>
+              </Link>
             </Card>
           ))}
         </div>
       )}
+      <div ref={loader} className="h-10" />
     </div>
   )
 }

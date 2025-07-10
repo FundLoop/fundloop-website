@@ -12,20 +12,20 @@ VALUES
   (9, 'SolarShare', 'Community solar energy platform allowing users to invest in renewable energy', '/placeholder.svg?height=40&width=40', 'https://solarshare.example.com', NOW(), NOW());
 
 -- Users
-INSERT INTO users (id, full_name, email, avatar_url, location_id, contribution_details, created_at, updated_at)
+INSERT INTO users (user_id, full_name, email, avatar_url, location_id, contribution_details, created_at, updated_at)
 VALUES
-  (1, 'Alex Rivera', 'alex@example.com', '/placeholder.svg?height=40&width=40', 1, 'Community Moderator', NOW() - INTERVAL '6 MONTH', NOW()),
-  (2, 'Jamie Chen', 'jamie@example.com', '/placeholder.svg?height=40&width=40', 2, 'Content Creator', NOW() - INTERVAL '4 MONTH', NOW()),
-  (3, 'Sam Washington', 'sam@example.com', '/placeholder.svg?height=40&width=40', 3, 'Developer', NOW() - INTERVAL '8 MONTH', NOW()),
-  (4, 'Taylor Kim', 'taylor@example.com', '/placeholder.svg?height=40&width=40', 4, 'Translator', NOW() - INTERVAL '3 MONTH', NOW()),
-  (5, 'Jordan Patel', 'jordan@example.com', '/placeholder.svg?height=40&width=40', 5, 'Educator', NOW() - INTERVAL '5 MONTH', NOW()),
-  (6, 'Morgan Silva', 'morgan@example.com', '/placeholder.svg?height=40&width=40', 6, 'Designer', NOW() - INTERVAL '2 MONTH', NOW()),
-  (7, 'Casey Jones', 'casey@example.com', '/placeholder.svg?height=40&width=40', 7, 'Researcher', NOW() - INTERVAL '7 MONTH', NOW()),
-  (8, 'Riley Nguyen', 'riley@example.com', '/placeholder.svg?height=40&width=40', 8, 'Advocate', NOW() - INTERVAL '1 MONTH', NOW()),
-  (9, 'Avery Smith', 'avery@example.com', '/placeholder.svg?height=40&width=40', 1, 'Writer', NOW() - INTERVAL '9 MONTH', NOW()),
-  (10, 'Quinn Johnson', 'quinn@example.com', '/placeholder.svg?height=40&width=40', 2, 'Analyst', NOW() - INTERVAL '5 MONTH', NOW()),
-  (11, 'Reese Garcia', 'reese@example.com', '/placeholder.svg?height=40&width=40', 3, 'Marketer', NOW() - INTERVAL '3 MONTH', NOW()),
-  (12, 'Dakota Lee', 'dakota@example.com', '/placeholder.svg?height=40&width=40', 4, 'Product Manager', NOW() - INTERVAL '6 MONTH', NOW());
+  ('302fb695-d9a2-4e51-b5f2-a62d758c0772', 'Alex Rivera', 'alex@example.com', '/placeholder.svg?height=40&width=40', 1, 'Community Moderator', NOW() - INTERVAL '6 MONTH', NOW()),
+  ('56ca6d03-d70b-4373-8336-fe04096e4643', 'Jamie Chen', 'jamie@example.com', '/placeholder.svg?height=40&width=40', 2, 'Content Creator', NOW() - INTERVAL '4 MONTH', NOW()),
+  ('3e9ab72c-9a68-40de-8b61-a2b17842558f', 'Sam Washington', 'sam@example.com', '/placeholder.svg?height=40&width=40', 3, 'Developer', NOW() - INTERVAL '8 MONTH', NOW()),
+  ('508acbd4-4d36-4b04-a8fb-ba3f3b1bfa91', 'Taylor Kim', 'taylor@example.com', '/placeholder.svg?height=40&width=40', 4, 'Translator', NOW() - INTERVAL '3 MONTH', NOW()),
+  ('2e554a92-a216-442f-a872-7daae84699f3', 'Jordan Patel', 'jordan@example.com', '/placeholder.svg?height=40&width=40', 5, 'Educator', NOW() - INTERVAL '5 MONTH', NOW()),
+  ('4be45456-f36d-4b54-b147-16e684903017', 'Morgan Silva', 'morgan@example.com', '/placeholder.svg?height=40&width=40', 6, 'Designer', NOW() - INTERVAL '2 MONTH', NOW()),
+  ('be45f799-419f-40c3-88fe-c9afd3856183', 'Casey Jones', 'casey@example.com', '/placeholder.svg?height=40&width=40', 7, 'Researcher', NOW() - INTERVAL '7 MONTH', NOW()),
+  ('c4a25e56-e237-43bd-bb85-40a2918de966', 'Riley Nguyen', 'riley@example.com', '/placeholder.svg?height=40&width=40', 8, 'Advocate', NOW() - INTERVAL '1 MONTH', NOW()),
+  ('8b5753ef-9e42-482f-8c68-bf6b736670ef', 'Avery Smith', 'avery@example.com', '/placeholder.svg?height=40&width=40', 1, 'Writer', NOW() - INTERVAL '9 MONTH', NOW()),
+  ('7c6bb064-21e9-43a6-ad65-2b02ad0cda41', 'Quinn Johnson', 'quinn@example.com', '/placeholder.svg?height=40&width=40', 2, 'Analyst', NOW() - INTERVAL '5 MONTH', NOW()),
+  ('bc15d32a-d4f9-4ae7-860e-1132a412967d', 'Reese Garcia', 'reese@example.com', '/placeholder.svg?height=40&width=40', 3, 'Marketer', NOW() - INTERVAL '3 MONTH', NOW()),
+  ('4263b12b-3355-4751-9126-aadf076791bc', 'Dakota Lee', 'dakota@example.com', '/placeholder.svg?height=40&width=40', 4, 'Product Manager', NOW() - INTERVAL '6 MONTH', NOW());
 
 -- User Emails
 -- INSERT INTO user_emails (user_id, email, is_primary, is_verified, created_at, updated_at)
@@ -46,18 +46,18 @@ VALUES
 -- Wallet Accounts
 INSERT INTO wallet_accounts (user_id, wallet_address, wallet_type, wallet_name, is_primary, created_at, updated_at)
 VALUES
-  (1, '0x1234567890abcdef1234567890abcdef12345678', 'ethereum', 'Main Wallet', true, NOW(), NOW()),
-  (2, '0x2345678901abcdef2345678901abcdef23456789', 'ethereum', 'Main Wallet', true, NOW(), NOW()),
-  (3, '0x3456789012abcdef3456789012abcdef34567890', 'ethereum', 'Main Wallet', true, NOW(), NOW()),
-  (4, '0x4567890123abcdef4567890123abcdef45678901', 'ethereum', 'Main Wallet', true, NOW(), NOW()),
-  (5, '0x5678901234abcdef5678901234abcdef56789012', 'ethereum', 'Main Wallet', true, NOW(), NOW()),
-  (6, '0x6789012345abcdef6789012345abcdef67890123', 'ethereum', 'Main Wallet', true, NOW(), NOW()),
-  (7, '0x7890123456abcdef7890123456abcdef78901234', 'ethereum', 'Main Wallet', true, NOW(), NOW()),
-  (8, '0x8901234567abcdef8901234567abcdef89012345', 'ethereum', 'Main Wallet', true, NOW(), NOW()),
-  (9, '0x9012345678abcdef9012345678abcdef90123456', 'ethereum', 'Main Wallet', true, NOW(), NOW()),
-  (10, '0x0123456789abcdef0123456789abcdef01234567', 'ethereum', 'Main Wallet', true, NOW(), NOW()),
-  (11, '0xabcdef1234567890abcdef1234567890abcdef12', 'ethereum', 'Main Wallet', true, NOW(), NOW()),
-  (12, '0xbcdef1234567890abcdef1234567890abcdef123', 'ethereum', 'Main Wallet', true, NOW(), NOW());
+  ('302fb695-d9a2-4e51-b5f2-a62d758c0772', '0x1234567890abcdef1234567890abcdef12345678', 'ethereum', 'Main Wallet', true, NOW(), NOW()),
+  ('56ca6d03-d70b-4373-8336-fe04096e4643', '0x2345678901abcdef2345678901abcdef23456789', 'ethereum', 'Main Wallet', true, NOW(), NOW()),
+  ('3e9ab72c-9a68-40de-8b61-a2b17842558f', '0x3456789012abcdef3456789012abcdef34567890', 'ethereum', 'Main Wallet', true, NOW(), NOW()),
+  ('508acbd4-4d36-4b04-a8fb-ba3f3b1bfa91', '0x4567890123abcdef4567890123abcdef45678901', 'ethereum', 'Main Wallet', true, NOW(), NOW()),
+  ('2e554a92-a216-442f-a872-7daae84699f3', '0x5678901234abcdef5678901234abcdef56789012', 'ethereum', 'Main Wallet', true, NOW(), NOW()),
+  ('4be45456-f36d-4b54-b147-16e684903017', '0x6789012345abcdef6789012345abcdef67890123', 'ethereum', 'Main Wallet', true, NOW(), NOW()),
+  ('be45f799-419f-40c3-88fe-c9afd3856183', '0x7890123456abcdef7890123456abcdef78901234', 'ethereum', 'Main Wallet', true, NOW(), NOW()),
+  ('c4a25e56-e237-43bd-bb85-40a2918de966', '0x8901234567abcdef8901234567abcdef89012345', 'ethereum', 'Main Wallet', true, NOW(), NOW()),
+  ('8b5753ef-9e42-482f-8c68-bf6b736670ef', '0x9012345678abcdef9012345678abcdef90123456', 'ethereum', 'Main Wallet', true, NOW(), NOW()),
+  ('7c6bb064-21e9-43a6-ad65-2b02ad0cda41', '0x0123456789abcdef0123456789abcdef01234567', 'ethereum', 'Main Wallet', true, NOW(), NOW()),
+  ('bc15d32a-d4f9-4ae7-860e-1132a412967d', '0xabcdef1234567890abcdef1234567890abcdef12', 'ethereum', 'Main Wallet', true, NOW(), NOW()),
+  ('4263b12b-3355-4751-9126-aadf076791bc', '0xbcdef1234567890abcdef1234567890abcdef123', 'ethereum', 'Main Wallet', true, NOW(), NOW());
 
 -- User Profiles
 -- INSERT INTO user_profiles (id, location_id, bio, avatar_url, created_at, updated_at)
@@ -101,35 +101,36 @@ VALUES
   (8, 14300, 143000, 1430, NOW(), NOW()),
   (9, 11200, 112000, 1120, NOW(), NOW());
 
--- User Project Participation
-INSERT INTO user_project_participation (user_id, project_id, role, joined_at, created_at, updated_at)
+
+-- Participants
+INSERT INTO participants (project_id, user_id, joined_at)
 VALUES
-  (1, 1, 'Community Moderator', NOW() - INTERVAL '3 MONTH', NOW(), NOW()),
-  (1, 2, 'Contributor', NOW() - INTERVAL '2 MONTH', NOW(), NOW()),
-  (1, 3, 'Contributor', NOW() - INTERVAL '1 MONTH', NOW(), NOW()),
-  (2, 2, 'Content Creator', NOW() - INTERVAL '4 MONTH', NOW(), NOW()),
-  (2, 4, 'Contributor', NOW() - INTERVAL '3 MONTH', NOW(), NOW()),
-  (3, 3, 'Developer', NOW() - INTERVAL '8 MONTH', NOW(), NOW()),
-  (3, 5, 'Contributor', NOW() - INTERVAL '6 MONTH', NOW(), NOW()),
-  (3, 7, 'Contributor', NOW() - INTERVAL '4 MONTH', NOW(), NOW()),
-  (4, 4, 'Translator', NOW() - INTERVAL '3 MONTH', NOW(), NOW()),
-  (4, 6, 'Contributor', NOW() - INTERVAL '2 MONTH', NOW(), NOW()),
-  (5, 5, 'Educator', NOW() - INTERVAL '5 MONTH', NOW(), NOW()),
-  (5, 8, 'Contributor', NOW() - INTERVAL '3 MONTH', NOW(), NOW()),
-  (6, 6, 'Designer', NOW() - INTERVAL '2 MONTH', NOW(), NOW()),
-  (6, 9, 'Contributor', NOW() - INTERVAL '1 MONTH', NOW(), NOW()),
-  (7, 7, 'Researcher', NOW() - INTERVAL '7 MONTH', NOW(), NOW()),
-  (7, 1, 'Contributor', NOW() - INTERVAL '5 MONTH', NOW(), NOW()),
-  (8, 8, 'Advocate', NOW() - INTERVAL '1 MONTH', NOW(), NOW()),
-  (8, 2, 'Contributor', NOW() - INTERVAL '0.5 MONTH', NOW(), NOW()),
-  (9, 9, 'Writer', NOW() - INTERVAL '9 MONTH', NOW(), NOW()),
-  (9, 3, 'Contributor', NOW() - INTERVAL '7 MONTH', NOW(), NOW()),
-  (10, 1, 'Analyst', NOW() - INTERVAL '5 MONTH', NOW(), NOW()),
-  (10, 4, 'Contributor', NOW() - INTERVAL '3 MONTH', NOW(), NOW()),
-  (11, 2, 'Marketer', NOW() - INTERVAL '3 MONTH', NOW(), NOW()),
-  (11, 5, 'Contributor', NOW() - INTERVAL '2 MONTH', NOW(), NOW()),
-  (12, 3, 'Product Manager', NOW() - INTERVAL '6 MONTH', NOW(), NOW()),
-  (12, 6, 'Contributor', NOW() - INTERVAL '4 MONTH', NOW(), NOW());
+  (1, '302fb695-d9a2-4e51-b5f2-a62d758c0772', NOW() - INTERVAL '3 MONTH'),
+  (2, '302fb695-d9a2-4e51-b5f2-a62d758c0772', NOW() - INTERVAL '2 MONTH'),
+  (3, '302fb695-d9a2-4e51-b5f2-a62d758c0772', NOW() - INTERVAL '1 MONTH'),
+  (2, '56ca6d03-d70b-4373-8336-fe04096e4643', NOW() - INTERVAL '4 MONTH'),
+  (4, '56ca6d03-d70b-4373-8336-fe04096e4643', NOW() - INTERVAL '3 MONTH'),
+  (3, '3e9ab72c-9a68-40de-8b61-a2b17842558f', NOW() - INTERVAL '8 MONTH'),
+  (5, '3e9ab72c-9a68-40de-8b61-a2b17842558f', NOW() - INTERVAL '6 MONTH'),
+  (7, '3e9ab72c-9a68-40de-8b61-a2b17842558f', NOW() - INTERVAL '4 MONTH'),
+  (4, '508acbd4-4d36-4b04-a8fb-ba3f3b1bfa91', NOW() - INTERVAL '3 MONTH'),
+  (6, '508acbd4-4d36-4b04-a8fb-ba3f3b1bfa91', NOW() - INTERVAL '2 MONTH'),
+  (5, '2e554a92-a216-442f-a872-7daae84699f3', NOW() - INTERVAL '5 MONTH'),
+  (8, '2e554a92-a216-442f-a872-7daae84699f3', NOW() - INTERVAL '3 MONTH'),
+  (6, '4be45456-f36d-4b54-b147-16e684903017', NOW() - INTERVAL '2 MONTH'),
+  (9, '4be45456-f36d-4b54-b147-16e684903017', NOW() - INTERVAL '1 MONTH'),
+  (7, 'be45f799-419f-40c3-88fe-c9afd3856183', NOW() - INTERVAL '7 MONTH'),
+  (1, 'be45f799-419f-40c3-88fe-c9afd3856183', NOW() - INTERVAL '5 MONTH'),
+  (8, 'c4a25e56-e237-43bd-bb85-40a2918de966', NOW() - INTERVAL '1 MONTH'),
+  (2, 'c4a25e56-e237-43bd-bb85-40a2918de966', NOW() - INTERVAL '0.5 MONTH'),
+  (9, '8b5753ef-9e42-482f-8c68-bf6b736670ef', NOW() - INTERVAL '9 MONTH'),
+  (3, '8b5753ef-9e42-482f-8c68-bf6b736670ef', NOW() - INTERVAL '7 MONTH'),
+  (1, '7c6bb064-21e9-43a6-ad65-2b02ad0cda41', NOW() - INTERVAL '5 MONTH'),
+  (4, '7c6bb064-21e9-43a6-ad65-2b02ad0cda41', NOW() - INTERVAL '3 MONTH'),
+  (2, 'bc15d32a-d4f9-4ae7-860e-1132a412967d', NOW() - INTERVAL '3 MONTH'),
+  (5, 'bc15d32a-d4f9-4ae7-860e-1132a412967d', NOW() - INTERVAL '2 MONTH'),
+  (3, '4263b12b-3355-4751-9126-aadf076791bc', NOW() - INTERVAL '6 MONTH'),
+  (6, '4263b12b-3355-4751-9126-aadf076791bc', NOW() - INTERVAL '4 MONTH');
 
 -- Blog Posts
 INSERT INTO blog_posts (id, title, slug, excerpt, content, author_id, published_at, created_at, updated_at, is_support, category, subtitle, picture, sort_order_within_category)
