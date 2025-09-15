@@ -1,3 +1,4 @@
+import React from 'react'
 import Link from "next/link"
 import { CircleDollarSign, Github, Twitter, Linkedin, Mail } from "lucide-react"
 
@@ -108,6 +109,14 @@ export default function Footer() {
                   className="text-slate-600 hover:text-emerald-600 dark:text-slate-300 dark:hover:text-emerald-400"
                 >
                   Blog
+                </Link>
+              </li>
+              <li>
+                <Link
+                  href="/ecosystem"
+                  className="text-slate-600 hover:text-emerald-600 dark:text-slate-300 dark:hover:text-emerald-400"
+                >
+                  Ecosystem
                 </Link>
               </li>
             </ul>
