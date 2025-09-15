@@ -10,6 +10,12 @@ describe('EcosystemPage', () => {
     expect(screen.getByText('ChainCrew')).toBeDefined()
   })
 
+  it('adds rel noopener noreferrer to external links', () => {
+    render(<EcosystemPage />)
+    const link = screen.getByRole('link', { name: 'ChainCrew' })
+    expect(link.getAttribute('rel')).toBe('noopener noreferrer')
+  })
+
   it('exports correct metadata', () => {
     expect(metadata).toMatchObject({
       title: 'Our Ecosystem',

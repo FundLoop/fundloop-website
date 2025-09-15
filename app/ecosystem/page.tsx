@@ -54,7 +54,12 @@ export default function EcosystemPage() {
           {sites.map((site) => (
             <div key={site.url} className="p-6 bg-white dark:bg-slate-800 rounded-2xl shadow hover:shadow-lg transition">
               <h2 className="text-2xl font-semibold mb-2">
-                <Link href={site.url} target="_blank" className="hover:underline">
+                <Link
+                  href={site.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="hover:underline"
+                >
                   {site.name}
                 </Link>
               </h2>
