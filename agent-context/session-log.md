@@ -12,6 +12,39 @@ Agents populate one level-3 heading for each coding session, following the same 
 
 ---
 
+### session v8: Integrate crypto payment methods into onboarding and project payments
+- timestamp: 2026-03-24T14:44:59-04:00
+- agent: **Codex (GPT-5)**
+- branch: **codex/dev**
+- head: ecfc6c93923f5d9c7e5386412e676b4a0c29ab91 - Add crypto collection schema and contracts
+
+#### Objective
+Connect the new crypto collection foundation to the product so projects can configure curated crypto routes during onboarding and submit tagged onchain payments from the project payments page.
+
+#### Actions Taken
+- Extended the project onboarding payload model to support multiple crypto payment methods with one default route.
+- Updated the project onboarding flow to load active chains, assets, and intake contracts from Supabase and let a project optionally configure multiple curated crypto routes.
+- Updated project onboarding publish logic so configured crypto routes are written into `payment_methods` using the new `crypto_contract` method and chain-specific references.
+- Added server actions for listing a project’s allowed crypto routes and for recording submitted onchain payment receipts into `onchain_payment_submissions`.
+- Added an onchain config layer, a wallet provider, and a crypto payment dialog that handles wallet connection, network switching, allowance checks, token approval, contract writes, and receipt persistence.
+- Integrated the crypto route list and payment dialog into the project payments page and wrapped the app layout with the new web3 provider.
+
+#### Tests and Validation Notes
+- `pnpm lint` passed
+- `pnpm typecheck` passed
+- `pnpm test` passed
+- `pnpm build` passed
+
+#### Reflections
+- The current implementation is a clean V1: smart-contract intake is live in the codebase, while accounting, sweeps, and fiat remain properly deferred instead of being half-built.
+
+#### Suggested Next Steps
+- Deploy chain-specific intake contracts and populate the real contract and treasury addresses in environment configuration.
+- Push the Supabase migration to the linked remote project before relying on the new payment-method and submission tables remotely.
+- Add e2e coverage for the wallet connect and onchain payment paths once deployment addresses are available.
+
+---
+
 ### session v7: Address PR #12 review comments on the pre-crypto branch
 - timestamp: 2026-03-24T16:45:00-04:00
 - agent: **Codex (GPT-5)**

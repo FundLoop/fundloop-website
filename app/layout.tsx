@@ -7,6 +7,7 @@ import { ThemeProvider } from "@/components/theme-provider"
 import Navbar from "@/components/navbar"
 import Footer from "@/components/footer"
 import { OnboardingModalManager } from "@/components/onboarding-modal-manager"
+import { Web3Provider } from "@/components/web3-provider"
 
 const inter = Inter({ subsets: ["latin"], variable: "--font-inter" })
 
@@ -24,14 +25,16 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <body className={`${inter.className} ${inter.variable}`}>
-        <ThemeProvider attribute="class" defaultTheme="system" enableSystem disableTransitionOnChange>
-          <Navbar />
-          <Suspense fallback={null}>
-            <OnboardingModalManager />
-          </Suspense>
-          <main className="min-h-screen">{children}</main>
-          <Footer />
-        </ThemeProvider>
+        <Web3Provider>
+          <ThemeProvider attribute="class" defaultTheme="system" enableSystem disableTransitionOnChange>
+            <Navbar />
+            <Suspense fallback={null}>
+              <OnboardingModalManager />
+            </Suspense>
+            <main className="min-h-screen">{children}</main>
+            <Footer />
+          </ThemeProvider>
+        </Web3Provider>
       </body>
     </html>
   )
