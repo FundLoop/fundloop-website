@@ -93,7 +93,7 @@ FOR EACH ROW
 EXECUTE FUNCTION public.set_updated_at();
 
 ALTER TABLE public.payment_methods
-  ADD COLUMN collection_mode public.payment_collection_mode,
+  ADD COLUMN collection_mode public.payment_collection_mode NOT NULL DEFAULT 'deposit_address',
   ADD COLUMN chain_id bigint REFERENCES public.ref_chains(id) ON UPDATE CASCADE,
   ADD COLUMN chain_asset_id bigint REFERENCES public.ref_chain_assets(id) ON UPDATE CASCADE,
   ADD COLUMN intake_contract_id bigint REFERENCES public.chain_intake_contracts(id) ON UPDATE CASCADE,
@@ -101,13 +101,9 @@ ALTER TABLE public.payment_methods
   ADD COLUMN is_enabled boolean NOT NULL DEFAULT true,
   ADD COLUMN updated_at timestamp with time zone NOT NULL DEFAULT now();
 
-UPDATE public.payment_methods
-SET collection_mode = COALESCE(collection_mode, 'contract');
+DROP TRIGGER IF EXISTS set_payment_methods_updated_at ON public.payment_methods;
 
-ALTER TABLE public.payment_methods
-  ALTER COLUMN collection_mode SET NOT NULL;
-
-CREATE TRIGGER set_payment_methods_updated_at_v2
+CREATE TRIGGER set_payment_methods_updated_at
 BEFORE UPDATE ON public.payment_methods
 FOR EACH ROW
 EXECUTE FUNCTION public.set_updated_at();
@@ -189,6 +185,24 @@ SET
   is_active = EXCLUDED.is_active,
   sort_order = EXCLUDED.sort_order;
 
+WITH intake_settings AS (
+  SELECT
+    chains.id AS chain_id,
+    'contract'::public.payment_collection_mode AS collection_mode,
+    CASE chains.network_key
+      WHEN 'ethereum' THEN COALESCE(NULLIF(current_setting('app.settings.ethereum_intake_contract', true), ''), '0x0000000000000000000000000000000000000000')
+      WHEN 'base' THEN COALESCE(NULLIF(current_setting('app.settings.base_intake_contract', true), ''), '0x0000000000000000000000000000000000000000')
+      WHEN 'celo' THEN COALESCE(NULLIF(current_setting('app.settings.celo_intake_contract', true), ''), '0x0000000000000000000000000000000000000000')
+    END AS contract_address,
+    CASE chains.network_key
+      WHEN 'ethereum' THEN COALESCE(NULLIF(current_setting('app.settings.ethereum_treasury_address', true), ''), '0x0000000000000000000000000000000000000000')
+      WHEN 'base' THEN COALESCE(NULLIF(current_setting('app.settings.base_treasury_address', true), ''), '0x0000000000000000000000000000000000000000')
+      WHEN 'celo' THEN COALESCE(NULLIF(current_setting('app.settings.celo_treasury_address', true), ''), '0x0000000000000000000000000000000000000000')
+    END AS treasury_address,
+    'fundloop-intake-v1'::text AS abi_version
+  FROM public.ref_chains chains
+  WHERE chains.network_key IN ('ethereum', 'base', 'celo')
+)
 INSERT INTO public.chain_intake_contracts (
   chain_id,
   collection_mode,
@@ -198,22 +212,14 @@ INSERT INTO public.chain_intake_contracts (
   is_active
 )
 SELECT
-  chains.id,
-  'contract',
-  CASE chains.network_key
-    WHEN 'ethereum' THEN COALESCE(NULLIF(current_setting('app.settings.ethereum_intake_contract', true), ''), '0x0000000000000000000000000000000000000000')
-    WHEN 'base' THEN COALESCE(NULLIF(current_setting('app.settings.base_intake_contract', true), ''), '0x0000000000000000000000000000000000000000')
-    WHEN 'celo' THEN COALESCE(NULLIF(current_setting('app.settings.celo_intake_contract', true), ''), '0x0000000000000000000000000000000000000000')
-  END,
-  CASE chains.network_key
-    WHEN 'ethereum' THEN COALESCE(NULLIF(current_setting('app.settings.ethereum_treasury_address', true), ''), '0x0000000000000000000000000000000000000000')
-    WHEN 'base' THEN COALESCE(NULLIF(current_setting('app.settings.base_treasury_address', true), ''), '0x0000000000000000000000000000000000000000')
-    WHEN 'celo' THEN COALESCE(NULLIF(current_setting('app.settings.celo_treasury_address', true), ''), '0x0000000000000000000000000000000000000000')
-  END,
-  'fundloop-intake-v1',
-  true
-FROM public.ref_chains chains
-WHERE chains.network_key IN ('ethereum', 'base', 'celo')
+  settings.chain_id,
+  settings.collection_mode,
+  settings.contract_address,
+  settings.treasury_address,
+  settings.abi_version,
+  settings.contract_address <> '0x0000000000000000000000000000000000000000'
+    AND settings.treasury_address <> '0x0000000000000000000000000000000000000000'
+FROM intake_settings settings
 ON CONFLICT (chain_id, collection_mode) DO UPDATE
 SET
   contract_address = EXCLUDED.contract_address,

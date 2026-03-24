@@ -7,6 +7,7 @@ type ActionResult<T> = { ok: true; data: T } | { ok: false; error: string }
 
 type CryptoPaymentMethodRow = {
   id: number
+  method_id: number
   project_id: number | null
   label: string | null
   is_default: boolean | null
@@ -15,7 +16,10 @@ type CryptoPaymentMethodRow = {
   intake_contract_id: number | null
   collection_mode: "contract" | "deposit_address"
   ref_chains: Pick<Tables<"ref_chains">, "id" | "display_name" | "network_key" | "evm_chain_id" | "native_asset_symbol">
-  ref_chain_assets: Pick<Tables<"ref_chain_assets">, "id" | "symbol" | "name" | "token_address" | "decimals" | "is_native">
+  ref_chain_assets: Pick<
+    Tables<"ref_chain_assets">,
+    "id" | "symbol" | "name" | "token_address" | "decimals" | "is_native" | "is_stablecoin"
+  >
   chain_intake_contracts: Pick<Tables<"chain_intake_contracts">, "id" | "contract_address" | "treasury_address" | "abi_version">
 }
 
@@ -105,6 +109,7 @@ export async function listProjectCryptoPaymentMethods(projectSlug: string): Prom
     .from("payment_methods")
     .select(`
       id,
+      method_id,
       project_id,
       label,
       is_default,
@@ -112,13 +117,16 @@ export async function listProjectCryptoPaymentMethods(projectSlug: string): Prom
       chain_asset_id,
       intake_contract_id,
       collection_mode,
-      ref_chains(id, display_name, network_key, evm_chain_id, native_asset_symbol),
-      ref_chain_assets(id, symbol, name, token_address, decimals, is_native),
-      chain_intake_contracts(id, contract_address, treasury_address, abi_version)
+      ref_chains!inner(id, display_name, network_key, evm_chain_id, native_asset_symbol),
+      ref_chain_assets!inner(id, symbol, name, token_address, decimals, is_native, is_stablecoin),
+      chain_intake_contracts!inner(id, contract_address, treasury_address, abi_version)
     `)
     .eq("project_id", context.data.project.id)
     .eq("collection_mode", "contract")
     .eq("is_enabled", true)
+    .not("chain_id", "is", null)
+    .not("chain_asset_id", "is", null)
+    .not("intake_contract_id", "is", null)
     .order("is_default", { ascending: false })
     .order("id", { ascending: true })
 
@@ -163,7 +171,7 @@ export async function recordOnchainPaymentSubmission(
     supabase.from("payments").select("id, project_id").eq("id", input.paymentId).single(),
     supabase
       .from("payment_methods")
-      .select("id, project_id, chain_id, chain_asset_id, intake_contract_id")
+      .select("id, method_id, project_id, chain_id, chain_asset_id, intake_contract_id")
       .eq("id", input.paymentMethodId)
       .single(),
     supabase.from("ref_payment_statuses").select("id").eq("code", "awaiting_confirmation").single(),
@@ -181,6 +189,10 @@ export async function recordOnchainPaymentSubmission(
     paymentMethod.intake_contract_id !== input.intakeContractId
   ) {
     return { ok: false, error: "Selected crypto route is invalid for this project" }
+  }
+
+  if (!awaitingStatus?.id) {
+    return { ok: false, error: "The awaiting_confirmation payment status is not configured" }
   }
 
   const amountDecimal = Number.parseFloat(input.amountDecimal)
@@ -218,7 +230,8 @@ export async function recordOnchainPaymentSubmission(
   const { error: paymentUpdateError } = await supabase
     .from("payments")
     .update({
-      status_id: awaitingStatus?.id ?? null,
+      status_id: awaitingStatus.id,
+      payment_method_id: paymentMethod.method_id ?? null,
       paid_at: new Date().toISOString(),
       notes: `Onchain payment submitted: ${input.txHash}`,
     })

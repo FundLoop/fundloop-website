@@ -12,6 +12,38 @@ Agents populate one level-3 heading for each coding session, following the same 
 
 ---
 
+### session v10: Address PR #14 crypto review findings
+- timestamp: 2026-03-24T16:28:00-04:00
+- agent: **Codex (GPT-5)**
+- branch: **codex/crypto-payment-flows**
+- head: 17dac232e2e4d2f3ef1cceca29526e4ef6e0e3ca - Fix CI pnpm setup
+
+#### Objective
+Resolve the inline review findings on PR #14 by hardening the crypto-collection migration, tightening crypto payment route queries, and preventing unsafe onchain payment submission behavior.
+
+#### Actions Taken
+- Changed the crypto migration so legacy `payment_methods` default to `deposit_address` mode instead of being blanket-backfilled to `contract`.
+- Replaced the duplicate `payment_methods` updated-at trigger with the original trigger name, avoiding two update triggers on the same table.
+- Changed seeded chain intake contracts to become inactive when real contract or treasury addresses are missing, instead of exposing zero-address routes as active.
+- Tightened `listProjectCryptoPaymentMethods` so it only returns fully-related contract routes with non-null chain, asset, and intake-contract references.
+- Hardened `recordOnchainPaymentSubmission` so it errors if `awaiting_confirmation` is missing and updates `payments.payment_method_id` to the selected route’s underlying reference method.
+- Updated the project payments page to skip malformed crypto routes defensively if any incomplete rows ever slip through.
+- Added stablecoin gating in the crypto payment dialog so fiat-denominated payment amounts are not converted directly into volatile/native token units without a quote step.
+
+#### Tests and Validation Notes
+- `pnpm check`
+- `pnpm --dir contracts test`
+
+#### Reflections
+- The most severe risk was semantic rather than syntactic: a fiat-denominated payment amount looked type-safe in code but was unsafe to send directly onchain without quote-based conversion.
+- Tightening the migration and the route query together is better than relying on either one alone.
+
+#### Suggested Next Steps
+- Push this follow-up to PR #14, rerun CI, and resolve the review threads.
+- Add explicit quote/oracle support before enabling direct native-asset payments in the crypto dialog.
+
+---
+
 ### session v9: Fix CI runner pnpm setup for PR validation
 - timestamp: 2026-03-24T16:12:00-04:00
 - agent: **Codex (GPT-5)**

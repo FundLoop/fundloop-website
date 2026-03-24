@@ -43,6 +43,7 @@ export type CryptoPaymentMethodOption = {
     token_address: string | null
     decimals: number
     is_native: boolean
+    is_stablecoin: boolean
   }
   intakeContract: {
     id: number
@@ -131,6 +132,8 @@ export function ProjectCryptoPaymentDialog({
 
     return parseUnits(String(payment.payment_amount), selectedMethod.asset.decimals)
   }, [payment, selectedMethod])
+
+  const supportsDirectUsdSettlement = Boolean(selectedMethod?.asset.is_stablecoin)
 
   useEffect(() => {
     const loadAllowance = async () => {
@@ -224,7 +227,7 @@ export function ProjectCryptoPaymentDialog({
   }, [writeError])
 
   const handleApprove = async () => {
-    if (!selectedMethod || !selectedMethod.asset.token_address) {
+    if (!selectedMethod || !selectedMethod.asset.token_address || !supportsDirectUsdSettlement) {
       return
     }
 
@@ -238,7 +241,7 @@ export function ProjectCryptoPaymentDialog({
   }
 
   const handleDeposit = async () => {
-    if (!selectedMethod || !projectId) {
+    if (!selectedMethod || !projectId || !supportsDirectUsdSettlement) {
       return
     }
 
@@ -311,6 +314,14 @@ export function ProjectCryptoPaymentDialog({
               ) : null}
             </div>
 
+            {!supportsDirectUsdSettlement ? (
+              <div className="rounded-2xl border border-amber-200 bg-amber-50/70 p-4 text-sm text-amber-900">
+                This payment is denominated in dollars, but this crypto route is not a stablecoin with known 1:1
+                dollar semantics. Direct submission is disabled until FundLoop adds asset pricing and quote-based
+                conversion.
+              </div>
+            ) : null}
+
             {hash ? (
               <div className="rounded-2xl border border-emerald-200 bg-emerald-50/70 p-4 text-sm text-emerald-950">
                 <p className="font-medium">Latest transaction</p>
@@ -345,6 +356,10 @@ export function ProjectCryptoPaymentDialog({
             >
               Switch to {selectedMethod.chain.display_name}
             </Button>
+          ) : !supportsDirectUsdSettlement ? (
+            <Button className="w-full" disabled>
+              Quote required before paying
+            </Button>
           ) : approvalRequired && selectedMethod && !selectedMethod.asset.is_native ? (
             <Button className="w-full" onClick={() => void handleApprove()} disabled={busy}>
               {busy ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
@@ -357,7 +372,7 @@ export function ProjectCryptoPaymentDialog({
             </Button>
           )}
 
-          {selectedMethod ? (
+          {selectedMethod && supportsDirectUsdSettlement ? (
             <p className="w-full text-center text-xs text-slate-500">
               Onchain amount: {formatUnits(amountRaw, selectedMethod.asset.decimals)} {selectedMethod.asset.symbol}
             </p>

@@ -189,8 +189,16 @@ export default function ProjectPaymentsPage() {
 
         const cryptoRoutesResult = await listProjectCryptoPaymentMethods(slug)
         if (cryptoRoutesResult.ok) {
+          const validMethods = cryptoRoutesResult.data.filter(
+            (method) => method.ref_chains && method.ref_chain_assets && method.chain_intake_contracts,
+          )
+
+          if (validMethods.length < cryptoRoutesResult.data.length) {
+            console.warn("Some crypto payment methods were skipped because required relations were missing.")
+          }
+
           setCryptoPaymentMethods(
-            cryptoRoutesResult.data.map((method) => ({
+            validMethods.map((method) => ({
               id: method.id,
               label: method.label,
               is_default: method.is_default,
@@ -208,6 +216,7 @@ export default function ProjectPaymentsPage() {
                 token_address: method.ref_chain_assets.token_address,
                 decimals: method.ref_chain_assets.decimals,
                 is_native: method.ref_chain_assets.is_native ?? false,
+                is_stablecoin: method.ref_chain_assets.is_stablecoin ?? false,
               },
               intakeContract: {
                 id: method.chain_intake_contracts.id,
