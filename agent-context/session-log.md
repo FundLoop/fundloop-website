@@ -12,6 +12,35 @@ Agents populate one level-3 heading for each coding session, following the same 
 
 ---
 
+### session v11: Add and reorganize repo backlog TODO
+- timestamp: 2026-03-24T17:05:00-04:00
+- agent: **Codex (GPT-5)**
+- branch: **codex/dev**
+- head: 0e266d73889f9b8ee14e0b803c3bbd3cc1e1da1b - Merge pull request #14 from FundLoop/codex/crypto-payment-flows
+
+#### Objective
+Capture the current post-migration and post-crypto backlog in a dedicated repo TODO file and reorganize it into logical workstreams without losing detail.
+
+#### Actions Taken
+- Added `agent-context/todo.md` as a dedicated backlog file for repo follow-up work.
+- Recorded the immediate operational next steps for remote Supabase alignment, contract deployment, environment configuration, and remote-backed verification.
+- Added the previously deferred scope items from recent sessions, including deposit-address fallback, auto-sweeps, indexer/accounting, fiat rails, quote/oracle support, and broader payment-management follow-ups.
+- Added the broader product and platform ideas discussed in-session, including chatbot, landing-page segmentation, Cubid integration, zk calculator work, bot participation, MCP/SDK work, architecture docs, notifications, off-ramps, and graph-based people views.
+- Reorganized the full list into logical categories so the backlog is easier to navigate and execute without collapsing the underlying items.
+
+#### Tests and Validation Notes
+- No runtime validation needed; this was a repo-context and planning artifact update.
+
+#### Reflections
+- The backlog had become useful but hard to scan once immediate next steps, deferred-scope items, and broader product ideas were mixed together.
+- Separating these into workstreams should make future execution and prioritization easier without losing the historical intent behind the deferred decisions.
+
+#### Suggested Next Steps
+- Keep `agent-context/todo.md` current as larger features land or are intentionally deferred.
+- Split the backlog into now/next/later priorities once the remote Supabase state and crypto deployment work is unblocked.
+
+---
+
 ### session v10: Address PR #14 crypto review findings
 - timestamp: 2026-03-24T16:28:00-04:00
 - agent: **Codex (GPT-5)**
