@@ -12,7 +12,7 @@ Agents populate one level-3 heading for each coding session, following the same 
 
 ---
 
-### session v6: Address PR #12 review comments on the pre-crypto branch
+### session v7: Address PR #12 review comments on the pre-crypto branch
 - timestamp: 2026-03-24T16:45:00-04:00
 - agent: **Codex (GPT-5)**
 - branch: **codex/dev**
@@ -44,6 +44,35 @@ Apply only the outstanding review-comment fixes for PR #12 on top of the pre-cry
 #### Suggested Next Steps
 - Push this review-fix branch and resolve the corresponding GitHub review threads on PR #12.
 - Keep later feature work isolated on `codex/crypto-payment-flows` until it is ready for its own PR.
+
+---
+
+### session v6: Add crypto collection rails foundation
+- timestamp: 2026-03-24T14:44:39-04:00
+- agent: **Codex (GPT-5)**
+- branch: **codex/dev**
+- head: b03d23342b344b2a3e3228737cd12283865dbdbe - Add explainer blog links for projects
+
+#### Objective
+Create the foundation for an EVM-first crypto contribution flow with shared intake contracts, curated chain/token metadata, and repo-level tooling support.
+
+#### Actions Taken
+- Added a `contracts/` workspace package with the `FundLoopIntake` contract, a mock ERC-20 for tests, a Hardhat config, and a deploy script.
+- Added contract tests covering native deposits, ERC-20 deposits, and unsupported-token rejection.
+- Expanded the root workspace and dependencies to support viem, wagmi, Reown AppKit, and the contracts package.
+- Added a forward-only Supabase migration that introduces chain metadata, chain assets, intake contracts, extended `payment_methods`, and `onchain_payment_submissions`.
+- Updated the tracked Supabase type surface to reflect the new crypto collection schema.
+- Extended `.env.example` and `.gitignore` for the new onchain and contracts workflow.
+
+#### Tests and Validation Notes
+- `pnpm --dir contracts test` passed
+- Repo-wide `lint`, `typecheck`, `test`, and `build` also passed during this implementation pass
+
+#### Reflections
+- Splitting the contracts/schema work from the app integration keeps the storage model and onchain interface easy to review independently.
+
+#### Suggested Next Steps
+- Wire the new schema into project onboarding and the project payments page so configured crypto methods can actually be used.
 
 ---
 
