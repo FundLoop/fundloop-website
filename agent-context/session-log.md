@@ -12,7 +12,7 @@ Agents populate one level-3 heading for each coding session, following the same 
 
 ---
 
-### session v5: Address PR #12 review comments on the pre-crypto branch
+### session v6: Address PR #12 review comments on the pre-crypto branch
 - timestamp: 2026-03-24T16:45:00-04:00
 - agent: **Codex (GPT-5)**
 - branch: **codex/dev**
@@ -44,6 +44,31 @@ Apply only the outstanding review-comment fixes for PR #12 on top of the pre-cry
 #### Suggested Next Steps
 - Push this review-fix branch and resolve the corresponding GitHub review threads on PR #12.
 - Keep later feature work isolated on `codex/crypto-payment-flows` until it is ready for its own PR.
+
+---
+
+### session v5: Add blog entry points from the project explainer section
+- timestamp: 2026-03-24T14:44:23-04:00
+- agent: **Codex (GPT-5)**
+- branch: **codex/dev**
+- head: 69d5eef7df520dd7cdcbb7c9bbe90e9ec2dcd5d4 - Tighten footer layout
+
+#### Objective
+Improve the explainer section for projects by linking deeper educational content and fixing the primary project signup CTA.
+
+#### Actions Taken
+- Added a `Read More` button under the “Is FundLoop For My Project?” heading that links to the project-benefits blog post with an origin query parameter.
+- Added a `Read More` button under the “How Much Will The Users Of Our Project Get?” heading that links to the citizen-salary explainer with an origin query parameter.
+- Corrected the adjacent `Add My Project` CTA so it routes into the project onboarding flow.
+
+#### Tests and Validation Notes
+- Verified the component change with local ESLint during the same working session.
+
+#### Reflections
+- The explainer section is more useful when it immediately connects broad claims to concrete long-form explanations.
+
+#### Suggested Next Steps
+- Revisit the linked blog posts and confirm their copy still matches the current onboarding and project contribution flow.
 
 ---
 
