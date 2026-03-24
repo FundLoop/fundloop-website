@@ -12,6 +12,33 @@ Agents populate one level-3 heading for each coding session, following the same 
 
 ---
 
+### session v9: Fix CI runner pnpm setup for PR validation
+- timestamp: 2026-03-24T16:12:00-04:00
+- agent: **Codex (GPT-5)**
+- branch: **codex/crypto-payment-flows**
+- head: 0f59b5feceb090e56dd687ad1b85120b4779bdd9 - Clarify PR workflow for dev and main
+
+#### Objective
+Repair the GitHub Actions validation workflow for PR #14 so the CI job can reach install, lint, test, typecheck, and build instead of failing during tool setup.
+
+#### Actions Taken
+- Inspected the failed `CI / validate` runs and confirmed both failures stopped in the `Setup Node.js` step before dependency installation.
+- Identified the root cause: `actions/setup-node` was configured with `cache: pnpm`, but the runner had not installed `pnpm` yet, so the action could not find the executable.
+- Updated `.github/workflows/ci.yml` to install pnpm explicitly with `pnpm/action-setup@v4` before the `setup-node` step.
+- Kept the fix narrow so the PR only changes CI bootstrap behavior and does not touch product code.
+
+#### Tests and Validation Notes
+- `pnpm check`
+- `pnpm --dir contracts test`
+
+#### Reflections
+- This was a CI bootstrap issue rather than a product regression. The workflow was asking GitHub Actions to cache a tool that the runner did not yet have on PATH.
+
+#### Suggested Next Steps
+- Push this workflow fix to PR #14 and confirm the `CI / validate` job reruns successfully.
+
+---
+
 ### session v8: Integrate crypto payment methods into onboarding and project payments
 - timestamp: 2026-03-24T14:44:59-04:00
 - agent: **Codex (GPT-5)**
