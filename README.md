@@ -1,107 +1,105 @@
-# FundLoop - A Network State for Mutual Prosperity
+# FundLoop Website
 
-FundLoop connects projects and users in a revenue sharing ecosystem. Projects
-pledge 1% of their revenue and active users receive a recurring citizen salary.
-The platform is built with Next.js, TypeScript and Supabase.
+FundLoop connects projects and users in a revenue-sharing ecosystem. Projects pledge a portion of revenue back to the network, and active users can receive recurring community distributions.
 
-## Vision
+This repository contains the FundLoop website and app shell built with Next.js, React, TypeScript, Tailwind CSS, and Supabase.
 
-FundLoop aims to build a sustainable economy where prosperity is shared between
-ethical projects and the community that supports them.
+## Stack
 
-## Features
-
-### Users
-- Receive a citizen salary from the ecosystem revenue pool
-- Discover projects aligned with personal values
-- Contribute skills to projects
-- Join a community of like-minded builders
-
-### Projects
-- Pledge 1% of revenue back to the ecosystem
-- Connect with engaged users
-- Manage payments and view analytics
-
-### Platform
-- Multi-step onboarding flows for users and projects
-- Supabase powered authentication and database
-- Admin dashboard and audit logging
-- Responsive design with full dark/light mode
-
-## Tech Stack
-
-- **Next.js 15** with the App Router
-- **TypeScript** and **React 19**
-- **Tailwind CSS** and **shadcn/ui** for styling
-- **Supabase** and **PostgreSQL** for data and auth
+- Next.js 16 App Router
+- React 19
+- TypeScript
+- Tailwind CSS 4 and shadcn/ui
+- Supabase SSR and Supabase Postgres
+- pnpm for package management
 
 ## Getting Started
 
 ### Prerequisites
 
-- Node.js 18+
-- pnpm or npm
-- A Supabase project
+- Node.js 22.x
+- pnpm 10.x
 
-### Installation
+### Clone and install
 
-1. Clone the repository
-   ```bash
-   git clone https://github.com/your-username/fundloop.git
-   cd fundloop
-   ```
-2. Install dependencies
-   ```bash
-   pnpm install # or npm install
-   ```
-3. Configure environment variables
-   ```bash
-   cp .env.example .env.local
-   ```
-   Fill in your Supabase credentials:
-   ```env
-   NEXT_PUBLIC_SUPABASE_URL=your_supabase_project_url
-   NEXT_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key
-   ```
-4. Run the development server
-   ```bash
-   pnpm dev # or npm run dev
-   ```
-5. Open [http://localhost:3000](http://localhost:3000) in your browser.
+```bash
+git clone https://github.com/FundLoop/fundloop-website.git
+cd fundloop-website
+pnpm install
+```
 
-## Database Setup
+### Environment variables
 
-SQL files in the `database/` directory define the schema and seed data.
-Run them in order using the Supabase SQL editor or `psql` against your
-project database.
+Copy the example file if you want to run auth and data-backed features locally:
 
-Projects are referenced by a unique **slug** rather than a numeric ID. The `slug`
-column is stored in the `projects` table and used in all project URLs
-(`projects/[slug]`).
+```bash
+cp .env.example .env.local
+```
+
+Required Supabase variables:
+
+```env
+NEXT_PUBLIC_SUPABASE_URL=your_supabase_project_url
+NEXT_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key
+```
+
+Static validation commands work in a fresh clone without real Supabase credentials. Interactive auth and database-backed screens still require valid Supabase env vars.
+
+## Supabase Workflow
+
+The [`supabase/`](/Users/botmaster/src/fundloop/supabase) directory is the canonical database source of truth.
+
+- `supabase/migrations/` contains the pulled remote schema history tracked in Git.
+- `supabase/seed.sql` contains the current `public` schema seed data from the linked remote project.
+- `types/supabase.ts` is generated from the linked Supabase schema.
+
+Common commands:
+
+```bash
+supabase db pull --linked
+supabase db dump --linked --data-only --use-copy --schema public --file supabase/seed.sql
+supabase gen types typescript --project-id <project-ref> --schema public > types/supabase.ts
+```
+
+The [`database/`](/Users/botmaster/src/fundloop/database) directory is now legacy reference material only and should not be treated as the migration source of truth.
+
+### Run the app
+
+```bash
+pnpm dev
+```
+
+Open [http://localhost:3000](http://localhost:3000).
+
+## Available Scripts
+
+- `pnpm dev` starts the local dev server.
+- `pnpm lint` runs the ESLint CLI with the Next.js flat config.
+- `pnpm test` runs the Vitest suite once.
+- `pnpm test:watch` runs Vitest in watch mode.
+- `pnpm typecheck` runs `tsc --noEmit`.
+- `pnpm build` creates a production build.
+- `pnpm check` runs lint, test, typecheck, and build in sequence.
 
 ## Project Structure
 
-- `app/` – Next.js pages and layouts
-- `components/` – Reusable React components and UI primitives
-- `hooks/` – Custom React hooks
-- `lib/` – Utilities including the Supabase client
-- `database/` – SQL schema and seed scripts
-- `types/` – Generated TypeScript types for Supabase
+- `app/` contains route segments and pages.
+- `components/` contains reusable UI and feature components.
+- `lib/` contains shared helpers.
+- `supabase/` contains the canonical schema migration and seed artifacts.
+- `database/` contains legacy reference SQL and snapshots.
+- `tests/` contains Vitest coverage.
+- `types/` contains shared TypeScript and Supabase types.
 
-## Running Lint
+## Notes
 
-Use the provided script to lint the project:
+- Some content and seeded records in this repo are demo content and placeholders.
+- `next build` currently emits a Recharts container-size warning during static generation, but the build completes successfully.
 
-```bash
-pnpm lint # or npm run lint
-```
+## Contributing
 
-## Deployment
-
-The project can be deployed to Vercel. Configure environment variables in the
-Vercel dashboard and it will build automatically on push to the `main` branch.
+See [CONTRIBUTING.md](/Users/botmaster/src/fundloop/CONTRIBUTING.md) for local setup and contribution expectations.
 
 ## License
 
 FundLoop is released under the [MIT License](LICENSE).
-

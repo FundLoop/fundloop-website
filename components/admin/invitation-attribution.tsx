@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { createClientComponentClient } from "@supabase/auth-helpers-nextjs"
+import { getSupabaseBrowserClient } from "@/lib/supabase"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Badge } from "@/components/ui/badge"
@@ -20,94 +20,91 @@ interface InvitationCodeWithUser {
   created_at: string
   invited_users: {
     user_id: string
-    full_name: string
-    created_at: string
+    full_name: string | null
+    created_at: string | null
   }[]
 }
 
 export function InvitationAttribution() {
   const [invitationCodes, setInvitationCodes] = useState<InvitationCodeWithUser[]>([])
   const [loading, setLoading] = useState(true)
-  const supabase = createClientComponentClient<Database>()
+  const getSupabase = () => getSupabaseBrowserClient()
 
   useEffect(() => {
-    fetchInvitationCodes()
-  }, [])
+    const loadInvitationCodes = async () => {
+      const supabase = getSupabase()
+      try {
+        setLoading(true)
 
-  const fetchInvitationCodes = async () => {
-    try {
-      setLoading(true)
+        const { data: codesData, error: codesError } = await supabase
+          .from("invitation_codes")
+          .select("*")
+          .order("created_at", { ascending: false })
 
-      // Fetch invitation codes
-      const { data: codesData, error: codesError } = await supabase
-        .from("invitation_codes")
-        .select("*")
-        .order("created_at", { ascending: false })
+        if (codesError) throw codesError
 
-      if (codesError) throw codesError
+        if (!codesData || codesData.length === 0) {
+          setInvitationCodes([])
+          return
+        }
 
-      if (!codesData || codesData.length === 0) {
-        setInvitationCodes([])
-        return
-      }
+        const creatorIds = codesData.map((code) => code.created_by).filter(Boolean)
 
-      // Get all creator user IDs
-      const creatorIds = codesData.map((code) => code.created_by).filter(Boolean)
+        const { data: creatorsData, error: creatorsError } = await supabase
+          .from("users")
+          .select("user_id, full_name")
+          .in("user_id", creatorIds)
 
-      // Fetch creator names
-      const { data: creatorsData, error: creatorsError } = await supabase
-        .from("users")
-        .select("user_id, full_name")
-        .in("user_id", creatorIds)
+        if (creatorsError) throw creatorsError
 
-      if (creatorsError) throw creatorsError
+        const creatorMap = new Map()
+        creatorsData?.forEach((creator) => {
+          creatorMap.set(creator.user_id, creator.full_name)
+        })
 
-      // Create a map of user IDs to names
-      const creatorMap = new Map()
-      creatorsData?.forEach((creator) => {
-        creatorMap.set(creator.user_id, creator.full_name)
-      })
+        const invitationCodesWithUsers = await Promise.all(
+          codesData.map(async (code) => {
+            const { data: invitedUsers, error: invitedError } = await supabase
+              .from("users")
+              .select("user_id, full_name, created_at")
+              .eq("invited_by_code", code.code)
+              .order("created_at", { ascending: false })
 
-      // Fetch users who used each invitation code
-      const invitationCodesWithUsers = await Promise.all(
-        codesData.map(async (code) => {
-          const { data: invitedUsers, error: invitedError } = await supabase
-            .from("users")
-            .select("user_id, full_name, created_at")
-            .eq("invited_by_code", code.code)
-            .order("created_at", { ascending: false })
+            if (invitedError) {
+              console.error("Error fetching invited users:", invitedError)
+              return {
+                ...code,
+                inviter_name: creatorMap.get(code.created_by) || "Unknown",
+                invited_users: [],
+              }
+            }
 
-          if (invitedError) {
-            console.error("Error fetching invited users:", invitedError)
             return {
               ...code,
               inviter_name: creatorMap.get(code.created_by) || "Unknown",
-              invited_users: [],
+              invited_users: invitedUsers || [],
             }
-          }
+          }),
+        )
 
-          return {
-            ...code,
-            inviter_name: creatorMap.get(code.created_by) || "Unknown",
-            invited_users: invitedUsers || [],
-          }
-        }),
-      )
-
-      setInvitationCodes(invitationCodesWithUsers)
-    } catch (error) {
-      console.error("Error fetching invitation codes:", error)
-      toast({
-        title: "Error",
-        description: "Failed to load invitation codes",
-        variant: "destructive",
-      })
-    } finally {
-      setLoading(false)
+        setInvitationCodes(invitationCodesWithUsers)
+      } catch (error) {
+        console.error("Error fetching invitation codes:", error)
+        toast({
+          title: "Error",
+          description: "Failed to load invitation codes",
+          variant: "destructive",
+        })
+      } finally {
+        setLoading(false)
+      }
     }
-  }
 
-  const formatDate = (dateString: string) => {
+    void loadInvitationCodes()
+  }, [])
+
+  const formatDate = (dateString: string | null) => {
+    if (!dateString) return "Unknown"
     return format(new Date(dateString), "MMM d, yyyy h:mm a")
   }
 
@@ -175,7 +172,7 @@ export function InvitationAttribution() {
                     <TableBody>
                       {code.invited_users.map((user) => (
                         <TableRow key={user.user_id}>
-                          <TableCell className="font-medium">{user.full_name}</TableCell>
+                          <TableCell className="font-medium">{user.full_name || "Unnamed User"}</TableCell>
                           <TableCell>{formatDate(user.created_at)}</TableCell>
                         </TableRow>
                       ))}

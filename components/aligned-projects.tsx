@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react"
 import Link from "next/link"
-import { createClientComponentClient } from "@supabase/auth-helpers-nextjs"
+import { getSupabaseBrowserClient } from "@/lib/supabase"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Badge } from "@/components/ui/badge"
@@ -14,7 +14,7 @@ import type { Database } from "@/types/supabase"
 // Define a simpler project type without relationships
 interface Project {
   id: number
-  slug: string
+  slug: string | null
   name: string
   logo_url: string | null
   description: string
@@ -28,10 +28,11 @@ interface Project {
 export default function AlignedProjects() {
   const [projects, setProjects] = useState<Project[]>([])
   const [loading, setLoading] = useState(true)
-  const supabase = createClientComponentClient<Database>()
+  const getSupabase = () => getSupabaseBrowserClient()
 
   useEffect(() => {
     const fetchProjects = async () => {
+      const supabase = getSupabase()
       setLoading(true)
 
       try {
@@ -78,7 +79,7 @@ export default function AlignedProjects() {
     }
 
     fetchProjects()
-  }, [supabase])
+  }, [])
 
   const getTimeAgo = (dateString: string | null) => {
     if (!dateString) return "Recently"
@@ -179,7 +180,10 @@ export default function AlignedProjects() {
                           className="h-8 gap-1"
                           onClick={(e) => {
                             e.stopPropagation()
-                            window.open(project.website, "_blank", "noopener,noreferrer")
+                            const website = project.website
+                            if (website) {
+                              window.open(website, "_blank", "noopener,noreferrer")
+                            }
                           }}
                         >
                           <span>Visit</span>

@@ -56,7 +56,23 @@ export default function AdminPaymentsPage() {
   }, [])
 
   useEffect(() => {
-    filterPayments()
+    let filtered = [...payments]
+
+    if (searchTerm) {
+      const term = searchTerm.toLowerCase()
+      filtered = filtered.filter(
+        (payment) =>
+          payment.project_name.toLowerCase().includes(term) ||
+          payment.payment_method.toLowerCase().includes(term) ||
+          payment.notes?.toLowerCase().includes(term),
+      )
+    }
+
+    if (statusFilter !== "all") {
+      filtered = filtered.filter((payment) => payment.status === statusFilter)
+    }
+
+    setFilteredPayments(filtered)
   }, [payments, searchTerm, statusFilter])
 
   const fetchPayments = async () => {
@@ -184,28 +200,6 @@ export default function AdminPaymentsPage() {
     }
   }
 
-  const filterPayments = () => {
-    let filtered = [...payments]
-
-    // Filter by search term
-    if (searchTerm) {
-      const term = searchTerm.toLowerCase()
-      filtered = filtered.filter(
-        (payment) =>
-          payment.project_name.toLowerCase().includes(term) ||
-          payment.payment_method.toLowerCase().includes(term) ||
-          payment.notes?.toLowerCase().includes(term),
-      )
-    }
-
-    // Filter by status
-    if (statusFilter !== "all") {
-      filtered = filtered.filter((payment) => payment.status === statusFilter)
-    }
-
-    setFilteredPayments(filtered)
-  }
-
   const confirmPayment = async (payment: Payment) => {
     try {
       // In a real app, you would update in Supabase
@@ -265,9 +259,9 @@ export default function AdminPaymentsPage() {
       case "pending":
         return <Badge variant="secondary">Pending</Badge>
       case "awaiting_confirmation":
-        return <Badge variant="warning">Awaiting Confirmation</Badge>
+        return <Badge variant="outline">Awaiting Confirmation</Badge>
       case "confirmed":
-        return <Badge variant="success">Confirmed</Badge>
+        return <Badge>Confirmed</Badge>
       case "failed":
         return <Badge variant="destructive">Failed</Badge>
       default:

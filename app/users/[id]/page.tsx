@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react"
 import { useParams } from "next/navigation"
-import { createClientComponentClient } from "@supabase/auth-helpers-nextjs"
+import { getSupabaseBrowserClient } from "@/lib/supabase"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Badge } from "@/components/ui/badge"
@@ -11,7 +11,7 @@ import { toast } from "@/components/ui/use-toast"
 
 interface User {
   user_id: string
-  full_name: string
+  full_name: string | null
   avatar_url: string | null
   contribution_details: string | null
   created_at: string | null
@@ -27,7 +27,7 @@ interface Project {
 export default function UserProfilePage() {
   const params = useParams()
   const userId = params?.id as string
-  const supabase = createClientComponentClient<Database>()
+  const getSupabase = () => getSupabaseBrowserClient()
   const [user, setUser] = useState<User | null>(null)
   const [loading, setLoading] = useState(true)
   const [projects, setProjects] = useState<Project[]>([])
@@ -35,11 +35,10 @@ export default function UserProfilePage() {
   useEffect(() => {
     const fetchUser = async () => {
       try {
+        const supabase = getSupabase()
         const { data, error } = await supabase
           .from("users")
-          .select(
-            "user_id, full_name, avatar_url, contribution_details, created_at, location_id"
-          )
+          .select("user_id, full_name, avatar_url, contribution_details, created_at, location_id")
           .eq("user_id", userId)
           .single()
 
@@ -90,7 +89,7 @@ export default function UserProfilePage() {
       }
     }
     if (userId) fetchUser()
-  }, [supabase, userId])
+  }, [userId])
 
   if (loading) {
     return <p className="p-8 text-center">Loading...</p>
@@ -105,10 +104,10 @@ export default function UserProfilePage() {
       <Card className="max-w-md mx-auto">
         <CardHeader className="text-center">
           <Avatar className="h-24 w-24 mx-auto mb-4">
-            <AvatarImage src={user.avatar_url || "/placeholder.svg?height=100&width=100"} alt={user.full_name} />
-            <AvatarFallback>{user.full_name.substring(0,2)}</AvatarFallback>
+            <AvatarImage src={user.avatar_url || "/placeholder.svg?height=100&width=100"} alt={user.full_name || "User"} />
+            <AvatarFallback>{(user.full_name || "U").substring(0,2)}</AvatarFallback>
           </Avatar>
-          <CardTitle>{user.full_name}</CardTitle>
+          <CardTitle>{user.full_name || "Unnamed User"}</CardTitle>
         </CardHeader>
         <CardContent className="text-center space-y-2">
           <Badge className="mb-2">{user.contribution_details || "Community Member"}</Badge>

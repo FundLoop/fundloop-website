@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react"
 import Link from "next/link"
 import Image from "next/image"
-import { createClientComponentClient } from "@supabase/auth-helpers-nextjs"
+import { getSupabaseBrowserClient } from "@/lib/supabase"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
@@ -11,19 +11,28 @@ import { Search, ArrowLeft } from "lucide-react"
 
 const DEFAULT_PICTURE =
   "https://kyxtqnfnksvcaugxwzuj.supabase.co/storage/v1/object/public/blog-pics//introducing-fundloop.png"
-import type { Database, Tables } from "@/types/supabase"
+import type { Database } from "@/types/supabase"
 
-type BlogPost = Tables<"blog_posts">
+interface BlogPostPreview {
+  id: number
+  title: string
+  subtitle: string | null
+  slug: string
+  excerpt: string
+  picture: string | null
+  published_at: string | null
+}
 
 export default function BlogPage() {
-  const [posts, setPosts] = useState<BlogPost[]>([])
+  const [posts, setPosts] = useState<BlogPostPreview[]>([])
   const [loading, setLoading] = useState(true)
   const [searchTerm, setSearchTerm] = useState("")
-  const [filteredPosts, setFilteredPosts] = useState<BlogPost[]>([])
-  const supabase = createClientComponentClient<Database>()
+  const [filteredPosts, setFilteredPosts] = useState<BlogPostPreview[]>([])
+  const getSupabase = () => getSupabaseBrowserClient()
 
   useEffect(() => {
     const fetchPosts = async () => {
+      const supabase = getSupabase()
       setLoading(true)
 
       try {
@@ -46,7 +55,7 @@ export default function BlogPage() {
     }
 
     fetchPosts()
-  }, [supabase])
+  }, [])
 
   // Filter posts when search term changes
   useEffect(() => {
@@ -61,7 +70,8 @@ export default function BlogPage() {
     }
   }, [searchTerm, posts])
 
-  const formatDate = (dateString: string) => {
+  const formatDate = (dateString: string | null) => {
+    if (!dateString) return "Unpublished"
     const date = new Date(dateString)
     return new Intl.DateTimeFormat("en-US", {
       year: "numeric",

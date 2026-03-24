@@ -5,7 +5,7 @@ import { CardDescription } from "@/components/ui/card"
 import type React from "react"
 import { useEffect, useState } from "react"
 import Link from "next/link"
-import { createClientComponentClient } from "@supabase/auth-helpers-nextjs"
+import { getSupabaseBrowserClient } from "@/lib/supabase"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { DollarSign, Users, Building2, ArrowLeft } from "lucide-react"
@@ -29,11 +29,15 @@ const generateDummyData = (count: number) => {
 const dummyLineData = generateDummyData(12)
 
 interface MonthlyStats {
-  month: string
+  id: number
+  month: number
+  year: number
   total_funds: number
   project_count: number
   user_count: number
   avg_salary: number
+  created_at: string | null
+  updated_at: string | null
 }
 
 interface StatCardProps {
@@ -72,10 +76,11 @@ export default function AnalyticsPage() {
   const [stats, setStats] = useState<MonthlyStats[]>([])
   const [loading, setLoading] = useState(true)
   const [latestStats, setLatestStats] = useState<MonthlyStats | null>(null)
-  const supabase = createClientComponentClient<Database>()
+  const getSupabase = () => getSupabaseBrowserClient()
 
   useEffect(() => {
     const fetchStats = async () => {
+      const supabase = getSupabase()
       setLoading(true)
       try {
         const { data, error } = await supabase.from("monthly_network_stats").select("*").order("year").order("month")
@@ -95,7 +100,7 @@ export default function AnalyticsPage() {
     }
 
     fetchStats()
-  }, [supabase])
+  }, [])
 
   return (
     <div className="container mx-auto px-4 py-12">

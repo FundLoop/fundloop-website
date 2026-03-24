@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react"
 import Link from "next/link"
-import { createClientComponentClient } from "@supabase/auth-helpers-nextjs"
+import { getSupabaseBrowserClient } from "@/lib/supabase"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
@@ -13,7 +13,7 @@ import type { Database } from "@/types/supabase"
 
 interface User {
   user_id: string
-  full_name: string
+  full_name: string | null
   avatar_url: string | null
   contribution_details: string | null
   created_at: string | null
@@ -31,11 +31,12 @@ export default function UsersPage() {
   const [searchTerm, setSearchTerm] = useState("")
   const [filteredUsers, setFilteredUsers] = useState<User[]>([])
   const [errorMsg, setErrorMsg] = useState<string | null>(null)
-  const supabase = createClientComponentClient<Database>()
+  const getSupabase = () => getSupabaseBrowserClient()
 
   useEffect(() => {
     const fetchParticipants = async () => {
       try {
+        const supabase = getSupabase()
         const { data, error } = await supabase.from("participants").select("user_id")
         if (error) throw error
         const ids = Array.from(new Set(data.map((d) => d.user_id)))
@@ -52,7 +53,7 @@ export default function UsersPage() {
     }
 
     fetchParticipants()
-  }, [supabase])
+  }, [])
 
   useEffect(() => {
     if (allIds.length === 0) {
@@ -63,6 +64,7 @@ export default function UsersPage() {
       setLoading(true)
 
       try {
+        const supabase = getSupabase()
         const limit = 12
         const slice = allIds.slice(page * limit, page * limit + limit)
 
@@ -73,12 +75,15 @@ export default function UsersPage() {
 
         const { data: userData, error: userError } = await supabase
           .from("users")
-          .select(
-            "user_id, full_name, avatar_url, contribution_details, created_at, location_id"
-          )
+          .select("user_id, full_name, avatar_url, contribution_details, created_at, location_id")
           .in("user_id", slice)
           .is("deleted_at", null)
           .eq("status", "active")
+
+        if (userError) throw userError
+        if (!userData) {
+          return
+        }
 
         // Get location names in a separate query
         const locationIds = userData.map((user) => user.location_id).filter((id): id is number => id !== null)
@@ -129,17 +134,17 @@ export default function UsersPage() {
     }
 
     fetchUsers()
-  }, [supabase, page, allIds])
+  }, [allIds, page])
 
   // Filter users when search term changes
   useEffect(() => {
     if (searchTerm.trim() === "") {
       setFilteredUsers(users)
     } else {
-      const term = searchTerm.toLowerCase()
+        const term = searchTerm.toLowerCase()
       const filtered = users.filter(
         (user) =>
-          user.full_name.toLowerCase().includes(term) ||
+          (user.full_name ?? "").toLowerCase().includes(term) ||
           user.location?.toLowerCase().includes(term) ||
           (user.contribution_details && user.contribution_details.toLowerCase().includes(term)),
       )
@@ -148,6 +153,7 @@ export default function UsersPage() {
   }, [searchTerm, users])
 
   useEffect(() => {
+    const observedLoader = loader.current
     const observer = new IntersectionObserver(
       (entries) => {
         if (entries[0].isIntersecting) {
@@ -162,11 +168,11 @@ export default function UsersPage() {
       },
       { threshold: 1 }
     )
-    if (loader.current) observer.observe(loader.current)
+    if (observedLoader) observer.observe(observedLoader)
     return () => {
-      if (loader.current) observer.unobserve(loader.current)
+      if (observedLoader) observer.unobserve(observedLoader)
     }
-  }, [])
+  }, [allIds.length])
 
   const getTimeAgo = (dateString: string | null) => {
     if (!dateString) return "Recently"
@@ -250,10 +256,13 @@ export default function UsersPage() {
               <Link href={`/users/${user.user_id}`} className="block">
                 <CardHeader className="pb-2 text-center">
                   <Avatar className="h-16 w-16 mx-auto mb-2">
-                    <AvatarImage src={user.avatar_url || "/placeholder.svg?height=40&width=40"} alt={user.full_name} />
-                    <AvatarFallback>{user.full_name.substring(0, 2)}</AvatarFallback>
+                    <AvatarImage
+                      src={user.avatar_url || "/placeholder.svg?height=40&width=40"}
+                      alt={user.full_name || "User"}
+                    />
+                    <AvatarFallback>{(user.full_name || "U").substring(0, 2)}</AvatarFallback>
                   </Avatar>
-                  <CardTitle className="text-base">{user.full_name}</CardTitle>
+                  <CardTitle className="text-base">{user.full_name || "Unnamed User"}</CardTitle>
                 </CardHeader>
                 <CardContent className="text-center">
                   <Badge className="mb-2">{user.contribution_details || "Community Member"}</Badge>

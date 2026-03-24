@@ -3,9 +3,9 @@
 import * as React from "react"
 import { ThemeProvider as NextThemesProvider } from "next-themes"
 
-interface ThemeProviderProps extends React.PropsWithChildren {}
+type ThemeProviderProps = React.ComponentProps<typeof NextThemesProvider>
 
-export function ThemeProvider({ children }: ThemeProviderProps) {
+export function ThemeProvider({ children, ...props }: ThemeProviderProps) {
   const [mounted, setMounted] = React.useState(false)
 
   React.useEffect(() => {
@@ -17,7 +17,7 @@ export function ThemeProvider({ children }: ThemeProviderProps) {
   }
 
   return (
-    <NextThemesProvider attribute="class" defaultTheme="system" enableSystem disableTransitionOnChange>
+    <NextThemesProvider {...props}>
       {children}
     </NextThemesProvider>
   )

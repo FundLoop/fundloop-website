@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react"
 import Link from "next/link"
-import { createClientComponentClient } from "@supabase/auth-helpers-nextjs"
+import { getSupabaseBrowserClient } from "@/lib/supabase"
 import { Card, CardContent } from "@/components/ui/card"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Badge } from "@/components/ui/badge"
@@ -13,7 +13,7 @@ import type { Database } from "@/types/supabase"
 
 interface User {
   user_id: string
-  full_name: string
+  full_name: string | null
   avatar_url: string | null
   contribution_details: string | null
   created_at: string | null
@@ -26,10 +26,11 @@ export default function AlignedUsers() {
   const [users, setUsers] = useState<User[]>([])
   const [loading, setLoading] = useState(true)
   const [errorMsg, setErrorMsg] = useState<string | null>(null)
-  const supabase = createClientComponentClient<Database>()
+  const getSupabase = () => getSupabaseBrowserClient()
 
   useEffect(() => {
     const fetchUsers = async () => {
+      const supabase = getSupabase()
       setLoading(true)
 
       try {
@@ -50,9 +51,7 @@ export default function AlignedUsers() {
         // Query only users that belong to a project
         const { data: userData, error: userError } = await supabase
           .from("users")
-          .select(
-            "user_id, full_name, avatar_url, contribution_details, created_at, location_id"
-          )
+          .select("user_id, full_name, avatar_url, contribution_details, created_at, location_id")
           .in("user_id", ids)
           .is("deleted_at", null)
           .eq("status", "active")
@@ -109,7 +108,7 @@ export default function AlignedUsers() {
     }
 
     fetchUsers()
-  }, [supabase])
+  }, [])
 
   const getTimeAgo = (dateString: string | null) => {
     if (!dateString) return "Recently"
@@ -192,11 +191,11 @@ export default function AlignedUsers() {
                       <Avatar className="h-16 w-16 mx-auto mb-2">
                         <AvatarImage
                           src={user.avatar_url || "/placeholder.svg?height=40&width=40"}
-                          alt={user.full_name}
+                          alt={user.full_name || "User"}
                         />
                         <AvatarFallback>{user.full_name ? user.full_name.substring(0, 2) : "?"}</AvatarFallback>
                       </Avatar>
-                      <h3 className="font-medium mb-1">{user.full_name}</h3>
+                      <h3 className="font-medium mb-1">{user.full_name || "Unnamed User"}</h3>
                       <Badge className="mb-2">{user.contribution_details || "Community Member"}</Badge>
                       <p className="text-xs text-slate-500 dark:text-slate-400 mb-1">{user.location}</p>
                       <p className="text-xs text-slate-500 dark:text-slate-400 mb-1">

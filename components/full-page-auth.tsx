@@ -6,8 +6,8 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { toast } from "@/components/ui/use-toast"
-import { supabase } from "@/lib/supabase"
-import { ChromeIcon as Google } from "lucide-react"
+import { getSupabaseBrowserClient } from "@/lib/supabase"
+import { Globe } from "lucide-react"
 
 interface FullPageAuthProps {
   open: boolean
@@ -23,10 +23,11 @@ export function FullPageAuth({ open, onClose }: FullPageAuthProps) {
   const handleRequestOtp = async () => {
     setLoading(true)
     try {
+      const supabase = getSupabaseBrowserClient()
       const { error } = await supabase.auth.signInWithOtp({
         email,
         options: {
-          emailRedirectTo: `${location.origin}/my-profile`,
+          emailRedirectTo: window.location.href,
         },
       })
       if (error) {
@@ -57,6 +58,7 @@ export function FullPageAuth({ open, onClose }: FullPageAuthProps) {
   const handleVerifyOtp = async () => {
     setLoading(true)
     try {
+      const supabase = getSupabaseBrowserClient()
       const { error } = await supabase.auth.verifyOtp({
         email,
         token: otp,
@@ -90,10 +92,11 @@ export function FullPageAuth({ open, onClose }: FullPageAuthProps) {
   const handleSignInWithGoogle = async () => {
     setLoading(true)
     try {
+      const supabase = getSupabaseBrowserClient()
       const { error } = await supabase.auth.signInWithOAuth({
         provider: "google",
         options: {
-          redirectTo: `${window.location.origin}/my-profile`,
+          redirectTo: window.location.href,
         },
       })
       if (error) {
@@ -151,7 +154,7 @@ export function FullPageAuth({ open, onClose }: FullPageAuthProps) {
           </Button>
         )}
         <Button onClick={handleSignInWithGoogle} disabled={loading} variant="secondary" className="w-full mt-2">
-          <Google className="mr-2 h-4 w-4" />
+          <Globe className="mr-2 h-4 w-4" />
           Sign In with Google
         </Button>
       </DialogContent>

@@ -1,6 +1,6 @@
 import React from 'react'
 import Link from "next/link"
-import { CircleDollarSign, Github, Twitter, Linkedin, Mail } from "lucide-react"
+import { CircleDollarSign, FolderGit2, Globe, BriefcaseBusiness, Mail } from "lucide-react"
 
 export default function Footer() {
   return (
@@ -41,21 +41,21 @@ export default function Footer() {
                 href="https://twitter.com"
                 className="text-slate-600 hover:text-emerald-600 dark:text-slate-300 dark:hover:text-emerald-400"
               >
-                <Twitter className="h-5 w-5" />
+                <Globe className="h-5 w-5" />
                 <span className="sr-only">Twitter</span>
               </Link>
               <Link
                 href="https://github.com"
                 className="text-slate-600 hover:text-emerald-600 dark:text-slate-300 dark:hover:text-emerald-400"
               >
-                <Github className="h-5 w-5" />
+                <FolderGit2 className="h-5 w-5" />
                 <span className="sr-only">GitHub</span>
               </Link>
               <Link
                 href="https://linkedin.com"
                 className="text-slate-600 hover:text-emerald-600 dark:text-slate-300 dark:hover:text-emerald-400"
               >
-                <Linkedin className="h-5 w-5" />
+                <BriefcaseBusiness className="h-5 w-5" />
                 <span className="sr-only">LinkedIn</span>
               </Link>
               <Link

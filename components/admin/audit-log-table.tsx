@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { createClientComponentClient } from "@supabase/auth-helpers-nextjs"
+import { getSupabaseBrowserClient } from "@/lib/supabase"
 import { Table, TableBody, TableCaption, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -35,64 +35,62 @@ export function AuditLogTable() {
   const [page, setPage] = useState(1)
   const [totalPages, setTotalPages] = useState(1)
   const [totalCount, setTotalCount] = useState(0)
+  const [reloadKey, setReloadKey] = useState(0)
   const pageSize = 10
 
-  const supabase = createClientComponentClient()
-
-  const fetchAuditLogs = async () => {
-    setLoading(true)
-    try {
-      // Build the query
-      let query = supabase.from("audit_log").select(
-        `
-          id, 
-          table_name, 
-          action, 
-          record_id, 
-          user_id, 
-          old_data, 
-          new_data, 
-          created_at
-        `,
-        { count: "exact" },
-      )
-
-      // Apply search filter
-      if (searchTerm) {
-        query = query.ilike("table_name", `%${searchTerm}%`)
-      }
-
-      // Get count first
-      const { count, error: countError } = await query
-
-      if (countError) throw countError
-
-      setTotalCount(count || 0)
-      setTotalPages(Math.ceil((count || 0) / pageSize))
-
-      // Then get paginated data
-      const { data, error } = await query
-        .range((page - 1) * pageSize, page * pageSize - 1)
-        .order("created_at", { ascending: false })
-
-      if (error) throw error
-
-      setAuditLogs(data || [])
-    } catch (error) {
-      console.error("Error fetching audit logs:", error)
-      toast({
-        title: "Error",
-        description: "Failed to load audit logs data",
-        variant: "destructive",
-      })
-    } finally {
-      setLoading(false)
-    }
-  }
+  const getSupabase = () => getSupabaseBrowserClient()
 
   useEffect(() => {
-    fetchAuditLogs()
-  }, [page, searchTerm])
+    const loadAuditLogs = async () => {
+      const supabase = getSupabase()
+      setLoading(true)
+      try {
+        let query = supabase.from("audit_log").select(
+          `
+            id, 
+            table_name, 
+            action, 
+            record_id, 
+            user_id, 
+            old_data, 
+            new_data, 
+            created_at
+          `,
+          { count: "exact" },
+        )
+
+        if (searchTerm) {
+          query = query.ilike("table_name", `%${searchTerm}%`)
+        }
+
+        const { count, error: countError } = await query
+
+        if (countError) throw countError
+
+        setTotalCount(count || 0)
+        setTotalPages(Math.ceil((count || 0) / pageSize))
+
+        const { data, error } = await query
+          .range((page - 1) * pageSize, page * pageSize - 1)
+          .order("created_at", { ascending: false })
+
+        if (error) throw error
+
+        setAuditLogs(data || [])
+      } catch (error) {
+        console.error("Error fetching audit logs:", error)
+        toast({
+          title: "Error",
+          description: "Failed to load audit logs data",
+          variant: "destructive",
+        })
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    void loadAuditLogs()
+  }, [page, reloadKey, searchTerm])
 
   const formatDate = (dateString: string) => {
     return formatDistanceToNow(new Date(dateString), { addSuffix: true })
@@ -115,7 +113,7 @@ export function AuditLogTable() {
             />
           </div>
 
-          <Button variant="outline" size="icon" onClick={fetchAuditLogs} title="Refresh">
+          <Button variant="outline" size="icon" onClick={() => setReloadKey((current) => current + 1)} title="Refresh">
             <RefreshCw className="h-4 w-4" />
           </Button>
         </div>
