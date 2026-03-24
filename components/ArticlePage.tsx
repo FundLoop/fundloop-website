@@ -4,10 +4,18 @@ import Image from "next/image"
 import { Button } from "@/components/ui/button"
 import { ArrowLeft } from "lucide-react"
 import Markdown from "@/components/markdown"
-import type { Tables } from "@/types/supabase"
+interface ArticlePost {
+  title: string
+  subtitle: string | null
+  content: string
+  picture: string | null
+  published_at?: string | null
+  created_at?: string | null
+  updated_at?: string | null
+}
 
 interface Props {
-  post: Tables<"blog_posts">
+  post: ArticlePost
   backHref: string
   backText: string
   showBack?: boolean

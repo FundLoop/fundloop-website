@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react"
 import Link from "next/link"
-import { createClientComponentClient } from "@supabase/auth-helpers-nextjs"
+import { getSupabaseBrowserClient } from "@/lib/supabase"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
@@ -15,7 +15,7 @@ import type { Database } from "@/types/supabase"
 // Define a simpler project type without relationships
 interface Project {
   id: number
-  slug: string
+  slug: string | null
   name: string
   logo_url: string | null
   description: string
@@ -34,10 +34,11 @@ export default function ProjectsPage() {
   const [categories, setCategories] = useState<{ id: number; name: string }[]>([])
   const [categoryFilter, setCategoryFilter] = useState("all")
   const [sortOrder, setSortOrder] = useState("recent")
-  const supabase = createClientComponentClient<Database>()
+  const getSupabase = () => getSupabaseBrowserClient()
 
   useEffect(() => {
     const fetchProjects = async () => {
+      const supabase = getSupabase()
       setLoading(true)
 
       try {
@@ -92,7 +93,7 @@ export default function ProjectsPage() {
     }
 
     fetchProjects()
-  }, [supabase])
+  }, [])
 
   // Apply filters and sorting
   useEffect(() => {
@@ -265,7 +266,10 @@ export default function ProjectsPage() {
                         className="h-8 gap-1"
                         onClick={(e) => {
                           e.stopPropagation()
-                          window.open(project.website, "_blank", "noopener,noreferrer")
+                          const website = project.website
+                          if (website) {
+                            window.open(website, "_blank", "noopener,noreferrer")
+                          }
                         }}
                       >
                         <span>Visit</span>

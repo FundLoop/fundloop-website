@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react"
 import Link from "next/link"
+import { usePathname, useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
@@ -12,13 +13,13 @@ import { getUserEmails, getUserWallets } from "@/app/actions/auth-actions"
 import { toast } from "@/components/ui/use-toast"
 import { Input } from "@/components/ui/input"
 import type { Tables } from "@/types/supabase"
-import { supabase } from "@/lib/supabase"
+import { getSupabaseBrowserClient } from "@/lib/supabase"
 
 type User = Tables<"users">
 
 interface Project {
   id: number
-  slug: string
+  slug: string | null
   name: string
   logo: string
   description: string
@@ -43,6 +44,7 @@ interface InvitationCode {
 
 export default function MyProfilePage() {
   const [loading, setLoading] = useState(true)
+  const [onboardingPending, setOnboardingPending] = useState(false)
   const [myProjects, setMyProjects] = useState<Project[]>([])
   const [myOrganizations, setMyOrganizations] = useState<Organization[]>([])
   const [primaryEmail, setPrimaryEmail] = useState<string | null>(null)
@@ -56,10 +58,20 @@ export default function MyProfilePage() {
   const [invitationCode, setInvitationCode] = useState<InvitationCode | null>(null)
   const [generatingCode, setGeneratingCode] = useState(false)
   const [inviteLink, setInviteLink] = useState<string>("")
+  const pathname = usePathname()
+  const router = useRouter()
+
+  const openOnboarding = () => {
+    const params = new URLSearchParams(window.location.search)
+    params.set("onboarding", "user")
+    const query = params.toString()
+    router.push(query ? `${pathname}?${query}` : pathname, { scroll: false })
+  }
 
   useEffect(() => {
     const fetchUserData = async () => {
       try {
+        const supabase = getSupabaseBrowserClient()
         setLoading(true)
 
         // Fetch emails and wallets
@@ -70,32 +82,33 @@ export default function MyProfilePage() {
           data: { user },
         } = await supabase.auth.getUser()
 
-        if (user) {
-          const { data: profile } = await supabase
-            .from("users")
-            .select(
-              "full_name, avatar_url, created_at, location_id"
-            )
-            .eq("user_id", user.id)
-            .single()
+        if (!user) {
+          return
+        }
 
-          if (profile) {
-            if (profile.full_name) {
-              setFullName(profile.full_name)
-            }
+        const { data: profile } = await supabase
+          .from("users")
+          .select("full_name, avatar_url, created_at, location_id, status")
+          .eq("user_id", user.id)
+          .single()
 
-            if (profile.location_id) {
-              const { data: loc } = await supabase
-                .from("ref_locations")
-                .select("name")
-                .eq("id", profile.location_id)
-                .single()
-              setLocation(loc?.name || null)
-            }
-
-            setJoined(profile.created_at)
-            setAvatar(profile.avatar_url)
+        if (profile) {
+          if (profile.status !== "active") {
+            setOnboardingPending(true)
+            return
           }
+
+          if (profile.full_name) {
+            setFullName(profile.full_name)
+          }
+
+          if (profile.location_id) {
+            const { data: loc } = await supabase.from("ref_locations").select("name").eq("id", profile.location_id).single()
+            setLocation(loc?.name || null)
+          }
+
+          setJoined(profile.created_at)
+          setAvatar(profile.avatar_url)
         }
 
         // Find primary email
@@ -149,10 +162,30 @@ export default function MyProfilePage() {
     }
 
     fetchUserData()
-  }, [supabase])
+  }, [])
+
+  if (!loading && onboardingPending) {
+    return (
+      <div className="container mx-auto px-4 py-12">
+        <Card className="max-w-2xl">
+          <CardHeader>
+            <CardTitle>Finish your FundLoop onboarding</CardTitle>
+            <CardDescription>
+              Your profile is still private. Continue the saved draft to publish it and unlock the full profile
+              experience.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <Button onClick={openOnboarding}>Continue onboarding</Button>
+          </CardContent>
+        </Card>
+      </div>
+    )
+  }
 
   const fetchInvitationCode = async () => {
     try {
+      const supabase = getSupabaseBrowserClient()
       // Get current user ID
       const {
         data: { user },
@@ -191,6 +224,7 @@ export default function MyProfilePage() {
 
   const generateInvitationCode = async () => {
     try {
+      const supabase = getSupabaseBrowserClient()
       setGeneratingCode(true)
 
       // Generate a new invitation code

@@ -3,34 +3,48 @@
 import { useEffect, useMemo, useState, useRef } from "react"
 import Link from "next/link"
 import { ArrowLeft } from "lucide-react"
-import { createClientComponentClient } from "@supabase/auth-helpers-nextjs"
+import { getSupabaseBrowserClient } from "@/lib/supabase"
 import ArticlePage from "@/components/ArticlePage"
 import { Button } from "@/components/ui/button"
-import type { Database, Tables } from "@/types/supabase"
+import type { Database } from "@/types/supabase"
 
-type DocPost = Tables<"blog_posts">
+interface DocPost {
+  id: number
+  title: string
+  subtitle: string | null
+  slug: string
+  excerpt: string
+  content: string
+  category: string | null
+  picture: string | null
+  published_at: string | null
+  created_at: string | null
+  updated_at: string | null
+  sort_order_within_category: number | null
+}
 
 export default function DocumentationPage() {
   const [posts, setPosts] = useState<DocPost[]>([])
   const [loading, setLoading] = useState(true)
   const [currentSlug, setCurrentSlug] = useState<string | null>(null)
   const articleRef = useRef<HTMLDivElement>(null)
-  const supabase = createClientComponentClient<Database>()
+  const getSupabase = () => getSupabaseBrowserClient()
 
   useEffect(() => {
     const fetchDocs = async () => {
+      const supabase = getSupabase()
       setLoading(true)
       const { data, error } = await supabase
         .from("blog_posts")
         .select(
-          "id, title, subtitle, slug, excerpt, content, category, picture, published_at, created_at, sort_order_within_category"
+          "id, title, subtitle, slug, excerpt, content, category, picture, published_at, created_at, updated_at, sort_order_within_category"
         )
         .eq("is_support", true)
       if (!error) setPosts(data || [])
       setLoading(false)
     }
     fetchDocs()
-  }, [supabase])
+  }, [])
 
   const categories = useMemo(() => {
     return Array.from(new Set(posts.map((p) => p.category).filter(Boolean)))
@@ -61,13 +75,9 @@ export default function DocumentationPage() {
     return categories.flatMap((cat) => postsByCategory[cat])
   }, [categories, postsByCategory])
 
-  useEffect(() => {
-    if (!currentSlug && flatPosts.length > 0) {
-      setCurrentSlug(flatPosts[0].slug)
-    }
-  }, [flatPosts, currentSlug])
+  const activeSlug = currentSlug ?? flatPosts[0]?.slug ?? null
 
-  const currentIndex = flatPosts.findIndex((p) => p.slug === currentSlug)
+  const currentIndex = flatPosts.findIndex((p) => p.slug === activeSlug)
   const currentPost = currentIndex >= 0 ? flatPosts[currentIndex] : null
   const prevPost = currentIndex > 0 ? flatPosts[currentIndex - 1] : null
   const nextPost =
@@ -96,7 +106,7 @@ export default function DocumentationPage() {
                     <button
                       onClick={() => setCurrentSlug(post.slug)}
                       className={`text-left w-full hover:underline ${
-                        currentSlug === post.slug
+                        activeSlug === post.slug
                           ? "text-emerald-600 dark:text-emerald-400 font-medium"
                           : ""
                       }`}
@@ -155,4 +165,3 @@ export default function DocumentationPage() {
     </div>
   )
 }
-

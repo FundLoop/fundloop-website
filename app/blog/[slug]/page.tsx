@@ -1,37 +1,45 @@
 "use client"
 
 import { useEffect, useState, useRef } from "react"
-import { useParams, useRouter, useSearchParams } from "next/navigation"
+import { useParams, useRouter } from "next/navigation"
 import Link from "next/link"
-import { createClientComponentClient } from "@supabase/auth-helpers-nextjs"
+import { getSupabaseBrowserClient } from "@/lib/supabase"
 import { Button } from "@/components/ui/button"
 import { ArrowLeft } from "lucide-react"
 import ArticlePage from "@/components/ArticlePage"
-import type { Database, Tables } from "@/types/supabase"
+import type { Database } from "@/types/supabase"
 
-type BlogPost = Tables<"blog_posts">
+interface BlogPost {
+  id: number
+  title: string
+  subtitle: string | null
+  content: string
+  picture: string | null
+  published_at: string | null
+  created_at: string | null
+}
 
 export default function BlogPostPage() {
   const params = useParams()
   const router = useRouter()
   const slug = params.slug as string
-  const searchParams = useSearchParams()
-  const origin = searchParams.get("origin")
   const benefitsSection = useRef<HTMLDivElement>(null)
+  const origin = typeof window === "undefined" ? null : new URLSearchParams(window.location.search).get("origin")
 
   const [post, setPost] = useState<BlogPost | null>(null)
   const [loading, setLoading] = useState(true)
   const [showBack, setShowBack] = useState(true)
-  const supabase = createClientComponentClient<Database>()
+  const getSupabase = () => getSupabaseBrowserClient()
 
   useEffect(() => {
     const fetchPost = async () => {
+      const supabase = getSupabase()
       setLoading(true)
 
       try {
         const { data, error } = await supabase
           .from("blog_posts")
-          .select("id, title, subtitle, content, picture, published_at")
+          .select("id, title, subtitle, content, picture, published_at, created_at")
           .eq("slug", slug)
           .eq("is_support", false)
           .single()
@@ -50,7 +58,7 @@ export default function BlogPostPage() {
     if (slug) {
       fetchPost()
     }
-  }, [slug, supabase, router])
+  }, [router, slug])
 
   // Restore scroll position on mount and save on unmount
   useEffect(() => {
@@ -88,15 +96,6 @@ export default function BlogPostPage() {
     window.addEventListener("scroll", onScroll)
     return () => window.removeEventListener("scroll", onScroll)
   }, [])
-
-  const formatDate = (dateString: string) => {
-    const date = new Date(dateString)
-    return new Intl.DateTimeFormat("en-US", {
-      year: "numeric",
-      month: "long",
-      day: "numeric",
-    }).format(date)
-  }
 
   const handleBackToBenefits = () => {
     router.push("/")

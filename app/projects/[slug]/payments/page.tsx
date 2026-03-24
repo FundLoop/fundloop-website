@@ -20,37 +20,38 @@ import {
 } from "@/components/ui/dialog"
 import { Badge } from "@/components/ui/badge"
 import { toast } from "@/components/ui/use-toast"
-import { supabase } from "@/lib/supabase"
+import { getSupabaseBrowserClient } from "@/lib/supabase"
 import { ArrowLeft, Plus, Calculator, Save, CheckCircle, AlertTriangle, Trash2, Info } from "lucide-react"
 
 interface PaymentMethod {
   id: number
   name: string
   code: string
-  description: string
+  description: string | null
 }
 
 interface PaymentStatus {
   id: number
   name: string
   code: string
-  description: string
+  description: string | null
 }
 
 interface PaymentPeriodicity {
   id: number
   name: string
   code: string
-  description: string
+  description: string | null
 }
 
 interface Project {
   id: number
+  slug: string | null
   name: string
-  payment_percentage: number
-  payment_periodicity_id: number
+  payment_percentage: number | null
+  payment_periodicity_id: number | null
   payment_custom_days: number | null
-  default_payment_method_id: number
+  default_payment_method_id: number | null
 }
 
 interface Payment {
@@ -60,13 +61,13 @@ interface Payment {
   revenue: number
   payment_amount: number
   payment_percentage: number
-  payment_method_id: number
+  payment_method_id: number | null
   payment_method_name: string
-  status_id: number
+  status_id: number | null
   status_name: string
   status_code: string
-  created_at: string
-  updated_at: string
+  created_at: string | null
+  updated_at: string | null
   paid_at: string | null
   confirmed_at: string | null
   notes: string | null
@@ -100,107 +101,109 @@ export default function ProjectPaymentsPage() {
   const [paymentToConfirm, setPaymentToConfirm] = useState<Payment | null>(null)
 
   useEffect(() => {
-    fetchProjectData()
-  }, [slug])
+    const fetchProjectData = async () => {
+      const supabase = getSupabaseBrowserClient()
 
-  const fetchProjectData = async () => {
-    try {
-      setLoading(true)
+      try {
+        setLoading(true)
 
-      // In a real app, you would fetch from Supabase
-      // For demo purposes, we'll use mock data
+        const { data: paymentMethodsData, error: paymentMethodsError } = await supabase
+          .from("ref_payment_methods")
+          .select("id, name, code, description")
+          .order("display_order")
 
-      // Fetch payment methods
-      const { data: paymentMethodsData, error: paymentMethodsError } = await supabase
-        .from("ref_payment_methods")
-        .select("id, name, code, description")
-        .order("display_order")
+        if (paymentMethodsError) throw paymentMethodsError
 
-      if (paymentMethodsError) throw paymentMethodsError
+        const { data: paymentStatusesData, error: paymentStatusesError } = await supabase
+          .from("ref_payment_statuses")
+          .select("id, name, code, description")
+          .order("display_order")
 
-      // Fetch payment statuses
-      const { data: paymentStatusesData, error: paymentStatusesError } = await supabase
-        .from("ref_payment_statuses")
-        .select("id, name, code, description")
-        .order("display_order")
+        if (paymentStatusesError) throw paymentStatusesError
 
-      if (paymentStatusesError) throw paymentStatusesError
+        const { data: paymentPeriodicitiesData, error: paymentPeriodicitiesError } = await supabase
+          .from("ref_payment_periodicities")
+          .select("id, name, code, description")
+          .order("display_order")
 
-      // Fetch payment periodicities
-      const { data: paymentPeriodicitiesData, error: paymentPeriodicitiesError } = await supabase
-        .from("ref_payment_periodicities")
-        .select("id, name, code, description")
-        .order("display_order")
+        if (paymentPeriodicitiesError) throw paymentPeriodicitiesError
 
-      if (paymentPeriodicitiesError) throw paymentPeriodicitiesError
+        const { data: projectData, error: projectError } = await supabase
+          .from("projects")
+          .select(
+            "id, slug, name, payment_percentage, payment_periodicity_id, payment_custom_days, default_payment_method_id"
+          )
+          .eq("slug", slug)
+          .single()
 
-      // Fetch project by slug to get ID and payment info
-      const { data: projectData, error: projectError } = await supabase
-        .from("projects")
-        .select(
-          "id, slug, name, payment_percentage, payment_periodicity_id, payment_custom_days, default_payment_method_id"
-        )
-        .eq("slug", slug)
-        .single()
+        if (projectError) throw projectError
 
-      if (projectError) throw projectError
+        setProjectId(projectData.id)
 
-      setProjectId(projectData.id)
+        const { data: paymentsData, error: paymentsError } = await supabase
+          .from("payments")
+          .select(`
+           id, period_start, period_end, revenue, payment_amount, payment_percentage,
+           payment_method_id, status_id, created_at, updated_at, paid_at, confirmed_at, notes,
+           ref_payment_methods(name, code),
+           ref_payment_statuses(name, code)
+         `)
+          .eq("project_id", projectData.id)
+          .order("period_start", { ascending: false })
 
-      // Fetch payments
-      const { data: paymentsData, error: paymentsError } = await supabase
-        .from("payments")
-        .select(`
-         id, period_start, period_end, revenue, payment_amount, payment_percentage,
-         payment_method_id, status_id, created_at, updated_at, paid_at, confirmed_at, notes,
-         ref_payment_methods(name, code),
-         ref_payment_statuses(name, code)
-       `)
-        .eq("project_id", projectData.id)
-        .order("period_start", { ascending: false })
+        if (paymentsError) throw paymentsError
 
-      if (paymentsError) throw paymentsError
+        const transformedPayments =
+          paymentsData?.map((payment) => ({
+            id: payment.id,
+            period_start: payment.period_start,
+            period_end: payment.period_end,
+            revenue: payment.revenue,
+            payment_amount: payment.payment_amount,
+            payment_percentage: payment.payment_percentage,
+            payment_method_id: payment.payment_method_id,
+            payment_method_name: payment.ref_payment_methods?.name || "Unknown",
+            status_id: payment.status_id,
+            status_name: payment.ref_payment_statuses?.name || "Unknown",
+            status_code: payment.ref_payment_statuses?.code || "unknown",
+            created_at: payment.created_at,
+            updated_at: payment.updated_at,
+            paid_at: payment.paid_at,
+            confirmed_at: payment.confirmed_at,
+            notes: payment.notes,
+          })) || []
 
-      // Transform payments data
-      const transformedPayments =
-        paymentsData?.map((payment) => ({
-          id: payment.id,
-          period_start: payment.period_start,
-          period_end: payment.period_end,
-          revenue: payment.revenue,
-          payment_amount: payment.payment_amount,
-          payment_percentage: payment.payment_percentage,
-          payment_method_id: payment.payment_method_id,
-          payment_method_name: payment.ref_payment_methods.name,
-          status_id: payment.status_id,
-          status_name: payment.ref_payment_statuses.name,
-          status_code: payment.ref_payment_statuses.code,
-          created_at: payment.created_at,
-          updated_at: payment.updated_at,
-          paid_at: payment.paid_at,
-          confirmed_at: payment.confirmed_at,
-          notes: payment.notes,
-        })) || []
+        setPaymentMethods(paymentMethodsData || [])
+        setPaymentStatuses(paymentStatusesData || [])
+        setPaymentPeriodicities(paymentPeriodicitiesData || [])
+        setProject(projectData ? { ...projectData, slug: projectData.slug ?? slug } : null)
+        setPayments(transformedPayments)
 
-      setPaymentMethods(paymentMethodsData || [])
-      setPaymentStatuses(paymentStatusesData || [])
-      setPaymentPeriodicities(paymentPeriodicitiesData || [])
-      setProject(projectData || null)
-      setPayments(transformedPayments)
-
-      // Initialize with one new payment row
-      addNewPaymentRow()
-    } catch (error) {
-      console.error("Error fetching project data:", error)
-      toast({
-        title: "Error",
-        description: "Failed to load project payment data",
-        variant: "destructive",
-      })
-    } finally {
-      setLoading(false)
+        setNewPaymentRows([
+          {
+            id: crypto.randomUUID(),
+            period_start: "",
+            period_end: "",
+            revenue: 0,
+            payment_amount: 0,
+            payment_percentage: projectData.payment_percentage || 1.0,
+            payment_method_id: projectData.default_payment_method_id || 0,
+          },
+        ])
+      } catch (error) {
+        console.error("Error fetching project data:", error)
+        toast({
+          title: "Error",
+          description: "Failed to load project payment data",
+          variant: "destructive",
+        })
+      } finally {
+        setLoading(false)
+      }
     }
-  }
+
+    void fetchProjectData()
+  }, [slug])
 
   const getDefaultPeriod = () => {
     // Get the most recent payment end date
@@ -245,6 +248,7 @@ export default function ProjectPaymentsPage() {
         endDate = subDays(today, project.payment_custom_days + 1)
       } else {
         // Default to previous month
+        startDate = startOfMonth(subDays(today, 30))
         endDate = endOfMonth(subDays(today, 30))
       }
     }
@@ -441,9 +445,9 @@ export default function ProjectPaymentsPage() {
       case "pending":
         return <Badge variant="secondary">{statusName}</Badge>
       case "awaiting_confirmation":
-        return <Badge variant="warning">{statusName}</Badge>
+        return <Badge variant="outline">{statusName}</Badge>
       case "confirmed":
-        return <Badge variant="success">{statusName}</Badge>
+        return <Badge>{statusName}</Badge>
       case "failed":
         return <Badge variant="destructive">{statusName}</Badge>
       default:

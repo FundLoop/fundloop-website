@@ -2,14 +2,14 @@
 
 import type React from "react"
 
-import { useState, useRef, useEffect } from "react"
+import { useState, useRef, useEffect, useCallback } from "react"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { toast } from "@/components/ui/use-toast"
-import { supabase } from "@/lib/supabase"
-import { ChromeIcon as Google, ArrowLeft } from "lucide-react"
+import { getSupabaseBrowserClient } from "@/lib/supabase"
+import { ArrowLeft, Globe } from "lucide-react"
 import { useRouter } from "next/navigation"
 
 interface FullPageAuthProps {
@@ -19,7 +19,6 @@ interface FullPageAuthProps {
 
 export function AuthModal({ open, onClose }: FullPageAuthProps) {
   const [email, setEmail] = useState("")
-  const [otp, setOtp] = useState("")
   const [loading, setLoading] = useState(false)
   const [otpSent, setOtpSent] = useState(false)
   const [otpDigits, setOtpDigits] = useState(["", "", "", "", "", ""])
@@ -36,10 +35,11 @@ export function AuthModal({ open, onClose }: FullPageAuthProps) {
     console.log("handleRequestOtp: Started")
     setLoading(true)
     try {
+      const supabase = getSupabaseBrowserClient()
       const { error } = await supabase.auth.signInWithOtp({
         email,
         options: {
-          emailRedirectTo: `${location.origin}/my-profile`,
+          emailRedirectTo: window.location.href,
         },
       })
       if (error) {
@@ -69,12 +69,13 @@ export function AuthModal({ open, onClose }: FullPageAuthProps) {
     }
   }
 
-  const verifyOtp = async () => {
+  const verifyOtp = useCallback(async () => {
     console.log("verifyOtp: Started")
     setLoading(true)
     try {
+      const supabase = getSupabaseBrowserClient()
       const otpCode = otpDigits.join("")
-      const { data, error } = await supabase.auth.verifyOtp({
+      const { error } = await supabase.auth.verifyOtp({
         email,
         token: otpCode,
         type: "email",
@@ -104,22 +105,25 @@ export function AuthModal({ open, onClose }: FullPageAuthProps) {
       setLoading(false)
       console.log("verifyOtp: Finished")
     }
-  }
+  }, [email, onClose, router, otpDigits])
 
   useEffect(() => {
     const allDigitsEntered = otpDigits.every((digit) => digit !== "")
-    if (otpSent && allDigitsEntered) {
-      verifyOtp()
+    if (!otpSent || !allDigitsEntered) {
+      return
     }
-  }, [otpDigits, otpSent])
+
+    void verifyOtp()
+  }, [otpDigits, otpSent, verifyOtp])
 
   const handleSignInWithGoogle = async () => {
     setLoading(true)
     try {
+      const supabase = getSupabaseBrowserClient()
       const { error } = await supabase.auth.signInWithOAuth({
         provider: "google",
         options: {
-          redirectTo: `${window.location.origin}/my-profile`,
+          redirectTo: window.location.href,
         },
       })
       if (error) {
@@ -209,7 +213,9 @@ export function AuthModal({ open, onClose }: FullPageAuthProps) {
                     onChange={(e) => handleOtpChange(index, e.target.value)}
                     onKeyDown={(e) => handleKeyDown(index, e)}
                     onPaste={handlePaste}
-                    ref={(el) => (otpInputs.current[index] = el)}
+                    ref={(el) => {
+                      otpInputs.current[index] = el
+                    }}
                     style={{ MozAppearance: "textfield" }}
                   />
                 ))}
@@ -234,7 +240,7 @@ export function AuthModal({ open, onClose }: FullPageAuthProps) {
         )}
         {!otpSent && (
           <Button onClick={handleSignInWithGoogle} disabled={loading} variant="secondary" className="w-full mt-2">
-            <Google className="mr-2 h-4 w-4" />
+            <Globe className="mr-2 h-4 w-4" />
             Sign In with Google
           </Button>
         )}

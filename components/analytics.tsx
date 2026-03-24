@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react"
 import Link from "next/link"
-import { createClientComponentClient } from "@supabase/auth-helpers-nextjs"
+import { getSupabaseBrowserClient } from "@/lib/supabase"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Skeleton } from "@/components/ui/skeleton"
@@ -25,10 +25,11 @@ export default function Analytics() {
   const [stats, setStats] = useState<FormattedStats[]>([])
   const [loading, setLoading] = useState(true)
   const [latestStats, setLatestStats] = useState<FormattedStats | null>(null)
-  const supabase = createClientComponentClient<Database>()
+  const getSupabase = () => getSupabaseBrowserClient()
 
   useEffect(() => {
     const fetchStats = async () => {
+      const supabase = getSupabase()
       setLoading(true)
       try {
         const { data, error } = await supabase.from("monthly_network_stats").select("*").order("year").order("month")
@@ -58,7 +59,7 @@ export default function Analytics() {
     }
 
     fetchStats()
-  }, [supabase])
+  }, [])
 
   return (
     <section className="py-8">

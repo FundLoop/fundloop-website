@@ -12,7 +12,7 @@ import { Textarea } from "@/components/ui/textarea"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { toast } from "@/components/ui/use-toast"
 import { ArrowLeft, Mail, MessageSquare, User } from "lucide-react"
-import { createClientComponentClient } from "@supabase/auth-helpers-nextjs"
+import { getSupabaseBrowserClient } from "@/lib/supabase"
 import type { Database } from "@/types/supabase"
 
 export default function SupportPage() {
@@ -25,7 +25,7 @@ export default function SupportPage() {
     message: "",
   })
   const [errors, setErrors] = useState<Record<string, string>>({})
-  const supabase = createClientComponentClient<Database>()
+  const getSupabase = () => getSupabaseBrowserClient()
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { id, value } = e.target
@@ -61,6 +61,7 @@ export default function SupportPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
+    const supabase = getSupabase()
     const newErrors: Record<string, string> = {}
     if (!formData.name.trim()) newErrors.name = "Name is required"
     if (!formData.email.trim()) {
@@ -85,16 +86,20 @@ export default function SupportPage() {
     } catch (err) {
       console.error("Failed to get IP", err)
     }
-    const { data: { user } } = await supabase.auth.getUser()
-    const { error } = await supabase.from("support_requests").insert({
-      name: formData.name,
-      email: formData.email,
-      subject: formData.subject,
-      category: formData.category,
-      message: formData.message,
-      ip_address: ip || null,
-      user_id: user?.id ?? null,
-    })
+    const {
+      data: { user },
+    } = await supabase.auth.getUser()
+    const { error } = await supabase.from("support_requests").insert([
+      {
+        name: formData.name,
+        email: formData.email,
+        subject: formData.subject,
+        category: formData.category,
+        message: formData.message,
+        ip_address: ip || null,
+        user_id: user?.id ?? null,
+      },
+    ])
     setIsSubmitting(false)
     if (error) {
       toast({ title: "Submission failed", description: error.message })

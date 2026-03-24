@@ -3,21 +3,30 @@
 import { useEffect, useState } from "react"
 import Link from "next/link"
 import Image from "next/image"
-import { createClientComponentClient } from "@supabase/auth-helpers-nextjs"
+import { getSupabaseBrowserClient } from "@/lib/supabase"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Skeleton } from "@/components/ui/skeleton"
-import type { Database, Tables } from "@/types/supabase"
+import type { Database } from "@/types/supabase"
 
-type BlogPost = Tables<"blog_posts">
+interface BlogPostPreview {
+  id: number
+  title: string
+  subtitle: string | null
+  slug: string
+  excerpt: string
+  picture: string | null
+  published_at: string | null
+}
 
 export default function BlogPreview() {
-  const [posts, setPosts] = useState<BlogPost[]>([])
+  const [posts, setPosts] = useState<BlogPostPreview[]>([])
   const [loading, setLoading] = useState(true)
-  const supabase = createClientComponentClient<Database>()
+  const getSupabase = () => getSupabaseBrowserClient()
 
   useEffect(() => {
     const fetchPosts = async () => {
+      const supabase = getSupabase()
       setLoading(true)
 
       try {
@@ -40,9 +49,10 @@ export default function BlogPreview() {
     }
 
     fetchPosts()
-  }, [supabase])
+  }, [])
 
-  const formatDate = (dateString: string) => {
+  const formatDate = (dateString: string | null) => {
+    if (!dateString) return "Unpublished"
     const date = new Date(dateString)
     return new Intl.DateTimeFormat("en-US", {
       year: "numeric",

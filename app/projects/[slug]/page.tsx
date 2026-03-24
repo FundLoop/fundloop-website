@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react"
 import Link from "next/link"
 import { useParams } from "next/navigation"
-import { createClientComponentClient } from "@supabase/auth-helpers-nextjs"
+import { getSupabaseBrowserClient } from "@/lib/supabase"
 import type { Database } from "@/types/supabase"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -54,7 +54,7 @@ interface Project {
 export default function ProjectDetailPage() {
   const params = useParams()
   const slug = params.slug as string
-  const supabase = createClientComponentClient<Database>()
+  const getSupabase = () => getSupabaseBrowserClient()
 
   const [project, setProject] = useState<Project | null>(null)
   const [loading, setLoading] = useState(true)
@@ -66,6 +66,7 @@ export default function ProjectDetailPage() {
   useEffect(() => {
     const fetchProject = async () => {
       try {
+        const supabase = getSupabase()
         setLoading(true)
 
         const { data, error } = await supabase
@@ -96,7 +97,7 @@ export default function ProjectDetailPage() {
 
         const formattedProject: Project = {
           id: data.id,
-          slug: data.slug,
+          slug: data.slug ?? slug,
           name: data.name,
           logo: data.logo_url || "/placeholder.svg?height=80&width=80",
           description: data.description,
@@ -187,7 +188,7 @@ export default function ProjectDetailPage() {
     }
 
     fetchProject()
-  }, [slug, supabase])
+  }, [slug])
 
   const [socials, setSocials] = useState<SocialLink[]>([])
   const [participants, setParticipants] = useState<ProjectUser[]>([])
@@ -441,12 +442,8 @@ export default function ProjectDetailPage() {
                   <h3 className="text-lg font-medium mb-2">Socials</h3>
                   <div className="flex flex-wrap gap-2">
                     {socials.map((social) => (
-                      <Badge key={social.name} variant="outline" asChild>
-                        <a
-                          href={social.url}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                        >
+                      <Badge key={social.name} variant="outline">
+                        <a href={social.url} target="_blank" rel="noopener noreferrer">
                           {social.name}
                         </a>
                       </Badge>

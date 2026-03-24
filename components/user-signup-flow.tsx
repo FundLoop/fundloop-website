@@ -1,994 +1,875 @@
 "use client"
 
-import type React from "react"
-
-import { useState, useEffect } from "react"
-import { useSearchParams } from "next/navigation"
+import { useEffect, useMemo, useRef, useState } from "react"
+import { ArrowLeft, ArrowRight, CheckCircle2, Search, Sparkles } from "lucide-react"
+import {
+  clearUserOnboardingDraft,
+  getOnboardingState,
+  publishUserOnboardingDraft,
+  searchProjectsForTeamMember,
+  upsertUserOnboardingDraft,
+} from "@/app/actions/onboarding-actions"
+import { getSupabaseBrowserClient } from "@/lib/supabase"
+import {
+  buildVisibilityFromPreset,
+  DEFAULT_USER_ONBOARDING_PAYLOAD,
+  type PrivacyPreset,
+  type TeamMemberProjectMatch,
+  type UserOnboardingPayload,
+  type UserOnboardingScreen,
+  mergeUserOnboardingPayload,
+} from "@/lib/onboarding"
 import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { Checkbox } from "@/components/ui/checkbox"
-import { toast } from "@/components/ui/use-toast"
-import { ArrowLeft, ArrowRight, Check, Info } from "lucide-react"
-import { supabase } from "@/lib/supabase"
-import { Tabs, TabsContent } from "@/components/ui/tabs"
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Textarea } from "@/components/ui/textarea"
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
+import { Switch } from "@/components/ui/switch"
+import { Badge } from "@/components/ui/badge"
 import { Combobox, type ComboboxOption } from "@/components/ui/combobox"
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
+import { Card, CardContent } from "@/components/ui/card"
+import { Separator } from "@/components/ui/separator"
+import { toast } from "@/components/ui/use-toast"
+import { OnboardingAuthStep } from "@/components/onboarding/onboarding-auth-step"
+import { OnboardingShell } from "@/components/onboarding/onboarding-shell"
+import { UserProfilePreview } from "@/components/onboarding/user-profile-preview"
 
-// Sample recommended projects
-const recommendedProjects = [
-  {
-    id: 1,
-    name: "EcoStream",
-    logo: "/placeholder.svg?height=40&width=40",
-    description: "Sustainable video streaming platform with carbon-neutral infrastructure",
-    category: "Media",
-  },
-  {
-    id: 2,
-    name: "Harvest",
-    logo: "/placeholder.svg?height=40&width=40",
-    description: "Farm-to-table marketplace connecting local farmers with consumers",
-    category: "Food",
-  },
-  {
-    id: 3,
-    name: "Nomad Workspace",
-    logo: "/placeholder.svg?height=40&width=40",
-    description: "Global network of sustainable co-working spaces for digital nomads",
-    category: "Workspace",
-  },
-  {
-    id: 4,
-    name: "GreenFinance",
-    logo: "/placeholder.svg?height=40&width=40",
-    description: "Ethical banking and investment platform focused on sustainability",
-    category: "Finance",
-  },
-]
-
-// Contribution skills
-const contributionSkills = [
-  { id: "build", label: "Build", description: "Software development, design, or other creation" },
-  { id: "market", label: "Market", description: "Marketing, promotion, and community outreach" },
-  { id: "manage", label: "Manage", description: "Project management and coordination" },
-  { id: "govern", label: "Govern", description: "Governance, decision-making, and policy" },
-  { id: "operate", label: "Operate", description: "Day-to-day operations and maintenance" },
-  { id: "test", label: "Test", description: "Testing, quality assurance, and feedback" },
-  { id: "research", label: "Research", description: "Research, analysis, and data collection" },
-  { id: "educate", label: "Educate", description: "Education, training, and documentation" },
-  { id: "support", label: "Support", description: "User support and community assistance" },
-]
-
-// Add this function to validate email
-const validateEmail = (email: string) => {
-  const regex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
-  return regex.test(email)
+type UserSignupFlowProps = {
+  onClose: () => void
+  inviteCode?: string
+  initialRelationshipChoice?: UserOnboardingPayload["relationshipChoice"]
+  onRequestFlowChange?: (flow: "user" | "project") => void
 }
 
-// Dummy functions for creating new options
-const createNewLocation = (value: string) => {
-  console.log("Creating new location:", value)
-  // In a real app, you would save this to the database
+type ReferenceData = {
+  genders: ComboboxOption[]
+  interests: ComboboxOption[]
+  locations: ComboboxOption[]
+  occupations: ComboboxOption[]
 }
 
-const createNewOccupation = (value: string) => {
-  console.log("Creating new occupation:", value)
-  // In a real app, you would save this to the database
+function formatDraftTime(value: string | null | undefined) {
+  if (!value) {
+    return "recently"
+  }
+
+  return new Intl.DateTimeFormat(undefined, {
+    dateStyle: "medium",
+    timeStyle: "short",
+  }).format(new Date(value))
 }
 
-const createNewInterest = (value: string) => {
-  console.log("Creating new interest:", value)
-  // In a real app, you would save this to the database
-}
+const USER_SCREEN_ORDER: UserOnboardingScreen[] = ["identity", "visibility", "about", "relationship", "review"]
 
-export default function UserSignupFlow({ onClose }: { onClose: () => void }) {
-  const searchParams = useSearchParams()
-  const inviteCode = searchParams.get("invite")
-
-  const [step, setStep] = useState(1)
-  const [currentUserId, setCurrentUserId] = useState<string | null>(null)
-  const [isSubmitting, setIsSubmitting] = useState(false)
-  const [userData, setUserData] = useState({
-    name: "",
-    email: "",
-    wallet: "",
-    age: "",
-    genderId: "",
-    locationId: "",
-    interests: [] as string[],
-    occupationId: "",
-    selectedProjects: [] as number[],
-    willContribute: false,
-    contributionSkills: [] as string[],
-    contributionDetails: "",
-    invitationCode: inviteCode || "", // Initialize with URL invite code if present
-    status: "active", // Add status field
+export default function UserSignupFlow({
+  onClose,
+  inviteCode = "",
+  initialRelationshipChoice = "individual",
+  onRequestFlowChange,
+}: UserSignupFlowProps) {
+  const [loading, setLoading] = useState(true)
+  const [authUserId, setAuthUserId] = useState<string | null>(null)
+  const [userStatus, setUserStatus] = useState<string | null>(null)
+  const [currentScreen, setCurrentScreen] = useState<UserOnboardingScreen>("welcome")
+  const [resumeTargetScreen, setResumeTargetScreen] = useState<UserOnboardingScreen>("identity")
+  const [payload, setPayload] = useState<UserOnboardingPayload>({
+    ...DEFAULT_USER_ONBOARDING_PAYLOAD,
+    inviteCode,
+    relationshipChoice: initialRelationshipChoice,
   })
+  const [draftTimestamp, setDraftTimestamp] = useState<string | null>(null)
+  const [references, setReferences] = useState<ReferenceData>({
+    genders: [],
+    interests: [],
+    locations: [],
+    occupations: [],
+  })
+  const [saving, setSaving] = useState(false)
+  const [publishing, setPublishing] = useState(false)
+  const [searchQuery, setSearchQuery] = useState("")
+  const [projectMatches, setProjectMatches] = useState<TeamMemberProjectMatch[]>([])
+  const [searchingProjects, setSearchingProjects] = useState(false)
 
-  // Reference data
-  const [genders, setGenders] = useState<ComboboxOption[]>([])
-  const [locations, setLocations] = useState<ComboboxOption[]>([])
-  const [occupations, setOccupations] = useState<ComboboxOption[]>([])
-  const [interests, setInterests] = useState<ComboboxOption[]>([])
-  const [loadingReferenceData, setLoadingReferenceData] = useState(true)
-  const [isValidInviteCode, setIsValidInviteCode] = useState(inviteCode ? true : false)
-  const [checkingInviteCode, setCheckingInviteCode] = useState(false)
+  const autosaveReady = useRef(false)
+
+  const selectedProject = projectMatches.find((project) => project.id === payload.selectedProjectId) ?? null
+
+  const selectedOccupation = useMemo(
+    () => references.occupations.find((option) => option.value === payload.occupationId)?.label ?? "Not set yet",
+    [payload.occupationId, references.occupations],
+  )
+  const selectedLocation = useMemo(
+    () => references.locations.find((option) => option.value === payload.locationId)?.label ?? "Not set yet",
+    [payload.locationId, references.locations],
+  )
 
   useEffect(() => {
-    const loadProgress = async () => {
+    const supabase = getSupabaseBrowserClient()
+    const loadSession = async () => {
       const {
         data: { user },
       } = await supabase.auth.getUser()
-      if (!user) return
-      setCurrentUserId(user.id)
-      const { data } = await supabase
-        .from("users")
-        .select("signup_step")
-        .eq("user_id", user.id)
-        .single()
-      if (data?.signup_step && data.signup_step > 1 && data.signup_step < 5) {
-        setStep(data.signup_step)
-      }
+      setAuthUserId(user?.id ?? null)
     }
-    loadProgress()
+
+    void loadSession()
+
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((event, session) => {
+      setAuthUserId(session?.user?.id ?? null)
+      if (event === "SIGNED_OUT") {
+        setCurrentScreen("welcome")
+        autosaveReady.current = false
+      }
+    })
+
+    return () => subscription.unsubscribe()
   }, [])
 
   useEffect(() => {
-    fetchReferenceData()
+    const fetchReferences = async () => {
+      const supabase = getSupabaseBrowserClient()
 
-    // If we have an invite code from URL, validate it
-    if (inviteCode) {
-      validateInviteCode(inviteCode)
+      const [{ data: genders }, { data: interests }, { data: locations }, { data: occupations }] = await Promise.all([
+        supabase.from("ref_genders").select("id, name").order("display_order"),
+        supabase.from("ref_interests").select("id, name").order("name"),
+        supabase.from("ref_locations").select("id, name").order("name"),
+        supabase.from("ref_occupations").select("id, name").order("name"),
+      ])
+
+      setReferences({
+        genders: genders?.map((item) => ({ value: String(item.id), label: item.name })) ?? [],
+        interests: interests?.map((item) => ({ value: String(item.id), label: item.name })) ?? [],
+        locations: locations?.map((item) => ({ value: String(item.id), label: item.name })) ?? [],
+        occupations: occupations?.map((item) => ({ value: String(item.id), label: item.name })) ?? [],
+      })
     }
-  }, [inviteCode])
 
-  const validateInviteCode = async (code: string) => {
-    if (!code) {
-      setIsValidInviteCode(false)
-      return false
-    }
+    void fetchReferences()
+  }, [])
 
-    setCheckingInviteCode(true)
-    try {
-      const { data, error } = await supabase.from("invitation_codes").select("code").eq("code", code).single()
+  useEffect(() => {
+    const loadState = async () => {
+      setLoading(true)
+      const state = await getOnboardingState()
 
-      if (error) {
-        console.error("Error validating invite code:", error)
-        setIsValidInviteCode(false)
-        return false
+      setAuthUserId(state.authUserId)
+      setUserStatus(state.profile?.status ?? null)
+
+      if (!state.authUserId) {
+        setCurrentScreen("welcome")
+        setPayload({
+          ...DEFAULT_USER_ONBOARDING_PAYLOAD,
+          inviteCode,
+          relationshipChoice: initialRelationshipChoice,
+        })
+        autosaveReady.current = false
+        setLoading(false)
+        return
       }
 
-      setIsValidInviteCode(true)
-      return true
-    } catch (err) {
-      console.error("Error validating invite code:", err)
-      setIsValidInviteCode(false)
-      return false
-    } finally {
-      setCheckingInviteCode(false)
+      if (state.userDraft) {
+        const draftPayload = mergeUserOnboardingPayload(state.userDraft.payload as Partial<UserOnboardingPayload>)
+        setPayload({
+          ...draftPayload,
+          inviteCode: draftPayload.inviteCode || inviteCode,
+        })
+        setResumeTargetScreen(
+          USER_SCREEN_ORDER.includes(state.userDraft.current_screen as UserOnboardingScreen)
+            ? (state.userDraft.current_screen as UserOnboardingScreen)
+            : "identity",
+        )
+        setCurrentScreen("resume")
+        setDraftTimestamp(state.userDraft.updated_at || state.userDraft.started_at)
+      } else {
+        setPayload((previous) =>
+          mergeUserOnboardingPayload({
+            ...previous,
+            inviteCode: previous.inviteCode || inviteCode,
+            relationshipChoice: previous.relationshipChoice || initialRelationshipChoice,
+          }),
+        )
+        setCurrentScreen("welcome")
+        setDraftTimestamp(null)
+      }
+
+      autosaveReady.current = true
+      setLoading(false)
     }
+
+    void loadState()
+  }, [authUserId, initialRelationshipChoice, inviteCode])
+
+  useEffect(() => {
+    if (!autosaveReady.current || !authUserId) {
+      return
+    }
+    if (currentScreen === "welcome" || currentScreen === "resume") {
+      return
+    }
+
+    const timeoutId = window.setTimeout(() => {
+      setSaving(true)
+      void upsertUserOnboardingDraft({
+        currentScreen,
+        payload,
+      }).finally(() => setSaving(false))
+    }, 600)
+
+    return () => window.clearTimeout(timeoutId)
+  }, [authUserId, currentScreen, payload])
+
+  useEffect(() => {
+    if (payload.relationshipChoice !== "team_member" || searchQuery.trim().length < 2) {
+      return
+    }
+
+    const timeoutId = window.setTimeout(() => {
+      setSearchingProjects(true)
+      void searchProjectsForTeamMember(searchQuery)
+        .then((result) => {
+          if (!result.ok) {
+            toast({
+              title: "Unable to search projects",
+              description: result.error,
+              variant: "destructive",
+            })
+            setProjectMatches([])
+            return
+          }
+
+          setProjectMatches(result.data)
+        })
+        .finally(() => setSearchingProjects(false))
+    }, 350)
+
+    return () => window.clearTimeout(timeoutId)
+  }, [payload.relationshipChoice, searchQuery])
+
+  const moveToScreen = (screen: UserOnboardingScreen) => {
+    setCurrentScreen(screen)
   }
 
-  const fetchReferenceData = async () => {
-    try {
-      setLoadingReferenceData(true)
+  const getPreviousScreen = () => {
+    const currentIndex = USER_SCREEN_ORDER.indexOf(currentScreen)
+    if (currentIndex <= 0) {
+      return "welcome"
+    }
 
-      // In a real app, you would fetch from Supabase
-      // For demo purposes, we'll use mock data
+    return USER_SCREEN_ORDER[currentIndex - 1]
+  }
 
-      // Fetch genders
-      const { data: gendersData, error: gendersError } = await supabase
-        .from("ref_genders")
-        .select("id, name")
-        .order("display_order")
+  const getNextScreen = () => {
+    const currentIndex = USER_SCREEN_ORDER.indexOf(currentScreen)
+    return USER_SCREEN_ORDER[Math.min(currentIndex + 1, USER_SCREEN_ORDER.length - 1)]
+  }
 
-      if (gendersError) throw gendersError
+  const handleContinueFromWelcome = async () => {
+    moveToScreen("identity")
+    if (!authUserId) {
+      return
+    }
+    setSaving(true)
+    const result = await upsertUserOnboardingDraft({
+      currentScreen: "identity",
+      payload,
+    })
+    setSaving(false)
 
-      // Fetch locations
-      const { data: locationsData, error: locationsError } = await supabase
-        .from("ref_locations")
-        .select("id, name")
-        .order("name")
-
-      if (locationsError) throw locationsError
-
-      // Fetch occupations
-      const { data: occupationsData, error: occupationsError } = await supabase
-        .from("ref_occupations")
-        .select("id, name")
-        .order("name")
-
-      if (occupationsError) throw occupationsError
-
-      // Fetch interests
-      const { data: interestsData, error: interestsError } = await supabase
-        .from("ref_interests")
-        .select("id, name")
-        .order("name")
-
-      if (interestsError) throw interestsError
-
-      // Transform data for comboboxes
-      setGenders(gendersData?.map((item) => ({ value: item.id.toString(), label: item.name })) || [])
-      setLocations(locationsData?.map((item) => ({ value: item.id.toString(), label: item.name })) || [])
-      setOccupations(occupationsData?.map((item) => ({ value: item.id.toString(), label: item.name })) || [])
-      setInterests(interestsData?.map((item) => ({ value: item.id.toString(), label: item.name })) || [])
-    } catch (error) {
-      console.error("Error fetching reference data:", error)
+    if (!result.ok) {
       toast({
-        title: "Error",
-        description: "Failed to load reference data. Please try again.",
+        title: "Could not start onboarding",
+        description: result.error,
         variant: "destructive",
       })
-    } finally {
-      setLoadingReferenceData(false)
     }
   }
 
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
-    const { id, value } = e.target
-    setUserData((prev) => ({ ...prev, [id.replace("user-", "")]: value }))
+  const handleResume = () => {
+    moveToScreen(resumeTargetScreen)
   }
 
-  const handleInterestToggle = (interestId: string) => {
-    setUserData((prev) => {
-      const interests = [...prev.interests]
-      if (interests.includes(interestId)) {
-        return { ...prev, interests: interests.filter((i) => i !== interestId) }
-      } else {
-        return { ...prev, interests: [...interests, interestId] }
-      }
-    })
-  }
+  const handleStartOver = async () => {
+    setSaving(true)
+    const result = await clearUserOnboardingDraft()
+    setSaving(false)
 
-  const handleProjectToggle = (projectId: number) => {
-    setUserData((prev) => {
-      const selectedProjects = [...prev.selectedProjects]
-      if (selectedProjects.includes(projectId)) {
-        return { ...prev, selectedProjects: selectedProjects.filter((id) => id !== projectId) }
-      } else {
-        return { ...prev, selectedProjects: [...selectedProjects, projectId] }
-      }
-    })
-  }
-
-  const handleSkillToggle = (skill: string) => {
-    setUserData((prev) => {
-      const skills = [...prev.contributionSkills]
-      if (skills.includes(skill)) {
-        return { ...prev, contributionSkills: skills.filter((s) => s !== skill) }
-      } else {
-        return { ...prev, contributionSkills: [...skills, skill] }
-      }
-    })
-  }
-
-  const handleSubmitStep1 = async (e: React.FormEvent) => {
-    e.preventDefault()
-
-    // Validate email
-    if (!validateEmail(userData.email)) {
+    if (!result.ok) {
       toast({
-        title: "Invalid email",
-        description: "Please enter a valid email address",
+        title: "Could not restart onboarding",
+        description: result.error,
         variant: "destructive",
       })
       return
     }
 
-    // Validate invitation code if provided
-    if (userData.invitationCode && !isValidInviteCode) {
-      const isValid = await validateInviteCode(userData.invitationCode)
-      if (!isValid) {
-        toast({
-          title: "Invalid invitation code",
-          description: "The invitation code you entered is not valid",
-          variant: "destructive",
-        })
-        return
-      }
+    setPayload({
+      ...DEFAULT_USER_ONBOARDING_PAYLOAD,
+      inviteCode,
+      relationshipChoice: initialRelationshipChoice,
+    })
+    setProjectMatches([])
+    setSearchQuery("")
+    setCurrentScreen("welcome")
+    setResumeTargetScreen("identity")
+    setDraftTimestamp(null)
+  }
+
+  const updatePayload = (partial: Partial<UserOnboardingPayload>) => {
+    if (partial.relationshipChoice && partial.relationshipChoice !== "team_member") {
+      setProjectMatches([])
+      setSearchQuery("")
     }
+    setPayload((previous) => mergeUserOnboardingPayload({ ...previous, ...partial }))
+  }
 
-    setIsSubmitting(true)
+  const toggleInterest = (interestId: string) => {
+    setPayload((previous) => {
+      const interestIds = previous.interestIds.includes(interestId)
+        ? previous.interestIds.filter((current) => current !== interestId)
+        : [...previous.interestIds, interestId]
 
-    try {
-      // Create user in Supabase with invitation code if provided
-      const insertData: any = {
-        full_name: userData.name,
-        email: userData.email,
-        status: userData.status,
+      return {
+        ...previous,
+        interestIds,
       }
+    })
+  }
 
-      // Add invitation code if provided
-      if (userData.invitationCode) {
-        insertData.invited_by_code = userData.invitationCode
-      }
+  const setPrivacyPreset = (preset: PrivacyPreset) => {
+    updatePayload({
+      privacyPreset: preset,
+      visibility: buildVisibilityFromPreset(preset),
+    })
+  }
 
-      const { data, error } = await supabase
-        .from("users")
-        .insert([insertData])
-        .select()
+  const setVisibilitySetting = (key: keyof UserOnboardingPayload["visibility"], value: boolean) => {
+    setPayload((previous) => ({
+      ...previous,
+      privacyPreset: previous.privacyPreset,
+      visibility: {
+        ...previous.visibility,
+        [key]: value,
+      },
+    }))
+  }
 
-      if (error) throw error
+  const handlePublish = async () => {
+    setPublishing(true)
+    const result = await publishUserOnboardingDraft()
+    setPublishing(false)
 
-      // If wallet address is provided, add it to wallet_accounts table
-      if (userData.wallet) {
-        const { error: walletError } = await supabase.from("wallet_accounts").insert([
-          {
-            user_id: data[0].user_id,
-            wallet_address: userData.wallet,
-            wallet_type: "ethereum", // Default type
-            is_primary: true,
-          },
-        ])
-
-        if (walletError) throw walletError
-      }
-
+    if (!result.ok) {
       toast({
-        title: "Profile created!",
-        description: "Let's continue with some additional information.",
-      })
-
-      setCurrentUserId(data[0].user_id)
-      await supabase
-        .from("users")
-        .update({ signup_step: 2 })
-        .eq("user_id", data[0].user_id)
-
-      setStep(2)
-    } catch (error) {
-      console.error("Error saving user:", error)
-      toast({
-        title: "Error creating profile",
-        description: "There was an error creating your profile. Please try again.",
+        title: "Could not publish profile",
+        description: result.error,
         variant: "destructive",
       })
-    } finally {
-      setIsSubmitting(false)
+      return
+    }
+
+    toast({
+      title: "Profile published",
+      description:
+        result.data.nextFlow === "project"
+          ? "Your personal profile is live. Next up: your project draft."
+          : "Your FundLoop profile is now live.",
+    })
+
+    if (result.data.nextFlow === "project") {
+      onRequestFlowChange?.("project")
+      return
+    }
+
+    onClose()
+  }
+
+  const canContinue = () => {
+    switch (currentScreen) {
+      case "identity":
+        return Boolean(payload.fullName.trim() && payload.profileHeadline.trim())
+      case "visibility":
+        return true
+      case "about":
+        return Boolean(payload.bio.trim() && payload.locationId && payload.occupationId)
+      case "relationship":
+        if (payload.relationshipChoice === "team_member") {
+          return Boolean(payload.selectedProjectId)
+        }
+        return true
+      case "review":
+        return true
+      default:
+        return true
     }
   }
 
-  const handleSubmitStep2 = async (e: React.FormEvent) => {
-    e.preventDefault()
-    setIsSubmitting(true)
+  const preview = (
+    <div className="space-y-4">
+      <UserProfilePreview payload={payload} />
+      <Card className="border-dashed">
+        <CardContent className="space-y-2 p-4 text-sm text-slate-600">
+          <p className="font-medium text-slate-900">Current visibility</p>
+          <div className="flex flex-wrap gap-2">
+            <Badge variant={payload.visibility.isNamePublic ? "default" : "outline"}>Name</Badge>
+            <Badge variant={payload.visibility.isPfpPublic ? "default" : "outline"}>Photo</Badge>
+            <Badge variant={payload.visibility.isOccupationPublic ? "default" : "outline"}>Occupation</Badge>
+            <Badge variant={payload.visibility.isLocationPublic ? "default" : "outline"}>Location</Badge>
+            <Badge variant={payload.visibility.isGenderPublic ? "default" : "outline"}>Gender</Badge>
+          </div>
+          <Separator />
+          <p>Occupation: {selectedOccupation}</p>
+          <p>Location: {selectedLocation}</p>
+        </CardContent>
+      </Card>
+    </div>
+  )
 
-    try {
-      // Update user in Supabase with demographic information
-      const { error } = await supabase
-        .from("users")
-        .update({
-          age: userData.age,
-          gender_id: userData.genderId ? Number.parseInt(userData.genderId) : null,
-          location_id: userData.locationId ? Number.parseInt(userData.locationId) : null,
-          occupation_id: userData.occupationId ? Number.parseInt(userData.occupationId) : null,
-        })
-        .eq("user_id", currentUserId as string)
-
-      if (error) throw error
-
-      // Insert user interests
-      if (userData.interests.length > 0) {
-        const userInterestsData = userData.interests.map((interestId) => ({
-          user_id: currentUserId,
-          interest_id: Number.parseInt(interestId),
-        }))
-
-        const { error: interestsError } = await supabase.from("user_interests").insert(userInterestsData)
-
-        if (interestsError) throw interestsError
-      }
-
-      toast({
-        title: "Demographics saved!",
-        description: "Now let's find some projects that match your interests.",
-      })
-
-      await supabase
-        .from("users")
-        .update({ signup_step: 3 })
-        .eq("user_id", currentUserId as string)
-
-      setStep(3)
-    } catch (error) {
-      console.error("Error updating user demographics:", error)
-      toast({
-        title: "Error updating demographics",
-        description: "There was an error updating your demographic information. Please try again.",
-        variant: "destructive",
-      })
-    } finally {
-      setIsSubmitting(false)
-    }
+  if (loading) {
+    return <div className="p-10 text-sm text-muted-foreground">Loading your onboarding flow...</div>
   }
 
-  const handleSubmitStep3 = async (e: React.FormEvent) => {
-    e.preventDefault()
-    setIsSubmitting(true)
-
-    try {
-      // Save selected projects as participant records
-      const { error } = await supabase.from("participants").insert(
-        userData.selectedProjects.map((projectId) => ({
-          user_id: currentUserId,
-          project_id: projectId,
-        })),
-      )
-
-      if (error) throw error
-
-      toast({
-        title: "Projects selected!",
-        description: "Now let's see how you might contribute to the ecosystem.",
-      })
-
-      await supabase
-        .from("users")
-        .update({ signup_step: 4 })
-        .eq("user_id", currentUserId as string)
-
-      setStep(4)
-    } catch (error) {
-      console.error("Error saving selected projects:", error)
-      toast({
-        title: "Error saving projects",
-        description: "There was an error saving your selected projects. Please try again.",
-        variant: "destructive",
-      })
-    } finally {
-      setIsSubmitting(false)
-    }
+  if (!authUserId) {
+    return (
+      <OnboardingShell
+        eyebrow="Step 1"
+        title="Get started with FundLoop"
+        description="Create an account or sign in to save your onboarding draft and continue from any device."
+        compact
+      >
+        <OnboardingAuthStep
+          title="Welcome to FundLoop"
+          description="We’ll guide you through a short profile flow, save every step, and pick up exactly where you left off."
+          onAuthenticated={() => setAuthUserId("pending")}
+        />
+      </OnboardingShell>
+    )
   }
 
-  const handleSubmitStep4 = async (e: React.FormEvent) => {
-    e.preventDefault()
-    setIsSubmitting(true)
-
-    try {
-      // Update user in Supabase with contribution information
-      const { error } = await supabase
-        .from("users")
-        .update({
-          will_contribute: userData.willContribute,
-          contribution_details: userData.willContribute ? userData.contributionDetails : null,
-        })
-        .eq("user_id", currentUserId as string)
-
-      if (error) throw error
-
-      // Insert user contribution skills
-      if (userData.willContribute && userData.contributionSkills.length > 0) {
-        const userSkillsData = userData.contributionSkills.map((skillId) => ({
-          user_id: currentUserId,
-          skill_id: Number.parseInt(skillId),
-        }))
-
-        const { error: skillsError } = await supabase.from("user_contribution_skills").insert(userSkillsData)
-
-        if (skillsError) throw skillsError
-      }
-
-      toast({
-        title: "Registration complete!",
-        description: "Welcome to FundLoop. You're now eligible to receive citizen salary payments.",
-      })
-
-      await supabase
-        .from("users")
-        .update({ signup_step: 5 })
-        .eq("user_id", currentUserId as string)
-
-      // Close the modal after a short delay
-      setTimeout(() => {
-        onClose()
-      }, 2000)
-    } catch (error) {
-      console.error("Error saving contribution information:", error)
-      toast({
-        title: "Error saving contribution information",
-        description: "There was an error saving your contribution information. Please try again.",
-        variant: "destructive",
-      })
-    } finally {
-      setIsSubmitting(false)
-    }
+  if (currentScreen === "welcome") {
+    return (
+      <OnboardingShell
+        eyebrow="Welcome"
+        title="A better start for new FundLoop members"
+        description="This onboarding builds your profile screen by screen, saves your draft as you go, and keeps it hidden until you publish."
+        compact
+        footer={
+          <div className="flex items-center justify-between">
+            <p className="text-sm text-slate-500">{saving ? "Saving draft..." : "Your draft will save automatically."}</p>
+            <Button onClick={() => void handleContinueFromWelcome()} className="gap-2">
+              Continue
+              <ArrowRight className="h-4 w-4" />
+            </Button>
+          </div>
+        }
+      >
+        <div className="grid gap-4 md:grid-cols-3">
+          {[
+            "Learn what FundLoop is about",
+            "Build your profile with a live preview",
+            "Choose whether to join a team or create a project",
+          ].map((item) => (
+            <Card key={item} className="border-slate-200/80">
+              <CardContent className="flex items-start gap-3 p-4 text-sm text-slate-600">
+                <Sparkles className="mt-0.5 h-4 w-4 text-emerald-600" />
+                <span>{item}</span>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      </OnboardingShell>
+    )
   }
 
-  if (loadingReferenceData && step > 1) {
-    return <div className="flex justify-center items-center p-8">Loading...</div>
+  if (currentScreen === "resume") {
+    return (
+      <OnboardingShell
+        eyebrow="Resume"
+        title="You already have a draft profile"
+        description={`It looks like you have a draft profile created from ${formatDraftTime(
+          draftTimestamp,
+        )}. Let’s continue where you left off last.`}
+        compact
+        footer={
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <Button variant="outline" onClick={() => void handleStartOver()} disabled={saving}>
+              Start over
+            </Button>
+            <Button onClick={handleResume} className="gap-2">
+              Continue draft
+              <ArrowRight className="h-4 w-4" />
+            </Button>
+          </div>
+        }
+      >
+        <div className="rounded-2xl border border-emerald-200 bg-emerald-50/70 p-4 text-sm text-emerald-900">
+          Your profile is still hidden from the rest of FundLoop until you publish it.
+        </div>
+      </OnboardingShell>
+    )
   }
 
   return (
-    <Tabs value={`step-${step}`} className="w-full">
-      {/* Step indicators */}
-      <div className="flex items-center justify-between mb-8">
-        <div className="flex items-center w-full">
-          <div
-            className={`flex items-center justify-center w-8 h-8 rounded-full ${
-              step >= 1 ? "bg-emerald-600 text-white" : "bg-slate-200 dark:bg-slate-700"
-            }`}
-          >
-            {step > 1 ? <Check className="h-4 w-4" /> : 1}
-          </div>
-          <div className={`flex-1 h-1 mx-2 ${step >= 2 ? "bg-emerald-600" : "bg-slate-200 dark:bg-slate-700"}`}></div>
-          <div
-            className={`flex items-center justify-center w-8 h-8 rounded-full ${
-              step >= 2 ? "bg-emerald-600 text-white" : "bg-slate-200 dark:bg-slate-700"
-            }`}
-          >
-            {step > 2 ? <Check className="h-4 w-4" /> : 2}
-          </div>
-          <div className={`flex-1 h-1 mx-2 ${step >= 3 ? "bg-emerald-600" : "bg-slate-200 dark:bg-slate-700"}`}></div>
-          <div
-            className={`flex items-center justify-center w-8 h-8 rounded-full ${
-              step >= 3 ? "bg-emerald-600 text-white" : "bg-slate-200 dark:bg-slate-700"
-            }`}
-          >
-            {step > 3 ? <Check className="h-4 w-4" /> : 3}
-          </div>
-          <div className={`flex-1 h-1 mx-2 ${step >= 4 ? "bg-emerald-600" : "bg-slate-200 dark:bg-slate-700"}`}></div>
-          <div
-            className={`flex items-center justify-center w-8 h-8 rounded-full ${
-              step >= 4 ? "bg-emerald-600 text-white" : "bg-slate-200 dark:bg-slate-700"
-            }`}
-          >
-            4
+    <OnboardingShell
+      eyebrow={`Profile setup • ${USER_SCREEN_ORDER.indexOf(currentScreen) + 1}/${USER_SCREEN_ORDER.length}`}
+      title={
+        currentScreen === "identity"
+          ? "Start with who you are"
+          : currentScreen === "visibility"
+            ? "Choose how public you want to be"
+            : currentScreen === "about"
+              ? "Tell FundLoop about yourself"
+              : currentScreen === "relationship"
+                ? "How are you joining the ecosystem?"
+                : "Review and publish your profile"
+      }
+      description={
+        currentScreen === "identity"
+          ? "Add your name, role, and profile picture so the preview starts feeling real."
+          : currentScreen === "visibility"
+            ? "Set a simple privacy preset, then fine-tune the fields that should stay public."
+            : currentScreen === "about"
+              ? "These details help FundLoop match you to the right projects and context."
+              : currentScreen === "relationship"
+                ? "Choose whether you’re joining as an individual, looking for an existing team, or planning to create your own project."
+                : "Check your live preview, then publish your profile when it feels right."
+      }
+      preview={preview}
+      footer={
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div className="text-sm text-slate-500">{saving ? "Saving your draft..." : "Every step is saved automatically."}</div>
+          <div className="flex items-center gap-3">
+            <Button variant="outline" onClick={() => moveToScreen(getPreviousScreen())}>
+              <ArrowLeft className="mr-2 h-4 w-4" />
+              Back
+            </Button>
+            {currentScreen === "review" ? (
+              <Button onClick={() => void handlePublish()} disabled={publishing} className="gap-2">
+                <CheckCircle2 className="h-4 w-4" />
+                {publishing ? "Publishing..." : "Publish profile"}
+              </Button>
+            ) : (
+              <Button onClick={() => moveToScreen(getNextScreen())} disabled={!canContinue()} className="gap-2">
+                Continue
+                <ArrowRight className="h-4 w-4" />
+              </Button>
+            )}
           </div>
         </div>
-      </div>
+      }
+    >
+      {currentScreen === "identity" ? (
+        <div className="grid gap-5">
+          {inviteCode ? (
+            <div className="rounded-2xl border border-emerald-200 bg-emerald-50/70 px-4 py-3 text-sm text-emerald-900">
+              You were invited to join FundLoop with code <span className="font-mono font-semibold">{inviteCode}</span>.
+            </div>
+          ) : null}
 
-      {/* Step 1: Basic Information */}
-      <TabsContent value="step-1" className="mt-0">
-        <Card className="w-full">
-          <CardHeader>
-            <CardTitle className="text-2xl">Join as a User</CardTitle>
-            <CardDescription>
-              Create your profile to participate in the ecosystem and receive citizen salary
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <form id="step1-form" onSubmit={handleSubmitStep1} className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="user-name">Full Name</Label>
-                <Input
-                  id="user-name"
-                  placeholder="Your name"
-                  value={userData.name}
-                  onChange={handleInputChange}
-                  required
-                />
-              </div>
+          <div className="grid gap-5 md:grid-cols-2">
+            <div className="space-y-2">
+              <Label htmlFor="onboarding-full-name">Full name</Label>
+              <Input
+                id="onboarding-full-name"
+                value={payload.fullName}
+                onChange={(event) => updatePayload({ fullName: event.target.value, displayName: event.target.value })}
+                placeholder="Your name"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="onboarding-role">Profile headline</Label>
+              <Input
+                id="onboarding-role"
+                value={payload.profileHeadline}
+                onChange={(event) => updatePayload({ profileHeadline: event.target.value })}
+                placeholder="Builder, founder, designer, researcher..."
+              />
+            </div>
+          </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="user-email">Email</Label>
-                <Input
-                  id="user-email"
-                  type="email"
-                  placeholder="you@example.com"
-                  value={userData.email}
-                  onChange={handleInputChange}
-                  required
-                />
-              </div>
+          <div className="space-y-2">
+            <Label htmlFor="onboarding-avatar">Profile picture URL</Label>
+            <Input
+              id="onboarding-avatar"
+              value={payload.avatarUrl}
+              onChange={(event) => updatePayload({ avatarUrl: event.target.value })}
+              placeholder="https://..."
+            />
+          </div>
+        </div>
+      ) : null}
 
-              <div className="space-y-2">
-                <Label htmlFor="user-wallet">Wallet Address (optional)</Label>
-                <Input id="user-wallet" placeholder="0x..." value={userData.wallet} onChange={handleInputChange} />
-                <p className="text-xs text-slate-500 dark:text-slate-400">
-                  For receiving citizen salary payments. You can add this later.
-                </p>
-              </div>
-
-              {/* Invitation Code Field - only show if not already provided in URL */}
-              {!inviteCode && (
-                <div className="space-y-2">
-                  <div className="flex items-center gap-2">
-                    <Label htmlFor="user-invitationCode">Invitation Code (optional)</Label>
-                    <TooltipProvider>
-                      <Tooltip>
-                        <TooltipTrigger asChild>
-                          <Info className="h-4 w-4 text-slate-400" />
-                        </TooltipTrigger>
-                        <TooltipContent>
-                          <p className="w-[200px] text-xs">
-                            Enter an invitation code if you received one from an existing member
-                          </p>
-                        </TooltipContent>
-                      </Tooltip>
-                    </TooltipProvider>
+      {currentScreen === "visibility" ? (
+        <div className="space-y-6">
+          <div className="space-y-3">
+            <Label>Privacy preset</Label>
+            <RadioGroup
+              value={payload.privacyPreset}
+              onValueChange={(value) => setPrivacyPreset(value as PrivacyPreset)}
+              className="grid gap-3"
+            >
+              {[
+                {
+                  value: "public",
+                  label: "Public profile",
+                  description: "Show your profile and key details broadly across FundLoop.",
+                },
+                {
+                  value: "limited",
+                  label: "Limited profile",
+                  description: "Stay discoverable, but keep sensitive fields private by default.",
+                },
+                {
+                  value: "private",
+                  label: "Private draft",
+                  description: "Hide your profile and all fields until you decide otherwise.",
+                },
+              ].map((option) => (
+                <label key={option.value} className="flex items-start gap-3 rounded-2xl border p-4">
+                  <RadioGroupItem value={option.value} id={`privacy-${option.value}`} />
+                  <div className="space-y-1">
+                    <p className="font-medium text-slate-900">{option.label}</p>
+                    <p className="text-sm text-slate-600">{option.description}</p>
                   </div>
-                  <Input
-                    id="user-invitationCode"
-                    placeholder="Enter invitation code"
-                    value={userData.invitationCode}
-                    onChange={(e) => {
-                      setUserData((prev) => ({ ...prev, invitationCode: e.target.value }))
-                      setIsValidInviteCode(false) // Reset validation when code changes
-                    }}
-                  />
-                  {userData.invitationCode && (
-                    <div className="flex items-center gap-2 text-xs">
-                      {checkingInviteCode ? (
-                        <span className="text-slate-500">Checking code...</span>
-                      ) : isValidInviteCode ? (
-                        <span className="text-emerald-600 dark:text-emerald-400">Valid invitation code</span>
-                      ) : (
-                        <span className="text-red-600 dark:text-red-400">Invalid invitation code</span>
-                      )}
-                      {!isValidInviteCode && userData.invitationCode && !checkingInviteCode && (
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          size="sm"
-                          className="h-6 px-2 text-xs"
-                          onClick={() => validateInviteCode(userData.invitationCode)}
-                        >
-                          Verify
-                        </Button>
-                      )}
-                    </div>
-                  )}
-                </div>
-              )}
+                </label>
+              ))}
+            </RadioGroup>
+          </div>
 
-              {/* If invitation code was provided in URL, show it as read-only */}
-              {inviteCode && (
-                <div className="space-y-2">
-                  <Label htmlFor="user-invitationCode">Invitation Code</Label>
-                  <Input
-                    id="user-invitationCode"
-                    value={inviteCode}
-                    readOnly
-                    className="bg-slate-50 dark:bg-slate-800"
-                  />
-                  <p className="text-xs text-emerald-600 dark:text-emerald-400">You were invited to join FundLoop</p>
-                </div>
-              )}
+          <Separator />
 
-              {/* Status Dropdown */}
-              <div className="space-y-2">
-                <Label htmlFor="user-status">Status</Label>
-                <Select
-                  value={userData.status}
-                  onValueChange={(value) => setUserData((prev) => ({ ...prev, status: value }))}
-                >
-                  <SelectTrigger id="user-status">
-                    <SelectValue placeholder="Select status" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="active">Active</SelectItem>
-                    <SelectItem value="inactive">Inactive</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div className="flex items-start space-x-2 pt-4">
-                <Checkbox id="terms" required />
-                <div className="grid gap-1.5 leading-none">
-                  <label
-                    htmlFor="terms"
-                    className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
-                  >
-                    I agree to the terms and conditions
-                  </label>
-                  <p className="text-sm text-slate-500 dark:text-slate-400">
-                    I understand that my participation data may be anonymously shared with projects in the ecosystem.
-                  </p>
-                </div>
-              </div>
-            </form>
-          </CardContent>
-          <CardFooter>
-            <Button
-              form="step1-form"
-              type="submit"
-              className="w-full bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-700 hover:to-blue-700"
-              disabled={isSubmitting}
-            >
-              {isSubmitting ? "Creating Profile..." : "Continue"}
-            </Button>
-          </CardFooter>
-        </Card>
-      </TabsContent>
-
-      {/* Rest of the steps remain the same */}
-      {/* Step 2: Demographics */}
-      <TabsContent value="step-2" className="mt-0">
-        <Card className="w-full">
-          <CardHeader>
-            <CardTitle className="text-2xl">Demographic Information</CardTitle>
-            <CardDescription>
-              This information helps us match you with relevant projects and opportunities
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <form id="step2-form" onSubmit={handleSubmitStep2} className="space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="user-age">Age Group</Label>
-                  <Select
-                    value={userData.age}
-                    onValueChange={(value) => setUserData((prev) => ({ ...prev, age: value }))}
-                  >
-                    <SelectTrigger id="user-age">
-                      <SelectValue placeholder="Select age group" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="18-24">18-24</SelectItem>
-                      <SelectItem value="25-34">25-34</SelectItem>
-                      <SelectItem value="35-44">35-44</SelectItem>
-                      <SelectItem value="45-54">45-54</SelectItem>
-                      <SelectItem value="55-64">55-64</SelectItem>
-                      <SelectItem value="65+">65+</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="user-gender">Gender</Label>
-                  <Select
-                    value={userData.genderId}
-                    onValueChange={(value) => setUserData((prev) => ({ ...prev, genderId: value }))}
-                  >
-                    <SelectTrigger id="user-gender">
-                      <SelectValue placeholder="Select gender" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {genders.map((gender) => (
-                        <SelectItem key={gender.value} value={gender.value}>
-                          {gender.label}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="user-location">Location</Label>
-                <Combobox
-                  options={locations}
-                  value={userData.locationId}
-                  onChange={(value) => setUserData((prev) => ({ ...prev, locationId: value }))}
-                  onCreateOption={createNewLocation}
-                  placeholder="Select or enter your location"
-                  emptyMessage="No locations found"
-                  createMessage="Add location"
+          <div className="grid gap-3 md:grid-cols-2">
+            {[
+              ["isNamePublic", "Show my name"],
+              ["isPfpPublic", "Show my profile picture"],
+              ["isOccupationPublic", "Show my occupation"],
+              ["isLocationPublic", "Show my location"],
+              ["isGenderPublic", "Show my gender"],
+            ].map(([key, label]) => (
+              <div key={key} className="flex items-center justify-between rounded-2xl border px-4 py-3">
+                <span className="text-sm font-medium text-slate-900">{label}</span>
+                <Switch
+                  checked={payload.visibility[key as keyof UserOnboardingPayload["visibility"]]}
+                  onCheckedChange={(checked) =>
+                    setVisibilitySetting(key as keyof UserOnboardingPayload["visibility"], checked)
+                  }
                 />
               </div>
+            ))}
+          </div>
+        </div>
+      ) : null}
 
-              <div className="space-y-2">
-                <Label htmlFor="user-occupation">Occupation</Label>
-                <Combobox
-                  options={occupations}
-                  value={userData.occupationId}
-                  onChange={(value) => setUserData((prev) => ({ ...prev, occupationId: value }))}
-                  onCreateOption={createNewOccupation}
-                  placeholder="Select or enter your occupation"
-                  emptyMessage="No occupations found"
-                  createMessage="Add occupation"
-                />
+      {currentScreen === "about" ? (
+        <div className="space-y-5">
+          <div className="space-y-2">
+            <Label htmlFor="onboarding-bio">Short bio</Label>
+            <Textarea
+              id="onboarding-bio"
+              rows={5}
+              value={payload.bio}
+              onChange={(event) => updatePayload({ bio: event.target.value })}
+              placeholder="What do you care about, and what kind of work or contribution defines you?"
+            />
+          </div>
+
+          <div className="grid gap-5 md:grid-cols-2">
+            <div className="space-y-2">
+              <Label>Location</Label>
+              <Combobox
+                options={references.locations}
+                value={payload.locationId}
+                onChange={(value) => updatePayload({ locationId: value })}
+                placeholder="Choose your location"
+                emptyMessage="No matching locations"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>Occupation</Label>
+              <Combobox
+                options={references.occupations}
+                value={payload.occupationId}
+                onChange={(value) => updatePayload({ occupationId: value })}
+                placeholder="Choose your occupation"
+                emptyMessage="No matching occupations"
+              />
+            </div>
+          </div>
+
+          <div className="grid gap-5 md:grid-cols-2">
+            <div className="space-y-2">
+              <Label>Gender</Label>
+              <Combobox
+                options={references.genders}
+                value={payload.genderId}
+                onChange={(value) => updatePayload({ genderId: value })}
+                placeholder="Choose a gender"
+                emptyMessage="No matching options"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>Interests</Label>
+              <div className="flex max-h-48 flex-wrap gap-2 overflow-y-auto rounded-2xl border p-3">
+                {references.interests.map((interest) => {
+                  const active = payload.interestIds.includes(interest.value)
+                  return (
+                    <Button
+                      key={interest.value}
+                      type="button"
+                      variant={active ? "default" : "outline"}
+                      size="sm"
+                      onClick={() => toggleInterest(interest.value)}
+                    >
+                      {interest.label}
+                    </Button>
+                  )
+                })}
               </div>
+            </div>
+          </div>
+        </div>
+      ) : null}
 
-              <div className="space-y-2">
-                <Label>Interests (select all that apply)</Label>
-                <div className="grid grid-cols-2 md:grid-cols-3 gap-2 mt-2">
-                  {interests.map((interest) => (
-                    <div key={interest.value} className="flex items-center space-x-2">
-                      <Checkbox
-                        id={`interest-${interest.value}`}
-                        checked={userData.interests.includes(interest.value)}
-                        onCheckedChange={() => handleInterestToggle(interest.value)}
-                        className="mt-1"
-                      />
-                      <label
-                        htmlFor={`interest-${interest.value}`}
-                        className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
-                      >
-                        {interest.label}
-                      </label>
-                    </div>
-                  ))}
+      {currentScreen === "relationship" ? (
+        <div className="space-y-6">
+          <RadioGroup
+            value={payload.relationshipChoice}
+            onValueChange={(value) =>
+              updatePayload({
+                relationshipChoice: value as UserOnboardingPayload["relationshipChoice"],
+                selectedProjectId: null,
+              })
+            }
+            className="grid gap-3"
+          >
+            {[
+              {
+                value: "individual",
+                title: "I’m joining as an individual",
+                description: "I want a FundLoop profile first and can decide on projects later.",
+              },
+              {
+                value: "team_member",
+                title: "I’m already on a project team",
+                description: "Help me find the project and tell me who to ask for an invite.",
+              },
+              {
+                value: "create_project",
+                title: "I want to create a new project",
+                description: "Publish my personal profile, then continue straight into project onboarding.",
+              },
+            ].map((option) => (
+              <label key={option.value} className="flex items-start gap-3 rounded-2xl border p-4">
+                <RadioGroupItem value={option.value} id={`relationship-${option.value}`} />
+                <div className="space-y-1">
+                  <p className="font-medium text-slate-900">{option.title}</p>
+                  <p className="text-sm text-slate-600">{option.description}</p>
                 </div>
-                <div className="mt-2">
-                  <Combobox
-                    options={[]}
-                    value=""
-                    onChange={() => {}}
-                    onCreateOption={createNewInterest}
-                    placeholder="Add a new interest"
-                    emptyMessage="Type to add a new interest"
-                    createMessage="Add interest"
+              </label>
+            ))}
+          </RadioGroup>
+
+          {payload.relationshipChoice === "team_member" ? (
+            <div className="space-y-4 rounded-3xl border border-slate-200 p-5">
+              <div className="space-y-2">
+                <Label htmlFor="project-search">Search for your project</Label>
+                <div className="relative">
+                  <Search className="pointer-events-none absolute left-3 top-3.5 h-4 w-4 text-slate-400" />
+                  <Input
+                    id="project-search"
+                    className="pl-9"
+                    value={searchQuery}
+                    onChange={(event) => setSearchQuery(event.target.value)}
+                    placeholder="Search by project name or slug"
                   />
                 </div>
               </div>
-            </form>
-          </CardContent>
-          <CardFooter className="flex justify-between">
-            <Button type="button" variant="outline" onClick={() => setStep(1)} className="gap-1">
-              <ArrowLeft className="h-4 w-4" />
-              Back
-            </Button>
-            <Button
-              form="step2-form"
-              type="submit"
-              className="bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-700 hover:to-blue-700 gap-1"
-              disabled={isSubmitting || !userData.age || !userData.locationId || userData.interests.length === 0}
-            >
-              {isSubmitting ? "Saving..." : "Continue"}
-              <ArrowRight className="h-4 w-4" />
-            </Button>
-          </CardFooter>
-        </Card>
-      </TabsContent>
 
-      {/* Step 3: Project Recommendations */}
-      <TabsContent value="step-3" className="mt-0">
-        <Card className="w-full">
-          <CardHeader>
-            <CardTitle className="text-2xl">Recommended Projects</CardTitle>
-            <CardDescription>
-              Based on your interests, we recommend these projects. Select at least one to get started.
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <form id="step3-form" onSubmit={handleSubmitStep3} className="space-y-4">
-              <div className="grid gap-4">
-                {recommendedProjects.map((project) => (
-                  <div
-                    key={project.id}
-                    className={`p-4 rounded-lg border cursor-pointer transition-colors ${
-                      userData.selectedProjects.includes(project.id)
-                        ? "border-emerald-500 bg-emerald-50 dark:bg-emerald-900/20"
-                        : "border-slate-200 dark:border-slate-700 hover:border-emerald-300 dark:hover:border-emerald-700"
-                    }`}
-                    onClick={() => handleProjectToggle(project.id)}
-                  >
-                    <div className="flex items-start gap-4">
-                      <Checkbox
-                        id={`project-${project.id}`}
-                        checked={userData.selectedProjects.includes(project.id)}
-                        onCheckedChange={() => handleProjectToggle(project.id)}
-                        className="mt-1"
-                      />
-                      <div className="flex-1">
-                        <div className="flex items-center gap-2 mb-2">
-                          <Avatar className="h-8 w-8">
-                            <AvatarImage src={project.logo} alt={project.name} />
-                            <AvatarFallback>{project.name.substring(0, 2)}</AvatarFallback>
-                          </Avatar>
-                          <div>
-                            <label htmlFor={`project-${project.id}`} className="text-base font-medium cursor-pointer">
-                              {project.name}
-                            </label>
-                            <p className="text-xs text-slate-500 dark:text-slate-400">{project.category}</p>
-                          </div>
+              {searchingProjects ? <p className="text-sm text-slate-500">Searching active projects...</p> : null}
+
+              <div className="space-y-3">
+                {projectMatches.map((project) => {
+                  const active = payload.selectedProjectId === project.id
+                  return (
+                    <button
+                      key={project.id}
+                      type="button"
+                      className={`w-full rounded-2xl border p-4 text-left transition ${
+                        active ? "border-emerald-500 bg-emerald-50" : "border-slate-200 hover:border-slate-300"
+                      }`}
+                      onClick={() => updatePayload({ selectedProjectId: project.id })}
+                    >
+                      <div className="space-y-1">
+                        <div className="flex items-center justify-between gap-3">
+                          <p className="font-medium text-slate-900">{project.name}</p>
+                          {active ? <Badge>Selected</Badge> : null}
                         </div>
-                        <p className="text-sm text-slate-600 dark:text-slate-300">{project.description}</p>
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </form>
-          </CardContent>
-          <CardFooter className="flex justify-between">
-            <Button type="button" variant="outline" onClick={() => setStep(2)} className="gap-1">
-              <ArrowLeft className="h-4 w-4" />
-              Back
-            </Button>
-            <Button
-              form="step3-form"
-              type="submit"
-              className="bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-700 hover:to-blue-700 gap-1"
-              disabled={isSubmitting || userData.selectedProjects.length === 0}
-            >
-              {isSubmitting ? "Saving..." : "Continue"}
-              <ArrowRight className="h-4 w-4" />
-            </Button>
-          </CardFooter>
-        </Card>
-      </TabsContent>
-
-      {/* Step 4: Skills Contribution */}
-      <TabsContent value="step-4" className="mt-0">
-        <Card className="w-full">
-          <CardHeader>
-            <CardTitle className="text-2xl">Skills Contribution</CardTitle>
-            <CardDescription>
-              Would you like to actively contribute your skills to the FundLoop ecosystem?
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <form id="step4-form" onSubmit={handleSubmitStep4} className="space-y-6">
-              <div className="space-y-4">
-                <div className="flex items-start space-x-2">
-                  <RadioGroup
-                    value={userData.willContribute ? "yes" : "no"}
-                    onValueChange={(value) => setUserData((prev) => ({ ...prev, willContribute: value === "yes" }))}
-                    className="flex flex-col space-y-3"
-                  >
-                    <div className="flex items-center space-x-2">
-                      <RadioGroupItem value="yes" id="contribution-yes" />
-                      <Label htmlFor="contribution-yes">Yes, I'd like to actively contribute my skills</Label>
-                    </div>
-                    <div className="flex items-center space-x-2">
-                      <RadioGroupItem value="no" id="contribution-no" />
-                      <Label htmlFor="contribution-no">No, I prefer to participate passively at this time</Label>
-                    </div>
-                  </RadioGroup>
-                </div>
-
-                {userData.willContribute && (
-                  <>
-                    <div className="space-y-2 pt-4">
-                      <Label>How would you like to contribute? (select all that apply)</Label>
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mt-2">
-                        {contributionSkills.map((skill) => (
-                          <div key={skill.id} className="flex items-start space-x-2">
-                            <Checkbox
-                              id={`skill-${skill.id}`}
-                              checked={userData.contributionSkills.includes(skill.id)}
-                              onCheckedChange={() => handleSkillToggle(skill.id)}
-                              className="mt-1"
-                            />
-                            <div>
-                              <label
-                                htmlFor={`skill-${skill.id}`}
-                                className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
-                              >
-                                {skill.label}
-                              </label>
-                              <p className="text-xs text-slate-500 dark:text-slate-400">{skill.description}</p>
-                            </div>
+                        <p className="text-sm text-slate-600">{project.description}</p>
+                        {project.contacts.length > 0 ? (
+                          <div className="pt-2 text-sm text-slate-700">
+                            <p className="font-medium">Who to ask for an invite</p>
+                            <ul className="mt-1 space-y-1">
+                              {project.contacts.map((contact) => (
+                                <li key={`${project.id}-${contact.name}-${contact.role}`}>
+                                  {contact.name} · {contact.role}
+                                  {contact.email ? ` · ${contact.email}` : ""}
+                                </li>
+                              ))}
+                            </ul>
                           </div>
-                        ))}
+                        ) : (
+                          <p className="pt-2 text-sm text-slate-700">{project.fallbackMessage}</p>
+                        )}
                       </div>
-                    </div>
-
-                    <div className="space-y-2">
-                      <Label htmlFor="user-contributionDetails">
-                        Tell us more about your skills and how you'd like to contribute
-                      </Label>
-                      <Textarea
-                        id="user-contributionDetails"
-                        placeholder="Describe your skills, experience, and how you'd like to contribute to the ecosystem..."
-                        className="min-h-[120px]"
-                        value={userData.contributionDetails}
-                        onChange={handleInputChange}
-                        required={userData.willContribute}
-                      />
-                    </div>
-                  </>
-                )}
+                    </button>
+                  )
+                })}
               </div>
-            </form>
-          </CardContent>
-          <CardFooter className="flex justify-between">
-            <Button type="button" variant="outline" onClick={() => setStep(3)} className="gap-1">
-              <ArrowLeft className="h-4 w-4" />
-              Back
-            </Button>
-            <Button
-              form="step4-form"
-              type="submit"
-              className="bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-700 hover:to-blue-700"
-              disabled={
-                isSubmitting ||
-                (userData.willContribute && (userData.contributionSkills.length === 0 || !userData.contributionDetails))
-              }
-            >
-              {isSubmitting ? "Completing Registration..." : "Complete Registration"}
-            </Button>
-          </CardFooter>
-        </Card>
-      </TabsContent>
-    </Tabs>
+
+              <Button type="button" variant="outline" onClick={() => updatePayload({ relationshipChoice: "create_project" })}>
+                I can’t find it. Help me create my own project instead.
+              </Button>
+            </div>
+          ) : null}
+        </div>
+      ) : null}
+
+      {currentScreen === "review" ? (
+        <div className="space-y-6">
+          <div className="rounded-3xl border border-emerald-200 bg-emerald-50/70 p-5">
+            <h3 className="font-semibold text-emerald-950">Ready to publish</h3>
+            <p className="mt-2 text-sm text-emerald-900">
+              Your draft is still private. Publishing will make your profile active inside FundLoop with the visibility settings shown in the preview.
+            </p>
+          </div>
+
+          <div className="grid gap-4 md:grid-cols-2">
+            <Card>
+              <CardContent className="space-y-2 p-4 text-sm text-slate-600">
+                <p className="font-medium text-slate-900">Profile summary</p>
+                <p>Name: {payload.fullName || "Not set"}</p>
+                <p>Headline: {payload.profileHeadline || "Not set"}</p>
+                <p>Location: {selectedLocation}</p>
+                <p>Occupation: {selectedOccupation}</p>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardContent className="space-y-2 p-4 text-sm text-slate-600">
+                <p className="font-medium text-slate-900">Next step after publish</p>
+                <p>
+                  {payload.relationshipChoice === "create_project"
+                    ? "You’ll continue directly into the project onboarding flow."
+                    : payload.relationshipChoice === "team_member"
+                      ? "You’ll be able to use the project contact guidance you selected."
+                      : "Your personal profile will be live and ready to use."}
+                </p>
+                {selectedProject ? <p>Selected project: {selectedProject.name}</p> : null}
+              </CardContent>
+            </Card>
+          </div>
+        </div>
+      ) : null}
+    </OnboardingShell>
   )
 }

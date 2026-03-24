@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react"
 import Link from "next/link"
 import { usePathname, useRouter } from "next/navigation"
-import { supabase } from "@/lib/supabase"
+import { getSupabaseBrowserClient } from "@/lib/supabase"
 import { Button } from "@/components/ui/button"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import {
@@ -18,24 +18,29 @@ import { AuthModal } from "@/components/auth-modal"
 import ResourcesDropdown from "@/components/resources-dropdown"
 import { CircleDollarSign, ChevronDown, User, Settings, LogOut } from "lucide-react"
 import { MobileMenu } from "@/components/mobile-menu"
-import { toast } from "@/components/ui/use-toast"
-import { Modal } from "@/components/modal"
-import UserSignupFlow from "@/components/user-signup-flow"
 
 export default function Navbar() {
   const [session, setSession] = useState<any>(null)
-  const [user, setUser] = useState<any>(null)
+  const [user, setUser] = useState<{ full_name: string | null; avatar_url: string | null; status: string | null } | null>(
+    null,
+  )
   const [loading, setLoading] = useState(true)
   const [showAuthModal, setShowAuthModal] = useState(false)
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
-  const [signupStep, setSignupStep] = useState<number>(5)
-  const [welcomeOpen, setWelcomeOpen] = useState(false)
 
   const pathname = usePathname()
   const router = useRouter()
 
+  const openOnboarding = () => {
+    const params = new URLSearchParams(window.location.search)
+    params.set("onboarding", "user")
+    const query = params.toString()
+    router.push(query ? `${pathname}?${query}` : pathname, { scroll: false })
+  }
+
   useEffect(() => {
     const fetchUser = async () => {
+      const supabase = getSupabaseBrowserClient()
       const { data } = await supabase.auth.getSession()
       const activeSession = data.session
       setSession(activeSession)
@@ -43,23 +48,12 @@ export default function Navbar() {
       if (activeSession?.user?.id) {
         const { data: userData } = await supabase
           .from("users")
-          .select("full_name, avatar_url, signup_step, signin_count")
+          .select("full_name, avatar_url, status")
           .eq("user_id", activeSession.user.id)
           .single()
 
         if (userData) {
-          setUser({ full_name: userData.full_name, avatar_url: userData.avatar_url })
-          setSignupStep(userData.signup_step ?? 1)
-          const newCount = (userData.signin_count ?? 0) + 1
-          await supabase
-            .from("users")
-            .update({ signin_count: newCount })
-            .eq("user_id", activeSession.user.id)
-          if (userData.signup_step === null || userData.signup_step < 5) {
-            setWelcomeOpen(true)
-          } else {
-            handleSigninActions(newCount, activeSession.user.id)
-          }
+          setUser({ full_name: userData.full_name, avatar_url: userData.avatar_url, status: userData.status })
         }
       } else {
         setUser(null)
@@ -70,6 +64,7 @@ export default function Navbar() {
 
     fetchUser()
 
+    const supabase = getSupabaseBrowserClient()
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange(async (_, newSession) => {
@@ -77,23 +72,12 @@ export default function Navbar() {
       if (newSession?.user?.id) {
         const { data } = await supabase
           .from("users")
-          .select("full_name, avatar_url, signup_step, signin_count")
+          .select("full_name, avatar_url, status")
           .eq("user_id", newSession.user.id)
           .single()
 
         if (data) {
-          setUser({ full_name: data.full_name, avatar_url: data.avatar_url })
-          setSignupStep(data.signup_step ?? 1)
-          const newCount = (data.signin_count ?? 0) + 1
-          await supabase
-            .from("users")
-            .update({ signin_count: newCount })
-            .eq("user_id", newSession.user.id)
-          if (data.signup_step === null || data.signup_step < 5) {
-            setWelcomeOpen(true)
-          } else {
-            handleSigninActions(newCount, newSession.user.id)
-          }
+          setUser({ full_name: data.full_name, avatar_url: data.avatar_url, status: data.status })
         }
       } else {
         setUser(null)
@@ -101,69 +85,14 @@ export default function Navbar() {
     })
 
     return () => subscription.unsubscribe()
-  }, [])
+  }, [router])
 
   const handleSignOut = async () => {
+    const supabase = getSupabaseBrowserClient()
     await supabase.auth.signOut()
     setSession(null)
     setUser(null)
     router.refresh()
-  }
-
-  const handleSigninActions = async (count: number, userId: string) => {
-    if (count === 2) {
-      toast({
-        title: "Welcome back",
-        description: "Please review your profile information",
-      })
-      router.push("/my-profile")
-    }
-
-    if (count === 3) {
-      const { data } = await supabase
-        .from("invitation_codes")
-        .select("usage_count")
-        .eq("created_by", userId)
-      const invited = data?.some((c) => (c as any).usage_count > 0)
-      if (!invited) {
-        toast({
-          title: "Invite friends",
-          description: "Share your invite code with others!",
-        })
-        router.push("/my-profile")
-      }
-    }
-
-    if (count === 6) {
-      const missing: string[] = []
-      const { data: profile } = await supabase
-        .from("users")
-        .select("avatar_url")
-        .eq("user_id", userId)
-        .single()
-      if (!profile?.avatar_url) missing.push("profile picture")
-
-      const { count: projectCount } = await supabase
-        .from("participants")
-        .select("id", { count: "exact", head: true })
-        .eq("user_id", userId)
-      if (!projectCount || projectCount === 0) missing.push("project membership")
-
-      const { data: codes } = await supabase
-        .from("invitation_codes")
-        .select("usage_count")
-        .eq("created_by", userId)
-      const used = codes?.some((c) => (c as any).usage_count > 0)
-      if (!used) missing.push("invite code usage")
-
-      if (missing.length > 0) {
-        toast({
-          title: "Complete your profile",
-          description: `Please add: ${missing.join(", ")}`,
-        })
-        router.push("/my-profile")
-      }
-    }
   }
 
   const navLinks = [
@@ -221,6 +150,16 @@ export default function Navbar() {
               <Button className="bg-emerald-600 text-white hover:bg-emerald-700" onClick={() => setShowAuthModal(true)}>
                 Authenticate
               </Button>
+            ) : user?.status !== "active" ? (
+              <div className="flex items-center gap-2">
+                <Button className="bg-emerald-600 text-white hover:bg-emerald-700" onClick={openOnboarding}>
+                  Continue onboarding
+                </Button>
+                <Button variant="ghost" size="icon" onClick={() => void handleSignOut()}>
+                  <LogOut className="h-4 w-4" />
+                  <span className="sr-only">Log out</span>
+                </Button>
+              </div>
             ) : (
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
@@ -267,9 +206,6 @@ export default function Navbar() {
       {/* Mobile menu modal */}
       <MobileMenu mobileMenuOpen={mobileMenuOpen} setMobileMenuOpen={setMobileMenuOpen} navLinks={navLinks} />
       <AuthModal open={showAuthModal} onClose={() => setShowAuthModal(false)} />
-      <Modal title="Welcome" isOpen={welcomeOpen} onClose={() => setWelcomeOpen(false)} size="lg">
-        <UserSignupFlow onClose={() => setWelcomeOpen(false)} />
-      </Modal>
     </>
   )
 }
