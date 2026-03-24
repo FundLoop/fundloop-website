@@ -9,24 +9,57 @@ import { getSupabaseBrowserClient } from "@/lib/supabase"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { DollarSign, Users, Building2, ArrowLeft } from "lucide-react"
-import { Line, LineChart, XAxis, YAxis, CartesianGrid, Legend, ResponsiveContainer } from "recharts"
+import { Line, LineChart, XAxis, YAxis, CartesianGrid, Legend } from "recharts"
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart"
-import type { Database } from "@/types/supabase"
 
-const COLORS = ["#0088FE", "#00C49F", "#FFBB28", "#FF8042", "#8884D8", "#82CA9D", "#FF6B6B"]
+const monthLabelFormatter = new Intl.DateTimeFormat("en-US", {
+  month: "short",
+  year: "numeric",
+})
 
-const generateDummyData = (count: number) => {
-  const data = []
-  for (let i = 0; i < count; i++) {
-    data.push({
-      name: `Item ${i + 1}`,
-      value: Math.floor(Math.random() * 100),
-    })
-  }
-  return data
+const compactNumberFormatter = new Intl.NumberFormat("en-US", {
+  notation: "compact",
+  maximumFractionDigits: 1,
+})
+
+const compactCurrencyFormatter = new Intl.NumberFormat("en-US", {
+  style: "currency",
+  currency: "USD",
+  notation: "compact",
+  maximumFractionDigits: 1,
+})
+
+const currencyFormatter = new Intl.NumberFormat("en-US", {
+  style: "currency",
+  currency: "USD",
+  maximumFractionDigits: 0,
+})
+
+const formatMonthLabel = (year: number, month: number) =>
+  monthLabelFormatter.format(new Date(year, month - 1, 1))
+
+const createFallbackNetworkGrowthData = () => {
+  return Array.from({ length: 12 }, (_, index) => {
+    const offset = 11 - index
+    const date = new Date()
+    date.setMonth(date.getMonth() - offset)
+
+    const step = index + 1
+    const avgSalary = 1800 + step * 140
+
+    return {
+      name: formatMonthLabel(date.getFullYear(), date.getMonth() + 1),
+      users: 120 + step * 24,
+      projects: 8 + step * 3,
+      funds: 32000 + step * 12500,
+      salary_min: Math.max(0, avgSalary * 0.6),
+      salary_avg: avgSalary,
+      salary_max: avgSalary * 1.45,
+    }
+  })
 }
 
-const dummyLineData = generateDummyData(12)
+const fallbackNetworkGrowthData = createFallbackNetworkGrowthData()
 
 interface MonthlyStats {
   id: number
@@ -74,14 +107,25 @@ function StatCard({ title, value, description, icon, trend }: StatCardProps) {
 
 export default function AnalyticsPage() {
   const [stats, setStats] = useState<MonthlyStats[]>([])
-  const [loading, setLoading] = useState(true)
   const [latestStats, setLatestStats] = useState<MonthlyStats | null>(null)
   const getSupabase = () => getSupabaseBrowserClient()
+
+  const networkGrowthData =
+    stats.length > 0
+      ? stats.map((stat) => ({
+          name: formatMonthLabel(stat.year, stat.month),
+          users: stat.user_count,
+          projects: stat.project_count,
+          funds: stat.total_funds,
+          salary_min: Math.max(0, stat.avg_salary * 0.6),
+          salary_avg: stat.avg_salary,
+          salary_max: stat.avg_salary * 1.45,
+        }))
+      : fallbackNetworkGrowthData
 
   useEffect(() => {
     const fetchStats = async () => {
       const supabase = getSupabase()
-      setLoading(true)
       try {
         const { data, error } = await supabase.from("monthly_network_stats").select("*").order("year").order("month")
 
@@ -94,8 +138,6 @@ export default function AnalyticsPage() {
         }
       } catch (err) {
         console.error("Error loading analytics data:", err)
-      } finally {
-        setLoading(false)
       }
     }
 
@@ -115,7 +157,9 @@ export default function AnalyticsPage() {
 
       <div className="mb-8">
         <h1 className="text-3xl md:text-4xl font-bold">Ecosystem Analytics</h1>
-        <p className="text-red-600">This is all dummy data for now.</p>
+        <p className="mt-2 text-sm italic text-red-600">
+          Note: This is all dummy data for now. It&apos;s a vision for what could be.
+        </p>
         <p className="text-slate-600 dark:text-slate-300 mt-2">
           Detailed metrics and insights about the FundLoop network state
         </p>
@@ -152,38 +196,166 @@ export default function AnalyticsPage() {
         />
       </div>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Network Growth</CardTitle>
-          <CardDescription>Users and projects growth over the last 12 months</CardDescription>
-        </CardHeader>
-        <CardContent className="h-[400px]">
-          <ChartContainer
-            config={{
-              users: {
-                label: "Users",
-                color: "hsl(var(--chart-1))",
-              },
-              projects: {
-                label: "Projects",
-                color: "hsl(var(--chart-2))",
-              },
-            }}
-          >
-            <ResponsiveContainer width="100%" height="100%">
-              <LineChart data={dummyLineData}>
+      <div className="grid gap-6 lg:grid-cols-2">
+        <Card>
+          <CardHeader>
+            <CardTitle>Projects</CardTitle>
+            <CardDescription>Projects in the network by month</CardDescription>
+          </CardHeader>
+          <CardContent className="h-[320px] min-w-0">
+            <ChartContainer
+              className="h-full w-full"
+              config={{
+                projects: {
+                  label: "Projects",
+                  color: "hsl(var(--chart-2))",
+                },
+              }}
+            >
+              <LineChart data={networkGrowthData}>
                 <CartesianGrid strokeDasharray="3 3" />
                 <XAxis dataKey="name" />
-                <YAxis />
+                <YAxis tickFormatter={(value: number) => compactNumberFormatter.format(value)} />
                 <ChartTooltip content={<ChartTooltipContent />} />
-                <Legend />
-                <Line type="monotone" dataKey="value" stroke="var(--chart-1)" name="Users" strokeWidth={2} />
-                <Line type="monotone" dataKey="value" stroke="var(--chart-2)" name="Projects" strokeWidth={2} />
+                <Line type="monotone" dataKey="projects" stroke="var(--color-projects)" name="Projects" strokeWidth={2} />
               </LineChart>
-            </ResponsiveContainer>
-          </ChartContainer>
-        </CardContent>
-      </Card>
+            </ChartContainer>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle>Users</CardTitle>
+            <CardDescription>People participating in FundLoop by month</CardDescription>
+          </CardHeader>
+          <CardContent className="h-[320px] min-w-0">
+            <ChartContainer
+              className="h-full w-full"
+              config={{
+                users: {
+                  label: "Users",
+                  color: "hsl(var(--chart-1))",
+                },
+              }}
+            >
+              <LineChart data={networkGrowthData}>
+                <CartesianGrid strokeDasharray="3 3" />
+                <XAxis dataKey="name" />
+                <YAxis tickFormatter={(value: number) => compactNumberFormatter.format(value)} />
+                <ChartTooltip content={<ChartTooltipContent />} />
+                <Line type="monotone" dataKey="users" stroke="var(--color-users)" name="Users" strokeWidth={2} />
+              </LineChart>
+            </ChartContainer>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle>Funds Collected</CardTitle>
+            <CardDescription>Total monthly funds flowing through the network</CardDescription>
+          </CardHeader>
+          <CardContent className="h-[320px] min-w-0">
+            <ChartContainer
+              className="h-full w-full"
+              config={{
+                funds: {
+                  label: "Funds Collected",
+                  color: "hsl(var(--chart-3))",
+                },
+              }}
+            >
+              <LineChart data={networkGrowthData}>
+                <CartesianGrid strokeDasharray="3 3" />
+                <XAxis dataKey="name" />
+                <YAxis tickFormatter={(value: number) => compactCurrencyFormatter.format(value)} />
+                <ChartTooltip
+                  content={
+                    <ChartTooltipContent
+                      formatter={(value, name) => (
+                        <div className="flex min-w-[12rem] items-center justify-between gap-4">
+                          <span className="text-muted-foreground">{name}</span>
+                          <span className="font-mono font-medium tabular-nums text-foreground">
+                            {currencyFormatter.format(Number(value))}
+                          </span>
+                        </div>
+                      )}
+                    />
+                  }
+                />
+                <Line type="monotone" dataKey="funds" stroke="var(--color-funds)" name="Funds Collected" strokeWidth={2} />
+              </LineChart>
+            </ChartContainer>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle>Citizen Salary</CardTitle>
+            <CardDescription>Monthly salary range and average per participant</CardDescription>
+          </CardHeader>
+          <CardContent className="h-[320px] min-w-0">
+            <ChartContainer
+              className="h-full w-full"
+              config={{
+                salary_min: {
+                  label: "Minimum",
+                  color: "hsl(var(--chart-4))",
+                },
+                salary_avg: {
+                  label: "Average",
+                  color: "hsl(var(--chart-1))",
+                },
+                salary_max: {
+                  label: "Maximum",
+                  color: "hsl(var(--chart-5))",
+                },
+              }}
+            >
+              <LineChart data={networkGrowthData}>
+                <CartesianGrid strokeDasharray="3 3" />
+                <XAxis dataKey="name" />
+                <YAxis tickFormatter={(value: number) => compactCurrencyFormatter.format(value)} />
+                <ChartTooltip
+                  content={
+                    <ChartTooltipContent
+                      formatter={(value, name) => (
+                        <div className="flex min-w-[12rem] items-center justify-between gap-4">
+                          <span className="text-muted-foreground">{name}</span>
+                          <span className="font-mono font-medium tabular-nums text-foreground">
+                            {currencyFormatter.format(Number(value))}
+                          </span>
+                        </div>
+                      )}
+                    />
+                  }
+                />
+                <Legend />
+                <Line
+                  type="monotone"
+                  dataKey="salary_min"
+                  stroke="var(--color-salary_min)"
+                  name="Minimum"
+                  strokeWidth={2}
+                />
+                <Line
+                  type="monotone"
+                  dataKey="salary_avg"
+                  stroke="var(--color-salary_avg)"
+                  name="Average"
+                  strokeWidth={2}
+                />
+                <Line
+                  type="monotone"
+                  dataKey="salary_max"
+                  stroke="var(--color-salary_max)"
+                  name="Maximum"
+                  strokeWidth={2}
+                />
+              </LineChart>
+            </ChartContainer>
+          </CardContent>
+        </Card>
+      </div>
     </div>
   )
 }
