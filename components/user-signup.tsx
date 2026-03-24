@@ -4,11 +4,7 @@ import { usePathname, useRouter } from "next/navigation"
 import { ArrowRight } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-
-function buildUrl(pathname: string, searchParams: URLSearchParams) {
-  const query = searchParams.toString()
-  return query ? `${pathname}?${query}` : pathname
-}
+import { buildUrl } from "@/lib/url"
 
 export default function UserSignup() {
   const pathname = usePathname()

@@ -32,7 +32,11 @@ export async function updateWithTracking(table: string, id: number | string, dat
   // Perform the update
   const { data: result, error } = await getUntypedTableClient(table).update(dataWithTracking).eq(idField, id).select()
 
-  return { data: result, error }
+  if (error) {
+    throw error
+  }
+
+  return result
 }
 
 // Soft delete function
@@ -52,7 +56,11 @@ export async function softDelete(table: string, id: number | string, idField = "
   // Perform the soft delete
   const { data, error } = await getUntypedTableClient(table).update(softDeleteData).eq(idField, id).select()
 
-  return { data, error }
+  if (error) {
+    throw error
+  }
+
+  return data
 }
 
 // Helper function to get the status field name for each table
@@ -88,5 +96,9 @@ export async function restoreRecord(table: string, id: number | string, idField 
   // Perform the restoration
   const { data, error } = await getUntypedTableClient(table).update(restoreData).eq(idField, id).select()
 
-  return { data, error }
+  if (error) {
+    throw error
+  }
+
+  return data
 }

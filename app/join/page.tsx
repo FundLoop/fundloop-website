@@ -7,11 +7,7 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Skeleton } from "@/components/ui/skeleton"
 import { toast } from "@/components/ui/use-toast"
 import { getSupabaseBrowserClient } from "@/lib/supabase"
-
-function buildUrl(pathname: string, searchParams: URLSearchParams) {
-  const query = searchParams.toString()
-  return query ? `${pathname}?${query}` : pathname
-}
+import { buildUrl } from "@/lib/url"
 
 export default function JoinPage() {
   const pathname = usePathname()

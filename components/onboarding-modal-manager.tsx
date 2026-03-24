@@ -6,11 +6,7 @@ import { getSupabaseBrowserClient } from "@/lib/supabase"
 import { Modal } from "@/components/modal"
 import UserSignupFlow from "@/components/user-signup-flow"
 import ProjectSignupFlow from "@/components/project-signup-flow"
-
-function buildUrl(pathname: string, searchParams: URLSearchParams) {
-  const query = searchParams.toString()
-  return query ? `${pathname}?${query}` : pathname
-}
+import { buildUrl } from "@/lib/url"
 
 export function OnboardingModalManager() {
   const pathname = usePathname()

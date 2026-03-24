@@ -12,6 +12,39 @@ Agents populate one level-3 heading for each coding session, following the same 
 
 ---
 
+### session v4: Address PR #12 review comments on the pre-crypto branch
+- timestamp: 2026-03-24T16:45:00-04:00
+- agent: **Codex (GPT-5)**
+- branch: **codex/dev**
+- head: 5b37589d0aa56a9ef90df9bffe16056a67196e22 - Clean up and enrich seed data
+
+#### Objective
+Apply only the outstanding review-comment fixes for PR #12 on top of the pre-crypto branch, while preserving the later footer, onboarding follow-up, and crypto work on a separate branch.
+
+#### Actions Taken
+- Created and preserved a separate `codex/crypto-payment-flows` branch for the later work, then reset `codex/dev` back to `5b37589` so the PR #12 fixup commit could stay narrowly scoped.
+- Restored the expected throw-on-error semantics in `lib/db-utils.ts` so admin callers do not silently receive `{ data, error }` objects where they previously expected exceptions.
+- Fixed the organizations admin table relation loading with explicit foreign-key hints and safer object/array handling, and guarded the empty `.in()` path in the users admin table.
+- Removed the no-op modal `aria-describedby` prop, tightened dialog header structure, and changed support form submissions to persist a nullable IP address instead of the literal string `"unknown"`.
+- Replaced duplicated local `buildUrl` helpers with a shared `lib/url.ts` helper and updated the onboarding entry points to use it.
+- Cleaned the contributor docs by replacing absolute local README links and updating the contribution notes to include `pnpm typecheck` as a required validation step.
+- Reworked project-onboarding publish to enforce a minimum pledge percentage and use a new transactional database function for atomic organization/project/member/category creation.
+- Optimized team-member project search so it only loads the specific user rows needed for contact resolution instead of selecting the entire users table.
+- Added forward-only Supabase migrations for the atomic publish RPC and nullable support-request IP addresses, and updated `types/supabase.ts` accordingly.
+
+#### Tests and Validation Notes
+- `pnpm eslint README.md CONTRIBUTING.md lib/db-utils.ts components/admin/organizations-table.tsx components/admin/users-table.tsx components/modal.tsx app/support/page.tsx components/user-signup.tsx components/project-signup.tsx components/hero.tsx app/join/page.tsx components/onboarding-modal-manager.tsx app/actions/onboarding-actions.ts`
+- `pnpm typecheck`
+- `pnpm build`
+
+#### Reflections
+- Resetting the branch before applying the fixes kept the PR history clean, but it also meant the review fixes had to be reapplied against the older pre-crypto file state.
+- The atomic publish RPC meaningfully reduces the chance of partially-created org/project records during onboarding failures.
+
+#### Suggested Next Steps
+- Push this review-fix branch and resolve the corresponding GitHub review threads on PR #12.
+- Keep later feature work isolated on `codex/crypto-payment-flows` until it is ready for its own PR.
+
 ### session v3: Upgrade stack, canonicalize Supabase, and implement resumable onboarding
 - timestamp: 2026-03-24T10:14:56-04:00
 - agent: **Codex (GPT-5)**

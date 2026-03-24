@@ -25,10 +25,9 @@ export function Modal({ title, isOpen, onClose, children, size = "md", contentCl
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
       <DialogContent
-        aria-describedby={description ? undefined : undefined}
         className={`${sizeClasses[size]} max-h-[90vh] overflow-y-auto data-[state=open]:opacity-100 data-[state=closed]:opacity-0 ${contentClassName ?? ""}`}
       >
-        <DialogHeader className="flex flex-row items-center justify-between">
+        <DialogHeader className="space-y-2 text-left">
           <DialogTitle>{title}</DialogTitle>
           {description ? <DialogDescription>{description}</DialogDescription> : null}
         </DialogHeader>

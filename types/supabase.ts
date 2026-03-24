@@ -1288,7 +1288,7 @@ export type Database = {
           category: string
           email: string
           id: number
-          ip_address: string
+          ip_address: string | null
           message: string
           name: string
           subject: string
@@ -1298,7 +1298,7 @@ export type Database = {
           category: string
           email: string
           id?: number
-          ip_address: string
+          ip_address?: string | null
           message: string
           name: string
           subject: string
@@ -1308,7 +1308,7 @@ export type Database = {
           category?: string
           email?: string
           id?: number
-          ip_address?: string
+          ip_address?: string | null
           message?: string
           name?: string
           subject?: string
@@ -1903,6 +1903,27 @@ export type Database = {
           is_public: boolean
           role_id: number
           user_id: string
+        }[]
+      }
+      publish_project_onboarding_draft_atomic: {
+        Args: {
+          p_billing_email: string | null
+          p_billing_frequency: string | null
+          p_category_ids: number[]
+          p_contact_email: string | null
+          p_default_payment_method_id: number | null
+          p_description: string
+          p_detailed_description: string | null
+          p_logo_url: string | null
+          p_name: string
+          p_payment_percentage: number
+          p_payment_periodicity_id: number | null
+          p_slug: string
+          p_website: string | null
+        }
+        Returns: {
+          project_id: number
+          project_slug: string
         }[]
       }
       soft_delete_organization_members: {

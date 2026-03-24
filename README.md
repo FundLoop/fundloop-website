@@ -47,7 +47,7 @@ Static validation commands work in a fresh clone without real Supabase credentia
 
 ## Supabase Workflow
 
-The [`supabase/`](/Users/botmaster/src/fundloop/supabase) directory is the canonical database source of truth.
+The [`supabase/`](supabase/) directory is the canonical database source of truth.
 
 - `supabase/migrations/` contains the pulled remote schema history tracked in Git.
 - `supabase/seed.sql` contains the current `public` schema seed data from the linked remote project.
@@ -60,8 +60,6 @@ supabase db pull --linked
 supabase db dump --linked --data-only --use-copy --schema public --file supabase/seed.sql
 supabase gen types typescript --project-id <project-ref> --schema public > types/supabase.ts
 ```
-
-The [`database/`](/Users/botmaster/src/fundloop/database) directory is now legacy reference material only and should not be treated as the migration source of truth.
 
 ### Run the app
 
@@ -87,7 +85,6 @@ Open [http://localhost:3000](http://localhost:3000).
 - `components/` contains reusable UI and feature components.
 - `lib/` contains shared helpers.
 - `supabase/` contains the canonical schema migration and seed artifacts.
-- `database/` contains legacy reference SQL and snapshots.
 - `tests/` contains Vitest coverage.
 - `types/` contains shared TypeScript and Supabase types.
 
@@ -98,7 +95,7 @@ Open [http://localhost:3000](http://localhost:3000).
 
 ## Contributing
 
-See [CONTRIBUTING.md](/Users/botmaster/src/fundloop/CONTRIBUTING.md) for local setup and contribution expectations.
+See [CONTRIBUTING.md](CONTRIBUTING.md) for local setup and contribution expectations.
 
 ## License
 

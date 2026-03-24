@@ -95,6 +95,10 @@ export function UsersTable() {
         if (error) throw error
 
         const userIds = data.map((user) => user.user_id)
+        if (userIds.length === 0) {
+          setUsers([])
+          return
+        }
 
         const { data: identitiesData, error: identitiesError } = await supabase
           .from("user_identities")

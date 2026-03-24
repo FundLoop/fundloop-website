@@ -12,7 +12,7 @@ import {
   mergeProjectOnboardingPayload,
   mergeUserOnboardingPayload,
 } from "@/lib/onboarding"
-import type { Tables } from "@/types/supabase"
+import type { Json, Tables } from "@/types/supabase"
 
 type OnboardingResult<T = undefined> =
   | { ok: true; data: T }
@@ -312,20 +312,6 @@ export async function clearProjectOnboardingDraft(): Promise<OnboardingResult> {
   return { ok: true, data: undefined }
 }
 
-async function getFounderRoleId(supabase: Awaited<ReturnType<typeof createServerSupabaseClient>>) {
-  const { data: roleRows, error } = await supabase
-    .from("ref_roles")
-    .select("id, name")
-    .in("name", ["Founder", "Admin"])
-    .order("name")
-
-  if (error || !roleRows || roleRows.length === 0) {
-    throw new Error(error?.message ?? "No founder/admin roles available")
-  }
-
-  return roleRows.find((role) => role.name === "Founder")?.id ?? roleRows[0].id
-}
-
 export async function publishProjectOnboardingDraft(): Promise<OnboardingResult<{ projectSlug: string | null }>> {
   const context = await getAuthenticatedContext()
   if (!context.ok) {
@@ -350,6 +336,9 @@ export async function publishProjectOnboardingDraft(): Promise<OnboardingResult<
   if (!payload.pledgeAccepted) {
     return { ok: false, error: "The FundLoop pledge must be accepted before publishing" }
   }
+  if ((parseDecimal(payload.paymentPercentage) ?? 0) < 1) {
+    return { ok: false, error: "Project payment percentage must be at least 1" }
+  }
 
   const { data: existingProject } = await supabase
     .from("projects")
@@ -361,102 +350,37 @@ export async function publishProjectOnboardingDraft(): Promise<OnboardingResult<
     return { ok: false, error: "A project with this slug already exists" }
   }
 
-  try {
-    const founderRoleId = await getFounderRoleId(supabase)
+  const categoryIds = payload.categoryIds
+    .map((categoryId) => parseNumber(categoryId))
+    .filter((categoryId): categoryId is number => categoryId !== null)
 
-    const { data: organization, error: organizationError } = await supabase
-      .from("organizations")
-      .insert({
-        name: payload.name.trim(),
-        description: payload.description.trim(),
-        website: payload.website.trim() || null,
-        status: "active",
-      })
-      .select("id")
-      .single()
+  const { data: publishedProject, error: publishError } = await supabase
+    .rpc("publish_project_onboarding_draft_atomic", {
+      p_name: payload.name.trim(),
+      p_slug: payload.slug.trim(),
+      p_description: payload.description.trim(),
+      p_website: payload.website.trim() || null,
+      p_detailed_description: payload.detailedDescription.trim() || null,
+      p_logo_url: payload.logoUrl.trim() || null,
+      p_contact_email: payload.contactEmail.trim() || null,
+      p_billing_email: payload.billingEmail.trim() || null,
+      p_billing_frequency: payload.billingFrequency || null,
+      p_payment_percentage: parseDecimal(payload.paymentPercentage) ?? 1,
+      p_payment_periodicity_id: parseNumber(payload.paymentPeriodicityId),
+      p_default_payment_method_id: parseNumber(payload.paymentMethodId),
+      p_category_ids: categoryIds,
+    } satisfies Record<string, Json>)
+    .single()
 
-    if (organizationError || !organization) {
-      return { ok: false, error: organizationError?.message ?? "Failed to create organization" }
-    }
-
-    const { error: memberError } = await supabase.from("organization_members").insert({
-      organization_id: organization.id,
-      user_id: user.id,
-      role_id: founderRoleId,
-      role_assigned_by: user.id,
-      status: "active",
-    })
-
-    if (memberError) {
-      return { ok: false, error: memberError.message }
-    }
-
-    const { data: project, error: projectError } = await supabase
-      .from("projects")
-      .insert({
-        organization_id: organization.id,
-        name: payload.name.trim(),
-        slug: payload.slug.trim(),
-        website: payload.website.trim() || null,
-        description: payload.description.trim(),
-        detailed_description: payload.detailedDescription.trim() || null,
-        logo_url: payload.logoUrl.trim() || null,
-        email: payload.contactEmail.trim() || null,
-        billing_email: payload.billingEmail.trim() || null,
-        billing_frequency: payload.billingFrequency || null,
-        payment_percentage: parseDecimal(payload.paymentPercentage) ?? 1,
-        payment_periodicity_id: parseNumber(payload.paymentPeriodicityId),
-        default_payment_method_id: parseNumber(payload.paymentMethodId),
-        status: "active",
-      })
-      .select("id, slug")
-      .single()
-
-    if (projectError || !project) {
-      return { ok: false, error: projectError?.message ?? "Failed to create project" }
-    }
-
-    const categoryIds = payload.categoryIds
-      .map((categoryId) => parseNumber(categoryId))
-      .filter((categoryId): categoryId is number => categoryId !== null)
-
-    if (categoryIds.length > 0) {
-      const { error: categoriesError } = await supabase.from("project_categories").insert(
-        categoryIds.map((category_id) => ({
-          project_id: project.id,
-          category_id,
-        })),
-      )
-
-      if (categoriesError) {
-        return { ok: false, error: categoriesError.message }
-      }
-    }
-
-    const { error: participantError } = await supabase.from("participants").insert({
-      project_id: project.id,
-      user_id: user.id,
-      is_admin: true,
-    })
-
-    if (participantError) {
-      return { ok: false, error: participantError.message }
-    }
-
-    const { error: deleteDraftError } = await supabase.from("project_onboarding_drafts").delete().eq("user_id", user.id)
-    if (deleteDraftError) {
-      return { ok: false, error: deleteDraftError.message }
-    }
-
-    revalidatePath("/")
-    revalidatePath("/my-profile")
-    revalidatePath("/projects")
-
-    return { ok: true, data: { projectSlug: project.slug } }
-  } catch (error) {
-    const message = error instanceof Error ? error.message : "Failed to publish project draft"
-    return { ok: false, error: message }
+  if (publishError || !publishedProject) {
+    return { ok: false, error: publishError?.message ?? "Failed to publish project draft" }
   }
+
+  revalidatePath("/")
+  revalidatePath("/my-profile")
+  revalidatePath("/projects")
+
+  return { ok: true, data: { projectSlug: publishedProject.project_slug } }
 }
 
 export async function searchProjectsForTeamMember(query: string): Promise<OnboardingResult<TeamMemberProjectMatch[]>> {
@@ -487,7 +411,7 @@ export async function searchProjectsForTeamMember(query: string): Promise<Onboar
   const organizationIds = Array.from(new Set(projects.map((project) => project.organization_id).filter(Boolean))) as number[]
   const projectIds = projects.map((project) => project.id)
 
-  const [{ data: organizationMembers }, { data: participantRows }, { data: roles }, { data: users }] = await Promise.all([
+  const [{ data: organizationMembers }, { data: participantRows }, { data: roles }] = await Promise.all([
     organizationIds.length > 0
       ? supabase
           .from("organization_members")
@@ -499,8 +423,19 @@ export async function searchProjectsForTeamMember(query: string): Promise<Onboar
       ? supabase.from("participants").select("project_id, user_id, is_admin").in("project_id", projectIds)
       : Promise.resolve({ data: [] as Tables<"participants">[], error: null }),
     supabase.from("ref_roles").select("id, name"),
-    supabase.from("users").select("user_id, full_name, email"),
   ])
+
+  const relevantUserIds = Array.from(
+    new Set([
+      ...(organizationMembers ?? []).map((member) => member.user_id).filter((userId): userId is string => Boolean(userId)),
+      ...(participantRows ?? []).map((participant) => participant.user_id).filter((userId): userId is string => Boolean(userId)),
+    ]),
+  )
+
+  const { data: users } =
+    relevantUserIds.length > 0
+      ? await supabase.from("users").select("user_id, full_name, email").in("user_id", relevantUserIds)
+      : { data: [] as Pick<Tables<"users">, "user_id" | "full_name" | "email">[] }
 
   const roleMap = new Map((roles ?? []).map((role) => [role.id, role.name]))
   const userMap = new Map((users ?? []).map((entry) => [entry.user_id, entry]))

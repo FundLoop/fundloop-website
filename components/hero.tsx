@@ -3,11 +3,7 @@
 import { ArrowRight } from "lucide-react"
 import { usePathname, useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
-
-function buildUrl(pathname: string, searchParams: URLSearchParams) {
-  const query = searchParams.toString()
-  return query ? `${pathname}?${query}` : pathname
-}
+import { buildUrl } from "@/lib/url"
 
 export default function Hero() {
   const pathname = usePathname()

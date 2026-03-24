@@ -49,6 +49,14 @@ interface Organization {
   }[]
 }
 
+function getRelatedRecord<T extends Record<string, unknown>>(value: T | T[] | null | undefined): T | null {
+  if (Array.isArray(value)) {
+    return value[0] ?? null
+  }
+
+  return value ?? null
+}
+
 export function OrganizationsTable() {
   const [organizations, setOrganizations] = useState<Organization[]>([])
   const [loading, setLoading] = useState(true)
@@ -109,8 +117,8 @@ export function OrganizationsTable() {
               id,
               user_id,
               role_id,
-              users(full_name),
-              ref_roles!inner(name)
+              users!organization_members_user_id_fkey(full_name),
+              ref_roles!organization_members_role_id_fkey(name)
             `,
               )
               .eq("organization_id", org.id)
@@ -130,12 +138,17 @@ export function OrganizationsTable() {
 
             if (projectsError) throw projectsError
 
-            const members = membersData.map((member) => ({
-              id: member.id,
-              user_id: member.user_id,
-              full_name: Array.isArray(member.users) ? (member.users[0]?.full_name ?? "Unknown User") : "Unknown User",
-              role: Array.isArray(member.ref_roles) ? (member.ref_roles[0]?.name ?? "Unknown Role") : "Unknown Role",
-            }))
+            const members = membersData.map((member) => {
+              const user = getRelatedRecord(member.users)
+              const role = getRelatedRecord(member.ref_roles)
+
+              return {
+                id: member.id,
+                user_id: member.user_id,
+                full_name: typeof user?.full_name === "string" ? user.full_name : "Unknown User",
+                role: typeof role?.name === "string" ? role.name : "Unknown Role",
+              }
+            })
 
             return {
               ...org,

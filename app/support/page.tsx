@@ -96,7 +96,7 @@ export default function SupportPage() {
         subject: formData.subject,
         category: formData.category,
         message: formData.message,
-        ip_address: ip || "unknown",
+        ip_address: ip || null,
         user_id: user?.id ?? null,
       },
     ])
