@@ -132,11 +132,14 @@ export default function AlignedUsers() {
           Do you have revenue? Do you have users you want to reward? Do you need more users?
         </p>
         <p className="text-lg text-slate-600 dark:text-slate-300">If so, FundLoop is exactly right for you.</p>
+        <Button asChild variant="outline" className="mt-4 mr-3">
+          <Link href="/blog/how-fundloop-benefits-projects?origin=benefits">Read More</Link>
+        </Button>
         <Button
           asChild
           className="mt-4 bg-gradient-to-r from-emerald-600 to-cyan-600 hover:from-emerald-700 hover:to-cyan-700"
         >
-          Add My Project
+          <Link href="/join?onboarding=project">Add My Project</Link>
         </Button>
       </div>
       <div className="py-8 text-center">
@@ -147,6 +150,9 @@ export default function AlignedUsers() {
           At least as much as you pay per user. Probably much more. Because when we pool our resources, the result is
           better for everyone.
         </p>
+        <Button asChild variant="outline" className="mt-4">
+          <Link href="/blog/math-behind-citizen-salaries?origin=blog">Read More</Link>
+        </Button>
       </div>
       <section className="py-8">
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8">

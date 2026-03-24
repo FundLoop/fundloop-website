@@ -62,11 +62,20 @@ export type ProjectOnboardingPayload = {
   detailedDescription: string
   categoryIds: string[]
   pledgeAccepted: boolean
-  paymentMethodId: string
   billingEmail: string
   billingFrequency: string
   paymentPercentage: string
   paymentPeriodicityId: string
+  cryptoPaymentMethods: ProjectCryptoPaymentMethod[]
+}
+
+export type ProjectCryptoPaymentMethod = {
+  id: string
+  chainId: string
+  chainAssetId: string
+  intakeContractId: string
+  label: string
+  isDefault: boolean
 }
 
 export type UserDraftRow = Tables<"user_onboarding_drafts">
@@ -149,11 +158,11 @@ export const DEFAULT_PROJECT_ONBOARDING_PAYLOAD: ProjectOnboardingPayload = {
   detailedDescription: "",
   categoryIds: [],
   pledgeAccepted: false,
-  paymentMethodId: "",
   billingEmail: "",
   billingFrequency: "monthly",
   paymentPercentage: "1.0",
   paymentPeriodicityId: "",
+  cryptoPaymentMethods: [],
 }
 
 export function mergeUserOnboardingPayload(
@@ -177,6 +186,7 @@ export function mergeProjectOnboardingPayload(
     ...DEFAULT_PROJECT_ONBOARDING_PAYLOAD,
     ...payload,
     categoryIds: payload?.categoryIds ?? DEFAULT_PROJECT_ONBOARDING_PAYLOAD.categoryIds,
+    cryptoPaymentMethods: payload?.cryptoPaymentMethods ?? DEFAULT_PROJECT_ONBOARDING_PAYLOAD.cryptoPaymentMethods,
   }
 }
 
@@ -194,4 +204,15 @@ export function sanitizeProjectSlug(value: string) {
 
 export function getDisplayName(payload: Pick<UserOnboardingPayload, "displayName" | "fullName">) {
   return payload.displayName.trim() || payload.fullName.trim() || "Future FundLoop member"
+}
+
+export function createEmptyProjectCryptoPaymentMethod(): ProjectCryptoPaymentMethod {
+  return {
+    id: crypto.randomUUID(),
+    chainId: "",
+    chainAssetId: "",
+    intakeContractId: "",
+    label: "",
+    isDefault: false,
+  }
 }

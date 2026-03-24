@@ -312,6 +312,20 @@ export async function clearProjectOnboardingDraft(): Promise<OnboardingResult> {
   return { ok: true, data: undefined }
 }
 
+async function getCryptoContractMethodId(supabase: Awaited<ReturnType<typeof createServerSupabaseClient>>) {
+  const { data, error } = await supabase
+    .from("ref_payment_methods")
+    .select("id")
+    .eq("code", "crypto_contract")
+    .single()
+
+  if (error || !data) {
+    throw new Error(error?.message ?? "Crypto payment method reference is missing")
+  }
+
+  return data.id
+}
+
 export async function publishProjectOnboardingDraft(): Promise<OnboardingResult<{ projectSlug: string | null }>> {
   const context = await getAuthenticatedContext()
   if (!context.ok) {
@@ -354,6 +368,26 @@ export async function publishProjectOnboardingDraft(): Promise<OnboardingResult<
     .map((categoryId) => parseNumber(categoryId))
     .filter((categoryId): categoryId is number => categoryId !== null)
 
+  const normalizedCryptoPaymentMethods = payload.cryptoPaymentMethods.map((method, index) => ({
+    index,
+    chainId: parseNumber(method.chainId),
+    chainAssetId: parseNumber(method.chainAssetId),
+    intakeContractId: parseNumber(method.intakeContractId),
+    label: method.label.trim(),
+    isDefault: method.isDefault,
+  }))
+
+  if (
+    normalizedCryptoPaymentMethods.some(
+      (method) => method.chainId === null || method.chainAssetId === null || method.intakeContractId === null,
+    )
+  ) {
+    return { ok: false, error: "Each crypto payment method must include a chain, asset, and contract." }
+  }
+
+  const cryptoContractMethodId =
+    normalizedCryptoPaymentMethods.length > 0 ? await getCryptoContractMethodId(supabase) : null
+
   const { data: publishedProject, error: publishError } = await supabase
     .rpc("publish_project_onboarding_draft_atomic", {
       p_name: payload.name.trim(),
@@ -367,13 +401,37 @@ export async function publishProjectOnboardingDraft(): Promise<OnboardingResult<
       p_billing_frequency: payload.billingFrequency || null,
       p_payment_percentage: parseDecimal(payload.paymentPercentage) ?? 1,
       p_payment_periodicity_id: parseNumber(payload.paymentPeriodicityId),
-      p_default_payment_method_id: parseNumber(payload.paymentMethodId),
+      p_default_payment_method_id: cryptoContractMethodId,
       p_category_ids: categoryIds,
     } satisfies Record<string, Json>)
     .single()
 
   if (publishError || !publishedProject) {
     return { ok: false, error: publishError?.message ?? "Failed to publish project draft" }
+  }
+
+  if (normalizedCryptoPaymentMethods.length > 0 && cryptoContractMethodId !== null) {
+    const hasExplicitDefault = normalizedCryptoPaymentMethods.some((method) => method.isDefault)
+    const paymentMethodRows = normalizedCryptoPaymentMethods.map((method) => ({
+      project_id: publishedProject.project_id,
+      method_id: cryptoContractMethodId,
+      collection_mode: "contract" as const,
+      chain_id: method.chainId,
+      chain_asset_id: method.chainAssetId,
+      intake_contract_id: method.intakeContractId,
+      is_default: method.isDefault || (method.index === 0 && !hasExplicitDefault),
+      is_enabled: true,
+      label: method.label || null,
+      details: {
+        onboarding_source: "project_onboarding_v1",
+        preferred_chain_asset_id: method.chainAssetId,
+      },
+    }))
+
+    const { error: paymentMethodsError } = await supabase.from("payment_methods").insert(paymentMethodRows)
+    if (paymentMethodsError) {
+      return { ok: false, error: paymentMethodsError.message }
+    }
   }
 
   revalidatePath("/")

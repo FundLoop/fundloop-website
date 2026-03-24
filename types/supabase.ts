@@ -496,35 +496,180 @@ export type Database = {
           },
         ]
       }
+      onchain_payment_submissions: {
+        Row: {
+          amount_decimal: number
+          amount_raw: string
+          block_number: number | null
+          chain_asset_id: number
+          chain_id: number
+          confirmed_at: string | null
+          id: number
+          intake_contract_id: number
+          metadata: Json | null
+          payment_id: number | null
+          payment_method_id: number
+          project_id: number
+          receipt: Json | null
+          status: string
+          submitted_at: string
+          tx_hash: string
+          wallet_address: string
+        }
+        Insert: {
+          amount_decimal: number
+          amount_raw: string
+          block_number?: number | null
+          chain_asset_id: number
+          chain_id: number
+          confirmed_at?: string | null
+          id?: number
+          intake_contract_id: number
+          metadata?: Json | null
+          payment_id?: number | null
+          payment_method_id: number
+          project_id: number
+          receipt?: Json | null
+          status?: string
+          submitted_at?: string
+          tx_hash: string
+          wallet_address: string
+        }
+        Update: {
+          amount_decimal?: number
+          amount_raw?: string
+          block_number?: number | null
+          chain_asset_id?: number
+          chain_id?: number
+          confirmed_at?: string | null
+          id?: number
+          intake_contract_id?: number
+          metadata?: Json | null
+          payment_id?: number | null
+          payment_method_id?: number
+          project_id?: number
+          receipt?: Json | null
+          status?: string
+          submitted_at?: string
+          tx_hash?: string
+          wallet_address?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "onchain_payment_submissions_chain_asset_id_fkey"
+            columns: ["chain_asset_id"]
+            isOneToOne: false
+            referencedRelation: "ref_chain_assets"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "onchain_payment_submissions_chain_id_fkey"
+            columns: ["chain_id"]
+            isOneToOne: false
+            referencedRelation: "ref_chains"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "onchain_payment_submissions_intake_contract_id_fkey"
+            columns: ["intake_contract_id"]
+            isOneToOne: false
+            referencedRelation: "chain_intake_contracts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "onchain_payment_submissions_payment_id_fkey"
+            columns: ["payment_id"]
+            isOneToOne: false
+            referencedRelation: "payments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "onchain_payment_submissions_payment_method_id_fkey"
+            columns: ["payment_method_id"]
+            isOneToOne: false
+            referencedRelation: "payment_methods"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "onchain_payment_submissions_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       payment_methods: {
         Row: {
+          chain_asset_id: number | null
+          chain_id: number | null
+          collection_mode: Database["public"]["Enums"]["payment_collection_mode"]
           created_at: string | null
           details: Json | null
           id: number
+          intake_contract_id: number | null
           is_default: boolean | null
+          is_enabled: boolean
+          label: string | null
           method_id: number | null
           project_id: number | null
+          updated_at: string
           updated_by: string | null
         }
         Insert: {
+          chain_asset_id?: number | null
+          chain_id?: number | null
+          collection_mode?: Database["public"]["Enums"]["payment_collection_mode"]
           created_at?: string | null
           details?: Json | null
           id?: number
+          intake_contract_id?: number | null
           is_default?: boolean | null
+          is_enabled?: boolean
+          label?: string | null
           method_id?: number | null
           project_id?: number | null
+          updated_at?: string
           updated_by?: string | null
         }
         Update: {
+          chain_asset_id?: number | null
+          chain_id?: number | null
+          collection_mode?: Database["public"]["Enums"]["payment_collection_mode"]
           created_at?: string | null
           details?: Json | null
           id?: number
+          intake_contract_id?: number | null
           is_default?: boolean | null
+          is_enabled?: boolean
+          label?: string | null
           method_id?: number | null
           project_id?: number | null
+          updated_at?: string
           updated_by?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "payment_methods_chain_asset_id_fkey"
+            columns: ["chain_asset_id"]
+            isOneToOne: false
+            referencedRelation: "ref_chain_assets"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "payment_methods_chain_id_fkey"
+            columns: ["chain_id"]
+            isOneToOne: false
+            referencedRelation: "ref_chains"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "payment_methods_intake_contract_id_fkey"
+            columns: ["intake_contract_id"]
+            isOneToOne: false
+            referencedRelation: "chain_intake_contracts"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "payment_methods_method_id_fkey"
             columns: ["method_id"]
@@ -977,24 +1122,142 @@ export type Database = {
           },
         ]
       }
+      chain_intake_contracts: {
+        Row: {
+          abi_version: string
+          chain_id: number
+          collection_mode: Database["public"]["Enums"]["payment_collection_mode"]
+          contract_address: string
+          created_at: string
+          id: number
+          is_active: boolean
+          treasury_address: string
+          updated_at: string
+        }
+        Insert: {
+          abi_version?: string
+          chain_id: number
+          collection_mode?: Database["public"]["Enums"]["payment_collection_mode"]
+          contract_address: string
+          created_at?: string
+          id?: number
+          is_active?: boolean
+          treasury_address: string
+          updated_at?: string
+        }
+        Update: {
+          abi_version?: string
+          chain_id?: number
+          collection_mode?: Database["public"]["Enums"]["payment_collection_mode"]
+          contract_address?: string
+          created_at?: string
+          id?: number
+          is_active?: boolean
+          treasury_address?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "chain_intake_contracts_chain_id_fkey"
+            columns: ["chain_id"]
+            isOneToOne: false
+            referencedRelation: "ref_chains"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      ref_chain_assets: {
+        Row: {
+          asset_key: string
+          chain_id: number
+          created_at: string
+          decimals: number
+          id: number
+          is_active: boolean
+          is_native: boolean
+          is_stablecoin: boolean
+          name: string
+          sort_order: number
+          symbol: string
+          token_address: string | null
+        }
+        Insert: {
+          asset_key: string
+          chain_id: number
+          created_at?: string
+          decimals: number
+          id?: number
+          is_active?: boolean
+          is_native?: boolean
+          is_stablecoin?: boolean
+          name: string
+          sort_order?: number
+          symbol: string
+          token_address?: string | null
+        }
+        Update: {
+          asset_key?: string
+          chain_id?: number
+          created_at?: string
+          decimals?: number
+          id?: number
+          is_active?: boolean
+          is_native?: boolean
+          is_stablecoin?: boolean
+          name?: string
+          sort_order?: number
+          symbol?: string
+          token_address?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ref_chain_assets_chain_id_fkey"
+            columns: ["chain_id"]
+            isOneToOne: false
+            referencedRelation: "ref_chains"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       ref_chains: {
         Row: {
           chain_id: string | null
           created_at: string
           description: string | null
+          display_name: string
+          ecosystem: string
+          evm_chain_id: number
           id: number
+          is_active: boolean
+          layer_type: string
+          native_asset_symbol: string
+          network_key: string
         }
         Insert: {
           chain_id?: string | null
           created_at?: string
           description?: string | null
+          display_name: string
+          ecosystem: string
+          evm_chain_id: number
           id?: number
+          is_active?: boolean
+          layer_type: string
+          native_asset_symbol: string
+          network_key: string
         }
         Update: {
           chain_id?: string | null
           created_at?: string
           description?: string | null
+          display_name?: string
+          ecosystem?: string
+          evm_chain_id?: number
           id?: number
+          is_active?: boolean
+          layer_type?: string
+          native_asset_symbol?: string
+          network_key?: string
         }
         Relationships: []
       }
@@ -1945,6 +2208,7 @@ export type Database = {
     }
     Enums: {
       organization_members_status: "active" | "inactive" | "deleted"
+      payment_collection_mode: "contract" | "deposit_address"
       organizations_status: "active" | "inactive" | "deleted"
       payments_status: "active" | "inactive" | "deleted"
       projects_status: "active" | "inactive" | "deleted"
@@ -2079,6 +2343,7 @@ export const Constants = {
   public: {
     Enums: {
       organization_members_status: ["active", "inactive", "deleted"],
+      payment_collection_mode: ["contract", "deposit_address"],
       organizations_status: ["active", "inactive", "deleted"],
       payments_status: ["active", "inactive", "deleted"],
       projects_status: ["active", "inactive", "deleted"],

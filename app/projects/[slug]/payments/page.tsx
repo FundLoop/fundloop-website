@@ -21,6 +21,11 @@ import {
 import { Badge } from "@/components/ui/badge"
 import { toast } from "@/components/ui/use-toast"
 import { getSupabaseBrowserClient } from "@/lib/supabase"
+import { listProjectCryptoPaymentMethods } from "@/app/actions/project-payment-actions"
+import {
+  ProjectCryptoPaymentDialog,
+  type CryptoPaymentMethodOption,
+} from "@/components/project-crypto-payment-dialog"
 import { ArrowLeft, Plus, Calculator, Save, CheckCircle, AlertTriangle, Trash2, Info } from "lucide-react"
 
 interface PaymentMethod {
@@ -99,6 +104,9 @@ export default function ProjectPaymentsPage() {
   const [editPaymentId, setEditPaymentId] = useState<number | null>(null)
   const [confirmDialogOpen, setConfirmDialogOpen] = useState(false)
   const [paymentToConfirm, setPaymentToConfirm] = useState<Payment | null>(null)
+  const [cryptoPaymentMethods, setCryptoPaymentMethods] = useState<CryptoPaymentMethodOption[]>([])
+  const [cryptoPaymentDialogOpen, setCryptoPaymentDialogOpen] = useState(false)
+  const [paymentToPay, setPaymentToPay] = useState<Payment | null>(null)
 
   useEffect(() => {
     const fetchProjectData = async () => {
@@ -178,6 +186,46 @@ export default function ProjectPaymentsPage() {
         setPaymentPeriodicities(paymentPeriodicitiesData || [])
         setProject(projectData ? { ...projectData, slug: projectData.slug ?? slug } : null)
         setPayments(transformedPayments)
+
+        const cryptoRoutesResult = await listProjectCryptoPaymentMethods(slug)
+        if (cryptoRoutesResult.ok) {
+          const validMethods = cryptoRoutesResult.data.filter(
+            (method) => method.ref_chains && method.ref_chain_assets && method.chain_intake_contracts,
+          )
+
+          if (validMethods.length < cryptoRoutesResult.data.length) {
+            console.warn("Some crypto payment methods were skipped because required relations were missing.")
+          }
+
+          setCryptoPaymentMethods(
+            validMethods.map((method) => ({
+              id: method.id,
+              label: method.label,
+              is_default: method.is_default,
+              chain: {
+                id: method.ref_chains.id,
+                display_name: method.ref_chains.display_name ?? method.ref_chains.network_key ?? "Unknown chain",
+                network_key: method.ref_chains.network_key ?? "unknown",
+                evm_chain_id: method.ref_chains.evm_chain_id ?? 0,
+                native_asset_symbol: method.ref_chains.native_asset_symbol ?? "TOKEN",
+              },
+              asset: {
+                id: method.ref_chain_assets.id,
+                symbol: method.ref_chain_assets.symbol,
+                name: method.ref_chain_assets.name,
+                token_address: method.ref_chain_assets.token_address,
+                decimals: method.ref_chain_assets.decimals,
+                is_native: method.ref_chain_assets.is_native ?? false,
+                is_stablecoin: method.ref_chain_assets.is_stablecoin ?? false,
+              },
+              intakeContract: {
+                id: method.chain_intake_contracts.id,
+                contract_address: method.chain_intake_contracts.contract_address,
+                treasury_address: method.chain_intake_contracts.treasury_address,
+              },
+            })),
+          )
+        }
 
         setNewPaymentRows([
           {
@@ -460,6 +508,34 @@ export default function ProjectPaymentsPage() {
     setConfirmDialogOpen(true)
   }
 
+  const openCryptoPaymentDialog = (payment: Payment) => {
+    setPaymentToPay(payment)
+    setCryptoPaymentDialogOpen(true)
+  }
+
+  const handleCryptoPaymentRecorded = (paymentId: number, txHash: string) => {
+    const awaitingStatus = paymentStatuses.find((status) => status.code === "awaiting_confirmation")
+    if (!awaitingStatus) {
+      return
+    }
+
+    setPayments((prev) =>
+      prev.map((payment) =>
+        payment.id === paymentId
+          ? {
+              ...payment,
+              status_id: awaitingStatus.id,
+              status_name: awaitingStatus.name,
+              status_code: awaitingStatus.code,
+              paid_at: new Date().toISOString(),
+              updated_at: new Date().toISOString(),
+              notes: `Onchain payment submitted: ${txHash}`,
+            }
+          : payment,
+      ),
+    )
+  }
+
   const confirmPayment = async (payment: Payment) => {
     // Placeholder for confirmPayment logic
     console.log("Confirming payment:", payment)
@@ -493,6 +569,36 @@ export default function ProjectPaymentsPage() {
       </div>
 
       <div className="space-y-8">
+        <Card>
+          <CardHeader>
+            <CardTitle>Crypto collection routes</CardTitle>
+            <CardDescription>
+              Preferred onchain routes configured for this project. Payments sent through these routes are tagged with the project ID.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            {cryptoPaymentMethods.length === 0 ? (
+              <p className="text-sm text-slate-500">
+                No crypto routes are configured yet. Add them in project onboarding or before the next collection cycle.
+              </p>
+            ) : (
+              <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+                {cryptoPaymentMethods.map((method) => (
+                  <div key={method.id} className="rounded-2xl border bg-slate-50/60 p-4 text-sm text-slate-700">
+                    <p className="font-medium text-slate-900">
+                      {method.label || `${method.chain.display_name} ${method.asset.symbol}`}
+                    </p>
+                    <p>{method.chain.display_name}</p>
+                    <p>{method.asset.symbol}</p>
+                    <p className="break-all text-xs text-slate-500">{method.intakeContract.contract_address}</p>
+                    {method.is_default ? <Badge className="mt-3">Default</Badge> : null}
+                  </div>
+                ))}
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
         {/* Add New Payments Section */}
         <Card>
           <CardHeader>
@@ -697,6 +803,13 @@ export default function ProjectPaymentsPage() {
                       <TableCell>{getStatusBadge(payment.status_code, payment.status_name)}</TableCell>
                       <TableCell className="text-right">
                         <div className="flex justify-end gap-2">
+                          {(payment.status_code === "draft" || payment.status_code === "pending") &&
+                          cryptoPaymentMethods.length > 0 ? (
+                            <Button size="sm" variant="outline" onClick={() => openCryptoPaymentDialog(payment)}>
+                              Pay with crypto
+                            </Button>
+                          ) : null}
+
                           {payment.status_code === "awaiting_confirmation" && (
                             <Button size="sm" onClick={() => openConfirmDialog(payment)}>
                               <CheckCircle className="h-4 w-4 mr-1" />
@@ -756,6 +869,16 @@ export default function ProjectPaymentsPage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      <ProjectCryptoPaymentDialog
+        open={cryptoPaymentDialogOpen}
+        onOpenChange={setCryptoPaymentDialogOpen}
+        payment={paymentToPay}
+        paymentMethods={cryptoPaymentMethods}
+        projectId={projectId}
+        projectSlug={slug}
+        onPaymentRecorded={handleCryptoPaymentRecorded}
+      />
     </div>
   )
 }

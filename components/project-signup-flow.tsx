@@ -1,7 +1,7 @@
 "use client"
 
 import { useEffect, useMemo, useRef, useState } from "react"
-import { ArrowLeft, ArrowRight, CheckCircle2 } from "lucide-react"
+import { ArrowLeft, ArrowRight, CheckCircle2, Plus, Trash2 } from "lucide-react"
 import {
   clearProjectOnboardingDraft,
   getOnboardingState,
@@ -11,6 +11,8 @@ import {
 import { getSupabaseBrowserClient } from "@/lib/supabase"
 import {
   DEFAULT_PROJECT_ONBOARDING_PAYLOAD,
+  createEmptyProjectCryptoPaymentMethod,
+  type ProjectCryptoPaymentMethod,
   sanitizeProjectSlug,
   type ProjectOnboardingPayload,
   type ProjectOnboardingScreen,
@@ -35,8 +37,10 @@ type ProjectSignupFlowProps = {
 
 type ReferenceData = {
   categories: ComboboxOption[]
-  paymentMethods: ComboboxOption[]
   paymentPeriodicities: ComboboxOption[]
+  chains: ComboboxOption[]
+  chainAssets: Array<ComboboxOption & { chainId: string; isNative: boolean }>
+  intakeContracts: Array<ComboboxOption & { chainId: string }>
 }
 
 const PROJECT_SCREEN_ORDER: ProjectOnboardingScreen[] = ["basics", "details", "contribution", "review"]
@@ -61,8 +65,10 @@ export default function ProjectSignupFlow({ onClose }: ProjectSignupFlowProps) {
   const [draftTimestamp, setDraftTimestamp] = useState<string | null>(null)
   const [references, setReferences] = useState<ReferenceData>({
     categories: [],
-    paymentMethods: [],
     paymentPeriodicities: [],
+    chains: [],
+    chainAssets: [],
+    intakeContracts: [],
   })
   const [saving, setSaving] = useState(false)
   const [publishing, setPublishing] = useState(false)
@@ -76,6 +82,16 @@ export default function ProjectSignupFlow({ onClose }: ProjectSignupFlowProps) {
         .filter((category) => payload.categoryIds.includes(category.value))
         .map((category) => category.label),
     [payload.categoryIds, references.categories],
+  )
+
+  const paymentMethodSummaries = useMemo(
+    () =>
+      payload.cryptoPaymentMethods.map((method) => {
+        const chain = references.chains.find((item) => item.value === method.chainId)?.label ?? "Choose a chain"
+        const asset = references.chainAssets.find((item) => item.value === method.chainAssetId)?.label ?? "Choose a token"
+        return `${chain} • ${asset}${method.isDefault ? " • Default" : ""}`
+      }),
+    [payload.cryptoPaymentMethods, references.chainAssets, references.chains],
   )
 
   useEffect(() => {
@@ -102,18 +118,21 @@ export default function ProjectSignupFlow({ onClose }: ProjectSignupFlowProps) {
   useEffect(() => {
     const fetchReferences = async () => {
       const supabase = getSupabaseBrowserClient()
-      const [{ data: categories }, { data: paymentMethods }, { data: periodicities }] = await Promise.all([
+      const [{ data: categories }, { data: periodicities }, { data: chains }, { data: chainAssets }, { data: intakeContracts }] = await Promise.all([
         supabase.from("ref_categories").select("id, name").order("name"),
-        supabase.from("ref_payment_methods").select("id, name, code").order("display_order"),
         supabase.from("ref_payment_periodicities").select("id, name, code").order("display_order"),
+        supabase.from("ref_chains").select("id, display_name, network_key").eq("is_active", true).order("display_name"),
+        supabase
+          .from("ref_chain_assets")
+          .select("id, chain_id, symbol, name, is_native")
+          .eq("is_active", true)
+          .order("sort_order"),
+        supabase
+          .from("chain_intake_contracts")
+          .select("id, chain_id, contract_address")
+          .eq("collection_mode", "contract")
+          .eq("is_active", true),
       ])
-
-      const paymentMethodOptions =
-        paymentMethods?.map((item) => ({
-          value: String(item.id),
-          label: item.name,
-          code: item.code,
-        })) ?? []
 
       const periodicityOptions =
         periodicities?.map((item) => ({
@@ -124,17 +143,29 @@ export default function ProjectSignupFlow({ onClose }: ProjectSignupFlowProps) {
 
       setReferences({
         categories: categories?.map((item) => ({ value: String(item.id), label: item.name })) ?? [],
-        paymentMethods: paymentMethodOptions,
         paymentPeriodicities: periodicityOptions,
+        chains:
+          chains?.map((item) => ({
+            value: String(item.id),
+            label: item.display_name ?? item.network_key ?? `Chain ${item.id}`,
+          })) ?? [],
+        chainAssets:
+          chainAssets?.map((item) => ({
+            value: String(item.id),
+            label: `${item.symbol} · ${item.name}`,
+            chainId: String(item.chain_id),
+            isNative: item.is_native ?? false,
+          })) ?? [],
+        intakeContracts:
+          intakeContracts?.map((item) => ({
+            value: String(item.id),
+            label: item.contract_address,
+            chainId: String(item.chain_id),
+          })) ?? [],
       })
 
       setPayload((previous) => ({
         ...previous,
-        paymentMethodId:
-          previous.paymentMethodId ||
-          paymentMethodOptions.find((option) => option.code === "bank_transfer")?.value ||
-          paymentMethodOptions[0]?.value ||
-          "",
         paymentPeriodicityId:
           previous.paymentPeriodicityId ||
           periodicityOptions.find((option) => option.code === "month")?.value ||
@@ -218,6 +249,51 @@ export default function ProjectSignupFlow({ onClose }: ProjectSignupFlowProps) {
     })
   }
 
+  const upsertCryptoPaymentMethod = (methodId: string, next: Partial<ProjectCryptoPaymentMethod>) => {
+    setPayload((previous) => {
+      const methods = previous.cryptoPaymentMethods.map((method) => {
+        if (method.id !== methodId) {
+          return next.isDefault ? { ...method, isDefault: false } : method
+        }
+
+        return {
+          ...method,
+          ...next,
+        }
+      })
+
+      return {
+        ...previous,
+        cryptoPaymentMethods: methods,
+      }
+    })
+  }
+
+  const addCryptoPaymentMethod = () => {
+    setPayload((previous) => ({
+      ...previous,
+      cryptoPaymentMethods: [
+        ...previous.cryptoPaymentMethods,
+        {
+          ...createEmptyProjectCryptoPaymentMethod(),
+          isDefault: previous.cryptoPaymentMethods.length === 0,
+        },
+      ],
+    }))
+  }
+
+  const removeCryptoPaymentMethod = (methodId: string) => {
+    setPayload((previous) => {
+      const nextMethods = previous.cryptoPaymentMethods.filter((method) => method.id !== methodId)
+      return {
+        ...previous,
+        cryptoPaymentMethods: nextMethods.map((method, index) =>
+          nextMethods.some((current) => current.isDefault) ? method : { ...method, isDefault: index === 0 },
+        ),
+      }
+    })
+  }
+
   const getPreviousScreen = () => {
     const currentIndex = PROJECT_SCREEN_ORDER.indexOf(currentScreen)
     return currentIndex <= 0 ? "basics" : PROJECT_SCREEN_ORDER[currentIndex - 1]
@@ -243,10 +319,13 @@ export default function ProjectSignupFlow({ onClose }: ProjectSignupFlowProps) {
       case "contribution":
         return Boolean(
           payload.pledgeAccepted &&
-            payload.paymentMethodId &&
             payload.billingEmail.trim() &&
             payload.paymentPeriodicityId &&
-            payload.paymentPercentage.trim(),
+            payload.paymentPercentage.trim() &&
+            payload.cryptoPaymentMethods.every(
+              (method) => method.chainId && method.chainAssetId && method.intakeContractId,
+            ) &&
+            (payload.cryptoPaymentMethods.length === 0 || payload.cryptoPaymentMethods.some((method) => method.isDefault)),
         )
       case "review":
         return true
@@ -306,6 +385,9 @@ export default function ProjectSignupFlow({ onClose }: ProjectSignupFlowProps) {
           <p>Categories: {selectedCategories.length > 0 ? selectedCategories.join(", ") : "Not set yet"}</p>
           <p>Billing email: {payload.billingEmail || "Not set yet"}</p>
           <p>Contribution cadence: {payload.billingFrequency || "Not set yet"}</p>
+          <p>
+            Crypto methods: {paymentMethodSummaries.length > 0 ? paymentMethodSummaries.join(", ") : "No preferred crypto methods yet"}
+          </p>
         </CardContent>
       </Card>
     </div>
@@ -537,21 +619,6 @@ export default function ProjectSignupFlow({ onClose }: ProjectSignupFlowProps) {
 
           <div className="grid gap-5 md:grid-cols-2">
             <div className="space-y-2">
-              <Label>Payment method</Label>
-              <Select value={payload.paymentMethodId} onValueChange={(value) => updatePayload({ paymentMethodId: value })}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Choose a payment method" />
-                </SelectTrigger>
-                <SelectContent>
-                  {references.paymentMethods.map((method) => (
-                    <SelectItem key={method.value} value={method.value}>
-                      {method.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="space-y-2">
               <Label>Contribution cadence</Label>
               <Select
                 value={payload.paymentPeriodicityId}
@@ -568,6 +635,9 @@ export default function ProjectSignupFlow({ onClose }: ProjectSignupFlowProps) {
                   ))}
                 </SelectContent>
               </Select>
+            </div>
+            <div className="rounded-2xl border border-slate-200 bg-slate-50/60 p-4 text-sm text-slate-600">
+              Projects can optionally configure one or more preferred crypto routes now, or skip and add them later before the first collection cycle.
             </div>
           </div>
 
@@ -604,6 +674,121 @@ export default function ProjectSignupFlow({ onClose }: ProjectSignupFlowProps) {
               placeholder="monthly"
             />
           </div>
+
+          <div className="space-y-4 rounded-3xl border p-5">
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <div>
+                <p className="font-medium text-slate-900">Preferred crypto payment methods</p>
+                <p className="text-sm text-slate-600">
+                  Supported routes are curated per chain and tagged to your project ID through the FundLoop intake contract.
+                </p>
+              </div>
+              <Button type="button" variant="outline" size="sm" onClick={addCryptoPaymentMethod}>
+                <Plus className="mr-2 h-4 w-4" />
+                Add crypto method
+              </Button>
+            </div>
+
+            {payload.cryptoPaymentMethods.length === 0 ? (
+              <div className="rounded-2xl border border-dashed p-4 text-sm text-slate-500">
+                No crypto methods configured yet. This step is optional during onboarding.
+              </div>
+            ) : (
+              <div className="space-y-4">
+                {payload.cryptoPaymentMethods.map((method, index) => {
+                  const availableAssets = references.chainAssets.filter((asset) => asset.chainId === method.chainId)
+                  const defaultContract = references.intakeContracts.find((contract) => contract.chainId === method.chainId)
+
+                  return (
+                    <div key={method.id} className="space-y-4 rounded-2xl border p-4">
+                      <div className="flex items-center justify-between gap-3">
+                        <p className="text-sm font-medium text-slate-900">Crypto method {index + 1}</p>
+                        <Button type="button" variant="ghost" size="icon" onClick={() => removeCryptoPaymentMethod(method.id)}>
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </div>
+
+                      <div className="grid gap-5 md:grid-cols-2">
+                        <div className="space-y-2">
+                          <Label>Chain</Label>
+                          <Select
+                            value={method.chainId}
+                            onValueChange={(value) =>
+                              upsertCryptoPaymentMethod(method.id, {
+                                chainId: value,
+                                chainAssetId: "",
+                                intakeContractId:
+                                  references.intakeContracts.find((contract) => contract.chainId === value)?.value ?? "",
+                              })
+                            }
+                          >
+                            <SelectTrigger>
+                              <SelectValue placeholder="Choose a chain" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {references.chains.map((chain) => (
+                                <SelectItem key={chain.value} value={chain.value}>
+                                  {chain.label}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
+
+                        <div className="space-y-2">
+                          <Label>Token</Label>
+                          <Select
+                            value={method.chainAssetId}
+                            onValueChange={(value) =>
+                              upsertCryptoPaymentMethod(method.id, {
+                                chainAssetId: value,
+                                intakeContractId: defaultContract?.value ?? method.intakeContractId,
+                              })
+                            }
+                            disabled={!method.chainId}
+                          >
+                            <SelectTrigger>
+                              <SelectValue placeholder="Choose a token" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {availableAssets.map((asset) => (
+                                <SelectItem key={asset.value} value={asset.value}>
+                                  {asset.label}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
+                      </div>
+
+                      <div className="grid gap-5 md:grid-cols-2">
+                        <div className="space-y-2">
+                          <Label htmlFor={`project-crypto-label-${method.id}`}>Label</Label>
+                          <Input
+                            id={`project-crypto-label-${method.id}`}
+                            value={method.label}
+                            onChange={(event) => upsertCryptoPaymentMethod(method.id, { label: event.target.value })}
+                            placeholder="Base USDC default route"
+                          />
+                        </div>
+
+                        <div className="space-y-2">
+                          <Label>Default route</Label>
+                          <Button
+                            type="button"
+                            variant={method.isDefault ? "default" : "outline"}
+                            onClick={() => upsertCryptoPaymentMethod(method.id, { isDefault: true })}
+                          >
+                            {method.isDefault ? "Default route" : "Mark as default"}
+                          </Button>
+                        </div>
+                      </div>
+                    </div>
+                  )
+                })}
+              </div>
+            )}
+          </div>
         </div>
       ) : null}
 
@@ -632,6 +817,9 @@ export default function ProjectSignupFlow({ onClose }: ProjectSignupFlowProps) {
                 <p>Pledge accepted: {payload.pledgeAccepted ? "Yes" : "No"}</p>
                 <p>Billing email: {payload.billingEmail}</p>
                 <p>Contribution: {payload.paymentPercentage}%</p>
+                <p>
+                  Crypto methods: {paymentMethodSummaries.length > 0 ? paymentMethodSummaries.join(", ") : "None configured yet"}
+                </p>
               </CardContent>
             </Card>
           </div>
