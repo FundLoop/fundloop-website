@@ -10,12 +10,14 @@ contract FundLoopIntake is Ownable {
 
     error ZeroAmount();
     error InvalidProjectId();
+    error InvalidPeriodId(uint8 periodId);
     error NativeDepositsDisabled();
     error TokenNotAllowed(address token);
     error InvalidTreasury();
 
     event Deposit(
         uint256 indexed projectId,
+        uint8 periodId,
         address indexed asset,
         uint256 amount,
         address indexed sender,
@@ -52,24 +54,30 @@ contract FundLoopIntake is Ownable {
         emit TokenAllowanceUpdated(token, allowed);
     }
 
-    function depositNative(uint256 projectId) external payable {
+    function depositNative(uint256 projectId, uint8 periodId) external payable {
         if (projectId == 0) revert InvalidProjectId();
+        _validatePeriodId(periodId);
         if (!nativeDepositsAllowed) revert NativeDepositsDisabled();
         if (msg.value == 0) revert ZeroAmount();
 
         (bool success, ) = treasury.call{ value: msg.value }("");
         require(success, "TREASURY_TRANSFER_FAILED");
 
-        emit Deposit(projectId, address(0), msg.value, msg.sender, treasury, true);
+        emit Deposit(projectId, periodId, address(0), msg.value, msg.sender, treasury, true);
     }
 
-    function depositToken(uint256 projectId, address token, uint256 amount) external {
+    function depositToken(uint256 projectId, uint8 periodId, address token, uint256 amount) external {
         if (projectId == 0) revert InvalidProjectId();
+        _validatePeriodId(periodId);
         if (amount == 0) revert ZeroAmount();
         if (!allowedTokens[token]) revert TokenNotAllowed(token);
 
         IERC20(token).safeTransferFrom(msg.sender, treasury, amount);
 
-        emit Deposit(projectId, token, amount, msg.sender, treasury, false);
+        emit Deposit(projectId, periodId, token, amount, msg.sender, treasury, false);
+    }
+
+    function _validatePeriodId(uint8 periodId) internal pure {
+        if (periodId > 12) revert InvalidPeriodId(periodId);
     }
 }

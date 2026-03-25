@@ -88,6 +88,22 @@ interface NewPaymentRow {
   payment_method_id: number
 }
 
+const periodTagLabels: Record<number, string> = {
+  0: "Current / unspecified",
+  1: "January",
+  2: "February",
+  3: "March",
+  4: "April",
+  5: "May",
+  6: "June",
+  7: "July",
+  8: "August",
+  9: "September",
+  10: "October",
+  11: "November",
+  12: "December",
+}
+
 export default function ProjectPaymentsPage() {
   const params = useParams()
   const slug = params.slug as string
@@ -513,7 +529,19 @@ export default function ProjectPaymentsPage() {
     setCryptoPaymentDialogOpen(true)
   }
 
-  const handleCryptoPaymentRecorded = (paymentId: number, txHash: string) => {
+  const getPeriodTagFromDate = (dateString: string | null | undefined) => {
+    if (!dateString) {
+      return 0
+    }
+
+    const monthText = dateString.slice(5, 7)
+    const month = Number.parseInt(monthText, 10)
+    return Number.isInteger(month) && month >= 1 && month <= 12 ? month : 0
+  }
+
+  const getPeriodTagLabel = (periodId: number) => periodTagLabels[periodId] ?? `Month ${periodId}`
+
+  const handleCryptoPaymentRecorded = (paymentId: number, txHash: string, periodId: number) => {
     const awaitingStatus = paymentStatuses.find((status) => status.code === "awaiting_confirmation")
     if (!awaitingStatus) {
       return
@@ -529,7 +557,7 @@ export default function ProjectPaymentsPage() {
               status_code: awaitingStatus.code,
               paid_at: new Date().toISOString(),
               updated_at: new Date().toISOString(),
-              notes: `Onchain payment submitted: ${txHash}`,
+              notes: `Onchain payment submitted: ${txHash} (period tag: ${periodId === 0 ? "current" : periodId})`,
             }
           : payment,
       ),
@@ -637,6 +665,9 @@ export default function ProjectPaymentsPage() {
                         value={row.period_end}
                         onChange={(e) => updateNewPaymentRow(row.id, "period_end", e.target.value)}
                       />
+                      <p className="text-xs text-slate-500">
+                        Onchain period tag preview: {getPeriodTagLabel(getPeriodTagFromDate(row.period_end))}
+                      </p>
                     </div>
                   </div>
 
@@ -791,10 +822,14 @@ export default function ProjectPaymentsPage() {
                 ) : (
                   payments.map((payment) => (
                     <TableRow key={payment.id}>
-                      <TableCell scope="row" className="font-medium">{payment.payment_method_name}</TableCell>
                       <TableCell>
-                        {format(new Date(payment.period_start), "MMM d, yyyy")} -{" "}
-                        {format(new Date(payment.period_end), "MMM d, yyyy")}
+                        <div className="font-medium">
+                          {format(new Date(payment.period_start), "MMM d, yyyy")} -{" "}
+                          {format(new Date(payment.period_end), "MMM d, yyyy")}
+                        </div>
+                        <div className="text-xs text-slate-500">
+                          Onchain tag: {getPeriodTagLabel(getPeriodTagFromDate(payment.period_end))}
+                        </div>
                       </TableCell>
                       <TableCell>{formatCurrency(payment.revenue)}</TableCell>
                       <TableCell>{formatCurrency(payment.payment_amount)}</TableCell>

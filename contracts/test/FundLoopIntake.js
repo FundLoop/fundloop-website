@@ -13,7 +13,7 @@ describe("FundLoopIntake", async () => {
     })
 
     const treasuryBalanceBefore = await publicClient.getBalance({ address: treasury.account.address })
-    const txHash = await intake.write.depositNative([42n], {
+    const txHash = await intake.write.depositNative([42n, 3], {
       account: sender.account,
       value: 123456789n,
     })
@@ -27,6 +27,7 @@ describe("FundLoopIntake", async () => {
     const events = await intake.getEvents.Deposit()
     assert.equal(events.length, 1)
     assert.equal(events[0].args.projectId, 42n)
+    assert.equal(events[0].args.periodId, 3)
     assert.equal(events[0].args.amount, 123456789n)
     assert.equal(events[0].args.sender?.toLowerCase(), sender.account.address.toLowerCase())
     assert.equal(events[0].args.isNative, true)
@@ -44,7 +45,7 @@ describe("FundLoopIntake", async () => {
     await intake.write.setAllowedToken([token.address, true], { account: owner.account })
     await token.write.approve([intake.address, 2_500_000n], { account: sender.account })
 
-    const txHash = await intake.write.depositToken([11n, token.address, 2_500_000n], { account: sender.account })
+    const txHash = await intake.write.depositToken([11n, 0, token.address, 2_500_000n], { account: sender.account })
     const receipt = await publicClient.waitForTransactionReceipt({ hash: txHash })
     const treasuryBalance = await token.read.balanceOf([treasury.account.address])
 
@@ -54,6 +55,7 @@ describe("FundLoopIntake", async () => {
     const events = await intake.getEvents.Deposit()
     assert.equal(events.length, 1)
     assert.equal(events[0].args.projectId, 11n)
+    assert.equal(events[0].args.periodId, 0)
     assert.equal(events[0].args.asset?.toLowerCase(), token.address.toLowerCase())
     assert.equal(events[0].args.amount, 2_500_000n)
     assert.equal(events[0].args.isNative, false)
@@ -70,8 +72,23 @@ describe("FundLoopIntake", async () => {
     await token.write.approve([intake.address, 1_000_000n], { account: sender.account })
 
     await assert.rejects(
-      intake.write.depositToken([9n, token.address, 1_000_000n], { account: sender.account }),
+      intake.write.depositToken([9n, 0, token.address, 1_000_000n], { account: sender.account }),
       /TokenNotAllowed/,
+    )
+  })
+
+  it("rejects invalid period ids", async () => {
+    const [owner, sender, treasury] = await viem.getWalletClients()
+    const intake = await viem.deployContract("FundLoopIntake", [owner.account.address, treasury.account.address], {
+      client: { wallet: owner },
+    })
+
+    await assert.rejects(
+      intake.write.depositNative([5n, 13], {
+        account: sender.account,
+        value: 1n,
+      }),
+      /InvalidPeriodId/,
     )
   })
 })

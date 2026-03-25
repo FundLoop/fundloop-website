@@ -3,7 +3,10 @@ export const fundLoopIntakeAbi = [
     type: "function",
     name: "depositNative",
     stateMutability: "payable",
-    inputs: [{ name: "projectId", type: "uint256" }],
+    inputs: [
+      { name: "projectId", type: "uint256" },
+      { name: "periodId", type: "uint8" },
+    ],
     outputs: [],
   },
   {
@@ -12,6 +15,7 @@ export const fundLoopIntakeAbi = [
     stateMutability: "nonpayable",
     inputs: [
       { name: "projectId", type: "uint256" },
+      { name: "periodId", type: "uint8" },
       { name: "token", type: "address" },
       { name: "amount", type: "uint256" },
     ],
@@ -22,6 +26,7 @@ export const fundLoopIntakeAbi = [
     name: "Deposit",
     inputs: [
       { indexed: true, name: "projectId", type: "uint256" },
+      { indexed: false, name: "periodId", type: "uint8" },
       { indexed: true, name: "asset", type: "address" },
       { indexed: false, name: "amount", type: "uint256" },
       { indexed: true, name: "sender", type: "address" },

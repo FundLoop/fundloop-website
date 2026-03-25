@@ -145,6 +145,7 @@ type RecordOnchainPaymentInput = {
   walletAddress: string
   amountRaw: string
   amountDecimal: string
+  periodId: number
   chainId: number
   chainAssetId: number
   intakeContractId: number
@@ -200,6 +201,10 @@ export async function recordOnchainPaymentSubmission(
     return { ok: false, error: "Payment amount is invalid" }
   }
 
+  if (!Number.isInteger(input.periodId) || input.periodId < 0 || input.periodId > 12) {
+    return { ok: false, error: "The selected period tag is invalid" }
+  }
+
   const { data: submission, error: submissionError } = await supabase
     .from("onchain_payment_submissions")
     .insert({
@@ -218,6 +223,7 @@ export async function recordOnchainPaymentSubmission(
       receipt: input.receipt,
       metadata: {
         source: "project_payments_page",
+        period_id: input.periodId,
       },
     })
     .select("id")
@@ -233,7 +239,7 @@ export async function recordOnchainPaymentSubmission(
       status_id: awaitingStatus.id,
       payment_method_id: paymentMethod.method_id ?? null,
       paid_at: new Date().toISOString(),
-      notes: `Onchain payment submitted: ${input.txHash}`,
+      notes: `Onchain payment submitted: ${input.txHash} (period tag: ${input.periodId === 0 ? "current" : input.periodId})`,
     })
     .eq("id", input.paymentId)
 

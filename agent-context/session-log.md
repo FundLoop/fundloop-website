@@ -12,6 +12,38 @@ Agents populate one level-3 heading for each coding session, following the same 
 
 ---
 
+### session v12: Add onchain payment period tags to crypto flows
+- timestamp: 2026-03-25T09:20:00-04:00
+- agent: **Codex (GPT-5)**
+- branch: **codex/dev**
+- head: 075da373d006c2ff50f17d08b403894eeb598a95 - Add organized repo backlog todo
+
+#### Objective
+Extend the crypto intake contract and project payments UI to carry an explicit month-based `periodId`, while preserving a sentinel value for current or unspecified payments.
+
+#### Actions Taken
+- Updated `contracts/src/FundLoopIntake.sol` so `depositNative` and `depositToken` both accept `periodId`, emit it in the `Deposit` event, and reject values outside `0..12`.
+- Updated `lib/onchain/fundloop-intake-abi.ts` so the app-side ABI matches the new contract interface.
+- Updated `contracts/test/FundLoopIntake.js` to cover the new event shape, the `0` sentinel case, and invalid-period rejection.
+- Updated `components/project-crypto-payment-dialog.tsx` to derive a default period tag from `payment.period_end`, expose an explicit period-tag selector in the UI, and pass the selected tag into contract writes and receipt recording.
+- Updated `app/projects/[slug]/payments/page.tsx` to preview the onchain period tag for payment rows and show it in the payment history UI.
+- Updated `app/actions/project-payment-actions.ts` to validate `periodId`, store it in onchain submission metadata, and include it in the payment note.
+
+#### Tests and Validation Notes
+- `pnpm --dir contracts test`
+- `pnpm eslint app/actions/project-payment-actions.ts 'app/projects/[slug]/payments/page.tsx' components/project-crypto-payment-dialog.tsx contracts/test/FundLoopIntake.js lib/onchain/fundloop-intake-abi.ts`
+- `pnpm typecheck`
+
+#### Reflections
+- Solidity cannot encode a literal `null`, so the cleanest mapping for “current / unspecified” is the explicit onchain sentinel `periodId = 0`.
+- The UI needed to make the tag visible and overridable; deriving it silently from `period_end` was not enough once the contract interface became explicit.
+
+#### Suggested Next Steps
+- Persist the selected `periodId` in a first-class database field if it becomes important for reporting or reconciliation beyond submission metadata.
+- Revisit whether month-only tagging is sufficient once invoice-level or year-sensitive accounting requirements become clearer.
+
+---
+
 ### session v11: Add and reorganize repo backlog TODO
 - timestamp: 2026-03-24T17:05:00-04:00
 - agent: **Codex (GPT-5)**

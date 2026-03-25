@@ -20,9 +20,26 @@ import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { toast } from "@/components/ui/use-toast"
 
+const periodOptions = [
+  { value: "0", label: "Current / unspecified" },
+  { value: "1", label: "January" },
+  { value: "2", label: "February" },
+  { value: "3", label: "March" },
+  { value: "4", label: "April" },
+  { value: "5", label: "May" },
+  { value: "6", label: "June" },
+  { value: "7", label: "July" },
+  { value: "8", label: "August" },
+  { value: "9", label: "September" },
+  { value: "10", label: "October" },
+  { value: "11", label: "November" },
+  { value: "12", label: "December" },
+] as const
+
 type PaymentRecord = {
   id: number
   payment_amount: number
+  period_end: string
 }
 
 export type CryptoPaymentMethodOption = {
@@ -59,7 +76,7 @@ type ProjectCryptoPaymentDialogProps = {
   paymentMethods: CryptoPaymentMethodOption[]
   projectId: number | null
   projectSlug: string
-  onPaymentRecorded: (paymentId: number, txHash: string) => void
+  onPaymentRecorded: (paymentId: number, txHash: string, periodId: number) => void
 }
 
 function serializeForJson(value: unknown): unknown {
@@ -90,6 +107,7 @@ export function ProjectCryptoPaymentDialog({
   onPaymentRecorded,
 }: ProjectCryptoPaymentDialogProps) {
   const [selectedMethodId, setSelectedMethodId] = useState<string>("")
+  const [selectedPeriodId, setSelectedPeriodId] = useState<string>("0")
   const [approvalRequired, setApprovalRequired] = useState(false)
   const [lastAction, setLastAction] = useState<"approve" | "deposit" | null>(null)
   const [recording, startRecording] = useTransition()
@@ -116,6 +134,7 @@ export function ProjectCryptoPaymentDialog({
       reset()
       setLastAction(null)
       setApprovalRequired(false)
+      setSelectedPeriodId("0")
       return
     }
 
@@ -132,6 +151,36 @@ export function ProjectCryptoPaymentDialog({
 
     return parseUnits(String(payment.payment_amount), selectedMethod.asset.decimals)
   }, [payment, selectedMethod])
+
+  const periodId = useMemo(() => {
+    const explicitValue = Number.parseInt(selectedPeriodId, 10)
+    if (Number.isInteger(explicitValue) && explicitValue >= 0 && explicitValue <= 12) {
+      return explicitValue
+    }
+
+    if (!payment?.period_end) {
+      return 0
+    }
+
+    const monthText = payment.period_end.slice(5, 7)
+    const month = Number.parseInt(monthText, 10)
+    return Number.isInteger(month) && month >= 1 && month <= 12 ? month : 0
+  }, [payment, selectedPeriodId])
+
+  useEffect(() => {
+    if (!open) {
+      return
+    }
+
+    if (!payment?.period_end) {
+      setSelectedPeriodId("0")
+      return
+    }
+
+    const monthText = payment.period_end.slice(5, 7)
+    const month = Number.parseInt(monthText, 10)
+    setSelectedPeriodId(Number.isInteger(month) && month >= 1 && month <= 12 ? String(month) : "0")
+  }, [open, payment?.id, payment?.period_end])
 
   const supportsDirectUsdSettlement = Boolean(selectedMethod?.asset.is_stablecoin)
 
@@ -187,6 +236,7 @@ export function ProjectCryptoPaymentDialog({
         walletAddress: address,
         amountRaw: amountRaw.toString(),
         amountDecimal: String(payment.payment_amount),
+        periodId,
         chainId: selectedMethod.chain.id,
         chainAssetId: selectedMethod.asset.id,
         intakeContractId: selectedMethod.intakeContract.id,
@@ -208,11 +258,11 @@ export function ProjectCryptoPaymentDialog({
         description: "The onchain receipt is stored and the payment now awaits confirmation.",
       })
 
-      onPaymentRecorded(payment.id, hash)
+      onPaymentRecorded(payment.id, hash, periodId)
       setLastAction(null)
       onOpenChange(false)
     })
-  }, [address, amountRaw, hash, lastAction, onOpenChange, onPaymentRecorded, payment, projectId, projectSlug, receiptQuery.data, receiptQuery.isSuccess, selectedMethod])
+  }, [address, amountRaw, hash, lastAction, onOpenChange, onPaymentRecorded, payment, periodId, projectId, projectSlug, receiptQuery.data, receiptQuery.isSuccess, selectedMethod])
 
   useEffect(() => {
     if (!writeError) {
@@ -252,7 +302,7 @@ export function ProjectCryptoPaymentDialog({
         address: selectedMethod.intakeContract.contract_address as `0x${string}`,
         abi: fundLoopIntakeAbi,
         functionName: "depositNative",
-        args: [BigInt(projectId)],
+        args: [BigInt(projectId), periodId],
         value: amountRaw,
       })
       return
@@ -262,7 +312,7 @@ export function ProjectCryptoPaymentDialog({
       address: selectedMethod.intakeContract.contract_address as `0x${string}`,
       abi: fundLoopIntakeAbi,
       functionName: "depositToken",
-      args: [BigInt(projectId), selectedMethod.asset.token_address as `0x${string}`, amountRaw],
+      args: [BigInt(projectId), periodId, selectedMethod.asset.token_address as `0x${string}`, amountRaw],
     })
   }
 
@@ -301,12 +351,33 @@ export function ProjectCryptoPaymentDialog({
               </Select>
             </div>
 
+            <div className="space-y-2">
+              <Label>Onchain period tag</Label>
+              <Select value={selectedPeriodId} onValueChange={setSelectedPeriodId}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Choose a period tag" />
+                </SelectTrigger>
+                <SelectContent>
+                  {periodOptions.map((option) => (
+                    <SelectItem key={option.value} value={option.value}>
+                      {option.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <p className="text-xs text-slate-500">
+                Use a month tag when you want to pre-pay a specific month. Use current / unspecified for the current
+                contribution cycle.
+              </p>
+            </div>
+
             <div className="rounded-2xl border bg-slate-50/70 p-4 text-sm text-slate-700">
               <p>
                 Amount: <span className="font-medium">{payment.payment_amount}</span> {selectedMethod.asset.symbol}
               </p>
               <p>Chain: {selectedMethod.chain.display_name}</p>
               <p>Project ID tag: {projectId}</p>
+              <p>Period ID tag: {periodOptions.find((option) => option.value === String(periodId))?.label ?? periodId}</p>
               <p className="break-all">Contract: {selectedMethod.intakeContract.contract_address}</p>
               <p className="break-all">Treasury: {selectedMethod.intakeContract.treasury_address}</p>
               {!selectedMethod.asset.is_native ? (
