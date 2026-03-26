@@ -12,6 +12,40 @@ Agents populate one level-3 heading for each coding session, following the same 
 
 ---
 
+### session v21: Address PR #16 inline review comments
+- timestamp: 2026-03-26T23:32:13Z
+- agent: **Codex (GPT-5)**
+- branch: **codex/marketing-nav-refresh**
+- head: a35bb3d102aa5872440f1f96944a41a0f519f7ce - feat(marketing): add ecosystem entry and refine brand badge
+
+#### Objective
+Address the actionable inline review comments on PR #16 by fixing the hero timer ref typing, mobile menu composition, mobile About navigation regression, misleading project-detail edit affordances, and the zkAS role rekey migration robustness.
+
+#### Actions Taken
+- Updated `components/hero.tsx` so the timer helper types use mutable refs explicitly instead of readonly ref-object types.
+- Split the mobile menu usage in `components/navbar.tsx` and `components/mobile-menu.tsx` so there is only one hamburger trigger, while the modal instance renders separately without duplicating the button.
+- Restored `About FundLoop` to mobile navigation by passing a mobile-only nav list into the menu modal.
+- Removed the misleading local-only edit controls from `components/project-detail-page.tsx` so the UI no longer implies persistence that does not exist yet.
+- Updated `supabase/migrations/20260326124500_rekey_zkas_access_role.sql` to remap `organization_members.role_id` and `organization_invitations.role_id` before deleting the old legacy role row.
+
+#### Tests and Validation Notes
+- Ran `pnpm lint`.
+- Ran `pnpm test`.
+- Ran `pnpm typecheck`.
+- Ran `pnpm build`.
+- Ran `pnpm --dir contracts test`.
+- `pnpm build` still emitted the existing Recharts static-generation width/height warnings while succeeding.
+
+#### Reflections
+- The review comments were accurate and mostly pointed to small boundary issues rather than architectural problems, so the safest path was to tighten each one directly instead of over-refactoring.
+- Removing the project-detail edit affordances is a better temporary state than leaving a UI that claims success without any backend persistence.
+
+#### Suggested Next Steps
+- Push this follow-up commit to PR #16 and reply on the addressed threads with the specific fix.
+- If editable project details are still wanted, implement them later through a real server action or route-backed update flow rather than local-only state.
+
+---
+
 ### session v20: Add Solar Village and refine the FundLoop coming-soon badge
 - timestamp: 2026-03-26T23:28:36Z
 - agent: **Codex (GPT-5)**

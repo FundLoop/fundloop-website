@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useRef, useState } from "react"
+import { useEffect, useRef, useState, type Dispatch, type MutableRefObject, type SetStateAction } from "react"
 import { ArrowRight } from "lucide-react"
 import { usePathname, useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
@@ -19,15 +19,15 @@ const rotatingTitles = [
 ] as const
 
 type HeroTimerRefs = {
-  completedFlipCountRef: React.RefObject<number>
-  delayRef: React.RefObject<number>
-  displayTimerRef: React.RefObject<number | undefined>
-  swapTimerRef: React.RefObject<number | undefined>
+  completedFlipCountRef: MutableRefObject<number>
+  delayRef: MutableRefObject<number>
+  displayTimerRef: MutableRefObject<number | undefined>
+  swapTimerRef: MutableRefObject<number | undefined>
 }
 
 type HeroStateSetters = {
-  setIsFading: React.Dispatch<React.SetStateAction<boolean>>
-  setTitleIndex: React.Dispatch<React.SetStateAction<number>>
+  setIsFading: Dispatch<SetStateAction<boolean>>
+  setTitleIndex: Dispatch<SetStateAction<number>>
 }
 
 function clearHeroFlipTimers({ displayTimerRef, swapTimerRef }: Pick<HeroTimerRefs, "displayTimerRef" | "swapTimerRef">) {

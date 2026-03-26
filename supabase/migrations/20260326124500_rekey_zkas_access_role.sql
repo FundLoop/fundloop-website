@@ -34,6 +34,14 @@ begin
     set role_id = reserved_role_id
     where role_id = current_role_id;
 
+    update public.organization_members
+    set role_id = reserved_role_id
+    where role_id = current_role_id;
+
+    update public.organization_invitations
+    set role_id = reserved_role_id
+    where role_id = current_role_id;
+
     delete from public.ref_roles
     where id = current_role_id;
   else

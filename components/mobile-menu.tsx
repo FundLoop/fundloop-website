@@ -12,16 +12,19 @@ interface MobileMenuProps {
   mobileMenuOpen?: boolean
   navLinks?: { label: string; href: string }[]
   useCaseLinks?: { label: string; href: string }[]
+  showTrigger?: boolean
 }
 
-export function MobileMenu({ setMobileMenuOpen, mobileMenuOpen, navLinks, useCaseLinks }: MobileMenuProps) {
+export function MobileMenu({ setMobileMenuOpen, mobileMenuOpen, navLinks, useCaseLinks, showTrigger = true }: MobileMenuProps) {
   const pathname = usePathname()
 
   return (
     <>
-      <Button variant="ghost" size="icon" className="md:hidden" onClick={() => setMobileMenuOpen(true)}>
-        <Menu className="h-5 w-5" />
-      </Button>
+      {showTrigger ? (
+        <Button variant="ghost" size="icon" className="md:hidden" onClick={() => setMobileMenuOpen(true)}>
+          <Menu className="h-5 w-5" />
+        </Button>
+      ) : null}
       {mobileMenuOpen && (
         <div className="fixed inset-0 z-50 bg-background p-6">
           <div className="flex justify-between items-center mb-4">

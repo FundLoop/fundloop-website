@@ -105,6 +105,8 @@ export default function Navbar() {
     { label: "Blog", href: "/blog" },
   ]
 
+  const mobileNavLinks = [...navLinks, { label: "About FundLoop", href: "/about" }]
+
   const exploreLinks = [
     {
       label: "Projects",
@@ -253,8 +255,9 @@ export default function Navbar() {
       <MobileMenu
         mobileMenuOpen={mobileMenuOpen}
         setMobileMenuOpen={setMobileMenuOpen}
-        navLinks={navLinks}
+        navLinks={mobileNavLinks}
         useCaseLinks={useCaseLinks.map(({ href, shortLabel }) => ({ href, label: shortLabel }))}
+        showTrigger={false}
       />
       <AuthModal open={showAuthModal} onClose={() => setShowAuthModal(false)} />
     </>

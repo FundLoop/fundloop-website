@@ -6,11 +6,8 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Badge } from "@/components/ui/badge"
-import { Input } from "@/components/ui/input"
-import { Textarea } from "@/components/ui/textarea"
 import { Separator } from "@/components/ui/separator"
-import { toast } from "@/components/ui/use-toast"
-import { ArrowLeft, Edit2, Check, X, ExternalLink, Building2, Users, Share2, DollarSign } from "lucide-react"
+import { ArrowLeft, ExternalLink, Building2, Users, Share2, DollarSign } from "lucide-react"
 import { ProjectVisibilityToggle } from "@/components/project-visibility-toggle"
 
 interface SocialLink {
@@ -64,49 +61,6 @@ interface ProjectDetailPageProps {
 export function ProjectDetailPage({ project: initialProject, participants, financials, hasAccess, userRole }: ProjectDetailPageProps) {
   const [project, setProject] = useState(initialProject)
   const [socials] = useState<SocialLink[]>([])
-  const [editingField, setEditingField] = useState<string | null>(null)
-  const [editValues, setEditValues] = useState<Record<string, string>>({
-    name: initialProject.name,
-    description: initialProject.description,
-    detailed_description: initialProject.detailed_description,
-    website: initialProject.website,
-    category: initialProject.category,
-  })
-
-  const handleEdit = (field: string) => {
-    setEditingField(field)
-  }
-
-  const handleSave = async (field: string) => {
-    try {
-      setProject((prev) => ({
-        ...prev,
-        [field]: editValues[field],
-      }))
-
-      toast({
-        title: "Success",
-        description: `${field.charAt(0).toUpperCase() + field.slice(1)} updated successfully`,
-      })
-    } catch (error) {
-      console.error(`Error updating ${field}:`, error)
-      toast({
-        title: "Error",
-        description: `Failed to update ${field}`,
-        variant: "destructive",
-      })
-    } finally {
-      setEditingField(null)
-    }
-  }
-
-  const handleCancel = (field: string) => {
-    setEditValues((prev) => ({
-      ...prev,
-      [field]: project[field as keyof ProjectDetail] as string,
-    }))
-    setEditingField(null)
-  }
 
   const handleVisibilityChange = (isPublic: boolean) => {
     setProject((prev) => ({
@@ -136,30 +90,9 @@ export function ProjectDetailPage({ project: initialProject, participants, finan
                   <AvatarFallback>{project.name.substring(0, 2)}</AvatarFallback>
                 </Avatar>
                 <div>
-                  {editingField === "name" ? (
-                    <div className="flex items-center gap-2">
-                      <Input
-                        value={editValues.name}
-                        onChange={(event) => setEditValues({ ...editValues, name: event.target.value })}
-                        className="max-w-xs"
-                      />
-                      <Button size="icon" variant="ghost" onClick={() => handleSave("name")}>
-                        <Check className="h-4 w-4" />
-                      </Button>
-                      <Button size="icon" variant="ghost" onClick={() => handleCancel("name")}>
-                        <X className="h-4 w-4" />
-                      </Button>
-                    </div>
-                  ) : (
-                    <div className="flex items-center gap-2">
-                      <CardTitle className="text-2xl">{project.name}</CardTitle>
-                      {hasAccess && userRole === "admin" ? (
-                        <Button size="icon" variant="ghost" onClick={() => handleEdit("name")}>
-                          <Edit2 className="h-4 w-4" />
-                        </Button>
-                      ) : null}
-                    </div>
-                  )}
+                  <div className="flex items-center gap-2">
+                    <CardTitle className="text-2xl">{project.name}</CardTitle>
+                  </div>
                   <CardDescription>Joined {project.joined}</CardDescription>
                 </div>
               </div>
@@ -169,101 +102,27 @@ export function ProjectDetailPage({ project: initialProject, participants, finan
               <div className="space-y-6">
                 <div>
                   <h3 className="mb-2 text-lg font-medium">Description</h3>
-                  {editingField === "description" ? (
-                    <div className="space-y-2">
-                      <Textarea
-                        value={editValues.description}
-                        onChange={(event) => setEditValues({ ...editValues, description: event.target.value })}
-                        rows={3}
-                      />
-                      <div className="flex justify-end gap-2">
-                        <Button size="sm" variant="outline" onClick={() => handleCancel("description")}>
-                          Cancel
-                        </Button>
-                        <Button size="sm" onClick={() => handleSave("description")}>
-                          Save
-                        </Button>
-                      </div>
-                    </div>
-                  ) : (
-                    <div className="flex items-start gap-2">
-                      <p className="text-slate-600 dark:text-slate-300">{project.description}</p>
-                      {hasAccess && userRole === "admin" ? (
-                        <Button size="icon" variant="ghost" onClick={() => handleEdit("description")}>
-                          <Edit2 className="h-4 w-4" />
-                        </Button>
-                      ) : null}
-                    </div>
-                  )}
+                  <p className="text-slate-600 dark:text-slate-300">{project.description}</p>
                 </div>
 
                 <div>
                   <h3 className="mb-2 text-lg font-medium">Detailed Information</h3>
-                  {editingField === "detailed_description" ? (
-                    <div className="space-y-2">
-                      <Textarea
-                        value={editValues.detailed_description}
-                        onChange={(event) =>
-                          setEditValues({ ...editValues, detailed_description: event.target.value })
-                        }
-                        rows={6}
-                      />
-                      <div className="flex justify-end gap-2">
-                        <Button size="sm" variant="outline" onClick={() => handleCancel("detailed_description")}>
-                          Cancel
-                        </Button>
-                        <Button size="sm" onClick={() => handleSave("detailed_description")}>
-                          Save
-                        </Button>
-                      </div>
-                    </div>
-                  ) : (
-                    <div className="flex items-start gap-2">
-                      <p className="text-slate-600 dark:text-slate-300">{project.detailed_description}</p>
-                      {hasAccess && userRole === "admin" ? (
-                        <Button size="icon" variant="ghost" onClick={() => handleEdit("detailed_description")}>
-                          <Edit2 className="h-4 w-4" />
-                        </Button>
-                      ) : null}
-                    </div>
-                  )}
+                  <p className="text-slate-600 dark:text-slate-300">{project.detailed_description}</p>
                 </div>
 
                 <div>
                   <h3 className="mb-2 text-lg font-medium">Website</h3>
-                  {editingField === "website" ? (
-                    <div className="space-y-2">
-                      <Input
-                        value={editValues.website}
-                        onChange={(event) => setEditValues({ ...editValues, website: event.target.value })}
-                      />
-                      <div className="flex justify-end gap-2">
-                        <Button size="sm" variant="outline" onClick={() => handleCancel("website")}>
-                          Cancel
-                        </Button>
-                        <Button size="sm" onClick={() => handleSave("website")}>
-                          Save
-                        </Button>
-                      </div>
-                    </div>
-                  ) : (
-                    <div className="flex items-center gap-2">
-                      <a
-                        href={project.website}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="flex items-center gap-1 text-emerald-600 hover:underline dark:text-emerald-400"
-                      >
-                        {project.website}
-                        <ExternalLink className="h-3.5 w-3.5" />
-                      </a>
-                      {hasAccess && userRole === "admin" ? (
-                        <Button size="icon" variant="ghost" onClick={() => handleEdit("website")}>
-                          <Edit2 className="h-4 w-4" />
-                        </Button>
-                      ) : null}
-                    </div>
-                  )}
+                  <div className="flex items-center gap-2">
+                    <a
+                      href={project.website}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex items-center gap-1 text-emerald-600 hover:underline dark:text-emerald-400"
+                    >
+                      {project.website}
+                      <ExternalLink className="h-3.5 w-3.5" />
+                    </a>
+                  </div>
                 </div>
 
                 <div>
