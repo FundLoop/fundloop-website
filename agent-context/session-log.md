@@ -12,6 +12,41 @@ Agents populate one level-3 heading for each coding session, following the same 
 
 ---
 
+### session v17: Fix zkAS audit logging, local Supabase bootstrap, and project detail rendering
+- timestamp: 2026-03-26T17:43:35Z
+- agent: **Codex (GPT-5)**
+- branch: **dev**
+- head: 4c2f3270a6a87a59b36cb1735a37bdde0d603300 - Merge pull request #15 from FundLoop/codex/zkActivitySum-v1
+
+#### Objective
+Fix the zkAS audit-trigger failure, make the tracked local Supabase reset path reproducible from migrations plus seed data, and resolve the stalled `/projects/harvest` page.
+
+#### Actions Taken
+- Added a forward migration to replace the shared `public.log_changes()` implementation so it no longer assumes an `updated_by` column and correctly logs `INSERT`, `UPDATE`, and `DELETE` events.
+- Added follow-up migrations to rekey zkAS-added reference rows away from low seed-owned ids so local resets do not collide with seeded `ref_roles`, `ref_payment_methods`, and `ref_notification_types` rows.
+- Converted the tracked `supabase/seed.sql` from dump-style `COPY ... FROM stdin` blocks into replayable `INSERT` statements, added the required `OVERRIDING SYSTEM VALUE` for `monthly_network_stats`, and removed stale `ref_chains` seed data that no longer matched the evolved schema.
+- Reworked `app/projects/[slug]/page.tsx` into a server-rendered route that loads project, participant, membership, organization, and financial data on the server and passes it into the new `components/project-detail-page.tsx` client view.
+- Hardened the project detail route so public pages render cleanly for signed-out users instead of throwing on the normal server-side `Auth session missing!` case.
+
+#### Tests and Validation Notes
+- Ran `DOCKER_HOST=unix:///var/run/docker.sock supabase db reset`.
+- Ran `pnpm lint`.
+- Ran `pnpm typecheck`.
+- Ran `pnpm build`.
+- Ran `pnpm test`.
+- Verified `public.log_changes()` with a temporary table that had no `updated_by` column and confirmed logged `INSERT`, `UPDATE`, and `DELETE` audit rows.
+- Smoke tested `http://localhost:3000/projects/harvest` and `http://localhost:3000/projects` with Playwright against local Supabase-backed app execution.
+
+#### Reflections
+- The bootstrap issue was really a chain of small schema/seed drifts rather than one bug, so fixing it cleanly required stabilizing the seed format and reserving high ids for migration-owned reference rows.
+- Moving the project detail page to a server-first data path fixed the user-visible loading failure and also removed a fragile client-side dependency on auth/session state during first render.
+
+#### Suggested Next Steps
+- Decide whether to also quiet the local Reown/AppKit warnings by adding a valid local `NEXT_PUBLIC_REOWN_PROJECT_ID` or guarding that initialization path in development.
+- If we want broader regression coverage, run a fuller authenticated Playwright pass across admin and onboarding flows on top of this now-clean local Supabase reset path.
+
+---
+
 ### session v16: Address PR #15 zkAS review comments
 - timestamp: 2026-03-26T10:02:10-04:00
 - agent: **Codex (GPT-5)**
