@@ -12,6 +12,127 @@ Agents populate one level-3 heading for each coding session, following the same 
 
 ---
 
+### session v16: Address PR #15 zkAS review comments
+- timestamp: 2026-03-26T10:02:10-04:00
+- agent: **Codex (GPT-5)**
+- branch: **codex/zkActivitySum-v1**
+- head: ed0a9140cc1a3a8fa227989a8a2c24b27a97ed7c - Ignore zkAS Python cache files
+
+#### Objective
+Address the open review comments on PR #15 by hardening the zkAS migrations and server actions, restoring lost onboarding RPC safeguards, and removing the user-facing service-role dependency.
+
+#### Actions Taken
+- Removed the incompatible zkAS audit trigger wiring from the new zkAS migrations and added an RLS policy so published runs can be selected safely by users through the standard server client.
+- Switched `app/settings/zkas/page.tsx` from the service-role client to the cookie-aware server Supabase client.
+- Restored the onboarding publish RPC to the validated `plpgsql` form with `SECURITY DEFINER` plus `SET search_path = public`, while keeping the separate grant migration in place.
+- Hardened zkAS server actions so revocation is scoped to admins on the target project and dataset approval requires a validated dataset state server-side.
+- Removed the unused duplicate-key accumulator from dataset validation and fixed the Python runner indentation issue flagged in review.
+- Updated `agent-context/session-log.md` to capture this review-response commit.
+
+#### Tests and Validation Notes
+- Planned validation after these fixes: `pnpm check` plus `python3 -m unittest discover -s tests -t .` in `zkas/engine`.
+
+#### Reflections
+- The review comments aligned closely with the issues surfaced in the earlier local smoke test, especially around the audit trigger assumptions, which made the hardening path straightforward once the comments were enumerated precisely.
+
+#### Suggested Next Steps
+- Push the review-response commit, reply on each addressed PR thread with the specific fix, and re-run the PR checks.
+
+---
+
+### session v15: Remove generated Python bytecode from zkAS engine commit
+- timestamp: 2026-03-26T01:53:17-04:00
+- agent: **Codex (GPT-5)**
+- branch: **codex/zkActivitySum-v1**
+- head: a786deda8115ea8d02911777c01c79f0c2884356 - Add zkAS control plane and admin workflows
+
+#### Objective
+Clean up generated Python bytecode files that were accidentally staged from the local zkAS engine test run and prevent them from reappearing in future commits.
+
+#### Actions Taken
+- Removed the tracked `__pycache__` and `.pyc` files under `zkas/engine`.
+- Updated `.gitignore` to ignore Python bytecode and cache directories across the repo.
+- Updated `agent-context/session-log.md` so this cleanup commit is recorded separately from the main zkAS feature commit.
+
+#### Tests and Validation Notes
+- No behavior changed; this is a repository hygiene cleanup.
+- The earlier full validation pass for the zkAS feature commit remained green before this follow-up cleanup.
+
+#### Reflections
+- Running the Python engine tests before staging is correct, but without Python ignore rules the generated cache files are easy to pick up in a large `git add -A` batch.
+
+#### Suggested Next Steps
+- Keep the follow-up commit paired with the main zkAS feature PR so reviewers can ignore it as packaging cleanup.
+
+---
+
+### session v14: Add zkAS control plane, admin surfaces, and local runner
+- timestamp: 2026-03-26T01:45:57-04:00
+- agent: **Codex (GPT-5)**
+- branch: **codex/zkActivitySum-v1**
+- head: 6e00edf5dd45f8f6fe76fe4b43c2c6d12398f476 - Add FundLoop and zkActivitySum docs
+
+#### Objective
+Implement the zkActivitySum v1 control plane across schema, validation, server actions, admin and project UI, publication flow, analytics, documentation, and the local Python runner, then smoke test it against local Supabase with Playwright.
+
+#### Actions Taken
+- Added the zkAS database layer with the new base and admin/publication migrations, regenerated Supabase types, and introduced the server-only admin Supabase client.
+- Implemented the zkAS TypeScript domain under `lib/zkas/` and `types/zkas.ts`, including auth guards, validation, manifest/result handling, storage, runner integration, publication materialization, and dataset guidance constants.
+- Added the operator, superadmin, project-manager, and user-facing routes under `app/admin/zkas`, `app/admin/superadmin/zkas`, `app/projects/[slug]/zkas`, and `app/settings/zkas`, plus supporting UI badges and navigation links from existing admin, project, and settings pages.
+- Added the local Python engine and runner wiring under `zkas/engine` and `zkas/runner`, along with validation and engine tests.
+- Added the zkAS engineering documentation set under `docs/engineering/2026-03-26-zkas-v1-control-plane/`.
+- Performed a real local smoke test using a disposable local Supabase stack plus Playwright, covering manager assignment, dataset upload, operator approval, run creation and execution, superadmin verification and publication, project analytics, and user-visible published results.
+- Updated the older onboarding publish migration split so the local Supabase CLI could replay that function definition cleanly during local testing.
+
+#### Tests and Validation Notes
+- Ran `pnpm lint`.
+- Ran `pnpm test`.
+- Ran `pnpm typecheck`.
+- Ran `pnpm build`.
+- Ran `pnpm check`.
+- Ran `python3 -m unittest discover -s tests -t .` in `zkas/engine`.
+- Ran local Supabase plus Playwright smoke coverage across the new zkAS feature set and representative existing app surfaces.
+- The smoke test exposed a real schema issue: zkAS audit triggers currently call the generic `log_changes()` path on tables that do not have `updated_by`, so local mutation testing required disabling those zkAS audit triggers in the disposable local database only.
+
+#### Reflections
+- The zkAS feature is now broad enough that the key risk has shifted from implementation completeness to operational hardening, especially around local database reproducibility and generic audit infrastructure assumptions.
+- The Playwright pass was valuable because it confirmed the full publish flow and analytics materialization, while also surfacing the trigger defect and the separate `/projects/harvest` loading issue that unit and build checks would not catch.
+
+#### Suggested Next Steps
+- Fix the zkAS audit trigger wiring so mutations succeed without local DB workarounds.
+- Make the local Supabase reset path fully reproducible from tracked migrations and seed assets alone.
+- Investigate the `/projects/harvest` route staying on its loading skeleton under the local smoke-test setup.
+
+---
+
+### session v13: Add FundLoop and zkActivitySum documentation set
+- timestamp: 2026-03-25T19:29:00-04:00
+- agent: **Codex (GPT-5)**
+- branch: **codex/dev**
+- head: 3c10b943a776ea190aacf4cf28d23e732e9d7d71 - Add onchain payment period tags to crypto flows
+
+#### Objective
+Add the current working documentation set under `docs/` and record the scope of that addition in the repo session log.
+
+#### Actions Taken
+- Added the zkActivitySum first-cut engineering docs covering product requirements, design inputs, minimal dataset validation, and monthly operator runs.
+- Added `docs/engineering/2026-04-16-migration.md` to capture migration-oriented engineering notes.
+- Added FundLoop narrative docs under `docs/whitepaper-and-grant-proposals/`, including the whitepaper and two grant proposal drafts.
+- Updated `agent-context/session-log.md` so this documentation-only commit is described alongside the repo history.
+
+#### Tests and Validation Notes
+- No runtime validation was required; this is a documentation-only change.
+- Verified the worktree contents before commit so the staged set is limited to the new docs and this session-log entry.
+
+#### Reflections
+- The added materials span product definition, engineering planning, fundraising narrative, and migration notes, so recording them as one documentation set is clearer than treating each file as an isolated artifact.
+
+#### Suggested Next Steps
+- Review the new docs for any sensitive or outdated planning assumptions before broader distribution.
+- Decide which of these drafts should remain internal working docs versus being promoted into polished public-facing materials.
+
+---
+
 ### session v12: Add onchain payment period tags to crypto flows
 - timestamp: 2026-03-25T09:20:00-04:00
 - agent: **Codex (GPT-5)**

@@ -609,6 +609,11 @@ export default function ProjectDetailPage() {
                   Manage Payments
                 </Link>
               </Button>
+              {hasAccess && userRole === "admin" && (
+                <Button asChild variant="outline" className="w-full">
+                  <Link href={`/projects/${project.slug}/zkas`}>Manage zkActivitySum</Link>
+                </Button>
+              )}
             </CardContent>
           </Card>
         </div>

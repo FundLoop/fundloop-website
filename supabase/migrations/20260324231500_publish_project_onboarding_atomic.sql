@@ -113,19 +113,3 @@ begin
   return next;
 end;
 $$;
-
-grant execute on function public.publish_project_onboarding_draft_atomic(
-  text,
-  text,
-  text,
-  text,
-  text,
-  text,
-  text,
-  text,
-  text,
-  numeric,
-  integer,
-  integer,
-  integer[]
-) to authenticated;
