@@ -12,6 +12,32 @@ Agents populate one level-3 heading for each coding session, following the same 
 
 ---
 
+### session v15: Remove generated Python bytecode from zkAS engine commit
+- timestamp: 2026-03-26T01:53:17-04:00
+- agent: **Codex (GPT-5)**
+- branch: **codex/zkActivitySum-v1**
+- head: a786deda8115ea8d02911777c01c79f0c2884356 - Add zkAS control plane and admin workflows
+
+#### Objective
+Clean up generated Python bytecode files that were accidentally staged from the local zkAS engine test run and prevent them from reappearing in future commits.
+
+#### Actions Taken
+- Removed the tracked `__pycache__` and `.pyc` files under `zkas/engine`.
+- Updated `.gitignore` to ignore Python bytecode and cache directories across the repo.
+- Updated `agent-context/session-log.md` so this cleanup commit is recorded separately from the main zkAS feature commit.
+
+#### Tests and Validation Notes
+- No behavior changed; this is a repository hygiene cleanup.
+- The earlier full validation pass for the zkAS feature commit remained green before this follow-up cleanup.
+
+#### Reflections
+- Running the Python engine tests before staging is correct, but without Python ignore rules the generated cache files are easy to pick up in a large `git add -A` batch.
+
+#### Suggested Next Steps
+- Keep the follow-up commit paired with the main zkAS feature PR so reviewers can ignore it as packaging cleanup.
+
+---
+
 ### session v14: Add zkAS control plane, admin surfaces, and local runner
 - timestamp: 2026-03-26T01:45:57-04:00
 - agent: **Codex (GPT-5)**
