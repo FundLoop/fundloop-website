@@ -16,8 +16,11 @@ import {
 import { ThemeToggle } from "@/components/theme-toggle"
 import { AuthModal } from "@/components/auth-modal"
 import ResourcesDropdown from "@/components/resources-dropdown"
+import UseCasesDropdown from "@/components/use-cases-dropdown"
 import { CircleDollarSign, ChevronDown, User, Settings, LogOut } from "lucide-react"
 import { MobileMenu } from "@/components/mobile-menu"
+import { useCaseLinks } from "@/lib/use-cases"
+import { cn } from "@/lib/utils"
 
 export default function Navbar() {
   const [session, setSession] = useState<any>(null)
@@ -99,9 +102,36 @@ export default function Navbar() {
     { label: "Projects", href: "/projects" },
     { label: "Users", href: "/users" },
     { label: "Analytics", href: "/analytics" },
-    { label: "About", href: "/about" },
     { label: "Blog", href: "/blog" },
   ]
+
+  const mobileNavLinks = [...navLinks, { label: "About FundLoop", href: "/about" }]
+
+  const exploreLinks = [
+    {
+      label: "Projects",
+      href: "/projects",
+      description: "Browse aligned projects participating in the FundLoop ecosystem.",
+    },
+    {
+      label: "Users",
+      href: "/users",
+      description: "See the people shaping the network and participating across projects.",
+    },
+    {
+      label: "Analytics",
+      href: "/analytics",
+      description: "Understand how contributions, activity, and citizen salary flow through the system.",
+    },
+    {
+      label: "About FundLoop",
+      href: "/about",
+      description: "Learn the mission, model, and long-term vision behind FundLoop.",
+    },
+  ]
+
+  const desktopNavItemClass =
+    "h-9 rounded-full px-4 text-sm font-medium transition-colors data-[state=open]:bg-emerald-50 data-[state=open]:text-emerald-700 dark:data-[state=open]:bg-emerald-950/40 dark:data-[state=open]:text-emerald-300"
 
   return (
     <>
@@ -110,21 +140,36 @@ export default function Navbar() {
           <Link href="/" className="flex items-center gap-2">
             <CircleDollarSign className="h-6 w-6 text-emerald-600" />
             <span className="font-bold text-xl hidden sm:inline">FundLoop</span>
+            <span className="relative left-1 top-1 hidden text-[0.7rem] font-medium italic tracking-[0.08em] text-[#5a1f1f] sm:inline dark:text-[#d6a3a3]">
+              Coming Soon
+            </span>
           </Link>
 
-          <div className="hidden md:flex items-center gap-6">
+          <div className="hidden md:flex items-center rounded-full border border-slate-200/80 bg-white/80 px-2 py-1 shadow-sm dark:border-slate-800 dark:bg-slate-950/70">
+            <UseCasesDropdown triggerClassName={desktopNavItemClass} />
+
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="ghost" className="text-sm font-medium">
+                <Button variant="ghost" className={desktopNavItemClass}>
                   Explore <ChevronDown className="h-4 w-4 ml-1" />
                 </Button>
               </DropdownMenuTrigger>
-              <DropdownMenuContent>
-                {navLinks.slice(0, 3).map((link) => (
-                  <DropdownMenuItem key={link.href} asChild>
-                    <Link href={link.href}>{link.label}</Link>
+              <DropdownMenuContent align="start" className="w-[30rem] max-w-[calc(100vw-2rem)] p-2">
+                <div className="grid gap-1 sm:grid-cols-2">
+                {exploreLinks.map((link) => (
+                  <DropdownMenuItem key={link.href} asChild className="p-0">
+                    <Link
+                      href={link.href}
+                      className={`flex min-h-24 flex-col items-start rounded-sm px-3 py-3 outline-none transition-colors hover:bg-accent ${
+                        pathname === link.href ? "text-emerald-600" : ""
+                      }`}
+                    >
+                      <span className="text-sm font-semibold">{link.label}</span>
+                      <span className="mt-1 text-xs leading-5 text-muted-foreground">{link.description}</span>
+                    </Link>
                   </DropdownMenuItem>
                 ))}
+                </div>
               </DropdownMenuContent>
             </DropdownMenu>
 
@@ -132,15 +177,18 @@ export default function Navbar() {
               <Link
                 key={link.href}
                 href={link.href}
-                className={`text-sm font-medium ${
-                  pathname === link.href ? "text-emerald-600" : "text-muted-foreground hover:text-foreground"
-                }`}
+                className={cn(
+                  "inline-flex h-9 items-center rounded-full px-4 text-sm font-medium transition-colors",
+                  pathname === link.href
+                    ? "bg-emerald-50 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-300"
+                    : "text-muted-foreground hover:bg-slate-100 hover:text-foreground dark:hover:bg-slate-900",
+                )}
               >
                 {link.label}
               </Link>
             ))}
 
-            <ResourcesDropdown />
+            <ResourcesDropdown triggerClassName={desktopNavItemClass} />
           </div>
 
           <div className="flex items-center gap-2">
@@ -204,7 +252,13 @@ export default function Navbar() {
       </header>
 
       {/* Mobile menu modal */}
-      <MobileMenu mobileMenuOpen={mobileMenuOpen} setMobileMenuOpen={setMobileMenuOpen} navLinks={navLinks} />
+      <MobileMenu
+        mobileMenuOpen={mobileMenuOpen}
+        setMobileMenuOpen={setMobileMenuOpen}
+        navLinks={mobileNavLinks}
+        useCaseLinks={useCaseLinks.map(({ href, shortLabel }) => ({ href, label: shortLabel }))}
+        showTrigger={false}
+      />
       <AuthModal open={showAuthModal} onClose={() => setShowAuthModal(false)} />
     </>
   )

@@ -44,3 +44,6 @@ jobs:
 
       - name: Build
         run: pnpm build
+
+      - name: Contracts Test
+        run: pnpm --dir contracts test

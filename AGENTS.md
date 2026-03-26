@@ -48,6 +48,10 @@ Agents in this repo must optimize for:
   - open PRs from `dev` into `main`
 - Do not push feature work directly to `dev` or `main` unless the user explicitly instructs you to do so.
 - `agent-context/session-log.md` is a maintained repo artifact and must be updated for every commit.
+- At the start of a new session, inventory what is next from:
+  - `agent-context/todo.md` and any relevant `todo.md` files under feature folders
+  - larger planned work and implementation docs inside `agent-context/`
+  - open GitHub issues when repo access is available
 
 ---
 
@@ -126,6 +130,12 @@ agent-context/          Agent working notes including session-log.md
 ```
 
 Follow existing naming and placement conventions before creating new abstractions. Extend the current pattern instead of creating a competing one.
+
+Inside `agent-context/`:
+
+- `session-log.md` records one entry per commit or significant coded session
+- `todo.md` holds smaller follow-up tasks and parked next actions
+- dedicated subfolders should be used for larger feature streams, implementation notes, and supporting docs
 
 ---
 

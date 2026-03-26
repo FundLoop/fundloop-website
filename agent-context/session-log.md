@@ -12,6 +12,161 @@ Agents populate one level-3 heading for each coding session, following the same 
 
 ---
 
+### session v21: Address PR #16 inline review comments
+- timestamp: 2026-03-26T23:32:13Z
+- agent: **Codex (GPT-5)**
+- branch: **codex/marketing-nav-refresh**
+- head: a35bb3d102aa5872440f1f96944a41a0f519f7ce - feat(marketing): add ecosystem entry and refine brand badge
+
+#### Objective
+Address the actionable inline review comments on PR #16 by fixing the hero timer ref typing, mobile menu composition, mobile About navigation regression, misleading project-detail edit affordances, and the zkAS role rekey migration robustness.
+
+#### Actions Taken
+- Updated `components/hero.tsx` so the timer helper types use mutable refs explicitly instead of readonly ref-object types.
+- Split the mobile menu usage in `components/navbar.tsx` and `components/mobile-menu.tsx` so there is only one hamburger trigger, while the modal instance renders separately without duplicating the button.
+- Restored `About FundLoop` to mobile navigation by passing a mobile-only nav list into the menu modal.
+- Removed the misleading local-only edit controls from `components/project-detail-page.tsx` so the UI no longer implies persistence that does not exist yet.
+- Updated `supabase/migrations/20260326124500_rekey_zkas_access_role.sql` to remap `organization_members.role_id` and `organization_invitations.role_id` before deleting the old legacy role row.
+
+#### Tests and Validation Notes
+- Ran `pnpm lint`.
+- Ran `pnpm test`.
+- Ran `pnpm typecheck`.
+- Ran `pnpm build`.
+- Ran `pnpm --dir contracts test`.
+- `pnpm build` still emitted the existing Recharts static-generation width/height warnings while succeeding.
+
+#### Reflections
+- The review comments were accurate and mostly pointed to small boundary issues rather than architectural problems, so the safest path was to tighten each one directly instead of over-refactoring.
+- Removing the project-detail edit affordances is a better temporary state than leaving a UI that claims success without any backend persistence.
+
+#### Suggested Next Steps
+- Push this follow-up commit to PR #16 and reply on the addressed threads with the specific fix.
+- If editable project details are still wanted, implement them later through a real server action or route-backed update flow rather than local-only state.
+
+---
+
+### session v20: Add Solar Village and refine the FundLoop coming-soon badge
+- timestamp: 2026-03-26T23:28:36Z
+- agent: **Codex (GPT-5)**
+- branch: **codex/marketing-nav-refresh**
+- head: d9e447351babf62ca3b2c93fa0cbb3d8e75d2940 - feat(marketing): refresh navigation and public landing content
+
+#### Objective
+Apply the final small public-site follow-ups on top of the marketing refresh branch by adding Solar Village to the ecosystem page and refining the FundLoop wordmark’s coming-soon notice.
+
+#### Actions Taken
+- Added `Solar Village` to `app/ecosystem/page.tsx` with the supplied `https://solarvillage.xyz` URL and the requested description about carbon credits for off-grid solar projects in Africa.
+- Adjusted the small `Coming Soon` notice in `components/navbar.tsx` to remove the pill treatment, switch to italic styling, and nudge it slightly down and to the right beside the FundLoop wordmark.
+
+#### Tests and Validation Notes
+- Ran `pnpm typecheck`.
+- Ran `pnpm lint`.
+
+#### Reflections
+- Keeping this as a separate follow-up commit makes the already-open marketing PR easier to review because the late copy/content nits stay isolated from the larger navigation and hero changes.
+
+#### Suggested Next Steps
+- Push this follow-up commit to update PR #16.
+- If more public-site polish is coming, consider batching additional micro-copy and badge-position tweaks together before the next push.
+
+---
+
+### session v19: Refresh marketing navigation, use-case pages, pricing, FAQ, and hero motion
+- timestamp: 2026-03-26T23:03:13Z
+- agent: **Codex (GPT-5)**
+- branch: **codex/marketing-nav-refresh**
+- head: 34a8709bef0bc7bd5e438aaeaec66730d47c78d1 - Tighten repo docs and CI coverage
+
+#### Objective
+Refresh the public-facing marketing surface by expanding the header navigation, adding use-case and pricing content, restructuring the FAQ, and making the homepage hero headline interactive and dynamic.
+
+#### Actions Taken
+- Added a new `Use Cases` navigation cluster, shared use-case content model, homepage use-case card section, and dedicated use-case landing pages under `app/use-cases/[slug]`.
+- Expanded the header dropdowns so `Use Cases`, `Explore`, and `Resources` use larger structured panels and regrouped the desktop navigation into a more consistent pill-style unit.
+- Added the new `Pricing` page, rewrote the `FAQ` page into audience-specific sections for projects, humans, and bots, and updated the copy to reflect the current FundLoop participation, privacy, and bot-pool model.
+- Moved `About FundLoop` into the `Explore` dropdown and updated mobile navigation to surface the new use-case paths cleanly.
+- Reworked the homepage hero title into a rotating interactive widget with a stepped slowdown curve, click-to-flip behavior, and a subtle hover expansion.
+
+#### Tests and Validation Notes
+- Ran `pnpm lint`.
+- Ran `pnpm test`.
+- Ran `pnpm typecheck`.
+- Ran `pnpm build`.
+- Ran `pnpm --dir contracts test`.
+- The build completed successfully and still emitted the existing Recharts static-generation width/height warnings.
+
+#### Reflections
+- The nav changes were most stable once the marketing content was centralized in a shared use-case model instead of duplicating labels and descriptions across the header, homepage, and standalone pages.
+- The interactive hero ended up needing a cleaner timer model than the initial effect-only approach so manual flips and scheduled flips would stay in sync without React hook warnings.
+
+#### Suggested Next Steps
+- Smoke test the refreshed public pages in a browser to make sure the hero interaction and the larger dropdowns feel right at real viewport sizes.
+- Decide whether the rotating hero title should eventually have a visible affordance or hint text, or remain a hidden interactive detail.
+
+---
+
+### session v18: Tighten repo cleanup docs and CI coverage
+- timestamp: 2026-03-26T19:56:33Z
+- agent: **Codex (GPT-5)**
+- branch: **dev**
+- head: b89156eeb01887f5c0cb0064488cff33ae158078 - Fix local zkAS bootstrap and project detail route
+
+#### Objective
+Run the full repo-cleanup pass, then tighten the contributor docs and pull-request CI coverage where the audit found concrete gaps.
+
+#### Actions Taken
+- Audited the repo baseline across `README.md`, `AGENTS.md`, licensing, session-log discipline, `agent-context/`, and `.github/workflows/ci.yml`.
+- Updated `README.md` to reflect the repaired local Supabase reset path, document the `contracts/` Hardhat workspace, and describe the newer zkAS/admin surfaces and `zkas/engine`.
+- Updated `AGENTS.md` so agents are explicitly instructed to inventory `agent-context/todo.md`, larger planned work in `agent-context/`, and GitHub issues at the start of a session.
+- Extended the CI workflow to run `pnpm --dir contracts test` in addition to the root app validation steps.
+
+#### Tests and Validation Notes
+- Ran `pnpm --dir contracts test`.
+
+#### Reflections
+- The repo baseline was already reasonably healthy, so the highest-signal cleanup was to fix stale operational guidance and make CI match the real multi-surface contract of the codebase.
+
+#### Suggested Next Steps
+- Push this cleanup commit when ready so the README, AGENTS guidance, and PR CI all stay aligned.
+
+---
+
+### session v17: Fix zkAS audit logging, local Supabase bootstrap, and project detail rendering
+- timestamp: 2026-03-26T17:43:35Z
+- agent: **Codex (GPT-5)**
+- branch: **dev**
+- head: 4c2f3270a6a87a59b36cb1735a37bdde0d603300 - Merge pull request #15 from FundLoop/codex/zkActivitySum-v1
+
+#### Objective
+Fix the zkAS audit-trigger failure, make the tracked local Supabase reset path reproducible from migrations plus seed data, and resolve the stalled `/projects/harvest` page.
+
+#### Actions Taken
+- Added a forward migration to replace the shared `public.log_changes()` implementation so it no longer assumes an `updated_by` column and correctly logs `INSERT`, `UPDATE`, and `DELETE` events.
+- Added follow-up migrations to rekey zkAS-added reference rows away from low seed-owned ids so local resets do not collide with seeded `ref_roles`, `ref_payment_methods`, and `ref_notification_types` rows.
+- Converted the tracked `supabase/seed.sql` from dump-style `COPY ... FROM stdin` blocks into replayable `INSERT` statements, added the required `OVERRIDING SYSTEM VALUE` for `monthly_network_stats`, and removed stale `ref_chains` seed data that no longer matched the evolved schema.
+- Reworked `app/projects/[slug]/page.tsx` into a server-rendered route that loads project, participant, membership, organization, and financial data on the server and passes it into the new `components/project-detail-page.tsx` client view.
+- Hardened the project detail route so public pages render cleanly for signed-out users instead of throwing on the normal server-side `Auth session missing!` case.
+
+#### Tests and Validation Notes
+- Ran `DOCKER_HOST=unix:///var/run/docker.sock supabase db reset`.
+- Ran `pnpm lint`.
+- Ran `pnpm typecheck`.
+- Ran `pnpm build`.
+- Ran `pnpm test`.
+- Verified `public.log_changes()` with a temporary table that had no `updated_by` column and confirmed logged `INSERT`, `UPDATE`, and `DELETE` audit rows.
+- Smoke tested `http://localhost:3000/projects/harvest` and `http://localhost:3000/projects` with Playwright against local Supabase-backed app execution.
+
+#### Reflections
+- The bootstrap issue was really a chain of small schema/seed drifts rather than one bug, so fixing it cleanly required stabilizing the seed format and reserving high ids for migration-owned reference rows.
+- Moving the project detail page to a server-first data path fixed the user-visible loading failure and also removed a fragile client-side dependency on auth/session state during first render.
+
+#### Suggested Next Steps
+- Decide whether to also quiet the local Reown/AppKit warnings by adding a valid local `NEXT_PUBLIC_REOWN_PROJECT_ID` or guarding that initialization path in development.
+- If we want broader regression coverage, run a fuller authenticated Playwright pass across admin and onboarding flows on top of this now-clean local Supabase reset path.
+
+---
+
 ### session v16: Address PR #15 zkAS review comments
 - timestamp: 2026-03-26T10:02:10-04:00
 - agent: **Codex (GPT-5)**
