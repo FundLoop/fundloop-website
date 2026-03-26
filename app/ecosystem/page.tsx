@@ -33,6 +33,7 @@ export default function EcosystemPage() {
     { name: "GreenPill Toronto", url: "https://greenpill.to", desc: "Toronto node of the global GreenPill Network." },
     { name: "Procent Foundation", url: "https://procentfoundation.com", desc: "Nonprofit supporting public goods and open innovation." },
     { name: "Safe2Meet", url: "https://safe2meet.me", desc: "Safer in-person meetups for real estate, classifieds, and dating." },
+    { name: "Solar Village", url: "https://solarvillage.xyz", desc: "Carbon credits for off-grid solar projects in Africa." },
     { name: "SmarTrust", url: "https://smartrust.me", desc: "AI-powered escrow & arbitration for freelancers, agencies, and B2B." },
     { name: "SnapVote", url: "https://snapvote.org", desc: "Fast, trustworthy decision-making and polls for communities." },
     { name: "SpareChange", url: "https://sparechange.tips", desc: "Tip anyone with QR codes and digital micro-payments." },

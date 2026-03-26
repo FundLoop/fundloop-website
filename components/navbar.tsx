@@ -138,6 +138,9 @@ export default function Navbar() {
           <Link href="/" className="flex items-center gap-2">
             <CircleDollarSign className="h-6 w-6 text-emerald-600" />
             <span className="font-bold text-xl hidden sm:inline">FundLoop</span>
+            <span className="relative left-1 top-1 hidden text-[0.7rem] font-medium italic tracking-[0.08em] text-[#5a1f1f] sm:inline dark:text-[#d6a3a3]">
+              Coming Soon
+            </span>
           </Link>
 
           <div className="hidden md:flex items-center rounded-full border border-slate-200/80 bg-white/80 px-2 py-1 shadow-sm dark:border-slate-800 dark:bg-slate-950/70">

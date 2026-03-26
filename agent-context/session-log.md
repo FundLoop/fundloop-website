@@ -12,6 +12,32 @@ Agents populate one level-3 heading for each coding session, following the same 
 
 ---
 
+### session v20: Add Solar Village and refine the FundLoop coming-soon badge
+- timestamp: 2026-03-26T23:28:36Z
+- agent: **Codex (GPT-5)**
+- branch: **codex/marketing-nav-refresh**
+- head: d9e447351babf62ca3b2c93fa0cbb3d8e75d2940 - feat(marketing): refresh navigation and public landing content
+
+#### Objective
+Apply the final small public-site follow-ups on top of the marketing refresh branch by adding Solar Village to the ecosystem page and refining the FundLoop wordmark’s coming-soon notice.
+
+#### Actions Taken
+- Added `Solar Village` to `app/ecosystem/page.tsx` with the supplied `https://solarvillage.xyz` URL and the requested description about carbon credits for off-grid solar projects in Africa.
+- Adjusted the small `Coming Soon` notice in `components/navbar.tsx` to remove the pill treatment, switch to italic styling, and nudge it slightly down and to the right beside the FundLoop wordmark.
+
+#### Tests and Validation Notes
+- Ran `pnpm typecheck`.
+- Ran `pnpm lint`.
+
+#### Reflections
+- Keeping this as a separate follow-up commit makes the already-open marketing PR easier to review because the late copy/content nits stay isolated from the larger navigation and hero changes.
+
+#### Suggested Next Steps
+- Push this follow-up commit to update PR #16.
+- If more public-site polish is coming, consider batching additional micro-copy and badge-position tweaks together before the next push.
+
+---
+
 ### session v19: Refresh marketing navigation, use-case pages, pricing, FAQ, and hero motion
 - timestamp: 2026-03-26T23:03:13Z
 - agent: **Codex (GPT-5)**
