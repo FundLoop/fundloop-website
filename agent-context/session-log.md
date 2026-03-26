@@ -12,6 +12,32 @@ Agents populate one level-3 heading for each coding session, following the same 
 
 ---
 
+### session v18: Tighten repo cleanup docs and CI coverage
+- timestamp: 2026-03-26T19:56:33Z
+- agent: **Codex (GPT-5)**
+- branch: **dev**
+- head: b89156eeb01887f5c0cb0064488cff33ae158078 - Fix local zkAS bootstrap and project detail route
+
+#### Objective
+Run the full repo-cleanup pass, then tighten the contributor docs and pull-request CI coverage where the audit found concrete gaps.
+
+#### Actions Taken
+- Audited the repo baseline across `README.md`, `AGENTS.md`, licensing, session-log discipline, `agent-context/`, and `.github/workflows/ci.yml`.
+- Updated `README.md` to reflect the repaired local Supabase reset path, document the `contracts/` Hardhat workspace, and describe the newer zkAS/admin surfaces and `zkas/engine`.
+- Updated `AGENTS.md` so agents are explicitly instructed to inventory `agent-context/todo.md`, larger planned work in `agent-context/`, and GitHub issues at the start of a session.
+- Extended the CI workflow to run `pnpm --dir contracts test` in addition to the root app validation steps.
+
+#### Tests and Validation Notes
+- Ran `pnpm --dir contracts test`.
+
+#### Reflections
+- The repo baseline was already reasonably healthy, so the highest-signal cleanup was to fix stale operational guidance and make CI match the real multi-surface contract of the codebase.
+
+#### Suggested Next Steps
+- Push this cleanup commit when ready so the README, AGENTS guidance, and PR CI all stay aligned.
+
+---
+
 ### session v17: Fix zkAS audit logging, local Supabase bootstrap, and project detail rendering
 - timestamp: 2026-03-26T17:43:35Z
 - agent: **Codex (GPT-5)**
