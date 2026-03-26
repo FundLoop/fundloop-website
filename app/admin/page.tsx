@@ -3,7 +3,7 @@
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { DollarSign, Users, Building2, BarChart3 } from "lucide-react"
+import { DollarSign, Users, Building2, BarChart3, BrainCircuit } from "lucide-react"
 
 export default function AdminDashboard() {
   return (
@@ -108,6 +108,21 @@ export default function AdminDashboard() {
               <Link href="/admin/analytics">
                 <BarChart3 className="h-4 w-4 mr-2" />
                 View Analytics
+              </Link>
+            </Button>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle>zkActivitySum</CardTitle>
+            <CardDescription>Review monthly datasets and run privacy-preserving allocations</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <Button asChild className="w-full">
+              <Link href="/admin/zkas">
+                <BrainCircuit className="h-4 w-4 mr-2" />
+                Open zkAS
               </Link>
             </Button>
           </CardContent>

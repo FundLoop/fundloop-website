@@ -12,6 +12,45 @@ Agents populate one level-3 heading for each coding session, following the same 
 
 ---
 
+### session v14: Add zkAS control plane, admin surfaces, and local runner
+- timestamp: 2026-03-26T01:45:57-04:00
+- agent: **Codex (GPT-5)**
+- branch: **codex/zkActivitySum-v1**
+- head: 6e00edf5dd45f8f6fe76fe4b43c2c6d12398f476 - Add FundLoop and zkActivitySum docs
+
+#### Objective
+Implement the zkActivitySum v1 control plane across schema, validation, server actions, admin and project UI, publication flow, analytics, documentation, and the local Python runner, then smoke test it against local Supabase with Playwright.
+
+#### Actions Taken
+- Added the zkAS database layer with the new base and admin/publication migrations, regenerated Supabase types, and introduced the server-only admin Supabase client.
+- Implemented the zkAS TypeScript domain under `lib/zkas/` and `types/zkas.ts`, including auth guards, validation, manifest/result handling, storage, runner integration, publication materialization, and dataset guidance constants.
+- Added the operator, superadmin, project-manager, and user-facing routes under `app/admin/zkas`, `app/admin/superadmin/zkas`, `app/projects/[slug]/zkas`, and `app/settings/zkas`, plus supporting UI badges and navigation links from existing admin, project, and settings pages.
+- Added the local Python engine and runner wiring under `zkas/engine` and `zkas/runner`, along with validation and engine tests.
+- Added the zkAS engineering documentation set under `docs/engineering/2026-03-26-zkas-v1-control-plane/`.
+- Performed a real local smoke test using a disposable local Supabase stack plus Playwright, covering manager assignment, dataset upload, operator approval, run creation and execution, superadmin verification and publication, project analytics, and user-visible published results.
+- Updated the older onboarding publish migration split so the local Supabase CLI could replay that function definition cleanly during local testing.
+
+#### Tests and Validation Notes
+- Ran `pnpm lint`.
+- Ran `pnpm test`.
+- Ran `pnpm typecheck`.
+- Ran `pnpm build`.
+- Ran `pnpm check`.
+- Ran `python3 -m unittest discover -s tests -t .` in `zkas/engine`.
+- Ran local Supabase plus Playwright smoke coverage across the new zkAS feature set and representative existing app surfaces.
+- The smoke test exposed a real schema issue: zkAS audit triggers currently call the generic `log_changes()` path on tables that do not have `updated_by`, so local mutation testing required disabling those zkAS audit triggers in the disposable local database only.
+
+#### Reflections
+- The zkAS feature is now broad enough that the key risk has shifted from implementation completeness to operational hardening, especially around local database reproducibility and generic audit infrastructure assumptions.
+- The Playwright pass was valuable because it confirmed the full publish flow and analytics materialization, while also surfacing the trigger defect and the separate `/projects/harvest` loading issue that unit and build checks would not catch.
+
+#### Suggested Next Steps
+- Fix the zkAS audit trigger wiring so mutations succeed without local DB workarounds.
+- Make the local Supabase reset path fully reproducible from tracked migrations and seed assets alone.
+- Investigate the `/projects/harvest` route staying on its loading skeleton under the local smoke-test setup.
+
+---
+
 ### session v13: Add FundLoop and zkActivitySum documentation set
 - timestamp: 2026-03-25T19:29:00-04:00
 - agent: **Codex (GPT-5)**

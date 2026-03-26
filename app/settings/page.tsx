@@ -1,6 +1,6 @@
 import Link from "next/link"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Mail, Wallet, User, Shield, Bell, CreditCard } from "lucide-react"
+import { Mail, Wallet, User, Shield, Bell, CreditCard, BrainCircuit } from "lucide-react"
 
 export default function SettingsPage() {
   return (
@@ -88,6 +88,23 @@ export default function SettingsPage() {
             <CardContent>
               <p className="text-sm text-slate-600 dark:text-slate-300">
                 View your payment history, manage payment methods, and update billing information.
+              </p>
+            </CardContent>
+          </Card>
+        </Link>
+
+        <Link href="/settings/zkas" className="block">
+          <Card className="h-full hover:border-emerald-300 dark:hover:border-emerald-700 transition-colors">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <BrainCircuit className="h-5 w-5 text-emerald-600 dark:text-emerald-400" />
+                zkAS Results
+              </CardTitle>
+              <CardDescription>View verified zkActivitySum publications</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <p className="text-sm text-slate-600 dark:text-slate-300">
+                Review published zkAS allocations once they have been verified and released by FundLoop superadmins.
               </p>
             </CardContent>
           </Card>

@@ -2092,6 +2092,694 @@ export type Database = {
           },
         ]
       }
+      zkas_dataset_issues: {
+        Row: {
+          code: string
+          created_at: string
+          dataset_id: number
+          field_name: string | null
+          id: number
+          message: string
+          metadata: Json | null
+          row_number: number | null
+          severity: Database["public"]["Enums"]["zkas_issue_severity"]
+        }
+        Insert: {
+          code: string
+          created_at?: string
+          dataset_id: number
+          field_name?: string | null
+          id?: number
+          message: string
+          metadata?: Json | null
+          row_number?: number | null
+          severity: Database["public"]["Enums"]["zkas_issue_severity"]
+        }
+        Update: {
+          code?: string
+          created_at?: string
+          dataset_id?: number
+          field_name?: string | null
+          id?: number
+          message?: string
+          metadata?: Json | null
+          row_number?: number | null
+          severity?: Database["public"]["Enums"]["zkas_issue_severity"]
+        }
+        Relationships: [
+          {
+            foreignKeyName: "zkas_dataset_issues_dataset_id_fkey"
+            columns: ["dataset_id"]
+            isOneToOne: false
+            referencedRelation: "zkas_datasets"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      zkas_datasets: {
+        Row: {
+          approved_at: string | null
+          approved_by_user_id: string | null
+          created_at: string
+          file_hash: string
+          file_name: string
+          format: string
+          id: number
+          month: string
+          note: string | null
+          object_path: string
+          project_id: number
+          replaced_by_dataset_id: number | null
+          row_count: number
+          schema_version: string
+          status: Database["public"]["Enums"]["zkas_dataset_status"]
+          updated_at: string
+          uploaded_by_user_id: string | null
+          validation_summary: Json | null
+        }
+        Insert: {
+          approved_at?: string | null
+          approved_by_user_id?: string | null
+          created_at?: string
+          file_hash: string
+          file_name: string
+          format: string
+          id?: number
+          month: string
+          note?: string | null
+          object_path: string
+          project_id: number
+          replaced_by_dataset_id?: number | null
+          row_count?: number
+          schema_version?: string
+          status?: Database["public"]["Enums"]["zkas_dataset_status"]
+          updated_at?: string
+          uploaded_by_user_id?: string | null
+          validation_summary?: Json | null
+        }
+        Update: {
+          approved_at?: string | null
+          approved_by_user_id?: string | null
+          created_at?: string
+          file_hash?: string
+          file_name?: string
+          format?: string
+          id?: number
+          month?: string
+          note?: string | null
+          object_path?: string
+          project_id?: number
+          replaced_by_dataset_id?: number | null
+          row_count?: number
+          schema_version?: string
+          status?: Database["public"]["Enums"]["zkas_dataset_status"]
+          updated_at?: string
+          uploaded_by_user_id?: string | null
+          validation_summary?: Json | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "zkas_datasets_approved_by_user_id_fkey"
+            columns: ["approved_by_user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "zkas_datasets_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "zkas_datasets_replaced_by_dataset_id_fkey"
+            columns: ["replaced_by_dataset_id"]
+            isOneToOne: false
+            referencedRelation: "zkas_datasets"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "zkas_datasets_uploaded_by_user_id_fkey"
+            columns: ["uploaded_by_user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["user_id"]
+          },
+        ]
+      }
+      zkas_identity_artifacts: {
+        Row: {
+          artifact_hash: string
+          created_at: string
+          file_name: string
+          id: number
+          month: string
+          note: string | null
+          object_path: string
+          provider: string
+          schema_version: string
+          status: string
+          updated_at: string
+          uploaded_by_user_id: string | null
+        }
+        Insert: {
+          artifact_hash: string
+          created_at?: string
+          file_name: string
+          id?: number
+          month: string
+          note?: string | null
+          object_path: string
+          provider?: string
+          schema_version?: string
+          status?: string
+          updated_at?: string
+          uploaded_by_user_id?: string | null
+        }
+        Update: {
+          artifact_hash?: string
+          created_at?: string
+          file_name?: string
+          id?: number
+          month?: string
+          note?: string | null
+          object_path?: string
+          provider?: string
+          schema_version?: string
+          status?: string
+          updated_at?: string
+          uploaded_by_user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "zkas_identity_artifacts_uploaded_by_user_id_fkey"
+            columns: ["uploaded_by_user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["user_id"]
+          },
+        ]
+      }
+      zkas_published_user_results: {
+        Row: {
+          aggregate_score: number
+          allocation_usd: number
+          created_at: string
+          id: number
+          notification_id: number | null
+          published_at: string
+          run_id: number
+          user_id: string
+          zkas_user_id: string
+        }
+        Insert: {
+          aggregate_score: number
+          allocation_usd: number
+          created_at?: string
+          id?: number
+          notification_id?: number | null
+          published_at?: string
+          run_id: number
+          user_id: string
+          zkas_user_id: string
+        }
+        Update: {
+          aggregate_score?: number
+          allocation_usd?: number
+          created_at?: string
+          id?: number
+          notification_id?: number | null
+          published_at?: string
+          run_id?: number
+          user_id?: string
+          zkas_user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "zkas_published_user_results_notification_id_fkey"
+            columns: ["notification_id"]
+            isOneToOne: false
+            referencedRelation: "user_notifications"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "zkas_published_user_results_run_id_fkey"
+            columns: ["run_id"]
+            isOneToOne: false
+            referencedRelation: "zkas_runs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "zkas_published_user_results_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["user_id"]
+          },
+        ]
+      }
+      zkas_run_attempts: {
+        Row: {
+          completed_at: string | null
+          created_at: string
+          failure_reason: string | null
+          id: number
+          logs: string | null
+          mode: Database["public"]["Enums"]["zkas_execution_mode"]
+          run_id: number
+          started_at: string | null
+          status: string
+          worker_job_id: string | null
+        }
+        Insert: {
+          completed_at?: string | null
+          created_at?: string
+          failure_reason?: string | null
+          id?: number
+          logs?: string | null
+          mode?: Database["public"]["Enums"]["zkas_execution_mode"]
+          run_id: number
+          started_at?: string | null
+          status?: string
+          worker_job_id?: string | null
+        }
+        Update: {
+          completed_at?: string | null
+          created_at?: string
+          failure_reason?: string | null
+          id?: number
+          logs?: string | null
+          mode?: Database["public"]["Enums"]["zkas_execution_mode"]
+          run_id?: number
+          started_at?: string | null
+          status?: string
+          worker_job_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "zkas_run_attempts_run_id_fkey"
+            columns: ["run_id"]
+            isOneToOne: false
+            referencedRelation: "zkas_runs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      zkas_run_datasets: {
+        Row: {
+          created_at: string
+          dataset_id: number
+          file_hash: string
+          id: number
+          object_path: string
+          project_id: number
+          row_count: number
+          run_id: number
+        }
+        Insert: {
+          created_at?: string
+          dataset_id: number
+          file_hash: string
+          id?: number
+          object_path: string
+          project_id: number
+          row_count?: number
+          run_id: number
+        }
+        Update: {
+          created_at?: string
+          dataset_id?: number
+          file_hash?: string
+          id?: number
+          object_path?: string
+          project_id?: number
+          row_count?: number
+          run_id?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "zkas_run_datasets_dataset_id_fkey"
+            columns: ["dataset_id"]
+            isOneToOne: false
+            referencedRelation: "zkas_datasets"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "zkas_run_datasets_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "zkas_run_datasets_run_id_fkey"
+            columns: ["run_id"]
+            isOneToOne: false
+            referencedRelation: "zkas_runs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      zkas_run_payments: {
+        Row: {
+          amount_usd: number
+          created_at: string
+          id: number
+          payment_id: number
+          period_end: string
+          project_id: number
+          run_id: number
+        }
+        Insert: {
+          amount_usd: number
+          created_at?: string
+          id?: number
+          payment_id: number
+          period_end: string
+          project_id: number
+          run_id: number
+        }
+        Update: {
+          amount_usd?: number
+          created_at?: string
+          id?: number
+          payment_id?: number
+          period_end?: string
+          project_id?: number
+          run_id?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "zkas_run_payments_payment_id_fkey"
+            columns: ["payment_id"]
+            isOneToOne: false
+            referencedRelation: "payments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "zkas_run_payments_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "zkas_run_payments_run_id_fkey"
+            columns: ["run_id"]
+            isOneToOne: false
+            referencedRelation: "zkas_runs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      zkas_run_project_cubid_buckets: {
+        Row: {
+          bucket_key: string
+          bucket_label: string
+          created_at: string
+          id: number
+          project_id: number
+          run_id: number
+          user_count: number
+        }
+        Insert: {
+          bucket_key: string
+          bucket_label: string
+          created_at?: string
+          id?: number
+          project_id: number
+          run_id: number
+          user_count?: number
+        }
+        Update: {
+          bucket_key?: string
+          bucket_label?: string
+          created_at?: string
+          id?: number
+          project_id?: number
+          run_id?: number
+          user_count?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "zkas_run_project_cubid_buckets_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "zkas_run_project_cubid_buckets_run_id_fkey"
+            columns: ["run_id"]
+            isOneToOne: false
+            referencedRelation: "zkas_runs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      zkas_run_project_summaries: {
+        Row: {
+          active_user_count: number
+          attributed_payout_usd: number
+          avg_attributed_payout_per_published_user_usd: number
+          avg_contribution_per_active_user_usd: number
+          contributed_amount_usd: number
+          created_at: string
+          dataset_id: number
+          id: number
+          project_id: number
+          published_user_count: number
+          run_id: number
+        }
+        Insert: {
+          active_user_count?: number
+          attributed_payout_usd?: number
+          avg_attributed_payout_per_published_user_usd?: number
+          avg_contribution_per_active_user_usd?: number
+          contributed_amount_usd?: number
+          created_at?: string
+          dataset_id: number
+          id?: number
+          project_id: number
+          published_user_count?: number
+          run_id: number
+        }
+        Update: {
+          active_user_count?: number
+          attributed_payout_usd?: number
+          avg_attributed_payout_per_published_user_usd?: number
+          avg_contribution_per_active_user_usd?: number
+          contributed_amount_usd?: number
+          created_at?: string
+          dataset_id?: number
+          id?: number
+          project_id?: number
+          published_user_count?: number
+          run_id?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "zkas_run_project_summaries_dataset_id_fkey"
+            columns: ["dataset_id"]
+            isOneToOne: false
+            referencedRelation: "zkas_datasets"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "zkas_run_project_summaries_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "zkas_run_project_summaries_run_id_fkey"
+            columns: ["run_id"]
+            isOneToOne: false
+            referencedRelation: "zkas_runs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      zkas_run_results: {
+        Row: {
+          aggregate_score: number
+          allocation_usd: number
+          app_count: number
+          created_at: string
+          eligibility: boolean
+          id: number
+          output_row_hash: string
+          project_count: number
+          run_id: number
+          zkas_user_id: string
+        }
+        Insert: {
+          aggregate_score: number
+          allocation_usd: number
+          app_count?: number
+          created_at?: string
+          eligibility: boolean
+          id?: number
+          output_row_hash: string
+          project_count?: number
+          run_id: number
+          zkas_user_id: string
+        }
+        Update: {
+          aggregate_score?: number
+          allocation_usd?: number
+          app_count?: number
+          created_at?: string
+          eligibility?: boolean
+          id?: number
+          output_row_hash?: string
+          project_count?: number
+          run_id?: number
+          zkas_user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "zkas_run_results_run_id_fkey"
+            columns: ["run_id"]
+            isOneToOne: false
+            referencedRelation: "zkas_runs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      zkas_runs: {
+        Row: {
+          attestation_artifact_hash: string | null
+          attestation_artifact_path: string | null
+          created_at: string
+          created_by_user_id: string | null
+          engine_config_version: string
+          engine_git_ref: string
+          engine_image_ref: string
+          finalized_at: string | null
+          id: number
+          identity_artifact_id: number | null
+          locked_at: string | null
+          locked_manifest: Json | null
+          locked_manifest_hash: string | null
+          month: string
+          note: string | null
+          publication_note: string | null
+          published_at: string | null
+          published_by_user_id: string | null
+          result_artifact_hash: string | null
+          result_artifact_path: string | null
+          schema_version: string
+          status: Database["public"]["Enums"]["zkas_run_status"]
+          total_allocated_usd: number | null
+          total_score: number | null
+          updated_at: string
+          usd_pool: number
+          user_count: number | null
+          verification_note: string | null
+          verification_status: Database["public"]["Enums"]["zkas_verification_status"]
+          verified_at: string | null
+          verified_by_user_id: string | null
+        }
+        Insert: {
+          attestation_artifact_hash?: string | null
+          attestation_artifact_path?: string | null
+          created_at?: string
+          created_by_user_id?: string | null
+          engine_config_version?: string
+          engine_git_ref?: string
+          engine_image_ref?: string
+          finalized_at?: string | null
+          id?: number
+          identity_artifact_id?: number | null
+          locked_at?: string | null
+          locked_manifest?: Json | null
+          locked_manifest_hash?: string | null
+          month: string
+          note?: string | null
+          publication_note?: string | null
+          published_at?: string | null
+          published_by_user_id?: string | null
+          result_artifact_hash?: string | null
+          result_artifact_path?: string | null
+          schema_version?: string
+          status?: Database["public"]["Enums"]["zkas_run_status"]
+          total_allocated_usd?: number | null
+          total_score?: number | null
+          updated_at?: string
+          usd_pool?: number
+          user_count?: number | null
+          verification_note?: string | null
+          verification_status?: Database["public"]["Enums"]["zkas_verification_status"]
+          verified_at?: string | null
+          verified_by_user_id?: string | null
+        }
+        Update: {
+          attestation_artifact_hash?: string | null
+          attestation_artifact_path?: string | null
+          created_at?: string
+          created_by_user_id?: string | null
+          engine_config_version?: string
+          engine_git_ref?: string
+          engine_image_ref?: string
+          finalized_at?: string | null
+          id?: number
+          identity_artifact_id?: number | null
+          locked_at?: string | null
+          locked_manifest?: Json | null
+          locked_manifest_hash?: string | null
+          month?: string
+          note?: string | null
+          publication_note?: string | null
+          published_at?: string | null
+          published_by_user_id?: string | null
+          result_artifact_hash?: string | null
+          result_artifact_path?: string | null
+          schema_version?: string
+          status?: Database["public"]["Enums"]["zkas_run_status"]
+          total_allocated_usd?: number | null
+          total_score?: number | null
+          updated_at?: string
+          usd_pool?: number
+          user_count?: number | null
+          verification_note?: string | null
+          verification_status?: Database["public"]["Enums"]["zkas_verification_status"]
+          verified_at?: string | null
+          verified_by_user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "zkas_runs_created_by_user_id_fkey"
+            columns: ["created_by_user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "zkas_runs_identity_artifact_id_fkey"
+            columns: ["identity_artifact_id"]
+            isOneToOne: false
+            referencedRelation: "zkas_identity_artifacts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "zkas_runs_published_by_user_id_fkey"
+            columns: ["published_by_user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "zkas_runs_verified_by_user_id_fkey"
+            columns: ["verified_by_user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["user_id"]
+          },
+        ]
+      }
     }
     Views: {
       project_category_count: {
@@ -2215,6 +2903,24 @@ export type Database = {
       users_status: "active" | "inactive" | "deleted"
       wallet_accounts_status: "active" | "inactive" | "deleted"
       wallet_connections_status: "active" | "inactive" | "deleted"
+      zkas_dataset_status:
+        | "uploaded"
+        | "validated"
+        | "failed"
+        | "approved"
+        | "included"
+        | "replaced"
+        | "archived"
+      zkas_execution_mode: "local" | "nitro"
+      zkas_issue_severity: "error" | "warning"
+      zkas_run_status:
+        | "draft"
+        | "locked"
+        | "running"
+        | "completed"
+        | "failed"
+        | "finalized"
+      zkas_verification_status: "pending" | "verified" | "rejected"
     }
     CompositeTypes: {
       [_ in never]: never

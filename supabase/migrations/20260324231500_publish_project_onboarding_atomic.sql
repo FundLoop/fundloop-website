@@ -1,4 +1,4 @@
-create or replace function public.publish_project_onboarding_draft_atomic(
+CREATE OR REPLACE FUNCTION public.publish_project_onboarding_draft_atomic(
   p_name text,
   p_slug text,
   p_description text,
@@ -13,119 +13,106 @@ create or replace function public.publish_project_onboarding_draft_atomic(
   p_default_payment_method_id integer,
   p_category_ids integer[]
 )
-returns table(project_id integer, project_slug text)
-language plpgsql
-security definer
-set search_path = public
-as $$
-declare
-  v_user_id uuid := auth.uid();
-  v_founder_role_id integer;
-  v_organization_id integer;
-  v_project_id integer;
-begin
-  if v_user_id is null then
-    raise exception 'User not authenticated';
-  end if;
-
-  if p_name is null or btrim(p_name) = '' or p_slug is null or btrim(p_slug) = '' or p_description is null or btrim(p_description) = '' then
-    raise exception 'Project basics are incomplete';
-  end if;
-
-  if p_payment_percentage < 1 then
-    raise exception 'Project payment percentage must be at least 1';
-  end if;
-
-  select id
-  into v_founder_role_id
-  from public.ref_roles
-  where name = 'Founder'
-  order by id
-  limit 1;
-
-  if v_founder_role_id is null then
-    select id
-    into v_founder_role_id
-    from public.ref_roles
-    where name = 'Admin'
-    order by id
-    limit 1;
-  end if;
-
-  if v_founder_role_id is null then
-    raise exception 'No founder/admin roles available';
-  end if;
-
-  insert into public.organizations (name, description, website, status)
-  values (btrim(p_name), btrim(p_description), nullif(btrim(coalesce(p_website, '')), ''), 'active')
-  returning id into v_organization_id;
-
-  insert into public.organization_members (organization_id, user_id, role_id, role_assigned_by, status)
-  values (v_organization_id, v_user_id, v_founder_role_id, v_user_id, 'active');
-
-  insert into public.projects (
-    organization_id,
-    name,
-    slug,
-    website,
-    description,
-    detailed_description,
-    logo_url,
-    email,
-    billing_email,
-    billing_frequency,
-    payment_percentage,
-    payment_periodicity_id,
-    default_payment_method_id,
-    status
+RETURNS TABLE(project_id integer, project_slug text)
+LANGUAGE sql
+SECURITY DEFINER
+AS '
+  WITH actor AS (
+    SELECT auth.uid() AS user_id
+  ),
+  founder_role AS (
+    SELECT
+      actor.user_id,
+      COALESCE(
+        (SELECT id FROM public.ref_roles WHERE name = ''Founder'' ORDER BY id LIMIT 1),
+        (SELECT id FROM public.ref_roles WHERE name = ''Admin'' ORDER BY id LIMIT 1)
+      ) AS role_id
+    FROM actor
+  ),
+  inserted_organization AS (
+    INSERT INTO public.organizations (name, description, website, status)
+    SELECT
+      btrim(p_name),
+      btrim(p_description),
+      nullif(btrim(coalesce(p_website, '''')), ''''),
+      ''active''
+    FROM founder_role
+    RETURNING id
+  ),
+  inserted_org_member AS (
+    INSERT INTO public.organization_members (organization_id, user_id, role_id, role_assigned_by, status)
+    SELECT
+      inserted_organization.id,
+      founder_role.user_id,
+      founder_role.role_id,
+      founder_role.user_id,
+      ''active''
+    FROM inserted_organization
+    CROSS JOIN founder_role
+    RETURNING organization_id
+  ),
+  inserted_project AS (
+    INSERT INTO public.projects (
+      organization_id,
+      name,
+      slug,
+      website,
+      description,
+      detailed_description,
+      logo_url,
+      email,
+      billing_email,
+      billing_frequency,
+      payment_percentage,
+      payment_periodicity_id,
+      default_payment_method_id,
+      status
+    )
+    SELECT
+      inserted_organization.id,
+      btrim(p_name),
+      btrim(p_slug),
+      nullif(btrim(coalesce(p_website, '''')), ''''),
+      btrim(p_description),
+      nullif(btrim(coalesce(p_detailed_description, '''')), ''''),
+      nullif(btrim(coalesce(p_logo_url, '''')), ''''),
+      nullif(btrim(coalesce(p_contact_email, '''')), ''''),
+      nullif(btrim(coalesce(p_billing_email, '''')), ''''),
+      nullif(btrim(coalesce(p_billing_frequency, '''')), ''''),
+      p_payment_percentage,
+      p_payment_periodicity_id,
+      p_default_payment_method_id,
+      ''active''
+    FROM inserted_organization
+    RETURNING id, slug
+  ),
+  inserted_categories AS (
+    INSERT INTO public.project_categories (project_id, category_id)
+    SELECT
+      inserted_project.id,
+      category_id
+    FROM inserted_project
+    CROSS JOIN unnest(coalesce(p_category_ids, ARRAY[]::integer[])) AS category_id
+    RETURNING project_id
+  ),
+  inserted_participant AS (
+    INSERT INTO public.participants (project_id, user_id, is_admin)
+    SELECT
+      inserted_project.id,
+      founder_role.user_id,
+      true
+    FROM inserted_project
+    CROSS JOIN founder_role
+    RETURNING project_id
+  ),
+  deleted_draft AS (
+    DELETE FROM public.project_onboarding_drafts
+    USING founder_role
+    WHERE public.project_onboarding_drafts.user_id = founder_role.user_id
+    RETURNING public.project_onboarding_drafts.id
   )
-  values (
-    v_organization_id,
-    btrim(p_name),
-    btrim(p_slug),
-    nullif(btrim(coalesce(p_website, '')), ''),
-    btrim(p_description),
-    nullif(btrim(coalesce(p_detailed_description, '')), ''),
-    nullif(btrim(coalesce(p_logo_url, '')), ''),
-    nullif(btrim(coalesce(p_contact_email, '')), ''),
-    nullif(btrim(coalesce(p_billing_email, '')), ''),
-    nullif(btrim(coalesce(p_billing_frequency, '')), ''),
-    p_payment_percentage,
-    p_payment_periodicity_id,
-    p_default_payment_method_id,
-    'active'
-  )
-  returning id, slug into v_project_id, project_slug;
-
-  if coalesce(array_length(p_category_ids, 1), 0) > 0 then
-    insert into public.project_categories (project_id, category_id)
-    select v_project_id, category_id
-    from unnest(p_category_ids) as category_id;
-  end if;
-
-  insert into public.participants (project_id, user_id, is_admin)
-  values (v_project_id, v_user_id, true);
-
-  delete from public.project_onboarding_drafts
-  where user_id = v_user_id;
-
-  project_id := v_project_id;
-  return next;
-end;
-$$;
-
-grant execute on function public.publish_project_onboarding_draft_atomic(
-  text,
-  text,
-  text,
-  text,
-  text,
-  text,
-  text,
-  text,
-  text,
-  numeric,
-  integer,
-  integer,
-  integer[]
-) to authenticated;
+  SELECT
+    inserted_project.id AS project_id,
+    inserted_project.slug AS project_slug
+  FROM inserted_project
+';
