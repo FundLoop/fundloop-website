@@ -12,6 +12,34 @@ Agents populate one level-3 heading for each coding session, following the same 
 
 ---
 
+### session v13: Add FundLoop and zkActivitySum documentation set
+- timestamp: 2026-03-25T19:29:00-04:00
+- agent: **Codex (GPT-5)**
+- branch: **codex/dev**
+- head: 3c10b943a776ea190aacf4cf28d23e732e9d7d71 - Add onchain payment period tags to crypto flows
+
+#### Objective
+Add the current working documentation set under `docs/` and record the scope of that addition in the repo session log.
+
+#### Actions Taken
+- Added the zkActivitySum first-cut engineering docs covering product requirements, design inputs, minimal dataset validation, and monthly operator runs.
+- Added `docs/engineering/2026-04-16-migration.md` to capture migration-oriented engineering notes.
+- Added FundLoop narrative docs under `docs/whitepaper-and-grant-proposals/`, including the whitepaper and two grant proposal drafts.
+- Updated `agent-context/session-log.md` so this documentation-only commit is described alongside the repo history.
+
+#### Tests and Validation Notes
+- No runtime validation was required; this is a documentation-only change.
+- Verified the worktree contents before commit so the staged set is limited to the new docs and this session-log entry.
+
+#### Reflections
+- The added materials span product definition, engineering planning, fundraising narrative, and migration notes, so recording them as one documentation set is clearer than treating each file as an isolated artifact.
+
+#### Suggested Next Steps
+- Review the new docs for any sensitive or outdated planning assumptions before broader distribution.
+- Decide which of these drafts should remain internal working docs versus being promoted into polished public-facing materials.
+
+---
+
 ### session v12: Add onchain payment period tags to crypto flows
 - timestamp: 2026-03-25T09:20:00-04:00
 - agent: **Codex (GPT-5)**
