@@ -293,6 +293,12 @@ export async function revokeProjectZkasAccess(formData: FormData): Promise<void>
     throw new Error("Participant is required")
   }
 
+  const adminSet = await getProjectAdmins(projectSlug)
+  const eligibleAdmin = adminSet.admins.find((admin) => admin.participantId === participantId)
+  if (!eligibleAdmin) {
+    throw new Error("Only project admins on this project can have zkAS access revoked")
+  }
+
   const supabase = getAdminSupabaseClient()
   const zkasRoleId = await getCachedZkasRoleId()
   const { error } = await supabase
@@ -460,6 +466,10 @@ export async function approveZkasDataset(formData: FormData): Promise<void> {
     throw new Error(datasetError?.message ?? "Dataset not found")
   }
 
+  if (dataset.status !== "validated") {
+    throw new Error("Only validated datasets can be approved")
+  }
+
   const { data: activeApproved } = await supabase
     .from("zkas_datasets")
     .select("id, status")
@@ -495,6 +505,7 @@ export async function approveZkasDataset(formData: FormData): Promise<void> {
       approved_by_user_id: actor.userId,
     })
     .eq("id", dataset.id)
+    .eq("status", "validated")
 
   if (error) {
     throw new Error(error.message)

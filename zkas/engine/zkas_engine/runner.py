@@ -66,21 +66,23 @@ def run_manifest(manifest: dict[str, Any]) -> dict[str, Any]:
         project_id = int(dataset["project_id"])
 
         for row in rows:
-          app_user_id = str(row["app_user_id"]).strip()
-          identity_key = (project_id, app_user_id)
-          if identity_key not in lookup:
-              raise ValueError(f"Missing identity mapping for project {project_id} user {app_user_id}")
+            app_user_id = str(row["app_user_id"]).strip()
+            identity_key = (project_id, app_user_id)
+            if identity_key not in lookup:
+                raise ValueError(f"Missing identity mapping for project {project_id} user {app_user_id}")
 
-          zkas_user_id = lookup[identity_key]
-          row_score = _decimal(row.get("activity_score")) * _decimal(row.get("activity_count")) * _decimal(row.get("confidence_weight"))
-          existing = aggregates.get(zkas_user_id)
-          if existing is None:
-              existing = AggregatedUser(total_score=Decimal("0"), project_ids=set(), row_count=0)
-              aggregates[zkas_user_id] = existing
+            zkas_user_id = lookup[identity_key]
+            row_score = _decimal(row.get("activity_score")) * _decimal(row.get("activity_count")) * _decimal(
+                row.get("confidence_weight")
+            )
+            existing = aggregates.get(zkas_user_id)
+            if existing is None:
+                existing = AggregatedUser(total_score=Decimal("0"), project_ids=set(), row_count=0)
+                aggregates[zkas_user_id] = existing
 
-          existing.total_score += row_score
-          existing.project_ids.add(project_id)
-          existing.row_count += 1
+            existing.total_score += row_score
+            existing.project_ids.add(project_id)
+            existing.row_count += 1
 
     total_score = sum((entry.total_score for entry in aggregates.values()), Decimal("0"))
     rows: list[dict[str, Any]] = []

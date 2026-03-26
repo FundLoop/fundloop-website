@@ -12,6 +12,34 @@ Agents populate one level-3 heading for each coding session, following the same 
 
 ---
 
+### session v16: Address PR #15 zkAS review comments
+- timestamp: 2026-03-26T10:02:10-04:00
+- agent: **Codex (GPT-5)**
+- branch: **codex/zkActivitySum-v1**
+- head: ed0a9140cc1a3a8fa227989a8a2c24b27a97ed7c - Ignore zkAS Python cache files
+
+#### Objective
+Address the open review comments on PR #15 by hardening the zkAS migrations and server actions, restoring lost onboarding RPC safeguards, and removing the user-facing service-role dependency.
+
+#### Actions Taken
+- Removed the incompatible zkAS audit trigger wiring from the new zkAS migrations and added an RLS policy so published runs can be selected safely by users through the standard server client.
+- Switched `app/settings/zkas/page.tsx` from the service-role client to the cookie-aware server Supabase client.
+- Restored the onboarding publish RPC to the validated `plpgsql` form with `SECURITY DEFINER` plus `SET search_path = public`, while keeping the separate grant migration in place.
+- Hardened zkAS server actions so revocation is scoped to admins on the target project and dataset approval requires a validated dataset state server-side.
+- Removed the unused duplicate-key accumulator from dataset validation and fixed the Python runner indentation issue flagged in review.
+- Updated `agent-context/session-log.md` to capture this review-response commit.
+
+#### Tests and Validation Notes
+- Planned validation after these fixes: `pnpm check` plus `python3 -m unittest discover -s tests -t .` in `zkas/engine`.
+
+#### Reflections
+- The review comments aligned closely with the issues surfaced in the earlier local smoke test, especially around the audit trigger assumptions, which made the hardening path straightforward once the comments were enumerated precisely.
+
+#### Suggested Next Steps
+- Push the review-response commit, reply on each addressed PR thread with the specific fix, and re-run the PR checks.
+
+---
+
 ### session v15: Remove generated Python bytecode from zkAS engine commit
 - timestamp: 2026-03-26T01:53:17-04:00
 - agent: **Codex (GPT-5)**

@@ -80,11 +80,6 @@ VALUES (
 )
 ON CONFLICT (code) DO NOTHING;
 
-CREATE TRIGGER audit_zkas_published_user_results
-AFTER INSERT OR UPDATE OR DELETE ON public.zkas_published_user_results
-FOR EACH ROW
-EXECUTE FUNCTION public.log_changes();
-
 ALTER TABLE public.zkas_published_user_results ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.zkas_run_project_summaries ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.zkas_run_project_cubid_buckets ENABLE ROW LEVEL SECURITY;
@@ -93,3 +88,16 @@ CREATE POLICY zkas_published_user_results_self_select
 ON public.zkas_published_user_results
 FOR SELECT
 USING (auth.uid() = user_id);
+
+CREATE POLICY zkas_runs_self_published_select
+ON public.zkas_runs
+FOR SELECT
+USING (
+  published_at IS NOT NULL
+  AND EXISTS (
+    SELECT 1
+    FROM public.zkas_published_user_results zpur
+    WHERE zpur.run_id = public.zkas_runs.id
+      AND zpur.user_id = auth.uid()
+  )
+);

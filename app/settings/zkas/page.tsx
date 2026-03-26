@@ -2,13 +2,13 @@ import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-import { getAdminSupabaseClient } from "@/lib/supabase-admin"
+import { createServerSupabaseClient } from "@/lib/supabase-server"
 import { getAuthenticatedActor } from "@/lib/zkas/auth"
 
 export default async function SettingsZkasPage() {
   const data = await (async () => {
     const actor = await getAuthenticatedActor()
-    const supabase = getAdminSupabaseClient()
+    const supabase = await createServerSupabaseClient()
     const { data: publishedResults, error } = await supabase
       .from("zkas_published_user_results")
       .select("run_id, allocation_usd, aggregate_score, published_at")

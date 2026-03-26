@@ -248,26 +248,6 @@ BEFORE UPDATE ON public.zkas_datasets
 FOR EACH ROW
 EXECUTE FUNCTION public.set_updated_at();
 
-CREATE TRIGGER audit_zkas_identity_artifacts
-AFTER INSERT OR UPDATE OR DELETE ON public.zkas_identity_artifacts
-FOR EACH ROW
-EXECUTE FUNCTION public.log_changes();
-
-CREATE TRIGGER audit_zkas_runs
-AFTER INSERT OR UPDATE OR DELETE ON public.zkas_runs
-FOR EACH ROW
-EXECUTE FUNCTION public.log_changes();
-
-CREATE TRIGGER audit_zkas_datasets
-AFTER INSERT OR UPDATE OR DELETE ON public.zkas_datasets
-FOR EACH ROW
-EXECUTE FUNCTION public.log_changes();
-
-CREATE TRIGGER audit_zkas_run_attempts
-AFTER INSERT OR UPDATE OR DELETE ON public.zkas_run_attempts
-FOR EACH ROW
-EXECUTE FUNCTION public.log_changes();
-
 ALTER TABLE public.zkas_identity_artifacts ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.zkas_runs ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.zkas_datasets ENABLE ROW LEVEL SECURITY;

@@ -170,7 +170,6 @@ export function validateDatasetContent(input: {
     rows.some((row) => row[column] !== undefined && row[column] !== null && row[column] !== ""),
   )
 
-  const duplicateKeys = new Set<string>()
   const seenKeys = new Set<string>()
   const parsedRows: ZkasDatasetRow[] = []
 
@@ -261,7 +260,6 @@ export function validateDatasetContent(input: {
 
     const dedupeKey = `${month}:${projectId}:${appUserId}`
     if (seenKeys.has(dedupeKey)) {
-      duplicateKeys.add(dedupeKey)
       addIssue(issues, {
         severity: "error",
         code: "duplicate_row",
