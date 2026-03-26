@@ -8,6 +8,7 @@ import Analytics from "@/components/analytics"
 import SupportWidget from "@/components/support-widget"
 import BlogPreview from "@/components/blog-preview"
 import NewsletterSignup from "@/components/newsletter-signup"
+import UseCasesSection from "@/components/use-cases-section"
 
 export default function Home() {
   return (
@@ -18,6 +19,9 @@ export default function Home() {
         <div className="grid md:grid-cols-2 gap-8">
           <ProjectSignup />
           <UserSignup />
+        </div>
+        <div id="use-cases">
+          <UseCasesSection />
         </div>
         <AlignedProjects />
         <AlignedUsers />

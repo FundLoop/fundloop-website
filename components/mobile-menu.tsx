@@ -11,9 +11,10 @@ interface MobileMenuProps {
   setMobileMenuOpen: React.Dispatch<React.SetStateAction<boolean>>
   mobileMenuOpen?: boolean
   navLinks?: { label: string; href: string }[]
+  useCaseLinks?: { label: string; href: string }[]
 }
 
-export function MobileMenu({ setMobileMenuOpen, mobileMenuOpen, navLinks }: MobileMenuProps) {
+export function MobileMenu({ setMobileMenuOpen, mobileMenuOpen, navLinks, useCaseLinks }: MobileMenuProps) {
   const pathname = usePathname()
 
   return (
@@ -30,6 +31,23 @@ export function MobileMenu({ setMobileMenuOpen, mobileMenuOpen, navLinks }: Mobi
             </Button>
           </div>
           <div className="flex flex-col space-y-4">
+            {useCaseLinks?.length ? (
+              <div className="space-y-3">
+                <p className="text-xs font-semibold uppercase tracking-[0.2em] text-muted-foreground">Use Cases</p>
+                <div className="flex flex-col space-y-3">
+                  {useCaseLinks.map(({ href, label }) => (
+                    <Link
+                      key={href}
+                      href={href}
+                      onClick={() => setMobileMenuOpen(false)}
+                      className={`text-sm ${pathname === href ? "text-emerald-600" : "text-muted-foreground"}`}
+                    >
+                      {label}
+                    </Link>
+                  ))}
+                </div>
+              </div>
+            ) : null}
             {navLinks?.map(({ href, label }) => (
               <Link key={href} href={href} onClick={() => setMobileMenuOpen(false)} className="text-md">
                 {label}

@@ -12,6 +12,40 @@ Agents populate one level-3 heading for each coding session, following the same 
 
 ---
 
+### session v19: Refresh marketing navigation, use-case pages, pricing, FAQ, and hero motion
+- timestamp: 2026-03-26T23:03:13Z
+- agent: **Codex (GPT-5)**
+- branch: **codex/marketing-nav-refresh**
+- head: 34a8709bef0bc7bd5e438aaeaec66730d47c78d1 - Tighten repo docs and CI coverage
+
+#### Objective
+Refresh the public-facing marketing surface by expanding the header navigation, adding use-case and pricing content, restructuring the FAQ, and making the homepage hero headline interactive and dynamic.
+
+#### Actions Taken
+- Added a new `Use Cases` navigation cluster, shared use-case content model, homepage use-case card section, and dedicated use-case landing pages under `app/use-cases/[slug]`.
+- Expanded the header dropdowns so `Use Cases`, `Explore`, and `Resources` use larger structured panels and regrouped the desktop navigation into a more consistent pill-style unit.
+- Added the new `Pricing` page, rewrote the `FAQ` page into audience-specific sections for projects, humans, and bots, and updated the copy to reflect the current FundLoop participation, privacy, and bot-pool model.
+- Moved `About FundLoop` into the `Explore` dropdown and updated mobile navigation to surface the new use-case paths cleanly.
+- Reworked the homepage hero title into a rotating interactive widget with a stepped slowdown curve, click-to-flip behavior, and a subtle hover expansion.
+
+#### Tests and Validation Notes
+- Ran `pnpm lint`.
+- Ran `pnpm test`.
+- Ran `pnpm typecheck`.
+- Ran `pnpm build`.
+- Ran `pnpm --dir contracts test`.
+- The build completed successfully and still emitted the existing Recharts static-generation width/height warnings.
+
+#### Reflections
+- The nav changes were most stable once the marketing content was centralized in a shared use-case model instead of duplicating labels and descriptions across the header, homepage, and standalone pages.
+- The interactive hero ended up needing a cleaner timer model than the initial effect-only approach so manual flips and scheduled flips would stay in sync without React hook warnings.
+
+#### Suggested Next Steps
+- Smoke test the refreshed public pages in a browser to make sure the hero interaction and the larger dropdowns feel right at real viewport sizes.
+- Decide whether the rotating hero title should eventually have a visible affordance or hint text, or remain a hidden interactive detail.
+
+---
+
 ### session v18: Tighten repo cleanup docs and CI coverage
 - timestamp: 2026-03-26T19:56:33Z
 - agent: **Codex (GPT-5)**
