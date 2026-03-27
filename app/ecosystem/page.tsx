@@ -1,74 +1,83 @@
-import React from 'react'
-import type { Metadata } from 'next'
+import type { Metadata } from "next"
 import Link from "next/link"
+import { ArrowLeft, ExternalLink } from "lucide-react"
+import { Button } from "@/components/ui/button"
+import { MarketingPage, MarketingSection, SectionBody, SectionEyebrow, SectionTitle } from "@/components/marketing/page-chrome"
+import { Reveal } from "@/components/marketing/reveal"
+import { ecosystemSites } from "@/lib/public-site"
 
 export const metadata: Metadata = {
-  title: 'Our Ecosystem',
-  description: 'Explore our interconnected projects across identity, payments, coordination, and regenerative economies.',
+  title: "Our Ecosystem",
+  description: "Explore our interconnected projects across identity, payments, coordination, and regenerative economies.",
   openGraph: {
-    title: 'Our Ecosystem',
-    description: 'Explore our interconnected projects across identity, payments, coordination, and regenerative economies.',
-    type: 'website',
-    url: 'https://fundloop.org/ecosystem',
+    title: "Our Ecosystem",
+    description: "Explore our interconnected projects across identity, payments, coordination, and regenerative economies.",
+    type: "website",
+    url: "https://fundloop.org/ecosystem",
   },
   twitter: {
-    card: 'summary_large_image',
-    title: 'Our Ecosystem',
-    description: 'Explore our interconnected projects across identity, payments, coordination, and regenerative economies.',
+    card: "summary_large_image",
+    title: "Our Ecosystem",
+    description: "Explore our interconnected projects across identity, payments, coordination, and regenerative economies.",
   },
   alternates: {
-    canonical: 'https://fundloop.org/ecosystem',
+    canonical: "https://fundloop.org/ecosystem",
   },
 }
 
 export default function EcosystemPage() {
-  const sites = [
-    { name: "ChainCrew", url: "https://chaincrew.xyz", desc: "Team up in Crews to manage memberships, events, and community treasuries." },
-    { name: "ClearPass", url: "https://clearpass.app", desc: "KYC verification with NFC-enabled passports and driver’s licenses." },
-    { name: "Cubid", url: "https://cubid.me", desc: "Privacy-preserving identity layer with proofs and stamps." },
-    { name: "EquityFlow", url: "https://equityflow.xyz", desc: "Tools for equity and commitment-sharing among founders and teams." },
-    { name: "Firebelly", url: "https://firebelly.xyz", desc: "Innovation studio supporting regenerative and Web3 ventures." },
-    { name: "FundLoop", url: "https://fundloop.org", desc: "Collaborative incubator and funding network for early-stage projects." },
-    { name: "GreenPill Canada", url: "https://greenpill.ca", desc: "Building local regenerative economies across Canada." },
-    { name: "GreenPill Toronto", url: "https://greenpill.to", desc: "Toronto node of the global GreenPill Network." },
-    { name: "Procent Foundation", url: "https://procentfoundation.com", desc: "Nonprofit supporting public goods and open innovation." },
-    { name: "Safe2Meet", url: "https://safe2meet.me", desc: "Safer in-person meetups for real estate, classifieds, and dating." },
-    { name: "Solar Village", url: "https://solarvillage.xyz", desc: "Carbon credits for off-grid solar projects in Africa." },
-    { name: "SmarTrust", url: "https://smartrust.me", desc: "AI-powered escrow & arbitration for freelancers, agencies, and B2B." },
-    { name: "SnapVote", url: "https://snapvote.org", desc: "Fast, trustworthy decision-making and polls for communities." },
-    { name: "SpareChange", url: "https://sparechange.tips", desc: "Tip anyone with QR codes and digital micro-payments." },
-    { name: "TCOIN", url: "https://tcoin.me", desc: "Toronto’s local community currency pegged to transit tokens." },
-    { name: "UBI Finder", url: "https://ubifinder.org", desc: "Global directory of Universal Basic Income projects." },
-    { name: "FreeForm", url: "https://usefreeform.com", desc: "Next-gen form builder with voting, branching, and identity options." },
-  ]
-
   return (
-    <div className="min-h-screen bg-gradient-to-b from-slate-50 to-slate-100 dark:from-slate-950 dark:to-slate-900 text-slate-800 dark:text-slate-100">
-      <div className="max-w-5xl mx-auto py-16 px-6">
-        <h1 className="text-4xl font-bold text-center mb-10">
-          Our Ecosystem
-        </h1>
-        <p className="text-center text-lg mb-12">
-          Explore the interconnected projects we’re building across identity, payments, coordination, and regenerative economies.
-        </p>
-        <div className="grid md:grid-cols-2 gap-6">
-          {sites.map((site) => (
-            <div key={site.url} className="p-6 bg-white dark:bg-slate-800 rounded-2xl shadow hover:shadow-lg transition">
-              <h2 className="text-2xl font-semibold mb-2">
+    <MarketingPage>
+      <MarketingSection className="pb-10 pt-10">
+        <Reveal>
+          <Button
+            asChild
+            variant="ghost"
+            className="rounded-full px-0 text-[var(--marketing-muted-strong)] hover:bg-transparent hover:text-[var(--marketing-accent)]"
+          >
+            <Link href="/">
+              <ArrowLeft className="h-4 w-4" />
+              Back to home
+            </Link>
+          </Button>
+        </Reveal>
+      </MarketingSection>
+
+      <MarketingSection className="pt-0">
+        <Reveal>
+          <SectionEyebrow>Ecosystem</SectionEyebrow>
+          <SectionTitle className="mt-4 max-w-5xl text-5xl sm:text-6xl lg:text-7xl">Our Ecosystem</SectionTitle>
+          <SectionBody className="mt-6 max-w-3xl">
+            Identity, payments, governance, local economies, safer trust rails, and public-goods infrastructure are all
+            taking shape around the same thesis: better systems should make cooperation easier, not harder.
+          </SectionBody>
+        </Reveal>
+      </MarketingSection>
+
+      <MarketingSection className="border-y border-[color:var(--marketing-line)] bg-white/34 dark:bg-white/[0.02]">
+        <div className="space-y-4">
+          {ecosystemSites.map((site, index) => (
+            <Reveal key={site.url} delay={index * 40}>
+              <div className="grid gap-5 border-t border-[color:var(--marketing-line)] py-6 sm:grid-cols-[4rem_minmax(0,0.9fr)_minmax(0,1.1fr)_auto] sm:items-start">
+                <p className="font-display text-4xl leading-none text-[var(--marketing-muted)]">{String(index + 1).padStart(2, "0")}</p>
                 <Link
                   href={site.url}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="hover:underline"
+                  className="group inline-flex items-start font-display text-3xl leading-none tracking-[-0.04em] transition-colors hover:text-[var(--marketing-accent)] sm:text-4xl"
                 >
                   {site.name}
                 </Link>
-              </h2>
-              <p>{site.desc}</p>
-            </div>
+                <p className="max-w-2xl text-sm leading-6 text-[var(--marketing-muted-strong)]">{site.desc}</p>
+                <span className="inline-flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.18em] text-[var(--marketing-accent)]">
+                  Open
+                  <ExternalLink className="h-3.5 w-3.5" />
+                </span>
+              </div>
+            </Reveal>
           ))}
         </div>
-      </div>
-    </div>
+      </MarketingSection>
+    </MarketingPage>
   )
 }

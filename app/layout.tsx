@@ -1,7 +1,7 @@
 import { Suspense } from "react"
 import type React from "react"
 import type { Metadata } from "next"
-import { Inter } from "next/font/google"
+import { Fraunces, Manrope } from "next/font/google"
 import "./globals.css"
 import { ThemeProvider } from "@/components/theme-provider"
 import Navbar from "@/components/navbar"
@@ -9,7 +9,8 @@ import Footer from "@/components/footer"
 import { OnboardingModalManager } from "@/components/onboarding-modal-manager"
 import { Web3Provider } from "@/components/web3-provider"
 
-const inter = Inter({ subsets: ["latin"], variable: "--font-inter" })
+const manrope = Manrope({ subsets: ["latin"], variable: "--font-manrope" })
+const fraunces = Fraunces({ subsets: ["latin"], variable: "--font-fraunces" })
 
 export const metadata: Metadata = {
   title: "FundLoop - A Network State for Mutual Prosperity",
@@ -24,7 +25,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" suppressHydrationWarning>
-      <body className={`${inter.className} ${inter.variable}`}>
+      <body className={`${manrope.className} ${manrope.variable} ${fraunces.variable}`}>
         <Web3Provider>
           <ThemeProvider attribute="class" defaultTheme="system" enableSystem disableTransitionOnChange>
             <Navbar />

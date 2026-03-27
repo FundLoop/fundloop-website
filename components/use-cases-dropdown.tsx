@@ -11,21 +11,34 @@ import { cn } from "@/lib/utils"
 
 type UseCasesDropdownProps = {
   triggerClassName?: string
+  open?: boolean
+  onOpenChange?: (open: boolean) => void
 }
 
-export default function UseCasesDropdown({ triggerClassName }: UseCasesDropdownProps) {
-  const [open, setOpen] = useState(false)
+export default function UseCasesDropdown({ triggerClassName, open: controlledOpen, onOpenChange }: UseCasesDropdownProps) {
+  const [internalOpen, setInternalOpen] = useState(false)
   const pathname = usePathname()
   const isActive = pathname.startsWith("/use-cases")
+  const open = controlledOpen ?? internalOpen
+
+  const handleOpenChange = (nextOpen: boolean) => {
+    onOpenChange?.(nextOpen)
+
+    if (controlledOpen === undefined) {
+      setInternalOpen(nextOpen)
+    }
+  }
 
   return (
-    <DropdownMenu open={open} onOpenChange={setOpen}>
+    <DropdownMenu open={open} onOpenChange={handleOpenChange}>
       <DropdownMenuTrigger asChild>
         <Button
           variant="ghost"
           className={cn(
             "text-sm font-medium",
-            isActive ? "text-emerald-600" : "text-muted-foreground hover:text-foreground",
+            isActive
+              ? "text-[var(--marketing-accent)]"
+              : "text-[var(--marketing-muted-strong)] hover:text-[var(--marketing-ink)] dark:hover:text-[var(--marketing-paper)]",
             triggerClassName,
           )}
         >
@@ -33,17 +46,20 @@ export default function UseCasesDropdown({ triggerClassName }: UseCasesDropdownP
           <ChevronDown className="ml-1 h-4 w-4" />
         </Button>
       </DropdownMenuTrigger>
-      <DropdownMenuContent align="start" className="w-[36rem] max-w-[calc(100vw-2rem)] p-2">
+      <DropdownMenuContent
+        align="start"
+        className="w-[36rem] max-w-[calc(100vw-2rem)] rounded-[1.5rem] border-[color:var(--marketing-line)] bg-[rgba(255,248,238,0.94)] p-3 shadow-[0_30px_90px_rgba(15,23,23,0.14)] backdrop-blur-xl dark:bg-[rgba(13,21,21,0.95)]"
+      >
         <div className="grid gap-1 sm:grid-cols-2">
           {useCaseLinks.map((useCase) => (
             <DropdownMenuItem key={useCase.slug} asChild className="p-0">
               <Link
                 href={useCase.href}
-                onClick={() => setOpen(false)}
-                className="flex min-h-24 flex-col items-start rounded-sm px-3 py-3 outline-none transition-colors hover:bg-accent"
+                onClick={() => handleOpenChange(false)}
+                className="flex min-h-24 flex-col items-start rounded-2xl px-4 py-4 outline-none transition-transform duration-200 hover:-translate-y-0.5 hover:bg-black/[0.03]"
               >
-                <span className="text-sm font-semibold">{useCase.label}</span>
-                <span className="mt-1 text-xs leading-5 text-muted-foreground">{useCase.description}</span>
+                <span className="text-sm font-semibold uppercase tracking-[0.18em]">{useCase.label}</span>
+                <span className="mt-2 text-xs leading-5 text-[var(--marketing-muted-strong)]">{useCase.description}</span>
               </Link>
             </DropdownMenuItem>
           ))}

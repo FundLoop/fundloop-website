@@ -2,7 +2,8 @@ import Link from "next/link"
 import { notFound } from "next/navigation"
 import { ArrowLeft, ArrowRight, Building2, HeartHandshake, ShieldCheck, Sparkles, Users } from "lucide-react"
 import { Button } from "@/components/ui/button"
-import { Card, CardContent } from "@/components/ui/card"
+import { MarketingPage, MarketingSection, SectionBody, SectionEyebrow, SectionTitle } from "@/components/marketing/page-chrome"
+import { Reveal } from "@/components/marketing/reveal"
 import { getUseCaseBySlug, useCases } from "@/lib/use-cases"
 
 const iconMap = {
@@ -26,88 +27,132 @@ export default async function UseCasePage({ params }: { params: Promise<{ slug: 
   }
 
   const Icon = iconMap[useCase.slug]
+  const relatedCases = useCases.filter((entry) => entry.slug !== useCase.slug).slice(0, 3)
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-slate-50 via-white to-emerald-50/40 dark:from-slate-950 dark:via-slate-950 dark:to-slate-900">
-      <div className="container mx-auto px-4 py-12 md:py-20">
-        <div className="mx-auto max-w-5xl">
-          <div className="mb-8">
-            <Button asChild variant="ghost" size="sm" className="gap-2">
-              <Link href="/#use-cases">
-                <ArrowLeft className="h-4 w-4" />
-                Back to Use Cases
+    <MarketingPage>
+      <MarketingSection className="pb-10 pt-10">
+        <Reveal>
+          <Button
+            asChild
+            variant="ghost"
+            className="rounded-full px-0 text-[var(--marketing-muted-strong)] hover:bg-transparent hover:text-[var(--marketing-accent)]"
+          >
+            <Link href="/#use-cases">
+              <ArrowLeft className="h-4 w-4" />
+              Back to use cases
+            </Link>
+          </Button>
+        </Reveal>
+      </MarketingSection>
+
+      <MarketingSection className="pt-0">
+        <div className="grid gap-12 lg:grid-cols-[minmax(0,1fr)_minmax(18rem,0.72fr)]">
+          <Reveal>
+            <div className="flex items-center gap-3">
+              <span className="inline-flex h-11 w-11 items-center justify-center rounded-full border border-[color:var(--marketing-line)] bg-white/55 dark:bg-white/[0.04]">
+                <Icon className="h-4 w-4" />
+              </span>
+              <SectionEyebrow>{useCase.eyebrow}</SectionEyebrow>
+            </div>
+            <SectionTitle className="mt-6 max-w-4xl text-5xl sm:text-6xl lg:text-7xl">{useCase.label}</SectionTitle>
+            <SectionBody className="mt-6 max-w-2xl">{useCase.hero}</SectionBody>
+          </Reveal>
+
+          <Reveal delay={120}>
+            <div className="rounded-[2rem] border border-[color:var(--marketing-line)] bg-white/52 p-6 dark:bg-white/[0.03]">
+              <p className="text-[0.68rem] font-semibold uppercase tracking-[0.28em] text-[var(--marketing-muted)]">
+                What this unlocks
+              </p>
+              <ul className="mt-6 space-y-4">
+                {useCase.outcomes.map((outcome) => (
+                  <li key={outcome} className="border-t border-[color:var(--marketing-line)] pt-4 text-sm leading-6 text-[var(--marketing-muted-strong)]">
+                    {outcome}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          </Reveal>
+        </div>
+      </MarketingSection>
+
+      <MarketingSection className="border-y border-[color:var(--marketing-line)] bg-white/34 dark:bg-white/[0.02]">
+        <div className="grid gap-12 lg:grid-cols-[minmax(0,0.78fr)_minmax(0,1.22fr)]">
+          <Reveal>
+            <SectionEyebrow>How it works</SectionEyebrow>
+            <SectionTitle className="mt-4 text-5xl sm:text-6xl">Operational detail, not vague promise.</SectionTitle>
+          </Reveal>
+          <div className="space-y-8">
+            {useCase.body.map((paragraph, index) => (
+              <Reveal key={paragraph} delay={index * 70}>
+                <p className="border-t border-[color:var(--marketing-line)] pt-5 text-base leading-7 text-[var(--marketing-muted-strong)]">
+                  {paragraph}
+                </p>
+              </Reveal>
+            ))}
+          </div>
+        </div>
+      </MarketingSection>
+
+      <MarketingSection>
+        <div className="grid gap-12 lg:grid-cols-[minmax(0,0.78fr)_minmax(0,1.22fr)]">
+          <Reveal>
+            <SectionEyebrow>Why teams use it</SectionEyebrow>
+            <SectionTitle className="mt-4 text-5xl sm:text-6xl">What makes this useful in practice.</SectionTitle>
+          </Reveal>
+          <div className="space-y-5">
+            {useCase.reasons.map((reason, index) => (
+              <Reveal key={reason} delay={index * 70}>
+                <p className="border-t border-[color:var(--marketing-line)] pt-5 text-base leading-7 text-[var(--marketing-muted-strong)]">
+                  {reason}
+                </p>
+              </Reveal>
+            ))}
+          </div>
+        </div>
+      </MarketingSection>
+
+      <MarketingSection className="border-y border-[color:var(--marketing-line)] bg-white/34 dark:bg-white/[0.02]">
+        <div className="grid gap-8 lg:grid-cols-[minmax(0,0.72fr)_minmax(0,1.28fr)]">
+          <Reveal>
+            <SectionEyebrow>Related use cases</SectionEyebrow>
+            <SectionTitle className="mt-4 text-5xl sm:text-6xl">Keep exploring the loop.</SectionTitle>
+          </Reveal>
+          <div className="space-y-4">
+            {relatedCases.map((entry, index) => (
+              <Reveal key={entry.slug} delay={index * 60}>
+                <Link href={entry.href} className="group block border-t border-[color:var(--marketing-line)] py-5">
+                  <p className="font-display text-3xl leading-none tracking-[-0.04em]">{entry.label}</p>
+                  <p className="mt-3 max-w-xl text-sm leading-6 text-[var(--marketing-muted-strong)]">{entry.description}</p>
+                  <span className="mt-4 inline-flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.18em] text-[var(--marketing-accent)]">
+                    Read more
+                    <ArrowRight className="h-3.5 w-3.5 transition-transform duration-200 group-hover:translate-x-1" />
+                  </span>
+                </Link>
+              </Reveal>
+            ))}
+          </div>
+        </div>
+      </MarketingSection>
+
+      <MarketingSection className="pb-24 pt-14">
+        <Reveal>
+          <div className="rounded-[2rem] border border-[color:var(--marketing-line)] bg-[linear-gradient(135deg,rgba(255,248,238,0.84),rgba(244,203,141,0.2))] p-8 dark:bg-[linear-gradient(135deg,rgba(18,27,25,0.94),rgba(239,139,87,0.12))] sm:p-10">
+            <SectionEyebrow>Ready to apply it?</SectionEyebrow>
+            <SectionTitle className="mt-4 max-w-3xl text-5xl sm:text-6xl">Create a project profile and connect the right onboarding, identity, and payout workflows.</SectionTitle>
+            <Button
+              asChild
+              size="lg"
+              className="mt-8 rounded-full bg-[var(--marketing-accent)] px-7 text-white hover:bg-[color:var(--marketing-accent)]/92"
+            >
+              <Link href="/?onboarding=project">
+                Start a project profile
+                <ArrowRight className="h-4 w-4" />
               </Link>
             </Button>
           </div>
-
-          <section className="rounded-[2rem] border border-slate-200/80 bg-white/90 p-8 shadow-sm dark:border-slate-800 dark:bg-slate-950/80 md:p-12">
-            <div className="grid gap-8 lg:grid-cols-[minmax(0,1fr)_20rem]">
-              <div>
-                <div className="inline-flex items-center gap-2 rounded-full bg-emerald-100 px-3 py-1 text-xs font-semibold uppercase tracking-[0.2em] text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-300">
-                  <Icon className="h-3.5 w-3.5" />
-                  {useCase.eyebrow}
-                </div>
-                <h1 className="mt-5 text-4xl font-bold tracking-tight text-slate-900 dark:text-white md:text-5xl">
-                  {useCase.label}
-                </h1>
-                <p className="mt-5 text-lg leading-8 text-slate-600 dark:text-slate-300">{useCase.hero}</p>
-              </div>
-
-              <Card className="border-slate-200/80 bg-slate-50 shadow-none dark:border-slate-800 dark:bg-slate-900">
-                <CardContent className="p-6">
-                  <p className="text-sm font-semibold text-slate-900 dark:text-white">What this unlocks</p>
-                  <ul className="mt-4 space-y-3 text-sm leading-6 text-slate-600 dark:text-slate-300">
-                    {useCase.outcomes.map((outcome) => (
-                      <li key={outcome}>{outcome}</li>
-                    ))}
-                  </ul>
-                </CardContent>
-              </Card>
-            </div>
-          </section>
-
-          <section className="mt-8 grid gap-6 lg:grid-cols-2">
-            <Card className="border-slate-200/80 bg-white/90 shadow-sm dark:border-slate-800 dark:bg-slate-950/80">
-              <CardContent className="p-8">
-                <h2 className="text-2xl font-bold text-slate-900 dark:text-white">How it works</h2>
-                <div className="mt-4 space-y-4 text-base leading-7 text-slate-600 dark:text-slate-300">
-                  {useCase.body.map((paragraph) => (
-                    <p key={paragraph}>{paragraph}</p>
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card className="border-slate-200/80 bg-white/90 shadow-sm dark:border-slate-800 dark:bg-slate-950/80">
-              <CardContent className="p-8">
-                <h2 className="text-2xl font-bold text-slate-900 dark:text-white">Why teams use it</h2>
-                <ul className="mt-4 space-y-4 text-base leading-7 text-slate-600 dark:text-slate-300">
-                  {useCase.reasons.map((reason) => (
-                    <li key={reason}>{reason}</li>
-                  ))}
-                </ul>
-              </CardContent>
-            </Card>
-          </section>
-
-          <section className="mt-8 rounded-[2rem] border border-emerald-200 bg-emerald-50 px-6 py-8 dark:border-emerald-900/60 dark:bg-emerald-950/20 md:px-8">
-            <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-              <div className="max-w-2xl">
-                <h2 className="text-2xl font-bold text-slate-900 dark:text-white">Ready to apply this in your project?</h2>
-                <p className="mt-2 text-sm leading-6 text-slate-600 dark:text-slate-300">
-                  Create a project profile and we can connect the right onboarding, identity, and payout workflows.
-                </p>
-              </div>
-              <Button asChild className="bg-emerald-600 text-white hover:bg-emerald-700">
-                <Link href="/#project-signup">
-                  Join as a Project
-                  <ArrowRight className="ml-2 h-4 w-4" />
-                </Link>
-              </Button>
-            </div>
-          </section>
-        </div>
-      </div>
-    </div>
+        </Reveal>
+      </MarketingSection>
+    </MarketingPage>
   )
 }

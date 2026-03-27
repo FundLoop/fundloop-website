@@ -7,6 +7,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { Button } from "@/components/ui/button"
 import { ChevronDown } from "lucide-react"
 import { cn } from "@/lib/utils"
+import { resourceLinks } from "@/lib/public-site"
 
 type ResourcesDropdownProps = {
   triggerClassName?: string
@@ -16,35 +17,7 @@ export default function ResourcesDropdown({ triggerClassName }: ResourcesDropdow
   const [open, setOpen] = useState(false)
   const pathname = usePathname()
 
-  const resources = [
-    {
-      href: "/pricing",
-      label: "Pricing",
-      description: "How FundLoop stays free for users and how projects are asked to support the ecosystem.",
-    },
-    {
-      href: "/documentation",
-      label: "Documentation",
-      description: "Implementation guides, setup details, and reference material for the platform.",
-    },
-    {
-      href: "/faq",
-      label: "FAQ",
-      description: "Straight answers to common questions from projects, users, and contributors.",
-    },
-    {
-      href: "/support",
-      label: "Support",
-      description: "Get help when you are stuck or need a path through onboarding and platform flows.",
-    },
-    {
-      href: "/api",
-      label: "API",
-      description: "Developer-facing endpoints and integration details for product and data workflows.",
-    },
-  ]
-
-  const isActive = resources.some((resource) => pathname === resource.href)
+  const isActive = resourceLinks.some((resource) => pathname === resource.href)
 
   return (
     <DropdownMenu open={open} onOpenChange={setOpen}>
@@ -53,7 +26,9 @@ export default function ResourcesDropdown({ triggerClassName }: ResourcesDropdow
           variant="ghost"
           className={cn(
             "text-sm font-medium",
-            isActive ? "text-emerald-600 dark:text-emerald-400" : "text-muted-foreground hover:text-foreground",
+            isActive
+              ? "text-[var(--marketing-accent)]"
+              : "text-[var(--marketing-muted-strong)] hover:text-[var(--marketing-ink)] dark:hover:text-[var(--marketing-paper)]",
             triggerClassName,
           )}
         >
@@ -61,22 +36,25 @@ export default function ResourcesDropdown({ triggerClassName }: ResourcesDropdow
           <ChevronDown className="ml-1 h-4 w-4" />
         </Button>
       </DropdownMenuTrigger>
-      <DropdownMenuContent align="end" className="w-[30rem] max-w-[calc(100vw-2rem)] p-2">
+      <DropdownMenuContent
+        align="end"
+        className="w-[30rem] max-w-[calc(100vw-2rem)] rounded-[1.5rem] border-[color:var(--marketing-line)] bg-[rgba(255,248,238,0.94)] p-3 shadow-[0_30px_90px_rgba(15,23,23,0.14)] backdrop-blur-xl dark:bg-[rgba(13,21,21,0.95)]"
+      >
         <div className="grid gap-1 sm:grid-cols-2">
-        {resources.map((resource) => (
-          <DropdownMenuItem key={resource.href} asChild className="p-0">
-            <Link
-              href={resource.href}
-              className={`flex min-h-24 flex-col items-start rounded-sm px-3 py-3 outline-none transition-colors hover:bg-accent ${
-                pathname === resource.href ? "text-emerald-600 dark:text-emerald-400" : ""
-              }`}
-              onClick={() => setOpen(false)}
-            >
-              <span className="text-sm font-semibold">{resource.label}</span>
-              <span className="mt-1 text-xs leading-5 text-muted-foreground">{resource.description}</span>
-            </Link>
-          </DropdownMenuItem>
-        ))}
+          {resourceLinks.map((resource) => (
+            <DropdownMenuItem key={resource.href} asChild className="p-0">
+              <Link
+                href={resource.href}
+                className={`flex min-h-24 flex-col items-start rounded-2xl px-4 py-4 outline-none transition-transform duration-200 hover:-translate-y-0.5 hover:bg-black/[0.03] ${
+                  pathname === resource.href ? "text-[var(--marketing-accent)]" : ""
+                }`}
+                onClick={() => setOpen(false)}
+              >
+                <span className="text-sm font-semibold uppercase tracking-[0.18em]">{resource.label}</span>
+                <span className="mt-2 text-xs leading-5 text-[var(--marketing-muted-strong)]">{resource.description}</span>
+              </Link>
+            </DropdownMenuItem>
+          ))}
         </div>
       </DropdownMenuContent>
     </DropdownMenu>

@@ -4,7 +4,8 @@
 @custom-variant dark (&:is(.dark *));
 
 @theme inline {
-  --font-sans: var(--font-inter);
+  --font-sans: var(--font-manrope);
+  --font-display: var(--font-fraunces);
 
   --color-background: hsl(var(--background));
   --color-foreground: hsl(var(--foreground));
@@ -47,6 +48,30 @@
   --animate-accordion-up: accordion-up 0.2s ease-out;
   --animate-collapsible-down: collapsible-down 0.2s ease-out;
   --animate-collapsible-up: collapsible-up 0.2s ease-out;
+}
+
+@keyframes constellation-float {
+  0%,
+  100% {
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+
+  50% {
+    transform: translate3d(0, -12px, 0) scale(1.01);
+  }
+}
+
+@keyframes constellation-pulse {
+  0%,
+  100% {
+    transform: scale(1);
+    opacity: 0.88;
+  }
+
+  50% {
+    transform: scale(1.18);
+    opacity: 1;
+  }
 }
 
 @keyframes accordion-down {
@@ -138,6 +163,16 @@
     --sidebar-accent-foreground: 222.2 47.4% 11.2%;
     --sidebar-border: 214.3 31.8% 91.4%;
     --sidebar-ring: 162 47% 50%;
+
+    --marketing-paper: #f3ebdd;
+    --marketing-ink: #162121;
+    --marketing-muted: #746b5d;
+    --marketing-muted-strong: #4c4b43;
+    --marketing-accent: #cc5c2c;
+    --marketing-accent-soft: #f4cb8d;
+    --marketing-moss: #637056;
+    --marketing-line: rgba(22, 33, 33, 0.12);
+    --marketing-line-strong: rgba(22, 33, 33, 0.28);
   }
 
   .dark {
@@ -174,6 +209,16 @@
     --sidebar-accent-foreground: 210 40% 98%;
     --sidebar-border: 217.2 32.6% 17.5%;
     --sidebar-ring: 162 47% 40%;
+
+    --marketing-paper: #efe3d2;
+    --marketing-ink: #0d1515;
+    --marketing-muted: #b8ad9c;
+    --marketing-muted-strong: #d7ccbb;
+    --marketing-accent: #ef8b57;
+    --marketing-accent-soft: #ffd690;
+    --marketing-moss: #8a9875;
+    --marketing-line: rgba(239, 227, 210, 0.12);
+    --marketing-line-strong: rgba(239, 227, 210, 0.28);
   }
 
   * {
@@ -182,5 +227,11 @@
 
   body {
     @apply bg-background text-foreground;
+    font-feature-settings: "ss01" 1, "cv02" 1, "cv11" 1;
+  }
+
+  ::selection {
+    background: rgba(204, 92, 44, 0.18);
+    color: inherit;
   }
 }

@@ -2,6 +2,8 @@ import Link from "next/link"
 import { ArrowLeft, ArrowRight, Bot, Building2, Users } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion"
+import { MarketingPage, MarketingSection, SectionBody, SectionEyebrow, SectionTitle } from "@/components/marketing/page-chrome"
+import { Reveal } from "@/components/marketing/reveal"
 
 const projectFaqs = [
   {
@@ -28,7 +30,7 @@ const projectFaqs = [
     answer:
       "Yes. When fiat moves, payment processor fees apply. When crypto moves, gas fees apply. Those costs come out of the funds transferred out from the platform rather than being framed as a separate subscription fee.",
   },
-]
+] as const
 
 const humanFaqs = [
   {
@@ -55,7 +57,7 @@ const humanFaqs = [
     answer:
       "We are very privacy focused. All data in FundLoop is entirely anonymized. You do not even need to tell us who you are before you withdraw payments, though if you withdraw fiat then the payment provider will need to know who you are. The goal is to support identity-aware and activity-aware coordination without turning personal identity into something projects can casually inspect.",
   },
-]
+] as const
 
 const botFaqs = [
   {
@@ -82,7 +84,7 @@ const botFaqs = [
     answer:
       "Because we believe in honesty and inclusivity. Providing a path for bots encourages them to participate openly, and it also reduces the imperative to break our system by pretending to be human just to access rewards.",
   },
-]
+] as const
 
 function FAQSection({
   icon: Icon,
@@ -93,94 +95,135 @@ function FAQSection({
   icon: typeof Building2
   title: string
   description: string
-  items: { value: string; question: string; answer: string }[]
+  items: readonly { value: string; question: string; answer: string }[]
 }) {
   return (
-    <section className="mt-8 first:mt-0">
-      <div className="mb-5 flex items-start gap-4">
-        <div className="mt-1 inline-flex h-11 w-11 items-center justify-center rounded-2xl bg-emerald-100 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-300">
-          <Icon className="h-5 w-5" />
-        </div>
+    <div className="border-t border-[color:var(--marketing-line)] pt-6">
+      <div className="mb-6 flex items-start gap-4">
+        <span className="inline-flex h-11 w-11 items-center justify-center rounded-full border border-[color:var(--marketing-line)] bg-white/55 dark:bg-white/[0.04]">
+          <Icon className="h-4 w-4" />
+        </span>
         <div>
-          <h2 className="text-2xl font-bold text-slate-900 dark:text-white">{title}</h2>
-          <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-600 dark:text-slate-300">{description}</p>
+          <h2 className="font-display text-4xl leading-none tracking-[-0.04em]">{title}</h2>
+          <p className="mt-3 max-w-2xl text-sm leading-6 text-[var(--marketing-muted-strong)]">{description}</p>
         </div>
       </div>
 
-      <Accordion type="single" collapsible className="w-full space-y-4">
+      <Accordion type="single" collapsible className="space-y-4">
         {items.map((faq) => (
-          <AccordionItem key={faq.value} value={faq.value} className="rounded-lg border px-6">
-            <AccordionTrigger className="py-4 text-left text-lg font-medium">{faq.question}</AccordionTrigger>
-            <AccordionContent className="pb-4 leading-7 text-slate-600 dark:text-slate-300">
+          <AccordionItem key={faq.value} value={faq.value} className="border-b border-[color:var(--marketing-line)]">
+            <AccordionTrigger className="py-5 text-left text-lg font-semibold tracking-[-0.02em] hover:no-underline">
+              {faq.question}
+            </AccordionTrigger>
+            <AccordionContent className="pb-5 text-base leading-7 text-[var(--marketing-muted-strong)]">
               {faq.answer}
             </AccordionContent>
           </AccordionItem>
         ))}
       </Accordion>
-    </section>
+    </div>
   )
 }
 
 export default function FAQPage() {
   return (
-    <div className="min-h-screen bg-gradient-to-b from-slate-50 via-white to-emerald-50/30 dark:from-slate-950 dark:via-slate-950 dark:to-slate-900">
-      <div className="container mx-auto px-4 py-12 md:py-20">
-        <div className="mx-auto max-w-5xl">
-          <div className="mb-8 flex items-center gap-2">
-            <Button asChild variant="ghost" size="sm" className="gap-2">
-              <Link href="/">
-                <ArrowLeft className="h-4 w-4" />
-                Back to Home
-              </Link>
-            </Button>
-          </div>
+    <MarketingPage>
+      <MarketingSection className="pb-10 pt-10">
+        <Reveal>
+          <Button
+            asChild
+            variant="ghost"
+            className="rounded-full px-0 text-[var(--marketing-muted-strong)] hover:bg-transparent hover:text-[var(--marketing-accent)]"
+          >
+            <Link href="/">
+              <ArrowLeft className="h-4 w-4" />
+              Back to home
+            </Link>
+          </Button>
+        </Reveal>
+      </MarketingSection>
 
-          <div className="rounded-[2rem] border border-slate-200/80 bg-white/90 p-8 shadow-sm dark:border-slate-800 dark:bg-slate-950/80 md:p-12">
-            <h1 className="mb-4 text-4xl font-bold tracking-tight md:text-5xl">Frequently Asked Questions</h1>
-            <p className="mb-8 text-lg leading-8 text-slate-600 dark:text-slate-300">
-              The short version of FundLoop is simple: users should not have to pay to join the network, projects can
-              support the ecosystem voluntarily, and the platform exists to help coordinate fairer value flow across
-              humans, projects, and even honest bots.
-            </p>
+      <MarketingSection className="pt-0">
+        <Reveal>
+          <SectionEyebrow>FAQ</SectionEyebrow>
+          <SectionTitle className="mt-4 max-w-5xl text-5xl sm:text-6xl lg:text-7xl">
+            Straight answers for projects, participants, and honest bots.
+          </SectionTitle>
+          <SectionBody className="mt-6 max-w-3xl">
+            The short version is simple: users do not pay to join the network, projects can support the ecosystem
+            voluntarily, and FundLoop exists to coordinate fairer value flow across humans, projects, and truthful
+            software agents.
+          </SectionBody>
+        </Reveal>
+      </MarketingSection>
 
+      <MarketingSection className="border-y border-[color:var(--marketing-line)] bg-white/34 dark:bg-white/[0.02]">
+        <div className="space-y-12">
+          <Reveal>
             <FAQSection
               icon={Building2}
-              title="Projects and Founders"
+              title="Projects and founders"
               description="Questions from teams deciding whether to join, support, or build with FundLoop."
               items={projectFaqs}
             />
-
+          </Reveal>
+          <Reveal delay={80}>
             <FAQSection
               icon={Users}
-              title="Humans and Community Members"
+              title="Humans and community members"
               description="Questions from the people participating in the network and earning through it."
               items={humanFaqs}
             />
-
+          </Reveal>
+          <Reveal delay={160}>
             <FAQSection
               icon={Bot}
               title="Bots"
               description="Questions about how bots fit into a system that values honesty, human verification, and aligned participation."
               items={botFaqs}
             />
+          </Reveal>
+        </div>
+      </MarketingSection>
 
-            <div className="mt-12 flex flex-col gap-4 rounded-2xl border border-emerald-200 bg-emerald-50 px-6 py-8 text-center dark:border-emerald-900/60 dark:bg-emerald-950/20">
-              <p className="text-slate-600 dark:text-slate-300">Need a pricing answer or a product clarification we did not cover?</p>
-              <div className="flex flex-col justify-center gap-3 sm:flex-row">
-                <Button asChild variant="outline">
-                  <Link href="/pricing">View Pricing</Link>
-                </Button>
-                <Button asChild>
-                  <Link href="/support">
-                    Contact Support
-                    <ArrowRight className="ml-2 h-4 w-4" />
-                  </Link>
-                </Button>
-              </div>
+      <MarketingSection className="pb-24 pt-14">
+        <Reveal>
+          <div className="rounded-[2rem] border border-[color:var(--marketing-line)] bg-[linear-gradient(135deg,rgba(255,248,238,0.84),rgba(244,203,141,0.2))] p-8 dark:bg-[linear-gradient(135deg,rgba(18,27,25,0.94),rgba(239,139,87,0.12))] sm:p-10">
+            <SectionEyebrow>Still need help?</SectionEyebrow>
+            <SectionTitle className="mt-4 max-w-4xl text-5xl sm:text-6xl">
+              The next best stop is participation, pricing, or support, depending on what you are trying to resolve.
+            </SectionTitle>
+            <div className="mt-8 flex flex-col gap-4 sm:flex-row">
+              <Button
+                asChild
+                variant="outline"
+                size="lg"
+                className="rounded-full border-[color:var(--marketing-line-strong)] bg-transparent px-7 hover:bg-black/[0.04] dark:hover:bg-white/[0.06]"
+              >
+                <Link href="/participation">View participation</Link>
+              </Button>
+              <Button
+                asChild
+                variant="outline"
+                size="lg"
+                className="rounded-full border-[color:var(--marketing-line-strong)] bg-transparent px-7 hover:bg-black/[0.04] dark:hover:bg-white/[0.06]"
+              >
+                <Link href="/pricing">View pricing</Link>
+              </Button>
+              <Button
+                asChild
+                size="lg"
+                className="rounded-full bg-[var(--marketing-accent)] px-7 text-white hover:bg-[color:var(--marketing-accent)]/92"
+              >
+                <Link href="/support">
+                  Contact support
+                  <ArrowRight className="h-4 w-4" />
+                </Link>
+              </Button>
             </div>
           </div>
-        </div>
-      </div>
-    </div>
+        </Reveal>
+      </MarketingSection>
+    </MarketingPage>
   )
 }

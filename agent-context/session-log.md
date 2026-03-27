@@ -12,6 +12,72 @@ Agents populate one level-3 heading for each coding session, following the same 
 
 ---
 
+### session v23: Address PR #17 public-site review comments
+- timestamp: 2026-03-27T15:45:06Z
+- agent: **Codex (GPT-5)**
+- branch: **codex/participation-marketing-refresh**
+- head: b54f8134cc2095a4dbff2fdb268dda3c8d89f6ad - feat(marketing): refresh public site and participation flow
+
+#### Objective
+Address the actionable PR review comments on the public-site marketing refresh by fixing the broken session-log frontmatter, restoring an old homepage deep link, tightening navigation behavior, and resolving the runtime/performance concerns in the new client-side components.
+
+#### Actions Taken
+- Moved the `session v22` entry out of the YAML frontmatter block in `agent-context/session-log.md` so the file metadata stays valid for tooling.
+- Split the desktop navbar’s explore data from its top-level blog link in `components/navbar.tsx` so `Blog` no longer appears twice.
+- Restored the homepage `/#project-signup` compatibility anchor in `app/page.tsx` so the pledge page CTA still lands on the project onboarding entry point.
+- Added `overflow-y-auto` to the mobile navigation overlay in `components/mobile-menu.tsx` so the expanded menu remains reachable on shorter screens.
+- Reworked `components/marketing/network-constellation.tsx` to use `requestAnimationFrame` plus CSS custom properties instead of React state updates on every pointer move.
+- Moved AppKit initialization in `components/web3-provider.tsx` into an effect so render stays free of SDK side effects.
+
+#### Tests and Validation Notes
+- Ran `pnpm lint -- app/page.tsx components/navbar.tsx components/mobile-menu.tsx components/marketing/network-constellation.tsx components/web3-provider.tsx`.
+- Ran `pnpm typecheck`.
+- Ran `pnpm build`.
+- Browser-smoke-tested `/#project-signup`, the desktop `Explore` dropdown, and the mobile navigation overlay with Playwright.
+- Confirmed the mobile overlay now has `overflowY: auto` and a larger `scrollHeight` than `clientHeight`, making the lower links reachable on short screens.
+- `pnpm build` still emitted the existing non-failing Recharts width/height warnings during analytics static generation.
+
+#### Reflections
+- Most of the review feedback was high-signal boundary work: preserving legacy deep links, keeping render paths pure, and making navigation robust across smaller screens.
+- The constellation effect reads the same visually after the `requestAnimationFrame` change, which is a good sign that the lighter implementation path did not compromise the intended feel.
+
+#### Suggested Next Steps
+- Push this review-response commit to PR #17 and reply on each addressed thread with the concrete fix.
+- If more interactions are added to the homepage hero, prefer CSS-variable or `requestAnimationFrame` driven motion before introducing new high-frequency React state updates.
+
+### session v22: Reimagine the public marketing site and participant journey
+- timestamp: 2026-03-27T15:07:38Z
+- agent: **Codex (GPT-5)**
+- branch: **codex/participation-marketing-refresh**
+- head: dbbb921140a99d33ddede83b00c7d0b27c22f68b - feat(marketing): add ecosystem entry and refine brand badge
+
+#### Objective
+Refresh the FundLoop public site into a cohesive marketing surface, add a real participant explainer page, fix the public navigation and onboarding regressions surfaced during review, and package the updated landing experience for a PR into `dev`.
+
+#### Actions Taken
+- Rebuilt the public-page presentation system with new shared marketing primitives, refreshed typography and motion, and updated the homepage, about, pricing, FAQ, ecosystem, API, documentation, support, join, and use-case pages to match the new visual language.
+- Updated the public navigation, footer, dropdowns, and mobile menu to support the redesigned site structure, improved responsive behavior on tablet/mobile breakpoints, and added a homepage CTA that can open the header use-case chooser directly.
+- Added local-environment safety fallbacks so public pages and onboarding query params still produce usable UI when Supabase or wallet config is missing instead of failing silently or throwing.
+- Added `I Am Human` to the ecosystem directory, curated the homepage ecosystem preview to highlight `SmarTrust`, `TCOIN`, and `Solar Village`, and strengthened the `Network Thesis` overlay so the constellation animation no longer collides with its copy.
+- Added the new `/participation` page to explain the participant lifecycle, proof/privacy controls, and payout preferences, then repointed the homepage, support, FAQ, and shared resource navigation to that new explainer.
+
+#### Tests and Validation Notes
+- Ran `pnpm lint`.
+- Ran `pnpm test`.
+- Ran `pnpm typecheck`.
+- Ran `pnpm build`.
+- Ran `pnpm --dir contracts test`.
+- Browser-smoke-tested the refreshed public pages, responsive breakpoints, onboarding query params, desktop/mobile use-case CTA behavior, and the new `/participation` page with Playwright against the local dev server.
+- `pnpm build` still emitted the existing non-failing Recharts width/height warnings during static generation on analytics-related pages.
+
+#### Reflections
+- The redesign held together best once the public pages shared a single marketing layout system instead of each page evolving its own chrome and spacing rules.
+- Treating the homepage ecosystem preview as an explicit editorial selection is safer than relying on array order, because content curation and directory order are different concerns.
+
+#### Suggested Next Steps
+- Review the new public copy as a group, especially the participant language and ecosystem/project descriptions, to make sure the tone matches FundLoop’s intended voice before wider launch.
+- If more public-site polish is coming, consider a follow-up pass on the remaining non-marketing routes such as `/blog`, `/projects`, and `/users` so their local-env behavior and visual language match the refreshed shell more closely.
+
 ### session v21: Address PR #16 inline review comments
 - timestamp: 2026-03-26T23:32:13Z
 - agent: **Codex (GPT-5)**

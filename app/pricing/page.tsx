@@ -1,145 +1,146 @@
 import Link from "next/link"
-import { ArrowLeft, ArrowRight, Coins, HeartHandshake, Users } from "lucide-react"
+import { ArrowLeft, ArrowRight } from "lucide-react"
 import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { MarketingPage, MarketingSection, SectionBody, SectionEyebrow, SectionTitle } from "@/components/marketing/page-chrome"
+import { Reveal } from "@/components/marketing/reveal"
+
+const principles = [
+  {
+    title: "Users pay nothing to participate.",
+    body: "Profiles, exploration, and eventual eligibility should not come with a platform subscription.",
+  },
+  {
+    title: "Projects support the loop voluntarily.",
+    body: "FundLoop asks aligned projects to contribute when they can instead of gating entry behind SaaS pricing.",
+  },
+  {
+    title: "Payment rails carry their own execution costs.",
+    body: "Fiat processor fees and crypto gas costs come out of money movement, not out of a separate recurring platform charge.",
+  },
+] as const
+
+const fundingFlows = [
+  {
+    label: "1%+ to operators",
+    body: "Supports the people, infrastructure, and review flows required to operate FundLoop reliably.",
+  },
+  {
+    label: "1%+ to the treasury",
+    body: "Helps aligned new projects get far enough to eventually contribute back into the loop.",
+  },
+] as const
 
 export default function PricingPage() {
   return (
-    <div className="min-h-screen bg-gradient-to-b from-slate-50 via-white to-emerald-50/30 dark:from-slate-950 dark:via-slate-950 dark:to-slate-900">
-      <div className="container mx-auto px-4 py-12 md:py-20">
-        <div className="mx-auto max-w-5xl">
-          <div className="mb-8">
-            <Button asChild variant="ghost" size="sm" className="gap-2">
-              <Link href="/">
-                <ArrowLeft className="h-4 w-4" />
-                Back to Home
+    <MarketingPage>
+      <MarketingSection className="pb-10 pt-10">
+        <Reveal>
+          <Button
+            asChild
+            variant="ghost"
+            className="rounded-full px-0 text-[var(--marketing-muted-strong)] hover:bg-transparent hover:text-[var(--marketing-accent)]"
+          >
+            <Link href="/">
+              <ArrowLeft className="h-4 w-4" />
+              Back to home
+            </Link>
+          </Button>
+        </Reveal>
+      </MarketingSection>
+
+      <MarketingSection className="pt-0">
+        <div className="grid gap-12 lg:grid-cols-[minmax(0,1fr)_minmax(18rem,0.72fr)]">
+          <Reveal>
+            <SectionEyebrow>Pricing</SectionEyebrow>
+            <SectionTitle className="mt-4 max-w-4xl text-5xl sm:text-6xl lg:text-7xl">
+              Free for people. Supported by aligned projects. Honest about transfer costs.
+            </SectionTitle>
+            <SectionBody className="mt-6 max-w-2xl">
+              FundLoop is the place people come to receive value, not another product that charges them for access. The
+              model is designed to keep participation open while letting projects support the system in a principled way.
+            </SectionBody>
+          </Reveal>
+
+          <Reveal delay={120}>
+            <div className="rounded-[2rem] border border-[color:var(--marketing-line)] bg-white/52 p-6 dark:bg-white/[0.03]">
+              <p className="text-[0.68rem] font-semibold uppercase tracking-[0.28em] text-[var(--marketing-muted)]">
+                Core rule
+              </p>
+              <p className="mt-4 font-display text-4xl leading-none tracking-[-0.04em]">Users should never have to pay just to be in the loop.</p>
+            </div>
+          </Reveal>
+        </div>
+      </MarketingSection>
+
+      <MarketingSection className="border-y border-[color:var(--marketing-line)] bg-white/34 dark:bg-white/[0.02]">
+        <div className="grid gap-10 lg:grid-cols-3">
+          {principles.map((item, index) => (
+            <Reveal key={item.title} delay={index * 90}>
+              <div className="border-t border-[color:var(--marketing-line)] pt-5">
+                <p className="text-sm font-semibold uppercase tracking-[0.18em]">{item.title}</p>
+                <p className="mt-3 text-sm leading-6 text-[var(--marketing-muted-strong)]">{item.body}</p>
+              </div>
+            </Reveal>
+          ))}
+        </div>
+      </MarketingSection>
+
+      <MarketingSection>
+        <div className="grid gap-12 lg:grid-cols-[minmax(0,0.78fr)_minmax(0,1.22fr)]">
+          <Reveal>
+            <SectionEyebrow>How project support works</SectionEyebrow>
+            <SectionTitle className="mt-4 text-5xl sm:text-6xl">Voluntary support keeps the platform sustainable without turning it into a paywall.</SectionTitle>
+            <SectionBody className="mt-5">
+              FundLoop recommends a simple split for teams that want to help keep the loop healthy today while also
+              helping new aligned projects survive long enough to join it.
+            </SectionBody>
+          </Reveal>
+
+          <div className="space-y-8">
+            {fundingFlows.map((flow, index) => (
+              <Reveal key={flow.label} delay={index * 90}>
+                <div className="border-t border-[color:var(--marketing-line)] pt-5">
+                  <p className="font-display text-4xl leading-none tracking-[-0.04em]">{flow.label}</p>
+                  <p className="mt-4 max-w-xl text-base leading-7 text-[var(--marketing-muted-strong)]">{flow.body}</p>
+                </div>
+              </Reveal>
+            ))}
+
+            <Reveal delay={180}>
+              <div className="border-t border-[color:var(--marketing-line)] pt-5">
+                <p className="text-sm font-semibold uppercase tracking-[0.18em]">Transfer fees</p>
+                <p className="mt-3 max-w-xl text-base leading-7 text-[var(--marketing-muted-strong)]">
+                  When money actually moves, there are direct network costs. Payment processor fees apply to fiat rails
+                  and gas fees apply to crypto rails. Those costs come out of the transferred funds themselves.
+                </p>
+              </div>
+            </Reveal>
+          </div>
+        </div>
+      </MarketingSection>
+
+      <MarketingSection className="pb-24 pt-10">
+        <Reveal>
+          <div className="rounded-[2rem] border border-[color:var(--marketing-line)] bg-[linear-gradient(135deg,rgba(255,248,238,0.84),rgba(244,203,141,0.2))] p-8 dark:bg-[linear-gradient(135deg,rgba(18,27,25,0.94),rgba(239,139,87,0.12))] sm:p-10">
+            <SectionEyebrow>Join the loop</SectionEyebrow>
+            <SectionTitle className="mt-4 max-w-3xl text-5xl sm:text-6xl">If your team wants to support shared prosperity, start with a project profile.</SectionTitle>
+            <SectionBody className="mt-5">
+              FundLoop already supports resumable onboarding drafts, so you can begin now and finish when your team is
+              ready.
+            </SectionBody>
+            <Button
+              asChild
+              size="lg"
+              className="mt-8 rounded-full bg-[var(--marketing-accent)] px-7 text-white hover:bg-[color:var(--marketing-accent)]/92"
+            >
+              <Link href="/?onboarding=project">
+                Join as a project
+                <ArrowRight className="h-4 w-4" />
               </Link>
             </Button>
           </div>
-
-          <section className="rounded-[2rem] border border-slate-200/80 bg-white/90 p-8 shadow-sm dark:border-slate-800 dark:bg-slate-950/80 md:p-12">
-            <p className="text-sm font-semibold uppercase tracking-[0.24em] text-emerald-600">Pricing</p>
-            <h1 className="mt-4 text-4xl font-bold tracking-tight text-slate-900 dark:text-white md:text-5xl">
-              FundLoop is free to use forever for users.
-            </h1>
-            <p className="mt-5 max-w-3xl text-lg leading-8 text-slate-600 dark:text-slate-300">
-              This is the platform you come to to get money, not pay money. If you are a user participating in the
-              ecosystem, creating a profile, exploring projects, and becoming eligible for distributions should never
-              come with a FundLoop platform fee.
-            </p>
-          </section>
-
-          <section className="mt-8 grid gap-6 lg:grid-cols-3">
-            <Card className="border-slate-200/80 bg-white/90 shadow-sm dark:border-slate-800 dark:bg-slate-950/80">
-              <CardHeader>
-                <div className="mb-3 inline-flex h-11 w-11 items-center justify-center rounded-2xl bg-emerald-100 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-300">
-                  <Users className="h-5 w-5" />
-                </div>
-                <CardTitle>For Users</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <p className="text-sm leading-6 text-slate-600 dark:text-slate-300">
-                  Free forever. FundLoop is designed so users can receive value, not be charged for access to the
-                  network.
-                </p>
-              </CardContent>
-            </Card>
-
-            <Card className="border-slate-200/80 bg-white/90 shadow-sm dark:border-slate-800 dark:bg-slate-950/80">
-              <CardHeader>
-                <div className="mb-3 inline-flex h-11 w-11 items-center justify-center rounded-2xl bg-emerald-100 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-300">
-                  <HeartHandshake className="h-5 w-5" />
-                </div>
-                <CardTitle>For Projects</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <p className="text-sm leading-6 text-slate-600 dark:text-slate-300">
-                  FundLoop is funded on a voluntary basis. We ask projects to support the system when they are able,
-                  rather than gating participation behind mandatory SaaS pricing.
-                </p>
-              </CardContent>
-            </Card>
-
-            <Card className="border-slate-200/80 bg-white/90 shadow-sm dark:border-slate-800 dark:bg-slate-950/80">
-              <CardHeader>
-                <div className="mb-3 inline-flex h-11 w-11 items-center justify-center rounded-2xl bg-emerald-100 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-300">
-                  <Coins className="h-5 w-5" />
-                </div>
-                <CardTitle>Transfer Costs</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <p className="text-sm leading-6 text-slate-600 dark:text-slate-300">
-                  Payment processor fees for fiat and gas fees for crypto are real network costs and come out of the
-                  funds transferred out from the platform.
-                </p>
-              </CardContent>
-            </Card>
-          </section>
-
-          <section className="mt-8 rounded-[2rem] border border-slate-200/80 bg-white/90 p-8 shadow-sm dark:border-slate-800 dark:bg-slate-950/80 md:p-10">
-            <div className="max-w-4xl">
-              <h2 className="text-2xl font-bold text-slate-900 dark:text-white md:text-3xl">How project funding works</h2>
-              <p className="mt-4 text-base leading-7 text-slate-600 dark:text-slate-300">
-                FundLoop is funded on a voluntary basis. We recommend that projects allow us to divert 1% or more of
-                their distributed funds to the community of people who work to operate FundLoop, and another 1% or more
-                to the treasury used to fund promising new projects that have taken the 1% pledge but have not yet
-                become profitable.
-              </p>
-              <p className="mt-4 text-base leading-7 text-slate-600 dark:text-slate-300">
-                That structure is meant to keep the platform sustainable without turning FundLoop into a paywall. It
-                supports the operators keeping the system alive today while also helping new aligned projects get far
-                enough to contribute back into the loop.
-              </p>
-            </div>
-
-            <div className="mt-8 grid gap-4 md:grid-cols-2">
-              <div className="rounded-2xl bg-slate-50 p-5 dark:bg-slate-900">
-                <p className="text-sm font-semibold text-slate-900 dark:text-white">1%+ to operators</p>
-                <p className="mt-2 text-sm leading-6 text-slate-600 dark:text-slate-300">
-                  Supports the people and workflows required to operate FundLoop, maintain infrastructure, and help the
-                  ecosystem function reliably.
-                </p>
-              </div>
-              <div className="rounded-2xl bg-slate-50 p-5 dark:bg-slate-900">
-                <p className="text-sm font-semibold text-slate-900 dark:text-white">1%+ to the treasury</p>
-                <p className="mt-2 text-sm leading-6 text-slate-600 dark:text-slate-300">
-                  Funds promising new projects that have already taken the pledge but have not yet reached profitability,
-                  helping the network grow in a principled way.
-                </p>
-              </div>
-            </div>
-          </section>
-
-          <section className="mt-8 rounded-[2rem] border border-amber-200 bg-amber-50/70 p-8 shadow-sm dark:border-amber-900/60 dark:bg-amber-950/20 md:p-10">
-            <h2 className="text-2xl font-bold text-slate-900 dark:text-white">Fees on money movement</h2>
-            <p className="mt-4 text-base leading-7 text-slate-600 dark:text-slate-300">
-              Towards the point where money actually moves, there are unavoidable transaction costs. Payment processor
-              fees apply when moving fiat money, and gas fees apply when moving crypto. Those costs come out of the
-              funds transferred out from our platform rather than being charged as a separate subscription.
-            </p>
-            <p className="mt-4 text-base leading-7 text-slate-600 dark:text-slate-300">
-              We want the pricing model to stay easy to understand: users do not pay to participate, projects are asked
-              to support the ecosystem voluntarily, and transfer rails carry their own direct execution costs.
-            </p>
-          </section>
-
-          <section className="mt-8 flex flex-col gap-4 rounded-[2rem] border border-emerald-200 bg-emerald-50 px-6 py-8 dark:border-emerald-900/60 dark:bg-emerald-950/20 md:flex-row md:items-center md:justify-between">
-            <div className="max-w-2xl">
-              <h2 className="text-2xl font-bold text-slate-900 dark:text-white">Want to join as a project?</h2>
-              <p className="mt-2 text-sm leading-6 text-slate-600 dark:text-slate-300">
-                If your team wants to participate in the loop and support shared prosperity, start with a project
-                profile.
-              </p>
-            </div>
-            <Button asChild className="bg-emerald-600 text-white hover:bg-emerald-700">
-              <Link href="/#project-signup">
-                Join as a Project
-                <ArrowRight className="ml-2 h-4 w-4" />
-              </Link>
-            </Button>
-          </section>
-        </div>
-      </div>
-    </div>
+        </Reveal>
+      </MarketingSection>
+    </MarketingPage>
   )
 }
