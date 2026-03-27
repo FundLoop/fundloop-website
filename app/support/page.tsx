@@ -4,18 +4,58 @@ import type React from "react"
 
 import { useState } from "react"
 import Link from "next/link"
+import { ArrowLeft, Mail, MessageSquare, User } from "lucide-react"
 import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { Textarea } from "@/components/ui/textarea"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { Textarea } from "@/components/ui/textarea"
 import { toast } from "@/components/ui/use-toast"
-import { ArrowLeft, Mail, MessageSquare, User } from "lucide-react"
-import { getSupabaseBrowserClient } from "@/lib/supabase"
-import type { Database } from "@/types/supabase"
+import { getSupabaseBrowserClient, isSupabaseConfigured } from "@/lib/supabase"
+import { MarketingPage, MarketingSection, SectionBody, SectionEyebrow, SectionTitle } from "@/components/marketing/page-chrome"
+import { Reveal } from "@/components/marketing/reveal"
+
+const helpPaths = [
+  {
+    title: "Participation",
+    body: "Use this when you want the clearest walkthrough of how people join projects, build signal, and receive rewards.",
+    href: "/participation",
+  },
+  {
+    title: "FAQ",
+    body: "Use this when you want the shortest answer to common questions about pricing, bots, or participation.",
+    href: "/faq",
+  },
+  {
+    title: "Documentation",
+    body: "Use this when you need walkthroughs, setup details, or support articles tied to product workflows.",
+    href: "/documentation",
+  },
+] as const
+
+const supportChannels = [
+  {
+    icon: User,
+    title: "Founder call",
+    body: "Coming soon for teams that need higher-touch guidance.",
+  },
+  {
+    icon: Mail,
+    title: "Email support",
+    body: "Reach us at support@fundloop.org for account, onboarding, or payment questions.",
+    href: "mailto:support@fundloop.org?subject=Support%20Request&body=Please%20describe%20your%20issue%20here.",
+  },
+  {
+    icon: MessageSquare,
+    title: "Live chat",
+    body: "Planned for future support hours once the public flows are live at a larger scale.",
+  },
+] as const
+
+type SupportChannel = (typeof supportChannels)[number]
 
 export default function SupportPage() {
+  const supabaseConfigured = isSupabaseConfigured()
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [formData, setFormData] = useState({
     name: "",
@@ -25,28 +65,31 @@ export default function SupportPage() {
     message: "",
   })
   const [errors, setErrors] = useState<Record<string, string>>({})
+
   const getSupabase = () => getSupabaseBrowserClient()
 
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
-    const { id, value } = e.target
+  const handleInputChange = (event: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+    const { id, value } = event.target
     setFormData((prev) => ({ ...prev, [id]: value }))
     setErrors((prev) => {
-      const newErr = { ...prev }
+      const nextErrors = { ...prev }
+
       switch (id) {
         case "name":
-          if (value.trim()) delete newErr.name
+          if (value.trim()) delete nextErrors.name
           break
         case "email":
-          if (/^\S+@\S+\.\S+$/.test(value)) delete newErr.email
+          if (/^\S+@\S+\.\S+$/.test(value)) delete nextErrors.email
           break
         case "subject":
-          if (value.trim()) delete newErr.subject
+          if (value.trim()) delete nextErrors.subject
           break
         case "message":
-          if (value.trim()) delete newErr.message
+          if (value.trim()) delete nextErrors.message
           break
       }
-      return newErr
+
+      return nextErrors
     })
   }
 
@@ -59,36 +102,53 @@ export default function SupportPage() {
     })
   }
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    const supabase = getSupabase()
-    const newErrors: Record<string, string> = {}
-    if (!formData.name.trim()) newErrors.name = "Name is required"
-    if (!formData.email.trim()) {
-      newErrors.email = "Email is required"
-    } else if (!/^\S+@\S+\.\S+$/.test(formData.email)) {
-      newErrors.email = "Invalid email address"
-    }
-    if (!formData.subject.trim()) newErrors.subject = "Subject is required"
-    if (!formData.category) newErrors.category = "Category is required"
-    if (!formData.message.trim()) newErrors.message = "Message is required"
-    if (Object.keys(newErrors).length > 0) {
-      setErrors(newErrors)
+  const handleSubmit = async (event: React.FormEvent) => {
+    event.preventDefault()
+
+    if (!supabaseConfigured) {
+      toast({
+        title: "Support is unavailable locally",
+        description: "Configure Supabase environment variables to submit support requests from this checkout.",
+        variant: "destructive",
+      })
       return
     }
+
+    const supabase = getSupabase()
+    const nextErrors: Record<string, string> = {}
+
+    if (!formData.name.trim()) nextErrors.name = "Name is required"
+    if (!formData.email.trim()) {
+      nextErrors.email = "Email is required"
+    } else if (!/^\S+@\S+\.\S+$/.test(formData.email)) {
+      nextErrors.email = "Invalid email address"
+    }
+    if (!formData.subject.trim()) nextErrors.subject = "Subject is required"
+    if (!formData.category) nextErrors.category = "Category is required"
+    if (!formData.message.trim()) nextErrors.message = "Message is required"
+
+    if (Object.keys(nextErrors).length > 0) {
+      setErrors(nextErrors)
+      return
+    }
+
     setErrors({})
     setIsSubmitting(true)
+
     let ip = ""
+
     try {
-      const res = await fetch("https://api.ipify.org?format=json")
-      const data = await res.json()
+      const response = await fetch("https://api.ipify.org?format=json")
+      const data = await response.json()
       ip = data.ip
-    } catch (err) {
-      console.error("Failed to get IP", err)
+    } catch (error) {
+      console.error("Failed to get IP", error)
     }
+
     const {
       data: { user },
     } = await supabase.auth.getUser()
+
     const { error } = await supabase.from("support_requests").insert([
       {
         name: formData.name,
@@ -100,11 +160,14 @@ export default function SupportPage() {
         user_id: user?.id ?? null,
       },
     ])
+
     setIsSubmitting(false)
+
     if (error) {
       toast({ title: "Submission failed", description: error.message })
       return
     }
+
     toast({
       title: "Support request submitted",
       description: "We'll get back to you as soon as possible.",
@@ -113,208 +176,176 @@ export default function SupportPage() {
   }
 
   return (
-    <div className="container mx-auto px-4 py-12">
-      <div className="flex items-center gap-2 mb-8">
-        <Button asChild variant="ghost" size="sm" className="gap-1">
-          <Link href="/">
-            <ArrowLeft className="h-4 w-4" />
-            <span>Back to Home</span>
-          </Link>
-        </Button>
-      </div>
+    <MarketingPage>
+      <MarketingSection className="pb-10 pt-10">
+        <Reveal>
+          <Button
+            asChild
+            variant="ghost"
+            className="rounded-full px-0 text-[var(--marketing-muted-strong)] hover:bg-transparent hover:text-[var(--marketing-accent)]"
+          >
+            <Link href="/">
+              <ArrowLeft className="h-4 w-4" />
+              Back to home
+            </Link>
+          </Button>
+        </Reveal>
+      </MarketingSection>
 
-      <div className="max-w-5xl mx-auto">
-        <h1 className="text-3xl md:text-4xl font-bold mb-4">Start Here</h1>
-        <p className="text-slate-600 dark:text-slate-300 text-lg mb-8">
-          Need help with FundLoop? Our support team is here to assist you.
-        </p>
+      <MarketingSection className="pt-0">
+        <Reveal>
+          <SectionEyebrow>Support</SectionEyebrow>
+          <SectionTitle className="mt-4 max-w-5xl text-5xl sm:text-6xl lg:text-7xl">
+            Start with the fastest path, then reach out if you still need a human.
+          </SectionTitle>
+          <SectionBody className="mt-6 max-w-3xl">
+            FundLoop support works best when we can route you quickly: FAQ for short answers, documentation for product
+            details, and the contact form when you are blocked by a real account or onboarding issue.
+          </SectionBody>
+        </Reveal>
+      </MarketingSection>
 
-        <div className="grid md:grid-cols-2 gap-8 mb-12">
-          <div className="text-center">
-            <h2 className="text-2xl font-bold mb-4">Frequently Asked Questions</h2>
-            <p className="text-slate-600 dark:text-slate-300 mb-6">
-              Find quick answers to common questions before contacting support.
-            </p>
-            <Button asChild variant="outline">
-              <Link href="/faq">View FAQ</Link>
-            </Button>
-          </div>
-          <div className="text-center">
-            <h2 className="text-2xl font-bold mb-4">Read Our Docs</h2>
-            <p className="text-slate-600 dark:text-slate-300 mb-6">
-              Explore our documentation for detailed guides and answers.
-            </p>
-            <Button asChild variant="outline">
-              <Link href="/documentation">View Documentation</Link>
-            </Button>
+      <MarketingSection className="border-y border-[color:var(--marketing-line)] bg-white/34 dark:bg-white/[0.02]">
+        <div className="grid gap-10 lg:grid-cols-[minmax(0,0.72fr)_minmax(0,1.28fr)]">
+          <Reveal>
+            <SectionEyebrow>Quick routes</SectionEyebrow>
+            <SectionTitle className="mt-4 text-5xl sm:text-6xl">Usually, one of these gets you unstuck fastest.</SectionTitle>
+          </Reveal>
+          <div className="grid gap-6 sm:grid-cols-2">
+            {helpPaths.map((path, index) => (
+              <Reveal key={path.href} delay={index * 90}>
+                <Link href={path.href} className="group block border-t border-[color:var(--marketing-line)] pt-5">
+                  <p className="font-display text-3xl leading-none tracking-[-0.04em]">{path.title}</p>
+                  <p className="mt-3 text-sm leading-6 text-[var(--marketing-muted-strong)]">{path.body}</p>
+                  <span className="mt-4 inline-flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.18em] text-[var(--marketing-accent)]">
+                    Open page
+                    <ArrowLeft className="h-3.5 w-3.5 rotate-180 transition-transform duration-200 group-hover:translate-x-1" />
+                  </span>
+                </Link>
+              </Reveal>
+            ))}
           </div>
         </div>
+      </MarketingSection>
 
-        <h1 className="text-3xl md:text-4xl font-bold mb-4">Still Need Support?</h1>
+      <MarketingSection>
+        <div className="grid gap-12 lg:grid-cols-[minmax(0,0.78fr)_minmax(0,1.22fr)]">
+          <Reveal className="space-y-6">
+            <div>
+              <SectionEyebrow>Channels</SectionEyebrow>
+              <SectionTitle className="mt-4 text-5xl sm:text-6xl">Ways to get help.</SectionTitle>
+            </div>
+            {supportChannels.map((channel: SupportChannel, index) => {
+              const Icon = channel.icon
+              const channelHref = "href" in channel ? channel.href : undefined
 
-        <div className="grid md:grid-cols-3 gap-8 mb-12">
-          <Card>
-            <CardHeader className="text-center">
-              <div className="mx-auto bg-emerald-100 dark:bg-emerald-900/30 p-3 rounded-full mb-4 w-12 h-12 flex items-center justify-center">
-                <User className="h-6 w-6 text-emerald-600 dark:text-emerald-400" />
-              </div>
-              <CardTitle>Chat With Our Founder</CardTitle>
-              <CardDescription>Schedule a quick call</CardDescription>
-            </CardHeader>
-            <CardContent className="text-center">
-              <p className="text-slate-600 dark:text-slate-300 mb-4">Coming Soon</p>
-            </CardContent>
-          </Card>
+              return (
+                <Reveal key={channel.title} delay={index * 70}>
+                  <div className="border-t border-[color:var(--marketing-line)] pt-5">
+                    <div className="flex items-center gap-3">
+                      <span className="inline-flex h-11 w-11 items-center justify-center rounded-full border border-[color:var(--marketing-line)] bg-white/55 dark:bg-white/[0.04]">
+                        <Icon className="h-4 w-4" />
+                      </span>
+                      <p className="text-sm font-semibold uppercase tracking-[0.18em]">{channel.title}</p>
+                    </div>
+                    {channelHref ? (
+                      <Link
+                        href={channelHref}
+                        className="mt-4 inline-flex text-sm font-semibold text-[var(--marketing-accent)] underline-offset-4 hover:underline"
+                      >
+                        support@fundloop.org
+                      </Link>
+                    ) : null}
+                    <p className="mt-3 text-sm leading-6 text-[var(--marketing-muted-strong)]">{channel.body}</p>
+                  </div>
+                </Reveal>
+              )
+            })}
+          </Reveal>
 
-          <Card>
-            <CardHeader className="text-center">
-              <div className="mx-auto bg-emerald-100 dark:bg-emerald-900/30 p-3 rounded-full mb-4 w-12 h-12 flex items-center justify-center">
-                <Mail className="h-6 w-6 text-emerald-600 dark:text-emerald-400" />
-              </div>
-              <CardTitle>Email Support</CardTitle>
-              <CardDescription>Get help via email</CardDescription>
-            </CardHeader>
-            <CardContent className="text-center">
-              <a
-                href="mailto:support@fundloop.org?subject=Support%20Request&body=Please%20describe%20your%20issue%20here."
-                className="text-emerald-600 dark:text-emerald-400 font-medium"
-              >
-                support@fundloop.org
-              </a>
-            </CardContent>
-          </Card>
+          <Reveal delay={120}>
+            <div className="rounded-[2rem] border border-[color:var(--marketing-line)] bg-white/58 p-6 shadow-[0_24px_70px_rgba(15,23,23,0.08)] dark:bg-white/[0.03] sm:p-8">
+              <p className="text-[0.68rem] font-semibold uppercase tracking-[0.28em] text-[var(--marketing-muted)]">
+                Contact form
+              </p>
+              <form onSubmit={handleSubmit} className="mt-8 space-y-5">
+                <div className="grid gap-5 sm:grid-cols-2">
+                  <div className="space-y-2">
+                    <Label htmlFor="name">Name</Label>
+                    <Input id="name" value={formData.name} onChange={handleInputChange} placeholder="Your name" required />
+                    {errors.name ? <p className="text-sm text-red-500">{errors.name}</p> : null}
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="email">Email</Label>
+                    <Input
+                      id="email"
+                      type="email"
+                      value={formData.email}
+                      onChange={handleInputChange}
+                      placeholder="you@example.com"
+                      required
+                    />
+                    {errors.email ? <p className="text-sm text-red-500">{errors.email}</p> : null}
+                  </div>
+                </div>
 
-          <Card>
-            <CardHeader className="text-center">
-              <div className="mx-auto bg-emerald-100 dark:bg-emerald-900/30 p-3 rounded-full mb-4 w-12 h-12 flex items-center justify-center">
-                <MessageSquare className="h-6 w-6 text-emerald-600 dark:text-emerald-400" />
-              </div>
-              <CardTitle>Live Chat (coming soon)</CardTitle>
-              <CardDescription>Chat with our support team</CardDescription>
-            </CardHeader>
-            <CardContent className="text-center">
-              <p className="text-slate-600 dark:text-slate-300 mb-4">Available Monday to Friday, 9am to 5pm UTC.</p>
-              <Button variant="outline" className="gap-1" disabled>
-                <MessageSquare className="h-4 w-4" />
-                Start Chat
-              </Button>
-            </CardContent>
-          </Card>
+                <div className="grid gap-5 sm:grid-cols-2">
+                  <div className="space-y-2">
+                    <Label htmlFor="subject">Subject</Label>
+                    <Input
+                      id="subject"
+                      value={formData.subject}
+                      onChange={handleInputChange}
+                      placeholder="What do you need help with?"
+                      required
+                    />
+                    {errors.subject ? <p className="text-sm text-red-500">{errors.subject}</p> : null}
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="category">Category</Label>
+                    <Select value={formData.category} onValueChange={handleSelectChange}>
+                      <SelectTrigger id="category">
+                        <SelectValue placeholder="Select category" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="general">General inquiry</SelectItem>
+                        <SelectItem value="technical">Technical support</SelectItem>
+                        <SelectItem value="billing">Billing and payments</SelectItem>
+                        <SelectItem value="account">Account issues</SelectItem>
+                        <SelectItem value="feature">Feature request</SelectItem>
+                        <SelectItem value="other">Other</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    {errors.category ? <p className="text-sm text-red-500">{errors.category}</p> : null}
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="message">Message</Label>
+                  <Textarea
+                    id="message"
+                    value={formData.message}
+                    onChange={handleInputChange}
+                    placeholder="Please describe your issue or question in detail."
+                    className="min-h-[170px]"
+                    required
+                  />
+                  {errors.message ? <p className="text-sm text-red-500">{errors.message}</p> : null}
+                </div>
+
+                <Button
+                  type="submit"
+                  size="lg"
+                  className="w-full rounded-full bg-[var(--marketing-accent)] text-white hover:bg-[color:var(--marketing-accent)]/92"
+                  disabled={isSubmitting || !supabaseConfigured}
+                >
+                  {!supabaseConfigured ? "Support unavailable locally" : isSubmitting ? "Submitting..." : "Submit request"}
+                </Button>
+              </form>
+            </div>
+          </Reveal>
         </div>
-
-        <Card className="mb-12">
-          <CardHeader>
-            <CardTitle>Contact Form</CardTitle>
-            <CardDescription>Fill out the form below and we'll get back to you as soon as possible.</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <form onSubmit={handleSubmit} className="space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="name">Name</Label>
-                  <Input
-                    id="name"
-                    placeholder="Your name"
-                    value={formData.name}
-                    onChange={handleInputChange}
-                    required
-                  />
-                  {errors.name && (
-                    <p className="text-sm text-red-500">{errors.name}</p>
-                  )}
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="email">Email</Label>
-                  <Input
-                    id="email"
-                    type="email"
-                    placeholder="Your email"
-                    value={formData.email}
-                    onChange={handleInputChange}
-                    required
-                  />
-                  {errors.email && (
-                    <p className="text-sm text-red-500">{errors.email}</p>
-                  )}
-                </div>
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="subject">Subject</Label>
-                  <Input
-                    id="subject"
-                    placeholder="Subject of your inquiry"
-                    value={formData.subject}
-                    onChange={handleInputChange}
-                    required
-                    aria-invalid={!!errors.subject}
-                    aria-describedby="subject-error"
-                  />
-                  {errors.subject && (
-                    <p id="subject-error" className="text-sm text-red-500">
-                      {errors.subject}
-                    </p>
-                  )}
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="category">Category</Label>
-                  <Select value={formData.category} onValueChange={handleSelectChange}>
-                    <SelectTrigger id="category">
-                      <SelectValue placeholder="Select category" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="general">General Inquiry</SelectItem>
-                      <SelectItem value="technical">Technical Support</SelectItem>
-                      <SelectItem value="billing">Billing & Payments</SelectItem>
-                      <SelectItem value="account">Account Issues</SelectItem>
-                      <SelectItem value="feature">Feature Request</SelectItem>
-                      <SelectItem value="other">Other</SelectItem>
-                    </SelectContent>
-                  </Select>
-                  {errors.category && (
-                    <p id="category-error" className="text-sm text-red-500">
-                      {errors.category}
-                    </p>
-                  )}
-                </div>
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="message">Message</Label>
-                <Textarea
-                  id="message"
-                  placeholder="Please describe your issue or question in detail"
-                  className="min-h-[150px]"
-                  value={formData.message}
-                  onChange={handleInputChange}
-                  required
-                  aria-invalid={!!errors.message}
-                  aria-describedby="message-error"
-                />
-                {errors.message && (
-                  <p id="message-error" className="text-sm text-red-500">
-                    {errors.message}
-                  </p>
-                )}
-              </div>
-            </form>
-          </CardContent>
-          <CardFooter>
-            <Button
-              type="submit"
-              className="w-full bg-gradient-to-r from-emerald-600 to-cyan-600 hover:from-emerald-700 hover:to-cyan-700"
-              onClick={handleSubmit}
-              disabled={isSubmitting}
-            >
-              {isSubmitting ? "Submitting..." : "Submit"}
-            </Button>
-          </CardFooter>
-        </Card>
-
-      </div>
-    </div>
+      </MarketingSection>
+    </MarketingPage>
   )
 }

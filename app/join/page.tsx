@@ -3,17 +3,19 @@
 import { useEffect, useState } from "react"
 import { usePathname, useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { Skeleton } from "@/components/ui/skeleton"
 import { toast } from "@/components/ui/use-toast"
-import { getSupabaseBrowserClient } from "@/lib/supabase"
+import { getSupabaseBrowserClient, isSupabaseConfigured } from "@/lib/supabase"
 import { buildUrl } from "@/lib/url"
+import { MarketingPage, MarketingSection, SectionBody, SectionEyebrow, SectionTitle } from "@/components/marketing/page-chrome"
+import { Reveal } from "@/components/marketing/reveal"
 
 export default function JoinPage() {
   const pathname = usePathname()
   const router = useRouter()
+  const supabaseConfigured = isSupabaseConfigured()
 
-  const [loading, setLoading] = useState(true)
+  const [loading, setLoading] = useState(supabaseConfigured)
   const [inviterName, setInviterName] = useState<string | null>(null)
   const [inviteCode, setInviteCode] = useState<string | null>(null)
   const [inviteReady, setInviteReady] = useState(false)
@@ -25,6 +27,10 @@ export default function JoinPage() {
   }, [])
 
   useEffect(() => {
+    if (!supabaseConfigured) {
+      return
+    }
+
     const validateInviteCode = async () => {
       const supabase = getSupabaseBrowserClient()
 
@@ -34,6 +40,7 @@ export default function JoinPage() {
       }
 
       setLoading(true)
+
       try {
         const { data, error } = await supabase
           .from("invitation_codes")
@@ -41,14 +48,10 @@ export default function JoinPage() {
           .eq("code", inviteCode)
           .single()
 
-        if (error) {
-          throw error
-        }
-
+        if (error) throw error
         if (data.expires_at && new Date(data.expires_at) < new Date()) {
           throw new Error("This invitation code has expired.")
         }
-
         if (data.max_uses && data.usage_count >= data.max_uses) {
           throw new Error("This invitation code has reached its maximum number of uses.")
         }
@@ -70,12 +73,9 @@ export default function JoinPage() {
       }
     }
 
-    if (!inviteReady) {
-      return
-    }
-
+    if (!inviteReady) return
     void validateInviteCode()
-  }, [inviteCode, inviteReady, router])
+  }, [inviteCode, inviteReady, router, supabaseConfigured])
 
   const openOnboarding = () => {
     const nextParams = new URLSearchParams(window.location.search)
@@ -83,48 +83,60 @@ export default function JoinPage() {
     router.push(buildUrl(pathname, nextParams), { scroll: false })
   }
 
-  if (loading) {
-    return (
-      <div className="container mx-auto flex justify-center px-4 py-24">
-        <Card className="w-full max-w-md">
-          <CardHeader className="text-center">
-            <CardTitle>Validating invitation</CardTitle>
-            <CardDescription>Please wait while FundLoop validates your invitation code.</CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4 py-4">
-            <Skeleton className="h-4 w-3/4" />
-            <Skeleton className="h-4 w-1/2" />
-            <Skeleton className="h-10 w-full" />
-          </CardContent>
-        </Card>
-      </div>
-    )
-  }
-
   return (
-    <div className="container mx-auto flex justify-center px-4 py-24">
-      <Card className="w-full max-w-md">
-        <CardHeader className="text-center">
-          <CardTitle>Join FundLoop</CardTitle>
-          <CardDescription>
-            {inviterName ? `You've been invited by ${inviterName} to join FundLoop.` : "You've been invited to join FundLoop."}
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-4 py-6 text-center">
-          <p>
-            FundLoop helps projects and people build regenerative economic loops. Your invitation code is preloaded, and
-            your onboarding draft will save as you go.
-          </p>
-          <p className="text-sm text-slate-600 dark:text-slate-300">
-            Invitation code: <span className="font-mono font-medium">{inviteCode}</span>
-          </p>
-        </CardContent>
-        <CardFooter>
-          <Button className="w-full bg-gradient-to-r from-emerald-600 to-cyan-600 hover:from-emerald-700 hover:to-cyan-700" onClick={openOnboarding}>
-            Continue onboarding
-          </Button>
-        </CardFooter>
-      </Card>
-    </div>
+    <MarketingPage>
+      <MarketingSection className="flex min-h-[calc(100svh-5.5rem)] items-center pb-20 pt-16">
+        <div className="mx-auto max-w-4xl">
+          {loading ? (
+            <Reveal>
+              <div className="rounded-[2rem] border border-[color:var(--marketing-line)] bg-white/58 p-8 shadow-[0_24px_70px_rgba(15,23,23,0.08)] dark:bg-white/[0.03] sm:p-10">
+                <SectionEyebrow>Invitation</SectionEyebrow>
+                <SectionTitle className="mt-4 text-5xl sm:text-6xl">Validating your invitation.</SectionTitle>
+                <div className="mt-8 space-y-4">
+                  <Skeleton className="h-5 w-40" />
+                  <Skeleton className="h-5 w-72" />
+                  <Skeleton className="h-12 w-full rounded-full" />
+                </div>
+              </div>
+            </Reveal>
+          ) : !supabaseConfigured ? (
+            <Reveal>
+              <div className="rounded-[2rem] border border-[color:var(--marketing-line)] bg-white/58 p-8 shadow-[0_24px_70px_rgba(15,23,23,0.08)] dark:bg-white/[0.03] sm:p-10">
+                <SectionEyebrow>Invitation</SectionEyebrow>
+                <SectionTitle className="mt-4 text-5xl sm:text-6xl">Invitations need a configured backend.</SectionTitle>
+                <SectionBody className="mt-6 max-w-2xl">
+                  Configure Supabase environment variables to validate invitation codes and continue onboarding locally.
+                </SectionBody>
+              </div>
+            </Reveal>
+          ) : (
+            <Reveal>
+              <div className="rounded-[2rem] border border-[color:var(--marketing-line)] bg-[linear-gradient(135deg,rgba(255,248,238,0.84),rgba(244,203,141,0.2))] p-8 shadow-[0_24px_70px_rgba(15,23,23,0.08)] dark:bg-[linear-gradient(135deg,rgba(18,27,25,0.94),rgba(239,139,87,0.12))] sm:p-10">
+                <SectionEyebrow>Invitation accepted</SectionEyebrow>
+                <SectionTitle className="mt-4 max-w-3xl text-5xl sm:text-6xl">Join FundLoop and pick up where the loop is forming.</SectionTitle>
+                <SectionBody className="mt-6 max-w-2xl">
+                  {inviterName
+                    ? `${inviterName} invited you into FundLoop.`
+                    : "You've been invited into FundLoop."} Your invitation code is preloaded, and your onboarding draft will save as you go.
+                </SectionBody>
+                <div className="mt-8 rounded-[1.5rem] border border-[color:var(--marketing-line)] bg-white/58 p-5 dark:bg-white/[0.04]">
+                  <p className="text-[0.68rem] font-semibold uppercase tracking-[0.28em] text-[var(--marketing-muted)]">
+                    Invitation code
+                  </p>
+                  <p className="mt-3 font-mono text-xl">{inviteCode}</p>
+                </div>
+                <Button
+                  size="lg"
+                  className="mt-8 rounded-full bg-[var(--marketing-accent)] px-7 text-white hover:bg-[color:var(--marketing-accent)]/92"
+                  onClick={openOnboarding}
+                >
+                  Continue onboarding
+                </Button>
+              </div>
+            </Reveal>
+          )}
+        </div>
+      </MarketingSection>
+    </MarketingPage>
   )
 }

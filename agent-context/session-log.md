@@ -1,4 +1,37 @@
 ---
+
+### session v22: Reimagine the public marketing site and participant journey
+- timestamp: 2026-03-27T15:07:38Z
+- agent: **Codex (GPT-5)**
+- branch: **codex/participation-marketing-refresh**
+- head: dbbb921140a99d33ddede83b00c7d0b27c22f68b - feat(marketing): add ecosystem entry and refine brand badge
+
+#### Objective
+Refresh the FundLoop public site into a cohesive marketing surface, add a real participant explainer page, fix the public navigation and onboarding regressions surfaced during review, and package the updated landing experience for a PR into `dev`.
+
+#### Actions Taken
+- Rebuilt the public-page presentation system with new shared marketing primitives, refreshed typography and motion, and updated the homepage, about, pricing, FAQ, ecosystem, API, documentation, support, join, and use-case pages to match the new visual language.
+- Updated the public navigation, footer, dropdowns, and mobile menu to support the redesigned site structure, improved responsive behavior on tablet/mobile breakpoints, and added a homepage CTA that can open the header use-case chooser directly.
+- Added local-environment safety fallbacks so public pages and onboarding query params still produce usable UI when Supabase or wallet config is missing instead of failing silently or throwing.
+- Added `I Am Human` to the ecosystem directory, curated the homepage ecosystem preview to highlight `SmarTrust`, `TCOIN`, and `Solar Village`, and strengthened the `Network Thesis` overlay so the constellation animation no longer collides with its copy.
+- Added the new `/participation` page to explain the participant lifecycle, proof/privacy controls, and payout preferences, then repointed the homepage, support, FAQ, and shared resource navigation to that new explainer.
+
+#### Tests and Validation Notes
+- Ran `pnpm lint`.
+- Ran `pnpm test`.
+- Ran `pnpm typecheck`.
+- Ran `pnpm build`.
+- Ran `pnpm --dir contracts test`.
+- Browser-smoke-tested the refreshed public pages, responsive breakpoints, onboarding query params, desktop/mobile use-case CTA behavior, and the new `/participation` page with Playwright against the local dev server.
+- `pnpm build` still emitted the existing non-failing Recharts width/height warnings during static generation on analytics-related pages.
+
+#### Reflections
+- The redesign held together best once the public pages shared a single marketing layout system instead of each page evolving its own chrome and spacing rules.
+- Treating the homepage ecosystem preview as an explicit editorial selection is safer than relying on array order, because content curation and directory order are different concerns.
+
+#### Suggested Next Steps
+- Review the new public copy as a group, especially the participant language and ecosystem/project descriptions, to make sure the tone matches FundLoop’s intended voice before wider launch.
+- If more public-site polish is coming, consider a follow-up pass on the remaining non-marketing routes such as `/blog`, `/projects`, and `/users` so their local-env behavior and visual language match the refreshed shell more closely.
 description: Session log for agent coding sessions
 alwaysApply: hybrid = one log entry per commit or session in the most appropriate session-log file
 ---

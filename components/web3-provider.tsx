@@ -41,13 +41,20 @@ function ensureAppKit() {
 }
 
 export function openFundLoopWalletModal() {
+  if (!hasReownProjectId) {
+    return Promise.resolve()
+  }
+
   ensureAppKit()
   return import("@reown/appkit/react").then(({ modal }) => modal?.open())
 }
 
 export function Web3Provider({ children }: { children: ReactNode }) {
   const [queryClient] = useState(() => new QueryClient())
-  ensureAppKit()
+
+  if (hasReownProjectId) {
+    ensureAppKit()
+  }
 
   return (
     <QueryClientProvider client={queryClient}>
