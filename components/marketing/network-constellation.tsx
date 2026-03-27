@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, type CSSProperties, type PointerEvent } from "react"
+import { useEffect, useRef, type CSSProperties, type PointerEvent } from "react"
 
 const nodes = [
   { label: "Projects", x: 18, y: 24, size: "lg", tone: "accent" },
@@ -35,30 +35,71 @@ const dotClasses = {
 } as const
 
 export function NetworkConstellation() {
-  const [offset, setOffset] = useState({ x: 0, y: 0 })
+  const containerRef = useRef<HTMLDivElement>(null)
+  const frameRef = useRef<number | null>(null)
+  const pendingOffsetRef = useRef({ x: 0, y: 0 })
+
+  const applyOffset = () => {
+    frameRef.current = null
+
+    if (!containerRef.current) {
+      return
+    }
+
+    containerRef.current.style.setProperty("--constellation-offset-x", `${pendingOffsetRef.current.x}px`)
+    containerRef.current.style.setProperty("--constellation-offset-y", `${pendingOffsetRef.current.y}px`)
+  }
+
+  const queueOffsetUpdate = (x: number, y: number) => {
+    pendingOffsetRef.current = { x, y }
+
+    if (frameRef.current !== null) {
+      return
+    }
+
+    frameRef.current = window.requestAnimationFrame(applyOffset)
+  }
 
   const handlePointerMove = (event: PointerEvent<HTMLDivElement>) => {
     const rect = event.currentTarget.getBoundingClientRect()
     const nextX = ((event.clientX - rect.left) / rect.width - 0.5) * 20
     const nextY = ((event.clientY - rect.top) / rect.height - 0.5) * 20
 
-    setOffset({ x: nextX, y: nextY })
+    queueOffsetUpdate(nextX, nextY)
   }
 
-  const resetOffset = () => setOffset({ x: 0, y: 0 })
+  const resetOffset = () => queueOffsetUpdate(0, 0)
+
+  useEffect(() => {
+    return () => {
+      if (frameRef.current !== null) {
+        window.cancelAnimationFrame(frameRef.current)
+      }
+    }
+  }, [])
 
   return (
     <div
+      ref={containerRef}
       className="relative aspect-[5/4] min-h-[22rem] overflow-hidden rounded-[2rem] border border-[color:var(--marketing-line)] bg-[linear-gradient(180deg,rgba(255,248,238,0.76),rgba(248,238,223,0.48))] p-6 shadow-[0_40px_120px_rgba(15,23,23,0.12)] dark:bg-[linear-gradient(180deg,rgba(18,27,25,0.92),rgba(10,18,17,0.84))]"
       onPointerLeave={resetOffset}
       onPointerMove={handlePointerMove}
+      style={
+        {
+          "--constellation-offset-x": "0px",
+          "--constellation-offset-y": "0px",
+        } as CSSProperties
+      }
     >
       <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_20%_20%,rgba(204,92,44,0.22),transparent_30%),radial-gradient(circle_at_80%_30%,rgba(120,138,101,0.18),transparent_28%),radial-gradient(circle_at_55%_75%,rgba(255,214,144,0.18),transparent_26%)]" />
       <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(rgba(22,33,33,0.07)_1px,transparent_1px),linear-gradient(90deg,rgba(22,33,33,0.07)_1px,transparent_1px)] bg-[size:3.5rem_3.5rem] opacity-35 dark:opacity-20" />
 
       <div
         className="absolute inset-0 transition-transform duration-500 ease-out"
-        style={{ transform: `translate(${offset.x * 0.32}px, ${offset.y * 0.32}px)` }}
+        style={{
+          transform:
+            "translate(calc(var(--constellation-offset-x) * 0.32), calc(var(--constellation-offset-y) * 0.32))",
+        }}
       >
         <svg viewBox="0 0 100 100" className="absolute inset-0 h-full w-full">
           {links.map(([from, to]) => (
@@ -78,7 +119,10 @@ export function NetworkConstellation() {
 
       <div
         className="absolute inset-0 animate-[constellation-float_18s_ease-in-out_infinite] transition-transform duration-500 ease-out"
-        style={{ transform: `translate(${offset.x * -0.28}px, ${offset.y * -0.28}px)` }}
+        style={{
+          transform:
+            "translate(calc(var(--constellation-offset-x) * -0.28), calc(var(--constellation-offset-y) * -0.28))",
+        }}
       >
         {nodes.map((node, index) => {
           const style = {

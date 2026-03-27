@@ -87,7 +87,7 @@ export default function Home() {
               FundLoop helps teams reward real contribution, grow with stronger proof-of-humanity signal, and route
               part of success back to the communities that make the whole system work.
             </SectionBody>
-            <div className="mt-10 flex flex-col gap-4 sm:flex-row">
+            <div id="project-signup" className="mt-10 flex scroll-mt-28 flex-col gap-4 sm:flex-row">
               <Button
                 asChild
                 size="lg"

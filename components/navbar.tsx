@@ -130,7 +130,8 @@ export default function Navbar() {
     router.refresh()
   }
 
-  const navLinks = [...publicExploreLinks, { label: "Blog", href: "/blog", description: "Essays, explainers, and product notes from the FundLoop orbit." }]
+  const exploreLinks = publicExploreLinks
+  const topLevelLinks = [{ label: "Blog", href: "/blog" }]
   const mobileNavLinks = [...publicExploreLinks, { label: "Blog", href: "/blog" }]
 
   const desktopNavItemClass =
@@ -166,7 +167,7 @@ export default function Navbar() {
                 className="w-[30rem] max-w-[calc(100vw-2rem)] rounded-[1.5rem] border-[color:var(--marketing-line)] bg-[rgba(255,248,238,0.94)] p-3 shadow-[0_30px_90px_rgba(15,23,23,0.14)] backdrop-blur-xl dark:bg-[rgba(13,21,21,0.95)]"
               >
                 <div className="grid gap-1 sm:grid-cols-2">
-                  {navLinks.map((link) => (
+                  {exploreLinks.map((link) => (
                     <DropdownMenuItem key={link.href} asChild className="p-0">
                       <Link
                         href={link.href}
@@ -183,7 +184,7 @@ export default function Navbar() {
               </DropdownMenuContent>
             </DropdownMenu>
 
-            {navLinks.slice(4).map((link) => (
+            {topLevelLinks.map((link) => (
               <Link
                 key={link.href}
                 href={link.href}

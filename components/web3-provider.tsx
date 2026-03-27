@@ -1,6 +1,6 @@
 "use client"
 
-import { type ReactNode, useState } from "react"
+import { type ReactNode, useEffect, useState } from "react"
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query"
 import { createAppKit } from "@reown/appkit/react"
 import { WagmiAdapter } from "@reown/appkit-adapter-wagmi"
@@ -52,9 +52,13 @@ export function openFundLoopWalletModal() {
 export function Web3Provider({ children }: { children: ReactNode }) {
   const [queryClient] = useState(() => new QueryClient())
 
-  if (hasReownProjectId) {
+  useEffect(() => {
+    if (!hasReownProjectId) {
+      return
+    }
+
     ensureAppKit()
-  }
+  }, [])
 
   return (
     <QueryClientProvider client={queryClient}>

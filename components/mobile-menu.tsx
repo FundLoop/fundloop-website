@@ -39,7 +39,7 @@ export function MobileMenu({
         </Button>
       ) : null}
       {mobileMenuOpen && (
-        <div className="fixed inset-0 z-50 bg-[var(--marketing-paper)]/95 p-6 backdrop-blur-xl dark:bg-[var(--marketing-ink)]/95">
+        <div className="fixed inset-0 z-50 overflow-y-auto bg-[var(--marketing-paper)]/95 p-6 backdrop-blur-xl dark:bg-[var(--marketing-ink)]/95">
           <div className="mb-8 flex items-center justify-between">
             <div>
               <p className="text-[0.68rem] font-semibold uppercase tracking-[0.28em] text-[var(--marketing-muted)]">
