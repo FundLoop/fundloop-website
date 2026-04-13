@@ -1,9 +1,36 @@
 "use server"
 
+import { revalidatePath } from "next/cache"
 import { createServerSupabaseClient } from "@/lib/supabase-server"
+import { getAdminSupabaseClient } from "@/lib/supabase-admin"
+import { requireInternalAdminActor } from "@/lib/zkas/auth"
+import { validateProjectPaymentDrafts, type ProjectPaymentDraftInput } from "@/lib/payments"
 import type { Json, Tables } from "@/types/supabase"
 
 type ActionResult<T> = { ok: true; data: T } | { ok: false; error: string }
+
+export type PaymentRecordSummary = {
+  id: number
+  project_id: number | null
+  project_name: string
+  project_slug: string | null
+  period_start: string
+  period_end: string
+  revenue: number
+  payment_amount: number
+  payment_percentage: number
+  payment_method_id: number | null
+  payment_method_name: string
+  payment_method_code: string
+  status_id: number | null
+  status_name: string
+  status_code: string
+  created_at: string | null
+  updated_at: string | null
+  paid_at: string | null
+  confirmed_at: string | null
+  notes: string | null
+}
 
 type CryptoPaymentMethodRow = {
   id: number
@@ -153,6 +180,139 @@ type RecordOnchainPaymentInput = {
   receipt: Json
 }
 
+type CreateProjectPaymentDraftsInput = {
+  projectSlug: string
+  payments: ProjectPaymentDraftInput[]
+}
+
+type InsertedPaymentRow = {
+  id: number
+  project_id: number | null
+  period_start: string
+  period_end: string
+  revenue: number
+  payment_amount: number
+  payment_percentage: number
+  payment_method_id: number | null
+  status_id: number | null
+  notes: string | null
+  created_at: string | null
+  updated_at: string | null
+  paid_at: string | null
+  confirmed_at: string | null
+  projects: Pick<Tables<"projects">, "name" | "slug"> | null
+  ref_payment_methods: Pick<Tables<"ref_payment_methods">, "name" | "code"> | null
+  ref_payment_statuses: Pick<Tables<"ref_payment_statuses">, "name" | "code"> | null
+}
+
+function mapPaymentSummary(row: InsertedPaymentRow): PaymentRecordSummary {
+  return {
+    id: row.id,
+    project_id: row.project_id,
+    project_name: row.projects?.name ?? "Unknown project",
+    project_slug: row.projects?.slug ?? null,
+    period_start: row.period_start,
+    period_end: row.period_end,
+    revenue: row.revenue,
+    payment_amount: row.payment_amount,
+    payment_percentage: row.payment_percentage,
+    payment_method_id: row.payment_method_id,
+    payment_method_name: row.ref_payment_methods?.name ?? "Unknown",
+    payment_method_code: row.ref_payment_methods?.code ?? "unknown",
+    status_id: row.status_id,
+    status_name: row.ref_payment_statuses?.name ?? "Unknown",
+    status_code: row.ref_payment_statuses?.code ?? "unknown",
+    created_at: row.created_at,
+    updated_at: row.updated_at,
+    paid_at: row.paid_at,
+    confirmed_at: row.confirmed_at,
+    notes: row.notes,
+  }
+}
+
+export async function createProjectPaymentDrafts(
+  input: CreateProjectPaymentDraftsInput,
+): Promise<ActionResult<PaymentRecordSummary[]>> {
+  const context = await getProjectAdminContext(input.projectSlug)
+  if (!context.ok) {
+    return context
+  }
+
+  const validation = validateProjectPaymentDrafts(input.payments)
+  if (!validation.ok) {
+    return validation
+  }
+
+  const supabase = getAdminSupabaseClient()
+  const [{ data: draftStatus }, { data: methods, error: methodsError }] = await Promise.all([
+    supabase.from("ref_payment_statuses").select("id").eq("code", "draft").single(),
+    supabase.from("ref_payment_methods").select("id").in(
+      "id",
+      validation.data.map((row) => row.payment_method_id),
+    ),
+  ])
+
+  if (!draftStatus?.id) {
+    return { ok: false, error: "The draft payment status is not configured." }
+  }
+
+  if (methodsError) {
+    return { ok: false, error: methodsError.message }
+  }
+
+  const validMethodIds = new Set((methods ?? []).map((method) => method.id))
+  const invalidRow = validation.data.find((row) => !validMethodIds.has(row.payment_method_id))
+  if (invalidRow) {
+    return { ok: false, error: "One or more selected payment methods are no longer available." }
+  }
+
+  const { data, error } = await supabase
+    .from("payments")
+    .insert(
+      validation.data.map((row) => ({
+        project_id: context.data.project.id,
+        period_start: row.period_start,
+        period_end: row.period_end,
+        revenue: row.revenue,
+        payment_amount: row.payment_amount,
+        payment_percentage: row.payment_percentage,
+        payment_method_id: row.payment_method_id,
+        status_id: draftStatus.id,
+      })),
+    )
+    .select(`
+      id,
+      project_id,
+      period_start,
+      period_end,
+      revenue,
+      payment_amount,
+      payment_percentage,
+      payment_method_id,
+      status_id,
+      notes,
+      created_at,
+      updated_at,
+      paid_at,
+      confirmed_at,
+      projects(name, slug),
+      ref_payment_methods(name, code),
+      ref_payment_statuses(name, code)
+    `)
+    .order("period_start", { ascending: false })
+
+  if (error) {
+    return { ok: false, error: error.message }
+  }
+
+  revalidatePath(`/projects/${input.projectSlug}/payments`)
+
+  return {
+    ok: true,
+    data: ((data ?? []) as InsertedPaymentRow[]).map(mapPaymentSummary),
+  }
+}
+
 export async function recordOnchainPaymentSubmission(
   input: RecordOnchainPaymentInput,
 ): Promise<ActionResult<{ submissionId: number }>> {
@@ -248,4 +408,73 @@ export async function recordOnchainPaymentSubmission(
   }
 
   return { ok: true, data: { submissionId: submission.id } }
+}
+
+export async function confirmInternalPaymentReceipt(
+  paymentId: number,
+): Promise<ActionResult<{ paymentId: number; statusCode: string; confirmedAt: string }>> {
+  try {
+    await requireInternalAdminActor()
+  } catch (error) {
+    return {
+      ok: false,
+      error: error instanceof Error ? error.message : "You do not have internal admin access.",
+    }
+  }
+
+  const supabase = getAdminSupabaseClient()
+  const [{ data: payment }, { data: confirmedStatus }] = await Promise.all([
+    supabase.from("payments").select("id, project_id, projects(slug)").eq("id", paymentId).single(),
+    supabase.from("ref_payment_statuses").select("id, code").eq("code", "confirmed").single(),
+  ])
+
+  if (!payment) {
+    return { ok: false, error: "Payment not found." }
+  }
+
+  if (!confirmedStatus?.id) {
+    return { ok: false, error: "The confirmed payment status is not configured." }
+  }
+
+  const confirmedAt = new Date().toISOString()
+
+  const { error: paymentError } = await supabase
+    .from("payments")
+    .update({
+      status_id: confirmedStatus.id,
+      confirmed_at: confirmedAt,
+      updated_at: confirmedAt,
+    })
+    .eq("id", paymentId)
+
+  if (paymentError) {
+    return { ok: false, error: paymentError.message }
+  }
+
+  const { error: submissionError } = await supabase
+    .from("onchain_payment_submissions")
+    .update({
+      status: "confirmed",
+      confirmed_at: confirmedAt,
+    })
+    .eq("payment_id", paymentId)
+
+  if (submissionError) {
+    return { ok: false, error: submissionError.message }
+  }
+
+  revalidatePath("/admin/payments")
+  const projectSlug = payment.projects && !Array.isArray(payment.projects) ? payment.projects.slug : null
+  if (projectSlug) {
+    revalidatePath(`/projects/${projectSlug}/payments`)
+  }
+
+  return {
+    ok: true,
+    data: {
+      paymentId,
+      statusCode: confirmedStatus.code,
+      confirmedAt,
+    },
+  }
 }

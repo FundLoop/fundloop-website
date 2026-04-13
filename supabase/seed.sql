@@ -311,6 +311,13 @@ INSERT INTO "public"."project_users" ("id", "is_favourite", "created_at", "proje
   ('14', 't', '2025-04-13 03:48:25.632286+00', '5', '1', '2025-04-13 03:48:25.632286+00'),
   ('3', 'f', '2025-04-13 00:35:45.231596+00', '1', '1', '2025-04-13 00:35:45.231596+00');
 
+INSERT INTO "public"."payments" ("id", "project_id", "period_start", "period_end", "revenue", "payment_amount", "payment_percentage", "payment_method_id", "status_id", "created_at", "updated_at", "paid_at", "confirmed_at", "notes", "updated_by", "deleted_at", "status") VALUES
+  ('1', '1', '2025-03-01', '2025-03-31', '128000.00', '1280.00', '1.00', '2', '4', '2025-04-02 10:30:00+00', '2025-04-05 14:20:00+00', '2025-04-03 09:15:00+00', '2025-04-05 14:20:00+00', 'ACH settlement reconciled by operations.', NULL, NULL, 'active'),
+  ('2', '2', '2025-04-01', '2025-04-30', '54000.00', '540.00', '1.00', '3', '3', '2025-05-02 11:45:00+00', '2025-05-03 16:30:00+00', '2025-05-03 16:30:00+00', NULL, 'Onchain payment submitted: 0x8d3fae5b9c2f1a4470e7fd2af4c92bbcd19f614529e183d8a1f3e91a3c2a7c11 (period tag: 4)', NULL, NULL, 'active'),
+  ('3', '3', '2025-05-01', '2025-05-31', '68000.00', '952.00', '1.40', '5', '1', '2025-06-01 09:00:00+00', '2025-06-01 09:00:00+00', NULL, NULL, 'Draft obligation prepared while the finance team verifies May revenue.', NULL, NULL, 'active'),
+  ('4', '4', '2025-05-01', '2025-05-31', '91000.00', '910.00', '1.00', '2', '2', '2025-06-02 12:10:00+00', '2025-06-03 08:55:00+00', NULL, NULL, 'Bank transfer initiated and pending settlement window.', NULL, NULL, 'active'),
+  ('5', '12', '2025-05-01', '2025-05-31', '24000.00', '240.00', '1.00', '6', '5', '2025-06-02 09:40:00+00', '2025-06-04 15:05:00+00', NULL, NULL, 'PayPal payout attempt failed and needs a replacement payment route.', NULL, NULL, 'active');
+
 INSERT INTO "public"."ref_interests" ("id", "name", "category", "usage_count", "created_at") VALUES
   ('1', 'Technology', 'Technology', '1', '2025-04-07 04:04:50.58259+00'),
   ('2', 'Environment', 'Environment', '1', '2025-04-07 04:04:50.58259+00'),
@@ -526,9 +533,9 @@ SELECT pg_catalog.setval('"public"."payment_methods_id_seq"', 1, false);
 
 SELECT pg_catalog.setval('"public"."payment_methods_id_seq1"', 1, false);
 
-SELECT pg_catalog.setval('"public"."payments_id_seq"', 1, false);
+SELECT pg_catalog.setval('"public"."payments_id_seq"', 5, true);
 
-SELECT pg_catalog.setval('"public"."payments_id_seq1"', 1, false);
+SELECT pg_catalog.setval('"public"."payments_id_seq1"', 5, true);
 
 SELECT pg_catalog.setval('"public"."project_stats_id_seq"', 9, true);
 

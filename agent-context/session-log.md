@@ -12,6 +12,66 @@ Agents populate one level-3 heading for each coding session, following the same 
 
 ---
 
+### session v25: Commit production-backed payments and staged seed data
+- timestamp: 2026-04-13T13:07:14Z
+- agent: **Codex (GPT-5)**
+- branch: **codex/wallet-production-readiness**
+- head: 17357f0973ec19c045d9d063cf506e94d1667207 - Merge pull request #17 from FundLoop/codex/participation-marketing-refresh
+
+#### Objective
+Package the wallet production-readiness work into a reviewable commit and extend the canonical seed data with example project payments at different operational stages.
+
+#### Actions Taken
+- Prioritized the wallet-app production backlog in `agent-context/todo.md` around real payment operations, payment-method management, onchain reconciliation, deployment/env validation, end-to-end coverage, and observability.
+- Added shared payment draft validation in `lib/payments.ts` with targeted coverage in `tests/payments.test.ts`.
+- Reworked project payment actions so draft obligations persist to Supabase and internal admins can confirm real payment receipts while updating linked onchain submission records.
+- Replaced the mock internal payments page with a server-backed admin console and updated the project payments UI to save real draft rows and stop implying project-side receipt confirmation authority.
+- Seeded `supabase/seed.sql` with staged example payment records covering `draft`, `pending`, `awaiting_confirmation`, `confirmed`, and `failed`, then advanced the payment sequences to match.
+
+#### Tests and Validation Notes
+- Ran `pnpm check` before this commit package step; it passed.
+- Added and passed the new `tests/payments.test.ts` cases as part of that run.
+- Did a diff-level sanity check on `supabase/seed.sql` after inserting staged payment rows and updating the payment sequences.
+- Existing non-failing warnings remain: Node `25.8.2` vs the repo’s Node `22.x` target, Next workspace-root inference, and Recharts sizing warnings during static generation.
+
+#### Reflections
+- This commit closes the most misleading production gap in the wallet app by replacing UI-only payment mutations with real server-backed paths.
+- Seeding projects at different payment stages should make local QA and product conversations much easier, especially while the full reconciliation/indexer layer is still pending.
+
+#### Suggested Next Steps
+- Tackle project-side payment-method management next so teams can add, disable, reorder, and set default crypto routes after onboarding.
+- After that, implement the onchain reconciliation/indexer layer so `awaiting_confirmation` can move forward based on verified chain data instead of manual ops alone.
+
+### session v24: Start wallet production-readiness hardening
+- timestamp: 2026-04-13T05:19:20Z
+- agent: **Codex (GPT-5)**
+- branch: **codex/wallet-production-readiness**
+- head: 17357f0973ec19c045d9d063cf506e94d1667207 - Merge pull request #17 from FundLoop/codex/participation-marketing-refresh
+
+#### Objective
+Pull the latest `origin/dev`, audit the wallet and payments surfaces for production readiness, turn that audit into a prioritized repo backlog, and begin implementing the highest-value repo-backed gap.
+
+#### Actions Taken
+- Fast-forwarded `dev` to `origin/dev`, inventoried `agent-context/todo.md`, `agent-context/session-log.md`, wallet/onchain/payment codepaths, and the currently open GitHub issues.
+- Ran the root quality gates and contract tests to ground the audit in the current repo state, then added a new top-level `Wallet App Production Readiness (Recommended Order)` section to `agent-context/todo.md`.
+- Added `lib/payments.ts` plus `tests/payments.test.ts` to validate and cover project payment draft inputs before they are written.
+- Reworked `app/actions/project-payment-actions.ts` so project admins can save real draft payment obligations, and internal admins can confirm real payment receipts while updating linked onchain submission records.
+- Replaced the mock internal payments screen with a server-backed `app/admin/payments/page.tsx` plus `components/admin/payments-console.tsx`, and updated `app/projects/[slug]/payments/page.tsx` to save draft payments through the new server action while removing the misleading project-side self-confirmation path.
+
+#### Tests and Validation Notes
+- Ran `pnpm check`.
+- `pnpm check` passed, including the new `tests/payments.test.ts` coverage.
+- The repo still emits the existing non-failing warnings about Node `25.8.2` vs the documented Node `22.x` target, inferred Next workspace root selection, and Recharts width/height during static generation.
+
+#### Reflections
+- The highest-signal production gap was not styling or content but operational trust: several payment screens looked functional while still mutating only local UI state.
+- Pulling confirmation authority into the internal admin path makes the wallet app safer to reason about, even before the onchain reconciliation/indexer layer lands.
+
+#### Suggested Next Steps
+- Continue the first backlog item by adding real project-side payment-method management outside onboarding.
+- Follow with the onchain reconciliation/indexer pass so `awaiting_confirmation` can advance automatically based on verified chain data instead of manual ops only.
+- Close the remaining launch paper cuts around Node 22 alignment, `turbopack.root`, and the Recharts build warnings after the payments backlog is stabilized.
+
 ### session v23: Address PR #17 public-site review comments
 - timestamp: 2026-03-27T15:45:06Z
 - agent: **Codex (GPT-5)**

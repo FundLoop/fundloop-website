@@ -10,23 +10,15 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Table, TableBody, TableCaption, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog"
 import { Badge } from "@/components/ui/badge"
 import { toast } from "@/components/ui/use-toast"
 import { getSupabaseBrowserClient } from "@/lib/supabase"
-import { listProjectCryptoPaymentMethods } from "@/app/actions/project-payment-actions"
+import { createProjectPaymentDrafts, listProjectCryptoPaymentMethods } from "@/app/actions/project-payment-actions"
 import {
   ProjectCryptoPaymentDialog,
   type CryptoPaymentMethodOption,
 } from "@/components/project-crypto-payment-dialog"
-import { ArrowLeft, Plus, Calculator, Save, CheckCircle, AlertTriangle, Trash2, Info } from "lucide-react"
+import { ArrowLeft, Plus, Calculator, Save, AlertTriangle, Trash2, Info } from "lucide-react"
 
 interface PaymentMethod {
   id: number
@@ -117,9 +109,6 @@ export default function ProjectPaymentsPage() {
   const [newPaymentRows, setNewPaymentRows] = useState<NewPaymentRow[]>([])
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
-  const [editPaymentId, setEditPaymentId] = useState<number | null>(null)
-  const [confirmDialogOpen, setConfirmDialogOpen] = useState(false)
-  const [paymentToConfirm, setPaymentToConfirm] = useState<Payment | null>(null)
   const [cryptoPaymentMethods, setCryptoPaymentMethods] = useState<CryptoPaymentMethodOption[]>([])
   const [cryptoPaymentDialogOpen, setCryptoPaymentDialogOpen] = useState(false)
   const [paymentToPay, setPaymentToPay] = useState<Payment | null>(null)
@@ -376,54 +365,44 @@ export default function ProjectPaymentsPage() {
     setSaving(true)
 
     try {
-      // Get the draft status ID
-      const draftStatus = paymentStatuses.find((status) => status.code === "draft")
-      if (!draftStatus) throw new Error("Draft status not found")
-
-      // In a real app, you would save to Supabase
-      // const { data, error } = await supabase
-      //   .from('payments')
-      //   .insert(
-      //     newPaymentRows.map(row => ({
-      //       project_id: parseInt(projectId),
-      //       period_start: row.period_start,
-      //       period_end: row.period_end,
-      //       revenue: row.revenue,
-      //       payment_amount: row.payment_amount,
-      //       payment_percentage: row.payment_percentage,
-      //       payment_method_id: row.payment_method_id,
-      //       status_id: draftStatus.id
-      //     }))
-      //   )
-
-      // For demo purposes, we'll just update the local state
-      const newPayments: Payment[] = newPaymentRows.map((row, index) => {
-        const method = paymentMethods.find((m) => m.id === row.payment_method_id)
-
-        return {
-          id: payments.length + index + 1,
+      const result = await createProjectPaymentDrafts({
+        projectSlug: slug,
+        payments: newPaymentRows.map((row) => ({
           period_start: row.period_start,
           period_end: row.period_end,
           revenue: row.revenue,
           payment_amount: row.payment_amount,
           payment_percentage: row.payment_percentage,
           payment_method_id: row.payment_method_id,
-          payment_method_name: method?.name || "Unknown",
-          status_id: draftStatus.id,
-          status_name: draftStatus.name,
-          status_code: draftStatus.code,
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString(),
-          paid_at: null,
-          confirmed_at: null,
-          notes: null,
-        }
+        })),
       })
 
-      setPayments((prev) => [...prev, ...newPayments])
+      if (!result.ok) {
+        throw new Error(result.error)
+      }
+
+      const newPayments: Payment[] = result.data.map((payment) => ({
+        id: payment.id,
+        period_start: payment.period_start,
+        period_end: payment.period_end,
+        revenue: payment.revenue,
+        payment_amount: payment.payment_amount,
+        payment_percentage: payment.payment_percentage,
+        payment_method_id: payment.payment_method_id,
+        payment_method_name: payment.payment_method_name,
+        status_id: payment.status_id,
+        status_name: payment.status_name,
+        status_code: payment.status_code,
+        created_at: payment.created_at,
+        updated_at: payment.updated_at,
+        paid_at: payment.paid_at,
+        confirmed_at: payment.confirmed_at,
+        notes: payment.notes,
+      }))
+
+      setPayments((prev) => [...newPayments, ...prev])
       setNewPaymentRows([])
 
-      // Add a new empty row
       setTimeout(() => {
         addNewPaymentRow()
       }, 100)
@@ -442,57 +421,6 @@ export default function ProjectPaymentsPage() {
     } finally {
       setSaving(false)
     }
-  }
-
-  const markAsPaid = async (payment: Payment) => {
-    try {
-      // Get the awaiting confirmation status ID
-      const awaitingStatus = paymentStatuses.find((status) => status.code === "awaiting_confirmation")
-      if (!awaitingStatus) throw new Error("Awaiting confirmation status not found")
-
-      // In a real app, you would update in Supabase
-      // const { error } = await supabase
-      //   .from('payments')
-      //   .update({
-      //     status_id: awaitingStatus.id,
-      //     paid_at: new Date().toISOString(),
-      //     updated_at: new Date().toISOString()
-      //   })
-      //   .eq('id', payment.id)
-
-      // For demo purposes, we'll just update the local state
-      setPayments((prev) =>
-        prev.map((p) =>
-          p.id === payment.id
-            ? {
-                ...p,
-                status_id: awaitingStatus.id,
-                status_name: awaitingStatus.name,
-                status_code: awaitingStatus.code,
-                paid_at: new Date().toISOString(),
-                updated_at: new Date().toISOString(),
-              }
-            : p,
-        ),
-      )
-
-      toast({
-        title: "Payment Marked as Paid",
-        description: "The payment is now awaiting confirmation from FundLoop administrators.",
-      })
-    } catch (error) {
-      console.error("Error marking payment as paid:", error)
-      toast({
-        title: "Error",
-        description: "Failed to update payment status",
-        variant: "destructive",
-      })
-    }
-  }
-
-  const openEditDialog = (payment: Payment) => {
-    setEditPaymentId(payment.id)
-    // In a real app, you would populate a form with the payment details
   }
 
   const formatCurrency = (amount: number) => {
@@ -517,11 +445,6 @@ export default function ProjectPaymentsPage() {
       default:
         return <Badge>{statusName}</Badge>
     }
-  }
-
-  const openConfirmDialog = (payment: Payment) => {
-    setPaymentToConfirm(payment)
-    setConfirmDialogOpen(true)
   }
 
   const openCryptoPaymentDialog = (payment: Payment) => {
@@ -562,12 +485,6 @@ export default function ProjectPaymentsPage() {
           : payment,
       ),
     )
-  }
-
-  const confirmPayment = async (payment: Payment) => {
-    // Placeholder for confirmPayment logic
-    console.log("Confirming payment:", payment)
-    // In a real application, you would call an API to confirm the payment
   }
 
   if (loading) {
@@ -845,13 +762,6 @@ export default function ProjectPaymentsPage() {
                             </Button>
                           ) : null}
 
-                          {payment.status_code === "awaiting_confirmation" && (
-                            <Button size="sm" onClick={() => openConfirmDialog(payment)}>
-                              <CheckCircle className="h-4 w-4 mr-1" />
-                              Confirm Receipt
-                            </Button>
-                          )}
-
                           <Button
                             variant="ghost"
                             size="icon"
@@ -862,6 +772,11 @@ export default function ProjectPaymentsPage() {
                             <Info className="h-4 w-4" />
                           </Button>
                         </div>
+                        {payment.status_code === "awaiting_confirmation" ? (
+                          <p className="mt-1 text-xs text-slate-500">
+                            Awaiting FundLoop confirmation after receipt review or onchain reconciliation.
+                          </p>
+                        ) : null}
                       </TableCell>
                     </TableRow>
                   ))
@@ -871,39 +786,6 @@ export default function ProjectPaymentsPage() {
           </CardContent>
         </Card>
       </div>
-
-      {/* Confirm Payment Dialog */}
-      <Dialog open={confirmDialogOpen} onOpenChange={setConfirmDialogOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Confirm Payment Receipt</DialogTitle>
-            <DialogDescription>
-              {paymentToConfirm && (
-                <>
-                  Are you sure you want to confirm receipt of {formatCurrency(paymentToConfirm.payment_amount)} from{" "}
-                  {paymentToConfirm.payment_method_name}?
-                </>
-              )}
-            </DialogDescription>
-          </DialogHeader>
-
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setConfirmDialogOpen(false)}>
-              Cancel
-            </Button>
-            <Button
-              onClick={() => {
-                if (paymentToConfirm) {
-                  confirmPayment(paymentToConfirm)
-                  setConfirmDialogOpen(false)
-                }
-              }}
-            >
-              Confirm Receipt
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
 
       <ProjectCryptoPaymentDialog
         open={cryptoPaymentDialogOpen}

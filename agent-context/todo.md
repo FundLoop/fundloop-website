@@ -1,5 +1,24 @@
 # Repo TODO
 
+## Wallet App Production Readiness (Recommended Order)
+
+- Replace the remaining mock and local-only payment operations with production-backed flows.
+  The biggest repo-backed gaps are `app/projects/[slug]/payments/page.tsx` and `app/admin/payments/page.tsx`, which still save, confirm, or mutate payment state in local UI state instead of the database.
+- Lock payment confirmation to the right actor and surface the real operational state clearly.
+  Project admins should be able to create obligations and submit crypto receipts, but internal FundLoop admins should own final receipt confirmation and reconciliation.
+- Add project-side payment-method management outside onboarding.
+  Teams need a settings or payments-management surface to add, disable, reorder, and set a default crypto route after initial setup.
+- Ship deployment-safe chain configuration and wallet environment validation.
+  Add per-environment contract manifests, validate `NEXT_PUBLIC_REOWN_PROJECT_ID` and chain RPC settings at startup, and make the active intake contracts and treasury routes auditable without manual copy/paste.
+- Build the onchain reconciliation layer that moves submitted receipts into confirmed or failed states.
+  The current wallet UX can store a tx receipt, but production readiness still requires confirmation depth rules, reorg handling, and an indexer/accounting pass that updates `awaiting_confirmation`.
+- Add remote-safe end-to-end coverage for the real wallet and payment flows.
+  Prioritize authenticated project-payment tests for wallet connect, chain switching, token approval, stablecoin deposit submission, and admin confirmation against shared remote-backed data.
+- Add observability for wallet and payment failures.
+  Capture wallet-connect failures, chain mismatch loops, receipt-recording failures, payment-save failures, and admin confirmation errors before broader launch.
+- Clean up launch paper cuts in the runtime and build environment.
+  The repo targets Node 22.x, but this checkout is currently on Node 25.8.2; `next build` also still warns about inferred workspace root and existing Recharts sizing during static generation.
+
 ## Environment, Deployment, and Release Readiness
 
 - Populate all env variables.
