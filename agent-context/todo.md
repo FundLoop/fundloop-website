@@ -12,8 +12,8 @@
   Add per-environment contract manifests, validate `NEXT_PUBLIC_REOWN_PROJECT_ID` and chain RPC settings at startup, and make the active intake contracts and treasury routes auditable without manual copy/paste.
 - Completed 2026-04-13: Build the onchain reconciliation layer that moves submitted receipts into confirmed or failed states.
   Known app-recorded crypto submissions now reconcile against verified `Deposit` events plus confirmation depth, with scheduled and admin-triggered replay paths.
-- Add remote-safe end-to-end coverage for the real wallet and payment flows.
-  Prioritize authenticated project-payment tests for wallet connect, chain switching, token approval, stablecoin deposit submission, and admin confirmation against shared remote-backed data.
+- Completed 2026-04-13: Add remote-safe end-to-end coverage for the real wallet and payment flows.
+  The repo now has a Playwright harness with `remote-safe` and opt-in `local-wallet` lanes, guarded non-production auth bootstrap, seeded shared-environment fixtures, and local injected-wallet coverage for route management, deposit submission, and reconciliation.
 - Add observability for wallet and payment failures.
   Capture wallet-connect failures, chain mismatch loops, receipt-recording failures, payment-save failures, and admin confirmation errors before broader launch.
 - Completed 2026-04-13: Clean up launch paper cuts in the runtime and build environment.
@@ -79,9 +79,14 @@
 
 ## Testing, QA, and Reliability
 
-- Add a remote-safe Playwright fixture strategy that creates unique test users/projects and cleans them up without resetting the shared Supabase database.
-- Add browser smoke or integration coverage for the new project-side crypto route manager once a stable local or remote-backed Playwright setup is available.
-- Add end-to-end coverage for wallet connect, chain switching, approval, and contract write flows once deployed addresses and real envs are available; that was explicitly deferred during the crypto V1 implementation.
+- Completed 2026-04-13: Add a remote-safe Playwright fixture strategy that creates unique test users/projects and cleans them up without resetting the shared Supabase database.
+  The new Playwright fixture helpers seed unique auth users, organizations, projects, payment routes, payments, and onchain submission rows through service-role access and clean them up without resetting the database.
+- Completed 2026-04-13: Add browser smoke or integration coverage for the new project-side crypto route manager once a stable local or remote-backed Playwright setup is available.
+  The new Playwright specs cover route add/edit/default/reorder/disable/re-enable on the real `/projects/[slug]/payments` surface.
+- Completed 2026-04-13: Add end-to-end coverage for wallet connect, chain switching, approval, and contract write flows once deployed addresses and real envs are available.
+  The opt-in `local-wallet` lane now covers injected wallet connection, ERC20 approval, contract deposit submission, and reconciliation-driven confirmation against a local chain id `8453` harness.
+- Provision the new `remote-safe` Playwright lane in CI and in a stable non-production environment with `FUNDLOOP_E2E_ENABLED=true`.
+- Decide whether the opt-in `local-wallet` lane should be promoted into CI once local Supabase, Hardhat, and browser dependencies are provisioned reliably in automation.
 - Add observability for the critical flows: auth redirect failures, onboarding save/publish failures, payment submission failures, and wallet-connect errors.
 
 ## Content, Landing Pages, and Site UX

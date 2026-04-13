@@ -4,7 +4,7 @@ import { createContext, type ReactNode, useContext, useEffect, useMemo, useState
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query"
 import { createAppKit } from "@reown/appkit/react"
 import { WagmiAdapter } from "@reown/appkit-adapter-wagmi"
-import { WagmiProvider } from "wagmi"
+import { useConnect, WagmiProvider } from "wagmi"
 import { createConfiguredChain, SUPPORTED_CHAIN_CONFIGS, type SupportedChainKey } from "@/lib/onchain/supported-chains"
 import { ZERO_REOWN_PROJECT_ID, type WalletRuntimeConfig } from "@/lib/onchain/runtime-config"
 
@@ -25,6 +25,7 @@ const fallbackChain = SUPPORTED_CHAIN_CONFIGS.ethereum.chain
 const WalletRuntimeContext = createContext<WalletRuntimeContextValue | null>(null)
 
 let appKitInitialized = false
+const localWalletBridgeEnabled = process.env.NEXT_PUBLIC_FUNDLOOP_E2E_LOCAL_WALLET === "true"
 
 function ensureAppKit(input: {
   wagmiAdapter: WagmiAdapter
@@ -54,6 +55,60 @@ export function useWalletRuntime() {
   }
 
   return context
+}
+
+function E2ELocalWalletBridge() {
+  const { connectors, connectAsync } = useConnect()
+
+  useEffect(() => {
+    if (!localWalletBridgeEnabled || typeof window === "undefined") {
+      return
+    }
+
+    const connectInjectedWallet = async () => {
+      const injectedConnector =
+        connectors.find((connector) => connector.type === "injected") ??
+        connectors.find((connector) => connector.id.toLowerCase().includes("injected")) ??
+        null
+
+      if (!injectedConnector) {
+        window.dispatchEvent(
+          new CustomEvent("fundloop:e2e-connect-wallet-result", {
+            detail: {
+              ok: false,
+              error: "No injected wallet connector is available.",
+            },
+          }),
+        )
+        return
+      }
+
+      try {
+        await connectAsync({ connector: injectedConnector })
+        window.dispatchEvent(
+          new CustomEvent("fundloop:e2e-connect-wallet-result", {
+            detail: {
+              ok: true,
+            },
+          }),
+        )
+      } catch (error) {
+        window.dispatchEvent(
+          new CustomEvent("fundloop:e2e-connect-wallet-result", {
+            detail: {
+              ok: false,
+              error: error instanceof Error ? error.message : "Could not connect the injected wallet.",
+            },
+          }),
+        )
+      }
+    }
+
+    window.addEventListener("fundloop:e2e-connect-wallet", connectInjectedWallet)
+    return () => window.removeEventListener("fundloop:e2e-connect-wallet", connectInjectedWallet)
+  }, [connectAsync, connectors])
+
+  return null
 }
 
 export function Web3Provider({
@@ -123,7 +178,10 @@ export function Web3Provider({
   return (
     <QueryClientProvider client={queryClient}>
       <WagmiProvider config={wagmiAdapter.wagmiConfig}>
-        <WalletRuntimeContext.Provider value={contextValue}>{children}</WalletRuntimeContext.Provider>
+        <WalletRuntimeContext.Provider value={contextValue}>
+          {localWalletBridgeEnabled ? <E2ELocalWalletBridge /> : null}
+          {children}
+        </WalletRuntimeContext.Provider>
       </WagmiProvider>
     </QueryClientProvider>
   )

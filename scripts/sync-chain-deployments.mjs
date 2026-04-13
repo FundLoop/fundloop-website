@@ -10,6 +10,17 @@ function normalizeAddress(value) {
 }
 
 async function loadManifest(environment) {
+  const manifestOverrideJson = process.env.FUNDLOOP_DEPLOYMENT_MANIFEST_JSON?.trim()
+  if (manifestOverrideJson) {
+    return JSON.parse(manifestOverrideJson)
+  }
+
+  const manifestOverridePath = process.env.FUNDLOOP_DEPLOYMENT_MANIFEST_PATH?.trim()
+  if (manifestOverridePath) {
+    const content = await readFile(manifestOverridePath, "utf8")
+    return JSON.parse(content)
+  }
+
   const __dirname = path.dirname(fileURLToPath(import.meta.url))
   const manifestPath = path.join(__dirname, "..", "lib", "onchain", "deployments", `${environment}.json`)
   const content = await readFile(manifestPath, "utf8")

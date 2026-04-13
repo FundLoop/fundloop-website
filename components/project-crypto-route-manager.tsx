@@ -351,7 +351,7 @@ export function ProjectCryptoRouteManager({ projectSlug, routes, onRoutesChange 
   }
 
   return (
-    <Card>
+    <Card data-testid="crypto-route-manager">
       <CardHeader className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
         <div className="space-y-2">
           <CardTitle>Crypto collection routes</CardTitle>
@@ -360,7 +360,14 @@ export function ProjectCryptoRouteManager({ projectSlug, routes, onRoutesChange 
             re-enable them later without losing context.
           </CardDescription>
         </div>
-        <Button type="button" variant="outline" size="sm" onClick={addDraftRoute} disabled={referencesLoading || isPending}>
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          onClick={addDraftRoute}
+          disabled={referencesLoading || isPending}
+          data-testid="add-crypto-route"
+        >
           <Plus className="mr-2 h-4 w-4" />
           Add crypto route
         </Button>
@@ -388,7 +395,15 @@ export function ProjectCryptoRouteManager({ projectSlug, routes, onRoutesChange 
                 const isBusy = busyRouteId === route.localId && isPending
 
                 return (
-                  <div key={route.localId} className="space-y-4 rounded-2xl border p-4">
+                  <div
+                    key={route.localId}
+                    className="space-y-4 rounded-2xl border p-4"
+                    data-testid={
+                      route.persisted && route.paymentMethodId !== null
+                        ? `enabled-route-${route.paymentMethodId}`
+                        : `enabled-route-draft-${route.localId}`
+                    }
+                  >
                     <div className="flex flex-wrap items-center justify-between gap-3">
                       <div>
                         <p className="text-sm font-medium text-slate-900">Route {index + 1}</p>
@@ -429,7 +444,7 @@ export function ProjectCryptoRouteManager({ projectSlug, routes, onRoutesChange 
                             })
                           }
                         >
-                          <SelectTrigger>
+                        <SelectTrigger data-testid={`route-chain-trigger-${route.paymentMethodId ?? route.localId}`}>
                             <SelectValue placeholder="Choose a chain" />
                           </SelectTrigger>
                           <SelectContent>
@@ -455,7 +470,7 @@ export function ProjectCryptoRouteManager({ projectSlug, routes, onRoutesChange 
                           }
                           disabled={!route.chainId}
                         >
-                          <SelectTrigger>
+                          <SelectTrigger data-testid={`route-token-trigger-${route.paymentMethodId ?? route.localId}`}>
                             <SelectValue placeholder="Choose a token" />
                           </SelectTrigger>
                           <SelectContent>
@@ -477,6 +492,7 @@ export function ProjectCryptoRouteManager({ projectSlug, routes, onRoutesChange 
                           value={route.label}
                           onChange={(event) => updateEditableRoute(route.localId, { label: event.target.value })}
                           placeholder="Base USDC default route"
+                          data-testid={`route-label-input-${route.paymentMethodId ?? route.localId}`}
                         />
                       </div>
 
@@ -495,6 +511,7 @@ export function ProjectCryptoRouteManager({ projectSlug, routes, onRoutesChange 
                         variant={route.isDefault ? "default" : "outline"}
                         onClick={() => updateEditableRoute(route.localId, { isDefault: true })}
                         disabled={!route.isRuntimeAvailable}
+                        data-testid={`route-default-button-${route.paymentMethodId ?? route.localId}`}
                       >
                         {route.isDefault ? "Default route" : "Mark as default"}
                       </Button>
@@ -503,6 +520,7 @@ export function ProjectCryptoRouteManager({ projectSlug, routes, onRoutesChange 
                         variant="outline"
                         onClick={() => handleMoveRoute(route, "up")}
                         disabled={isBusy || index === 0}
+                        data-testid={`route-move-up-${route.paymentMethodId ?? route.localId}`}
                       >
                         <ArrowUp className="mr-2 h-4 w-4" />
                         Move up
@@ -512,6 +530,7 @@ export function ProjectCryptoRouteManager({ projectSlug, routes, onRoutesChange 
                         variant="outline"
                         onClick={() => handleMoveRoute(route, "down")}
                         disabled={isBusy || index === enabledRoutes.length - 1}
+                        data-testid={`route-move-down-${route.paymentMethodId ?? route.localId}`}
                       >
                         <ArrowDown className="mr-2 h-4 w-4" />
                         Move down
@@ -520,6 +539,7 @@ export function ProjectCryptoRouteManager({ projectSlug, routes, onRoutesChange 
                         type="button"
                         onClick={() => handlePersistRoute(route)}
                         disabled={isBusy || referencesLoading || !isRouteReady(route) || (route.isDefault && !route.isRuntimeAvailable)}
+                        data-testid={`route-save-${route.paymentMethodId ?? route.localId}`}
                       >
                         <Save className="mr-2 h-4 w-4" />
                         {route.persisted ? "Save changes" : "Create route"}
@@ -530,11 +550,18 @@ export function ProjectCryptoRouteManager({ projectSlug, routes, onRoutesChange 
                           variant="outline"
                           onClick={() => handleToggleEnabled(route, false)}
                           disabled={isBusy}
+                          data-testid={`route-disable-${route.paymentMethodId}`}
                         >
                           Disable route
                         </Button>
                       ) : (
-                        <Button type="button" variant="ghost" onClick={() => removeDraftRoute(route.localId)} disabled={isBusy}>
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          onClick={() => removeDraftRoute(route.localId)}
+                          disabled={isBusy}
+                          data-testid={`route-remove-draft-${route.localId}`}
+                        >
                           <Trash2 className="mr-2 h-4 w-4" />
                           Remove draft
                         </Button>
@@ -575,7 +602,11 @@ export function ProjectCryptoRouteManager({ projectSlug, routes, onRoutesChange 
                 const isBusy = busyRouteId === route.localId && isPending
 
                 return (
-                  <div key={route.localId} className="space-y-3 rounded-2xl border bg-slate-50/60 p-4">
+                  <div
+                    key={route.localId}
+                    className="space-y-3 rounded-2xl border bg-slate-50/60 p-4"
+                    data-testid={`disabled-route-${route.paymentMethodId ?? route.localId}`}
+                  >
                     <div className="flex flex-wrap items-center justify-between gap-3">
                       <div>
                         <p className="font-medium text-slate-900">{routeLabel}</p>
@@ -605,7 +636,13 @@ export function ProjectCryptoRouteManager({ projectSlug, routes, onRoutesChange 
                       </div>
                     ) : null}
 
-                    <Button type="button" variant="outline" onClick={() => handleToggleEnabled(route, true)} disabled={isBusy}>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={() => handleToggleEnabled(route, true)}
+                      disabled={isBusy}
+                      data-testid={`route-enable-${route.paymentMethodId ?? route.localId}`}
+                    >
                       Re-enable route
                     </Button>
                   </div>

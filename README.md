@@ -58,6 +58,22 @@ NEXT_PUBLIC_CELO_RPC_URL=https://...
 
 Tracked contract and treasury addresses now live in the deployment manifests under [`lib/onchain/deployments/`](lib/onchain/deployments/). Preview and production should not rely on ad hoc env addresses anymore.
 
+Playwright e2e variables:
+
+```env
+FUNDLOOP_E2E_ENABLED=false
+FUNDLOOP_E2E_SECRET=shared_non_production_secret
+PLAYWRIGHT_REMOTE_BASE_URL=https://preview-or-staging.example.com
+PLAYWRIGHT_REMOTE_SUPABASE_URL=https://your-supabase-project.supabase.co
+PLAYWRIGHT_REMOTE_SUPABASE_SERVICE_ROLE_KEY=service_role_for_remote_fixture_seeding
+PLAYWRIGHT_LOCAL_BASE_URL=http://127.0.0.1:3001
+PLAYWRIGHT_LOCAL_RPC_URL=http://127.0.0.1:8545
+PLAYWRIGHT_LOCAL_CHAIN_ID=8453
+PLAYWRIGHT_LOCAL_WALLET_ADDRESS=0x...
+NEXT_PUBLIC_FUNDLOOP_E2E_LOCAL_WALLET=false
+NEXT_PUBLIC_FUNDLOOP_LOCAL_WALLET_MANIFEST_JSON=
+```
+
 ## Supabase Workflow
 
 The [`supabase/`](supabase/) directory is the canonical database source of truth.
@@ -105,6 +121,31 @@ node scripts/sync-chain-deployments.mjs --env local --apply
 
 To run scheduled payment reconciliation, post to `/api/internal/payments/reconcile-onchain` with `Authorization: Bearer $FUNDLOOP_PAYMENTS_CRON_SECRET`. Internal admins can also trigger targeted replay/backfill from `/admin/payments/reconciliation`.
 
+## Playwright E2E Workflow
+
+The repo now includes a two-lane Playwright harness:
+
+- `remote-safe` seeds unique users, projects, payments, and crypto routes against a shared non-production Supabase environment, then signs the browser into the real app through `POST /api/internal/e2e/login`.
+- `local-wallet` is opt-in and runs against a local Next app plus a local Hardhat JSON-RPC node on chain id `8453`, with a generated local manifest override and an injected test wallet provider.
+
+Run the remote-safe lane:
+
+```bash
+pnpm test:e2e:remote
+```
+
+Run the local-wallet lane:
+
+```bash
+pnpm test:e2e:local
+```
+
+Notes:
+
+- `POST /api/internal/e2e/login` is disabled unless `FUNDLOOP_E2E_ENABLED=true`, `FUNDLOOP_E2E_SECRET` is configured, and `NODE_ENV` is not `production`.
+- The local-wallet runner starts the local Hardhat node and the Next dev server for you, but it expects local Supabase env vars to already point at a running local Supabase stack.
+- The local-wallet runner temporarily overrides the local deployment manifest through `NEXT_PUBLIC_FUNDLOOP_LOCAL_WALLET_MANIFEST_JSON` so tracked manifest files stay unchanged in Git.
+
 ### Run the app
 
 ```bash
@@ -122,6 +163,8 @@ Open [http://localhost:3000](http://localhost:3000).
 - `pnpm typecheck` runs `tsc --noEmit`.
 - `pnpm build` creates a production build.
 - `pnpm check` runs lint, test, typecheck, and build in sequence.
+- `pnpm test:e2e:remote` runs the shared-environment Playwright lane.
+- `pnpm test:e2e:local` runs the opt-in local wallet Playwright lane.
 - `pnpm --dir contracts test` runs the Hardhat workspace tests.
 
 ## Contracts Workspace

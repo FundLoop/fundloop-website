@@ -530,7 +530,7 @@ export default function ProjectPaymentsPage() {
   }
 
   return (
-    <div className="container mx-auto px-4 py-12">
+    <div className="container mx-auto px-4 py-12" data-testid="project-payments-page">
       <div className="flex items-center gap-2 mb-8">
         <Button asChild variant="ghost" size="sm" className="gap-1">
           <Link href={`/projects/${slug}`}>
@@ -748,7 +748,7 @@ export default function ProjectPaymentsPage() {
                   </TableRow>
                 ) : (
                   payments.map((payment) => (
-                    <TableRow key={payment.id}>
+                    <TableRow key={payment.id} data-testid={`payment-row-${payment.id}`}>
                       <TableCell>
                         <div className="font-medium">
                           {format(new Date(payment.period_start), "MMM d, yyyy")} -{" "}
@@ -776,7 +776,12 @@ export default function ProjectPaymentsPage() {
                             payment.status_code === "pending" ||
                             (payment.status_code === "failed" && payment.latest_onchain_submission?.status === "failed")) &&
                           cryptoPaymentMethods.length > 0 ? (
-                            <Button size="sm" variant="outline" onClick={() => openCryptoPaymentDialog(payment)}>
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => openCryptoPaymentDialog(payment)}
+                              data-testid={`pay-with-crypto-${payment.id}`}
+                            >
                               {payment.status_code === "failed" ? "Retry crypto payment" : "Pay with crypto"}
                             </Button>
                           ) : null}

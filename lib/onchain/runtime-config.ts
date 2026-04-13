@@ -6,6 +6,7 @@ import { SUPPORTED_CHAIN_CONFIGS, SUPPORTED_CHAIN_KEYS, type SupportedChainKey }
 
 export const ZERO_ADDRESS = "0x0000000000000000000000000000000000000000"
 export const ZERO_REOWN_PROJECT_ID = "00000000000000000000000000000000"
+export const LOCAL_WALLET_MANIFEST_OVERRIDE_ENV = "NEXT_PUBLIC_FUNDLOOP_LOCAL_WALLET_MANIFEST_JSON"
 
 export type DeploymentEnvironment = "local" | "preview" | "production"
 
@@ -119,6 +120,19 @@ const DEPLOYMENT_MANIFESTS: Record<DeploymentEnvironment, DeploymentManifest> = 
   production: manifestSchema.parse(productionManifestJson),
 }
 
+function getManifestOverride(environment: DeploymentEnvironment, env: NodeJS.ProcessEnv = process.env) {
+  if (environment !== "local") {
+    return null
+  }
+
+  const override = env[LOCAL_WALLET_MANIFEST_OVERRIDE_ENV]?.trim()
+  if (!override) {
+    return null
+  }
+
+  return manifestSchema.parse(JSON.parse(override))
+}
+
 function normalizeAddress(value: string) {
   return value.trim().toLowerCase()
 }
@@ -148,8 +162,8 @@ export function resolveDeploymentEnvironment(env: NodeJS.ProcessEnv = process.en
   return "local"
 }
 
-export function getDeploymentManifest(environment: DeploymentEnvironment): DeploymentManifest {
-  return DEPLOYMENT_MANIFESTS[environment]
+export function getDeploymentManifest(environment: DeploymentEnvironment, env: NodeJS.ProcessEnv = process.env): DeploymentManifest {
+  return getManifestOverride(environment, env) ?? DEPLOYMENT_MANIFESTS[environment]
 }
 
 export function isStrictWalletValidationEnvironment(environment: DeploymentEnvironment) {
@@ -160,7 +174,7 @@ export function buildWalletRuntimeConfig(
   env: NodeJS.ProcessEnv = process.env,
   environment = resolveDeploymentEnvironment(env),
 ): WalletRuntimeConfig {
-  const manifest = getDeploymentManifest(environment)
+  const manifest = getDeploymentManifest(environment, env)
   const issues: WalletRuntimeIssue[] = []
   const reownProjectId = env.NEXT_PUBLIC_REOWN_PROJECT_ID?.trim() || null
   const reownProjectIdConfigured = isConfiguredReownProjectId(reownProjectId ?? undefined)

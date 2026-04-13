@@ -12,6 +12,37 @@ Agents populate one level-3 heading for each coding session, following the same 
 
 ---
 
+### session v31: Add Playwright wallet and payment end-to-end harness
+- timestamp: 2026-04-13T22:03:00Z
+- agent: **Codex (GPT-5)**
+- branch: **codex/wallet-production-readiness**
+- head: 9f002f065509f5b22bc1f90cfd4055e1512ff6c7 - feat(payments): add onchain reconciliation worker flow
+
+#### Objective
+Add production-oriented Playwright coverage for the real wallet and payment flows, including remote-safe project payment coverage and an opt-in local wallet lane for true browser-driven contract submission and reconciliation.
+
+#### Actions Taken
+- Added the guarded non-production test login route at `/api/internal/e2e/login` plus shared e2e auth/secret helpers in `lib/e2e/config.ts`.
+- Added the Playwright harness with separate `remote-safe` and `local-wallet` projects in `playwright.config.ts`, new root scripts in `package.json`, and Vitest exclusions so browser specs do not leak into the unit-test runner.
+- Added remote fixture orchestration under `tests/e2e/support/`, including service-role fixture seeding/cleanup, browser login helpers, and an injected local EIP-1193 provider shim for the local wallet lane.
+- Added the remote-safe browser specs for the real `/projects/[slug]/payments` flow and route-manager lifecycle, plus local-wallet specs for wallet connect, token approval, crypto deposit submission, reconciliation to `confirmed`, and mismatch failure/retry behavior.
+- Added the local wallet execution helpers in `scripts/run-playwright-local-wallet.mjs` and `contracts/scripts/deploy-playwright-local-wallet.js`, plus manifest override support in `lib/onchain/runtime-config.ts` and sync-script overrides in `scripts/sync-chain-deployments.mjs`.
+- Added stable `data-testid` hooks to the project payments UI, updated `.env.example`, `README.md`, and `agent-context/todo.md`, and added focused config coverage in `tests/e2e-config.test.ts`.
+
+#### Tests and Validation Notes
+- Ran `pnpm dlx node@22.22.1 /opt/homebrew/bin/pnpm check`.
+- Ran `pnpm dlx node@22.22.1 /opt/homebrew/bin/pnpm exec playwright test --list`.
+- `lint`, `test`, `typecheck`, and `build` all passed in the supported Node 22 runtime.
+- Did not run the actual Playwright browser lanes end to end in this session because the required remote env and local Supabase/Hardhat runtime were not both provisioned here.
+
+#### Reflections
+- Splitting the browser coverage into `remote-safe` and `local-wallet` lanes keeps the shared-environment tests safe while still giving the repo a path to real wallet transaction coverage.
+- The local manifest override approach was worth adding because it lets Playwright boot a real chain-aware app process without mutating tracked deployment manifests just for test setup.
+
+#### Suggested Next Steps
+- Provision the `remote-safe` lane in a stable non-production environment with the required service-role and e2e-secret env vars, then start running it regularly.
+- Decide whether the local-wallet lane should be promoted into CI once local Supabase, Hardhat, and browser dependencies are provisioned reliably in automation.
+
 ### session v30: Add onchain payment reconciliation and replay tooling
 - timestamp: 2026-04-13T21:32:05Z
 - agent: **Codex (GPT-5)**

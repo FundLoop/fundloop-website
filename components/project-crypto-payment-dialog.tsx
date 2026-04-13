@@ -375,7 +375,7 @@ export function ProjectCryptoPaymentDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent>
+      <DialogContent data-testid="project-crypto-payment-dialog">
         <DialogHeader>
           <DialogTitle>Pay with crypto</DialogTitle>
           <DialogDescription>
@@ -392,7 +392,7 @@ export function ProjectCryptoPaymentDialog({
             <div className="space-y-2">
               <Label>Payment route</Label>
               <Select value={String(selectedMethod.id)} onValueChange={setSelectedMethodId}>
-                <SelectTrigger>
+                <SelectTrigger data-testid="crypto-payment-route-trigger">
                   <SelectValue placeholder="Choose a crypto route" />
                 </SelectTrigger>
                 <SelectContent>
@@ -409,7 +409,7 @@ export function ProjectCryptoPaymentDialog({
             <div className="space-y-2">
               <Label>Onchain period tag</Label>
               <Select value={selectedPeriodId} onValueChange={setSelectedPeriodId}>
-                <SelectTrigger>
+                <SelectTrigger data-testid="crypto-payment-period-trigger">
                   <SelectValue placeholder="Choose a period tag" />
                 </SelectTrigger>
                 <SelectContent>
@@ -480,7 +480,7 @@ export function ProjectCryptoPaymentDialog({
               Route unavailable in {runtimeConfig.environment}
             </Button>
           ) : !isConnected ? (
-            <Button className="w-full" onClick={() => void openWalletModal()} disabled={!walletEnabled}>
+            <Button className="w-full" onClick={() => void openWalletModal()} disabled={!walletEnabled} data-testid="connect-wallet-button">
               <Wallet className="mr-2 h-4 w-4" />
               Connect wallet
             </Button>
@@ -489,6 +489,7 @@ export function ProjectCryptoPaymentDialog({
               className="w-full"
               onClick={() => void switchChainAsync({ chainId: selectedMethod.chain.evm_chain_id })}
               disabled={busy}
+              data-testid="switch-wallet-chain-button"
             >
               Switch to {selectedMethod.chain.display_name}
             </Button>
@@ -497,12 +498,17 @@ export function ProjectCryptoPaymentDialog({
               Quote required before paying
             </Button>
           ) : approvalRequired && selectedMethod && !selectedMethod.asset.is_native ? (
-            <Button className="w-full" onClick={() => void handleApprove()} disabled={busy}>
+            <Button className="w-full" onClick={() => void handleApprove()} disabled={busy} data-testid="approve-token-button">
               {busy ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
               Approve {selectedMethod.asset.symbol}
             </Button>
           ) : (
-            <Button className="w-full" onClick={() => void handleDeposit()} disabled={busy || !selectedMethod || !payment}>
+            <Button
+              className="w-full"
+              onClick={() => void handleDeposit()}
+              disabled={busy || !selectedMethod || !payment}
+              data-testid="submit-crypto-payment-button"
+            >
               {busy ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
               Submit crypto payment
             </Button>
