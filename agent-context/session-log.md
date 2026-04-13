@@ -12,6 +12,37 @@ Agents populate one level-3 heading for each coding session, following the same 
 
 ---
 
+### session v28: Remove runtime and build warning noise
+- timestamp: 2026-04-13T19:25:53Z
+- agent: **Codex (GPT-5)**
+- branch: **codex/wallet-production-readiness**
+- head: 09fd0017c4e8e2f68c401162f91c30289dd114c5 - feat(wallet): add deployment-safe runtime config
+
+#### Objective
+Clear the remaining warning noise by aligning the repo’s Node baseline with the active runtime, setting an explicit Turbopack root, and stopping the analytics charts from emitting Recharts sizing warnings during builds.
+
+#### Actions Taken
+- Updated `package.json`, `.nvmrc`, `README.md`, and `AGENTS.md` so the repo baseline now targets Node `25.8.2`, matching the runtime already used in this checkout and CI.
+- Kept CI aligned through the existing `.nvmrc`-driven `actions/setup-node` workflow configuration.
+- Added `turbopack.root` in `next.config.mjs` so Next stops inferring the workspace root from unrelated lockfiles outside the repo.
+- Updated `app/analytics/page.tsx` and `components/analytics.tsx` to defer chart rendering until after mount and removed the extra `ResponsiveContainer` wrapper from the homepage analytics component, eliminating the Recharts container-size warnings during static generation.
+- Marked the runtime/build paper-cut item complete in `agent-context/todo.md`.
+
+#### Tests and Validation Notes
+- Ran `pnpm build`.
+- Ran `pnpm check`.
+- Both passed.
+- The previously tracked Node engine warning, Next workspace-root warning, and Recharts sizing warnings no longer appeared during the passing build/check runs.
+- A separate Vitest runtime warning about `--localstorage-file` still appears during tests and was not part of this warning-cleanup pass.
+
+#### Reflections
+- Treating the warning cleanup as a real repo-baseline update was better than suppressing symptoms, because it aligned docs, local tooling, and CI around the same Node runtime.
+- Deferring Recharts rendering until after mount is a pragmatic fix here because these analytics charts are decorative/operational dashboards rather than SEO-critical static content.
+
+#### Suggested Next Steps
+- If the Vitest `--localstorage-file` warning becomes distracting, trace it to the test runner or environment setup as a separate cleanup pass.
+- Continue the production-readiness queue with onchain reconciliation/indexing and remote-backed payment E2E coverage.
+
 ### session v27: Add deployment-safe wallet configuration and audit tooling
 - timestamp: 2026-04-13T19:22:52Z
 - agent: **Codex (GPT-5)**

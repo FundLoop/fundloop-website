@@ -106,9 +106,14 @@ function StatCard({ title, value, description, icon, trend }: StatCardProps) {
 }
 
 export default function AnalyticsPage() {
+  const [mounted, setMounted] = useState(false)
   const [stats, setStats] = useState<MonthlyStats[]>([])
   const [latestStats, setLatestStats] = useState<MonthlyStats | null>(null)
   const getSupabase = () => getSupabaseBrowserClient()
+
+  useEffect(() => {
+    setMounted(true)
+  }, [])
 
   const networkGrowthData =
     stats.length > 0
@@ -203,23 +208,27 @@ export default function AnalyticsPage() {
             <CardDescription>Projects in the network by month</CardDescription>
           </CardHeader>
           <CardContent className="h-[320px] min-w-0">
-            <ChartContainer
-              className="h-full w-full"
-              config={{
-                projects: {
-                  label: "Projects",
-                  color: "hsl(var(--chart-2))",
-                },
-              }}
-            >
-              <LineChart data={networkGrowthData}>
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="name" />
-                <YAxis tickFormatter={(value: number) => compactNumberFormatter.format(value)} />
-                <ChartTooltip content={<ChartTooltipContent />} />
-                <Line type="monotone" dataKey="projects" stroke="var(--color-projects)" name="Projects" strokeWidth={2} />
-              </LineChart>
-            </ChartContainer>
+            {mounted ? (
+              <ChartContainer
+                className="h-full w-full"
+                config={{
+                  projects: {
+                    label: "Projects",
+                    color: "hsl(var(--chart-2))",
+                  },
+                }}
+              >
+                <LineChart data={networkGrowthData}>
+                  <CartesianGrid strokeDasharray="3 3" />
+                  <XAxis dataKey="name" />
+                  <YAxis tickFormatter={(value: number) => compactNumberFormatter.format(value)} />
+                  <ChartTooltip content={<ChartTooltipContent />} />
+                  <Line type="monotone" dataKey="projects" stroke="var(--color-projects)" name="Projects" strokeWidth={2} />
+                </LineChart>
+              </ChartContainer>
+            ) : (
+              <div className="h-full w-full rounded-md bg-slate-100 dark:bg-slate-900/40" />
+            )}
           </CardContent>
         </Card>
 
@@ -229,23 +238,27 @@ export default function AnalyticsPage() {
             <CardDescription>People participating in FundLoop by month</CardDescription>
           </CardHeader>
           <CardContent className="h-[320px] min-w-0">
-            <ChartContainer
-              className="h-full w-full"
-              config={{
-                users: {
-                  label: "Users",
-                  color: "hsl(var(--chart-1))",
-                },
-              }}
-            >
-              <LineChart data={networkGrowthData}>
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="name" />
-                <YAxis tickFormatter={(value: number) => compactNumberFormatter.format(value)} />
-                <ChartTooltip content={<ChartTooltipContent />} />
-                <Line type="monotone" dataKey="users" stroke="var(--color-users)" name="Users" strokeWidth={2} />
-              </LineChart>
-            </ChartContainer>
+            {mounted ? (
+              <ChartContainer
+                className="h-full w-full"
+                config={{
+                  users: {
+                    label: "Users",
+                    color: "hsl(var(--chart-1))",
+                  },
+                }}
+              >
+                <LineChart data={networkGrowthData}>
+                  <CartesianGrid strokeDasharray="3 3" />
+                  <XAxis dataKey="name" />
+                  <YAxis tickFormatter={(value: number) => compactNumberFormatter.format(value)} />
+                  <ChartTooltip content={<ChartTooltipContent />} />
+                  <Line type="monotone" dataKey="users" stroke="var(--color-users)" name="Users" strokeWidth={2} />
+                </LineChart>
+              </ChartContainer>
+            ) : (
+              <div className="h-full w-full rounded-md bg-slate-100 dark:bg-slate-900/40" />
+            )}
           </CardContent>
         </Card>
 
@@ -255,36 +268,40 @@ export default function AnalyticsPage() {
             <CardDescription>Total monthly funds flowing through the network</CardDescription>
           </CardHeader>
           <CardContent className="h-[320px] min-w-0">
-            <ChartContainer
-              className="h-full w-full"
-              config={{
-                funds: {
-                  label: "Funds Collected",
-                  color: "hsl(var(--chart-3))",
-                },
-              }}
-            >
-              <LineChart data={networkGrowthData}>
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="name" />
-                <YAxis tickFormatter={(value: number) => compactCurrencyFormatter.format(value)} />
-                <ChartTooltip
-                  content={
-                    <ChartTooltipContent
-                      formatter={(value, name) => (
-                        <div className="flex min-w-[12rem] items-center justify-between gap-4">
-                          <span className="text-muted-foreground">{name}</span>
-                          <span className="font-mono font-medium tabular-nums text-foreground">
-                            {currencyFormatter.format(Number(value))}
-                          </span>
-                        </div>
-                      )}
-                    />
-                  }
-                />
-                <Line type="monotone" dataKey="funds" stroke="var(--color-funds)" name="Funds Collected" strokeWidth={2} />
-              </LineChart>
-            </ChartContainer>
+            {mounted ? (
+              <ChartContainer
+                className="h-full w-full"
+                config={{
+                  funds: {
+                    label: "Funds Collected",
+                    color: "hsl(var(--chart-3))",
+                  },
+                }}
+              >
+                <LineChart data={networkGrowthData}>
+                  <CartesianGrid strokeDasharray="3 3" />
+                  <XAxis dataKey="name" />
+                  <YAxis tickFormatter={(value: number) => compactCurrencyFormatter.format(value)} />
+                  <ChartTooltip
+                    content={
+                      <ChartTooltipContent
+                        formatter={(value, name) => (
+                          <div className="flex min-w-[12rem] items-center justify-between gap-4">
+                            <span className="text-muted-foreground">{name}</span>
+                            <span className="font-mono font-medium tabular-nums text-foreground">
+                              {currencyFormatter.format(Number(value))}
+                            </span>
+                          </div>
+                        )}
+                      />
+                    }
+                  />
+                  <Line type="monotone" dataKey="funds" stroke="var(--color-funds)" name="Funds Collected" strokeWidth={2} />
+                </LineChart>
+              </ChartContainer>
+            ) : (
+              <div className="h-full w-full rounded-md bg-slate-100 dark:bg-slate-900/40" />
+            )}
           </CardContent>
         </Card>
 
@@ -294,65 +311,69 @@ export default function AnalyticsPage() {
             <CardDescription>Monthly salary range and average per participant</CardDescription>
           </CardHeader>
           <CardContent className="h-[320px] min-w-0">
-            <ChartContainer
-              className="h-full w-full"
-              config={{
-                salary_min: {
-                  label: "Minimum",
-                  color: "hsl(var(--chart-4))",
-                },
-                salary_avg: {
-                  label: "Average",
-                  color: "hsl(var(--chart-1))",
-                },
-                salary_max: {
-                  label: "Maximum",
-                  color: "hsl(var(--chart-5))",
-                },
-              }}
-            >
-              <LineChart data={networkGrowthData}>
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="name" />
-                <YAxis tickFormatter={(value: number) => compactCurrencyFormatter.format(value)} />
-                <ChartTooltip
-                  content={
-                    <ChartTooltipContent
-                      formatter={(value, name) => (
-                        <div className="flex min-w-[12rem] items-center justify-between gap-4">
-                          <span className="text-muted-foreground">{name}</span>
-                          <span className="font-mono font-medium tabular-nums text-foreground">
-                            {currencyFormatter.format(Number(value))}
-                          </span>
-                        </div>
-                      )}
-                    />
-                  }
-                />
-                <Legend />
-                <Line
-                  type="monotone"
-                  dataKey="salary_min"
-                  stroke="var(--color-salary_min)"
-                  name="Minimum"
-                  strokeWidth={2}
-                />
-                <Line
-                  type="monotone"
-                  dataKey="salary_avg"
-                  stroke="var(--color-salary_avg)"
-                  name="Average"
-                  strokeWidth={2}
-                />
-                <Line
-                  type="monotone"
-                  dataKey="salary_max"
-                  stroke="var(--color-salary_max)"
-                  name="Maximum"
-                  strokeWidth={2}
-                />
-              </LineChart>
-            </ChartContainer>
+            {mounted ? (
+              <ChartContainer
+                className="h-full w-full"
+                config={{
+                  salary_min: {
+                    label: "Minimum",
+                    color: "hsl(var(--chart-4))",
+                  },
+                  salary_avg: {
+                    label: "Average",
+                    color: "hsl(var(--chart-1))",
+                  },
+                  salary_max: {
+                    label: "Maximum",
+                    color: "hsl(var(--chart-5))",
+                  },
+                }}
+              >
+                <LineChart data={networkGrowthData}>
+                  <CartesianGrid strokeDasharray="3 3" />
+                  <XAxis dataKey="name" />
+                  <YAxis tickFormatter={(value: number) => compactCurrencyFormatter.format(value)} />
+                  <ChartTooltip
+                    content={
+                      <ChartTooltipContent
+                        formatter={(value, name) => (
+                          <div className="flex min-w-[12rem] items-center justify-between gap-4">
+                            <span className="text-muted-foreground">{name}</span>
+                            <span className="font-mono font-medium tabular-nums text-foreground">
+                              {currencyFormatter.format(Number(value))}
+                            </span>
+                          </div>
+                        )}
+                      />
+                    }
+                  />
+                  <Legend />
+                  <Line
+                    type="monotone"
+                    dataKey="salary_min"
+                    stroke="var(--color-salary_min)"
+                    name="Minimum"
+                    strokeWidth={2}
+                  />
+                  <Line
+                    type="monotone"
+                    dataKey="salary_avg"
+                    stroke="var(--color-salary_avg)"
+                    name="Average"
+                    strokeWidth={2}
+                  />
+                  <Line
+                    type="monotone"
+                    dataKey="salary_max"
+                    stroke="var(--color-salary_max)"
+                    name="Maximum"
+                    strokeWidth={2}
+                  />
+                </LineChart>
+              </ChartContainer>
+            ) : (
+              <div className="h-full w-full rounded-md bg-slate-100 dark:bg-slate-900/40" />
+            )}
           </CardContent>
         </Card>
       </div>

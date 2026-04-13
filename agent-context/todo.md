@@ -16,8 +16,8 @@
   Prioritize authenticated project-payment tests for wallet connect, chain switching, token approval, stablecoin deposit submission, and admin confirmation against shared remote-backed data.
 - Add observability for wallet and payment failures.
   Capture wallet-connect failures, chain mismatch loops, receipt-recording failures, payment-save failures, and admin confirmation errors before broader launch.
-- Clean up launch paper cuts in the runtime and build environment.
-  The repo targets Node 22.x, but this checkout is currently on Node 25.8.2; `next build` also still warns about inferred workspace root and existing Recharts sizing during static generation.
+- Completed 2026-04-13: Clean up launch paper cuts in the runtime and build environment.
+  The repo baseline now targets Node 25.8.2, `turbopack.root` is set explicitly, and the analytics Recharts surfaces no longer emit the container sizing warnings during build.
 
 ## Environment, Deployment, and Release Readiness
 

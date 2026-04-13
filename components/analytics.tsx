@@ -7,7 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Skeleton } from "@/components/ui/skeleton"
 import { DollarSign, Users, Building2 } from "lucide-react"
-import { Line, LineChart, XAxis, YAxis, CartesianGrid, Legend, ResponsiveContainer } from "recharts"
+import { Line, LineChart, XAxis, YAxis, CartesianGrid, Legend } from "recharts"
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart"
 import type { Database, Tables } from "@/types/supabase"
 
@@ -22,10 +22,15 @@ type FormattedStats = {
 }
 
 export default function Analytics() {
+  const [mounted, setMounted] = useState(false)
   const [stats, setStats] = useState<FormattedStats[]>([])
   const [loading, setLoading] = useState(true)
   const [latestStats, setLatestStats] = useState<FormattedStats | null>(null)
   const getSupabase = () => getSupabaseBrowserClient()
+
+  useEffect(() => {
+    setMounted(true)
+  }, [])
 
   useEffect(() => {
     const fetchStats = async () => {
@@ -143,12 +148,13 @@ export default function Analytics() {
           <CardTitle>Network Growth</CardTitle>
         </CardHeader>
         <CardContent className="h-[300px]">
-          {loading ? (
+          {loading || !mounted ? (
             <div className="h-full w-full flex items-center justify-center">
               <Skeleton className="h-full w-full" />
             </div>
           ) : (
             <ChartContainer
+              className="h-full w-full"
               config={{
                 funds: {
                   label: "Total Funds ($)",
@@ -164,40 +170,38 @@ export default function Analytics() {
                 },
               }}
             >
-              <ResponsiveContainer width="100%" height="80%">
-                <LineChart data={stats}>
-                  <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis dataKey="month" />
-                  <YAxis yAxisId="left" orientation="left" />
-                  <YAxis yAxisId="right" orientation="right" />
-                  <ChartTooltip content={<ChartTooltipContent />} />
-                  <Legend />
-                  <Line
-                    yAxisId="left"
-                    type="monotone"
-                    dataKey="total_funds"
-                    stroke="var(--color-funds)"
-                    name="Total Funds"
-                    strokeWidth={2}
-                  />
-                  <Line
-                    yAxisId="left"
-                    type="monotone"
-                    dataKey="user_count"
-                    stroke="var(--color-users)"
-                    name="Users"
-                    strokeWidth={2}
-                  />
-                  <Line
-                    yAxisId="right"
-                    type="monotone"
-                    dataKey="avg_salary"
-                    stroke="var(--color-salary)"
-                    name="Citizen Salary"
-                    strokeWidth={2}
-                  />
-                </LineChart>
-              </ResponsiveContainer>
+              <LineChart data={stats}>
+                <CartesianGrid strokeDasharray="3 3" />
+                <XAxis dataKey="month" />
+                <YAxis yAxisId="left" orientation="left" />
+                <YAxis yAxisId="right" orientation="right" />
+                <ChartTooltip content={<ChartTooltipContent />} />
+                <Legend />
+                <Line
+                  yAxisId="left"
+                  type="monotone"
+                  dataKey="total_funds"
+                  stroke="var(--color-funds)"
+                  name="Total Funds"
+                  strokeWidth={2}
+                />
+                <Line
+                  yAxisId="left"
+                  type="monotone"
+                  dataKey="user_count"
+                  stroke="var(--color-users)"
+                  name="Users"
+                  strokeWidth={2}
+                />
+                <Line
+                  yAxisId="right"
+                  type="monotone"
+                  dataKey="avg_salary"
+                  stroke="var(--color-salary)"
+                  name="Citizen Salary"
+                  strokeWidth={2}
+                />
+              </LineChart>
             </ChartContainer>
           )}
         </CardContent>

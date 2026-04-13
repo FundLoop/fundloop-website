@@ -17,7 +17,7 @@ This repository contains the FundLoop website and app shell built with Next.js, 
 
 ### Prerequisites
 
-- Node.js 22.x
+- Node.js 25.8.2
 - pnpm 10.x
 
 ### Clone and install
