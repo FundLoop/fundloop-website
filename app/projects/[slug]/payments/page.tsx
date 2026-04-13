@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useEffect, useMemo, useState } from "react"
 import { useParams } from "next/navigation"
 import Link from "next/link"
 import { format, addDays, subDays, startOfWeek, endOfWeek, startOfMonth, endOfMonth } from "date-fns"
@@ -13,11 +13,16 @@ import { Table, TableBody, TableCaption, TableCell, TableHead, TableHeader, Tabl
 import { Badge } from "@/components/ui/badge"
 import { toast } from "@/components/ui/use-toast"
 import { getSupabaseBrowserClient } from "@/lib/supabase"
-import { createProjectPaymentDrafts, listProjectCryptoPaymentMethods } from "@/app/actions/project-payment-actions"
+import {
+  createProjectPaymentDrafts,
+  listProjectManagedCryptoPaymentMethods,
+  type ManagedCryptoPaymentMethodSummary,
+} from "@/app/actions/project-payment-actions"
 import {
   ProjectCryptoPaymentDialog,
   type CryptoPaymentMethodOption,
 } from "@/components/project-crypto-payment-dialog"
+import { ProjectCryptoRouteManager } from "@/components/project-crypto-route-manager"
 import { ArrowLeft, Plus, Calculator, Save, AlertTriangle, Trash2, Info } from "lucide-react"
 
 interface PaymentMethod {
@@ -109,9 +114,42 @@ export default function ProjectPaymentsPage() {
   const [newPaymentRows, setNewPaymentRows] = useState<NewPaymentRow[]>([])
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
-  const [cryptoPaymentMethods, setCryptoPaymentMethods] = useState<CryptoPaymentMethodOption[]>([])
+  const [managedCryptoPaymentMethods, setManagedCryptoPaymentMethods] = useState<ManagedCryptoPaymentMethodSummary[]>([])
   const [cryptoPaymentDialogOpen, setCryptoPaymentDialogOpen] = useState(false)
   const [paymentToPay, setPaymentToPay] = useState<Payment | null>(null)
+
+  const cryptoPaymentMethods = useMemo<CryptoPaymentMethodOption[]>(
+    () =>
+      managedCryptoPaymentMethods
+        .filter((method) => method.is_enabled)
+        .map((method) => ({
+          id: method.id,
+          label: method.label,
+          is_default: method.is_default,
+          chain: {
+            id: method.chain.id,
+            display_name: method.chain.display_name,
+            network_key: method.chain.network_key,
+            evm_chain_id: method.chain.evm_chain_id,
+            native_asset_symbol: method.chain.native_asset_symbol,
+          },
+          asset: {
+            id: method.asset.id,
+            symbol: method.asset.symbol,
+            name: method.asset.name,
+            token_address: method.asset.token_address,
+            decimals: method.asset.decimals,
+            is_native: method.asset.is_native,
+            is_stablecoin: method.asset.is_stablecoin,
+          },
+          intakeContract: {
+            id: method.intakeContract.id,
+            contract_address: method.intakeContract.contract_address,
+            treasury_address: method.intakeContract.treasury_address,
+          },
+        })),
+    [managedCryptoPaymentMethods],
+  )
 
   useEffect(() => {
     const fetchProjectData = async () => {
@@ -192,44 +230,9 @@ export default function ProjectPaymentsPage() {
         setProject(projectData ? { ...projectData, slug: projectData.slug ?? slug } : null)
         setPayments(transformedPayments)
 
-        const cryptoRoutesResult = await listProjectCryptoPaymentMethods(slug)
+        const cryptoRoutesResult = await listProjectManagedCryptoPaymentMethods(slug)
         if (cryptoRoutesResult.ok) {
-          const validMethods = cryptoRoutesResult.data.filter(
-            (method) => method.ref_chains && method.ref_chain_assets && method.chain_intake_contracts,
-          )
-
-          if (validMethods.length < cryptoRoutesResult.data.length) {
-            console.warn("Some crypto payment methods were skipped because required relations were missing.")
-          }
-
-          setCryptoPaymentMethods(
-            validMethods.map((method) => ({
-              id: method.id,
-              label: method.label,
-              is_default: method.is_default,
-              chain: {
-                id: method.ref_chains.id,
-                display_name: method.ref_chains.display_name ?? method.ref_chains.network_key ?? "Unknown chain",
-                network_key: method.ref_chains.network_key ?? "unknown",
-                evm_chain_id: method.ref_chains.evm_chain_id ?? 0,
-                native_asset_symbol: method.ref_chains.native_asset_symbol ?? "TOKEN",
-              },
-              asset: {
-                id: method.ref_chain_assets.id,
-                symbol: method.ref_chain_assets.symbol,
-                name: method.ref_chain_assets.name,
-                token_address: method.ref_chain_assets.token_address,
-                decimals: method.ref_chain_assets.decimals,
-                is_native: method.ref_chain_assets.is_native ?? false,
-                is_stablecoin: method.ref_chain_assets.is_stablecoin ?? false,
-              },
-              intakeContract: {
-                id: method.chain_intake_contracts.id,
-                contract_address: method.chain_intake_contracts.contract_address,
-                treasury_address: method.chain_intake_contracts.treasury_address,
-              },
-            })),
-          )
+          setManagedCryptoPaymentMethods(cryptoRoutesResult.data)
         }
 
         setNewPaymentRows([
@@ -514,35 +517,11 @@ export default function ProjectPaymentsPage() {
       </div>
 
       <div className="space-y-8">
-        <Card>
-          <CardHeader>
-            <CardTitle>Crypto collection routes</CardTitle>
-            <CardDescription>
-              Preferred onchain routes configured for this project. Payments sent through these routes are tagged with the project ID.
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            {cryptoPaymentMethods.length === 0 ? (
-              <p className="text-sm text-slate-500">
-                No crypto routes are configured yet. Add them in project onboarding or before the next collection cycle.
-              </p>
-            ) : (
-              <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-                {cryptoPaymentMethods.map((method) => (
-                  <div key={method.id} className="rounded-2xl border bg-slate-50/60 p-4 text-sm text-slate-700">
-                    <p className="font-medium text-slate-900">
-                      {method.label || `${method.chain.display_name} ${method.asset.symbol}`}
-                    </p>
-                    <p>{method.chain.display_name}</p>
-                    <p>{method.asset.symbol}</p>
-                    <p className="break-all text-xs text-slate-500">{method.intakeContract.contract_address}</p>
-                    {method.is_default ? <Badge className="mt-3">Default</Badge> : null}
-                  </div>
-                ))}
-              </div>
-            )}
-          </CardContent>
-        </Card>
+        <ProjectCryptoRouteManager
+          projectSlug={slug}
+          routes={managedCryptoPaymentMethods}
+          onRoutesChange={setManagedCryptoPaymentMethods}
+        />
 
         {/* Add New Payments Section */}
         <Card>

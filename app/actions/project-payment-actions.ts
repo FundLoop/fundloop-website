@@ -3,6 +3,13 @@
 import { revalidatePath } from "next/cache"
 import { createServerSupabaseClient } from "@/lib/supabase-server"
 import { getAdminSupabaseClient } from "@/lib/supabase-admin"
+import {
+  getPromotedDefaultRouteId,
+  moveProjectCryptoRouteState,
+  renumberProjectCryptoRouteStates,
+  type RouteMoveDirection,
+  type ProjectCryptoRouteState,
+} from "@/lib/project-crypto-routes"
 import { requireInternalAdminActor } from "@/lib/zkas/auth"
 import { validateProjectPaymentDrafts, type ProjectPaymentDraftInput } from "@/lib/payments"
 import type { Json, Tables } from "@/types/supabase"
@@ -32,28 +39,174 @@ export type PaymentRecordSummary = {
   notes: string | null
 }
 
-type CryptoPaymentMethodRow = {
+export type ManagedCryptoPaymentMethodSummary = {
+  id: number
+  label: string | null
+  is_default: boolean
+  is_enabled: boolean
+  sort_order: number
+  chain: {
+    id: number
+    display_name: string
+    network_key: string
+    evm_chain_id: number
+    native_asset_symbol: string
+    is_active: boolean
+  }
+  asset: {
+    id: number
+    symbol: string
+    name: string
+    token_address: string | null
+    decimals: number
+    is_native: boolean
+    is_stablecoin: boolean
+    is_active: boolean
+  }
+  intakeContract: {
+    id: number
+    contract_address: string
+    treasury_address: string
+    abi_version: string
+    is_active: boolean
+  }
+}
+
+type ManagedCryptoPaymentMethodRow = {
   id: number
   method_id: number
   project_id: number | null
   label: string | null
   is_default: boolean | null
+  is_enabled: boolean
+  sort_order: number
   chain_id: number | null
   chain_asset_id: number | null
   intake_contract_id: number | null
   collection_mode: "contract" | "deposit_address"
-  ref_chains: Pick<Tables<"ref_chains">, "id" | "display_name" | "network_key" | "evm_chain_id" | "native_asset_symbol">
+  ref_chains: Pick<
+    Tables<"ref_chains">,
+    "id" | "display_name" | "network_key" | "evm_chain_id" | "native_asset_symbol" | "is_active"
+  >
   ref_chain_assets: Pick<
     Tables<"ref_chain_assets">,
-    "id" | "symbol" | "name" | "token_address" | "decimals" | "is_native" | "is_stablecoin"
+    "id" | "symbol" | "name" | "token_address" | "decimals" | "is_native" | "is_stablecoin" | "is_active"
   >
-  chain_intake_contracts: Pick<Tables<"chain_intake_contracts">, "id" | "contract_address" | "treasury_address" | "abi_version">
+  chain_intake_contracts: Pick<
+    Tables<"chain_intake_contracts">,
+    "id" | "contract_address" | "treasury_address" | "abi_version" | "is_active"
+  >
 }
+
+type MinimalCryptoPaymentMethodRow = Pick<
+  Tables<"payment_methods">,
+  | "id"
+  | "project_id"
+  | "method_id"
+  | "chain_id"
+  | "chain_asset_id"
+  | "intake_contract_id"
+  | "is_default"
+  | "is_enabled"
+  | "sort_order"
+  | "collection_mode"
+>
+
+type PaymentMethodReferenceRow = Pick<Tables<"ref_payment_methods">, "id">
 
 type ProjectContext = {
   userId: string
-  project: Pick<Tables<"projects">, "id" | "slug" | "name" | "organization_id">
+  project: Pick<Tables<"projects">, "id" | "slug" | "name" | "organization_id" | "default_payment_method_id">
 }
+
+type RecordOnchainPaymentInput = {
+  projectSlug: string
+  paymentId: number
+  paymentMethodId: number
+  txHash: string
+  walletAddress: string
+  amountRaw: string
+  amountDecimal: string
+  periodId: number
+  chainId: number
+  chainAssetId: number
+  intakeContractId: number
+  blockNumber?: number | null
+  receipt: Json
+}
+
+type CreateProjectPaymentDraftsInput = {
+  projectSlug: string
+  payments: ProjectPaymentDraftInput[]
+}
+
+type CreateProjectCryptoPaymentMethodInput = {
+  projectSlug: string
+  chainId: number
+  chainAssetId: number
+  intakeContractId: number
+  label: string
+  isDefault?: boolean
+}
+
+type UpdateProjectCryptoPaymentMethodInput = {
+  projectSlug: string
+  paymentMethodId: number
+  chainId: number
+  chainAssetId: number
+  intakeContractId: number
+  label: string
+  isDefault: boolean
+}
+
+type MoveProjectCryptoPaymentMethodInput = {
+  projectSlug: string
+  paymentMethodId: number
+  direction: RouteMoveDirection
+}
+
+type ToggleProjectCryptoPaymentMethodEnabledInput = {
+  projectSlug: string
+  paymentMethodId: number
+  enabled: boolean
+}
+
+type InsertedPaymentRow = {
+  id: number
+  project_id: number | null
+  period_start: string
+  period_end: string
+  revenue: number
+  payment_amount: number
+  payment_percentage: number
+  payment_method_id: number | null
+  status_id: number | null
+  notes: string | null
+  created_at: string | null
+  updated_at: string | null
+  paid_at: string | null
+  confirmed_at: string | null
+  projects: Pick<Tables<"projects">, "name" | "slug"> | null
+  ref_payment_methods: Pick<Tables<"ref_payment_methods">, "name" | "code"> | null
+  ref_payment_statuses: Pick<Tables<"ref_payment_statuses">, "name" | "code"> | null
+}
+
+const MANAGED_CRYPTO_PAYMENT_METHOD_SELECT = `
+  id,
+  method_id,
+  project_id,
+  label,
+  is_default,
+  is_enabled,
+  sort_order,
+  chain_id,
+  chain_asset_id,
+  intake_contract_id,
+  collection_mode,
+  ref_chains!inner(id, display_name, network_key, evm_chain_id, native_asset_symbol, is_active),
+  ref_chain_assets!inner(id, symbol, name, token_address, decimals, is_native, is_stablecoin, is_active),
+  chain_intake_contracts!inner(id, contract_address, treasury_address, abi_version, is_active)
+`
 
 async function getAuthenticatedUserId() {
   const supabase = await createServerSupabaseClient()
@@ -78,7 +231,7 @@ async function getProjectAdminContext(projectSlug: string): Promise<ActionResult
   const { supabase, userId } = auth
   const { data: project, error: projectError } = await supabase
     .from("projects")
-    .select("id, slug, name, organization_id")
+    .select("id, slug, name, organization_id, default_payment_method_id")
     .eq("slug", projectSlug)
     .single()
 
@@ -120,91 +273,6 @@ async function getProjectAdminContext(projectSlug: string): Promise<ActionResult
   return { ok: false, error: "You do not have permission to manage payments for this project" }
 }
 
-export async function listProjectCryptoPaymentMethods(projectSlug: string): Promise<ActionResult<CryptoPaymentMethodRow[]>> {
-  const context = await getProjectAdminContext(projectSlug)
-  if (!context.ok) {
-    return context
-  }
-
-  const auth = await getAuthenticatedUserId()
-  if (!auth.ok) {
-    return { ok: false, error: auth.error }
-  }
-
-  const { supabase } = auth
-  const { data, error } = await supabase
-    .from("payment_methods")
-    .select(`
-      id,
-      method_id,
-      project_id,
-      label,
-      is_default,
-      chain_id,
-      chain_asset_id,
-      intake_contract_id,
-      collection_mode,
-      ref_chains!inner(id, display_name, network_key, evm_chain_id, native_asset_symbol),
-      ref_chain_assets!inner(id, symbol, name, token_address, decimals, is_native, is_stablecoin),
-      chain_intake_contracts!inner(id, contract_address, treasury_address, abi_version)
-    `)
-    .eq("project_id", context.data.project.id)
-    .eq("collection_mode", "contract")
-    .eq("is_enabled", true)
-    .not("chain_id", "is", null)
-    .not("chain_asset_id", "is", null)
-    .not("intake_contract_id", "is", null)
-    .order("is_default", { ascending: false })
-    .order("id", { ascending: true })
-
-  if (error) {
-    return { ok: false, error: error.message }
-  }
-
-  return { ok: true, data: (data ?? []) as CryptoPaymentMethodRow[] }
-}
-
-type RecordOnchainPaymentInput = {
-  projectSlug: string
-  paymentId: number
-  paymentMethodId: number
-  txHash: string
-  walletAddress: string
-  amountRaw: string
-  amountDecimal: string
-  periodId: number
-  chainId: number
-  chainAssetId: number
-  intakeContractId: number
-  blockNumber?: number | null
-  receipt: Json
-}
-
-type CreateProjectPaymentDraftsInput = {
-  projectSlug: string
-  payments: ProjectPaymentDraftInput[]
-}
-
-type InsertedPaymentRow = {
-  id: number
-  project_id: number | null
-  period_start: string
-  period_end: string
-  revenue: number
-  payment_amount: number
-  payment_percentage: number
-  payment_method_id: number | null
-  status_id: number | null
-  notes: string | null
-  created_at: string | null
-  updated_at: string | null
-  paid_at: string | null
-  confirmed_at: string | null
-  projects: Pick<Tables<"projects">, "name" | "slug"> | null
-  ref_payment_methods: Pick<Tables<"ref_payment_methods">, "name" | "code"> | null
-  ref_payment_statuses: Pick<Tables<"ref_payment_statuses">, "name" | "code"> | null
-}
-
 function mapPaymentSummary(row: InsertedPaymentRow): PaymentRecordSummary {
   return {
     id: row.id,
@@ -230,6 +298,570 @@ function mapPaymentSummary(row: InsertedPaymentRow): PaymentRecordSummary {
   }
 }
 
+function mapManagedCryptoPaymentMethodSummary(row: ManagedCryptoPaymentMethodRow): ManagedCryptoPaymentMethodSummary {
+  return {
+    id: row.id,
+    label: row.label,
+    is_default: Boolean(row.is_default),
+    is_enabled: row.is_enabled,
+    sort_order: row.sort_order,
+    chain: {
+      id: row.ref_chains.id,
+      display_name: row.ref_chains.display_name,
+      network_key: row.ref_chains.network_key,
+      evm_chain_id: row.ref_chains.evm_chain_id,
+      native_asset_symbol: row.ref_chains.native_asset_symbol,
+      is_active: row.ref_chains.is_active,
+    },
+    asset: {
+      id: row.ref_chain_assets.id,
+      symbol: row.ref_chain_assets.symbol,
+      name: row.ref_chain_assets.name,
+      token_address: row.ref_chain_assets.token_address,
+      decimals: row.ref_chain_assets.decimals,
+      is_native: row.ref_chain_assets.is_native,
+      is_stablecoin: row.ref_chain_assets.is_stablecoin,
+      is_active: row.ref_chain_assets.is_active,
+    },
+    intakeContract: {
+      id: row.chain_intake_contracts.id,
+      contract_address: row.chain_intake_contracts.contract_address,
+      treasury_address: row.chain_intake_contracts.treasury_address,
+      abi_version: row.chain_intake_contracts.abi_version,
+      is_active: row.chain_intake_contracts.is_active,
+    },
+  }
+}
+
+async function getCryptoContractMethodId() {
+  const supabase = getAdminSupabaseClient()
+  const { data, error } = await supabase.from("ref_payment_methods").select("id").eq("code", "crypto_contract").single()
+
+  if (error || !data) {
+    throw new Error(error?.message ?? "Crypto payment method reference is missing")
+  }
+
+  return data.id
+}
+
+async function listProjectManagedCryptoPaymentMethodsForProjectId(projectId: number) {
+  const supabase = getAdminSupabaseClient()
+  const { data, error } = await supabase
+    .from("payment_methods")
+    .select(MANAGED_CRYPTO_PAYMENT_METHOD_SELECT)
+    .eq("project_id", projectId)
+    .eq("collection_mode", "contract")
+    .not("chain_id", "is", null)
+    .not("chain_asset_id", "is", null)
+    .not("intake_contract_id", "is", null)
+    .order("sort_order", { ascending: true })
+    .order("id", { ascending: true })
+
+  if (error) {
+    throw new Error(error.message)
+  }
+
+  return ((data ?? []) as ManagedCryptoPaymentMethodRow[]).map(mapManagedCryptoPaymentMethodSummary)
+}
+
+async function getProjectCryptoRouteStates(projectId: number) {
+  const supabase = getAdminSupabaseClient()
+  const { data, error } = await supabase
+    .from("payment_methods")
+    .select("id, is_enabled, is_default, sort_order")
+    .eq("project_id", projectId)
+    .eq("collection_mode", "contract")
+    .order("sort_order", { ascending: true })
+    .order("id", { ascending: true })
+
+  if (error) {
+    throw new Error(error.message)
+  }
+
+  return ((data ?? []) as ProjectCryptoRouteState[]).map((state) => ({
+    id: state.id,
+    is_enabled: Boolean(state.is_enabled),
+    is_default: Boolean(state.is_default),
+    sort_order: state.sort_order,
+  }))
+}
+
+async function validateManagedCryptoRouteReferences(input: {
+  chainId: number
+  chainAssetId: number
+  intakeContractId: number
+}) {
+  const supabase = getAdminSupabaseClient()
+  const [{ data: chain }, { data: asset }, { data: intakeContract }] = await Promise.all([
+    supabase.from("ref_chains").select("id, is_active").eq("id", input.chainId).single(),
+    supabase.from("ref_chain_assets").select("id, chain_id, is_active").eq("id", input.chainAssetId).single(),
+    supabase
+      .from("chain_intake_contracts")
+      .select("id, chain_id, collection_mode, is_active")
+      .eq("id", input.intakeContractId)
+      .single(),
+  ])
+
+  if (!chain?.is_active) {
+    return { ok: false as const, error: "The selected chain is no longer active." }
+  }
+
+  if (!asset?.is_active || asset.chain_id !== input.chainId) {
+    return { ok: false as const, error: "The selected token is invalid for that chain." }
+  }
+
+  if (
+    !intakeContract?.is_active ||
+    intakeContract.chain_id !== input.chainId ||
+    intakeContract.collection_mode !== "contract"
+  ) {
+    return { ok: false as const, error: "The selected intake contract is invalid for that chain." }
+  }
+
+  return { ok: true as const }
+}
+
+async function ensureNoDuplicateEnabledCryptoRoute(input: {
+  projectId: number
+  chainId: number
+  chainAssetId: number
+  intakeContractId: number
+  excludePaymentMethodId?: number
+}) {
+  const supabase = getAdminSupabaseClient()
+  let query = supabase
+    .from("payment_methods")
+    .select("id")
+    .eq("project_id", input.projectId)
+    .eq("collection_mode", "contract")
+    .eq("is_enabled", true)
+    .eq("chain_id", input.chainId)
+    .eq("chain_asset_id", input.chainAssetId)
+    .eq("intake_contract_id", input.intakeContractId)
+
+  if (input.excludePaymentMethodId) {
+    query = query.neq("id", input.excludePaymentMethodId)
+  }
+
+  const { data, error } = await query.limit(1)
+  if (error) {
+    throw new Error(error.message)
+  }
+
+  if ((data ?? []).length > 0) {
+    return {
+      ok: false as const,
+      error: "This crypto route is already enabled for the project. Disable the existing one before reusing it.",
+    }
+  }
+
+  return { ok: true as const }
+}
+
+async function syncProjectCryptoContractDefault(project: ProjectContext["project"], cryptoContractMethodId: number) {
+  const supabase = getAdminSupabaseClient()
+  const { count, error } = await supabase
+    .from("payment_methods")
+    .select("id", { count: "exact", head: true })
+    .eq("project_id", project.id)
+    .eq("collection_mode", "contract")
+    .eq("is_enabled", true)
+
+  if (error) {
+    throw new Error(error.message)
+  }
+
+  if ((count ?? 0) > 0) {
+    const { error: updateError } = await supabase
+      .from("projects")
+      .update({ default_payment_method_id: cryptoContractMethodId })
+      .eq("id", project.id)
+
+    if (updateError) {
+      throw new Error(updateError.message)
+    }
+
+    return
+  }
+
+  if (project.default_payment_method_id === cryptoContractMethodId) {
+    const { error: clearError } = await supabase
+      .from("projects")
+      .update({ default_payment_method_id: null })
+      .eq("id", project.id)
+
+    if (clearError) {
+      throw new Error(clearError.message)
+    }
+  }
+}
+
+async function applyProjectCryptoRouteStates(projectId: number, states: ProjectCryptoRouteState[]) {
+  const supabase = getAdminSupabaseClient()
+  const normalizedStates = renumberProjectCryptoRouteStates(states)
+
+  for (const state of normalizedStates) {
+    const { error } = await supabase
+      .from("payment_methods")
+      .update({
+        is_enabled: state.is_enabled,
+        is_default: Boolean(state.is_default),
+        sort_order: state.sort_order,
+      })
+      .eq("id", state.id)
+      .eq("project_id", projectId)
+
+    if (error) {
+      throw new Error(error.message)
+    }
+  }
+}
+
+function normalizeManagedRouteLabel(label: string) {
+  const next = label.trim()
+  return next.length > 0 ? next : null
+}
+
+async function refreshProjectManagedRoutes(project: ProjectContext["project"]) {
+  const routes = await listProjectManagedCryptoPaymentMethodsForProjectId(project.id)
+  revalidatePath(`/projects/${project.slug}/payments`)
+  return routes
+}
+
+export async function listProjectManagedCryptoPaymentMethods(
+  projectSlug: string,
+): Promise<ActionResult<ManagedCryptoPaymentMethodSummary[]>> {
+  const context = await getProjectAdminContext(projectSlug)
+  if (!context.ok) {
+    return context
+  }
+
+  try {
+    return {
+      ok: true,
+      data: await listProjectManagedCryptoPaymentMethodsForProjectId(context.data.project.id),
+    }
+  } catch (error) {
+    return {
+      ok: false,
+      error: error instanceof Error ? error.message : "Could not load crypto payment routes.",
+    }
+  }
+}
+
+export async function listProjectCryptoPaymentMethods(
+  projectSlug: string,
+): Promise<ActionResult<ManagedCryptoPaymentMethodSummary[]>> {
+  const context = await getProjectAdminContext(projectSlug)
+  if (!context.ok) {
+    return context
+  }
+
+  try {
+    const routes = await listProjectManagedCryptoPaymentMethodsForProjectId(context.data.project.id)
+    return {
+      ok: true,
+      data: routes.filter((route) => route.is_enabled),
+    }
+  } catch (error) {
+    return {
+      ok: false,
+      error: error instanceof Error ? error.message : "Could not load active crypto payment routes.",
+    }
+  }
+}
+
+export async function createProjectCryptoPaymentMethod(
+  input: CreateProjectCryptoPaymentMethodInput,
+): Promise<ActionResult<ManagedCryptoPaymentMethodSummary[]>> {
+  const context = await getProjectAdminContext(input.projectSlug)
+  if (!context.ok) {
+    return context
+  }
+
+  const referenceValidation = await validateManagedCryptoRouteReferences(input)
+  if (!referenceValidation.ok) {
+    return referenceValidation
+  }
+
+  try {
+    const cryptoContractMethodId = await getCryptoContractMethodId()
+    const duplicateValidation = await ensureNoDuplicateEnabledCryptoRoute({
+      projectId: context.data.project.id,
+      chainId: input.chainId,
+      chainAssetId: input.chainAssetId,
+      intakeContractId: input.intakeContractId,
+    })
+
+    if (!duplicateValidation.ok) {
+      return duplicateValidation
+    }
+
+    const currentStates = await getProjectCryptoRouteStates(context.data.project.id)
+    const shouldDefault = input.isDefault || currentStates.filter((route) => route.is_enabled).length === 0
+
+    const supabase = getAdminSupabaseClient()
+
+    if (shouldDefault) {
+      const { error: clearDefaultError } = await supabase
+        .from("payment_methods")
+        .update({ is_default: false })
+        .eq("project_id", context.data.project.id)
+        .eq("collection_mode", "contract")
+
+      if (clearDefaultError) {
+        return { ok: false, error: clearDefaultError.message }
+      }
+    }
+
+    const { error: insertError } = await supabase.from("payment_methods").insert({
+      project_id: context.data.project.id,
+      method_id: cryptoContractMethodId,
+      collection_mode: "contract",
+      chain_id: input.chainId,
+      chain_asset_id: input.chainAssetId,
+      intake_contract_id: input.intakeContractId,
+      is_default: shouldDefault,
+      is_enabled: true,
+      label: normalizeManagedRouteLabel(input.label),
+      sort_order: currentStates.length + 1,
+      details: {
+        manager_source: "project_payments_v2",
+        preferred_chain_asset_id: input.chainAssetId,
+      },
+    })
+
+    if (insertError) {
+      return { ok: false, error: insertError.message }
+    }
+
+    await syncProjectCryptoContractDefault(context.data.project, cryptoContractMethodId)
+
+    return {
+      ok: true,
+      data: await refreshProjectManagedRoutes(context.data.project),
+    }
+  } catch (error) {
+    return {
+      ok: false,
+      error: error instanceof Error ? error.message : "Could not add the crypto route.",
+    }
+  }
+}
+
+export async function updateProjectCryptoPaymentMethod(
+  input: UpdateProjectCryptoPaymentMethodInput,
+): Promise<ActionResult<ManagedCryptoPaymentMethodSummary[]>> {
+  const context = await getProjectAdminContext(input.projectSlug)
+  if (!context.ok) {
+    return context
+  }
+
+  const referenceValidation = await validateManagedCryptoRouteReferences(input)
+  if (!referenceValidation.ok) {
+    return referenceValidation
+  }
+
+  try {
+    const supabase = getAdminSupabaseClient()
+    const { data: route, error: routeError } = await supabase
+      .from("payment_methods")
+      .select(
+        "id, project_id, method_id, chain_id, chain_asset_id, intake_contract_id, is_default, is_enabled, sort_order, collection_mode",
+      )
+      .eq("id", input.paymentMethodId)
+      .eq("project_id", context.data.project.id)
+      .single()
+
+    if (routeError || !route || route.collection_mode !== "contract") {
+      return { ok: false, error: routeError?.message ?? "Crypto route not found." }
+    }
+
+    if (!route.is_enabled && input.isDefault) {
+      return { ok: false, error: "Disabled routes cannot be marked as default." }
+    }
+
+    if (route.is_enabled) {
+      const duplicateValidation = await ensureNoDuplicateEnabledCryptoRoute({
+        projectId: context.data.project.id,
+        chainId: input.chainId,
+        chainAssetId: input.chainAssetId,
+        intakeContractId: input.intakeContractId,
+        excludePaymentMethodId: route.id,
+      })
+
+      if (!duplicateValidation.ok) {
+        return duplicateValidation
+      }
+    }
+
+    if (input.isDefault) {
+      const { error: clearDefaultError } = await supabase
+        .from("payment_methods")
+        .update({ is_default: false })
+        .eq("project_id", context.data.project.id)
+        .eq("collection_mode", "contract")
+
+      if (clearDefaultError) {
+        return { ok: false, error: clearDefaultError.message }
+      }
+    }
+
+    const { error: updateError } = await supabase
+      .from("payment_methods")
+      .update({
+        chain_id: input.chainId,
+        chain_asset_id: input.chainAssetId,
+        intake_contract_id: input.intakeContractId,
+        label: normalizeManagedRouteLabel(input.label),
+        is_default: input.isDefault,
+      })
+      .eq("id", route.id)
+      .eq("project_id", context.data.project.id)
+
+    if (updateError) {
+      return { ok: false, error: updateError.message }
+    }
+
+    const cryptoContractMethodId = await getCryptoContractMethodId()
+    await syncProjectCryptoContractDefault(context.data.project, cryptoContractMethodId)
+
+    return {
+      ok: true,
+      data: await refreshProjectManagedRoutes(context.data.project),
+    }
+  } catch (error) {
+    return {
+      ok: false,
+      error: error instanceof Error ? error.message : "Could not update the crypto route.",
+    }
+  }
+}
+
+export async function moveProjectCryptoPaymentMethod(
+  input: MoveProjectCryptoPaymentMethodInput,
+): Promise<ActionResult<ManagedCryptoPaymentMethodSummary[]>> {
+  const context = await getProjectAdminContext(input.projectSlug)
+  if (!context.ok) {
+    return context
+  }
+
+  try {
+    const currentStates = await getProjectCryptoRouteStates(context.data.project.id)
+    if (!currentStates.some((route) => route.id === input.paymentMethodId)) {
+      return { ok: false, error: "Crypto route not found." }
+    }
+
+    const nextStates = moveProjectCryptoRouteState(currentStates, input.paymentMethodId, input.direction)
+    await applyProjectCryptoRouteStates(context.data.project.id, nextStates)
+
+    return {
+      ok: true,
+      data: await refreshProjectManagedRoutes(context.data.project),
+    }
+  } catch (error) {
+    return {
+      ok: false,
+      error: error instanceof Error ? error.message : "Could not reorder the crypto route.",
+    }
+  }
+}
+
+export async function toggleProjectCryptoPaymentMethodEnabled(
+  input: ToggleProjectCryptoPaymentMethodEnabledInput,
+): Promise<ActionResult<ManagedCryptoPaymentMethodSummary[]>> {
+  const context = await getProjectAdminContext(input.projectSlug)
+  if (!context.ok) {
+    return context
+  }
+
+  try {
+    const supabase = getAdminSupabaseClient()
+    const { data: route, error: routeError } = await supabase
+      .from("payment_methods")
+      .select(
+        "id, project_id, method_id, chain_id, chain_asset_id, intake_contract_id, is_default, is_enabled, sort_order, collection_mode",
+      )
+      .eq("id", input.paymentMethodId)
+      .eq("project_id", context.data.project.id)
+      .single()
+
+    if (routeError || !route || route.collection_mode !== "contract") {
+      return { ok: false, error: routeError?.message ?? "Crypto route not found." }
+    }
+
+    if (route.is_enabled === input.enabled) {
+      return {
+        ok: true,
+        data: await refreshProjectManagedRoutes(context.data.project),
+      }
+    }
+
+    const currentStates = await getProjectCryptoRouteStates(context.data.project.id)
+    const nextStates = currentStates.map((state) => ({ ...state }))
+    const targetRoute = nextStates.find((state) => state.id === route.id)
+
+    if (!targetRoute) {
+      return { ok: false, error: "Crypto route not found." }
+    }
+
+    if (input.enabled) {
+      const referenceValidation = await validateManagedCryptoRouteReferences({
+        chainId: route.chain_id ?? 0,
+        chainAssetId: route.chain_asset_id ?? 0,
+        intakeContractId: route.intake_contract_id ?? 0,
+      })
+
+      if (!referenceValidation.ok) {
+        return referenceValidation
+      }
+
+      const duplicateValidation = await ensureNoDuplicateEnabledCryptoRoute({
+        projectId: context.data.project.id,
+        chainId: route.chain_id ?? 0,
+        chainAssetId: route.chain_asset_id ?? 0,
+        intakeContractId: route.intake_contract_id ?? 0,
+        excludePaymentMethodId: route.id,
+      })
+
+      if (!duplicateValidation.ok) {
+        return duplicateValidation
+      }
+
+      targetRoute.is_enabled = true
+    } else {
+      const disabledRouteWasDefault = Boolean(targetRoute.is_default)
+      targetRoute.is_enabled = false
+      targetRoute.is_default = false
+
+      if (disabledRouteWasDefault) {
+        const promotedDefaultId = getPromotedDefaultRouteId(nextStates, route.id)
+        if (promotedDefaultId !== null) {
+          const promotedRoute = nextStates.find((state) => state.id === promotedDefaultId)
+          if (promotedRoute) {
+            promotedRoute.is_default = true
+          }
+        }
+      }
+    }
+
+    await applyProjectCryptoRouteStates(context.data.project.id, nextStates)
+
+    const cryptoContractMethodId = await getCryptoContractMethodId()
+    await syncProjectCryptoContractDefault(context.data.project, cryptoContractMethodId)
+
+    return {
+      ok: true,
+      data: await refreshProjectManagedRoutes(context.data.project),
+    }
+  } catch (error) {
+    return {
+      ok: false,
+      error: error instanceof Error ? error.message : "Could not update the route state.",
+    }
+  }
+}
+
 export async function createProjectPaymentDrafts(
   input: CreateProjectPaymentDraftsInput,
 ): Promise<ActionResult<PaymentRecordSummary[]>> {
@@ -246,10 +878,13 @@ export async function createProjectPaymentDrafts(
   const supabase = getAdminSupabaseClient()
   const [{ data: draftStatus }, { data: methods, error: methodsError }] = await Promise.all([
     supabase.from("ref_payment_statuses").select("id").eq("code", "draft").single(),
-    supabase.from("ref_payment_methods").select("id").in(
-      "id",
-      validation.data.map((row) => row.payment_method_id),
-    ),
+    supabase
+      .from("ref_payment_methods")
+      .select("id")
+      .in(
+        "id",
+        validation.data.map((row) => row.payment_method_id),
+      ),
   ])
 
   if (!draftStatus?.id) {
@@ -260,7 +895,7 @@ export async function createProjectPaymentDrafts(
     return { ok: false, error: methodsError.message }
   }
 
-  const validMethodIds = new Set((methods ?? []).map((method) => method.id))
+  const validMethodIds = new Set((methods as PaymentMethodReferenceRow[] | null)?.map((method) => method.id) ?? [])
   const invalidRow = validation.data.find((row) => !validMethodIds.has(row.payment_method_id))
   if (invalidRow) {
     return { ok: false, error: "One or more selected payment methods are no longer available." }

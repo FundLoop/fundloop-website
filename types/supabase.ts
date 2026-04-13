@@ -613,6 +613,7 @@ export type Database = {
           label: string | null
           method_id: number | null
           project_id: number | null
+          sort_order: number
           updated_at: string
           updated_by: string | null
         }
@@ -629,6 +630,7 @@ export type Database = {
           label?: string | null
           method_id?: number | null
           project_id?: number | null
+          sort_order?: number
           updated_at?: string
           updated_by?: string | null
         }
@@ -645,6 +647,7 @@ export type Database = {
           label?: string | null
           method_id?: number | null
           project_id?: number | null
+          sort_order?: number
           updated_at?: string
           updated_by?: string | null
         }

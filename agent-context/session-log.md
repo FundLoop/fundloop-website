@@ -12,6 +12,40 @@ Agents populate one level-3 heading for each coding session, following the same 
 
 ---
 
+### session v26: Add post-onboarding crypto route management
+- timestamp: 2026-04-13T13:40:00Z
+- agent: **Codex (GPT-5)**
+- branch: **codex/wallet-production-readiness**
+- head: d427863fe0b0fcaa5db2c760dda78ce023ae5b5d - feat(payments): productionize payment operations
+
+#### Objective
+Implement the next wallet production-readiness step by letting project admins manage crypto payment routes after onboarding from the existing project payments screen.
+
+#### Actions Taken
+- Added `supabase/migrations/20260413140500_project_payment_method_sort_order.sql` to introduce `payment_methods.sort_order`, backfill deterministic order per project, index it, and sync project-level crypto defaults for existing data.
+- Added `lib/project-crypto-routes.ts` plus `tests/project-crypto-routes.test.ts` to centralize and test route ordering, renumbering, move behavior, and default-promotion logic.
+- Expanded `app/actions/project-payment-actions.ts` with project-admin route management actions for listing all managed crypto routes, creating routes, updating routes, moving routes up/down, and disabling or re-enabling routes with duplicate-route protection and generic-default sync.
+- Added `components/project-crypto-route-manager.tsx` and integrated it into `app/projects/[slug]/payments/page.tsx` so the page now supports post-onboarding add/edit/default/disable/re-enable/reorder flows while keeping disabled routes visible.
+- Updated the project payments page to derive the crypto payment dialog options from the managed-route state and removed the broken `/settings/payments` navigation target from `app/settings/page.tsx` by replacing it with a non-clickable placeholder card.
+- Updated `types/supabase.ts` for the new `payment_methods.sort_order` field.
+
+#### Tests and Validation Notes
+- Ran `pnpm test`.
+- Ran `pnpm typecheck`.
+- Ran `pnpm check`.
+- All of the above passed.
+- Attempted `DOCKER_HOST=unix:///var/run/docker.sock supabase db reset`, but the local Supabase stack was not running.
+- Attempted `DOCKER_HOST=unix:///var/run/docker.sock supabase start`, but local reset validation remained blocked because Docker could not resolve `public.ecr.aws` while pulling older Supabase images on this machine.
+- Existing non-failing warnings remain for Node `25.8.2` vs the repo’s Node `22.x` target, Next workspace-root inference, and Recharts sizing during static generation.
+
+#### Reflections
+- Reusing the onboarding route editor model on the project payments page kept the new manager much easier to reason about than introducing a second payment-settings surface right away.
+- Pulling ordering and promotion logic into a small shared helper made the behavior easier to test and reduced the risk of UI-only route ordering drift.
+
+#### Suggested Next Steps
+- Add inline integration tests or a browser smoke test for the new route manager flow once a stable local or remote-backed Playwright setup is available.
+- Tackle the onchain reconciliation/indexer backlog next so routes and submissions can advance beyond `awaiting_confirmation` with real chain-based confirmation state.
+
 ### session v25: Commit production-backed payments and staged seed data
 - timestamp: 2026-04-13T13:07:14Z
 - agent: **Codex (GPT-5)**
