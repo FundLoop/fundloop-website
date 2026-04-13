@@ -12,6 +12,34 @@ Agents populate one level-3 heading for each coding session, following the same 
 
 ---
 
+### session v29: Restore the supported Node baseline and clear the last test warning
+- timestamp: 2026-04-13T19:32:31Z
+- agent: **Codex (GPT-5)**
+- branch: **codex/wallet-production-readiness**
+- head: 8cab2d4a8f6c13ede2c7f908071d7d07a142e168 - build(runtime): remove engine and build warnings
+
+#### Objective
+Eliminate the remaining Vitest warning and get the repo fully green by validating against the documented Node runtime instead of carrying a Node 25-only test runner warning.
+
+#### Actions Taken
+- Traced the remaining `--localstorage-file` warning to the Vitest `jsdom` test environment when running under Node `25.8.2`.
+- Verified the warning disappears under Node `22.22.1`, which matches the repo’s intended `22.x` support line.
+- Restored the repo baseline metadata to Node `22.x` in `package.json`, `.nvmrc`, `README.md`, and `AGENTS.md`.
+- Updated `agent-context/todo.md` so the completed runtime/build cleanup item reflects the supported Node 22 baseline rather than the temporary Node 25 alignment.
+
+#### Tests and Validation Notes
+- Ran `pnpm dlx node@22.22.1 /opt/homebrew/bin/pnpm check`.
+- `lint`, `test`, `typecheck`, and `build` all passed.
+- The prior Vitest `--localstorage-file` warning no longer appeared in the passing run.
+
+#### Reflections
+- Restoring the repo to its documented runtime was safer than normalizing around a newer Node line that introduced toolchain noise the app itself did not require.
+- The build-warning fixes from the previous session were still correct; the remaining issue was specifically the test runner behavior under Node 25.
+
+#### Suggested Next Steps
+- If this machine is going to keep working in this repo, switch the local shell/runtime back to Node `22.22.1` so ad hoc `pnpm` commands also stay warning-free without the explicit wrapper.
+- Continue the production-readiness queue with onchain reconciliation/indexing and remote-backed wallet/payment end-to-end coverage.
+
 ### session v28: Remove runtime and build warning noise
 - timestamp: 2026-04-13T19:25:53Z
 - agent: **Codex (GPT-5)**

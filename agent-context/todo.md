@@ -17,7 +17,7 @@
 - Add observability for wallet and payment failures.
   Capture wallet-connect failures, chain mismatch loops, receipt-recording failures, payment-save failures, and admin confirmation errors before broader launch.
 - Completed 2026-04-13: Clean up launch paper cuts in the runtime and build environment.
-  The repo baseline now targets Node 25.8.2, `turbopack.root` is set explicitly, and the analytics Recharts surfaces no longer emit the container sizing warnings during build.
+  The repo baseline is back on the supported Node 22 line, `turbopack.root` is set explicitly, and the analytics Recharts surfaces no longer emit the container sizing warnings during build.
 
 ## Environment, Deployment, and Release Readiness
 

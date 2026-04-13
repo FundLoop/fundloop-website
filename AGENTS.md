@@ -32,7 +32,7 @@ Agents in this repo must optimize for:
 ## 2. Current Repo Ground Truth
 
 - Package manager is **pnpm**. Do not introduce npm or yarn workflow drift.
-- Node baseline is **25.8.2**.
+- Node baseline is **22.x**.
 - `supabase/` is the canonical database source of truth.
 - `database/` has been removed and must not be reintroduced as a parallel schema source.
 - `types/supabase.ts` is generated from the canonical Supabase schema and should stay in sync with migrations.
