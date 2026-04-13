@@ -45,6 +45,18 @@ NEXT_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key
 
 Static validation commands work in a fresh clone without real Supabase credentials. Interactive auth and database-backed screens still require valid Supabase env vars.
 
+Wallet-related variables:
+
+```env
+FUNDLOOP_DEPLOYMENT_ENV=local
+NEXT_PUBLIC_REOWN_PROJECT_ID=your_reown_project_id
+NEXT_PUBLIC_ETHEREUM_RPC_URL=https://...
+NEXT_PUBLIC_BASE_RPC_URL=https://...
+NEXT_PUBLIC_CELO_RPC_URL=https://...
+```
+
+Tracked contract and treasury addresses now live in the deployment manifests under [`lib/onchain/deployments/`](lib/onchain/deployments/). Preview and production should not rely on ad hoc env addresses anymore.
+
 ## Supabase Workflow
 
 The [`supabase/`](supabase/) directory is the canonical database source of truth.
@@ -67,6 +79,28 @@ supabase db pull --linked
 supabase db dump --linked --data-only --schema public --file supabase/seed.sql
 supabase gen types typescript --project-id <project-ref> --schema public > types/supabase.ts
 ```
+
+## Wallet Deployment Workflow
+
+Wallet execution uses a hybrid model:
+
+- tracked manifests under [`lib/onchain/deployments/`](/Users/botmaster/src/fundloop/lib/onchain/deployments) are the source of truth for deployed intake contract and treasury addresses
+- Supabase `chain_intake_contracts` rows remain the runtime source used by project payment routes
+- the sync script applies manifest changes into Supabase explicitly instead of mutating the database at app startup
+
+Dry run the deployment sync:
+
+```bash
+node scripts/sync-chain-deployments.mjs --env local
+```
+
+Apply the sync after reviewing the output:
+
+```bash
+node scripts/sync-chain-deployments.mjs --env local --apply
+```
+
+`preview` and `production` builds now validate wallet configuration strictly. If the active manifest, Reown project id, or required RPC URLs are missing or inconsistent, startup should fail until the environment is corrected.
 
 ### Run the app
 

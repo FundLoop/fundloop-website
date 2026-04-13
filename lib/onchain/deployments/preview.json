@@ -1,0 +1,30 @@
+{
+  "version": "fundloop-wallet-deployments.v1",
+  "environment": "preview",
+  "chains": [
+    {
+      "networkKey": "ethereum",
+      "evmChainId": 1,
+      "enabled": false,
+      "abiVersion": "fundloop-intake-v1",
+      "contractAddress": "0x0000000000000000000000000000000000000000",
+      "treasuryAddress": "0x0000000000000000000000000000000000000000"
+    },
+    {
+      "networkKey": "base",
+      "evmChainId": 8453,
+      "enabled": false,
+      "abiVersion": "fundloop-intake-v1",
+      "contractAddress": "0x0000000000000000000000000000000000000000",
+      "treasuryAddress": "0x0000000000000000000000000000000000000000"
+    },
+    {
+      "networkKey": "celo",
+      "evmChainId": 42220,
+      "enabled": false,
+      "abiVersion": "fundloop-intake-v1",
+      "contractAddress": "0x0000000000000000000000000000000000000000",
+      "treasuryAddress": "0x0000000000000000000000000000000000000000"
+    }
+  ]
+}

@@ -12,6 +12,40 @@ Agents populate one level-3 heading for each coding session, following the same 
 
 ---
 
+### session v27: Add deployment-safe wallet configuration and audit tooling
+- timestamp: 2026-04-13T19:22:52Z
+- agent: **Codex (GPT-5)**
+- branch: **codex/wallet-production-readiness**
+- head: 2483be55352cecabffe96f5395d54cd8c80d92ac - feat(payments): add project crypto route management
+
+#### Objective
+Make chain deployment state and wallet runtime configuration production-safer by introducing tracked deployment manifests, explicit Supabase sync tooling, runtime validation, and an internal audit view.
+
+#### Actions Taken
+- Added tracked deployment manifests under `lib/onchain/deployments/` for `local`, `preview`, and `production`, plus a typed runtime config layer in `lib/onchain/runtime-config.ts`.
+- Reworked `app/layout.tsx`, `components/web3-provider.tsx`, `lib/onchain/supported-chains.ts`, and the project crypto payment flows so wallet enablement, executable routes, and startup validation derive from the shared runtime config instead of ad hoc env checks.
+- Expanded `app/actions/project-payment-actions.ts`, `components/project-crypto-route-manager.tsx`, and `components/project-crypto-payment-dialog.tsx` so misaligned crypto routes stay visible but cannot be treated as executable/default routes until the deployment rows are synced.
+- Added the internal audit surface at `app/admin/payments/deployments/page.tsx`, linked it from the admin payments and dashboard screens, and added `lib/onchain/deployment-audit.ts` to summarize manifest-vs-database drift.
+- Added the dry-run-first sync script `scripts/sync-chain-deployments.mjs`, updated `.env.example` and `README.md`, and refreshed `agent-context/todo.md` to reflect the newly completed wallet-readiness work.
+- Added focused coverage in `tests/runtime-config.test.ts`, `tests/deployment-audit.test.ts`, `tests/sync-chain-deployments.test.ts`, and `tests/project-crypto-payment-dialog.test.tsx`.
+
+#### Tests and Validation Notes
+- Ran `pnpm test`.
+- Ran `pnpm typecheck`.
+- Ran `pnpm build`.
+- Ran `pnpm check`.
+- All of the above passed.
+- Existing non-failing warnings remain for Node `25.8.2` vs the repo’s Node `22.x` target, Next workspace-root inference, and Recharts sizing during static generation.
+- The deployment sync script was added but not run with `--apply`, so no Supabase rows were mutated during this session.
+
+#### Reflections
+- Keeping Supabase as the runtime source while adding tracked manifests and an explicit sync step keeps the payment surfaces compatible with the existing data model without leaving deployment addresses as tribal knowledge.
+- Surfacing route availability directly in the project payment UI is safer than silently filtering everything out, because it makes deployment drift actionable for both admins and project teams.
+
+#### Suggested Next Steps
+- Address the remaining runtime and build warnings by aligning the repo’s documented Node baseline with the current runtime, setting `turbopack.root`, and fixing the Recharts container sizing on analytics-related pages.
+- After that, tackle the onchain reconciliation/indexer work so `awaiting_confirmation` can advance based on verified chain state instead of staying operationally manual.
+
 ### session v26: Add post-onboarding crypto route management
 - timestamp: 2026-04-13T13:40:00Z
 - agent: **Codex (GPT-5)**

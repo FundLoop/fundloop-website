@@ -9,7 +9,9 @@ import {
   updateProjectCryptoPaymentMethod,
   type ManagedCryptoPaymentMethodSummary,
 } from "@/app/actions/project-payment-actions"
+import { useWalletRuntime } from "@/components/web3-provider"
 import { getSupabaseBrowserClient } from "@/lib/supabase"
+import { getDeploymentAvailabilityForRoute } from "@/lib/onchain/runtime-config"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -29,12 +31,18 @@ type ReferenceOption = {
   label: string
 }
 
+type ChainOption = ReferenceOption & {
+  networkKey: string
+}
+
 type ChainAssetOption = ReferenceOption & {
   chainId: string
 }
 
 type IntakeContractOption = ReferenceOption & {
   chainId: string
+  treasuryAddress: string
+  abiVersion: string
 }
 
 type EditableRoute = {
@@ -49,10 +57,12 @@ type EditableRoute = {
   sortOrder: number
   persisted: boolean
   hasInactiveReference: boolean
+  isRuntimeAvailable: boolean
+  runtimeAvailabilityIssue: string | null
 }
 
 type ReferenceData = {
-  chains: ReferenceOption[]
+  chains: ChainOption[]
   chainAssets: ChainAssetOption[]
   intakeContracts: IntakeContractOption[]
 }
@@ -70,6 +80,8 @@ function toLocalRoute(route: ManagedCryptoPaymentMethodSummary): EditableRoute {
     sortOrder: route.sort_order,
     persisted: true,
     hasInactiveReference: !route.chain.is_active || !route.asset.is_active || !route.intakeContract.is_active,
+    isRuntimeAvailable: route.is_runtime_available,
+    runtimeAvailabilityIssue: route.runtime_availability_issue,
   }
 }
 
@@ -88,6 +100,7 @@ function isRouteReady(route: EditableRoute) {
 }
 
 export function ProjectCryptoRouteManager({ projectSlug, routes, onRoutesChange }: ProjectCryptoRouteManagerProps) {
+  const { runtimeConfig } = useWalletRuntime()
   const [references, setReferences] = useState<ReferenceData>({
     chains: [],
     chainAssets: [],
@@ -121,7 +134,7 @@ export function ProjectCryptoRouteManager({ projectSlug, routes, onRoutesChange 
             .order("sort_order"),
           supabase
             .from("chain_intake_contracts")
-            .select("id, chain_id, contract_address")
+            .select("id, chain_id, contract_address, treasury_address, abi_version")
             .eq("collection_mode", "contract")
             .eq("is_active", true)
             .order("id"),
@@ -132,6 +145,7 @@ export function ProjectCryptoRouteManager({ projectSlug, routes, onRoutesChange 
             chains?.map((chain) => ({
               value: String(chain.id),
               label: chain.display_name ?? chain.network_key ?? `Chain ${chain.id}`,
+              networkKey: chain.network_key ?? "",
             })) ?? [],
           chainAssets:
             assets?.map((asset) => ({
@@ -144,6 +158,8 @@ export function ProjectCryptoRouteManager({ projectSlug, routes, onRoutesChange 
               value: String(contract.id),
               label: contract.contract_address,
               chainId: String(contract.chain_id),
+              treasuryAddress: contract.treasury_address,
+              abiVersion: contract.abi_version,
             })) ?? [],
         })
       } finally {
@@ -165,9 +181,32 @@ export function ProjectCryptoRouteManager({ projectSlug, routes, onRoutesChange 
           return partial.isDefault ? { ...route, isDefault: false } : route
         }
 
-        return {
+        const nextRoute = {
           ...route,
           ...partial,
+        }
+        const selectedChain = references.chains.find((chain) => chain.value === nextRoute.chainId)
+        const selectedContract = references.intakeContracts.find((contract) => contract.value === nextRoute.intakeContractId)
+
+        if (!selectedChain || !selectedContract) {
+          return {
+            ...nextRoute,
+            isRuntimeAvailable: false,
+            runtimeAvailabilityIssue: "Choose an active chain and intake contract to validate this route.",
+          }
+        }
+
+        const availability = getDeploymentAvailabilityForRoute(runtimeConfig, {
+          networkKey: selectedChain.networkKey,
+          contractAddress: selectedContract.label,
+          treasuryAddress: selectedContract.treasuryAddress,
+          abiVersion: selectedContract.abiVersion,
+        })
+
+        return {
+          ...nextRoute,
+          isRuntimeAvailable: availability.available,
+          runtimeAvailabilityIssue: availability.reason,
         }
       }),
     )
@@ -188,6 +227,8 @@ export function ProjectCryptoRouteManager({ projectSlug, routes, onRoutesChange 
         sortOrder: previous.length + 1,
         persisted: false,
         hasInactiveReference: false,
+        isRuntimeAvailable: false,
+        runtimeAvailabilityIssue: "Choose an active chain and intake contract to validate this route.",
       },
     ])
   }
@@ -366,6 +407,13 @@ export function ProjectCryptoRouteManager({ projectSlug, routes, onRoutesChange 
                       </div>
                     ) : null}
 
+                    {!route.hasInactiveReference && !route.isRuntimeAvailable ? (
+                      <div className="rounded-2xl border border-amber-200 bg-amber-50/80 p-3 text-sm text-amber-900">
+                        {route.runtimeAvailabilityIssue ??
+                          "This route is saved, but it does not match the active wallet deployment for this environment."}
+                      </div>
+                    ) : null}
+
                     <div className="grid gap-5 md:grid-cols-2">
                       <div className="space-y-2">
                         <Label>Chain</Label>
@@ -446,6 +494,7 @@ export function ProjectCryptoRouteManager({ projectSlug, routes, onRoutesChange 
                         type="button"
                         variant={route.isDefault ? "default" : "outline"}
                         onClick={() => updateEditableRoute(route.localId, { isDefault: true })}
+                        disabled={!route.isRuntimeAvailable}
                       >
                         {route.isDefault ? "Default route" : "Mark as default"}
                       </Button>
@@ -470,7 +519,7 @@ export function ProjectCryptoRouteManager({ projectSlug, routes, onRoutesChange 
                       <Button
                         type="button"
                         onClick={() => handlePersistRoute(route)}
-                        disabled={isBusy || referencesLoading || !isRouteReady(route)}
+                        disabled={isBusy || referencesLoading || !isRouteReady(route) || (route.isDefault && !route.isRuntimeAvailable)}
                       >
                         <Save className="mr-2 h-4 w-4" />
                         {route.persisted ? "Save changes" : "Create route"}
@@ -546,6 +595,13 @@ export function ProjectCryptoRouteManager({ projectSlug, routes, onRoutesChange 
                       <div className="rounded-2xl border border-amber-200 bg-amber-50/80 p-3 text-sm text-amber-900">
                         This disabled route references inactive infrastructure. Re-enabling will require a valid active chain,
                         token, and intake contract.
+                      </div>
+                    ) : null}
+
+                    {!route.hasInactiveReference && !route.isRuntimeAvailable ? (
+                      <div className="rounded-2xl border border-amber-200 bg-amber-50/80 p-3 text-sm text-amber-900">
+                        {route.runtimeAvailabilityIssue ??
+                          "This route is out of sync with the active wallet deployment and will stay unavailable until the deployment rows are synced."}
                       </div>
                     ) : null}
 

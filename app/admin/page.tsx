@@ -3,7 +3,7 @@
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { DollarSign, Users, Building2, BarChart3, BrainCircuit } from "lucide-react"
+import { DollarSign, Users, Building2, BarChart3, BrainCircuit, Wallet } from "lucide-react"
 
 export default function AdminDashboard() {
   return (
@@ -123,6 +123,21 @@ export default function AdminDashboard() {
               <Link href="/admin/zkas">
                 <BrainCircuit className="h-4 w-4 mr-2" />
                 Open zkAS
+              </Link>
+            </Button>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle>Wallet Deployments</CardTitle>
+            <CardDescription>Audit wallet envs, manifests, and intake-contract sync state</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <Button asChild className="w-full" variant="outline">
+              <Link href="/admin/payments/deployments">
+                <Wallet className="mr-2 h-4 w-4" />
+                Review Deployments
               </Link>
             </Button>
           </CardContent>

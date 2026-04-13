@@ -1,3 +1,5 @@
+import Link from "next/link"
+import { Button } from "@/components/ui/button"
 import { PaymentsConsole } from "@/components/admin/payments-console"
 import { Card, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { getAdminSupabaseClient } from "@/lib/supabase-admin"
@@ -99,5 +101,14 @@ export default async function AdminPaymentsPage() {
     )
   }
 
-  return <PaymentsConsole initialPayments={data.map(mapPayment)} />
+  return (
+    <div className="space-y-6">
+      <div className="container mx-auto flex justify-end px-4 pt-12">
+        <Button asChild variant="outline">
+          <Link href="/admin/payments/deployments">Wallet deployments</Link>
+        </Button>
+      </div>
+      <PaymentsConsole initialPayments={data.map(mapPayment)} />
+    </div>
+  )
 }

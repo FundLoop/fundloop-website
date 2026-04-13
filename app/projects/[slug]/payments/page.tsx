@@ -126,6 +126,8 @@ export default function ProjectPaymentsPage() {
           id: method.id,
           label: method.label,
           is_default: method.is_default,
+          is_runtime_available: method.is_runtime_available,
+          runtime_availability_issue: method.runtime_availability_issue,
           chain: {
             id: method.chain.id,
             display_name: method.chain.display_name,

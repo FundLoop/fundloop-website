@@ -2,12 +2,12 @@
 
 ## Wallet App Production Readiness (Recommended Order)
 
-- Replace the remaining mock and local-only payment operations with production-backed flows.
-  The biggest repo-backed gaps are `app/projects/[slug]/payments/page.tsx` and `app/admin/payments/page.tsx`, which still save, confirm, or mutate payment state in local UI state instead of the database.
-- Lock payment confirmation to the right actor and surface the real operational state clearly.
-  Project admins should be able to create obligations and submit crypto receipts, but internal FundLoop admins should own final receipt confirmation and reconciliation.
-- Add project-side payment-method management outside onboarding.
-  Teams need a settings or payments-management surface to add, disable, reorder, and set a default crypto route after initial setup.
+- Completed 2026-04-13: Replace the remaining mock and local-only payment operations with production-backed flows.
+  `app/projects/[slug]/payments/page.tsx` and `app/admin/payments/page.tsx` now persist and load real payment state through server-backed actions instead of local-only UI mutations.
+- Completed 2026-04-13: Lock payment confirmation to the right actor and surface the real operational state clearly.
+  Project admins can create obligations and submit receipts, while internal FundLoop admins own final receipt confirmation; onchain reconciliation is still a separate follow-up below.
+- Completed 2026-04-13: Add project-side payment-method management outside onboarding.
+  `/projects/[slug]/payments` now lets project admins add, disable, reorder, re-enable, and set a default crypto route after onboarding.
 - Ship deployment-safe chain configuration and wallet environment validation.
   Add per-environment contract manifests, validate `NEXT_PUBLIC_REOWN_PROJECT_ID` and chain RPC settings at startup, and make the active intake contracts and treasury routes auditable without manual copy/paste.
 - Build the onchain reconciliation layer that moves submitted receipts into confirmed or failed states.
@@ -59,9 +59,11 @@
 
 ## Payments Product and Project Finance Operations
 
-- Fill in the remaining business-usable admin workflows: reviewing project payment submissions, reconciling monthly obligations, and managing project payment methods from settings instead of only onboarding.
-- Add project payment-method management UI under settings so teams can add, disable, reorder, and mark a default crypto route after onboarding.
-- Add post-onboarding management screens so project teams can edit crypto routes after signup instead of relying mainly on onboarding-time setup.
+- Partially completed 2026-04-13: Fill in the remaining business-usable admin workflows.
+  Project payment submissions and post-onboarding crypto route management are now much closer to usable, but monthly obligation reconciliation and any dedicated settings placement remain open.
+- Follow-up decision: Decide whether project payment-method management needs a dedicated settings surface later, or whether `/projects/[slug]/payments` should remain the long-term home for route management.
+- Completed 2026-04-13: Add post-onboarding management screens so project teams can edit crypto routes after signup instead of relying mainly on onboarding-time setup.
+  This shipped on `/projects/[slug]/payments` instead of a separate settings page.
 - Add a production readiness pass for the payments page UX: clearer copy around USD-denominated obligations, explicit stablecoin-only messaging, and better empty/error states when no crypto routes are configured.
 
 ## Onboarding, Auth, and User-Flow Verification
@@ -78,6 +80,7 @@
 ## Testing, QA, and Reliability
 
 - Add a remote-safe Playwright fixture strategy that creates unique test users/projects and cleans them up without resetting the shared Supabase database.
+- Add browser smoke or integration coverage for the new project-side crypto route manager once a stable local or remote-backed Playwright setup is available.
 - Add end-to-end coverage for wallet connect, chain switching, approval, and contract write flows once deployed addresses and real envs are available; that was explicitly deferred during the crypto V1 implementation.
 - Add observability for the critical flows: auth redirect failures, onboarding save/publish failures, payment submission failures, and wallet-connect errors.
 

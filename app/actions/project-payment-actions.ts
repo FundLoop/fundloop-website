@@ -12,6 +12,11 @@ import {
 } from "@/lib/project-crypto-routes"
 import { requireInternalAdminActor } from "@/lib/zkas/auth"
 import { validateProjectPaymentDrafts, type ProjectPaymentDraftInput } from "@/lib/payments"
+import {
+  getDeploymentAvailabilityForRoute,
+  getWalletRuntimeConfig,
+  type DeploymentAvailability,
+} from "@/lib/onchain/runtime-config"
 import type { Json, Tables } from "@/types/supabase"
 
 type ActionResult<T> = { ok: true; data: T } | { ok: false; error: string }
@@ -45,6 +50,8 @@ export type ManagedCryptoPaymentMethodSummary = {
   is_default: boolean
   is_enabled: boolean
   sort_order: number
+  is_runtime_available: boolean
+  runtime_availability_issue: string | null
   chain: {
     id: number
     display_name: string
@@ -299,12 +306,21 @@ function mapPaymentSummary(row: InsertedPaymentRow): PaymentRecordSummary {
 }
 
 function mapManagedCryptoPaymentMethodSummary(row: ManagedCryptoPaymentMethodRow): ManagedCryptoPaymentMethodSummary {
+  const deploymentAvailability = getDeploymentAvailabilityForRoute(getWalletRuntimeConfig(), {
+    networkKey: row.ref_chains.network_key,
+    contractAddress: row.chain_intake_contracts.contract_address,
+    treasuryAddress: row.chain_intake_contracts.treasury_address,
+    abiVersion: row.chain_intake_contracts.abi_version,
+  })
+
   return {
     id: row.id,
     label: row.label,
     is_default: Boolean(row.is_default),
     is_enabled: row.is_enabled,
     sort_order: row.sort_order,
+    is_runtime_available: deploymentAvailability.available,
+    runtime_availability_issue: deploymentAvailability.reason,
     chain: {
       id: row.ref_chains.id,
       display_name: row.ref_chains.display_name,
@@ -330,6 +346,23 @@ function mapManagedCryptoPaymentMethodSummary(row: ManagedCryptoPaymentMethodRow
       abi_version: row.chain_intake_contracts.abi_version,
       is_active: row.chain_intake_contracts.is_active,
     },
+  }
+}
+
+function isExecutableManagedCryptoRoute(route: ManagedCryptoPaymentMethodSummary) {
+  return route.is_enabled && route.is_runtime_available
+}
+
+function getDefaultEligibilityForRoute(route: ManagedCryptoPaymentMethodSummary): DeploymentAvailability {
+  if (route.is_runtime_available) {
+    return { available: true, reason: null }
+  }
+
+  return {
+    available: false,
+    reason:
+      route.runtime_availability_issue ??
+      "This crypto route does not match the active wallet deployment and cannot be used as the default route yet.",
   }
 }
 
@@ -419,6 +452,35 @@ async function validateManagedCryptoRouteReferences(input: {
   }
 
   return { ok: true as const }
+}
+
+async function getManagedRouteDeploymentAvailability(input: {
+  chainId: number
+  intakeContractId: number
+}): Promise<DeploymentAvailability> {
+  const supabase = getAdminSupabaseClient()
+  const [{ data: chain }, { data: intakeContract }] = await Promise.all([
+    supabase.from("ref_chains").select("network_key").eq("id", input.chainId).single(),
+    supabase
+      .from("chain_intake_contracts")
+      .select("contract_address, treasury_address, abi_version")
+      .eq("id", input.intakeContractId)
+      .single(),
+  ])
+
+  if (!chain?.network_key || !intakeContract) {
+    return {
+      available: false,
+      reason: "The selected chain deployment metadata is missing from Supabase.",
+    }
+  }
+
+  return getDeploymentAvailabilityForRoute(getWalletRuntimeConfig(), {
+    networkKey: chain.network_key,
+    contractAddress: intakeContract.contract_address,
+    treasuryAddress: intakeContract.treasury_address,
+    abiVersion: intakeContract.abi_version,
+  })
 }
 
 async function ensureNoDuplicateEnabledCryptoRoute(input: {
@@ -561,7 +623,7 @@ export async function listProjectCryptoPaymentMethods(
     const routes = await listProjectManagedCryptoPaymentMethodsForProjectId(context.data.project.id)
     return {
       ok: true,
-      data: routes.filter((route) => route.is_enabled),
+      data: routes.filter(isExecutableManagedCryptoRoute),
     }
   } catch (error) {
     return {
@@ -599,6 +661,19 @@ export async function createProjectCryptoPaymentMethod(
 
     const currentStates = await getProjectCryptoRouteStates(context.data.project.id)
     const shouldDefault = input.isDefault || currentStates.filter((route) => route.is_enabled).length === 0
+    const runtimeAvailability = await getManagedRouteDeploymentAvailability({
+      chainId: input.chainId,
+      intakeContractId: input.intakeContractId,
+    })
+
+    if (shouldDefault && !runtimeAvailability.available) {
+      return {
+        ok: false,
+        error:
+          runtimeAvailability.reason ??
+          "Sync the deployment manifest into Supabase before making this route the default payment route.",
+      }
+    }
 
     const supabase = getAdminSupabaseClient()
 
@@ -692,6 +767,20 @@ export async function updateProjectCryptoPaymentMethod(
 
       if (!duplicateValidation.ok) {
         return duplicateValidation
+      }
+    }
+
+    const runtimeEligibility = await getManagedRouteDeploymentAvailability({
+      chainId: input.chainId,
+      intakeContractId: input.intakeContractId,
+    })
+
+    if (input.isDefault && !runtimeEligibility.available) {
+      return {
+        ok: false,
+        error:
+          runtimeEligibility.reason ??
+          "Sync the deployment manifest into Supabase before making this route the default payment route.",
       }
     }
 
@@ -829,6 +918,17 @@ export async function toggleProjectCryptoPaymentMethodEnabled(
       }
 
       targetRoute.is_enabled = true
+
+      const routes = await listProjectManagedCryptoPaymentMethodsForProjectId(context.data.project.id)
+      const managedRoute = routes.find((managed) => managed.id === route.id)
+      if (managedRoute && managedRoute.is_default && !managedRoute.is_runtime_available) {
+        return {
+          ok: false,
+          error:
+            managedRoute.runtime_availability_issue ??
+            "Sync the deployment manifest into Supabase before re-enabling this route as the default.",
+        }
+      }
     } else {
       const disabledRouteWasDefault = Boolean(targetRoute.is_default)
       targetRoute.is_enabled = false
@@ -985,6 +1085,17 @@ export async function recordOnchainPaymentSubmission(
     paymentMethod.intake_contract_id !== input.intakeContractId
   ) {
     return { ok: false, error: "Selected crypto route is invalid for this project" }
+  }
+
+  const executableRoutes = await listProjectManagedCryptoPaymentMethodsForProjectId(context.data.project.id)
+  const selectedRoute = executableRoutes.find((route) => route.id === input.paymentMethodId)
+  if (!selectedRoute?.is_runtime_available) {
+    return {
+      ok: false,
+      error:
+        selectedRoute?.runtime_availability_issue ??
+        "This crypto route is not available in the active wallet deployment for this environment.",
+    }
   }
 
   if (!awaitingStatus?.id) {

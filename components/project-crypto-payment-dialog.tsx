@@ -5,7 +5,7 @@ import { useAccount, usePublicClient, useSwitchChain, useWaitForTransactionRecei
 import { formatUnits, parseUnits } from "viem"
 import { Loader2, Wallet } from "lucide-react"
 import { recordOnchainPaymentSubmission } from "@/app/actions/project-payment-actions"
-import { openFundLoopWalletModal, hasReownProjectId } from "@/components/web3-provider"
+import { useWalletRuntime } from "@/components/web3-provider"
 import { erc20Abi, fundLoopIntakeAbi } from "@/lib/onchain/fundloop-intake-abi"
 import { Button } from "@/components/ui/button"
 import {
@@ -46,6 +46,8 @@ export type CryptoPaymentMethodOption = {
   id: number
   label: string | null
   is_default: boolean | null
+  is_runtime_available: boolean
+  runtime_availability_issue: string | null
   chain: {
     id: number
     display_name: string
@@ -111,6 +113,7 @@ export function ProjectCryptoPaymentDialog({
   const [approvalRequired, setApprovalRequired] = useState(false)
   const [lastAction, setLastAction] = useState<"approve" | "deposit" | null>(null)
   const [recording, startRecording] = useTransition()
+  const { openWalletModal, runtimeConfig, walletEnabled } = useWalletRuntime()
   const { address, chainId, isConnected } = useAccount()
   const { switchChainAsync, isPending: switchingChain } = useSwitchChain()
   const { data: hash, error: writeError, isPending: writing, writeContractAsync, reset } = useWriteContract()
@@ -183,10 +186,17 @@ export function ProjectCryptoPaymentDialog({
   }, [open, payment?.id, payment?.period_end])
 
   const supportsDirectUsdSettlement = Boolean(selectedMethod?.asset.is_stablecoin)
+  const selectedRouteAvailable = Boolean(selectedMethod?.is_runtime_available)
+  const selectedRouteIssue =
+    selectedMethod?.runtime_availability_issue ??
+    `This crypto route is not available in the active ${runtimeConfig.environment} wallet deployment.`
+  const walletConfigIssue =
+    runtimeConfig.issues.find((issue) => issue.severity === "error")?.message ??
+    "Wallet connection is not configured for this environment."
 
   useEffect(() => {
     const loadAllowance = async () => {
-      if (!open || !address || !selectedMethod || selectedMethod.asset.is_native || !publicClient) {
+      if (!open || !address || !selectedMethod || !selectedRouteAvailable || selectedMethod.asset.is_native || !publicClient) {
         setApprovalRequired(false)
         return
       }
@@ -207,7 +217,7 @@ export function ProjectCryptoPaymentDialog({
     }
 
     void loadAllowance()
-  }, [address, amountRaw, open, publicClient, selectedMethod, receiptQuery.isSuccess])
+  }, [address, amountRaw, open, publicClient, receiptQuery.isSuccess, selectedMethod, selectedRouteAvailable])
 
   useEffect(() => {
     if (!receiptQuery.isSuccess || !selectedMethod || !payment || !projectId || !hash) {
@@ -277,7 +287,7 @@ export function ProjectCryptoPaymentDialog({
   }, [writeError])
 
   const handleApprove = async () => {
-    if (!selectedMethod || !selectedMethod.asset.token_address || !supportsDirectUsdSettlement) {
+    if (!selectedMethod || !selectedRouteAvailable || !selectedMethod.asset.token_address || !supportsDirectUsdSettlement) {
       return
     }
 
@@ -291,7 +301,7 @@ export function ProjectCryptoPaymentDialog({
   }
 
   const handleDeposit = async () => {
-    if (!selectedMethod || !projectId || !supportsDirectUsdSettlement) {
+    if (!selectedMethod || !selectedRouteAvailable || !projectId || !supportsDirectUsdSettlement) {
       return
     }
 
@@ -345,6 +355,7 @@ export function ProjectCryptoPaymentDialog({
                   {paymentMethods.map((method) => (
                     <SelectItem key={method.id} value={String(method.id)}>
                       {method.label || `${method.chain.display_name} ${method.asset.symbol}`}
+                      {!method.is_runtime_available ? " (Unavailable)" : ""}
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -393,6 +404,12 @@ export function ProjectCryptoPaymentDialog({
               </div>
             ) : null}
 
+            {!selectedRouteAvailable ? (
+              <div className="rounded-2xl border border-amber-200 bg-amber-50/70 p-4 text-sm text-amber-900">
+                {selectedRouteIssue}
+              </div>
+            ) : null}
+
             {hash ? (
               <div className="rounded-2xl border border-emerald-200 bg-emerald-50/70 p-4 text-sm text-emerald-950">
                 <p className="font-medium">Latest transaction</p>
@@ -408,14 +425,18 @@ export function ProjectCryptoPaymentDialog({
         )}
 
         <DialogFooter className="flex-col gap-2 sm:flex-col">
-          {!hasReownProjectId ? (
+          {!walletEnabled ? (
             <div className="w-full rounded-2xl border border-amber-200 bg-amber-50/70 p-3 text-sm text-amber-900">
-              Wallet connection is not configured. Add `NEXT_PUBLIC_REOWN_PROJECT_ID` to enable crypto payments.
+              {walletConfigIssue}
             </div>
           ) : null}
 
-          {!isConnected ? (
-            <Button className="w-full" onClick={() => void openFundLoopWalletModal()} disabled={!hasReownProjectId}>
+          {!selectedRouteAvailable ? (
+            <Button className="w-full" disabled>
+              Route unavailable in {runtimeConfig.environment}
+            </Button>
+          ) : !isConnected ? (
+            <Button className="w-full" onClick={() => void openWalletModal()} disabled={!walletEnabled}>
               <Wallet className="mr-2 h-4 w-4" />
               Connect wallet
             </Button>
