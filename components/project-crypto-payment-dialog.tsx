@@ -7,6 +7,8 @@ import { Loader2, Wallet } from "lucide-react"
 import { recordOnchainPaymentSubmission } from "@/app/actions/project-payment-actions"
 import { useWalletRuntime } from "@/components/web3-provider"
 import { erc20Abi, fundLoopIntakeAbi } from "@/lib/onchain/fundloop-intake-abi"
+import { getRequiredConfirmationDepth } from "@/lib/onchain/runtime-config"
+import type { OnchainSubmissionSummary } from "@/lib/onchain/payment-submissions"
 import { Button } from "@/components/ui/button"
 import {
   Dialog,
@@ -78,7 +80,7 @@ type ProjectCryptoPaymentDialogProps = {
   paymentMethods: CryptoPaymentMethodOption[]
   projectId: number | null
   projectSlug: string
-  onPaymentRecorded: (paymentId: number, txHash: string, periodId: number) => void
+  onPaymentRecorded: (paymentId: number, submission: OnchainSubmissionSummary) => void
 }
 
 function serializeForJson(value: unknown): unknown {
@@ -268,11 +270,53 @@ export function ProjectCryptoPaymentDialog({
         description: "The onchain receipt is stored and the payment now awaits confirmation.",
       })
 
-      onPaymentRecorded(payment.id, hash, periodId)
+      onPaymentRecorded(payment.id, {
+        id: result.data.submissionId,
+        payment_id: payment.id,
+        project_id: projectId,
+        payment_method_id: selectedMethod.id,
+        period_id: periodId,
+        tx_hash: hash,
+        wallet_address: address,
+        status: "submitted",
+        confirmation_count: 0,
+        confirmation_depth: getRequiredConfirmationDepth(runtimeConfig, selectedMethod.chain.network_key),
+        failure_code: null,
+        failure_reason: null,
+        submitted_at: new Date().toISOString(),
+        last_checked_at: null,
+        reconciled_at: null,
+        matched_log_index: null,
+        chain: {
+          id: selectedMethod.chain.id,
+          display_name: selectedMethod.chain.display_name,
+          network_key: selectedMethod.chain.network_key,
+        },
+        asset: {
+          id: selectedMethod.asset.id,
+          symbol: selectedMethod.asset.symbol,
+          is_native: selectedMethod.asset.is_native,
+        },
+      })
       setLastAction(null)
       onOpenChange(false)
     })
-  }, [address, amountRaw, hash, lastAction, onOpenChange, onPaymentRecorded, payment, periodId, projectId, projectSlug, receiptQuery.data, receiptQuery.isSuccess, selectedMethod])
+  }, [
+    address,
+    amountRaw,
+    hash,
+    lastAction,
+    onOpenChange,
+    onPaymentRecorded,
+    payment,
+    periodId,
+    projectId,
+    projectSlug,
+    receiptQuery.data,
+    receiptQuery.isSuccess,
+    runtimeConfig,
+    selectedMethod,
+  ])
 
   useEffect(() => {
     if (!writeError) {

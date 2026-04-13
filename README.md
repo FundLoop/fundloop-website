@@ -49,6 +49,7 @@ Wallet-related variables:
 
 ```env
 FUNDLOOP_DEPLOYMENT_ENV=local
+FUNDLOOP_PAYMENTS_CRON_SECRET=your_internal_cron_secret
 NEXT_PUBLIC_REOWN_PROJECT_ID=your_reown_project_id
 NEXT_PUBLIC_ETHEREUM_RPC_URL=https://...
 NEXT_PUBLIC_BASE_RPC_URL=https://...
@@ -101,6 +102,8 @@ node scripts/sync-chain-deployments.mjs --env local --apply
 ```
 
 `preview` and `production` builds now validate wallet configuration strictly. If the active manifest, Reown project id, or required RPC URLs are missing or inconsistent, startup should fail until the environment is corrected.
+
+To run scheduled payment reconciliation, post to `/api/internal/payments/reconcile-onchain` with `Authorization: Bearer $FUNDLOOP_PAYMENTS_CRON_SECRET`. Internal admins can also trigger targeted replay/backfill from `/admin/payments/reconciliation`.
 
 ### Run the app
 
@@ -163,7 +166,6 @@ If you are working on zkAS changes, expect to touch both the app layer and the S
 ## Notes
 
 - Some content and seeded records in this repo are demo content and placeholders.
-- `next build` currently emits a Recharts container-size warning during static generation, but the build completes successfully.
 
 ## Contributing
 

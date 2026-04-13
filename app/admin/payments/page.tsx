@@ -2,9 +2,11 @@ import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { PaymentsConsole } from "@/components/admin/payments-console"
 import { Card, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { listLatestOnchainSubmissionsForPaymentIds } from "@/lib/onchain/payment-reconciliation"
 import { getAdminSupabaseClient } from "@/lib/supabase-admin"
 import { requireInternalAdminActor } from "@/lib/zkas/auth"
 import type { PaymentRecordSummary } from "@/app/actions/project-payment-actions"
+import type { OnchainSubmissionSummary } from "@/lib/onchain/payment-submissions"
 
 type PaymentRow = {
   id: number
@@ -26,7 +28,7 @@ type PaymentRow = {
   ref_payment_statuses: { name: string; code: string } | null
 }
 
-function mapPayment(row: PaymentRow): PaymentRecordSummary {
+function mapPayment(row: PaymentRow, latestOnchainSubmission: OnchainSubmissionSummary | null): PaymentRecordSummary {
   return {
     id: row.id,
     project_id: row.project_id,
@@ -48,6 +50,7 @@ function mapPayment(row: PaymentRow): PaymentRecordSummary {
     paid_at: row.paid_at,
     confirmed_at: row.confirmed_at,
     notes: row.notes,
+    latest_onchain_submission: latestOnchainSubmission,
   }
 }
 
@@ -101,14 +104,21 @@ export default async function AdminPaymentsPage() {
     )
   }
 
+  const latestOnchainSubmissionByPaymentId = await listLatestOnchainSubmissionsForPaymentIds(data.map((row) => row.id))
+
   return (
     <div className="space-y-6">
-      <div className="container mx-auto flex justify-end px-4 pt-12">
+      <div className="container mx-auto flex gap-2 justify-end px-4 pt-12">
+        <Button asChild variant="outline">
+          <Link href="/admin/payments/reconciliation">Reconciliation</Link>
+        </Button>
         <Button asChild variant="outline">
           <Link href="/admin/payments/deployments">Wallet deployments</Link>
         </Button>
       </div>
-      <PaymentsConsole initialPayments={data.map(mapPayment)} />
+      <PaymentsConsole
+        initialPayments={data.map((row) => mapPayment(row, latestOnchainSubmissionByPaymentId.get(row.id) ?? null))}
+      />
     </div>
   )
 }

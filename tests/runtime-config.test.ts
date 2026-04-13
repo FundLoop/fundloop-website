@@ -3,6 +3,7 @@ import {
   assertWalletRuntimeConfigForStartup,
   buildWalletRuntimeConfig,
   getDeploymentAvailabilityForRoute,
+  getRequiredConfirmationDepth,
   resolveDeploymentEnvironment,
 } from "@/lib/onchain/runtime-config"
 
@@ -51,5 +52,19 @@ describe("wallet runtime config", () => {
 
     expect(availability.available).toBe(false)
     expect(availability.reason).toMatch(/No enabled base wallet deployment/)
+  })
+
+  it("reads confirmation depth from the manifest even when the chain is disabled", () => {
+    const config = buildWalletRuntimeConfig({
+      FUNDLOOP_DEPLOYMENT_ENV: "production",
+      NEXT_PUBLIC_REOWN_PROJECT_ID: "reown-project-id",
+      NEXT_PUBLIC_ETHEREUM_RPC_URL: "https://ethereum.example",
+      NEXT_PUBLIC_BASE_RPC_URL: "https://base.example",
+      NEXT_PUBLIC_CELO_RPC_URL: "https://celo.example",
+    } as unknown as NodeJS.ProcessEnv)
+
+    expect(getRequiredConfirmationDepth(config, "ethereum")).toBe(12)
+    expect(getRequiredConfirmationDepth(config, "base")).toBe(20)
+    expect(getRequiredConfirmationDepth(config, "celo")).toBe(30)
   })
 })

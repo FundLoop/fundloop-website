@@ -15,6 +15,7 @@ import { toast } from "@/components/ui/use-toast"
 import { getSupabaseBrowserClient } from "@/lib/supabase"
 import {
   createProjectPaymentDrafts,
+  listProjectLatestOnchainSubmissions,
   listProjectManagedCryptoPaymentMethods,
   type ManagedCryptoPaymentMethodSummary,
 } from "@/app/actions/project-payment-actions"
@@ -22,6 +23,7 @@ import {
   ProjectCryptoPaymentDialog,
   type CryptoPaymentMethodOption,
 } from "@/components/project-crypto-payment-dialog"
+import { buildLatestOnchainSubmissionMap, type OnchainSubmissionSummary } from "@/lib/onchain/payment-submissions"
 import { ProjectCryptoRouteManager } from "@/components/project-crypto-route-manager"
 import { ArrowLeft, Plus, Calculator, Save, AlertTriangle, Trash2, Info } from "lucide-react"
 
@@ -73,6 +75,7 @@ interface Payment {
   paid_at: string | null
   confirmed_at: string | null
   notes: string | null
+  latest_onchain_submission: OnchainSubmissionSummary | null
 }
 
 interface NewPaymentRow {
@@ -206,6 +209,11 @@ export default function ProjectPaymentsPage() {
 
         if (paymentsError) throw paymentsError
 
+        const latestOnchainSubmissionsResult = await listProjectLatestOnchainSubmissions(slug)
+        const latestOnchainSubmissionByPaymentId = latestOnchainSubmissionsResult.ok
+          ? buildLatestOnchainSubmissionMap(latestOnchainSubmissionsResult.data)
+          : new Map<number, OnchainSubmissionSummary>()
+
         const transformedPayments =
           paymentsData?.map((payment) => ({
             id: payment.id,
@@ -224,6 +232,7 @@ export default function ProjectPaymentsPage() {
             paid_at: payment.paid_at,
             confirmed_at: payment.confirmed_at,
             notes: payment.notes,
+            latest_onchain_submission: latestOnchainSubmissionByPaymentId.get(payment.id) ?? null,
           })) || []
 
         setPaymentMethods(paymentMethodsData || [])
@@ -403,6 +412,7 @@ export default function ProjectPaymentsPage() {
         paid_at: payment.paid_at,
         confirmed_at: payment.confirmed_at,
         notes: payment.notes,
+        latest_onchain_submission: payment.latest_onchain_submission,
       }))
 
       setPayments((prev) => [...newPayments, ...prev])
@@ -452,6 +462,24 @@ export default function ProjectPaymentsPage() {
     }
   }
 
+  const getOnchainProgressText = (payment: Payment) => {
+    const submission = payment.latest_onchain_submission
+    if (!submission) {
+      return null
+    }
+
+    switch (submission.status) {
+      case "submitted":
+        return "Onchain receipt stored; waiting for the transaction receipt to become fetchable."
+      case "confirming":
+        return `Onchain deposit verified with ${submission.confirmation_count}/${submission.confirmation_depth} confirmations.`
+      case "confirmed":
+        return `Onchain deposit finalized with ${submission.confirmation_count} confirmations.`
+      case "failed":
+        return submission.failure_reason ?? "The latest onchain submission failed reconciliation."
+    }
+  }
+
   const openCryptoPaymentDialog = (payment: Payment) => {
     setPaymentToPay(payment)
     setCryptoPaymentDialogOpen(true)
@@ -469,7 +497,7 @@ export default function ProjectPaymentsPage() {
 
   const getPeriodTagLabel = (periodId: number) => periodTagLabels[periodId] ?? `Month ${periodId}`
 
-  const handleCryptoPaymentRecorded = (paymentId: number, txHash: string, periodId: number) => {
+  const handleCryptoPaymentRecorded = (paymentId: number, submission: OnchainSubmissionSummary) => {
     const awaitingStatus = paymentStatuses.find((status) => status.code === "awaiting_confirmation")
     if (!awaitingStatus) {
       return
@@ -485,7 +513,8 @@ export default function ProjectPaymentsPage() {
               status_code: awaitingStatus.code,
               paid_at: new Date().toISOString(),
               updated_at: new Date().toISOString(),
-              notes: `Onchain payment submitted: ${txHash} (period tag: ${periodId === 0 ? "current" : periodId})`,
+              notes: `Onchain payment submitted: ${submission.tx_hash} (period tag: ${submission.period_id === 0 ? "current" : submission.period_id})`,
+              latest_onchain_submission: submission,
             }
           : payment,
       ),
@@ -733,13 +762,22 @@ export default function ProjectPaymentsPage() {
                       <TableCell>{formatCurrency(payment.payment_amount)}</TableCell>
                       <TableCell>{payment.payment_percentage}%</TableCell>
                       <TableCell className="capitalize">{payment.payment_method_name.replace("_", " ")}</TableCell>
-                      <TableCell>{getStatusBadge(payment.status_code, payment.status_name)}</TableCell>
+                      <TableCell>
+                        <div className="space-y-1">
+                          {getStatusBadge(payment.status_code, payment.status_name)}
+                          {payment.latest_onchain_submission ? (
+                            <p className="max-w-xs text-xs text-slate-500">{getOnchainProgressText(payment)}</p>
+                          ) : null}
+                        </div>
+                      </TableCell>
                       <TableCell className="text-right">
                         <div className="flex justify-end gap-2">
-                          {(payment.status_code === "draft" || payment.status_code === "pending") &&
+                          {(payment.status_code === "draft" ||
+                            payment.status_code === "pending" ||
+                            (payment.status_code === "failed" && payment.latest_onchain_submission?.status === "failed")) &&
                           cryptoPaymentMethods.length > 0 ? (
                             <Button size="sm" variant="outline" onClick={() => openCryptoPaymentDialog(payment)}>
-                              Pay with crypto
+                              {payment.status_code === "failed" ? "Retry crypto payment" : "Pay with crypto"}
                             </Button>
                           ) : null}
 
@@ -755,7 +793,13 @@ export default function ProjectPaymentsPage() {
                         </div>
                         {payment.status_code === "awaiting_confirmation" ? (
                           <p className="mt-1 text-xs text-slate-500">
-                            Awaiting FundLoop confirmation after receipt review or onchain reconciliation.
+                            Awaiting automatic onchain reconciliation to verify the recorded deposit.
+                          </p>
+                        ) : null}
+                        {payment.status_code === "failed" && payment.latest_onchain_submission?.status === "failed" ? (
+                          <p className="mt-1 text-xs text-rose-600">
+                            The latest onchain submission failed verification. Review the failure above, then retry with
+                            a replacement deposit.
                           </p>
                         ) : null}
                       </TableCell>

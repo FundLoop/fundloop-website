@@ -500,16 +500,29 @@ export type Database = {
         Row: {
           amount_decimal: number
           amount_raw: string
+          asset_is_native: boolean
+          asset_token_address: string | null
           block_number: number | null
           chain_asset_id: number
           chain_id: number
+          chain_network_key: string
+          confirmation_count: number
           confirmed_at: string | null
+          failure_code: string | null
+          failure_reason: string | null
           id: number
+          intake_abi_version: string
           intake_contract_id: number
+          intake_contract_address: string
+          intake_treasury_address: string
+          last_checked_at: string | null
+          matched_log_index: number | null
           metadata: Json | null
           payment_id: number | null
           payment_method_id: number
+          period_id: number
           project_id: number
+          reconciled_at: string | null
           receipt: Json | null
           status: string
           submitted_at: string
@@ -519,16 +532,29 @@ export type Database = {
         Insert: {
           amount_decimal: number
           amount_raw: string
+          asset_is_native: boolean
+          asset_token_address?: string | null
           block_number?: number | null
           chain_asset_id: number
           chain_id: number
+          chain_network_key: string
+          confirmation_count?: number
           confirmed_at?: string | null
+          failure_code?: string | null
+          failure_reason?: string | null
           id?: number
+          intake_abi_version: string
           intake_contract_id: number
+          intake_contract_address: string
+          intake_treasury_address: string
+          last_checked_at?: string | null
+          matched_log_index?: number | null
           metadata?: Json | null
           payment_id?: number | null
           payment_method_id: number
+          period_id: number
           project_id: number
+          reconciled_at?: string | null
           receipt?: Json | null
           status?: string
           submitted_at?: string
@@ -538,16 +564,29 @@ export type Database = {
         Update: {
           amount_decimal?: number
           amount_raw?: string
+          asset_is_native?: boolean
+          asset_token_address?: string | null
           block_number?: number | null
           chain_asset_id?: number
           chain_id?: number
+          chain_network_key?: string
+          confirmation_count?: number
           confirmed_at?: string | null
+          failure_code?: string | null
+          failure_reason?: string | null
           id?: number
+          intake_abi_version?: string
           intake_contract_id?: number
+          intake_contract_address?: string
+          intake_treasury_address?: string
+          last_checked_at?: string | null
+          matched_log_index?: number | null
           metadata?: Json | null
           payment_id?: number | null
           payment_method_id?: number
+          period_id?: number
           project_id?: number
+          reconciled_at?: string | null
           receipt?: Json | null
           status?: string
           submitted_at?: string

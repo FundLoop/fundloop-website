@@ -48,6 +48,24 @@ function getStatusBadge(statusCode: string, statusName: string) {
   }
 }
 
+function getOnchainStatusText(payment: PaymentRecordSummary) {
+  const submission = payment.latest_onchain_submission
+  if (!submission) {
+    return null
+  }
+
+  switch (submission.status) {
+    case "submitted":
+      return "Receipt stored; waiting for the transaction receipt to become fetchable."
+    case "confirming":
+      return `Onchain deposit verified with ${submission.confirmation_count}/${submission.confirmation_depth} confirmations.`
+    case "confirmed":
+      return `Onchain deposit finalized with ${submission.confirmation_count} confirmations.`
+    case "failed":
+      return submission.failure_reason ?? "Onchain reconciliation failed for the latest submission."
+  }
+}
+
 export function PaymentsConsole({ initialPayments }: PaymentsConsoleProps) {
   const [payments, setPayments] = useState(initialPayments)
   const [searchTerm, setSearchTerm] = useState("")
@@ -234,10 +252,17 @@ export function PaymentsConsole({ initialPayments }: PaymentsConsoleProps) {
                     <TableCell>{formatCurrency(payment.revenue)}</TableCell>
                     <TableCell>{formatCurrency(payment.payment_amount)}</TableCell>
                     <TableCell className="capitalize">{payment.payment_method_name}</TableCell>
-                    <TableCell>{getStatusBadge(payment.status_code, payment.status_name)}</TableCell>
+                    <TableCell>
+                      <div className="space-y-1">
+                        {getStatusBadge(payment.status_code, payment.status_name)}
+                        {payment.latest_onchain_submission ? (
+                          <p className="max-w-xs text-xs text-slate-500">{getOnchainStatusText(payment)}</p>
+                        ) : null}
+                      </div>
+                    </TableCell>
                     <TableCell className="text-right">
                       <div className="flex justify-end gap-2">
-                        {payment.status_code === "awaiting_confirmation" ? (
+                        {payment.status_code === "awaiting_confirmation" && !payment.latest_onchain_submission ? (
                           <Button size="sm" onClick={() => openConfirmDialog(payment)}>
                             <CheckCircle className="mr-1 h-4 w-4" />
                             Confirm Receipt
@@ -253,6 +278,10 @@ export function PaymentsConsole({ initialPayments }: PaymentsConsoleProps) {
               )}
             </TableBody>
           </Table>
+          <div className="rounded-2xl border bg-slate-50/80 p-4 text-sm text-slate-600">
+            Crypto-submitted payments now advance through onchain reconciliation. Manual confirmation remains available
+            only for non-onchain payment rails.
+          </div>
         </CardContent>
       </Card>
 

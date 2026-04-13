@@ -10,8 +10,8 @@
   `/projects/[slug]/payments` now lets project admins add, disable, reorder, re-enable, and set a default crypto route after onboarding.
 - Ship deployment-safe chain configuration and wallet environment validation.
   Add per-environment contract manifests, validate `NEXT_PUBLIC_REOWN_PROJECT_ID` and chain RPC settings at startup, and make the active intake contracts and treasury routes auditable without manual copy/paste.
-- Build the onchain reconciliation layer that moves submitted receipts into confirmed or failed states.
-  The current wallet UX can store a tx receipt, but production readiness still requires confirmation depth rules, reorg handling, and an indexer/accounting pass that updates `awaiting_confirmation`.
+- Completed 2026-04-13: Build the onchain reconciliation layer that moves submitted receipts into confirmed or failed states.
+  Known app-recorded crypto submissions now reconcile against verified `Deposit` events plus confirmation depth, with scheduled and admin-triggered replay paths.
 - Add remote-safe end-to-end coverage for the real wallet and payment flows.
   Prioritize authenticated project-payment tests for wallet connect, chain switching, token approval, stablecoin deposit submission, and admin confirmation against shared remote-backed data.
 - Add observability for wallet and payment failures.

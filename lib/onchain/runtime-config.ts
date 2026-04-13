@@ -20,6 +20,7 @@ export type WalletRuntimeChain = {
   displayName: string
   evmChainId: number
   rpcUrl: string
+  confirmationDepth: number
   abiVersion: string
   contractAddress: string
   treasuryAddress: string
@@ -46,6 +47,7 @@ const manifestChainSchema = z.object({
   networkKey: z.enum(SUPPORTED_CHAIN_KEYS),
   evmChainId: z.number().int().positive(),
   enabled: z.boolean(),
+  confirmationDepth: z.number().int().positive(),
   abiVersion: z.string().trim().min(1),
   contractAddress: z.string().trim().regex(/^0x[a-fA-F0-9]{40}$/),
   treasuryAddress: z.string().trim().regex(/^0x[a-fA-F0-9]{40}$/),
@@ -195,6 +197,7 @@ export function buildWalletRuntimeConfig(
       displayName: supported.chain.name,
       evmChainId: chain.evmChainId,
       rpcUrl,
+      confirmationDepth: chain.confirmationDepth,
       abiVersion: chain.abiVersion,
       contractAddress: chain.contractAddress,
       treasuryAddress: chain.treasuryAddress,
@@ -244,6 +247,19 @@ export function getRuntimeChainByNetworkKey(
   networkKey: string,
 ): WalletRuntimeChain | null {
   return runtimeConfig.activeChains.find((chain) => chain.networkKey === networkKey) ?? null
+}
+
+export function getManifestChainByNetworkKey(environment: DeploymentEnvironment, networkKey: string) {
+  return getDeploymentManifest(environment).chains.find((chain) => chain.networkKey === networkKey) ?? null
+}
+
+export function getRequiredConfirmationDepth(runtimeConfig: WalletRuntimeConfig, networkKey: string) {
+  const runtimeChain = getRuntimeChainByNetworkKey(runtimeConfig, networkKey)
+  if (runtimeChain) {
+    return runtimeChain.confirmationDepth
+  }
+
+  return getManifestChainByNetworkKey(runtimeConfig.environment, networkKey)?.confirmationDepth ?? 1
 }
 
 export function getDeploymentAvailabilityForRoute(

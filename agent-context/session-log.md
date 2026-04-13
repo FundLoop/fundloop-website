@@ -12,6 +12,37 @@ Agents populate one level-3 heading for each coding session, following the same 
 
 ---
 
+### session v30: Add onchain payment reconciliation and replay tooling
+- timestamp: 2026-04-13T21:32:05Z
+- agent: **Codex (GPT-5)**
+- branch: **codex/wallet-production-readiness**
+- head: c0beb76a7c5e18f56c706b4045128d7eda937529 - build(runtime): restore Node 22 baseline for green checks
+
+#### Objective
+Advance crypto-submitted payment obligations out of `awaiting_confirmation` using verified chain state instead of manual internal-admin confirmation.
+
+#### Actions Taken
+- Added a forward-only Supabase migration for reconciliation-safe `onchain_payment_submissions`, including first-class `period_id`, immutable route snapshots, reconciliation metadata, constrained lifecycle statuses, and the single-unresolved-submission index.
+- Extended the tracked wallet deployment manifests and runtime config with per-chain confirmation depth so reconciliation can apply environment-specific finality rules.
+- Added the shared server-side reconciliation engine in `lib/onchain/payment-reconciliation.ts`, including receipt fetching, `Deposit` event matching, confirmation-depth handling, latest-submission queries, and `cron_logs` summaries for successful and failed runs.
+- Added the protected cron route at `/api/internal/payments/reconcile-onchain`, the internal admin replay action, and the `/admin/payments/reconciliation` page with targeted replay controls.
+- Reworked payment actions and project/admin payment UIs so crypto submissions persist immutable snapshots, failed submissions become retryable, crypto-submitted obligations no longer allow unsafe manual confirmation, and both admin and project surfaces show the latest onchain reconciliation status.
+- Updated `.env.example`, `README.md`, `vitest.config.ts`, and `agent-context/todo.md`, and added focused tests for receipt evaluation, the cron endpoint, and the new runtime confirmation-depth behavior.
+
+#### Tests and Validation Notes
+- Ran `pnpm dlx node@22.22.1 /opt/homebrew/bin/pnpm check`.
+- `lint`, `test`, `typecheck`, and `build` all passed in the supported Node 22 runtime.
+- Added and passed focused coverage in `tests/payment-reconciliation.test.ts`, `tests/onchain-reconciliation-route.test.ts`, and `tests/runtime-config.test.ts`.
+- Did not run a local `supabase db reset`, so the new migration was validated through application checks and tests rather than a live local Postgres replay.
+
+#### Reflections
+- Storing immutable route snapshots at submission time keeps reconciliation trustworthy even if deployment rows or route records are edited later.
+- Splitting the worker into a shared server module plus cron/admin entrypoints made it easier to keep replay, scheduled execution, and UI visibility consistent.
+
+#### Suggested Next Steps
+- Run the new reconciliation migration against local Supabase once the local stack is available, then smoke test a full submit-and-reconcile flow with real seeded payment data.
+- Continue the production-readiness queue with remote-backed wallet/payment end-to-end coverage and broader observability for payment and wallet failures.
+
 ### session v29: Restore the supported Node baseline and clear the last test warning
 - timestamp: 2026-04-13T19:32:31Z
 - agent: **Codex (GPT-5)**

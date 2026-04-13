@@ -17,6 +17,12 @@ import {
   getWalletRuntimeConfig,
   type DeploymentAvailability,
 } from "@/lib/onchain/runtime-config"
+import {
+  listProjectOnchainSubmissionSummaries,
+  runOnchainPaymentReconciliation,
+  type OnchainReconciliationRunSummary,
+} from "@/lib/onchain/payment-reconciliation"
+import type { OnchainSubmissionSummary } from "@/lib/onchain/payment-submissions"
 import type { Json, Tables } from "@/types/supabase"
 
 type ActionResult<T> = { ok: true; data: T } | { ok: false; error: string }
@@ -42,6 +48,7 @@ export type PaymentRecordSummary = {
   paid_at: string | null
   confirmed_at: string | null
   notes: string | null
+  latest_onchain_submission: OnchainSubmissionSummary | null
 }
 
 export type ManagedCryptoPaymentMethodSummary = {
@@ -198,6 +205,27 @@ type InsertedPaymentRow = {
   ref_payment_statuses: Pick<Tables<"ref_payment_statuses">, "name" | "code"> | null
 }
 
+type RecordOnchainPaymentRouteSnapshot = {
+  id: number
+  method_id: number
+  project_id: number | null
+  chain_id: number | null
+  chain_asset_id: number | null
+  intake_contract_id: number | null
+  ref_chains: {
+    network_key: string
+  }
+  chain_intake_contracts: {
+    contract_address: string
+    treasury_address: string
+    abi_version: string
+  }
+  ref_chain_assets: {
+    token_address: string | null
+    is_native: boolean
+  }
+}
+
 const MANAGED_CRYPTO_PAYMENT_METHOD_SELECT = `
   id,
   method_id,
@@ -302,6 +330,7 @@ function mapPaymentSummary(row: InsertedPaymentRow): PaymentRecordSummary {
     paid_at: row.paid_at,
     confirmed_at: row.confirmed_at,
     notes: row.notes,
+    latest_onchain_submission: null,
   }
 }
 
@@ -584,6 +613,14 @@ function normalizeManagedRouteLabel(label: string) {
   return next.length > 0 ? next : null
 }
 
+function appendPaymentNote(existingNote: string | null | undefined, nextNote: string) {
+  if (!existingNote?.trim()) {
+    return nextNote
+  }
+
+  return `${existingNote}\n${nextNote}`
+}
+
 async function refreshProjectManagedRoutes(project: ProjectContext["project"]) {
   const routes = await listProjectManagedCryptoPaymentMethodsForProjectId(project.id)
   revalidatePath(`/projects/${project.slug}/payments`)
@@ -629,6 +666,27 @@ export async function listProjectCryptoPaymentMethods(
     return {
       ok: false,
       error: error instanceof Error ? error.message : "Could not load active crypto payment routes.",
+    }
+  }
+}
+
+export async function listProjectLatestOnchainSubmissions(
+  projectSlug: string,
+): Promise<ActionResult<OnchainSubmissionSummary[]>> {
+  const context = await getProjectAdminContext(projectSlug)
+  if (!context.ok) {
+    return context
+  }
+
+  try {
+    return {
+      ok: true,
+      data: await listProjectOnchainSubmissionSummaries(context.data.project.id),
+    }
+  } catch (error) {
+    return {
+      ok: false,
+      error: error instanceof Error ? error.message : "Could not load onchain submission status.",
     }
   }
 }
@@ -1056,35 +1114,56 @@ export async function recordOnchainPaymentSubmission(
     return context
   }
 
-  const auth = await getAuthenticatedUserId()
-  if (!auth.ok) {
-    return { ok: false, error: auth.error }
-  }
+  const supabase = getAdminSupabaseClient()
 
-  const { supabase } = auth
-
-  const [{ data: payment }, { data: paymentMethod }, { data: awaitingStatus }] = await Promise.all([
-    supabase.from("payments").select("id, project_id").eq("id", input.paymentId).single(),
-    supabase
-      .from("payment_methods")
-      .select("id, method_id, project_id, chain_id, chain_asset_id, intake_contract_id")
-      .eq("id", input.paymentMethodId)
-      .single(),
-    supabase.from("ref_payment_statuses").select("id").eq("code", "awaiting_confirmation").single(),
-  ])
+  const [{ data: payment }, { data: paymentMethod }, { data: awaitingStatus }, { data: unresolvedSubmission }] =
+    await Promise.all([
+      supabase.from("payments").select("id, project_id, notes").eq("id", input.paymentId).single(),
+      supabase
+        .from("payment_methods")
+        .select(`
+          id,
+          method_id,
+          project_id,
+          chain_id,
+          chain_asset_id,
+          intake_contract_id,
+          ref_chains!inner(network_key),
+          chain_intake_contracts!inner(contract_address, treasury_address, abi_version),
+          ref_chain_assets!inner(token_address, is_native)
+        `)
+        .eq("id", input.paymentMethodId)
+        .single(),
+      supabase.from("ref_payment_statuses").select("id").eq("code", "awaiting_confirmation").single(),
+      supabase
+        .from("onchain_payment_submissions")
+        .select("id")
+        .eq("payment_id", input.paymentId)
+        .in("status", ["submitted", "confirming"])
+        .maybeSingle(),
+    ])
 
   if (!payment || payment.project_id !== context.data.project.id) {
     return { ok: false, error: "Payment record does not belong to this project" }
   }
 
+  const paymentMethodSnapshot = paymentMethod as RecordOnchainPaymentRouteSnapshot | null
+
   if (
-    !paymentMethod ||
-    paymentMethod.project_id !== context.data.project.id ||
-    paymentMethod.chain_id !== input.chainId ||
-    paymentMethod.chain_asset_id !== input.chainAssetId ||
-    paymentMethod.intake_contract_id !== input.intakeContractId
+    !paymentMethodSnapshot ||
+    paymentMethodSnapshot.project_id !== context.data.project.id ||
+    paymentMethodSnapshot.chain_id !== input.chainId ||
+    paymentMethodSnapshot.chain_asset_id !== input.chainAssetId ||
+    paymentMethodSnapshot.intake_contract_id !== input.intakeContractId
   ) {
     return { ok: false, error: "Selected crypto route is invalid for this project" }
+  }
+
+  if (unresolvedSubmission?.id) {
+    return {
+      ok: false,
+      error: "This payment already has an unresolved onchain submission. Wait for reconciliation or a failed result before retrying.",
+    }
   }
 
   const executableRoutes = await listProjectManagedCryptoPaymentMethodsForProjectId(context.data.project.id)
@@ -1120,10 +1199,17 @@ export async function recordOnchainPaymentSubmission(
       chain_id: input.chainId,
       chain_asset_id: input.chainAssetId,
       intake_contract_id: input.intakeContractId,
+      chain_network_key: paymentMethodSnapshot.ref_chains.network_key,
+      intake_contract_address: paymentMethodSnapshot.chain_intake_contracts.contract_address,
+      intake_treasury_address: paymentMethodSnapshot.chain_intake_contracts.treasury_address,
+      intake_abi_version: paymentMethodSnapshot.chain_intake_contracts.abi_version,
+      asset_token_address: paymentMethodSnapshot.ref_chain_assets.token_address,
+      asset_is_native: paymentMethodSnapshot.ref_chain_assets.is_native,
       wallet_address: input.walletAddress,
       tx_hash: input.txHash,
       amount_raw: input.amountRaw,
       amount_decimal: amountDecimal,
+      period_id: input.periodId,
       status: "submitted",
       block_number: input.blockNumber ?? null,
       receipt: input.receipt,
@@ -1143,9 +1229,12 @@ export async function recordOnchainPaymentSubmission(
     .from("payments")
     .update({
       status_id: awaitingStatus.id,
-      payment_method_id: paymentMethod.method_id ?? null,
+      payment_method_id: paymentMethodSnapshot.method_id ?? null,
       paid_at: new Date().toISOString(),
-      notes: `Onchain payment submitted: ${input.txHash} (period tag: ${input.periodId === 0 ? "current" : input.periodId})`,
+      notes: appendPaymentNote(
+        payment.notes,
+        `Onchain payment submitted: ${input.txHash} (period tag: ${input.periodId === 0 ? "current" : input.periodId})`,
+      ),
     })
     .eq("id", input.paymentId)
 
@@ -1153,7 +1242,51 @@ export async function recordOnchainPaymentSubmission(
     return { ok: false, error: paymentUpdateError.message }
   }
 
+  revalidatePath(`/projects/${input.projectSlug}/payments`)
+  revalidatePath("/admin/payments")
+
   return { ok: true, data: { submissionId: submission.id } }
+}
+
+export async function runInternalOnchainPaymentReconciliation(input?: {
+  limit?: number
+  paymentId?: number
+  submissionId?: number
+}): Promise<ActionResult<OnchainReconciliationRunSummary>> {
+  try {
+    await requireInternalAdminActor()
+  } catch (error) {
+    return {
+      ok: false,
+      error: error instanceof Error ? error.message : "You do not have internal admin access.",
+    }
+  }
+
+  try {
+    const summary = await runOnchainPaymentReconciliation({
+      source: "admin_manual",
+      limit: input?.limit,
+      paymentId: input?.paymentId,
+      submissionId: input?.submissionId,
+    })
+
+    revalidatePath("/admin/payments")
+    revalidatePath("/admin/payments/reconciliation")
+
+    for (const projectSlug of summary.touchedProjectSlugs) {
+      revalidatePath(`/projects/${projectSlug}/payments`)
+    }
+
+    return {
+      ok: true,
+      data: summary,
+    }
+  } catch (error) {
+    return {
+      ok: false,
+      error: error instanceof Error ? error.message : "Could not run onchain payment reconciliation.",
+    }
+  }
 }
 
 export async function confirmInternalPaymentReceipt(
@@ -1169,13 +1302,21 @@ export async function confirmInternalPaymentReceipt(
   }
 
   const supabase = getAdminSupabaseClient()
-  const [{ data: payment }, { data: confirmedStatus }] = await Promise.all([
+  const [{ data: payment }, { data: confirmedStatus }, { data: onchainSubmission }] = await Promise.all([
     supabase.from("payments").select("id, project_id, projects(slug)").eq("id", paymentId).single(),
     supabase.from("ref_payment_statuses").select("id, code").eq("code", "confirmed").single(),
+    supabase.from("onchain_payment_submissions").select("id").eq("payment_id", paymentId).limit(1).maybeSingle(),
   ])
 
   if (!payment) {
     return { ok: false, error: "Payment not found." }
+  }
+
+  if (onchainSubmission?.id) {
+    return {
+      ok: false,
+      error: "Crypto-submitted payments must be advanced by onchain reconciliation instead of manual confirmation.",
+    }
   }
 
   if (!confirmedStatus?.id) {
