@@ -17,19 +17,19 @@ Each item below is intentionally sized to one agentic coding session. The sequen
 - Timestamp started: 2026-04-14T21:54:22Z
 - Timestamp completed: 2026-04-14T21:54:22Z
 - Feature branch: codex/wallet-production-readiness
-- Head: TBD
+- Head: 0f81f15
 - Session-log reference(s): session v34
 
 Turn the architecture docs into a repo-grounded execution plan that the next several agents can follow without re-deriving priorities. This session should tighten `agent-context/` itself: normalize naming, cross-link the backgrounder/current-state/target-state docs, and add a short “how to use this backlog” note for future contributors. The goal is not product code yet. The goal is to make the repo operationally legible so subsequent sessions can work in sequence instead of starting from scratch every time.
 
 ## Session 02: Inventory every incomplete, stubbed, or placeholder route
 
-- Status: Not started
-- Timestamp started: TBD
-- Timestamp completed: TBD
-- Feature branch: TBD
+- Status: Complete
+- Timestamp started: 2026-04-14T21:55:18Z
+- Timestamp completed: 2026-04-14T21:55:18Z
+- Feature branch: codex/wallet-production-readiness
 - Head: TBD
-- Session-log reference(s): TBD
+- Session-log reference(s): session v35
 
 Review the route tree and current UI to identify all pages that are unfinished, misleading, redundant, or only half-wired. Produce a route inventory with one disposition per page: finish, merge, redirect, or remove. This should include public pages, settings pages, admin pages, and any thin placeholders that still reflect an earlier website-first mindset. The output should drive the product information architecture so later UX sessions are completing real surfaces rather than polishing pages that should disappear.
 

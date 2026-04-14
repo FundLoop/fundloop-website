@@ -98,6 +98,35 @@ Complete Session 04 by adding the reusable app-side contract and invocation laye
 - Implement `project-payment-drafts-create` as the first real Supabase Edge Function.
 - Move the project payments page onto the browser Edge Function adapter and keep the server action as a compatibility wrapper.
 
+### session v35: Inventory current app routes and dispositions
+- timestamp: 2026-04-14T21:55:18Z
+- agent: **Codex (GPT-5)**
+- branch: **codex/wallet-production-readiness**
+- head: 0f81f1575f4552b86f7091bb2b17ec7123c4df9d - docs(agent-context): finalize planning doc entrypoint
+
+#### Objective
+Complete Session 02 by inventorying every current route surface under `app/`, recording which routes are already real, which are transitional, and which should be merged, redirected, or removed before deeper UX and IA work continues.
+
+#### Actions Taken
+- Added `agent-context/route-inventory.md` with one entry for every current `page.tsx` and `route.ts` surface under `app/`.
+- Grouped the inventory into public, authenticated, operator, and machine/internal surfaces so route planning is easier to follow.
+- Recorded audience, current state, evidence, disposition, canonical future destination, and follow-up roadmap sessions for each route.
+- Called out the concrete issues discovered during exploration, including mock/demo routes, missing admin child routes, missing settings child routes, the broken `/organizations` profile link target, and the intentionally transitional `/api` and `/analytics` public pages.
+- Updated the planning index and marked Session 02 complete in `agent-context/todo.md`, while also backfilling Session 01 with the commit head that closed it.
+
+#### Tests and Validation Notes
+- Documentation-only change.
+- Verified the route inventory covers the current `app/` surface list by comparing against the repo route list generated from `page.tsx` and `route.ts` files.
+- Did not run `pnpm` validation because no runtime or code behavior changed.
+
+#### Reflections
+- The route tree is in better shape than a pure placeholder app, but it still mixes production surfaces with transitional or demo routes in ways that will confuse later implementation if we do not lock the IA soon.
+- Capturing broken links in the inventory makes the next navigation and workspace sessions much more concrete than a generic “clean up IA” task would be.
+
+#### Suggested Next Steps
+- Define the target information architecture with explicit role-based workspaces and route mappings for the major current surfaces.
+- Add a small number of migration-oriented TODO annotations to the highest-signal transitional route files so future refactors point back to the IA doc.
+
 ### session v34: Finalize planning doc set and backlog entrypoint
 - timestamp: 2026-04-14T21:54:22Z
 - agent: **Codex (GPT-5)**

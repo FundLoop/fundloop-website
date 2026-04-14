@@ -12,6 +12,8 @@ This directory is the canonical planning and execution context for FundLoop agen
   Intended operating model for the production FundLoop system.
 - [TODO Roadmap](/Users/botmaster/src/fundloop/agent-context/todo.md)
   Sequenced execution backlog, one agentic coding session per item.
+- [Route Inventory](/Users/botmaster/src/fundloop/agent-context/route-inventory.md)
+  Current `app/` route-by-route inventory with planned disposition for each surface.
 - [Session Log](/Users/botmaster/src/fundloop/agent-context/session-log.md)
   Commit-by-commit record of completed work, validation, and next steps.
 
