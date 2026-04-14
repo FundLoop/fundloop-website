@@ -217,10 +217,12 @@ If you are working on zkAS changes, expect to touch both the app layer and the S
 - `components/` contains reusable UI and feature components.
 - `lib/` contains shared helpers.
 - `contracts/` contains the Hardhat workspace for onchain intake contracts.
+- `docs/engineering/` contains longer-lived engineering and architecture docs.
 - `supabase/` contains the canonical schema migration and seed artifacts.
 - `tests/` contains Vitest coverage.
 - `types/` contains shared TypeScript and Supabase types.
 - `zkas/` contains the local zkActivitySum execution engine and runner-related code.
+- `agent-context/` contains lightweight live agent context such as the backlog and session log.
 
 ## Notes
 

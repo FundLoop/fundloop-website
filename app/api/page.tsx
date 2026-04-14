@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button"
 import { MarketingPage, MarketingSection, SectionBody, SectionEyebrow, SectionTitle } from "@/components/marketing/page-chrome"
 import { Reveal } from "@/components/marketing/reveal"
 
-// TODO(Session 03 IA): keep this public temporarily, but merge its canonical content into `/documentation` once developer, MCP, and protocol docs are real.
+// TODO(Session 03 IA): keep this public temporarily, but merge its canonical content into `/documentation` once developer, MCP, and protocol docs are real. See `docs/engineering/information-architecture.md`.
 
 const surfaces = [
   {

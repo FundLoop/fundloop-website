@@ -1,6 +1,6 @@
 "use client"
 
-// TODO(Session 03 IA): keep `/admin` as the operator workspace root and replace the broken child links here with real operator destinations from `agent-context/information-architecture.md`.
+// TODO(Session 03 IA): keep `/admin` as the operator workspace root and replace the broken child links here with real operator destinations from `docs/engineering/information-architecture.md`.
 
 import Link from "next/link"
 import { Button } from "@/components/ui/button"

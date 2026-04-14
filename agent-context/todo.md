@@ -8,6 +8,7 @@ Each item below is intentionally sized to one agentic coding session. The sequen
 - Always build on feature branches. 
 - When starting a task: update the status to "started", set the branch and timestamp started. Reference `backgrounder-for-agents.md`, `current-state-architecture.md`, and `target-state-architecture.md` before starting to build.
 - While building: Make underway commits if needed, always with an accompanying session-log entry. Build unit tests and smoke tests for new features as needed. Smoke test before reporting complete. Do not write in this doc what you actually did, instead write that in the session-log.
+- At the end of each task: update relevant long-lived engineering docs in `docs/engineering/` whenever architecture, route decisions, workflows, or operating assumptions changed.
 - If a todo needs to be split, or if any spillover actions were not completed, then remove those words from your todo and instead create new minor todo at the right place in the document, for example a new `12.1` immediately after todo 12.
 - Once completed, set status to complete, update timestamp completed, ensure all relevant session logs are referenced. 
 
@@ -39,7 +40,7 @@ Review the route tree and current UI to identify all pages that are unfinished, 
 - Timestamp started: 2026-04-14T21:57:19Z
 - Timestamp completed: 2026-04-14T21:57:19Z
 - Feature branch: codex/wallet-production-readiness
-- Head: TBD
+- Head: 9f88663
 - Session-log reference(s): session v36
 
 Restructure the app map around the three real personas: regular users, founders/project members, and internal operators. This session should decide the long-term navigation model, top-level route groupings, dashboard entry points, and what belongs under settings versus workspaces. The result should be a stable information architecture document plus initial route-level TODO annotations in the code. It should also identify which current pages remain public marketing content and which need to become production application surfaces.

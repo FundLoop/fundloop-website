@@ -1,8 +1,10 @@
 # Agent Context
 
-This directory is the canonical planning and execution context for FundLoop agents.
+This directory is the lightweight, live context surface for FundLoop agents.
 
-## Core Planning Set
+Keep this folder small and current. It should hold the working context agents need during active implementation, not the full set of long-lived engineering docs.
+
+## Live Agent Context
 
 - [Backgrounder for Agents](/Users/botmaster/src/fundloop/agent-context/backgrounder-for-agents.md)
   Product intent, users, and decision-making context.
@@ -12,16 +14,19 @@ This directory is the canonical planning and execution context for FundLoop agen
   Intended operating model for the production FundLoop system.
 - [TODO Roadmap](/Users/botmaster/src/fundloop/agent-context/todo.md)
   Sequenced execution backlog, one agentic coding session per item.
-- [Route Inventory](/Users/botmaster/src/fundloop/agent-context/route-inventory.md)
-  Current `app/` route-by-route inventory with planned disposition for each surface.
-- [Information Architecture](/Users/botmaster/src/fundloop/agent-context/information-architecture.md)
-  Target route model and canonical homes for public, user, founder, and operator surfaces.
 - [Session Log](/Users/botmaster/src/fundloop/agent-context/session-log.md)
   Commit-by-commit record of completed work, validation, and next steps.
+
+## Long-Lived Engineering Docs
+
+- [Engineering Docs Index](/Users/botmaster/src/fundloop/docs/engineering/README.md)
+- [Information Architecture](/Users/botmaster/src/fundloop/docs/engineering/information-architecture.md)
+- [Route Inventory](/Users/botmaster/src/fundloop/docs/engineering/route-inventory.md)
 
 ## How To Use This Folder
 
 1. Start with the backgrounder for product intent.
 2. Read current-state and target-state before choosing implementation work.
 3. Use the todo roadmap to pick the next scoped session.
-4. Record all completed work in the session log, not in the todo file.
+4. Update the session log with completed work.
+5. Update `docs/engineering/` when architecture, routes, workflows, or operating assumptions changed.

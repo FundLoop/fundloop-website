@@ -98,6 +98,34 @@ Complete Session 04 by adding the reusable app-side contract and invocation laye
 - Implement `project-payment-drafts-create` as the first real Supabase Edge Function.
 - Move the project payments page onto the browser Edge Function adapter and keep the server action as a compatibility wrapper.
 
+### session v37: Move long-lived route docs into engineering docs
+- timestamp: 2026-04-14T23:19:22Z
+- agent: **Codex (GPT-5)**
+- branch: **codex/wallet-production-readiness**
+- head: 9f88663b10eea061b96cab8e05f289a333f92649 - docs(agent-context): define target information architecture
+
+#### Objective
+Finish the in-flight documentation cleanup so `agent-context/` stays a small live context surface for agents, while the longer-lived route and architecture docs move into `docs/engineering/` before Sessions 04 and 05 begin.
+
+#### Actions Taken
+- Moved the long-lived route governance docs into `docs/engineering/` as `information-architecture.md` and `route-inventory.md`.
+- Added `docs/engineering/README.md` and updated `agent-context/README.md` so the repo now distinguishes lightweight live agent context from longer-lived engineering references.
+- Updated `AGENTS.md` and `README.md` to point larger engineering docs at `docs/engineering/` instead of `agent-context/`.
+- Updated the recent route-level migration comments to reference the moved information-architecture doc.
+- Updated `agent-context/todo.md` so each task now reminds agents to refresh engineering docs when architecture, routes, workflows, or operating assumptions change, and backfilled Session 03 with its commit head.
+
+#### Tests and Validation Notes
+- Ran `pnpm dlx node@22.22.1 /opt/homebrew/bin/pnpm lint`.
+- Lint passed after the reference updates and comment adjustments.
+
+#### Reflections
+- Keeping `agent-context/` small will make active sessions easier to orient quickly, while `docs/engineering/` gives the longer-lived design work a more stable home.
+- Doing this cleanup before the Edge Function sessions reduces the chance of mixing architectural implementation work with unrelated doc churn in the same commit.
+
+#### Suggested Next Steps
+- Introduce the shared Edge Function contract layer in the app and document the invocation pattern in `docs/engineering/`.
+- Use project payment draft creation as the first real Supabase Edge Function migration to prove the transport contract.
+
 ### session v36: Define target route model and mark transitional surfaces
 - timestamp: 2026-04-14T21:57:19Z
 - agent: **Codex (GPT-5)**
@@ -108,7 +136,7 @@ Complete Session 04 by adding the reusable app-side contract and invocation laye
 Complete Session 03 by defining the target information architecture around role-based workspaces, mapping major current routes to their future canonical homes, and adding a small set of migration comments to the most important transitional route files.
 
 #### Actions Taken
-- Added `agent-context/information-architecture.md` to lock the target route model for public surfaces, the user workspace, the founder/project workspace, and the internal operator workspace.
+- Added `docs/engineering/information-architecture.md` to lock the target route model for public surfaces, the user workspace, the founder/project workspace, and the internal operator workspace.
 - Added an explicit current-to-target route mapping table covering the major transitional surfaces, including `/my-profile`, `/settings`, `/projects/[slug]/payments`, `/admin`, `/analytics`, `/api`, `/participation`, `/join`, and `/pledge`.
 - Updated the planning index to include the IA document.
 - Added short IA-oriented TODO comments to the high-signal transitional route files: `app/admin/page.tsx`, `app/settings/page.tsx`, `app/api/page.tsx`, `app/analytics/page.tsx`, `app/invitations/[token]/page.tsx`, and `app/organizations/[id]/page.tsx`.
@@ -137,7 +165,7 @@ Complete Session 03 by defining the target information architecture around role-
 Complete Session 02 by inventorying every current route surface under `app/`, recording which routes are already real, which are transitional, and which should be merged, redirected, or removed before deeper UX and IA work continues.
 
 #### Actions Taken
-- Added `agent-context/route-inventory.md` with one entry for every current `page.tsx` and `route.ts` surface under `app/`.
+- Added `docs/engineering/route-inventory.md` with one entry for every current `page.tsx` and `route.ts` surface under `app/`.
 - Grouped the inventory into public, authenticated, operator, and machine/internal surfaces so route planning is easier to follow.
 - Recorded audience, current state, evidence, disposition, canonical future destination, and follow-up roadmap sessions for each route.
 - Called out the concrete issues discovered during exploration, including mock/demo routes, missing admin child routes, missing settings child routes, the broken `/organizations` profile link target, and the intentionally transitional `/api` and `/analytics` public pages.
