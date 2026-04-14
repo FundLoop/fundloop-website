@@ -121,6 +121,22 @@ node scripts/sync-chain-deployments.mjs --env local --apply
 
 To run scheduled payment reconciliation, post to `/api/internal/payments/reconcile-onchain` with `Authorization: Bearer $FUNDLOOP_PAYMENTS_CRON_SECRET`. Internal admins can also trigger targeted replay/backfill from `/admin/payments/reconciliation`.
 
+## Supabase Edge Functions
+
+FundLoop is migrating write-heavy flows onto Supabase Edge Functions behind shared app-side adapters.
+
+The first real command is:
+
+- `project-payment-drafts-create`
+
+Run it locally once the local Supabase stack is up:
+
+```bash
+pnpm supabase:functions:serve:project-payment-drafts-create
+```
+
+The browser path for project payment draft creation now calls the function directly via the shared Edge Function adapter, while the legacy server action remains as a compatibility wrapper.
+
 ## Playwright E2E Workflow
 
 The repo now includes a two-lane Playwright harness:

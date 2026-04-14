@@ -12,6 +12,38 @@ Agents populate one level-3 heading for each coding session, following the same 
 
 ---
 
+### session v39: Migrate project payment drafts onto the first Edge Function
+- timestamp: 2026-04-14T23:36:10Z
+- agent: **Codex (GPT-5)**
+- branch: **codex/wallet-production-readiness**
+- head: f2bd1b5f6d9876b48a579efb45d0f8f2eb8c38e2 - feat(edge-functions): add shared invocation contract layer
+
+#### Objective
+Complete Session 05 by standing up the first real Supabase Edge Function domain boundary for project payment draft creation, moving the project payments page onto the browser adapter, and keeping the old server action only as a compatibility wrapper.
+
+#### Actions Taken
+- Added the shared payment draft command module under `lib/payments/` so project-admin permission checks, draft status lookup, payment-method validation, inserts, and summary mapping now live outside the server action.
+- Added the first real Supabase Edge Function at `supabase/functions/project-payment-drafts-create/index.js`, including bearer-token auth, service-role-backed domain execution, payment-save observability writes, and the shared command contract.
+- Moved the client-side project payments write path onto `invokeProjectPaymentDraftsCreateBrowser(...)` and reduced `createProjectPaymentDrafts(...)` to a compatibility wrapper around the server Edge Function adapter.
+- Split browser-safe and server-only Edge Function invokers/adapters so the client bundle no longer drags `next/headers` across the boundary.
+- Added local development ergonomics with a new `pnpm supabase:functions:serve:project-payment-drafts-create` script and updated the README plus engineering docs to document the new write path and local smoke flow.
+- Added focused coverage for the extracted command and the payment-draft adapter while trimming the outdated payment-save server-action observability expectation.
+
+#### Tests and Validation Notes
+- Ran `pnpm dlx node@22.22.1 /opt/homebrew/bin/pnpm exec vitest run tests/project-payment-drafts-command.test.ts tests/project-payment-drafts-create-adapter.test.ts tests/project-payment-observability-actions.test.ts`.
+- Ran `pnpm dlx node@22.22.1 /opt/homebrew/bin/pnpm lint`.
+- Ran `pnpm dlx node@22.22.1 /opt/homebrew/bin/pnpm check`.
+- `lint`, `test`, `typecheck`, and `build` all passed in the supported Node 22 runtime.
+- Did not run a live `supabase functions serve` browser smoke because a local Supabase function runtime was not provisioned in this session.
+
+#### Reflections
+- The clean separation between browser-safe adapters and server-only adapters was necessary to keep the first migration production-safe; otherwise the shared transport layer would have leaked server-only imports into the client bundle.
+- Starting with payment draft creation still feels like the right first domain because it exercised auth, permissions, validation, observability, and summary mapping without entangling the later onboarding sessions.
+
+#### Suggested Next Steps
+- Continue migrating the next narrow write command onto the same Edge Function pattern, likely onboarding draft save or onboarding publish.
+- Decide whether to add a small local smoke harness around `supabase functions serve` once the team has a reliable local Supabase runtime available.
+
 ### session v38: Add shared Supabase Edge Function contract layer
 - timestamp: 2026-04-14T23:28:41Z
 - agent: **Codex (GPT-5)**

@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache"
 import { createServerSupabaseClient } from "@/lib/supabase-server"
 import { getAdminSupabaseClient } from "@/lib/supabase-admin"
+import { invokeProjectPaymentDraftsCreateServer } from "@/lib/edge-functions/project-payment-drafts-create-server"
 import {
   getPromotedDefaultRouteId,
   moveProjectCryptoRouteState,
@@ -11,7 +12,6 @@ import {
   type ProjectCryptoRouteState,
 } from "@/lib/project-crypto-routes"
 import { requireInternalAdminActor } from "@/lib/zkas/auth"
-import { validateProjectPaymentDrafts, type ProjectPaymentDraftInput } from "@/lib/payments"
 import {
   getDeploymentAvailabilityForRoute,
   getWalletRuntimeConfig,
@@ -32,6 +32,7 @@ import {
 import { recordPaymentFlowEvent } from "@/lib/observability/payment-flow-server"
 import type { PaymentRecordSummary } from "@/lib/payments/payment-record-summary"
 import type { Json, Tables } from "@/types/supabase"
+import type { ProjectPaymentDraftsCreateInput } from "@/lib/edge-functions/project-payment-drafts-create-contract"
 
 type ActionResult<T> = { ok: true; data: T } | { ok: false; error: string }
 export type { PaymentRecordSummary } from "@/lib/payments/payment-record-summary"
@@ -111,8 +112,6 @@ type MinimalCryptoPaymentMethodRow = Pick<
   | "collection_mode"
 >
 
-type PaymentMethodReferenceRow = Pick<Tables<"ref_payment_methods">, "id">
-
 type ProjectContext = {
   userId: string
   project: Pick<Tables<"projects">, "id" | "slug" | "name" | "organization_id" | "default_payment_method_id">
@@ -135,11 +134,7 @@ type RecordOnchainPaymentInput = {
   receipt: Json
 }
 
-type CreateProjectPaymentDraftsInput = {
-  projectSlug: string
-  attemptId?: string
-  payments: ProjectPaymentDraftInput[]
-}
+type CreateProjectPaymentDraftsInput = ProjectPaymentDraftsCreateInput
 
 type CreateProjectCryptoPaymentMethodInput = {
   projectSlug: string
@@ -174,26 +169,6 @@ type ToggleProjectCryptoPaymentMethodEnabledInput = {
 
 function getObservabilityAttemptId(attemptId?: string) {
   return attemptId?.trim() || crypto.randomUUID()
-}
-
-type InsertedPaymentRow = {
-  id: number
-  project_id: number | null
-  period_start: string
-  period_end: string
-  revenue: number
-  payment_amount: number
-  payment_percentage: number
-  payment_method_id: number | null
-  status_id: number | null
-  notes: string | null
-  created_at: string | null
-  updated_at: string | null
-  paid_at: string | null
-  confirmed_at: string | null
-  projects: Pick<Tables<"projects">, "name" | "slug"> | null
-  ref_payment_methods: Pick<Tables<"ref_payment_methods">, "name" | "code"> | null
-  ref_payment_statuses: Pick<Tables<"ref_payment_statuses">, "name" | "code"> | null
 }
 
 type RecordOnchainPaymentRouteSnapshot = {
@@ -345,32 +320,6 @@ async function recordActionObservabilityEvent(input: {
     errorMessage: input.error ? normalizePaymentFlowErrorMessage(input.error) : null,
     metadata: input.metadata,
   })
-}
-
-function mapPaymentSummary(row: InsertedPaymentRow): PaymentRecordSummary {
-  return {
-    id: row.id,
-    project_id: row.project_id,
-    project_name: row.projects?.name ?? "Unknown project",
-    project_slug: row.projects?.slug ?? null,
-    period_start: row.period_start,
-    period_end: row.period_end,
-    revenue: row.revenue,
-    payment_amount: row.payment_amount,
-    payment_percentage: row.payment_percentage,
-    payment_method_id: row.payment_method_id,
-    payment_method_name: row.ref_payment_methods?.name ?? "Unknown",
-    payment_method_code: row.ref_payment_methods?.code ?? "unknown",
-    status_id: row.status_id,
-    status_name: row.ref_payment_statuses?.name ?? "Unknown",
-    status_code: row.ref_payment_statuses?.code ?? "unknown",
-    created_at: row.created_at,
-    updated_at: row.updated_at,
-    paid_at: row.paid_at,
-    confirmed_at: row.confirmed_at,
-    notes: row.notes,
-    latest_onchain_submission: null,
-  }
 }
 
 function mapManagedCryptoPaymentMethodSummary(row: ManagedCryptoPaymentMethodRow): ManagedCryptoPaymentMethodSummary {
@@ -1062,193 +1011,19 @@ export async function toggleProjectCryptoPaymentMethodEnabled(
 export async function createProjectPaymentDrafts(
   input: CreateProjectPaymentDraftsInput,
 ): Promise<ActionResult<PaymentRecordSummary[]>> {
-  const attemptId = getObservabilityAttemptId(input.attemptId)
-  const auth = await getAuthenticatedUserId()
-  const context = await getProjectAdminContext(input.projectSlug)
-  if (!context.ok) {
-    await recordActionObservabilityEvent({
-      flow: "payment_save",
-      stage: "submit",
-      outcome: "failure",
-      attemptId,
-      actorUserId: auth.ok ? auth.userId : null,
-      actorRole: auth.ok ? "authenticated_user" : "unauthenticated",
-      error: context.error,
-      metadata: {
-        projectSlug: input.projectSlug,
-        paymentCount: input.payments.length,
-      },
-    })
-    return context
-  }
-
-  await recordActionObservabilityEvent({
-    flow: "payment_save",
-    stage: "submit",
-    outcome: "attempt",
-    attemptId,
-    actorUserId: context.data.userId,
-    actorRole: "project_admin",
-    projectId: context.data.project.id,
-    metadata: {
-      paymentCount: input.payments.length,
-    },
-  })
-
-  const validation = validateProjectPaymentDrafts(input.payments)
-  if (!validation.ok) {
-    await recordActionObservabilityEvent({
-      flow: "payment_save",
-      stage: "validation",
-      outcome: "failure",
-      attemptId,
-      actorUserId: context.data.userId,
-      actorRole: "project_admin",
-      projectId: context.data.project.id,
-      error: validation.error,
-      metadata: {
-        paymentCount: input.payments.length,
-      },
-    })
-    return validation
-  }
-
-  const supabase = getAdminSupabaseClient()
-  const [{ data: draftStatus }, { data: methods, error: methodsError }] = await Promise.all([
-    supabase.from("ref_payment_statuses").select("id").eq("code", "draft").single(),
-    supabase
-      .from("ref_payment_methods")
-      .select("id")
-      .in(
-        "id",
-        validation.data.map((row) => row.payment_method_id),
-      ),
-  ])
-
-  if (!draftStatus?.id) {
-    await recordActionObservabilityEvent({
-      flow: "payment_save",
-      stage: "submit",
-      outcome: "failure",
-      attemptId,
-      actorUserId: context.data.userId,
-      actorRole: "project_admin",
-      projectId: context.data.project.id,
-      error: "The draft payment status is not configured.",
-      metadata: {
-        paymentCount: input.payments.length,
-      },
-    })
-    return { ok: false, error: "The draft payment status is not configured." }
-  }
-
-  if (methodsError) {
-    await recordActionObservabilityEvent({
-      flow: "payment_save",
-      stage: "submit",
-      outcome: "failure",
-      attemptId,
-      actorUserId: context.data.userId,
-      actorRole: "project_admin",
-      projectId: context.data.project.id,
-      error: methodsError.message,
-      metadata: {
-        paymentCount: input.payments.length,
-      },
-    })
-    return { ok: false, error: methodsError.message }
-  }
-
-  const validMethodIds = new Set((methods as PaymentMethodReferenceRow[] | null)?.map((method) => method.id) ?? [])
-  const invalidRow = validation.data.find((row) => !validMethodIds.has(row.payment_method_id))
-  if (invalidRow) {
-    await recordActionObservabilityEvent({
-      flow: "payment_save",
-      stage: "validation",
-      outcome: "failure",
-      attemptId,
-      actorUserId: context.data.userId,
-      actorRole: "project_admin",
-      projectId: context.data.project.id,
-      error: "One or more selected payment methods are no longer available.",
-      metadata: {
-        paymentCount: input.payments.length,
-        paymentMethodId: invalidRow.payment_method_id,
-      },
-    })
-    return { ok: false, error: "One or more selected payment methods are no longer available." }
-  }
-
-  const { data, error } = await supabase
-    .from("payments")
-    .insert(
-      validation.data.map((row) => ({
-        project_id: context.data.project.id,
-        period_start: row.period_start,
-        period_end: row.period_end,
-        revenue: row.revenue,
-        payment_amount: row.payment_amount,
-        payment_percentage: row.payment_percentage,
-        payment_method_id: row.payment_method_id,
-        status_id: draftStatus.id,
-      })),
-    )
-    .select(`
-      id,
-      project_id,
-      period_start,
-      period_end,
-      revenue,
-      payment_amount,
-      payment_percentage,
-      payment_method_id,
-      status_id,
-      notes,
-      created_at,
-      updated_at,
-      paid_at,
-      confirmed_at,
-      projects(name, slug),
-      ref_payment_methods(name, code),
-      ref_payment_statuses(name, code)
-    `)
-    .order("period_start", { ascending: false })
-
-  if (error) {
-    await recordActionObservabilityEvent({
-      flow: "payment_save",
-      stage: "submit",
-      outcome: "failure",
-      attemptId,
-      actorUserId: context.data.userId,
-      actorRole: "project_admin",
-      projectId: context.data.project.id,
-      error: error.message,
-      metadata: {
-        paymentCount: input.payments.length,
-      },
-    })
-    return { ok: false, error: error.message }
+  const result = await invokeProjectPaymentDraftsCreateServer(input)
+  if (!result.ok) {
+    return {
+      ok: false,
+      error: result.error.message,
+    }
   }
 
   revalidatePath(`/projects/${input.projectSlug}/payments`)
 
-  await recordActionObservabilityEvent({
-    flow: "payment_save",
-    stage: "submit",
-    outcome: "success",
-    attemptId,
-    actorUserId: context.data.userId,
-    actorRole: "project_admin",
-    projectId: context.data.project.id,
-    metadata: {
-      paymentCount: (data ?? []).length,
-    },
-  })
-
   return {
     ok: true,
-    data: ((data ?? []) as InsertedPaymentRow[]).map(mapPaymentSummary),
+    data: result.data,
   }
 }
 

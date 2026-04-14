@@ -14,11 +14,11 @@ import { Badge } from "@/components/ui/badge"
 import { toast } from "@/components/ui/use-toast"
 import { getSupabaseBrowserClient } from "@/lib/supabase"
 import {
-  createProjectPaymentDrafts,
   listProjectLatestOnchainSubmissions,
   listProjectManagedCryptoPaymentMethods,
   type ManagedCryptoPaymentMethodSummary,
 } from "@/app/actions/project-payment-actions"
+import { invokeProjectPaymentDraftsCreateBrowser } from "@/lib/edge-functions/project-payment-drafts-create"
 import {
   ProjectCryptoPaymentDialog,
   type CryptoPaymentMethodOption,
@@ -397,7 +397,7 @@ export default function ProjectPaymentsPage() {
     setSaving(true)
 
     try {
-      const result = await createProjectPaymentDrafts({
+      const result = await invokeProjectPaymentDraftsCreateBrowser({
         projectSlug: slug,
         attemptId,
         payments: newPaymentRows.map((row) => ({
@@ -411,7 +411,7 @@ export default function ProjectPaymentsPage() {
       })
 
       if (!result.ok) {
-        throw new Error(result.error)
+        throw new Error(result.error.message)
       }
 
       const newPayments: Payment[] = result.data.map((payment) => ({
@@ -446,10 +446,11 @@ export default function ProjectPaymentsPage() {
         description: `${newPayments.length} payment record(s) have been saved as drafts.`,
       })
     } catch (error) {
+      const message = error instanceof Error && error.message.trim() ? error.message : "Failed to save payment records"
       console.error("Error saving payments:", error)
       toast({
         title: "Error",
-        description: "Failed to save payment records",
+        description: message,
         variant: "destructive",
       })
     } finally {

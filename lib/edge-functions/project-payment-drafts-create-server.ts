@@ -1,4 +1,6 @@
-import { invokeBrowserEdgeCommand } from "./invoke"
+import "server-only"
+
+import { invokeServerEdgeCommand } from "./invoke-server"
 import {
   isProjectPaymentDraftsCreateOutput,
   PROJECT_PAYMENT_DRAFTS_CREATE_FUNCTION,
@@ -24,8 +26,8 @@ function normalizeProjectPaymentDraftsCreateResult(
   return edgeCommandSuccess(result.data)
 }
 
-export async function invokeProjectPaymentDraftsCreateBrowser(input: ProjectPaymentDraftsCreateInput) {
+export async function invokeProjectPaymentDraftsCreateServer(input: ProjectPaymentDraftsCreateInput) {
   return normalizeProjectPaymentDraftsCreateResult(
-    await invokeBrowserEdgeCommand<ProjectPaymentDraftsCreateInput, unknown>(PROJECT_PAYMENT_DRAFTS_CREATE_FUNCTION, input),
+    await invokeServerEdgeCommand<ProjectPaymentDraftsCreateInput, unknown>(PROJECT_PAYMENT_DRAFTS_CREATE_FUNCTION, input),
   )
 }

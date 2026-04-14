@@ -27,6 +27,7 @@
     "test:e2e": "playwright test --project=remote-safe",
     "test:e2e:remote": "playwright test --project=remote-safe",
     "test:e2e:local": "node scripts/run-playwright-local-wallet.mjs",
+    "supabase:functions:serve:project-payment-drafts-create": "supabase functions serve project-payment-drafts-create --env-file .env.local",
     "typecheck": "tsc --noEmit",
     "check": "pnpm lint && pnpm test && pnpm typecheck && pnpm build"
   },

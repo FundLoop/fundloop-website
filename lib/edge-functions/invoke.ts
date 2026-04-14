@@ -1,10 +1,10 @@
 import type { SupabaseClient } from "@supabase/supabase-js"
 import type { Database } from "../../types/supabase"
 import { getSupabaseBrowserClient } from "../supabase"
-import { createServerSupabaseClient } from "../supabase-server"
 import { edgeCommandFailure, isEdgeCommandResult, type EdgeCommandFailure, type EdgeCommandResult } from "./result"
 
 type FunctionsCapableClient = Pick<SupabaseClient<Database>, "functions">
+type FunctionInvokeOptions = NonNullable<Parameters<FunctionsCapableClient["functions"]["invoke"]>[1]>
 
 function getInvokeErrorMessage(error: unknown) {
   if (error instanceof Error && error.message.trim()) {
@@ -33,7 +33,7 @@ export async function invokeEdgeCommandWithClient<TInput, TOutput>(
   input: TInput,
 ): Promise<EdgeCommandResult<TOutput>> {
   const { data, error } = await client.functions.invoke(functionName, {
-    body: input,
+    body: input as FunctionInvokeOptions["body"],
   })
 
   if (error) {
@@ -49,9 +49,4 @@ export async function invokeEdgeCommandWithClient<TInput, TOutput>(
 
 export async function invokeBrowserEdgeCommand<TInput, TOutput>(functionName: string, input: TInput) {
   return invokeEdgeCommandWithClient<TInput, TOutput>(getSupabaseBrowserClient(), functionName, input)
-}
-
-export async function invokeServerEdgeCommand<TInput, TOutput>(functionName: string, input: TInput) {
-  const client = await createServerSupabaseClient()
-  return invokeEdgeCommandWithClient<TInput, TOutput>(client, functionName, input)
 }
