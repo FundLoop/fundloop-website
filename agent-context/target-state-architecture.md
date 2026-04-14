@@ -2,6 +2,12 @@
 
 Last drafted: 2026-04-14
 
+Related planning docs:
+- [Agent Context Index](/Users/botmaster/src/fundloop/agent-context/README.md)
+- [Backgrounder for Agents](/Users/botmaster/src/fundloop/agent-context/backgrounder-for-agents.md)
+- [Current-State Architecture](/Users/botmaster/src/fundloop/agent-context/current-state-architecture.md)
+- [TODO Roadmap](/Users/botmaster/src/fundloop/agent-context/todo.md)
+
 ## 1. North Star
 
 FundLoop should become a production-grade monthly economic coordination engine that serves two first-class audiences:

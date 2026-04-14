@@ -1,5 +1,11 @@
 # backgrounder-for-agents.md
 
+Related planning docs:
+- [Agent Context Index](/Users/botmaster/src/fundloop/agent-context/README.md)
+- [Current-State Architecture](/Users/botmaster/src/fundloop/agent-context/current-state-architecture.md)
+- [Target-State Architecture](/Users/botmaster/src/fundloop/agent-context/target-state-architecture.md)
+- [TODO Roadmap](/Users/botmaster/src/fundloop/agent-context/todo.md)
+
 ## Purpose of this Document
 
 This document is required reading for any coding agent working on FundLoop. It provides context about *why* FundLoop exists, *who it serves*, and *what matters most* when making implementation decisions.

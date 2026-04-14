@@ -5,19 +5,20 @@ This file is the current execution roadmap for bringing FundLoop from the presen
 Each item below is intentionally sized to one agentic coding session. The sequence matters. Later work should assume the earlier sessions are complete unless the backlog is deliberately re-planned.
 
 ## Execution Rules
-
-Always build on feature branches. When starting a task then update the status to "started", set the branch and timestamp started. Make underway commits if needed, always with an accompanying session-log entry. Reference `everfund-target-state-site-architecture-and-technical-specs-for-agents.md`. Build unit tests and smoke tests for new features as needed. Smoke test before reporting complete. Once completed, set status to complete, update timestamp completed, ensure all relevant session logs are referenced. Do not write in this doc what you actually did, instead write that in the session-log.
-
-If a todo needs to be split, or if any spillover actions were not completed, then remove those words from your todo and instead create new minor todo at the right place in the document (e.g. new `12.1` to follow existing todo `12`).
+- Always build on feature branches. 
+- When starting a task: update the status to "started", set the branch and timestamp started. Reference `backgrounder-for-agents.md`, `current-state-architecture.md`, and `target-state-architecture.md` before starting to build.
+- While building: Make underway commits if needed, always with an accompanying session-log entry. Build unit tests and smoke tests for new features as needed. Smoke test before reporting complete. Do not write in this doc what you actually did, instead write that in the session-log.
+- If a todo needs to be split, or if any spillover actions were not completed, then remove those words from your todo and instead create new minor todo at the right place in the document, for example a new `12.1` immediately after todo 12.
+- Once completed, set status to complete, update timestamp completed, ensure all relevant session logs are referenced. 
 
 ## Session 01: Replace the old backlog with a release-oriented execution map
 
-- Status: Not started
-- Timestamp started: TBD
-- Timestamp completed: TBD
-- Feature branch: TBD
+- Status: Complete
+- Timestamp started: 2026-04-14T21:54:22Z
+- Timestamp completed: 2026-04-14T21:54:22Z
+- Feature branch: codex/wallet-production-readiness
 - Head: TBD
-- Session-log reference(s): TBD
+- Session-log reference(s): session v34
 
 Turn the architecture docs into a repo-grounded execution plan that the next several agents can follow without re-deriving priorities. This session should tighten `agent-context/` itself: normalize naming, cross-link the backgrounder/current-state/target-state docs, and add a short “how to use this backlog” note for future contributors. The goal is not product code yet. The goal is to make the repo operationally legible so subsequent sessions can work in sequence instead of starting from scratch every time.
 

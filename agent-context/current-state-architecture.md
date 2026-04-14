@@ -2,6 +2,12 @@
 
 Last reviewed: 2026-04-14
 
+Related planning docs:
+- [Agent Context Index](/Users/botmaster/src/fundloop/agent-context/README.md)
+- [Backgrounder for Agents](/Users/botmaster/src/fundloop/agent-context/backgrounder-for-agents.md)
+- [Target-State Architecture](/Users/botmaster/src/fundloop/agent-context/target-state-architecture.md)
+- [TODO Roadmap](/Users/botmaster/src/fundloop/agent-context/todo.md)
+
 ## 1. What This Repo Is Today
 
 FundLoop is currently a single Next.js 16 App Router application that combines:

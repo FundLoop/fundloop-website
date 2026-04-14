@@ -98,6 +98,34 @@ Complete Session 04 by adding the reusable app-side contract and invocation laye
 - Implement `project-payment-drafts-create` as the first real Supabase Edge Function.
 - Move the project payments page onto the browser Edge Function adapter and keep the server action as a compatibility wrapper.
 
+### session v34: Finalize planning doc set and backlog entrypoint
+- timestamp: 2026-04-14T21:54:22Z
+- agent: **Codex (GPT-5)**
+- branch: **codex/wallet-production-readiness**
+- head: 61161486db371eb19b91ffd4b434a17d8941ae38 - docs(agent-context): add architecture docs and sequenced roadmap
+
+#### Objective
+Complete Session 01 by tightening the planning artifacts in `agent-context/`, turning them into a canonical starting point for future implementation sessions, and removing stale or invalid planning references from the roadmap header.
+
+#### Actions Taken
+- Added `agent-context/README.md` as the planning index for the architecture docs, backlog, and session log.
+- Added cross-links at the top of `backgrounder-for-agents.md`, `current-state-architecture.md`, and `target-state-architecture.md` so future agents can move between the planning docs without re-discovering them.
+- Normalized the `agent-context/todo.md` execution-rules header so it now references the actual existing planning docs instead of the missing `everfund-target-state-site-architecture-and-technical-specs-for-agents.md` filename.
+- Marked Session 01 complete in `agent-context/todo.md` and recorded the branch, timestamps, and intended session-log reference for this planning pass.
+
+#### Tests and Validation Notes
+- Documentation-only change.
+- Verified the planning docs cross-link correctly by inspection.
+- Did not run `pnpm` validation because no runtime or code behavior changed.
+
+#### Reflections
+- Having a dedicated `agent-context/README.md` makes the planning set much more approachable than relying on filenames alone.
+- Removing the stale architecture-spec reference now should prevent future agents from wasting time hunting for a document that does not exist.
+
+#### Suggested Next Steps
+- Produce the route inventory for every `app/` surface, including broken-link and mock/demo routes.
+- Follow that with the target information architecture so the next implementation sessions can operate against explicit route decisions instead of implicit assumptions.
+
 ### session v33: Document current and target architecture with execution roadmap
 - timestamp: 2026-04-14T21:28:17Z
 - agent: **Codex (GPT-5)**
