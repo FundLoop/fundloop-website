@@ -1,5 +1,7 @@
 "use client"
 
+// TODO(Session 03 IA): remove this mock organization route and replace it with real founder-workspace organization navigation when Session 18 lands.
+
 import { useState, useEffect } from "react"
 import Link from "next/link"
 import { useParams } from "next/navigation"

@@ -98,6 +98,35 @@ Complete Session 04 by adding the reusable app-side contract and invocation laye
 - Implement `project-payment-drafts-create` as the first real Supabase Edge Function.
 - Move the project payments page onto the browser Edge Function adapter and keep the server action as a compatibility wrapper.
 
+### session v36: Define target route model and mark transitional surfaces
+- timestamp: 2026-04-14T21:57:19Z
+- agent: **Codex (GPT-5)**
+- branch: **codex/wallet-production-readiness**
+- head: 889ab9d7b3dee4d47e5cbe9eb533410c827983f4 - docs(agent-context): add app route inventory
+
+#### Objective
+Complete Session 03 by defining the target information architecture around role-based workspaces, mapping major current routes to their future canonical homes, and adding a small set of migration comments to the most important transitional route files.
+
+#### Actions Taken
+- Added `agent-context/information-architecture.md` to lock the target route model for public surfaces, the user workspace, the founder/project workspace, and the internal operator workspace.
+- Added an explicit current-to-target route mapping table covering the major transitional surfaces, including `/my-profile`, `/settings`, `/projects/[slug]/payments`, `/admin`, `/analytics`, `/api`, `/participation`, `/join`, and `/pledge`.
+- Updated the planning index to include the IA document.
+- Added short IA-oriented TODO comments to the high-signal transitional route files: `app/admin/page.tsx`, `app/settings/page.tsx`, `app/api/page.tsx`, `app/analytics/page.tsx`, `app/invitations/[token]/page.tsx`, and `app/organizations/[id]/page.tsx`.
+- Marked Session 03 complete in `agent-context/todo.md` and backfilled Session 02 with the commit head that closed it.
+
+#### Tests and Validation Notes
+- Ran `pnpm dlx node@22.22.1 /opt/homebrew/bin/pnpm lint`.
+- Lint passed after adding the route-level migration comments.
+- No broader validation was needed because this session added planning docs and source comments only.
+
+#### Reflections
+- Locking the route model now makes the next navigation and workspace sessions much less ambiguous, especially around the split between public project detail and founder-only project operations.
+- Adding just a few migration comments was enough to anchor future work without spreading low-signal TODO noise across the whole tree.
+
+#### Suggested Next Steps
+- Use the IA doc to refactor shared navigation and dashboard entry points around public, user, founder, and operator destinations.
+- Start moving transitional authenticated surfaces out of the current mixed route set and into the canonical workspace homes defined here.
+
 ### session v35: Inventory current app routes and dispositions
 - timestamp: 2026-04-14T21:55:18Z
 - agent: **Codex (GPT-5)**

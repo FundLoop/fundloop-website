@@ -2,6 +2,8 @@ import Link from "next/link"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Mail, Wallet, User, Shield, Bell, CreditCard, BrainCircuit } from "lucide-react"
 
+// TODO(Session 03 IA): this hub is transitional; keep account/settings leaves, but move primary product actions into user and founder workspaces per `agent-context/information-architecture.md`.
+
 export default function SettingsPage() {
   return (
     <div className="container mx-auto px-4 py-12">

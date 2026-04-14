@@ -28,19 +28,19 @@ Turn the architecture docs into a repo-grounded execution plan that the next sev
 - Timestamp started: 2026-04-14T21:55:18Z
 - Timestamp completed: 2026-04-14T21:55:18Z
 - Feature branch: codex/wallet-production-readiness
-- Head: TBD
+- Head: 889ab9d
 - Session-log reference(s): session v35
 
 Review the route tree and current UI to identify all pages that are unfinished, misleading, redundant, or only half-wired. Produce a route inventory with one disposition per page: finish, merge, redirect, or remove. This should include public pages, settings pages, admin pages, and any thin placeholders that still reflect an earlier website-first mindset. The output should drive the product information architecture so later UX sessions are completing real surfaces rather than polishing pages that should disappear.
 
 ## Session 03: Define the target information architecture for users, founders, and operators
 
-- Status: Not started
-- Timestamp started: TBD
-- Timestamp completed: TBD
-- Feature branch: TBD
+- Status: Complete
+- Timestamp started: 2026-04-14T21:57:19Z
+- Timestamp completed: 2026-04-14T21:57:19Z
+- Feature branch: codex/wallet-production-readiness
 - Head: TBD
-- Session-log reference(s): TBD
+- Session-log reference(s): session v36
 
 Restructure the app map around the three real personas: regular users, founders/project members, and internal operators. This session should decide the long-term navigation model, top-level route groupings, dashboard entry points, and what belongs under settings versus workspaces. The result should be a stable information architecture document plus initial route-level TODO annotations in the code. It should also identify which current pages remain public marketing content and which need to become production application surfaces.
 

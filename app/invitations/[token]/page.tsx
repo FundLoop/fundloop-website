@@ -1,5 +1,7 @@
 "use client"
 
+// TODO(Session 03 IA): retire this demo token route in favor of the real `/join` invitation entry flow once invitation acceptance is fully implemented.
+
 import { useState, useEffect } from "react"
 import { useParams, useRouter } from "next/navigation"
 import Link from "next/link"

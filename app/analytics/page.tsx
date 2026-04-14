@@ -1,5 +1,7 @@
 "use client"
 
+// TODO(Session 03 IA): this is a transitional public reporting preview; fold it into the future `/reports` transparency surface described in `agent-context/information-architecture.md`.
+
 import { CardDescription } from "@/components/ui/card"
 
 import type React from "react"

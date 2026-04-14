@@ -14,6 +14,8 @@ This directory is the canonical planning and execution context for FundLoop agen
   Sequenced execution backlog, one agentic coding session per item.
 - [Route Inventory](/Users/botmaster/src/fundloop/agent-context/route-inventory.md)
   Current `app/` route-by-route inventory with planned disposition for each surface.
+- [Information Architecture](/Users/botmaster/src/fundloop/agent-context/information-architecture.md)
+  Target route model and canonical homes for public, user, founder, and operator surfaces.
 - [Session Log](/Users/botmaster/src/fundloop/agent-context/session-log.md)
   Commit-by-commit record of completed work, validation, and next steps.
 
