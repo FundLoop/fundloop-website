@@ -97,6 +97,35 @@ Complete Session 04 by adding the reusable app-side contract and invocation laye
 #### Suggested Next Steps
 - Implement `project-payment-drafts-create` as the first real Supabase Edge Function.
 - Move the project payments page onto the browser Edge Function adapter and keep the server action as a compatibility wrapper.
+
+### session v33: Document current and target architecture with execution roadmap
+- timestamp: 2026-04-14T21:28:17Z
+- agent: **Codex (GPT-5)**
+- branch: **codex/wallet-production-readiness**
+- head: e7c35322b6868443b958ed5da6b9c888fcb26729 - feat(observability): add payment flow event logging
+
+#### Objective
+Capture the repo's current architecture, define the intended target-state architecture, and replace the old ad hoc backlog with a sequenced execution roadmap that future agents can use to bring FundLoop from its current semi-finished state to an operational product.
+
+#### Actions Taken
+- Added `agent-context/current-state-architecture.md` to describe the repo's present subsystem boundaries, operational shape, and architectural hotspots.
+- Added `agent-context/target-state-architecture.md` using the new backgrounder and current-state docs to define the intended future-state architecture, including CUBID-first identity, Edge Function boundaries, MCP workflows, multi-rail payments, and the monthly operating cadence.
+- Preserved and included `agent-context/backgrounder-for-agents.md` as part of the architecture set used for planning.
+- Rewrote `agent-context/todo.md` into a 45-session execution roadmap that moves logically from current-state to target-state.
+- Added execution rules and per-session metadata placeholders to every roadmap item so future sessions can track branch, head, timing, and session-log references without turning the todo file into a work diary.
+
+#### Tests and Validation Notes
+- Documentation-only change.
+- Did not run `pnpm` validation because no application code, schema, or runtime behavior changed.
+
+#### Reflections
+- Turning the repo notes into a structured architecture set plus a sequenced roadmap makes the project much more legible for future agents and should reduce repeated rediscovery work.
+- The per-session metadata on every todo is a good safeguard because it makes it easier to keep execution hygiene visible without mixing status tracking into the session log itself.
+
+#### Suggested Next Steps
+- Start executing the new roadmap from the top, updating each session item as work begins and completes.
+- Consider adding a small cross-reference appendix later that maps older completed backlog items into the new roadmap structure if reviewers want more historical continuity.
+
 ### session v32: Add wallet and payment flow observability
 - timestamp: 2026-04-14T19:26:18Z
 - agent: **Codex (GPT-5)**
