@@ -24,6 +24,7 @@ import {
   type CryptoPaymentMethodOption,
 } from "@/components/project-crypto-payment-dialog"
 import { buildLatestOnchainSubmissionMap, type OnchainSubmissionSummary } from "@/lib/onchain/payment-submissions"
+import { capturePaymentFlowEvent } from "@/lib/observability/payment-flow-client"
 import { ProjectCryptoRouteManager } from "@/components/project-crypto-route-manager"
 import { ArrowLeft, Plus, Calculator, Save, AlertTriangle, Trash2, Info } from "lucide-react"
 
@@ -362,12 +363,29 @@ export default function ProjectPaymentsPage() {
   }
 
   const savePayments = async () => {
+    const attemptId = crypto.randomUUID()
+
     // Validate all rows
     const invalidRows = newPaymentRows.filter(
       (row) => !row.period_start || !row.period_end || row.revenue <= 0 || row.payment_amount <= 0,
     )
 
     if (invalidRows.length > 0) {
+      void capturePaymentFlowEvent({
+        flow: "payment_save",
+        stage: "validation",
+        outcome: "failure",
+        severity: "warning",
+        attemptId,
+        projectId: project?.id ?? null,
+        environment: "local",
+        errorCode: "validation_failed",
+        errorMessage: "Please fill in all required fields with valid values",
+        metadata: {
+          invalidRowCount: invalidRows.length,
+          paymentCount: newPaymentRows.length,
+        },
+      })
       toast({
         title: "Validation Error",
         description: "Please fill in all required fields with valid values",
@@ -381,6 +399,7 @@ export default function ProjectPaymentsPage() {
     try {
       const result = await createProjectPaymentDrafts({
         projectSlug: slug,
+        attemptId,
         payments: newPaymentRows.map((row) => ({
           period_start: row.period_start,
           period_end: row.period_end,

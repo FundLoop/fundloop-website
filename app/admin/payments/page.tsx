@@ -1,8 +1,10 @@
 import Link from "next/link"
+import { formatDistanceToNow } from "date-fns"
 import { Button } from "@/components/ui/button"
 import { PaymentsConsole } from "@/components/admin/payments-console"
 import { Card, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { listLatestOnchainSubmissionsForPaymentIds } from "@/lib/onchain/payment-reconciliation"
+import { buildAttemptLabel, formatEventError, listRecentPaymentFlowFailures } from "@/lib/observability/payment-flow-server"
 import { getAdminSupabaseClient } from "@/lib/supabase-admin"
 import { requireInternalAdminActor } from "@/lib/zkas/auth"
 import type { PaymentRecordSummary } from "@/app/actions/project-payment-actions"
@@ -105,16 +107,56 @@ export default async function AdminPaymentsPage() {
   }
 
   const latestOnchainSubmissionByPaymentId = await listLatestOnchainSubmissionsForPaymentIds(data.map((row) => row.id))
+  const recentFailures = await listRecentPaymentFlowFailures(5)
 
   return (
     <div className="space-y-6">
       <div className="container mx-auto flex gap-2 justify-end px-4 pt-12">
+        <Button asChild variant="outline">
+          <Link href="/admin/payments/observability">Observability</Link>
+        </Button>
         <Button asChild variant="outline">
           <Link href="/admin/payments/reconciliation">Reconciliation</Link>
         </Button>
         <Button asChild variant="outline">
           <Link href="/admin/payments/deployments">Wallet deployments</Link>
         </Button>
+      </div>
+      <div className="container mx-auto px-4">
+        <Card>
+          <CardHeader>
+            <CardTitle>Recent payment-flow failures</CardTitle>
+            <CardDescription>
+              Latest wallet, payment-save, receipt-recording, and admin-confirmation failures captured for operations.
+            </CardDescription>
+          </CardHeader>
+          <div className="px-6 pb-6">
+            {recentFailures.length === 0 ? (
+              <p className="text-sm text-slate-500">No recent failures were captured in the last 7 days.</p>
+            ) : (
+              <div className="space-y-3">
+                {recentFailures.map((event) => (
+                  <div key={event.id} className="rounded-2xl border p-3 text-sm">
+                    <div className="flex flex-wrap items-center justify-between gap-2">
+                      <div className="font-medium capitalize">
+                        {event.flow.replaceAll("_", " ")} · {event.stage.replaceAll("_", " ")}
+                      </div>
+                      <div className="text-xs text-slate-500">
+                        {formatDistanceToNow(new Date(event.created_at), { addSuffix: true })}
+                      </div>
+                    </div>
+                    <p className="mt-1 text-slate-700">{formatEventError(event)}</p>
+                    <p className="mt-1 text-xs text-slate-500">
+                      {buildAttemptLabel(event.attempt_id)}
+                      {event.project_name ? ` · ${event.project_name}` : ""}
+                      {event.payment_id ? ` · Payment #${event.payment_id}` : ""}
+                    </p>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </Card>
       </div>
       <PaymentsConsole
         initialPayments={data.map((row) => mapPayment(row, latestOnchainSubmissionByPaymentId.get(row.id) ?? null))}

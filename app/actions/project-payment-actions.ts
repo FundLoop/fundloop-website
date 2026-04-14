@@ -15,6 +15,7 @@ import { validateProjectPaymentDrafts, type ProjectPaymentDraftInput } from "@/l
 import {
   getDeploymentAvailabilityForRoute,
   getWalletRuntimeConfig,
+  resolveDeploymentEnvironment,
   type DeploymentAvailability,
 } from "@/lib/onchain/runtime-config"
 import {
@@ -23,6 +24,12 @@ import {
   type OnchainReconciliationRunSummary,
 } from "@/lib/onchain/payment-reconciliation"
 import type { OnchainSubmissionSummary } from "@/lib/onchain/payment-submissions"
+import {
+  normalizePaymentFlowErrorCode,
+  normalizePaymentFlowErrorMessage,
+  type PaymentFlowActorRole,
+} from "@/lib/observability/payment-flow"
+import { recordPaymentFlowEvent } from "@/lib/observability/payment-flow-server"
 import type { Json, Tables } from "@/types/supabase"
 
 type ActionResult<T> = { ok: true; data: T } | { ok: false; error: string }
@@ -135,6 +142,7 @@ type ProjectContext = {
 
 type RecordOnchainPaymentInput = {
   projectSlug: string
+  attemptId?: string
   paymentId: number
   paymentMethodId: number
   txHash: string
@@ -151,6 +159,7 @@ type RecordOnchainPaymentInput = {
 
 type CreateProjectPaymentDraftsInput = {
   projectSlug: string
+  attemptId?: string
   payments: ProjectPaymentDraftInput[]
 }
 
@@ -183,6 +192,10 @@ type ToggleProjectCryptoPaymentMethodEnabledInput = {
   projectSlug: string
   paymentMethodId: number
   enabled: boolean
+}
+
+function getObservabilityAttemptId(attemptId?: string) {
+  return attemptId?.trim() || crypto.randomUUID()
 }
 
 type InsertedPaymentRow = {
@@ -306,6 +319,54 @@ async function getProjectAdminContext(projectSlug: string): Promise<ActionResult
   }
 
   return { ok: false, error: "You do not have permission to manage payments for this project" }
+}
+
+async function recordActionObservabilityEvent(input: {
+  flow: "payment_save" | "receipt_recording" | "admin_confirmation"
+  stage: "validation" | "submit" | "submission_record"
+  outcome: "attempt" | "success" | "failure"
+  attemptId: string
+  actorUserId?: string | null
+  actorRole?: PaymentFlowActorRole
+  projectId?: number | null
+  paymentId?: number | null
+  submissionId?: number | null
+  paymentMethodId?: number | null
+  chainId?: number | null
+  chainAssetId?: number | null
+  intakeContractId?: number | null
+  txHash?: string | null
+  walletAddress?: string | null
+  error?: unknown
+  metadata?: Json
+}) {
+  await recordPaymentFlowEvent({
+    flow: input.flow,
+    stage: input.stage,
+    outcome: input.outcome,
+    severity:
+      input.outcome === "failure"
+        ? input.stage === "validation"
+          ? "warning"
+          : "error"
+        : "info",
+    attemptId: input.attemptId,
+    actorUserId: input.actorUserId ?? null,
+    actorRole: input.actorRole,
+    projectId: input.projectId ?? null,
+    paymentId: input.paymentId ?? null,
+    submissionId: input.submissionId ?? null,
+    paymentMethodId: input.paymentMethodId ?? null,
+    chainId: input.chainId ?? null,
+    chainAssetId: input.chainAssetId ?? null,
+    intakeContractId: input.intakeContractId ?? null,
+    txHash: input.txHash ?? null,
+    walletAddress: input.walletAddress ?? null,
+    environment: resolveDeploymentEnvironment(),
+    errorCode: input.error ? normalizePaymentFlowErrorCode(input.stage, input.error) : null,
+    errorMessage: input.error ? normalizePaymentFlowErrorMessage(input.error) : null,
+    metadata: input.metadata,
+  })
 }
 
 function mapPaymentSummary(row: InsertedPaymentRow): PaymentRecordSummary {
@@ -1023,13 +1084,54 @@ export async function toggleProjectCryptoPaymentMethodEnabled(
 export async function createProjectPaymentDrafts(
   input: CreateProjectPaymentDraftsInput,
 ): Promise<ActionResult<PaymentRecordSummary[]>> {
+  const attemptId = getObservabilityAttemptId(input.attemptId)
+  const auth = await getAuthenticatedUserId()
   const context = await getProjectAdminContext(input.projectSlug)
   if (!context.ok) {
+    await recordActionObservabilityEvent({
+      flow: "payment_save",
+      stage: "submit",
+      outcome: "failure",
+      attemptId,
+      actorUserId: auth.ok ? auth.userId : null,
+      actorRole: auth.ok ? "authenticated_user" : "unauthenticated",
+      error: context.error,
+      metadata: {
+        projectSlug: input.projectSlug,
+        paymentCount: input.payments.length,
+      },
+    })
     return context
   }
 
+  await recordActionObservabilityEvent({
+    flow: "payment_save",
+    stage: "submit",
+    outcome: "attempt",
+    attemptId,
+    actorUserId: context.data.userId,
+    actorRole: "project_admin",
+    projectId: context.data.project.id,
+    metadata: {
+      paymentCount: input.payments.length,
+    },
+  })
+
   const validation = validateProjectPaymentDrafts(input.payments)
   if (!validation.ok) {
+    await recordActionObservabilityEvent({
+      flow: "payment_save",
+      stage: "validation",
+      outcome: "failure",
+      attemptId,
+      actorUserId: context.data.userId,
+      actorRole: "project_admin",
+      projectId: context.data.project.id,
+      error: validation.error,
+      metadata: {
+        paymentCount: input.payments.length,
+      },
+    })
     return validation
   }
 
@@ -1046,16 +1148,56 @@ export async function createProjectPaymentDrafts(
   ])
 
   if (!draftStatus?.id) {
+    await recordActionObservabilityEvent({
+      flow: "payment_save",
+      stage: "submit",
+      outcome: "failure",
+      attemptId,
+      actorUserId: context.data.userId,
+      actorRole: "project_admin",
+      projectId: context.data.project.id,
+      error: "The draft payment status is not configured.",
+      metadata: {
+        paymentCount: input.payments.length,
+      },
+    })
     return { ok: false, error: "The draft payment status is not configured." }
   }
 
   if (methodsError) {
+    await recordActionObservabilityEvent({
+      flow: "payment_save",
+      stage: "submit",
+      outcome: "failure",
+      attemptId,
+      actorUserId: context.data.userId,
+      actorRole: "project_admin",
+      projectId: context.data.project.id,
+      error: methodsError.message,
+      metadata: {
+        paymentCount: input.payments.length,
+      },
+    })
     return { ok: false, error: methodsError.message }
   }
 
   const validMethodIds = new Set((methods as PaymentMethodReferenceRow[] | null)?.map((method) => method.id) ?? [])
   const invalidRow = validation.data.find((row) => !validMethodIds.has(row.payment_method_id))
   if (invalidRow) {
+    await recordActionObservabilityEvent({
+      flow: "payment_save",
+      stage: "validation",
+      outcome: "failure",
+      attemptId,
+      actorUserId: context.data.userId,
+      actorRole: "project_admin",
+      projectId: context.data.project.id,
+      error: "One or more selected payment methods are no longer available.",
+      metadata: {
+        paymentCount: input.payments.length,
+        paymentMethodId: invalidRow.payment_method_id,
+      },
+    })
     return { ok: false, error: "One or more selected payment methods are no longer available." }
   }
 
@@ -1095,10 +1237,36 @@ export async function createProjectPaymentDrafts(
     .order("period_start", { ascending: false })
 
   if (error) {
+    await recordActionObservabilityEvent({
+      flow: "payment_save",
+      stage: "submit",
+      outcome: "failure",
+      attemptId,
+      actorUserId: context.data.userId,
+      actorRole: "project_admin",
+      projectId: context.data.project.id,
+      error: error.message,
+      metadata: {
+        paymentCount: input.payments.length,
+      },
+    })
     return { ok: false, error: error.message }
   }
 
   revalidatePath(`/projects/${input.projectSlug}/payments`)
+
+  await recordActionObservabilityEvent({
+    flow: "payment_save",
+    stage: "submit",
+    outcome: "success",
+    attemptId,
+    actorUserId: context.data.userId,
+    actorRole: "project_admin",
+    projectId: context.data.project.id,
+    metadata: {
+      paymentCount: (data ?? []).length,
+    },
+  })
 
   return {
     ok: true,
@@ -1109,10 +1277,51 @@ export async function createProjectPaymentDrafts(
 export async function recordOnchainPaymentSubmission(
   input: RecordOnchainPaymentInput,
 ): Promise<ActionResult<{ submissionId: number }>> {
+  const attemptId = getObservabilityAttemptId(input.attemptId)
+  const auth = await getAuthenticatedUserId()
   const context = await getProjectAdminContext(input.projectSlug)
   if (!context.ok) {
+    await recordActionObservabilityEvent({
+      flow: "receipt_recording",
+      stage: "submission_record",
+      outcome: "failure",
+      attemptId,
+      actorUserId: auth.ok ? auth.userId : null,
+      actorRole: auth.ok ? "authenticated_user" : "unauthenticated",
+      paymentId: input.paymentId,
+      paymentMethodId: input.paymentMethodId,
+      chainId: input.chainId,
+      chainAssetId: input.chainAssetId,
+      intakeContractId: input.intakeContractId,
+      txHash: input.txHash,
+      walletAddress: input.walletAddress,
+      error: context.error,
+      metadata: {
+        projectSlug: input.projectSlug,
+      },
+    })
     return context
   }
+
+  await recordActionObservabilityEvent({
+    flow: "receipt_recording",
+    stage: "submission_record",
+    outcome: "attempt",
+    attemptId,
+    actorUserId: context.data.userId,
+    actorRole: "project_admin",
+    projectId: context.data.project.id,
+    paymentId: input.paymentId,
+    paymentMethodId: input.paymentMethodId,
+    chainId: input.chainId,
+    chainAssetId: input.chainAssetId,
+    intakeContractId: input.intakeContractId,
+    txHash: input.txHash,
+    walletAddress: input.walletAddress,
+    metadata: {
+      periodId: input.periodId,
+    },
+  })
 
   const supabase = getAdminSupabaseClient()
 
@@ -1144,6 +1353,21 @@ export async function recordOnchainPaymentSubmission(
     ])
 
   if (!payment || payment.project_id !== context.data.project.id) {
+    await recordActionObservabilityEvent({
+      flow: "receipt_recording",
+      stage: "submission_record",
+      outcome: "failure",
+      attemptId,
+      actorUserId: context.data.userId,
+      actorRole: "project_admin",
+      projectId: context.data.project.id,
+      paymentId: input.paymentId,
+      paymentMethodId: input.paymentMethodId,
+      error: "Payment record does not belong to this project",
+      metadata: {
+        requestedProjectSlug: input.projectSlug,
+      },
+    })
     return { ok: false, error: "Payment record does not belong to this project" }
   }
 
@@ -1156,10 +1380,40 @@ export async function recordOnchainPaymentSubmission(
     paymentMethodSnapshot.chain_asset_id !== input.chainAssetId ||
     paymentMethodSnapshot.intake_contract_id !== input.intakeContractId
   ) {
+    await recordActionObservabilityEvent({
+      flow: "receipt_recording",
+      stage: "submission_record",
+      outcome: "failure",
+      attemptId,
+      actorUserId: context.data.userId,
+      actorRole: "project_admin",
+      projectId: context.data.project.id,
+      paymentId: input.paymentId,
+      paymentMethodId: input.paymentMethodId,
+      chainId: input.chainId,
+      chainAssetId: input.chainAssetId,
+      intakeContractId: input.intakeContractId,
+      error: "Selected crypto route is invalid for this project",
+    })
     return { ok: false, error: "Selected crypto route is invalid for this project" }
   }
 
   if (unresolvedSubmission?.id) {
+    await recordActionObservabilityEvent({
+      flow: "receipt_recording",
+      stage: "submission_record",
+      outcome: "failure",
+      attemptId,
+      actorUserId: context.data.userId,
+      actorRole: "project_admin",
+      projectId: context.data.project.id,
+      paymentId: input.paymentId,
+      paymentMethodId: input.paymentMethodId,
+      submissionId: unresolvedSubmission.id,
+      txHash: input.txHash,
+      walletAddress: input.walletAddress,
+      error: "This payment already has an unresolved onchain submission. Wait for reconciliation or a failed result before retrying.",
+    })
     return {
       ok: false,
       error: "This payment already has an unresolved onchain submission. Wait for reconciliation or a failed result before retrying.",
@@ -1169,24 +1423,80 @@ export async function recordOnchainPaymentSubmission(
   const executableRoutes = await listProjectManagedCryptoPaymentMethodsForProjectId(context.data.project.id)
   const selectedRoute = executableRoutes.find((route) => route.id === input.paymentMethodId)
   if (!selectedRoute?.is_runtime_available) {
+    const routeError =
+      selectedRoute?.runtime_availability_issue ??
+      "This crypto route is not available in the active wallet deployment for this environment."
+    await recordActionObservabilityEvent({
+      flow: "receipt_recording",
+      stage: "submission_record",
+      outcome: "failure",
+      attemptId,
+      actorUserId: context.data.userId,
+      actorRole: "project_admin",
+      projectId: context.data.project.id,
+      paymentId: input.paymentId,
+      paymentMethodId: input.paymentMethodId,
+      txHash: input.txHash,
+      walletAddress: input.walletAddress,
+      error: routeError,
+    })
     return {
       ok: false,
-      error:
-        selectedRoute?.runtime_availability_issue ??
-        "This crypto route is not available in the active wallet deployment for this environment.",
+      error: routeError,
     }
   }
 
   if (!awaitingStatus?.id) {
+    await recordActionObservabilityEvent({
+      flow: "receipt_recording",
+      stage: "submission_record",
+      outcome: "failure",
+      attemptId,
+      actorUserId: context.data.userId,
+      actorRole: "project_admin",
+      projectId: context.data.project.id,
+      paymentId: input.paymentId,
+      paymentMethodId: input.paymentMethodId,
+      error: "The awaiting_confirmation payment status is not configured",
+    })
     return { ok: false, error: "The awaiting_confirmation payment status is not configured" }
   }
 
   const amountDecimal = Number.parseFloat(input.amountDecimal)
   if (!Number.isFinite(amountDecimal) || amountDecimal <= 0) {
+    await recordActionObservabilityEvent({
+      flow: "receipt_recording",
+      stage: "submission_record",
+      outcome: "failure",
+      attemptId,
+      actorUserId: context.data.userId,
+      actorRole: "project_admin",
+      projectId: context.data.project.id,
+      paymentId: input.paymentId,
+      paymentMethodId: input.paymentMethodId,
+      txHash: input.txHash,
+      walletAddress: input.walletAddress,
+      error: "Payment amount is invalid",
+    })
     return { ok: false, error: "Payment amount is invalid" }
   }
 
   if (!Number.isInteger(input.periodId) || input.periodId < 0 || input.periodId > 12) {
+    await recordActionObservabilityEvent({
+      flow: "receipt_recording",
+      stage: "submission_record",
+      outcome: "failure",
+      attemptId,
+      actorUserId: context.data.userId,
+      actorRole: "project_admin",
+      projectId: context.data.project.id,
+      paymentId: input.paymentId,
+      paymentMethodId: input.paymentMethodId,
+      error: "The selected period tag is invalid",
+      metadata: {
+        periodId: input.periodId,
+      },
+    })
     return { ok: false, error: "The selected period tag is invalid" }
   }
 
@@ -1222,6 +1532,20 @@ export async function recordOnchainPaymentSubmission(
     .single()
 
   if (submissionError || !submission) {
+    await recordActionObservabilityEvent({
+      flow: "receipt_recording",
+      stage: "submission_record",
+      outcome: "failure",
+      attemptId,
+      actorUserId: context.data.userId,
+      actorRole: "project_admin",
+      projectId: context.data.project.id,
+      paymentId: input.paymentId,
+      paymentMethodId: input.paymentMethodId,
+      txHash: input.txHash,
+      walletAddress: input.walletAddress,
+      error: submissionError?.message ?? "Could not store the onchain payment submission",
+    })
     return { ok: false, error: submissionError?.message ?? "Could not store the onchain payment submission" }
   }
 
@@ -1239,11 +1563,48 @@ export async function recordOnchainPaymentSubmission(
     .eq("id", input.paymentId)
 
   if (paymentUpdateError) {
+    await recordActionObservabilityEvent({
+      flow: "receipt_recording",
+      stage: "submission_record",
+      outcome: "failure",
+      attemptId,
+      actorUserId: context.data.userId,
+      actorRole: "project_admin",
+      projectId: context.data.project.id,
+      paymentId: input.paymentId,
+      paymentMethodId: input.paymentMethodId,
+      submissionId: submission.id,
+      txHash: input.txHash,
+      walletAddress: input.walletAddress,
+      error: paymentUpdateError.message,
+    })
     return { ok: false, error: paymentUpdateError.message }
   }
 
   revalidatePath(`/projects/${input.projectSlug}/payments`)
   revalidatePath("/admin/payments")
+
+  await recordActionObservabilityEvent({
+    flow: "receipt_recording",
+    stage: "submission_record",
+    outcome: "success",
+    attemptId,
+    actorUserId: context.data.userId,
+    actorRole: "project_admin",
+    projectId: context.data.project.id,
+    paymentId: input.paymentId,
+    paymentMethodId: input.paymentMethodId,
+    submissionId: submission.id,
+    chainId: input.chainId,
+    chainAssetId: input.chainAssetId,
+    intakeContractId: input.intakeContractId,
+    txHash: input.txHash,
+    walletAddress: input.walletAddress,
+    metadata: {
+      periodId: input.periodId,
+      amountRaw: input.amountRaw,
+    },
+  })
 
   return { ok: true, data: { submissionId: submission.id } }
 }
@@ -1291,15 +1652,35 @@ export async function runInternalOnchainPaymentReconciliation(input?: {
 
 export async function confirmInternalPaymentReceipt(
   paymentId: number,
+  attemptId?: string,
 ): Promise<ActionResult<{ paymentId: number; statusCode: string; confirmedAt: string }>> {
+  const resolvedAttemptId = getObservabilityAttemptId(attemptId)
   try {
     await requireInternalAdminActor()
   } catch (error) {
+    await recordActionObservabilityEvent({
+      flow: "admin_confirmation",
+      stage: "submit",
+      outcome: "failure",
+      attemptId: resolvedAttemptId,
+      actorRole: "unauthenticated",
+      paymentId,
+      error,
+    })
     return {
       ok: false,
       error: error instanceof Error ? error.message : "You do not have internal admin access.",
     }
   }
+
+  await recordActionObservabilityEvent({
+    flow: "admin_confirmation",
+    stage: "submit",
+    outcome: "attempt",
+    attemptId: resolvedAttemptId,
+    actorRole: "internal_admin",
+    paymentId,
+  })
 
   const supabase = getAdminSupabaseClient()
   const [{ data: payment }, { data: confirmedStatus }, { data: onchainSubmission }] = await Promise.all([
@@ -1309,10 +1690,30 @@ export async function confirmInternalPaymentReceipt(
   ])
 
   if (!payment) {
+    await recordActionObservabilityEvent({
+      flow: "admin_confirmation",
+      stage: "submit",
+      outcome: "failure",
+      attemptId: resolvedAttemptId,
+      actorRole: "internal_admin",
+      paymentId,
+      error: "Payment not found.",
+    })
     return { ok: false, error: "Payment not found." }
   }
 
   if (onchainSubmission?.id) {
+    await recordActionObservabilityEvent({
+      flow: "admin_confirmation",
+      stage: "submit",
+      outcome: "failure",
+      attemptId: resolvedAttemptId,
+      actorRole: "internal_admin",
+      projectId: payment.project_id,
+      paymentId,
+      submissionId: onchainSubmission.id,
+      error: "Crypto-submitted payments must be advanced by onchain reconciliation instead of manual confirmation.",
+    })
     return {
       ok: false,
       error: "Crypto-submitted payments must be advanced by onchain reconciliation instead of manual confirmation.",
@@ -1320,6 +1721,16 @@ export async function confirmInternalPaymentReceipt(
   }
 
   if (!confirmedStatus?.id) {
+    await recordActionObservabilityEvent({
+      flow: "admin_confirmation",
+      stage: "submit",
+      outcome: "failure",
+      attemptId: resolvedAttemptId,
+      actorRole: "internal_admin",
+      projectId: payment.project_id,
+      paymentId,
+      error: "The confirmed payment status is not configured.",
+    })
     return { ok: false, error: "The confirmed payment status is not configured." }
   }
 
@@ -1335,6 +1746,16 @@ export async function confirmInternalPaymentReceipt(
     .eq("id", paymentId)
 
   if (paymentError) {
+    await recordActionObservabilityEvent({
+      flow: "admin_confirmation",
+      stage: "submit",
+      outcome: "failure",
+      attemptId: resolvedAttemptId,
+      actorRole: "internal_admin",
+      projectId: payment.project_id,
+      paymentId,
+      error: paymentError.message,
+    })
     return { ok: false, error: paymentError.message }
   }
 
@@ -1347,6 +1768,16 @@ export async function confirmInternalPaymentReceipt(
     .eq("payment_id", paymentId)
 
   if (submissionError) {
+    await recordActionObservabilityEvent({
+      flow: "admin_confirmation",
+      stage: "submit",
+      outcome: "failure",
+      attemptId: resolvedAttemptId,
+      actorRole: "internal_admin",
+      projectId: payment.project_id,
+      paymentId,
+      error: submissionError.message,
+    })
     return { ok: false, error: submissionError.message }
   }
 
@@ -1355,6 +1786,19 @@ export async function confirmInternalPaymentReceipt(
   if (projectSlug) {
     revalidatePath(`/projects/${projectSlug}/payments`)
   }
+
+  await recordActionObservabilityEvent({
+    flow: "admin_confirmation",
+    stage: "submit",
+    outcome: "success",
+    attemptId: resolvedAttemptId,
+    actorRole: "internal_admin",
+    projectId: payment.project_id,
+    paymentId,
+    metadata: {
+      confirmedAt,
+    },
+  })
 
   return {
     ok: true,

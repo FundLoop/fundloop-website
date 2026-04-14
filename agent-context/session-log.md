@@ -12,6 +12,37 @@ Agents populate one level-3 heading for each coding session, following the same 
 
 ---
 
+### session v32: Add wallet and payment flow observability
+- timestamp: 2026-04-14T19:26:18Z
+- agent: **Codex (GPT-5)**
+- branch: **codex/wallet-production-readiness**
+- head: b022077d0498d811864fa468a530b6a6d2a25fd9 - feat(e2e): add wallet and payment Playwright harness
+
+#### Objective
+Add internal, DB-backed observability for wallet connect, payment save, receipt recording, and admin confirmation failures so operators can investigate payment issues without relying on ad hoc console output or toasts.
+
+#### Actions Taken
+- Added a forward-only Supabase migration for `payment_flow_events`, including structured event fields, flow/stage/outcome constraints, and indexes for recent admin investigation paths.
+- Added shared observability helpers under `lib/observability/` for event validation, metadata sanitization, best-effort server writes, event summaries, recent-failure queries, and attempt drill-downs.
+- Added the authenticated browser ingestion route at `/api/internal/observability/payment-events` so client-side wallet and UI events can be recorded with server-derived actor identity and role context.
+- Instrumented the project payment save, crypto receipt recording, wallet connect, and internal admin confirmation flows with correlated `attempt_id` values across client and server events.
+- Added `/admin/payments/observability` plus a compact recent-failure card on `/admin/payments` so operators can review flow summaries, filter recent failures, and inspect a single attempt end to end.
+- Updated `types/supabase.ts` and added focused coverage for the observability helpers, ingestion route, action-level instrumentation, admin observability page, and wallet-connect UI capture behavior.
+
+#### Tests and Validation Notes
+- Ran `pnpm dlx node@22.22.1 /opt/homebrew/bin/pnpm test`.
+- Ran `pnpm dlx node@22.22.1 /opt/homebrew/bin/pnpm typecheck`.
+- Ran `pnpm dlx node@22.22.1 /opt/homebrew/bin/pnpm check`.
+- `lint`, `test`, `typecheck`, and `build` all passed in the supported Node 22 runtime.
+
+#### Reflections
+- Keeping observability best-effort was the right call because it let us add meaningful operator visibility without making payment actions or wallet interactions depend on the new event sink.
+- Reusing the existing internal payments area for summaries and drill-downs makes the feature immediately useful to operators instead of burying it in a generic logging surface.
+
+#### Suggested Next Steps
+- Decide whether to add retention, archival, or periodic cleanup rules for `payment_flow_events` once production traffic patterns are known.
+- Consider extending the same event model to onchain reconciliation runs and deployment-drift failures so operators can view the whole payment pipeline in one place.
+
 ### session v31: Add Playwright wallet and payment end-to-end harness
 - timestamp: 2026-04-13T22:03:00Z
 - agent: **Codex (GPT-5)**

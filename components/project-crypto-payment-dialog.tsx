@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useMemo, useState, useTransition } from "react"
+import { useCallback, useEffect, useMemo, useState, useTransition } from "react"
 import { useAccount, usePublicClient, useSwitchChain, useWaitForTransactionReceipt, useWriteContract } from "wagmi"
 import { formatUnits, parseUnits } from "viem"
 import { Loader2, Wallet } from "lucide-react"
@@ -9,6 +9,7 @@ import { useWalletRuntime } from "@/components/web3-provider"
 import { erc20Abi, fundLoopIntakeAbi } from "@/lib/onchain/fundloop-intake-abi"
 import { getRequiredConfirmationDepth } from "@/lib/onchain/runtime-config"
 import type { OnchainSubmissionSummary } from "@/lib/onchain/payment-submissions"
+import { capturePaymentFlowEvent } from "@/lib/observability/payment-flow-client"
 import { Button } from "@/components/ui/button"
 import {
   Dialog,
@@ -114,6 +115,8 @@ export function ProjectCryptoPaymentDialog({
   const [selectedPeriodId, setSelectedPeriodId] = useState<string>("0")
   const [approvalRequired, setApprovalRequired] = useState(false)
   const [lastAction, setLastAction] = useState<"approve" | "deposit" | null>(null)
+  const [walletAttemptId, setWalletAttemptId] = useState<string | null>(null)
+  const [receiptAttemptId, setReceiptAttemptId] = useState<string | null>(null)
   const [recording, startRecording] = useTransition()
   const { openWalletModal, runtimeConfig, walletEnabled } = useWalletRuntime()
   const { address, chainId, isConnected } = useAccount()
@@ -140,6 +143,8 @@ export function ProjectCryptoPaymentDialog({
       setLastAction(null)
       setApprovalRequired(false)
       setSelectedPeriodId("0")
+      setWalletAttemptId(null)
+      setReceiptAttemptId(null)
       return
     }
 
@@ -196,6 +201,41 @@ export function ProjectCryptoPaymentDialog({
     runtimeConfig.issues.find((issue) => issue.severity === "error")?.message ??
     "Wallet connection is not configured for this environment."
 
+  const emitReceiptEvent = useCallback(async (
+    event: Omit<Parameters<typeof capturePaymentFlowEvent>[0], "flow" | "attemptId" | "environment">,
+  ) => {
+    const attemptId = receiptAttemptId ?? crypto.randomUUID()
+    if (!receiptAttemptId) {
+      setReceiptAttemptId(attemptId)
+    }
+
+    await capturePaymentFlowEvent({
+      flow: "receipt_recording",
+      attemptId,
+      environment: runtimeConfig.environment,
+      projectId,
+      paymentId: payment?.id ?? null,
+      paymentMethodId: selectedMethod?.id ?? null,
+      chainId: selectedMethod?.chain.id ?? null,
+      chainAssetId: selectedMethod?.asset.id ?? null,
+      intakeContractId: selectedMethod?.intakeContract.id ?? null,
+      txHash: hash ?? null,
+      walletAddress: address ?? null,
+      ...event,
+    })
+  }, [
+    address,
+    hash,
+    payment?.id,
+    projectId,
+    receiptAttemptId,
+    runtimeConfig.environment,
+    selectedMethod?.asset.id,
+    selectedMethod?.chain.id,
+    selectedMethod?.id,
+    selectedMethod?.intakeContract.id,
+  ])
+
   useEffect(() => {
     const loadAllowance = async () => {
       if (!open || !address || !selectedMethod || !selectedRouteAvailable || selectedMethod.asset.is_native || !publicClient) {
@@ -222,11 +262,63 @@ export function ProjectCryptoPaymentDialog({
   }, [address, amountRaw, open, publicClient, receiptQuery.isSuccess, selectedMethod, selectedRouteAvailable])
 
   useEffect(() => {
+    if (!walletAttemptId || !isConnected) {
+      return
+    }
+
+    void capturePaymentFlowEvent({
+      flow: "wallet_connect",
+      stage: "connected",
+      outcome: "success",
+      attemptId: walletAttemptId,
+      environment: runtimeConfig.environment,
+      projectId,
+      paymentId: payment?.id ?? null,
+      walletAddress: address ?? null,
+      metadata: {
+        chainId,
+      },
+    })
+    setWalletAttemptId(null)
+  }, [address, chainId, isConnected, payment?.id, projectId, runtimeConfig.environment, walletAttemptId])
+
+  useEffect(() => {
+    if (!walletAttemptId || isConnected) {
+      return
+    }
+
+    const timeoutId = window.setTimeout(() => {
+      void capturePaymentFlowEvent({
+        flow: "wallet_connect",
+        stage: "timeout",
+        outcome: "failure",
+        severity: "warning",
+        attemptId: walletAttemptId,
+        environment: runtimeConfig.environment,
+        projectId,
+        paymentId: payment?.id ?? null,
+        errorCode: "wallet_connect_timeout",
+        errorMessage: "Wallet connection did not complete before the timeout.",
+      })
+      setWalletAttemptId((current) => (current === walletAttemptId ? null : current))
+    }, 15000)
+
+    return () => window.clearTimeout(timeoutId)
+  }, [isConnected, payment?.id, projectId, runtimeConfig.environment, walletAttemptId])
+
+  useEffect(() => {
     if (!receiptQuery.isSuccess || !selectedMethod || !payment || !projectId || !hash) {
       return
     }
 
     if (lastAction === "approve") {
+      void emitReceiptEvent({
+        stage: "approval",
+        outcome: "success",
+        metadata: {
+          chainId: selectedMethod.chain.evm_chain_id,
+        },
+      })
       toast({
         title: "Token approved",
         description: "Approval confirmed. You can submit the crypto payment now.",
@@ -239,9 +331,34 @@ export function ProjectCryptoPaymentDialog({
       return
     }
 
+    const activeAttemptId = receiptAttemptId ?? crypto.randomUUID()
+    if (!receiptAttemptId) {
+      setReceiptAttemptId(activeAttemptId)
+    }
+
     startRecording(async () => {
+      await capturePaymentFlowEvent({
+        flow: "receipt_recording",
+        stage: "deposit",
+        outcome: "success",
+        attemptId: activeAttemptId,
+        environment: runtimeConfig.environment,
+        projectId,
+        paymentId: payment.id,
+        paymentMethodId: selectedMethod.id,
+        chainId: selectedMethod.chain.id,
+        chainAssetId: selectedMethod.asset.id,
+        intakeContractId: selectedMethod.intakeContract.id,
+        txHash: hash,
+        walletAddress: address,
+        metadata: {
+          blockNumber: receiptQuery.data.blockNumber ? Number(receiptQuery.data.blockNumber) : null,
+        },
+      })
+
       const result = await recordOnchainPaymentSubmission({
         projectSlug,
+        attemptId: activeAttemptId,
         paymentId: payment.id,
         paymentMethodId: selectedMethod.id,
         txHash: hash,
@@ -257,6 +374,12 @@ export function ProjectCryptoPaymentDialog({
       })
 
       if (!result.ok) {
+        await emitReceiptEvent({
+          stage: "submission_record",
+          outcome: "failure",
+          errorCode: "submission_record_failed",
+          errorMessage: result.error,
+        })
         toast({
           title: "Payment receipt could not be stored",
           description: result.error,
@@ -265,6 +388,11 @@ export function ProjectCryptoPaymentDialog({
         return
       }
 
+      await emitReceiptEvent({
+        stage: "submission_record",
+        outcome: "success",
+        submissionId: result.data.submissionId,
+      })
       toast({
         title: "Crypto payment submitted",
         description: "The onchain receipt is stored and the payment now awaits confirmation.",
@@ -298,12 +426,14 @@ export function ProjectCryptoPaymentDialog({
           is_native: selectedMethod.asset.is_native,
         },
       })
+      setReceiptAttemptId(null)
       setLastAction(null)
       onOpenChange(false)
     })
   }, [
     address,
     amountRaw,
+    emitReceiptEvent,
     hash,
     lastAction,
     onOpenChange,
@@ -312,6 +442,7 @@ export function ProjectCryptoPaymentDialog({
     periodId,
     projectId,
     projectSlug,
+    receiptAttemptId,
     receiptQuery.data,
     receiptQuery.isSuccess,
     runtimeConfig,
@@ -323,51 +454,193 @@ export function ProjectCryptoPaymentDialog({
       return
     }
 
+    void emitReceiptEvent({
+      stage: lastAction === "approve" ? "approval" : "deposit",
+      outcome: "failure",
+      errorCode: "transaction_failed",
+      errorMessage: writeError.message,
+    })
     toast({
       title: "Transaction failed",
       description: writeError.message,
       variant: "destructive",
     })
-  }, [writeError])
+  }, [emitReceiptEvent, lastAction, writeError])
+
+  const handleConnectWallet = async () => {
+    const attemptId = crypto.randomUUID()
+    setWalletAttemptId(attemptId)
+
+    await capturePaymentFlowEvent({
+      flow: "wallet_connect",
+      stage: "cta_click",
+      outcome: "attempt",
+      attemptId,
+      environment: runtimeConfig.environment,
+      projectId,
+      paymentId: payment?.id ?? null,
+    })
+
+    if (!walletEnabled) {
+      await capturePaymentFlowEvent({
+        flow: "wallet_connect",
+        stage: "runtime_blocked",
+        outcome: "failure",
+        severity: "warning",
+        attemptId,
+        environment: runtimeConfig.environment,
+        projectId,
+        paymentId: payment?.id ?? null,
+        errorCode: "wallet_runtime_blocked",
+        errorMessage: walletConfigIssue,
+      })
+      setWalletAttemptId(null)
+      return
+    }
+
+    try {
+      await capturePaymentFlowEvent({
+        flow: "wallet_connect",
+        stage: "modal_open",
+        outcome: "attempt",
+        attemptId,
+        environment: runtimeConfig.environment,
+        projectId,
+        paymentId: payment?.id ?? null,
+      })
+      await openWalletModal()
+    } catch (error) {
+      await capturePaymentFlowEvent({
+        flow: "wallet_connect",
+        stage: "modal_open",
+        outcome: "failure",
+        severity: "error",
+        attemptId,
+        environment: runtimeConfig.environment,
+        projectId,
+        paymentId: payment?.id ?? null,
+        errorCode: "wallet_modal_open_failed",
+        errorMessage: error instanceof Error ? error.message : "Could not open the wallet modal.",
+      })
+      setWalletAttemptId(null)
+    }
+  }
+
+  const handleSwitchChain = async () => {
+    if (!selectedMethod) {
+      return
+    }
+
+    await emitReceiptEvent({
+      stage: "chain_switch",
+      outcome: "attempt",
+      metadata: {
+        targetChainId: selectedMethod.chain.evm_chain_id,
+      },
+    })
+
+    try {
+      await switchChainAsync({ chainId: selectedMethod.chain.evm_chain_id })
+      await emitReceiptEvent({
+        stage: "chain_switch",
+        outcome: "success",
+        metadata: {
+          targetChainId: selectedMethod.chain.evm_chain_id,
+        },
+      })
+    } catch (error) {
+      await emitReceiptEvent({
+        stage: "chain_switch",
+        outcome: "failure",
+        errorCode: "chain_switch_failed",
+        errorMessage: error instanceof Error ? error.message : "Could not switch the connected wallet chain.",
+        metadata: {
+          targetChainId: selectedMethod.chain.evm_chain_id,
+        },
+      })
+    }
+  }
 
   const handleApprove = async () => {
     if (!selectedMethod || !selectedRouteAvailable || !selectedMethod.asset.token_address || !supportsDirectUsdSettlement) {
-      return
-    }
-
-    setLastAction("approve")
-    await writeContractAsync({
-      address: selectedMethod.asset.token_address as `0x${string}`,
-      abi: erc20Abi,
-      functionName: "approve",
-      args: [selectedMethod.intakeContract.contract_address as `0x${string}`, amountRaw],
-    })
-  }
-
-  const handleDeposit = async () => {
-    if (!selectedMethod || !selectedRouteAvailable || !projectId || !supportsDirectUsdSettlement) {
-      return
-    }
-
-    setLastAction("deposit")
-
-    if (selectedMethod.asset.is_native) {
-      await writeContractAsync({
-        address: selectedMethod.intakeContract.contract_address as `0x${string}`,
-        abi: fundLoopIntakeAbi,
-        functionName: "depositNative",
-        args: [BigInt(projectId), periodId],
-        value: amountRaw,
+      await emitReceiptEvent({
+        stage: "runtime_blocked",
+        outcome: "failure",
+        severity: "warning",
+        errorCode: "approval_unavailable",
+        errorMessage: selectedRouteAvailable
+          ? "Approval is not available for the selected route."
+          : selectedRouteIssue,
       })
       return
     }
 
-    await writeContractAsync({
-      address: selectedMethod.intakeContract.contract_address as `0x${string}`,
-      abi: fundLoopIntakeAbi,
-      functionName: "depositToken",
-      args: [BigInt(projectId), periodId, selectedMethod.asset.token_address as `0x${string}`, amountRaw],
+    setLastAction("approve")
+    await emitReceiptEvent({
+      stage: "approval",
+      outcome: "attempt",
+      metadata: {
+        contractAddress: selectedMethod.intakeContract.contract_address,
+      },
     })
+
+    try {
+      await writeContractAsync({
+        address: selectedMethod.asset.token_address as `0x${string}`,
+        abi: erc20Abi,
+        functionName: "approve",
+        args: [selectedMethod.intakeContract.contract_address as `0x${string}`, amountRaw],
+      })
+    } catch {
+      // The wagmi hook will surface the failure via writeError; keep the UX consistent and avoid double toasts.
+    }
+  }
+
+  const handleDeposit = async () => {
+    if (!selectedMethod || !selectedRouteAvailable || !projectId || !supportsDirectUsdSettlement) {
+      await emitReceiptEvent({
+        stage: "runtime_blocked",
+        outcome: "failure",
+        severity: "warning",
+        errorCode: "deposit_unavailable",
+        errorMessage: !selectedRouteAvailable
+          ? selectedRouteIssue
+          : "This crypto payment route is not currently executable.",
+      })
+      return
+    }
+
+    setLastAction("deposit")
+    await emitReceiptEvent({
+      stage: "deposit",
+      outcome: "attempt",
+      metadata: {
+        projectId,
+        periodId,
+      },
+    })
+
+    try {
+      if (selectedMethod.asset.is_native) {
+        await writeContractAsync({
+          address: selectedMethod.intakeContract.contract_address as `0x${string}`,
+          abi: fundLoopIntakeAbi,
+          functionName: "depositNative",
+          args: [BigInt(projectId), periodId],
+          value: amountRaw,
+        })
+        return
+      }
+
+      await writeContractAsync({
+        address: selectedMethod.intakeContract.contract_address as `0x${string}`,
+        abi: fundLoopIntakeAbi,
+        functionName: "depositToken",
+        args: [BigInt(projectId), periodId, selectedMethod.asset.token_address as `0x${string}`, amountRaw],
+      })
+    } catch {
+      // The wagmi hook will surface the failure via writeError; keep the UX consistent and avoid double toasts.
+    }
   }
 
   const wrongChain = selectedMethod ? chainId !== selectedMethod.chain.evm_chain_id : false
@@ -480,14 +753,14 @@ export function ProjectCryptoPaymentDialog({
               Route unavailable in {runtimeConfig.environment}
             </Button>
           ) : !isConnected ? (
-            <Button className="w-full" onClick={() => void openWalletModal()} disabled={!walletEnabled} data-testid="connect-wallet-button">
+            <Button className="w-full" onClick={() => void handleConnectWallet()} disabled={!walletEnabled} data-testid="connect-wallet-button">
               <Wallet className="mr-2 h-4 w-4" />
               Connect wallet
             </Button>
           ) : wrongChain && selectedMethod ? (
             <Button
               className="w-full"
-              onClick={() => void switchChainAsync({ chainId: selectedMethod.chain.evm_chain_id })}
+              onClick={() => void handleSwitchChain()}
               disabled={busy}
               data-testid="switch-wallet-chain-button"
             >

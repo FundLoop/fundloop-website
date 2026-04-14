@@ -18,6 +18,7 @@ import {
 import { Input } from "@/components/ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Table, TableBody, TableCaption, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
+import { capturePaymentFlowEvent } from "@/lib/observability/payment-flow-client"
 import { toast } from "@/components/ui/use-toast"
 
 type PaymentsConsoleProps = {
@@ -109,8 +110,34 @@ export function PaymentsConsole({ initialPayments }: PaymentsConsoleProps) {
     }
 
     startConfirming(async () => {
-      const result = await confirmInternalPaymentReceipt(paymentToConfirm.id)
+      const attemptId = crypto.randomUUID()
+      await capturePaymentFlowEvent({
+        flow: "admin_confirmation",
+        stage: "submit",
+        outcome: "attempt",
+        attemptId,
+        environment: "local",
+        projectId: paymentToConfirm.project_id,
+        paymentId: paymentToConfirm.id,
+        metadata: {
+          source: "admin_payments_console",
+        },
+      })
+
+      const result = await confirmInternalPaymentReceipt(paymentToConfirm.id, attemptId)
       if (!result.ok) {
+        await capturePaymentFlowEvent({
+          flow: "admin_confirmation",
+          stage: "submit",
+          outcome: "failure",
+          attemptId,
+          severity: "error",
+          environment: "local",
+          projectId: paymentToConfirm.project_id,
+          paymentId: paymentToConfirm.id,
+          errorCode: "admin_confirmation_failed",
+          errorMessage: result.error,
+        })
         toast({
           title: "Confirmation failed",
           description: result.error,
@@ -119,6 +146,15 @@ export function PaymentsConsole({ initialPayments }: PaymentsConsoleProps) {
         return
       }
 
+      await capturePaymentFlowEvent({
+        flow: "admin_confirmation",
+        stage: "submit",
+        outcome: "success",
+        attemptId,
+        environment: "local",
+        projectId: paymentToConfirm.project_id,
+        paymentId: paymentToConfirm.id,
+      })
       setPayments((current) =>
         current.map((payment) =>
           payment.id === paymentToConfirm.id
