@@ -18,8 +18,15 @@ describe("local public discovery seed fixtures", () => {
     expect(seedSql).toContain("'00000000-0000-4000-8000-000000000104'")
   })
 
+  it("includes stable public blog slugs for listing and detail smoke coverage", () => {
+    expect(seedSql).toContain("'why-monthly-cadence-matters'")
+    expect(seedSql).toContain("'what-contributors-actually-need-from-a-project-directory'")
+    expect(seedSql).toContain("'from-kyc-friction-to-trust-signals'")
+  })
+
   it("bumps the local project and user sequences past the curated fixtures", () => {
     expect(seedSql).toContain(`SELECT pg_catalog.setval('"public"."projects_id_seq1"', 103, true);`)
     expect(seedSql).toContain(`SELECT pg_catalog.setval('"public"."users_sequential_id_seq"', 104, true);`)
+    expect(seedSql).toContain(`SELECT pg_catalog.setval('"public"."blog_posts_id_seq"', 26, true);`)
   })
 })

@@ -1,14 +1,15 @@
 "use client"
 
 import { useEffect, useMemo, useRef, useState } from "react"
+import { useRouter } from "next/navigation"
 import { ArrowLeft, ArrowRight, CheckCircle2, Search, Sparkles } from "lucide-react"
 import {
-  clearUserOnboardingDraft,
   getOnboardingState,
-  publishUserOnboardingDraft,
   searchProjectsForTeamMember,
-  upsertUserOnboardingDraft,
 } from "@/app/actions/onboarding-actions"
+import { invokeUserOnboardingDraftClearBrowser } from "@/lib/edge-functions/user-onboarding-draft-clear"
+import { invokeUserOnboardingPublishBrowser } from "@/lib/edge-functions/user-onboarding-publish"
+import { invokeUserOnboardingDraftUpsertBrowser } from "@/lib/edge-functions/user-onboarding-draft-upsert"
 import { getSupabaseBrowserClient } from "@/lib/supabase"
 import {
   buildVisibilityFromPreset,
@@ -67,6 +68,7 @@ export default function UserSignupFlow({
   initialRelationshipChoice = "individual",
   onRequestFlowChange,
 }: UserSignupFlowProps) {
+  const router = useRouter()
   const [loading, setLoading] = useState(true)
   const [authUserId, setAuthUserId] = useState<string | null>(null)
   const [userStatus, setUserStatus] = useState<string | null>(null)
@@ -211,10 +213,20 @@ export default function UserSignupFlow({
 
     const timeoutId = window.setTimeout(() => {
       setSaving(true)
-      void upsertUserOnboardingDraft({
+      void invokeUserOnboardingDraftUpsertBrowser({
         currentScreen,
         payload,
-      }).finally(() => setSaving(false))
+      })
+        .then((result) => {
+          if (!result.ok) {
+            toast({
+              title: "Could not save draft",
+              description: result.error.message,
+              variant: "destructive",
+            })
+          }
+        })
+        .finally(() => setSaving(false))
     }, 600)
 
     return () => window.clearTimeout(timeoutId)
@@ -271,7 +283,7 @@ export default function UserSignupFlow({
       return
     }
     setSaving(true)
-    const result = await upsertUserOnboardingDraft({
+    const result = await invokeUserOnboardingDraftUpsertBrowser({
       currentScreen: "identity",
       payload,
     })
@@ -280,7 +292,7 @@ export default function UserSignupFlow({
     if (!result.ok) {
       toast({
         title: "Could not start onboarding",
-        description: result.error,
+        description: result.error.message,
         variant: "destructive",
       })
     }
@@ -292,13 +304,13 @@ export default function UserSignupFlow({
 
   const handleStartOver = async () => {
     setSaving(true)
-    const result = await clearUserOnboardingDraft()
+    const result = await invokeUserOnboardingDraftClearBrowser()
     setSaving(false)
 
     if (!result.ok) {
       toast({
         title: "Could not restart onboarding",
-        description: result.error,
+        description: result.error.message,
         variant: "destructive",
       })
       return
@@ -357,17 +369,19 @@ export default function UserSignupFlow({
 
   const handlePublish = async () => {
     setPublishing(true)
-    const result = await publishUserOnboardingDraft()
+    const result = await invokeUserOnboardingPublishBrowser()
     setPublishing(false)
 
     if (!result.ok) {
       toast({
         title: "Could not publish profile",
-        description: result.error,
+        description: result.error.message,
         variant: "destructive",
       })
       return
     }
+
+    router.refresh()
 
     toast({
       title: "Profile published",

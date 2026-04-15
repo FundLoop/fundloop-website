@@ -1,5 +1,62 @@
 ---
 
+### session v47: Move onboarding write flows to typed Edge Function commands
+- timestamp: 2026-04-15T01:08:08-0400
+- agent: **Codex (GPT-5)**
+- branch: **codex/wallet-production-readiness**
+- head: TBD
+
+#### Objective
+Complete Session 12 by moving onboarding draft-save, clear, and publish writes out of `app/actions/onboarding-actions.ts` and into typed Supabase Edge Function commands, while bundling the pending local blog-seed fixture cleanup into the same commit.
+
+#### Actions Taken
+- Extracted the onboarding mutation logic into server-only command modules under `lib/onboarding/`:
+  - `user-onboarding-commands.ts`
+  - `project-onboarding-commands.ts`
+  - `command-utils.ts`
+- Added six onboarding command contracts and adapters under `lib/edge-functions/` for:
+  - user draft upsert
+  - user draft clear
+  - user publish
+  - project draft upsert
+  - project draft clear
+  - project publish
+- Added six matching Supabase Edge Functions under `supabase/functions/`, plus the shared command runtime helper, following the existing authenticated-client plus service-role-after-auth pattern used by the payment draft command.
+- Reduced `app/actions/onboarding-actions.ts` to the intentional read surface (`getOnboardingState`, `searchProjectsForTeamMember`) plus thin compatibility wrappers that delegate writes through the server Edge adapters.
+- Switched `components/user-signup-flow.tsx` and `components/project-signup-flow.tsx` to use the browser Edge adapters for welcome-start saves, autosave, clear/start-over, and publish, while preserving the existing toast, resume, close, and project-flow handoff behavior.
+- Added coverage for onboarding contracts, command modules, Edge adapters, and the client signup flows:
+  - `tests/onboarding-edge-contracts.test.ts`
+  - `tests/user-onboarding-commands.test.ts`
+  - `tests/project-onboarding-commands.test.ts`
+  - `tests/onboarding-edge-adapters.test.ts`
+  - `tests/user-signup-flow.test.tsx`
+  - `tests/project-signup-flow.test.tsx`
+- Folded the previously dirty local-fixture cleanup into this same session by adding deterministic published blog posts to `supabase/seed.sql`, documenting the stable smoke targets in `docs/engineering/local-seed.md`, and extending `tests/local-public-seed.test.ts`.
+- Updated `docs/engineering/edge-functions.md` to record onboarding writes as the second migrated Edge Function domain.
+- Fixed one follow-on local runtime issue exposed during smoke by making `lib/navigation-context.ts` fall back to the authenticated SSR Supabase client when the local service-role env is absent, and added a regression case in `tests/navigation-context.test.ts`.
+
+#### Tests and Validation Notes
+- `pnpm dlx node@22.22.1 /opt/homebrew/bin/pnpm exec vitest run tests/navigation-context.test.ts tests/onboarding-edge-contracts.test.ts tests/user-onboarding-commands.test.ts tests/project-onboarding-commands.test.ts tests/onboarding-edge-adapters.test.ts tests/user-signup-flow.test.tsx tests/project-signup-flow.test.tsx` passed
+- `pnpm dlx node@22.22.1 /opt/homebrew/bin/pnpm exec vitest run tests/local-public-seed.test.ts` passed earlier during the bundled seed work and remains part of this checkpoint
+- `pnpm dlx node@22.22.1 /opt/homebrew/bin/pnpm check` passed
+- Local HTTP smoke confirmed:
+  - `/en?onboarding=user` returned `200`
+  - `/en/blog/why-monthly-cadence-matters` returned `200`
+  - the guarded `/api/internal/e2e/login` route successfully authenticated the disposable local smoke user
+- Full browser write-path smoke was only partially completed. The local environment was serving an older `everfund` Supabase stack that lacked `user_onboarding_drafts`, and when I attempted to switch over to a fresh local `fundloop` stack the Docker daemon was no longer available. That prevented a trustworthy end-to-end verification of the actual draft-write and publish requests against the intended local schema in this session.
+
+#### Reflections
+- The core architectural win here is that onboarding now follows the same command-style Edge Function pattern as the payment draft write path, which makes the founder/user lifecycle flows much more consistent with the target architecture.
+- The local smoke uncovered a useful non-obvious bug outside the new onboarding code: shared navigation was hard-failing public authenticated pages when the service-role env was missing. Fixing that now makes the app shell more robust in local and preview environments.
+- The remaining gap is environmental rather than architectural. The code-level migration is validated through tests and build checks, but the local Supabase runtime needs to be healthy and on the correct schema before the true browser write-path smoke can be called complete.
+
+#### Suggested Next Steps
+- Bring the local Docker/Supabase stack back up under the repo’s actual `fundloop` project ID, then rerun the authenticated browser smoke for:
+  - user draft save/resume/publish
+  - user publish -> project handoff
+  - project draft save/resume/publish
+- Once Session 12’s live smoke is clean, move on to Session 13’s CUBID-first identity requirements work using the new onboarding write architecture as the foundation.
+
 ### session v46: Consolidate the remaining public routes into the modern localized shell
 - timestamp: 2026-04-15T00:16:00-0400
 - agent: **Codex (GPT-5)**

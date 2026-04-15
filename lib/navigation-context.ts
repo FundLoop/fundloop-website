@@ -66,15 +66,24 @@ export const getNavigationContext = cache(async (): Promise<NavigationContext> =
     return emptyNavigationContext()
   }
 
-  const adminSupabase = getAdminSupabaseClient()
+  const roleAwareSupabase = (() => {
+    try {
+      return getAdminSupabaseClient()
+    } catch {
+      // Local and preview environments may omit the service-role key. Fall back
+      // to the authenticated SSR client so the shared shell still renders.
+      return supabase
+    }
+  })()
+
   const [{ data: profile }, { data: participantRows }, { data: founderRoles }] = await Promise.all([
-    adminSupabase
+    roleAwareSupabase
       .from("users")
       .select("full_name, avatar_url, status")
       .eq("user_id", authUser.id)
       .maybeSingle<UserProfileRow>(),
-    adminSupabase.from("participants").select("project_id").eq("user_id", authUser.id).eq("is_admin", true),
-    adminSupabase.from("ref_roles").select("id").in("name", ["Founder", "Admin"]),
+    roleAwareSupabase.from("participants").select("project_id").eq("user_id", authUser.id).eq("is_admin", true),
+    roleAwareSupabase.from("ref_roles").select("id").in("name", ["Founder", "Admin"]),
   ])
 
   const participantProjectIds = Array.from(new Set((participantRows ?? []).map((row) => row.project_id)))
@@ -82,7 +91,7 @@ export const getNavigationContext = cache(async (): Promise<NavigationContext> =
 
   const { data: organizationMemberships } =
     founderRoleIds.length > 0
-      ? await adminSupabase
+      ? await roleAwareSupabase
           .from("organization_members")
           .select("organization_id")
           .eq("user_id", authUser.id)
@@ -94,10 +103,10 @@ export const getNavigationContext = cache(async (): Promise<NavigationContext> =
 
   const [participantProjectsResult, organizationProjectsResult] = await Promise.all([
     participantProjectIds.length > 0
-      ? adminSupabase.from("projects").select("id, slug, name, organization_id").in("id", participantProjectIds)
+      ? roleAwareSupabase.from("projects").select("id, slug, name, organization_id").in("id", participantProjectIds)
       : Promise.resolve({ data: [] as ProjectRow[] }),
     organizationIds.length > 0
-      ? adminSupabase.from("projects").select("id, slug, name, organization_id").in("organization_id", organizationIds)
+      ? roleAwareSupabase.from("projects").select("id, slug, name, organization_id").in("organization_id", organizationIds)
       : Promise.resolve({ data: [] as ProjectRow[] }),
   ])
 

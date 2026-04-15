@@ -1,13 +1,14 @@
 "use client"
 
 import { useEffect, useMemo, useRef, useState } from "react"
+import { useRouter } from "next/navigation"
 import { ArrowLeft, ArrowRight, CheckCircle2, Plus, Trash2 } from "lucide-react"
 import {
-  clearProjectOnboardingDraft,
   getOnboardingState,
-  publishProjectOnboardingDraft,
-  upsertProjectOnboardingDraft,
 } from "@/app/actions/onboarding-actions"
+import { invokeProjectOnboardingDraftClearBrowser } from "@/lib/edge-functions/project-onboarding-draft-clear"
+import { invokeProjectOnboardingPublishBrowser } from "@/lib/edge-functions/project-onboarding-publish"
+import { invokeProjectOnboardingDraftUpsertBrowser } from "@/lib/edge-functions/project-onboarding-draft-upsert"
 import { getSupabaseBrowserClient } from "@/lib/supabase"
 import {
   DEFAULT_PROJECT_ONBOARDING_PAYLOAD,
@@ -57,6 +58,7 @@ function formatDraftTime(value: string | null | undefined) {
 }
 
 export default function ProjectSignupFlow({ onClose }: ProjectSignupFlowProps) {
+  const router = useRouter()
   const [loading, setLoading] = useState(true)
   const [authUserId, setAuthUserId] = useState<string | null>(null)
   const [currentScreen, setCurrentScreen] = useState<ProjectOnboardingScreen>("basics")
@@ -223,10 +225,20 @@ export default function ProjectSignupFlow({ onClose }: ProjectSignupFlowProps) {
 
     const timeoutId = window.setTimeout(() => {
       setSaving(true)
-      void upsertProjectOnboardingDraft({
+      void invokeProjectOnboardingDraftUpsertBrowser({
         currentScreen,
         payload,
-      }).finally(() => setSaving(false))
+      })
+        .then((result) => {
+          if (!result.ok) {
+            toast({
+              title: "Could not save project draft",
+              description: result.error.message,
+              variant: "destructive",
+            })
+          }
+        })
+        .finally(() => setSaving(false))
     }, 600)
 
     return () => window.clearTimeout(timeoutId)
@@ -336,13 +348,13 @@ export default function ProjectSignupFlow({ onClose }: ProjectSignupFlowProps) {
 
   const handleStartOver = async () => {
     setSaving(true)
-    const result = await clearProjectOnboardingDraft()
+    const result = await invokeProjectOnboardingDraftClearBrowser()
     setSaving(false)
 
     if (!result.ok) {
       toast({
         title: "Could not restart project onboarding",
-        description: result.error,
+        description: result.error.message,
         variant: "destructive",
       })
       return
@@ -356,17 +368,19 @@ export default function ProjectSignupFlow({ onClose }: ProjectSignupFlowProps) {
 
   const handlePublish = async () => {
     setPublishing(true)
-    const result = await publishProjectOnboardingDraft()
+    const result = await invokeProjectOnboardingPublishBrowser()
     setPublishing(false)
 
     if (!result.ok) {
       toast({
         title: "Could not publish project",
-        description: result.error,
+        description: result.error.message,
         variant: "destructive",
       })
       return
     }
+
+    router.refresh()
 
     toast({
       title: "Project published",

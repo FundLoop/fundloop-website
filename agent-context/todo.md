@@ -135,12 +135,12 @@ Use the route inventory from Session 02 to finish, merge, redirect, or remove th
 
 ## Session 12: Move onboarding draft save and publish flows to Edge Functions
 
-- Status: Not started
-- Timestamp started: TBD
-- Timestamp completed: TBD
-- Feature branch: TBD
+- Status: Complete
+- Timestamp started: 2026-04-15T00:46:52-0400
+- Timestamp completed: 2026-04-15T01:08:08-0400
+- Feature branch: codex/wallet-production-readiness
 - Head: TBD
-- Session-log reference(s): TBD
+- Session-log reference(s): session v47
 
 Migrate resumable onboarding away from direct server-action orchestration and into Edge Function commands. This session should cover user onboarding drafts, project onboarding drafts, and the publish steps that materialize real records. Preserve resumability, validation, and authorization. The web app should call typed Edge Function adapters rather than writing directly through server actions. This is a key transition step because onboarding is one of the most application-like parts of the repo and sets the pattern for founder and user lifecycle management.
 
