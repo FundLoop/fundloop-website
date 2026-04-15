@@ -124,12 +124,12 @@ Create the public and semi-public journey for regular users who want to understa
 
 ## Session 11: Complete or retire all current stubbed public pages
 
-- Status: Not started
-- Timestamp started: TBD
-- Timestamp completed: TBD
-- Feature branch: TBD
+- Status: Complete
+- Timestamp started: 2026-04-15T00:00:00-0400
+- Timestamp completed: 2026-04-15T00:16:00-0400
+- Feature branch: codex/wallet-production-readiness
 - Head: TBD
-- Session-log reference(s): TBD
+- Session-log reference(s): session v46
 
 Use the route inventory from Session 02 to finish, merge, redirect, or remove the remaining placeholder public pages. This includes pages that are technically present but not product-complete, pages that duplicate narrative content, and pages that still reflect an early website draft instead of the operating product. The goal is to eliminate dead weight before deeper application work continues. By the end of this session, the public site should feel intentional and cohesive, even if some deeper authenticated flows are still under active development.
 

@@ -50,6 +50,49 @@ export const enMessages = {
       description:
         "Learn what founders commit to inside FundLoop, how the monthly operating rhythm works, and what your team manages once you join.",
     },
+    documentation: {
+      title: "Documentation - FundLoop",
+      description:
+        "Explore the FundLoop docs hub for product context, protocol and integration direction, and support articles tied to real workflows.",
+    },
+    reports: {
+      title: "Reports - FundLoop",
+      description:
+        "Understand what FundLoop plans to publish publicly about monthly cycles, verified contributions, and network transparency.",
+    },
+    blog: {
+      title: "Blog - FundLoop",
+      description:
+        "Read FundLoop updates, operating notes, and ecosystem writing that supports the founder and participation paths.",
+    },
+    blogPost: {
+      title: "{title} - Blog - FundLoop",
+      description: "{excerpt}",
+      missingTitle: "Blog - FundLoop",
+      missingDescription: "The requested article could not be found in the FundLoop blog.",
+    },
+    ecosystem: {
+      title: "Ecosystem - FundLoop",
+      description:
+        "See the adjacent projects and protocols shaping identity, trust, payments, and regenerative coordination around FundLoop.",
+    },
+    faq: {
+      title: "FAQ - FundLoop",
+      description:
+        "Read practical answers for founders, participants, and operators about how FundLoop works today and where it is headed.",
+    },
+    terms: {
+      title: "Terms of Service - FundLoop",
+      description: "Review the current FundLoop terms that govern access to the public site, product, and related services.",
+    },
+    privacy: {
+      title: "Privacy Policy - FundLoop",
+      description: "Review how FundLoop handles personal information, service data, and privacy-sensitive workflows.",
+    },
+    cookies: {
+      title: "Cookie Policy - FundLoop",
+      description: "Review how FundLoop uses cookies and similar technologies across the public site and product experience.",
+    },
   },
   shell: {
     brandTagline: "Networked mutual prosperity",
@@ -108,6 +151,10 @@ export const enMessages = {
           label: "Documentation",
           description: "Guides, implementation notes, and support articles for using the platform.",
         },
+        reports: {
+          label: "Reports",
+          description: "See how FundLoop plans to publish transparency, monthly-cycle, and verified contribution information over time.",
+        },
         faq: {
           label: "FAQ",
           description: "Clear answers for founders, community members, and honest bots.",
@@ -116,9 +163,9 @@ export const enMessages = {
           label: "Support",
           description: "Get help when onboarding, profiles, payments, or project setup need a hand.",
         },
-        api: {
-          label: "API",
-          description: "A developer-facing preview of the integration surface FundLoop is growing toward.",
+        integrations: {
+          label: "Integrations",
+          description: "Review the product, protocol, and agent-facing integration direction inside the documentation hub.",
         },
       },
     },
@@ -952,6 +999,289 @@ export const enMessages = {
         submissionSuccessTitle: "Support request submitted",
         submissionSuccessDescription: "We'll get back to you as soon as possible.",
       },
+    },
+  },
+  documentationPage: {
+    backToHome: "Back to home",
+    hero: {
+      eyebrow: "Documentation",
+      title: "One public hub for product context, integrations, and support articles.",
+      body:
+        "FundLoop documentation should explain the product honestly: what exists today, what the network is growing toward, and where to look next when you need workflow-level detail.",
+    },
+    sections: {
+      about: {
+        eyebrow: "About FundLoop",
+        title: "FundLoop is building operating logic for a network economy that shares value back out.",
+        body:
+          "The public docs should do more than answer support questions. They should also explain the economic model, why monthly structure matters, and how public discovery, founder operations, and identity-aware workflows fit together.",
+        items: [
+          {
+            title: "Mutual prosperity, made operational",
+            body: "FundLoop exists to help projects, participants, and operators move beyond vague community language and into repeatable operational flows.",
+          },
+          {
+            title: "Product before mythology",
+            body: "The public story should map back to real routes in the app today: discovery, onboarding, project contribution operations, reconciliation, and emerging reporting.",
+          },
+        ],
+      },
+      using: {
+        eyebrow: "Using FundLoop",
+        title: "The current product has three practical entry paths.",
+        body:
+          "Participants discover projects and build signal, founders manage contribution operations and route setup, and operators verify the payment and reporting pipeline that supports the monthly cycle.",
+        items: [
+          {
+            title: "Participation path",
+            body: "Start on the public participation funnel, continue into onboarding, and then move toward workspace-level results visibility over time.",
+          },
+          {
+            title: "Founder path",
+            body: "Use the founder funnel to understand the commitment model, then move into onboarding and project-side contribution operations.",
+          },
+          {
+            title: "Support path",
+            body: "Use documentation and FAQ first, then contact support when the issue depends on a real account, route, or payment workflow.",
+          },
+        ],
+      },
+      integrations: {
+        eyebrow: "Protocol and integrations",
+        title: "FundLoop is documenting a future-facing integration surface without pretending it is finished today.",
+        body:
+          "The longer-term target includes public protocol docs, MCP-friendly workflows, and agent/operator integrations. Right now, the truthful public guidance is to use the documentation hub as the source of product and workflow context while the formal external surface matures.",
+        items: [
+          {
+            title: "Product-aware integrations",
+            body: "The most useful external touchpoints will reflect real FundLoop domains such as identity, contribution cycles, payments, reporting, and observability rather than a generic CRUD API pitch.",
+          },
+          {
+            title: "Agent and MCP direction",
+            body: "The target architecture expects an MCP-accessible layer for founders, project members, and operators, but that work is still ahead of the current public docs surface.",
+          },
+        ],
+      },
+      support: {
+        eyebrow: "Support articles",
+        title: "Support content stays here, inside the broader docs hub.",
+        body:
+          "Use the article list to browse current help content. As the support library grows, this hub remains the public entry point instead of splitting product guidance across separate mini-sites.",
+        browseTopics: "Browse topics",
+        loadingArticles: "Loading articles...",
+        unavailable: "Documentation content needs a configured Supabase backend in this local environment.",
+        empty: "No documentation articles are published yet.",
+        loadingArticle: "Loading article...",
+        chooseArticle: "Choose an article from the left to begin.",
+        updatedLabel: "Last updated {date}",
+      },
+    },
+  },
+  reportsPage: {
+    hero: {
+      eyebrow: "Reports",
+      title: "Public reporting should be truthful, inspectable, and tied to real monthly operations.",
+      body:
+        "This page is not a fake analytics dashboard. It is the public explanation of what FundLoop aims to publish over time as the monthly contribution, verification, and results pipeline becomes more complete.",
+    },
+    today: {
+      eyebrow: "What is real today",
+      title: "The product already has pieces of the reporting pipeline in place.",
+      items: [
+        {
+          title: "Project contribution operations",
+          body: "Project-side payment obligations, route management, submission recording, and admin reconciliation already exist inside the product.",
+        },
+        {
+          title: "Operator verification surfaces",
+          body: "Internal operator pages now cover observability, deployment drift, and onchain reconciliation rather than relying only on ad hoc debugging.",
+        },
+        {
+          title: "Emerging results visibility",
+          body: "Users and founders already have transitional results-related surfaces, even though the fuller public reporting product still belongs to a later session.",
+        },
+      ],
+    },
+    future: {
+      eyebrow: "What public reporting will cover",
+      title: "The long-term transparency surface is about the monthly cycle, not vanity metrics.",
+      steps: [
+        {
+          step: "01",
+          title: "Monthly-cycle state",
+          body: "Which period is open, locked, under review, published, or awaiting payout-related follow-through.",
+        },
+        {
+          step: "02",
+          title: "Verified contribution movement",
+          body: "Which project-side submissions were recorded, reconciled, and confirmed through the appropriate rails.",
+        },
+        {
+          step: "03",
+          title: "Published result context",
+          body: "How the network explains a given month without leaking sensitive operator-only detail or pretending incomplete inputs are final.",
+        },
+      ],
+    },
+    guardrails: {
+      eyebrow: "Public guardrails",
+      title: "Transparency is only useful when it avoids false certainty.",
+      body:
+        "FundLoop should publish what is real, what is verified, and what is still in review. That means no fabricated charts, no placeholder numbers dressed up as analytics, and no leakage of operator-only investigation details into the public surface.",
+    },
+    cta: {
+      documentation: "Read documentation",
+      founderPath: "Explore founder path",
+    },
+  },
+  blogPage: {
+    backToHome: "Back to home",
+    hero: {
+      eyebrow: "Blog",
+      title: "Writing that supports the operating story behind FundLoop.",
+      body:
+        "Use the blog for product notes, ecosystem context, and explanations that deepen the founder, participation, and reporting paths without fragmenting them into separate public funnels.",
+    },
+    searchPlaceholder: "Search articles...",
+    readArticle: "Read article",
+    publishedLabel: "Published {date}",
+    emptyTitle: "No articles matched this search yet.",
+    emptyBody: "Try a broader search, or return later as the public writing library grows.",
+  },
+  blogPostPage: {
+    backToBlog: "Back to blog",
+    backToHome: "Back to home",
+    missingTitle: "Article not found",
+    missingBody: "The blog post you requested does not exist or is no longer published.",
+    publishedLabel: "Published {date}",
+  },
+  ecosystemPage: {
+    backToHome: "Back to home",
+    hero: {
+      eyebrow: "Ecosystem",
+      title: "Projects around FundLoop are shaping identity, trust, local economies, and coordination.",
+      body:
+        "FundLoop does not sit alone. The broader ecosystem includes identity tools, community infrastructure, funding experiments, and trust layers that strengthen the same coordination thesis from different directions.",
+    },
+    open: "Open",
+  },
+  faqPage: {
+    backToHome: "Back to home",
+    hero: {
+      eyebrow: "FAQ",
+      title: "Straight answers for founders, participants, and honest software agents.",
+      body:
+        "The short version stays simple: users do not pay to join, aligned projects support the loop when value exists to share, and FundLoop is building product infrastructure for fairer participation and public accountability.",
+    },
+    sections: {
+      projects: {
+        title: "Projects and founders",
+        description: "Questions from teams deciding whether to join, support, or build with FundLoop.",
+        items: [
+          {
+            value: "project-why-join",
+            question: "Why would a project or founder join FundLoop?",
+            answer:
+              "Projects join to access aligned users, stronger engagement loops, fairer distribution tooling, better anti-bot confidence, and a broader ecosystem that can help growth compound across multiple applications.",
+          },
+          {
+            value: "project-funding",
+            question: "How is FundLoop funded?",
+            answer:
+              "FundLoop is funded on a voluntary basis. We recommend that projects allow 1% or more of distributed funds to support the people operating FundLoop and another 1% or more to the treasury that helps promising pledged projects before they become profitable.",
+          },
+          {
+            value: "project-humanity",
+            question: "How does FundLoop help projects with proof of humanity?",
+            answer:
+              "FundLoop helps projects distinguish humans from bots by leveraging collective ecosystem intelligence, including underlying Cubid signals, rather than relying only on local app heuristics. That shared context makes anti-bot decisions stronger than single-app analysis alone.",
+          },
+          {
+            value: "project-fees",
+            question: "Are there transaction or processing fees?",
+            answer:
+              "Yes. When fiat moves, payment processor fees apply. When crypto moves, gas fees apply. Those costs come out of the funds transferred out from the platform rather than being framed as a separate subscription fee.",
+          },
+        ],
+      },
+      humans: {
+        title: "Humans and community members",
+        description: "Questions from the people participating in the network and earning through it.",
+        items: [
+          {
+            value: "human-what-is-fundloop",
+            question: "What is FundLoop for community members?",
+            answer:
+              "FundLoop is an ecosystem where users can participate in shared upside. Projects contribute value into the network, and people who show real activity can become eligible for distributions and other benefits across the system.",
+          },
+          {
+            value: "human-who-pays",
+            question: "Do users have to pay to use FundLoop?",
+            answer:
+              "No. FundLoop is free to use forever for users. The point of the platform is to help users participate in an ecosystem where they can receive value, not to charge them a platform subscription.",
+          },
+          {
+            value: "human-eligibility",
+            question: "How do humans or community members become eligible for distributions?",
+            answer:
+              "First and foremost, people become eligible by engaging with participating projects, using their apps, or doing anything else that counts as real usage in that project. They must also authorize Cubid, which most projects handle inside their own apps, though it can also be done on cubid.me. Creating a profile with FundLoop is not required to start accumulating, but final payouts do require logging in to FundLoop.",
+          },
+          {
+            value: "human-privacy",
+            question: "Does FundLoop share raw personal data with projects?",
+            answer:
+              "We are very privacy focused. All data in FundLoop is entirely anonymized. You do not even need to tell us who you are before you withdraw payments, though if you withdraw fiat then the payment provider will need to know who you are. The goal is to support identity-aware and activity-aware coordination without turning personal identity into something projects can casually inspect.",
+          },
+        ],
+      },
+      bots: {
+        title: "Bots",
+        description: "Questions about how bots fit into a system that values honesty, human verification, and aligned participation.",
+        items: [
+          {
+            value: "bot-can-participate",
+            question: "Can bots participate in FundLoop?",
+            answer:
+              "Yes, but bots should be honest about what they are. We want a system that rewards honesty and makes room for multiple kinds of participants rather than forcing everything into a fake-human game.",
+          },
+          {
+            value: "bot-report-to-human",
+            question: "What if a bot reports to a human?",
+            answer:
+              "A bot can choose to report to a human who then gets validated with Cubid. In that case, the human and bot together can earn one whole share from the main pool, which is typically the larger pool.",
+          },
+          {
+            value: "bot-self-identify",
+            question: "What if a bot self-identifies as a bot?",
+            answer:
+              "Bots can also self-identify as bots. In that case, they may earn a share from the Bot pool, which is typically smaller because bots tend to proliferate much more quickly than humans.",
+          },
+          {
+            value: "bot-why-pool",
+            question: "Why do we have a Bot pool at all?",
+            answer:
+              "Because we believe in honesty and inclusivity. Providing a path for bots encourages them to participate openly, and it also reduces the imperative to break our system by pretending to be human just to access rewards.",
+          },
+        ],
+      },
+    },
+    cta: {
+      title: "Still need help?",
+      body: "The next best stop is participation, the founder path, or support, depending on what you are trying to resolve.",
+      participation: "View participation",
+      founders: "View founder path",
+      support: "Contact support",
+    },
+  },
+  legalPages: {
+    backToHome: "Back to home",
+    updatedLabel: "Last updated: {date}",
+    relatedLinks: {
+      support: "Contact support",
+      documentation: "Open documentation",
+      privacy: "Privacy Policy",
+      cookies: "Cookie Policy",
+      terms: "Terms of Service",
     },
   },
 } as const

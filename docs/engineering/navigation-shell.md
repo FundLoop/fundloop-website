@@ -72,6 +72,16 @@ Session 10 completed the parallel public user acquisition and discovery path.
   - signed-in active users: `/workspace`
 - the truthful interim “earnings/results” destination remains `/[locale]/settings/zkas`, framed publicly as current results visibility rather than a finished payout workspace
 
+Session 11 completed the remaining public-route consolidation pass.
+
+- `/[locale]/about` now permanently redirects to `/[locale]/documentation#about-fundloop`
+- `/[locale]/api` now permanently redirects to `/[locale]/documentation#protocol-and-integrations`
+- `/[locale]/analytics` now permanently redirects to `/[locale]/reports`
+- `/[locale]/invitations/[token]` now redirects into the real invite-aware join flow using `/[locale]/join?invite=...`
+- `/[locale]/documentation` is now the canonical public docs hub for product overview, integration direction, and support articles
+- `/[locale]/reports` is now the truthful public transparency/reporting entry surface
+- `/[locale]/blog`, `/[locale]/blog/[slug]`, `/[locale]/ecosystem`, `/[locale]/faq`, and the legal pages now use the current public shell instead of the older pre-i18n page style
+
 ### App shell
 
 The app shell lives in `app/[locale]/(app)/layout.tsx` and:

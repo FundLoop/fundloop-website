@@ -26,9 +26,10 @@ vi.mock("next-intl/server", () => ({
       "nav.resourceLinks.participation.label": "Participation",
       "nav.resourceLinks.founders.label": "Founder path",
       "nav.resourceLinks.documentation.label": "Documentation",
+      "nav.resourceLinks.reports.label": "Reports",
       "nav.resourceLinks.faq.label": "FAQ",
       "nav.resourceLinks.support.label": "Support",
-      "nav.resourceLinks.api.label": "API",
+      "nav.resourceLinks.integrations.label": "Integrations",
     }
 
     return translations[key] ?? key

@@ -1,5 +1,56 @@
 ---
 
+### session v46: Consolidate the remaining public routes into the modern localized shell
+- timestamp: 2026-04-15T00:16:00-0400
+- agent: **Codex (GPT-5)**
+- branch: **codex/wallet-production-readiness**
+- head: TBD
+
+#### Objective
+Complete Session 11 by retiring the remaining legacy public routes, adding the canonical public reports hub, rebuilding the old-shell public pages onto the current localized marketing shell, and updating the route/docs metadata so the public site feels intentional instead of transitional.
+
+#### Actions Taken
+- Replaced `/[locale]/about`, `/[locale]/api`, and `/[locale]/analytics` with permanent redirects into their IA-approved canonical destinations, and retired the old mock invitation route by redirecting `/[locale]/invitations/[token]` into `/[locale]/join?invite=...`.
+- Added the new `/[locale]/reports` public transparency surface and rebuilt `/[locale]/documentation` into the merged docs hub for about/product context, protocol and integration direction, and support-article browsing.
+- Reworked the remaining old-shell public pages onto the modern localized public shell:
+  - `blog`
+  - `blog/[slug]`
+  - `ecosystem`
+  - `faq`
+  - `terms`
+  - `privacy`
+  - `cookies`
+- Added the new server-side `lib/public-content.ts` helper so blog and documentation content now load through the same fail-soft server pattern used by the newer public discovery routes.
+- Updated `lib/public-site.ts`, the footer, and the relevant locale message packs so public resources now promote `reports` and `documentation#protocol-and-integrations` instead of the retired standalone `analytics` and `api` pages.
+- Updated `docs/engineering/navigation-shell.md`, `docs/engineering/route-inventory.md`, and `agent-context/todo.md` so the long-lived docs reflect the new public-route truth.
+- Added and refreshed coverage in:
+  - `tests/public-route-redirects.test.ts`
+  - `tests/ecosystem-page.test.tsx`
+  - `tests/footer.test.tsx`
+  - `tests/i18n.test.ts`
+
+#### Tests and Validation Notes
+- `pnpm dlx node@22.22.1 /opt/homebrew/bin/pnpm lint` passed
+- `pnpm dlx node@22.22.1 /opt/homebrew/bin/pnpm test` passed
+- `pnpm dlx node@22.22.1 /opt/homebrew/bin/pnpm typecheck` passed
+- `pnpm dlx node@22.22.1 /opt/homebrew/bin/pnpm build` passed
+- Local production smoke on port `3001` confirmed:
+  - `/en/about` -> `308` to `/en/documentation#about-fundloop`
+  - `/en/api` -> `308` to `/en/documentation#protocol-and-integrations`
+  - `/en/analytics` -> `308` to `/en/reports`
+  - `/en/invitations/test-token` -> `308` to `/en/join?invite=test-token`
+  - `/en/documentation`, `/en/reports`, `/en/blog`, `/en/faq`, `/fr/documentation`, and `/es/blog` all returned `200`
+- Headless browser smoke verified light/dark mode rendering for `/en/reports` and `/en/documentation`, including the expected titles and the `dark` class toggle on the document element.
+- One local-content caveat remains: the current local dataset did not expose any published blog posts during this smoke pass, so the rebuilt blog listing rendered its empty state rather than a real article card and there was no live blog-detail route to verify in-browser.
+
+#### Reflections
+- The most important part of this session was not visual cleanup by itself; it was collapsing the remaining transitional public routes into canonical destinations so the public site now tells one coherent story.
+- Moving docs and blog content onto a server-side helper also closes an architectural gap: the old browser-only content pages were out of step with the rest of the public shell and made the site feel more like a stitched-together prototype than one product.
+
+#### Suggested Next Steps
+- Session 12 should now migrate the onboarding draft save/publish flows to Edge Functions while the public acquisition paths and documentation surface are stable.
+- When local content fixtures improve again, add one real blog post/article smoke target so the rebuilt blog detail route stays covered alongside the public discovery fixtures.
+
 ### session v45: Remove hard 500s from query-driven public and admin pages after local reset
 - timestamp: 2026-04-14T23:44:52-0400
 - agent: **Codex (GPT-5)**

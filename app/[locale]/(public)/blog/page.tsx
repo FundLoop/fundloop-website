@@ -1,175 +1,131 @@
-"use client"
-
-import { useEffect, useState } from "react"
-import Link from "next/link"
+import type { Metadata } from "next"
 import Image from "next/image"
-import { getSupabaseBrowserClient } from "@/lib/supabase"
-import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { getTranslations } from "next-intl/server"
+import { ArrowRight, Search } from "lucide-react"
+import { Link } from "@/i18n/navigation"
+import { getPublicBlogPosts } from "@/lib/public-content"
 import { Input } from "@/components/ui/input"
-import { Search, ArrowLeft } from "lucide-react"
+import {
+  MarketingPage,
+  MarketingSection,
+  SectionBody,
+  SectionEyebrow,
+  SectionTitle,
+} from "@/components/marketing/page-chrome"
+import { Reveal } from "@/components/marketing/reveal"
 
 const DEFAULT_PICTURE =
   "https://kyxtqnfnksvcaugxwzuj.supabase.co/storage/v1/object/public/blog-pics//introducing-fundloop.png"
-import type { Database } from "@/types/supabase"
 
-interface BlogPostPreview {
-  id: number
-  title: string
-  subtitle: string | null
-  slug: string
-  excerpt: string
-  picture: string | null
-  published_at: string | null
+type PageProps = {
+  params: Promise<{ locale: string }>
+  searchParams: Promise<{ q?: string }>
 }
 
-export default function BlogPage() {
-  const [posts, setPosts] = useState<BlogPostPreview[]>([])
-  const [loading, setLoading] = useState(true)
-  const [searchTerm, setSearchTerm] = useState("")
-  const [filteredPosts, setFilteredPosts] = useState<BlogPostPreview[]>([])
-  const getSupabase = () => getSupabaseBrowserClient()
+function formatDate(locale: string, dateString: string) {
+  return new Intl.DateTimeFormat(locale, {
+    year: "numeric",
+    month: "long",
+    day: "numeric",
+  }).format(new Date(dateString))
+}
 
-  useEffect(() => {
-    const fetchPosts = async () => {
-      const supabase = getSupabase()
-      setLoading(true)
+export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
+  const { locale } = await params
+  const t = await getTranslations({ locale, namespace: "metadata.blog" })
 
-      try {
-        // Simple query for blog posts - no joins
-        const { data, error } = await supabase
-          .from("blog_posts")
-          .select("id, title, subtitle, slug, excerpt, picture, published_at")
-          .eq("is_support", false)
-          .order("published_at", { ascending: false })
-
-        if (error) throw error
-
-        setPosts(data || [])
-        setFilteredPosts(data || [])
-      } catch (err) {
-        console.error("Error fetching blog posts:", err)
-      } finally {
-        setLoading(false)
-      }
-    }
-
-    fetchPosts()
-  }, [])
-
-  // Filter posts when search term changes
-  useEffect(() => {
-    if (searchTerm.trim() === "") {
-      setFilteredPosts(posts)
-    } else {
-      const term = searchTerm.toLowerCase()
-      const filtered = posts.filter(
-        (post) => post.title.toLowerCase().includes(term) || post.excerpt.toLowerCase().includes(term),
-      )
-      setFilteredPosts(filtered)
-    }
-  }, [searchTerm, posts])
-
-  const formatDate = (dateString: string | null) => {
-    if (!dateString) return "Unpublished"
-    const date = new Date(dateString)
-    return new Intl.DateTimeFormat("en-US", {
-      year: "numeric",
-      month: "long",
-      day: "numeric",
-    }).format(date)
+  return {
+    title: t("title"),
+    description: t("description"),
   }
+}
+
+export default async function BlogPage({ params, searchParams }: PageProps) {
+  const { locale } = await params
+  const { q } = await searchParams
+  const t = await getTranslations({ locale, namespace: "blogPage" })
+  const posts = await getPublicBlogPosts(q)
 
   return (
-    <div className="container mx-auto px-4 py-12">
-      <div className="flex items-center gap-2 mb-8">
-        <Button asChild variant="ghost" size="sm" className="gap-1">
-          <Link href="/">
-            <ArrowLeft className="h-4 w-4" />
-            <span>Back to Home</span>
-          </Link>
-        </Button>
-      </div>
+    <MarketingPage>
+      <MarketingSection className="pt-10">
+        <div className="grid gap-12 lg:grid-cols-[minmax(0,1fr)_minmax(19rem,0.72fr)]">
+          <Reveal>
+            <SectionEyebrow>{t("hero.eyebrow")}</SectionEyebrow>
+            <SectionTitle className="mt-4 max-w-4xl text-5xl sm:text-6xl lg:text-7xl">{t("hero.title")}</SectionTitle>
+            <SectionBody className="mt-6 max-w-2xl">{t("hero.body")}</SectionBody>
+          </Reveal>
 
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-8">
-        <div>
-          <h1 className="text-3xl md:text-4xl font-bold">FundLoop Blog</h1>
-          <p className="text-slate-600 dark:text-slate-300 mt-2">
-            News, updates, and insights from the FundLoop ecosystem
-          </p>
+          <Reveal delay={120}>
+            <form action="" className="rounded-[2rem] border border-[color:var(--marketing-line)] bg-white/58 p-6 shadow-[0_24px_70px_rgba(15,23,23,0.08)] dark:bg-white/[0.03] sm:p-8">
+              <label
+                htmlFor="blog-search"
+                className="text-[0.68rem] font-semibold uppercase tracking-[0.28em] text-[var(--marketing-muted)]"
+              >
+                {t("searchPlaceholder")}
+              </label>
+              <div className="relative mt-4">
+                <Search className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-[var(--marketing-muted)]" />
+                <Input
+                  id="blog-search"
+                  name="q"
+                  defaultValue={q ?? ""}
+                  placeholder={t("searchPlaceholder")}
+                  className="h-12 rounded-full pl-11"
+                />
+              </div>
+            </form>
+          </Reveal>
         </div>
+      </MarketingSection>
 
-        <div className="relative w-full md:w-[300px]">
-          <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-slate-500 dark:text-slate-400" />
-          <Input
-            placeholder="Search articles..."
-            className="pl-8"
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-          />
-        </div>
-      </div>
+      <MarketingSection className="pb-24 pt-8">
+        {posts.length === 0 ? (
+          <Reveal>
+            <div className="rounded-[2rem] border border-[color:var(--marketing-line)] bg-white/58 p-8 text-center shadow-[0_24px_70px_rgba(15,23,23,0.08)] dark:bg-white/[0.03]">
+              <SectionTitle className="text-4xl sm:text-5xl">{t("emptyTitle")}</SectionTitle>
+              <SectionBody className="mx-auto mt-5 max-w-2xl">{t("emptyBody")}</SectionBody>
+            </div>
+          </Reveal>
+        ) : (
+          <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-3">
+            {posts.map((post, index) => {
+              const publishedLabel = post.publishedAt ? t("publishedLabel", { date: formatDate(locale, post.publishedAt!) }) : null
 
-      {loading ? (
-        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {Array(6)
-            .fill(0)
-            .map((_, i) => (
-              <Card key={i} className="flex flex-col h-full">
-                <CardHeader>
-                  <div className="h-6 w-full bg-slate-200 dark:bg-slate-700 rounded mb-2" />
-                  <div className="h-4 w-24 bg-slate-200 dark:bg-slate-700 rounded" />
-                </CardHeader>
-                <CardContent className="flex-grow">
-                  <div className="h-4 w-full bg-slate-200 dark:bg-slate-700 rounded mb-2" />
-                  <div className="h-4 w-5/6 bg-slate-200 dark:bg-slate-700 rounded mb-2" />
-                  <div className="h-4 w-4/6 bg-slate-200 dark:bg-slate-700 rounded" />
-                </CardContent>
-              </Card>
-            ))}
-        </div>
-      ) : filteredPosts.length === 0 ? (
-        <div className="text-center py-12">
-          <p className="text-lg text-slate-600 dark:text-slate-300 mb-4">No articles found matching your search.</p>
-          <Button onClick={() => setSearchTerm("")}>Clear Search</Button>
-        </div>
-      ) : (
-        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {filteredPosts.map((post) => (
-            <Card
-              key={post.id}
-              className="overflow-hidden transition-transform transform hover:scale-105 hover:shadow-lg"
-            >
-              <Link href={`/blog/${post.slug}?origin=blog`} className="block h-full">
-                <div className="relative w-full h-40">
-                  <Image
-                    src={post.picture || DEFAULT_PICTURE}
-                    alt={post.title}
-                    fill
-                    className="object-cover"
-                  />
-                </div>
-                <CardHeader>
-                  <CardTitle className="text-xl hover:text-emerald-600 dark:hover:text-emerald-400">
-                    {post.title}
-                  </CardTitle>
-                  {post.subtitle && (
-                    <p className="text-sm text-slate-600 dark:text-slate-300">
-                      {post.subtitle}
-                    </p>
-                  )}
-                  <CardDescription>{formatDate(post.published_at)}</CardDescription>
-                </CardHeader>
-                <CardContent className="flex-grow">
-                  <p className="text-sm text-slate-600 dark:text-slate-300">
-                    {post.excerpt}
-                  </p>
-                </CardContent>
-              </Link>
-            </Card>
-          ))}
-        </div>
-      )}
-    </div>
+              return (
+                <Reveal key={post.id} delay={index * 50}>
+                  <article className="flex h-full flex-col rounded-[1.75rem] border border-[color:var(--marketing-line)] bg-white/58 p-5 shadow-[0_20px_60px_rgba(15,23,23,0.08)] dark:bg-white/[0.03]">
+                    <div className="relative mb-5 aspect-[4/3] overflow-hidden rounded-[1.25rem]">
+                      <Image src={post.picture || DEFAULT_PICTURE} alt={post.title} fill className="object-cover" />
+                    </div>
+                    <div className="flex flex-1 flex-col">
+                      {publishedLabel ? (
+                        <p className="text-[0.68rem] font-semibold uppercase tracking-[0.24em] text-[var(--marketing-muted)]">
+                          {publishedLabel}
+                        </p>
+                      ) : null}
+                      <h2 className="mt-3 font-display text-3xl leading-none tracking-[-0.04em]">{post.title}</h2>
+                      {post.subtitle ? (
+                        <p className="mt-3 text-sm font-semibold uppercase tracking-[0.18em] text-[var(--marketing-accent)]">
+                          {post.subtitle}
+                        </p>
+                      ) : null}
+                      <p className="mt-4 flex-1 text-sm leading-6 text-[var(--marketing-muted-strong)]">{post.excerpt}</p>
+                      <Link
+                        href={`/blog/${post.slug}`}
+                        className="mt-6 inline-flex items-center gap-2 text-sm font-semibold uppercase tracking-[0.18em] text-[var(--marketing-accent)]"
+                      >
+                        {t("readArticle")}
+                        <ArrowRight className="h-4 w-4" />
+                      </Link>
+                    </div>
+                  </article>
+                </Reveal>
+              )
+            })}
+          </div>
+        )}
+      </MarketingSection>
+    </MarketingPage>
   )
 }

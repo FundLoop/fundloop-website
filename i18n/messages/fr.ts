@@ -50,6 +50,49 @@ export const frMessages = {
       description:
         "Comprenez ce que les fondateurs s’engagent à faire dans FundLoop, comment fonctionne la cadence mensuelle et ce que votre équipe gère ensuite dans le produit.",
     },
+    documentation: {
+      title: "Documentation - FundLoop",
+      description:
+        "Explorez le hub de documentation FundLoop pour le contexte produit, la direction protocole/intégrations, et les articles de support liés à de vrais workflows.",
+    },
+    reports: {
+      title: "Rapports - FundLoop",
+      description:
+        "Comprenez ce que FundLoop prévoit de publier publiquement sur les cycles mensuels, les contributions vérifiées et la transparence du réseau.",
+    },
+    blog: {
+      title: "Blog - FundLoop",
+      description:
+        "Lisez les notes produit, les mises à jour et les textes d’écosystème qui soutiennent les parcours fondateur et participation.",
+    },
+    blogPost: {
+      title: "{title} - Blog - FundLoop",
+      description: "{excerpt}",
+      missingTitle: "Blog - FundLoop",
+      missingDescription: "L’article demandé est introuvable dans le blog FundLoop.",
+    },
+    ecosystem: {
+      title: "Écosystème - FundLoop",
+      description:
+        "Découvrez les projets et protocoles voisins qui façonnent l’identité, la confiance, les paiements et la coordination régénérative autour de FundLoop.",
+    },
+    faq: {
+      title: "FAQ - FundLoop",
+      description:
+        "Lisez des réponses concrètes pour les fondateurs, participants et opérateurs sur le fonctionnement actuel de FundLoop.",
+    },
+    terms: {
+      title: "Conditions d’utilisation - FundLoop",
+      description: "Consultez les conditions actuelles de FundLoop qui gouvernent l’accès au site public, au produit et aux services associés.",
+    },
+    privacy: {
+      title: "Politique de confidentialité - FundLoop",
+      description: "Consultez la façon dont FundLoop gère les données personnelles, les données de service et les workflows sensibles.",
+    },
+    cookies: {
+      title: "Politique de cookies - FundLoop",
+      description: "Consultez l’usage des cookies et technologies similaires sur le site public et l’expérience produit FundLoop.",
+    },
   },
   shell: {
     brandTagline: "Prospérité mutuelle en réseau",
@@ -108,6 +151,10 @@ export const frMessages = {
           label: "Documentation",
           description: "Guides, notes d’implémentation et articles de support pour utiliser la plateforme.",
         },
+        reports: {
+          label: "Rapports",
+          description: "Découvrez comment FundLoop prévoit de publier dans le temps des informations de transparence, de cycles mensuels et de contributions vérifiées.",
+        },
         faq: {
           label: "FAQ",
           description: "Des réponses claires pour les fondateurs, les membres de communauté et les bots honnêtes.",
@@ -116,9 +163,9 @@ export const frMessages = {
           label: "Support",
           description: "Obtenez de l’aide lorsque l’onboarding, les profils, les paiements ou la configuration projet ont besoin d’un coup de main.",
         },
-        api: {
-          label: "API",
-          description: "Un aperçu orienté développeur de la surface d’intégration vers laquelle FundLoop évolue.",
+        integrations: {
+          label: "Intégrations",
+          description: "Consultez dans la documentation la direction produit, protocole et agent de la surface d’intégration FundLoop.",
         },
       },
     },
@@ -952,6 +999,85 @@ export const frMessages = {
         submissionSuccessTitle: "Demande de support envoyée",
         submissionSuccessDescription: "Nous vous répondrons dès que possible.",
       },
+    },
+  },
+  documentationPage: {
+    backToHome: "Retour à l’accueil",
+    hero: {
+      eyebrow: "Documentation",
+      title: "Un hub public unique pour le contexte produit, les intégrations et les articles de support.",
+      body:
+        "La documentation FundLoop doit expliquer honnêtement ce qui existe aujourd’hui, ce vers quoi le réseau évolue et où aller ensuite lorsque vous avez besoin de détails sur un workflow.",
+    },
+  },
+  reportsPage: {
+    hero: {
+      eyebrow: "Rapports",
+      title: "Le reporting public doit être honnête, vérifiable et lié à de vraies opérations mensuelles.",
+      body:
+        "Cette page n’est pas un faux tableau analytique. C’est l’explication publique de ce que FundLoop prévoit de publier à mesure que le pipeline mensuel de contribution, vérification et publication se complète.",
+    },
+    cta: {
+      documentation: "Lire la documentation",
+      founderPath: "Explorer le parcours fondateur",
+    },
+  },
+  blogPage: {
+    backToHome: "Retour à l’accueil",
+    hero: {
+      eyebrow: "Blog",
+      title: "Des textes qui soutiennent la logique opérationnelle derrière FundLoop.",
+      body:
+        "Utilisez le blog pour les notes produit, le contexte d’écosystème et les explications qui approfondissent les parcours fondateur, participation et reporting.",
+    },
+    searchPlaceholder: "Rechercher des articles...",
+    readArticle: "Lire l’article",
+    publishedLabel: "Publié le {date}",
+    emptyTitle: "Aucun article ne correspond encore à cette recherche.",
+    emptyBody: "Essayez une recherche plus large ou revenez plus tard à mesure que la bibliothèque publique grandit.",
+  },
+  blogPostPage: {
+    backToBlog: "Retour au blog",
+    backToHome: "Retour à l’accueil",
+    missingTitle: "Article introuvable",
+    missingBody: "L’article demandé n’existe pas ou n’est plus publié.",
+    publishedLabel: "Publié le {date}",
+  },
+  ecosystemPage: {
+    backToHome: "Retour à l’accueil",
+    hero: {
+      eyebrow: "Écosystème",
+      title: "Autour de FundLoop, des projets façonnent l’identité, la confiance, les économies locales et la coordination.",
+      body:
+        "FundLoop n’existe pas seul. L’écosystème plus large inclut des outils d’identité, des infrastructures communautaires, des expériences de financement et des couches de confiance qui renforcent la même thèse de coordination.",
+    },
+    open: "Ouvrir",
+  },
+  faqPage: {
+    backToHome: "Retour à l’accueil",
+    hero: {
+      eyebrow: "FAQ",
+      title: "Des réponses directes pour les fondateurs, les participants et les agents logiciels honnêtes.",
+      body:
+        "La version courte reste simple : les utilisateurs ne paient pas pour rejoindre, les projets alignés soutiennent la boucle lorsque la valeur existe, et FundLoop construit une infrastructure produit pour une participation plus juste.",
+    },
+    cta: {
+      title: "Vous avez encore besoin d’aide ?",
+      body: "La prochaine meilleure étape dépend du sujet : participation, parcours fondateur ou support.",
+      participation: "Voir la participation",
+      founders: "Voir le parcours fondateur",
+      support: "Contacter le support",
+    },
+  },
+  legalPages: {
+    backToHome: "Retour à l’accueil",
+    updatedLabel: "Dernière mise à jour : {date}",
+    relatedLinks: {
+      support: "Contacter le support",
+      documentation: "Ouvrir la documentation",
+      privacy: "Politique de confidentialité",
+      cookies: "Politique de cookies",
+      terms: "Conditions d’utilisation",
     },
   },
 } as const

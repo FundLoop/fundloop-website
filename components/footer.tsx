@@ -122,14 +122,6 @@ export default async function Footer() {
             <ul className="mt-5 space-y-3 text-sm">
               <li>
                 <LocaleLink
-                  href="/founders"
-                  className="text-[var(--marketing-muted-strong)] transition-colors hover:text-[var(--marketing-accent)]"
-                >
-                  {t("nav.primary.founders")}
-                </LocaleLink>
-              </li>
-              <li>
-                <LocaleLink
                   href="/terms"
                   className="text-[var(--marketing-muted-strong)] transition-colors hover:text-[var(--marketing-accent)]"
                 >
