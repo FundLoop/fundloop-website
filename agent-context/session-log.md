@@ -1,5 +1,43 @@
 ---
 
+### session v40: Establish shared design tokens for durable light and dark themes
+- timestamp: 2026-04-14T20:53:37-04:00
+- agent: **Codex (GPT-5)**
+- branch: **codex/wallet-production-readiness**
+- head: TBD
+
+#### Objective
+Complete Session 07 by replacing the current ad hoc color and surface styling drift with a durable semantic token system that works for both the public marketing shell and denser operator/account screens in light and dark mode.
+
+#### Actions Taken
+- Refactored `app/globals.css` to introduce semantic surface, text, interaction, status, spacing, type, and shadow tokens on top of the existing shadcn-compatible base theme contract.
+- Rebalanced both light and dark palettes so the app now has stronger parity across canvas, panel, border, and text treatments instead of relying on repeated `slate`, `emerald`, and raw white-overlay values.
+- Updated the shared UI primitives in `components/ui/` so buttons, cards, badges, inputs, textareas, and selects now consume the token system instead of hard-coded palette assumptions.
+- Updated shared presentation layers including `components/marketing/page-chrome.tsx`, `components/marketing/network-constellation.tsx`, `components/theme-toggle.tsx`, and `components/onboarding/onboarding-shell.tsx` so the design-token pass covers both visually expressive marketing surfaces and reusable product shells.
+- Restyled the operator and account hubs at `app/[locale]/admin/page.tsx` and `app/[locale]/settings/page.tsx` to prove the same tokens work on denser operational layouts without a one-off page theme.
+- Added `docs/engineering/design-tokens.md` and linked it from the engineering docs index.
+- Smoke-tested the updated surfaces in a local production server across light and dark themes.
+
+#### Tests and Validation Notes
+- `pnpm dlx node@22.22.1 /opt/homebrew/bin/pnpm lint` passed
+- `pnpm dlx node@22.22.1 /opt/homebrew/bin/pnpm test` passed
+- `pnpm dlx node@22.22.1 /opt/homebrew/bin/pnpm typecheck` passed
+- `pnpm dlx node@22.22.1 /opt/homebrew/bin/pnpm build` passed
+- Browser smoke passed against a local production server:
+  - `/en` rendered the updated marketing shell in light mode
+  - `/en/admin` rendered the tokenized operator surface in light mode
+  - `/en/settings` rendered correctly in dark mode with the document theme switching to `dark`
+
+#### Reflections
+- The main value in this session came from reducing semantic drift, not from redesigning every page. With the token layer in place, later visual work can improve composition and information architecture without re-solving theme parity from scratch.
+- The biggest source of previous inconsistency was duplicated one-off `slate` and `emerald` utility usage on product screens. Updating the primitives first gave the app a more reliable baseline with less page-by-page cleanup.
+
+#### Suggested Next Steps
+- Session 08 should build on this by refactoring the shared navigation and layout around the new information architecture now that the shell and tokens are stable enough to support it.
+- Future feature sessions should keep migrating repeated raw palette classes toward semantic tokens whenever they touch legacy UI surfaces.
+
+---
+
 ### session v20: Add multilingual app-shell infrastructure with locale-prefixed routing
 - timestamp: 2026-04-14T20:07:56-04:00
 - agent: **Codex (GPT-5)**

@@ -11,6 +11,7 @@ Use this directory for material that should outlive a single agent session, incl
 
 Current high-signal docs:
 
+- [Design Tokens](/Users/botmaster/src/fundloop/docs/engineering/design-tokens.md)
 - [Edge Function Contract Pattern](/Users/botmaster/src/fundloop/docs/engineering/edge-functions.md)
 - [Information Architecture](/Users/botmaster/src/fundloop/docs/engineering/information-architecture.md)
 - [Internationalization](/Users/botmaster/src/fundloop/docs/engineering/i18n.md)
