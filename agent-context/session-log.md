@@ -1,5 +1,33 @@
 ---
 
+### session v44: Add deterministic local public discovery fixtures for browser smoke tests
+- timestamp: 2026-04-14T23:26:09-0400
+- agent: **Codex (GPT-5)**
+- branch: **codex/wallet-production-readiness**
+- head: TBD
+
+#### Objective
+Make the local Supabase seed more reliable for public discovery work by adding a small deterministic fixture set for project and user detail pages, so local resets always produce known browser smoke targets without depending on incidental snapshot rows.
+
+#### Actions Taken
+- Appended a clearly labeled deterministic fixture block to `supabase/seed.sql` with three stable public projects (`civic-mesh`, `mutual-aid-atlas`, `open-transit-ledger`), four public users, and linked participant rows that exercise both project and user discovery surfaces.
+- Bumped the tracked `projects_id_seq1` and `users_sequential_id_seq` setvals in the seed so future local inserts remain above the new curated fixture IDs.
+- Added `tests/local-public-seed.test.ts` to lock in the presence of the curated slugs, user ids, and sequence bumps in the tracked seed artifact.
+- Added `docs/engineering/local-seed.md` and updated `docs/engineering/README.md` plus `README.md` so local developers and future agent sessions have a stable list of post-reset smoke routes to target.
+
+#### Tests and Validation Notes
+- `pnpm dlx node@22.22.1 /opt/homebrew/bin/pnpm exec vitest run tests/local-public-seed.test.ts` passed
+- `pnpm dlx node@22.22.1 /opt/homebrew/bin/pnpm check` passed
+- I did not run `supabase db reset` in this session because the local Supabase CLI currently reports no active `supabase_db_fundloop` container on this machine, so the seed changes were validated through the tracked artifact, tests, and repo-wide quality gates instead of a live reset replay.
+
+#### Reflections
+- The seed did not need a wholesale replacement; the valuable change was to layer a tiny, intentional fixture set on top of the broader snapshot-style data so discovery smoke tests have something stable to target.
+- Keeping the fixture doc separate from the seed itself should make later Playwright and public-route work less brittle because the expected local targets are now explicit instead of tribal knowledge.
+
+#### Suggested Next Steps
+- Once the local Supabase stack is healthy again, run `supabase db reset` and manually smoke the curated `/projects/*` and `/users/*` routes against the new fixture set.
+- If we add more public discovery filtering or richer profile modules later, extend this deterministic fixture set rather than relying on whichever remote-style rows happen to exist in the seed.
+
 ### session v43: Rebuild the user discovery and participation funnel into one coherent public path
 - timestamp: 2026-04-14T23:09:00-0400
 - agent: **Codex (GPT-5)**

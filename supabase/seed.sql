@@ -507,6 +507,31 @@ INSERT INTO "public"."user_social_platforms" ("id", "user_id", "social_platform_
   ('5', '290eb647-f25f-43f3-bf6b-1e2b2cf25e69', '8', 'myfarcaster', '', 'f', 'f', '2025-04-25 19:16:26.761407+00', '2025-04-25 19:40:53.06325+00'),
   ('1', '11c1a713-b14b-49c0-bcc4-0246fbc78410', '1', 'k8zander', NULL, 'f', 'f', '2025-04-25 16:00:54.903629+00', '2025-04-25 20:32:42.202903+00');
 
+-- Deterministic local public discovery fixtures.
+-- These rows give browser and smoke tests stable public project and user detail pages
+-- after every `supabase db reset`, independent of whichever snapshot-style rows exist above.
+
+INSERT INTO "public"."users" ("user_id", "cubid_id", "full_name", "avatar_url", "birth_year", "gender_id", "location_id", "occupation_id", "will_contribute", "contribution_details", "created_at", "updated_at", "primary_email_identity", "id", "invited_by_code", "updated_by", "deleted_at", "status", "cubid_score", "lifetime_sweat_equity", "is_public", "display_name", "birthdate", "is_pfp_public", "is_name_public", "is_birthyear_public", "is_birthday_public", "is_gender_public", "is_occupation_public", "is_location_public", "email", "age", "bio") VALUES
+  ('00000000-0000-4000-8000-000000000101', NULL, 'Maya Torres', 'https://api.dicebear.com/9.x/adventurer/svg?seed=MayaTorres', '1992', '2', '6', '9', 't', 'Community operator who helps climate and mutual-aid teams turn everyday participation into visible, trusted signal.', '2025-06-12 12:00:00+00', '2025-06-12 12:00:00+00', NULL, '101', NULL, NULL, NULL, 'active', '0', '0', 't', 'Maya', NULL, 't', 't', 'f', 'f', 't', 't', 't', 'maya@fundloop.example.com', NULL, 'Builds calm, reliable rituals that help communities stay engaged over time.'),
+  ('00000000-0000-4000-8000-000000000102', NULL, 'Eli Walker', 'https://api.dicebear.com/9.x/adventurer/svg?seed=EliWalker', '1989', '1', '1', '1', 't', 'Prototype engineer focused on lightweight civic tooling, contributor onboarding, and transparent public operations.', '2025-06-12 12:05:00+00', '2025-06-12 12:05:00+00', NULL, '102', NULL, NULL, NULL, 'active', '0', '0', 't', 'Eli', NULL, 't', 't', 'f', 'f', 't', 't', 't', 'eli@fundloop.example.com', NULL, 'Works across product and infrastructure to keep high-trust contribution flows legible.'),
+  ('00000000-0000-4000-8000-000000000103', NULL, 'Safiya Noor', 'https://api.dicebear.com/9.x/adventurer/svg?seed=SafiyaNoor', '1994', '2', '2', '8', 't', 'Writer and researcher who documents community commitments, contributor pathways, and real-world participation outcomes.', '2025-06-12 12:10:00+00', '2025-06-12 12:10:00+00', NULL, '103', NULL, NULL, NULL, 'active', '0', '0', 't', 'Safiya', NULL, 't', 't', 'f', 'f', 't', 't', 't', 'safiya@fundloop.example.com', NULL, 'Translates messy community work into stories, process docs, and public-facing trust signals.'),
+  ('00000000-0000-4000-8000-000000000104', NULL, 'Jonah Park', 'https://api.dicebear.com/9.x/adventurer/svg?seed=JonahPark', '1991', '1', '4', '2', 't', 'Operations generalist who supports shared service teams with process mapping, reporting, and founder support.', '2025-06-12 12:15:00+00', '2025-06-12 12:15:00+00', NULL, '104', NULL, NULL, NULL, 'active', '0', '0', 't', 'Jonah', NULL, 't', 't', 'f', 'f', 't', 't', 't', 'jonah@fundloop.example.com', NULL, 'Keeps distributed projects moving by connecting finance, operations, and community context.');
+
+INSERT INTO "public"."projects" ("id", "name", "description", "detailed_description", "logo_url", "website", "organization_id", "is_public", "created_at", "payment_percentage", "payment_periodicity_id", "payment_custom_days", "default_payment_method_id", "category_id", "updated_at", "updated_by", "deleted_at", "status", "cumulative_revenue", "cumulative_donated", "email", "billing_email", "billing_frequency", "slug") VALUES
+  ('101', 'Civic Mesh', 'Neighborhood coordination software for mutual aid, public updates, and trusted local action.', 'Civic Mesh helps local organizers publish needs, coordinate volunteers, and keep recurring neighborhood work visible without relying on noisy engagement loops. It is designed to make practical participation legible, dependable, and easy to revisit month over month.', 'https://images.unsplash.com/photo-1529156069898-49953e39b3ac?q=80&w=1964&auto=format&fit=crop', 'https://civicmesh.example.com', NULL, 't', '2025-06-12 13:00:00+00', '1.00', '2', NULL, '1', '11', '2025-06-12 13:00:00+00', NULL, NULL, 'active', '210000', '2100', 'hello@civicmesh.example.com', 'finance@civicmesh.example.com', 'monthly', 'civic-mesh'),
+  ('102', 'Mutual Aid Atlas', 'Shared infrastructure for relief networks, request routing, and volunteer response across cities.', 'Mutual Aid Atlas supports distributed care teams with intake flows, fulfillment coordination, and transparent reporting on what gets done. The project emphasizes practical identity, repeat participation, and clear trust signals for contributors and founders alike.', 'https://images.unsplash.com/photo-1488521787991-ed7bbaae773c?q=80&w=1935&auto=format&fit=crop', 'https://mutualaidatlas.example.com', NULL, 't', '2025-06-12 13:05:00+00', '1.00', '2', NULL, '1', '10', '2025-06-12 13:05:00+00', NULL, NULL, 'active', '175000', '1750', 'hello@mutualaidatlas.example.com', 'finance@mutualaidatlas.example.com', 'monthly', 'mutual-aid-atlas'),
+  ('103', 'Open Transit Ledger', 'Community-first transit reporting and commuter coordination tools for resilient cities.', 'Open Transit Ledger gives riders and organizers a shared view of route reliability, commuter needs, and local improvement efforts. It turns public transit participation into visible operational signal that can support better funding, stronger communities, and clearer monthly reporting.', 'https://images.unsplash.com/photo-1474487548417-781cb71495f3?q=80&w=2070&auto=format&fit=crop', 'https://opentransitledger.example.com', NULL, 't', '2025-06-12 13:10:00+00', '1.00', '2', NULL, '1', '9', '2025-06-12 13:10:00+00', NULL, NULL, 'active', '198000', '1980', 'hello@opentransitledger.example.com', 'finance@opentransitledger.example.com', 'monthly', 'open-transit-ledger');
+
+INSERT INTO "public"."participants" ("id", "project_id", "joined_at", "updated_at", "user_id", "is_admin", "is_favorite") VALUES
+  ('101', '101', '2025-06-12 13:20:00+00', '2025-06-12 13:20:00+00', '00000000-0000-4000-8000-000000000101', 't', NULL),
+  ('102', '101', '2025-06-12 13:21:00+00', '2025-06-12 13:21:00+00', '00000000-0000-4000-8000-000000000102', 'f', NULL),
+  ('103', '101', '2025-06-12 13:22:00+00', '2025-06-12 13:22:00+00', '00000000-0000-4000-8000-000000000103', 'f', NULL),
+  ('104', '102', '2025-06-12 13:23:00+00', '2025-06-12 13:23:00+00', '00000000-0000-4000-8000-000000000102', 't', NULL),
+  ('105', '102', '2025-06-12 13:24:00+00', '2025-06-12 13:24:00+00', '00000000-0000-4000-8000-000000000103', 'f', NULL),
+  ('106', '102', '2025-06-12 13:25:00+00', '2025-06-12 13:25:00+00', '00000000-0000-4000-8000-000000000104', 'f', NULL),
+  ('107', '103', '2025-06-12 13:26:00+00', '2025-06-12 13:26:00+00', '00000000-0000-4000-8000-000000000104', 't', NULL),
+  ('108', '103', '2025-06-12 13:27:00+00', '2025-06-12 13:27:00+00', '00000000-0000-4000-8000-000000000101', 'f', NULL);
+
 SELECT pg_catalog.setval('"public"."blog_posts_id_seq"', 23, true);
 
 SELECT pg_catalog.setval('"public"."debug_log_id_seq"', 11, true);
@@ -545,7 +570,7 @@ SELECT pg_catalog.setval('"public"."project_users_id_seq"', 14, true);
 
 SELECT pg_catalog.setval('"public"."projects_id_seq"', 1, false);
 
-SELECT pg_catalog.setval('"public"."projects_id_seq1"', 12, true);
+SELECT pg_catalog.setval('"public"."projects_id_seq1"', 103, true);
 
 SELECT pg_catalog.setval('"public"."ref_categories_id_seq"', 17, true);
 
@@ -605,7 +630,7 @@ SELECT pg_catalog.setval('"public"."user_project_participation_id_seq"', 28, tru
 
 SELECT pg_catalog.setval('"public"."user_social_platforms_id_seq"', 5, true);
 
-SELECT pg_catalog.setval('"public"."users_sequential_id_seq"', 44, true);
+SELECT pg_catalog.setval('"public"."users_sequential_id_seq"', 104, true);
 
 SELECT pg_catalog.setval('"public"."wallet_accounts_id_seq"', 180, true);
 
