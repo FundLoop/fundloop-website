@@ -23,7 +23,7 @@ export const enMessages = {
     founders: {
       title: "Founders - FundLoop",
       description:
-        "See the founder-facing path into FundLoop, from onboarding and contribution commitments to the operational workspace that follows.",
+        "Learn what founders commit to inside FundLoop, how the monthly operating rhythm works, and what your team manages once you join.",
     },
   },
   shell: {
@@ -75,9 +75,9 @@ export const enMessages = {
           label: "Participation",
           description: "How people join projects, build signal, manage proof, and receive rewards through FundLoop.",
         },
-        pricing: {
-          label: "Pricing",
-          description: "How FundLoop stays free for users and how projects are asked to support the loop.",
+        founders: {
+          label: "Founder path",
+          description: "What founders commit to, how support works, and what teams manage once they join FundLoop.",
         },
         documentation: {
           label: "Documentation",
@@ -128,7 +128,7 @@ export const enMessages = {
       buildTheLoop: "Build the loop",
       body:
         "FundLoop connects projects, people, and proof into a shared economic loop where real participation can compound into real upside.",
-      startProjectProfile: "Start a project profile",
+      openFounderPath: "Explore the founder path",
       explore: "Explore",
       resources: "Resources",
       legal: "Legal",
@@ -147,25 +147,181 @@ export const enMessages = {
     wallets: "Wallet Addresses",
   },
   founders: {
-    eyebrow: "Founder path",
-    title: "A cleaner way into FundLoop for project teams.",
-    body:
-      "This page is the bridge between the public founder narrative and the operational founder workspace. It frames what FundLoop expects from project teams before the full founder funnel is rebuilt.",
-    primaryCta: "Start project onboarding",
-    secondaryCta: "Read documentation",
-    cards: {
-      commitment: {
-        title: "Commit to the loop",
-        description: "See how founder participation, contribution commitments, and monthly cadence fit together.",
-      },
-      operations: {
-        title: "Operate with real tools",
-        description: "Move from onboarding into payment obligations, collection routes, and project reporting surfaces.",
-      },
-      cadence: {
-        title: "Prepare for monthly rhythm",
-        description: "Understand the recurring cycle that later ties contributions, verification, distribution, and reporting together.",
-      },
+    hero: {
+      eyebrow: "Founder path",
+      title: "Bring your project into a funding loop that rewards the people who help it grow.",
+      body:
+        "FundLoop is for founders who want a practical give-back model, cleaner participation signal, and an operating rhythm that turns monthly contribution into something measurable instead of hand-wavy community goodwill.",
+      primaryCta: "Start project onboarding",
+      secondaryCta: "Read documentation",
+      panelEyebrow: "What your team should be ready for",
+      panelTitle: "One clear path from founder story to real project operations.",
+      highlights: [
+        {
+          label: "Commitment",
+          body: "Your team is expected to support the loop with a recurring share of revenue or distribution value instead of treating community growth as free extraction.",
+        },
+        {
+          label: "Operations",
+          body: "Inside FundLoop you manage project profile data, payment obligations, collection routes, and the operational surfaces that support contribution month after month.",
+        },
+        {
+          label: "Cadence",
+          body: "The model is monthly on purpose: close the period, prepare the records, verify what happened, and move funds with enough structure to explain every step later.",
+        },
+        {
+          label: "Identity",
+          body: "Payout-touching operations are expected to tie back to real accountable humans, with CUBID.me positioned as the long-term identity and KYC anchor for the network.",
+        },
+      ],
+    },
+    commitment: {
+      eyebrow: "Commitment",
+      title: "FundLoop asks founders to route part of their upside back into the loop.",
+      body:
+        "The point is not a generic SaaS fee. The point is to make value circulation explicit, so the people operating the platform and the wider network can both benefit when a project starts to work.",
+      quoteEyebrow: "The core pledge",
+      quote:
+        "\"We commit to contributing a meaningful share of revenue or distribution value into FundLoop so real participation can translate into shared upside across the network.\"",
+      pillars: [
+        {
+          title: "Participation data",
+          body: "Projects should be ready to contribute enough usage context for FundLoop to understand meaningful participation without turning raw personal data into a public inspection surface.",
+        },
+        {
+          title: "Revenue commitment",
+          body: "The baseline story remains a 1%+ give-back, but the practical goal is simple: make your support visible, recurring, and operationally accountable.",
+        },
+        {
+          title: "Proof-ready operations",
+          body: "The founder path is built for teams that want to explain what they contributed, when they contributed it, and how monthly activity ties back to later payout and reporting decisions.",
+        },
+      ],
+    },
+    supportModel: {
+      eyebrow: "Support model",
+      title: "Free for participants. Supported by aligned projects. Honest about transfer costs.",
+      body:
+        "FundLoop should not charge people just to be present in the network. Instead, aligned projects help sustain the loop when value actually exists to share.",
+      note:
+        "Execution costs still exist. Fiat processor fees and crypto gas costs come out of money movement itself, not from a separate recurring access fee.",
+      principles: [
+        {
+          title: "Users do not pay a platform subscription",
+          body: "Participation, discovery, and eventual eligibility should stay open rather than turning into yet another gated product tier.",
+        },
+        {
+          title: "Projects support the loop when there is upside to share",
+          body: "The contribution model is tied to real value creation, not to forcing early teams into a fixed software invoice before the system is useful.",
+        },
+        {
+          title: "Support should be inspectable later",
+          body: "The model works best when founders can point to concrete monthly obligations, submissions, confirmation, and reporting instead of vague promises.",
+        },
+      ],
+      flows: [
+        {
+          title: "1%+ to operations",
+          body: "Supports the people, infrastructure, review work, and payout-touching operations needed to keep FundLoop reliable.",
+        },
+        {
+          title: "1%+ to treasury",
+          body: "Helps promising aligned projects survive long enough to become contributors themselves, rather than relying only on projects that are already profitable.",
+        },
+      ],
+    },
+    cadence: {
+      eyebrow: "Monthly cadence",
+      title: "The founder promise only works if the monthly cycle is legible.",
+      body:
+        "FundLoop is intentionally building toward a repeatable bookkeeping and distribution rhythm that founders can understand before they join and operators can verify after the fact.",
+      steps: [
+        {
+          step: "01",
+          title: "Close the month",
+          body: "Lock the contribution period so the team knows which obligations, submissions, and participation records belong to that cycle.",
+        },
+        {
+          step: "02",
+          title: "Prepare and verify",
+          body: "Review the underlying project records, reconcile payment activity, and get the month into a state that can support fair calculation instead of guesswork.",
+        },
+        {
+          step: "03",
+          title: "Distribute with receipts",
+          body: "Move value through approved rails with onchain or processor-backed evidence strong enough for later audit and support work.",
+        },
+        {
+          step: "04",
+          title: "Report and improve",
+          body: "Use the resulting month to explain what happened, where funds moved, and what your team should tighten before the next cycle begins.",
+        },
+      ],
+    },
+    identity: {
+      eyebrow: "Identity and accountability",
+      title: "Founders should expect identity requirements anywhere trust, payouts, or growth coordination matter.",
+      body:
+        "FundLoop is privacy-aware, but it is not accountability-free. Teams joining this network should expect identity-sensitive operations to tie back to real humans and verifiable project operators.",
+      items: [
+        {
+          title: "CUBID.me is the long-term identity anchor",
+          body: "The target architecture makes CUBID.me the source of account identity, contact details, socials, and payout-relevant KYC context rather than scattering that data across ad hoc local forms.",
+        },
+        {
+          title: "Proof-of-humanity is product infrastructure",
+          body: "Founders join not only to contribute money, but also to benefit from stronger ecosystem-wide confidence about who is human, who is accountable, and where participation signal should count.",
+        },
+        {
+          title: "Privacy still matters",
+          body: "The operating model should keep raw personal data tightly controlled while still giving projects, operators, and participants enough confidence to move value responsibly.",
+        },
+      ],
+    },
+    insideFundLoop: {
+      eyebrow: "Inside FundLoop",
+      title: "Once your team is in, the founder path turns into an operating surface.",
+      body:
+        "This is not meant to end on a vague partnership promise. The point of the funnel is to prepare founders for the actual tools and routines they will encounter once they start operating inside the product.",
+      cards: [
+        {
+          title: "Project onboarding and profile management",
+          body: "Start with a personal profile, continue into a saved project draft, and publish a real project presence that can later support discovery, participation, and founder operations.",
+        },
+        {
+          title: "Contribution operations and collection routes",
+          body: "Manage monthly obligations, supported payment rails, route availability, and the wallet-aware collection setup needed to make real contributions executable.",
+        },
+        {
+          title: "Reporting, proof, and review loops",
+          body: "The product is already moving toward observability, reconciliation, and zkAS/reporting workflows so teams can explain what was contributed and what the network did with it.",
+        },
+      ],
+    },
+    start: {
+      eyebrow: "What happens next",
+      title: "Start the founder path now, then continue into the real onboarding flow.",
+      body:
+        "FundLoop already supports resumable onboarding drafts. The founder handoff is deliberately simple so a team can start now, pause, and come back without losing context.",
+      nextSteps: [
+        {
+          step: "01",
+          title: "Create or continue a personal profile",
+          body: "The current onboarding flow starts from the person who is creating the project, because founder operations still need a clear accountable human behind them.",
+        },
+        {
+          step: "02",
+          title: "Continue into a saved project draft",
+          body: "After your profile is in place, FundLoop can resume the project onboarding flow and save progress while your team fills in the operational details.",
+        },
+        {
+          step: "03",
+          title: "Configure payment and contribution operations later",
+          body: "Once the project is live, founder and project-admin surfaces take over for routes, obligations, reconciliation, and the monthly operating cycle.",
+        },
+      ],
+      primaryCta: "Start project onboarding",
+      secondaryCta: "Open the documentation",
     },
   },
   workspace: {
@@ -285,11 +441,11 @@ export const enMessages = {
     entryPaths: [
       {
         eyebrow: "For founders and operators",
-        title: "Turn participation into a fair distribution engine.",
+        title: "See the founder path before you start project onboarding.",
         body:
-          "Use FundLoop for fAirdrops, proof-of-humanity confidence, community incentives, and the kind of give-back mechanics that make your product feel aligned instead of extractive.",
-        cta: "See founder use cases",
-        ctaAction: "open-use-cases-menu",
+          "Learn the commitment model, monthly rhythm, identity expectations, and contribution operations your team will step into once it joins FundLoop.",
+        href: "/founders",
+        cta: "Open the founder path",
       },
       {
         eyebrow: "For people in the network",

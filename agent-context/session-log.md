@@ -1,5 +1,45 @@
 ---
 
+### session v42: Rebuild the founder acquisition funnel into one canonical public path
+- timestamp: 2026-04-14T22:26:48-0400
+- agent: **Codex (GPT-5)**
+- branch: **codex/wallet-production-readiness**
+- head: TBD
+
+#### Objective
+Complete Session 09 by turning the lightweight `/[locale]/founders` placeholder into the real founder acquisition funnel, collapsing the legacy pledge/pricing story into that route, and tightening the surrounding public-shell copy so founders see one coherent path into project onboarding.
+
+#### Actions Taken
+- Rebuilt `app/[locale]/(public)/founders/page.tsx` as a long-form localized founder funnel using the existing marketing primitives, with explicit sections for the founder promise, commitment model, support model, monthly cadence, identity/KYC expectations, inside-FundLoop operations, and the onboarding handoff.
+- Replaced the legacy `app/[locale]/(public)/pledge/page.tsx` and `app/[locale]/(public)/pricing/page.tsx` pages with permanent localized redirects to `/[locale]/founders#commitment` and `/[locale]/founders#support-model`.
+- Updated the localized message dictionaries in English, French, and Spanish so founder copy, metadata, footer CTA text, and the home-page founder entry path all align to the new funnel.
+- Simplified the home-page founder entry card to point to `/founders` instead of acting like a second founder landing page, while keeping explicit “start now” CTAs routed into `/?onboarding=project`.
+- Updated shared public links and copy so the resource/footer surfaces now promote the founder path rather than a standalone pricing page, and cleaned adjacent founder-facing references in the FAQ and older project-signup copy.
+- Added redirect coverage in `tests/founder-route-redirects.test.ts`, refreshed i18n/footer tests for the new founder-path model, and updated the engineering docs in `docs/engineering/navigation-shell.md` and `docs/engineering/route-inventory.md`.
+
+#### Tests and Validation Notes
+- `pnpm dlx node@22.22.1 /opt/homebrew/bin/pnpm lint` passed
+- `pnpm dlx node@22.22.1 /opt/homebrew/bin/pnpm test` passed
+- `pnpm dlx node@22.22.1 /opt/homebrew/bin/pnpm typecheck` passed
+- `pnpm dlx node@22.22.1 /opt/homebrew/bin/pnpm build` passed
+- `pnpm dlx node@22.22.1 /opt/homebrew/bin/pnpm check` passed
+- Local production smoke confirmed:
+  - `/en/pledge` responds with `308` to `/en/founders#commitment`
+  - `/en/pricing` responds with `308` to `/en/founders#support-model`
+  - `/en/founders` renders the new founder funnel with the locale-preserving onboarding CTA and the shared footer/resource links pointing to `/founders`
+  - `/fr/founders` renders the updated localized founder funnel and metadata
+- I attempted an additional headless Playwright interaction smoke against the onboarding CTA, but the ad hoc inline runner hung in this environment, so the final founder-path smoke was completed against the local production server via redirect and rendered-HTML verification instead.
+
+#### Reflections
+- The key product move in this session was treating `/founders` as the only public founder mental model instead of leaving “pricing,” “pledge,” and founder onboarding spread across three different stories.
+- Reusing the existing marketing-shell primitives kept the page visually stronger without introducing a parallel design system or one-off founder-only components that would become hard to maintain later.
+
+#### Suggested Next Steps
+- Session 10 should now give the participant side the same treatment so the public site has equally clear, first-class paths for both founders and regular users.
+- Session 11 can finish the remaining public cleanup with far less risk now that the founder narrative is consolidated and the old pledge/pricing routes are already retired safely.
+
+---
+
 ### session v41: Split the public and app shells around the new workspace IA
 - timestamp: 2026-04-14T22:10:57-0400
 - agent: **Codex (GPT-5)**

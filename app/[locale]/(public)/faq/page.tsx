@@ -191,7 +191,7 @@ export default function FAQPage() {
           <div className="rounded-[2rem] border border-[color:var(--marketing-line)] bg-[linear-gradient(135deg,rgba(255,248,238,0.84),rgba(244,203,141,0.2))] p-8 dark:bg-[linear-gradient(135deg,rgba(18,27,25,0.94),rgba(239,139,87,0.12))] sm:p-10">
             <SectionEyebrow>Still need help?</SectionEyebrow>
             <SectionTitle className="mt-4 max-w-4xl text-5xl sm:text-6xl">
-              The next best stop is participation, pricing, or support, depending on what you are trying to resolve.
+              The next best stop is participation, the founder path, or support, depending on what you are trying to resolve.
             </SectionTitle>
             <div className="mt-8 flex flex-col gap-4 sm:flex-row">
               <Button
@@ -208,7 +208,7 @@ export default function FAQPage() {
                 size="lg"
                 className="rounded-full border-[color:var(--marketing-line-strong)] bg-transparent px-7 hover:bg-black/[0.04] dark:hover:bg-white/[0.06]"
               >
-                <Link href="/pricing">View pricing</Link>
+                <Link href="/founders">View founder path</Link>
               </Button>
               <Button
                 asChild

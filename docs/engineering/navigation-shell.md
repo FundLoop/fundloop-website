@@ -51,6 +51,14 @@ Primary public navigation is now:
 - `/blog`
 - `/support`
 
+Session 09 completed the public founder acquisition path under `/[locale]/founders`.
+
+- `/[locale]/founders` is now the canonical founder funnel
+- `/[locale]/pledge` permanently redirects to `/[locale]/founders#commitment`
+- `/[locale]/pricing` permanently redirects to `/[locale]/founders#support-model`
+
+Shared public shell links should point founders to `/founders` first. The direct conversion into the existing project onboarding modal remains an explicit call to action inside the founder funnel itself.
+
 ### App shell
 
 The app shell lives in `app/[locale]/(app)/layout.tsx` and:

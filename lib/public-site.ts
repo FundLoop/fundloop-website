@@ -1,6 +1,6 @@
 export type PublicPrimaryLinkId = "founders" | "participation" | "projects" | "documentation" | "blog" | "support"
 export type PublicExploreLinkId = "projects" | "users" | "analytics" | "about"
-export type ResourceLinkId = "participation" | "pricing" | "documentation" | "faq" | "support" | "api"
+export type ResourceLinkId = "participation" | "founders" | "documentation" | "faq" | "support" | "api"
 
 export const publicPrimaryLinks = [
   {
@@ -70,10 +70,10 @@ export const resourceLinks = [
     description: "How people join projects, build signal, manage proof, and receive rewards through FundLoop.",
   },
   {
-    id: "pricing",
-    href: "/pricing",
-    label: "Pricing",
-    description: "How FundLoop stays free for users and how projects are asked to support the loop.",
+    id: "founders",
+    href: "/founders",
+    label: "Founder path",
+    description: "What founders commit to, how support works, and what teams manage once they join FundLoop.",
   },
   {
     id: "documentation",

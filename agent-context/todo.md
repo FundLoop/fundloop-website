@@ -102,12 +102,12 @@ Update the app shell, navigation, account menus, and dashboard entry points to m
 
 ## Session 09: Rebuild the founder acquisition funnel and public founder pages
 
-- Status: Not started
-- Timestamp started: TBD
-- Timestamp completed: TBD
-- Feature branch: TBD
+- Status: Complete
+- Timestamp started: 2026-04-14T22:11:00-0400
+- Timestamp completed: 2026-04-14T22:26:48-0400
+- Feature branch: codex/wallet-production-readiness
 - Head: TBD
-- Session-log reference(s): TBD
+- Session-log reference(s): session v42
 
 Turn the current founder-facing public messaging into a real production funnel. The session should unify any scattered founder pitch surfaces into a clean path that explains revenue commitment, onboarding expectations, monthly cadence, identity requirements, and what founders can manage once inside. This is the point where “visually stunning” needs to show up in a focused way: excellent typography, strong hierarchy, clear calls to action, and no vague placeholder marketing copy. The output should hand off naturally into founder onboarding, not just a contact-page dead end.
 

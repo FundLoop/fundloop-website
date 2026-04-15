@@ -44,5 +44,7 @@ describe("i18n message loading", () => {
     expect(messages.home.heroTitle).toContain("économie")
     expect(messages.shell.nav.resources).toBe("Ressources")
     expect(messages.shell.nav.primary.founders).toBe("Fondateurs")
+    expect(messages.shell.nav.resourceLinks.founders.label).toBe("Parcours fondateur")
+    expect(messages.home.entryPaths[0].href).toBe("/founders")
   })
 })

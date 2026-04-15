@@ -34,12 +34,12 @@ This inventory covers every current `page.tsx` and `route.ts` surface under `app
 | `/documentation` | Developers, partners, operators | Real but broad docs stub. | Should anchor product, protocol, and ops docs over time. | finish | Public docs hub | 11, 44 |
 | `/ecosystem` | Public visitors | Real supporting public page. | Fits ecosystem story and aligned network narrative. | finish | Public ecosystem/discovery surface | 11 |
 | `/faq` | Public visitors | Real supporting public page. | Useful public support/discovery content. | finish | Public FAQ | 11 |
-| `/founders` | Prospective founders | New lightweight founder-path landing page. | Session 08 introduced this as the public founder entry while the fuller funnel is rebuilt in Session 09. | finish | Public founder acquisition entry | 09 |
+| `/founders` | Prospective founders | Real founder acquisition funnel. | Session 09 consolidated the founder story here and made it the single public founder path. | finish | Public founder acquisition entry | 09 |
 | `/join` | Invited users | Real invite-code entry route. | Validates invite codes and hands off to onboarding. | finish | Public invitation and onboarding entry | 10, 12 |
 | `/invitations/[token]` | Invited users | Demo-only invitation flow. | Contains explicit demo/mock assumptions. | redirect | `/join` and the real invitation entry flow | 11 |
 | `/participation` | Prospective users | Real public explainer. | Good user-side narrative, but belongs in broader discovery funnel. | finish | Public user discovery and participation explainer | 10 |
-| `/pledge` | Prospective founders | Legacy standalone pledge page. | Older website-style founder pitch and static pledge content. | merge | Founder acquisition funnel and docs | 09 |
-| `/pricing` | Prospective founders | Public pricing/offer page. | Should either become real founder packaging or merge into funnel. | merge | Founder acquisition funnel | 09 |
+| `/pledge` | Prospective founders | Redirect-only legacy founder page. | Session 09 merged pledge content into `/founders#commitment`. | redirect | `/founders#commitment` | 09 |
+| `/pricing` | Prospective founders | Redirect-only legacy founder page. | Session 09 merged support-model content into `/founders#support-model`. | redirect | `/founders#support-model` | 09 |
 | `/privacy` | Public visitors | Standard legal page. | No major structural issue. | finish | Public legal surface | 11 |
 | `/support` | Public visitors, users, founders | Real support/contact page. | Should remain part of public/help system. | finish | Public support surface | 11, 44 |
 | `/terms` | Public visitors | Standard legal page. | No major structural issue. | finish | Public legal surface | 11 |

@@ -13,7 +13,6 @@ import {
   SectionEyebrow,
   SectionTitle,
 } from "@/components/marketing/page-chrome"
-import { OpenUseCasesCta } from "@/components/marketing/open-use-cases-cta"
 import { Reveal } from "@/components/marketing/reveal"
 import { NetworkConstellation } from "@/components/marketing/network-constellation"
 import { ecosystemSites, resourceLinks } from "@/lib/public-site"
@@ -36,20 +35,13 @@ type HomeStep = {
 }
 
 type EntryPath =
-  | {
-      eyebrow: string
-      title: string
-      body: string
-      cta: string
-      ctaAction: "open-use-cases-menu"
-    }
-  | {
-      eyebrow: string
-      title: string
-      body: string
-      cta: string
-      href: string
-    }
+  {
+    eyebrow: string
+    title: string
+    body: string
+    cta: string
+    href: string
+  }
 
 type PageProps = {
   params: Promise<{ locale: string }>
@@ -168,20 +160,13 @@ export default async function Home({ params }: PageProps) {
                   </h2>
                   <p className="mt-5 max-w-xl text-base leading-7 text-[var(--marketing-muted-strong)]">{path.body}</p>
                 </div>
-                {"ctaAction" in path ? (
-                  <OpenUseCasesCta className="group mt-10 inline-flex items-center gap-2 text-sm font-semibold uppercase tracking-[0.18em] text-[var(--marketing-accent)]">
-                    {path.cta}
-                    <ArrowRight className="h-4 w-4 transition-transform duration-200 group-hover:translate-x-1" />
-                  </OpenUseCasesCta>
-                ) : (
-                  <LocaleLink
-                    href={path.href}
-                    className="group mt-10 inline-flex items-center gap-2 text-sm font-semibold uppercase tracking-[0.18em] text-[var(--marketing-accent)]"
-                  >
-                    {path.cta}
-                    <ArrowRight className="h-4 w-4 transition-transform duration-200 group-hover:translate-x-1" />
-                  </LocaleLink>
-                )}
+                <LocaleLink
+                  href={path.href}
+                  className="group mt-10 inline-flex items-center gap-2 text-sm font-semibold uppercase tracking-[0.18em] text-[var(--marketing-accent)]"
+                >
+                  {path.cta}
+                  <ArrowRight className="h-4 w-4 transition-transform duration-200 group-hover:translate-x-1" />
+                </LocaleLink>
               </div>
             </Reveal>
           ))}

@@ -7,7 +7,7 @@ vi.mock("next-intl/server", () => ({
     const translations: Record<string, string> = {
       "footer.buildTheLoop": "Build the loop",
       "footer.body": "Body copy",
-      "footer.startProjectProfile": "Start a project profile",
+      "footer.openFounderPath": "Explore the founder path",
       "footer.explore": "Explore",
       "footer.resources": "Resources",
       "footer.legal": "Legal",
@@ -24,7 +24,7 @@ vi.mock("next-intl/server", () => ({
       "nav.primary.blog": "Blog",
       "nav.primary.support": "Support",
       "nav.resourceLinks.participation.label": "Participation",
-      "nav.resourceLinks.pricing.label": "Pricing",
+      "nav.resourceLinks.founders.label": "Founder path",
       "nav.resourceLinks.documentation.label": "Documentation",
       "nav.resourceLinks.faq.label": "FAQ",
       "nav.resourceLinks.support.label": "Support",
@@ -56,5 +56,11 @@ describe("Footer", () => {
     render(await Footer())
     const links = screen.getAllByRole("link", { name: /founders/i })
     expect(links[0]?.getAttribute("href")).toBe("/founders")
+  })
+
+  it("uses the founder path as the shared public CTA", async () => {
+    render(await Footer())
+    const link = screen.getByRole("link", { name: /explore the founder path/i })
+    expect(link.getAttribute("href")).toBe("/founders")
   })
 })

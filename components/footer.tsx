@@ -33,10 +33,10 @@ export default async function Footer() {
             </LocaleLink>
             <p className="mt-6 text-sm leading-7 text-[var(--marketing-muted-strong)]">{t("footer.body")}</p>
             <LocaleLink
-              href="/?onboarding=project"
+              href="/founders"
               className="mt-6 inline-flex items-center gap-2 text-sm font-semibold uppercase tracking-[0.18em] text-[var(--marketing-accent)]"
             >
-              {t("footer.startProjectProfile")}
+              {t("footer.openFounderPath")}
               <ArrowRight className="h-4 w-4" />
             </LocaleLink>
             <div className="mt-8 flex gap-4">

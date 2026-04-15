@@ -23,7 +23,7 @@ export const frMessages = {
     founders: {
       title: "Fondateurs - FundLoop",
       description:
-        "Découvrez le point d’entrée fondateur dans FundLoop, de l’onboarding aux engagements mensuels puis à l’espace de travail opérationnel.",
+        "Comprenez ce que les fondateurs s’engagent à faire dans FundLoop, comment fonctionne la cadence mensuelle et ce que votre équipe gère ensuite dans le produit.",
     },
   },
   shell: {
@@ -75,9 +75,9 @@ export const frMessages = {
           label: "Participation",
           description: "Comment les personnes rejoignent des projets, construisent du signal, gèrent leurs preuves et reçoivent des récompenses via FundLoop.",
         },
-        pricing: {
-          label: "Tarification",
-          description: "Comment FundLoop reste gratuit pour les utilisateurs et comment les projets sont invités à soutenir la boucle.",
+        founders: {
+          label: "Parcours fondateur",
+          description: "Ce que les fondateurs promettent, comment le soutien fonctionne et ce que les équipes gèrent une fois dans FundLoop.",
         },
         documentation: {
           label: "Documentation",
@@ -128,7 +128,7 @@ export const frMessages = {
       buildTheLoop: "Construire la boucle",
       body:
         "FundLoop relie projets, personnes et preuves dans une boucle économique partagée où une vraie participation peut produire une vraie valeur.",
-      startProjectProfile: "Créer un profil projet",
+      openFounderPath: "Explorer le parcours fondateur",
       explore: "Explorer",
       resources: "Ressources",
       legal: "Légal",
@@ -147,25 +147,181 @@ export const frMessages = {
     wallets: "Adresses de wallet",
   },
   founders: {
-    eyebrow: "Parcours fondateur",
-    title: "Une entrée plus claire dans FundLoop pour les équipes projet.",
-    body:
-      "Cette page relie le récit public destiné aux fondateurs et le futur espace opérationnel. Elle clarifie ce que FundLoop attend des équipes avant la reconstruction complète du funnel fondateur.",
-    primaryCta: "Commencer l’onboarding projet",
-    secondaryCta: "Lire la documentation",
-    cards: {
-      commitment: {
-        title: "S’engager dans la boucle",
-        description: "Comprenez comment engagements fondateurs, contributions mensuelles et cadence économique s’articulent.",
-      },
-      operations: {
-        title: "Opérer avec de vrais outils",
-        description: "Passez de l’onboarding aux obligations de paiement, routes de collecte et surfaces de reporting projet.",
-      },
-      cadence: {
-        title: "Préparer le rythme mensuel",
-        description: "Voyez comment contributions, vérification, distribution et reporting finiront par se relier chaque mois.",
-      },
+    hero: {
+      eyebrow: "Parcours fondateur",
+      title: "Faites entrer votre projet dans une boucle de financement qui récompense les personnes qui l’aident à grandir.",
+      body:
+        "FundLoop s’adresse aux fondateurs qui veulent un vrai modèle de give-back, un signal de participation plus propre et une cadence opérationnelle qui transforme la contribution mensuelle en quelque chose de mesurable.",
+      primaryCta: "Commencer l’onboarding projet",
+      secondaryCta: "Lire la documentation",
+      panelEyebrow: "Ce que votre équipe doit prévoir",
+      panelTitle: "Un chemin clair entre récit fondateur et vraies opérations projet.",
+      highlights: [
+        {
+          label: "Engagement",
+          body: "Votre équipe doit être prête à soutenir la boucle avec une part récurrente de revenu ou de valeur distribuée, au lieu de traiter la croissance communautaire comme une extraction gratuite.",
+        },
+        {
+          label: "Opérations",
+          body: "Dans FundLoop vous gérez les données projet, les obligations de paiement, les routes de collecte et les surfaces qui rendent la contribution mensuelle vraiment opérable.",
+        },
+        {
+          label: "Cadence",
+          body: "Le modèle est mensuel par choix : on clôture la période, on prépare les enregistrements, on vérifie ce qui s’est passé et on déplace les fonds avec assez de structure pour pouvoir l’expliquer ensuite.",
+        },
+        {
+          label: "Identité",
+          body: "Les opérations touchant aux paiements doivent pouvoir remonter à de vrais humains responsables, avec CUBID.me comme ancrage cible pour l’identité et le KYC du réseau.",
+        },
+      ],
+    },
+    commitment: {
+      eyebrow: "Engagement",
+      title: "FundLoop demande aux fondateurs de renvoyer une partie de leur upside dans la boucle.",
+      body:
+        "Il ne s’agit pas d’un abonnement SaaS générique. L’objectif est de rendre la circulation de valeur explicite, pour que les opérateurs de la plateforme comme le réseau élargi bénéficient lorsque le projet commence à fonctionner.",
+      quoteEyebrow: "Le cœur du pledge",
+      quote:
+        "\"Nous nous engageons à contribuer une part significative des revenus ou de la valeur distribuée à FundLoop afin que la participation réelle puisse devenir un upside partagé dans tout le réseau.\"",
+      pillars: [
+        {
+          title: "Données de participation",
+          body: "Les projets doivent être prêts à fournir assez de contexte d’usage pour que FundLoop comprenne la participation utile sans transformer des données personnelles brutes en surface d’inspection publique.",
+        },
+        {
+          title: "Engagement de revenu",
+          body: "Le récit de base reste un give-back de 1 % ou plus, mais l’objectif pratique est simple : rendre votre soutien visible, récurrent et responsable sur le plan opérationnel.",
+        },
+        {
+          title: "Opérations prêtes pour la preuve",
+          body: "Le parcours fondateur est pensé pour les équipes qui veulent pouvoir expliquer ce qu’elles ont contribué, quand, et comment l’activité mensuelle alimente ensuite paiements et reporting.",
+        },
+      ],
+    },
+    supportModel: {
+      eyebrow: "Modèle de soutien",
+      title: "Gratuit pour les participants. Soutenu par des projets alignés. Honnête sur les coûts de transfert.",
+      body:
+        "FundLoop ne doit pas facturer la simple présence dans le réseau. À la place, les projets alignés aident à soutenir la boucle lorsqu’il y a réellement de la valeur à partager.",
+      note:
+        "Les coûts d’exécution existent toujours. Les frais fiat et le gas crypto sont prélevés au moment du mouvement d’argent lui-même, pas via un abonnement d’accès séparé.",
+      principles: [
+        {
+          title: "Les utilisateurs ne paient pas d’abonnement plateforme",
+          body: "Participation, découverte et éligibilité future doivent rester ouvertes au lieu de devenir un énième palier payant.",
+        },
+        {
+          title: "Les projets soutiennent la boucle lorsqu’il existe de l’upside",
+          body: "Le modèle de contribution se lie à la création de valeur réelle, pas à une facture logicielle fixe imposée trop tôt aux jeunes équipes.",
+        },
+        {
+          title: "Le soutien doit pouvoir être relu plus tard",
+          body: "Le modèle fonctionne mieux quand les fondateurs peuvent montrer des obligations mensuelles concrètes, des soumissions, des confirmations et du reporting.",
+        },
+      ],
+      flows: [
+        {
+          title: "1 % ou plus pour les opérations",
+          body: "Soutient les personnes, l’infrastructure, le travail de revue et les opérations liées aux paiements qui rendent FundLoop fiable.",
+        },
+        {
+          title: "1 % ou plus pour la trésorerie",
+          body: "Aide des projets alignés prometteurs à survivre assez longtemps pour devenir eux-mêmes contributeurs.",
+        },
+      ],
+    },
+    cadence: {
+      eyebrow: "Cadence mensuelle",
+      title: "La promesse faite aux fondateurs ne tient que si le cycle mensuel est lisible.",
+      body:
+        "FundLoop avance volontairement vers un rythme comptable et distributif répétable que les fondateurs peuvent comprendre avant d’entrer et que les opérateurs peuvent vérifier ensuite.",
+      steps: [
+        {
+          step: "01",
+          title: "Clôturer le mois",
+          body: "Verrouiller la période de contribution pour savoir quelles obligations, soumissions et traces de participation appartiennent à ce cycle.",
+        },
+        {
+          step: "02",
+          title: "Préparer et vérifier",
+          body: "Passer en revue les enregistrements projet, rapprocher l’activité de paiement et mettre le mois dans un état qui supporte un calcul équitable.",
+        },
+        {
+          step: "03",
+          title: "Distribuer avec des reçus",
+          body: "Déplacer la valeur via des rails approuvés avec des preuves onchain ou processeur assez solides pour l’audit et le support ultérieurs.",
+        },
+        {
+          step: "04",
+          title: "Reporter et améliorer",
+          body: "Utiliser le mois produit pour expliquer ce qui s’est passé, où les fonds ont bougé et ce que l’équipe doit resserrer avant le cycle suivant.",
+        },
+      ],
+    },
+    identity: {
+      eyebrow: "Identité et responsabilité",
+      title: "Les fondateurs doivent s’attendre à des exigences d’identité partout où confiance, paiements ou coordination de croissance comptent.",
+      body:
+        "FundLoop est attentif à la vie privée, mais pas dépourvu de responsabilité. Les équipes qui rejoignent ce réseau doivent s’attendre à ce que les opérations sensibles soient reliées à de vrais humains et à des opérateurs vérifiables.",
+      items: [
+        {
+          title: "CUBID.me est l’ancre d’identité cible",
+          body: "L’architecture cible fait de CUBID.me la source de l’identité du compte, des coordonnées et du contexte KYC pertinent pour les paiements.",
+        },
+        {
+          title: "La preuve d’humanité est une infrastructure produit",
+          body: "Les fondateurs rejoignent aussi pour bénéficier d’une meilleure confiance réseau sur qui est humain, qui est responsable et où le signal de participation doit compter.",
+        },
+        {
+          title: "La vie privée reste importante",
+          body: "Le modèle doit garder les données personnelles brutes sous contrôle tout en offrant assez de confiance pour déplacer la valeur de façon responsable.",
+        },
+      ],
+    },
+    insideFundLoop: {
+      eyebrow: "Dans FundLoop",
+      title: "Une fois votre équipe entrée, le parcours fondateur devient une surface d’exploitation.",
+      body:
+        "L’objectif n’est pas de finir sur une promesse vague. Ce funnel prépare les fondateurs aux vrais outils et aux vraies routines qu’ils rencontrent une fois dans le produit.",
+      cards: [
+        {
+          title: "Onboarding projet et gestion du profil",
+          body: "On commence par un profil personnel, puis un brouillon projet sauvegardé, jusqu’à une présence projet réelle capable de soutenir découverte, participation et opérations fondateur.",
+        },
+        {
+          title: "Opérations de contribution et routes de collecte",
+          body: "Gérez les obligations mensuelles, les rails de paiement pris en charge, la disponibilité des routes et la configuration wallet nécessaire pour exécuter de vraies contributions.",
+        },
+        {
+          title: "Reporting, preuve et boucles de revue",
+          body: "Le produit va déjà vers davantage d’observabilité, de réconciliation et de flux zkAS/reporting afin que les équipes puissent expliquer ce qui a été contribué et ce que le réseau en a fait.",
+        },
+      ],
+    },
+    start: {
+      eyebrow: "Ce qui se passe ensuite",
+      title: "Commencez le parcours fondateur maintenant, puis continuez dans le vrai flux d’onboarding.",
+      body:
+        "FundLoop prend déjà en charge les brouillons d’onboarding repris plus tard. Le passage du public à l’onboarding reste volontairement simple pour qu’une équipe puisse commencer, faire une pause, puis revenir sans perdre le contexte.",
+      nextSteps: [
+        {
+          step: "01",
+          title: "Créer ou reprendre un profil personnel",
+          body: "Le flux actuel commence par la personne qui crée le projet, car les opérations fondateur ont encore besoin d’un humain clairement responsable derrière elles.",
+        },
+        {
+          step: "02",
+          title: "Continuer dans un brouillon projet sauvegardé",
+          body: "Une fois le profil en place, FundLoop peut reprendre l’onboarding projet et sauvegarder la progression pendant que l’équipe complète les détails opérationnels.",
+        },
+        {
+          step: "03",
+          title: "Configurer plus tard paiements et contribution",
+          body: "Une fois le projet publié, les surfaces fondateur et admin projet prennent le relais pour les routes, obligations, rapprochements et la cadence mensuelle.",
+        },
+      ],
+      primaryCta: "Commencer l’onboarding projet",
+      secondaryCta: "Ouvrir la documentation",
     },
   },
   workspace: {
@@ -285,11 +441,11 @@ export const frMessages = {
     entryPaths: [
       {
         eyebrow: "Pour les fondateurs et opérateurs",
-        title: "Transformez la participation en moteur de distribution équitable.",
+        title: "Découvrez le parcours fondateur avant de lancer l’onboarding projet.",
         body:
-          "Utilisez FundLoop pour les fAirdrops, la confiance preuve d’humanité, les incitations communautaires et les mécanismes de redistribution qui rendent votre produit aligné plutôt qu’extractif.",
-        cta: "Voir les cas d’usage fondateurs",
-        ctaAction: "open-use-cases-menu",
+          "Comprenez le modèle d’engagement, la cadence mensuelle, les attentes d’identité et les opérations de contribution dans lesquelles votre équipe entrera une fois dans FundLoop.",
+        href: "/founders",
+        cta: "Ouvrir le parcours fondateur",
       },
       {
         eyebrow: "Pour les personnes dans le réseau",
