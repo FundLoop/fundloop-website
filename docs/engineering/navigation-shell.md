@@ -59,6 +59,19 @@ Session 09 completed the public founder acquisition path under `/[locale]/founde
 
 Shared public shell links should point founders to `/founders` first. The direct conversion into the existing project onboarding modal remains an explicit call to action inside the founder funnel itself.
 
+Session 10 completed the parallel public user acquisition and discovery path.
+
+- `/[locale]/participation` is now the canonical public user funnel
+- `/[locale]/projects` and `/[locale]/users` are server-rendered public discovery surfaces, not browser-fetched utility directories
+- `/[locale]/projects/[slug]` and `/[locale]/users/[id]` are public profile/detail surfaces designed to feed participation and workspace handoff
+- generic public user CTAs still use `/?onboarding=user`
+- `/[locale]/join` remains invite-aware only and is not the generic signup route
+- when a session exists, public user CTAs are role-aware:
+  - signed-out users: `/?onboarding=user`
+  - signed-in inactive users: continue onboarding
+  - signed-in active users: `/workspace`
+- the truthful interim “earnings/results” destination remains `/[locale]/settings/zkas`, framed publicly as current results visibility rather than a finished payout workspace
+
 ### App shell
 
 The app shell lives in `app/[locale]/(app)/layout.tsx` and:

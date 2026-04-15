@@ -1,140 +1,189 @@
-"use client"
-
-import { useEffect, useState } from "react"
-import { useParams } from "next/navigation"
-import { getSupabaseBrowserClient } from "@/lib/supabase"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import type { Metadata } from "next"
+import { notFound } from "next/navigation"
+import { getTranslations } from "next-intl/server"
+import { ArrowRight, ExternalLink } from "lucide-react"
+import { Link } from "@/i18n/navigation"
+import { getNavigationContext } from "@/lib/navigation-context"
+import { getPublicUserProfile } from "@/lib/public-discovery"
+import { getPublicUserCtaState, getPublicUserPrimaryHref } from "@/lib/public-user-journey"
+import { Button } from "@/components/ui/button"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
-import { Badge } from "@/components/ui/badge"
-import type { Database } from "@/types/supabase"
-import { toast } from "@/components/ui/use-toast"
+import {
+  MarketingPage,
+  MarketingSection,
+  SectionBody,
+  SectionEyebrow,
+  SectionTitle,
+} from "@/components/marketing/page-chrome"
+import { Reveal } from "@/components/marketing/reveal"
 
-interface User {
-  user_id: string
-  full_name: string | null
-  avatar_url: string | null
-  contribution_details: string | null
-  created_at: string | null
-  location: string | null
+type PageProps = {
+  params: Promise<{ locale: string; id: string }>
 }
 
-interface Project {
-  id: number
-  name: string
-  logo_url: string | null
-}
-
-export default function UserProfilePage() {
-  const params = useParams()
-  const userId = params?.id as string
-  const getSupabase = () => getSupabaseBrowserClient()
-  const [user, setUser] = useState<User | null>(null)
-  const [loading, setLoading] = useState(true)
-  const [projects, setProjects] = useState<Project[]>([])
-
-  useEffect(() => {
-    const fetchUser = async () => {
-      try {
-        const supabase = getSupabase()
-        const { data, error } = await supabase
-          .from("users")
-          .select("user_id, full_name, avatar_url, contribution_details, created_at, location_id")
-          .eq("user_id", userId)
-          .single()
-
-        if (error) throw error
-
-        if (!data) return
-
-        let location = null
-        if (data.location_id) {
-          const { data: loc } = await supabase
-            .from("ref_locations")
-            .select("name")
-            .eq("id", data.location_id)
-            .single()
-          location = loc?.name ?? null
-        }
-
-        setUser({
-          ...data,
-          location,
-        })
-
-        const { data: participantData } = await supabase
-          .from("participants")
-          .select("project_id")
-          .eq("user_id", userId)
-
-        if (participantData && participantData.length > 0) {
-          const projectIds = participantData.map((p) => p.project_id)
-          const { data: projectData } = await supabase
-            .from("projects")
-            .select("id, name, logo_url")
-            .in("id", projectIds)
-
-          if (projectData) {
-            setProjects(projectData)
-          }
-        }
-      } catch (err) {
-        console.error("Error loading profile", err)
-        toast({
-          title: "Error",
-          description: "Failed to load profile",
-          variant: "destructive",
-        })
-      } finally {
-        setLoading(false)
-      }
-    }
-    if (userId) fetchUser()
-  }, [userId])
-
-  if (loading) {
-    return <p className="p-8 text-center">Loading...</p>
+function formatJoinedDate(locale: string, createdAt: string | null) {
+  if (!createdAt) {
+    return null
   }
 
-  if (!user) {
-    return <p className="p-8 text-center">User not found.</p>
+  return new Intl.DateTimeFormat(locale, {
+    month: "long",
+    year: "numeric",
+  }).format(new Date(createdAt))
+}
+
+function getPrimaryLabel(state: ReturnType<typeof getPublicUserCtaState>, t: Awaited<ReturnType<typeof getTranslations>>) {
+  if (state === "workspace") {
+    return t("cta.openWorkspace")
+  }
+
+  if (state === "continue_onboarding") {
+    return t("cta.continueOnboarding")
+  }
+
+  return t("cta.startProfile")
+}
+
+export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
+  const { locale, id } = await params
+  const t = await getTranslations({ locale, namespace: "metadata.userDetail" })
+  const profile = await getPublicUserProfile(id)
+
+  return {
+    title: profile ? t("title", { name: profile.user.fullName ?? t("fallbackName") }) : t("missingTitle"),
+    description: profile ? t("description", { name: profile.user.fullName ?? t("fallbackName") }) : t("missingDescription"),
+  }
+}
+
+export default async function UserProfilePage({ params }: PageProps) {
+  const { locale, id } = await params
+  const t = await getTranslations({ locale, namespace: "userProfile" })
+  const navigationContext = await getNavigationContext()
+  const ctaState = getPublicUserCtaState(navigationContext)
+  const profile = await getPublicUserProfile(id)
+
+  if (!profile) {
+    notFound()
   }
 
   return (
-    <div className="container mx-auto px-4 py-12">
-      <Card className="max-w-md mx-auto">
-        <CardHeader className="text-center">
-          <Avatar className="h-24 w-24 mx-auto mb-4">
-            <AvatarImage src={user.avatar_url || "/placeholder.svg?height=100&width=100"} alt={user.full_name || "User"} />
-            <AvatarFallback>{(user.full_name || "U").substring(0,2)}</AvatarFallback>
-          </Avatar>
-          <CardTitle>{user.full_name || "Unnamed User"}</CardTitle>
-        </CardHeader>
-        <CardContent className="text-center space-y-2">
-          <Badge className="mb-2">{user.contribution_details || "Community Member"}</Badge>
-          {user.location && (
-            <p className="text-sm text-slate-600 dark:text-slate-300">{user.location}</p>
-          )}
-          {user.created_at && (
-            <p className="text-xs text-slate-500 dark:text-slate-400">Joined {new Date(user.created_at).toLocaleDateString()}</p>
-          )}
-        </CardContent>
-      </Card>
-      {projects.length > 0 && (
-        <div className="max-w-md mx-auto mt-8">
-          <h2 className="text-xl font-bold text-center mb-4">Projects</h2>
-          <ul className="grid grid-cols-2 gap-4">
-            {projects.map((project) => (
-              <li key={project.id} className="flex flex-col items-center">
-                <Avatar className="h-10 w-10 mb-2">
-                  <AvatarImage src={project.logo_url || "/placeholder.svg?height=40&width=40"} alt={project.name} />
-                  <AvatarFallback>{project.name.substring(0, 2)}</AvatarFallback>
-                </Avatar>
-                <span className="text-sm text-center">{project.name}</span>
-              </li>
-            ))}
-          </ul>
+    <MarketingPage>
+      <MarketingSection className="pt-10">
+        <div className="grid gap-12 lg:grid-cols-[minmax(0,1fr)_minmax(18rem,0.7fr)]">
+          <Reveal>
+            <SectionEyebrow>{t("hero.eyebrow")}</SectionEyebrow>
+            <div className="mt-6 flex items-center gap-5">
+              <Avatar className="h-24 w-24 border border-[color:var(--marketing-line)]">
+                <AvatarImage src={profile.user.avatarUrl ?? "/placeholder.svg?height=96&width=96"} alt={profile.user.fullName ?? t("fallbackName")} />
+                <AvatarFallback>{(profile.user.fullName ?? "U").slice(0, 2)}</AvatarFallback>
+              </Avatar>
+              <div>
+                <h1 className="font-display text-5xl leading-none tracking-[-0.05em] sm:text-6xl">
+                  {profile.user.fullName ?? t("fallbackName")}
+                </h1>
+                <p className="mt-3 text-sm font-semibold uppercase tracking-[0.22em] text-[var(--marketing-muted)]">
+                  {profile.user.projectCount === 1 ? t("hero.singleProject") : t("hero.multiProject", { count: profile.user.projectCount })}
+                </p>
+              </div>
+            </div>
+            <SectionBody className="mt-8 max-w-2xl">
+              {profile.user.contributionDetails ?? t("hero.defaultContribution")}
+            </SectionBody>
+            <div className="mt-10 flex flex-col gap-4 sm:flex-row">
+              <Button
+                asChild
+                size="lg"
+                className="rounded-full bg-[var(--marketing-accent)] px-7 text-white hover:bg-[color:var(--marketing-accent)]/92"
+              >
+                <Link href={getPublicUserPrimaryHref(navigationContext)}>
+                  {getPrimaryLabel(ctaState, t)}
+                  <ArrowRight className="h-4 w-4" />
+                </Link>
+              </Button>
+              <Button
+                asChild
+                size="lg"
+                variant="outline"
+                className="rounded-full border-[color:var(--marketing-line-strong)] bg-transparent px-7 hover:bg-black/[0.04] dark:hover:bg-white/[0.06]"
+              >
+                <Link href="/participation">
+                  {t("cta.readParticipation")}
+                  <ArrowRight className="h-4 w-4" />
+                </Link>
+              </Button>
+            </div>
+          </Reveal>
+
+          <Reveal delay={120}>
+            <div className="rounded-[2rem] border border-[color:var(--marketing-line)] bg-[linear-gradient(135deg,rgba(255,248,238,0.82),rgba(126,175,203,0.22))] p-6 dark:bg-[linear-gradient(135deg,rgba(14,22,22,0.92),rgba(126,175,203,0.08))] sm:p-8">
+              <p className="text-[0.68rem] font-semibold uppercase tracking-[0.28em] text-[var(--marketing-muted)]">
+                {t("snapshot.eyebrow")}
+              </p>
+              <div className="mt-6 space-y-5">
+                <div className="border-t border-[color:var(--marketing-line)] pt-4">
+                  <p className="text-[0.68rem] font-semibold uppercase tracking-[0.24em] text-[var(--marketing-muted)]">{t("snapshot.locationLabel")}</p>
+                  <p className="mt-2 text-2xl font-semibold">{profile.user.location ?? t("snapshot.locationFallback")}</p>
+                </div>
+                <div className="border-t border-[color:var(--marketing-line)] pt-4">
+                  <p className="text-[0.68rem] font-semibold uppercase tracking-[0.24em] text-[var(--marketing-muted)]">{t("snapshot.joinedLabel")}</p>
+                  <p className="mt-2 text-2xl font-semibold">
+                    {formatJoinedDate(locale, profile.user.createdAt) ?? t("snapshot.joinedFallback")}
+                  </p>
+                </div>
+                <div className="border-t border-[color:var(--marketing-line)] pt-4">
+                  <p className="text-[0.68rem] font-semibold uppercase tracking-[0.24em] text-[var(--marketing-muted)]">{t("snapshot.resultsLabel")}</p>
+                  <p className="mt-2 text-sm leading-6 text-[var(--marketing-muted-strong)]">{t("snapshot.resultsBody")}</p>
+                </div>
+              </div>
+            </div>
+          </Reveal>
         </div>
-      )}
-    </div>
+      </MarketingSection>
+
+      <MarketingSection className="border-y border-[color:var(--marketing-line)] bg-white/34 dark:bg-white/[0.02]">
+        <div className="grid gap-12 lg:grid-cols-[minmax(0,0.74fr)_minmax(0,1.26fr)]">
+          <Reveal className="lg:sticky lg:top-28 lg:self-start">
+            <SectionEyebrow>{t("projects.eyebrow")}</SectionEyebrow>
+            <SectionTitle className="mt-4 text-5xl sm:text-6xl">{t("projects.title")}</SectionTitle>
+            <SectionBody className="mt-5">{t("projects.body")}</SectionBody>
+          </Reveal>
+
+          <div className="space-y-6">
+            {profile.projects.length === 0 ? (
+              <Reveal>
+                <div className="border-t border-[color:var(--marketing-line)] py-8">
+                  <p className="text-base text-[var(--marketing-muted-strong)]">{t("projects.empty")}</p>
+                </div>
+              </Reveal>
+            ) : (
+              profile.projects.map((project, index) => (
+                <Reveal key={project.id} delay={index * 45}>
+                  <article className="flex flex-col gap-5 border-t border-[color:var(--marketing-line)] py-6 sm:flex-row sm:items-center sm:justify-between">
+                    <div className="flex items-center gap-4">
+                      <Avatar className="h-14 w-14 border border-[color:var(--marketing-line)]">
+                        <AvatarImage src={project.logoUrl ?? "/placeholder.svg?height=56&width=56"} alt={project.name} />
+                        <AvatarFallback>{project.name.slice(0, 2)}</AvatarFallback>
+                      </Avatar>
+                      <div>
+                        <h2 className="font-display text-3xl tracking-[-0.04em]">{project.name}</h2>
+                        <p className="mt-2 text-sm text-[var(--marketing-muted-strong)]">{t("projects.projectBody")}</p>
+                      </div>
+                    </div>
+                    {project.slug ? (
+                      <Button asChild variant="outline" className="rounded-full border-[color:var(--marketing-line)] px-6">
+                        <Link href={`/projects/${project.slug}`}>
+                          {t("projects.openProject")}
+                          <ExternalLink className="h-4 w-4" />
+                        </Link>
+                      </Button>
+                    ) : null}
+                  </article>
+                </Reveal>
+              ))
+            )}
+          </div>
+        </div>
+      </MarketingSection>
+    </MarketingPage>
   )
 }

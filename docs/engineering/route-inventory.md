@@ -37,17 +37,17 @@ This inventory covers every current `page.tsx` and `route.ts` surface under `app
 | `/founders` | Prospective founders | Real founder acquisition funnel. | Session 09 consolidated the founder story here and made it the single public founder path. | finish | Public founder acquisition entry | 09 |
 | `/join` | Invited users | Real invite-code entry route. | Validates invite codes and hands off to onboarding. | finish | Public invitation and onboarding entry | 10, 12 |
 | `/invitations/[token]` | Invited users | Demo-only invitation flow. | Contains explicit demo/mock assumptions. | redirect | `/join` and the real invitation entry flow | 11 |
-| `/participation` | Prospective users | Real public explainer. | Good user-side narrative, but belongs in broader discovery funnel. | finish | Public user discovery and participation explainer | 10 |
+| `/participation` | Prospective users | Real public user funnel. | Session 10 made this the canonical public user acquisition and explanation path, with explicit onboarding, CUBID, project discovery, and results-visibility handoff. | finish | Public user discovery and participation explainer | 10 |
 | `/pledge` | Prospective founders | Redirect-only legacy founder page. | Session 09 merged pledge content into `/founders#commitment`. | redirect | `/founders#commitment` | 09 |
 | `/pricing` | Prospective founders | Redirect-only legacy founder page. | Session 09 merged support-model content into `/founders#support-model`. | redirect | `/founders#support-model` | 09 |
 | `/privacy` | Public visitors | Standard legal page. | No major structural issue. | finish | Public legal surface | 11 |
 | `/support` | Public visitors, users, founders | Real support/contact page. | Should remain part of public/help system. | finish | Public support surface | 11, 44 |
 | `/terms` | Public visitors | Standard legal page. | No major structural issue. | finish | Public legal surface | 11 |
 | `/use-cases/[slug]` | Public visitors, founders | Real public explainer detail route. | Supports founder narrative and ecosystem education. | finish | Public use-case detail surface | 09, 11 |
-| `/projects` | Public visitors, users | Real project directory. | Already useful as discovery surface. | finish | Public project discovery directory | 10 |
-| `/projects/[slug]` | Public visitors, project members | Mixed public detail and member-aware page. | Public project detail route with some member-aware access. | finish | Public project detail with links into founder workspace | 10, 18 |
-| `/users` | Public visitors, users | Real public member directory. | Discovery/trust surface for the network. | finish | Public participant directory | 10 |
-| `/users/[id]` | Public visitors, users | Real public member profile. | Supports person-level discovery and credibility. | finish | Public participant profile | 10 |
+| `/projects` | Public visitors, users | Real server-rendered project discovery page. | Session 10 rebuilt the page around the user funnel, localized metadata, server-side filters, and onboarding/workspace CTA handoff. | finish | Public project discovery directory | 10 |
+| `/projects/[slug]` | Public visitors, project members | Real public project profile with founder-aware access. | Session 10 modernized the route into a public discovery/profile surface and kept founder controls secondary for project admins only. | finish | Public project detail with links into founder workspace | 10, 18 |
+| `/users` | Public visitors, users | Real server-rendered participant discovery page. | Session 10 reframed the route as a participation-oriented public credibility surface with auth-aware CTA handoff. | finish | Public participant directory | 10 |
+| `/users/[id]` | Public visitors, users | Real public participant profile. | Session 10 modernized the route into a public profile that links back into projects and the participation path instead of feeling like a utility record. | finish | Public participant profile | 10 |
 
 ## Authenticated User and Founder Surfaces
 

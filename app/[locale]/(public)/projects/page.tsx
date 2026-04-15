@@ -1,288 +1,285 @@
-"use client"
-
-import { useEffect, useState } from "react"
-import Link from "next/link"
-import { getSupabaseBrowserClient } from "@/lib/supabase"
+import type { Metadata } from "next"
+import { getTranslations } from "next-intl/server"
+import { ArrowRight, ExternalLink, Search, SlidersHorizontal } from "lucide-react"
+import { Link } from "@/i18n/navigation"
+import { getNavigationContext } from "@/lib/navigation-context"
+import { getPublicProjectsDirectoryData } from "@/lib/public-discovery"
+import { getPublicUserCtaState, getPublicUserPrimaryHref } from "@/lib/public-user-journey"
 import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
-import { Badge } from "@/components/ui/badge"
-import { Input } from "@/components/ui/input"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Search, ExternalLink, ArrowLeft } from "lucide-react"
-import type { Database } from "@/types/supabase"
+import {
+  MarketingPage,
+  MarketingSection,
+  SectionBody,
+  SectionEyebrow,
+  SectionTitle,
+} from "@/components/marketing/page-chrome"
+import { Reveal } from "@/components/marketing/reveal"
 
-// Define a simpler project type without relationships
-interface Project {
-  id: number
-  slug: string | null
-  name: string
-  logo_url: string | null
-  description: string
-  category_id: number | null
-  created_at: string | null
-  website: string | null
-  category?: string
-  user_count?: number
+type PageProps = {
+  params: Promise<{ locale: string }>
+  searchParams: Promise<{
+    q?: string
+    category?: string
+    sort?: string
+  }>
 }
 
-export default function ProjectsPage() {
-  const [projects, setProjects] = useState<Project[]>([])
-  const [loading, setLoading] = useState(true)
-  const [searchTerm, setSearchTerm] = useState("")
-  const [filteredProjects, setFilteredProjects] = useState<Project[]>([])
-  const [categories, setCategories] = useState<{ id: number; name: string }[]>([])
-  const [categoryFilter, setCategoryFilter] = useState("all")
-  const [sortOrder, setSortOrder] = useState("recent")
-  const getSupabase = () => getSupabaseBrowserClient()
-
-  useEffect(() => {
-    const fetchProjects = async () => {
-      const supabase = getSupabase()
-      setLoading(true)
-
-      try {
-        // Fetch projects with soft delete awareness
-        const { data: projectData, error: projectError } = await supabase
-          .from("projects")
-          .select("id, slug, name, logo_url, description, category_id, created_at, website")
-          .is("deleted_at", null)
-          .eq("status", "active")
-          .order("created_at", { ascending: false })
-
-        if (projectError) throw projectError
-
-        // Fetch all categories for filters
-        const { data: allCategories } = await supabase
-          .from("ref_categories")
-          .select("id, name")
-          .order("name")
-
-        setCategories(allCategories || [])
-
-        // Get categories
-        const categoryIds = projectData.map((project) => project.category_id).filter((id): id is number => id !== null)
-
-        let categoryMap: Record<number, string> = {}
-
-        if (categoryIds.length > 0) {
-          const { data: categoryData } = await supabase.from("ref_categories").select("id, name").in("id", categoryIds)
-
-          if (categoryData) {
-            categoryMap = categoryData.reduce((acc: Record<number, string>, cat) => {
-              acc[cat.id] = cat.name
-              return acc
-            }, {})
-          }
-        }
-
-        // Format the project data
-        const formattedProjects = projectData.map((project) => ({
-          ...project,
-          category: project.category_id ? categoryMap[project.category_id] || "Uncategorized" : "Uncategorized",
-          user_count: 0, // Default value
-        }))
-
-        setProjects(formattedProjects)
-        setFilteredProjects(formattedProjects)
-      } catch (err) {
-        console.error("Error fetching projects:", err)
-      } finally {
-        setLoading(false)
-      }
-    }
-
-    fetchProjects()
-  }, [])
-
-  // Apply filters and sorting
-  useEffect(() => {
-    let result = [...projects]
-
-    if (categoryFilter !== "all") {
-      result = result.filter((p) => p.category_id === Number.parseInt(categoryFilter))
-    }
-
-    if (searchTerm.trim() !== "") {
-      const term = searchTerm.toLowerCase()
-      result = result.filter(
-        (project) =>
-          project.name.toLowerCase().includes(term) ||
-          project.description.toLowerCase().includes(term) ||
-          (project.category && project.category.toLowerCase().includes(term)),
-      )
-    }
-
-    result.sort((a, b) => {
-      if (sortOrder === "oldest") {
-        return new Date(a.created_at || 0).getTime() - new Date(b.created_at || 0).getTime()
-      }
-      return new Date(b.created_at || 0).getTime() - new Date(a.created_at || 0).getTime()
-    })
-
-    setFilteredProjects(result)
-  }, [searchTerm, projects, categoryFilter, sortOrder])
-
-  const getTimeAgo = (dateString: string | null) => {
-    if (!dateString) return "Recently"
-
-    const date = new Date(dateString)
-    const now = new Date()
-    const diffInMonths = (now.getFullYear() - date.getFullYear()) * 12 + now.getMonth() - date.getMonth()
-
-    if (diffInMonths < 1) return "Less than a month ago"
-    if (diffInMonths === 1) return "1 month ago"
-    return `${diffInMonths} months ago`
+function parseCategory(value: string | undefined) {
+  if (!value) {
+    return null
   }
 
-  return (
-    <div className="container mx-auto px-4 py-12">
-      <div className="flex items-center gap-2 mb-8">
-        <Button asChild variant="ghost" size="sm" className="gap-1">
-          <Link href="/">
-            <ArrowLeft className="h-4 w-4" />
-            <span>Back to Home</span>
-          </Link>
-        </Button>
-      </div>
+  const parsed = Number.parseInt(value, 10)
+  return Number.isNaN(parsed) ? null : parsed
+}
 
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-8">
-        <div>
-          <h1 className="text-3xl md:text-4xl font-bold">Aligned Projects</h1>
-          <p className="text-slate-600 dark:text-slate-300 mt-2">
-            Discover all projects that have taken the 1% pledge to support the FundLoop ecosystem
+function getPrimaryLabel(state: ReturnType<typeof getPublicUserCtaState>, t: Awaited<ReturnType<typeof getTranslations>>) {
+  if (state === "workspace") {
+    return t("hero.primaryCtaWorkspace")
+  }
+
+  if (state === "continue_onboarding") {
+    return t("hero.primaryCtaContinue")
+  }
+
+  return t("hero.primaryCtaStart")
+}
+
+function formatJoinedDate(locale: string, createdAt: string | null) {
+  if (!createdAt) {
+    return null
+  }
+
+  return new Intl.DateTimeFormat(locale, {
+    month: "short",
+    year: "numeric",
+  }).format(new Date(createdAt))
+}
+
+export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
+  const { locale } = await params
+  const t = await getTranslations({ locale, namespace: "metadata.projects" })
+
+  return {
+    title: t("title"),
+    description: t("description"),
+  }
+}
+
+export default async function ProjectsPage({ params, searchParams }: PageProps) {
+  const { locale } = await params
+  const { q, category, sort } = await searchParams
+  const t = await getTranslations({ locale, namespace: "projectsDirectory" })
+  const navigationContext = await getNavigationContext()
+  const ctaState = getPublicUserCtaState(navigationContext)
+  const { projects, categories } = await getPublicProjectsDirectoryData({
+    search: q,
+    categoryId: parseCategory(category),
+    sort: sort === "oldest" || sort === "name" ? sort : "recent",
+  })
+
+  return (
+    <MarketingPage>
+      <MarketingSection className="pt-10">
+        <div className="grid gap-12 lg:grid-cols-[minmax(0,1fr)_minmax(19rem,0.72fr)]">
+          <Reveal>
+            <SectionEyebrow>{t("hero.eyebrow")}</SectionEyebrow>
+            <SectionTitle className="mt-4 max-w-4xl text-5xl sm:text-6xl lg:text-7xl">{t("hero.title")}</SectionTitle>
+            <SectionBody className="mt-6 max-w-2xl">{t("hero.body")}</SectionBody>
+            <div className="mt-10 flex flex-col gap-4 sm:flex-row">
+              <Button
+                asChild
+                size="lg"
+                className="rounded-full bg-[var(--marketing-accent)] px-7 text-white hover:bg-[color:var(--marketing-accent)]/92"
+              >
+                <Link href={getPublicUserPrimaryHref(navigationContext)}>
+                  {getPrimaryLabel(ctaState, t)}
+                  <ArrowRight className="h-4 w-4" />
+                </Link>
+              </Button>
+              <Button
+                asChild
+                size="lg"
+                variant="outline"
+                className="rounded-full border-[color:var(--marketing-line-strong)] bg-transparent px-7 hover:bg-black/[0.04] dark:hover:bg-white/[0.06]"
+              >
+                <Link href="/participation">
+                  {t("hero.secondaryCta")}
+                  <ArrowRight className="h-4 w-4" />
+                </Link>
+              </Button>
+            </div>
+          </Reveal>
+
+          <Reveal delay={120}>
+            <div className="rounded-[2rem] border border-[color:var(--marketing-line)] bg-[linear-gradient(135deg,rgba(255,248,238,0.82),rgba(182,221,214,0.22))] p-6 dark:bg-[linear-gradient(135deg,rgba(14,22,22,0.92),rgba(182,221,214,0.08))] sm:p-8">
+              <p className="text-[0.68rem] font-semibold uppercase tracking-[0.28em] text-[var(--marketing-muted)]">
+                {t("context.eyebrow")}
+              </p>
+              <div className="mt-6 space-y-5">
+                <div className="border-t border-[color:var(--marketing-line)] pt-4">
+                  <p className="font-display text-4xl leading-none tracking-[-0.04em]">{t("context.discoveryTitle")}</p>
+                  <p className="mt-2 text-sm leading-6 text-[var(--marketing-muted-strong)]">{t("context.discoveryBody")}</p>
+                </div>
+                <div className="border-t border-[color:var(--marketing-line)] pt-4">
+                  <p className="font-display text-4xl leading-none tracking-[-0.04em]">{t("context.identityTitle")}</p>
+                  <p className="mt-2 text-sm leading-6 text-[var(--marketing-muted-strong)]">{t("context.identityBody")}</p>
+                </div>
+                <div className="border-t border-[color:var(--marketing-line)] pt-4">
+                  <p className="font-display text-4xl leading-none tracking-[-0.04em]">{t("context.resultsTitle")}</p>
+                  <p className="mt-2 text-sm leading-6 text-[var(--marketing-muted-strong)]">{t("context.resultsBody")}</p>
+                </div>
+              </div>
+            </div>
+          </Reveal>
+        </div>
+      </MarketingSection>
+
+      <MarketingSection className="border-y border-[color:var(--marketing-line)] bg-white/34 dark:bg-white/[0.02]">
+        <Reveal>
+          <form className="grid gap-4 rounded-[2rem] border border-[color:var(--marketing-line)] bg-white/70 p-5 shadow-[0_16px_50px_rgba(15,23,23,0.08)] dark:bg-white/[0.03] lg:grid-cols-[minmax(0,1fr)_15rem_12rem_auto]">
+            <label className="block">
+              <span className="mb-2 flex items-center gap-2 text-[0.72rem] font-semibold uppercase tracking-[0.24em] text-[var(--marketing-muted)]">
+                <Search className="h-4 w-4" />
+                {t("filters.searchLabel")}
+              </span>
+              <input
+                type="search"
+                name="q"
+                defaultValue={q ?? ""}
+                placeholder={t("filters.searchPlaceholder")}
+                className="h-12 w-full rounded-full border border-[color:var(--marketing-line)] bg-transparent px-4 text-sm outline-none transition-colors focus:border-[color:var(--marketing-line-strong)]"
+              />
+            </label>
+
+            <label className="block">
+              <span className="mb-2 flex items-center gap-2 text-[0.72rem] font-semibold uppercase tracking-[0.24em] text-[var(--marketing-muted)]">
+                <SlidersHorizontal className="h-4 w-4" />
+                {t("filters.categoryLabel")}
+              </span>
+              <select
+                name="category"
+                defaultValue={category ?? "all"}
+                className="h-12 w-full rounded-full border border-[color:var(--marketing-line)] bg-transparent px-4 text-sm outline-none transition-colors focus:border-[color:var(--marketing-line-strong)]"
+              >
+                <option value="all">{t("filters.allCategories")}</option>
+                {categories.map((item) => (
+                  <option key={item.id} value={String(item.id)}>
+                    {item.name}
+                  </option>
+                ))}
+              </select>
+            </label>
+
+            <label className="block">
+              <span className="mb-2 flex items-center gap-2 text-[0.72rem] font-semibold uppercase tracking-[0.24em] text-[var(--marketing-muted)]">
+                {t("filters.sortLabel")}
+              </span>
+              <select
+                name="sort"
+                defaultValue={sort === "oldest" || sort === "name" ? sort : "recent"}
+                className="h-12 w-full rounded-full border border-[color:var(--marketing-line)] bg-transparent px-4 text-sm outline-none transition-colors focus:border-[color:var(--marketing-line-strong)]"
+              >
+                <option value="recent">{t("filters.sortRecent")}</option>
+                <option value="oldest">{t("filters.sortOldest")}</option>
+                <option value="name">{t("filters.sortName")}</option>
+              </select>
+            </label>
+
+            <div className="flex items-end gap-3">
+              <Button type="submit" className="h-12 rounded-full bg-[var(--marketing-accent)] px-6 text-white hover:bg-[color:var(--marketing-accent)]/92">
+                {t("filters.apply")}
+              </Button>
+              <Button asChild type="button" variant="outline" className="h-12 rounded-full border-[color:var(--marketing-line)] px-6">
+                <Link href="/projects">{t("filters.clear")}</Link>
+              </Button>
+            </div>
+          </form>
+        </Reveal>
+      </MarketingSection>
+
+      <MarketingSection>
+        <div className="flex flex-col gap-4 border-b border-[color:var(--marketing-line)] pb-6 sm:flex-row sm:items-end sm:justify-between">
+          <div>
+            <SectionEyebrow>{t("directory.eyebrow")}</SectionEyebrow>
+            <SectionTitle className="mt-4 text-4xl sm:text-5xl">{t("directory.title")}</SectionTitle>
+          </div>
+          <p className="text-sm text-[var(--marketing-muted-strong)]">
+            {t("directory.count", { count: projects.length })}
           </p>
         </div>
 
-        <div className="flex w-full md:w-auto gap-2 flex-wrap">
-          <div className="relative w-full md:w-[200px]">
-            <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-slate-500 dark:text-slate-400" />
-            <Input
-              placeholder="Search projects..."
-              className="pl-8"
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-            />
-          </div>
-          <Select value={categoryFilter} onValueChange={setCategoryFilter}>
-            <SelectTrigger className="w-[180px]">
-              <SelectValue placeholder="Filter Category" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All Categories</SelectItem>
-              {categories.map((cat) => (
-                <SelectItem key={cat.id} value={cat.id.toString()}>
-                  {cat.name}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-          <Select value={sortOrder} onValueChange={setSortOrder}>
-            <SelectTrigger className="w-[150px]">
-              <SelectValue placeholder="Sort" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="recent">Newest</SelectItem>
-              <SelectItem value="oldest">Oldest</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
-      </div>
-
-      {loading ? (
-        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {Array(6)
-            .fill(0)
-            .map((_, i) => (
-              <Card key={i} className="overflow-hidden">
-                <CardHeader className="pb-2">
-                  <div className="flex justify-between items-start">
-                    <div className="flex items-center gap-2">
-                      <div className="h-10 w-10 rounded-full bg-slate-200 dark:bg-slate-700" />
+        {projects.length === 0 ? (
+          <Reveal>
+            <div className="py-16 text-center">
+              <p className="text-lg text-[var(--marketing-muted-strong)]">{t("empty.title")}</p>
+              <p className="mt-3 text-sm text-[var(--marketing-muted)]">{t("empty.body")}</p>
+            </div>
+          </Reveal>
+        ) : (
+          <div className="mt-10 grid gap-8 lg:grid-cols-2">
+            {projects.map((project, index) => (
+              <Reveal key={project.id} delay={index * 45}>
+                <article className="group h-full rounded-[2rem] border border-[color:var(--marketing-line)] bg-white/60 p-6 transition-transform duration-200 hover:-translate-y-1 dark:bg-white/[0.03]">
+                  <div className="flex items-start justify-between gap-4">
+                    <div className="flex items-center gap-4">
+                      <Avatar className="h-14 w-14 border border-[color:var(--marketing-line)]">
+                        <AvatarImage src={project.logoUrl ?? "/placeholder.svg?height=56&width=56"} alt={project.name} />
+                        <AvatarFallback>{project.name.slice(0, 2)}</AvatarFallback>
+                      </Avatar>
                       <div>
-                        <div className="h-5 w-32 bg-slate-200 dark:bg-slate-700 rounded" />
-                        <div className="h-4 w-24 mt-1 bg-slate-200 dark:bg-slate-700 rounded" />
+                        <p className="text-[0.68rem] font-semibold uppercase tracking-[0.24em] text-[var(--marketing-muted)]">
+                          {project.categoryName ?? t("card.uncategorized")}
+                        </p>
+                        <h2 className="mt-2 font-display text-3xl tracking-[-0.04em]">{project.name}</h2>
                       </div>
                     </div>
-                    <div className="h-5 w-16 bg-slate-200 dark:bg-slate-700 rounded" />
-                  </div>
-                </CardHeader>
-                <CardContent>
-                  <div className="h-4 w-full mb-2 bg-slate-200 dark:bg-slate-700 rounded" />
-                  <div className="h-4 w-5/6 mb-2 bg-slate-200 dark:bg-slate-700 rounded" />
-                  <div className="h-4 w-4/6 mb-4 bg-slate-200 dark:bg-slate-700 rounded" />
-                  <div className="flex justify-between items-center">
-                    <div className="h-4 w-24 bg-slate-200 dark:bg-slate-700 rounded" />
-                    <div className="h-8 w-16 bg-slate-200 dark:bg-slate-700 rounded" />
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
-        </div>
-      ) : filteredProjects.length === 0 ? (
-        <div className="text-center py-12">
-          <p className="text-lg text-slate-600 dark:text-slate-300 mb-4">No projects found matching your search.</p>
-          <Button onClick={() => setSearchTerm("")}>Clear Search</Button>
-        </div>
-      ) : (
-        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {filteredProjects.map((project) => (
-            <Card key={project.id} className="overflow-hidden">
-              {/* Project card content */}
-              <div className="block">
-                <Link href={`/projects/${project.slug}`} className="block">
-                  <CardHeader className="pb-2">
-                    <div className="flex justify-between items-start">
-                      <div className="flex items-center gap-2">
-                        <Avatar className="h-10 w-10">
-                          <AvatarImage
-                            src={project.logo_url || "/placeholder.svg?height=40&width=40"}
-                            alt={project.name}
-                          />
-                          <AvatarFallback>{project.name.substring(0, 2)}</AvatarFallback>
-                        </Avatar>
-                        <div>
-                          <CardTitle className="text-lg">{project.name}</CardTitle>
-                          <CardDescription className="text-xs">Joined {getTimeAgo(project.created_at)}</CardDescription>
-                        </div>
-                      </div>
-                      <Badge variant="outline">{project.category || "Uncategorized"}</Badge>
-                    </div>
-                  </CardHeader>
-                  <CardContent>
-                    <p className="text-sm text-slate-600 dark:text-slate-300 mb-4">{project.description}</p>
-                  </CardContent>
-                </Link>
-                <CardContent className="pt-0">
-                  <div className="flex justify-between items-center">
-                    <div className="text-sm text-slate-500 dark:text-slate-400">
-                      {(project.user_count || 0).toLocaleString()} users
-                    </div>
-                    {/* External link button - separate from the card link */}
-                    {project.website && (
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        className="h-8 gap-1"
-                        onClick={(e) => {
-                          e.stopPropagation()
-                          const website = project.website
-                          if (website) {
-                            window.open(website, "_blank", "noopener,noreferrer")
-                          }
-                        }}
-                      >
-                        <span>Visit</span>
-                        <ExternalLink className="h-3.5 w-3.5" />
+                    {project.website ? (
+                      <Button asChild variant="ghost" size="icon" className="rounded-full border border-[color:var(--marketing-line)]">
+                        <a href={project.website} target="_blank" rel="noreferrer" aria-label={t("card.visitWebsite")}>
+                          <ExternalLink className="h-4 w-4" />
+                        </a>
                       </Button>
-                    )}
+                    ) : null}
                   </div>
-                </CardContent>
-              </div>
-            </Card>
-          ))}
-        </div>
-      )}
-    </div>
+
+                  <p className="mt-6 max-w-2xl text-base leading-7 text-[var(--marketing-muted-strong)]">{project.description}</p>
+
+                  <div className="mt-8 grid gap-4 border-t border-[color:var(--marketing-line)] pt-5 sm:grid-cols-2">
+                    <div>
+                      <p className="text-[0.68rem] font-semibold uppercase tracking-[0.24em] text-[var(--marketing-muted)]">
+                        {t("card.participantsLabel")}
+                      </p>
+                      <p className="mt-2 text-2xl font-semibold">{project.participantCount}</p>
+                    </div>
+                    <div>
+                      <p className="text-[0.68rem] font-semibold uppercase tracking-[0.24em] text-[var(--marketing-muted)]">
+                        {t("card.joinedLabel")}
+                      </p>
+                      <p className="mt-2 text-base font-medium text-[var(--marketing-muted-strong)]">
+                        {formatJoinedDate(locale, project.createdAt) ?? t("card.joinedFallback")}
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="mt-8 flex flex-col gap-3 sm:flex-row">
+                    <Button asChild className="rounded-full bg-[var(--marketing-accent)] px-6 text-white hover:bg-[color:var(--marketing-accent)]/92">
+                      <Link href={`/projects/${project.slug}`}>
+                        {t("card.openProject")}
+                        <ArrowRight className="h-4 w-4" />
+                      </Link>
+                    </Button>
+                    <Button asChild variant="outline" className="rounded-full border-[color:var(--marketing-line)] px-6">
+                      <Link href={getPublicUserPrimaryHref(navigationContext)}>{getPrimaryLabel(ctaState, t)}</Link>
+                    </Button>
+                  </div>
+                </article>
+              </Reveal>
+            ))}
+          </div>
+        )}
+      </MarketingSection>
+    </MarketingPage>
   )
 }

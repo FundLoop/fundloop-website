@@ -46,5 +46,8 @@ describe("i18n message loading", () => {
     expect(messages.shell.nav.primary.founders).toBe("Fondateurs")
     expect(messages.shell.nav.resourceLinks.founders.label).toBe("Parcours fondateur")
     expect(messages.home.entryPaths[0].href).toBe("/founders")
+    expect(messages.projectsDirectory.hero.eyebrow).toBe("Découverte de projets")
+    expect(messages.usersDirectory.hero.eyebrow).toBe("Personnes dans la boucle")
+    expect(messages.participation.nextSteps.steps[0]?.step).toBe("01")
   })
 })

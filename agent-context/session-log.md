@@ -1,5 +1,46 @@
 ---
 
+### session v43: Rebuild the user discovery and participation funnel into one coherent public path
+- timestamp: 2026-04-14T23:09:00-0400
+- agent: **Codex (GPT-5)**
+- branch: **codex/wallet-production-readiness**
+- head: TBD
+
+#### Objective
+Complete Session 10 by turning the user side of FundLoop into one coherent public-to-workspace path: rebuild `/[locale]/participation` as the canonical participant funnel, modernize the public projects and people directories, and make onboarding, CUBID identity, and current results visibility feel like one system instead of scattered pages.
+
+#### Actions Taken
+- Rebuilt `app/[locale]/(public)/participation/page.tsx` into a stronger localized user funnel with explicit sections for why users join, cross-project discovery, CUBID-backed identity expectations, current results visibility, and the honest “what happens next” path.
+- Replaced the old browser-fetched `app/[locale]/(public)/projects/page.tsx` and `app/[locale]/(public)/users/page.tsx` implementations with server-rendered public discovery pages using query-string filters, locale-aware links, localized metadata, and auth-aware user CTA handoff.
+- Replaced `app/[locale]/(public)/projects/[slug]/page.tsx` and `app/[locale]/(public)/users/[id]/page.tsx` with public profile/detail surfaces that feel like part of the same product, removed the old `components/project-detail-page.tsx`, and kept founder-only project controls secondary to the public discovery story.
+- Added `lib/public-user-journey.ts` to centralize the public CTA truth for signed-out users, signed-in inactive users, and active users, and added `lib/public-discovery.ts` as the server-side data layer for public projects/users discovery and detail queries.
+- Hardened the new public discovery data layer so server-side Supabase failures degrade into empty-state public pages with compact warnings instead of throwing render-time exceptions.
+- Expanded the English, French, and Spanish message packs with new participation, projects, project-detail, users, and user-detail copy plus localized metadata and home-page participant entry-path updates.
+- Added test coverage in `tests/public-user-journey.test.ts` and refreshed `tests/i18n.test.ts` to lock in the new localized route copy, then updated `docs/engineering/navigation-shell.md`, `docs/engineering/route-inventory.md`, and `agent-context/todo.md` to reflect the completed Session 10 architecture.
+
+#### Tests and Validation Notes
+- `pnpm dlx node@22.22.1 /opt/homebrew/bin/pnpm check` passed
+- `pnpm dlx node@22.22.1 /opt/homebrew/bin/pnpm exec vitest run tests/public-user-journey.test.ts tests/i18n.test.ts` passed
+- Local dev smoke against the rebuilt public user path confirmed:
+  - `/en/participation` returned `200`
+  - `/en/projects` returned `200`
+  - `/en/users` returned `200`
+  - `/fr/participation` returned `200`
+  - `/es/participation` returned `200`
+  - `/en/participation` rendered the locale-preserving onboarding CTA href (`/en?onboarding=user`) and the public projects CTA href (`/en/projects`)
+- The local seed did not expose public project/user detail rows during this smoke, so representative detail-route browser verification remains dependent on richer local fixture data.
+- Local server-side Supabase fetches can still fail in some env setups; the new public discovery pages now fail soft into empty-state UI with warning-level logs rather than surfacing render errors to users.
+
+#### Reflections
+- The biggest improvement in this session was not only the new page art direction, but the shift from “public directory utilities” to one joined-up user story: discover, verify, participate, then keep an eye on current visibility from the workspace.
+- The server-first rewrite exposed a real local-env gap that the older browser-fetch versions masked. Hardening the public discovery layer now should make later Edge Function and workspace sessions safer because public pages no longer assume perfect server connectivity.
+
+#### Suggested Next Steps
+- Session 11 should finish the remaining public-page cleanup while the new founder and participant funnels are both fresh and aligned.
+- Session 17 can now build the real signed-in user workspace home on top of a much clearer public acquisition and discovery story.
+
+---
+
 ### session v42: Rebuild the founder acquisition funnel into one canonical public path
 - timestamp: 2026-04-14T22:26:48-0400
 - agent: **Codex (GPT-5)**

@@ -113,12 +113,12 @@ Turn the current founder-facing public messaging into a real production funnel. 
 
 ## Session 10: Rebuild the user discovery and participation funnel
 
-- Status: Not started
-- Timestamp started: TBD
-- Timestamp completed: TBD
-- Feature branch: TBD
+- Status: Complete
+- Timestamp started: 2026-04-14T23:55:00-0400
+- Timestamp completed: 2026-04-15T01:05:00-0400
+- Feature branch: codex/wallet-production-readiness
 - Head: TBD
-- Session-log reference(s): TBD
+- Session-log reference(s): session v43
 
 Create the public and semi-public journey for regular users who want to understand FundLoop, discover projects, and see how participation turns into earnings. This should refine or replace current placeholder explainer surfaces with a path that leads toward sign-up, identity verification, project discovery, and earnings visibility. The design should stay simple and data-clear, not overly promotional. The key outcome is that the user side of the product becomes a first-class experience instead of feeling secondary to project payment operations.
 

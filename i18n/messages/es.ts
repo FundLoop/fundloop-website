@@ -15,6 +15,31 @@ export const esMessages = {
       description:
         "Aprende cómo los participantes se unen a proyectos alineados, construyen señal en la red y gestionan recompensas mensuales a través de FundLoop.",
     },
+    projects: {
+      title: "Proyectos - FundLoop",
+      description:
+        "Explora los proyectos públicos de FundLoop, entiende qué está construyendo cada equipo y pasa del descubrimiento a la participación con más contexto.",
+    },
+    projectDetail: {
+      title: "{name} - Proyectos - FundLoop",
+      description:
+        "Explora {name} dentro de FundLoop, ve quién aparece alrededor del proyecto y entiende cómo la participación se conecta con la futura visibilidad de resultados.",
+      missingTitle: "Proyecto - FundLoop",
+      missingDescription: "El proyecto solicitado no se encontró en el directorio público de FundLoop.",
+    },
+    users: {
+      title: "Personas - FundLoop",
+      description:
+        "Explora el directorio público de participantes, descubre quién está activo en la red y entiende cómo identidad y participación aparecen dentro de FundLoop.",
+    },
+    userDetail: {
+      title: "{name} - Personas - FundLoop",
+      description:
+        "Explora el perfil público de FundLoop de {name}, mira en qué proyectos públicos aparece y entiende cómo la participación se vuelve más legible con el tiempo.",
+      fallbackName: "Participante",
+      missingTitle: "Participante - FundLoop",
+      missingDescription: "La persona solicitada no se encontró en el directorio público de FundLoop.",
+    },
     support: {
       title: "Soporte - FundLoop",
       description:
@@ -449,9 +474,9 @@ export const esMessages = {
       },
       {
         eyebrow: "Para quienes forman parte de la red",
-        title: "Únete temprano, vuelve con constancia y haz que tu presencia cuente.",
+        title: "Únete a la red, descubre proyectos reales y mantén un registro legible de tu participación.",
         body:
-          "FundLoop está diseñado para que una persona pueda crear un perfil, acumular reputación mediante uso real y, con el tiempo, retirar valor de un sistema pensado para reconocer contribuciones.",
+          "Empieza con participación, fortalece tu identidad con CUBID, descubre proyectos alineados y vuelve a un mismo lugar que haga más clara la visibilidad actual de resultados.",
         href: "/participation",
         cta: "Leer cómo funciona la participación",
       },
@@ -522,88 +547,318 @@ export const esMessages = {
     },
   },
   participation: {
-    backToHome: "Volver al inicio",
     hero: {
       eyebrow: "Participación",
       title:
-        "Participa en proyectos reales y vuelve cada mes para ver cuánto dice la red que valió tu participación.",
+        "Un camino claro desde el descubrimiento hacia participación, identidad y visibilidad actual de resultados.",
       body:
-        "FundLoop es para personas que se unen a proyectos alineados, participan de manera sincera y quieren que las recompensas reflejen presencia real en lugar de actividad superficial. No se trata de farmear una sola app para siempre. Se trata de construir un historial de participación a lo largo del loop.",
-      participantCta: "Unirse como participante",
-      browseProjectsCta: "Explorar proyectos participantes",
+        "FundLoop es para personas que quieren descubrir proyectos alineados, construir señal real apareciendo de verdad, reforzar prueba de persona mediante CUBID y mantener una visión honesta de lo que la red dice hoy sobre su participación.",
+      primaryCtaStart: "Crear tu perfil",
+      primaryCtaContinue: "Continuar onboarding",
+      primaryCtaWorkspace: "Abrir tu espacio",
+      secondaryCta: "Explorar proyectos participantes",
     },
-    rhythm: {
-      eyebrow: "Ritmo de participación",
-      joinTitle: "Unirse",
-      joinBody: "Empieza con un proyecto, o incluso con varios, que realmente te importen.",
-      engageTitle: "Participar",
-      engageBody: "Participa de formas que creen contexto real, no solo ruido.",
-      returnTitle: "Volver",
-      returnBody: "Regresa cada mes para revisar tu recompensa total y decidir qué hacer después.",
+    journey: {
+      eyebrow: "Recorrido de usuario",
+      profileTitle: "Perfil",
+      profileBody: "Empieza con un perfil personal que pueda acompañarte entre proyectos en lugar de volver a explicar quién eres en cada sitio.",
+      signalTitle: "Señal",
+      signalBody: "Únete a proyectos que de verdad te importen y deja que la contribución real, la curiosidad y el seguimiento se vuelvan más legibles con el tiempo.",
+      resultsTitle: "Resultados",
+      resultsBody: "Vuelve a FundLoop para revisar la vista actual de resultados publicados mientras el espacio completo de ganancias y pagos todavía se está construyendo.",
     },
-    howItWorks: {
-      eyebrow: "Cómo funciona",
-      title: "Un loop construido alrededor de la participación genuina.",
+    whyJoin: {
+      eyebrow: "Por qué unirse",
+      title: "La participación debería sentirse como un camino práctico, no como un juego de fidelidad.",
       body:
-        "El objetivo es simple: facilitar que una persona se mueva entre proyectos alineados y que su contribución sea reconocida con más matices de los que una sola app puede ver.",
-      steps: [
+        "FundLoop intenta volver coherente el lado usuario de la red: una cuenta, una historia de participación y un lugar para entender qué empieza a significar la actividad a través de varios proyectos.",
+      items: [
         {
-          step: "01",
-          title: "Empieza con un proyecto, o mejor aún con varios.",
-          body: "Únete a proyectos participantes que realmente te importen. Si ya estás activo en uno, ya has empezado a crear señal.",
+          label: "Descubrimiento entre proyectos",
+          body:
+            "Deberías poder moverte entre proyectos alineados sin empezar desde cero cada vez ni perder el contexto de cómo ya te has mostrado en otros lugares de la red.",
         },
         {
-          step: "02",
-          title: "Hazte presente de verdad.",
+          label: "Participación con contexto",
           body:
-            "FundLoop funciona mejor cuando la participación parece contribución real, curiosidad, apoyo y seguimiento en lugar de click-farming o actividad vacía.",
+            "La meta no es recompensar ruido. La meta es dar espacio a actividad significativa, presencia útil y tipos de contribución que una sola app suele entender mal por sí sola.",
         },
         {
-          step: "03",
-          title: "Vuelve y amplía tu órbita.",
+          label: "Visibilidad honesta",
           body:
-            "Cuando tengas tiempo, vuelve a FundLoop, descubre otro proyecto alineado y sigue construyendo una imagen más completa de cómo participas en toda la red.",
-        },
-        {
-          step: "04",
-          title: "Revisa cada mes tu recompensa total.",
-          body:
-            "FundLoop agrega lo que la red ha observado y lo convierte en una visión mensual más clara del valor que has generado en los proyectos participantes.",
+            "FundLoop debe ser claro sobre lo que ya está vivo hoy: puedes crear un perfil, explorar proyectos, construir presencia y revisar la superficie actual de resultados publicados mientras el producto completo de pagos llega más adelante.",
         },
       ],
     },
-    proof: {
-      eyebrow: "Prueba y privacidad",
-      title: "FundLoop recompensa a humanos, no solo actividad.",
+    discovery: {
+      eyebrow: "Descubrimiento entre proyectos",
+      title: "La participación se vuelve más útil cuando puede viajar por toda la red.",
       body:
-        "La prueba de humanidad puede venir de apps participantes que ya usas y siempre puedes fortalecerla más adelante. Lo importante es que mantienes el control sobre qué se comparte y dónde.",
-      cubidCta: "Gestionar tu pasaporte de Cubid",
+        "Las superficies públicas de descubrimiento están para ayudar a encontrar proyectos reales, entender quién ya está apareciendo alrededor de ellos y ampliar tu órbita sin convertir la red en un directorio sin siguiente paso.",
+      steps: [
+        {
+          step: "01",
+          title: "Empieza con un proyecto relevante.",
+          body:
+            "Elige un proyecto público que realmente te importe. Si ya estás activo allí, no empiezas desde cero. Solo estás haciendo más legible esa relación.",
+        },
+        {
+          step: "02",
+          title: "Sigue descubriendo proyectos cercanos.",
+          body:
+            "La idea no es navegar sin fin. La idea es ampliar lo suficiente tu contexto para que tu historia de participación refleje una red y no solo una app cerrada.",
+        },
+        {
+          step: "03",
+          title: "Usa las páginas públicas como señales de confianza.",
+          body:
+            "Estas páginas son deliberadamente ligeras, pero ya ayudan a ver dónde están apareciendo equipos reales y personas reales antes de comprometer más tiempo.",
+        },
+        {
+          step: "04",
+          title: "Vuelve a tu espacio para la visibilidad actual.",
+          body:
+            "En cuanto tu cuenta esté activa, el espacio se convierte en el hogar más honesto para el contexto de cuenta y la vista actual de resultados publicados.",
+        },
+      ],
+    },
+    identity: {
+      eyebrow: "Identidad y elegibilidad",
+      title: "CUBID forma parte del camino de usuario porque la identidad importa en cuanto empieza a moverse el valor.",
+      body:
+        "FundLoop no debería fingir que prueba de persona, confianza de cuenta y elegibilidad de pago son detalles opcionales. El producto avanza hacia un modelo de identidad respaldado por CUBID y los usuarios deberían entenderlo pronto.",
+      cubidCta: "Abrir pasaporte CUBID",
+      resultsCta: "Ver visibilidad actual de resultados",
       points: [
         {
-          label: "Prueba de humanidad",
+          label: "CUBID fortalece la prueba de persona",
           body:
-            "El algoritmo está diseñado para recompensar a humanos reales. Si demuestras tu humanidad en una app participante, eso puede fortalecer cómo la red interpreta tu participación.",
+            "Cada usuario debería asumir que una cuenta real de CUBID importará cada vez más, porque la red necesita una base de confianza más fuerte que registros desechables.",
         },
         {
-          label: "Controles de privacidad",
+          label: "Descubrimiento y elegibilidad no son lo mismo",
           body:
-            "Tú decides cuánta información compartir con FundLoop y con cada app participante. Una prueba más fuerte no tiene por qué significar compartir más de lo que deseas.",
+            "Puedes explorar proyectos y entender la red antes de que todo esté plenamente verificado, pero la identidad pesará cada vez más sobre lo que puede contar para elegibilidad y pagos.",
         },
         {
-          label: "Preferencias de pago",
+          label: "Los resultados actuales existen antes de que el producto de pagos esté completo",
           body:
-            "Deja tus recompensas en tu cuenta de FundLoop, retíralas cuando quieras y actualiza tus monedas o tokens preferidos siempre que cambien tus necesidades.",
+            "Hoy el endpoint intermedio honesto sigue siendo la superficie de resultados publicados en settings. Todavía no es el hogar final de ganancias, pero sí muestra la dirección.",
+        },
+      ],
+    },
+    nextSteps: {
+      eyebrow: "Qué pasa después",
+      title: "El camino actual de usuario ya es suficientemente real como para actuar sobre él.",
+      body:
+        "Esta es la secuencia práctica que FundLoop ya soporta. Es deliberadamente modesta, pero clara: empieza tu perfil, fortalece identidad, descubre proyectos y mantén una vista de tu visibilidad actual mientras madura el sistema de pagos.",
+      steps: [
+        {
+          step: "01",
+          title: "Crear o continuar tu perfil personal",
+          body: "El flujo de onboarding ya guarda borradores y te lleva de vuelta donde lo dejaste, así que no hay penalización por empezar antes de estar listo para terminar todo.",
+        },
+        {
+          step: "02",
+          title: "Fortalecer la prueba de persona mediante CUBID",
+          body: "Trata CUBID como parte real del camino, no como nota al pie. Es hacia donde se dirigen la confianza de identidad y la futura elegibilidad.",
+        },
+        {
+          step: "03",
+          title: "Unirte a proyectos y construir señal real",
+          body: "Usa las superficies públicas de proyectos y personas para decidir dónde aparecer y deja que la actividad consistente cree un registro más claro con el tiempo.",
+        },
+        {
+          step: "04",
+          title: "Revisar la visibilidad actual de resultados",
+          body: "La vista actual todavía no es el hogar final de ganancias, pero ya es el lugar honesto para ver qué ha publicado la red sobre tu actividad.",
         },
       ],
     },
     closing: {
-      eyebrow: "Qué puedes hacer con tus recompensas",
+      eyebrow: "Empieza el camino de usuario",
       title:
-        "Déjalas en FundLoop, retíralas cuando te convenga y cambia tus preferencias de pago cuando quieras.",
+        "Usa la participación como puerta de entrada y sigue avanzando hacia descubrimiento, identidad y una vista más clara de tu espacio.",
       body:
-        "Las recompensas no están pensadas para atraparte. Déjalas en tu cuenta de FundLoop si te resulta práctico, retíralas a tu ritmo y actualiza tus monedas o tokens preferidos según tu situación.",
-      createProfile: "Crear tu perfil",
-      findProject: "Encontrar otro proyecto",
+        "FundLoop ya tiene suficiente producto real debajo como para que este camino merezca la pena ahora mismo, incluso antes de que llegue la experiencia completa de ganancias y pagos.",
+      findProject: "Explorar proyectos participantes",
+    },
+  },
+  projectsDirectory: {
+    hero: {
+      eyebrow: "Descubrimiento de proyectos",
+      title: "Explora el lado público de los proyectos de FundLoop sin caer en un directorio sin salida.",
+      body:
+        "Estos proyectos son el borde público del loop: lugares donde las personas pueden descubrir equipos alineados, entender qué intenta hacer cada proyecto y decidir dónde merece la pena empezar a participar.",
+      primaryCtaStart: "Crear tu perfil",
+      primaryCtaContinue: "Continuar onboarding",
+      primaryCtaWorkspace: "Abrir tu espacio",
+      secondaryCta: "Leer el camino de participación",
+    },
+    context: {
+      eyebrow: "Cómo usar este directorio",
+      discoveryTitle: "Encontrar proyectos con señal real",
+      discoveryBody: "Usa estos perfiles públicos para encontrar equipos que se sientan reales, activos y dignos de tu presencia.",
+      identityTitle: "La identidad importará más después",
+      identityBody: "El descubrimiento es público, pero la elegibilidad y los flujos de valor avanzan hacia una identidad CUBID más fuerte.",
+      resultsTitle: "La visibilidad sigue siendo honesta",
+      resultsBody: "El sistema de pagos no está reconstruido por completo todavía, pero FundLoop ya tiene una superficie de resultados publicados que marca la dirección.",
+    },
+    filters: {
+      searchLabel: "Buscar",
+      searchPlaceholder: "Buscar proyectos públicos",
+      categoryLabel: "Categoría",
+      allCategories: "Todas las categorías",
+      sortLabel: "Ordenar",
+      sortRecent: "Más nuevos primero",
+      sortOldest: "Más antiguos primero",
+      sortName: "Nombre",
+      apply: "Aplicar",
+      clear: "Restablecer",
+    },
+    directory: {
+      eyebrow: "Proyectos públicos",
+      title: "Explora equipos alineados que ya aparecen en el loop.",
+      count: "{count, plural, =0 {Todavía no hay proyectos públicos} one {# proyecto público} other {# proyectos públicos}}",
+    },
+    empty: {
+      title: "Ningún proyecto público coincide con estos filtros.",
+      body: "Amplía la búsqueda o limpia los filtros para seguir explorando la red.",
+    },
+    card: {
+      uncategorized: "Sin categoría",
+      visitWebsite: "Visitar sitio del proyecto",
+      participantsLabel: "Participantes visibles",
+      joinedLabel: "Público desde",
+      joinedFallback: "Recientemente",
+      openProject: "Abrir proyecto",
+    },
+  },
+  projectProfile: {
+    hero: {
+      eyebrow: "Perfil del proyecto",
+      uncategorized: "Sin categoría",
+    },
+    cta: {
+      startProfile: "Crear tu perfil",
+      continueOnboarding: "Continuar onboarding",
+      openWorkspace: "Abrir tu espacio",
+      readParticipation: "Leer camino de participación",
+      visitWebsite: "Visitar sitio",
+    },
+    snapshot: {
+      eyebrow: "Resumen público",
+      joinedLabel: "Público desde",
+      joinedFallback: "Recientemente",
+      participantsLabel: "Participantes visibles",
+      resultsLabel: "Visibilidad actual de resultados",
+      resultsBody: "La participación ya puede alimentar visibilidad publicada de resultados incluso mientras el producto más amplio de ganancias sigue en construcción.",
+    },
+    story: {
+      eyebrow: "Qué está haciendo este proyecto",
+      title: "Trata la página pública del proyecto como contexto para decidir dónde puede contar tu participación después.",
+      body:
+        "La idea de este perfil no es imitar un deck para inversores. Su función es dar contexto suficiente para entender el proyecto, quién está alrededor y si merece entrar en tu órbita de participación.",
+      fallbackBody:
+        "Este proyecto todavía no ha publicado una descripción pública más larga, pero ya es descubrible aquí para que otras personas puedan construir contexto a su alrededor.",
+    },
+    people: {
+      eyebrow: "Personas alrededor del proyecto",
+      title: "La participación pública empieza viendo quién ya está aquí.",
+      body:
+        "Estos perfiles públicos de participantes forman una capa ligera de confianza. Ayudan a mostrar que la red contiene proyectos reales y personas reales, no solo categorías abstractas.",
+      empty: "Este proyecto todavía no tiene perfiles públicos de participantes para mostrar.",
+      adminRole: "Admin del proyecto",
+      memberRole: "Participante",
+      openProfile: "Abrir perfil",
+    },
+    admin: {
+      eyebrow: "Controles de fundador",
+      title: "Sigues teniendo enlaces operativos directos mientras el espacio de fundador se consolida.",
+      payments: "Abrir pagos",
+      zkas: "Abrir zkAS del proyecto",
+    },
+  },
+  usersDirectory: {
+    hero: {
+      eyebrow: "Personas dentro del loop",
+      title: "Conoce la capa humana pública de FundLoop sin convertirla en un directorio frío.",
+      body:
+        "Estos perfiles públicos ayudan a descubrir quién está activo en la red, dónde la participación ya está apareciendo y dejan claro que FundLoop se construye alrededor de humanos y no solo actividad anónima.",
+      primaryCtaStart: "Crear tu perfil",
+      primaryCtaContinue: "Continuar onboarding",
+      primaryCtaWorkspace: "Abrir tu espacio",
+      secondaryCta: "Leer camino de participación",
+    },
+    context: {
+      eyebrow: "Para qué sirve esta página",
+      discoveryTitle: "Credibilidad pública",
+      discoveryBody: "El directorio de personas debe añadir confianza y contexto al descubrimiento de proyectos, no convertirse en un ranking de vanidad.",
+      identityTitle: "La identidad se fortalece después",
+      identityBody: "Los perfiles públicos son solo una capa. La identidad respaldada por CUBID es donde responsabilidad y futura elegibilidad se vuelven mucho más sólidas.",
+      resultsTitle: "La visibilidad del espacio llega después",
+      resultsBody: "Una vez que un usuario está activo, el espacio se convierte en el lugar honesto para continuar hacia estado de cuenta y la vista actual de resultados publicados.",
+    },
+    filters: {
+      searchLabel: "Buscar",
+      searchPlaceholder: "Buscar participantes públicos",
+      projectLabel: "Proyecto",
+      allProjects: "Todos los proyectos",
+      apply: "Aplicar",
+      clear: "Restablecer",
+    },
+    directory: {
+      eyebrow: "Participantes públicos",
+      title: "Personas cuya presencia ya es visible a través de la red.",
+      count: "{count, plural, =0 {Todavía no hay participantes públicos} one {# participante público} other {# participantes públicos}}",
+    },
+    empty: {
+      title: "Ningún participante público coincide con estos filtros.",
+      body: "Amplía la búsqueda o quita el filtro de proyecto para explorar mejor la red.",
+    },
+    card: {
+      unnamed: "Participante sin nombre",
+      singleProject: "Activo en 1 proyecto",
+      multiProject: "Activo en {count} proyectos",
+      defaultContribution: "Participante de FundLoop",
+      locationLabel: "Ubicación",
+      locationFallback: "Ubicación privada",
+      joinedLabel: "Público desde",
+      joinedFallback: "Recientemente",
+      openProfile: "Abrir perfil",
+    },
+  },
+  userProfile: {
+    fallbackName: "Participante",
+    hero: {
+      eyebrow: "Perfil del participante",
+      singleProject: "Activo en 1 proyecto público",
+      multiProject: "Activo en {count} proyectos públicos",
+      defaultContribution: "Esta persona ha decidido mantener su nota pública de contribución mínima por ahora.",
+    },
+    cta: {
+      startProfile: "Crear tu perfil",
+      continueOnboarding: "Continuar onboarding",
+      openWorkspace: "Abrir tu espacio",
+      readParticipation: "Leer camino de participación",
+    },
+    snapshot: {
+      eyebrow: "Resumen público",
+      locationLabel: "Ubicación",
+      locationFallback: "Ubicación privada",
+      joinedLabel: "Público desde",
+      joinedFallback: "Recientemente",
+      resultsLabel: "Visibilidad actual de resultados",
+      resultsBody: "El espacio completo de ganancias llegará más adelante, pero FundLoop ya tiene una superficie de resultados publicados para usuarios conectados.",
+    },
+    projects: {
+      eyebrow: "Proyectos visibles",
+      title: "Los enlaces públicos a proyectos hacen que la participación se sienta conectada en lugar de aislada.",
+      body:
+        "Este perfil es deliberadamente ligero. Su trabajo es ayudar a otras personas a entender dónde aparece esta persona dentro del loop y luego seguir hacia las superficies públicas de proyecto relevantes.",
+      empty: "Esta persona no está mostrando actualmente membresías públicas de proyecto aquí.",
+      projectBody: "Abre el perfil del proyecto para entender el equipo alrededor, el contexto público y el siguiente paso de participación.",
+      openProject: "Abrir proyecto",
     },
   },
   support: {
