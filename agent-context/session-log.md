@@ -1,5 +1,92 @@
 ---
 
+### session v50: Fold CUBID authority and profile/account ownership into one refactor pass
+- timestamp: 2026-04-15T15:22:50-0400
+- agent: **Codex (GPT-5)**
+- branch: **codex/wallet-production-readiness**
+- head: TBD
+
+#### Objective
+Complete the folded Sessions 15 and 16 by making CUBID the explicit authority for identity-owned fields, extending the normalized snapshot/read-model contract with authoritative names, refactoring onboarding and account/profile surfaces around that ownership split, and adding a first read-only operator identity-health page.
+
+#### Actions Taken
+- Added the forward-only migration `supabase/migrations/20260415170500_cubid_primary_name.sql` so `public.cubid_identity_snapshots` now stores `primary_name`.
+- Updated `types/supabase.ts` and the normalized CUBID types under `lib/cubid/types.ts` so the app contract now includes snapshot-backed `primaryName`.
+- Extended the CUBID sync pipeline:
+  - `lib/cubid/snapshot.ts`
+  - `lib/cubid/sync-profile-command.ts`
+  - `lib/edge-functions/user-cubid-sync-profile-contract.ts`
+  so snapshot sync now derives and persists `primary_name` alongside email, phone, score, stamp arrays, and fail-soft sync metadata.
+- Reworked the shared identity read-model in `lib/cubid/read-model.ts` to expose:
+  - managed identity fields with `synced`, `pending`, and `legacy_local_fallback` states
+  - explicit identity ownership groups
+  - the updated hybrid completion model
+- Updated `lib/profile-completion.ts` so local completion now tracks FundLoop-owned profile fields instead of treating editable full name as local.
+- Extended `lib/navigation-context.ts`, `app/actions/onboarding-actions.ts`, and `lib/public-discovery.ts` so signed-in and public surfaces can render:
+  - CUBID-managed identity
+  - FundLoop-managed profile/preferences
+  - trust/status cues and snapshot-backed names
+- Refactored onboarding ownership:
+  - `components/user-signup-flow.tsx`
+  - `components/onboarding/user-profile-preview.tsx`
+  - `components/onboarding/extended-cubid-identity-step.tsx`
+  so user onboarding no longer treats full name as a locally editable field and instead presents it as CUBID-managed identity with display name and profile headline remaining local.
+- Refactored signed-in account/profile surfaces:
+  - `components/account/cubid-identity-panel.tsx`
+  - `components/account/account-settings-panel.tsx`
+  - `components/account/fundloop-profile-panel.tsx`
+  - `app/[locale]/(app)/workspace/page.tsx`
+  - `app/[locale]/(app)/workspace/account/page.tsx`
+  - `app/[locale]/(app)/founder/account/page.tsx`
+  so the UI now separates CUBID-managed identity from FundLoop-managed profile/preferences and explains pending or legacy fallback states explicitly.
+- Updated public participant surfaces:
+  - `app/[locale]/(public)/users/page.tsx`
+  - `app/[locale]/(public)/users/[id]/page.tsx`
+  so they prefer display name as the public headline, show verified/legal name secondarily when available, and surface lightweight CUBID trust/status cues without turning the pages into operator dashboards.
+- Added the first read-only operator identity-health page at `app/[locale]/(app)/admin/identity/page.tsx` and linked it from `app/[locale]/(app)/admin/page.tsx`.
+- Fixed the unauthenticated behavior on `/admin/identity` so it now degrades to an access-denied view instead of throwing a 500.
+- Updated the durable docs:
+  - `docs/engineering/cubid-identity.md`
+  - `docs/engineering/route-inventory.md`
+- Added and refreshed coverage for the folded Sessions 15 and 16 behavior:
+  - `tests/cubid-read-model.test.ts`
+  - `tests/admin-identity-page.test.tsx`
+  - updates to `tests/navigation-context.test.ts`
+  - `tests/account-settings-panel.test.tsx`
+  - `tests/cubid-sync-profile-command.test.ts`
+  - `tests/onboarding-edge-contracts.test.ts`
+  - `tests/public-user-journey.test.ts`
+  - `tests/user-signup-flow.test.tsx`
+
+#### Tests and Validation Notes
+- `pnpm dlx node@22.22.1 /opt/homebrew/bin/pnpm lint` passed
+- `pnpm dlx node@22.22.1 /opt/homebrew/bin/pnpm test` passed
+- `pnpm dlx node@22.22.1 /opt/homebrew/bin/pnpm typecheck` passed
+- `pnpm dlx node@22.22.1 /opt/homebrew/bin/pnpm build` passed
+- `pnpm dlx node@22.22.1 /opt/homebrew/bin/pnpm check` passed
+- Manual production-smoke checks against `next start -p 3001` verified:
+  - `/en/users` returned `200` and rendered the new CUBID trust labels
+  - `/en/users/00000000-0000-4000-8000-000000000101` returned `200` and rendered the verified-name / CUBID-score identity copy
+  - `/en/workspace/account` redirected unauthenticated users to `/en/join`
+  - `/en/founder/account` redirected unauthenticated users to `/en/join`
+  - `/en/admin/identity` rendered an access-denied state instead of throwing a server error when accessed without operator auth
+- I attempted to restart the local Supabase stack for a richer authenticated smoke, but `supabase start` failed because local port `54322` is already allocated by another Supabase project (`everfund`). Because of that environment conflict, I did not complete a trustworthy signed-in browser smoke of the new workspace/account identity panels in this session.
+
+#### Reflections
+- Session 14 established the snapshot contract; this folded pass is where the product stops pretending that FundLoop is the canonical editor of identity. The important UX change is not just new data fields, but a clearer promise about who owns what.
+- The most useful shared abstraction here is the managed-identity read model. It keeps onboarding, account pages, and public participant views aligned without having each surface parse raw snapshot payloads or reinvent fallback rules.
+- The new `/admin/identity` page is intentionally read-only and scoped. It provides operator visibility into stale or failed CUBID sync state without jumping ahead into cross-user sync or intervention workflows.
+
+#### Suggested Next Steps
+- Once the local Supabase port conflict is resolved, run a signed-in browser smoke for:
+  - `/workspace`
+  - `/workspace/account`
+  - `/founder/account`
+  - `/admin/identity`
+  using a linked or verified test user so the new ownership split can be checked visually end to end.
+- Session 17 can now build the real user workspace home on top of the clearer identity contract and completion model instead of inheriting the old mixed profile assumptions.
+- Future CUBID/operator sessions can extend `/admin/identity` with controlled resync tooling, but only after the current read-only health contract has seen real operator use.
+
 ### session v49: Add the CUBID snapshot model and extended profile-completion loop
 - timestamp: 2026-04-15T14:49:45-0400
 - agent: **Codex (GPT-5)**

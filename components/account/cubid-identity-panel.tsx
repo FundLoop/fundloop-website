@@ -7,6 +7,7 @@ import { BadgeCheck, ExternalLink, RefreshCw, ShieldAlert, ShieldCheck } from "l
 import { createBrowserCubidWeb2Client } from "@/lib/cubid/browser-web2-client"
 import { invokeUserCubidSyncProfileBrowser } from "@/lib/edge-functions/user-cubid-sync-profile"
 import { buildCubidProviderAllowUrl } from "@/lib/cubid/passport"
+import type { CubidIdentityOwnership, ManagedIdentityField } from "@/lib/cubid/read-model"
 import {
   CUBID_PROVIDER_STAMPS,
   getVerifiedProviderStamps,
@@ -20,10 +21,16 @@ import { Badge } from "@/components/ui/badge"
 
 type CubidIdentityPanelProps = {
   status: CubidIdentityStatus
-  email: string | null
+  signedInEmail: string | null
   cubidId: string | null
   cubidScore: number | null
   cubidSnapshot: CubidIdentitySnapshotSummary | null
+  managedIdentity: {
+    fullName: ManagedIdentityField
+    primaryEmail: ManagedIdentityField
+    primaryPhone: ManagedIdentityField
+  }
+  identityOwnership: CubidIdentityOwnership
   profileCompletionPercent: number
   profileCompletionMissingItems: string[]
   cubidPassportOrigin: string | null
@@ -39,7 +46,7 @@ type CubidIdentityPanelProps = {
 }
 
 const missingItemLabels: Record<string, string> = {
-  full_name: "Add your full name",
+  profile_headline: "Add a profile headline",
   display_name: "Choose a display name",
   bio: "Write a bio",
   occupation: "Add your occupation",
@@ -48,6 +55,23 @@ const missingItemLabels: Record<string, string> = {
   cubid_link: "Link CUBID",
   cubid_phone: "Verify a phone number",
   cubid_provider: "Connect an additional provider",
+}
+
+const ownershipLabels: Record<string, string> = {
+  full_name: "Full name",
+  email: "Email",
+  phone: "Phone",
+  provider_stamps: "Provider and social stamps",
+  verification_state: "Verification state",
+  cubid_score: "CUBID score",
+  display_name: "Display name",
+  profile_headline: "Profile headline",
+  bio: "Bio",
+  occupation: "Occupation",
+  location: "Location",
+  interests: "Interests",
+  visibility: "Visibility preferences",
+  wallets: "Wallets",
 }
 
 function labelForStamp(stamp: string) {
@@ -74,12 +98,34 @@ function getStatusMeta(status: CubidIdentityStatus) {
   }
 }
 
+function getManagedFieldBadge(field: ManagedIdentityField) {
+  switch (field.state) {
+    case "synced":
+      return {
+        label: "Synced from CUBID",
+        className: "border-emerald-200 bg-emerald-50 text-emerald-950",
+      }
+    case "legacy_local_fallback":
+      return {
+        label: "Legacy FundLoop fallback",
+        className: "border-amber-200 bg-amber-50 text-amber-950",
+      }
+    default:
+      return {
+        label: "Pending from CUBID",
+        className: "border-slate-200 bg-slate-50 text-slate-900",
+      }
+  }
+}
+
 export function CubidIdentityPanel({
   status,
-  email,
+  signedInEmail,
   cubidId,
   cubidScore,
   cubidSnapshot,
+  managedIdentity,
+  identityOwnership,
   profileCompletionPercent,
   profileCompletionMissingItems,
   cubidPassportOrigin,
@@ -134,8 +180,8 @@ export function CubidIdentityPanel({
 
       <div className="grid gap-4 md:grid-cols-3">
         <div className="rounded-2xl border border-[color:var(--surface-border)] bg-[var(--surface-panel)] px-4 py-3">
-          <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[var(--text-muted)]">Email</p>
-          <p className="mt-1 text-sm text-[var(--text-strong)]">{email ?? "Not available"}</p>
+          <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[var(--text-muted)]">Signed-in email</p>
+          <p className="mt-1 text-sm text-[var(--text-strong)]">{signedInEmail ?? "Not available"}</p>
         </div>
         <div className="rounded-2xl border border-[color:var(--surface-border)] bg-[var(--surface-panel)] px-4 py-3">
           <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[var(--text-muted)]">CUBID user</p>
@@ -148,18 +194,55 @@ export function CubidIdentityPanel({
       </div>
 
       <div className="rounded-3xl border border-[color:var(--surface-border)] bg-[var(--surface-panel-strong)] p-5">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div>
+            <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[var(--text-muted)]">CUBID-managed identity</p>
+            <p className="mt-1 text-sm leading-6 text-[var(--text-muted)]">
+              These values are sourced from CUBID and treated as the identity authority inside FundLoop. Missing values remain
+              read-only and pending until CUBID provides them.
+            </p>
+          </div>
+          <Button type="button" variant="outline" onClick={() => void handleRefresh()} disabled={refreshing || !cubidId}>
+            <RefreshCw className={`mr-2 h-4 w-4 ${refreshing ? "animate-spin" : ""}`} />
+            {refreshing ? "Refreshing..." : refreshCta}
+          </Button>
+        </div>
+
+        <div className="mt-4 grid gap-4 md:grid-cols-3">
+          {([
+            ["Full name", managedIdentity.fullName],
+            ["Primary email", managedIdentity.primaryEmail],
+            ["Primary phone", managedIdentity.primaryPhone],
+          ] as const).map(([label, field]) => {
+            const badge = getManagedFieldBadge(field as ManagedIdentityField)
+            return (
+              <div
+                key={label}
+                className="rounded-2xl border border-[color:var(--surface-border)] bg-[var(--surface-panel)] px-4 py-3"
+              >
+                <div className="flex items-start justify-between gap-3">
+                  <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[var(--text-muted)]">{label}</p>
+                  <Badge variant="outline" className={badge.className}>
+                    {badge.label}
+                  </Badge>
+                </div>
+                <p className="mt-3 text-sm text-[var(--text-strong)]">{field.value ?? "Pending from CUBID"}</p>
+              </div>
+            )
+          })}
+        </div>
+      </div>
+
+      <div className="rounded-3xl border border-[color:var(--surface-border)] bg-[var(--surface-panel-strong)] p-5">
         <div className="space-y-3">
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div>
               <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[var(--text-muted)]">{completionTitle}</p>
-              <p className="mt-1 text-sm text-[var(--text-muted)]">
-                Local profile details count for 60%. CUBID linkage, phone, and at least one extra provider complete the remaining 40%.
+              <p className="mt-1 text-sm leading-6 text-[var(--text-muted)]">
+                FundLoop now separates identity trust from local preferences. Completion rewards synced CUBID identity plus
+                local profile context that still belongs inside the product.
               </p>
             </div>
-            <Button type="button" variant="outline" onClick={() => void handleRefresh()} disabled={refreshing || !cubidId}>
-              <RefreshCw className={`mr-2 h-4 w-4 ${refreshing ? "animate-spin" : ""}`} />
-              {refreshing ? "Refreshing..." : refreshCta}
-            </Button>
           </div>
           <Progress value={profileCompletionPercent} className="h-2 bg-[var(--surface-border)]" />
           <p className="text-sm font-semibold text-[var(--text-strong)]">{profileCompletionPercent}% complete</p>
@@ -179,37 +262,61 @@ export function CubidIdentityPanel({
 
       <div className="grid gap-4 md:grid-cols-2">
         <div className="rounded-2xl border border-[color:var(--surface-border)] bg-[var(--surface-panel)] px-4 py-3">
-          <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[var(--text-muted)]">Primary phone</p>
-          <p className="mt-1 text-sm text-[var(--text-strong)]">{cubidSnapshot?.primaryPhone ?? "Not verified yet"}</p>
+          <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[var(--text-muted)]">Ownership split</p>
+          <div className="mt-3 flex flex-wrap gap-2">
+            {identityOwnership.cubidManaged.map((item) => (
+              <Badge key={item} className="bg-cyan-100 text-cyan-950 hover:bg-cyan-100">
+                {ownershipLabels[item] ?? item}
+              </Badge>
+            ))}
+          </div>
+        </div>
+        <div className="rounded-2xl border border-[color:var(--surface-border)] bg-[var(--surface-panel)] px-4 py-3">
+          <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[var(--text-muted)]">Still local to FundLoop</p>
+          <div className="mt-3 flex flex-wrap gap-2">
+            {identityOwnership.fundloopManaged.map((item) => (
+              <Badge key={item} variant="outline">
+                {ownershipLabels[item] ?? item}
+              </Badge>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      <div className="grid gap-4 md:grid-cols-2">
+        <div className="rounded-2xl border border-[color:var(--surface-border)] bg-[var(--surface-panel)] px-4 py-3">
+          <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[var(--text-muted)]">Verified stamps</p>
+          <div className="mt-3 flex flex-wrap gap-2">
+            {cubidSnapshot?.verifiedStampTypes.length ? (
+              cubidSnapshot.verifiedStampTypes.map((stamp) => (
+                <Badge key={stamp}>
+                  <ShieldCheck className="mr-1 h-3.5 w-3.5" />
+                  {labelForStamp(stamp)}
+                </Badge>
+              ))
+            ) : (
+              <p className="text-sm text-[var(--text-muted)]">No verified stamps recorded yet.</p>
+            )}
+          </div>
         </div>
         <div className="rounded-2xl border border-[color:var(--surface-border)] bg-[var(--surface-panel)] px-4 py-3">
           <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[var(--text-muted)]">Last sync</p>
           <p className="mt-1 text-sm text-[var(--text-strong)]">
             {cubidSnapshot?.lastSyncedAt ? new Date(cubidSnapshot.lastSyncedAt).toLocaleString() : "Not synced yet"}
           </p>
+          {cubidSnapshot?.lastSyncErrorMessage ? (
+            <p className="mt-2 text-sm text-amber-900">{cubidSnapshot.lastSyncErrorMessage}</p>
+          ) : null}
         </div>
       </div>
-
-      {cubidSnapshot?.verifiedStampTypes.length ? (
-        <div className="space-y-2">
-          <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[var(--text-muted)]">Verified stamps</p>
-          <div className="flex flex-wrap gap-2">
-            {cubidSnapshot.verifiedStampTypes.map((stamp) => (
-              <Badge key={stamp}>
-                <ShieldCheck className="mr-1 h-3.5 w-3.5" />
-                {labelForStamp(stamp)}
-              </Badge>
-            ))}
-          </div>
-        </div>
-      ) : null}
 
       {cubidId && cubidStampPageId && cubidWeb2Client && !hasVerifiedPhoneStamp(cubidSnapshot) ? (
         <div className="rounded-3xl border border-[color:var(--surface-border)] bg-[var(--surface-panel)] p-5">
           <div className="space-y-3">
             <h3 className="text-base font-semibold text-[var(--text-strong)]">Verify your phone</h3>
             <p className="text-sm leading-6 text-[var(--text-muted)]">
-              Session 14 supports inline phone capture through the CUBID web2 flow. Refresh this tab after verification completes.
+              Phone remains optional for publish, but it is one of the clearest additional trust signals the current CUBID bridge
+              can collect inline.
             </p>
             <PhoneOtpForm
               client={cubidWeb2Client}
@@ -253,12 +360,6 @@ export function CubidIdentityPanel({
               ))}
             </div>
           </div>
-        </div>
-      ) : null}
-
-      {cubidSnapshot?.lastSyncErrorMessage ? (
-        <div className="rounded-2xl border border-amber-200 bg-amber-50/80 px-4 py-3 text-sm text-amber-950">
-          {cubidSnapshot.lastSyncErrorMessage}
         </div>
       ) : null}
 

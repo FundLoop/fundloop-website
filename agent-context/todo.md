@@ -168,23 +168,23 @@ Introduce the database and application model that links a FundLoop user to a CUB
 
 ## Session 15: Implement the first real CUBID Edge Function integration
 
-- Status: Not started
-- Timestamp started: TBD
-- Timestamp completed: TBD
-- Feature branch: TBD
+- Status: Complete
+- Timestamp started: 2026-04-15T15:00:00-0400
+- Timestamp completed: 2026-04-15T15:22:50-0400
+- Feature branch: codex/wallet-production-readiness
 - Head: TBD
-- Session-log reference(s): TBD
+- Session-log reference(s): session v50
 
 Build the backend integration that talks to CUBID.me, fetches the current account data, validates the response, and stores a normalized snapshot in FundLoop. The function should be safe, explicit, and auditable. It should not blindly mirror arbitrary payloads into the database. This session should also define failure semantics and operator visibility for identity sync issues. The result should be the first real external-system dependency in the target architecture, implemented in a way that later monthly cycle locking and payout eligibility can trust.
 
 ## Session 16: Refactor user profile and account views around CUBID-backed identity
 
-- Status: Not started
-- Timestamp started: TBD
-- Timestamp completed: TBD
-- Feature branch: TBD
+- Status: Complete
+- Timestamp started: 2026-04-15T15:00:00-0400
+- Timestamp completed: 2026-04-15T15:22:50-0400
+- Feature branch: codex/wallet-production-readiness
 - Head: TBD
-- Session-log reference(s): TBD
+- Session-log reference(s): session v50
 
 Update profile and account surfaces so they stop behaving like FundLoop is the canonical editor of identity details. The UI should show which fields come from CUBID, which are local preferences, and what the current verification state is. If some current profile fields should remain local, make that distinction explicit. This session should simplify the mental model for users and reduce duplicate identity entry. It should also prepare the product for payout and eligibility surfaces that depend on proof-of-personhood rather than ad hoc local profile completeness.
 

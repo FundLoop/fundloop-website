@@ -1,4 +1,4 @@
-import type { FetchIdentityResponse, FetchScoreResponse, FetchStampsResponse } from "@cubid/api"
+import type { FetchIdentityResponse, FetchScoreResponse, FetchStampsResponse, FetchUserDataResponse } from "@cubid/api"
 import type { Json } from "@/types/supabase"
 import {
   CUBID_RECOMMENDED_STAMPS,
@@ -12,6 +12,7 @@ type CubidSnapshotNormalizationInput = {
   identity: FetchIdentityResponse
   score: FetchScoreResponse | null
   stamps: FetchStampsResponse
+  userData: FetchUserDataResponse | null
 }
 
 function isVerifiedStatus(status: string | null | undefined) {
@@ -37,6 +38,7 @@ export function normalizeCubidIdentitySnapshot(input: CubidSnapshotNormalization
 
   return {
     cubidUserId: input.cubidUserId,
+    primaryName: input.userData?.name?.trim() || null,
     primaryEmail: input.stamps.email,
     primaryPhone: pickPrimaryPhone(input.stamps.allStamps),
     cubidScore: input.score?.cubidScore ?? null,

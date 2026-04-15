@@ -32,6 +32,21 @@ function formatJoinedDate(locale: string, createdAt: string | null) {
   }).format(new Date(createdAt))
 }
 
+function getTrustLabel(
+  status: "unlinked" | "linked" | "verified",
+  t: Awaited<ReturnType<typeof getTranslations>>,
+) {
+  if (status === "verified") {
+    return t("identity.verified")
+  }
+
+  if (status === "linked") {
+    return t("identity.linked")
+  }
+
+  return t("identity.pending")
+}
+
 function getPrimaryLabel(state: ReturnType<typeof getPublicUserCtaState>, t: Awaited<ReturnType<typeof getTranslations>>) {
   if (state === "workspace") {
     return t("cta.openWorkspace")
@@ -50,8 +65,9 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   const profile = await getPublicUserProfile(id)
 
   return {
-    title: profile ? t("title", { name: profile.user.fullName ?? t("fallbackName") }) : t("missingTitle"),
-    description: profile ? t("description", { name: profile.user.fullName ?? t("fallbackName") }) : t("missingDescription"),
+    title: profile ? t("title", { name: profile.user.displayName ?? profile.user.fullName ?? t("fallbackName") }) : t("missingTitle"),
+    description:
+      profile ? t("description", { name: profile.user.displayName ?? profile.user.fullName ?? t("fallbackName") }) : t("missingDescription"),
   }
 }
 
@@ -79,16 +95,31 @@ export default async function UserProfilePage({ params }: PageProps) {
               </Avatar>
               <div>
                 <h1 className="font-display text-5xl leading-none tracking-[-0.05em] sm:text-6xl">
-                  {profile.user.fullName ?? t("fallbackName")}
+                  {profile.user.displayName ?? profile.user.fullName ?? t("fallbackName")}
                 </h1>
+                {profile.user.fullName && profile.user.displayName && profile.user.fullName !== profile.user.displayName ? (
+                  <p className="mt-3 text-xs font-semibold uppercase tracking-[0.22em] text-[var(--marketing-muted)]">
+                    {t("identity.verifiedName", { name: profile.user.fullName })}
+                  </p>
+                ) : null}
                 <p className="mt-3 text-sm font-semibold uppercase tracking-[0.22em] text-[var(--marketing-muted)]">
                   {profile.user.projectCount === 1 ? t("hero.singleProject") : t("hero.multiProject", { count: profile.user.projectCount })}
                 </p>
               </div>
             </div>
             <SectionBody className="mt-8 max-w-2xl">
-              {profile.user.contributionDetails ?? t("hero.defaultContribution")}
+              {profile.user.profileHeadline ?? profile.user.contributionDetails ?? t("hero.defaultContribution")}
             </SectionBody>
+            <div className="mt-6 flex flex-wrap gap-2">
+              <span className="rounded-full border border-[color:var(--marketing-line)] px-3 py-1 text-xs font-semibold uppercase tracking-[0.16em] text-[var(--marketing-muted-strong)]">
+                {getTrustLabel(profile.user.cubidIdentityStatus, t)}
+              </span>
+              {profile.user.cubidScore !== null ? (
+                <span className="rounded-full border border-[color:var(--marketing-line)] px-3 py-1 text-xs font-semibold uppercase tracking-[0.16em] text-[var(--marketing-muted-strong)]">
+                  {t("identity.cubidScore", { score: profile.user.cubidScore })}
+                </span>
+              ) : null}
+            </div>
             <div className="mt-10 flex flex-col gap-4 sm:flex-row">
               <Button
                 asChild
@@ -120,6 +151,15 @@ export default async function UserProfilePage({ params }: PageProps) {
                 {t("snapshot.eyebrow")}
               </p>
               <div className="mt-6 space-y-5">
+                <div className="border-t border-[color:var(--marketing-line)] pt-4">
+                  <p className="text-[0.68rem] font-semibold uppercase tracking-[0.24em] text-[var(--marketing-muted)]">{t("identity.eyebrow")}</p>
+                  <p className="mt-2 text-2xl font-semibold">{getTrustLabel(profile.user.cubidIdentityStatus, t)}</p>
+                  <p className="mt-2 text-sm leading-6 text-[var(--marketing-muted-strong)]">
+                    {profile.user.fullName
+                      ? t("identity.body")
+                      : t("identity.pendingBody")}
+                  </p>
+                </div>
                 <div className="border-t border-[color:var(--marketing-line)] pt-4">
                   <p className="text-[0.68rem] font-semibold uppercase tracking-[0.24em] text-[var(--marketing-muted)]">{t("snapshot.locationLabel")}</p>
                   <p className="mt-2 text-2xl font-semibold">{profile.user.location ?? t("snapshot.locationFallback")}</p>

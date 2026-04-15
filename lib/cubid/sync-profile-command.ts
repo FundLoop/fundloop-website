@@ -50,7 +50,7 @@ type CubidSyncCommandInput = {
 
 type CubidProfileRow = Pick<
   Database["public"]["Tables"]["users"]["Row"],
-  "cubid_id" | "cubid_identity_status" | "cubid_score" | "primary_email_identity"
+  "cubid_id" | "cubid_identity_status" | "cubid_score" | "primary_email_identity" | "full_name"
 >
 
 function commandFailure(code: CubidSyncFailureCode, message: string): CubidSyncCommandFailure {
@@ -69,7 +69,7 @@ export async function executeSyncCubidProfileCommand(
 ): Promise<CubidSyncCommandResult> {
   const { data: profile, error: profileError } = await supabase
     .from("users")
-    .select("cubid_id, cubid_identity_status, cubid_score, primary_email_identity")
+    .select("cubid_id, cubid_identity_status, cubid_score, primary_email_identity, full_name")
     .eq("user_id", input.actorUserId)
     .single<CubidProfileRow>()
 
@@ -120,10 +120,11 @@ export async function executeSyncCubidProfileCommand(
   const cubidClient = createServerCubidApiClient()
 
   try {
-    const [identity, score, stamps] = await Promise.all([
+    const [identity, score, stamps, userData] = await Promise.all([
       cubidClient.fetchIdentity({ userId: resolvedCubidId }),
       cubidClient.fetchScore({ userId: resolvedCubidId }).catch(() => null),
       cubidClient.fetchStamps({ userId: resolvedCubidId }),
+      cubidClient.fetchUserData({ userId: resolvedCubidId }).catch(() => null),
     ])
 
     const normalizedSnapshot = normalizeCubidIdentitySnapshot({
@@ -131,6 +132,7 @@ export async function executeSyncCubidProfileCommand(
       identity,
       score,
       stamps,
+      userData,
     })
 
     const nextIdentityStatus = inferSnapshotIdentityStatus(resolvedIdentityStatus, normalizedSnapshot)
@@ -142,6 +144,7 @@ export async function executeSyncCubidProfileCommand(
         user_id: input.actorUserId,
         cubid_user_id: normalizedSnapshot.cubidUserId,
         primary_email: normalizedSnapshot.primaryEmail,
+        primary_name: normalizedSnapshot.primaryName,
         primary_phone: normalizedSnapshot.primaryPhone,
         cubid_score: normalizedSnapshot.cubidScore,
         available_stamp_types: normalizedSnapshot.availableStampTypes,
@@ -163,6 +166,7 @@ export async function executeSyncCubidProfileCommand(
     const { error: profileUpdateError } = await supabase
       .from("users")
       .update({
+        ...(normalizedSnapshot.primaryName ? { full_name: normalizedSnapshot.primaryName } : {}),
         cubid_id: resolvedCubidId,
         cubid_score: nextScore,
         cubid_identity_status:
@@ -203,6 +207,7 @@ export async function executeSyncCubidProfileCommand(
         {
           user_id: input.actorUserId,
           cubid_user_id: resolvedCubidId,
+          primary_name: existingSnapshot?.primaryName ?? profile.full_name ?? null,
           primary_email: existingSnapshot?.primaryEmail ?? null,
           primary_phone: existingSnapshot?.primaryPhone ?? null,
           cubid_score: existingSnapshot?.cubidScore ?? cubidScore ?? null,

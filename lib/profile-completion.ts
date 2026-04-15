@@ -1,8 +1,8 @@
 import { type CubidIdentitySnapshot, getMissingRecommendedStamps, hasVerifiedPhoneStamp, hasVerifiedProviderStamp } from "@/lib/cubid/types"
 
 type LocalProfileState = {
-  fullName: string | null | undefined
   displayName: string | null | undefined
+  profileHeadline: string | null | undefined
   bio: string | null | undefined
   occupationId: string | number | null | undefined
   locationId: string | number | null | undefined
@@ -35,8 +35,8 @@ export function computeHybridProfileCompletion(
   const missingItems: string[] = []
 
   const localChecks: Array<[string, boolean]> = [
-    ["full_name", hasText(localProfile.fullName)],
     ["display_name", hasText(localProfile.displayName)],
+    ["profile_headline", hasText(localProfile.profileHeadline)],
     ["bio", hasText(localProfile.bio)],
     ["occupation", hasSelection(localProfile.occupationId)],
     ["location", hasSelection(localProfile.locationId)],

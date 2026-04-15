@@ -176,6 +176,7 @@ describe("onboarding edge function contracts", () => {
         cubidScore: 91,
         cubidIdentityStatus: "verified",
         cubidSnapshot: {
+          primaryName: "Maya Torres",
           primaryEmail: "maya@example.com",
           primaryPhone: "+15555550123",
           cubidScore: 91,

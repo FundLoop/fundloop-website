@@ -17,6 +17,7 @@ export type CubidIdentityLinkState = {
 
 export type CubidIdentitySnapshot = {
   cubidUserId: string
+  primaryName: string | null
   primaryEmail: string | null
   primaryPhone: string | null
   cubidScore: number | null
@@ -31,6 +32,7 @@ export type CubidIdentitySnapshot = {
 
 export type CubidIdentitySnapshotSummary = Pick<
   CubidIdentitySnapshot,
+  | "primaryName"
   | "primaryEmail"
   | "primaryPhone"
   | "cubidScore"
@@ -64,6 +66,7 @@ export function toCubidIdentitySnapshot(record: CubidIdentitySnapshotRecord | nu
 
   return {
     cubidUserId: record.cubid_user_id,
+    primaryName: record.primary_name,
     primaryEmail: record.primary_email,
     primaryPhone: record.primary_phone,
     cubidScore: record.cubid_score,
@@ -80,6 +83,7 @@ export function toCubidIdentitySnapshot(record: CubidIdentitySnapshotRecord | nu
 export function toCubidIdentitySnapshotSummary(
   snapshot: Pick<
     CubidIdentitySnapshot,
+    | "primaryName"
     | "primaryEmail"
     | "primaryPhone"
     | "cubidScore"
@@ -95,6 +99,7 @@ export function toCubidIdentitySnapshotSummary(
   }
 
   return {
+    primaryName: snapshot.primaryName ?? null,
     primaryEmail: snapshot.primaryEmail ?? null,
     primaryPhone: snapshot.primaryPhone ?? null,
     cubidScore: snapshot.cubidScore ?? null,

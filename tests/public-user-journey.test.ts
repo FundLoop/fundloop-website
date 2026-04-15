@@ -16,6 +16,50 @@ function buildContext(overrides: Partial<NavigationContext> = {}): NavigationCon
   }
 }
 
+function buildUser(overrides: Partial<NonNullable<NavigationContext["user"]>> = {}): NonNullable<NavigationContext["user"]> {
+  return {
+    id: "user-1",
+    email: "person@example.com",
+    fullName: "Person Example",
+    avatarUrl: null,
+    status: "active",
+    cubidIdentityStatus: "unlinked",
+    cubidId: null,
+    primaryEmailIdentity: null,
+    cubidScore: null,
+    cubidSnapshot: null,
+    managedIdentity: {
+      fullName: { value: null, state: "pending" },
+      primaryEmail: { value: null, state: "pending" },
+      primaryPhone: { value: null, state: "pending" },
+    },
+    identityOwnership: {
+      cubidManaged: ["full_name", "email", "phone"],
+      fundloopManaged: ["display_name", "bio"],
+    },
+    localProfile: {
+      displayName: null,
+      profileHeadline: null,
+      bio: null,
+      occupationName: null,
+      locationName: null,
+      interestCount: 0,
+      interestNames: [],
+      visibility: {
+        isPublic: false,
+        isNamePublic: false,
+        isPfpPublic: false,
+        isGenderPublic: false,
+        isOccupationPublic: false,
+        isLocationPublic: false,
+      },
+    },
+    profileCompletionPercent: 0,
+    profileCompletionMissingItems: [],
+    ...overrides,
+  }
+}
+
 describe("public user journey helpers", () => {
   it("sends signed-out users to user onboarding", () => {
     const context = buildContext()
@@ -28,20 +72,7 @@ describe("public user journey helpers", () => {
     const context = buildContext({
       isAuthenticated: true,
       hasWorkspaceAccess: true,
-      user: {
-        id: "user-1",
-        email: "person@example.com",
-        fullName: "Person Example",
-        avatarUrl: null,
-        status: "inactive",
-        cubidIdentityStatus: "unlinked",
-        cubidId: null,
-        primaryEmailIdentity: null,
-        cubidScore: null,
-        cubidSnapshot: null,
-        profileCompletionPercent: 0,
-        profileCompletionMissingItems: [],
-      },
+      user: buildUser({ status: "inactive" }),
     })
 
     expect(getPublicUserCtaState(context)).toBe("continue_onboarding")
@@ -52,20 +83,13 @@ describe("public user journey helpers", () => {
     const context = buildContext({
       isAuthenticated: true,
       hasWorkspaceAccess: true,
-      user: {
-        id: "user-1",
-        email: "person@example.com",
-        fullName: "Person Example",
-        avatarUrl: null,
-        status: "active",
+      user: buildUser({
         cubidIdentityStatus: "linked",
         cubidId: "cubid-user-1",
-        primaryEmailIdentity: null,
         cubidScore: 88,
-        cubidSnapshot: null,
         profileCompletionPercent: 20,
         profileCompletionMissingItems: ["cubid_phone", "cubid_provider"],
-      },
+      }),
     })
 
     expect(getPublicUserCtaState(context)).toBe("workspace")

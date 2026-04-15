@@ -129,9 +129,14 @@ export async function executeUserOnboardingPublishCommand(
   const genderId = parseInteger(payload.genderId)
   const { data: existingProfile } = await supabase
     .from("users")
-    .select("invited_by_code, cubid_identity_status")
+    .select("invited_by_code, cubid_identity_status, full_name")
     .eq("user_id", input.actorUserId)
     .single()
+  const { data: cubidSnapshot } = await supabase
+    .from("cubid_identity_snapshots")
+    .select("primary_name")
+    .eq("user_id", input.actorUserId)
+    .maybeSingle()
 
   if (
     !existingProfile ||
@@ -146,8 +151,8 @@ export async function executeUserOnboardingPublishCommand(
   const { error: updateError } = await supabase
     .from("users")
     .update({
-      full_name: payload.fullName.trim() || null,
-      display_name: payload.displayName.trim() || payload.fullName.trim() || null,
+      full_name: cubidSnapshot?.primary_name?.trim() || (existingProfile?.full_name ?? null),
+      display_name: payload.displayName.trim() || cubidSnapshot?.primary_name?.trim() || existingProfile?.full_name || null,
       avatar_url: payload.avatarUrl.trim() || null,
       bio: payload.bio.trim() || null,
       occupation_id: occupationId,

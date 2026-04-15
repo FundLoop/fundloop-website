@@ -1,6 +1,6 @@
 # FundLoop Route Inventory
 
-Last reviewed: 2026-04-14
+Last reviewed: 2026-04-15
 
 Related planning docs:
 - [Engineering Docs Index](/Users/botmaster/src/fundloop/docs/engineering/README.md)
@@ -54,10 +54,10 @@ This inventory covers every current `page.tsx` and `route.ts` surface under `app
 | Path | Audience | Current state | Evidence / notes | Disposition | Canonical target | Follow-up session |
 | --- | --- | --- | --- | --- | --- | --- |
 | `/workspace` | Signed-in users | New lightweight user-workspace entry shell. | Session 08 introduced this as the canonical signed-in user start point before Session 17 rebuilds the fuller home. | finish | User workspace home | 17 |
-| `/workspace/account` | Signed-in users | New workspace account surface. | Session 08 moved account-management into the user workspace and redirects old account entry routes here. | finish | User workspace account settings | 16, 42 |
+| `/workspace/account` | Signed-in users | Workspace account hub with explicit identity ownership split. | Sessions 15 and 16 made CUBID-managed identity read-only here and separated it from FundLoop-managed profile/preferences. | finish | User workspace account settings | 16, 42 |
 | `/founder` | Founders, project members | New lightweight founder-workspace entry shell. | Session 08 introduced this as the canonical founder start point while deeper project operations remain under project-specific routes. | finish | Founder workspace home | 18 |
 | `/founder/projects` | Founders, project members | New founder project index shell. | Bridges the new founder shell to existing project operations routes. | finish | Founder workspace projects | 18 |
-| `/founder/account` | Founders, project members | New founder account shell. | Gives founder users a workspace-level account destination instead of relying on the old settings hub. | finish | Founder workspace account settings | 18, 42 |
+| `/founder/account` | Founders, project members | Founder account shell with the same read-only CUBID identity summary. | Sessions 15 and 16 aligned founder account with the shared identity authority model. | finish | Founder workspace account settings | 16, 18, 42 |
 | `/my-profile` | Signed-in users | Redirect-only legacy entry. | Session 08 retired the old mixed profile/dashboard entry in favor of `/workspace`. | redirect | `/workspace` | 16, 17, 42 |
 | `/organizations/[id]` | Founder/org members | Mock organization detail page. | Uses explicit mock data and placeholder logos. | remove | Founder workspace organization view once real | 18 |
 | `/projects/[slug]/payments` | Project admins | Real founder operations surface. | Production payment and route management now lives here. | finish | Founder workspace project contributions | 18, 33 |
@@ -72,6 +72,7 @@ This inventory covers every current `page.tsx` and `route.ts` surface under `app
 | Path | Audience | Current state | Evidence / notes | Disposition | Canonical target | Follow-up session |
 | --- | --- | --- | --- | --- | --- | --- |
 | `/admin` | Internal operators | Operator workspace landing page. | Session 08 removed the broken child links and now points only to real operator destinations. | finish | Internal operator workspace home | 44 |
+| `/admin/identity` | Internal operators | Read-only operator identity-health surface. | Sessions 15 and 16 added stale-snapshot, sync-error, and linkage visibility without cross-user identity writes. | finish | Internal operator identity health | 15, 16, 44 |
 | `/admin/payments` | Internal operators | Real payments operations hub. | Already meaningful and linked to observability, reconciliation, deployments. | finish | Operator payments workspace | 20, 37 |
 | `/admin/payments/deployments` | Internal operators | Real wallet-deployment audit page. | Supports runtime drift and env validation. | finish | Operator payments deployment audit | 44 |
 | `/admin/payments/observability` | Internal operators | Real payment observability surface. | Part of the operator control plane. | finish | Operator payments observability | 37 |

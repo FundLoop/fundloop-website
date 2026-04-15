@@ -11,6 +11,7 @@ export type UserCubidSyncProfileValidatedInput = {
 }
 
 export type UserCubidSnapshotSummaryOutput = {
+  primaryName: string | null
   primaryEmail: string | null
   primaryPhone: string | null
   cubidScore: number | null
@@ -60,6 +61,7 @@ function isSnapshotSummaryOutput(value: unknown): value is UserCubidSnapshotSumm
 
   const candidate = value as Record<string, unknown>
   return (
+    (candidate.primaryName === null || typeof candidate.primaryName === "string") &&
     (candidate.primaryEmail === null || typeof candidate.primaryEmail === "string") &&
     (candidate.primaryPhone === null || typeof candidate.primaryPhone === "string") &&
     (candidate.cubidScore === null || typeof candidate.cubidScore === "number") &&

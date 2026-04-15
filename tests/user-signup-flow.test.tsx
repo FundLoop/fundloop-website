@@ -199,12 +199,15 @@ describe("UserSignupFlow", () => {
     render(<UserSignupFlow onClose={vi.fn()} />)
 
     await screen.findByRole("heading", { name: /you already have a draft profile/i })
-    fireEvent.click(screen.getByRole("button", { name: /continue draft/i }))
+    await act(async () => {
+      fireEvent.click(screen.getByRole("button", { name: /continue draft/i }))
+    })
 
-    await screen.findByLabelText(/full name/i)
+    await screen.findByRole("heading", { name: /set the profile details fundloop still owns/i })
+    await screen.findByLabelText(/public display name/i)
     invokeUserOnboardingDraftUpsertBrowser.mockClear()
 
-    fireEvent.change(screen.getByLabelText(/full name/i), { target: { value: "Maya Torres" } })
+    fireEvent.change(screen.getByLabelText(/public display name/i), { target: { value: "Maya Torres" } })
 
     await act(async () => {
       await new Promise((resolve) => setTimeout(resolve, 700))
@@ -215,7 +218,6 @@ describe("UserSignupFlow", () => {
         expect.objectContaining({
           currentScreen: "identity",
           payload: expect.objectContaining({
-            fullName: "Maya Torres",
             displayName: "Maya Torres",
           }),
         }),

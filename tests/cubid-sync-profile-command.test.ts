@@ -4,6 +4,7 @@ const executeResolveCubidIdentityByEmailCommand = vi.fn()
 const fetchIdentity = vi.fn()
 const fetchScore = vi.fn()
 const fetchStamps = vi.fn()
+const fetchUserData = vi.fn()
 
 vi.mock("@/lib/cubid/resolve-email-command", () => ({
   executeResolveCubidIdentityByEmailCommand,
@@ -14,6 +15,7 @@ vi.mock("@/lib/cubid/server-client", () => ({
     fetchIdentity,
     fetchScore,
     fetchStamps,
+    fetchUserData,
   }),
 }))
 
@@ -55,6 +57,7 @@ function createSupabaseMock(responsesByTable: Record<string, unknown[]>) {
 describe("executeSyncCubidProfileCommand", () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    fetchUserData.mockResolvedValue({ name: "Maya Torres", error: null })
   })
 
   it("syncs the normalized snapshot and upgrades the local user record", async () => {
@@ -103,6 +106,7 @@ describe("executeSyncCubidProfileCommand", () => {
         cubidScore: 93,
         cubidIdentityStatus: "verified",
         cubidSnapshot: expect.objectContaining({
+          primaryName: "Maya Torres",
           primaryEmail: "maya@example.com",
           primaryPhone: "+15555550123",
           verifiedStampTypes: ["email", "phone", "github"],

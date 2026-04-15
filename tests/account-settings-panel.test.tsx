@@ -5,15 +5,19 @@ import { AccountSettingsPanel } from "@/components/account/account-settings-pane
 
 const translations: Record<string, string> = {
   identity: "CUBID Identity",
+  profile: "Profile & Visibility",
   emails: "Email Addresses",
   wallets: "Wallet Addresses",
-  "panels.identity.title": "CUBID is becoming the account authority for FundLoop",
+  "panels.identity.title": "CUBID is now the identity authority for FundLoop",
   "panels.identity.manage": "Manage on CUBID Passport",
   "panels.identity.labels.unlinked": "Not linked yet",
   "panels.identity.labels.linked": "Linked",
   "panels.identity.labels.verified": "Verified",
   "panels.identity.refresh": "Refresh CUBID data",
   "panels.identity.completion": "Profile completion",
+  "panels.profile.title": "FundLoop-managed profile",
+  "panels.profile.description": "Profile description",
+  "panels.profile.ownershipNote": "Ownership note",
   "panels.identity.status.unlinked":
     "This account is still missing its CUBID link. FundLoop can keep local settings here, but publish and payout-touching flows now expect a linked identity first.",
   "panels.identity.status.linked":
@@ -48,14 +52,40 @@ describe("AccountSettingsPanel", () => {
         description="Description"
         cubid={{
           status: "linked",
-          email: "maya@example.com",
+          signedInEmail: "maya@example.com",
           cubidId: "cubid-user-1",
           cubidScore: 75,
           snapshot: null,
+          managedIdentity: {
+            fullName: { value: "Maya Torres", state: "synced" },
+            primaryEmail: { value: "maya@example.com", state: "synced" },
+            primaryPhone: { value: null, state: "pending" },
+          },
+          identityOwnership: {
+            cubidManaged: ["full_name", "email"],
+            fundloopManaged: ["display_name", "bio"],
+          },
           profileCompletionPercent: 70,
           profileCompletionMissingItems: ["cubid_phone"],
           cubidPassportOrigin: "https://passport.cubid.me",
           cubidStampPageId: "123",
+        }}
+        localProfile={{
+          displayName: "Maya",
+          profileHeadline: "Builder",
+          bio: "Bio",
+          occupationName: "Designer",
+          locationName: "Toronto",
+          interestCount: 2,
+          interestNames: ["Climate", "Open source"],
+          visibility: {
+            isPublic: true,
+            isNamePublic: true,
+            isPfpPublic: true,
+            isGenderPublic: false,
+            isOccupationPublic: true,
+            isLocationPublic: true,
+          },
         }}
       />,
     )

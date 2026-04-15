@@ -216,11 +216,12 @@ export const enMessages = {
   },
   accountSettings: {
     identity: "CUBID Identity",
+    profile: "Profile & Visibility",
     emails: "Email Addresses",
     wallets: "Wallet Addresses",
     panels: {
       identity: {
-        title: "CUBID is becoming the account authority for FundLoop",
+        title: "CUBID is now the identity authority for FundLoop",
         manage: "Manage on CUBID Passport",
         refresh: "Refresh CUBID data",
         completion: "Profile completion",
@@ -237,6 +238,13 @@ export const enMessages = {
           verified:
             "This account is linked to CUBID and the latest response indicates the email identity is verified. That is the strongest state currently surfaced inside FundLoop.",
         },
+      },
+      profile: {
+        title: "FundLoop-managed profile",
+        description:
+          "Display name, profile headline, discovery context, and visibility preferences still belong to FundLoop. Identity facts like legal name, email, phone, and verification state no longer do.",
+        ownershipNote:
+          "Use this section for local profile preferences only. Identity fields that matter for proof-of-personhood and later payout eligibility are intentionally sourced from CUBID instead of being duplicated here.",
       },
     },
   },
@@ -422,7 +430,7 @@ export const enMessages = {
     eyebrow: "User workspace",
     title: "A clearer home for your FundLoop activity",
     body:
-      "This is the new entry point for the participant side of FundLoop. The fuller workspace arrives later, but from here you can already move toward account controls, participation context, and published results.",
+      "This is the new entry point for the participant side of FundLoop. The fuller workspace arrives later, but from here you can already track identity readiness, local profile preferences, participation context, and published results.",
     open: "Open",
     identity: {
       title: "Identity status now matters before value can move",
@@ -465,7 +473,7 @@ export const enMessages = {
   workspaceAccount: {
     heading: "Account",
     description:
-      "Manage the personal details, email addresses, and wallet addresses that still live locally in FundLoop while the broader CUBID-backed account model is being introduced.",
+      "FundLoop now separates CUBID-managed identity from local profile preferences. Use this account hub to see that split clearly, refresh synced identity data, and manage the product-specific settings that still belong here.",
   },
   founderWorkspace: {
     eyebrow: "Founder workspace",
@@ -509,7 +517,7 @@ export const enMessages = {
   founderAccount: {
     heading: "Founder account",
     description:
-      "Use this workspace-level account view while project operations are being consolidated. Founder-specific controls will keep moving here as the founder workspace is completed.",
+      "Use this workspace-level account view while project operations are being consolidated. The identity section mirrors the same CUBID-first authority model, while founder-specific local preferences stay in FundLoop.",
   },
   home: {
     eyebrow: "Mutual prosperity, made operational",
@@ -909,6 +917,13 @@ export const enMessages = {
       singleProject: "Active in 1 project",
       multiProject: "Active in {count} projects",
       defaultContribution: "FundLoop participant",
+      verifiedName: "Verified name: {name}",
+      cubidScore: "CUBID score {score}",
+      trust: {
+        pending: "Identity pending",
+        linked: "CUBID linked",
+        verified: "CUBID verified",
+      },
       locationLabel: "Location",
       locationFallback: "Location private",
       joinedLabel: "Public since",
@@ -938,6 +953,17 @@ export const enMessages = {
       joinedFallback: "Recently",
       resultsLabel: "Current results visibility",
       resultsBody: "The fuller earnings workspace is still coming later, but FundLoop already has a published results surface for signed-in users.",
+    },
+    identity: {
+      eyebrow: "Identity",
+      pending: "Identity pending",
+      linked: "CUBID linked",
+      verified: "CUBID verified",
+      verifiedName: "Verified name: {name}",
+      cubidScore: "CUBID score {score}",
+      body: "FundLoop now distinguishes verified identity signals from the local profile preferences that make a participant discoverable inside the product.",
+      pendingBody:
+        "This participant is already visible publicly in FundLoop, but the stronger CUBID-backed identity layer is still pending or incomplete.",
     },
     projects: {
       eyebrow: "Projects in view",

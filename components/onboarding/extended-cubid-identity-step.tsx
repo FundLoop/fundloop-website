@@ -33,8 +33,8 @@ type ExtendedCubidIdentityStepProps = {
 }
 
 const missingItemLabels: Record<string, string> = {
-  full_name: "Add your full name",
   display_name: "Choose a public display name",
+  profile_headline: "Add a profile headline",
   bio: "Write a short bio",
   occupation: "Add your occupation",
   location: "Add your location",

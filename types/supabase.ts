@@ -1823,6 +1823,7 @@ export type Database = {
           last_sync_error_message: string | null
           last_synced_at: string | null
           primary_email: string | null
+          primary_name: string | null
           primary_phone: string | null
           raw_identity: Json
           raw_stamps: Json
@@ -1837,6 +1838,7 @@ export type Database = {
           last_sync_error_message?: string | null
           last_synced_at?: string | null
           primary_email?: string | null
+          primary_name?: string | null
           primary_phone?: string | null
           raw_identity?: Json
           raw_stamps?: Json
@@ -1851,6 +1853,7 @@ export type Database = {
           last_sync_error_message?: string | null
           last_synced_at?: string | null
           primary_email?: string | null
+          primary_name?: string | null
           primary_phone?: string | null
           raw_identity?: Json
           raw_stamps?: Json

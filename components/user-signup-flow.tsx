@@ -86,6 +86,7 @@ export default function UserSignupFlow({
   const [authUserId, setAuthUserId] = useState<string | null>(null)
   const [authEmail, setAuthEmail] = useState<string | null>(null)
   const [userStatus, setUserStatus] = useState<string | null>(null)
+  const [legacyFullName, setLegacyFullName] = useState<string | null>(null)
   const [currentScreen, setCurrentScreen] = useState<UserOnboardingScreen>("welcome")
   const [resumeTargetScreen, setResumeTargetScreen] = useState<UserOnboardingScreen>("cubid")
   const [cubidIdentityStatus, setCubidIdentityStatus] = useState<"unlinked" | "linked" | "verified">("unlinked")
@@ -117,6 +118,8 @@ export default function UserSignupFlow({
   const [searchingProjects, setSearchingProjects] = useState(false)
 
   const autosaveReady = useRef(false)
+  const managedFullName = cubidSnapshot?.primaryName ?? legacyFullName ?? null
+  const managedFullNameState = cubidSnapshot?.primaryName ? "synced" : legacyFullName ? "legacy_local_fallback" : "pending"
 
   const selectedProject = projectMatches.find((project) => project.id === payload.selectedProjectId) ?? null
 
@@ -185,6 +188,7 @@ export default function UserSignupFlow({
       setAuthUserId(state.authUserId)
       setAuthEmail(state.authEmail)
       setUserStatus(state.profile?.status ?? null)
+      setLegacyFullName(state.profile?.full_name ?? null)
       setCubidIdentityStatus(state.profile?.cubid_identity_status ?? "unlinked")
       setCubidId(state.profile?.cubid_id ?? null)
       setCubidScore(state.profile?.cubid_score ?? null)
@@ -211,8 +215,10 @@ export default function UserSignupFlow({
 
       if (state.userDraft) {
         const draftPayload = mergeUserOnboardingPayload(state.userDraft.payload as Partial<UserOnboardingPayload>)
+        const managedName = state.cubidSnapshot?.primaryName ?? state.profile?.full_name ?? draftPayload.fullName
         setPayload({
           ...draftPayload,
+          fullName: managedName,
           inviteCode: draftPayload.inviteCode || inviteCode,
         })
         setResumeTargetScreen(
@@ -226,6 +232,7 @@ export default function UserSignupFlow({
         setPayload((previous) =>
           mergeUserOnboardingPayload({
             ...previous,
+            fullName: state.cubidSnapshot?.primaryName ?? state.profile?.full_name ?? previous.fullName,
             inviteCode: previous.inviteCode || inviteCode,
             relationshipChoice: previous.relationshipChoice || initialRelationshipChoice,
           }),
@@ -356,6 +363,7 @@ export default function UserSignupFlow({
 
     setPayload({
       ...DEFAULT_USER_ONBOARDING_PAYLOAD,
+      fullName: managedFullName ?? "",
       inviteCode,
       relationshipChoice: initialRelationshipChoice,
     })
@@ -415,8 +423,15 @@ export default function UserSignupFlow({
     setCubidScore(result.data.cubidScore)
     setCubidIdentityStatus(result.data.cubidIdentityStatus)
     setCubidSnapshot(state.cubidSnapshot)
+    setLegacyFullName(state.profile?.full_name ?? null)
     setProfileCompletionPercent(state.profileCompletionPercent)
     setProfileCompletionMissingItems(state.profileCompletionMissingItems)
+    setPayload((previous) =>
+      mergeUserOnboardingPayload({
+        ...previous,
+        fullName: state.cubidSnapshot?.primaryName ?? state.profile?.full_name ?? previous.fullName,
+      }),
+    )
 
     toast({
       title: "CUBID data refreshed",
@@ -511,7 +526,7 @@ export default function UserSignupFlow({
       case "extended_identity":
         return true
       case "identity":
-        return Boolean(payload.fullName.trim() && payload.profileHeadline.trim())
+        return Boolean(payload.displayName.trim() && payload.profileHeadline.trim())
       case "visibility":
         return true
       case "about":
@@ -642,7 +657,7 @@ export default function UserSignupFlow({
           : currentScreen === "extended_identity"
             ? "Optionally strengthen your profile signals"
           : currentScreen === "identity"
-          ? "Start with who you are"
+          ? "Set the profile details FundLoop still owns"
           : currentScreen === "visibility"
             ? "Choose how public you want to be"
             : currentScreen === "about"
@@ -657,7 +672,7 @@ export default function UserSignupFlow({
           : currentScreen === "extended_identity"
             ? "This step is optional. Add a phone number or provider stamps now, or skip ahead and come back from your workspace later."
           : currentScreen === "identity"
-          ? "Add your name, role, and profile picture so the preview starts feeling real."
+          ? "Your legal identity now comes from CUBID. Use this step for display name, profile headline, and the FundLoop-specific context that still belongs here."
           : currentScreen === "visibility"
             ? "Set a simple privacy preset, then fine-tune the fields that should stay public."
             : currentScreen === "about"
@@ -729,14 +744,32 @@ export default function UserSignupFlow({
 
           <div className="grid gap-5 md:grid-cols-2">
             <div className="space-y-2">
-              <Label htmlFor="onboarding-full-name">Full name</Label>
+              <Label>CUBID-managed full name</Label>
+              <div className="rounded-2xl border border-[color:var(--surface-border)] bg-[var(--surface-panel)] px-4 py-3">
+                <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[var(--text-muted)]">
+                  {managedFullNameState === "synced"
+                    ? "Synced from CUBID"
+                    : managedFullNameState === "legacy_local_fallback"
+                      ? "Legacy FundLoop fallback"
+                      : "Pending from CUBID"}
+                </p>
+                <p className="mt-1 text-sm text-[var(--text-strong)]">
+                  {managedFullName ?? "FundLoop is still waiting for your CUBID-managed full name."}
+                </p>
+              </div>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="onboarding-display-name">Public display name</Label>
               <Input
-                id="onboarding-full-name"
-                value={payload.fullName}
-                onChange={(event) => updatePayload({ fullName: event.target.value, displayName: event.target.value })}
-                placeholder="Your name"
+                id="onboarding-display-name"
+                value={payload.displayName}
+                onChange={(event) => updatePayload({ displayName: event.target.value })}
+                placeholder="What should people see on your public profile?"
               />
             </div>
+          </div>
+
+          <div className="grid gap-5 md:grid-cols-2">
             <div className="space-y-2">
               <Label htmlFor="onboarding-role">Profile headline</Label>
               <Input
@@ -1008,7 +1041,8 @@ export default function UserSignupFlow({
             <Card>
               <CardContent className="space-y-2 p-4 text-sm text-slate-600">
                 <p className="font-medium text-slate-900">Profile summary</p>
-                <p>Name: {payload.fullName || "Not set"}</p>
+                <p>Display name: {payload.displayName || "Not set"}</p>
+                <p>Verified full name: {managedFullName || "Pending from CUBID"}</p>
                 <p>Headline: {payload.profileHeadline || "Not set"}</p>
                 <p>Location: {selectedLocation}</p>
                 <p>Occupation: {selectedOccupation}</p>

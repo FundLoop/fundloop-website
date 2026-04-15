@@ -8,6 +8,9 @@ const participantsSelect = vi.fn()
 const rolesSelect = vi.fn()
 const membershipsSelect = vi.fn()
 const projectsSelect = vi.fn()
+const locationMaybeSingle = vi.fn()
+const occupationMaybeSingle = vi.fn()
+const interestRefsIn = vi.fn()
 const internalAdminCheck = vi.fn()
 const getAdminSupabaseClient = vi.fn()
 const createServerSupabaseClient = vi.fn()
@@ -41,8 +44,17 @@ vi.mock("@/lib/supabase-admin", () => ({
 
       if (table === "user_interests") {
         return {
-          select: () => ({
-            eq: interestCountEq,
+          select: (...args: unknown[]) => ({
+            eq: (...eqArgs: unknown[]) => {
+              const [fields] = args
+              if (fields === "interest_id") {
+                return Promise.resolve({
+                  data: [{ interest_id: 11 }, { interest_id: 12 }],
+                })
+              }
+
+              return interestCountEq(...eqArgs)
+            },
           }),
         }
       }
@@ -71,6 +83,34 @@ vi.mock("@/lib/supabase-admin", () => ({
         }
       }
 
+      if (table === "ref_locations") {
+        return {
+          select: () => ({
+            eq: () => ({
+              maybeSingle: locationMaybeSingle,
+            }),
+          }),
+        }
+      }
+
+      if (table === "ref_occupations") {
+        return {
+          select: () => ({
+            eq: () => ({
+              maybeSingle: occupationMaybeSingle,
+            }),
+          }),
+        }
+      }
+
+      if (table === "ref_interests") {
+        return {
+          select: () => ({
+            in: interestRefsIn,
+          }),
+        }
+      }
+
       throw new Error(`Unexpected table ${table}`)
     },
   })),
@@ -93,6 +133,9 @@ describe("getNavigationContext", () => {
     rolesSelect.mockReset()
     membershipsSelect.mockReset()
     projectsSelect.mockReset()
+    locationMaybeSingle.mockReset()
+    occupationMaybeSingle.mockReset()
+    interestRefsIn.mockReset()
     internalAdminCheck.mockReset()
 
     getAdminSupabaseClient.mockImplementation(() => ({
@@ -119,8 +162,17 @@ describe("getNavigationContext", () => {
 
         if (table === "user_interests") {
           return {
-            select: () => ({
-              eq: interestCountEq,
+            select: (...args: unknown[]) => ({
+              eq: (...eqArgs: unknown[]) => {
+                const [fields] = args
+                if (fields === "interest_id") {
+                  return Promise.resolve({
+                    data: [{ interest_id: 11 }, { interest_id: 12 }],
+                  })
+                }
+
+                return interestCountEq(...eqArgs)
+              },
             }),
           }
         }
@@ -149,6 +201,34 @@ describe("getNavigationContext", () => {
           }
         }
 
+        if (table === "ref_locations") {
+          return {
+            select: () => ({
+              eq: () => ({
+                maybeSingle: locationMaybeSingle,
+              }),
+            }),
+          }
+        }
+
+        if (table === "ref_occupations") {
+          return {
+            select: () => ({
+              eq: () => ({
+                maybeSingle: occupationMaybeSingle,
+              }),
+            }),
+          }
+        }
+
+        if (table === "ref_interests") {
+          return {
+            select: () => ({
+              in: interestRefsIn,
+            }),
+          }
+        }
+
         throw new Error(`Unexpected table ${table}`)
       },
     }))
@@ -160,6 +240,9 @@ describe("getNavigationContext", () => {
     })
     cubidSnapshotMaybeSingle.mockResolvedValue({ data: null })
     interestCountEq.mockResolvedValue({ count: 0 })
+    locationMaybeSingle.mockResolvedValue({ data: null })
+    occupationMaybeSingle.mockResolvedValue({ data: null })
+    interestRefsIn.mockResolvedValue({ data: [] })
   })
 
   it("builds workspace, founder, and admin access from existing repo signals", async () => {
@@ -178,8 +261,15 @@ describe("getNavigationContext", () => {
         avatar_url: null,
         status: "active",
         bio: "Bio",
+        profile_headline: "Trustworthy builder",
         occupation_id: 1,
         location_id: 2,
+        is_public: true,
+        is_name_public: true,
+        is_pfp_public: true,
+        is_gender_public: false,
+        is_occupation_public: true,
+        is_location_public: true,
         cubid_identity_status: "verified",
         cubid_id: "cubid-user-1",
         primary_email_identity: "auth-identity-1",
@@ -190,6 +280,7 @@ describe("getNavigationContext", () => {
       data: {
         user_id: "user-1",
         cubid_user_id: "cubid-user-1",
+        primary_name: "Case Founder",
         primary_email: "maya@example.com",
         primary_phone: "+15555550123",
         cubid_score: 92,
@@ -203,6 +294,14 @@ describe("getNavigationContext", () => {
       },
     })
     interestCountEq.mockResolvedValue({ count: 2 })
+    locationMaybeSingle.mockResolvedValue({ data: { name: "Toronto" } })
+    occupationMaybeSingle.mockResolvedValue({ data: { name: "Engineer" } })
+    interestRefsIn.mockResolvedValue({
+      data: [
+        { id: 11, name: "Open source" },
+        { id: 12, name: "Transit" },
+      ],
+    })
     participantsSelect.mockReturnValue({
       eq: (_field: string, _value: string | boolean) => ({
         eq: (_nextField: string, _nextValue: boolean) =>
@@ -277,8 +376,15 @@ describe("getNavigationContext", () => {
         avatar_url: null,
         status: "inactive",
         bio: null,
+        profile_headline: null,
         occupation_id: null,
         location_id: null,
+        is_public: false,
+        is_name_public: false,
+        is_pfp_public: false,
+        is_gender_public: false,
+        is_occupation_public: false,
+        is_location_public: false,
         cubid_identity_status: "unlinked",
         cubid_id: null,
         primary_email_identity: null,
@@ -363,8 +469,15 @@ describe("getNavigationContext", () => {
 
         if (table === "user_interests") {
           return {
-            select: () => ({
-              eq: interestCountEqFallback,
+            select: (...args: unknown[]) => ({
+              eq: (...eqArgs: unknown[]) => {
+                const [fields] = args
+                if (fields === "interest_id") {
+                  return Promise.resolve({ data: [] })
+                }
+
+                return interestCountEqFallback(...eqArgs)
+              },
             }),
           }
         }
@@ -384,6 +497,34 @@ describe("getNavigationContext", () => {
         if (table === "projects") {
           return {
             select: projectsSelectFallback,
+          }
+        }
+
+        if (table === "ref_locations") {
+          return {
+            select: () => ({
+              eq: () => ({
+                maybeSingle: vi.fn().mockResolvedValue({ data: null }),
+              }),
+            }),
+          }
+        }
+
+        if (table === "ref_occupations") {
+          return {
+            select: () => ({
+              eq: () => ({
+                maybeSingle: vi.fn().mockResolvedValue({ data: null }),
+              }),
+            }),
+          }
+        }
+
+        if (table === "ref_interests") {
+          return {
+            select: () => ({
+              in: vi.fn().mockResolvedValue({ data: [] }),
+            }),
           }
         }
 

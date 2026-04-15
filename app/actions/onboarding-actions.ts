@@ -45,6 +45,7 @@ type OnboardingState = {
       })
     | null
   cubidSnapshot: {
+    primaryName: string | null
     primaryEmail: string | null
     primaryPhone: string | null
     cubidScore: number | null
@@ -109,7 +110,7 @@ export async function getOnboardingState(): Promise<OnboardingState> {
     supabase
       .from("users")
       .select(
-        "user_id, status, full_name, display_name, avatar_url, cubid_identity_status, cubid_id, primary_email_identity, cubid_score, bio, occupation_id, location_id",
+        "user_id, status, full_name, display_name, avatar_url, cubid_identity_status, cubid_id, primary_email_identity, cubid_score, bio, profile_headline, occupation_id, location_id",
       )
       .eq("user_id", user.id)
       .single(),
@@ -124,6 +125,7 @@ export async function getOnboardingState(): Promise<OnboardingState> {
       ? {
           fullName: profile.full_name,
           displayName: profile.display_name,
+          profileHeadline: profile.profile_headline,
           bio: profile.bio,
           occupationId: profile.occupation_id,
           locationId: profile.location_id,

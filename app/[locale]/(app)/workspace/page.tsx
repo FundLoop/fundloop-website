@@ -31,6 +31,13 @@ export default async function WorkspacePage({ params }: WorkspacePageProps) {
         : "border-amber-200 bg-amber-50/80 text-amber-950"
   const completionPercent = navigationContext.user?.profileCompletionPercent ?? 0
   const completionMissingItems = navigationContext.user?.profileCompletionMissingItems ?? []
+  const managedName = navigationContext.user?.managedIdentity.fullName
+  const managedNameLabel =
+    managedName?.state === "synced"
+      ? "Synced from CUBID"
+      : managedName?.state === "legacy_local_fallback"
+        ? "Legacy FundLoop fallback"
+        : "Pending from CUBID"
 
   const cards = [
     {
@@ -78,6 +85,12 @@ export default async function WorkspacePage({ params }: WorkspacePageProps) {
               <p className="text-[0.72rem] font-semibold uppercase tracking-[0.28em]">{t(`identity.status.${cubidStatus}`)}</p>
               <h2 className="text-xl font-semibold">{t("identity.title")}</h2>
               <p className="text-sm leading-6">{t(`identity.body.${cubidStatus}`)}</p>
+              <div className="rounded-2xl border border-current/20 bg-white/40 px-4 py-3 text-sm dark:bg-black/10">
+                <p className="text-[0.68rem] font-semibold uppercase tracking-[0.2em]">{managedNameLabel}</p>
+                <p className="mt-1 font-medium">
+                  {managedName?.value ?? "FundLoop is still waiting for a CUBID-managed full name for this account."}
+                </p>
+              </div>
             </div>
           </div>
           <a
@@ -102,8 +115,8 @@ export default async function WorkspacePage({ params }: WorkspacePageProps) {
             </p>
             <h2 className="text-xl font-semibold text-[var(--text-strong)]">{completionPercent}% complete</h2>
             <p className="text-sm leading-6 text-[var(--text-muted)]">
-              Local profile fields count alongside CUBID-backed phone and provider signals. This remains optional beyond basic
-              linkage, but it helps move your account toward a richer trust profile.
+              Identity now comes from CUBID, while FundLoop still owns your display name, profile headline, discovery context,
+              and visibility preferences. This score combines those local preferences with optional CUBID trust signals.
             </p>
           </div>
           <Link

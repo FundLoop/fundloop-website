@@ -44,13 +44,17 @@ export type PublicProjectDetail = {
 
 export type PublicDiscoveryUser = {
   userId: string
+  displayName: string | null
   fullName: string | null
+  profileHeadline: string | null
   avatarUrl: string | null
   contributionDetails: string | null
   createdAt: string | null
   location: string | null
   projectCount: number
   projectSlugs: string[]
+  cubidIdentityStatus: "unlinked" | "linked" | "verified"
+  cubidScore: number | null
 }
 
 export type PublicUsersDirectoryData = {
@@ -95,7 +99,10 @@ function userMatchesSearch(user: PublicDiscoveryUser, search: string) {
     return true
   }
 
-  return [user.fullName ?? "", user.location ?? "", user.contributionDetails ?? ""].join(" ").toLowerCase().includes(search)
+  return [user.displayName ?? "", user.fullName ?? "", user.location ?? "", user.contributionDetails ?? ""]
+    .join(" ")
+    .toLowerCase()
+    .includes(search)
 }
 
 export async function getPublicProjectsDirectoryData({
@@ -295,7 +302,7 @@ export async function getPublicUsersDirectoryData({
         .order("name"),
       supabase
         .from("users")
-        .select("user_id, full_name, avatar_url, contribution_details, created_at, location_id")
+        .select("user_id, display_name, full_name, profile_headline, avatar_url, contribution_details, created_at, location_id, cubid_identity_status, cubid_score")
         .eq("status", "active")
         .eq("is_public", true)
         .is("deleted_at", null),
@@ -345,7 +352,9 @@ export async function getPublicUsersDirectoryData({
 
         return {
           userId: user.user_id,
+          displayName: user.display_name,
           fullName: user.full_name,
+          profileHeadline: user.profile_headline,
           avatarUrl: user.avatar_url,
           contributionDetails: user.contribution_details,
           createdAt: user.created_at,
@@ -354,6 +363,8 @@ export async function getPublicUsersDirectoryData({
           projectSlugs: (publicProjects ?? [])
             .filter((project) => projectIdsForUser.includes(project.id))
             .map((project) => project.slug ?? String(project.id)),
+          cubidIdentityStatus: user.cubid_identity_status ?? "unlinked",
+          cubidScore: user.cubid_score ?? null,
         }
       })
       .filter((user) => {
@@ -368,8 +379,8 @@ export async function getPublicUsersDirectoryData({
         return userMatchesSearch(user, searchTerm)
       })
       .sort((left, right) => {
-        const leftName = left.fullName ?? ""
-        const rightName = right.fullName ?? ""
+        const leftName = left.displayName ?? left.fullName ?? ""
+        const rightName = right.displayName ?? right.fullName ?? ""
         return leftName.localeCompare(rightName)
       })
 
@@ -389,7 +400,9 @@ export const getPublicUserProfile = cache(async (userId: string): Promise<Public
 
     const { data: userRow, error: userError } = await supabase
       .from("users")
-      .select("user_id, full_name, avatar_url, contribution_details, created_at, location_id, status, is_public")
+      .select(
+        "user_id, display_name, full_name, profile_headline, avatar_url, contribution_details, created_at, location_id, status, is_public, cubid_identity_status, cubid_score",
+      )
       .eq("user_id", userId)
       .maybeSingle()
 
@@ -435,13 +448,17 @@ export const getPublicUserProfile = cache(async (userId: string): Promise<Public
     return {
       user: {
         userId: userRow.user_id,
+        displayName: userRow.display_name,
         fullName: userRow.full_name,
+        profileHeadline: userRow.profile_headline,
         avatarUrl: userRow.avatar_url,
         contributionDetails: userRow.contribution_details,
         createdAt: userRow.created_at,
         location: locationRow?.name ?? null,
         projectCount: (projectRows ?? []).length,
         projectSlugs: (projectRows ?? []).map((project) => project.slug ?? String(project.id)),
+        cubidIdentityStatus: userRow.cubid_identity_status ?? "unlinked",
+        cubidScore: userRow.cubid_score ?? null,
       },
       projects: (projectRows ?? []).map((project) => ({
         id: project.id,
