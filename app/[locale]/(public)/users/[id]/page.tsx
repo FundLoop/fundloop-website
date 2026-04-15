@@ -156,7 +156,7 @@ export default async function UserProfilePage({ params }: PageProps) {
                 </div>
               </Reveal>
             ) : (
-              profile.projects.map((project, index) => (
+              profile.projects.map((project: (typeof profile.projects)[number], index: number) => (
                 <Reveal key={project.id} delay={index * 45}>
                   <article className="flex flex-col gap-5 border-t border-[color:var(--marketing-line)] py-6 sm:flex-row sm:items-center sm:justify-between">
                     <div className="flex items-center gap-4">

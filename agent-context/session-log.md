@@ -1,5 +1,43 @@
 ---
 
+### session v45: Remove hard 500s from query-driven public and admin pages after local reset
+- timestamp: 2026-04-14T23:44:52-0400
+- agent: **Codex (GPT-5)**
+- branch: **codex/wallet-production-readiness**
+- head: TBD
+
+#### Objective
+Fix the remaining local runtime errors exposed after the local Supabase reset, specifically the hard `500` failures on query-driven pages such as `/[locale]/projects`, `/[locale]/users`, and `/[locale]/admin/payments/observability`, then recommit the resulting dirty files with a fresh session-log entry.
+
+#### Actions Taken
+- Fixed the public discovery/server helper regression introduced during local-seed follow-up work by restoring the `react` `cache` import for the still-cached detail/profile readers while leaving the directory readers uncached.
+- Added explicit item/index typing on the public project and user detail pages so `tsc --noEmit` stays clean after the local public-discovery changes.
+- Marked the query-driven pages as `dynamic = "force-dynamic"` and restored proper awaited `searchParams` handling on:
+  - `app/[locale]/(public)/projects/page.tsx`
+  - `app/[locale]/(public)/users/page.tsx`
+  - `app/[locale]/(app)/admin/payments/observability/page.tsx`
+  - `app/[locale]/(app)/projects/[slug]/zkas/page.tsx`
+- Verified that the hard 500s are gone for the affected routes in local dev after restarting the app server.
+
+#### Tests and Validation Notes
+- `pnpm dlx node@22.22.1 /opt/homebrew/bin/pnpm check` passed
+- `pnpm dlx node@22.22.1 /opt/homebrew/bin/pnpm exec vitest run tests/local-public-seed.test.ts tests/public-user-journey.test.ts tests/i18n.test.ts` passed
+- Local dev smoke after restarting Next with the corrected `.env.local`:
+  - `/en/projects` returned `200`
+  - `/en/users` returned `200`
+  - `/en/projects/civic-mesh` returned `200`
+  - `/en/users/00000000-0000-4000-8000-000000000101` returned `200`
+  - `/en/admin/payments/observability` returned `200`
+- One remaining local-environment caveat is still visible in server logs: Node-side calls to the local Supabase API can report `TypeError: fetch failed` on this machine, so the public discovery pages currently rely on their fail-soft empty-state behavior rather than consistently rendering seeded data during local smoke.
+
+#### Reflections
+- The crash source was not the curated seed itself; it was the combination of query-driven pages and the local dev/runtime path around `searchParams` plus a follow-up helper regression.
+- The pages are now operationally safer because they no longer hard-fail under this local setup, even when the local Supabase API connectivity remains flaky from the Next server process.
+
+#### Suggested Next Steps
+- Investigate why Node-side requests from the app process to `http://127.0.0.1:54321` are still intermittently failing even though `supabase status` reports the stack as running.
+- Once that connectivity issue is resolved, rerun the local public discovery smoke and verify the deterministic seeded names appear in `/projects` and `/users`, not just that the routes stay up.
+
 ### session v44: Add deterministic local public discovery fixtures for browser smoke tests
 - timestamp: 2026-04-14T23:26:09-0400
 - agent: **Codex (GPT-5)**

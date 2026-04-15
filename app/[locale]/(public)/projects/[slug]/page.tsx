@@ -187,7 +187,7 @@ export default async function ProjectPage({ params }: PageProps) {
                 </div>
               </Reveal>
             ) : (
-              participants.map((participant, index) => (
+              participants.map((participant: (typeof participants)[number], index: number) => (
                 <Reveal key={participant.id} delay={index * 40}>
                   <article className="flex flex-col gap-4 border-t border-[color:var(--marketing-line)] py-6 sm:flex-row sm:items-center sm:justify-between">
                     <div className="flex items-center gap-4">

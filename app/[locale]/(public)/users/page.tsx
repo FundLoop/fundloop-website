@@ -24,6 +24,8 @@ type PageProps = {
   }>
 }
 
+export const dynamic = "force-dynamic"
+
 function parseProjectId(value: string | undefined) {
   if (!value) {
     return null

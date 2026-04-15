@@ -31,6 +31,8 @@ function asValidationCounts(summary: unknown) {
 const csvTemplateHref = `data:text/csv;charset=utf-8,${encodeURIComponent(ZKAS_DATASET_TEMPLATE_CSV)}`
 const jsonTemplateHref = `data:application/json;charset=utf-8,${encodeURIComponent(ZKAS_DATASET_TEMPLATE_JSON)}`
 
+export const dynamic = "force-dynamic"
+
 export default async function ProjectZkasPage({
   params,
   searchParams,

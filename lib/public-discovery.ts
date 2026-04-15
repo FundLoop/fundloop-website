@@ -98,98 +98,96 @@ function userMatchesSearch(user: PublicDiscoveryUser, search: string) {
   return [user.fullName ?? "", user.location ?? "", user.contributionDetails ?? ""].join(" ").toLowerCase().includes(search)
 }
 
-export const getPublicProjectsDirectoryData = cache(
-  async ({
-    categoryId,
-    search,
-    sort,
-  }: {
-    categoryId?: number | null
-    search?: string
-    sort?: "recent" | "oldest" | "name"
-  }): Promise<PublicProjectsDirectoryData> => {
-    try {
-      const supabase = await createServerSupabaseClient()
+export async function getPublicProjectsDirectoryData({
+  categoryId,
+  search,
+  sort,
+}: {
+  categoryId?: number | null
+  search?: string
+  sort?: "recent" | "oldest" | "name"
+}): Promise<PublicProjectsDirectoryData> {
+  try {
+    const supabase = await createServerSupabaseClient()
 
-      const [{ data: projectRows, error: projectError }, { data: categories, error: categoriesError }] = await Promise.all([
-        supabase
-          .from("projects")
-          .select("id, slug, name, description, detailed_description, logo_url, website, category_id, created_at")
-          .eq("status", "active")
-          .eq("is_public", true)
-          .is("deleted_at", null),
-        supabase.from("ref_categories").select("id, name").order("name"),
-      ])
+    const [{ data: projectRows, error: projectError }, { data: categories, error: categoriesError }] = await Promise.all([
+      supabase
+        .from("projects")
+        .select("id, slug, name, description, detailed_description, logo_url, website, category_id, created_at")
+        .eq("status", "active")
+        .eq("is_public", true)
+        .is("deleted_at", null),
+      supabase.from("ref_categories").select("id, name").order("name"),
+    ])
 
-      if (projectError) {
-        throw new Error(projectError.message)
-      }
-
-      if (categoriesError) {
-        throw new Error(categoriesError.message)
-      }
-
-      const categoryMap = new Map((categories ?? []).map((category) => [category.id, category.name]))
-      const projectIds = (projectRows ?? []).map((project) => project.id)
-
-      const { data: participantRows, error: participantError } =
-        projectIds.length > 0
-          ? await supabase.from("participants").select("project_id, user_id").in("project_id", projectIds)
-          : { data: [], error: null }
-
-      if (participantError) {
-        throw new Error(participantError.message)
-      }
-
-      const participantCounts = new Map<number, Set<string>>()
-      for (const row of participantRows ?? []) {
-        const current = participantCounts.get(row.project_id) ?? new Set<string>()
-        current.add(row.user_id)
-        participantCounts.set(row.project_id, current)
-      }
-
-      const searchTerm = normalizeSearchTerm(search)
-
-      const projects = (projectRows ?? [])
-        .filter((project) => (categoryId ? project.category_id === categoryId : true))
-        .map<PublicDiscoveryProject>((project) => ({
-          id: project.id,
-          slug: project.slug ?? String(project.id),
-          name: project.name,
-          description: project.description ?? "",
-          detailedDescription: project.detailed_description ?? "",
-          isPublic: true,
-          logoUrl: project.logo_url,
-          website: project.website,
-          categoryId: project.category_id,
-          categoryName: project.category_id ? categoryMap.get(project.category_id) ?? null : null,
-          createdAt: project.created_at,
-          participantCount: participantCounts.get(project.id)?.size ?? 0,
-        }))
-        .filter((project) => projectMatchesSearch(project, searchTerm))
-
-      const sortedProjects = [...projects].sort((left, right) => {
-        if (sort === "oldest") {
-          return new Date(left.createdAt ?? 0).getTime() - new Date(right.createdAt ?? 0).getTime()
-        }
-
-        if (sort === "name") {
-          return left.name.localeCompare(right.name)
-        }
-
-        return new Date(right.createdAt ?? 0).getTime() - new Date(left.createdAt ?? 0).getTime()
-      })
-
-      return {
-        categories: categories ?? [],
-        projects: sortedProjects,
-      }
-    } catch (error) {
-      logPublicDiscoveryError("projects-directory", error)
-      return { categories: [], projects: [] }
+    if (projectError) {
+      throw new Error(projectError.message)
     }
-  },
-)
+
+    if (categoriesError) {
+      throw new Error(categoriesError.message)
+    }
+
+    const categoryMap = new Map((categories ?? []).map((category) => [category.id, category.name]))
+    const projectIds = (projectRows ?? []).map((project) => project.id)
+
+    const { data: participantRows, error: participantError } =
+      projectIds.length > 0
+        ? await supabase.from("participants").select("project_id, user_id").in("project_id", projectIds)
+        : { data: [], error: null }
+
+    if (participantError) {
+      throw new Error(participantError.message)
+    }
+
+    const participantCounts = new Map<number, Set<string>>()
+    for (const row of participantRows ?? []) {
+      const current = participantCounts.get(row.project_id) ?? new Set<string>()
+      current.add(row.user_id)
+      participantCounts.set(row.project_id, current)
+    }
+
+    const searchTerm = normalizeSearchTerm(search)
+
+    const projects = (projectRows ?? [])
+      .filter((project) => (categoryId ? project.category_id === categoryId : true))
+      .map<PublicDiscoveryProject>((project) => ({
+        id: project.id,
+        slug: project.slug ?? String(project.id),
+        name: project.name,
+        description: project.description ?? "",
+        detailedDescription: project.detailed_description ?? "",
+        isPublic: true,
+        logoUrl: project.logo_url,
+        website: project.website,
+        categoryId: project.category_id,
+        categoryName: project.category_id ? categoryMap.get(project.category_id) ?? null : null,
+        createdAt: project.created_at,
+        participantCount: participantCounts.get(project.id)?.size ?? 0,
+      }))
+      .filter((project) => projectMatchesSearch(project, searchTerm))
+
+    const sortedProjects = [...projects].sort((left, right) => {
+      if (sort === "oldest") {
+        return new Date(left.createdAt ?? 0).getTime() - new Date(right.createdAt ?? 0).getTime()
+      }
+
+      if (sort === "name") {
+        return left.name.localeCompare(right.name)
+      }
+
+      return new Date(right.createdAt ?? 0).getTime() - new Date(left.createdAt ?? 0).getTime()
+    })
+
+    return {
+      categories: categories ?? [],
+      projects: sortedProjects,
+    }
+  } catch (error) {
+    logPublicDiscoveryError("projects-directory", error)
+    return { categories: [], projects: [] }
+  }
+}
 
 export const getPublicProjectDetail = cache(async (slug: string): Promise<PublicProjectDetail | null> => {
   try {
@@ -277,115 +275,113 @@ export const getPublicProjectDetail = cache(async (slug: string): Promise<Public
   }
 })
 
-export const getPublicUsersDirectoryData = cache(
-  async ({
-    projectId,
-    search,
-  }: {
-    projectId?: number | null
-    search?: string
-  }): Promise<PublicUsersDirectoryData> => {
-    try {
-      const supabase = await createServerSupabaseClient()
+export async function getPublicUsersDirectoryData({
+  projectId,
+  search,
+}: {
+  projectId?: number | null
+  search?: string
+}): Promise<PublicUsersDirectoryData> {
+  try {
+    const supabase = await createServerSupabaseClient()
 
-      const [{ data: publicProjects, error: projectError }, { data: userRows, error: userError }] = await Promise.all([
-        supabase
-          .from("projects")
-          .select("id, name, slug")
-          .eq("status", "active")
-          .eq("is_public", true)
-          .is("deleted_at", null)
-          .order("name"),
-        supabase
-          .from("users")
-          .select("user_id, full_name, avatar_url, contribution_details, created_at, location_id")
-          .eq("status", "active")
-          .eq("is_public", true)
-          .is("deleted_at", null),
+    const [{ data: publicProjects, error: projectError }, { data: userRows, error: userError }] = await Promise.all([
+      supabase
+        .from("projects")
+        .select("id, name, slug")
+        .eq("status", "active")
+        .eq("is_public", true)
+        .is("deleted_at", null)
+        .order("name"),
+      supabase
+        .from("users")
+        .select("user_id, full_name, avatar_url, contribution_details, created_at, location_id")
+        .eq("status", "active")
+        .eq("is_public", true)
+        .is("deleted_at", null),
+    ])
+
+    if (projectError) {
+      throw new Error(projectError.message)
+    }
+
+    if (userError) {
+      throw new Error(userError.message)
+    }
+
+    const projectIds = (publicProjects ?? []).map((project) => project.id)
+    const visibleProjectIds = projectId ? [projectId] : projectIds
+
+    const [{ data: participantRows, error: participantError }, { data: locationRows, error: locationError }] =
+      await Promise.all([
+        projectIds.length > 0
+          ? supabase.from("participants").select("project_id, user_id").in("project_id", projectIds)
+          : { data: [], error: null },
+        supabase.from("ref_locations").select("id, name"),
       ])
 
-      if (projectError) {
-        throw new Error(projectError.message)
-      }
-
-      if (userError) {
-        throw new Error(userError.message)
-      }
-
-      const projectIds = (publicProjects ?? []).map((project) => project.id)
-      const visibleProjectIds = projectId ? [projectId] : projectIds
-
-      const [{ data: participantRows, error: participantError }, { data: locationRows, error: locationError }] =
-        await Promise.all([
-          projectIds.length > 0
-            ? supabase.from("participants").select("project_id, user_id").in("project_id", projectIds)
-            : { data: [], error: null },
-          supabase.from("ref_locations").select("id, name"),
-        ])
-
-      if (participantError) {
-        throw new Error(participantError.message)
-      }
-
-      if (locationError) {
-        throw new Error(locationError.message)
-      }
-
-      const locationMap = new Map((locationRows ?? []).map((location) => [location.id, location.name]))
-      const participantProjectsByUser = new Map<string, Set<number>>()
-
-      for (const row of participantRows ?? []) {
-        const current = participantProjectsByUser.get(row.user_id) ?? new Set<number>()
-        current.add(row.project_id)
-        participantProjectsByUser.set(row.user_id, current)
-      }
-
-      const searchTerm = normalizeSearchTerm(search)
-
-      const users = (userRows ?? [])
-        .map<PublicDiscoveryUser>((user) => {
-          const projectIdsForUser = Array.from(participantProjectsByUser.get(user.user_id) ?? [])
-
-          return {
-            userId: user.user_id,
-            fullName: user.full_name,
-            avatarUrl: user.avatar_url,
-            contributionDetails: user.contribution_details,
-            createdAt: user.created_at,
-            location: user.location_id ? locationMap.get(user.location_id) ?? null : null,
-            projectCount: projectIdsForUser.length,
-            projectSlugs: (publicProjects ?? [])
-              .filter((project) => projectIdsForUser.includes(project.id))
-              .map((project) => project.slug ?? String(project.id)),
-          }
-        })
-        .filter((user) => {
-          if (visibleProjectIds.length === 0) {
-            return false
-          }
-
-          if (projectId && !(participantProjectsByUser.get(user.userId) ?? new Set<number>()).has(projectId)) {
-            return false
-          }
-
-          return userMatchesSearch(user, searchTerm)
-        })
-        .sort((left, right) => {
-          const leftName = left.fullName ?? ""
-          const rightName = right.fullName ?? ""
-          return leftName.localeCompare(rightName)
-        })
-
-      return {
-        projects: publicProjects ?? [],
-        users,
-      }
-    } catch (error) {
-      logPublicDiscoveryError("users-directory", error)
-      return { projects: [], users: [] }
+    if (participantError) {
+      throw new Error(participantError.message)
     }
-  },
-)
+
+    if (locationError) {
+      throw new Error(locationError.message)
+    }
+
+    const locationMap = new Map((locationRows ?? []).map((location) => [location.id, location.name]))
+    const participantProjectsByUser = new Map<string, Set<number>>()
+
+    for (const row of participantRows ?? []) {
+      const current = participantProjectsByUser.get(row.user_id) ?? new Set<number>()
+      current.add(row.project_id)
+      participantProjectsByUser.set(row.user_id, current)
+    }
+
+    const searchTerm = normalizeSearchTerm(search)
+
+    const users = (userRows ?? [])
+      .map<PublicDiscoveryUser>((user) => {
+        const projectIdsForUser = Array.from(participantProjectsByUser.get(user.user_id) ?? [])
+
+        return {
+          userId: user.user_id,
+          fullName: user.full_name,
+          avatarUrl: user.avatar_url,
+          contributionDetails: user.contribution_details,
+          createdAt: user.created_at,
+          location: user.location_id ? locationMap.get(user.location_id) ?? null : null,
+          projectCount: projectIdsForUser.length,
+          projectSlugs: (publicProjects ?? [])
+            .filter((project) => projectIdsForUser.includes(project.id))
+            .map((project) => project.slug ?? String(project.id)),
+        }
+      })
+      .filter((user) => {
+        if (visibleProjectIds.length === 0) {
+          return false
+        }
+
+        if (projectId && !(participantProjectsByUser.get(user.userId) ?? new Set<number>()).has(projectId)) {
+          return false
+        }
+
+        return userMatchesSearch(user, searchTerm)
+      })
+      .sort((left, right) => {
+        const leftName = left.fullName ?? ""
+        const rightName = right.fullName ?? ""
+        return leftName.localeCompare(rightName)
+      })
+
+    return {
+      projects: publicProjects ?? [],
+      users,
+    }
+  } catch (error) {
+    logPublicDiscoveryError("users-directory", error)
+    return { projects: [], users: [] }
+  }
+}
 
 export const getPublicUserProfile = cache(async (userId: string): Promise<PublicUserProfile | null> => {
   try {

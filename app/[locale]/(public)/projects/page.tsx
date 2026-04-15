@@ -25,6 +25,8 @@ type PageProps = {
   }>
 }
 
+export const dynamic = "force-dynamic"
+
 function parseCategory(value: string | undefined) {
   if (!value) {
     return null
