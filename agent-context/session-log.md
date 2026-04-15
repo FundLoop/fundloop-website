@@ -1,5 +1,47 @@
 ---
 
+### session v41: Split the public and app shells around the new workspace IA
+- timestamp: 2026-04-14T22:10:57-0400
+- agent: **Codex (GPT-5)**
+- branch: **codex/wallet-production-readiness**
+- head: TBD
+
+#### Objective
+Complete Session 08 by turning the information architecture decisions into a real shell split: lightweight public navigation, a product-style authenticated shell, canonical workspace entry routes, and the removal of the most confusing legacy entry points.
+
+#### Actions Taken
+- Split the localized App Router tree into `app/[locale]/(public)` and `app/[locale]/(app)` route groups so public pages keep marketing chrome while authenticated product routes share a dedicated app shell.
+- Added `lib/navigation-context.ts` as the shared server-side navigation contract, deriving authenticated user state, founder/project access, internal-admin access, and managed-project summaries from the repo’s existing Supabase truth.
+- Rebuilt the shared navigation layer with a simpler IA-aligned public navbar, a new authenticated app shell, a shared auth/account control component, and a generalized mobile menu.
+- Added the first canonical shell entry routes at `/[locale]/workspace`, `/[locale]/workspace/account`, `/[locale]/founder`, `/[locale]/founder/projects`, `/[locale]/founder/account`, and `/[locale]/founders`.
+- Redirected legacy route entry points away from the old mixed hubs by replacing `/[locale]/my-profile`, `/[locale]/settings`, and `/[locale]/settings/account` with route-level redirects to the new workspace destinations.
+- Updated the admin landing page so it no longer promotes missing child routes and instead links only to real operator destinations.
+- Localized the new shell labels and workspace/founder entry-page copy in English, French, and Spanish.
+- Added long-lived engineering documentation for the new shell split in `docs/engineering/navigation-shell.md` and updated `docs/engineering/route-inventory.md` to reflect the new routes plus the legacy redirects.
+- Updated route-related tests to follow the moved route modules and added `tests/navigation-context.test.ts` to lock in the shared role-resolution contract.
+
+#### Tests and Validation Notes
+- `pnpm dlx node@22.22.1 /opt/homebrew/bin/pnpm lint` passed
+- `pnpm dlx node@22.22.1 /opt/homebrew/bin/pnpm test` passed
+- `pnpm dlx node@22.22.1 /opt/homebrew/bin/pnpm typecheck` passed
+- `pnpm dlx node@22.22.1 /opt/homebrew/bin/pnpm build` passed
+- `pnpm dlx node@22.22.1 /opt/homebrew/bin/pnpm check` passed
+- Local production smoke on port `3001` confirmed:
+  - `/en/founders` rendered on the new public shell
+  - `/en/my-profile` redirected through the new shell movement
+  - `/en/settings` and `/en/settings/account` redirected through the new account destination movement
+  - unauthenticated `/en/workspace`, `/en/founder`, and `/en/admin` requests fell back into `/en/join` instead of exposing a broken private shell
+
+#### Reflections
+- The biggest implementation choice was moving auth gating out of the app layout and down into the new canonical entry routes. That kept the legacy redirect routes behaving exactly as planned while still protecting the new workspace/founder/operator starts.
+- Introducing a shared navigation context now should make the later Session 17 and 18 workspace rebuilds much cleaner, because shell role decisions no longer have to be rediscovered independently in each route.
+
+#### Suggested Next Steps
+- Session 09 should use the new `/founders` entry as the foundation for a real founder acquisition funnel instead of rebuilding founder messaging inside the old pledge/pricing structure.
+- Later workspace-content sessions should keep routing new account, reporting, and project operations through the new canonical workspace entries instead of adding more functionality back under `/settings` or `/my-profile`.
+
+---
+
 ### session v40: Establish shared design tokens for durable light and dark themes
 - timestamp: 2026-04-14T20:53:37-04:00
 - agent: **Codex (GPT-5)**

@@ -1,11 +1,9 @@
-"use client"
-
-// TODO(Session 03 IA): keep `/admin` as the operator workspace root and replace the broken child links here with real operator destinations from `docs/engineering/information-architecture.md`.
-
-import Link from "next/link"
-import { BarChart3, BrainCircuit, Building2, DollarSign, Users, Wallet } from "lucide-react"
+import { redirect } from "next/navigation"
+import { BrainCircuit, DollarSign, Eye, Shield, Wallet } from "lucide-react"
+import { Link } from "@/i18n/navigation"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { getNavigationContext } from "@/lib/navigation-context"
 
 const summaryCards = [
   { title: "Total Revenue", value: "$1,245,000", note: "Across all projects" },
@@ -24,30 +22,6 @@ const adminDestinations = [
     variant: "default" as const,
   },
   {
-    title: "Project Management",
-    description: "Manage projects in the FundLoop ecosystem",
-    href: "/admin/projects",
-    icon: Building2,
-    cta: "Manage Projects",
-    variant: "secondary" as const,
-  },
-  {
-    title: "User Management",
-    description: "Manage users in the FundLoop ecosystem",
-    href: "/admin/users",
-    icon: Users,
-    cta: "Manage Users",
-    variant: "secondary" as const,
-  },
-  {
-    title: "Analytics",
-    description: "View detailed analytics and reports",
-    href: "/admin/analytics",
-    icon: BarChart3,
-    cta: "View Analytics",
-    variant: "secondary" as const,
-  },
-  {
     title: "zkActivitySum",
     description: "Review monthly datasets and run privacy-preserving allocations",
     href: "/admin/zkas",
@@ -63,9 +37,36 @@ const adminDestinations = [
     cta: "Review Deployments",
     variant: "outline" as const,
   },
+  {
+    title: "Observability",
+    description: "Inspect recent payment-flow failures, attempts, and operator context",
+    href: "/admin/payments/observability",
+    icon: Eye,
+    cta: "Open Observability",
+    variant: "secondary" as const,
+  },
+  {
+    title: "Superadmin Queue",
+    description: "Review the restricted verification and publication work that still needs superadmin access",
+    href: "/admin/superadmin",
+    icon: Shield,
+    cta: "Open Superadmin",
+    variant: "secondary" as const,
+  },
 ] as const
 
-export default function AdminDashboard() {
+type AdminDashboardProps = {
+  params: Promise<{ locale: string }>
+}
+
+export default async function AdminDashboard({ params }: AdminDashboardProps) {
+  const { locale } = await params
+  const navigationContext = await getNavigationContext()
+
+  if (!navigationContext.isAuthenticated) {
+    redirect(`/${locale}/join`)
+  }
+
   return (
     <div className="min-h-screen bg-[linear-gradient(180deg,color-mix(in_srgb,var(--surface-canvas)_88%,transparent),transparent_32%)]">
       <div className="container mx-auto space-y-10 px-4 py-12">

@@ -20,10 +20,23 @@ export const esMessages = {
       description:
         "Encuentra la vía de ayuda más rápida para onboarding, participación, pagos y preguntas de cuenta dentro de FundLoop.",
     },
+    founders: {
+      title: "Fundadores - FundLoop",
+      description:
+        "Descubre la entrada para fundadores en FundLoop, desde onboarding y compromisos mensuales hasta el espacio operativo que sigue.",
+    },
   },
   shell: {
     brandTagline: "Prosperidad mutua en red",
     nav: {
+      primary: {
+        founders: "Fundadores",
+        participation: "Participación",
+        projects: "Proyectos",
+        documentation: "Documentación",
+        blog: "Blog",
+        support: "Soporte",
+      },
       useCases: "Casos de uso",
       explore: "Explorar",
       resources: "Recursos",
@@ -31,6 +44,11 @@ export const esMessages = {
       authenticate: "Autenticarse",
       authUnavailable: "Auth no disponible en local",
       continueOnboarding: "Continuar onboarding",
+      workspace: "Espacio",
+      founder: "Fundador",
+      admin: "Admin",
+      account: "Cuenta",
+      accountFallback: "Cuenta FundLoop",
       myProfile: "Mi perfil",
       settings: "Configuración",
       logout: "Cerrar sesión",
@@ -81,9 +99,30 @@ export const esMessages = {
     },
     mobile: {
       navigate: "Navegar",
+      public: "Rutas públicas",
+      workspace: "Espacios",
+      currentSection: "Sección actual",
       useCases: "Casos de uso",
       explore: "Explorar",
       resources: "Recursos",
+    },
+    appShell: {
+      productShell: "Espacio del producto",
+      workspace: {
+        overview: "Resumen",
+        account: "Cuenta",
+        reporting: "Resultados publicados",
+      },
+      founder: {
+        overview: "Resumen",
+        projects: "Proyectos",
+        account: "Cuenta",
+      },
+      admin: {
+        overview: "Resumen",
+        payments: "Pagos",
+        zkas: "zkAS",
+      },
     },
     footer: {
       buildTheLoop: "Construye el loop",
@@ -102,6 +141,106 @@ export const esMessages = {
       mission: "Un estado-red para la prosperidad mutua.",
       visitSite: "Visitar sitio",
     },
+  },
+  accountSettings: {
+    emails: "Direcciones de correo",
+    wallets: "Direcciones de wallet",
+  },
+  founders: {
+    eyebrow: "Ruta para fundadores",
+    title: "Una forma más clara de entrar a FundLoop para equipos de proyecto.",
+    body:
+      "Esta página conecta la narrativa pública para fundadores con el futuro espacio operativo. Aclara qué espera FundLoop de los equipos antes de reconstruir por completo el funnel para fundadores.",
+    primaryCta: "Empezar onboarding de proyecto",
+    secondaryCta: "Leer documentación",
+    cards: {
+      commitment: {
+        title: "Comprometerse con el loop",
+        description: "Entiende cómo se conectan los compromisos de los fundadores, las contribuciones y el ritmo mensual.",
+      },
+      operations: {
+        title: "Operar con herramientas reales",
+        description: "Pasa del onboarding a obligaciones de pago, rutas de cobro y superficies de reporting de proyecto.",
+      },
+      cadence: {
+        title: "Preparar el ritmo mensual",
+        description: "Entiende cómo más adelante se unirán contribuciones, verificación, distribución y reporting en un mismo ciclo.",
+      },
+    },
+  },
+  workspace: {
+    eyebrow: "Espacio de usuario",
+    title: "Un punto de partida más claro para tu actividad en FundLoop",
+    body:
+      "Esta es la nueva entrada para el lado participante de FundLoop. El espacio completo llegará después, pero desde aquí ya puedes moverte hacia la cuenta, el contexto de participación y los resultados publicados.",
+    open: "Abrir",
+    cards: {
+      account: {
+        title: "Cuenta",
+        description: "Gestiona la configuración de cuenta y las preferencias relacionadas con pagos que ahora viven en tu espacio.",
+      },
+      participation: {
+        title: "Participación",
+        description: "Vuelve a la guía pública de participación mientras el hogar completo del espacio todavía se reconstruye.",
+      },
+      results: {
+        title: "Resultados publicados",
+        description: "Revisa la superficie personal de zkAS que más adelante se moverá al reporting del espacio.",
+      },
+      founder: {
+        title: "Espacio fundador",
+        description: "Salta directamente al lado operativo de proyectos en FundLoop cuando estés gestionando un proyecto.",
+      },
+    },
+  },
+  workspaceAccount: {
+    heading: "Cuenta",
+    description:
+      "Gestiona los datos personales, direcciones de correo y direcciones de wallet que todavía viven localmente en FundLoop mientras llega el modelo de cuenta respaldado por CUBID.",
+  },
+  founderWorkspace: {
+    eyebrow: "Espacio fundador",
+    title: "Un punto de entrada operativo estable para equipos de proyecto",
+    body:
+      "Este shell es el primer paso hacia el espacio fundador completo. Da a los admins de proyecto un lugar claro para empezar y luego apunta hacia las superficies reales de pagos y zkAS que ya existen más adentro en la app.",
+    open: "Abrir",
+    empty: {
+      title: "Todavía no hay proyectos gestionados",
+      body:
+        "Este espacio se activa cuando publicas un proyecto o te agregan como fundador/admin en uno. Hasta entonces, la ruta pública para fundadores y el onboarding siguen siendo los siguientes pasos correctos.",
+      cta: "Abrir la ruta para fundadores",
+    },
+    cards: {
+      projects: {
+        title: "Proyectos",
+        description: "Mira todos los proyectos que gestionas y elige la siguiente tarea operativa.",
+      },
+      operations: {
+        title: "Operaciones de contribución",
+        description: "Abre el flujo real de pagos y gestión de rutas desde el nuevo espacio fundador.",
+      },
+      account: {
+        title: "Cuenta",
+        description: "Mantén las preferencias de fundador y el contexto del espacio en un solo lugar.",
+      },
+    },
+  },
+  founderProjects: {
+    eyebrow: "Proyectos gestionados",
+    title: "Elige un espacio de proyecto",
+    body:
+      "Estas tarjetas conectan el nuevo shell fundador con las páginas operativas que ya son reales, aunque todavía viven bajo rutas específicas de proyecto.",
+    links: {
+      project: "Abrir perfil público del proyecto",
+      payments: "Abrir operaciones de contribución",
+      zkas: "Abrir zkAS del proyecto",
+    },
+    missingSlug: "Publica o corrige el slug del proyecto antes de enlazar rutas de fundador más profundas.",
+  },
+  founderAccount: {
+    heading: "Cuenta fundador",
+    description:
+      "Usa esta vista de cuenta a nivel de espacio mientras se consolidan las operaciones del proyecto. Los controles específicos para fundadores seguirán moviéndose aquí.",
   },
   home: {
     eyebrow: "Prosperidad mutua, hecha operativa",

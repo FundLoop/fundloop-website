@@ -12,17 +12,17 @@ vi.mock("next-intl/server", () => ({
       "footer.resources": "Resources",
       "footer.legal": "Legal",
       "footer.ecosystem": "Ecosystem",
-      "footer.pledge": "The FundLoop Pledge",
       "footer.terms": "Terms of Service",
       "footer.privacy": "Privacy Policy",
       "footer.cookies": "Cookie Policy",
       "footer.rightsReserved": "FundLoop. All rights reserved.",
       "footer.mission": "A network state for mutual prosperity.",
-      "nav.blog": "Blog",
-      "nav.exploreLinks.projects.label": "Projects",
-      "nav.exploreLinks.users.label": "Users",
-      "nav.exploreLinks.analytics.label": "Analytics",
-      "nav.exploreLinks.about.label": "About FundLoop",
+      "nav.primary.founders": "Founders",
+      "nav.primary.participation": "Participation",
+      "nav.primary.projects": "Projects",
+      "nav.primary.documentation": "Documentation",
+      "nav.primary.blog": "Blog",
+      "nav.primary.support": "Support",
       "nav.resourceLinks.participation.label": "Participation",
       "nav.resourceLinks.pricing.label": "Pricing",
       "nav.resourceLinks.documentation.label": "Documentation",
@@ -50,5 +50,11 @@ describe("Footer", () => {
     render(await Footer())
     const link = screen.getByRole("link", { name: /ecosystem/i })
     expect(link.getAttribute("href")).toBe("/ecosystem")
+  })
+
+  it("links to the founder path from the footer", async () => {
+    render(await Footer())
+    const links = screen.getAllByRole("link", { name: /founders/i })
+    expect(links[0]?.getAttribute("href")).toBe("/founders")
   })
 })

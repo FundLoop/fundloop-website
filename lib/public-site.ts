@@ -1,5 +1,39 @@
+export type PublicPrimaryLinkId = "founders" | "participation" | "projects" | "documentation" | "blog" | "support"
 export type PublicExploreLinkId = "projects" | "users" | "analytics" | "about"
 export type ResourceLinkId = "participation" | "pricing" | "documentation" | "faq" | "support" | "api"
+
+export const publicPrimaryLinks = [
+  {
+    id: "founders",
+    href: "/founders",
+    label: "Founders",
+  },
+  {
+    id: "participation",
+    href: "/participation",
+    label: "Participation",
+  },
+  {
+    id: "projects",
+    href: "/projects",
+    label: "Projects",
+  },
+  {
+    id: "documentation",
+    href: "/documentation",
+    label: "Documentation",
+  },
+  {
+    id: "blog",
+    href: "/blog",
+    label: "Blog",
+  },
+  {
+    id: "support",
+    href: "/support",
+    label: "Support",
+  },
+] as const
 
 export const publicExploreLinks = [
   {

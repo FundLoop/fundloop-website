@@ -91,12 +91,12 @@ Refactor the current styling layer into a stable token-driven theme system with 
 
 ## Session 08: Refactor shared navigation and layout around the new IA
 
-- Status: Not started
-- Timestamp started: TBD
-- Timestamp completed: TBD
-- Feature branch: TBD
+- Status: Complete
+- Timestamp started: 2026-04-14T21:58:00-0400
+- Timestamp completed: 2026-04-14T22:10:57-0400
+- Feature branch: codex/wallet-production-readiness
 - Head: TBD
-- Session-log reference(s): TBD
+- Session-log reference(s): session v41
 
 Update the app shell, navigation, account menus, and dashboard entry points to match the new information architecture. This should include clear paths for regular users, founders/project members, and internal operators, while keeping the public site lightweight and understandable. Remove or neutralize confusing dead ends and old route assumptions. This session should focus on skeleton and movement, not final page content. The outcome should be that users can tell where they are in the product and what the app is for before the remaining pages are fully rebuilt.
 

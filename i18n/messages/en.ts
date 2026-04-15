@@ -20,10 +20,23 @@ export const enMessages = {
       description:
         "Find the fastest help path for onboarding, participation, payments, and account questions across FundLoop.",
     },
+    founders: {
+      title: "Founders - FundLoop",
+      description:
+        "See the founder-facing path into FundLoop, from onboarding and contribution commitments to the operational workspace that follows.",
+    },
   },
   shell: {
     brandTagline: "Networked mutual prosperity",
     nav: {
+      primary: {
+        founders: "Founders",
+        participation: "Participation",
+        projects: "Projects",
+        documentation: "Documentation",
+        blog: "Blog",
+        support: "Support",
+      },
       useCases: "Use Cases",
       explore: "Explore",
       resources: "Resources",
@@ -31,6 +44,11 @@ export const enMessages = {
       authenticate: "Authenticate",
       authUnavailable: "Auth unavailable locally",
       continueOnboarding: "Continue onboarding",
+      workspace: "Workspace",
+      founder: "Founder",
+      admin: "Admin",
+      account: "Account",
+      accountFallback: "FundLoop account",
       myProfile: "My Profile",
       settings: "Settings",
       logout: "Log out",
@@ -81,9 +99,30 @@ export const enMessages = {
     },
     mobile: {
       navigate: "Navigate",
+      public: "Public paths",
+      workspace: "Workspace",
+      currentSection: "Current section",
       useCases: "Use Cases",
       explore: "Explore",
       resources: "Resources",
+    },
+    appShell: {
+      productShell: "Product workspace",
+      workspace: {
+        overview: "Overview",
+        account: "Account",
+        reporting: "Published results",
+      },
+      founder: {
+        overview: "Overview",
+        projects: "Projects",
+        account: "Account",
+      },
+      admin: {
+        overview: "Overview",
+        payments: "Payments",
+        zkas: "zkAS",
+      },
     },
     footer: {
       buildTheLoop: "Build the loop",
@@ -102,6 +141,106 @@ export const enMessages = {
       mission: "A network state for mutual prosperity.",
       visitSite: "Visit site",
     },
+  },
+  accountSettings: {
+    emails: "Email Addresses",
+    wallets: "Wallet Addresses",
+  },
+  founders: {
+    eyebrow: "Founder path",
+    title: "A cleaner way into FundLoop for project teams.",
+    body:
+      "This page is the bridge between the public founder narrative and the operational founder workspace. It frames what FundLoop expects from project teams before the full founder funnel is rebuilt.",
+    primaryCta: "Start project onboarding",
+    secondaryCta: "Read documentation",
+    cards: {
+      commitment: {
+        title: "Commit to the loop",
+        description: "See how founder participation, contribution commitments, and monthly cadence fit together.",
+      },
+      operations: {
+        title: "Operate with real tools",
+        description: "Move from onboarding into payment obligations, collection routes, and project reporting surfaces.",
+      },
+      cadence: {
+        title: "Prepare for monthly rhythm",
+        description: "Understand the recurring cycle that later ties contributions, verification, distribution, and reporting together.",
+      },
+    },
+  },
+  workspace: {
+    eyebrow: "User workspace",
+    title: "A clearer home for your FundLoop activity",
+    body:
+      "This is the new entry point for the participant side of FundLoop. The fuller workspace arrives later, but from here you can already move toward account controls, participation context, and published results.",
+    open: "Open",
+    cards: {
+      account: {
+        title: "Account",
+        description: "Manage the account settings and payout-touching preferences that now belong in your workspace.",
+      },
+      participation: {
+        title: "Participation",
+        description: "Return to the public participation guide while the full workspace home is still being rebuilt.",
+      },
+      results: {
+        title: "Published results",
+        description: "Review the personal zkAS publication surface that will later move into workspace reporting.",
+      },
+      founder: {
+        title: "Founder workspace",
+        description: "Jump directly into the project-operations side of FundLoop when you are managing a project.",
+      },
+    },
+  },
+  workspaceAccount: {
+    heading: "Account",
+    description:
+      "Manage the personal details, email addresses, and wallet addresses that still live locally in FundLoop while the broader CUBID-backed account model is being introduced.",
+  },
+  founderWorkspace: {
+    eyebrow: "Founder workspace",
+    title: "A stable operations entry point for project teams",
+    body:
+      "This shell is the first step toward the full founder workspace coming later. It gives project admins a durable place to start, then points into the real payment and zkAS surfaces that already exist deeper in the app.",
+    open: "Open",
+    empty: {
+      title: "No managed projects yet",
+      body:
+        "This workspace becomes active once you publish a project or are added as a founder/admin on one. Until then, the public founder path and onboarding flow remain the right next steps.",
+      cta: "Open the founder path",
+    },
+    cards: {
+      projects: {
+        title: "Projects",
+        description: "See every project you currently manage and choose the next operational task.",
+      },
+      operations: {
+        title: "Contribution operations",
+        description: "Open the currently real project payments and route-management flow from the new founder shell.",
+      },
+      account: {
+        title: "Account",
+        description: "Keep founder-facing account preferences and workspace guidance in one place.",
+      },
+    },
+  },
+  founderProjects: {
+    eyebrow: "Managed projects",
+    title: "Choose a project workspace",
+    body:
+      "These cards are the bridge between the new founder shell and the already-real operational pages that still live under project-specific routes for now.",
+    links: {
+      project: "Open public project profile",
+      payments: "Open contribution operations",
+      zkas: "Open project zkAS",
+    },
+    missingSlug: "Publish or repair the project slug before deeper founder routes can be linked.",
+  },
+  founderAccount: {
+    heading: "Founder account",
+    description:
+      "Use this workspace-level account view while project operations are being consolidated. Founder-specific controls will keep moving here as the founder workspace is completed.",
   },
   home: {
     eyebrow: "Mutual prosperity, made operational",

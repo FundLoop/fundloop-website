@@ -34,6 +34,7 @@ This inventory covers every current `page.tsx` and `route.ts` surface under `app
 | `/documentation` | Developers, partners, operators | Real but broad docs stub. | Should anchor product, protocol, and ops docs over time. | finish | Public docs hub | 11, 44 |
 | `/ecosystem` | Public visitors | Real supporting public page. | Fits ecosystem story and aligned network narrative. | finish | Public ecosystem/discovery surface | 11 |
 | `/faq` | Public visitors | Real supporting public page. | Useful public support/discovery content. | finish | Public FAQ | 11 |
+| `/founders` | Prospective founders | New lightweight founder-path landing page. | Session 08 introduced this as the public founder entry while the fuller funnel is rebuilt in Session 09. | finish | Public founder acquisition entry | 09 |
 | `/join` | Invited users | Real invite-code entry route. | Validates invite codes and hands off to onboarding. | finish | Public invitation and onboarding entry | 10, 12 |
 | `/invitations/[token]` | Invited users | Demo-only invitation flow. | Contains explicit demo/mock assumptions. | redirect | `/join` and the real invitation entry flow | 11 |
 | `/participation` | Prospective users | Real public explainer. | Good user-side narrative, but belongs in broader discovery funnel. | finish | Public user discovery and participation explainer | 10 |
@@ -52,20 +53,25 @@ This inventory covers every current `page.tsx` and `route.ts` surface under `app
 
 | Path | Audience | Current state | Evidence / notes | Disposition | Canonical target | Follow-up session |
 | --- | --- | --- | --- | --- | --- | --- |
-| `/my-profile` | Signed-in users | Large mixed account/profile/dashboard page. | Links to missing `/organizations`; mixes identity, invitations, and participation context. | merge | User workspace home plus account settings | 16, 17, 42 |
+| `/workspace` | Signed-in users | New lightweight user-workspace entry shell. | Session 08 introduced this as the canonical signed-in user start point before Session 17 rebuilds the fuller home. | finish | User workspace home | 17 |
+| `/workspace/account` | Signed-in users | New workspace account surface. | Session 08 moved account-management into the user workspace and redirects old account entry routes here. | finish | User workspace account settings | 16, 42 |
+| `/founder` | Founders, project members | New lightweight founder-workspace entry shell. | Session 08 introduced this as the canonical founder start point while deeper project operations remain under project-specific routes. | finish | Founder workspace home | 18 |
+| `/founder/projects` | Founders, project members | New founder project index shell. | Bridges the new founder shell to existing project operations routes. | finish | Founder workspace projects | 18 |
+| `/founder/account` | Founders, project members | New founder account shell. | Gives founder users a workspace-level account destination instead of relying on the old settings hub. | finish | Founder workspace account settings | 18, 42 |
+| `/my-profile` | Signed-in users | Redirect-only legacy entry. | Session 08 retired the old mixed profile/dashboard entry in favor of `/workspace`. | redirect | `/workspace` | 16, 17, 42 |
 | `/organizations/[id]` | Founder/org members | Mock organization detail page. | Uses explicit mock data and placeholder logos. | remove | Founder workspace organization view once real | 18 |
 | `/projects/[slug]/payments` | Project admins | Real founder operations surface. | Production payment and route management now lives here. | finish | Founder workspace project contributions | 18, 33 |
 | `/projects/[slug]/zkas` | Project admins, operators | Transitional project-side zkAS page. | Belongs to monthly cycle and reporting rather than standalone project leaf. | merge | Founder workspace cycle and reporting area | 33, 36 |
 | `/projects/[slug]/zkas/uploads/[id]` | Project admins, operators | Transitional upload-detail leaf. | Should live under project contribution-data submission and audit flow. | merge | Founder workspace attribution/data submission history | 34 |
-| `/settings` | Signed-in users | Transitional settings hub. | Links to missing `/settings/notifications` and `/settings/security`; currently acts as a catch-all. | merge | Supporting settings surface under role workspaces | 42 |
-| `/settings/account` | Signed-in users | Real account-management leaf. | Useful, but should be subordinate to workspace/account IA. | finish | Account settings under user/founder workspace | 16, 42 |
+| `/settings` | Signed-in users | Redirect-only legacy entry. | Session 08 collapsed the old settings hub into `/workspace/account` to remove dead-end settings navigation. | redirect | `/workspace/account` | 42 |
+| `/settings/account` | Signed-in users | Redirect-only legacy account leaf. | Session 08 redirected the old account route to the new workspace account surface. | redirect | `/workspace/account` | 16, 42 |
 | `/settings/zkas` | Signed-in users | Transitional personal zkAS results page. | Better treated as part of earnings/reporting than general settings. | merge | User workspace reporting and results | 35, 36 |
 
 ## Internal Operator and Admin Surfaces
 
 | Path | Audience | Current state | Evidence / notes | Disposition | Canonical target | Follow-up session |
 | --- | --- | --- | --- | --- | --- | --- |
-| `/admin` | Internal operators | Transitional admin landing page. | Links to missing `/admin/projects`, `/admin/users`, and `/admin/analytics`. | finish | Internal operator workspace home | 03, 08, 44 |
+| `/admin` | Internal operators | Operator workspace landing page. | Session 08 removed the broken child links and now points only to real operator destinations. | finish | Internal operator workspace home | 44 |
 | `/admin/payments` | Internal operators | Real payments operations hub. | Already meaningful and linked to observability, reconciliation, deployments. | finish | Operator payments workspace | 20, 37 |
 | `/admin/payments/deployments` | Internal operators | Real wallet-deployment audit page. | Supports runtime drift and env validation. | finish | Operator payments deployment audit | 44 |
 | `/admin/payments/observability` | Internal operators | Real payment observability surface. | Part of the operator control plane. | finish | Operator payments observability | 37 |

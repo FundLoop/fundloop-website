@@ -7,8 +7,6 @@ import { NextIntlClientProvider } from "next-intl"
 import { getMessages, getTranslations, setRequestLocale } from "next-intl/server"
 import "../globals.css"
 import { ThemeProvider } from "@/components/theme-provider"
-import Navbar from "@/components/navbar"
-import Footer from "@/components/footer"
 import { OnboardingModalManager } from "@/components/onboarding-modal-manager"
 import { Web3Provider } from "@/components/web3-provider"
 import { getWalletRuntimeConfig } from "@/lib/onchain/runtime-config"
@@ -59,12 +57,10 @@ export default async function RootLayout({ children, params }: LayoutProps) {
         <NextIntlClientProvider messages={messages}>
           <Web3Provider runtimeConfig={walletRuntimeConfig}>
             <ThemeProvider attribute="class" defaultTheme="system" enableSystem disableTransitionOnChange>
-              <Navbar />
               <Suspense fallback={null}>
                 <OnboardingModalManager />
               </Suspense>
-              <main className="min-h-screen">{children}</main>
-              <Footer />
+              {children}
             </ThemeProvider>
           </Web3Provider>
         </NextIntlClientProvider>

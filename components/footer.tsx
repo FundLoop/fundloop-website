@@ -2,13 +2,13 @@ import Link from "next/link"
 import { getTranslations } from "next-intl/server"
 import { ArrowRight, BriefcaseBusiness, CircleDollarSign, FolderGit2, Globe, Mail } from "lucide-react"
 import { Link as LocaleLink } from "@/i18n/navigation"
-import { publicExploreLinks, resourceLinks } from "@/lib/public-site"
+import { publicPrimaryLinks, resourceLinks } from "@/lib/public-site"
 
 export default async function Footer() {
   const t = await getTranslations("shell")
-  const exploreLinks = publicExploreLinks.map((link) => ({
+  const primaryLinks = publicPrimaryLinks.map((link) => ({
     ...link,
-    label: t(`nav.exploreLinks.${link.id}.label`),
+    label: t(`nav.primary.${link.id}`),
   }))
   const translatedResourceLinks = resourceLinks.map((link) => ({
     ...link,
@@ -76,7 +76,7 @@ export default async function Footer() {
               {t("footer.explore")}
             </h3>
             <ul className="mt-5 space-y-3 text-sm">
-              {exploreLinks.map((link) => (
+              {primaryLinks.map((link) => (
                 <li key={link.href}>
                   <LocaleLink
                     href={link.href}
@@ -86,14 +86,6 @@ export default async function Footer() {
                   </LocaleLink>
                 </li>
               ))}
-              <li>
-                <LocaleLink
-                  href="/blog"
-                  className="text-[var(--marketing-muted-strong)] transition-colors hover:text-[var(--marketing-accent)]"
-                >
-                  {t("nav.blog")}
-                </LocaleLink>
-              </li>
               <li>
                 <LocaleLink
                   href="/ecosystem"
@@ -130,10 +122,10 @@ export default async function Footer() {
             <ul className="mt-5 space-y-3 text-sm">
               <li>
                 <LocaleLink
-                  href="/pledge"
+                  href="/founders"
                   className="text-[var(--marketing-muted-strong)] transition-colors hover:text-[var(--marketing-accent)]"
                 >
-                  {t("footer.pledge")}
+                  {t("nav.primary.founders")}
                 </LocaleLink>
               </li>
               <li>

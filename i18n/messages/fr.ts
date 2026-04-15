@@ -20,10 +20,23 @@ export const frMessages = {
       description:
         "Trouvez le chemin d’aide le plus rapide pour l’onboarding, la participation, les paiements et les questions de compte sur FundLoop.",
     },
+    founders: {
+      title: "Fondateurs - FundLoop",
+      description:
+        "Découvrez le point d’entrée fondateur dans FundLoop, de l’onboarding aux engagements mensuels puis à l’espace de travail opérationnel.",
+    },
   },
   shell: {
     brandTagline: "Prospérité mutuelle en réseau",
     nav: {
+      primary: {
+        founders: "Fondateurs",
+        participation: "Participation",
+        projects: "Projets",
+        documentation: "Documentation",
+        blog: "Blog",
+        support: "Support",
+      },
       useCases: "Cas d’usage",
       explore: "Explorer",
       resources: "Ressources",
@@ -31,6 +44,11 @@ export const frMessages = {
       authenticate: "S’authentifier",
       authUnavailable: "Auth indisponible en local",
       continueOnboarding: "Continuer l’onboarding",
+      workspace: "Espace",
+      founder: "Fondateur",
+      admin: "Admin",
+      account: "Compte",
+      accountFallback: "Compte FundLoop",
       myProfile: "Mon profil",
       settings: "Paramètres",
       logout: "Se déconnecter",
@@ -81,9 +99,30 @@ export const frMessages = {
     },
     mobile: {
       navigate: "Navigation",
+      public: "Parcours publics",
+      workspace: "Espaces",
+      currentSection: "Section active",
       useCases: "Cas d’usage",
       explore: "Explorer",
       resources: "Ressources",
+    },
+    appShell: {
+      productShell: "Espace produit",
+      workspace: {
+        overview: "Vue d’ensemble",
+        account: "Compte",
+        reporting: "Résultats publiés",
+      },
+      founder: {
+        overview: "Vue d’ensemble",
+        projects: "Projets",
+        account: "Compte",
+      },
+      admin: {
+        overview: "Vue d’ensemble",
+        payments: "Paiements",
+        zkas: "zkAS",
+      },
     },
     footer: {
       buildTheLoop: "Construire la boucle",
@@ -102,6 +141,106 @@ export const frMessages = {
       mission: "Un État-réseau pour une prospérité mutuelle.",
       visitSite: "Visiter le site",
     },
+  },
+  accountSettings: {
+    emails: "Adresses e-mail",
+    wallets: "Adresses de wallet",
+  },
+  founders: {
+    eyebrow: "Parcours fondateur",
+    title: "Une entrée plus claire dans FundLoop pour les équipes projet.",
+    body:
+      "Cette page relie le récit public destiné aux fondateurs et le futur espace opérationnel. Elle clarifie ce que FundLoop attend des équipes avant la reconstruction complète du funnel fondateur.",
+    primaryCta: "Commencer l’onboarding projet",
+    secondaryCta: "Lire la documentation",
+    cards: {
+      commitment: {
+        title: "S’engager dans la boucle",
+        description: "Comprenez comment engagements fondateurs, contributions mensuelles et cadence économique s’articulent.",
+      },
+      operations: {
+        title: "Opérer avec de vrais outils",
+        description: "Passez de l’onboarding aux obligations de paiement, routes de collecte et surfaces de reporting projet.",
+      },
+      cadence: {
+        title: "Préparer le rythme mensuel",
+        description: "Voyez comment contributions, vérification, distribution et reporting finiront par se relier chaque mois.",
+      },
+    },
+  },
+  workspace: {
+    eyebrow: "Espace utilisateur",
+    title: "Un point d’entrée plus clair pour votre activité FundLoop",
+    body:
+      "C’est la nouvelle porte d’entrée du côté participant. L’espace complet arrive plus tard, mais vous pouvez déjà aller vers le compte, le contexte de participation et les résultats publiés.",
+    open: "Ouvrir",
+    cards: {
+      account: {
+        title: "Compte",
+        description: "Gérez les préférences et réglages personnels qui appartiennent désormais à votre espace.",
+      },
+      participation: {
+        title: "Participation",
+        description: "Revenez au guide public de participation pendant que l’accueil complet de l’espace est encore en chantier.",
+      },
+      results: {
+        title: "Résultats publiés",
+        description: "Consultez la surface personnelle zkAS qui sera ensuite déplacée vers le reporting de l’espace.",
+      },
+      founder: {
+        title: "Espace fondateur",
+        description: "Accédez directement au côté opérations projet de FundLoop lorsque vous gérez un projet.",
+      },
+    },
+  },
+  workspaceAccount: {
+    heading: "Compte",
+    description:
+      "Gérez les détails personnels, les adresses e-mail et les adresses de wallet qui vivent encore localement dans FundLoop pendant que le modèle de compte adossé à CUBID arrive.",
+  },
+  founderWorkspace: {
+    eyebrow: "Espace fondateur",
+    title: "Un point d’entrée opérationnel stable pour les équipes projet",
+    body:
+      "Cette coquille est la première étape vers l’espace fondateur complet. Elle donne un démarrage clair aux admins projet et pointe ensuite vers les surfaces réelles de paiement et de zkAS déjà présentes plus en profondeur.",
+    open: "Ouvrir",
+    empty: {
+      title: "Aucun projet géré pour le moment",
+      body:
+        "Cet espace s’active une fois qu’un projet est publié ou qu’un accès fondateur/admin vous est accordé. En attendant, le parcours public fondateur et l’onboarding restent les bonnes prochaines étapes.",
+      cta: "Ouvrir le parcours fondateur",
+    },
+    cards: {
+      projects: {
+        title: "Projets",
+        description: "Voyez tous les projets que vous gérez et choisissez la prochaine tâche opérationnelle.",
+      },
+      operations: {
+        title: "Opérations de contribution",
+        description: "Ouvrez le flux réel de paiements et de routes de collecte depuis le nouvel espace fondateur.",
+      },
+      account: {
+        title: "Compte",
+        description: "Gardez les préférences fondateur et le contexte de l’espace au même endroit.",
+      },
+    },
+  },
+  founderProjects: {
+    eyebrow: "Projets gérés",
+    title: "Choisissez un espace projet",
+    body:
+      "Ces cartes relient le nouvel espace fondateur aux pages opérationnelles déjà réelles, qui vivent encore sous des routes spécifiques aux projets.",
+    links: {
+      project: "Ouvrir la fiche publique du projet",
+      payments: "Ouvrir les opérations de contribution",
+      zkas: "Ouvrir le zkAS projet",
+    },
+    missingSlug: "Publiez ou réparez le slug du projet avant de lier des routes fondateur plus profondes.",
+  },
+  founderAccount: {
+    heading: "Compte fondateur",
+    description:
+      "Utilisez cette vue de compte au niveau de l’espace pendant que les opérations projet sont consolidées. Les contrôles spécifiques aux fondateurs continueront d’être déplacés ici.",
   },
   home: {
     eyebrow: "Prospérité mutuelle, rendue opérationnelle",
