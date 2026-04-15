@@ -1,4 +1,45 @@
 ---
+
+### session v20: Add multilingual app-shell infrastructure with locale-prefixed routing
+- timestamp: 2026-04-14T20:07:56-04:00
+- agent: **Codex (GPT-5)**
+- branch: **codex/wallet-production-readiness**
+- head: TBD
+
+#### Objective
+Implement Session 06 by adding the first production-grade i18n layer to FundLoop with always-prefixed locale routes, shared translation infrastructure, and translated shell coverage for the public home, participation, and support flows.
+
+#### Actions Taken
+- Added `next-intl` and introduced a dedicated i18n layer under `i18n/` for locale routing, locale-aware navigation helpers, request-time message loading, dictionary fallback, and proxy redirect helpers.
+- Moved the public App Router shell under `app/[locale]/...`, updated the locale root layout to provide `NextIntlClientProvider`, localized metadata, and locale validation, and kept internal API handlers unprefixed.
+- Added `proxy.ts` so bare page routes redirect to `/en/...`, locale cookies preserve the active language on future bare-route visits, and unsupported locale prefixes like `/de/...` fall through to a proper `404`.
+- Localized the shared public shell in the navbar, footer, mobile menu, resource dropdown, and use-cases dropdown using locale-aware links and translated shell dictionaries.
+- Translated the first public page set: `/[locale]`, `/[locale]/participation`, and `/[locale]/support`, including support-form labels, validation copy, and success/failure toast copy.
+- Added the long-lived engineering reference at `docs/engineering/i18n.md` and linked it from `docs/engineering/README.md`.
+- Updated tests and test infrastructure for the localized routing/layout changes, including new i18n and proxy tests plus existing ecosystem, footer, and observability page tests that referenced moved route modules.
+
+#### Tests and Validation Notes
+- `pnpm dlx node@22.22.1 /opt/homebrew/bin/pnpm lint` passed
+- `pnpm dlx node@22.22.1 /opt/homebrew/bin/pnpm test` passed
+- `pnpm dlx node@22.22.1 /opt/homebrew/bin/pnpm typecheck` passed
+- `pnpm dlx node@22.22.1 /opt/homebrew/bin/pnpm build` passed
+- `pnpm dlx node@22.22.1 /opt/homebrew/bin/pnpm check` passed
+- Manual smoke passed against a local production server:
+  - `/` redirected to `/en`
+  - `/participation` redirected to `/en/participation`
+  - `/fr` rendered translated shell copy
+  - `/es/support` rendered translated support copy
+  - `/de/support` returned `404`
+
+#### Reflections
+- The biggest risk in this session was not the translations themselves, but making locale-prefixed routing coexist cleanly with the existing Next App Router tree and unprefixed internal API handlers.
+- `next-intl` also required a small Vitest compatibility adjustment because some of its internal imports do not play nicely with the current test environment unless the runner resolves `next/navigation` and `next/server` explicitly.
+
+#### Suggested Next Steps
+- Session 07 should build on this by converting the existing styling layer into a durable light/dark token system so the newly localized shell stays visually coherent across both themes.
+- Future content-heavy sessions should translate public product funnels and then founder/user workspaces incrementally, reusing the same `next-intl` patterns established here.
+
+---
 description: Session log for agent coding sessions
 alwaysApply: hybrid = one log entry per commit or session in the most appropriate session-log file
 ---

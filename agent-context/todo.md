@@ -69,12 +69,12 @@ Pick one narrow but meaningful domain, likely onboarding drafts or project payme
 
 ## Session 06: Add multilingual infrastructure to the app shell
 
-- Status: Not started
-- Timestamp started: TBD
-- Timestamp completed: TBD
-- Feature branch: TBD
+- Status: Complete
+- Timestamp started: 2026-04-14 19:58:00 EDT
+- Timestamp completed: 2026-04-14 20:07:56 EDT
+- Feature branch: codex/wallet-production-readiness
 - Head: TBD
-- Session-log reference(s): TBD
+- Session-log reference(s): session v20
 
 Introduce the core i18n architecture for Next.js App Router: locale routing strategy, translation file organization, server/client helpers, and a fallback policy. The initial target is infrastructure, not full translation coverage. Make sure layouts, navigation, metadata, and a small set of public surfaces can render from language packs. This session should explicitly avoid string-by-string ad hoc translation. It should produce a clean system the later UX and product sessions can expand across user, founder, and operator experiences.
 

@@ -4,7 +4,9 @@ import type React from "react"
 
 import { useState } from "react"
 import Link from "next/link"
+import { useTranslations } from "next-intl"
 import { ArrowLeft, Mail, MessageSquare, User } from "lucide-react"
+import { Link as LocaleLink } from "@/i18n/navigation"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -12,50 +14,40 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Textarea } from "@/components/ui/textarea"
 import { toast } from "@/components/ui/use-toast"
 import { getSupabaseBrowserClient, isSupabaseConfigured } from "@/lib/supabase"
-import { MarketingPage, MarketingSection, SectionBody, SectionEyebrow, SectionTitle } from "@/components/marketing/page-chrome"
+import {
+  MarketingPage,
+  MarketingSection,
+  SectionBody,
+  SectionEyebrow,
+  SectionTitle,
+} from "@/components/marketing/page-chrome"
 import { Reveal } from "@/components/marketing/reveal"
 
-const helpPaths = [
-  {
-    title: "Participation",
-    body: "Use this when you want the clearest walkthrough of how people join projects, build signal, and receive rewards.",
-    href: "/participation",
-  },
-  {
-    title: "FAQ",
-    body: "Use this when you want the shortest answer to common questions about pricing, bots, or participation.",
-    href: "/faq",
-  },
-  {
-    title: "Documentation",
-    body: "Use this when you need walkthroughs, setup details, or support articles tied to product workflows.",
-    href: "/documentation",
-  },
-] as const
+type SupportChannel = {
+  icon: "user" | "mail" | "message-square"
+  title: string
+  body: string
+  href?: string
+  linkLabel?: string
+}
 
-const supportChannels = [
-  {
-    icon: User,
-    title: "Founder call",
-    body: "Coming soon for teams that need higher-touch guidance.",
-  },
-  {
-    icon: Mail,
-    title: "Email support",
-    body: "Reach us at support@fundloop.org for account, onboarding, or payment questions.",
-    href: "mailto:support@fundloop.org?subject=Support%20Request&body=Please%20describe%20your%20issue%20here.",
-  },
-  {
-    icon: MessageSquare,
-    title: "Live chat",
-    body: "Planned for future support hours once the public flows are live at a larger scale.",
-  },
-] as const
+type QuickRoute = {
+  title: string
+  body: string
+  href: string
+}
 
-type SupportChannel = (typeof supportChannels)[number]
+const supportChannelIcons = {
+  user: User,
+  mail: Mail,
+  "message-square": MessageSquare,
+} as const
 
-export default function SupportPage() {
+export default function SupportPageContent() {
+  const t = useTranslations("support")
   const supabaseConfigured = isSupabaseConfigured()
+  const quickRoutes = t.raw("quickRoutes.items") as QuickRoute[]
+  const supportChannels = t.raw("channels.items") as SupportChannel[]
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [formData, setFormData] = useState({
     name: "",
@@ -107,8 +99,8 @@ export default function SupportPage() {
 
     if (!supabaseConfigured) {
       toast({
-        title: "Support is unavailable locally",
-        description: "Configure Supabase environment variables to submit support requests from this checkout.",
+        title: t("form.toasts.unavailableTitle"),
+        description: t("form.toasts.unavailableDescription"),
         variant: "destructive",
       })
       return
@@ -117,15 +109,15 @@ export default function SupportPage() {
     const supabase = getSupabase()
     const nextErrors: Record<string, string> = {}
 
-    if (!formData.name.trim()) nextErrors.name = "Name is required"
+    if (!formData.name.trim()) nextErrors.name = t("form.errors.nameRequired")
     if (!formData.email.trim()) {
-      nextErrors.email = "Email is required"
+      nextErrors.email = t("form.errors.emailRequired")
     } else if (!/^\S+@\S+\.\S+$/.test(formData.email)) {
-      nextErrors.email = "Invalid email address"
+      nextErrors.email = t("form.errors.emailInvalid")
     }
-    if (!formData.subject.trim()) nextErrors.subject = "Subject is required"
-    if (!formData.category) nextErrors.category = "Category is required"
-    if (!formData.message.trim()) nextErrors.message = "Message is required"
+    if (!formData.subject.trim()) nextErrors.subject = t("form.errors.subjectRequired")
+    if (!formData.category) nextErrors.category = t("form.errors.categoryRequired")
+    if (!formData.message.trim()) nextErrors.message = t("form.errors.messageRequired")
 
     if (Object.keys(nextErrors).length > 0) {
       setErrors(nextErrors)
@@ -164,13 +156,13 @@ export default function SupportPage() {
     setIsSubmitting(false)
 
     if (error) {
-      toast({ title: "Submission failed", description: error.message })
+      toast({ title: t("form.toasts.submissionFailedTitle"), description: error.message })
       return
     }
 
     toast({
-      title: "Support request submitted",
-      description: "We'll get back to you as soon as possible.",
+      title: t("form.toasts.submissionSuccessTitle"),
+      description: t("form.toasts.submissionSuccessDescription"),
     })
     setFormData({ name: "", email: "", subject: "", category: "", message: "" })
   }
@@ -184,44 +176,39 @@ export default function SupportPage() {
             variant="ghost"
             className="rounded-full px-0 text-[var(--marketing-muted-strong)] hover:bg-transparent hover:text-[var(--marketing-accent)]"
           >
-            <Link href="/">
+            <LocaleLink href="/">
               <ArrowLeft className="h-4 w-4" />
-              Back to home
-            </Link>
+              {t("backToHome")}
+            </LocaleLink>
           </Button>
         </Reveal>
       </MarketingSection>
 
       <MarketingSection className="pt-0">
         <Reveal>
-          <SectionEyebrow>Support</SectionEyebrow>
-          <SectionTitle className="mt-4 max-w-5xl text-5xl sm:text-6xl lg:text-7xl">
-            Start with the fastest path, then reach out if you still need a human.
-          </SectionTitle>
-          <SectionBody className="mt-6 max-w-3xl">
-            FundLoop support works best when we can route you quickly: FAQ for short answers, documentation for product
-            details, and the contact form when you are blocked by a real account or onboarding issue.
-          </SectionBody>
+          <SectionEyebrow>{t("hero.eyebrow")}</SectionEyebrow>
+          <SectionTitle className="mt-4 max-w-5xl text-5xl sm:text-6xl lg:text-7xl">{t("hero.title")}</SectionTitle>
+          <SectionBody className="mt-6 max-w-3xl">{t("hero.body")}</SectionBody>
         </Reveal>
       </MarketingSection>
 
       <MarketingSection className="border-y border-[color:var(--marketing-line)] bg-white/34 dark:bg-white/[0.02]">
         <div className="grid gap-10 lg:grid-cols-[minmax(0,0.72fr)_minmax(0,1.28fr)]">
           <Reveal>
-            <SectionEyebrow>Quick routes</SectionEyebrow>
-            <SectionTitle className="mt-4 text-5xl sm:text-6xl">Usually, one of these gets you unstuck fastest.</SectionTitle>
+            <SectionEyebrow>{t("quickRoutes.eyebrow")}</SectionEyebrow>
+            <SectionTitle className="mt-4 text-5xl sm:text-6xl">{t("quickRoutes.title")}</SectionTitle>
           </Reveal>
           <div className="grid gap-6 sm:grid-cols-2">
-            {helpPaths.map((path, index) => (
+            {quickRoutes.map((path, index) => (
               <Reveal key={path.href} delay={index * 90}>
-                <Link href={path.href} className="group block border-t border-[color:var(--marketing-line)] pt-5">
+                <LocaleLink href={path.href} className="group block border-t border-[color:var(--marketing-line)] pt-5">
                   <p className="font-display text-3xl leading-none tracking-[-0.04em]">{path.title}</p>
                   <p className="mt-3 text-sm leading-6 text-[var(--marketing-muted-strong)]">{path.body}</p>
                   <span className="mt-4 inline-flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.18em] text-[var(--marketing-accent)]">
-                    Open page
+                    {t("quickRoutes.openPage")}
                     <ArrowLeft className="h-3.5 w-3.5 rotate-180 transition-transform duration-200 group-hover:translate-x-1" />
                   </span>
-                </Link>
+                </LocaleLink>
               </Reveal>
             ))}
           </div>
@@ -232,12 +219,11 @@ export default function SupportPage() {
         <div className="grid gap-12 lg:grid-cols-[minmax(0,0.78fr)_minmax(0,1.22fr)]">
           <Reveal className="space-y-6">
             <div>
-              <SectionEyebrow>Channels</SectionEyebrow>
-              <SectionTitle className="mt-4 text-5xl sm:text-6xl">Ways to get help.</SectionTitle>
+              <SectionEyebrow>{t("channels.eyebrow")}</SectionEyebrow>
+              <SectionTitle className="mt-4 text-5xl sm:text-6xl">{t("channels.title")}</SectionTitle>
             </div>
-            {supportChannels.map((channel: SupportChannel, index) => {
-              const Icon = channel.icon
-              const channelHref = "href" in channel ? channel.href : undefined
+            {supportChannels.map((channel, index) => {
+              const Icon = supportChannelIcons[channel.icon]
 
               return (
                 <Reveal key={channel.title} delay={index * 70}>
@@ -248,12 +234,12 @@ export default function SupportPage() {
                       </span>
                       <p className="text-sm font-semibold uppercase tracking-[0.18em]">{channel.title}</p>
                     </div>
-                    {channelHref ? (
+                    {channel.href ? (
                       <Link
-                        href={channelHref}
+                        href={channel.href}
                         className="mt-4 inline-flex text-sm font-semibold text-[var(--marketing-accent)] underline-offset-4 hover:underline"
                       >
-                        support@fundloop.org
+                        {channel.linkLabel}
                       </Link>
                     ) : null}
                     <p className="mt-3 text-sm leading-6 text-[var(--marketing-muted-strong)]">{channel.body}</p>
@@ -266,23 +252,23 @@ export default function SupportPage() {
           <Reveal delay={120}>
             <div className="rounded-[2rem] border border-[color:var(--marketing-line)] bg-white/58 p-6 shadow-[0_24px_70px_rgba(15,23,23,0.08)] dark:bg-white/[0.03] sm:p-8">
               <p className="text-[0.68rem] font-semibold uppercase tracking-[0.28em] text-[var(--marketing-muted)]">
-                Contact form
+                {t("form.eyebrow")}
               </p>
               <form onSubmit={handleSubmit} className="mt-8 space-y-5">
                 <div className="grid gap-5 sm:grid-cols-2">
                   <div className="space-y-2">
-                    <Label htmlFor="name">Name</Label>
-                    <Input id="name" value={formData.name} onChange={handleInputChange} placeholder="Your name" required />
+                    <Label htmlFor="name">{t("form.name")}</Label>
+                    <Input id="name" value={formData.name} onChange={handleInputChange} placeholder={t("form.namePlaceholder")} required />
                     {errors.name ? <p className="text-sm text-red-500">{errors.name}</p> : null}
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="email">Email</Label>
+                    <Label htmlFor="email">{t("form.email")}</Label>
                     <Input
                       id="email"
                       type="email"
                       value={formData.email}
                       onChange={handleInputChange}
-                      placeholder="you@example.com"
+                      placeholder={t("form.emailPlaceholder")}
                       required
                     />
                     {errors.email ? <p className="text-sm text-red-500">{errors.email}</p> : null}
@@ -291,29 +277,29 @@ export default function SupportPage() {
 
                 <div className="grid gap-5 sm:grid-cols-2">
                   <div className="space-y-2">
-                    <Label htmlFor="subject">Subject</Label>
+                    <Label htmlFor="subject">{t("form.subject")}</Label>
                     <Input
                       id="subject"
                       value={formData.subject}
                       onChange={handleInputChange}
-                      placeholder="What do you need help with?"
+                      placeholder={t("form.subjectPlaceholder")}
                       required
                     />
                     {errors.subject ? <p className="text-sm text-red-500">{errors.subject}</p> : null}
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="category">Category</Label>
+                    <Label htmlFor="category">{t("form.category")}</Label>
                     <Select value={formData.category} onValueChange={handleSelectChange}>
                       <SelectTrigger id="category">
-                        <SelectValue placeholder="Select category" />
+                        <SelectValue placeholder={t("form.categoryPlaceholder")} />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="general">General inquiry</SelectItem>
-                        <SelectItem value="technical">Technical support</SelectItem>
-                        <SelectItem value="billing">Billing and payments</SelectItem>
-                        <SelectItem value="account">Account issues</SelectItem>
-                        <SelectItem value="feature">Feature request</SelectItem>
-                        <SelectItem value="other">Other</SelectItem>
+                        <SelectItem value="general">{t("form.categories.general")}</SelectItem>
+                        <SelectItem value="technical">{t("form.categories.technical")}</SelectItem>
+                        <SelectItem value="billing">{t("form.categories.billing")}</SelectItem>
+                        <SelectItem value="account">{t("form.categories.account")}</SelectItem>
+                        <SelectItem value="feature">{t("form.categories.feature")}</SelectItem>
+                        <SelectItem value="other">{t("form.categories.other")}</SelectItem>
                       </SelectContent>
                     </Select>
                     {errors.category ? <p className="text-sm text-red-500">{errors.category}</p> : null}
@@ -321,12 +307,12 @@ export default function SupportPage() {
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="message">Message</Label>
+                  <Label htmlFor="message">{t("form.message")}</Label>
                   <Textarea
                     id="message"
                     value={formData.message}
                     onChange={handleInputChange}
-                    placeholder="Please describe your issue or question in detail."
+                    placeholder={t("form.messagePlaceholder")}
                     className="min-h-[170px]"
                     required
                   />
@@ -339,7 +325,7 @@ export default function SupportPage() {
                   className="w-full rounded-full bg-[var(--marketing-accent)] text-white hover:bg-[color:var(--marketing-accent)]/92"
                   disabled={isSubmitting || !supabaseConfigured}
                 >
-                  {!supabaseConfigured ? "Support unavailable locally" : isSubmitting ? "Submitting..." : "Submit request"}
+                  {!supabaseConfigured ? t("form.unavailable") : isSubmitting ? t("form.submitting") : t("form.submit")}
                 </Button>
               </form>
             </div>

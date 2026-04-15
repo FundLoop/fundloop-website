@@ -2,10 +2,10 @@
 
 import type React from "react"
 
+import { useTranslations } from "next-intl"
+import { Menu, X } from "lucide-react"
+import { Link, usePathname } from "@/i18n/navigation"
 import { Button } from "@/components/ui/button"
-import { X, Menu } from "lucide-react"
-import Link from "next/link"
-import { usePathname } from "next/navigation"
 
 interface MobileMenuProps {
   setMobileMenuOpen: React.Dispatch<React.SetStateAction<boolean>>
@@ -24,6 +24,7 @@ export function MobileMenu({
   resourceLinks,
   showTrigger = true,
 }: MobileMenuProps) {
+  const t = useTranslations("shell.mobile")
   const pathname = usePathname()
 
   return (
@@ -38,12 +39,12 @@ export function MobileMenu({
           <Menu className="h-5 w-5" />
         </Button>
       ) : null}
-      {mobileMenuOpen && (
+      {mobileMenuOpen ? (
         <div className="fixed inset-0 z-50 overflow-y-auto bg-[var(--marketing-paper)]/95 p-6 backdrop-blur-xl dark:bg-[var(--marketing-ink)]/95">
           <div className="mb-8 flex items-center justify-between">
             <div>
               <p className="text-[0.68rem] font-semibold uppercase tracking-[0.28em] text-[var(--marketing-muted)]">
-                Navigate
+                {t("navigate")}
               </p>
               <h2 className="mt-2 font-display text-3xl">FundLoop</h2>
             </div>
@@ -55,7 +56,7 @@ export function MobileMenu({
             {useCaseLinks?.length ? (
               <div className="space-y-4">
                 <p className="text-[0.68rem] font-semibold uppercase tracking-[0.28em] text-[var(--marketing-muted)]">
-                  Use Cases
+                  {t("useCases")}
                 </p>
                 <div className="flex flex-col space-y-3">
                   {useCaseLinks.map(({ href, label }) => (
@@ -76,7 +77,7 @@ export function MobileMenu({
             {navLinks?.length ? (
               <div className="space-y-4">
                 <p className="text-[0.68rem] font-semibold uppercase tracking-[0.28em] text-[var(--marketing-muted)]">
-                  Explore
+                  {t("explore")}
                 </p>
                 <div className="grid gap-3">
                   {navLinks.map(({ href, label }) => (
@@ -95,7 +96,7 @@ export function MobileMenu({
             {resourceLinks?.length ? (
               <div className="space-y-4">
                 <p className="text-[0.68rem] font-semibold uppercase tracking-[0.28em] text-[var(--marketing-muted)]">
-                  Resources
+                  {t("resources")}
                 </p>
                 <div className="grid gap-3">
                   {resourceLinks.map(({ href, label }) => (
@@ -113,7 +114,7 @@ export function MobileMenu({
             ) : null}
           </div>
         </div>
-      )}
+      ) : null}
     </>
   )
 }

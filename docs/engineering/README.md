@@ -13,6 +13,7 @@ Current high-signal docs:
 
 - [Edge Function Contract Pattern](/Users/botmaster/src/fundloop/docs/engineering/edge-functions.md)
 - [Information Architecture](/Users/botmaster/src/fundloop/docs/engineering/information-architecture.md)
+- [Internationalization](/Users/botmaster/src/fundloop/docs/engineering/i18n.md)
 - [Route Inventory](/Users/botmaster/src/fundloop/docs/engineering/route-inventory.md)
 
 Agent-only live context still belongs in [agent-context](/Users/botmaster/src/fundloop/agent-context/README.md).

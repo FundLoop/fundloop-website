@@ -91,7 +91,7 @@ vi.mock("@/lib/observability/payment-flow-server", () => ({
 
 describe("AdminPaymentsObservabilityPage", () => {
   it("renders summary cards, filtered events, and attempt drill-downs", async () => {
-    const Page = (await import("@/app/admin/payments/observability/page")).default
+    const Page = (await import("@/app/[locale]/admin/payments/observability/page")).default
     render(
       await Page({
         searchParams: Promise.resolve({

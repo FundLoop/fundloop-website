@@ -1,34 +1,39 @@
 "use client"
 
 import { useEffect, useState } from "react"
-import Link from "next/link"
-import { usePathname, useRouter } from "next/navigation"
+import { useTranslations } from "next-intl"
 import { getSupabaseBrowserClient, isSupabaseConfigured } from "@/lib/supabase"
+import { Link, usePathname, useRouter } from "@/i18n/navigation"
 import { Button } from "@/components/ui/button"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
-  DropdownMenuTrigger,
   DropdownMenuSeparator,
+  DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { ThemeToggle } from "@/components/theme-toggle"
 import { AuthModal } from "@/components/auth-modal"
 import ResourcesDropdown from "@/components/resources-dropdown"
 import UseCasesDropdown from "@/components/use-cases-dropdown"
-import { CircleDollarSign, ChevronDown, User, Settings, LogOut } from "lucide-react"
+import { CircleDollarSign, ChevronDown, LogOut, Settings, User } from "lucide-react"
 import { MobileMenu } from "@/components/mobile-menu"
 import { useCaseLinks } from "@/lib/use-cases"
 import { OPEN_USE_CASES_MENU_EVENT } from "@/lib/use-cases-nav"
 import { cn } from "@/lib/utils"
 import { publicExploreLinks, resourceLinks } from "@/lib/public-site"
 
+type NavbarUser = {
+  full_name: string | null
+  avatar_url: string | null
+  status: string | null
+}
+
 export default function Navbar() {
+  const t = useTranslations("shell")
   const [session, setSession] = useState<any>(null)
-  const [user, setUser] = useState<{ full_name: string | null; avatar_url: string | null; status: string | null } | null>(
-    null,
-  )
+  const [user, setUser] = useState<NavbarUser | null>(null)
   const [loading, setLoading] = useState(true)
   const [showAuthModal, setShowAuthModal] = useState(false)
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
@@ -76,13 +81,14 @@ export default function Navbar() {
       setLoading(false)
     }
 
-    fetchUser()
+    void fetchUser()
 
     const supabase = getSupabaseBrowserClient()
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange(async (_, newSession) => {
       setSession(newSession)
+
       if (newSession?.user?.id) {
         const { data } = await supabase
           .from("users")
@@ -130,9 +136,18 @@ export default function Navbar() {
     router.refresh()
   }
 
-  const exploreLinks = publicExploreLinks
-  const topLevelLinks = [{ label: "Blog", href: "/blog" }]
-  const mobileNavLinks = [...publicExploreLinks, { label: "Blog", href: "/blog" }]
+  const exploreLinks = publicExploreLinks.map((link) => ({
+    ...link,
+    label: t(`nav.exploreLinks.${link.id}.label`),
+    description: t(`nav.exploreLinks.${link.id}.description`),
+  }))
+  const translatedResourceLinks = resourceLinks.map((link) => ({
+    ...link,
+    label: t(`nav.resourceLinks.${link.id}.label`),
+    description: t(`nav.resourceLinks.${link.id}.description`),
+  }))
+  const topLevelLinks = [{ label: t("nav.blog"), href: "/blog" }]
+  const mobileNavLinks = [...exploreLinks, { label: t("nav.blog"), href: "/blog" }]
 
   const desktopNavItemClass =
     "h-10 rounded-full px-4 text-sm font-medium text-[var(--marketing-muted-strong)] transition-colors data-[state=open]:bg-black/[0.04] data-[state=open]:text-[var(--marketing-ink)] dark:data-[state=open]:bg-white/[0.06] dark:data-[state=open]:text-[var(--marketing-paper)]"
@@ -148,18 +163,18 @@ export default function Navbar() {
             <div className="hidden sm:block">
               <p className="font-display text-2xl leading-none tracking-[-0.04em]">FundLoop</p>
               <p className="mt-1 text-[0.6rem] font-semibold uppercase tracking-[0.28em] text-[var(--marketing-muted)]">
-                Networked mutual prosperity
+                {t("brandTagline")}
               </p>
             </div>
           </Link>
 
-          <div className="hidden lg:flex items-center rounded-full border border-[color:var(--marketing-line)] bg-white/55 px-2 py-1 dark:bg-white/[0.03]">
+          <div className="hidden items-center rounded-full border border-[color:var(--marketing-line)] bg-white/55 px-2 py-1 dark:bg-white/[0.03] lg:flex">
             <UseCasesDropdown open={useCasesOpen} onOpenChange={setUseCasesOpen} triggerClassName={desktopNavItemClass} />
 
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button variant="ghost" className={desktopNavItemClass}>
-                  Explore <ChevronDown className="h-4 w-4 ml-1" />
+                  {t("nav.explore")} <ChevronDown className="ml-1 h-4 w-4" />
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent
@@ -211,7 +226,7 @@ export default function Navbar() {
                 disabled={!supabaseConfigured || loading}
                 onClick={() => setShowAuthModal(true)}
               >
-                {supabaseConfigured ? "Authenticate" : "Auth unavailable locally"}
+                {supabaseConfigured ? t("nav.authenticate") : t("nav.authUnavailable")}
               </Button>
             ) : user?.status !== "active" ? (
               <div className="flex items-center gap-2">
@@ -219,17 +234,17 @@ export default function Navbar() {
                   className="rounded-full border border-transparent bg-[var(--marketing-accent)] px-5 text-white hover:bg-[color:var(--marketing-accent)]/90"
                   onClick={openOnboarding}
                 >
-                  Continue onboarding
+                  {t("nav.continueOnboarding")}
                 </Button>
                 <Button variant="ghost" size="icon" onClick={() => void handleSignOut()}>
                   <LogOut className="h-4 w-4" />
-                  <span className="sr-only">Log out</span>
+                  <span className="sr-only">{t("nav.logout")}</span>
                 </Button>
               </div>
             ) : (
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" className="h-8 w-8 p-0 rounded-full">
+                  <Button variant="ghost" className="h-8 w-8 rounded-full p-0">
                     <Avatar className="h-8 w-8">
                       <AvatarImage src={user?.avatar_url || "/placeholder.svg"} />
                       <AvatarFallback>{user?.full_name?.substring(0, 2) || "U"}</AvatarFallback>
@@ -245,39 +260,34 @@ export default function Navbar() {
                   <DropdownMenuItem asChild>
                     <Link href="/my-profile">
                       <User className="mr-2 h-4 w-4" />
-                      My Profile
+                      {t("nav.myProfile")}
                     </Link>
                   </DropdownMenuItem>
                   <DropdownMenuItem asChild>
                     <Link href="/settings">
                       <Settings className="mr-2 h-4 w-4" />
-                      Settings
+                      {t("nav.settings")}
                     </Link>
                   </DropdownMenuItem>
                   <DropdownMenuSeparator />
                   <DropdownMenuItem onClick={handleSignOut}>
                     <LogOut className="mr-2 h-4 w-4" />
-                    Log out
+                    {t("nav.logout")}
                   </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
             )}
 
-            {/* Mobile hamburger icon */}
-            <MobileMenu setMobileMenuOpen={setMobileMenuOpen} />
+            <MobileMenu
+              setMobileMenuOpen={setMobileMenuOpen}
+              mobileMenuOpen={mobileMenuOpen}
+              navLinks={mobileNavLinks}
+              useCaseLinks={useCaseLinks}
+              resourceLinks={translatedResourceLinks}
+            />
           </div>
         </div>
       </header>
-
-      {/* Mobile menu modal */}
-      <MobileMenu
-        mobileMenuOpen={mobileMenuOpen}
-        setMobileMenuOpen={setMobileMenuOpen}
-        navLinks={mobileNavLinks}
-        resourceLinks={resourceLinks.map(({ href, label }) => ({ href, label }))}
-        useCaseLinks={useCaseLinks.map(({ href, shortLabel }) => ({ href, label: shortLabel }))}
-        showTrigger={false}
-      />
       <AuthModal open={showAuthModal} onClose={() => setShowAuthModal(false)} />
     </>
   )

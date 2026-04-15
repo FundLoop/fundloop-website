@@ -1,11 +1,11 @@
 "use client"
 
 import { useState } from "react"
-import Link from "next/link"
-import { usePathname } from "next/navigation"
+import { useTranslations } from "next-intl"
+import { ChevronDown } from "lucide-react"
+import { Link, usePathname } from "@/i18n/navigation"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 import { Button } from "@/components/ui/button"
-import { ChevronDown } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { resourceLinks } from "@/lib/public-site"
 
@@ -14,8 +14,14 @@ type ResourcesDropdownProps = {
 }
 
 export default function ResourcesDropdown({ triggerClassName }: ResourcesDropdownProps) {
+  const t = useTranslations("shell")
   const [open, setOpen] = useState(false)
   const pathname = usePathname()
+  const translatedResourceLinks = resourceLinks.map((resource) => ({
+    ...resource,
+    label: t(`nav.resourceLinks.${resource.id}.label`),
+    description: t(`nav.resourceLinks.${resource.id}.description`),
+  }))
 
   const isActive = resourceLinks.some((resource) => pathname === resource.href)
 
@@ -32,7 +38,7 @@ export default function ResourcesDropdown({ triggerClassName }: ResourcesDropdow
             triggerClassName,
           )}
         >
-          Resources
+          {t("nav.resources")}
           <ChevronDown className="ml-1 h-4 w-4" />
         </Button>
       </DropdownMenuTrigger>
@@ -41,7 +47,7 @@ export default function ResourcesDropdown({ triggerClassName }: ResourcesDropdow
         className="w-[30rem] max-w-[calc(100vw-2rem)] rounded-[1.5rem] border-[color:var(--marketing-line)] bg-[rgba(255,248,238,0.94)] p-3 shadow-[0_30px_90px_rgba(15,23,23,0.14)] backdrop-blur-xl dark:bg-[rgba(13,21,21,0.95)]"
       >
         <div className="grid gap-1 sm:grid-cols-2">
-          {resourceLinks.map((resource) => (
+          {translatedResourceLinks.map((resource) => (
             <DropdownMenuItem key={resource.href} asChild className="p-0">
               <Link
                 href={resource.href}
