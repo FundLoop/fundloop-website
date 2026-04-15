@@ -1,7 +1,7 @@
 import type { SupabaseClient } from "@supabase/supabase-js"
 import type { Database } from "../../types/supabase"
 import { resolveCubidIdentityByEmail } from "./resolve-by-email"
-import { type CubidIdentitySnapshot, isResolvedCubidIdentityStatus } from "./types"
+import { type CubidIdentityLinkState, isResolvedCubidIdentityStatus } from "./types"
 
 type CubidResolutionCommandFailureCode =
   | "missing_email"
@@ -19,7 +19,7 @@ type CubidResolutionCommandFailure = {
 
 type CubidResolutionCommandSuccess = {
   ok: true
-  data: CubidIdentitySnapshot
+  data: CubidIdentityLinkState
 }
 
 export type CubidResolutionCommandResult = CubidResolutionCommandSuccess | CubidResolutionCommandFailure
@@ -78,7 +78,7 @@ export async function executeResolveCubidIdentityByEmailCommand(
     }
   }
 
-  let resolvedIdentity: CubidIdentitySnapshot
+  let resolvedIdentity: CubidIdentityLinkState
 
   try {
     resolvedIdentity = await resolveCubidIdentityByEmail({

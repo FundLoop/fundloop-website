@@ -8,11 +8,13 @@ import {
   searchProjectsForTeamMember,
 } from "@/app/actions/onboarding-actions"
 import { CubidIdentityStep } from "@/components/onboarding/cubid-identity-step"
+import { ExtendedCubidIdentityStep } from "@/components/onboarding/extended-cubid-identity-step"
 import { invokeUserOnboardingDraftClearBrowser } from "@/lib/edge-functions/user-onboarding-draft-clear"
 import { invokeUserOnboardingPublishBrowser } from "@/lib/edge-functions/user-onboarding-publish"
 import { invokeUserOnboardingDraftUpsertBrowser } from "@/lib/edge-functions/user-onboarding-draft-upsert"
 import { invokeUserCubidResolveEmailBrowser } from "@/lib/edge-functions/user-cubid-resolve-email"
-import { isResolvedCubidIdentityStatus } from "@/lib/cubid/types"
+import { invokeUserCubidSyncProfileBrowser } from "@/lib/edge-functions/user-cubid-sync-profile"
+import { isResolvedCubidIdentityStatus, type CubidIdentitySnapshotSummary } from "@/lib/cubid/types"
 import { getSupabaseBrowserClient } from "@/lib/supabase"
 import {
   buildVisibilityFromPreset,
@@ -63,7 +65,15 @@ function formatDraftTime(value: string | null | undefined) {
   }).format(new Date(value))
 }
 
-const USER_SCREEN_ORDER: UserOnboardingScreen[] = ["cubid", "identity", "visibility", "about", "relationship", "review"]
+const USER_SCREEN_ORDER: UserOnboardingScreen[] = [
+  "cubid",
+  "extended_identity",
+  "identity",
+  "visibility",
+  "about",
+  "relationship",
+  "review",
+]
 
 export default function UserSignupFlow({
   onClose,
@@ -81,7 +91,13 @@ export default function UserSignupFlow({
   const [cubidIdentityStatus, setCubidIdentityStatus] = useState<"unlinked" | "linked" | "verified">("unlinked")
   const [cubidId, setCubidId] = useState<string | null>(null)
   const [cubidScore, setCubidScore] = useState<number | null>(null)
+  const [cubidSnapshot, setCubidSnapshot] = useState<CubidIdentitySnapshotSummary | null>(null)
+  const [profileCompletionPercent, setProfileCompletionPercent] = useState(0)
+  const [profileCompletionMissingItems, setProfileCompletionMissingItems] = useState<string[]>([])
+  const [cubidPassportOrigin, setCubidPassportOrigin] = useState<string | null>(null)
+  const [cubidStampPageId, setCubidStampPageId] = useState<string | null>(null)
   const [resolvingCubid, setResolvingCubid] = useState(false)
+  const [syncingCubidProfile, setSyncingCubidProfile] = useState(false)
   const [payload, setPayload] = useState<UserOnboardingPayload>({
     ...DEFAULT_USER_ONBOARDING_PAYLOAD,
     inviteCode,
@@ -172,6 +188,11 @@ export default function UserSignupFlow({
       setCubidIdentityStatus(state.profile?.cubid_identity_status ?? "unlinked")
       setCubidId(state.profile?.cubid_id ?? null)
       setCubidScore(state.profile?.cubid_score ?? null)
+      setCubidSnapshot(state.cubidSnapshot)
+      setProfileCompletionPercent(state.profileCompletionPercent)
+      setProfileCompletionMissingItems(state.profileCompletionMissingItems)
+      setCubidPassportOrigin(state.cubidPassportOrigin)
+      setCubidStampPageId(state.cubidStampPageId)
 
       if (!state.authUserId) {
         setCurrentScreen("welcome")
@@ -180,6 +201,9 @@ export default function UserSignupFlow({
           inviteCode,
           relationshipChoice: initialRelationshipChoice,
         })
+        setCubidSnapshot(null)
+        setProfileCompletionPercent(0)
+        setProfileCompletionMissingItems([])
         autosaveReady.current = false
         setLoading(false)
         return
@@ -367,6 +391,37 @@ export default function UserSignupFlow({
           ? "Your email identity is verified with CUBID and ready for FundLoop publishing."
           : "Your email is now linked to CUBID. You can continue through onboarding.",
     })
+
+    await handleSyncCubidProfile()
+  }
+
+  const handleSyncCubidProfile = async () => {
+    setSyncingCubidProfile(true)
+    const result = await invokeUserCubidSyncProfileBrowser()
+
+    if (!result.ok) {
+      setSyncingCubidProfile(false)
+      toast({
+        title: "Could not refresh CUBID data",
+        description: result.error.message,
+        variant: "destructive",
+      })
+      return
+    }
+
+    const state = await getOnboardingState()
+    setSyncingCubidProfile(false)
+    setCubidId(result.data.cubidId)
+    setCubidScore(result.data.cubidScore)
+    setCubidIdentityStatus(result.data.cubidIdentityStatus)
+    setCubidSnapshot(state.cubidSnapshot)
+    setProfileCompletionPercent(state.profileCompletionPercent)
+    setProfileCompletionMissingItems(state.profileCompletionMissingItems)
+
+    toast({
+      title: "CUBID data refreshed",
+      description: "Your latest identity snapshot is now reflected in this onboarding flow.",
+    })
   }
 
   const updatePayload = (partial: Partial<UserOnboardingPayload>) => {
@@ -453,6 +508,8 @@ export default function UserSignupFlow({
     switch (currentScreen) {
       case "cubid":
         return isResolvedCubidIdentityStatus(cubidIdentityStatus)
+      case "extended_identity":
+        return true
       case "identity":
         return Boolean(payload.fullName.trim() && payload.profileHeadline.trim())
       case "visibility":
@@ -582,6 +639,8 @@ export default function UserSignupFlow({
       title={
         currentScreen === "cubid"
           ? "Link your identity with CUBID"
+          : currentScreen === "extended_identity"
+            ? "Optionally strengthen your profile signals"
           : currentScreen === "identity"
           ? "Start with who you are"
           : currentScreen === "visibility"
@@ -595,6 +654,8 @@ export default function UserSignupFlow({
       description={
         currentScreen === "cubid"
           ? "Before your profile can go live, FundLoop needs to resolve the signed-in email against CUBID and keep that identity link on file."
+          : currentScreen === "extended_identity"
+            ? "This step is optional. Add a phone number or provider stamps now, or skip ahead and come back from your workspace later."
           : currentScreen === "identity"
           ? "Add your name, role, and profile picture so the preview starts feeling real."
           : currentScreen === "visibility"
@@ -639,6 +700,22 @@ export default function UserSignupFlow({
           onResolve={() => void handleResolveCubid()}
           title="CUBID becomes the identity bridge for FundLoop publishing"
           body="We use your signed-in email to resolve or create the matching CUBID user. Publishing is blocked until that link exists, because later payout and accountability flows depend on it."
+        />
+      ) : null}
+
+      {currentScreen === "extended_identity" ? (
+        <ExtendedCubidIdentityStep
+          email={authEmail}
+          cubidId={cubidId}
+          cubidIdentityStatus={cubidIdentityStatus}
+          cubidSnapshot={cubidSnapshot}
+          profileCompletionPercent={profileCompletionPercent}
+          profileCompletionMissingItems={profileCompletionMissingItems}
+          cubidPassportOrigin={cubidPassportOrigin}
+          cubidStampPageId={cubidStampPageId}
+          syncing={syncingCubidProfile}
+          onRefresh={() => void handleSyncCubidProfile()}
+          onSkip={() => moveToScreen("identity")}
         />
       ) : null}
 
@@ -948,6 +1025,17 @@ export default function UserSignupFlow({
                       : "Your personal profile will be live and ready to use."}
                 </p>
                 {selectedProject ? <p>Selected project: {selectedProject.name}</p> : null}
+              </CardContent>
+            </Card>
+            <Card>
+              <CardContent className="space-y-2 p-4 text-sm text-slate-600">
+                <p className="font-medium text-slate-900">Profile completion today</p>
+                <p>{profileCompletionPercent}% complete across local profile data and CUBID-backed trust items.</p>
+                {profileCompletionMissingItems.length > 0 ? (
+                  <p>Still missing: {profileCompletionMissingItems.join(", ")}</p>
+                ) : (
+                  <p>All Session 14 completion items are already covered.</p>
+                )}
               </CardContent>
             </Card>
           </div>

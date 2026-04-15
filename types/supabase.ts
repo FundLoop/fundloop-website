@@ -1814,6 +1814,59 @@ export type Database = {
           },
         ]
       }
+      cubid_identity_snapshots: {
+        Row: {
+          available_stamp_types: string[]
+          cubid_score: number | null
+          cubid_user_id: string
+          last_sync_error_code: string | null
+          last_sync_error_message: string | null
+          last_synced_at: string | null
+          primary_email: string | null
+          primary_phone: string | null
+          raw_identity: Json
+          raw_stamps: Json
+          user_id: string
+          verified_stamp_types: string[]
+        }
+        Insert: {
+          available_stamp_types?: string[]
+          cubid_score?: number | null
+          cubid_user_id: string
+          last_sync_error_code?: string | null
+          last_sync_error_message?: string | null
+          last_synced_at?: string | null
+          primary_email?: string | null
+          primary_phone?: string | null
+          raw_identity?: Json
+          raw_stamps?: Json
+          user_id: string
+          verified_stamp_types?: string[]
+        }
+        Update: {
+          available_stamp_types?: string[]
+          cubid_score?: number | null
+          cubid_user_id?: string
+          last_sync_error_code?: string | null
+          last_sync_error_message?: string | null
+          last_synced_at?: string | null
+          primary_email?: string | null
+          primary_phone?: string | null
+          raw_identity?: Json
+          raw_stamps?: Json
+          user_id?: string
+          verified_stamp_types?: string[]
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cubid_identity_snapshots_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: true
+            referencedRelation: "users"
+            referencedColumns: ["user_id"]
+          },
+        ]
+      }
       user_interests: {
         Row: {
           created_at: string | null

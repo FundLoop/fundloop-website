@@ -222,6 +222,8 @@ export const frMessages = {
       identity: {
         title: "CUBID devient l’autorité d’identité pour FundLoop",
         manage: "Gérer dans CUBID Passport",
+        refresh: "Actualiser les données CUBID",
+        completion: "Complétude du profil",
         labels: {
           unlinked: "Pas encore lié",
           linked: "Lié",

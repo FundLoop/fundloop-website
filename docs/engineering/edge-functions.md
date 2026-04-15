@@ -33,6 +33,7 @@ The first migrated domains are:
 
 - `project-payment-drafts-create`
 - `user-cubid-resolve-email`
+- `user-cubid-sync-profile`
 - onboarding writes:
   - `user-onboarding-draft-upsert`
   - `user-onboarding-draft-clear`
@@ -58,8 +59,10 @@ For onboarding:
 For CUBID:
 
 - `user-cubid-resolve-email` is the canonical write path for resolving or auto-creating a CUBID identity from the authenticated user email
-- the function uses direct HTTP calls to the CUBID API instead of installing `cubid-sdk`
-- the app invokes the browser adapter from onboarding and account/workspace surfaces, while server-side publish commands still enforce the same identity requirement for bypass safety
+- `user-cubid-sync-profile` is the canonical write path for refreshing the normalized identity snapshot and stamps
+- the functions use direct HTTP calls to the CUBID API and the local CUBID v2 SDK packages rather than a remote npm dependency install
+- the app invokes browser adapters from onboarding and account/workspace surfaces, while server-side publish commands still enforce the same identity requirement for bypass safety
+- phone OTP and verified-stamp persistence use authenticated internal Next route handlers as a browser bridge so `CUBID_API_KEY` never enters the client bundle
 
 The migration is intentionally incremental so the transport layer can stabilize before broader read migration and later founder/user workspace work.
 
@@ -80,6 +83,7 @@ supabase functions serve user-onboarding-publish --env-file .env.local
 supabase functions serve project-onboarding-draft-upsert --env-file .env.local
 supabase functions serve project-onboarding-publish --env-file .env.local
 supabase functions serve user-cubid-resolve-email --env-file .env.local
+supabase functions serve user-cubid-sync-profile --env-file .env.local
 ```
 
 Once the local stack is running, invoke the command through the app or by calling the local functions endpoint with an authenticated bearer token.

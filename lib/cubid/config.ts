@@ -19,6 +19,10 @@ export type CubidConfig = {
   baseUrl: string
 }
 
+export type CubidWeb2Config = CubidConfig & {
+  stampPageId: string | null
+}
+
 export function getCubidConfig(): CubidConfig {
   const dappId = readEnv("CUBID_DAPP_ID")
   const apiKey = readEnv("CUBID_API_KEY")
@@ -33,6 +37,20 @@ export function getCubidConfig(): CubidConfig {
     apiKey,
     baseUrl,
   }
+}
+
+export function getCubidWeb2Config(): CubidWeb2Config {
+  const config = getCubidConfig()
+  const stampPageId = readEnv("CUBID_STAMP_PAGE_ID") ?? null
+
+  return {
+    ...config,
+    stampPageId,
+  }
+}
+
+export function getCubidPassportOrigin(baseUrl = getCubidConfig().baseUrl) {
+  return new URL(baseUrl).origin
 }
 
 export { DEFAULT_CUBID_API_BASE_URL }

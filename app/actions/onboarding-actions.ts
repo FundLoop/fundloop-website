@@ -1,6 +1,8 @@
 "use server"
 
 import { revalidatePath } from "next/cache"
+import { getCubidPassportOrigin, getCubidWeb2Config } from "@/lib/cubid/config"
+import { buildCubidIdentityReadModel } from "@/lib/cubid/read-model"
 import { createServerSupabaseClient } from "@/lib/supabase-server"
 import { invokeProjectOnboardingDraftClearServer } from "@/lib/edge-functions/project-onboarding-draft-clear-server"
 import { invokeProjectOnboardingPublishServer } from "@/lib/edge-functions/project-onboarding-publish-server"
@@ -35,10 +37,27 @@ type OnboardingState = {
         | "cubid_id"
         | "primary_email_identity"
         | "cubid_score"
+        | "bio"
+        | "occupation_id"
+        | "location_id"
       > & {
         profile_headline?: string | null
       })
     | null
+  cubidSnapshot: {
+    primaryEmail: string | null
+    primaryPhone: string | null
+    cubidScore: number | null
+    availableStampTypes: string[]
+    verifiedStampTypes: string[]
+    lastSyncedAt: string | null
+    lastSyncErrorCode: string | null
+    lastSyncErrorMessage: string | null
+  } | null
+  profileCompletionPercent: number
+  profileCompletionMissingItems: string[]
+  cubidPassportOrigin: string | null
+  cubidStampPageId: string | null
   userDraft: Tables<"user_onboarding_drafts"> | null
   projectDraft: Tables<"project_onboarding_drafts"> | null
 }
@@ -73,6 +92,11 @@ export async function getOnboardingState(): Promise<OnboardingState> {
       authUserId: null,
       authEmail: null,
       profile: null,
+      cubidSnapshot: null,
+      profileCompletionPercent: 0,
+      profileCompletionMissingItems: [],
+      cubidPassportOrigin: null,
+      cubidStampPageId: null,
       userDraft: null,
       projectDraft: null,
     }
@@ -80,22 +104,60 @@ export async function getOnboardingState(): Promise<OnboardingState> {
 
   const { supabase, user } = context
 
-  const [{ data: profile }, { data: userDraft }, { data: projectDraft }] = await Promise.all([
+  const [{ data: profile }, { data: cubidSnapshot }, { count: interestCount }, { data: userDraft }, { data: projectDraft }] =
+    await Promise.all([
     supabase
       .from("users")
       .select(
-        "user_id, status, full_name, display_name, avatar_url, cubid_identity_status, cubid_id, primary_email_identity, cubid_score",
+        "user_id, status, full_name, display_name, avatar_url, cubid_identity_status, cubid_id, primary_email_identity, cubid_score, bio, occupation_id, location_id",
       )
       .eq("user_id", user.id)
       .single(),
+    supabase.from("cubid_identity_snapshots").select("*").eq("user_id", user.id).maybeSingle(),
+    supabase.from("user_interests").select("*", { count: "exact", head: true }).eq("user_id", user.id),
     supabase.from("user_onboarding_drafts").select("*").eq("user_id", user.id).maybeSingle(),
     supabase.from("project_onboarding_drafts").select("*").eq("user_id", user.id).maybeSingle(),
   ])
+
+  const cubidReadModel = buildCubidIdentityReadModel(
+    profile
+      ? {
+          fullName: profile.full_name,
+          displayName: profile.display_name,
+          bio: profile.bio,
+          occupationId: profile.occupation_id,
+          locationId: profile.location_id,
+          cubidIdentityStatus: profile.cubid_identity_status,
+        }
+      : null,
+    cubidSnapshot ?? null,
+    interestCount ?? 0,
+  )
+
+  const cubidRuntimeConfig = (() => {
+    try {
+      const config = getCubidWeb2Config()
+      return {
+        cubidPassportOrigin: getCubidPassportOrigin(config.baseUrl),
+        cubidStampPageId: config.stampPageId,
+      }
+    } catch {
+      return {
+        cubidPassportOrigin: null,
+        cubidStampPageId: null,
+      }
+    }
+  })()
 
   return {
     authUserId: user.id,
     authEmail: user.email ?? null,
     profile,
+    cubidSnapshot: cubidReadModel.cubidSnapshotSummary,
+    profileCompletionPercent: cubidReadModel.profileCompletionPercent,
+    profileCompletionMissingItems: cubidReadModel.profileCompletionMissingItems,
+    cubidPassportOrigin: cubidRuntimeConfig.cubidPassportOrigin,
+    cubidStampPageId: cubidRuntimeConfig.cubidStampPageId,
     userDraft,
     projectDraft,
   }

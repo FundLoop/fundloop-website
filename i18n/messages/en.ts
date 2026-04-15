@@ -222,6 +222,8 @@ export const enMessages = {
       identity: {
         title: "CUBID is becoming the account authority for FundLoop",
         manage: "Manage on CUBID Passport",
+        refresh: "Refresh CUBID data",
+        completion: "Profile completion",
         labels: {
           unlinked: "Not linked yet",
           linked: "Linked",

@@ -5,7 +5,7 @@ import { Fingerprint, Mail, Wallet } from "lucide-react"
 import { CubidIdentityPanel } from "@/components/account/cubid-identity-panel"
 import { EmailManagement } from "@/components/account/email-management"
 import { WalletManagement } from "@/components/account/wallet-management"
-import type { CubidIdentityStatus } from "@/lib/cubid/types"
+import type { CubidIdentitySnapshotSummary, CubidIdentityStatus } from "@/lib/cubid/types"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 
 type AccountSettingsPanelProps = {
@@ -16,6 +16,11 @@ type AccountSettingsPanelProps = {
     email: string | null
     cubidId: string | null
     cubidScore: number | null
+    snapshot: CubidIdentitySnapshotSummary | null
+    profileCompletionPercent: number
+    profileCompletionMissingItems: string[]
+    cubidPassportOrigin: string | null
+    cubidStampPageId: string | null
   }
 }
 
@@ -54,12 +59,19 @@ export function AccountSettingsPanel({ heading, description, cubid }: AccountSet
               email={cubid.email}
               cubidId={cubid.cubidId}
               cubidScore={cubid.cubidScore}
+              cubidSnapshot={cubid.snapshot}
+              profileCompletionPercent={cubid.profileCompletionPercent}
+              profileCompletionMissingItems={cubid.profileCompletionMissingItems}
+              cubidPassportOrigin={cubid.cubidPassportOrigin}
+              cubidStampPageId={cubid.cubidStampPageId}
               title={t("panels.identity.title")}
               description={t(`panels.identity.status.${cubid.status}`)}
               linkedLabel={t("panels.identity.labels.linked")}
               verifiedLabel={t("panels.identity.labels.verified")}
               unlinkedLabel={t("panels.identity.labels.unlinked")}
               manageCta={t("panels.identity.manage")}
+              refreshCta={t("panels.identity.refresh")}
+              completionTitle={t("panels.identity.completion")}
             />
           </TabsContent>
 

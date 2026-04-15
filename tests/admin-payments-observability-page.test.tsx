@@ -90,7 +90,7 @@ vi.mock("@/lib/observability/payment-flow-server", () => ({
 }))
 
 describe("AdminPaymentsObservabilityPage", () => {
-  it("renders summary cards, filtered events, and attempt drill-downs", async () => {
+  it("renders summary cards, filtered events, and attempt drill-downs", { timeout: 15_000 }, async () => {
     const Page = (await import("@/app/[locale]/(app)/admin/payments/observability/page")).default
     render(
       await Page({

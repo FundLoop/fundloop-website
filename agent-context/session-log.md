@@ -1,5 +1,89 @@
 ---
 
+### session v49: Add the CUBID snapshot model and extended profile-completion loop
+- timestamp: 2026-04-15T14:49:45-0400
+- agent: **Codex (GPT-5)**
+- branch: **codex/wallet-production-readiness**
+- head: TBD
+
+#### Objective
+Complete Session 14 by adding a durable CUBID snapshot model, a typed snapshot-sync command, optional extended identity completion in user onboarding, and richer workspace/account surfaces that show hybrid profile completion without blocking publish on phone or extra provider stamps.
+
+#### Actions Taken
+- Added the forward-only migration `supabase/migrations/20260415101500_cubid_identity_snapshots.sql` for `public.cubid_identity_snapshots`, including normalized stamp arrays, raw payload storage, sync timestamps, and sync-error fields.
+- Updated `types/supabase.ts` so the generated app contract now includes `cubid_identity_snapshots`.
+- Switched the repo to the local CUBID v2 package contract through local tarball dependencies in `package.json` / `pnpm-lock.yaml`:
+  - `@cubid/api`
+  - `@cubid/web2`
+  - `@cubid/web2-react`
+- Built the Session 14 CUBID server layer under `lib/cubid/`:
+  - `server-client.ts` for server-side SDK clients
+  - `snapshot.ts` for identity/stamp normalization
+  - `read-model.ts` for shared snapshot + completion shaping
+  - `sync-profile-command.ts` for fail-soft snapshot sync and `users` strengthening
+  - `passport.ts` and `browser-web2-client.ts` for safe browser-side web2 handoff
+- Fixed the earlier Session 13 type drift by updating `resolve-email-command.ts` to return the lightweight link-state contract instead of the full snapshot type.
+- Added the new typed Edge Function boundary for snapshot refresh:
+  - `lib/edge-functions/user-cubid-sync-profile-contract.ts`
+  - `lib/edge-functions/user-cubid-sync-profile.ts`
+  - `lib/edge-functions/user-cubid-sync-profile-server.ts`
+  - `supabase/functions/user-cubid-sync-profile/index.js`
+- Added authenticated internal CUBID browser-bridge routes so secrets stay server-side:
+  - `app/api/internal/cubid/phone/start/route.ts`
+  - `app/api/internal/cubid/phone/verify/route.ts`
+  - `app/api/internal/cubid/stamps/add/route.ts`
+- Extended the read models in:
+  - `app/actions/onboarding-actions.ts`
+  - `lib/navigation-context.ts`
+  so they now carry:
+  - snapshot-backed identity fields
+  - hybrid profile-completion percentage
+  - missing completion items
+  - non-secret CUBID Passport config needed by the browser bridge
+- Added the optional `extended_identity` onboarding screen in `lib/onboarding.ts`, then updated:
+  - `components/user-signup-flow.tsx`
+  - `components/onboarding/extended-cubid-identity-step.tsx`
+  so signed-in users can verify phone inline, open provider allow flows through `@cubid/web2-react`, refresh the snapshot, and still skip forward without blocking publish.
+- Upgraded account/workspace identity UX:
+  - `components/account/cubid-identity-panel.tsx`
+  - `components/account/account-settings-panel.tsx`
+  - `app/[locale]/(app)/workspace/page.tsx`
+  - `app/[locale]/(app)/workspace/account/page.tsx`
+  - `app/[locale]/(app)/founder/account/page.tsx`
+  to show snapshot-backed state, completion percentage, missing items, phone/provider progress, and refresh controls.
+- Updated durable docs and configuration:
+  - `.env.example`
+  - `docs/engineering/edge-functions.md`
+  - `docs/engineering/cubid-identity.md`
+  - `docs/engineering/README.md`
+- Added or updated coverage for the new Session 14 behavior:
+  - `tests/cubid-sync-profile-command.test.ts`
+  - `tests/onboarding-edge-contracts.test.ts`
+  - `tests/public-user-journey.test.ts`
+  - `tests/navigation-context.test.ts`
+  - `tests/account-settings-panel.test.tsx`
+  - `tests/user-signup-flow.test.tsx`
+
+#### Tests and Validation Notes
+- Focused validation passed:
+  - `pnpm exec vitest run tests/public-user-journey.test.ts tests/navigation-context.test.ts tests/account-settings-panel.test.tsx tests/user-signup-flow.test.tsx tests/onboarding-edge-contracts.test.ts tests/cubid-sync-profile-command.test.ts`
+  - `pnpm typecheck`
+- Full repo gates were still pending at the time of this log update and were run afterward as part of the session closeout.
+- I did not run a live credentialed browser smoke against real CUBID Passport in this session. The browser bridge, Edge Function path, and snapshot read models are validated through tests and repo gates, but a real end-to-end phone/provider flow still depends on configured local CUBID credentials and a valid `CUBID_STAMP_PAGE_ID`.
+
+#### Reflections
+- Session 13 established the lightweight identity gate; Session 14 is the point where FundLoop gains a durable identity snapshot contract that later payout, reporting, and monthly-cycle work can build on.
+- The important security decision here was to keep the browser on a narrow bridge: Edge Functions for sync, internal route handlers for phone/stamp actions, and no `CUBID_API_KEY` in client code.
+- The current package wiring intentionally uses the local sibling CUBID v2 workspace through local tarball references. That works cleanly for this machine and session, but it remains an environment-sensitive dependency contract rather than a portable public-registry install.
+
+#### Suggested Next Steps
+- Run a real local browser smoke with working `CUBID_DAPP_ID`, `CUBID_API_KEY`, and `CUBID_STAMP_PAGE_ID` to verify:
+  - resolve email -> sync snapshot
+  - phone OTP -> persisted phone stamp
+  - provider allow flow return -> refreshed snapshot
+- Session 15 can now focus on hardening the external sync semantics and operator visibility because the normalized storage contract already exists.
+- Session 16 should continue the UI cleanup by making more profile/account fields explicitly “CUBID authority” versus “local preference.”
+
 ### session v48: Make onboarding and workspace identity-first with direct CUBID email resolution
 - timestamp: 2026-04-15T08:57:52-0400
 - agent: **Codex (GPT-5)**

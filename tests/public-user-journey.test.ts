@@ -10,6 +10,8 @@ function buildContext(overrides: Partial<NavigationContext> = {}): NavigationCon
     hasFounderAccess: false,
     hasAdminAccess: false,
     managedProjects: [],
+    cubidPassportOrigin: null,
+    cubidStampPageId: null,
     ...overrides,
   }
 }
@@ -36,6 +38,9 @@ describe("public user journey helpers", () => {
         cubidId: null,
         primaryEmailIdentity: null,
         cubidScore: null,
+        cubidSnapshot: null,
+        profileCompletionPercent: 0,
+        profileCompletionMissingItems: [],
       },
     })
 
@@ -57,6 +62,9 @@ describe("public user journey helpers", () => {
         cubidId: "cubid-user-1",
         primaryEmailIdentity: null,
         cubidScore: 88,
+        cubidSnapshot: null,
+        profileCompletionPercent: 20,
+        profileCompletionMissingItems: ["cubid_phone", "cubid_provider"],
       },
     })
 

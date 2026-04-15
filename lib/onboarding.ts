@@ -4,6 +4,7 @@ export const USER_ONBOARDING_SCREENS = [
   "welcome",
   "resume",
   "cubid",
+  "extended_identity",
   "identity",
   "visibility",
   "about",

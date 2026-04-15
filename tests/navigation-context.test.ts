@@ -2,6 +2,8 @@ import { beforeEach, describe, expect, it, vi } from "vitest"
 
 const authGetUser = vi.fn()
 const usersMaybeSingle = vi.fn()
+const cubidSnapshotMaybeSingle = vi.fn()
+const interestCountEq = vi.fn()
 const participantsSelect = vi.fn()
 const rolesSelect = vi.fn()
 const membershipsSelect = vi.fn()
@@ -23,6 +25,24 @@ vi.mock("@/lib/supabase-admin", () => ({
             eq: () => ({
               maybeSingle: usersMaybeSingle,
             }),
+          }),
+        }
+      }
+
+      if (table === "cubid_identity_snapshots") {
+        return {
+          select: () => ({
+            eq: () => ({
+              maybeSingle: cubidSnapshotMaybeSingle,
+            }),
+          }),
+        }
+      }
+
+      if (table === "user_interests") {
+        return {
+          select: () => ({
+            eq: interestCountEq,
           }),
         }
       }
@@ -67,6 +87,8 @@ describe("getNavigationContext", () => {
     createServerSupabaseClient.mockReset()
     authGetUser.mockReset()
     usersMaybeSingle.mockReset()
+    cubidSnapshotMaybeSingle.mockReset()
+    interestCountEq.mockReset()
     participantsSelect.mockReset()
     rolesSelect.mockReset()
     membershipsSelect.mockReset()
@@ -81,6 +103,24 @@ describe("getNavigationContext", () => {
               eq: () => ({
                 maybeSingle: usersMaybeSingle,
               }),
+            }),
+          }
+        }
+
+        if (table === "cubid_identity_snapshots") {
+          return {
+            select: () => ({
+              eq: () => ({
+                maybeSingle: cubidSnapshotMaybeSingle,
+              }),
+            }),
+          }
+        }
+
+        if (table === "user_interests") {
+          return {
+            select: () => ({
+              eq: interestCountEq,
             }),
           }
         }
@@ -118,6 +158,8 @@ describe("getNavigationContext", () => {
         getUser: authGetUser,
       },
     })
+    cubidSnapshotMaybeSingle.mockResolvedValue({ data: null })
+    interestCountEq.mockResolvedValue({ count: 0 })
   })
 
   it("builds workspace, founder, and admin access from existing repo signals", async () => {
@@ -132,14 +174,35 @@ describe("getNavigationContext", () => {
     usersMaybeSingle.mockResolvedValue({
       data: {
         full_name: "Case Founder",
+        display_name: "Case",
         avatar_url: null,
         status: "active",
+        bio: "Bio",
+        occupation_id: 1,
+        location_id: 2,
         cubid_identity_status: "verified",
         cubid_id: "cubid-user-1",
         primary_email_identity: "auth-identity-1",
         cubid_score: 92,
       },
     })
+    cubidSnapshotMaybeSingle.mockResolvedValue({
+      data: {
+        user_id: "user-1",
+        cubid_user_id: "cubid-user-1",
+        primary_email: "maya@example.com",
+        primary_phone: "+15555550123",
+        cubid_score: 92,
+        available_stamp_types: ["email", "phone", "github"],
+        verified_stamp_types: ["email", "phone"],
+        raw_identity: {},
+        raw_stamps: [],
+        last_synced_at: "2026-04-15T12:00:00.000Z",
+        last_sync_error_code: null,
+        last_sync_error_message: null,
+      },
+    })
+    interestCountEq.mockResolvedValue({ count: 2 })
     participantsSelect.mockReturnValue({
       eq: (_field: string, _value: string | boolean) => ({
         eq: (_nextField: string, _nextValue: boolean) =>
@@ -191,6 +254,8 @@ describe("getNavigationContext", () => {
         cubidId: "cubid-user-1",
         primaryEmailIdentity: "auth-identity-1",
         cubidScore: 92,
+        profileCompletionPercent: 90,
+        profileCompletionMissingItems: ["cubid_provider"],
       }),
     )
     expect(context.managedProjects).toEqual([
@@ -208,14 +273,20 @@ describe("getNavigationContext", () => {
     const usersMaybeSingleFallback = vi.fn().mockResolvedValue({
       data: {
         full_name: "Fallback Founder",
+        display_name: "Fallback",
         avatar_url: null,
         status: "inactive",
+        bio: null,
+        occupation_id: null,
+        location_id: null,
         cubid_identity_status: "unlinked",
         cubid_id: null,
         primary_email_identity: null,
         cubid_score: null,
       },
     })
+    const cubidSnapshotMaybeSingleFallback = vi.fn().mockResolvedValue({ data: null })
+    const interestCountEqFallback = vi.fn().mockResolvedValue({ count: 0 })
     const participantsSelectFallback = vi.fn().mockReturnValue({
       eq: (_field: string, _value: string | boolean) => ({
         eq: (_nextField: string, _nextValue: boolean) =>
@@ -277,6 +348,24 @@ describe("getNavigationContext", () => {
         if (table === "participants") {
           return {
             select: participantsSelectFallback,
+          }
+        }
+
+        if (table === "cubid_identity_snapshots") {
+          return {
+            select: () => ({
+              eq: () => ({
+                maybeSingle: cubidSnapshotMaybeSingleFallback,
+              }),
+            }),
+          }
+        }
+
+        if (table === "user_interests") {
+          return {
+            select: () => ({
+              eq: interestCountEqFallback,
+            }),
           }
         }
 

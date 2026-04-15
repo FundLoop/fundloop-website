@@ -14,13 +14,13 @@ describe("resolveCubidIdentityByEmail", () => {
       .mockResolvedValueOnce(
         new Response(
           JSON.stringify({
-            identities: [{ type: "email", identity: "maya@example.com", verified: true }],
+            stamp_details: [{ stamp_type: "email", value: "maya@example.com", status: "verified" }],
           }),
           { status: 200, headers: { "content-type": "application/json" } },
         ),
       )
       .mockResolvedValueOnce(
-        new Response(JSON.stringify({ score: 87 }), {
+        new Response(JSON.stringify({ cubid_score: 87 }), {
           status: 200,
           headers: { "content-type": "application/json" },
         }),
@@ -49,7 +49,7 @@ describe("resolveCubidIdentityByEmail", () => {
     const fetchMock = vi
       .fn<typeof fetch>()
       .mockResolvedValueOnce(
-        new Response(JSON.stringify({ data: { id: "cubid-user-2" } }), {
+        new Response(JSON.stringify({ user_id: "cubid-user-2" }), {
           status: 200,
           headers: { "content-type": "application/json" },
         }),
@@ -57,9 +57,7 @@ describe("resolveCubidIdentityByEmail", () => {
       .mockResolvedValueOnce(
         new Response(
           JSON.stringify({
-            data: {
-              email: "person@example.com",
-            },
+            stamp_details: [],
           }),
           { status: 200, headers: { "content-type": "application/json" } },
         ),

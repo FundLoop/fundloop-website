@@ -2,6 +2,8 @@ import "server-only"
 
 import { cache } from "react"
 import type { Database } from "@/types/supabase"
+import { getCubidPassportOrigin, getCubidWeb2Config } from "@/lib/cubid/config"
+import { buildCubidIdentityReadModel } from "@/lib/cubid/read-model"
 import { getAdminSupabaseClient } from "@/lib/supabase-admin"
 import { createServerSupabaseClient } from "@/lib/supabase-server"
 import { isInternalAdminEmail } from "@/lib/zkas/auth"
@@ -16,6 +18,18 @@ export type NavigationUser = {
   cubidId: string | null
   primaryEmailIdentity: string | null
   cubidScore: number | null
+  cubidSnapshot: {
+    primaryEmail: string | null
+    primaryPhone: string | null
+    cubidScore: number | null
+    availableStampTypes: string[]
+    verifiedStampTypes: string[]
+    lastSyncedAt: string | null
+    lastSyncErrorCode: string | null
+    lastSyncErrorMessage: string | null
+  } | null
+  profileCompletionPercent: number
+  profileCompletionMissingItems: string[]
 }
 
 export type ManagedProjectSummary = {
@@ -31,6 +45,8 @@ export type NavigationContext = {
   hasFounderAccess: boolean
   hasAdminAccess: boolean
   managedProjects: ManagedProjectSummary[]
+  cubidPassportOrigin: string | null
+  cubidStampPageId: string | null
 }
 
 type ProjectRow = {
@@ -46,8 +62,12 @@ type RoleRow = {
 
 type UserProfileRow = {
   full_name: string | null
+  display_name: string | null
   avatar_url: string | null
   status: string | null
+  bio: string | null
+  occupation_id: number | null
+  location_id: number | null
   cubid_identity_status: Database["public"]["Enums"]["cubid_identity_status"]
   cubid_id: string | null
   primary_email_identity: string | null
@@ -62,6 +82,8 @@ function emptyNavigationContext(): NavigationContext {
     hasFounderAccess: false,
     hasAdminAccess: false,
     managedProjects: [],
+    cubidPassportOrigin: null,
+    cubidStampPageId: null,
   }
 }
 
@@ -85,12 +107,17 @@ export const getNavigationContext = cache(async (): Promise<NavigationContext> =
     }
   })()
 
-  const [{ data: profile }, { data: participantRows }, { data: founderRoles }] = await Promise.all([
+  const [{ data: profile }, { data: cubidSnapshot }, { count: interestCount }, { data: participantRows }, { data: founderRoles }] =
+    await Promise.all([
     roleAwareSupabase
       .from("users")
-      .select("full_name, avatar_url, status, cubid_identity_status, cubid_id, primary_email_identity, cubid_score")
+      .select(
+        "full_name, display_name, avatar_url, status, bio, occupation_id, location_id, cubid_identity_status, cubid_id, primary_email_identity, cubid_score",
+      )
       .eq("user_id", authUser.id)
       .maybeSingle<UserProfileRow>(),
+    roleAwareSupabase.from("cubid_identity_snapshots").select("*").eq("user_id", authUser.id).maybeSingle(),
+    roleAwareSupabase.from("user_interests").select("*", { count: "exact", head: true }).eq("user_id", authUser.id),
     roleAwareSupabase.from("participants").select("project_id").eq("user_id", authUser.id).eq("is_admin", true),
     roleAwareSupabase.from("ref_roles").select("id").in("name", ["Founder", "Admin"]),
   ])
@@ -130,6 +157,36 @@ export const getNavigationContext = cache(async (): Promise<NavigationContext> =
 
   const managedProjects = Array.from(managedProjectsMap.values()).sort((left, right) => left.name.localeCompare(right.name))
 
+  const cubidReadModel = buildCubidIdentityReadModel(
+    profile
+      ? {
+          fullName: profile.full_name,
+          displayName: profile.display_name,
+          bio: profile.bio,
+          occupationId: profile.occupation_id,
+          locationId: profile.location_id,
+          cubidIdentityStatus: profile.cubid_identity_status,
+        }
+      : null,
+    cubidSnapshot ?? null,
+    interestCount ?? 0,
+  )
+
+  const cubidRuntimeConfig = (() => {
+    try {
+      const config = getCubidWeb2Config()
+      return {
+        cubidPassportOrigin: getCubidPassportOrigin(config.baseUrl),
+        cubidStampPageId: config.stampPageId,
+      }
+    } catch {
+      return {
+        cubidPassportOrigin: null,
+        cubidStampPageId: null,
+      }
+    }
+  })()
+
   return {
     user: {
       id: authUser.id,
@@ -141,11 +198,16 @@ export const getNavigationContext = cache(async (): Promise<NavigationContext> =
       cubidId: profile?.cubid_id ?? null,
       primaryEmailIdentity: profile?.primary_email_identity ?? null,
       cubidScore: profile?.cubid_score ?? null,
+      cubidSnapshot: cubidReadModel.cubidSnapshotSummary,
+      profileCompletionPercent: cubidReadModel.profileCompletionPercent,
+      profileCompletionMissingItems: cubidReadModel.profileCompletionMissingItems,
     },
     isAuthenticated: true,
     hasWorkspaceAccess: true,
     hasFounderAccess: managedProjects.length > 0,
     hasAdminAccess: isInternalAdminEmail(authUser.email ?? null),
     managedProjects,
+    cubidPassportOrigin: cubidRuntimeConfig.cubidPassportOrigin,
+    cubidStampPageId: cubidRuntimeConfig.cubidStampPageId,
   }
 })

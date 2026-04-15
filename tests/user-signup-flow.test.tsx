@@ -12,6 +12,7 @@ const invokeUserOnboardingDraftUpsertBrowser = vi.fn()
 const invokeUserOnboardingDraftClearBrowser = vi.fn()
 const invokeUserOnboardingPublishBrowser = vi.fn()
 const invokeUserCubidResolveEmailBrowser = vi.fn()
+const invokeUserCubidSyncProfileBrowser = vi.fn()
 
 function createBrowserSupabaseClient() {
   const queryResponse = (data: unknown) => ({
@@ -67,6 +68,10 @@ vi.mock("@/lib/edge-functions/user-cubid-resolve-email", () => ({
   invokeUserCubidResolveEmailBrowser,
 }))
 
+vi.mock("@/lib/edge-functions/user-cubid-sync-profile", () => ({
+  invokeUserCubidSyncProfileBrowser,
+}))
+
 vi.mock("@/lib/supabase", () => ({
   getSupabaseBrowserClient: () => createBrowserSupabaseClient(),
 }))
@@ -109,6 +114,17 @@ describe("UserSignupFlow", () => {
     vi.useRealTimers()
     vi.clearAllMocks()
     searchProjectsForTeamMember.mockResolvedValue({ ok: true, data: [] })
+    invokeUserCubidSyncProfileBrowser.mockResolvedValue({
+      ok: true,
+      data: {
+        cubidId: "cubid-user-1",
+        primaryEmailIdentity: "auth-identity-1",
+        cubidScore: 81,
+        cubidIdentityStatus: "linked",
+        cubidSnapshot: null,
+        missingRecommendedStamps: ["phone", "github"],
+      },
+    })
   })
 
   it("autosaves through the browser upsert adapter", async () => {
@@ -126,6 +142,11 @@ describe("UserSignupFlow", () => {
         primary_email_identity: "auth-identity-1",
         cubid_score: 77,
       },
+      cubidSnapshot: null,
+      profileCompletionPercent: 70,
+      profileCompletionMissingItems: ["cubid_provider"],
+      cubidPassportOrigin: "https://passport.cubid.me",
+      cubidStampPageId: "123",
       userDraft: {
         id: 11,
         user_id: "user-1",
@@ -217,6 +238,11 @@ describe("UserSignupFlow", () => {
         primary_email_identity: "auth-identity-1",
         cubid_score: 77,
       },
+      cubidSnapshot: null,
+      profileCompletionPercent: 70,
+      profileCompletionMissingItems: ["cubid_provider"],
+      cubidPassportOrigin: "https://passport.cubid.me",
+      cubidStampPageId: "123",
       userDraft: {
         id: 2,
         user_id: "user-1",
@@ -282,6 +308,11 @@ describe("UserSignupFlow", () => {
         primary_email_identity: "auth-identity-1",
         cubid_score: null,
       },
+      cubidSnapshot: null,
+      profileCompletionPercent: 20,
+      profileCompletionMissingItems: ["cubid_phone", "cubid_provider"],
+      cubidPassportOrigin: "https://passport.cubid.me",
+      cubidStampPageId: "123",
       userDraft: null,
       projectDraft: null,
     })

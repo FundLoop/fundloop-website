@@ -12,6 +12,8 @@ const translations: Record<string, string> = {
   "panels.identity.labels.unlinked": "Not linked yet",
   "panels.identity.labels.linked": "Linked",
   "panels.identity.labels.verified": "Verified",
+  "panels.identity.refresh": "Refresh CUBID data",
+  "panels.identity.completion": "Profile completion",
   "panels.identity.status.unlinked":
     "This account is still missing its CUBID link. FundLoop can keep local settings here, but publish and payout-touching flows now expect a linked identity first.",
   "panels.identity.status.linked":
@@ -19,6 +21,12 @@ const translations: Record<string, string> = {
   "panels.identity.status.verified":
     "This account is linked to CUBID and the latest response indicates the email identity is verified. That is the strongest state currently surfaced inside FundLoop.",
 }
+
+vi.mock("next/navigation", () => ({
+  useRouter: () => ({
+    refresh: vi.fn(),
+  }),
+}))
 
 vi.mock("next-intl", () => ({
   useTranslations: () => (key: string) => translations[key] ?? key,
@@ -43,6 +51,11 @@ describe("AccountSettingsPanel", () => {
           email: "maya@example.com",
           cubidId: "cubid-user-1",
           cubidScore: 75,
+          snapshot: null,
+          profileCompletionPercent: 70,
+          profileCompletionMissingItems: ["cubid_phone"],
+          cubidPassportOrigin: "https://passport.cubid.me",
+          cubidStampPageId: "123",
         }}
       />,
     )

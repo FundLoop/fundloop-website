@@ -157,12 +157,12 @@ Update onboarding so proof-of-personhood and KYC are no longer abstract concepts
 
 ## Session 14: Add the CUBID account-linking and identity snapshot model
 
-- Status: Not started
-- Timestamp started: TBD
-- Timestamp completed: TBD
-- Feature branch: TBD
+- Status: Complete
+- Timestamp started: 2026-04-15T13:55:00-0400
+- Timestamp completed: 2026-04-15T14:49:45-0400
+- Feature branch: codex/wallet-production-readiness
 - Head: TBD
-- Session-log reference(s): TBD
+- Session-log reference(s): session v49
 
 Introduce the database and application model that links a FundLoop user to a CUBID identity. This should include a canonical external identity reference, a synchronized identity snapshot, verification state, sync timestamps, and room for future monthly locking of identity state. Do not over-model every possible CUBID field yet. The focus is creating the right durable contract so the app can consume CUBID as the source of socials, phone, email, and personhood status without making the local profile tables the real authority.
 

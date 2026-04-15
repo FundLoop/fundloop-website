@@ -25,6 +25,11 @@ export default async function FounderAccountPage({ params }: FounderAccountPageP
         email: navigationContext.user?.email ?? null,
         cubidId: navigationContext.user?.cubidId ?? null,
         cubidScore: navigationContext.user?.cubidScore ?? null,
+        snapshot: navigationContext.user?.cubidSnapshot ?? null,
+        profileCompletionPercent: navigationContext.user?.profileCompletionPercent ?? 0,
+        profileCompletionMissingItems: navigationContext.user?.profileCompletionMissingItems ?? [],
+        cubidPassportOrigin: navigationContext.cubidPassportOrigin,
+        cubidStampPageId: navigationContext.cubidStampPageId,
       }}
     />
   )

@@ -29,6 +29,8 @@ export default async function WorkspacePage({ params }: WorkspacePageProps) {
       : cubidStatus === "linked"
         ? "border-cyan-200 bg-cyan-50/70 text-cyan-950"
         : "border-amber-200 bg-amber-50/80 text-amber-950"
+  const completionPercent = navigationContext.user?.profileCompletionPercent ?? 0
+  const completionMissingItems = navigationContext.user?.profileCompletionMissingItems ?? []
 
   const cards = [
     {
@@ -90,6 +92,41 @@ export default async function WorkspacePage({ params }: WorkspacePageProps) {
         {!isResolvedCubidIdentityStatus(cubidStatus) ? (
           <p className="mt-4 text-sm leading-6">{t("identity.followUp")}</p>
         ) : null}
+      </section>
+
+      <section className="rounded-[calc(var(--radius-2xl)+0.25rem)] border border-[color:var(--surface-border)] bg-[var(--surface-panel-strong)] p-6 shadow-[var(--surface-shadow-panel)]">
+        <div className="flex flex-wrap items-start justify-between gap-4">
+          <div className="max-w-3xl space-y-2">
+            <p className="text-[0.72rem] font-semibold uppercase tracking-[0.28em] text-[var(--interactive-primary)]">
+              Profile completion
+            </p>
+            <h2 className="text-xl font-semibold text-[var(--text-strong)]">{completionPercent}% complete</h2>
+            <p className="text-sm leading-6 text-[var(--text-muted)]">
+              Local profile fields count alongside CUBID-backed phone and provider signals. This remains optional beyond basic
+              linkage, but it helps move your account toward a richer trust profile.
+            </p>
+          </div>
+          <Link
+            href="/workspace/account"
+            className="inline-flex items-center rounded-full border border-[color:var(--surface-border-strong)] px-4 py-2 text-sm font-semibold text-[var(--text-strong)]"
+          >
+            Continue in account
+          </Link>
+        </div>
+        {completionMissingItems.length > 0 ? (
+          <div className="mt-4 flex flex-wrap gap-2">
+            {completionMissingItems.map((item) => (
+              <span
+                key={item}
+                className="rounded-full border border-[color:var(--surface-border)] bg-[var(--surface-panel)] px-3 py-1 text-xs font-medium text-[var(--text-muted)]"
+              >
+                {item.replaceAll("_", " ")}
+              </span>
+            ))}
+          </div>
+        ) : (
+          <p className="mt-4 text-sm text-[var(--text-muted)]">All current Session 14 completion items are already covered.</p>
+        )}
       </section>
 
       <section className="grid gap-6 md:grid-cols-2 xl:grid-cols-4">

@@ -13,11 +13,15 @@ import {
   isUserCubidResolveEmailOutput,
   validateUserCubidResolveEmailInput,
 } from "@/lib/edge-functions/user-cubid-resolve-email-contract"
+import {
+  isUserCubidSyncProfileOutput,
+  validateUserCubidSyncProfileInput,
+} from "@/lib/edge-functions/user-cubid-sync-profile-contract"
 
 describe("onboarding edge function contracts", () => {
   it("accepts and sanitizes a valid user draft payload", () => {
     const result = validateUserOnboardingDraftUpsertInput({
-      currentScreen: "identity",
+      currentScreen: "extended_identity",
       payload: {
         fullName: "Maya Torres",
         profileHeadline: "Community builder",
@@ -39,7 +43,7 @@ describe("onboarding edge function contracts", () => {
     expect(result).toEqual({
       ok: true,
       data: expect.objectContaining({
-        currentScreen: "identity",
+        currentScreen: "extended_identity",
         payload: expect.objectContaining({
           fullName: "Maya Torres",
           relationshipChoice: "create_project",
@@ -156,6 +160,32 @@ describe("onboarding edge function contracts", () => {
         primaryEmailIdentity: "auth-identity-1",
         cubidScore: 91,
         cubidIdentityStatus: "verified",
+      }),
+    ).toBe(true)
+  })
+
+  it("validates the user CUBID sync contract", () => {
+    expect(validateUserCubidSyncProfileInput({ emailOverride: " Maya@example.com " })).toEqual({
+      ok: true,
+      data: { emailOverride: "maya@example.com" },
+    })
+    expect(
+      isUserCubidSyncProfileOutput({
+        cubidId: "cubid-user-1",
+        primaryEmailIdentity: "auth-identity-1",
+        cubidScore: 91,
+        cubidIdentityStatus: "verified",
+        cubidSnapshot: {
+          primaryEmail: "maya@example.com",
+          primaryPhone: "+15555550123",
+          cubidScore: 91,
+          availableStampTypes: ["email", "phone"],
+          verifiedStampTypes: ["email", "phone"],
+          lastSyncedAt: "2026-04-15T12:00:00.000Z",
+          lastSyncErrorCode: null,
+          lastSyncErrorMessage: null,
+        },
+        missingRecommendedStamps: ["github"],
       }),
     ).toBe(true)
   })
