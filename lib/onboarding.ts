@@ -3,6 +3,7 @@ import type { Tables } from "../types/supabase"
 export const USER_ONBOARDING_SCREENS = [
   "welcome",
   "resume",
+  "cubid",
   "identity",
   "visibility",
   "about",
@@ -12,6 +13,7 @@ export const USER_ONBOARDING_SCREENS = [
 
 export const PROJECT_ONBOARDING_SCREENS = [
   "resume",
+  "cubid",
   "basics",
   "details",
   "contribution",

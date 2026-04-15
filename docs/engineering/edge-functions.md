@@ -32,6 +32,7 @@ The app should treat a declared failure envelope differently from transport or i
 The first migrated domains are:
 
 - `project-payment-drafts-create`
+- `user-cubid-resolve-email`
 - onboarding writes:
   - `user-onboarding-draft-upsert`
   - `user-onboarding-draft-clear`
@@ -52,6 +53,13 @@ For onboarding:
 - `components/user-signup-flow.tsx` and `components/project-signup-flow.tsx` now call browser Edge Function adapters for draft save, clear, and publish
 - `app/actions/onboarding-actions.ts` keeps read helpers such as `getOnboardingState()` and `searchProjectsForTeamMember()`
 - publish still relies on the existing `publish_project_onboarding_draft_atomic` RPC for the atomic project materialization step
+- publish now also enforces a linked CUBID identity (`linked` or `verified`) for both user and project onboarding
+
+For CUBID:
+
+- `user-cubid-resolve-email` is the canonical write path for resolving or auto-creating a CUBID identity from the authenticated user email
+- the function uses direct HTTP calls to the CUBID API instead of installing `cubid-sdk`
+- the app invokes the browser adapter from onboarding and account/workspace surfaces, while server-side publish commands still enforce the same identity requirement for bypass safety
 
 The migration is intentionally incremental so the transport layer can stabilize before broader read migration and later founder/user workspace work.
 
@@ -71,6 +79,7 @@ supabase functions serve user-onboarding-draft-upsert --env-file .env.local
 supabase functions serve user-onboarding-publish --env-file .env.local
 supabase functions serve project-onboarding-draft-upsert --env-file .env.local
 supabase functions serve project-onboarding-publish --env-file .env.local
+supabase functions serve user-cubid-resolve-email --env-file .env.local
 ```
 
 Once the local stack is running, invoke the command through the app or by calling the local functions endpoint with an authenticated bearer token.

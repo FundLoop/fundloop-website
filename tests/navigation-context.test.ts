@@ -134,6 +134,10 @@ describe("getNavigationContext", () => {
         full_name: "Case Founder",
         avatar_url: null,
         status: "active",
+        cubid_identity_status: "verified",
+        cubid_id: "cubid-user-1",
+        primary_email_identity: "auth-identity-1",
+        cubid_score: 92,
       },
     })
     participantsSelect.mockReturnValue({
@@ -181,6 +185,14 @@ describe("getNavigationContext", () => {
     expect(context.hasWorkspaceAccess).toBe(true)
     expect(context.hasFounderAccess).toBe(true)
     expect(context.hasAdminAccess).toBe(true)
+    expect(context.user).toEqual(
+      expect.objectContaining({
+        cubidIdentityStatus: "verified",
+        cubidId: "cubid-user-1",
+        primaryEmailIdentity: "auth-identity-1",
+        cubidScore: 92,
+      }),
+    )
     expect(context.managedProjects).toEqual([
       { id: 2, slug: "alpha", name: "Alpha" },
       { id: 5, slug: "beta", name: "Beta" },
@@ -198,6 +210,10 @@ describe("getNavigationContext", () => {
         full_name: "Fallback Founder",
         avatar_url: null,
         status: "inactive",
+        cubid_identity_status: "unlinked",
+        cubid_id: null,
+        primary_email_identity: null,
+        cubid_score: null,
       },
     })
     const participantsSelectFallback = vi.fn().mockReturnValue({

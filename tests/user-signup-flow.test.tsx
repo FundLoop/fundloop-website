@@ -11,6 +11,7 @@ const searchProjectsForTeamMember = vi.fn()
 const invokeUserOnboardingDraftUpsertBrowser = vi.fn()
 const invokeUserOnboardingDraftClearBrowser = vi.fn()
 const invokeUserOnboardingPublishBrowser = vi.fn()
+const invokeUserCubidResolveEmailBrowser = vi.fn()
 
 function createBrowserSupabaseClient() {
   const queryResponse = (data: unknown) => ({
@@ -24,7 +25,7 @@ function createBrowserSupabaseClient() {
 
   return {
     auth: {
-      getUser: vi.fn().mockResolvedValue({ data: { user: { id: "user-1" } } }),
+      getUser: vi.fn().mockResolvedValue({ data: { user: { id: "user-1", email: "maya@example.com" } } }),
       onAuthStateChange: vi.fn().mockReturnValue({ data: { subscription: { unsubscribe: vi.fn() } } }),
     },
     from(table: string) {
@@ -60,6 +61,10 @@ vi.mock("@/lib/edge-functions/user-onboarding-draft-clear", () => ({
 
 vi.mock("@/lib/edge-functions/user-onboarding-publish", () => ({
   invokeUserOnboardingPublishBrowser,
+}))
+
+vi.mock("@/lib/edge-functions/user-cubid-resolve-email", () => ({
+  invokeUserCubidResolveEmailBrowser,
 }))
 
 vi.mock("@/lib/supabase", () => ({
@@ -110,8 +115,50 @@ describe("UserSignupFlow", () => {
     getOnboardingState.mockResolvedValue({
       authUserId: "user-1",
       authEmail: "maya@example.com",
-      profile: { user_id: "user-1", status: "inactive", full_name: null, display_name: null, avatar_url: null },
-      userDraft: null,
+      profile: {
+        user_id: "user-1",
+        status: "inactive",
+        full_name: null,
+        display_name: null,
+        avatar_url: null,
+        cubid_identity_status: "linked",
+        cubid_id: "cubid-user-1",
+        primary_email_identity: "auth-identity-1",
+        cubid_score: 77,
+      },
+      userDraft: {
+        id: 11,
+        user_id: "user-1",
+        current_screen: "identity",
+        payload: {
+          fullName: "",
+          displayName: "",
+          profileHeadline: "",
+          avatarUrl: "",
+          bio: "",
+          occupationId: "",
+          locationId: "",
+          genderId: "",
+          interestIds: [],
+          inviteCode: "",
+          privacyPreset: "limited",
+          visibility: {
+            isPublic: true,
+            isNamePublic: true,
+            isPfpPublic: true,
+            isGenderPublic: false,
+            isOccupationPublic: true,
+            isLocationPublic: true,
+            isBirthyearPublic: false,
+            isBirthdayPublic: false,
+          },
+          relationshipChoice: "individual",
+          selectedProjectId: null,
+        },
+        started_at: "2026-04-15T00:00:00.000Z",
+        updated_at: "2026-04-15T00:00:00.000Z",
+        completed_at: null,
+      },
       projectDraft: null,
     })
     invokeUserOnboardingDraftUpsertBrowser.mockResolvedValue({
@@ -130,8 +177,8 @@ describe("UserSignupFlow", () => {
     const { default: UserSignupFlow } = await import("@/components/user-signup-flow")
     render(<UserSignupFlow onClose={vi.fn()} />)
 
-    await screen.findByRole("heading", { name: /a better start for new fundloop members/i })
-    fireEvent.click(screen.getByRole("button", { name: /continue/i }))
+    await screen.findByRole("heading", { name: /you already have a draft profile/i })
+    fireEvent.click(screen.getByRole("button", { name: /continue draft/i }))
 
     await screen.findByLabelText(/full name/i)
     invokeUserOnboardingDraftUpsertBrowser.mockClear()
@@ -159,7 +206,17 @@ describe("UserSignupFlow", () => {
     getOnboardingState.mockResolvedValue({
       authUserId: "user-1",
       authEmail: "maya@example.com",
-      profile: { user_id: "user-1", status: "inactive", full_name: null, display_name: null, avatar_url: null },
+      profile: {
+        user_id: "user-1",
+        status: "inactive",
+        full_name: null,
+        display_name: null,
+        avatar_url: null,
+        cubid_identity_status: "linked",
+        cubid_id: "cubid-user-1",
+        primary_email_identity: "auth-identity-1",
+        cubid_score: 77,
+      },
       userDraft: {
         id: 2,
         user_id: "user-1",
@@ -207,6 +264,49 @@ describe("UserSignupFlow", () => {
       expect(invokeUserOnboardingPublishBrowser).toHaveBeenCalled()
       expect(refresh).toHaveBeenCalled()
       expect(onRequestFlowChange).toHaveBeenCalledWith("project")
+    })
+  })
+
+  it("lets the user resolve CUBID from onboarding before continuing", async () => {
+    getOnboardingState.mockResolvedValue({
+      authUserId: "user-1",
+      authEmail: "maya@example.com",
+      profile: {
+        user_id: "user-1",
+        status: "inactive",
+        full_name: null,
+        display_name: null,
+        avatar_url: null,
+        cubid_identity_status: "unlinked",
+        cubid_id: null,
+        primary_email_identity: "auth-identity-1",
+        cubid_score: null,
+      },
+      userDraft: null,
+      projectDraft: null,
+    })
+    invokeUserCubidResolveEmailBrowser.mockResolvedValue({
+      ok: true,
+      data: {
+        cubidId: "cubid-user-1",
+        primaryEmailIdentity: "auth-identity-1",
+        cubidScore: 81,
+        cubidIdentityStatus: "linked",
+      },
+    })
+
+    const { default: UserSignupFlow } = await import("@/components/user-signup-flow")
+    render(<UserSignupFlow onClose={vi.fn()} />)
+
+    await screen.findByRole("heading", { name: /a better start for new fundloop members/i })
+    fireEvent.click(screen.getByRole("button", { name: /continue/i }))
+    await screen.findByRole("heading", { name: /link your identity with cubid/i })
+
+    fireEvent.click(screen.getByRole("button", { name: /link cubid now/i }))
+
+    await waitFor(() => {
+      expect(invokeUserCubidResolveEmailBrowser).toHaveBeenCalled()
+      expect(screen.getByText(/cubid-user-1/i)).toBeTruthy()
     })
   })
 })

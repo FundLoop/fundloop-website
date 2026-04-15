@@ -20,6 +20,12 @@ export default async function FounderAccountPage({ params }: FounderAccountPageP
     <AccountSettingsPanel
       heading={t("heading")}
       description={t("description")}
+      cubid={{
+        status: navigationContext.user?.cubidIdentityStatus ?? "unlinked",
+        email: navigationContext.user?.email ?? null,
+        cubidId: navigationContext.user?.cubidId ?? null,
+        cubidScore: navigationContext.user?.cubidScore ?? null,
+      }}
     />
   )
 }

@@ -10,6 +10,7 @@ const getOnboardingState = vi.fn()
 const invokeProjectOnboardingDraftUpsertBrowser = vi.fn()
 const invokeProjectOnboardingDraftClearBrowser = vi.fn()
 const invokeProjectOnboardingPublishBrowser = vi.fn()
+const invokeUserCubidResolveEmailBrowser = vi.fn()
 
 function createBrowserSupabaseClient() {
   const queryResponse = (data: unknown) => ({
@@ -26,7 +27,7 @@ function createBrowserSupabaseClient() {
 
   return {
     auth: {
-      getUser: vi.fn().mockResolvedValue({ data: { user: { id: "user-1" } } }),
+      getUser: vi.fn().mockResolvedValue({ data: { user: { id: "user-1", email: "maya@example.com" } } }),
       onAuthStateChange: vi.fn().mockReturnValue({ data: { subscription: { unsubscribe: vi.fn() } } }),
     },
     from(table: string) {
@@ -64,6 +65,10 @@ vi.mock("@/lib/edge-functions/project-onboarding-draft-clear", () => ({
 
 vi.mock("@/lib/edge-functions/project-onboarding-publish", () => ({
   invokeProjectOnboardingPublishBrowser,
+}))
+
+vi.mock("@/lib/edge-functions/user-cubid-resolve-email", () => ({
+  invokeUserCubidResolveEmailBrowser,
 }))
 
 vi.mock("@/lib/supabase", () => ({
@@ -113,7 +118,12 @@ describe("ProjectSignupFlow", () => {
     getOnboardingState.mockResolvedValue({
       authUserId: "user-1",
       authEmail: "maya@example.com",
-      profile: null,
+      profile: {
+        cubid_identity_status: "linked",
+        cubid_id: "cubid-user-1",
+        primary_email_identity: "auth-identity-1",
+        cubid_score: 77,
+      },
       userDraft: null,
       projectDraft: null,
     })
@@ -133,6 +143,10 @@ describe("ProjectSignupFlow", () => {
     const { default: ProjectSignupFlow } = await import("@/components/project-signup-flow")
     render(<ProjectSignupFlow onClose={vi.fn()} />)
 
+    await screen.findByRole("heading", { name: /link your founder identity with cubid/i })
+    await act(async () => {
+      fireEvent.click(screen.getByRole("button", { name: /continue/i }))
+    })
     await screen.findByLabelText(/project name/i)
     invokeProjectOnboardingDraftUpsertBrowser.mockClear()
 
@@ -159,7 +173,12 @@ describe("ProjectSignupFlow", () => {
     getOnboardingState.mockResolvedValue({
       authUserId: "user-1",
       authEmail: "maya@example.com",
-      profile: null,
+      profile: {
+        cubid_identity_status: "linked",
+        cubid_id: "cubid-user-1",
+        primary_email_identity: "auth-identity-1",
+        cubid_score: 77,
+      },
       userDraft: null,
       projectDraft: {
         id: 4,
@@ -213,6 +232,41 @@ describe("ProjectSignupFlow", () => {
       expect(invokeProjectOnboardingPublishBrowser).toHaveBeenCalled()
       expect(refresh).toHaveBeenCalled()
       expect(onClose).toHaveBeenCalled()
+    })
+  })
+
+  it("lets the founder resolve CUBID before continuing to project basics", async () => {
+    getOnboardingState.mockResolvedValue({
+      authUserId: "user-1",
+      authEmail: "maya@example.com",
+      profile: {
+        cubid_identity_status: "unlinked",
+        cubid_id: null,
+        primary_email_identity: "auth-identity-1",
+        cubid_score: null,
+      },
+      userDraft: null,
+      projectDraft: null,
+    })
+    invokeUserCubidResolveEmailBrowser.mockResolvedValue({
+      ok: true,
+      data: {
+        cubidId: "cubid-user-1",
+        primaryEmailIdentity: "auth-identity-1",
+        cubidScore: 81,
+        cubidIdentityStatus: "linked",
+      },
+    })
+
+    const { default: ProjectSignupFlow } = await import("@/components/project-signup-flow")
+    render(<ProjectSignupFlow onClose={vi.fn()} />)
+
+    await screen.findByRole("heading", { name: /link your founder identity with cubid/i })
+    fireEvent.click(screen.getByRole("button", { name: /link cubid now/i }))
+
+    await waitFor(() => {
+      expect(invokeUserCubidResolveEmailBrowser).toHaveBeenCalled()
+      expect(screen.getByText(/cubid-user-1/i)).toBeTruthy()
     })
   })
 })

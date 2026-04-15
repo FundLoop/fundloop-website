@@ -24,7 +24,18 @@ type OnboardingState = {
   authUserId: string | null
   authEmail: string | null
   profile:
-    | (Pick<Tables<"users">, "user_id" | "status" | "full_name" | "display_name" | "avatar_url"> & {
+    | (Pick<
+        Tables<"users">,
+        | "user_id"
+        | "status"
+        | "full_name"
+        | "display_name"
+        | "avatar_url"
+        | "cubid_identity_status"
+        | "cubid_id"
+        | "primary_email_identity"
+        | "cubid_score"
+      > & {
         profile_headline?: string | null
       })
     | null
@@ -72,7 +83,9 @@ export async function getOnboardingState(): Promise<OnboardingState> {
   const [{ data: profile }, { data: userDraft }, { data: projectDraft }] = await Promise.all([
     supabase
       .from("users")
-      .select("user_id, status, full_name, display_name, avatar_url")
+      .select(
+        "user_id, status, full_name, display_name, avatar_url, cubid_identity_status, cubid_id, primary_email_identity, cubid_score",
+      )
       .eq("user_id", user.id)
       .single(),
     supabase.from("user_onboarding_drafts").select("*").eq("user_id", user.id).maybeSingle(),

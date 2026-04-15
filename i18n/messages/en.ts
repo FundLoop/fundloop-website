@@ -215,8 +215,28 @@ export const enMessages = {
     },
   },
   accountSettings: {
+    identity: "CUBID Identity",
     emails: "Email Addresses",
     wallets: "Wallet Addresses",
+    panels: {
+      identity: {
+        title: "CUBID is becoming the account authority for FundLoop",
+        manage: "Manage on CUBID Passport",
+        labels: {
+          unlinked: "Not linked yet",
+          linked: "Linked",
+          verified: "Verified",
+        },
+        status: {
+          unlinked:
+            "This account is still missing its CUBID link. FundLoop can keep local settings here, but publish and payout-touching flows now expect a linked identity first.",
+          linked:
+            "This account is linked to CUBID through the signed-in email. Full verification can continue on CUBID.me, but FundLoop can already treat the identity bridge as established.",
+          verified:
+            "This account is linked to CUBID and the latest response indicates the email identity is verified. That is the strongest state currently surfaced inside FundLoop.",
+        },
+      },
+    },
   },
   founders: {
     hero: {
@@ -402,6 +422,25 @@ export const enMessages = {
     body:
       "This is the new entry point for the participant side of FundLoop. The fuller workspace arrives later, but from here you can already move toward account controls, participation context, and published results.",
     open: "Open",
+    identity: {
+      title: "Identity status now matters before value can move",
+      cta: "Open CUBID Passport",
+      followUp:
+        "If this still shows as unlinked, finish the CUBID resolution step in onboarding or visit the account tab to understand what is missing before publish and payout-touching actions.",
+      status: {
+        unlinked: "Not linked yet",
+        linked: "Linked",
+        verified: "Verified",
+      },
+      body: {
+        unlinked:
+          "Your signed-in account still needs a CUBID link before FundLoop can treat it as ready for publish and later payout-relevant operations.",
+        linked:
+          "Your signed-in account is linked to CUBID. FundLoop can now use that identity bridge for publish gates and future accountability flows.",
+        verified:
+          "Your signed-in account is linked to CUBID and the latest response shows a verified email identity, which is the strongest state currently surfaced in FundLoop.",
+      },
+    },
     cards: {
       account: {
         title: "Account",

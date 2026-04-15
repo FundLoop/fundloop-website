@@ -13,6 +13,7 @@ type UserDraftCommandFailureCode = "not_authenticated" | "draft_save_failed" | "
 type UserPublishCommandFailureCode =
   | "not_authenticated"
   | "draft_not_found"
+  | "cubid_identity_required"
   | "profile_update_failed"
   | "interest_reset_failed"
   | "interest_insert_failed"
@@ -128,9 +129,19 @@ export async function executeUserOnboardingPublishCommand(
   const genderId = parseInteger(payload.genderId)
   const { data: existingProfile } = await supabase
     .from("users")
-    .select("invited_by_code")
+    .select("invited_by_code, cubid_identity_status")
     .eq("user_id", input.actorUserId)
     .single()
+
+  if (
+    !existingProfile ||
+    (existingProfile.cubid_identity_status !== "linked" && existingProfile.cubid_identity_status !== "verified")
+  ) {
+    return commandFailure(
+      "cubid_identity_required",
+      "Link your CUBID identity before publishing your FundLoop profile.",
+    )
+  }
 
   const { error: updateError } = await supabase
     .from("users")

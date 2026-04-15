@@ -12,6 +12,7 @@ import { getCryptoContractMethodId, parseDecimal, parseInteger } from "./command
 type ProjectDraftCommandFailureCode = "not_authenticated" | "draft_save_failed" | "draft_clear_failed"
 type ProjectPublishCommandFailureCode =
   | "draft_not_found"
+  | "cubid_identity_required"
   | "project_basics_incomplete"
   | "pledge_required"
   | "invalid_payment_percentage"
@@ -124,6 +125,23 @@ export async function executeProjectOnboardingPublishCommand(
   }
 
   const payload = mergeProjectOnboardingPayload(draft.payload as Partial<ProjectOnboardingPayload>)
+  const { data: actorProfile, error: actorProfileError } = await supabase
+    .from("users")
+    .select("cubid_identity_status")
+    .eq("user_id", input.actorUserId)
+    .single()
+
+  if (
+    actorProfileError ||
+    !actorProfile ||
+    (actorProfile.cubid_identity_status !== "linked" && actorProfile.cubid_identity_status !== "verified")
+  ) {
+    return commandFailure(
+      "cubid_identity_required",
+      "Link your CUBID identity before publishing a FundLoop project.",
+    )
+  }
+
   if (!payload.name.trim() || !payload.slug.trim() || !payload.description.trim()) {
     return commandFailure("project_basics_incomplete", "Project basics are incomplete")
   }

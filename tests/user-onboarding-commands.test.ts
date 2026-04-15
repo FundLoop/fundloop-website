@@ -155,7 +155,10 @@ describe("user onboarding commands", () => {
         },
         { data: null, error: null },
       ],
-      users: [{ data: { invited_by_code: null }, error: null }, { data: null, error: null }],
+      users: [
+        { data: { invited_by_code: null, cubid_identity_status: "linked" }, error: null },
+        { data: null, error: null },
+      ],
       user_interests: [{ data: null, error: null }, { data: null, error: null }],
       invitation_codes: [{ data: { usage_count: 2 }, error: null }, { data: null, error: null }],
     })
@@ -189,6 +192,42 @@ describe("user onboarding commands", () => {
       error: {
         code: "draft_not_found",
         message: "User draft not found",
+      },
+    })
+  })
+
+  it("blocks publish when the user has not linked CUBID yet", async () => {
+    const supabase = createSupabaseMock({
+      user_onboarding_drafts: [
+        {
+          data: {
+            id: 8,
+            user_id: "user-1",
+            current_screen: "review",
+            payload: {
+              fullName: "Maya Torres",
+              relationshipChoice: "individual",
+            },
+            started_at: "2026-04-15T00:00:00.000Z",
+            updated_at: "2026-04-15T00:00:00.000Z",
+            completed_at: null,
+          },
+          error: null,
+        },
+      ],
+      users: [{ data: { invited_by_code: null, cubid_identity_status: "unlinked" }, error: null }],
+    })
+
+    await expect(
+      executeUserOnboardingPublishCommand(supabase as never, {
+        actorUserId: "user-1",
+        actorEmail: "maya@example.com",
+      }),
+    ).resolves.toEqual({
+      ok: false,
+      error: {
+        code: "cubid_identity_required",
+        message: "Link your CUBID identity before publishing your FundLoop profile.",
       },
     })
   })

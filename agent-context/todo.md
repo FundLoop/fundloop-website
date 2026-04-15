@@ -146,14 +146,14 @@ Migrate resumable onboarding away from direct server-action orchestration and in
 
 ## Session 13: Reshape onboarding around CUBID-first identity requirements
 
-- Status: Not started
-- Timestamp started: TBD
-- Timestamp completed: TBD
-- Feature branch: TBD
+- Status: Complete
+- Timestamp started: 2026-04-15T08:20:00-0400
+- Timestamp completed: 2026-04-15T08:57:52-0400
+- Feature branch: codex/wallet-production-readiness
 - Head: TBD
-- Session-log reference(s): TBD
+- Session-log reference(s): session v48
 
-Update onboarding so proof-of-personhood and KYC are no longer abstract concepts in the UX. The flow should clearly require a CUBID.me account and prepare the app for the later API integration. This session should add the right intermediate states, placeholders, and data model hooks so the product can distinguish “signed in,” “CUBID linked,” and “identity verified.” Avoid implementing the full remote integration here. The goal is to make the UI and workflow architecture identity-first instead of bolting KYC on at the end.
+Update onboarding so proof-of-personhood and KYC are no longer abstract concepts in the UX. The flow should clearly require a CUBID.me account and establish the first direct API-backed identity resolution path without pulling in the full SDK. This session should add the right intermediate states and persistence hooks so the product can distinguish “signed in,” “CUBID linked,” and “identity verified,” then enforce linkage before user or project publish. The goal is to make the UI and workflow architecture identity-first instead of bolting KYC on at the end.
 
 ## Session 14: Add the CUBID account-linking and identity snapshot model
 

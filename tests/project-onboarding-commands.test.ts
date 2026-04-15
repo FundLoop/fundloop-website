@@ -150,6 +150,7 @@ describe("project onboarding commands", () => {
             error: null,
           },
         ],
+        users: [{ data: { cubid_identity_status: "linked" }, error: null }],
         projects: [{ data: null, error: null }],
         ref_payment_methods: [{ data: { id: 55 }, error: null }],
         payment_methods: [{ data: null, error: null }],
@@ -194,6 +195,7 @@ describe("project onboarding commands", () => {
           error: null,
         },
       ],
+      users: [{ data: { cubid_identity_status: "linked" }, error: null }],
     })
 
     await expect(
@@ -203,6 +205,42 @@ describe("project onboarding commands", () => {
       error: {
         code: "pledge_required",
         message: "The FundLoop pledge must be accepted before publishing",
+      },
+    })
+  })
+
+  it("blocks project publish when the actor has not linked CUBID yet", async () => {
+    const supabase = createSupabaseMock({
+      project_onboarding_drafts: [
+        {
+          data: {
+            id: 10,
+            user_id: "user-1",
+            current_screen: "review",
+            payload: {
+              name: "Civic Mesh",
+              slug: "civic-mesh",
+              description: "Short description",
+              pledgeAccepted: true,
+              paymentPercentage: "1.5",
+            },
+            started_at: "2026-04-15T00:00:00.000Z",
+            updated_at: "2026-04-15T00:00:00.000Z",
+            completed_at: null,
+          },
+          error: null,
+        },
+      ],
+      users: [{ data: { cubid_identity_status: "unlinked" }, error: null }],
+    })
+
+    await expect(
+      executeProjectOnboardingPublishCommand(supabase as never, { actorUserId: "user-1" }),
+    ).resolves.toEqual({
+      ok: false,
+      error: {
+        code: "cubid_identity_required",
+        message: "Link your CUBID identity before publishing a FundLoop project.",
       },
     })
   })

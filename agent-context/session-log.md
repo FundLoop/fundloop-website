@@ -1,5 +1,74 @@
 ---
 
+### session v48: Make onboarding and workspace identity-first with direct CUBID email resolution
+- timestamp: 2026-04-15T08:57:52-0400
+- agent: **Codex (GPT-5)**
+- branch: **codex/wallet-production-readiness**
+- head: TBD
+
+#### Objective
+Complete Session 13 by making CUBID linkage a first-class prerequisite in FundLoop: add a minimal explicit identity status to `public.users`, resolve or auto-create a CUBID user from the authenticated email through direct API calls, enforce linkage before user or project publish, and surface that state in onboarding plus workspace/account without installing the full `cubid-sdk`.
+
+#### Actions Taken
+- Added the forward-only migration `supabase/migrations/20260415154500_cubid_identity_status.sql` to introduce `public.cubid_identity_status`, add `users.cubid_identity_status`, and backfill existing users to `linked` or `unlinked` based on current CUBID linkage.
+- Updated `types/supabase.ts` so the generated app contract now includes the new enum and user column.
+- Built a lightweight direct CUBID client under `lib/cubid/`:
+  - `config.ts` for env loading
+  - `resolve-by-email.ts` for `create_user`, `identity/fetch_identity`, and `score/fetch_score`
+  - `resolve-email-command.ts` for fail-soft persistence into `public.users`
+- Added the typed Edge Function command boundary for CUBID linkage:
+  - `lib/edge-functions/user-cubid-resolve-email-contract.ts`
+  - `lib/edge-functions/user-cubid-resolve-email.ts`
+  - `lib/edge-functions/user-cubid-resolve-email-server.ts`
+  - `supabase/functions/user-cubid-resolve-email/index.js`
+- Extended `lib/navigation-context.ts` and `app/actions/onboarding-actions.ts` so read models now carry:
+  - `cubidIdentityStatus`
+  - `cubidId`
+  - `primaryEmailIdentity`
+  - `cubidScore`
+- Enforced linkage inside the actual publish commands:
+  - `executeUserOnboardingPublishCommand(...)` now rejects publish with `cubid_identity_required` when the user is still `unlinked`
+  - `executeProjectOnboardingPublishCommand(...)` now rejects publish with `cubid_identity_required` when the current founder/member is still `unlinked`
+- Added `"cubid"` as the first onboarding screen for both user and project flows in `lib/onboarding.ts`, then updated:
+  - `components/user-signup-flow.tsx`
+  - `components/project-signup-flow.tsx`
+  so onboarding now shows the signed-in email, resolves CUBID identity through the browser Edge Function adapter, and blocks progress/publish until linkage succeeds.
+- Added the new identity UI primitives:
+  - `components/onboarding/cubid-identity-step.tsx`
+  - `components/account/cubid-identity-panel.tsx`
+- Updated workspace/account surfaces so identity state is visible after sign-in:
+  - `app/[locale]/(app)/workspace/page.tsx`
+  - `app/[locale]/(app)/workspace/account/page.tsx`
+  - `app/[locale]/(app)/founder/account/page.tsx`
+  - `components/account/account-settings-panel.tsx`
+- Expanded the locale packs (`en`, `fr`, `es`) and updated the durable docs:
+  - `.env.example`
+  - `docs/engineering/edge-functions.md`
+  - `docs/engineering/navigation-shell.md`
+- Added and refreshed coverage for the new identity flow:
+  - `tests/cubid-resolve-by-email.test.ts`
+  - `tests/cubid-resolution-command.test.ts`
+  - `tests/account-settings-panel.test.tsx`
+  - plus updates to onboarding, adapter, navigation-context, and publish-command tests
+
+#### Tests and Validation Notes
+- `pnpm dlx node@22.22.1 /opt/homebrew/bin/pnpm exec vitest run tests/cubid-resolve-by-email.test.ts tests/cubid-resolution-command.test.ts tests/onboarding-edge-contracts.test.ts tests/onboarding-edge-adapters.test.ts tests/user-onboarding-commands.test.ts tests/project-onboarding-commands.test.ts tests/navigation-context.test.ts tests/user-signup-flow.test.tsx tests/project-signup-flow.test.tsx tests/account-settings-panel.test.tsx` passed during focused development
+- `pnpm dlx node@22.22.1 /opt/homebrew/bin/pnpm check` passed
+- I did not run a live browser smoke against the real CUBID API in this session. The code-level integration, publish gating, and workspace/account behavior are validated through tests and full repo gates, but a real external-credential smoke remains pending a configured local session with known-good CUBID credentials.
+
+#### Reflections
+- The biggest architectural shift here is that identity is no longer implicit. Onboarding, publish, workspace, and account all now share one explicit state model: `unlinked`, `linked`, or `verified`.
+- Using direct HTTP calls instead of installing `cubid-sdk` kept this session intentionally narrow and reviewable while still establishing the real external dependency shape that later sessions can deepen.
+- One important compromise remains visible in the data model: `public.users.primary_email_identity` is still constrained by the existing app/auth schema, so Session 13 treats it as an app-side identity reference instead of overwriting it with arbitrary CUBID-side identifiers. A richer canonical snapshot model still belongs in the next CUBID sessions.
+
+#### Suggested Next Steps
+- Session 14 should introduce the fuller CUBID-linked snapshot model so FundLoop can distinguish local auth/session state from the durable external identity record more cleanly.
+- Once CUBID credentials are configured in a stable local environment, run an authenticated browser smoke for:
+  - user onboarding resolve -> publish
+  - project onboarding resolve -> publish
+  - workspace/account status transitions after linkage
+- After the richer snapshot model exists, revisit how `primary_email_identity` and future CUBID-managed fields should be represented so FundLoop clearly separates identity authority from local preferences.
+
 ### session v47: Move onboarding write flows to typed Edge Function commands
 - timestamp: 2026-04-15T01:08:08-0400
 - agent: **Codex (GPT-5)**

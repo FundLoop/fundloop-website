@@ -102,4 +102,20 @@ describe("onboarding edge adapters", () => {
       },
     })
   })
+
+  it("normalizes invalid CUBID resolve payloads from the transport", async () => {
+    invokeBrowserEdgeCommand.mockResolvedValue({
+      ok: true,
+      data: { unexpected: true },
+    })
+
+    const { invokeUserCubidResolveEmailBrowser } = await import("@/lib/edge-functions/user-cubid-resolve-email")
+    await expect(invokeUserCubidResolveEmailBrowser()).resolves.toEqual({
+      ok: false,
+      error: {
+        code: "invalid_edge_response",
+        message: "Edge Function user-cubid-resolve-email returned an invalid response payload.",
+      },
+    })
+  })
 })

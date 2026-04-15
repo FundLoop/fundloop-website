@@ -1,6 +1,7 @@
 import "server-only"
 
 import { cache } from "react"
+import type { Database } from "@/types/supabase"
 import { getAdminSupabaseClient } from "@/lib/supabase-admin"
 import { createServerSupabaseClient } from "@/lib/supabase-server"
 import { isInternalAdminEmail } from "@/lib/zkas/auth"
@@ -11,6 +12,10 @@ export type NavigationUser = {
   fullName: string | null
   avatarUrl: string | null
   status: string | null
+  cubidIdentityStatus: Database["public"]["Enums"]["cubid_identity_status"]
+  cubidId: string | null
+  primaryEmailIdentity: string | null
+  cubidScore: number | null
 }
 
 export type ManagedProjectSummary = {
@@ -43,6 +48,10 @@ type UserProfileRow = {
   full_name: string | null
   avatar_url: string | null
   status: string | null
+  cubid_identity_status: Database["public"]["Enums"]["cubid_identity_status"]
+  cubid_id: string | null
+  primary_email_identity: string | null
+  cubid_score: number | null
 }
 
 function emptyNavigationContext(): NavigationContext {
@@ -79,7 +88,7 @@ export const getNavigationContext = cache(async (): Promise<NavigationContext> =
   const [{ data: profile }, { data: participantRows }, { data: founderRoles }] = await Promise.all([
     roleAwareSupabase
       .from("users")
-      .select("full_name, avatar_url, status")
+      .select("full_name, avatar_url, status, cubid_identity_status, cubid_id, primary_email_identity, cubid_score")
       .eq("user_id", authUser.id)
       .maybeSingle<UserProfileRow>(),
     roleAwareSupabase.from("participants").select("project_id").eq("user_id", authUser.id).eq("is_admin", true),
@@ -128,6 +137,10 @@ export const getNavigationContext = cache(async (): Promise<NavigationContext> =
       fullName: profile?.full_name ?? null,
       avatarUrl: profile?.avatar_url ?? null,
       status: profile?.status ?? null,
+      cubidIdentityStatus: profile?.cubid_identity_status ?? "unlinked",
+      cubidId: profile?.cubid_id ?? null,
+      primaryEmailIdentity: profile?.primary_email_identity ?? null,
+      cubidScore: profile?.cubid_score ?? null,
     },
     isAuthenticated: true,
     hasWorkspaceAccess: true,

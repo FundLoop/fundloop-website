@@ -1,6 +1,8 @@
 import { redirect } from "next/navigation"
 import { getTranslations } from "next-intl/server"
+import { BadgeCheck, ShieldAlert, ShieldCheck } from "lucide-react"
 import { Link } from "@/i18n/navigation"
+import { isResolvedCubidIdentityStatus } from "@/lib/cubid/types"
 import { getNavigationContext } from "@/lib/navigation-context"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 
@@ -16,6 +18,17 @@ export default async function WorkspacePage({ params }: WorkspacePageProps) {
   if (!navigationContext.isAuthenticated) {
     redirect(`/${locale}/join`)
   }
+
+  const cubidStatus = navigationContext.user?.cubidIdentityStatus ?? "unlinked"
+  const cubidStatusIcon =
+    cubidStatus === "verified" ? BadgeCheck : cubidStatus === "linked" ? ShieldCheck : ShieldAlert
+  const CubidStatusIcon = cubidStatusIcon
+  const cubidToneClassName =
+    cubidStatus === "verified"
+      ? "border-emerald-200 bg-emerald-50/70 text-emerald-950"
+      : cubidStatus === "linked"
+        ? "border-cyan-200 bg-cyan-50/70 text-cyan-950"
+        : "border-amber-200 bg-amber-50/80 text-amber-950"
 
   const cards = [
     {
@@ -53,6 +66,30 @@ export default async function WorkspacePage({ params }: WorkspacePageProps) {
           </h1>
           <p className="max-w-2xl text-base leading-7 text-[var(--text-muted)]">{t("body")}</p>
         </div>
+      </section>
+
+      <section className={`rounded-[calc(var(--radius-2xl)+0.25rem)] border p-6 shadow-[var(--surface-shadow-panel)] ${cubidToneClassName}`}>
+        <div className="flex flex-wrap items-start justify-between gap-4">
+          <div className="flex max-w-3xl items-start gap-3">
+            <CubidStatusIcon className="mt-0.5 h-5 w-5 shrink-0" />
+            <div className="space-y-2">
+              <p className="text-[0.72rem] font-semibold uppercase tracking-[0.28em]">{t(`identity.status.${cubidStatus}`)}</p>
+              <h2 className="text-xl font-semibold">{t("identity.title")}</h2>
+              <p className="text-sm leading-6">{t(`identity.body.${cubidStatus}`)}</p>
+            </div>
+          </div>
+          <a
+            href="https://passport.cubid.me"
+            target="_blank"
+            rel="noreferrer"
+            className="inline-flex items-center rounded-full border border-current/20 px-4 py-2 text-sm font-semibold"
+          >
+            {t("identity.cta")}
+          </a>
+        </div>
+        {!isResolvedCubidIdentityStatus(cubidStatus) ? (
+          <p className="mt-4 text-sm leading-6">{t("identity.followUp")}</p>
+        ) : null}
       </section>
 
       <section className="grid gap-6 md:grid-cols-2 xl:grid-cols-4">

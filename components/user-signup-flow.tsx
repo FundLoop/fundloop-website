@@ -7,9 +7,12 @@ import {
   getOnboardingState,
   searchProjectsForTeamMember,
 } from "@/app/actions/onboarding-actions"
+import { CubidIdentityStep } from "@/components/onboarding/cubid-identity-step"
 import { invokeUserOnboardingDraftClearBrowser } from "@/lib/edge-functions/user-onboarding-draft-clear"
 import { invokeUserOnboardingPublishBrowser } from "@/lib/edge-functions/user-onboarding-publish"
 import { invokeUserOnboardingDraftUpsertBrowser } from "@/lib/edge-functions/user-onboarding-draft-upsert"
+import { invokeUserCubidResolveEmailBrowser } from "@/lib/edge-functions/user-cubid-resolve-email"
+import { isResolvedCubidIdentityStatus } from "@/lib/cubid/types"
 import { getSupabaseBrowserClient } from "@/lib/supabase"
 import {
   buildVisibilityFromPreset,
@@ -60,7 +63,7 @@ function formatDraftTime(value: string | null | undefined) {
   }).format(new Date(value))
 }
 
-const USER_SCREEN_ORDER: UserOnboardingScreen[] = ["identity", "visibility", "about", "relationship", "review"]
+const USER_SCREEN_ORDER: UserOnboardingScreen[] = ["cubid", "identity", "visibility", "about", "relationship", "review"]
 
 export default function UserSignupFlow({
   onClose,
@@ -71,9 +74,14 @@ export default function UserSignupFlow({
   const router = useRouter()
   const [loading, setLoading] = useState(true)
   const [authUserId, setAuthUserId] = useState<string | null>(null)
+  const [authEmail, setAuthEmail] = useState<string | null>(null)
   const [userStatus, setUserStatus] = useState<string | null>(null)
   const [currentScreen, setCurrentScreen] = useState<UserOnboardingScreen>("welcome")
-  const [resumeTargetScreen, setResumeTargetScreen] = useState<UserOnboardingScreen>("identity")
+  const [resumeTargetScreen, setResumeTargetScreen] = useState<UserOnboardingScreen>("cubid")
+  const [cubidIdentityStatus, setCubidIdentityStatus] = useState<"unlinked" | "linked" | "verified">("unlinked")
+  const [cubidId, setCubidId] = useState<string | null>(null)
+  const [cubidScore, setCubidScore] = useState<number | null>(null)
+  const [resolvingCubid, setResolvingCubid] = useState(false)
   const [payload, setPayload] = useState<UserOnboardingPayload>({
     ...DEFAULT_USER_ONBOARDING_PAYLOAD,
     inviteCode,
@@ -112,6 +120,7 @@ export default function UserSignupFlow({
         data: { user },
       } = await supabase.auth.getUser()
       setAuthUserId(user?.id ?? null)
+      setAuthEmail(user?.email ?? null)
     }
 
     void loadSession()
@@ -120,6 +129,7 @@ export default function UserSignupFlow({
       data: { subscription },
     } = supabase.auth.onAuthStateChange((event, session) => {
       setAuthUserId(session?.user?.id ?? null)
+      setAuthEmail(session?.user?.email ?? null)
       if (event === "SIGNED_OUT") {
         setCurrentScreen("welcome")
         autosaveReady.current = false
@@ -157,7 +167,11 @@ export default function UserSignupFlow({
       const state = await getOnboardingState()
 
       setAuthUserId(state.authUserId)
+      setAuthEmail(state.authEmail)
       setUserStatus(state.profile?.status ?? null)
+      setCubidIdentityStatus(state.profile?.cubid_identity_status ?? "unlinked")
+      setCubidId(state.profile?.cubid_id ?? null)
+      setCubidScore(state.profile?.cubid_score ?? null)
 
       if (!state.authUserId) {
         setCurrentScreen("welcome")
@@ -180,7 +194,7 @@ export default function UserSignupFlow({
         setResumeTargetScreen(
           USER_SCREEN_ORDER.includes(state.userDraft.current_screen as UserOnboardingScreen)
             ? (state.userDraft.current_screen as UserOnboardingScreen)
-            : "identity",
+            : "cubid",
         )
         setCurrentScreen("resume")
         setDraftTimestamp(state.userDraft.updated_at || state.userDraft.started_at)
@@ -278,13 +292,13 @@ export default function UserSignupFlow({
   }
 
   const handleContinueFromWelcome = async () => {
-    moveToScreen("identity")
+    moveToScreen("cubid")
     if (!authUserId) {
       return
     }
     setSaving(true)
     const result = await invokeUserOnboardingDraftUpsertBrowser({
-      currentScreen: "identity",
+      currentScreen: "cubid",
       payload,
     })
     setSaving(false)
@@ -324,8 +338,35 @@ export default function UserSignupFlow({
     setProjectMatches([])
     setSearchQuery("")
     setCurrentScreen("welcome")
-    setResumeTargetScreen("identity")
+    setResumeTargetScreen("cubid")
     setDraftTimestamp(null)
+  }
+
+  const handleResolveCubid = async () => {
+    setResolvingCubid(true)
+    const result = await invokeUserCubidResolveEmailBrowser()
+    setResolvingCubid(false)
+
+    if (!result.ok) {
+      toast({
+        title: "Could not link CUBID identity",
+        description: result.error.message,
+        variant: "destructive",
+      })
+      return
+    }
+
+    setCubidIdentityStatus(result.data.cubidIdentityStatus)
+    setCubidId(result.data.cubidId)
+    setCubidScore(result.data.cubidScore)
+
+    toast({
+      title: result.data.cubidIdentityStatus === "verified" ? "CUBID verified" : "CUBID linked",
+      description:
+        result.data.cubidIdentityStatus === "verified"
+          ? "Your email identity is verified with CUBID and ready for FundLoop publishing."
+          : "Your email is now linked to CUBID. You can continue through onboarding.",
+    })
   }
 
   const updatePayload = (partial: Partial<UserOnboardingPayload>) => {
@@ -368,6 +409,15 @@ export default function UserSignupFlow({
   }
 
   const handlePublish = async () => {
+    if (!isResolvedCubidIdentityStatus(cubidIdentityStatus)) {
+      toast({
+        title: "Link CUBID before publishing",
+        description: "Resolve your CUBID identity from the signed-in email before publishing your profile.",
+        variant: "destructive",
+      })
+      return
+    }
+
     setPublishing(true)
     const result = await invokeUserOnboardingPublishBrowser()
     setPublishing(false)
@@ -401,6 +451,8 @@ export default function UserSignupFlow({
 
   const canContinue = () => {
     switch (currentScreen) {
+      case "cubid":
+        return isResolvedCubidIdentityStatus(cubidIdentityStatus)
       case "identity":
         return Boolean(payload.fullName.trim() && payload.profileHeadline.trim())
       case "visibility":
@@ -528,7 +580,9 @@ export default function UserSignupFlow({
     <OnboardingShell
       eyebrow={`Profile setup • ${USER_SCREEN_ORDER.indexOf(currentScreen) + 1}/${USER_SCREEN_ORDER.length}`}
       title={
-        currentScreen === "identity"
+        currentScreen === "cubid"
+          ? "Link your identity with CUBID"
+          : currentScreen === "identity"
           ? "Start with who you are"
           : currentScreen === "visibility"
             ? "Choose how public you want to be"
@@ -539,7 +593,9 @@ export default function UserSignupFlow({
                 : "Review and publish your profile"
       }
       description={
-        currentScreen === "identity"
+        currentScreen === "cubid"
+          ? "Before your profile can go live, FundLoop needs to resolve the signed-in email against CUBID and keep that identity link on file."
+          : currentScreen === "identity"
           ? "Add your name, role, and profile picture so the preview starts feeling real."
           : currentScreen === "visibility"
             ? "Set a simple privacy preset, then fine-tune the fields that should stay public."
@@ -573,6 +629,19 @@ export default function UserSignupFlow({
         </div>
       }
     >
+      {currentScreen === "cubid" ? (
+        <CubidIdentityStep
+          email={authEmail}
+          cubidIdentityStatus={cubidIdentityStatus}
+          cubidId={cubidId}
+          cubidScore={cubidScore}
+          resolving={resolvingCubid}
+          onResolve={() => void handleResolveCubid()}
+          title="CUBID becomes the identity bridge for FundLoop publishing"
+          body="We use your signed-in email to resolve or create the matching CUBID user. Publishing is blocked until that link exists, because later payout and accountability flows depend on it."
+        />
+      ) : null}
+
       {currentScreen === "identity" ? (
         <div className="grid gap-5">
           {inviteCode ? (

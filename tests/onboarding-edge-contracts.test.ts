@@ -9,6 +9,10 @@ import {
   isUserOnboardingDraftUpsertOutput,
 } from "@/lib/edge-functions/user-onboarding-draft-upsert-contract"
 import { validateUserOnboardingPublishInput, isUserOnboardingPublishOutput } from "@/lib/edge-functions/user-onboarding-publish-contract"
+import {
+  isUserCubidResolveEmailOutput,
+  validateUserCubidResolveEmailInput,
+} from "@/lib/edge-functions/user-cubid-resolve-email-contract"
 
 describe("onboarding edge function contracts", () => {
   it("accepts and sanitizes a valid user draft payload", () => {
@@ -139,5 +143,20 @@ describe("onboarding edge function contracts", () => {
       ok: true,
       data: {},
     })
+  })
+
+  it("validates the user CUBID resolve contract", () => {
+    expect(validateUserCubidResolveEmailInput({ emailOverride: " Maya@example.com " })).toEqual({
+      ok: true,
+      data: { emailOverride: "maya@example.com" },
+    })
+    expect(
+      isUserCubidResolveEmailOutput({
+        cubidId: "cubid-user-1",
+        primaryEmailIdentity: "auth-identity-1",
+        cubidScore: 91,
+        cubidIdentityStatus: "verified",
+      }),
+    ).toBe(true)
   })
 })

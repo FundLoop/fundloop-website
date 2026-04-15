@@ -102,6 +102,17 @@ Current contextual subnav rules are path-based:
 - `/founder`, `/projects/*`, and legacy founder/mock organization routes map to the founder section
 - `/admin/*` maps to the operator section
 
+Session 13 made identity state a first-class part of the authenticated shell.
+
+- `getNavigationContext()` now carries:
+  - `cubidIdentityStatus`
+  - `cubidId`
+  - `primaryEmailIdentity`
+  - `cubidScore`
+- `/[locale]/workspace` now surfaces a lightweight identity-status card that tells the user whether FundLoop only has their app session, has a linked CUBID identity, or has a stronger verified state available
+- `/[locale]/workspace/account` now includes a dedicated identity panel that points users to `passport.cubid.me` as the source-of-truth identity authority
+- user and project onboarding now begin with an explicit CUBID prerequisite step, and both publish paths require a linked identity before completion
+
 ## Canonical Entry Routes
 
 Session 08 introduced the first IA-aligned entry routes:

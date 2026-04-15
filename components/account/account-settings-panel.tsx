@@ -1,17 +1,25 @@
 "use client"
 
 import { useTranslations } from "next-intl"
-import { Mail, Wallet } from "lucide-react"
+import { Fingerprint, Mail, Wallet } from "lucide-react"
+import { CubidIdentityPanel } from "@/components/account/cubid-identity-panel"
 import { EmailManagement } from "@/components/account/email-management"
 import { WalletManagement } from "@/components/account/wallet-management"
+import type { CubidIdentityStatus } from "@/lib/cubid/types"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 
 type AccountSettingsPanelProps = {
   heading: string
   description: string
+  cubid: {
+    status: CubidIdentityStatus
+    email: string | null
+    cubidId: string | null
+    cubidScore: number | null
+  }
 }
 
-export function AccountSettingsPanel({ heading, description }: AccountSettingsPanelProps) {
+export function AccountSettingsPanel({ heading, description, cubid }: AccountSettingsPanelProps) {
   const t = useTranslations("accountSettings")
 
   return (
@@ -24,8 +32,12 @@ export function AccountSettingsPanel({ heading, description }: AccountSettingsPa
       </section>
 
       <section className="rounded-[calc(var(--radius-2xl)+0.25rem)] border border-[color:var(--surface-border)] bg-[var(--surface-panel-strong)] p-6 shadow-[var(--surface-shadow-panel)]">
-        <Tabs defaultValue="emails" className="w-full">
-          <TabsList className="mb-8 grid w-full grid-cols-2">
+        <Tabs defaultValue="identity" className="w-full">
+          <TabsList className="mb-8 grid w-full grid-cols-3">
+            <TabsTrigger value="identity" className="flex items-center gap-2">
+              <Fingerprint className="h-4 w-4" />
+              {t("identity")}
+            </TabsTrigger>
             <TabsTrigger value="emails" className="flex items-center gap-2">
               <Mail className="h-4 w-4" />
               {t("emails")}
@@ -35,6 +47,21 @@ export function AccountSettingsPanel({ heading, description }: AccountSettingsPa
               {t("wallets")}
             </TabsTrigger>
           </TabsList>
+
+          <TabsContent value="identity" className="mt-0">
+            <CubidIdentityPanel
+              status={cubid.status}
+              email={cubid.email}
+              cubidId={cubid.cubidId}
+              cubidScore={cubid.cubidScore}
+              title={t("panels.identity.title")}
+              description={t(`panels.identity.status.${cubid.status}`)}
+              linkedLabel={t("panels.identity.labels.linked")}
+              verifiedLabel={t("panels.identity.labels.verified")}
+              unlinkedLabel={t("panels.identity.labels.unlinked")}
+              manageCta={t("panels.identity.manage")}
+            />
+          </TabsContent>
 
           <TabsContent value="emails" className="mt-0">
             <EmailManagement />

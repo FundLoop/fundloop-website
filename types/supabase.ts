@@ -1986,6 +1986,7 @@ export type Database = {
           contribution_details: string | null
           created_at: string | null
           cubid_id: string | null
+          cubid_identity_status: Database["public"]["Enums"]["cubid_identity_status"]
           cubid_score: number | null
           deleted_at: string | null
           display_name: string | null
@@ -2022,6 +2023,7 @@ export type Database = {
           contribution_details?: string | null
           created_at?: string | null
           cubid_id?: string | null
+          cubid_identity_status?: Database["public"]["Enums"]["cubid_identity_status"]
           cubid_score?: number | null
           deleted_at?: string | null
           display_name?: string | null
@@ -2058,6 +2060,7 @@ export type Database = {
           contribution_details?: string | null
           created_at?: string | null
           cubid_id?: string | null
+          cubid_identity_status?: Database["public"]["Enums"]["cubid_identity_status"]
           cubid_score?: number | null
           deleted_at?: string | null
           display_name?: string | null
@@ -3062,6 +3065,7 @@ export type Database = {
       }
     }
     Enums: {
+      cubid_identity_status: "unlinked" | "linked" | "verified"
       organization_members_status: "active" | "inactive" | "deleted"
       payment_collection_mode: "contract" | "deposit_address"
       organizations_status: "active" | "inactive" | "deleted"
@@ -3215,6 +3219,7 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
+      cubid_identity_status: ["unlinked", "linked", "verified"],
       organization_members_status: ["active", "inactive", "deleted"],
       payment_collection_mode: ["contract", "deposit_address"],
       organizations_status: ["active", "inactive", "deleted"],

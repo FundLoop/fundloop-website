@@ -32,6 +32,10 @@ describe("public user journey helpers", () => {
         fullName: "Person Example",
         avatarUrl: null,
         status: "inactive",
+        cubidIdentityStatus: "unlinked",
+        cubidId: null,
+        primaryEmailIdentity: null,
+        cubidScore: null,
       },
     })
 
@@ -49,6 +53,10 @@ describe("public user journey helpers", () => {
         fullName: "Person Example",
         avatarUrl: null,
         status: "active",
+        cubidIdentityStatus: "linked",
+        cubidId: "cubid-user-1",
+        primaryEmailIdentity: null,
+        cubidScore: 88,
       },
     })
 

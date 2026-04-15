@@ -215,8 +215,28 @@ export const frMessages = {
     },
   },
   accountSettings: {
+    identity: "Identité CUBID",
     emails: "Adresses e-mail",
     wallets: "Adresses de wallet",
+    panels: {
+      identity: {
+        title: "CUBID devient l’autorité d’identité pour FundLoop",
+        manage: "Gérer dans CUBID Passport",
+        labels: {
+          unlinked: "Pas encore lié",
+          linked: "Lié",
+          verified: "Vérifié",
+        },
+        status: {
+          unlinked:
+            "Ce compte n’a pas encore de lien CUBID. FundLoop peut encore garder ici quelques préférences locales, mais les publications et opérations liées aux paiements exigent désormais d’abord une identité liée.",
+          linked:
+            "Ce compte est lié à CUBID via l’e-mail connecté. La vérification complète peut continuer sur CUBID.me, mais FundLoop peut déjà considérer le pont d’identité comme établi.",
+          verified:
+            "Ce compte est lié à CUBID et la dernière réponse indique que l’identité e-mail est vérifiée. C’est l’état le plus fort actuellement visible dans FundLoop.",
+        },
+      },
+    },
   },
   founders: {
     hero: {
@@ -402,6 +422,25 @@ export const frMessages = {
     body:
       "C’est la nouvelle porte d’entrée du côté participant. L’espace complet arrive plus tard, mais vous pouvez déjà aller vers le compte, le contexte de participation et les résultats publiés.",
     open: "Ouvrir",
+    identity: {
+      title: "Le statut d’identité compte désormais avant que la valeur puisse circuler",
+      cta: "Ouvrir CUBID Passport",
+      followUp:
+        "Si cet état reste non lié, terminez l’étape de résolution CUBID dans l’onboarding ou ouvrez l’onglet compte pour voir ce qui manque avant les publications et opérations liées aux paiements.",
+      status: {
+        unlinked: "Pas encore lié",
+        linked: "Lié",
+        verified: "Vérifié",
+      },
+      body: {
+        unlinked:
+          "Votre compte connecté a encore besoin d’un lien CUBID avant que FundLoop puisse le considérer prêt pour la publication et les futures opérations liées aux paiements.",
+        linked:
+          "Votre compte connecté est lié à CUBID. FundLoop peut désormais utiliser ce pont d’identité pour les blocages de publication et les futurs flux de responsabilité.",
+        verified:
+          "Votre compte connecté est lié à CUBID et la dernière réponse montre une identité e-mail vérifiée, soit l’état le plus fort actuellement visible dans FundLoop.",
+      },
+    },
     cards: {
       account: {
         title: "Compte",
