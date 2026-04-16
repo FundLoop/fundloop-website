@@ -12,6 +12,34 @@ Agents populate one level-3 heading for each coding session, following the same 
 
 ---
 
+### session v38: Add shared Supabase Edge Function contract layer
+- timestamp: 2026-04-14T23:28:41Z
+- agent: **Codex (GPT-5)**
+- branch: **codex/wallet-pr1-payments-edge**
+- head: 56599f9a9eb72692bdbafaa2b3ddbc6b6ccbf558 - feat(observability): add payment flow failure instrumentation
+
+#### Objective
+Complete Session 04 by adding the reusable app-side contract and invocation layer for Supabase Edge Functions, including typed envelopes, shared browser/server invokers, and the first command contract for project payment draft creation.
+
+#### Actions Taken
+- Added the shared Edge Function result envelope and invocation helpers under `lib/edge-functions/`.
+- Added the first command contract and adapter for `project-payment-drafts-create`, including payload validation and output-shape validation.
+- Extracted the shared payment summary type into `lib/payments/payment-record-summary.ts` so app code and future Edge Functions can depend on one transport-safe shape.
+- Added focused contract/invoker coverage in `tests/edge-function-invoke.test.ts` and `tests/project-payment-drafts-create-contract.test.ts`.
+- Added `docs/engineering/edge-functions.md` and linked it from the engineering docs index.
+
+#### Tests and Validation Notes
+- Ran `pnpm dlx node@22.22.1 /opt/homebrew/bin/pnpm exec vitest run tests/edge-function-invoke.test.ts tests/project-payment-drafts-create-contract.test.ts`.
+- Ran `pnpm dlx node@22.22.1 /opt/homebrew/bin/pnpm lint`.
+- Both the focused tests and lint passed.
+
+#### Reflections
+- Landing the shared envelope and invokers first makes the upcoming Edge Function migration much cleaner, because the product code can call a function-specific adapter instead of learning transport details inline.
+- Extracting the payment summary shape now avoids a later round of duplicate transport types between Next code and Supabase functions.
+
+#### Suggested Next Steps
+- Implement `project-payment-drafts-create` as the first real Supabase Edge Function.
+- Move the project payments page onto the browser Edge Function adapter and keep the server action as a compatibility wrapper.
 ### session v32: Add wallet and payment flow observability
 - timestamp: 2026-04-14T19:26:18Z
 - agent: **Codex (GPT-5)**
