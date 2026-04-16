@@ -1,5 +1,40 @@
 ---
 
+### session v51: Vendor CUBID tarballs so CI and Vercel can install the onboarding stack
+- timestamp: 2026-04-16T18:17:23-0400
+- agent: **Codex (GPT-5)**
+- branch: **codex/wallet-pr4-onboarding-cubid**
+- head: TBD
+
+#### Objective
+Repair the stacked onboarding/CUBID tip branch after PR #21 failed in GitHub Actions and Vercel because the branch depended on local sibling-repo tarballs that do not exist in CI.
+
+#### Actions Taken
+- Copied the local CUBID SDK tarballs into a tracked repo directory at `vendor/cubid/`:
+  - `cubid-api-0.1.0.tgz`
+  - `cubid-web2-0.1.0.tgz`
+  - `cubid-web2-react-0.1.0.tgz`
+- Updated `package.json` so both `dependencies` and `pnpm.overrides` now point at the vendored tarballs instead of `../cubid/cubid-sdk-v2/dist-packs/*`.
+- Regenerated `pnpm-lock.yaml` from the repo root so the lockfile now resolves the vendored in-repo tarballs.
+- Reproduced the CI validation sequence from the FundLoop worktree to verify the branch no longer depends on the sibling `cubid-sdk-v2` checkout.
+
+#### Tests and Validation Notes
+- `pnpm --dir /Users/botmaster/src/fundloop-pr-stack install --frozen-lockfile` passed
+- `pnpm --dir /Users/botmaster/src/fundloop-pr-stack lint` passed
+- `pnpm --dir /Users/botmaster/src/fundloop-pr-stack test` passed
+- `pnpm --dir /Users/botmaster/src/fundloop-pr-stack typecheck` passed
+- `pnpm --dir /Users/botmaster/src/fundloop-pr-stack build` passed
+- `pnpm --dir /Users/botmaster/src/fundloop-pr-stack/contracts test` passed
+- Local validation ran under Node 25 because that is the host shell default on this machine; Hardhat warned about the unsupported runtime, but the repo's CI workflow uses `.nvmrc` and pins Node 22, which is the supported path for GitHub Actions and Vercel.
+
+#### Reflections
+- The original CUBID package wiring was acceptable for local multi-repo development but not for a standalone checkout. Vendoring the tarballs is the smallest change that makes the stacked PR portable without widening the scope to package publishing or workspace restructuring.
+- Because the tarballs are tiny, checking them into the repo is materially lower risk than trying to publish private packages in the middle of a stacked review.
+
+#### Suggested Next Steps
+- Push the repair commit to `codex/wallet-pr4-onboarding-cubid` so PR #21 can rerun CI and Vercel with the vendored artifacts.
+- If reviewers want a longer-term dependency strategy, follow up later with either published private packages or a first-class monorepo package boundary after the current stack lands.
+
 ### session v50: Fold CUBID authority and profile/account ownership into one refactor pass
 - timestamp: 2026-04-15T15:22:50-0400
 - agent: **Codex (GPT-5)**

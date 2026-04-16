@@ -5,23 +5,23 @@ settings:
   excludeLinksFromLockfile: false
 
 overrides:
-  '@cubid/api': file:../cubid/cubid-sdk-v2/dist-packs/cubid-api-0.1.0.tgz
-  '@cubid/web2': file:../cubid/cubid-sdk-v2/dist-packs/cubid-web2-0.1.0.tgz
-  '@cubid/web2-react': file:../cubid/cubid-sdk-v2/dist-packs/cubid-web2-react-0.1.0.tgz
+  '@cubid/api': file:vendor/cubid/cubid-api-0.1.0.tgz
+  '@cubid/web2': file:vendor/cubid/cubid-web2-0.1.0.tgz
+  '@cubid/web2-react': file:vendor/cubid/cubid-web2-react-0.1.0.tgz
 
 importers:
 
   .:
     dependencies:
       '@cubid/api':
-        specifier: file:../cubid/cubid-sdk-v2/dist-packs/cubid-api-0.1.0.tgz
-        version: file:../cubid/cubid-sdk-v2/dist-packs/cubid-api-0.1.0.tgz
+        specifier: file:vendor/cubid/cubid-api-0.1.0.tgz
+        version: file:vendor/cubid/cubid-api-0.1.0.tgz
       '@cubid/web2':
-        specifier: file:../cubid/cubid-sdk-v2/dist-packs/cubid-web2-0.1.0.tgz
-        version: file:../cubid/cubid-sdk-v2/dist-packs/cubid-web2-0.1.0.tgz
+        specifier: file:vendor/cubid/cubid-web2-0.1.0.tgz
+        version: file:vendor/cubid/cubid-web2-0.1.0.tgz
       '@cubid/web2-react':
-        specifier: file:../cubid/cubid-sdk-v2/dist-packs/cubid-web2-react-0.1.0.tgz
-        version: file:../cubid/cubid-sdk-v2/dist-packs/cubid-web2-react-0.1.0.tgz(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
+        specifier: file:vendor/cubid/cubid-web2-react-0.1.0.tgz
+        version: file:vendor/cubid/cubid-web2-react-0.1.0.tgz(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
       '@hookform/resolvers':
         specifier: ^5.2.2
         version: 5.2.2(react-hook-form@7.72.0(react@19.2.4))
@@ -407,19 +407,19 @@ packages:
     resolution: {integrity: sha512-QxULHAm7cNu72w97JUNCBFODFaXpbDg+dP8b/oWFAZ2MTRppA3U00Y2L1HqaS4J6yBqxwa/Y3nMBaxVKbB/NsA==}
     engines: {node: '>=20.19.0'}
 
-  '@cubid/api@file:../cubid/cubid-sdk-v2/dist-packs/cubid-api-0.1.0.tgz':
-    resolution: {integrity: sha512-FtzkdHlL2SfjrYyMmhLeZ1Sr5SL3RRwOsSkJJyrt3hdr5oqEvIkquqawG0hgmGMhZJQ4jfxPH9XdsNRweTYyWw==, tarball: file:../cubid/cubid-sdk-v2/dist-packs/cubid-api-0.1.0.tgz}
+  '@cubid/api@file:vendor/cubid/cubid-api-0.1.0.tgz':
+    resolution: {integrity: sha512-FtzkdHlL2SfjrYyMmhLeZ1Sr5SL3RRwOsSkJJyrt3hdr5oqEvIkquqawG0hgmGMhZJQ4jfxPH9XdsNRweTYyWw==, tarball: file:vendor/cubid/cubid-api-0.1.0.tgz}
     version: 0.1.0
 
-  '@cubid/web2-react@file:../cubid/cubid-sdk-v2/dist-packs/cubid-web2-react-0.1.0.tgz':
-    resolution: {integrity: sha512-ImP5mYICXBiKLhWSUsnLbB71hhKg2KLYfYCrnYmqTIHOJ0/KfB7DsL3xJADkS/tvuoISoJt66FrKZU3OuPhQEg==, tarball: file:../cubid/cubid-sdk-v2/dist-packs/cubid-web2-react-0.1.0.tgz}
+  '@cubid/web2-react@file:vendor/cubid/cubid-web2-react-0.1.0.tgz':
+    resolution: {integrity: sha512-ImP5mYICXBiKLhWSUsnLbB71hhKg2KLYfYCrnYmqTIHOJ0/KfB7DsL3xJADkS/tvuoISoJt66FrKZU3OuPhQEg==, tarball: file:vendor/cubid/cubid-web2-react-0.1.0.tgz}
     version: 0.1.0
     peerDependencies:
       react: '>=18.2.0'
       react-dom: '>=18.2.0'
 
-  '@cubid/web2@file:../cubid/cubid-sdk-v2/dist-packs/cubid-web2-0.1.0.tgz':
-    resolution: {integrity: sha512-wDFAjt3idjMEfr/0r9NSdKdTOX9Xlt9JcnXWlncP/kv5Z+6FL/HNQT/uyH7RVf7UawTqB5ycKT0PDZ9Ni6quZA==, tarball: file:../cubid/cubid-sdk-v2/dist-packs/cubid-web2-0.1.0.tgz}
+  '@cubid/web2@file:vendor/cubid/cubid-web2-0.1.0.tgz':
+    resolution: {integrity: sha512-wDFAjt3idjMEfr/0r9NSdKdTOX9Xlt9JcnXWlncP/kv5Z+6FL/HNQT/uyH7RVf7UawTqB5ycKT0PDZ9Ni6quZA==, tarball: file:vendor/cubid/cubid-web2-0.1.0.tgz}
     version: 0.1.0
 
   '@date-fns/tz@1.4.1':
@@ -6169,17 +6169,17 @@ snapshots:
 
   '@csstools/css-tokenizer@4.0.0': {}
 
-  '@cubid/api@file:../cubid/cubid-sdk-v2/dist-packs/cubid-api-0.1.0.tgz': {}
+  '@cubid/api@file:vendor/cubid/cubid-api-0.1.0.tgz': {}
 
-  '@cubid/web2-react@file:../cubid/cubid-sdk-v2/dist-packs/cubid-web2-react-0.1.0.tgz(react-dom@19.2.4(react@19.2.4))(react@19.2.4)':
+  '@cubid/web2-react@file:vendor/cubid/cubid-web2-react-0.1.0.tgz(react-dom@19.2.4(react@19.2.4))(react@19.2.4)':
     dependencies:
-      '@cubid/web2': file:../cubid/cubid-sdk-v2/dist-packs/cubid-web2-0.1.0.tgz
+      '@cubid/web2': file:vendor/cubid/cubid-web2-0.1.0.tgz
       react: 19.2.4
       react-dom: 19.2.4(react@19.2.4)
 
-  '@cubid/web2@file:../cubid/cubid-sdk-v2/dist-packs/cubid-web2-0.1.0.tgz':
+  '@cubid/web2@file:vendor/cubid/cubid-web2-0.1.0.tgz':
     dependencies:
-      '@cubid/api': file:../cubid/cubid-sdk-v2/dist-packs/cubid-api-0.1.0.tgz
+      '@cubid/api': file:vendor/cubid/cubid-api-0.1.0.tgz
 
   '@date-fns/tz@1.4.1': {}
 
