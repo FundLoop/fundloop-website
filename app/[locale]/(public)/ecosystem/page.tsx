@@ -1,31 +1,31 @@
 import type { Metadata } from "next"
 import Link from "next/link"
+import { getTranslations } from "next-intl/server"
 import { ArrowLeft, ExternalLink } from "lucide-react"
+import { Link as LocaleLink } from "@/i18n/navigation"
 import { Button } from "@/components/ui/button"
 import { MarketingPage, MarketingSection, SectionBody, SectionEyebrow, SectionTitle } from "@/components/marketing/page-chrome"
 import { Reveal } from "@/components/marketing/reveal"
 import { ecosystemSites } from "@/lib/public-site"
 
-export const metadata: Metadata = {
-  title: "Our Ecosystem",
-  description: "Explore our interconnected projects across identity, payments, coordination, and regenerative economies.",
-  openGraph: {
-    title: "Our Ecosystem",
-    description: "Explore our interconnected projects across identity, payments, coordination, and regenerative economies.",
-    type: "website",
-    url: "https://fundloop.org/ecosystem",
-  },
-  twitter: {
-    card: "summary_large_image",
-    title: "Our Ecosystem",
-    description: "Explore our interconnected projects across identity, payments, coordination, and regenerative economies.",
-  },
-  alternates: {
-    canonical: "https://fundloop.org/ecosystem",
-  },
+type PageProps = {
+  params: Promise<{ locale: string }>
 }
 
-export default function EcosystemPage() {
+export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
+  const { locale } = await params
+  const t = await getTranslations({ locale, namespace: "metadata.ecosystem" })
+
+  return {
+    title: t("title"),
+    description: t("description"),
+  }
+}
+
+export default async function EcosystemPage({ params }: PageProps) {
+  await params
+  const t = await getTranslations("ecosystemPage")
+
   return (
     <MarketingPage>
       <MarketingSection className="pb-10 pt-10">
@@ -35,22 +35,19 @@ export default function EcosystemPage() {
             variant="ghost"
             className="rounded-full px-0 text-[var(--marketing-muted-strong)] hover:bg-transparent hover:text-[var(--marketing-accent)]"
           >
-            <Link href="/">
+            <LocaleLink href="/">
               <ArrowLeft className="h-4 w-4" />
-              Back to home
-            </Link>
+              {t("backToHome")}
+            </LocaleLink>
           </Button>
         </Reveal>
       </MarketingSection>
 
       <MarketingSection className="pt-0">
         <Reveal>
-          <SectionEyebrow>Ecosystem</SectionEyebrow>
-          <SectionTitle className="mt-4 max-w-5xl text-5xl sm:text-6xl lg:text-7xl">Our Ecosystem</SectionTitle>
-          <SectionBody className="mt-6 max-w-3xl">
-            Identity, payments, governance, local economies, safer trust rails, and public-goods infrastructure are all
-            taking shape around the same thesis: better systems should make cooperation easier, not harder.
-          </SectionBody>
+          <SectionEyebrow>{t("hero.eyebrow")}</SectionEyebrow>
+          <SectionTitle className="mt-4 max-w-5xl text-5xl sm:text-6xl lg:text-7xl">{t("hero.title")}</SectionTitle>
+          <SectionBody className="mt-6 max-w-3xl">{t("hero.body")}</SectionBody>
         </Reveal>
       </MarketingSection>
 
@@ -70,7 +67,7 @@ export default function EcosystemPage() {
                 </Link>
                 <p className="max-w-2xl text-sm leading-6 text-[var(--marketing-muted-strong)]">{site.desc}</p>
                 <span className="inline-flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.18em] text-[var(--marketing-accent)]">
-                  Open
+                  {t("open")}
                   <ExternalLink className="h-3.5 w-3.5" />
                 </span>
               </div>

@@ -180,7 +180,7 @@ export default function ProjectSignupStep1({
               <p className="text-sm text-slate-500 dark:text-slate-400">
                 Our project commits to anonymously sync our users and contribute 1% of our revenue to the FundLoop
                 ecosystem to fund the citizen salary program.{' '}
-                <Link href="/pledge" className="text-emerald-600 hover:underline dark:text-emerald-400">
+                <Link href="/founders#commitment" className="text-emerald-600 hover:underline dark:text-emerald-400">
                   Read the full pledge
                 </Link>
               </p>

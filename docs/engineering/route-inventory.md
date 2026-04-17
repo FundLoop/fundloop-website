@@ -18,36 +18,36 @@ This inventory covers every current `page.tsx` and `route.ts` surface under `app
 - `/settings` currently links to missing routes: `/settings/notifications` and `/settings/security`.
 - `/my-profile` currently links to missing `/organizations`.
 - `/invitations/[token]` and `/organizations/[id]` are demo/mock surfaces and should not be treated as production-ready flows.
-- `/api` and `/analytics` are intentionally transitional public pages and should remain visible only with an explicit plan to finish or merge them.
+- `/about`, `/api`, and `/analytics` are now legacy public entry points and should remain redirects only.
 
 ## Public Site and Discovery Surfaces
 
 | Path | Audience | Current state | Evidence / notes | Disposition | Canonical target | Follow-up session |
 | --- | --- | --- | --- | --- | --- | --- |
 | `/` | Public visitors | Marketing home is real but still pre-IA. | Strong visual design, but still the top of a mixed public/app nav. | finish | Public home and entry funnel | 08, 09, 10, 45 |
-| `/about` | Public visitors | Standalone narrative page likely overlaps home/docs. | Duplicate “what is FundLoop” storytelling risk. | merge | Public home plus docs/about content block | 11 |
-| `/api` | Developers, partners, agents | Transitional preview page. | Explicitly says API is in progress. | finish | Public docs and protocol overview surface | 38, 41 |
-| `/analytics` | Public visitors, transparency readers | Transitional public analytics page. | Explicit dummy-data note in UI. | finish | Public reporting and transparency surface | 36 |
-| `/blog` | Public visitors | Real content listing. | Supports public education and founder/user funnel support. | finish | Public blog | 11 |
-| `/blog/[slug]` | Public visitors | Real content detail route. | Belongs with blog program. | finish | Public blog article detail | 11 |
-| `/cookies` | Public visitors | Standard legal/compliance page. | No major structural issue. | finish | Public legal surface | 11 |
-| `/documentation` | Developers, partners, operators | Real but broad docs stub. | Should anchor product, protocol, and ops docs over time. | finish | Public docs hub | 11, 44 |
-| `/ecosystem` | Public visitors | Real supporting public page. | Fits ecosystem story and aligned network narrative. | finish | Public ecosystem/discovery surface | 11 |
-| `/faq` | Public visitors | Real supporting public page. | Useful public support/discovery content. | finish | Public FAQ | 11 |
-| `/founders` | Prospective founders | New lightweight founder-path landing page. | Session 08 introduced this as the public founder entry while the fuller funnel is rebuilt in Session 09. | finish | Public founder acquisition entry | 09 |
+| `/about` | Public visitors | Redirect-only legacy narrative route. | Session 11 merged the public “about” story into the documentation hub. | redirect | `/documentation#about-fundloop` | 11 |
+| `/api` | Developers, partners, agents | Redirect-only legacy developer preview route. | Session 11 folded the old API preview into the documentation hub’s integrations section. | redirect | `/documentation#protocol-and-integrations` | 11 |
+| `/analytics` | Public visitors, transparency readers | Redirect-only legacy preview route. | Session 11 retired the dummy analytics page in favor of the truthful public reports hub. | redirect | `/reports` | 11 |
+| `/blog` | Public visitors | Localized server-rendered content listing. | Session 11 moved the page onto the modern public shell and retired the old browser-only fetch pattern. | finish | Public blog | 11 |
+| `/blog/[slug]` | Public visitors | Localized server-rendered content detail route. | Session 11 replaced the old client-only article page with the current public-shell article experience. | finish | Public blog article detail | 11 |
+| `/cookies` | Public visitors | Real legal/compliance page on the current public shell. | Session 11 rebuilt the page visually and added localized metadata/chrome while keeping the body copy truthful. | finish | Public legal surface | 11 |
+| `/documentation` | Developers, partners, operators | Canonical public docs hub. | Session 11 merged the about/integrations narrative and support-article browsing into one public documentation surface. | finish | Public docs hub | 11, 44 |
+| `/ecosystem` | Public visitors | Real supporting public page on the current public shell. | Session 11 localized the shell and metadata and aligned the route with the modern marketing system. | finish | Public ecosystem/discovery surface | 11 |
+| `/faq` | Public visitors | Real supporting public page on the current public shell. | Session 11 moved FAQ onto the current shell and localized the surrounding chrome/CTA behavior. | finish | Public FAQ | 11 |
+| `/founders` | Prospective founders | Real founder acquisition funnel. | Session 09 consolidated the founder story here and made it the single public founder path. | finish | Public founder acquisition entry | 09 |
 | `/join` | Invited users | Real invite-code entry route. | Validates invite codes and hands off to onboarding. | finish | Public invitation and onboarding entry | 10, 12 |
-| `/invitations/[token]` | Invited users | Demo-only invitation flow. | Contains explicit demo/mock assumptions. | redirect | `/join` and the real invitation entry flow | 11 |
-| `/participation` | Prospective users | Real public explainer. | Good user-side narrative, but belongs in broader discovery funnel. | finish | Public user discovery and participation explainer | 10 |
-| `/pledge` | Prospective founders | Legacy standalone pledge page. | Older website-style founder pitch and static pledge content. | merge | Founder acquisition funnel and docs | 09 |
-| `/pricing` | Prospective founders | Public pricing/offer page. | Should either become real founder packaging or merge into funnel. | merge | Founder acquisition funnel | 09 |
-| `/privacy` | Public visitors | Standard legal page. | No major structural issue. | finish | Public legal surface | 11 |
+| `/invitations/[token]` | Invited users | Redirect-only legacy invitation route. | Session 11 retired the old mock invitation flow and now preserves the token into the real `/join?invite=...` path. | redirect | `/join` and the real invitation entry flow | 11 |
+| `/participation` | Prospective users | Real public user funnel. | Session 10 made this the canonical public user acquisition and explanation path, with explicit onboarding, CUBID, project discovery, and results-visibility handoff. | finish | Public user discovery and participation explainer | 10 |
+| `/pledge` | Prospective founders | Redirect-only legacy founder page. | Session 09 merged pledge content into `/founders#commitment`. | redirect | `/founders#commitment` | 09 |
+| `/pricing` | Prospective founders | Redirect-only legacy founder page. | Session 09 merged support-model content into `/founders#support-model`. | redirect | `/founders#support-model` | 09 |
+| `/privacy` | Public visitors | Real legal page on the current public shell. | Session 11 rebuilt the page visually and added localized metadata/chrome while keeping the body copy truthful. | finish | Public legal surface | 11 |
 | `/support` | Public visitors, users, founders | Real support/contact page. | Should remain part of public/help system. | finish | Public support surface | 11, 44 |
-| `/terms` | Public visitors | Standard legal page. | No major structural issue. | finish | Public legal surface | 11 |
+| `/terms` | Public visitors | Real legal page on the current public shell. | Session 11 rebuilt the page visually and added localized metadata/chrome while keeping the body copy truthful. | finish | Public legal surface | 11 |
 | `/use-cases/[slug]` | Public visitors, founders | Real public explainer detail route. | Supports founder narrative and ecosystem education. | finish | Public use-case detail surface | 09, 11 |
-| `/projects` | Public visitors, users | Real project directory. | Already useful as discovery surface. | finish | Public project discovery directory | 10 |
-| `/projects/[slug]` | Public visitors, project members | Mixed public detail and member-aware page. | Public project detail route with some member-aware access. | finish | Public project detail with links into founder workspace | 10, 18 |
-| `/users` | Public visitors, users | Real public member directory. | Discovery/trust surface for the network. | finish | Public participant directory | 10 |
-| `/users/[id]` | Public visitors, users | Real public member profile. | Supports person-level discovery and credibility. | finish | Public participant profile | 10 |
+| `/projects` | Public visitors, users | Real server-rendered project discovery page. | Session 10 rebuilt the page around the user funnel, localized metadata, server-side filters, and onboarding/workspace CTA handoff. | finish | Public project discovery directory | 10 |
+| `/projects/[slug]` | Public visitors, project members | Real public project profile with founder-aware access. | Session 10 modernized the route into a public discovery/profile surface and kept founder controls secondary for project admins only. | finish | Public project detail with links into founder workspace | 10, 18 |
+| `/users` | Public visitors, users | Real server-rendered participant discovery page. | Session 10 reframed the route as a participation-oriented public credibility surface with auth-aware CTA handoff. | finish | Public participant directory | 10 |
+| `/users/[id]` | Public visitors, users | Real public participant profile. | Session 10 modernized the route into a public profile that links back into projects and the participation path instead of feeling like a utility record. | finish | Public participant profile | 10 |
 
 ## Authenticated User and Founder Surfaces
 
@@ -93,3 +93,4 @@ This inventory covers every current `page.tsx` and `route.ts` surface under `app
 | `/api/internal/e2e/login` | Playwright, non-production automation | Purpose-built internal test helper. | Guarded, non-production auth bootstrap for browser tests. | finish | Internal test-only auth helper | 44 |
 | `/api/internal/observability/payment-events` | Authenticated browser clients | Real internal ingestion endpoint. | Captures client-originated payment-flow observability events. | finish | Internal observability ingestion API | 37 |
 | `/api/internal/payments/reconcile-onchain` | Cron, internal operators | Real internal worker endpoint. | Protected reconciliation trigger for scheduled and manual runs. | finish | Internal payment reconciliation endpoint | 20, 37 |
+| `/reports` | Public visitors, transparency readers | Canonical public reporting hub. | Session 11 introduced the truthful transparency surface that explains what reporting exists now and what the public reporting model will cover later. | finish | Public reporting and transparency hub | 11, 36 |

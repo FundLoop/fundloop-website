@@ -1,189 +1,250 @@
-import Link from "next/link"
+import type { Metadata } from "next"
+import { notFound } from "next/navigation"
+import { getTranslations } from "next-intl/server"
+import { ArrowRight, ExternalLink, Eye } from "lucide-react"
+import { Link } from "@/i18n/navigation"
+import { getNavigationContext } from "@/lib/navigation-context"
+import { getPublicProjectDetail } from "@/lib/public-discovery"
+import { getPublicUserCtaState, getPublicUserPrimaryHref } from "@/lib/public-user-journey"
+import { ProjectVisibilityToggle } from "@/components/project-visibility-toggle"
 import { Button } from "@/components/ui/button"
-import { ArrowLeft } from "lucide-react"
-import { createServerSupabaseClient } from "@/lib/supabase-server"
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import {
-  ProjectDetailPage,
-  type ProjectDetail,
-  type ProjectFinancials,
-  type ProjectOrganization,
-  type ProjectParticipant,
-} from "@/components/project-detail-page"
+  MarketingPage,
+  MarketingSection,
+  SectionBody,
+  SectionEyebrow,
+  SectionTitle,
+} from "@/components/marketing/page-chrome"
+import { Reveal } from "@/components/marketing/reveal"
 
-async function getProjectDetail(slug: string): Promise<{
-  project: ProjectDetail | null
-  participants: ProjectParticipant[]
-  financials: ProjectFinancials | null
-  hasAccess: boolean
-  userRole: "admin" | "member" | null
-}> {
-  const supabase = await createServerSupabaseClient()
-  const { data: projectRow, error: projectError } = await supabase
-    .from("projects")
-    .select(
-      "id, slug, name, logo_url, description, detailed_description, website, created_at, category_id, is_public, organization_id"
-    )
-    .eq("slug", slug)
-    .is("deleted_at", null)
-    .maybeSingle()
+type PageProps = {
+  params: Promise<{ locale: string; slug: string }>
+}
 
-  if (projectError) {
-    throw new Error(projectError.message)
+function formatJoinedDate(locale: string, createdAt: string | null) {
+  if (!createdAt) {
+    return null
   }
 
-  if (!projectRow) {
-    return {
-      project: null,
-      participants: [],
-      financials: null,
-      hasAccess: false,
-      userRole: null,
-    }
+  return new Intl.DateTimeFormat(locale, {
+    month: "long",
+    year: "numeric",
+  }).format(new Date(createdAt))
+}
+
+function getPrimaryLabel(state: ReturnType<typeof getPublicUserCtaState>, t: Awaited<ReturnType<typeof getTranslations>>) {
+  if (state === "workspace") {
+    return t("cta.openWorkspace")
   }
 
-  const [
-    { data: categoryRow, error: categoryError },
-    { data: participantRows, error: participantError },
-    { data: paymentRows, error: paymentError },
-    { data: salaryRow, error: salaryError },
-    { data: authData, error: authError },
-    organizationResult,
-  ] = await Promise.all([
-    projectRow.category_id
-      ? supabase.from("ref_categories").select("name").eq("id", projectRow.category_id).maybeSingle()
-      : Promise.resolve({ data: null, error: null }),
-    supabase.from("participants").select("is_admin, user_id, users(full_name, avatar_url, status)").eq("project_id", projectRow.id),
-    supabase.from("payments").select("payment_amount").eq("project_id", projectRow.id).order("period_start", { ascending: false }),
-    supabase
-      .from("monthly_network_stats")
-      .select("avg_salary")
-      .order("year", { ascending: false })
-      .order("month", { ascending: false })
-      .limit(1)
-      .maybeSingle(),
-    supabase.auth.getUser(),
-    projectRow.organization_id
-      ? supabase.from("organizations").select("id, name, logo_url").eq("id", projectRow.organization_id).maybeSingle()
-      : Promise.resolve({ data: null, error: null }),
-  ])
-
-  if (categoryError) {
-    throw new Error(categoryError.message)
-  }
-  if (participantError) {
-    throw new Error(participantError.message)
-  }
-  if (paymentError) {
-    throw new Error(paymentError.message)
-  }
-  if (salaryError) {
-    throw new Error(salaryError.message)
-  }
-  if (authError && authError.message !== "Auth session missing!") {
-    throw new Error(authError.message)
-  }
-  if (organizationResult.error) {
-    throw new Error(organizationResult.error.message)
+  if (state === "continue_onboarding") {
+    return t("cta.continueOnboarding")
   }
 
-  const activeParticipants = (participantRows ?? []).filter((participant) => {
-    const participantUser = participant.users as { status?: string } | null
-    return participantUser?.status === "active"
-  })
+  return t("cta.startProfile")
+}
 
-  const participants: ProjectParticipant[] = activeParticipants.map((participant) => {
-    const participantUser = participant.users as { full_name?: string | null; avatar_url?: string | null } | null
-    return {
-      id: participant.user_id,
-      name: participantUser?.full_name ?? "Unnamed User",
-      avatar: participantUser?.avatar_url ?? "/placeholder.svg?height=40&width=40",
-      role: participant.is_admin ? "Admin" : "Member",
-    }
-  })
-
-  const currentUserId = authData.user?.id ?? null
-  const membership = currentUserId
-    ? activeParticipants.find((participant) => participant.user_id === currentUserId) ?? null
-    : null
-
-  const organization: ProjectOrganization | undefined = organizationResult.data
-    ? {
-        id: organizationResult.data.id,
-        name: organizationResult.data.name,
-        logo: organizationResult.data.logo_url ?? "/placeholder.svg?height=40&width=40",
-      }
-    : undefined
-
-  const epochCount = paymentRows?.length ?? 0
-  const latestContributed = epochCount > 0 ? paymentRows?.[0]?.payment_amount ?? 0 : 0
-  const totalContributed = paymentRows?.reduce((sum, payment) => sum + (payment.payment_amount ?? 0), 0) ?? 0
-  const avgContributed = epochCount > 0 ? totalContributed / epochCount : 0
-  const participantCount = activeParticipants.length || 1
-
-  const financials: ProjectFinancials = {
-    epochCount,
-    latestContributed,
-    avgContributed,
-    avgContributedPerParticipant: epochCount > 0 ? avgContributed / participantCount : 0,
-    avgSalary: salaryRow?.avg_salary ?? null,
-  }
+export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
+  const { locale, slug } = await params
+  const t = await getTranslations({ locale, namespace: "metadata.projectDetail" })
+  const detail = await getPublicProjectDetail(slug)
 
   return {
-    project: {
-      id: projectRow.id,
-      slug: projectRow.slug ?? slug,
-      name: projectRow.name,
-      logo: projectRow.logo_url ?? "/placeholder.svg?height=80&width=80",
-      description: projectRow.description ?? "",
-      category: categoryRow?.name ?? "Uncategorized",
-      joined: projectRow.created_at ? new Date(projectRow.created_at).toLocaleDateString() : "Recently",
-      website: projectRow.website ?? "",
-      detailed_description: projectRow.detailed_description ?? "",
-      is_public: projectRow.is_public ?? true,
-      organization,
-    },
-    participants,
-    financials,
-    hasAccess: Boolean(membership?.is_admin),
-    userRole: membership ? (membership.is_admin ? "admin" : "member") : null,
+    title: detail ? t("title", { name: detail.project.name }) : t("missingTitle"),
+    description: detail ? t("description", { name: detail.project.name }) : t("missingDescription"),
   }
 }
 
-export default async function ProjectPage({ params }: { params: Promise<{ slug: string }> }) {
-  const { slug } = await params
-  const { project, participants, financials, hasAccess, userRole } = await getProjectDetail(slug)
+export default async function ProjectPage({ params }: PageProps) {
+  const { locale, slug } = await params
+  const t = await getTranslations({ locale, namespace: "projectProfile" })
+  const navigationContext = await getNavigationContext()
+  const ctaState = getPublicUserCtaState(navigationContext)
+  const detail = await getPublicProjectDetail(slug)
 
-  if (!project) {
-    return (
-      <div className="container mx-auto px-4 py-12">
-        <div className="mb-8 flex items-center gap-2">
-          <Button asChild variant="ghost" size="sm" className="gap-1">
-            <Link href="/projects">
-              <ArrowLeft className="h-4 w-4" />
-              <span>Back to Projects</span>
-            </Link>
-          </Button>
-        </div>
-        <div className="py-12 text-center">
-          <h1 className="mb-4 text-2xl font-bold">Project Not Found</h1>
-          <p className="mb-6 text-slate-600 dark:text-slate-300">
-            The project you&apos;re looking for doesn&apos;t exist or you don&apos;t have access to view it.
-          </p>
-          <Button asChild>
-            <Link href="/projects">Browse Projects</Link>
-          </Button>
-        </div>
-      </div>
-    )
+  if (!detail) {
+    notFound()
   }
 
+  const { project, participants, hasAccess, userRole } = detail
+
   return (
-    <ProjectDetailPage
-      project={project}
-      participants={participants}
-      financials={financials}
-      hasAccess={hasAccess}
-      userRole={userRole}
-    />
+    <MarketingPage>
+      <MarketingSection className="pt-10">
+        <div className="grid gap-12 lg:grid-cols-[minmax(0,1fr)_minmax(18rem,0.7fr)]">
+          <Reveal>
+            <SectionEyebrow>{t("hero.eyebrow")}</SectionEyebrow>
+            <div className="mt-6 flex flex-col gap-6 sm:flex-row sm:items-start">
+              <Avatar className="h-24 w-24 border border-[color:var(--marketing-line)]">
+                <AvatarImage src={project.logoUrl ?? "/placeholder.svg?height=96&width=96"} alt={project.name} />
+                <AvatarFallback>{project.name.slice(0, 2)}</AvatarFallback>
+              </Avatar>
+              <div>
+                <p className="text-[0.68rem] font-semibold uppercase tracking-[0.24em] text-[var(--marketing-muted)]">
+                  {project.categoryName ?? t("hero.uncategorized")}
+                </p>
+                <h1 className="mt-3 font-display text-5xl leading-none tracking-[-0.05em] sm:text-6xl">
+                  {project.name}
+                </h1>
+                <SectionBody className="mt-6 max-w-3xl">{project.description}</SectionBody>
+              </div>
+            </div>
+
+            <div className="mt-10 flex flex-col gap-4 sm:flex-row">
+              <Button
+                asChild
+                size="lg"
+                className="rounded-full bg-[var(--marketing-accent)] px-7 text-white hover:bg-[color:var(--marketing-accent)]/92"
+              >
+                <Link href={getPublicUserPrimaryHref(navigationContext)}>
+                  {getPrimaryLabel(ctaState, t)}
+                  <ArrowRight className="h-4 w-4" />
+                </Link>
+              </Button>
+              <Button
+                asChild
+                size="lg"
+                variant="outline"
+                className="rounded-full border-[color:var(--marketing-line-strong)] bg-transparent px-7 hover:bg-black/[0.04] dark:hover:bg-white/[0.06]"
+              >
+                <Link href="/participation">
+                  {t("cta.readParticipation")}
+                  <ArrowRight className="h-4 w-4" />
+                </Link>
+              </Button>
+              {project.website ? (
+                <Button
+                  asChild
+                  size="lg"
+                  variant="outline"
+                  className="rounded-full border-[color:var(--marketing-line-strong)] bg-transparent px-7 hover:bg-black/[0.04] dark:hover:bg-white/[0.06]"
+                >
+                  <a href={project.website} target="_blank" rel="noreferrer">
+                    {t("cta.visitWebsite")}
+                    <ExternalLink className="h-4 w-4" />
+                  </a>
+                </Button>
+              ) : null}
+            </div>
+          </Reveal>
+
+          <Reveal delay={120}>
+            <div className="rounded-[2rem] border border-[color:var(--marketing-line)] bg-[linear-gradient(135deg,rgba(255,248,238,0.82),rgba(182,221,214,0.22))] p-6 dark:bg-[linear-gradient(135deg,rgba(14,22,22,0.92),rgba(182,221,214,0.08))] sm:p-8">
+              <p className="text-[0.68rem] font-semibold uppercase tracking-[0.28em] text-[var(--marketing-muted)]">
+                {t("snapshot.eyebrow")}
+              </p>
+              <div className="mt-6 space-y-5">
+                <div className="border-t border-[color:var(--marketing-line)] pt-4">
+                  <p className="text-[0.68rem] font-semibold uppercase tracking-[0.24em] text-[var(--marketing-muted)]">{t("snapshot.joinedLabel")}</p>
+                  <p className="mt-2 text-2xl font-semibold">{formatJoinedDate(locale, project.createdAt) ?? t("snapshot.joinedFallback")}</p>
+                </div>
+                <div className="border-t border-[color:var(--marketing-line)] pt-4">
+                  <p className="text-[0.68rem] font-semibold uppercase tracking-[0.24em] text-[var(--marketing-muted)]">{t("snapshot.participantsLabel")}</p>
+                  <p className="mt-2 text-2xl font-semibold">{participants.length}</p>
+                </div>
+                <div className="border-t border-[color:var(--marketing-line)] pt-4">
+                  <p className="text-[0.68rem] font-semibold uppercase tracking-[0.24em] text-[var(--marketing-muted)]">{t("snapshot.resultsLabel")}</p>
+                  <p className="mt-2 text-sm leading-6 text-[var(--marketing-muted-strong)]">{t("snapshot.resultsBody")}</p>
+                </div>
+              </div>
+            </div>
+          </Reveal>
+        </div>
+      </MarketingSection>
+
+      <MarketingSection className="border-y border-[color:var(--marketing-line)] bg-white/34 dark:bg-white/[0.02]">
+        <div className="grid gap-12 lg:grid-cols-[minmax(0,0.8fr)_minmax(0,1.2fr)]">
+          <Reveal className="lg:sticky lg:top-28 lg:self-start">
+            <SectionEyebrow>{t("story.eyebrow")}</SectionEyebrow>
+            <SectionTitle className="mt-4 text-5xl sm:text-6xl">{t("story.title")}</SectionTitle>
+            <SectionBody className="mt-5">{t("story.body")}</SectionBody>
+          </Reveal>
+
+          <Reveal>
+            <div className="border-t border-[color:var(--marketing-line)] pt-6">
+              <p className="max-w-3xl text-base leading-7 text-[var(--marketing-muted-strong)]">
+                {project.detailedDescription || t("story.fallbackBody")}
+              </p>
+            </div>
+          </Reveal>
+        </div>
+      </MarketingSection>
+
+      <MarketingSection>
+        <div className="grid gap-12 lg:grid-cols-[minmax(0,0.76fr)_minmax(0,1.24fr)]">
+          <Reveal className="lg:sticky lg:top-28 lg:self-start">
+            <SectionEyebrow>{t("people.eyebrow")}</SectionEyebrow>
+            <SectionTitle className="mt-4 text-5xl sm:text-6xl">{t("people.title")}</SectionTitle>
+            <SectionBody className="mt-5">{t("people.body")}</SectionBody>
+          </Reveal>
+
+          <div className="space-y-6">
+            {participants.length === 0 ? (
+              <Reveal>
+                <div className="border-t border-[color:var(--marketing-line)] py-8">
+                  <p className="text-base text-[var(--marketing-muted-strong)]">{t("people.empty")}</p>
+                </div>
+              </Reveal>
+            ) : (
+              participants.map((participant: (typeof participants)[number], index: number) => (
+                <Reveal key={participant.id} delay={index * 40}>
+                  <article className="flex flex-col gap-4 border-t border-[color:var(--marketing-line)] py-6 sm:flex-row sm:items-center sm:justify-between">
+                    <div className="flex items-center gap-4">
+                      <Avatar className="h-14 w-14 border border-[color:var(--marketing-line)]">
+                        <AvatarImage src={participant.avatarUrl ?? "/placeholder.svg?height=56&width=56"} alt={participant.name} />
+                        <AvatarFallback>{participant.name.slice(0, 2)}</AvatarFallback>
+                      </Avatar>
+                      <div>
+                        <h2 className="font-display text-3xl tracking-[-0.04em]">{participant.name}</h2>
+                        <p className="mt-2 text-sm text-[var(--marketing-muted-strong)]">
+                          {participant.role === "admin" ? t("people.adminRole") : t("people.memberRole")}
+                        </p>
+                      </div>
+                    </div>
+                    <Button asChild variant="outline" className="rounded-full border-[color:var(--marketing-line)] px-6">
+                      <Link href={`/users/${participant.id}`}>
+                        {t("people.openProfile")}
+                        <ArrowRight className="h-4 w-4" />
+                      </Link>
+                    </Button>
+                  </article>
+                </Reveal>
+              ))
+            )}
+          </div>
+        </div>
+      </MarketingSection>
+
+      {hasAccess && userRole === "admin" ? (
+        <MarketingSection className="pt-0">
+          <Reveal>
+            <div className="rounded-[2rem] border border-[color:var(--marketing-line)] bg-white/64 p-6 dark:bg-white/[0.03] sm:p-8">
+              <div className="flex items-center gap-3">
+                <span className="inline-flex h-11 w-11 items-center justify-center rounded-full border border-[color:var(--marketing-line)]">
+                  <Eye className="h-5 w-5" />
+                </span>
+                <div>
+                  <p className="text-[0.68rem] font-semibold uppercase tracking-[0.24em] text-[var(--marketing-muted)]">
+                    {t("admin.eyebrow")}
+                  </p>
+                  <h2 className="mt-2 text-2xl font-semibold tracking-[-0.04em]">{t("admin.title")}</h2>
+                </div>
+              </div>
+
+              <div className="mt-6 grid gap-6 lg:grid-cols-[minmax(0,1fr)_auto_auto] lg:items-center">
+                <ProjectVisibilityToggle projectId={project.id} isPublic={project.isPublic} />
+                <Button asChild variant="outline" className="rounded-full border-[color:var(--marketing-line)] px-6">
+                  <Link href={`/projects/${project.slug}/payments`}>{t("admin.payments")}</Link>
+                </Button>
+                <Button asChild variant="outline" className="rounded-full border-[color:var(--marketing-line)] px-6">
+                  <Link href={`/projects/${project.slug}/zkas`}>{t("admin.zkas")}</Link>
+                </Button>
+              </div>
+            </div>
+          </Reveal>
+        </MarketingSection>
+      ) : null}
+    </MarketingPage>
   )
 }

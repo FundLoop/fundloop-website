@@ -15,6 +15,7 @@ Current high-signal docs:
 - [Edge Function Contract Pattern](/Users/botmaster/src/fundloop/docs/engineering/edge-functions.md)
 - [Information Architecture](/Users/botmaster/src/fundloop/docs/engineering/information-architecture.md)
 - [Internationalization](/Users/botmaster/src/fundloop/docs/engineering/i18n.md)
+- [Local Seed Fixtures](/Users/botmaster/src/fundloop/docs/engineering/local-seed.md)
 - [Navigation and Shell Architecture](/Users/botmaster/src/fundloop/docs/engineering/navigation-shell.md)
 - [Route Inventory](/Users/botmaster/src/fundloop/docs/engineering/route-inventory.md)
 

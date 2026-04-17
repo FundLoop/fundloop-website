@@ -1,169 +1,102 @@
-"use client"
-
-import { useEffect, useState, useRef } from "react"
-import { useParams, useRouter } from "next/navigation"
-import Link from "next/link"
-import { getSupabaseBrowserClient } from "@/lib/supabase"
-import { Button } from "@/components/ui/button"
+import type { Metadata } from "next"
+import Image from "next/image"
+import { notFound } from "next/navigation"
+import { getTranslations } from "next-intl/server"
 import { ArrowLeft } from "lucide-react"
-import ArticlePage from "@/components/ArticlePage"
-import type { Database } from "@/types/supabase"
+import { Link } from "@/i18n/navigation"
+import { getPublicBlogPostBySlug } from "@/lib/public-content"
+import { Button } from "@/components/ui/button"
+import Markdown from "@/components/markdown"
+import { MarketingPage, MarketingSection, SectionBody, SectionEyebrow, SectionTitle } from "@/components/marketing/page-chrome"
+import { Reveal } from "@/components/marketing/reveal"
 
-interface BlogPost {
-  id: number
-  title: string
-  subtitle: string | null
-  content: string
-  picture: string | null
-  published_at: string | null
-  created_at: string | null
+const DEFAULT_PICTURE =
+  "https://kyxtqnfnksvcaugxwzuj.supabase.co/storage/v1/object/public/blog-pics//introducing-fundloop.png"
+
+type PageProps = {
+  params: Promise<{ locale: string; slug: string }>
+  searchParams: Promise<{ origin?: string }>
 }
 
-export default function BlogPostPage() {
-  const params = useParams()
-  const router = useRouter()
-  const slug = params.slug as string
-  const benefitsSection = useRef<HTMLDivElement>(null)
-  const origin = typeof window === "undefined" ? null : new URLSearchParams(window.location.search).get("origin")
+function formatDate(locale: string, dateString: string) {
+  return new Intl.DateTimeFormat(locale, {
+    year: "numeric",
+    month: "long",
+    day: "numeric",
+  }).format(new Date(dateString))
+}
 
-  const [post, setPost] = useState<BlogPost | null>(null)
-  const [loading, setLoading] = useState(true)
-  const [showBack, setShowBack] = useState(true)
-  const getSupabase = () => getSupabaseBrowserClient()
-
-  useEffect(() => {
-    const fetchPost = async () => {
-      const supabase = getSupabase()
-      setLoading(true)
-
-      try {
-        const { data, error } = await supabase
-          .from("blog_posts")
-          .select("id, title, subtitle, content, picture, published_at, created_at")
-          .eq("slug", slug)
-          .eq("is_support", false)
-          .single()
-
-        if (error) throw error
-
-        setPost(data)
-      } catch (err) {
-        console.error("Error fetching blog post:", err)
-        router.push("/blog")
-      } finally {
-        setLoading(false)
-      }
-    }
-
-    if (slug) {
-      fetchPost()
-    }
-  }, [router, slug])
-
-  // Restore scroll position on mount and save on unmount
-  useEffect(() => {
-    const saved = localStorage.getItem(`blog-scroll-${slug}`)
-    if (saved) {
-      window.scrollTo(0, parseInt(saved, 10))
-    } else {
-      window.scrollTo(0, 0)
-    }
-
-    const saveScroll = () => {
-      localStorage.setItem(`blog-scroll-${slug}`, String(window.scrollY))
-    }
-
-    window.addEventListener("beforeunload", saveScroll)
-
-    return () => {
-      saveScroll()
-      window.removeEventListener("beforeunload", saveScroll)
-    }
-  }, [slug])
-
-  // Show/hide back button based on scroll direction
-  useEffect(() => {
-    let last = window.scrollY
-    const onScroll = () => {
-      const current = window.scrollY
-      if (current > last + 10) {
-        setShowBack(false)
-      } else if (current < last - 10) {
-        setShowBack(true)
-      }
-      last = current
-    }
-    window.addEventListener("scroll", onScroll)
-    return () => window.removeEventListener("scroll", onScroll)
-  }, [])
-
-  const handleBackToBenefits = () => {
-    router.push("/")
-    // Wait for the homepage to load, then scroll to the benefits section
-    setTimeout(() => {
-      const benefitsSection = document.getElementById("benefits")
-      if (benefitsSection) {
-        benefitsSection.scrollIntoView({ behavior: "smooth", block: "start" })
-      }
-    }, 50) // A short delay to allow the homepage to render
-  }
-
-  if (loading) {
-    return (
-      <div className="container mx-auto px-4 py-12">
-        <div className="flex items-center gap-2 mb-8">
-          <Button asChild variant="ghost" size="sm" className="gap-1">
-            <Link href="/blog">
-              <ArrowLeft className="h-4 w-4" />
-              <span>Back to Blog</span>
-            </Link>
-          </Button>
-        </div>
-        <div className="max-w-3xl mx-auto">
-          <div className="h-10 w-3/4 bg-slate-200 dark:bg-slate-700 rounded mb-4" />
-          <div className="h-4 w-24 bg-slate-200 dark:bg-slate-700 rounded mb-8" />
-          <div className="space-y-4">
-            <div className="h-4 w-full bg-slate-200 dark:bg-slate-700 rounded" />
-            <div className="h-4 w-full bg-slate-200 dark:bg-slate-700 rounded" />
-            <div className="h-4 w-3/4 bg-slate-200 dark:bg-slate-700 rounded" />
-          </div>
-        </div>
-      </div>
-    )
-  }
+export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
+  const { locale, slug } = await params
+  const t = await getTranslations({ locale, namespace: "metadata.blogPost" })
+  const post = await getPublicBlogPostBySlug(slug)
 
   if (!post) {
-    return (
-      <div className="container mx-auto px-4 py-12">
-        <div className="flex items-center gap-2 mb-8">
-          <Button asChild variant="ghost" size="sm" className="gap-1">
-            <Link href="/blog">
-              <ArrowLeft className="h-4 w-4" />
-              <span>Back to Blog</span>
-            </Link>
-          </Button>
-        </div>
-        <div className="max-w-3xl mx-auto text-center">
-          <h1 className="text-2xl font-bold mb-4">Post Not Found</h1>
-          <p className="mb-6">The blog post you're looking for doesn't exist or has been removed.</p>
-          <Button asChild>
-            <Link href="/blog">Back to Blog</Link>
-          </Button>
-        </div>
-      </div>
-    )
+    return {
+      title: t("missingTitle"),
+      description: t("missingDescription"),
+    }
   }
 
+  return {
+    title: t("title", { title: post.title }),
+    description: t("description", { excerpt: post.excerpt }),
+  }
+}
+
+export default async function BlogPostPage({ params, searchParams }: PageProps) {
+  const { locale, slug } = await params
+  const { origin } = await searchParams
+  const t = await getTranslations({ locale, namespace: "blogPostPage" })
+  const post = await getPublicBlogPostBySlug(slug)
+
+  if (!post) {
+    notFound()
+  }
+
+  const backHref = origin === "benefits" ? "/" : "/blog"
+  const backText = origin === "benefits" ? t("backToHome") : t("backToBlog")
+
   return (
-    <div className="container mx-auto px-4 py-12">
-      <ArticlePage
-        post={post}
-        backHref={origin === "benefits" ? "/" : "/blog"}
-        backText={origin === "benefits" ? "Back to Benefits" : "Back to Blog"}
-        showBack={showBack}
-        onBack={origin === "benefits" ? handleBackToBenefits : undefined}
-        dateKey="created_at"
-      />
-    </div>
+    <MarketingPage>
+      <MarketingSection className="pb-10 pt-10">
+        <Reveal>
+          <Button
+            asChild
+            variant="ghost"
+            className="rounded-full px-0 text-[var(--marketing-muted-strong)] hover:bg-transparent hover:text-[var(--marketing-accent)]"
+          >
+            <Link href={backHref}>
+              <ArrowLeft className="h-4 w-4" />
+              {backText}
+            </Link>
+          </Button>
+        </Reveal>
+      </MarketingSection>
+
+      <MarketingSection className="pt-0">
+        <div className="mx-auto max-w-4xl">
+          <Reveal>
+            <SectionEyebrow>{t("publishedLabel", { date: formatDate(locale, post.publishedAt ?? post.createdAt ?? new Date().toISOString()) })}</SectionEyebrow>
+            <SectionTitle className="mt-4 max-w-4xl text-5xl sm:text-6xl lg:text-7xl">{post.title}</SectionTitle>
+            {post.subtitle ? <SectionBody className="mt-6 max-w-3xl">{post.subtitle}</SectionBody> : null}
+          </Reveal>
+
+          <Reveal delay={120}>
+            <div className="relative mt-10 aspect-[16/9] overflow-hidden rounded-[2rem] border border-[color:var(--marketing-line)]">
+              <Image src={post.picture || DEFAULT_PICTURE} alt={post.title} fill className="object-cover" />
+            </div>
+          </Reveal>
+        </div>
+      </MarketingSection>
+
+      <MarketingSection className="pb-24 pt-12">
+        <Reveal>
+          <article className="mx-auto max-w-3xl rounded-[2rem] border border-[color:var(--marketing-line)] bg-white/58 p-6 shadow-[0_24px_70px_rgba(15,23,23,0.08)] dark:bg-white/[0.03] sm:p-8">
+            <Markdown content={post.content} />
+          </article>
+        </Reveal>
+      </MarketingSection>
+    </MarketingPage>
   )
 }

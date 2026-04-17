@@ -1,39 +1,59 @@
-import React from 'react'
-import { render, screen } from '@testing-library/react'
-import { describe, it, expect } from 'vitest'
-import EcosystemPage, { metadata } from '../app/[locale]/(public)/ecosystem/page'
+import React from "react"
+import { render, screen } from "@testing-library/react"
+import { describe, expect, it, vi } from "vitest"
 
-describe('EcosystemPage', () => {
-  it('renders ecosystem heading and sites', () => {
-    render(<EcosystemPage />)
-    expect(screen.getByRole('heading', { name: /Our Ecosystem/i })).toBeDefined()
-    expect(screen.getByText('ChainCrew')).toBeDefined()
+vi.mock("next-intl/server", () => ({
+  getTranslations: vi.fn().mockImplementation(async ({ namespace }: { namespace?: string } = {}) => {
+    if (namespace === "metadata.ecosystem") {
+      return (key: string) =>
+        ({
+          title: "Ecosystem - FundLoop",
+          description: "Explore the surrounding network.",
+        })[key] ?? key
+    }
+
+    return (key: string) =>
+      ({
+        "backToHome": "Back to home",
+        "hero.eyebrow": "Ecosystem",
+        "hero.title": "Our ecosystem",
+        "hero.body": "Supporting systems around FundLoop.",
+        "open": "Open",
+      })[key] ?? key
+  }),
+}))
+
+vi.mock("@/i18n/navigation", () => ({
+  Link: ({ href, children, ...props }: React.AnchorHTMLAttributes<HTMLAnchorElement>) => (
+    <a href={typeof href === "string" ? href : ""} {...props}>
+      {children}
+    </a>
+  ),
+}))
+
+describe("EcosystemPage", () => {
+  it("renders ecosystem heading and sites", async () => {
+    const { default: EcosystemPage } = await import("@/app/[locale]/(public)/ecosystem/page")
+
+    render(await EcosystemPage({ params: Promise.resolve({ locale: "en" }) }))
+    expect(screen.getByRole("heading", { name: /our ecosystem/i })).toBeDefined()
+    expect(screen.getByText("ChainCrew")).toBeDefined()
   })
 
-  it('adds rel noopener noreferrer to external links', () => {
-    render(<EcosystemPage />)
-    const link = screen.getByRole('link', { name: 'ChainCrew' })
-    expect(link.getAttribute('rel')).toBe('noopener noreferrer')
+  it("adds rel noopener noreferrer to external links", async () => {
+    const { default: EcosystemPage } = await import("@/app/[locale]/(public)/ecosystem/page")
+
+    render(await EcosystemPage({ params: Promise.resolve({ locale: "en" }) }))
+    const link = screen.getByRole("link", { name: "ChainCrew" })
+    expect(link.getAttribute("rel")).toBe("noopener noreferrer")
   })
 
-  it('exports correct metadata', () => {
-    expect(metadata).toMatchObject({
-      title: 'Our Ecosystem',
-      description: 'Explore our interconnected projects across identity, payments, coordination, and regenerative economies.',
-      openGraph: {
-        title: 'Our Ecosystem',
-        description: 'Explore our interconnected projects across identity, payments, coordination, and regenerative economies.',
-        type: 'website',
-        url: 'https://fundloop.org/ecosystem',
-      },
-      twitter: {
-        card: 'summary_large_image',
-        title: 'Our Ecosystem',
-        description: 'Explore our interconnected projects across identity, payments, coordination, and regenerative economies.',
-      },
-      alternates: {
-        canonical: 'https://fundloop.org/ecosystem',
-      },
+  it("generates localized metadata", async () => {
+    const { generateMetadata } = await import("@/app/[locale]/(public)/ecosystem/page")
+
+    await expect(generateMetadata({ params: Promise.resolve({ locale: "en" }) })).resolves.toMatchObject({
+      title: "Ecosystem - FundLoop",
+      description: "Explore the surrounding network.",
     })
   })
 })

@@ -1,6 +1,12 @@
 export type PublicPrimaryLinkId = "founders" | "participation" | "projects" | "documentation" | "blog" | "support"
-export type PublicExploreLinkId = "projects" | "users" | "analytics" | "about"
-export type ResourceLinkId = "participation" | "pricing" | "documentation" | "faq" | "support" | "api"
+export type ResourceLinkId =
+  | "participation"
+  | "founders"
+  | "documentation"
+  | "reports"
+  | "faq"
+  | "support"
+  | "integrations"
 
 export const publicPrimaryLinks = [
   {
@@ -35,33 +41,6 @@ export const publicPrimaryLinks = [
   },
 ] as const
 
-export const publicExploreLinks = [
-  {
-    id: "projects",
-    label: "Projects",
-    href: "/projects",
-    description: "Browse aligned projects already participating in the FundLoop network.",
-  },
-  {
-    id: "users",
-    label: "Users",
-    href: "/users",
-    description: "Meet the people shaping the ecosystem through real participation.",
-  },
-  {
-    id: "analytics",
-    label: "Analytics",
-    href: "/analytics",
-    description: "See how contribution, activity, and value circulation show up across the network.",
-  },
-  {
-    id: "about",
-    label: "About FundLoop",
-    href: "/about",
-    description: "Understand the mission, the 1% pledge, and the long-term economic thesis.",
-  },
-] as const
-
 export const resourceLinks = [
   {
     id: "participation",
@@ -70,16 +49,22 @@ export const resourceLinks = [
     description: "How people join projects, build signal, manage proof, and receive rewards through FundLoop.",
   },
   {
-    id: "pricing",
-    href: "/pricing",
-    label: "Pricing",
-    description: "How FundLoop stays free for users and how projects are asked to support the loop.",
+    id: "founders",
+    href: "/founders",
+    label: "Founder path",
+    description: "What founders commit to, how support works, and what teams manage once they join FundLoop.",
   },
   {
     id: "documentation",
     href: "/documentation",
     label: "Documentation",
     description: "Guides, implementation notes, and support articles for using the platform.",
+  },
+  {
+    id: "reports",
+    href: "/reports",
+    label: "Reports",
+    description: "Understand what FundLoop publishes publicly about monthly cycles, verified contributions, and future transparency.",
   },
   {
     id: "faq",
@@ -94,10 +79,10 @@ export const resourceLinks = [
     description: "Get help when onboarding, profiles, payments, or project setup need a hand.",
   },
   {
-    id: "api",
-    href: "/api",
-    label: "API",
-    description: "A developer-facing preview of the integration surface FundLoop is growing toward.",
+    id: "integrations",
+    href: "/documentation#protocol-and-integrations",
+    label: "Integrations",
+    description: "See the product, protocol, and integration surface FundLoop is documenting for developers, partners, and agents.",
   },
 ] as const
 

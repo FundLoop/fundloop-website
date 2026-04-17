@@ -1,5 +1,203 @@
 ---
 
+### session v46: Consolidate the remaining public routes into the modern localized shell
+- timestamp: 2026-04-15T00:16:00-0400
+- agent: **Codex (GPT-5)**
+- branch: **codex/wallet-production-readiness**
+- head: TBD
+
+#### Objective
+Complete Session 11 by retiring the remaining legacy public routes, adding the canonical public reports hub, rebuilding the old-shell public pages onto the current localized marketing shell, and updating the route/docs metadata so the public site feels intentional instead of transitional.
+
+#### Actions Taken
+- Replaced `/[locale]/about`, `/[locale]/api`, and `/[locale]/analytics` with permanent redirects into their IA-approved canonical destinations, and retired the old mock invitation route by redirecting `/[locale]/invitations/[token]` into `/[locale]/join?invite=...`.
+- Added the new `/[locale]/reports` public transparency surface and rebuilt `/[locale]/documentation` into the merged docs hub for about/product context, protocol and integration direction, and support-article browsing.
+- Reworked the remaining old-shell public pages onto the modern localized public shell:
+  - `blog`
+  - `blog/[slug]`
+  - `ecosystem`
+  - `faq`
+  - `terms`
+  - `privacy`
+  - `cookies`
+- Added the new server-side `lib/public-content.ts` helper so blog and documentation content now load through the same fail-soft server pattern used by the newer public discovery routes.
+- Updated `lib/public-site.ts`, the footer, and the relevant locale message packs so public resources now promote `reports` and `documentation#protocol-and-integrations` instead of the retired standalone `analytics` and `api` pages.
+- Updated `docs/engineering/navigation-shell.md`, `docs/engineering/route-inventory.md`, and `agent-context/todo.md` so the long-lived docs reflect the new public-route truth.
+- Added and refreshed coverage in:
+  - `tests/public-route-redirects.test.ts`
+  - `tests/ecosystem-page.test.tsx`
+  - `tests/footer.test.tsx`
+  - `tests/i18n.test.ts`
+
+#### Tests and Validation Notes
+- `pnpm dlx node@22.22.1 /opt/homebrew/bin/pnpm lint` passed
+- `pnpm dlx node@22.22.1 /opt/homebrew/bin/pnpm test` passed
+- `pnpm dlx node@22.22.1 /opt/homebrew/bin/pnpm typecheck` passed
+- `pnpm dlx node@22.22.1 /opt/homebrew/bin/pnpm build` passed
+- Local production smoke on port `3001` confirmed:
+  - `/en/about` -> `308` to `/en/documentation#about-fundloop`
+  - `/en/api` -> `308` to `/en/documentation#protocol-and-integrations`
+  - `/en/analytics` -> `308` to `/en/reports`
+  - `/en/invitations/test-token` -> `308` to `/en/join?invite=test-token`
+  - `/en/documentation`, `/en/reports`, `/en/blog`, `/en/faq`, `/fr/documentation`, and `/es/blog` all returned `200`
+- Headless browser smoke verified light/dark mode rendering for `/en/reports` and `/en/documentation`, including the expected titles and the `dark` class toggle on the document element.
+- One local-content caveat remains: the current local dataset did not expose any published blog posts during this smoke pass, so the rebuilt blog listing rendered its empty state rather than a real article card and there was no live blog-detail route to verify in-browser.
+
+#### Reflections
+- The most important part of this session was not visual cleanup by itself; it was collapsing the remaining transitional public routes into canonical destinations so the public site now tells one coherent story.
+- Moving docs and blog content onto a server-side helper also closes an architectural gap: the old browser-only content pages were out of step with the rest of the public shell and made the site feel more like a stitched-together prototype than one product.
+
+#### Suggested Next Steps
+- Session 12 should now migrate the onboarding draft save/publish flows to Edge Functions while the public acquisition paths and documentation surface are stable.
+- When local content fixtures improve again, add one real blog post/article smoke target so the rebuilt blog detail route stays covered alongside the public discovery fixtures.
+
+### session v45: Remove hard 500s from query-driven public and admin pages after local reset
+- timestamp: 2026-04-14T23:44:52-0400
+- agent: **Codex (GPT-5)**
+- branch: **codex/wallet-production-readiness**
+- head: TBD
+
+#### Objective
+Fix the remaining local runtime errors exposed after the local Supabase reset, specifically the hard `500` failures on query-driven pages such as `/[locale]/projects`, `/[locale]/users`, and `/[locale]/admin/payments/observability`, then recommit the resulting dirty files with a fresh session-log entry.
+
+#### Actions Taken
+- Fixed the public discovery/server helper regression introduced during local-seed follow-up work by restoring the `react` `cache` import for the still-cached detail/profile readers while leaving the directory readers uncached.
+- Added explicit item/index typing on the public project and user detail pages so `tsc --noEmit` stays clean after the local public-discovery changes.
+- Marked the query-driven pages as `dynamic = "force-dynamic"` and restored proper awaited `searchParams` handling on:
+  - `app/[locale]/(public)/projects/page.tsx`
+  - `app/[locale]/(public)/users/page.tsx`
+  - `app/[locale]/(app)/admin/payments/observability/page.tsx`
+  - `app/[locale]/(app)/projects/[slug]/zkas/page.tsx`
+- Verified that the hard 500s are gone for the affected routes in local dev after restarting the app server.
+
+#### Tests and Validation Notes
+- `pnpm dlx node@22.22.1 /opt/homebrew/bin/pnpm check` passed
+- `pnpm dlx node@22.22.1 /opt/homebrew/bin/pnpm exec vitest run tests/local-public-seed.test.ts tests/public-user-journey.test.ts tests/i18n.test.ts` passed
+- Local dev smoke after restarting Next with the corrected `.env.local`:
+  - `/en/projects` returned `200`
+  - `/en/users` returned `200`
+  - `/en/projects/civic-mesh` returned `200`
+  - `/en/users/00000000-0000-4000-8000-000000000101` returned `200`
+  - `/en/admin/payments/observability` returned `200`
+- One remaining local-environment caveat is still visible in server logs: Node-side calls to the local Supabase API can report `TypeError: fetch failed` on this machine, so the public discovery pages currently rely on their fail-soft empty-state behavior rather than consistently rendering seeded data during local smoke.
+
+#### Reflections
+- The crash source was not the curated seed itself; it was the combination of query-driven pages and the local dev/runtime path around `searchParams` plus a follow-up helper regression.
+- The pages are now operationally safer because they no longer hard-fail under this local setup, even when the local Supabase API connectivity remains flaky from the Next server process.
+
+#### Suggested Next Steps
+- Investigate why Node-side requests from the app process to `http://127.0.0.1:54321` are still intermittently failing even though `supabase status` reports the stack as running.
+- Once that connectivity issue is resolved, rerun the local public discovery smoke and verify the deterministic seeded names appear in `/projects` and `/users`, not just that the routes stay up.
+
+### session v44: Add deterministic local public discovery fixtures for browser smoke tests
+- timestamp: 2026-04-14T23:26:09-0400
+- agent: **Codex (GPT-5)**
+- branch: **codex/wallet-production-readiness**
+- head: TBD
+
+#### Objective
+Make the local Supabase seed more reliable for public discovery work by adding a small deterministic fixture set for project and user detail pages, so local resets always produce known browser smoke targets without depending on incidental snapshot rows.
+
+#### Actions Taken
+- Appended a clearly labeled deterministic fixture block to `supabase/seed.sql` with three stable public projects (`civic-mesh`, `mutual-aid-atlas`, `open-transit-ledger`), four public users, and linked participant rows that exercise both project and user discovery surfaces.
+- Bumped the tracked `projects_id_seq1` and `users_sequential_id_seq` setvals in the seed so future local inserts remain above the new curated fixture IDs.
+- Added `tests/local-public-seed.test.ts` to lock in the presence of the curated slugs, user ids, and sequence bumps in the tracked seed artifact.
+- Added `docs/engineering/local-seed.md` and updated `docs/engineering/README.md` plus `README.md` so local developers and future agent sessions have a stable list of post-reset smoke routes to target.
+
+#### Tests and Validation Notes
+- `pnpm dlx node@22.22.1 /opt/homebrew/bin/pnpm exec vitest run tests/local-public-seed.test.ts` passed
+- `pnpm dlx node@22.22.1 /opt/homebrew/bin/pnpm check` passed
+- I did not run `supabase db reset` in this session because the local Supabase CLI currently reports no active `supabase_db_fundloop` container on this machine, so the seed changes were validated through the tracked artifact, tests, and repo-wide quality gates instead of a live reset replay.
+
+#### Reflections
+- The seed did not need a wholesale replacement; the valuable change was to layer a tiny, intentional fixture set on top of the broader snapshot-style data so discovery smoke tests have something stable to target.
+- Keeping the fixture doc separate from the seed itself should make later Playwright and public-route work less brittle because the expected local targets are now explicit instead of tribal knowledge.
+
+#### Suggested Next Steps
+- Once the local Supabase stack is healthy again, run `supabase db reset` and manually smoke the curated `/projects/*` and `/users/*` routes against the new fixture set.
+- If we add more public discovery filtering or richer profile modules later, extend this deterministic fixture set rather than relying on whichever remote-style rows happen to exist in the seed.
+
+### session v43: Rebuild the user discovery and participation funnel into one coherent public path
+- timestamp: 2026-04-14T23:09:00-0400
+- agent: **Codex (GPT-5)**
+- branch: **codex/wallet-production-readiness**
+- head: TBD
+
+#### Objective
+Complete Session 10 by turning the user side of FundLoop into one coherent public-to-workspace path: rebuild `/[locale]/participation` as the canonical participant funnel, modernize the public projects and people directories, and make onboarding, CUBID identity, and current results visibility feel like one system instead of scattered pages.
+
+#### Actions Taken
+- Rebuilt `app/[locale]/(public)/participation/page.tsx` into a stronger localized user funnel with explicit sections for why users join, cross-project discovery, CUBID-backed identity expectations, current results visibility, and the honest “what happens next” path.
+- Replaced the old browser-fetched `app/[locale]/(public)/projects/page.tsx` and `app/[locale]/(public)/users/page.tsx` implementations with server-rendered public discovery pages using query-string filters, locale-aware links, localized metadata, and auth-aware user CTA handoff.
+- Replaced `app/[locale]/(public)/projects/[slug]/page.tsx` and `app/[locale]/(public)/users/[id]/page.tsx` with public profile/detail surfaces that feel like part of the same product, removed the old `components/project-detail-page.tsx`, and kept founder-only project controls secondary to the public discovery story.
+- Added `lib/public-user-journey.ts` to centralize the public CTA truth for signed-out users, signed-in inactive users, and active users, and added `lib/public-discovery.ts` as the server-side data layer for public projects/users discovery and detail queries.
+- Hardened the new public discovery data layer so server-side Supabase failures degrade into empty-state public pages with compact warnings instead of throwing render-time exceptions.
+- Expanded the English, French, and Spanish message packs with new participation, projects, project-detail, users, and user-detail copy plus localized metadata and home-page participant entry-path updates.
+- Added test coverage in `tests/public-user-journey.test.ts` and refreshed `tests/i18n.test.ts` to lock in the new localized route copy, then updated `docs/engineering/navigation-shell.md`, `docs/engineering/route-inventory.md`, and `agent-context/todo.md` to reflect the completed Session 10 architecture.
+
+#### Tests and Validation Notes
+- `pnpm dlx node@22.22.1 /opt/homebrew/bin/pnpm check` passed
+- `pnpm dlx node@22.22.1 /opt/homebrew/bin/pnpm exec vitest run tests/public-user-journey.test.ts tests/i18n.test.ts` passed
+- Local dev smoke against the rebuilt public user path confirmed:
+  - `/en/participation` returned `200`
+  - `/en/projects` returned `200`
+  - `/en/users` returned `200`
+  - `/fr/participation` returned `200`
+  - `/es/participation` returned `200`
+  - `/en/participation` rendered the locale-preserving onboarding CTA href (`/en?onboarding=user`) and the public projects CTA href (`/en/projects`)
+- The local seed did not expose public project/user detail rows during this smoke, so representative detail-route browser verification remains dependent on richer local fixture data.
+- Local server-side Supabase fetches can still fail in some env setups; the new public discovery pages now fail soft into empty-state UI with warning-level logs rather than surfacing render errors to users.
+
+#### Reflections
+- The biggest improvement in this session was not only the new page art direction, but the shift from “public directory utilities” to one joined-up user story: discover, verify, participate, then keep an eye on current visibility from the workspace.
+- The server-first rewrite exposed a real local-env gap that the older browser-fetch versions masked. Hardening the public discovery layer now should make later Edge Function and workspace sessions safer because public pages no longer assume perfect server connectivity.
+
+#### Suggested Next Steps
+- Session 11 should finish the remaining public-page cleanup while the new founder and participant funnels are both fresh and aligned.
+- Session 17 can now build the real signed-in user workspace home on top of a much clearer public acquisition and discovery story.
+
+---
+
+### session v42: Rebuild the founder acquisition funnel into one canonical public path
+- timestamp: 2026-04-14T22:26:48-0400
+- agent: **Codex (GPT-5)**
+- branch: **codex/wallet-production-readiness**
+- head: TBD
+
+#### Objective
+Complete Session 09 by turning the lightweight `/[locale]/founders` placeholder into the real founder acquisition funnel, collapsing the legacy pledge/pricing story into that route, and tightening the surrounding public-shell copy so founders see one coherent path into project onboarding.
+
+#### Actions Taken
+- Rebuilt `app/[locale]/(public)/founders/page.tsx` as a long-form localized founder funnel using the existing marketing primitives, with explicit sections for the founder promise, commitment model, support model, monthly cadence, identity/KYC expectations, inside-FundLoop operations, and the onboarding handoff.
+- Replaced the legacy `app/[locale]/(public)/pledge/page.tsx` and `app/[locale]/(public)/pricing/page.tsx` pages with permanent localized redirects to `/[locale]/founders#commitment` and `/[locale]/founders#support-model`.
+- Updated the localized message dictionaries in English, French, and Spanish so founder copy, metadata, footer CTA text, and the home-page founder entry path all align to the new funnel.
+- Simplified the home-page founder entry card to point to `/founders` instead of acting like a second founder landing page, while keeping explicit “start now” CTAs routed into `/?onboarding=project`.
+- Updated shared public links and copy so the resource/footer surfaces now promote the founder path rather than a standalone pricing page, and cleaned adjacent founder-facing references in the FAQ and older project-signup copy.
+- Added redirect coverage in `tests/founder-route-redirects.test.ts`, refreshed i18n/footer tests for the new founder-path model, and updated the engineering docs in `docs/engineering/navigation-shell.md` and `docs/engineering/route-inventory.md`.
+
+#### Tests and Validation Notes
+- `pnpm dlx node@22.22.1 /opt/homebrew/bin/pnpm lint` passed
+- `pnpm dlx node@22.22.1 /opt/homebrew/bin/pnpm test` passed
+- `pnpm dlx node@22.22.1 /opt/homebrew/bin/pnpm typecheck` passed
+- `pnpm dlx node@22.22.1 /opt/homebrew/bin/pnpm build` passed
+- `pnpm dlx node@22.22.1 /opt/homebrew/bin/pnpm check` passed
+- Local production smoke confirmed:
+  - `/en/pledge` responds with `308` to `/en/founders#commitment`
+  - `/en/pricing` responds with `308` to `/en/founders#support-model`
+  - `/en/founders` renders the new founder funnel with the locale-preserving onboarding CTA and the shared footer/resource links pointing to `/founders`
+  - `/fr/founders` renders the updated localized founder funnel and metadata
+- I attempted an additional headless Playwright interaction smoke against the onboarding CTA, but the ad hoc inline runner hung in this environment, so the final founder-path smoke was completed against the local production server via redirect and rendered-HTML verification instead.
+
+#### Reflections
+- The key product move in this session was treating `/founders` as the only public founder mental model instead of leaving “pricing,” “pledge,” and founder onboarding spread across three different stories.
+- Reusing the existing marketing-shell primitives kept the page visually stronger without introducing a parallel design system or one-off founder-only components that would become hard to maintain later.
+
+#### Suggested Next Steps
+- Session 10 should now give the participant side the same treatment so the public site has equally clear, first-class paths for both founders and regular users.
+- Session 11 can finish the remaining public cleanup with far less risk now that the founder narrative is consolidated and the old pledge/pricing routes are already retired safely.
+
+---
+
 ### session v41: Split the public and app shells around the new workspace IA
 - timestamp: 2026-04-14T22:10:57-0400
 - agent: **Codex (GPT-5)**

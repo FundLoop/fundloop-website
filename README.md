@@ -79,7 +79,7 @@ NEXT_PUBLIC_FUNDLOOP_LOCAL_WALLET_MANIFEST_JSON=
 The [`supabase/`](supabase/) directory is the canonical database source of truth.
 
 - `supabase/migrations/` contains the pulled remote schema history tracked in Git.
-- `supabase/seed.sql` contains the current `public` schema seed data from the linked remote project.
+- `supabase/seed.sql` contains the tracked local `public` schema seed, including deterministic public discovery fixtures for smoke testing.
 - `types/supabase.ts` is generated from the linked Supabase schema.
 
 For local database work, the tracked migrations plus `supabase/seed.sql` should be replayable directly:
@@ -96,6 +96,15 @@ supabase db pull --linked
 supabase db dump --linked --data-only --schema public --file supabase/seed.sql
 supabase gen types typescript --project-id <project-ref> --schema public > types/supabase.ts
 ```
+
+After a local reset, these stable public smoke targets should exist:
+
+- `/en/projects/civic-mesh`
+- `/en/projects/mutual-aid-atlas`
+- `/en/projects/open-transit-ledger`
+- `/en/users/00000000-0000-4000-8000-000000000101`
+
+See [Local Seed Fixtures](/Users/botmaster/src/fundloop/docs/engineering/local-seed.md) for the full deterministic fixture set.
 
 ## Wallet Deployment Workflow
 

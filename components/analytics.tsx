@@ -76,7 +76,7 @@ export default function Analytics() {
           </p>
         </div>
         <Button asChild className="mt-4 md:mt-0">
-          <Link href="/analytics">View Detailed Analytics</Link>
+          <Link href="/reports">View Detailed Reports</Link>
         </Button>
       </div>
 

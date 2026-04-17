@@ -51,6 +51,37 @@ Primary public navigation is now:
 - `/blog`
 - `/support`
 
+Session 09 completed the public founder acquisition path under `/[locale]/founders`.
+
+- `/[locale]/founders` is now the canonical founder funnel
+- `/[locale]/pledge` permanently redirects to `/[locale]/founders#commitment`
+- `/[locale]/pricing` permanently redirects to `/[locale]/founders#support-model`
+
+Shared public shell links should point founders to `/founders` first. The direct conversion into the existing project onboarding modal remains an explicit call to action inside the founder funnel itself.
+
+Session 10 completed the parallel public user acquisition and discovery path.
+
+- `/[locale]/participation` is now the canonical public user funnel
+- `/[locale]/projects` and `/[locale]/users` are server-rendered public discovery surfaces, not browser-fetched utility directories
+- `/[locale]/projects/[slug]` and `/[locale]/users/[id]` are public profile/detail surfaces designed to feed participation and workspace handoff
+- generic public user CTAs still use `/?onboarding=user`
+- `/[locale]/join` remains invite-aware only and is not the generic signup route
+- when a session exists, public user CTAs are role-aware:
+  - signed-out users: `/?onboarding=user`
+  - signed-in inactive users: continue onboarding
+  - signed-in active users: `/workspace`
+- the truthful interim “earnings/results” destination remains `/[locale]/settings/zkas`, framed publicly as current results visibility rather than a finished payout workspace
+
+Session 11 completed the remaining public-route consolidation pass.
+
+- `/[locale]/about` now permanently redirects to `/[locale]/documentation#about-fundloop`
+- `/[locale]/api` now permanently redirects to `/[locale]/documentation#protocol-and-integrations`
+- `/[locale]/analytics` now permanently redirects to `/[locale]/reports`
+- `/[locale]/invitations/[token]` now redirects into the real invite-aware join flow using `/[locale]/join?invite=...`
+- `/[locale]/documentation` is now the canonical public docs hub for product overview, integration direction, and support articles
+- `/[locale]/reports` is now the truthful public transparency/reporting entry surface
+- `/[locale]/blog`, `/[locale]/blog/[slug]`, `/[locale]/ecosystem`, `/[locale]/faq`, and the legal pages now use the current public shell instead of the older pre-i18n page style
+
 ### App shell
 
 The app shell lives in `app/[locale]/(app)/layout.tsx` and:

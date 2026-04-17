@@ -102,34 +102,34 @@ Update the app shell, navigation, account menus, and dashboard entry points to m
 
 ## Session 09: Rebuild the founder acquisition funnel and public founder pages
 
-- Status: Not started
-- Timestamp started: TBD
-- Timestamp completed: TBD
-- Feature branch: TBD
+- Status: Complete
+- Timestamp started: 2026-04-14T22:11:00-0400
+- Timestamp completed: 2026-04-14T22:26:48-0400
+- Feature branch: codex/wallet-production-readiness
 - Head: TBD
-- Session-log reference(s): TBD
+- Session-log reference(s): session v42
 
 Turn the current founder-facing public messaging into a real production funnel. The session should unify any scattered founder pitch surfaces into a clean path that explains revenue commitment, onboarding expectations, monthly cadence, identity requirements, and what founders can manage once inside. This is the point where “visually stunning” needs to show up in a focused way: excellent typography, strong hierarchy, clear calls to action, and no vague placeholder marketing copy. The output should hand off naturally into founder onboarding, not just a contact-page dead end.
 
 ## Session 10: Rebuild the user discovery and participation funnel
 
-- Status: Not started
-- Timestamp started: TBD
-- Timestamp completed: TBD
-- Feature branch: TBD
+- Status: Complete
+- Timestamp started: 2026-04-14T23:55:00-0400
+- Timestamp completed: 2026-04-15T01:05:00-0400
+- Feature branch: codex/wallet-production-readiness
 - Head: TBD
-- Session-log reference(s): TBD
+- Session-log reference(s): session v43
 
 Create the public and semi-public journey for regular users who want to understand FundLoop, discover projects, and see how participation turns into earnings. This should refine or replace current placeholder explainer surfaces with a path that leads toward sign-up, identity verification, project discovery, and earnings visibility. The design should stay simple and data-clear, not overly promotional. The key outcome is that the user side of the product becomes a first-class experience instead of feeling secondary to project payment operations.
 
 ## Session 11: Complete or retire all current stubbed public pages
 
-- Status: Not started
-- Timestamp started: TBD
-- Timestamp completed: TBD
-- Feature branch: TBD
+- Status: Complete
+- Timestamp started: 2026-04-15T00:00:00-0400
+- Timestamp completed: 2026-04-15T00:16:00-0400
+- Feature branch: codex/wallet-production-readiness
 - Head: TBD
-- Session-log reference(s): TBD
+- Session-log reference(s): session v46
 
 Use the route inventory from Session 02 to finish, merge, redirect, or remove the remaining placeholder public pages. This includes pages that are technically present but not product-complete, pages that duplicate narrative content, and pages that still reflect an early website draft instead of the operating product. The goal is to eliminate dead weight before deeper application work continues. By the end of this session, the public site should feel intentional and cohesive, even if some deeper authenticated flows are still under active development.
 
