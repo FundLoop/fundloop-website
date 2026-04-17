@@ -1,4 +1,125 @@
 ---
+
+### session v41: Split the public and app shells around the new workspace IA
+- timestamp: 2026-04-14T22:10:57-0400
+- agent: **Codex (GPT-5)**
+- branch: **codex/wallet-production-readiness**
+- head: TBD
+
+#### Objective
+Complete Session 08 by turning the information architecture decisions into a real shell split: lightweight public navigation, a product-style authenticated shell, canonical workspace entry routes, and the removal of the most confusing legacy entry points.
+
+#### Actions Taken
+- Split the localized App Router tree into `app/[locale]/(public)` and `app/[locale]/(app)` route groups so public pages keep marketing chrome while authenticated product routes share a dedicated app shell.
+- Added `lib/navigation-context.ts` as the shared server-side navigation contract, deriving authenticated user state, founder/project access, internal-admin access, and managed-project summaries from the repo’s existing Supabase truth.
+- Rebuilt the shared navigation layer with a simpler IA-aligned public navbar, a new authenticated app shell, a shared auth/account control component, and a generalized mobile menu.
+- Added the first canonical shell entry routes at `/[locale]/workspace`, `/[locale]/workspace/account`, `/[locale]/founder`, `/[locale]/founder/projects`, `/[locale]/founder/account`, and `/[locale]/founders`.
+- Redirected legacy route entry points away from the old mixed hubs by replacing `/[locale]/my-profile`, `/[locale]/settings`, and `/[locale]/settings/account` with route-level redirects to the new workspace destinations.
+- Updated the admin landing page so it no longer promotes missing child routes and instead links only to real operator destinations.
+- Localized the new shell labels and workspace/founder entry-page copy in English, French, and Spanish.
+- Added long-lived engineering documentation for the new shell split in `docs/engineering/navigation-shell.md` and updated `docs/engineering/route-inventory.md` to reflect the new routes plus the legacy redirects.
+- Updated route-related tests to follow the moved route modules and added `tests/navigation-context.test.ts` to lock in the shared role-resolution contract.
+
+#### Tests and Validation Notes
+- `pnpm dlx node@22.22.1 /opt/homebrew/bin/pnpm lint` passed
+- `pnpm dlx node@22.22.1 /opt/homebrew/bin/pnpm test` passed
+- `pnpm dlx node@22.22.1 /opt/homebrew/bin/pnpm typecheck` passed
+- `pnpm dlx node@22.22.1 /opt/homebrew/bin/pnpm build` passed
+- `pnpm dlx node@22.22.1 /opt/homebrew/bin/pnpm check` passed
+- Local production smoke on port `3001` confirmed:
+  - `/en/founders` rendered on the new public shell
+  - `/en/my-profile` redirected through the new shell movement
+  - `/en/settings` and `/en/settings/account` redirected through the new account destination movement
+  - unauthenticated `/en/workspace`, `/en/founder`, and `/en/admin` requests fell back into `/en/join` instead of exposing a broken private shell
+
+#### Reflections
+- The biggest implementation choice was moving auth gating out of the app layout and down into the new canonical entry routes. That kept the legacy redirect routes behaving exactly as planned while still protecting the new workspace/founder/operator starts.
+- Introducing a shared navigation context now should make the later Session 17 and 18 workspace rebuilds much cleaner, because shell role decisions no longer have to be rediscovered independently in each route.
+
+#### Suggested Next Steps
+- Session 09 should use the new `/founders` entry as the foundation for a real founder acquisition funnel instead of rebuilding founder messaging inside the old pledge/pricing structure.
+- Later workspace-content sessions should keep routing new account, reporting, and project operations through the new canonical workspace entries instead of adding more functionality back under `/settings` or `/my-profile`.
+
+---
+
+### session v40: Establish shared design tokens for durable light and dark themes
+- timestamp: 2026-04-14T20:53:37-04:00
+- agent: **Codex (GPT-5)**
+- branch: **codex/wallet-production-readiness**
+- head: TBD
+
+#### Objective
+Complete Session 07 by replacing the current ad hoc color and surface styling drift with a durable semantic token system that works for both the public marketing shell and denser operator/account screens in light and dark mode.
+
+#### Actions Taken
+- Refactored `app/globals.css` to introduce semantic surface, text, interaction, status, spacing, type, and shadow tokens on top of the existing shadcn-compatible base theme contract.
+- Rebalanced both light and dark palettes so the app now has stronger parity across canvas, panel, border, and text treatments instead of relying on repeated `slate`, `emerald`, and raw white-overlay values.
+- Updated the shared UI primitives in `components/ui/` so buttons, cards, badges, inputs, textareas, and selects now consume the token system instead of hard-coded palette assumptions.
+- Updated shared presentation layers including `components/marketing/page-chrome.tsx`, `components/marketing/network-constellation.tsx`, `components/theme-toggle.tsx`, and `components/onboarding/onboarding-shell.tsx` so the design-token pass covers both visually expressive marketing surfaces and reusable product shells.
+- Restyled the operator and account hubs at `app/[locale]/admin/page.tsx` and `app/[locale]/settings/page.tsx` to prove the same tokens work on denser operational layouts without a one-off page theme.
+- Added `docs/engineering/design-tokens.md` and linked it from the engineering docs index.
+- Smoke-tested the updated surfaces in a local production server across light and dark themes.
+
+#### Tests and Validation Notes
+- `pnpm dlx node@22.22.1 /opt/homebrew/bin/pnpm lint` passed
+- `pnpm dlx node@22.22.1 /opt/homebrew/bin/pnpm test` passed
+- `pnpm dlx node@22.22.1 /opt/homebrew/bin/pnpm typecheck` passed
+- `pnpm dlx node@22.22.1 /opt/homebrew/bin/pnpm build` passed
+- Browser smoke passed against a local production server:
+  - `/en` rendered the updated marketing shell in light mode
+  - `/en/admin` rendered the tokenized operator surface in light mode
+  - `/en/settings` rendered correctly in dark mode with the document theme switching to `dark`
+
+#### Reflections
+- The main value in this session came from reducing semantic drift, not from redesigning every page. With the token layer in place, later visual work can improve composition and information architecture without re-solving theme parity from scratch.
+- The biggest source of previous inconsistency was duplicated one-off `slate` and `emerald` utility usage on product screens. Updating the primitives first gave the app a more reliable baseline with less page-by-page cleanup.
+
+#### Suggested Next Steps
+- Session 08 should build on this by refactoring the shared navigation and layout around the new information architecture now that the shell and tokens are stable enough to support it.
+- Future feature sessions should keep migrating repeated raw palette classes toward semantic tokens whenever they touch legacy UI surfaces.
+
+---
+
+### session v20: Add multilingual app-shell infrastructure with locale-prefixed routing
+- timestamp: 2026-04-14T20:07:56-04:00
+- agent: **Codex (GPT-5)**
+- branch: **codex/wallet-production-readiness**
+- head: TBD
+
+#### Objective
+Implement Session 06 by adding the first production-grade i18n layer to FundLoop with always-prefixed locale routes, shared translation infrastructure, and translated shell coverage for the public home, participation, and support flows.
+
+#### Actions Taken
+- Added `next-intl` and introduced a dedicated i18n layer under `i18n/` for locale routing, locale-aware navigation helpers, request-time message loading, dictionary fallback, and proxy redirect helpers.
+- Moved the public App Router shell under `app/[locale]/...`, updated the locale root layout to provide `NextIntlClientProvider`, localized metadata, and locale validation, and kept internal API handlers unprefixed.
+- Added `proxy.ts` so bare page routes redirect to `/en/...`, locale cookies preserve the active language on future bare-route visits, and unsupported locale prefixes like `/de/...` fall through to a proper `404`.
+- Localized the shared public shell in the navbar, footer, mobile menu, resource dropdown, and use-cases dropdown using locale-aware links and translated shell dictionaries.
+- Translated the first public page set: `/[locale]`, `/[locale]/participation`, and `/[locale]/support`, including support-form labels, validation copy, and success/failure toast copy.
+- Added the long-lived engineering reference at `docs/engineering/i18n.md` and linked it from `docs/engineering/README.md`.
+- Updated tests and test infrastructure for the localized routing/layout changes, including new i18n and proxy tests plus existing ecosystem, footer, and observability page tests that referenced moved route modules.
+
+#### Tests and Validation Notes
+- `pnpm dlx node@22.22.1 /opt/homebrew/bin/pnpm lint` passed
+- `pnpm dlx node@22.22.1 /opt/homebrew/bin/pnpm test` passed
+- `pnpm dlx node@22.22.1 /opt/homebrew/bin/pnpm typecheck` passed
+- `pnpm dlx node@22.22.1 /opt/homebrew/bin/pnpm build` passed
+- `pnpm dlx node@22.22.1 /opt/homebrew/bin/pnpm check` passed
+- Manual smoke passed against a local production server:
+  - `/` redirected to `/en`
+  - `/participation` redirected to `/en/participation`
+  - `/fr` rendered translated shell copy
+  - `/es/support` rendered translated support copy
+  - `/de/support` returned `404`
+
+#### Reflections
+- The biggest risk in this session was not the translations themselves, but making locale-prefixed routing coexist cleanly with the existing Next App Router tree and unprefixed internal API handlers.
+- `next-intl` also required a small Vitest compatibility adjustment because some of its internal imports do not play nicely with the current test environment unless the runner resolves `next/navigation` and `next/server` explicitly.
+
+#### Suggested Next Steps
+- Session 07 should build on this by converting the existing styling layer into a durable light/dark token system so the newly localized shell stays visually coherent across both themes.
+- Future content-heavy sessions should translate public product funnels and then founder/user workspaces incrementally, reusing the same `next-intl` patterns established here.
+
+---
 description: Session log for agent coding sessions
 alwaysApply: hybrid = one log entry per commit or session in the most appropriate session-log file
 ---
@@ -97,6 +218,149 @@ Complete Session 04 by adding the reusable app-side contract and invocation laye
 #### Suggested Next Steps
 - Implement `project-payment-drafts-create` as the first real Supabase Edge Function.
 - Move the project payments page onto the browser Edge Function adapter and keep the server action as a compatibility wrapper.
+
+### session v37: Move long-lived route docs into engineering docs
+- timestamp: 2026-04-14T23:19:22Z
+- agent: **Codex (GPT-5)**
+- branch: **codex/wallet-production-readiness**
+- head: 9f88663b10eea061b96cab8e05f289a333f92649 - docs(agent-context): define target information architecture
+
+#### Objective
+Finish the in-flight documentation cleanup so `agent-context/` stays a small live context surface for agents, while the longer-lived route and architecture docs move into `docs/engineering/` before Sessions 04 and 05 begin.
+
+#### Actions Taken
+- Moved the long-lived route governance docs into `docs/engineering/` as `information-architecture.md` and `route-inventory.md`.
+- Added `docs/engineering/README.md` and updated `agent-context/README.md` so the repo now distinguishes lightweight live agent context from longer-lived engineering references.
+- Updated `AGENTS.md` and `README.md` to point larger engineering docs at `docs/engineering/` instead of `agent-context/`.
+- Updated the recent route-level migration comments to reference the moved information-architecture doc.
+- Updated `agent-context/todo.md` so each task now reminds agents to refresh engineering docs when architecture, routes, workflows, or operating assumptions change, and backfilled Session 03 with its commit head.
+
+#### Tests and Validation Notes
+- Ran `pnpm dlx node@22.22.1 /opt/homebrew/bin/pnpm lint`.
+- Lint passed after the reference updates and comment adjustments.
+
+#### Reflections
+- Keeping `agent-context/` small will make active sessions easier to orient quickly, while `docs/engineering/` gives the longer-lived design work a more stable home.
+- Doing this cleanup before the Edge Function sessions reduces the chance of mixing architectural implementation work with unrelated doc churn in the same commit.
+
+#### Suggested Next Steps
+- Introduce the shared Edge Function contract layer in the app and document the invocation pattern in `docs/engineering/`.
+- Use project payment draft creation as the first real Supabase Edge Function migration to prove the transport contract.
+
+### session v36: Define target route model and mark transitional surfaces
+- timestamp: 2026-04-14T21:57:19Z
+- agent: **Codex (GPT-5)**
+- branch: **codex/wallet-production-readiness**
+- head: 889ab9d7b3dee4d47e5cbe9eb533410c827983f4 - docs(agent-context): add app route inventory
+
+#### Objective
+Complete Session 03 by defining the target information architecture around role-based workspaces, mapping major current routes to their future canonical homes, and adding a small set of migration comments to the most important transitional route files.
+
+#### Actions Taken
+- Added `docs/engineering/information-architecture.md` to lock the target route model for public surfaces, the user workspace, the founder/project workspace, and the internal operator workspace.
+- Added an explicit current-to-target route mapping table covering the major transitional surfaces, including `/my-profile`, `/settings`, `/projects/[slug]/payments`, `/admin`, `/analytics`, `/api`, `/participation`, `/join`, and `/pledge`.
+- Updated the planning index to include the IA document.
+- Added short IA-oriented TODO comments to the high-signal transitional route files: `app/admin/page.tsx`, `app/settings/page.tsx`, `app/api/page.tsx`, `app/analytics/page.tsx`, `app/invitations/[token]/page.tsx`, and `app/organizations/[id]/page.tsx`.
+- Marked Session 03 complete in `agent-context/todo.md` and backfilled Session 02 with the commit head that closed it.
+
+#### Tests and Validation Notes
+- Ran `pnpm dlx node@22.22.1 /opt/homebrew/bin/pnpm lint`.
+- Lint passed after adding the route-level migration comments.
+- No broader validation was needed because this session added planning docs and source comments only.
+
+#### Reflections
+- Locking the route model now makes the next navigation and workspace sessions much less ambiguous, especially around the split between public project detail and founder-only project operations.
+- Adding just a few migration comments was enough to anchor future work without spreading low-signal TODO noise across the whole tree.
+
+#### Suggested Next Steps
+- Use the IA doc to refactor shared navigation and dashboard entry points around public, user, founder, and operator destinations.
+- Start moving transitional authenticated surfaces out of the current mixed route set and into the canonical workspace homes defined here.
+
+### session v35: Inventory current app routes and dispositions
+- timestamp: 2026-04-14T21:55:18Z
+- agent: **Codex (GPT-5)**
+- branch: **codex/wallet-production-readiness**
+- head: 0f81f1575f4552b86f7091bb2b17ec7123c4df9d - docs(agent-context): finalize planning doc entrypoint
+
+#### Objective
+Complete Session 02 by inventorying every current route surface under `app/`, recording which routes are already real, which are transitional, and which should be merged, redirected, or removed before deeper UX and IA work continues.
+
+#### Actions Taken
+- Added `docs/engineering/route-inventory.md` with one entry for every current `page.tsx` and `route.ts` surface under `app/`.
+- Grouped the inventory into public, authenticated, operator, and machine/internal surfaces so route planning is easier to follow.
+- Recorded audience, current state, evidence, disposition, canonical future destination, and follow-up roadmap sessions for each route.
+- Called out the concrete issues discovered during exploration, including mock/demo routes, missing admin child routes, missing settings child routes, the broken `/organizations` profile link target, and the intentionally transitional `/api` and `/analytics` public pages.
+- Updated the planning index and marked Session 02 complete in `agent-context/todo.md`, while also backfilling Session 01 with the commit head that closed it.
+
+#### Tests and Validation Notes
+- Documentation-only change.
+- Verified the route inventory covers the current `app/` surface list by comparing against the repo route list generated from `page.tsx` and `route.ts` files.
+- Did not run `pnpm` validation because no runtime or code behavior changed.
+
+#### Reflections
+- The route tree is in better shape than a pure placeholder app, but it still mixes production surfaces with transitional or demo routes in ways that will confuse later implementation if we do not lock the IA soon.
+- Capturing broken links in the inventory makes the next navigation and workspace sessions much more concrete than a generic “clean up IA” task would be.
+
+#### Suggested Next Steps
+- Define the target information architecture with explicit role-based workspaces and route mappings for the major current surfaces.
+- Add a small number of migration-oriented TODO annotations to the highest-signal transitional route files so future refactors point back to the IA doc.
+
+### session v34: Finalize planning doc set and backlog entrypoint
+- timestamp: 2026-04-14T21:54:22Z
+- agent: **Codex (GPT-5)**
+- branch: **codex/wallet-production-readiness**
+- head: 61161486db371eb19b91ffd4b434a17d8941ae38 - docs(agent-context): add architecture docs and sequenced roadmap
+
+#### Objective
+Complete Session 01 by tightening the planning artifacts in `agent-context/`, turning them into a canonical starting point for future implementation sessions, and removing stale or invalid planning references from the roadmap header.
+
+#### Actions Taken
+- Added `agent-context/README.md` as the planning index for the architecture docs, backlog, and session log.
+- Added cross-links at the top of `backgrounder-for-agents.md`, `current-state-architecture.md`, and `target-state-architecture.md` so future agents can move between the planning docs without re-discovering them.
+- Normalized the `agent-context/todo.md` execution-rules header so it now references the actual existing planning docs instead of the missing `everfund-target-state-site-architecture-and-technical-specs-for-agents.md` filename.
+- Marked Session 01 complete in `agent-context/todo.md` and recorded the branch, timestamps, and intended session-log reference for this planning pass.
+
+#### Tests and Validation Notes
+- Documentation-only change.
+- Verified the planning docs cross-link correctly by inspection.
+- Did not run `pnpm` validation because no runtime or code behavior changed.
+
+#### Reflections
+- Having a dedicated `agent-context/README.md` makes the planning set much more approachable than relying on filenames alone.
+- Removing the stale architecture-spec reference now should prevent future agents from wasting time hunting for a document that does not exist.
+
+#### Suggested Next Steps
+- Produce the route inventory for every `app/` surface, including broken-link and mock/demo routes.
+- Follow that with the target information architecture so the next implementation sessions can operate against explicit route decisions instead of implicit assumptions.
+
+### session v33: Document current and target architecture with execution roadmap
+- timestamp: 2026-04-14T21:28:17Z
+- agent: **Codex (GPT-5)**
+- branch: **codex/wallet-production-readiness**
+- head: e7c35322b6868443b958ed5da6b9c888fcb26729 - feat(observability): add payment flow event logging
+
+#### Objective
+Capture the repo's current architecture, define the intended target-state architecture, and replace the old ad hoc backlog with a sequenced execution roadmap that future agents can use to bring FundLoop from its current semi-finished state to an operational product.
+
+#### Actions Taken
+- Added `agent-context/current-state-architecture.md` to describe the repo's present subsystem boundaries, operational shape, and architectural hotspots.
+- Added `agent-context/target-state-architecture.md` using the new backgrounder and current-state docs to define the intended future-state architecture, including CUBID-first identity, Edge Function boundaries, MCP workflows, multi-rail payments, and the monthly operating cadence.
+- Preserved and included `agent-context/backgrounder-for-agents.md` as part of the architecture set used for planning.
+- Rewrote `agent-context/todo.md` into a 45-session execution roadmap that moves logically from current-state to target-state.
+- Added execution rules and per-session metadata placeholders to every roadmap item so future sessions can track branch, head, timing, and session-log references without turning the todo file into a work diary.
+
+#### Tests and Validation Notes
+- Documentation-only change.
+- Did not run `pnpm` validation because no application code, schema, or runtime behavior changed.
+
+#### Reflections
+- Turning the repo notes into a structured architecture set plus a sequenced roadmap makes the project much more legible for future agents and should reduce repeated rediscovery work.
+- The per-session metadata on every todo is a good safeguard because it makes it easier to keep execution hygiene visible without mixing status tracking into the session log itself.
+
+#### Suggested Next Steps
+- Start executing the new roadmap from the top, updating each session item as work begins and completes.
+- Consider adding a small cross-reference appendix later that maps older completed backlog items into the new roadmap structure if reviewers want more historical continuity.
+
 ### session v32: Add wallet and payment flow observability
 - timestamp: 2026-04-14T19:26:18Z
 - agent: **Codex (GPT-5)**

@@ -22,9 +22,11 @@ const links = [
 ] as const
 
 const toneClasses = {
-  accent: "border-[rgba(204,92,44,0.4)] bg-[rgba(204,92,44,0.14)] text-[var(--marketing-ink)]",
-  moss: "border-[rgba(99,112,86,0.36)] bg-[rgba(99,112,86,0.14)] text-[var(--marketing-ink)]",
-  ink: "border-[rgba(22,33,33,0.18)] bg-[rgba(255,248,238,0.72)] text-[var(--marketing-ink)] dark:text-[var(--marketing-paper)]",
+  accent:
+    "border-[color:color-mix(in_srgb,var(--marketing-accent)_38%,transparent)] bg-[color:color-mix(in_srgb,var(--marketing-accent)_14%,transparent)] text-[var(--marketing-ink)]",
+  moss:
+    "border-[color:color-mix(in_srgb,var(--marketing-moss)_38%,transparent)] bg-[color:color-mix(in_srgb,var(--marketing-moss)_14%,transparent)] text-[var(--marketing-ink)]",
+  ink: "border-[color:var(--marketing-line-strong)] bg-[var(--marketing-panel-strong)] text-[var(--marketing-ink)] dark:text-[var(--marketing-paper)]",
 } as const
 
 const dotClasses = {
@@ -81,7 +83,7 @@ export function NetworkConstellation() {
   return (
     <div
       ref={containerRef}
-      className="relative aspect-[5/4] min-h-[22rem] overflow-hidden rounded-[2rem] border border-[color:var(--marketing-line)] bg-[linear-gradient(180deg,rgba(255,248,238,0.76),rgba(248,238,223,0.48))] p-6 shadow-[0_40px_120px_rgba(15,23,23,0.12)] dark:bg-[linear-gradient(180deg,rgba(18,27,25,0.92),rgba(10,18,17,0.84))]"
+      className="relative aspect-[5/4] min-h-[22rem] overflow-hidden rounded-[calc(var(--radius-2xl)+0.25rem)] border border-[color:var(--marketing-line)] bg-[linear-gradient(180deg,var(--marketing-panel-strong),var(--marketing-panel))] p-6 shadow-[var(--surface-shadow-floating)]"
       onPointerLeave={resetOffset}
       onPointerMove={handlePointerMove}
       style={
@@ -91,8 +93,8 @@ export function NetworkConstellation() {
         } as CSSProperties
       }
     >
-      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_20%_20%,rgba(204,92,44,0.22),transparent_30%),radial-gradient(circle_at_80%_30%,rgba(120,138,101,0.18),transparent_28%),radial-gradient(circle_at_55%_75%,rgba(255,214,144,0.18),transparent_26%)]" />
-      <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(rgba(22,33,33,0.07)_1px,transparent_1px),linear-gradient(90deg,rgba(22,33,33,0.07)_1px,transparent_1px)] bg-[size:3.5rem_3.5rem] opacity-35 dark:opacity-20" />
+      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_20%_20%,var(--marketing-glow-2),transparent_30%),radial-gradient(circle_at_80%_30%,var(--marketing-glow-3),transparent_28%),radial-gradient(circle_at_55%_75%,var(--marketing-glow-1),transparent_26%)]" />
+      <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(var(--surface-grid)_1px,transparent_1px),linear-gradient(90deg,var(--surface-grid)_1px,transparent_1px)] bg-[size:3.5rem_3.5rem] opacity-35 dark:opacity-20" />
 
       <div
         className="absolute inset-0 transition-transform duration-500 ease-out"
@@ -110,6 +112,7 @@ export function NetworkConstellation() {
               x2={nodes[to].x}
               y2={nodes[to].y}
               stroke="rgba(22,33,33,0.22)"
+              style={{ stroke: "color-mix(in srgb, var(--marketing-ink) 22%, transparent)" }}
               strokeDasharray="4 5"
               strokeWidth="0.7"
             />
@@ -136,6 +139,7 @@ export function NetworkConstellation() {
               <div className="flex items-center gap-3">
                 <span
                   className={`inline-flex ${dotClasses[node.size]} animate-[constellation-pulse_8s_ease-in-out_infinite] rounded-full border border-white/50 bg-[var(--marketing-accent)] shadow-[0_0_0_10px_rgba(204,92,44,0.08)]`}
+                  style={{ boxShadow: "0 0 0 10px color-mix(in srgb, var(--marketing-accent) 10%, transparent)" }}
                 />
                 <span
                   className={`rounded-full border px-3 py-1 text-xs font-semibold uppercase tracking-[0.2em] backdrop-blur-sm ${toneClasses[node.tone]}`}
@@ -148,7 +152,7 @@ export function NetworkConstellation() {
         })}
       </div>
 
-      <div className="absolute bottom-4 left-4 z-10 max-w-[13rem] rounded-[1.25rem] border border-[color:var(--marketing-line)] bg-[rgba(243,235,221,0.9)] p-4 shadow-[0_18px_50px_rgba(15,23,23,0.12)] backdrop-blur-md sm:bottom-6 sm:left-6 sm:max-w-[15rem] dark:bg-[rgba(13,21,21,0.84)]">
+      <div className="absolute bottom-4 left-4 z-10 max-w-[13rem] rounded-[calc(var(--radius-xl)+0.125rem)] border border-[color:var(--marketing-line)] bg-[var(--marketing-panel-strong)] p-4 shadow-[var(--surface-shadow-panel)] backdrop-blur-md sm:bottom-6 sm:left-6 sm:max-w-[15rem]">
         <p className="text-[0.68rem] font-semibold uppercase tracking-[0.28em] text-[var(--marketing-muted)]">
           Network Thesis
         </p>

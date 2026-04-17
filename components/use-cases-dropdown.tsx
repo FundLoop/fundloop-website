@@ -1,9 +1,9 @@
 "use client"
 
 import { useState } from "react"
-import Link from "next/link"
-import { usePathname } from "next/navigation"
+import { useTranslations } from "next-intl"
 import { ChevronDown } from "lucide-react"
+import { Link, usePathname } from "@/i18n/navigation"
 import { Button } from "@/components/ui/button"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 import { useCaseLinks } from "@/lib/use-cases"
@@ -16,6 +16,7 @@ type UseCasesDropdownProps = {
 }
 
 export default function UseCasesDropdown({ triggerClassName, open: controlledOpen, onOpenChange }: UseCasesDropdownProps) {
+  const t = useTranslations("shell")
   const [internalOpen, setInternalOpen] = useState(false)
   const pathname = usePathname()
   const isActive = pathname.startsWith("/use-cases")
@@ -42,7 +43,7 @@ export default function UseCasesDropdown({ triggerClassName, open: controlledOpe
             triggerClassName,
           )}
         >
-          Use Cases
+          {t("nav.useCases")}
           <ChevronDown className="ml-1 h-4 w-4" />
         </Button>
       </DropdownMenuTrigger>

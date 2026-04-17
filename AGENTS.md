@@ -50,7 +50,7 @@ Agents in this repo must optimize for:
 - `agent-context/session-log.md` is a maintained repo artifact and must be updated for every commit.
 - At the start of a new session, inventory what is next from:
   - `agent-context/todo.md` and any relevant `todo.md` files under feature folders
-  - larger planned work and implementation docs inside `agent-context/`
+  - larger planned work and implementation docs inside `docs/engineering/`
   - open GitHub issues when repo access is available
 
 ---
@@ -126,7 +126,8 @@ contracts/              Hardhat workspace for intake contracts and tests
 supabase/               Canonical migrations, config, and seed artifacts
 tests/                  Vitest setup and test files
 types/                  Generated Supabase types and shared TS types
-agent-context/          Agent working notes including session-log.md
+docs/engineering/       Longer-lived engineering and architecture docs
+agent-context/          Lightweight live agent context, backlog, and session-log artifacts
 ```
 
 Follow existing naming and placement conventions before creating new abstractions. Extend the current pattern instead of creating a competing one.
@@ -135,7 +136,12 @@ Inside `agent-context/`:
 
 - `session-log.md` records one entry per commit or significant coded session
 - `todo.md` holds smaller follow-up tasks and parked next actions
-- dedicated subfolders should be used for larger feature streams, implementation notes, and supporting docs
+- keep the rest of the folder small and current for active agent context only
+
+Inside `docs/engineering/`:
+
+- longer-lived route, architecture, and implementation docs live here
+- update these docs whenever a task materially changes architecture, route decisions, workflows, or operating assumptions
 
 ---
 

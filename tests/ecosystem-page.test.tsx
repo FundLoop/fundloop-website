@@ -1,7 +1,7 @@
 import React from 'react'
 import { render, screen } from '@testing-library/react'
 import { describe, it, expect } from 'vitest'
-import EcosystemPage, { metadata } from '../app/ecosystem/page'
+import EcosystemPage, { metadata } from '../app/[locale]/(public)/ecosystem/page'
 
 describe('EcosystemPage', () => {
   it('renders ecosystem heading and sites', () => {

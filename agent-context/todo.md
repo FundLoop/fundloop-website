@@ -1,60 +1,42 @@
-# Repo TODO
+# FundLoop TODO
 
-## Wallet App Production Readiness (Recommended Order)
+This file is the current execution roadmap for bringing FundLoop from the present semi-finished app shell to the target operational architecture described in `current-state-architecture.md`, `target-state-architecture.md`, and `backgrounder-for-agents.md`.
 
-- Completed 2026-04-13: Replace the remaining mock and local-only payment operations with production-backed flows.
-  `app/projects/[slug]/payments/page.tsx` and `app/admin/payments/page.tsx` now persist and load real payment state through server-backed actions instead of local-only UI mutations.
-- Completed 2026-04-13: Lock payment confirmation to the right actor and surface the real operational state clearly.
-  Project admins can create obligations and submit receipts, while internal FundLoop admins own final receipt confirmation; onchain reconciliation is still a separate follow-up below.
-- Completed 2026-04-13: Add project-side payment-method management outside onboarding.
-  `/projects/[slug]/payments` now lets project admins add, disable, reorder, re-enable, and set a default crypto route after onboarding.
-- Ship deployment-safe chain configuration and wallet environment validation.
-  Add per-environment contract manifests, validate `NEXT_PUBLIC_REOWN_PROJECT_ID` and chain RPC settings at startup, and make the active intake contracts and treasury routes auditable without manual copy/paste.
-- Completed 2026-04-13: Build the onchain reconciliation layer that moves submitted receipts into confirmed or failed states.
-  Known app-recorded crypto submissions now reconcile against verified `Deposit` events plus confirmation depth, with scheduled and admin-triggered replay paths.
-- Completed 2026-04-13: Add remote-safe end-to-end coverage for the real wallet and payment flows.
-  The repo now has a Playwright harness with `remote-safe` and opt-in `local-wallet` lanes, guarded non-production auth bootstrap, seeded shared-environment fixtures, and local injected-wallet coverage for route management, deposit submission, and reconciliation.
-- Add observability for wallet and payment failures.
-  Capture wallet-connect failures, chain mismatch loops, receipt-recording failures, payment-save failures, and admin confirmation errors before broader launch.
-- Completed 2026-04-13: Clean up launch paper cuts in the runtime and build environment.
-  The repo baseline is back on the supported Node 22 line, `turbopack.root` is set explicitly, and the analytics Recharts surfaces no longer emit the container sizing warnings during build.
+Each item below is intentionally sized to one agentic coding session. The sequence matters. Later work should assume the earlier sessions are complete unless the backlog is deliberately re-planned.
 
-## Environment, Deployment, and Release Readiness
+## Execution Rules
+- Always build on feature branches. 
+- When starting a task: update the status to "started", set the branch and timestamp started. Reference `backgrounder-for-agents.md`, `current-state-architecture.md`, and `target-state-architecture.md` before starting to build.
+- While building: Make underway commits if needed, always with an accompanying session-log entry. Build unit tests and smoke tests for new features as needed. Smoke test before reporting complete. Do not write in this doc what you actually did, instead write that in the session-log.
+- At the end of each task: update relevant long-lived engineering docs in `docs/engineering/` whenever architecture, route decisions, workflows, or operating assumptions changed.
+- If a todo needs to be split, or if any spillover actions were not completed, then remove those words from your todo and instead create new minor todo at the right place in the document, for example a new `12.1` immediately after todo 12.
+- Once completed, set status to complete, update timestamp completed, ensure all relevant session logs are referenced. 
 
-- Populate all env variables.
-- Add a real `NEXT_PUBLIC_REOWN_PROJECT_ID` so wallet connect works outside placeholder mode. The missing env is already surfaced in `components/project-crypto-payment-dialog.tsx`.
-- Deploy the intake contracts on Base, Ethereum, and Celo, then populate the contract and treasury settings the migration expects. Right now the code safely disables zero-address routes, but that also means crypto payments are not live yet.
-- Add contract deployment manifests per chain and environment so the app can consume verified addresses and ABI versions without manual copy/paste.
-- Add a contract upgrade and ownership runbook covering deployer, treasury rotation, allowed-token updates, and emergency disable procedures.
+## Session 01: Replace the old backlog with a release-oriented execution map
 
-## Supabase, Database, and Local Data Workflows
+- Status: Complete
+- Timestamp started: 2026-04-14T21:54:22Z
+- Timestamp completed: 2026-04-14T21:54:22Z
+- Feature branch: codex/wallet-production-readiness
+- Head: 0f81f15
+- Session-log reference(s): session v34
 
-- Push the tracked Supabase migrations to the linked remote project so the live DB matches the app code. The big ones are `20260324213000_resumable_onboarding.sql` and `20260324150000_crypto_collection_rails.sql`.
-- Make `supabase/seed.sql` reliably replayable for local resets. The repo is much healthier now, but local DB bootstrapping is still weaker than it should be.
-- Replace the current local seed dump approach with a stable, replayable seed workflow for local Supabase resets; the first pass intentionally prioritized canonicalizing the remote schema and shrinking the seed over perfect local replay.
-- Persist the chosen crypto `periodId` on a first-class database column or linked payment-events table instead of only in onchain submission metadata and notes.
+Turn the architecture docs into a repo-grounded execution plan that the next several agents can follow without re-deriving priorities. This session should tighten `agent-context/` itself: normalize naming, cross-link the backgrounder/current-state/target-state docs, and add a short “how to use this backlog” note for future contributors. The goal is not product code yet. The goal is to make the repo operationally legible so subsequent sessions can work in sequence instead of starting from scratch every time.
 
-## Crypto Collection Rails, Contracts, and Treasury Intake
+## Session 02: Inventory every incomplete, stubbed, or placeholder route
 
-- Decide how we want to handle pricing for non-stablecoin routes. The current code correctly blocks direct USD-to-volatile-asset submission until quote/oracle support exists, so native ETH/CELO payments are not truly complete yet.
-- Add quote and pricing support before allowing direct native-asset payments; the current dialog correctly blocks volatile assets because the V1 scope stopped at stablecoin-safe submission.
-- Implement the project-specific deposit-address fallback path that was intentionally deferred while shipping the smart-contract-first crypto collection V1.
-- Add auto-sweep functionality for deterministically generated deposit addresses into the FundLoop treasury.
-- Extend onchain payment attribution beyond the current month-only `periodId` approach if business needs later require explicit year or invoice-level identity.
-- Add token allowlist governance rules and admin tooling for enabling or disabling supported assets per chain.
+- Status: Complete
+- Timestamp started: 2026-04-14T21:55:18Z
+- Timestamp completed: 2026-04-14T21:55:18Z
+- Feature branch: codex/wallet-production-readiness
+- Head: 889ab9d
+- Session-log reference(s): session v35
 
-## Fiat Rails, Onramp, and Offramp
+Review the route tree and current UI to identify all pages that are unfinished, misleading, redundant, or only half-wired. Produce a route inventory with one disposition per page: finish, merge, redirect, or remove. This should include public pages, settings pages, admin pages, and any thin placeholders that still reflect an earlier website-first mindset. The output should drive the product information architecture so later UX sessions are completing real surfaces rather than polishing pages that should disappear.
 
-- Add a fiat payment route.
-- Add the fiat onramp layer that was explicitly left out of the crypto rails session.
-- Build a fiat off-ramp so users can collect payouts in fiat.
-- Build a Superfluid-based off-ramp so users can receive streaming payments.
+## Session 03: Define the target information architecture for users, founders, and operators
 
-## Onchain Indexing, Accounting, and Reconciliation
-
-- Build the full indexer and accounting engine layer that watches onchain deposits, reconciles them against obligations, and advances payment states beyond `awaiting_confirmation`.
-- Add confirmation depth and reorg handling rules for onchain submissions before they are treated as credited payments.
-- Add an indexer view to visualize the on-chain data.
+- Status: Complete
 - Timestamp started: 2026-04-14T21:57:19Z
 - Timestamp completed: 2026-04-14T21:57:19Z
 - Feature branch: codex/wallet-production-readiness
@@ -65,56 +47,56 @@ Restructure the app map around the three real personas: regular users, founders/
 
 ## Session 04: Introduce a backend-contract layer for Supabase Edge Functions
 
-- Status: Complete
-- Timestamp started: 2026-04-14T23:27:54Z
-- Timestamp completed: 2026-04-14T23:28:41Z
-- Feature branch: codex/wallet-production-readiness
-- Head: f2bd1b5
-- Session-log reference(s): session v38
+- Status: Not started
+- Timestamp started: TBD
+- Timestamp completed: TBD
+- Feature branch: TBD
+- Head: TBD
+- Session-log reference(s): TBD
 
 Create the application-side foundation for the future read/write model. The web app should gain a consistent client for calling Supabase Edge Functions, typed request and response envelopes, shared auth/error handling, and a clear place to put function-specific adapters. Do not migrate all behavior yet. The goal is to remove the current ambiguity where writes happen in server actions and reads often happen straight from the browser. This session creates the transport contract every later migration will depend on.
 
 ## Session 05: Stand up the first real Edge Function domain boundary
 
-- Status: Complete
-- Timestamp started: 2026-04-14T23:28:42Z
-- Timestamp completed: 2026-04-14T23:36:10Z
-- Feature branch: codex/wallet-production-readiness
+- Status: Not started
+- Timestamp started: TBD
+- Timestamp completed: TBD
+- Feature branch: TBD
 - Head: TBD
-- Session-log reference(s): session v39
+- Session-log reference(s): TBD
 
 Pick one narrow but meaningful domain, likely onboarding drafts or project payment draft creation, and implement the first production-style Supabase Edge Function with schema validation, auth checks, and a typed web adapter. This session proves the new backend pattern in a real workflow. It should include local development ergonomics, shared error shapes, and a small test harness. The goal is to establish a repeatable template so later sessions can migrate more domains without inventing a new style each time.
 
 ## Session 06: Add multilingual infrastructure to the app shell
 
-- Status: Not started
-- Timestamp started: TBD
-- Timestamp completed: TBD
-- Feature branch: TBD
+- Status: Complete
+- Timestamp started: 2026-04-14 19:58:00 EDT
+- Timestamp completed: 2026-04-14 20:07:56 EDT
+- Feature branch: codex/wallet-production-readiness
 - Head: TBD
-- Session-log reference(s): TBD
+- Session-log reference(s): session v20
 
 Introduce the core i18n architecture for Next.js App Router: locale routing strategy, translation file organization, server/client helpers, and a fallback policy. The initial target is infrastructure, not full translation coverage. Make sure layouts, navigation, metadata, and a small set of public surfaces can render from language packs. This session should explicitly avoid string-by-string ad hoc translation. It should produce a clean system the later UX and product sessions can expand across user, founder, and operator experiences.
 
 ## Session 07: Build a durable design token system for light and dark mode
 
-- Status: Not started
-- Timestamp started: TBD
-- Timestamp completed: TBD
-- Feature branch: TBD
+- Status: Complete
+- Timestamp started: 2026-04-14 20:47:18 EDT
+- Timestamp completed: 2026-04-14 20:53:37 EDT
+- Feature branch: codex/wallet-production-readiness
 - Head: TBD
-- Session-log reference(s): TBD
+- Session-log reference(s): session v40
 
 Refactor the current styling layer into a stable token-driven theme system with strong light/dark parity. This session should centralize color, typography, spacing, and state tokens in a way that supports both public marketing pages and dense operational screens. Audit the current surfaces for broken contrast, inconsistent backgrounds, and one-off styling drift. The goal is not a full redesign in one session. The goal is to create a visually coherent base so later “stunning but simple” UX work does not require re-theming every page twice.
 
 ## Session 08: Refactor shared navigation and layout around the new IA
 
-- Status: Not started
-- Timestamp started: TBD
-- Timestamp completed: TBD
-- Feature branch: TBD
+- Status: Complete
+- Timestamp started: 2026-04-14T21:58:00-0400
+- Timestamp completed: 2026-04-14T22:10:57-0400
+- Feature branch: codex/wallet-production-readiness
 - Head: TBD
-- Session-log reference(s): TBD
+- Session-log reference(s): session v41
 
 Update the app shell, navigation, account menus, and dashboard entry points to match the new information architecture. This should include clear paths for regular users, founders/project members, and internal operators, while keeping the public site lightweight and understandable. Remove or neutralize confusing dead ends and old route assumptions. This session should focus on skeleton and movement, not final page content. The outcome should be that users can tell where they are in the product and what the app is for before the remaining pages are fully rebuilt.
 
@@ -524,4 +506,3 @@ Translate the architecture into operational reliability. This session should pro
 - Session-log reference(s): TBD
 
 After the heavy architecture and workflow work is in place, do the intentional finish pass. This session should refine copy, empty states, motion, visual hierarchy, multilingual edge cases, and the most important conversion points for both users and founders. It should also tighten the balance between “visually stunning” and “simple, clean UX.” The goal is not random polish. It is aligning the product’s presentation with the fact that the underlying system is now real, operational, and trustworthy.
->>>>>>> f2bd1b5 (feat(edge-functions): add shared invocation contract layer)

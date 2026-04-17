@@ -32,21 +32,23 @@ export function OnboardingShell({
 
       <section
         className={cn(
-          "rounded-3xl border border-slate-200/80 bg-white p-6 shadow-sm sm:p-8",
+          "rounded-[calc(var(--radius-2xl)+0.125rem)] border border-[color:var(--surface-border)] bg-[var(--surface-panel-strong)] p-6 shadow-[var(--surface-shadow-panel)] backdrop-blur-sm sm:p-8",
           compact ? "max-w-2xl" : "",
         )}
       >
         <div className="space-y-3">
-          {eyebrow ? <p className="text-xs font-semibold uppercase tracking-[0.24em] text-emerald-600">{eyebrow}</p> : null}
+          {eyebrow ? (
+            <p className="text-xs font-semibold uppercase tracking-[0.24em] text-[var(--interactive-primary)]">{eyebrow}</p>
+          ) : null}
           <div className="space-y-1">
-            <h2 className="text-3xl font-semibold tracking-tight text-slate-950">{title}</h2>
-            <p className="max-w-2xl text-sm leading-6 text-slate-600">{description}</p>
+            <h2 className="text-3xl font-semibold tracking-tight text-[var(--text-strong)]">{title}</h2>
+            <p className="max-w-2xl text-sm leading-6 text-[var(--text-muted)]">{description}</p>
           </div>
         </div>
 
         <div className="mt-8 space-y-6">{children}</div>
 
-        {footer ? <div className="mt-8 border-t border-slate-200 pt-6">{footer}</div> : null}
+        {footer ? <div className="mt-8 border-t border-[color:var(--surface-border)] pt-6">{footer}</div> : null}
       </section>
     </div>
   )
