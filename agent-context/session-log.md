@@ -1,5 +1,395 @@
 ---
 
+### session v53: Remove duplicate bootstrap from the founder CUBID project gate
+- timestamp: 2026-04-17T19:37:49-0400
+- agent: **Codex (GPT-5)**
+- branch: **codex/wallet-pr4-onboarding-cubid**
+- head: a391c27
+
+#### Objective
+Fix the next PR #21 validate failure after the user-flow repair landed. The new CI failure was in `tests/project-signup-flow.test.tsx`, where the founder CUBID-resolution flow could lose the linked state before the test saw the updated `cubid-user-1` UI.
+
+#### Actions Taken
+- Pulled the fresh PR #21 GitHub Actions logs and isolated the failure to the project onboarding CUBID-resolution test rather than the user onboarding flow fixed in session v52.
+- Confirmed `components/project-signup-flow.tsx` still used the old bootstrap pattern where the onboarding-state effect depended on `authUserId` while also mutating `authUserId`, making duplicate bootstrap requests possible during initial auth hydration.
+- Added explicit auth bootstrap state plus request-id guarding in `components/project-signup-flow.tsx` so `getOnboardingState()` now runs once per auth event and stale async responses cannot overwrite the active onboarding state.
+- Added synchronous screen-ref updates around resume/back/continue transitions so a late response cannot revert the active project screen.
+- Tightened `tests/project-signup-flow.test.tsx` so the founder-linking regression also asserts the onboarding bootstrap only runs once before the CUBID-linked state is rendered.
+
+#### Tests and Validation Notes
+- `pnpm exec vitest run tests/project-signup-flow.test.tsx` passed
+- `pnpm test` passed
+- `pnpm dlx node@22.22.1 /opt/homebrew/bin/pnpm exec vitest run tests/project-signup-flow.test.tsx` passed
+
+#### Reflections
+- The second CI failure was the project-flow twin of the user-flow bug from session v52. Fixing them at the same bootstrap boundary is cleaner than trying to special-case each test assertion.
+- Matching the affected test against Node 22 was worthwhile here because the bug only surfaced reliably in GitHub Actions before the guard landed.
+
+#### Suggested Next Steps
+- Push the follow-up commit so PR #21 can rerun validate on the merge commit with both onboarding bootstrap fixes present.
+- If another onboarding CI failure appears, audit the remaining flow components for effects that both depend on and mutate auth-derived state.
+
+### session v52: Remove duplicate onboarding bootstrap from the user resume flow
+- timestamp: 2026-04-17T19:30:00-0400
+- agent: **Codex (GPT-5)**
+- branch: **codex/wallet-pr4-onboarding-cubid**
+- head: d185055
+
+#### Objective
+Fix the remaining PR #21 validate failure by making the user onboarding resume flow deterministic in CI, where `tests/user-signup-flow.test.tsx` could lose the transition from the resume screen to review/publish during initial authenticated hydration.
+
+#### Actions Taken
+- Traced the failing PR #21 validate job to `tests/user-signup-flow.test.tsx`, specifically the resume-to-review publish path in `components/user-signup-flow.tsx`.
+- Identified that the component was re-running `getOnboardingState()` during initial hydration because the bootstrap effect depended on `authUserId`, which the bootstrap itself updates.
+- Added explicit auth bootstrap state in `components/user-signup-flow.tsx` so onboarding state loads once per auth event instead of recursively re-triggering during mount hydration.
+- Added request-id guarding plus a synchronous `currentScreenRef` write path so late async onboarding responses cannot overwrite a user-initiated screen transition back to `resume` or `welcome`.
+- Replaced the flaky regression case in `tests/user-signup-flow.test.tsx` with a deterministic assertion that initial authenticated hydration only bootstraps once and still resumes into the review/publish screen.
+
+#### Tests and Validation Notes
+- `pnpm exec vitest run tests/user-signup-flow.test.tsx` passed
+- `pnpm test` passed
+- Local validation ran under Node 25 because that is the host shell default on this machine; the repo still declares Node 22 as the supported baseline for CI.
+
+#### Reflections
+- The CI failure was a state-bootstrap design problem, not a simple DOM timing issue in the test. Fixing the duplicate bootstrap path in the component is lower risk than adding more waits around an unstable transition.
+- Keeping a synchronous screen ref alongside React state is justified here because the bug depends on async responses observing stale UI state between render commits.
+
+#### Suggested Next Steps
+- Push the branch so PR #21 can rerun the validate workflow with the bootstrap fix.
+- If CI still shows environment-specific variance, run the full Node 22 validation path locally to match the repository baseline exactly.
+
+### session v51: Vendor CUBID tarballs so CI and Vercel can install the onboarding stack
+- timestamp: 2026-04-16T18:17:23-0400
+- agent: **Codex (GPT-5)**
+- branch: **codex/wallet-pr4-onboarding-cubid**
+- head: TBD
+
+#### Objective
+Repair the stacked onboarding/CUBID tip branch after PR #21 failed in GitHub Actions and Vercel because the branch depended on local sibling-repo tarballs that do not exist in CI.
+
+#### Actions Taken
+- Copied the local CUBID SDK tarballs into a tracked repo directory at `vendor/cubid/`:
+  - `cubid-api-0.1.0.tgz`
+  - `cubid-web2-0.1.0.tgz`
+  - `cubid-web2-react-0.1.0.tgz`
+- Updated `package.json` so both `dependencies` and `pnpm.overrides` now point at the vendored tarballs instead of `../cubid/cubid-sdk-v2/dist-packs/*`.
+- Regenerated `pnpm-lock.yaml` from the repo root so the lockfile now resolves the vendored in-repo tarballs.
+- Reproduced the CI validation sequence from the FundLoop worktree to verify the branch no longer depends on the sibling `cubid-sdk-v2` checkout.
+
+#### Tests and Validation Notes
+- `pnpm --dir /Users/botmaster/src/fundloop-pr-stack install --frozen-lockfile` passed
+- `pnpm --dir /Users/botmaster/src/fundloop-pr-stack lint` passed
+- `pnpm --dir /Users/botmaster/src/fundloop-pr-stack test` passed
+- `pnpm --dir /Users/botmaster/src/fundloop-pr-stack typecheck` passed
+- `pnpm --dir /Users/botmaster/src/fundloop-pr-stack build` passed
+- `pnpm --dir /Users/botmaster/src/fundloop-pr-stack/contracts test` passed
+- Local validation ran under Node 25 because that is the host shell default on this machine; Hardhat warned about the unsupported runtime, but the repo's CI workflow uses `.nvmrc` and pins Node 22, which is the supported path for GitHub Actions and Vercel.
+
+#### Reflections
+- The original CUBID package wiring was acceptable for local multi-repo development but not for a standalone checkout. Vendoring the tarballs is the smallest change that makes the stacked PR portable without widening the scope to package publishing or workspace restructuring.
+- Because the tarballs are tiny, checking them into the repo is materially lower risk than trying to publish private packages in the middle of a stacked review.
+
+#### Suggested Next Steps
+- Push the repair commit to `codex/wallet-pr4-onboarding-cubid` so PR #21 can rerun CI and Vercel with the vendored artifacts.
+- If reviewers want a longer-term dependency strategy, follow up later with either published private packages or a first-class monorepo package boundary after the current stack lands.
+
+### session v50: Fold CUBID authority and profile/account ownership into one refactor pass
+- timestamp: 2026-04-15T15:22:50-0400
+- agent: **Codex (GPT-5)**
+- branch: **codex/wallet-production-readiness**
+- head: TBD
+
+#### Objective
+Complete the folded Sessions 15 and 16 by making CUBID the explicit authority for identity-owned fields, extending the normalized snapshot/read-model contract with authoritative names, refactoring onboarding and account/profile surfaces around that ownership split, and adding a first read-only operator identity-health page.
+
+#### Actions Taken
+- Added the forward-only migration `supabase/migrations/20260415170500_cubid_primary_name.sql` so `public.cubid_identity_snapshots` now stores `primary_name`.
+- Updated `types/supabase.ts` and the normalized CUBID types under `lib/cubid/types.ts` so the app contract now includes snapshot-backed `primaryName`.
+- Extended the CUBID sync pipeline:
+  - `lib/cubid/snapshot.ts`
+  - `lib/cubid/sync-profile-command.ts`
+  - `lib/edge-functions/user-cubid-sync-profile-contract.ts`
+  so snapshot sync now derives and persists `primary_name` alongside email, phone, score, stamp arrays, and fail-soft sync metadata.
+- Reworked the shared identity read-model in `lib/cubid/read-model.ts` to expose:
+  - managed identity fields with `synced`, `pending`, and `legacy_local_fallback` states
+  - explicit identity ownership groups
+  - the updated hybrid completion model
+- Updated `lib/profile-completion.ts` so local completion now tracks FundLoop-owned profile fields instead of treating editable full name as local.
+- Extended `lib/navigation-context.ts`, `app/actions/onboarding-actions.ts`, and `lib/public-discovery.ts` so signed-in and public surfaces can render:
+  - CUBID-managed identity
+  - FundLoop-managed profile/preferences
+  - trust/status cues and snapshot-backed names
+- Refactored onboarding ownership:
+  - `components/user-signup-flow.tsx`
+  - `components/onboarding/user-profile-preview.tsx`
+  - `components/onboarding/extended-cubid-identity-step.tsx`
+  so user onboarding no longer treats full name as a locally editable field and instead presents it as CUBID-managed identity with display name and profile headline remaining local.
+- Refactored signed-in account/profile surfaces:
+  - `components/account/cubid-identity-panel.tsx`
+  - `components/account/account-settings-panel.tsx`
+  - `components/account/fundloop-profile-panel.tsx`
+  - `app/[locale]/(app)/workspace/page.tsx`
+  - `app/[locale]/(app)/workspace/account/page.tsx`
+  - `app/[locale]/(app)/founder/account/page.tsx`
+  so the UI now separates CUBID-managed identity from FundLoop-managed profile/preferences and explains pending or legacy fallback states explicitly.
+- Updated public participant surfaces:
+  - `app/[locale]/(public)/users/page.tsx`
+  - `app/[locale]/(public)/users/[id]/page.tsx`
+  so they prefer display name as the public headline, show verified/legal name secondarily when available, and surface lightweight CUBID trust/status cues without turning the pages into operator dashboards.
+- Added the first read-only operator identity-health page at `app/[locale]/(app)/admin/identity/page.tsx` and linked it from `app/[locale]/(app)/admin/page.tsx`.
+- Fixed the unauthenticated behavior on `/admin/identity` so it now degrades to an access-denied view instead of throwing a 500.
+- Updated the durable docs:
+  - `docs/engineering/cubid-identity.md`
+  - `docs/engineering/route-inventory.md`
+- Added and refreshed coverage for the folded Sessions 15 and 16 behavior:
+  - `tests/cubid-read-model.test.ts`
+  - `tests/admin-identity-page.test.tsx`
+  - updates to `tests/navigation-context.test.ts`
+  - `tests/account-settings-panel.test.tsx`
+  - `tests/cubid-sync-profile-command.test.ts`
+  - `tests/onboarding-edge-contracts.test.ts`
+  - `tests/public-user-journey.test.ts`
+  - `tests/user-signup-flow.test.tsx`
+
+#### Tests and Validation Notes
+- `pnpm dlx node@22.22.1 /opt/homebrew/bin/pnpm lint` passed
+- `pnpm dlx node@22.22.1 /opt/homebrew/bin/pnpm test` passed
+- `pnpm dlx node@22.22.1 /opt/homebrew/bin/pnpm typecheck` passed
+- `pnpm dlx node@22.22.1 /opt/homebrew/bin/pnpm build` passed
+- `pnpm dlx node@22.22.1 /opt/homebrew/bin/pnpm check` passed
+- Manual production-smoke checks against `next start -p 3001` verified:
+  - `/en/users` returned `200` and rendered the new CUBID trust labels
+  - `/en/users/00000000-0000-4000-8000-000000000101` returned `200` and rendered the verified-name / CUBID-score identity copy
+  - `/en/workspace/account` redirected unauthenticated users to `/en/join`
+  - `/en/founder/account` redirected unauthenticated users to `/en/join`
+  - `/en/admin/identity` rendered an access-denied state instead of throwing a server error when accessed without operator auth
+- I attempted to restart the local Supabase stack for a richer authenticated smoke, but `supabase start` failed because local port `54322` is already allocated by another Supabase project (`everfund`). Because of that environment conflict, I did not complete a trustworthy signed-in browser smoke of the new workspace/account identity panels in this session.
+
+#### Reflections
+- Session 14 established the snapshot contract; this folded pass is where the product stops pretending that FundLoop is the canonical editor of identity. The important UX change is not just new data fields, but a clearer promise about who owns what.
+- The most useful shared abstraction here is the managed-identity read model. It keeps onboarding, account pages, and public participant views aligned without having each surface parse raw snapshot payloads or reinvent fallback rules.
+- The new `/admin/identity` page is intentionally read-only and scoped. It provides operator visibility into stale or failed CUBID sync state without jumping ahead into cross-user sync or intervention workflows.
+
+#### Suggested Next Steps
+- Once the local Supabase port conflict is resolved, run a signed-in browser smoke for:
+  - `/workspace`
+  - `/workspace/account`
+  - `/founder/account`
+  - `/admin/identity`
+  using a linked or verified test user so the new ownership split can be checked visually end to end.
+- Session 17 can now build the real user workspace home on top of the clearer identity contract and completion model instead of inheriting the old mixed profile assumptions.
+- Future CUBID/operator sessions can extend `/admin/identity` with controlled resync tooling, but only after the current read-only health contract has seen real operator use.
+
+### session v49: Add the CUBID snapshot model and extended profile-completion loop
+- timestamp: 2026-04-15T14:49:45-0400
+- agent: **Codex (GPT-5)**
+- branch: **codex/wallet-production-readiness**
+- head: TBD
+
+#### Objective
+Complete Session 14 by adding a durable CUBID snapshot model, a typed snapshot-sync command, optional extended identity completion in user onboarding, and richer workspace/account surfaces that show hybrid profile completion without blocking publish on phone or extra provider stamps.
+
+#### Actions Taken
+- Added the forward-only migration `supabase/migrations/20260415101500_cubid_identity_snapshots.sql` for `public.cubid_identity_snapshots`, including normalized stamp arrays, raw payload storage, sync timestamps, and sync-error fields.
+- Updated `types/supabase.ts` so the generated app contract now includes `cubid_identity_snapshots`.
+- Switched the repo to the local CUBID v2 package contract through local tarball dependencies in `package.json` / `pnpm-lock.yaml`:
+  - `@cubid/api`
+  - `@cubid/web2`
+  - `@cubid/web2-react`
+- Built the Session 14 CUBID server layer under `lib/cubid/`:
+  - `server-client.ts` for server-side SDK clients
+  - `snapshot.ts` for identity/stamp normalization
+  - `read-model.ts` for shared snapshot + completion shaping
+  - `sync-profile-command.ts` for fail-soft snapshot sync and `users` strengthening
+  - `passport.ts` and `browser-web2-client.ts` for safe browser-side web2 handoff
+- Fixed the earlier Session 13 type drift by updating `resolve-email-command.ts` to return the lightweight link-state contract instead of the full snapshot type.
+- Added the new typed Edge Function boundary for snapshot refresh:
+  - `lib/edge-functions/user-cubid-sync-profile-contract.ts`
+  - `lib/edge-functions/user-cubid-sync-profile.ts`
+  - `lib/edge-functions/user-cubid-sync-profile-server.ts`
+  - `supabase/functions/user-cubid-sync-profile/index.js`
+- Added authenticated internal CUBID browser-bridge routes so secrets stay server-side:
+  - `app/api/internal/cubid/phone/start/route.ts`
+  - `app/api/internal/cubid/phone/verify/route.ts`
+  - `app/api/internal/cubid/stamps/add/route.ts`
+- Extended the read models in:
+  - `app/actions/onboarding-actions.ts`
+  - `lib/navigation-context.ts`
+  so they now carry:
+  - snapshot-backed identity fields
+  - hybrid profile-completion percentage
+  - missing completion items
+  - non-secret CUBID Passport config needed by the browser bridge
+- Added the optional `extended_identity` onboarding screen in `lib/onboarding.ts`, then updated:
+  - `components/user-signup-flow.tsx`
+  - `components/onboarding/extended-cubid-identity-step.tsx`
+  so signed-in users can verify phone inline, open provider allow flows through `@cubid/web2-react`, refresh the snapshot, and still skip forward without blocking publish.
+- Upgraded account/workspace identity UX:
+  - `components/account/cubid-identity-panel.tsx`
+  - `components/account/account-settings-panel.tsx`
+  - `app/[locale]/(app)/workspace/page.tsx`
+  - `app/[locale]/(app)/workspace/account/page.tsx`
+  - `app/[locale]/(app)/founder/account/page.tsx`
+  to show snapshot-backed state, completion percentage, missing items, phone/provider progress, and refresh controls.
+- Updated durable docs and configuration:
+  - `.env.example`
+  - `docs/engineering/edge-functions.md`
+  - `docs/engineering/cubid-identity.md`
+  - `docs/engineering/README.md`
+- Added or updated coverage for the new Session 14 behavior:
+  - `tests/cubid-sync-profile-command.test.ts`
+  - `tests/onboarding-edge-contracts.test.ts`
+  - `tests/public-user-journey.test.ts`
+  - `tests/navigation-context.test.ts`
+  - `tests/account-settings-panel.test.tsx`
+  - `tests/user-signup-flow.test.tsx`
+
+#### Tests and Validation Notes
+- Focused validation passed:
+  - `pnpm exec vitest run tests/public-user-journey.test.ts tests/navigation-context.test.ts tests/account-settings-panel.test.tsx tests/user-signup-flow.test.tsx tests/onboarding-edge-contracts.test.ts tests/cubid-sync-profile-command.test.ts`
+  - `pnpm typecheck`
+- Full repo gates were still pending at the time of this log update and were run afterward as part of the session closeout.
+- I did not run a live credentialed browser smoke against real CUBID Passport in this session. The browser bridge, Edge Function path, and snapshot read models are validated through tests and repo gates, but a real end-to-end phone/provider flow still depends on configured local CUBID credentials and a valid `CUBID_STAMP_PAGE_ID`.
+
+#### Reflections
+- Session 13 established the lightweight identity gate; Session 14 is the point where FundLoop gains a durable identity snapshot contract that later payout, reporting, and monthly-cycle work can build on.
+- The important security decision here was to keep the browser on a narrow bridge: Edge Functions for sync, internal route handlers for phone/stamp actions, and no `CUBID_API_KEY` in client code.
+- The current package wiring intentionally uses the local sibling CUBID v2 workspace through local tarball references. That works cleanly for this machine and session, but it remains an environment-sensitive dependency contract rather than a portable public-registry install.
+
+#### Suggested Next Steps
+- Run a real local browser smoke with working `CUBID_DAPP_ID`, `CUBID_API_KEY`, and `CUBID_STAMP_PAGE_ID` to verify:
+  - resolve email -> sync snapshot
+  - phone OTP -> persisted phone stamp
+  - provider allow flow return -> refreshed snapshot
+- Session 15 can now focus on hardening the external sync semantics and operator visibility because the normalized storage contract already exists.
+- Session 16 should continue the UI cleanup by making more profile/account fields explicitly “CUBID authority” versus “local preference.”
+
+### session v48: Make onboarding and workspace identity-first with direct CUBID email resolution
+- timestamp: 2026-04-15T08:57:52-0400
+- agent: **Codex (GPT-5)**
+- branch: **codex/wallet-production-readiness**
+- head: TBD
+
+#### Objective
+Complete Session 13 by making CUBID linkage a first-class prerequisite in FundLoop: add a minimal explicit identity status to `public.users`, resolve or auto-create a CUBID user from the authenticated email through direct API calls, enforce linkage before user or project publish, and surface that state in onboarding plus workspace/account without installing the full `cubid-sdk`.
+
+#### Actions Taken
+- Added the forward-only migration `supabase/migrations/20260415154500_cubid_identity_status.sql` to introduce `public.cubid_identity_status`, add `users.cubid_identity_status`, and backfill existing users to `linked` or `unlinked` based on current CUBID linkage.
+- Updated `types/supabase.ts` so the generated app contract now includes the new enum and user column.
+- Built a lightweight direct CUBID client under `lib/cubid/`:
+  - `config.ts` for env loading
+  - `resolve-by-email.ts` for `create_user`, `identity/fetch_identity`, and `score/fetch_score`
+  - `resolve-email-command.ts` for fail-soft persistence into `public.users`
+- Added the typed Edge Function command boundary for CUBID linkage:
+  - `lib/edge-functions/user-cubid-resolve-email-contract.ts`
+  - `lib/edge-functions/user-cubid-resolve-email.ts`
+  - `lib/edge-functions/user-cubid-resolve-email-server.ts`
+  - `supabase/functions/user-cubid-resolve-email/index.js`
+- Extended `lib/navigation-context.ts` and `app/actions/onboarding-actions.ts` so read models now carry:
+  - `cubidIdentityStatus`
+  - `cubidId`
+  - `primaryEmailIdentity`
+  - `cubidScore`
+- Enforced linkage inside the actual publish commands:
+  - `executeUserOnboardingPublishCommand(...)` now rejects publish with `cubid_identity_required` when the user is still `unlinked`
+  - `executeProjectOnboardingPublishCommand(...)` now rejects publish with `cubid_identity_required` when the current founder/member is still `unlinked`
+- Added `"cubid"` as the first onboarding screen for both user and project flows in `lib/onboarding.ts`, then updated:
+  - `components/user-signup-flow.tsx`
+  - `components/project-signup-flow.tsx`
+  so onboarding now shows the signed-in email, resolves CUBID identity through the browser Edge Function adapter, and blocks progress/publish until linkage succeeds.
+- Added the new identity UI primitives:
+  - `components/onboarding/cubid-identity-step.tsx`
+  - `components/account/cubid-identity-panel.tsx`
+- Updated workspace/account surfaces so identity state is visible after sign-in:
+  - `app/[locale]/(app)/workspace/page.tsx`
+  - `app/[locale]/(app)/workspace/account/page.tsx`
+  - `app/[locale]/(app)/founder/account/page.tsx`
+  - `components/account/account-settings-panel.tsx`
+- Expanded the locale packs (`en`, `fr`, `es`) and updated the durable docs:
+  - `.env.example`
+  - `docs/engineering/edge-functions.md`
+  - `docs/engineering/navigation-shell.md`
+- Added and refreshed coverage for the new identity flow:
+  - `tests/cubid-resolve-by-email.test.ts`
+  - `tests/cubid-resolution-command.test.ts`
+  - `tests/account-settings-panel.test.tsx`
+  - plus updates to onboarding, adapter, navigation-context, and publish-command tests
+
+#### Tests and Validation Notes
+- `pnpm dlx node@22.22.1 /opt/homebrew/bin/pnpm exec vitest run tests/cubid-resolve-by-email.test.ts tests/cubid-resolution-command.test.ts tests/onboarding-edge-contracts.test.ts tests/onboarding-edge-adapters.test.ts tests/user-onboarding-commands.test.ts tests/project-onboarding-commands.test.ts tests/navigation-context.test.ts tests/user-signup-flow.test.tsx tests/project-signup-flow.test.tsx tests/account-settings-panel.test.tsx` passed during focused development
+- `pnpm dlx node@22.22.1 /opt/homebrew/bin/pnpm check` passed
+- I did not run a live browser smoke against the real CUBID API in this session. The code-level integration, publish gating, and workspace/account behavior are validated through tests and full repo gates, but a real external-credential smoke remains pending a configured local session with known-good CUBID credentials.
+
+#### Reflections
+- The biggest architectural shift here is that identity is no longer implicit. Onboarding, publish, workspace, and account all now share one explicit state model: `unlinked`, `linked`, or `verified`.
+- Using direct HTTP calls instead of installing `cubid-sdk` kept this session intentionally narrow and reviewable while still establishing the real external dependency shape that later sessions can deepen.
+- One important compromise remains visible in the data model: `public.users.primary_email_identity` is still constrained by the existing app/auth schema, so Session 13 treats it as an app-side identity reference instead of overwriting it with arbitrary CUBID-side identifiers. A richer canonical snapshot model still belongs in the next CUBID sessions.
+
+#### Suggested Next Steps
+- Session 14 should introduce the fuller CUBID-linked snapshot model so FundLoop can distinguish local auth/session state from the durable external identity record more cleanly.
+- Once CUBID credentials are configured in a stable local environment, run an authenticated browser smoke for:
+  - user onboarding resolve -> publish
+  - project onboarding resolve -> publish
+  - workspace/account status transitions after linkage
+- After the richer snapshot model exists, revisit how `primary_email_identity` and future CUBID-managed fields should be represented so FundLoop clearly separates identity authority from local preferences.
+
+### session v47: Move onboarding write flows to typed Edge Function commands
+- timestamp: 2026-04-15T01:08:08-0400
+- agent: **Codex (GPT-5)**
+- branch: **codex/wallet-production-readiness**
+- head: TBD
+
+#### Objective
+Complete Session 12 by moving onboarding draft-save, clear, and publish writes out of `app/actions/onboarding-actions.ts` and into typed Supabase Edge Function commands, while bundling the pending local blog-seed fixture cleanup into the same commit.
+
+#### Actions Taken
+- Extracted the onboarding mutation logic into server-only command modules under `lib/onboarding/`:
+  - `user-onboarding-commands.ts`
+  - `project-onboarding-commands.ts`
+  - `command-utils.ts`
+- Added six onboarding command contracts and adapters under `lib/edge-functions/` for:
+  - user draft upsert
+  - user draft clear
+  - user publish
+  - project draft upsert
+  - project draft clear
+  - project publish
+- Added six matching Supabase Edge Functions under `supabase/functions/`, plus the shared command runtime helper, following the existing authenticated-client plus service-role-after-auth pattern used by the payment draft command.
+- Reduced `app/actions/onboarding-actions.ts` to the intentional read surface (`getOnboardingState`, `searchProjectsForTeamMember`) plus thin compatibility wrappers that delegate writes through the server Edge adapters.
+- Switched `components/user-signup-flow.tsx` and `components/project-signup-flow.tsx` to use the browser Edge adapters for welcome-start saves, autosave, clear/start-over, and publish, while preserving the existing toast, resume, close, and project-flow handoff behavior.
+- Added coverage for onboarding contracts, command modules, Edge adapters, and the client signup flows:
+  - `tests/onboarding-edge-contracts.test.ts`
+  - `tests/user-onboarding-commands.test.ts`
+  - `tests/project-onboarding-commands.test.ts`
+  - `tests/onboarding-edge-adapters.test.ts`
+  - `tests/user-signup-flow.test.tsx`
+  - `tests/project-signup-flow.test.tsx`
+- Folded the previously dirty local-fixture cleanup into this same session by adding deterministic published blog posts to `supabase/seed.sql`, documenting the stable smoke targets in `docs/engineering/local-seed.md`, and extending `tests/local-public-seed.test.ts`.
+- Updated `docs/engineering/edge-functions.md` to record onboarding writes as the second migrated Edge Function domain.
+- Fixed one follow-on local runtime issue exposed during smoke by making `lib/navigation-context.ts` fall back to the authenticated SSR Supabase client when the local service-role env is absent, and added a regression case in `tests/navigation-context.test.ts`.
+
+#### Tests and Validation Notes
+- `pnpm dlx node@22.22.1 /opt/homebrew/bin/pnpm exec vitest run tests/navigation-context.test.ts tests/onboarding-edge-contracts.test.ts tests/user-onboarding-commands.test.ts tests/project-onboarding-commands.test.ts tests/onboarding-edge-adapters.test.ts tests/user-signup-flow.test.tsx tests/project-signup-flow.test.tsx` passed
+- `pnpm dlx node@22.22.1 /opt/homebrew/bin/pnpm exec vitest run tests/local-public-seed.test.ts` passed earlier during the bundled seed work and remains part of this checkpoint
+- `pnpm dlx node@22.22.1 /opt/homebrew/bin/pnpm check` passed
+- Local HTTP smoke confirmed:
+  - `/en?onboarding=user` returned `200`
+  - `/en/blog/why-monthly-cadence-matters` returned `200`
+  - the guarded `/api/internal/e2e/login` route successfully authenticated the disposable local smoke user
+- Full browser write-path smoke was only partially completed. The local environment was serving an older `everfund` Supabase stack that lacked `user_onboarding_drafts`, and when I attempted to switch over to a fresh local `fundloop` stack the Docker daemon was no longer available. That prevented a trustworthy end-to-end verification of the actual draft-write and publish requests against the intended local schema in this session.
+
+#### Reflections
+- The core architectural win here is that onboarding now follows the same command-style Edge Function pattern as the payment draft write path, which makes the founder/user lifecycle flows much more consistent with the target architecture.
+- The local smoke uncovered a useful non-obvious bug outside the new onboarding code: shared navigation was hard-failing public authenticated pages when the service-role env was missing. Fixing that now makes the app shell more robust in local and preview environments.
+- The remaining gap is environmental rather than architectural. The code-level migration is validated through tests and build checks, but the local Supabase runtime needs to be healthy and on the correct schema before the true browser write-path smoke can be called complete.
+
+#### Suggested Next Steps
+- Bring the local Docker/Supabase stack back up under the repo’s actual `fundloop` project ID, then rerun the authenticated browser smoke for:
+  - user draft save/resume/publish
+  - user publish -> project handoff
+  - project draft save/resume/publish
+- Once Session 12’s live smoke is clean, move on to Session 13’s CUBID-first identity requirements work using the new onboarding write architecture as the foundation.
+
 ### session v46: Consolidate the remaining public routes into the modern localized shell
 - timestamp: 2026-04-15T00:16:00-0400
 - agent: **Codex (GPT-5)**

@@ -1,14 +1,20 @@
 "use client"
 
 import { useEffect, useMemo, useRef, useState } from "react"
+import { useRouter } from "next/navigation"
 import { ArrowLeft, ArrowRight, CheckCircle2, Search, Sparkles } from "lucide-react"
 import {
-  clearUserOnboardingDraft,
   getOnboardingState,
-  publishUserOnboardingDraft,
   searchProjectsForTeamMember,
-  upsertUserOnboardingDraft,
 } from "@/app/actions/onboarding-actions"
+import { CubidIdentityStep } from "@/components/onboarding/cubid-identity-step"
+import { ExtendedCubidIdentityStep } from "@/components/onboarding/extended-cubid-identity-step"
+import { invokeUserOnboardingDraftClearBrowser } from "@/lib/edge-functions/user-onboarding-draft-clear"
+import { invokeUserOnboardingPublishBrowser } from "@/lib/edge-functions/user-onboarding-publish"
+import { invokeUserOnboardingDraftUpsertBrowser } from "@/lib/edge-functions/user-onboarding-draft-upsert"
+import { invokeUserCubidResolveEmailBrowser } from "@/lib/edge-functions/user-cubid-resolve-email"
+import { invokeUserCubidSyncProfileBrowser } from "@/lib/edge-functions/user-cubid-sync-profile"
+import { isResolvedCubidIdentityStatus, type CubidIdentitySnapshotSummary } from "@/lib/cubid/types"
 import { getSupabaseBrowserClient } from "@/lib/supabase"
 import {
   buildVisibilityFromPreset,
@@ -59,7 +65,15 @@ function formatDraftTime(value: string | null | undefined) {
   }).format(new Date(value))
 }
 
-const USER_SCREEN_ORDER: UserOnboardingScreen[] = ["identity", "visibility", "about", "relationship", "review"]
+const USER_SCREEN_ORDER: UserOnboardingScreen[] = [
+  "cubid",
+  "extended_identity",
+  "identity",
+  "visibility",
+  "about",
+  "relationship",
+  "review",
+]
 
 export default function UserSignupFlow({
   onClose,
@@ -67,11 +81,26 @@ export default function UserSignupFlow({
   initialRelationshipChoice = "individual",
   onRequestFlowChange,
 }: UserSignupFlowProps) {
+  const router = useRouter()
   const [loading, setLoading] = useState(true)
   const [authUserId, setAuthUserId] = useState<string | null>(null)
+  const [authEmail, setAuthEmail] = useState<string | null>(null)
+  const [authStateReady, setAuthStateReady] = useState(false)
+  const [authStateVersion, setAuthStateVersion] = useState(0)
   const [userStatus, setUserStatus] = useState<string | null>(null)
+  const [legacyFullName, setLegacyFullName] = useState<string | null>(null)
   const [currentScreen, setCurrentScreen] = useState<UserOnboardingScreen>("welcome")
-  const [resumeTargetScreen, setResumeTargetScreen] = useState<UserOnboardingScreen>("identity")
+  const [resumeTargetScreen, setResumeTargetScreen] = useState<UserOnboardingScreen>("cubid")
+  const [cubidIdentityStatus, setCubidIdentityStatus] = useState<"unlinked" | "linked" | "verified">("unlinked")
+  const [cubidId, setCubidId] = useState<string | null>(null)
+  const [cubidScore, setCubidScore] = useState<number | null>(null)
+  const [cubidSnapshot, setCubidSnapshot] = useState<CubidIdentitySnapshotSummary | null>(null)
+  const [profileCompletionPercent, setProfileCompletionPercent] = useState(0)
+  const [profileCompletionMissingItems, setProfileCompletionMissingItems] = useState<string[]>([])
+  const [cubidPassportOrigin, setCubidPassportOrigin] = useState<string | null>(null)
+  const [cubidStampPageId, setCubidStampPageId] = useState<string | null>(null)
+  const [resolvingCubid, setResolvingCubid] = useState(false)
+  const [syncingCubidProfile, setSyncingCubidProfile] = useState(false)
   const [payload, setPayload] = useState<UserOnboardingPayload>({
     ...DEFAULT_USER_ONBOARDING_PAYLOAD,
     inviteCode,
@@ -91,6 +120,10 @@ export default function UserSignupFlow({
   const [searchingProjects, setSearchingProjects] = useState(false)
 
   const autosaveReady = useRef(false)
+  const currentScreenRef = useRef<UserOnboardingScreen>("welcome")
+  const loadStateRequestId = useRef(0)
+  const managedFullName = cubidSnapshot?.primaryName ?? legacyFullName ?? null
+  const managedFullNameState = cubidSnapshot?.primaryName ? "synced" : legacyFullName ? "legacy_local_fallback" : "pending"
 
   const selectedProject = projectMatches.find((project) => project.id === payload.selectedProjectId) ?? null
 
@@ -110,6 +143,8 @@ export default function UserSignupFlow({
         data: { user },
       } = await supabase.auth.getUser()
       setAuthUserId(user?.id ?? null)
+      setAuthEmail(user?.email ?? null)
+      setAuthStateReady(true)
     }
 
     void loadSession()
@@ -118,7 +153,11 @@ export default function UserSignupFlow({
       data: { subscription },
     } = supabase.auth.onAuthStateChange((event, session) => {
       setAuthUserId(session?.user?.id ?? null)
+      setAuthEmail(session?.user?.email ?? null)
+      setAuthStateReady(true)
+      setAuthStateVersion((previous) => previous + 1)
       if (event === "SIGNED_OUT") {
+        currentScreenRef.current = "welcome"
         setCurrentScreen("welcome")
         autosaveReady.current = false
       }
@@ -150,20 +189,44 @@ export default function UserSignupFlow({
   }, [])
 
   useEffect(() => {
+    if (!authStateReady) {
+      return
+    }
+
     const loadState = async () => {
+      const requestId = loadStateRequestId.current + 1
+      loadStateRequestId.current = requestId
       setLoading(true)
       const state = await getOnboardingState()
 
+      if (loadStateRequestId.current !== requestId) {
+        return
+      }
+
       setAuthUserId(state.authUserId)
+      setAuthEmail(state.authEmail)
       setUserStatus(state.profile?.status ?? null)
+      setLegacyFullName(state.profile?.full_name ?? null)
+      setCubidIdentityStatus(state.profile?.cubid_identity_status ?? "unlinked")
+      setCubidId(state.profile?.cubid_id ?? null)
+      setCubidScore(state.profile?.cubid_score ?? null)
+      setCubidSnapshot(state.cubidSnapshot)
+      setProfileCompletionPercent(state.profileCompletionPercent)
+      setProfileCompletionMissingItems(state.profileCompletionMissingItems)
+      setCubidPassportOrigin(state.cubidPassportOrigin)
+      setCubidStampPageId(state.cubidStampPageId)
 
       if (!state.authUserId) {
+        currentScreenRef.current = "welcome"
         setCurrentScreen("welcome")
         setPayload({
           ...DEFAULT_USER_ONBOARDING_PAYLOAD,
           inviteCode,
           relationshipChoice: initialRelationshipChoice,
         })
+        setCubidSnapshot(null)
+        setProfileCompletionPercent(0)
+        setProfileCompletionMissingItems([])
         autosaveReady.current = false
         setLoading(false)
         return
@@ -171,26 +234,39 @@ export default function UserSignupFlow({
 
       if (state.userDraft) {
         const draftPayload = mergeUserOnboardingPayload(state.userDraft.payload as Partial<UserOnboardingPayload>)
+        const managedName = state.cubidSnapshot?.primaryName ?? state.profile?.full_name ?? draftPayload.fullName
         setPayload({
           ...draftPayload,
+          fullName: managedName,
           inviteCode: draftPayload.inviteCode || inviteCode,
         })
         setResumeTargetScreen(
           USER_SCREEN_ORDER.includes(state.userDraft.current_screen as UserOnboardingScreen)
             ? (state.userDraft.current_screen as UserOnboardingScreen)
-            : "identity",
+            : "cubid",
         )
-        setCurrentScreen("resume")
+        const nextScreen =
+          currentScreenRef.current === "welcome" || currentScreenRef.current === "resume"
+            ? "resume"
+            : currentScreenRef.current
+        currentScreenRef.current = nextScreen
+        setCurrentScreen(nextScreen)
         setDraftTimestamp(state.userDraft.updated_at || state.userDraft.started_at)
       } else {
         setPayload((previous) =>
           mergeUserOnboardingPayload({
             ...previous,
+            fullName: state.cubidSnapshot?.primaryName ?? state.profile?.full_name ?? previous.fullName,
             inviteCode: previous.inviteCode || inviteCode,
             relationshipChoice: previous.relationshipChoice || initialRelationshipChoice,
           }),
         )
-        setCurrentScreen("welcome")
+        const nextScreen =
+          currentScreenRef.current === "welcome" || currentScreenRef.current === "resume"
+            ? "welcome"
+            : currentScreenRef.current
+        currentScreenRef.current = nextScreen
+        setCurrentScreen(nextScreen)
         setDraftTimestamp(null)
       }
 
@@ -199,7 +275,7 @@ export default function UserSignupFlow({
     }
 
     void loadState()
-  }, [authUserId, initialRelationshipChoice, inviteCode])
+  }, [authStateReady, authStateVersion, initialRelationshipChoice, inviteCode])
 
   useEffect(() => {
     if (!autosaveReady.current || !authUserId) {
@@ -211,10 +287,20 @@ export default function UserSignupFlow({
 
     const timeoutId = window.setTimeout(() => {
       setSaving(true)
-      void upsertUserOnboardingDraft({
+      void invokeUserOnboardingDraftUpsertBrowser({
         currentScreen,
         payload,
-      }).finally(() => setSaving(false))
+      })
+        .then((result) => {
+          if (!result.ok) {
+            toast({
+              title: "Could not save draft",
+              description: result.error.message,
+              variant: "destructive",
+            })
+          }
+        })
+        .finally(() => setSaving(false))
     }, 600)
 
     return () => window.clearTimeout(timeoutId)
@@ -248,6 +334,7 @@ export default function UserSignupFlow({
   }, [payload.relationshipChoice, searchQuery])
 
   const moveToScreen = (screen: UserOnboardingScreen) => {
+    currentScreenRef.current = screen
     setCurrentScreen(screen)
   }
 
@@ -266,13 +353,13 @@ export default function UserSignupFlow({
   }
 
   const handleContinueFromWelcome = async () => {
-    moveToScreen("identity")
+    moveToScreen("cubid")
     if (!authUserId) {
       return
     }
     setSaving(true)
-    const result = await upsertUserOnboardingDraft({
-      currentScreen: "identity",
+    const result = await invokeUserOnboardingDraftUpsertBrowser({
+      currentScreen: "cubid",
       payload,
     })
     setSaving(false)
@@ -280,7 +367,7 @@ export default function UserSignupFlow({
     if (!result.ok) {
       toast({
         title: "Could not start onboarding",
-        description: result.error,
+        description: result.error.message,
         variant: "destructive",
       })
     }
@@ -292,13 +379,13 @@ export default function UserSignupFlow({
 
   const handleStartOver = async () => {
     setSaving(true)
-    const result = await clearUserOnboardingDraft()
+    const result = await invokeUserOnboardingDraftClearBrowser()
     setSaving(false)
 
     if (!result.ok) {
       toast({
         title: "Could not restart onboarding",
-        description: result.error,
+        description: result.error.message,
         variant: "destructive",
       })
       return
@@ -306,14 +393,81 @@ export default function UserSignupFlow({
 
     setPayload({
       ...DEFAULT_USER_ONBOARDING_PAYLOAD,
+      fullName: managedFullName ?? "",
       inviteCode,
       relationshipChoice: initialRelationshipChoice,
     })
     setProjectMatches([])
     setSearchQuery("")
+    currentScreenRef.current = "welcome"
     setCurrentScreen("welcome")
-    setResumeTargetScreen("identity")
+    setResumeTargetScreen("cubid")
     setDraftTimestamp(null)
+  }
+
+  const handleResolveCubid = async () => {
+    setResolvingCubid(true)
+    const result = await invokeUserCubidResolveEmailBrowser()
+    setResolvingCubid(false)
+
+    if (!result.ok) {
+      toast({
+        title: "Could not link CUBID identity",
+        description: result.error.message,
+        variant: "destructive",
+      })
+      return
+    }
+
+    setCubidIdentityStatus(result.data.cubidIdentityStatus)
+    setCubidId(result.data.cubidId)
+    setCubidScore(result.data.cubidScore)
+
+    toast({
+      title: result.data.cubidIdentityStatus === "verified" ? "CUBID verified" : "CUBID linked",
+      description:
+        result.data.cubidIdentityStatus === "verified"
+          ? "Your email identity is verified with CUBID and ready for FundLoop publishing."
+          : "Your email is now linked to CUBID. You can continue through onboarding.",
+    })
+
+    await handleSyncCubidProfile()
+  }
+
+  const handleSyncCubidProfile = async () => {
+    setSyncingCubidProfile(true)
+    const result = await invokeUserCubidSyncProfileBrowser()
+
+    if (!result.ok) {
+      setSyncingCubidProfile(false)
+      toast({
+        title: "Could not refresh CUBID data",
+        description: result.error.message,
+        variant: "destructive",
+      })
+      return
+    }
+
+    const state = await getOnboardingState()
+    setSyncingCubidProfile(false)
+    setCubidId(result.data.cubidId)
+    setCubidScore(result.data.cubidScore)
+    setCubidIdentityStatus(result.data.cubidIdentityStatus)
+    setCubidSnapshot(state.cubidSnapshot)
+    setLegacyFullName(state.profile?.full_name ?? null)
+    setProfileCompletionPercent(state.profileCompletionPercent)
+    setProfileCompletionMissingItems(state.profileCompletionMissingItems)
+    setPayload((previous) =>
+      mergeUserOnboardingPayload({
+        ...previous,
+        fullName: state.cubidSnapshot?.primaryName ?? state.profile?.full_name ?? previous.fullName,
+      }),
+    )
+
+    toast({
+      title: "CUBID data refreshed",
+      description: "Your latest identity snapshot is now reflected in this onboarding flow.",
+    })
   }
 
   const updatePayload = (partial: Partial<UserOnboardingPayload>) => {
@@ -356,18 +510,29 @@ export default function UserSignupFlow({
   }
 
   const handlePublish = async () => {
+    if (!isResolvedCubidIdentityStatus(cubidIdentityStatus)) {
+      toast({
+        title: "Link CUBID before publishing",
+        description: "Resolve your CUBID identity from the signed-in email before publishing your profile.",
+        variant: "destructive",
+      })
+      return
+    }
+
     setPublishing(true)
-    const result = await publishUserOnboardingDraft()
+    const result = await invokeUserOnboardingPublishBrowser()
     setPublishing(false)
 
     if (!result.ok) {
       toast({
         title: "Could not publish profile",
-        description: result.error,
+        description: result.error.message,
         variant: "destructive",
       })
       return
     }
+
+    router.refresh()
 
     toast({
       title: "Profile published",
@@ -387,8 +552,12 @@ export default function UserSignupFlow({
 
   const canContinue = () => {
     switch (currentScreen) {
+      case "cubid":
+        return isResolvedCubidIdentityStatus(cubidIdentityStatus)
+      case "extended_identity":
+        return true
       case "identity":
-        return Boolean(payload.fullName.trim() && payload.profileHeadline.trim())
+        return Boolean(payload.displayName.trim() && payload.profileHeadline.trim())
       case "visibility":
         return true
       case "about":
@@ -514,8 +683,12 @@ export default function UserSignupFlow({
     <OnboardingShell
       eyebrow={`Profile setup • ${USER_SCREEN_ORDER.indexOf(currentScreen) + 1}/${USER_SCREEN_ORDER.length}`}
       title={
-        currentScreen === "identity"
-          ? "Start with who you are"
+        currentScreen === "cubid"
+          ? "Link your identity with CUBID"
+          : currentScreen === "extended_identity"
+            ? "Optionally strengthen your profile signals"
+          : currentScreen === "identity"
+          ? "Set the profile details FundLoop still owns"
           : currentScreen === "visibility"
             ? "Choose how public you want to be"
             : currentScreen === "about"
@@ -525,8 +698,12 @@ export default function UserSignupFlow({
                 : "Review and publish your profile"
       }
       description={
-        currentScreen === "identity"
-          ? "Add your name, role, and profile picture so the preview starts feeling real."
+        currentScreen === "cubid"
+          ? "Before your profile can go live, FundLoop needs to resolve the signed-in email against CUBID and keep that identity link on file."
+          : currentScreen === "extended_identity"
+            ? "This step is optional. Add a phone number or provider stamps now, or skip ahead and come back from your workspace later."
+          : currentScreen === "identity"
+          ? "Your legal identity now comes from CUBID. Use this step for display name, profile headline, and the FundLoop-specific context that still belongs here."
           : currentScreen === "visibility"
             ? "Set a simple privacy preset, then fine-tune the fields that should stay public."
             : currentScreen === "about"
@@ -559,6 +736,35 @@ export default function UserSignupFlow({
         </div>
       }
     >
+      {currentScreen === "cubid" ? (
+        <CubidIdentityStep
+          email={authEmail}
+          cubidIdentityStatus={cubidIdentityStatus}
+          cubidId={cubidId}
+          cubidScore={cubidScore}
+          resolving={resolvingCubid}
+          onResolve={() => void handleResolveCubid()}
+          title="CUBID becomes the identity bridge for FundLoop publishing"
+          body="We use your signed-in email to resolve or create the matching CUBID user. Publishing is blocked until that link exists, because later payout and accountability flows depend on it."
+        />
+      ) : null}
+
+      {currentScreen === "extended_identity" ? (
+        <ExtendedCubidIdentityStep
+          email={authEmail}
+          cubidId={cubidId}
+          cubidIdentityStatus={cubidIdentityStatus}
+          cubidSnapshot={cubidSnapshot}
+          profileCompletionPercent={profileCompletionPercent}
+          profileCompletionMissingItems={profileCompletionMissingItems}
+          cubidPassportOrigin={cubidPassportOrigin}
+          cubidStampPageId={cubidStampPageId}
+          syncing={syncingCubidProfile}
+          onRefresh={() => void handleSyncCubidProfile()}
+          onSkip={() => moveToScreen("identity")}
+        />
+      ) : null}
+
       {currentScreen === "identity" ? (
         <div className="grid gap-5">
           {inviteCode ? (
@@ -569,14 +775,32 @@ export default function UserSignupFlow({
 
           <div className="grid gap-5 md:grid-cols-2">
             <div className="space-y-2">
-              <Label htmlFor="onboarding-full-name">Full name</Label>
+              <Label>CUBID-managed full name</Label>
+              <div className="rounded-2xl border border-[color:var(--surface-border)] bg-[var(--surface-panel)] px-4 py-3">
+                <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[var(--text-muted)]">
+                  {managedFullNameState === "synced"
+                    ? "Synced from CUBID"
+                    : managedFullNameState === "legacy_local_fallback"
+                      ? "Legacy FundLoop fallback"
+                      : "Pending from CUBID"}
+                </p>
+                <p className="mt-1 text-sm text-[var(--text-strong)]">
+                  {managedFullName ?? "FundLoop is still waiting for your CUBID-managed full name."}
+                </p>
+              </div>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="onboarding-display-name">Public display name</Label>
               <Input
-                id="onboarding-full-name"
-                value={payload.fullName}
-                onChange={(event) => updatePayload({ fullName: event.target.value, displayName: event.target.value })}
-                placeholder="Your name"
+                id="onboarding-display-name"
+                value={payload.displayName}
+                onChange={(event) => updatePayload({ displayName: event.target.value })}
+                placeholder="What should people see on your public profile?"
               />
             </div>
+          </div>
+
+          <div className="grid gap-5 md:grid-cols-2">
             <div className="space-y-2">
               <Label htmlFor="onboarding-role">Profile headline</Label>
               <Input
@@ -848,7 +1072,8 @@ export default function UserSignupFlow({
             <Card>
               <CardContent className="space-y-2 p-4 text-sm text-slate-600">
                 <p className="font-medium text-slate-900">Profile summary</p>
-                <p>Name: {payload.fullName || "Not set"}</p>
+                <p>Display name: {payload.displayName || "Not set"}</p>
+                <p>Verified full name: {managedFullName || "Pending from CUBID"}</p>
                 <p>Headline: {payload.profileHeadline || "Not set"}</p>
                 <p>Location: {selectedLocation}</p>
                 <p>Occupation: {selectedOccupation}</p>
@@ -865,6 +1090,17 @@ export default function UserSignupFlow({
                       : "Your personal profile will be live and ready to use."}
                 </p>
                 {selectedProject ? <p>Selected project: {selectedProject.name}</p> : null}
+              </CardContent>
+            </Card>
+            <Card>
+              <CardContent className="space-y-2 p-4 text-sm text-slate-600">
+                <p className="font-medium text-slate-900">Profile completion today</p>
+                <p>{profileCompletionPercent}% complete across local profile data and CUBID-backed trust items.</p>
+                {profileCompletionMissingItems.length > 0 ? (
+                  <p>Still missing: {profileCompletionMissingItems.join(", ")}</p>
+                ) : (
+                  <p>All Session 14 completion items are already covered.</p>
+                )}
               </CardContent>
             </Card>
           </div>

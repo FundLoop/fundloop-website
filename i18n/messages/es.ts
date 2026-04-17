@@ -215,8 +215,30 @@ export const esMessages = {
     },
   },
   accountSettings: {
+    identity: "Identidad CUBID",
     emails: "Direcciones de correo",
     wallets: "Direcciones de wallet",
+    panels: {
+      identity: {
+        title: "CUBID está pasando a ser la autoridad de identidad para FundLoop",
+        manage: "Gestionar en CUBID Passport",
+        refresh: "Actualizar datos de CUBID",
+        completion: "Completitud del perfil",
+        labels: {
+          unlinked: "Aún sin enlazar",
+          linked: "Enlazado",
+          verified: "Verificado",
+        },
+        status: {
+          unlinked:
+            "Esta cuenta todavía no tiene su enlace con CUBID. FundLoop puede seguir guardando aquí algunas preferencias locales, pero las publicaciones y operaciones relacionadas con pagos ahora exigen primero una identidad enlazada.",
+          linked:
+            "Esta cuenta está enlazada con CUBID a través del correo conectado. La verificación completa puede continuar en CUBID.me, pero FundLoop ya puede tratar el puente de identidad como establecido.",
+          verified:
+            "Esta cuenta está enlazada con CUBID y la última respuesta indica que la identidad de correo está verificada. Ese es el estado más fuerte que hoy muestra FundLoop.",
+        },
+      },
+    },
   },
   founders: {
     hero: {
@@ -402,6 +424,25 @@ export const esMessages = {
     body:
       "Esta es la nueva entrada para el lado participante de FundLoop. El espacio completo llegará después, pero desde aquí ya puedes moverte hacia la cuenta, el contexto de participación y los resultados publicados.",
     open: "Abrir",
+    identity: {
+      title: "El estado de identidad ya importa antes de que el valor pueda moverse",
+      cta: "Abrir CUBID Passport",
+      followUp:
+        "Si esto sigue apareciendo como no enlazado, completa el paso de resolución de CUBID en onboarding o abre la pestaña de cuenta para entender qué falta antes de publicar o tocar flujos de pago.",
+      status: {
+        unlinked: "Aún sin enlazar",
+        linked: "Enlazado",
+        verified: "Verificado",
+      },
+      body: {
+        unlinked:
+          "Tu cuenta conectada todavía necesita un enlace con CUBID antes de que FundLoop pueda tratarla como lista para publicar y para futuras operaciones relacionadas con pagos.",
+        linked:
+          "Tu cuenta conectada está enlazada con CUBID. FundLoop ya puede usar ese puente de identidad para las barreras de publicación y los futuros flujos de responsabilidad.",
+        verified:
+          "Tu cuenta conectada está enlazada con CUBID y la última respuesta muestra una identidad de correo verificada, el estado más fuerte que hoy expone FundLoop.",
+      },
+    },
     cards: {
       account: {
         title: "Cuenta",

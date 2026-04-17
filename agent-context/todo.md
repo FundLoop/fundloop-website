@@ -135,56 +135,56 @@ Use the route inventory from Session 02 to finish, merge, redirect, or remove th
 
 ## Session 12: Move onboarding draft save and publish flows to Edge Functions
 
-- Status: Not started
-- Timestamp started: TBD
-- Timestamp completed: TBD
-- Feature branch: TBD
+- Status: Complete
+- Timestamp started: 2026-04-15T00:46:52-0400
+- Timestamp completed: 2026-04-15T01:08:08-0400
+- Feature branch: codex/wallet-production-readiness
 - Head: TBD
-- Session-log reference(s): TBD
+- Session-log reference(s): session v47
 
 Migrate resumable onboarding away from direct server-action orchestration and into Edge Function commands. This session should cover user onboarding drafts, project onboarding drafts, and the publish steps that materialize real records. Preserve resumability, validation, and authorization. The web app should call typed Edge Function adapters rather than writing directly through server actions. This is a key transition step because onboarding is one of the most application-like parts of the repo and sets the pattern for founder and user lifecycle management.
 
 ## Session 13: Reshape onboarding around CUBID-first identity requirements
 
-- Status: Not started
-- Timestamp started: TBD
-- Timestamp completed: TBD
-- Feature branch: TBD
+- Status: Complete
+- Timestamp started: 2026-04-15T08:20:00-0400
+- Timestamp completed: 2026-04-15T08:57:52-0400
+- Feature branch: codex/wallet-production-readiness
 - Head: TBD
-- Session-log reference(s): TBD
+- Session-log reference(s): session v48
 
-Update onboarding so proof-of-personhood and KYC are no longer abstract concepts in the UX. The flow should clearly require a CUBID.me account and prepare the app for the later API integration. This session should add the right intermediate states, placeholders, and data model hooks so the product can distinguish “signed in,” “CUBID linked,” and “identity verified.” Avoid implementing the full remote integration here. The goal is to make the UI and workflow architecture identity-first instead of bolting KYC on at the end.
+Update onboarding so proof-of-personhood and KYC are no longer abstract concepts in the UX. The flow should clearly require a CUBID.me account and establish the first direct API-backed identity resolution path without pulling in the full SDK. This session should add the right intermediate states and persistence hooks so the product can distinguish “signed in,” “CUBID linked,” and “identity verified,” then enforce linkage before user or project publish. The goal is to make the UI and workflow architecture identity-first instead of bolting KYC on at the end.
 
 ## Session 14: Add the CUBID account-linking and identity snapshot model
 
-- Status: Not started
-- Timestamp started: TBD
-- Timestamp completed: TBD
-- Feature branch: TBD
+- Status: Complete
+- Timestamp started: 2026-04-15T13:55:00-0400
+- Timestamp completed: 2026-04-15T14:49:45-0400
+- Feature branch: codex/wallet-production-readiness
 - Head: TBD
-- Session-log reference(s): TBD
+- Session-log reference(s): session v49
 
 Introduce the database and application model that links a FundLoop user to a CUBID identity. This should include a canonical external identity reference, a synchronized identity snapshot, verification state, sync timestamps, and room for future monthly locking of identity state. Do not over-model every possible CUBID field yet. The focus is creating the right durable contract so the app can consume CUBID as the source of socials, phone, email, and personhood status without making the local profile tables the real authority.
 
 ## Session 15: Implement the first real CUBID Edge Function integration
 
-- Status: Not started
-- Timestamp started: TBD
-- Timestamp completed: TBD
-- Feature branch: TBD
+- Status: Complete
+- Timestamp started: 2026-04-15T15:00:00-0400
+- Timestamp completed: 2026-04-15T15:22:50-0400
+- Feature branch: codex/wallet-production-readiness
 - Head: TBD
-- Session-log reference(s): TBD
+- Session-log reference(s): session v50
 
 Build the backend integration that talks to CUBID.me, fetches the current account data, validates the response, and stores a normalized snapshot in FundLoop. The function should be safe, explicit, and auditable. It should not blindly mirror arbitrary payloads into the database. This session should also define failure semantics and operator visibility for identity sync issues. The result should be the first real external-system dependency in the target architecture, implemented in a way that later monthly cycle locking and payout eligibility can trust.
 
 ## Session 16: Refactor user profile and account views around CUBID-backed identity
 
-- Status: Not started
-- Timestamp started: TBD
-- Timestamp completed: TBD
-- Feature branch: TBD
+- Status: Complete
+- Timestamp started: 2026-04-15T15:00:00-0400
+- Timestamp completed: 2026-04-15T15:22:50-0400
+- Feature branch: codex/wallet-production-readiness
 - Head: TBD
-- Session-log reference(s): TBD
+- Session-log reference(s): session v50
 
 Update profile and account surfaces so they stop behaving like FundLoop is the canonical editor of identity details. The UI should show which fields come from CUBID, which are local preferences, and what the current verification state is. If some current profile fields should remain local, make that distinction explicit. This session should simplify the mental model for users and reduce duplicate identity entry. It should also prepare the product for payout and eligibility surfaces that depend on proof-of-personhood rather than ad hoc local profile completeness.
 

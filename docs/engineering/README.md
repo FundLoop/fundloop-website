@@ -11,6 +11,7 @@ Use this directory for material that should outlive a single agent session, incl
 
 Current high-signal docs:
 
+- [CUBID Identity and Snapshot Model](/Users/botmaster/src/fundloop/docs/engineering/cubid-identity.md)
 - [Design Tokens](/Users/botmaster/src/fundloop/docs/engineering/design-tokens.md)
 - [Edge Function Contract Pattern](/Users/botmaster/src/fundloop/docs/engineering/edge-functions.md)
 - [Information Architecture](/Users/botmaster/src/fundloop/docs/engineering/information-architecture.md)

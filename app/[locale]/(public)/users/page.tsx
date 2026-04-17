@@ -58,6 +58,25 @@ function formatJoinedDate(locale: string, createdAt: string | null) {
   }).format(new Date(createdAt))
 }
 
+function getUserHeadline(user: Awaited<ReturnType<typeof getPublicUsersDirectoryData>>["users"][number]) {
+  return user.displayName ?? user.fullName ?? "Participant"
+}
+
+function getTrustLabel(
+  status: "unlinked" | "linked" | "verified",
+  t: Awaited<ReturnType<typeof getTranslations>>,
+) {
+  if (status === "verified") {
+    return t("card.trust.verified")
+  }
+
+  if (status === "linked") {
+    return t("card.trust.linked")
+  }
+
+  return t("card.trust.pending")
+}
+
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
   const { locale } = await params
   const t = await getTranslations({ locale, namespace: "metadata.users" })
@@ -216,12 +235,17 @@ export default async function UsersPage({ params, searchParams }: PageProps) {
                       <p className="text-[0.68rem] font-semibold uppercase tracking-[0.24em] text-[var(--marketing-muted)]">
                         {user.projectCount === 1 ? t("card.singleProject") : t("card.multiProject", { count: user.projectCount })}
                       </p>
-                      <h2 className="mt-2 truncate font-display text-3xl tracking-[-0.04em]">{user.fullName ?? t("card.unnamed")}</h2>
+                      <h2 className="mt-2 truncate font-display text-3xl tracking-[-0.04em]">{getUserHeadline(user)}</h2>
+                      {user.fullName && user.displayName && user.fullName !== user.displayName ? (
+                        <p className="mt-1 text-xs font-semibold uppercase tracking-[0.18em] text-[var(--marketing-muted)]">
+                          {t("card.verifiedName", { name: user.fullName })}
+                        </p>
+                      ) : null}
                     </div>
                   </div>
 
                   <p className="mt-5 text-sm leading-6 text-[var(--marketing-muted-strong)]">
-                    {user.contributionDetails ?? t("card.defaultContribution")}
+                    {user.profileHeadline ?? user.contributionDetails ?? t("card.defaultContribution")}
                   </p>
 
                   <div className="mt-6 grid gap-4 border-t border-[color:var(--marketing-line)] pt-5 sm:grid-cols-2">
@@ -241,6 +265,17 @@ export default async function UsersPage({ params, searchParams }: PageProps) {
                         {formatJoinedDate(locale, user.createdAt) ?? t("card.joinedFallback")}
                       </p>
                     </div>
+                  </div>
+
+                  <div className="mt-4 flex flex-wrap gap-2">
+                    <span className="rounded-full border border-[color:var(--marketing-line)] px-3 py-1 text-xs font-semibold uppercase tracking-[0.16em] text-[var(--marketing-muted-strong)]">
+                      {getTrustLabel(user.cubidIdentityStatus, t)}
+                    </span>
+                    {user.cubidScore !== null ? (
+                      <span className="rounded-full border border-[color:var(--marketing-line)] px-3 py-1 text-xs font-semibold uppercase tracking-[0.16em] text-[var(--marketing-muted-strong)]">
+                        {t("card.cubidScore", { score: user.cubidScore })}
+                      </span>
+                    ) : null}
                   </div>
 
                   <div className="mt-8 flex flex-col gap-3 sm:flex-row">

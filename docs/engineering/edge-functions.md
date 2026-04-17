@@ -1,6 +1,6 @@
 # Edge Function Contract Pattern
 
-Last reviewed: 2026-04-14
+Last reviewed: 2026-04-15
 
 This document defines the app-side contract for Supabase Edge Functions in FundLoop.
 
@@ -29,9 +29,18 @@ The app should treat a declared failure envelope differently from transport or i
 
 ## Current First Command
 
-The first command migrated to this pattern is:
+The first migrated domains are:
 
 - `project-payment-drafts-create`
+- `user-cubid-resolve-email`
+- `user-cubid-sync-profile`
+- onboarding writes:
+  - `user-onboarding-draft-upsert`
+  - `user-onboarding-draft-clear`
+  - `user-onboarding-publish`
+  - `project-onboarding-draft-upsert`
+  - `project-onboarding-draft-clear`
+  - `project-onboarding-publish`
 
 The canonical write path is now:
 
@@ -40,7 +49,22 @@ The canonical write path is now:
 - the function runs the shared payment-draft command module
 - the legacy server action remains only as a compatibility wrapper around the server invoker
 
-It is intentionally narrow so the transport layer can stabilize before broader onboarding and payment migrations.
+For onboarding:
+
+- `components/user-signup-flow.tsx` and `components/project-signup-flow.tsx` now call browser Edge Function adapters for draft save, clear, and publish
+- `app/actions/onboarding-actions.ts` keeps read helpers such as `getOnboardingState()` and `searchProjectsForTeamMember()`
+- publish still relies on the existing `publish_project_onboarding_draft_atomic` RPC for the atomic project materialization step
+- publish now also enforces a linked CUBID identity (`linked` or `verified`) for both user and project onboarding
+
+For CUBID:
+
+- `user-cubid-resolve-email` is the canonical write path for resolving or auto-creating a CUBID identity from the authenticated user email
+- `user-cubid-sync-profile` is the canonical write path for refreshing the normalized identity snapshot and stamps
+- the functions use direct HTTP calls to the CUBID API and the local CUBID v2 SDK packages rather than a remote npm dependency install
+- the app invokes browser adapters from onboarding and account/workspace surfaces, while server-side publish commands still enforce the same identity requirement for bypass safety
+- phone OTP and verified-stamp persistence use authenticated internal Next route handlers as a browser bridge so `CUBID_API_KEY` never enters the client bundle
+
+The migration is intentionally incremental so the transport layer can stabilize before broader read migration and later founder/user workspace work.
 
 ## Local Development
 
@@ -49,6 +73,17 @@ Typical local workflow:
 ```bash
 supabase start
 pnpm supabase:functions:serve:project-payment-drafts-create
+```
+
+For onboarding commands, use the same CLI pattern directly:
+
+```bash
+supabase functions serve user-onboarding-draft-upsert --env-file .env.local
+supabase functions serve user-onboarding-publish --env-file .env.local
+supabase functions serve project-onboarding-draft-upsert --env-file .env.local
+supabase functions serve project-onboarding-publish --env-file .env.local
+supabase functions serve user-cubid-resolve-email --env-file .env.local
+supabase functions serve user-cubid-sync-profile --env-file .env.local
 ```
 
 Once the local stack is running, invoke the command through the app or by calling the local functions endpoint with an authenticated bearer token.

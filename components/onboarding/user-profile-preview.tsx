@@ -28,6 +28,11 @@ export function UserProfilePreview({ payload }: UserProfilePreviewProps) {
           </Avatar>
           <div className="space-y-1">
             <h3 className="text-xl font-semibold text-slate-900">{displayName}</h3>
+            {payload.fullName.trim() && payload.fullName.trim() !== displayName ? (
+              <p className="text-xs font-semibold uppercase tracking-[0.2em] text-emerald-700">
+                Verified name: {payload.fullName}
+              </p>
+            ) : null}
             <p className="text-sm text-slate-600">{payload.profileHeadline || "Your role and mission will appear here."}</p>
             <Badge variant={payload.visibility.isPublic ? "default" : "secondary"}>
               {payload.visibility.isPublic ? "Visible on FundLoop" : "Private draft"}

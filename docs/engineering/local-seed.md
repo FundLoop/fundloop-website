@@ -13,6 +13,10 @@ Use these fixtures after `supabase db reset` when you want predictable public pa
   - `/en/users/00000000-0000-4000-8000-000000000102`
   - `/en/users/00000000-0000-4000-8000-000000000103`
   - `/en/users/00000000-0000-4000-8000-000000000104`
+- Blog
+  - `/en/blog/why-monthly-cadence-matters`
+  - `/en/blog/what-contributors-actually-need-from-a-project-directory`
+  - `/en/blog/from-kyc-friction-to-trust-signals`
 
 Why these fixtures exist:
 

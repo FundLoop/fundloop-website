@@ -1,8 +1,10 @@
-import type { Tables } from "@/types/supabase"
+import type { Tables } from "../types/supabase"
 
 export const USER_ONBOARDING_SCREENS = [
   "welcome",
   "resume",
+  "cubid",
+  "extended_identity",
   "identity",
   "visibility",
   "about",
@@ -12,6 +14,7 @@ export const USER_ONBOARDING_SCREENS = [
 
 export const PROJECT_ONBOARDING_SCREENS = [
   "resume",
+  "cubid",
   "basics",
   "details",
   "contribution",
@@ -163,6 +166,105 @@ export const DEFAULT_PROJECT_ONBOARDING_PAYLOAD: ProjectOnboardingPayload = {
   paymentPercentage: "1.0",
   paymentPeriodicityId: "",
   cryptoPaymentMethods: [],
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return Boolean(value && typeof value === "object" && !Array.isArray(value))
+}
+
+function getStringValue(value: unknown) {
+  return typeof value === "string" ? value : ""
+}
+
+function getStringArray(value: unknown) {
+  return Array.isArray(value) ? value.filter((item): item is string => typeof item === "string") : []
+}
+
+function getBooleanValue(value: unknown, fallback = false) {
+  return typeof value === "boolean" ? value : fallback
+}
+
+export function sanitizeUserOnboardingPayload(payload: unknown): Partial<UserOnboardingPayload> {
+  if (!isRecord(payload)) {
+    return {}
+  }
+
+  const visibility = isRecord(payload.visibility) ? payload.visibility : {}
+  const relationshipChoice = payload.relationshipChoice
+  const privacyPreset = payload.privacyPreset
+
+  return {
+    fullName: getStringValue(payload.fullName),
+    displayName: getStringValue(payload.displayName),
+    profileHeadline: getStringValue(payload.profileHeadline),
+    avatarUrl: getStringValue(payload.avatarUrl),
+    bio: getStringValue(payload.bio),
+    occupationId: getStringValue(payload.occupationId),
+    locationId: getStringValue(payload.locationId),
+    genderId: getStringValue(payload.genderId),
+    interestIds: getStringArray(payload.interestIds),
+    inviteCode: getStringValue(payload.inviteCode),
+    privacyPreset:
+      privacyPreset === "public" || privacyPreset === "limited" || privacyPreset === "private" ? privacyPreset : undefined,
+    visibility: {
+      isPublic: getBooleanValue(visibility.isPublic, DEFAULT_USER_ONBOARDING_PAYLOAD.visibility.isPublic),
+      isNamePublic: getBooleanValue(visibility.isNamePublic, DEFAULT_USER_ONBOARDING_PAYLOAD.visibility.isNamePublic),
+      isPfpPublic: getBooleanValue(visibility.isPfpPublic, DEFAULT_USER_ONBOARDING_PAYLOAD.visibility.isPfpPublic),
+      isGenderPublic: getBooleanValue(visibility.isGenderPublic, DEFAULT_USER_ONBOARDING_PAYLOAD.visibility.isGenderPublic),
+      isOccupationPublic: getBooleanValue(
+        visibility.isOccupationPublic,
+        DEFAULT_USER_ONBOARDING_PAYLOAD.visibility.isOccupationPublic,
+      ),
+      isLocationPublic: getBooleanValue(visibility.isLocationPublic, DEFAULT_USER_ONBOARDING_PAYLOAD.visibility.isLocationPublic),
+      isBirthyearPublic: getBooleanValue(
+        visibility.isBirthyearPublic,
+        DEFAULT_USER_ONBOARDING_PAYLOAD.visibility.isBirthyearPublic,
+      ),
+      isBirthdayPublic: getBooleanValue(
+        visibility.isBirthdayPublic,
+        DEFAULT_USER_ONBOARDING_PAYLOAD.visibility.isBirthdayPublic,
+      ),
+    },
+    relationshipChoice:
+      relationshipChoice === "individual" || relationshipChoice === "team_member" || relationshipChoice === "create_project"
+        ? relationshipChoice
+        : undefined,
+    selectedProjectId: typeof payload.selectedProjectId === "number" ? payload.selectedProjectId : null,
+  }
+}
+
+export function sanitizeProjectOnboardingPayload(payload: unknown): Partial<ProjectOnboardingPayload> {
+  if (!isRecord(payload)) {
+    return {}
+  }
+
+  const rawMethods = Array.isArray(payload.cryptoPaymentMethods) ? payload.cryptoPaymentMethods : []
+
+  return {
+    name: getStringValue(payload.name),
+    slug: getStringValue(payload.slug),
+    logoUrl: getStringValue(payload.logoUrl),
+    website: getStringValue(payload.website),
+    description: getStringValue(payload.description),
+    contactEmail: getStringValue(payload.contactEmail),
+    detailedDescription: getStringValue(payload.detailedDescription),
+    categoryIds: getStringArray(payload.categoryIds),
+    pledgeAccepted: getBooleanValue(payload.pledgeAccepted),
+    billingEmail: getStringValue(payload.billingEmail),
+    billingFrequency: getStringValue(payload.billingFrequency),
+    paymentPercentage: getStringValue(payload.paymentPercentage),
+    paymentPeriodicityId: getStringValue(payload.paymentPeriodicityId),
+    cryptoPaymentMethods: rawMethods
+      .filter(isRecord)
+      .map((method) => ({
+        id: getStringValue(method.id),
+        chainId: getStringValue(method.chainId),
+        chainAssetId: getStringValue(method.chainAssetId),
+        intakeContractId: getStringValue(method.intakeContractId),
+        label: getStringValue(method.label),
+        isDefault: getBooleanValue(method.isDefault),
+      })),
+  }
 }
 
 export function mergeUserOnboardingPayload(

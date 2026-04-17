@@ -1,13 +1,17 @@
 "use client"
 
 import { useEffect, useMemo, useRef, useState } from "react"
+import { useRouter } from "next/navigation"
 import { ArrowLeft, ArrowRight, CheckCircle2, Plus, Trash2 } from "lucide-react"
 import {
-  clearProjectOnboardingDraft,
   getOnboardingState,
-  publishProjectOnboardingDraft,
-  upsertProjectOnboardingDraft,
 } from "@/app/actions/onboarding-actions"
+import { CubidIdentityStep } from "@/components/onboarding/cubid-identity-step"
+import { isResolvedCubidIdentityStatus } from "@/lib/cubid/types"
+import { invokeProjectOnboardingDraftClearBrowser } from "@/lib/edge-functions/project-onboarding-draft-clear"
+import { invokeProjectOnboardingPublishBrowser } from "@/lib/edge-functions/project-onboarding-publish"
+import { invokeProjectOnboardingDraftUpsertBrowser } from "@/lib/edge-functions/project-onboarding-draft-upsert"
+import { invokeUserCubidResolveEmailBrowser } from "@/lib/edge-functions/user-cubid-resolve-email"
 import { getSupabaseBrowserClient } from "@/lib/supabase"
 import {
   DEFAULT_PROJECT_ONBOARDING_PAYLOAD,
@@ -43,7 +47,7 @@ type ReferenceData = {
   intakeContracts: Array<ComboboxOption & { chainId: string }>
 }
 
-const PROJECT_SCREEN_ORDER: ProjectOnboardingScreen[] = ["basics", "details", "contribution", "review"]
+const PROJECT_SCREEN_ORDER: ProjectOnboardingScreen[] = ["cubid", "basics", "details", "contribution", "review"]
 
 function formatDraftTime(value: string | null | undefined) {
   if (!value) {
@@ -57,10 +61,17 @@ function formatDraftTime(value: string | null | undefined) {
 }
 
 export default function ProjectSignupFlow({ onClose }: ProjectSignupFlowProps) {
+  const router = useRouter()
   const [loading, setLoading] = useState(true)
   const [authUserId, setAuthUserId] = useState<string | null>(null)
-  const [currentScreen, setCurrentScreen] = useState<ProjectOnboardingScreen>("basics")
-  const [resumeTargetScreen, setResumeTargetScreen] = useState<ProjectOnboardingScreen>("basics")
+  const [authEmail, setAuthEmail] = useState<string | null>(null)
+  const [authStateReady, setAuthStateReady] = useState(false)
+  const [authStateVersion, setAuthStateVersion] = useState(0)
+  const [currentScreen, setCurrentScreen] = useState<ProjectOnboardingScreen>("cubid")
+  const [resumeTargetScreen, setResumeTargetScreen] = useState<ProjectOnboardingScreen>("cubid")
+  const [cubidIdentityStatus, setCubidIdentityStatus] = useState<"unlinked" | "linked" | "verified">("unlinked")
+  const [cubidId, setCubidId] = useState<string | null>(null)
+  const [cubidScore, setCubidScore] = useState<number | null>(null)
   const [payload, setPayload] = useState<ProjectOnboardingPayload>(DEFAULT_PROJECT_ONBOARDING_PAYLOAD)
   const [draftTimestamp, setDraftTimestamp] = useState<string | null>(null)
   const [references, setReferences] = useState<ReferenceData>({
@@ -72,9 +83,12 @@ export default function ProjectSignupFlow({ onClose }: ProjectSignupFlowProps) {
   })
   const [saving, setSaving] = useState(false)
   const [publishing, setPublishing] = useState(false)
+  const [resolvingCubid, setResolvingCubid] = useState(false)
 
   const autosaveReady = useRef(false)
   const slugEdited = useRef(false)
+  const currentScreenRef = useRef<ProjectOnboardingScreen>("cubid")
+  const loadStateRequestId = useRef(0)
 
   const selectedCategories = useMemo(
     () =>
@@ -102,6 +116,8 @@ export default function ProjectSignupFlow({ onClose }: ProjectSignupFlowProps) {
         data: { user },
       } = await supabase.auth.getUser()
       setAuthUserId(user?.id ?? null)
+      setAuthEmail(user?.email ?? null)
+      setAuthStateReady(true)
     }
 
     void loadSession()
@@ -110,6 +126,9 @@ export default function ProjectSignupFlow({ onClose }: ProjectSignupFlowProps) {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((_, session) => {
       setAuthUserId(session?.user?.id ?? null)
+      setAuthEmail(session?.user?.email ?? null)
+      setAuthStateReady(true)
+      setAuthStateVersion((previous) => previous + 1)
     })
 
     return () => subscription.unsubscribe()
@@ -178,14 +197,29 @@ export default function ProjectSignupFlow({ onClose }: ProjectSignupFlowProps) {
   }, [])
 
   useEffect(() => {
+    if (!authStateReady) {
+      return
+    }
+
     const loadState = async () => {
+      const requestId = loadStateRequestId.current + 1
+      loadStateRequestId.current = requestId
       setLoading(true)
       const state = await getOnboardingState()
 
+      if (loadStateRequestId.current !== requestId) {
+        return
+      }
+
       setAuthUserId(state.authUserId)
+      setAuthEmail(state.authEmail)
+      setCubidIdentityStatus(state.profile?.cubid_identity_status ?? "unlinked")
+      setCubidId(state.profile?.cubid_id ?? null)
+      setCubidScore(state.profile?.cubid_score ?? null)
 
       if (!state.authUserId) {
-        setCurrentScreen("basics")
+        currentScreenRef.current = "cubid"
+        setCurrentScreen("cubid")
         setPayload(DEFAULT_PROJECT_ONBOARDING_PAYLOAD)
         autosaveReady.current = false
         setLoading(false)
@@ -198,14 +232,17 @@ export default function ProjectSignupFlow({ onClose }: ProjectSignupFlowProps) {
         setResumeTargetScreen(
           PROJECT_SCREEN_ORDER.includes(state.projectDraft.current_screen as ProjectOnboardingScreen)
             ? (state.projectDraft.current_screen as ProjectOnboardingScreen)
-            : "basics",
+            : "cubid",
         )
+        currentScreenRef.current = "resume"
         setCurrentScreen("resume")
         setDraftTimestamp(state.projectDraft.updated_at || state.projectDraft.started_at)
       } else {
         setPayload((previous) => mergeProjectOnboardingPayload(previous))
-        setCurrentScreen("basics")
-        setResumeTargetScreen("basics")
+        const nextScreen = currentScreenRef.current === "resume" ? "resume" : "cubid"
+        currentScreenRef.current = nextScreen
+        setCurrentScreen(nextScreen)
+        setResumeTargetScreen("cubid")
         setDraftTimestamp(null)
       }
 
@@ -214,7 +251,7 @@ export default function ProjectSignupFlow({ onClose }: ProjectSignupFlowProps) {
     }
 
     void loadState()
-  }, [authUserId])
+  }, [authStateReady, authStateVersion])
 
   useEffect(() => {
     if (!autosaveReady.current || !authUserId || currentScreen === "resume") {
@@ -223,10 +260,20 @@ export default function ProjectSignupFlow({ onClose }: ProjectSignupFlowProps) {
 
     const timeoutId = window.setTimeout(() => {
       setSaving(true)
-      void upsertProjectOnboardingDraft({
+      void invokeProjectOnboardingDraftUpsertBrowser({
         currentScreen,
         payload,
-      }).finally(() => setSaving(false))
+      })
+        .then((result) => {
+          if (!result.ok) {
+            toast({
+              title: "Could not save project draft",
+              description: result.error.message,
+              variant: "destructive",
+            })
+          }
+        })
+        .finally(() => setSaving(false))
     }, 600)
 
     return () => window.clearTimeout(timeoutId)
@@ -234,6 +281,33 @@ export default function ProjectSignupFlow({ onClose }: ProjectSignupFlowProps) {
 
   const updatePayload = (partial: Partial<ProjectOnboardingPayload>) => {
     setPayload((previous) => mergeProjectOnboardingPayload({ ...previous, ...partial }))
+  }
+
+  const handleResolveCubid = async () => {
+    setResolvingCubid(true)
+    const result = await invokeUserCubidResolveEmailBrowser()
+    setResolvingCubid(false)
+
+    if (!result.ok) {
+      toast({
+        title: "Could not link CUBID identity",
+        description: result.error.message,
+        variant: "destructive",
+      })
+      return
+    }
+
+    setCubidIdentityStatus(result.data.cubidIdentityStatus)
+    setCubidId(result.data.cubidId)
+    setCubidScore(result.data.cubidScore)
+
+    toast({
+      title: result.data.cubidIdentityStatus === "verified" ? "CUBID verified" : "CUBID linked",
+      description:
+        result.data.cubidIdentityStatus === "verified"
+          ? "Your founder identity is verified with CUBID and ready for project publishing."
+          : "Your founder email is now linked with CUBID. You can continue project onboarding.",
+    })
   }
 
   const toggleCategory = (categoryId: string) => {
@@ -306,6 +380,8 @@ export default function ProjectSignupFlow({ onClose }: ProjectSignupFlowProps) {
 
   const canContinue = () => {
     switch (currentScreen) {
+      case "cubid":
+        return isResolvedCubidIdentityStatus(cubidIdentityStatus)
       case "basics":
         return Boolean(
           payload.name.trim() &&
@@ -336,37 +412,49 @@ export default function ProjectSignupFlow({ onClose }: ProjectSignupFlowProps) {
 
   const handleStartOver = async () => {
     setSaving(true)
-    const result = await clearProjectOnboardingDraft()
+    const result = await invokeProjectOnboardingDraftClearBrowser()
     setSaving(false)
 
     if (!result.ok) {
       toast({
         title: "Could not restart project onboarding",
-        description: result.error,
+        description: result.error.message,
         variant: "destructive",
       })
       return
     }
 
     setPayload(DEFAULT_PROJECT_ONBOARDING_PAYLOAD)
-    setCurrentScreen("basics")
-    setResumeTargetScreen("basics")
+    currentScreenRef.current = "cubid"
+    setCurrentScreen("cubid")
+    setResumeTargetScreen("cubid")
     setDraftTimestamp(null)
   }
 
   const handlePublish = async () => {
+    if (!isResolvedCubidIdentityStatus(cubidIdentityStatus)) {
+      toast({
+        title: "Link CUBID before publishing",
+        description: "Resolve your CUBID identity from the signed-in email before publishing a project.",
+        variant: "destructive",
+      })
+      return
+    }
+
     setPublishing(true)
-    const result = await publishProjectOnboardingDraft()
+    const result = await invokeProjectOnboardingPublishBrowser()
     setPublishing(false)
 
     if (!result.ok) {
       toast({
         title: "Could not publish project",
-        description: result.error,
+        description: result.error.message,
         variant: "destructive",
       })
       return
     }
+
+    router.refresh()
 
     toast({
       title: "Project published",
@@ -428,7 +516,13 @@ export default function ProjectSignupFlow({ onClose }: ProjectSignupFlowProps) {
             <Button variant="outline" onClick={() => void handleStartOver()} disabled={saving}>
               Start over
             </Button>
-            <Button onClick={() => setCurrentScreen(resumeTargetScreen)} className="gap-2">
+            <Button
+              onClick={() => {
+                currentScreenRef.current = resumeTargetScreen
+                setCurrentScreen(resumeTargetScreen)
+              }}
+              className="gap-2"
+            >
               Continue draft
               <ArrowRight className="h-4 w-4" />
             </Button>
@@ -446,7 +540,9 @@ export default function ProjectSignupFlow({ onClose }: ProjectSignupFlowProps) {
     <OnboardingShell
       eyebrow={`Project setup • ${PROJECT_SCREEN_ORDER.indexOf(currentScreen) + 1}/${PROJECT_SCREEN_ORDER.length}`}
       title={
-        currentScreen === "basics"
+        currentScreen === "cubid"
+          ? "Link your founder identity with CUBID"
+          : currentScreen === "basics"
           ? "Start with the project essentials"
           : currentScreen === "details"
             ? "Describe what this project stands for"
@@ -455,7 +551,9 @@ export default function ProjectSignupFlow({ onClose }: ProjectSignupFlowProps) {
               : "Review and publish your project"
       }
       description={
-        currentScreen === "basics"
+        currentScreen === "cubid"
+          ? "Project publishing is tied to a real accountable person. Link the signed-in founder email to CUBID before the project can go live."
+          : currentScreen === "basics"
           ? "Capture the public-facing details that will shape the project preview."
           : currentScreen === "details"
             ? "Fill in the richer description, categories, and positioning for this project."
@@ -468,7 +566,13 @@ export default function ProjectSignupFlow({ onClose }: ProjectSignupFlowProps) {
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div className="text-sm text-slate-500">{saving ? "Saving your project draft..." : "Every project step is saved automatically."}</div>
           <div className="flex items-center gap-3">
-            <Button variant="outline" onClick={() => setCurrentScreen(getPreviousScreen())}>
+            <Button
+              variant="outline"
+              onClick={() => {
+                currentScreenRef.current = getPreviousScreen()
+                setCurrentScreen(getPreviousScreen())
+              }}
+            >
               <ArrowLeft className="mr-2 h-4 w-4" />
               Back
             </Button>
@@ -478,7 +582,14 @@ export default function ProjectSignupFlow({ onClose }: ProjectSignupFlowProps) {
                 {publishing ? "Publishing..." : "Publish project"}
               </Button>
             ) : (
-              <Button onClick={() => setCurrentScreen(getNextScreen())} disabled={!canContinue()} className="gap-2">
+              <Button
+                onClick={() => {
+                  currentScreenRef.current = getNextScreen()
+                  setCurrentScreen(getNextScreen())
+                }}
+                disabled={!canContinue()}
+                className="gap-2"
+              >
                 Continue
                 <ArrowRight className="h-4 w-4" />
               </Button>
@@ -487,6 +598,19 @@ export default function ProjectSignupFlow({ onClose }: ProjectSignupFlowProps) {
         </div>
       }
     >
+      {currentScreen === "cubid" ? (
+        <CubidIdentityStep
+          email={authEmail}
+          cubidIdentityStatus={cubidIdentityStatus}
+          cubidId={cubidId}
+          cubidScore={cubidScore}
+          resolving={resolvingCubid}
+          onResolve={() => void handleResolveCubid()}
+          title="Founders need a linked CUBID identity before project publish"
+          body="FundLoop treats project publishing as a payout-touching operation. We therefore require the authenticated founder or project member to resolve the signed-in email against CUBID before continuing into the project setup screens."
+        />
+      ) : null}
+
       {currentScreen === "basics" ? (
         <div className="space-y-5">
           <div className="grid gap-5 md:grid-cols-2">

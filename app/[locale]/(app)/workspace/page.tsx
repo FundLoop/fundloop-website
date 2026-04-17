@@ -1,6 +1,8 @@
 import { redirect } from "next/navigation"
 import { getTranslations } from "next-intl/server"
+import { BadgeCheck, ShieldAlert, ShieldCheck } from "lucide-react"
 import { Link } from "@/i18n/navigation"
+import { isResolvedCubidIdentityStatus } from "@/lib/cubid/types"
 import { getNavigationContext } from "@/lib/navigation-context"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 
@@ -16,6 +18,26 @@ export default async function WorkspacePage({ params }: WorkspacePageProps) {
   if (!navigationContext.isAuthenticated) {
     redirect(`/${locale}/join`)
   }
+
+  const cubidStatus = navigationContext.user?.cubidIdentityStatus ?? "unlinked"
+  const cubidStatusIcon =
+    cubidStatus === "verified" ? BadgeCheck : cubidStatus === "linked" ? ShieldCheck : ShieldAlert
+  const CubidStatusIcon = cubidStatusIcon
+  const cubidToneClassName =
+    cubidStatus === "verified"
+      ? "border-emerald-200 bg-emerald-50/70 text-emerald-950"
+      : cubidStatus === "linked"
+        ? "border-cyan-200 bg-cyan-50/70 text-cyan-950"
+        : "border-amber-200 bg-amber-50/80 text-amber-950"
+  const completionPercent = navigationContext.user?.profileCompletionPercent ?? 0
+  const completionMissingItems = navigationContext.user?.profileCompletionMissingItems ?? []
+  const managedName = navigationContext.user?.managedIdentity.fullName
+  const managedNameLabel =
+    managedName?.state === "synced"
+      ? "Synced from CUBID"
+      : managedName?.state === "legacy_local_fallback"
+        ? "Legacy FundLoop fallback"
+        : "Pending from CUBID"
 
   const cards = [
     {
@@ -53,6 +75,71 @@ export default async function WorkspacePage({ params }: WorkspacePageProps) {
           </h1>
           <p className="max-w-2xl text-base leading-7 text-[var(--text-muted)]">{t("body")}</p>
         </div>
+      </section>
+
+      <section className={`rounded-[calc(var(--radius-2xl)+0.25rem)] border p-6 shadow-[var(--surface-shadow-panel)] ${cubidToneClassName}`}>
+        <div className="flex flex-wrap items-start justify-between gap-4">
+          <div className="flex max-w-3xl items-start gap-3">
+            <CubidStatusIcon className="mt-0.5 h-5 w-5 shrink-0" />
+            <div className="space-y-2">
+              <p className="text-[0.72rem] font-semibold uppercase tracking-[0.28em]">{t(`identity.status.${cubidStatus}`)}</p>
+              <h2 className="text-xl font-semibold">{t("identity.title")}</h2>
+              <p className="text-sm leading-6">{t(`identity.body.${cubidStatus}`)}</p>
+              <div className="rounded-2xl border border-current/20 bg-white/40 px-4 py-3 text-sm dark:bg-black/10">
+                <p className="text-[0.68rem] font-semibold uppercase tracking-[0.2em]">{managedNameLabel}</p>
+                <p className="mt-1 font-medium">
+                  {managedName?.value ?? "FundLoop is still waiting for a CUBID-managed full name for this account."}
+                </p>
+              </div>
+            </div>
+          </div>
+          <a
+            href="https://passport.cubid.me"
+            target="_blank"
+            rel="noreferrer"
+            className="inline-flex items-center rounded-full border border-current/20 px-4 py-2 text-sm font-semibold"
+          >
+            {t("identity.cta")}
+          </a>
+        </div>
+        {!isResolvedCubidIdentityStatus(cubidStatus) ? (
+          <p className="mt-4 text-sm leading-6">{t("identity.followUp")}</p>
+        ) : null}
+      </section>
+
+      <section className="rounded-[calc(var(--radius-2xl)+0.25rem)] border border-[color:var(--surface-border)] bg-[var(--surface-panel-strong)] p-6 shadow-[var(--surface-shadow-panel)]">
+        <div className="flex flex-wrap items-start justify-between gap-4">
+          <div className="max-w-3xl space-y-2">
+            <p className="text-[0.72rem] font-semibold uppercase tracking-[0.28em] text-[var(--interactive-primary)]">
+              Profile completion
+            </p>
+            <h2 className="text-xl font-semibold text-[var(--text-strong)]">{completionPercent}% complete</h2>
+            <p className="text-sm leading-6 text-[var(--text-muted)]">
+              Identity now comes from CUBID, while FundLoop still owns your display name, profile headline, discovery context,
+              and visibility preferences. This score combines those local preferences with optional CUBID trust signals.
+            </p>
+          </div>
+          <Link
+            href="/workspace/account"
+            className="inline-flex items-center rounded-full border border-[color:var(--surface-border-strong)] px-4 py-2 text-sm font-semibold text-[var(--text-strong)]"
+          >
+            Continue in account
+          </Link>
+        </div>
+        {completionMissingItems.length > 0 ? (
+          <div className="mt-4 flex flex-wrap gap-2">
+            {completionMissingItems.map((item) => (
+              <span
+                key={item}
+                className="rounded-full border border-[color:var(--surface-border)] bg-[var(--surface-panel)] px-3 py-1 text-xs font-medium text-[var(--text-muted)]"
+              >
+                {item.replaceAll("_", " ")}
+              </span>
+            ))}
+          </div>
+        ) : (
+          <p className="mt-4 text-sm text-[var(--text-muted)]">All current Session 14 completion items are already covered.</p>
+        )}
       </section>
 
       <section className="grid gap-6 md:grid-cols-2 xl:grid-cols-4">

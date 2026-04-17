@@ -1,5 +1,5 @@
 import { redirect } from "next/navigation"
-import { BrainCircuit, DollarSign, Eye, Shield, Wallet } from "lucide-react"
+import { BrainCircuit, DollarSign, Eye, Fingerprint, Shield, Wallet } from "lucide-react"
 import { Link } from "@/i18n/navigation"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -35,6 +35,14 @@ const adminDestinations = [
     href: "/admin/payments/deployments",
     icon: Wallet,
     cta: "Review Deployments",
+    variant: "outline" as const,
+  },
+  {
+    title: "Identity Health",
+    description: "Review stale or failed CUBID sync state before identity-sensitive workflows depend on it",
+    href: "/admin/identity",
+    icon: Fingerprint,
+    cta: "Open Identity Health",
     variant: "outline" as const,
   },
   {
