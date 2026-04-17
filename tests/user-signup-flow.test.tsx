@@ -14,6 +14,15 @@ const invokeUserOnboardingPublishBrowser = vi.fn()
 const invokeUserCubidResolveEmailBrowser = vi.fn()
 const invokeUserCubidSyncProfileBrowser = vi.fn()
 
+function createDeferredPromise<T>() {
+  let resolve!: (value: T) => void
+  const promise = new Promise<T>((resolver) => {
+    resolve = resolver
+  })
+
+  return { promise, resolve }
+}
+
 function createBrowserSupabaseClient() {
   const queryResponse = (data: unknown) => ({
     select() {
@@ -293,6 +302,58 @@ describe("UserSignupFlow", () => {
       expect(refresh).toHaveBeenCalled()
       expect(onRequestFlowChange).toHaveBeenCalledWith("project")
     })
+  })
+
+  it("does not re-bootstrap after hydrating the authenticated session", async () => {
+    const onboardingState = {
+      authUserId: "user-1",
+      authEmail: "maya@example.com",
+      profile: {
+        user_id: "user-1",
+        status: "inactive",
+        full_name: null,
+        display_name: null,
+        avatar_url: null,
+        cubid_identity_status: "linked",
+        cubid_id: "cubid-user-1",
+        primary_email_identity: "auth-identity-1",
+        cubid_score: 77,
+      },
+      cubidSnapshot: null,
+      profileCompletionPercent: 70,
+      profileCompletionMissingItems: ["cubid_provider"],
+      cubidPassportOrigin: "https://passport.cubid.me",
+      cubidStampPageId: "123",
+      userDraft: {
+        id: 3,
+        user_id: "user-1",
+        current_screen: "review",
+        payload: {
+          fullName: "Maya Torres",
+          profileHeadline: "Builder",
+          relationshipChoice: "create_project",
+        },
+        started_at: "2026-04-15T00:00:00.000Z",
+        updated_at: "2026-04-15T00:00:00.000Z",
+        completed_at: null,
+      },
+      projectDraft: null,
+    }
+    const firstLoad = createDeferredPromise<typeof onboardingState>()
+
+    getOnboardingState.mockReturnValueOnce(firstLoad.promise)
+
+    const { default: UserSignupFlow } = await import("@/components/user-signup-flow")
+    render(<UserSignupFlow onClose={vi.fn()} />)
+
+    firstLoad.resolve(onboardingState)
+    await screen.findByRole("heading", { name: /you already have a draft profile/i })
+    await waitFor(() => expect(getOnboardingState).toHaveBeenCalledTimes(1))
+
+    await act(async () => {
+      fireEvent.click(screen.getByRole("button", { name: /continue draft/i }))
+    })
+    await screen.findByRole("heading", { name: /review and publish your profile/i })
   })
 
   it("lets the user resolve CUBID from onboarding before continuing", async () => {

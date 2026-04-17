@@ -1,5 +1,34 @@
 ---
 
+### session v52: Remove duplicate onboarding bootstrap from the user resume flow
+- timestamp: 2026-04-17T19:30:00-0400
+- agent: **Codex (GPT-5)**
+- branch: **codex/wallet-pr4-onboarding-cubid**
+- head: d185055
+
+#### Objective
+Fix the remaining PR #21 validate failure by making the user onboarding resume flow deterministic in CI, where `tests/user-signup-flow.test.tsx` could lose the transition from the resume screen to review/publish during initial authenticated hydration.
+
+#### Actions Taken
+- Traced the failing PR #21 validate job to `tests/user-signup-flow.test.tsx`, specifically the resume-to-review publish path in `components/user-signup-flow.tsx`.
+- Identified that the component was re-running `getOnboardingState()` during initial hydration because the bootstrap effect depended on `authUserId`, which the bootstrap itself updates.
+- Added explicit auth bootstrap state in `components/user-signup-flow.tsx` so onboarding state loads once per auth event instead of recursively re-triggering during mount hydration.
+- Added request-id guarding plus a synchronous `currentScreenRef` write path so late async onboarding responses cannot overwrite a user-initiated screen transition back to `resume` or `welcome`.
+- Replaced the flaky regression case in `tests/user-signup-flow.test.tsx` with a deterministic assertion that initial authenticated hydration only bootstraps once and still resumes into the review/publish screen.
+
+#### Tests and Validation Notes
+- `pnpm exec vitest run tests/user-signup-flow.test.tsx` passed
+- `pnpm test` passed
+- Local validation ran under Node 25 because that is the host shell default on this machine; the repo still declares Node 22 as the supported baseline for CI.
+
+#### Reflections
+- The CI failure was a state-bootstrap design problem, not a simple DOM timing issue in the test. Fixing the duplicate bootstrap path in the component is lower risk than adding more waits around an unstable transition.
+- Keeping a synchronous screen ref alongside React state is justified here because the bug depends on async responses observing stale UI state between render commits.
+
+#### Suggested Next Steps
+- Push the branch so PR #21 can rerun the validate workflow with the bootstrap fix.
+- If CI still shows environment-specific variance, run the full Node 22 validation path locally to match the repository baseline exactly.
+
 ### session v51: Vendor CUBID tarballs so CI and Vercel can install the onboarding stack
 - timestamp: 2026-04-16T18:17:23-0400
 - agent: **Codex (GPT-5)**

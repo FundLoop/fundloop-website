@@ -85,6 +85,8 @@ export default function UserSignupFlow({
   const [loading, setLoading] = useState(true)
   const [authUserId, setAuthUserId] = useState<string | null>(null)
   const [authEmail, setAuthEmail] = useState<string | null>(null)
+  const [authStateReady, setAuthStateReady] = useState(false)
+  const [authStateVersion, setAuthStateVersion] = useState(0)
   const [userStatus, setUserStatus] = useState<string | null>(null)
   const [legacyFullName, setLegacyFullName] = useState<string | null>(null)
   const [currentScreen, setCurrentScreen] = useState<UserOnboardingScreen>("welcome")
@@ -118,6 +120,8 @@ export default function UserSignupFlow({
   const [searchingProjects, setSearchingProjects] = useState(false)
 
   const autosaveReady = useRef(false)
+  const currentScreenRef = useRef<UserOnboardingScreen>("welcome")
+  const loadStateRequestId = useRef(0)
   const managedFullName = cubidSnapshot?.primaryName ?? legacyFullName ?? null
   const managedFullNameState = cubidSnapshot?.primaryName ? "synced" : legacyFullName ? "legacy_local_fallback" : "pending"
 
@@ -140,6 +144,7 @@ export default function UserSignupFlow({
       } = await supabase.auth.getUser()
       setAuthUserId(user?.id ?? null)
       setAuthEmail(user?.email ?? null)
+      setAuthStateReady(true)
     }
 
     void loadSession()
@@ -149,7 +154,10 @@ export default function UserSignupFlow({
     } = supabase.auth.onAuthStateChange((event, session) => {
       setAuthUserId(session?.user?.id ?? null)
       setAuthEmail(session?.user?.email ?? null)
+      setAuthStateReady(true)
+      setAuthStateVersion((previous) => previous + 1)
       if (event === "SIGNED_OUT") {
+        currentScreenRef.current = "welcome"
         setCurrentScreen("welcome")
         autosaveReady.current = false
       }
@@ -181,9 +189,19 @@ export default function UserSignupFlow({
   }, [])
 
   useEffect(() => {
+    if (!authStateReady) {
+      return
+    }
+
     const loadState = async () => {
+      const requestId = loadStateRequestId.current + 1
+      loadStateRequestId.current = requestId
       setLoading(true)
       const state = await getOnboardingState()
+
+      if (loadStateRequestId.current !== requestId) {
+        return
+      }
 
       setAuthUserId(state.authUserId)
       setAuthEmail(state.authEmail)
@@ -199,6 +217,7 @@ export default function UserSignupFlow({
       setCubidStampPageId(state.cubidStampPageId)
 
       if (!state.authUserId) {
+        currentScreenRef.current = "welcome"
         setCurrentScreen("welcome")
         setPayload({
           ...DEFAULT_USER_ONBOARDING_PAYLOAD,
@@ -226,7 +245,12 @@ export default function UserSignupFlow({
             ? (state.userDraft.current_screen as UserOnboardingScreen)
             : "cubid",
         )
-        setCurrentScreen("resume")
+        const nextScreen =
+          currentScreenRef.current === "welcome" || currentScreenRef.current === "resume"
+            ? "resume"
+            : currentScreenRef.current
+        currentScreenRef.current = nextScreen
+        setCurrentScreen(nextScreen)
         setDraftTimestamp(state.userDraft.updated_at || state.userDraft.started_at)
       } else {
         setPayload((previous) =>
@@ -237,7 +261,12 @@ export default function UserSignupFlow({
             relationshipChoice: previous.relationshipChoice || initialRelationshipChoice,
           }),
         )
-        setCurrentScreen("welcome")
+        const nextScreen =
+          currentScreenRef.current === "welcome" || currentScreenRef.current === "resume"
+            ? "welcome"
+            : currentScreenRef.current
+        currentScreenRef.current = nextScreen
+        setCurrentScreen(nextScreen)
         setDraftTimestamp(null)
       }
 
@@ -246,7 +275,7 @@ export default function UserSignupFlow({
     }
 
     void loadState()
-  }, [authUserId, initialRelationshipChoice, inviteCode])
+  }, [authStateReady, authStateVersion, initialRelationshipChoice, inviteCode])
 
   useEffect(() => {
     if (!autosaveReady.current || !authUserId) {
@@ -305,6 +334,7 @@ export default function UserSignupFlow({
   }, [payload.relationshipChoice, searchQuery])
 
   const moveToScreen = (screen: UserOnboardingScreen) => {
+    currentScreenRef.current = screen
     setCurrentScreen(screen)
   }
 
@@ -369,6 +399,7 @@ export default function UserSignupFlow({
     })
     setProjectMatches([])
     setSearchQuery("")
+    currentScreenRef.current = "welcome"
     setCurrentScreen("welcome")
     setResumeTargetScreen("cubid")
     setDraftTimestamp(null)
