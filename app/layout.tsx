@@ -8,7 +8,7 @@ import Navbar from "@/components/navbar"
 import Footer from "@/components/footer"
 import { OnboardingModalManager } from "@/components/onboarding-modal-manager"
 import { Web3Provider } from "@/components/web3-provider"
-import { assertWalletRuntimeConfigForStartup, getWalletRuntimeConfig } from "@/lib/onchain/runtime-config"
+import { getWalletRuntimeConfig } from "@/lib/onchain/runtime-config"
 
 const manrope = Manrope({ subsets: ["latin"], variable: "--font-manrope" })
 const fraunces = Fraunces({ subsets: ["latin"], variable: "--font-fraunces" })
@@ -25,7 +25,6 @@ export default function RootLayout({
   children: React.ReactNode
 }>) {
   const walletRuntimeConfig = getWalletRuntimeConfig()
-  assertWalletRuntimeConfigForStartup(walletRuntimeConfig)
 
   return (
     <html lang="en" suppressHydrationWarning>

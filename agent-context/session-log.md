@@ -12,6 +12,31 @@ Agents populate one level-3 heading for each coding session, following the same 
 
 ---
 
+### session v40: Let preview deployments degrade when wallet runtime env is absent
+- timestamp: 2026-04-16T18:17:23-0400
+- agent: **Codex (GPT-5)**
+- branch: **codex/wallet-pr1-payments-edge**
+- head: TBD
+
+#### Objective
+Fix the stacked PR preview deployments after Vercel builds started failing during prerender because the root layout threw on missing wallet runtime configuration in preview environments.
+
+#### Actions Taken
+- Removed the root-layout startup assertion from `app/layout.tsx` so the shared `Web3Provider` can receive the runtime config and keep wallet features disabled instead of crashing the entire app when preview env vars are incomplete.
+- Kept the wallet runtime config builder and explicit validation helper in place for targeted runtime checks and tests; this change only stops the public shell from treating missing preview wallet env as a build-time fatal error.
+- Verified the change against a preview-style build invocation with wallet env intentionally absent.
+
+#### Tests and Validation Notes
+- `FUNDLOOP_DEPLOYMENT_ENV=preview pnpm --dir /Users/botmaster/src/fundloop-pr1-fix build` passed
+
+#### Reflections
+- The runtime config already carries enough state to disable wallet UX safely. Throwing in the global layout made unrelated public pages depend on private wallet-preview environment setup, which is the wrong coupling for Vercel previews.
+- Keeping strict validation as a callable helper preserves the ability to assert on wallet-critical surfaces without making every marketing or documentation page unbuildable.
+
+#### Suggested Next Steps
+- Cherry-pick this fix upward through the rest of the stacked PRs so all preview deployments rerun from the same degraded-but-buildable root layout.
+- If production needs a hard fail for wallet-specific routes later, reintroduce that assertion closer to the routes or actions that actually require wallet execution.
+
 ### session v39: Migrate project payment drafts onto the first Edge Function
 - timestamp: 2026-04-14T23:36:10Z
 - agent: **Codex (GPT-5)**
