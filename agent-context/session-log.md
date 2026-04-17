@@ -12,6 +12,371 @@ Agents populate one level-3 heading for each coding session, following the same 
 
 ---
 
+### session v40: Let preview deployments degrade when wallet runtime env is absent
+- timestamp: 2026-04-16T18:17:23-0400
+- agent: **Codex (GPT-5)**
+- branch: **codex/wallet-pr1-payments-edge**
+- head: TBD
+
+#### Objective
+Fix the stacked PR preview deployments after Vercel builds started failing during prerender because the root layout threw on missing wallet runtime configuration in preview environments.
+
+#### Actions Taken
+- Removed the root-layout startup assertion from `app/layout.tsx` so the shared `Web3Provider` can receive the runtime config and keep wallet features disabled instead of crashing the entire app when preview env vars are incomplete.
+- Kept the wallet runtime config builder and explicit validation helper in place for targeted runtime checks and tests; this change only stops the public shell from treating missing preview wallet env as a build-time fatal error.
+- Verified the change against a preview-style build invocation with wallet env intentionally absent.
+
+#### Tests and Validation Notes
+- `FUNDLOOP_DEPLOYMENT_ENV=preview pnpm --dir /Users/botmaster/src/fundloop-pr1-fix build` passed
+
+#### Reflections
+- The runtime config already carries enough state to disable wallet UX safely. Throwing in the global layout made unrelated public pages depend on private wallet-preview environment setup, which is the wrong coupling for Vercel previews.
+- Keeping strict validation as a callable helper preserves the ability to assert on wallet-critical surfaces without making every marketing or documentation page unbuildable.
+
+#### Suggested Next Steps
+- Cherry-pick this fix upward through the rest of the stacked PRs so all preview deployments rerun from the same degraded-but-buildable root layout.
+- If production needs a hard fail for wallet-specific routes later, reintroduce that assertion closer to the routes or actions that actually require wallet execution.
+
+### session v39: Migrate project payment drafts onto the first Edge Function
+- timestamp: 2026-04-14T23:36:10Z
+- agent: **Codex (GPT-5)**
+- branch: **codex/wallet-production-readiness**
+- head: f2bd1b5f6d9876b48a579efb45d0f8f2eb8c38e2 - feat(edge-functions): add shared invocation contract layer
+
+#### Objective
+Complete Session 05 by standing up the first real Supabase Edge Function domain boundary for project payment draft creation, moving the project payments page onto the browser adapter, and keeping the old server action only as a compatibility wrapper.
+
+#### Actions Taken
+- Added the shared payment draft command module under `lib/payments/` so project-admin permission checks, draft status lookup, payment-method validation, inserts, and summary mapping now live outside the server action.
+- Added the first real Supabase Edge Function at `supabase/functions/project-payment-drafts-create/index.js`, including bearer-token auth, service-role-backed domain execution, payment-save observability writes, and the shared command contract.
+- Moved the client-side project payments write path onto `invokeProjectPaymentDraftsCreateBrowser(...)` and reduced `createProjectPaymentDrafts(...)` to a compatibility wrapper around the server Edge Function adapter.
+- Split browser-safe and server-only Edge Function invokers/adapters so the client bundle no longer drags `next/headers` across the boundary.
+- Added local development ergonomics with a new `pnpm supabase:functions:serve:project-payment-drafts-create` script and updated the README plus engineering docs to document the new write path and local smoke flow.
+- Added focused coverage for the extracted command and the payment-draft adapter while trimming the outdated payment-save server-action observability expectation.
+
+#### Tests and Validation Notes
+- Ran `pnpm dlx node@22.22.1 /opt/homebrew/bin/pnpm exec vitest run tests/project-payment-drafts-command.test.ts tests/project-payment-drafts-create-adapter.test.ts tests/project-payment-observability-actions.test.ts`.
+- Ran `pnpm dlx node@22.22.1 /opt/homebrew/bin/pnpm lint`.
+- Ran `pnpm dlx node@22.22.1 /opt/homebrew/bin/pnpm check`.
+- `lint`, `test`, `typecheck`, and `build` all passed in the supported Node 22 runtime.
+- Did not run a live `supabase functions serve` browser smoke because a local Supabase function runtime was not provisioned in this session.
+
+#### Reflections
+- The clean separation between browser-safe adapters and server-only adapters was necessary to keep the first migration production-safe; otherwise the shared transport layer would have leaked server-only imports into the client bundle.
+- Starting with payment draft creation still feels like the right first domain because it exercised auth, permissions, validation, observability, and summary mapping without entangling the later onboarding sessions.
+
+#### Suggested Next Steps
+- Continue migrating the next narrow write command onto the same Edge Function pattern, likely onboarding draft save or onboarding publish.
+- Decide whether to add a small local smoke harness around `supabase functions serve` once the team has a reliable local Supabase runtime available.
+
+### session v38: Add shared Supabase Edge Function contract layer
+- timestamp: 2026-04-14T23:28:41Z
+- agent: **Codex (GPT-5)**
+- branch: **codex/wallet-pr1-payments-edge**
+- head: 56599f9a9eb72692bdbafaa2b3ddbc6b6ccbf558 - feat(observability): add payment flow failure instrumentation
+
+#### Objective
+Complete Session 04 by adding the reusable app-side contract and invocation layer for Supabase Edge Functions, including typed envelopes, shared browser/server invokers, and the first command contract for project payment draft creation.
+
+#### Actions Taken
+- Added the shared Edge Function result envelope and invocation helpers under `lib/edge-functions/`.
+- Added the first command contract and adapter for `project-payment-drafts-create`, including payload validation and output-shape validation.
+- Extracted the shared payment summary type into `lib/payments/payment-record-summary.ts` so app code and future Edge Functions can depend on one transport-safe shape.
+- Added focused contract/invoker coverage in `tests/edge-function-invoke.test.ts` and `tests/project-payment-drafts-create-contract.test.ts`.
+- Added `docs/engineering/edge-functions.md` and linked it from the engineering docs index.
+
+#### Tests and Validation Notes
+- Ran `pnpm dlx node@22.22.1 /opt/homebrew/bin/pnpm exec vitest run tests/edge-function-invoke.test.ts tests/project-payment-drafts-create-contract.test.ts`.
+- Ran `pnpm dlx node@22.22.1 /opt/homebrew/bin/pnpm lint`.
+- Both the focused tests and lint passed.
+
+#### Reflections
+- Landing the shared envelope and invokers first makes the upcoming Edge Function migration much cleaner, because the product code can call a function-specific adapter instead of learning transport details inline.
+- Extracting the payment summary shape now avoids a later round of duplicate transport types between Next code and Supabase functions.
+
+#### Suggested Next Steps
+- Implement `project-payment-drafts-create` as the first real Supabase Edge Function.
+- Move the project payments page onto the browser Edge Function adapter and keep the server action as a compatibility wrapper.
+### session v32: Add wallet and payment flow observability
+- timestamp: 2026-04-14T19:26:18Z
+- agent: **Codex (GPT-5)**
+- branch: **codex/wallet-production-readiness**
+- head: b022077d0498d811864fa468a530b6a6d2a25fd9 - feat(e2e): add wallet and payment Playwright harness
+
+#### Objective
+Add internal, DB-backed observability for wallet connect, payment save, receipt recording, and admin confirmation failures so operators can investigate payment issues without relying on ad hoc console output or toasts.
+
+#### Actions Taken
+- Added a forward-only Supabase migration for `payment_flow_events`, including structured event fields, flow/stage/outcome constraints, and indexes for recent admin investigation paths.
+- Added shared observability helpers under `lib/observability/` for event validation, metadata sanitization, best-effort server writes, event summaries, recent-failure queries, and attempt drill-downs.
+- Added the authenticated browser ingestion route at `/api/internal/observability/payment-events` so client-side wallet and UI events can be recorded with server-derived actor identity and role context.
+- Instrumented the project payment save, crypto receipt recording, wallet connect, and internal admin confirmation flows with correlated `attempt_id` values across client and server events.
+- Added `/admin/payments/observability` plus a compact recent-failure card on `/admin/payments` so operators can review flow summaries, filter recent failures, and inspect a single attempt end to end.
+- Updated `types/supabase.ts` and added focused coverage for the observability helpers, ingestion route, action-level instrumentation, admin observability page, and wallet-connect UI capture behavior.
+
+#### Tests and Validation Notes
+- Ran `pnpm dlx node@22.22.1 /opt/homebrew/bin/pnpm test`.
+- Ran `pnpm dlx node@22.22.1 /opt/homebrew/bin/pnpm typecheck`.
+- Ran `pnpm dlx node@22.22.1 /opt/homebrew/bin/pnpm check`.
+- `lint`, `test`, `typecheck`, and `build` all passed in the supported Node 22 runtime.
+
+#### Reflections
+- Keeping observability best-effort was the right call because it let us add meaningful operator visibility without making payment actions or wallet interactions depend on the new event sink.
+- Reusing the existing internal payments area for summaries and drill-downs makes the feature immediately useful to operators instead of burying it in a generic logging surface.
+
+#### Suggested Next Steps
+- Decide whether to add retention, archival, or periodic cleanup rules for `payment_flow_events` once production traffic patterns are known.
+- Consider extending the same event model to onchain reconciliation runs and deployment-drift failures so operators can view the whole payment pipeline in one place.
+
+### session v31: Add Playwright wallet and payment end-to-end harness
+- timestamp: 2026-04-13T22:03:00Z
+- agent: **Codex (GPT-5)**
+- branch: **codex/wallet-production-readiness**
+- head: 9f002f065509f5b22bc1f90cfd4055e1512ff6c7 - feat(payments): add onchain reconciliation worker flow
+
+#### Objective
+Add production-oriented Playwright coverage for the real wallet and payment flows, including remote-safe project payment coverage and an opt-in local wallet lane for true browser-driven contract submission and reconciliation.
+
+#### Actions Taken
+- Added the guarded non-production test login route at `/api/internal/e2e/login` plus shared e2e auth/secret helpers in `lib/e2e/config.ts`.
+- Added the Playwright harness with separate `remote-safe` and `local-wallet` projects in `playwright.config.ts`, new root scripts in `package.json`, and Vitest exclusions so browser specs do not leak into the unit-test runner.
+- Added remote fixture orchestration under `tests/e2e/support/`, including service-role fixture seeding/cleanup, browser login helpers, and an injected local EIP-1193 provider shim for the local wallet lane.
+- Added the remote-safe browser specs for the real `/projects/[slug]/payments` flow and route-manager lifecycle, plus local-wallet specs for wallet connect, token approval, crypto deposit submission, reconciliation to `confirmed`, and mismatch failure/retry behavior.
+- Added the local wallet execution helpers in `scripts/run-playwright-local-wallet.mjs` and `contracts/scripts/deploy-playwright-local-wallet.js`, plus manifest override support in `lib/onchain/runtime-config.ts` and sync-script overrides in `scripts/sync-chain-deployments.mjs`.
+- Added stable `data-testid` hooks to the project payments UI, updated `.env.example`, `README.md`, and `agent-context/todo.md`, and added focused config coverage in `tests/e2e-config.test.ts`.
+
+#### Tests and Validation Notes
+- Ran `pnpm dlx node@22.22.1 /opt/homebrew/bin/pnpm check`.
+- Ran `pnpm dlx node@22.22.1 /opt/homebrew/bin/pnpm exec playwright test --list`.
+- `lint`, `test`, `typecheck`, and `build` all passed in the supported Node 22 runtime.
+- Did not run the actual Playwright browser lanes end to end in this session because the required remote env and local Supabase/Hardhat runtime were not both provisioned here.
+
+#### Reflections
+- Splitting the browser coverage into `remote-safe` and `local-wallet` lanes keeps the shared-environment tests safe while still giving the repo a path to real wallet transaction coverage.
+- The local manifest override approach was worth adding because it lets Playwright boot a real chain-aware app process without mutating tracked deployment manifests just for test setup.
+
+#### Suggested Next Steps
+- Provision the `remote-safe` lane in a stable non-production environment with the required service-role and e2e-secret env vars, then start running it regularly.
+- Decide whether the local-wallet lane should be promoted into CI once local Supabase, Hardhat, and browser dependencies are provisioned reliably in automation.
+
+### session v30: Add onchain payment reconciliation and replay tooling
+- timestamp: 2026-04-13T21:32:05Z
+- agent: **Codex (GPT-5)**
+- branch: **codex/wallet-production-readiness**
+- head: c0beb76a7c5e18f56c706b4045128d7eda937529 - build(runtime): restore Node 22 baseline for green checks
+
+#### Objective
+Advance crypto-submitted payment obligations out of `awaiting_confirmation` using verified chain state instead of manual internal-admin confirmation.
+
+#### Actions Taken
+- Added a forward-only Supabase migration for reconciliation-safe `onchain_payment_submissions`, including first-class `period_id`, immutable route snapshots, reconciliation metadata, constrained lifecycle statuses, and the single-unresolved-submission index.
+- Extended the tracked wallet deployment manifests and runtime config with per-chain confirmation depth so reconciliation can apply environment-specific finality rules.
+- Added the shared server-side reconciliation engine in `lib/onchain/payment-reconciliation.ts`, including receipt fetching, `Deposit` event matching, confirmation-depth handling, latest-submission queries, and `cron_logs` summaries for successful and failed runs.
+- Added the protected cron route at `/api/internal/payments/reconcile-onchain`, the internal admin replay action, and the `/admin/payments/reconciliation` page with targeted replay controls.
+- Reworked payment actions and project/admin payment UIs so crypto submissions persist immutable snapshots, failed submissions become retryable, crypto-submitted obligations no longer allow unsafe manual confirmation, and both admin and project surfaces show the latest onchain reconciliation status.
+- Updated `.env.example`, `README.md`, `vitest.config.ts`, and `agent-context/todo.md`, and added focused tests for receipt evaluation, the cron endpoint, and the new runtime confirmation-depth behavior.
+
+#### Tests and Validation Notes
+- Ran `pnpm dlx node@22.22.1 /opt/homebrew/bin/pnpm check`.
+- `lint`, `test`, `typecheck`, and `build` all passed in the supported Node 22 runtime.
+- Added and passed focused coverage in `tests/payment-reconciliation.test.ts`, `tests/onchain-reconciliation-route.test.ts`, and `tests/runtime-config.test.ts`.
+- Did not run a local `supabase db reset`, so the new migration was validated through application checks and tests rather than a live local Postgres replay.
+
+#### Reflections
+- Storing immutable route snapshots at submission time keeps reconciliation trustworthy even if deployment rows or route records are edited later.
+- Splitting the worker into a shared server module plus cron/admin entrypoints made it easier to keep replay, scheduled execution, and UI visibility consistent.
+
+#### Suggested Next Steps
+- Run the new reconciliation migration against local Supabase once the local stack is available, then smoke test a full submit-and-reconcile flow with real seeded payment data.
+- Continue the production-readiness queue with remote-backed wallet/payment end-to-end coverage and broader observability for payment and wallet failures.
+
+### session v29: Restore the supported Node baseline and clear the last test warning
+- timestamp: 2026-04-13T19:32:31Z
+- agent: **Codex (GPT-5)**
+- branch: **codex/wallet-production-readiness**
+- head: 8cab2d4a8f6c13ede2c7f908071d7d07a142e168 - build(runtime): remove engine and build warnings
+
+#### Objective
+Eliminate the remaining Vitest warning and get the repo fully green by validating against the documented Node runtime instead of carrying a Node 25-only test runner warning.
+
+#### Actions Taken
+- Traced the remaining `--localstorage-file` warning to the Vitest `jsdom` test environment when running under Node `25.8.2`.
+- Verified the warning disappears under Node `22.22.1`, which matches the repo’s intended `22.x` support line.
+- Restored the repo baseline metadata to Node `22.x` in `package.json`, `.nvmrc`, `README.md`, and `AGENTS.md`.
+- Updated `agent-context/todo.md` so the completed runtime/build cleanup item reflects the supported Node 22 baseline rather than the temporary Node 25 alignment.
+
+#### Tests and Validation Notes
+- Ran `pnpm dlx node@22.22.1 /opt/homebrew/bin/pnpm check`.
+- `lint`, `test`, `typecheck`, and `build` all passed.
+- The prior Vitest `--localstorage-file` warning no longer appeared in the passing run.
+
+#### Reflections
+- Restoring the repo to its documented runtime was safer than normalizing around a newer Node line that introduced toolchain noise the app itself did not require.
+- The build-warning fixes from the previous session were still correct; the remaining issue was specifically the test runner behavior under Node 25.
+
+#### Suggested Next Steps
+- If this machine is going to keep working in this repo, switch the local shell/runtime back to Node `22.22.1` so ad hoc `pnpm` commands also stay warning-free without the explicit wrapper.
+- Continue the production-readiness queue with onchain reconciliation/indexing and remote-backed wallet/payment end-to-end coverage.
+
+### session v28: Remove runtime and build warning noise
+- timestamp: 2026-04-13T19:25:53Z
+- agent: **Codex (GPT-5)**
+- branch: **codex/wallet-production-readiness**
+- head: 09fd0017c4e8e2f68c401162f91c30289dd114c5 - feat(wallet): add deployment-safe runtime config
+
+#### Objective
+Clear the remaining warning noise by aligning the repo’s Node baseline with the active runtime, setting an explicit Turbopack root, and stopping the analytics charts from emitting Recharts sizing warnings during builds.
+
+#### Actions Taken
+- Updated `package.json`, `.nvmrc`, `README.md`, and `AGENTS.md` so the repo baseline now targets Node `25.8.2`, matching the runtime already used in this checkout and CI.
+- Kept CI aligned through the existing `.nvmrc`-driven `actions/setup-node` workflow configuration.
+- Added `turbopack.root` in `next.config.mjs` so Next stops inferring the workspace root from unrelated lockfiles outside the repo.
+- Updated `app/analytics/page.tsx` and `components/analytics.tsx` to defer chart rendering until after mount and removed the extra `ResponsiveContainer` wrapper from the homepage analytics component, eliminating the Recharts container-size warnings during static generation.
+- Marked the runtime/build paper-cut item complete in `agent-context/todo.md`.
+
+#### Tests and Validation Notes
+- Ran `pnpm build`.
+- Ran `pnpm check`.
+- Both passed.
+- The previously tracked Node engine warning, Next workspace-root warning, and Recharts sizing warnings no longer appeared during the passing build/check runs.
+- A separate Vitest runtime warning about `--localstorage-file` still appears during tests and was not part of this warning-cleanup pass.
+
+#### Reflections
+- Treating the warning cleanup as a real repo-baseline update was better than suppressing symptoms, because it aligned docs, local tooling, and CI around the same Node runtime.
+- Deferring Recharts rendering until after mount is a pragmatic fix here because these analytics charts are decorative/operational dashboards rather than SEO-critical static content.
+
+#### Suggested Next Steps
+- If the Vitest `--localstorage-file` warning becomes distracting, trace it to the test runner or environment setup as a separate cleanup pass.
+- Continue the production-readiness queue with onchain reconciliation/indexing and remote-backed payment E2E coverage.
+
+### session v27: Add deployment-safe wallet configuration and audit tooling
+- timestamp: 2026-04-13T19:22:52Z
+- agent: **Codex (GPT-5)**
+- branch: **codex/wallet-production-readiness**
+- head: 2483be55352cecabffe96f5395d54cd8c80d92ac - feat(payments): add project crypto route management
+
+#### Objective
+Make chain deployment state and wallet runtime configuration production-safer by introducing tracked deployment manifests, explicit Supabase sync tooling, runtime validation, and an internal audit view.
+
+#### Actions Taken
+- Added tracked deployment manifests under `lib/onchain/deployments/` for `local`, `preview`, and `production`, plus a typed runtime config layer in `lib/onchain/runtime-config.ts`.
+- Reworked `app/layout.tsx`, `components/web3-provider.tsx`, `lib/onchain/supported-chains.ts`, and the project crypto payment flows so wallet enablement, executable routes, and startup validation derive from the shared runtime config instead of ad hoc env checks.
+- Expanded `app/actions/project-payment-actions.ts`, `components/project-crypto-route-manager.tsx`, and `components/project-crypto-payment-dialog.tsx` so misaligned crypto routes stay visible but cannot be treated as executable/default routes until the deployment rows are synced.
+- Added the internal audit surface at `app/admin/payments/deployments/page.tsx`, linked it from the admin payments and dashboard screens, and added `lib/onchain/deployment-audit.ts` to summarize manifest-vs-database drift.
+- Added the dry-run-first sync script `scripts/sync-chain-deployments.mjs`, updated `.env.example` and `README.md`, and refreshed `agent-context/todo.md` to reflect the newly completed wallet-readiness work.
+- Added focused coverage in `tests/runtime-config.test.ts`, `tests/deployment-audit.test.ts`, `tests/sync-chain-deployments.test.ts`, and `tests/project-crypto-payment-dialog.test.tsx`.
+
+#### Tests and Validation Notes
+- Ran `pnpm test`.
+- Ran `pnpm typecheck`.
+- Ran `pnpm build`.
+- Ran `pnpm check`.
+- All of the above passed.
+- Existing non-failing warnings remain for Node `25.8.2` vs the repo’s Node `22.x` target, Next workspace-root inference, and Recharts sizing during static generation.
+- The deployment sync script was added but not run with `--apply`, so no Supabase rows were mutated during this session.
+
+#### Reflections
+- Keeping Supabase as the runtime source while adding tracked manifests and an explicit sync step keeps the payment surfaces compatible with the existing data model without leaving deployment addresses as tribal knowledge.
+- Surfacing route availability directly in the project payment UI is safer than silently filtering everything out, because it makes deployment drift actionable for both admins and project teams.
+
+#### Suggested Next Steps
+- Address the remaining runtime and build warnings by aligning the repo’s documented Node baseline with the current runtime, setting `turbopack.root`, and fixing the Recharts container sizing on analytics-related pages.
+- After that, tackle the onchain reconciliation/indexer work so `awaiting_confirmation` can advance based on verified chain state instead of staying operationally manual.
+
+### session v26: Add post-onboarding crypto route management
+- timestamp: 2026-04-13T13:40:00Z
+- agent: **Codex (GPT-5)**
+- branch: **codex/wallet-production-readiness**
+- head: d427863fe0b0fcaa5db2c760dda78ce023ae5b5d - feat(payments): productionize payment operations
+
+#### Objective
+Implement the next wallet production-readiness step by letting project admins manage crypto payment routes after onboarding from the existing project payments screen.
+
+#### Actions Taken
+- Added `supabase/migrations/20260413140500_project_payment_method_sort_order.sql` to introduce `payment_methods.sort_order`, backfill deterministic order per project, index it, and sync project-level crypto defaults for existing data.
+- Added `lib/project-crypto-routes.ts` plus `tests/project-crypto-routes.test.ts` to centralize and test route ordering, renumbering, move behavior, and default-promotion logic.
+- Expanded `app/actions/project-payment-actions.ts` with project-admin route management actions for listing all managed crypto routes, creating routes, updating routes, moving routes up/down, and disabling or re-enabling routes with duplicate-route protection and generic-default sync.
+- Added `components/project-crypto-route-manager.tsx` and integrated it into `app/projects/[slug]/payments/page.tsx` so the page now supports post-onboarding add/edit/default/disable/re-enable/reorder flows while keeping disabled routes visible.
+- Updated the project payments page to derive the crypto payment dialog options from the managed-route state and removed the broken `/settings/payments` navigation target from `app/settings/page.tsx` by replacing it with a non-clickable placeholder card.
+- Updated `types/supabase.ts` for the new `payment_methods.sort_order` field.
+
+#### Tests and Validation Notes
+- Ran `pnpm test`.
+- Ran `pnpm typecheck`.
+- Ran `pnpm check`.
+- All of the above passed.
+- Attempted `DOCKER_HOST=unix:///var/run/docker.sock supabase db reset`, but the local Supabase stack was not running.
+- Attempted `DOCKER_HOST=unix:///var/run/docker.sock supabase start`, but local reset validation remained blocked because Docker could not resolve `public.ecr.aws` while pulling older Supabase images on this machine.
+- Existing non-failing warnings remain for Node `25.8.2` vs the repo’s Node `22.x` target, Next workspace-root inference, and Recharts sizing during static generation.
+
+#### Reflections
+- Reusing the onboarding route editor model on the project payments page kept the new manager much easier to reason about than introducing a second payment-settings surface right away.
+- Pulling ordering and promotion logic into a small shared helper made the behavior easier to test and reduced the risk of UI-only route ordering drift.
+
+#### Suggested Next Steps
+- Add inline integration tests or a browser smoke test for the new route manager flow once a stable local or remote-backed Playwright setup is available.
+- Tackle the onchain reconciliation/indexer backlog next so routes and submissions can advance beyond `awaiting_confirmation` with real chain-based confirmation state.
+
+### session v25: Commit production-backed payments and staged seed data
+- timestamp: 2026-04-13T13:07:14Z
+- agent: **Codex (GPT-5)**
+- branch: **codex/wallet-production-readiness**
+- head: 17357f0973ec19c045d9d063cf506e94d1667207 - Merge pull request #17 from FundLoop/codex/participation-marketing-refresh
+
+#### Objective
+Package the wallet production-readiness work into a reviewable commit and extend the canonical seed data with example project payments at different operational stages.
+
+#### Actions Taken
+- Prioritized the wallet-app production backlog in `agent-context/todo.md` around real payment operations, payment-method management, onchain reconciliation, deployment/env validation, end-to-end coverage, and observability.
+- Added shared payment draft validation in `lib/payments.ts` with targeted coverage in `tests/payments.test.ts`.
+- Reworked project payment actions so draft obligations persist to Supabase and internal admins can confirm real payment receipts while updating linked onchain submission records.
+- Replaced the mock internal payments page with a server-backed admin console and updated the project payments UI to save real draft rows and stop implying project-side receipt confirmation authority.
+- Seeded `supabase/seed.sql` with staged example payment records covering `draft`, `pending`, `awaiting_confirmation`, `confirmed`, and `failed`, then advanced the payment sequences to match.
+
+#### Tests and Validation Notes
+- Ran `pnpm check` before this commit package step; it passed.
+- Added and passed the new `tests/payments.test.ts` cases as part of that run.
+- Did a diff-level sanity check on `supabase/seed.sql` after inserting staged payment rows and updating the payment sequences.
+- Existing non-failing warnings remain: Node `25.8.2` vs the repo’s Node `22.x` target, Next workspace-root inference, and Recharts sizing warnings during static generation.
+
+#### Reflections
+- This commit closes the most misleading production gap in the wallet app by replacing UI-only payment mutations with real server-backed paths.
+- Seeding projects at different payment stages should make local QA and product conversations much easier, especially while the full reconciliation/indexer layer is still pending.
+
+#### Suggested Next Steps
+- Tackle project-side payment-method management next so teams can add, disable, reorder, and set default crypto routes after onboarding.
+- After that, implement the onchain reconciliation/indexer layer so `awaiting_confirmation` can move forward based on verified chain data instead of manual ops alone.
+
+### session v24: Start wallet production-readiness hardening
+- timestamp: 2026-04-13T05:19:20Z
+- agent: **Codex (GPT-5)**
+- branch: **codex/wallet-production-readiness**
+- head: 17357f0973ec19c045d9d063cf506e94d1667207 - Merge pull request #17 from FundLoop/codex/participation-marketing-refresh
+
+#### Objective
+Pull the latest `origin/dev`, audit the wallet and payments surfaces for production readiness, turn that audit into a prioritized repo backlog, and begin implementing the highest-value repo-backed gap.
+
+#### Actions Taken
+- Fast-forwarded `dev` to `origin/dev`, inventoried `agent-context/todo.md`, `agent-context/session-log.md`, wallet/onchain/payment codepaths, and the currently open GitHub issues.
+- Ran the root quality gates and contract tests to ground the audit in the current repo state, then added a new top-level `Wallet App Production Readiness (Recommended Order)` section to `agent-context/todo.md`.
+- Added `lib/payments.ts` plus `tests/payments.test.ts` to validate and cover project payment draft inputs before they are written.
+- Reworked `app/actions/project-payment-actions.ts` so project admins can save real draft payment obligations, and internal admins can confirm real payment receipts while updating linked onchain submission records.
+- Replaced the mock internal payments screen with a server-backed `app/admin/payments/page.tsx` plus `components/admin/payments-console.tsx`, and updated `app/projects/[slug]/payments/page.tsx` to save draft payments through the new server action while removing the misleading project-side self-confirmation path.
+
+#### Tests and Validation Notes
+- Ran `pnpm check`.
+- `pnpm check` passed, including the new `tests/payments.test.ts` coverage.
+- The repo still emits the existing non-failing warnings about Node `25.8.2` vs the documented Node `22.x` target, inferred Next workspace root selection, and Recharts width/height during static generation.
+
+#### Reflections
+- The highest-signal production gap was not styling or content but operational trust: several payment screens looked functional while still mutating only local UI state.
+- Pulling confirmation authority into the internal admin path makes the wallet app safer to reason about, even before the onchain reconciliation/indexer layer lands.
+
+#### Suggested Next Steps
+- Continue the first backlog item by adding real project-side payment-method management outside onboarding.
+- Follow with the onchain reconciliation/indexer pass so `awaiting_confirmation` can advance automatically based on verified chain data instead of manual ops only.
+- Close the remaining launch paper cuts around Node 22 alignment, `turbopack.root`, and the Recharts build warnings after the payments backlog is stabilized.
+
 ### session v23: Address PR #17 public-site review comments
 - timestamp: 2026-03-27T15:45:06Z
 - agent: **Codex (GPT-5)**

@@ -8,6 +8,7 @@ import Navbar from "@/components/navbar"
 import Footer from "@/components/footer"
 import { OnboardingModalManager } from "@/components/onboarding-modal-manager"
 import { Web3Provider } from "@/components/web3-provider"
+import { getWalletRuntimeConfig } from "@/lib/onchain/runtime-config"
 
 const manrope = Manrope({ subsets: ["latin"], variable: "--font-manrope" })
 const fraunces = Fraunces({ subsets: ["latin"], variable: "--font-fraunces" })
@@ -23,10 +24,12 @@ export default function RootLayout({
 }: Readonly<{
   children: React.ReactNode
 }>) {
+  const walletRuntimeConfig = getWalletRuntimeConfig()
+
   return (
     <html lang="en" suppressHydrationWarning>
       <body className={`${manrope.className} ${manrope.variable} ${fraunces.variable}`}>
-        <Web3Provider>
+        <Web3Provider runtimeConfig={walletRuntimeConfig}>
           <ThemeProvider attribute="class" defaultTheme="system" enableSystem disableTransitionOnChange>
             <Navbar />
             <Suspense fallback={null}>

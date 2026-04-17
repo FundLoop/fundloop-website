@@ -500,16 +500,29 @@ export type Database = {
         Row: {
           amount_decimal: number
           amount_raw: string
+          asset_is_native: boolean
+          asset_token_address: string | null
           block_number: number | null
           chain_asset_id: number
           chain_id: number
+          chain_network_key: string
+          confirmation_count: number
           confirmed_at: string | null
+          failure_code: string | null
+          failure_reason: string | null
           id: number
+          intake_abi_version: string
           intake_contract_id: number
+          intake_contract_address: string
+          intake_treasury_address: string
+          last_checked_at: string | null
+          matched_log_index: number | null
           metadata: Json | null
           payment_id: number | null
           payment_method_id: number
+          period_id: number
           project_id: number
+          reconciled_at: string | null
           receipt: Json | null
           status: string
           submitted_at: string
@@ -519,16 +532,29 @@ export type Database = {
         Insert: {
           amount_decimal: number
           amount_raw: string
+          asset_is_native: boolean
+          asset_token_address?: string | null
           block_number?: number | null
           chain_asset_id: number
           chain_id: number
+          chain_network_key: string
+          confirmation_count?: number
           confirmed_at?: string | null
+          failure_code?: string | null
+          failure_reason?: string | null
           id?: number
+          intake_abi_version: string
           intake_contract_id: number
+          intake_contract_address: string
+          intake_treasury_address: string
+          last_checked_at?: string | null
+          matched_log_index?: number | null
           metadata?: Json | null
           payment_id?: number | null
           payment_method_id: number
+          period_id: number
           project_id: number
+          reconciled_at?: string | null
           receipt?: Json | null
           status?: string
           submitted_at?: string
@@ -538,16 +564,29 @@ export type Database = {
         Update: {
           amount_decimal?: number
           amount_raw?: string
+          asset_is_native?: boolean
+          asset_token_address?: string | null
           block_number?: number | null
           chain_asset_id?: number
           chain_id?: number
+          chain_network_key?: string
+          confirmation_count?: number
           confirmed_at?: string | null
+          failure_code?: string | null
+          failure_reason?: string | null
           id?: number
+          intake_abi_version?: string
           intake_contract_id?: number
+          intake_contract_address?: string
+          intake_treasury_address?: string
+          last_checked_at?: string | null
+          matched_log_index?: number | null
           metadata?: Json | null
           payment_id?: number | null
           payment_method_id?: number
+          period_id?: number
           project_id?: number
+          reconciled_at?: string | null
           receipt?: Json | null
           status?: string
           submitted_at?: string
@@ -613,6 +652,7 @@ export type Database = {
           label: string | null
           method_id: number | null
           project_id: number | null
+          sort_order: number
           updated_at: string
           updated_by: string | null
         }
@@ -629,6 +669,7 @@ export type Database = {
           label?: string | null
           method_id?: number | null
           project_id?: number | null
+          sort_order?: number
           updated_at?: string
           updated_by?: string | null
         }
@@ -645,6 +686,7 @@ export type Database = {
           label?: string | null
           method_id?: number | null
           project_id?: number | null
+          sort_order?: number
           updated_at?: string
           updated_by?: string | null
         }
@@ -764,6 +806,131 @@ export type Database = {
             columns: ["status_id"]
             isOneToOne: false
             referencedRelation: "ref_payment_statuses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      payment_flow_events: {
+        Row: {
+          actor_role: string
+          actor_user_id: string | null
+          attempt_id: string
+          chain_asset_id: number | null
+          chain_id: number | null
+          created_at: string
+          environment: string
+          error_code: string | null
+          error_message: string | null
+          flow: string
+          id: number
+          intake_contract_id: number | null
+          metadata: Json
+          outcome: string
+          payment_id: number | null
+          payment_method_id: number | null
+          project_id: number | null
+          severity: string
+          stage: string
+          submission_id: number | null
+          tx_hash: string | null
+          wallet_address: string | null
+        }
+        Insert: {
+          actor_role?: string
+          actor_user_id?: string | null
+          attempt_id: string
+          chain_asset_id?: number | null
+          chain_id?: number | null
+          created_at?: string
+          environment: string
+          error_code?: string | null
+          error_message?: string | null
+          flow: string
+          id?: number
+          intake_contract_id?: number | null
+          metadata?: Json
+          outcome: string
+          payment_id?: number | null
+          payment_method_id?: number | null
+          project_id?: number | null
+          severity?: string
+          stage: string
+          submission_id?: number | null
+          tx_hash?: string | null
+          wallet_address?: string | null
+        }
+        Update: {
+          actor_role?: string
+          actor_user_id?: string | null
+          attempt_id?: string
+          chain_asset_id?: number | null
+          chain_id?: number | null
+          created_at?: string
+          environment?: string
+          error_code?: string | null
+          error_message?: string | null
+          flow?: string
+          id?: number
+          intake_contract_id?: number | null
+          metadata?: Json
+          outcome?: string
+          payment_id?: number | null
+          payment_method_id?: number | null
+          project_id?: number | null
+          severity?: string
+          stage?: string
+          submission_id?: number | null
+          tx_hash?: string | null
+          wallet_address?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "payment_flow_events_chain_asset_id_fkey"
+            columns: ["chain_asset_id"]
+            isOneToOne: false
+            referencedRelation: "ref_chain_assets"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "payment_flow_events_chain_id_fkey"
+            columns: ["chain_id"]
+            isOneToOne: false
+            referencedRelation: "ref_chains"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "payment_flow_events_intake_contract_id_fkey"
+            columns: ["intake_contract_id"]
+            isOneToOne: false
+            referencedRelation: "chain_intake_contracts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "payment_flow_events_payment_id_fkey"
+            columns: ["payment_id"]
+            isOneToOne: false
+            referencedRelation: "payments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "payment_flow_events_payment_method_id_fkey"
+            columns: ["payment_method_id"]
+            isOneToOne: false
+            referencedRelation: "payment_methods"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "payment_flow_events_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "payment_flow_events_submission_id_fkey"
+            columns: ["submission_id"]
+            isOneToOne: false
+            referencedRelation: "onchain_payment_submissions"
             referencedColumns: ["id"]
           },
         ]

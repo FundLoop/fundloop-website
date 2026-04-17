@@ -24,6 +24,10 @@
     "lint": "eslint . --max-warnings=0",
     "test": "vitest run",
     "test:watch": "vitest --watch",
+    "test:e2e": "playwright test --project=remote-safe",
+    "test:e2e:remote": "playwright test --project=remote-safe",
+    "test:e2e:local": "node scripts/run-playwright-local-wallet.mjs",
+    "supabase:functions:serve:project-payment-drafts-create": "supabase functions serve project-payment-drafts-create --env-file .env.local",
     "typecheck": "tsc --noEmit",
     "check": "pnpm lint && pnpm test && pnpm typecheck && pnpm build"
   },
@@ -85,6 +89,7 @@
     "zod": "^4.3.6"
   },
   "devDependencies": {
+    "@playwright/test": "^1.59.1",
     "@tailwindcss/postcss": "^4.2.2",
     "@tailwindcss/typography": "^0.5.19",
     "@testing-library/dom": "^10.4.1",

@@ -76,22 +76,21 @@ export default function SettingsPage() {
           </Card>
         </Link>
 
-        <Link href="/settings/payments" className="block">
-          <Card className="h-full hover:border-emerald-300 dark:hover:border-emerald-700 transition-colors">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <CreditCard className="h-5 w-5 text-emerald-600 dark:text-emerald-400" />
-                Payments
-              </CardTitle>
-              <CardDescription>Manage your payment methods and history</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <p className="text-sm text-slate-600 dark:text-slate-300">
-                View your payment history, manage payment methods, and update billing information.
-              </p>
-            </CardContent>
-          </Card>
-        </Link>
+        <Card className="h-full border-dashed">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <CreditCard className="h-5 w-5 text-emerald-600 dark:text-emerald-400" />
+              Payments
+            </CardTitle>
+            <CardDescription>Project payment settings are moving into project-specific payment pages</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <p className="text-sm text-slate-600 dark:text-slate-300">
+              Manage crypto collection routes from each project&apos;s payments screen for now. A dedicated account-level
+              payments settings page is not live yet.
+            </p>
+          </CardContent>
+        </Card>
 
         <Link href="/settings/zkas" className="block">
           <Card className="h-full hover:border-emerald-300 dark:hover:border-emerald-700 transition-colors">

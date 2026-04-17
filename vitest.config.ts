@@ -8,10 +8,13 @@ export default defineConfig({
     environment: 'jsdom',
     globals: true,
     setupFiles: ['./tests/setup.ts'],
+    include: ['tests/**/*.test.ts', 'tests/**/*.test.tsx'],
+    exclude: ['tests/e2e/**'],
   },
   resolve: {
     alias: {
       '@': path.resolve(__dirname, './'),
+      'server-only': path.resolve(__dirname, './tests/shims/server-only.ts'),
     },
   },
 })
