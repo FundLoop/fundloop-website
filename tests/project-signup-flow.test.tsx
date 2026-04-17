@@ -262,6 +262,7 @@ describe("ProjectSignupFlow", () => {
     render(<ProjectSignupFlow onClose={vi.fn()} />)
 
     await screen.findByRole("heading", { name: /link your founder identity with cubid/i })
+    await waitFor(() => expect(getOnboardingState).toHaveBeenCalledTimes(1))
     fireEvent.click(screen.getByRole("button", { name: /link cubid now/i }))
 
     await waitFor(() => {

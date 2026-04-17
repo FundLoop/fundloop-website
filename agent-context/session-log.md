@@ -1,5 +1,34 @@
 ---
 
+### session v53: Remove duplicate bootstrap from the founder CUBID project gate
+- timestamp: 2026-04-17T19:37:49-0400
+- agent: **Codex (GPT-5)**
+- branch: **codex/wallet-pr4-onboarding-cubid**
+- head: a391c27
+
+#### Objective
+Fix the next PR #21 validate failure after the user-flow repair landed. The new CI failure was in `tests/project-signup-flow.test.tsx`, where the founder CUBID-resolution flow could lose the linked state before the test saw the updated `cubid-user-1` UI.
+
+#### Actions Taken
+- Pulled the fresh PR #21 GitHub Actions logs and isolated the failure to the project onboarding CUBID-resolution test rather than the user onboarding flow fixed in session v52.
+- Confirmed `components/project-signup-flow.tsx` still used the old bootstrap pattern where the onboarding-state effect depended on `authUserId` while also mutating `authUserId`, making duplicate bootstrap requests possible during initial auth hydration.
+- Added explicit auth bootstrap state plus request-id guarding in `components/project-signup-flow.tsx` so `getOnboardingState()` now runs once per auth event and stale async responses cannot overwrite the active onboarding state.
+- Added synchronous screen-ref updates around resume/back/continue transitions so a late response cannot revert the active project screen.
+- Tightened `tests/project-signup-flow.test.tsx` so the founder-linking regression also asserts the onboarding bootstrap only runs once before the CUBID-linked state is rendered.
+
+#### Tests and Validation Notes
+- `pnpm exec vitest run tests/project-signup-flow.test.tsx` passed
+- `pnpm test` passed
+- `pnpm dlx node@22.22.1 /opt/homebrew/bin/pnpm exec vitest run tests/project-signup-flow.test.tsx` passed
+
+#### Reflections
+- The second CI failure was the project-flow twin of the user-flow bug from session v52. Fixing them at the same bootstrap boundary is cleaner than trying to special-case each test assertion.
+- Matching the affected test against Node 22 was worthwhile here because the bug only surfaced reliably in GitHub Actions before the guard landed.
+
+#### Suggested Next Steps
+- Push the follow-up commit so PR #21 can rerun validate on the merge commit with both onboarding bootstrap fixes present.
+- If another onboarding CI failure appears, audit the remaining flow components for effects that both depend on and mutate auth-derived state.
+
 ### session v52: Remove duplicate onboarding bootstrap from the user resume flow
 - timestamp: 2026-04-17T19:30:00-0400
 - agent: **Codex (GPT-5)**

@@ -65,6 +65,8 @@ export default function ProjectSignupFlow({ onClose }: ProjectSignupFlowProps) {
   const [loading, setLoading] = useState(true)
   const [authUserId, setAuthUserId] = useState<string | null>(null)
   const [authEmail, setAuthEmail] = useState<string | null>(null)
+  const [authStateReady, setAuthStateReady] = useState(false)
+  const [authStateVersion, setAuthStateVersion] = useState(0)
   const [currentScreen, setCurrentScreen] = useState<ProjectOnboardingScreen>("cubid")
   const [resumeTargetScreen, setResumeTargetScreen] = useState<ProjectOnboardingScreen>("cubid")
   const [cubidIdentityStatus, setCubidIdentityStatus] = useState<"unlinked" | "linked" | "verified">("unlinked")
@@ -85,6 +87,8 @@ export default function ProjectSignupFlow({ onClose }: ProjectSignupFlowProps) {
 
   const autosaveReady = useRef(false)
   const slugEdited = useRef(false)
+  const currentScreenRef = useRef<ProjectOnboardingScreen>("cubid")
+  const loadStateRequestId = useRef(0)
 
   const selectedCategories = useMemo(
     () =>
@@ -113,6 +117,7 @@ export default function ProjectSignupFlow({ onClose }: ProjectSignupFlowProps) {
       } = await supabase.auth.getUser()
       setAuthUserId(user?.id ?? null)
       setAuthEmail(user?.email ?? null)
+      setAuthStateReady(true)
     }
 
     void loadSession()
@@ -122,6 +127,8 @@ export default function ProjectSignupFlow({ onClose }: ProjectSignupFlowProps) {
     } = supabase.auth.onAuthStateChange((_, session) => {
       setAuthUserId(session?.user?.id ?? null)
       setAuthEmail(session?.user?.email ?? null)
+      setAuthStateReady(true)
+      setAuthStateVersion((previous) => previous + 1)
     })
 
     return () => subscription.unsubscribe()
@@ -190,9 +197,19 @@ export default function ProjectSignupFlow({ onClose }: ProjectSignupFlowProps) {
   }, [])
 
   useEffect(() => {
+    if (!authStateReady) {
+      return
+    }
+
     const loadState = async () => {
+      const requestId = loadStateRequestId.current + 1
+      loadStateRequestId.current = requestId
       setLoading(true)
       const state = await getOnboardingState()
+
+      if (loadStateRequestId.current !== requestId) {
+        return
+      }
 
       setAuthUserId(state.authUserId)
       setAuthEmail(state.authEmail)
@@ -201,6 +218,7 @@ export default function ProjectSignupFlow({ onClose }: ProjectSignupFlowProps) {
       setCubidScore(state.profile?.cubid_score ?? null)
 
       if (!state.authUserId) {
+        currentScreenRef.current = "cubid"
         setCurrentScreen("cubid")
         setPayload(DEFAULT_PROJECT_ONBOARDING_PAYLOAD)
         autosaveReady.current = false
@@ -216,11 +234,14 @@ export default function ProjectSignupFlow({ onClose }: ProjectSignupFlowProps) {
             ? (state.projectDraft.current_screen as ProjectOnboardingScreen)
             : "cubid",
         )
+        currentScreenRef.current = "resume"
         setCurrentScreen("resume")
         setDraftTimestamp(state.projectDraft.updated_at || state.projectDraft.started_at)
       } else {
         setPayload((previous) => mergeProjectOnboardingPayload(previous))
-        setCurrentScreen("cubid")
+        const nextScreen = currentScreenRef.current === "resume" ? "resume" : "cubid"
+        currentScreenRef.current = nextScreen
+        setCurrentScreen(nextScreen)
         setResumeTargetScreen("cubid")
         setDraftTimestamp(null)
       }
@@ -230,7 +251,7 @@ export default function ProjectSignupFlow({ onClose }: ProjectSignupFlowProps) {
     }
 
     void loadState()
-  }, [authUserId])
+  }, [authStateReady, authStateVersion])
 
   useEffect(() => {
     if (!autosaveReady.current || !authUserId || currentScreen === "resume") {
@@ -404,6 +425,7 @@ export default function ProjectSignupFlow({ onClose }: ProjectSignupFlowProps) {
     }
 
     setPayload(DEFAULT_PROJECT_ONBOARDING_PAYLOAD)
+    currentScreenRef.current = "cubid"
     setCurrentScreen("cubid")
     setResumeTargetScreen("cubid")
     setDraftTimestamp(null)
@@ -494,7 +516,13 @@ export default function ProjectSignupFlow({ onClose }: ProjectSignupFlowProps) {
             <Button variant="outline" onClick={() => void handleStartOver()} disabled={saving}>
               Start over
             </Button>
-            <Button onClick={() => setCurrentScreen(resumeTargetScreen)} className="gap-2">
+            <Button
+              onClick={() => {
+                currentScreenRef.current = resumeTargetScreen
+                setCurrentScreen(resumeTargetScreen)
+              }}
+              className="gap-2"
+            >
               Continue draft
               <ArrowRight className="h-4 w-4" />
             </Button>
@@ -538,7 +566,13 @@ export default function ProjectSignupFlow({ onClose }: ProjectSignupFlowProps) {
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div className="text-sm text-slate-500">{saving ? "Saving your project draft..." : "Every project step is saved automatically."}</div>
           <div className="flex items-center gap-3">
-            <Button variant="outline" onClick={() => setCurrentScreen(getPreviousScreen())}>
+            <Button
+              variant="outline"
+              onClick={() => {
+                currentScreenRef.current = getPreviousScreen()
+                setCurrentScreen(getPreviousScreen())
+              }}
+            >
               <ArrowLeft className="mr-2 h-4 w-4" />
               Back
             </Button>
@@ -548,7 +582,14 @@ export default function ProjectSignupFlow({ onClose }: ProjectSignupFlowProps) {
                 {publishing ? "Publishing..." : "Publish project"}
               </Button>
             ) : (
-              <Button onClick={() => setCurrentScreen(getNextScreen())} disabled={!canContinue()} className="gap-2">
+              <Button
+                onClick={() => {
+                  currentScreenRef.current = getNextScreen()
+                  setCurrentScreen(getNextScreen())
+                }}
+                disabled={!canContinue()}
+                className="gap-2"
+              >
                 Continue
                 <ArrowRight className="h-4 w-4" />
               </Button>
