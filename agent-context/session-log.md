@@ -1,10 +1,38 @@
----
+### session v56: Address PR 20 public discovery review comments
+- timestamp: 2026-04-17T20:22:03-04:00
+- agent: **Codex (GPT-5)**
+- branch: **codex/address-wallet-review-comments**
+- head: TBD
+
+#### Objective
+Address the outstanding review threads from PR #20 after the public funnel and discovery work merged, focusing on truthful public rendering and consistent discovery semantics.
+
+#### Actions Taken
+- Removed the stray opening YAML frontmatter delimiter from `agent-context/session-log.md` so the log renders as normal Markdown.
+- Updated public project participant totals to count only active users, matching project detail visibility.
+- Reworked public user-directory project slug derivation to use a precomputed `projectId -> slug` map instead of filtering all projects for every user.
+- Added an all-project membership guard so the users directory only includes active public users who participate in at least one public project.
+- Changed the FAQ closing CTA eyebrow to a dedicated localized CTA label instead of reusing the hero eyebrow.
+- Changed blog-post rendering so missing publish/create timestamps show an explicit pending publication label rather than pretending the post was published today.
+- Noted that the PR #20 doc-link comments were already fixed by the preceding PR #19 cleanup commit, `7a53688`.
+
+#### Tests and Validation Notes
+- `pnpm dlx node@22.22.1 /opt/homebrew/bin/pnpm lint` passed
+- `pnpm dlx node@22.22.1 /opt/homebrew/bin/pnpm typecheck` passed
+
+#### Reflections
+- The directory count and membership fixes keep list and detail pages aligned around the same public/active participation rules.
+- The blog timestamp fallback was a small but important honesty fix: no fabricated dates, even for edge-case content.
+
+#### Suggested Next Steps
+- Reply to and resolve the nine PR #20 review threads with the relevant commit references.
+- Continue the same review-fix-resolve loop with the outstanding PR #21 comments.
 
 ### session v55: Address PR 19 shell and planning-doc review comments
 - timestamp: 2026-04-17T20:19:02-04:00
 - agent: **Codex (GPT-5)**
 - branch: **codex/address-wallet-review-comments**
-- head: TBD
+- head: 7a53688
 
 #### Objective
 Address the outstanding review threads from PR #19 after the app-shell and locale-routing work merged, keeping the fixes focused on review cleanup rather than additional shell refactors.

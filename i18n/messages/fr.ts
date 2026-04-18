@@ -1083,6 +1083,7 @@ export const frMessages = {
     missingTitle: "Article introuvable",
     missingBody: "L’article demandé n’existe pas ou n’est plus publié.",
     publishedLabel: "Publié le {date}",
+    unpublishedLabel: "Date de publication en attente",
   },
   ecosystemPage: {
     backToHome: "Retour à l’accueil",
@@ -1103,6 +1104,7 @@ export const frMessages = {
         "La version courte reste simple : les utilisateurs ne paient pas pour rejoindre, les projets alignés soutiennent la boucle lorsque la valeur existe, et FundLoop construit une infrastructure produit pour une participation plus juste.",
     },
     cta: {
+      eyebrow: "Prochaines étapes",
       title: "Vous avez encore besoin d’aide ?",
       body: "La prochaine meilleure étape dépend du sujet : participation, parcours fondateur ou support.",
       participation: "Voir la participation",

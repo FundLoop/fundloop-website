@@ -1221,6 +1221,7 @@ export const enMessages = {
     missingTitle: "Article not found",
     missingBody: "The blog post you requested does not exist or is no longer published.",
     publishedLabel: "Published {date}",
+    unpublishedLabel: "Publication date pending",
   },
   ecosystemPage: {
     backToHome: "Back to home",
@@ -1333,6 +1334,7 @@ export const enMessages = {
       },
     },
     cta: {
+      eyebrow: "Next steps",
       title: "Still need help?",
       body: "The next best stop is participation, the founder path, or support, depending on what you are trying to resolve.",
       participation: "View participation",
