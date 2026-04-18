@@ -1080,7 +1080,7 @@ export async function recordOnchainPaymentSubmission(
 
   const [{ data: payment }, { data: paymentMethod }, { data: awaitingStatus }, { data: unresolvedSubmission }] =
     await Promise.all([
-      supabase.from("payments").select("id, project_id, notes").eq("id", input.paymentId).single(),
+      supabase.from("payments").select("id, project_id, payment_amount, notes").eq("id", input.paymentId).single(),
       supabase
         .from("payment_methods")
         .select(`
@@ -1232,6 +1232,47 @@ export async function recordOnchainPaymentSubmission(
       error: "Payment amount is invalid",
     })
     return { ok: false, error: "Payment amount is invalid" }
+  }
+
+  const expectedAmount = Number(payment.payment_amount)
+  if (!Number.isFinite(expectedAmount) || expectedAmount <= 0) {
+    await recordActionObservabilityEvent({
+      flow: "receipt_recording",
+      stage: "submission_record",
+      outcome: "failure",
+      attemptId,
+      actorUserId: context.data.userId,
+      actorRole: "project_admin",
+      projectId: context.data.project.id,
+      paymentId: input.paymentId,
+      paymentMethodId: input.paymentMethodId,
+      txHash: input.txHash,
+      walletAddress: input.walletAddress,
+      error: "Canonical payment amount is invalid",
+    })
+    return { ok: false, error: "Canonical payment amount is invalid" }
+  }
+
+  if (Math.abs(amountDecimal - expectedAmount) > 0.000001) {
+    await recordActionObservabilityEvent({
+      flow: "receipt_recording",
+      stage: "submission_record",
+      outcome: "failure",
+      attemptId,
+      actorUserId: context.data.userId,
+      actorRole: "project_admin",
+      projectId: context.data.project.id,
+      paymentId: input.paymentId,
+      paymentMethodId: input.paymentMethodId,
+      txHash: input.txHash,
+      walletAddress: input.walletAddress,
+      error: "Submitted onchain amount does not match the payment amount",
+      metadata: {
+        expectedAmount,
+        submittedAmount: amountDecimal,
+      },
+    })
+    return { ok: false, error: "Submitted onchain amount does not match the payment amount" }
   }
 
   if (!Number.isInteger(input.periodId) || input.periodId < 0 || input.periodId > 12) {

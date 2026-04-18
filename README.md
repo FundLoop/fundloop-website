@@ -110,7 +110,7 @@ See [Local Seed Fixtures](/Users/botmaster/src/fundloop/docs/engineering/local-s
 
 Wallet execution uses a hybrid model:
 
-- tracked manifests under [`lib/onchain/deployments/`](/Users/botmaster/src/fundloop/lib/onchain/deployments) are the source of truth for deployed intake contract and treasury addresses
+- tracked manifests under [`lib/onchain/deployments/`](lib/onchain/deployments/) are the source of truth for deployed intake contract and treasury addresses
 - Supabase `chain_intake_contracts` rows remain the runtime source used by project payment routes
 - the sync script applies manifest changes into Supabase explicitly instead of mutating the database at app startup
 

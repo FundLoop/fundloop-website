@@ -13,7 +13,7 @@ Current high-signal docs:
 
 - [CUBID Identity and Snapshot Model](/Users/botmaster/src/fundloop/docs/engineering/cubid-identity.md)
 - [Design Tokens](/Users/botmaster/src/fundloop/docs/engineering/design-tokens.md)
-- [Edge Function Contract Pattern](/Users/botmaster/src/fundloop/docs/engineering/edge-functions.md)
+- [Edge Function Contract Pattern](./edge-functions.md)
 - [Information Architecture](/Users/botmaster/src/fundloop/docs/engineering/information-architecture.md)
 - [Internationalization](/Users/botmaster/src/fundloop/docs/engineering/i18n.md)
 - [Local Seed Fixtures](/Users/botmaster/src/fundloop/docs/engineering/local-seed.md)

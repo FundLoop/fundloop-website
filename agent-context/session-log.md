@@ -1,5 +1,37 @@
 ---
 
+### session v54: Address PR 18 payment and onchain reconciliation review comments
+- timestamp: 2026-04-17T20:08:59-0400
+- agent: **Codex (GPT-5)**
+- branch: **codex/address-wallet-review-comments**
+- head: TBD
+
+#### Objective
+Address the outstanding review threads from PR #18 after the wallet payments and Edge Function groundwork was approved and merged, without reopening the original stacked branch.
+
+#### Actions Taken
+- Converted the PR #18 doc links called out in review from machine-local `/Users/...` targets to repo-relative links in:
+  - `docs/engineering/README.md`
+  - `README.md`
+- Added runtime validation and string-to-number coercion for the internal onchain reconciliation route body in `app/api/internal/payments/reconcile-onchain/route.ts`.
+- Added route coverage proving valid numeric strings are accepted and invalid numeric filters return `400` before reaching reconciliation.
+- Hardened `recordOnchainPaymentSubmission(...)` so the submitted onchain decimal amount must match the canonical `payments.payment_amount` before a submission is stored.
+- Added the forward-only migration `supabase/migrations/20260417193000_onchain_reconciliation_atomic_update.sql` with `public.finalize_onchain_payment_reconciliation(...)`.
+- Switched reconciliation finalization in `lib/onchain/payment-reconciliation.ts` to call the new RPC so terminal submission state and linked payment state update inside one database transaction.
+- Updated `types/supabase.ts` with the new RPC signature.
+
+#### Tests and Validation Notes
+- `pnpm dlx node@22.22.1 /opt/homebrew/bin/pnpm exec vitest run tests/onchain-reconciliation-route.test.ts tests/payment-reconciliation.test.ts tests/project-payment-observability-actions.test.ts` passed
+- `pnpm dlx node@22.22.1 /opt/homebrew/bin/pnpm typecheck` passed
+
+#### Reflections
+- The two P1 review comments were tightly coupled: canonical amount validation prevents underpayment snapshots from entering the reconciliation queue, and atomic finalization prevents payment/submission status drift once reconciliation starts.
+- The RPC keeps the application-level logic readable while giving Postgres ownership of the transactional boundary.
+
+#### Suggested Next Steps
+- Reply to and resolve the five PR #18 review threads with this commit reference.
+- Continue the same review-fix-resolve loop with the outstanding PR #19 comments.
+
 ### session v53: Remove duplicate bootstrap from the founder CUBID project gate
 - timestamp: 2026-04-17T19:37:49-0400
 - agent: **Codex (GPT-5)**

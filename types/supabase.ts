@@ -3072,6 +3072,25 @@ export type Database = {
       }
     }
     Functions: {
+      finalize_onchain_payment_reconciliation: {
+        Args: {
+          p_confirmation_count: number
+          p_failure_code: string | null
+          p_failure_reason: string | null
+          p_last_checked_at: string
+          p_matched_log_index: number | null
+          p_payment_confirmed_at: string | null
+          p_payment_id: number | null
+          p_payment_note: string | null
+          p_payment_status_id: number | null
+          p_payment_updated_at: string
+          p_submission_confirmed_at: string | null
+          p_submission_id: number
+          p_submission_reconciled_at: string | null
+          p_submission_status: string
+        }
+        Returns: undefined
+      }
       get_active_org_members: {
         Args: { org_id: number }
         Returns: {
