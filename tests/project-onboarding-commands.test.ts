@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest"
+import { describe, expect, it, vi } from "vitest"
 import {
   executeProjectOnboardingDraftClearCommand,
   executeProjectOnboardingDraftUpsertCommand,
@@ -171,6 +171,70 @@ describe("project onboarding commands", () => {
         projectSlug: "civic-mesh",
       },
     })
+  })
+
+  it("uses the authenticated RPC client when publishing from an Edge Function", async () => {
+    const rpc = vi.fn(() => ({
+      single() {
+        return Promise.resolve({
+          data: { project_id: 99, project_slug: "civic-mesh" },
+          error: null,
+        })
+      },
+    }))
+    const rpcSupabase = { rpc }
+    const supabase = createSupabaseMock({
+      project_onboarding_drafts: [
+        {
+          data: {
+            id: 10,
+            user_id: "user-1",
+            current_screen: "review",
+            payload: {
+              name: "Civic Mesh",
+              slug: "civic-mesh",
+              logoUrl: "",
+              website: "",
+              description: "Routing public transit coordination.",
+              contactEmail: "",
+              detailedDescription: "",
+              categoryIds: [],
+              pledgeAccepted: true,
+              billingEmail: "",
+              billingFrequency: "monthly",
+              paymentPercentage: "1.5",
+              paymentPeriodicityId: "",
+              cryptoPaymentMethods: [],
+            },
+            started_at: "2026-04-15T00:00:00.000Z",
+            updated_at: "2026-04-15T00:00:00.000Z",
+            completed_at: null,
+          },
+          error: null,
+        },
+      ],
+      users: [{ data: { cubid_identity_status: "linked" }, error: null }],
+      projects: [{ data: null, error: null }],
+    })
+
+    await expect(
+      executeProjectOnboardingPublishCommand(supabase as never, {
+        actorUserId: "user-1",
+        rpcSupabase: rpcSupabase as never,
+      }),
+    ).resolves.toEqual({
+      ok: true,
+      data: {
+        projectSlug: "civic-mesh",
+      },
+    })
+
+    expect(rpc).toHaveBeenCalledWith(
+      "publish_project_onboarding_draft_atomic",
+      expect.objectContaining({
+        p_slug: "civic-mesh",
+      }),
+    )
   })
 
   it("rejects incomplete project publish requirements", async () => {

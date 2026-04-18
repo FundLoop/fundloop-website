@@ -91,6 +91,7 @@ export async function authenticateRequest(request) {
 
   return {
     ok: true,
+    authClient: clients.authClient,
     adminClient: clients.adminClient,
     user,
   }

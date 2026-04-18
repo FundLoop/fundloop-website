@@ -15,7 +15,7 @@ import type {
 
 function unsupportedPromise<T>() {
   return Promise.reject<T>(
-    new Error("This CUBID browser bridge only supports phone OTP and stamp persistence in Session 14."),
+    new Error("This CUBID browser bridge only supports phone OTP and stamp persistence."),
   )
 }
 

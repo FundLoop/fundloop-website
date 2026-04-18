@@ -5,7 +5,13 @@ import {
   executeUserOnboardingPublishCommand,
 } from "@/lib/onboarding/user-onboarding-commands"
 
-function createQueryResponse(response: unknown) {
+type SupabaseOperation = {
+  table: string
+  operation: "update"
+  payload: unknown
+}
+
+function createQueryResponse(response: unknown, table: string, operations: SupabaseOperation[]) {
   return {
     select() {
       return this
@@ -25,7 +31,8 @@ function createQueryResponse(response: unknown) {
     delete() {
       return this
     },
-    update() {
+    update(payload: unknown) {
+      operations.push({ table, operation: "update", payload })
       return this
     },
     insert() {
@@ -39,12 +46,14 @@ function createQueryResponse(response: unknown) {
 
 function createSupabaseMock(responsesByTable: Record<string, unknown[]>) {
   const counters = new Map<string, number>()
+  const operations: SupabaseOperation[] = []
 
   return {
+    operations,
     from(table: string) {
       const nextIndex = counters.get(table) ?? 0
       counters.set(table, nextIndex + 1)
-      return createQueryResponse(responsesByTable[table]?.[nextIndex] ?? { data: null, error: null })
+      return createQueryResponse(responsesByTable[table]?.[nextIndex] ?? { data: null, error: null }, table, operations)
     },
   }
 }
@@ -175,6 +184,74 @@ describe("user onboarding commands", () => {
         relationshipChoice: "create_project",
       },
     })
+  })
+
+  it("preserves existing invite attribution when a draft has no new invite code", async () => {
+    const supabase = createSupabaseMock({
+      user_onboarding_drafts: [
+        {
+          data: {
+            id: 8,
+            user_id: "user-1",
+            current_screen: "review",
+            payload: {
+              fullName: "Maya Torres",
+              displayName: "Maya",
+              profileHeadline: "Builder",
+              avatarUrl: "",
+              bio: "",
+              occupationId: "",
+              locationId: "",
+              genderId: "",
+              interestIds: [],
+              inviteCode: "",
+              privacyPreset: "limited",
+              visibility: {
+                isPublic: true,
+                isNamePublic: true,
+                isPfpPublic: true,
+                isGenderPublic: false,
+                isOccupationPublic: true,
+                isLocationPublic: true,
+                isBirthyearPublic: false,
+                isBirthdayPublic: false,
+              },
+              relationshipChoice: "individual",
+              selectedProjectId: null,
+            },
+            started_at: "2026-04-15T00:00:00.000Z",
+            updated_at: "2026-04-15T00:00:00.000Z",
+            completed_at: null,
+          },
+          error: null,
+        },
+        { data: null, error: null },
+      ],
+      users: [
+        { data: { invited_by_code: "legacy-invite", cubid_identity_status: "linked", full_name: "Maya Torres" }, error: null },
+        { data: null, error: null },
+      ],
+      user_interests: [{ data: null, error: null }],
+    })
+
+    await expect(
+      executeUserOnboardingPublishCommand(supabase as never, {
+        actorUserId: "user-1",
+        actorEmail: "maya@example.com",
+      }),
+    ).resolves.toEqual({
+      ok: true,
+      data: {
+        nextFlow: null,
+        relationshipChoice: "individual",
+      },
+    })
+
+    expect(supabase.operations.find((operation) => operation.table === "users")?.payload).toEqual(
+      expect.objectContaining({
+        invited_by_code: "legacy-invite",
+      }),
+    )
   })
 
   it("returns a clear failure when the user draft is missing", async () => {

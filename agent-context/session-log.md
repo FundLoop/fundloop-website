@@ -1,8 +1,39 @@
+### session v57: Address PR 21 CUBID onboarding review comments
+- timestamp: 2026-04-17T20:25:13-04:00
+- agent: **Codex (GPT-5)**
+- branch: **codex/address-wallet-review-comments**
+- head: TBD
+
+#### Objective
+Address the outstanding review threads from PR #21 after the CUBID onboarding work merged, focusing on trust-boundary fixes and reproducible dependency cleanup.
+
+#### Actions Taken
+- Removed internal session-planning wording from the CUBID browser bridge unsupported-operation error.
+- Verified the outdated package and lockfile comments were already addressed on the merged tip by switching `@cubid/*` dependencies to repo-vendored tarballs under `vendor/cubid/`.
+- Extended the shared Edge Function command runtime to return the authenticated Supabase client alongside the service-role client.
+- Changed `project-onboarding-publish` so the project publish RPC runs through the authenticated client while privileged reads/writes remain on the admin client.
+- Added an optional `rpcSupabase` command input for `executeProjectOnboardingPublishCommand(...)` and covered that handoff in command tests.
+- Preserved existing `users.invited_by_code` during user publish when the draft does not provide a new invite code.
+- Enforced signed-in email matching in the CUBID resolve and sync Edge Functions so client-provided email overrides cannot link or sync another email identity.
+
+#### Tests and Validation Notes
+- `pnpm dlx node@22.22.1 /opt/homebrew/bin/pnpm exec vitest run tests/project-onboarding-commands.test.ts tests/user-onboarding-commands.test.ts tests/onboarding-edge-adapters.test.ts tests/cubid-resolve-email-command.test.ts tests/cubid-read-model.test.ts` passed
+- `pnpm dlx node@22.22.1 /opt/homebrew/bin/pnpm lint` passed
+- `pnpm dlx node@22.22.1 /opt/homebrew/bin/pnpm typecheck` passed
+
+#### Reflections
+- The project publish path now preserves the intended split: service role for privileged server-owned data access, user JWT for the RPC that depends on `auth.uid()`.
+- The CUBID email guard is deliberately duplicated across resolve and sync because both are user-facing identity writes and should share the same trust boundary.
+
+#### Suggested Next Steps
+- Reply to and resolve the seven PR #21 review threads with the relevant commit references.
+- Open a fresh cleanup PR from `codex/address-wallet-review-comments` into `dev` after all review threads are closed.
+
 ### session v56: Address PR 20 public discovery review comments
 - timestamp: 2026-04-17T20:22:03-04:00
 - agent: **Codex (GPT-5)**
 - branch: **codex/address-wallet-review-comments**
-- head: TBD
+- head: f4ce96d
 
 #### Objective
 Address the outstanding review threads from PR #20 after the public funnel and discovery work merged, focusing on truthful public rendering and consistent discovery semantics.

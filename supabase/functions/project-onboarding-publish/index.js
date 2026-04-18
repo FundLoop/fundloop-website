@@ -25,6 +25,7 @@ async function handleRequest(request) {
 
   const result = await executeProjectOnboardingPublishCommand(auth.adminClient, {
     actorUserId: auth.user.id,
+    rpcSupabase: auth.authClient,
   })
 
   if (!result.ok) {
