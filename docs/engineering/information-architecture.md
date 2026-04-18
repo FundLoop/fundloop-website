@@ -3,13 +3,13 @@
 Last reviewed: 2026-04-14
 
 Related planning docs:
-- [Engineering Docs Index](/Users/botmaster/src/fundloop/docs/engineering/README.md)
-- [Agent Context Index](/Users/botmaster/src/fundloop/agent-context/README.md)
-- [Backgrounder for Agents](/Users/botmaster/src/fundloop/agent-context/backgrounder-for-agents.md)
-- [Current-State Architecture](/Users/botmaster/src/fundloop/agent-context/current-state-architecture.md)
-- [Target-State Architecture](/Users/botmaster/src/fundloop/agent-context/target-state-architecture.md)
-- [Route Inventory](/Users/botmaster/src/fundloop/docs/engineering/route-inventory.md)
-- [TODO Roadmap](/Users/botmaster/src/fundloop/agent-context/todo.md)
+- [Engineering Docs Index](./README.md)
+- [Agent Context Index](../../agent-context/README.md)
+- [Backgrounder for Agents](../../agent-context/backgrounder-for-agents.md)
+- [Current-State Architecture](../../agent-context/current-state-architecture.md)
+- [Target-State Architecture](../../agent-context/target-state-architecture.md)
+- [Route Inventory](./route-inventory.md)
+- [TODO Roadmap](../../agent-context/todo.md)
 
 This document locks the target route model for FundLoop. It does not move routes yet. It defines which surfaces stay public, which authenticated surfaces converge into role-based workspaces, and where transitional current routes should land.
 

@@ -1,6 +1,6 @@
 # Local Seed Fixtures
 
-FundLoop's tracked [`supabase/seed.sql`](/Users/botmaster/src/fundloop/supabase/seed.sql) remains the canonical local data seed, but it now includes a small deterministic public-discovery fixture set specifically for browser smoke tests and local UX validation.
+FundLoop's tracked [`supabase/seed.sql`](../../supabase/seed.sql) remains the canonical local data seed, but it now includes a small deterministic public-discovery fixture set specifically for browser smoke tests and local UX validation.
 
 Use these fixtures after `supabase db reset` when you want predictable public pages:
 

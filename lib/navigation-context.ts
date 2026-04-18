@@ -105,6 +105,13 @@ type UserProfileRow = {
   cubid_score: number | null
 }
 
+type NavigationQueryError = {
+  message?: string
+  code?: string
+  details?: string
+  hint?: string
+}
+
 function emptyNavigationContext(): NavigationContext {
   return {
     user: null,
@@ -118,11 +125,28 @@ function emptyNavigationContext(): NavigationContext {
   }
 }
 
+function logNavigationContextError(label: string, error: NavigationQueryError | null | undefined) {
+  if (!error) {
+    return
+  }
+
+  console.warn("[navigation-context] Supabase read failed", {
+    label,
+    message: error.message,
+    code: error.code,
+    details: error.details,
+    hint: error.hint,
+  })
+}
+
 export const getNavigationContext = cache(async (): Promise<NavigationContext> => {
   const supabase = await createServerSupabaseClient()
   const {
     data: { user: authUser },
+    error: authError,
   } = await supabase.auth.getUser()
+
+  logNavigationContextError("auth.getUser", authError)
 
   if (!authUser) {
     return emptyNavigationContext()
@@ -138,8 +162,7 @@ export const getNavigationContext = cache(async (): Promise<NavigationContext> =
     }
   })()
 
-  const [{ data: profile }, { data: cubidSnapshot }, { count: interestCount }, { data: participantRows }, { data: founderRoles }] =
-    await Promise.all([
+  const [profileResult, cubidSnapshotResult, interestCountResult, participantRowsResult, founderRolesResult] = await Promise.all([
     roleAwareSupabase
       .from("users")
       .select(
@@ -153,10 +176,21 @@ export const getNavigationContext = cache(async (): Promise<NavigationContext> =
     roleAwareSupabase.from("ref_roles").select("id").in("name", ["Founder", "Admin"]),
   ])
 
+  logNavigationContextError("users.profile", profileResult.error)
+  logNavigationContextError("cubid_identity_snapshots", cubidSnapshotResult.error)
+  logNavigationContextError("user_interests.count", interestCountResult.error)
+  logNavigationContextError("participants.admin_projects", participantRowsResult.error)
+  logNavigationContextError("ref_roles.founder_admin", founderRolesResult.error)
+
+  const profile = profileResult.data ?? null
+  const cubidSnapshot = cubidSnapshotResult.data ?? null
+  const interestCount = interestCountResult.count ?? 0
+  const participantRows = participantRowsResult.error ? [] : (participantRowsResult.data ?? [])
+  const founderRoles = founderRolesResult.error ? [] : (founderRolesResult.data ?? [])
   const participantProjectIds = Array.from(new Set((participantRows ?? []).map((row) => row.project_id)))
   const founderRoleIds = ((founderRoles as RoleRow[] | null) ?? []).map((role) => role.id)
 
-  const { data: organizationMemberships } =
+  const organizationMembershipsResult =
     founderRoleIds.length > 0
       ? await roleAwareSupabase
           .from("organization_members")
@@ -164,21 +198,28 @@ export const getNavigationContext = cache(async (): Promise<NavigationContext> =
           .eq("user_id", authUser.id)
           .eq("status", "active")
           .in("role_id", founderRoleIds)
-      : { data: [] as { organization_id: number }[] }
+      : { data: [] as { organization_id: number }[], error: null }
+  logNavigationContextError("organization_members.founder_roles", organizationMembershipsResult.error)
+  const organizationMemberships = organizationMembershipsResult.error ? [] : (organizationMembershipsResult.data ?? [])
 
   const organizationIds = Array.from(new Set((organizationMemberships ?? []).map((row) => row.organization_id)))
 
   const [participantProjectsResult, organizationProjectsResult] = await Promise.all([
     participantProjectIds.length > 0
       ? roleAwareSupabase.from("projects").select("id, slug, name, organization_id").in("id", participantProjectIds)
-      : Promise.resolve({ data: [] as ProjectRow[] }),
+      : Promise.resolve({ data: [] as ProjectRow[], error: null }),
     organizationIds.length > 0
       ? roleAwareSupabase.from("projects").select("id, slug, name, organization_id").in("organization_id", organizationIds)
-      : Promise.resolve({ data: [] as ProjectRow[] }),
+      : Promise.resolve({ data: [] as ProjectRow[], error: null }),
   ])
+  logNavigationContextError("projects.participant_managed", participantProjectsResult.error)
+  logNavigationContextError("projects.organization_managed", organizationProjectsResult.error)
 
   const managedProjectsMap = new Map<number, ManagedProjectSummary>()
-  for (const project of [...(participantProjectsResult.data ?? []), ...(organizationProjectsResult.data ?? [])]) {
+  for (const project of [
+    ...(participantProjectsResult.error ? [] : (participantProjectsResult.data ?? [])),
+    ...(organizationProjectsResult.error ? [] : (organizationProjectsResult.data ?? [])),
+  ]) {
     managedProjectsMap.set(project.id, {
       id: project.id,
       slug: project.slug,
@@ -192,24 +233,32 @@ export const getNavigationContext = cache(async (): Promise<NavigationContext> =
   const locationRowPromise =
     profile?.location_id !== null && profile?.location_id !== undefined
       ? roleAwareSupabase.from("ref_locations").select("name").eq("id", profile.location_id).maybeSingle<{ name: string }>()
-      : Promise.resolve({ data: null as { name: string } | null })
+      : Promise.resolve({ data: null as { name: string } | null, error: null })
   const occupationRowPromise =
     profile?.occupation_id !== null && profile?.occupation_id !== undefined
       ? roleAwareSupabase.from("ref_occupations").select("name").eq("id", profile.occupation_id).maybeSingle<{ name: string }>()
-      : Promise.resolve({ data: null as { name: string } | null })
+      : Promise.resolve({ data: null as { name: string } | null, error: null })
 
-  const [{ data: interestRows }, { data: locationRow }, { data: occupationRow }] = await Promise.all([
+  const [interestRowsResult, locationRowResult, occupationRowResult] = await Promise.all([
     interestRowsPromise,
     locationRowPromise,
     occupationRowPromise,
   ])
+  logNavigationContextError("user_interests.rows", interestRowsResult.error)
+  logNavigationContextError("ref_locations.profile_location", locationRowResult.error)
+  logNavigationContextError("ref_occupations.profile_occupation", occupationRowResult.error)
 
-  const interestIds = (interestRows ?? []).map((row) => row.interest_id)
-  const { data: interestRefRows } =
+  const interestRows = interestRowsResult.error ? [] : (interestRowsResult.data ?? [])
+  const locationRow = locationRowResult.error ? null : locationRowResult.data
+  const occupationRow = occupationRowResult.error ? null : occupationRowResult.data
+  const interestIds = interestRows.map((row) => row.interest_id)
+  const interestRefRowsResult =
     interestIds.length > 0
       ? await roleAwareSupabase.from("ref_interests").select("id, name").in("id", interestIds)
-      : { data: [] as { id: number; name: string }[] }
-  const interestNameMap = new Map((interestRefRows ?? []).map((row) => [row.id, row.name]))
+      : { data: [] as { id: number; name: string }[], error: null }
+  logNavigationContextError("ref_interests.profile_interests", interestRefRowsResult.error)
+  const interestRefRows = interestRefRowsResult.error ? [] : (interestRefRowsResult.data ?? [])
+  const interestNameMap = new Map(interestRefRows.map((row) => [row.id, row.name]))
   const interestNames = interestIds.map((interestId) => interestNameMap.get(interestId)).filter((value): value is string => Boolean(value))
 
   const cubidReadModel = buildCubidIdentityReadModel(

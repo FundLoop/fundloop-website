@@ -104,7 +104,7 @@ After a local reset, these stable public smoke targets should exist:
 - `/en/projects/open-transit-ledger`
 - `/en/users/00000000-0000-4000-8000-000000000101`
 
-See [Local Seed Fixtures](/Users/botmaster/src/fundloop/docs/engineering/local-seed.md) for the full deterministic fixture set.
+See [Local Seed Fixtures](docs/engineering/local-seed.md) for the full deterministic fixture set.
 
 ## Wallet Deployment Workflow
 

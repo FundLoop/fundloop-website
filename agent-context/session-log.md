@@ -1,10 +1,40 @@
 ---
 
+### session v55: Address PR 19 shell and planning-doc review comments
+- timestamp: 2026-04-17T20:19:02-04:00
+- agent: **Codex (GPT-5)**
+- branch: **codex/address-wallet-review-comments**
+- head: TBD
+
+#### Objective
+Address the outstanding review threads from PR #19 after the app-shell and locale-routing work merged, keeping the fixes focused on review cleanup rather than additional shell refactors.
+
+#### Actions Taken
+- Converted the active planning, engineering, README, and local-seed documentation links from machine-local `/Users/...` targets to repo-relative links.
+- Left historical session-log command paths intact because those entries describe prior local validation commands rather than navigable documentation.
+- Updated `docs/engineering/i18n.md` to record that FundLoop is on Next.js 16 and intentionally uses the active `proxy.ts` convention rather than adding deprecated `middleware.ts`.
+- Hardened `lib/navigation-context.ts` so Supabase read errors are no longer silently ignored.
+- Added explicit navigation-context logging for auth, profile, CUBID snapshot, participant, organization, project, interest, occupation, and location reads.
+- Kept navigation fallbacks conservative when reads fail so the app shell can still render while avoiding inflated founder/admin/project access from partial data.
+
+#### Tests and Validation Notes
+- `pnpm dlx node@22.22.1 /opt/homebrew/bin/pnpm lint` passed
+- `pnpm dlx node@22.22.1 /opt/homebrew/bin/pnpm typecheck` passed
+- `rg -n '/Users/botmaster/src/fundloop|/Users/' README.md agent-context docs i18n proxy.ts lib/navigation-context.ts` now only reports historical session-log entries.
+
+#### Reflections
+- The middleware review note was correct for older Next.js versions but stale for this repo’s Next.js 16 baseline. Documenting the convention is safer than adding a conflicting `middleware.ts`.
+- Navigation context should stay resilient, but explicit logging gives future agents and operators a trail when role-aware shell state falls back because a read failed.
+
+#### Suggested Next Steps
+- Reply to and resolve the eight PR #19 review threads with this commit reference.
+- Continue the same review-fix-resolve loop with the outstanding PR #20 comments.
+
 ### session v54: Address PR 18 payment and onchain reconciliation review comments
 - timestamp: 2026-04-17T20:08:59-0400
 - agent: **Codex (GPT-5)**
 - branch: **codex/address-wallet-review-comments**
-- head: TBD
+- head: 36cfd26
 
 #### Objective
 Address the outstanding review threads from PR #18 after the wallet payments and Edge Function groundwork was approved and merged, without reopening the original stacked branch.
