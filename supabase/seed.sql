@@ -1,5 +1,72 @@
 SET session_replication_role = replica;
 
+-- Deterministic local auth fixture for authenticated founder workspace smoke tests.
+-- Email: maya@fundloop.example.com
+-- Password: FundLoopFounder123!
+INSERT INTO "auth"."users" (
+  "instance_id",
+  "id",
+  "aud",
+  "role",
+  "email",
+  "encrypted_password",
+  "email_confirmed_at",
+  "confirmation_token",
+  "recovery_token",
+  "email_change_token_new",
+  "email_change",
+  "email_change_token_current",
+  "reauthentication_token",
+  "last_sign_in_at",
+  "raw_app_meta_data",
+  "raw_user_meta_data",
+  "created_at",
+  "updated_at",
+  "is_sso_user",
+  "is_anonymous"
+) VALUES (
+  '00000000-0000-0000-0000-000000000000',
+  '00000000-0000-4000-8000-000000000101',
+  'authenticated',
+  'authenticated',
+  'maya@fundloop.example.com',
+  crypt('FundLoopFounder123!', gen_salt('bf')),
+  '2025-06-12 12:00:00+00',
+  '',
+  '',
+  '',
+  '',
+  '',
+  '',
+  '2025-06-12 12:00:00+00',
+  '{"provider": "email", "providers": ["email"]}'::jsonb,
+  '{"full_name": "Maya Torres", "name": "Maya Torres"}'::jsonb,
+  '2025-06-12 12:00:00+00',
+  '2025-06-12 12:00:00+00',
+  false,
+  false
+);
+
+INSERT INTO "auth"."identities" (
+  "provider_id",
+  "user_id",
+  "identity_data",
+  "provider",
+  "last_sign_in_at",
+  "created_at",
+  "updated_at",
+  "id"
+) VALUES (
+  'maya@fundloop.example.com',
+  '00000000-0000-4000-8000-000000000101',
+  '{"sub": "00000000-0000-4000-8000-000000000101", "email": "maya@fundloop.example.com", "email_verified": true, "phone_verified": false}'::jsonb,
+  'email',
+  '2025-06-12 12:00:00+00',
+  '2025-06-12 12:00:00+00',
+  '2025-06-12 12:00:00+00',
+  '00000000-0000-4000-8000-000000001101'
+);
+
 INSERT INTO "public"."ref_genders" ("id", "name", "display_order") VALUES
   ('1', 'Male', '1'),
   ('2', 'Female', '2'),

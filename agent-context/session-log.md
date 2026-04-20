@@ -1,8 +1,42 @@
+### session v64: Add authenticated local founder seed and smoke Session 18
+- timestamp: 2026-04-20T16:28:45-04:00
+- agent: **Codex (GPT-5)**
+- branch: **codex/session-18-founder-workspace**
+- head: pending final commit
+
+#### Objective
+Add a deterministic authenticated founder fixture to the local seed and rerun the Session 18 founder workspace smoke against a real signed-in founder session.
+
+#### Actions Taken
+- Added a local-only Supabase Auth fixture for `maya@fundloop.example.com` with password `FundLoopFounder123!`, matched to the deterministic public user `00000000-0000-4000-8000-000000000101`.
+- Documented the authenticated founder smoke fixture in `docs/engineering/local-seed.md`.
+- Extended the local seed test to assert the Auth user and identity fixture stay present.
+- Reset the local FundLoop Supabase database and verified the seeded founder can sign in through `/api/internal/e2e/login`.
+- Used Playwright CLI to authenticate as Maya and smoke `/en/founder`, `/en/founder/projects`, `/en/founder/projects/civic-mesh`, `/en/organizations/test`, and the founder project home dark-mode toggle.
+
+#### Tests and Validation Notes
+- `supabase start --exclude logflare --ignore-health-check` succeeded after the analytics/logflare container failed the default health check.
+- `supabase db reset` passed after adjusting the Auth seed to avoid generated columns and null token-string fields.
+- `pnpm lint` passed.
+- `pnpm test -- local-public-seed` passed with the ambient Node 25 shell.
+- `pnpm dlx node@22.22.1 /opt/homebrew/bin/pnpm test -- local-public-seed` passed.
+- Browser smoke verified authenticated founder pages render with zero console errors and the expected founder nav, project data, project-home links, organization redirect, and dark theme class.
+
+#### Reflections
+- The founder workspace is now smoke-testable locally without relying on an ad hoc browser session.
+- Supabase Auth seed rows are pickier than the column nullability suggests; generated `confirmed_at` and token columns need local-compatible handling.
+
+#### Suggested Next Steps
+- Yeet the Session 18 branch into `dev` for review.
+- Consider adding an explicit Playwright spec for the seeded founder workspace fixture once the PR is open.
+
+---
+
 ### session v63: Build the founder and project workspace home
 - timestamp: 2026-04-20T13:53:17-04:00
 - agent: **Codex (GPT-5)**
 - branch: **codex/session-18-founder-workspace**
-- head: pending final commit
+- head: 67243d2
 
 #### Objective
 Implement Session 18 by turning the founder workspace entry points into operational homes while keeping existing contribution and zkAS operation routes in place.

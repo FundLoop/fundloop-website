@@ -18,6 +18,13 @@ describe("local public discovery seed fixtures", () => {
     expect(seedSql).toContain("'00000000-0000-4000-8000-000000000104'")
   })
 
+  it("includes an authenticated founder fixture for workspace smoke coverage", () => {
+    expect(seedSql).toContain(`INSERT INTO "auth"."users"`)
+    expect(seedSql).toContain("'maya@fundloop.example.com'")
+    expect(seedSql).toContain("crypt('FundLoopFounder123!', gen_salt('bf'))")
+    expect(seedSql).toContain(`INSERT INTO "auth"."identities"`)
+  })
+
   it("includes stable public blog slugs for listing and detail smoke coverage", () => {
     expect(seedSql).toContain("'why-monthly-cadence-matters'")
     expect(seedSql).toContain("'what-contributors-actually-need-from-a-project-directory'")
