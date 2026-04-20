@@ -9,17 +9,22 @@ CREATE OR REPLACE FUNCTION public.finalize_onchain_payment_reconciliation(
   p_failure_reason text,
   p_submission_confirmed_at timestamp with time zone,
   p_submission_reconciled_at timestamp with time zone,
-  p_payment_status_id bigint,
+  p_payment_status_id integer,
   p_payment_confirmed_at timestamp with time zone,
   p_payment_note text,
   p_payment_updated_at timestamp with time zone
 )
 RETURNS void
 LANGUAGE plpgsql
-SECURITY DEFINER
+SECURITY INVOKER
 SET search_path = public
 AS $$
 BEGIN
+  IF auth.role() IS DISTINCT FROM 'service_role' THEN
+    RAISE EXCEPTION 'insufficient_privilege'
+      USING ERRCODE = '42501';
+  END IF;
+
   UPDATE public.onchain_payment_submissions
   SET
     status = p_submission_status,
@@ -30,7 +35,8 @@ BEGIN
     failure_reason = p_failure_reason,
     confirmed_at = p_submission_confirmed_at,
     reconciled_at = p_submission_reconciled_at
-  WHERE id = p_submission_id;
+  WHERE id = p_submission_id
+    AND payment_id IS NOT DISTINCT FROM p_payment_id;
 
   IF NOT FOUND THEN
     RAISE EXCEPTION 'onchain_payment_submission_not_found';
@@ -54,3 +60,37 @@ BEGIN
   END IF;
 END;
 $$;
+
+REVOKE ALL ON FUNCTION public.finalize_onchain_payment_reconciliation(
+  bigint,
+  bigint,
+  text,
+  timestamp with time zone,
+  integer,
+  integer,
+  text,
+  text,
+  timestamp with time zone,
+  timestamp with time zone,
+  integer,
+  timestamp with time zone,
+  text,
+  timestamp with time zone
+) FROM PUBLIC, anon, authenticated;
+
+GRANT EXECUTE ON FUNCTION public.finalize_onchain_payment_reconciliation(
+  bigint,
+  bigint,
+  text,
+  timestamp with time zone,
+  integer,
+  integer,
+  text,
+  text,
+  timestamp with time zone,
+  timestamp with time zone,
+  integer,
+  timestamp with time zone,
+  text,
+  timestamp with time zone
+) TO service_role;

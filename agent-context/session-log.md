@@ -1,8 +1,37 @@
+### session v58: Address PR 22 reconciliation RPC review comments
+- timestamp: 2026-04-19T21:54:03-04:00
+- agent: **Codex (GPT-5)**
+- branch: **codex/address-wallet-review-comments**
+- head: TBD
+
+#### Objective
+Address the first review pass on PR #22 after the cleanup branch was opened against `dev`, focusing on the reconciliation finalizer RPC security and session-log metadata.
+
+#### Actions Taken
+- Changed `public.finalize_onchain_payment_reconciliation(...)` from `SECURITY DEFINER` to `SECURITY INVOKER`.
+- Added an explicit `auth.role() = 'service_role'` guard so broad function execution grants cannot mutate payment or submission state.
+- Added function-level grants that revoke execution from broad roles and grant execution only to `service_role`.
+- Matched `p_payment_status_id` to the schema `integer` type used by `payments.status_id`.
+- Tightened the submission update so the target submission must be linked to the provided payment id before either terminal update proceeds.
+- Replaced the stale `head: TBD` in the prior session-log entry with the actual `07d8bf8` commit hash.
+
+#### Tests and Validation Notes
+- `pnpm dlx node@22.22.1 /opt/homebrew/bin/pnpm exec vitest run tests/onchain-reconciliation-route.test.ts tests/payment-reconciliation.test.ts tests/project-payment-observability-actions.test.ts` passed
+- `pnpm dlx node@22.22.1 /opt/homebrew/bin/pnpm lint` passed
+- `pnpm dlx node@22.22.1 /opt/homebrew/bin/pnpm typecheck` passed
+
+#### Reflections
+- The RPC is still the right transaction boundary, but the privilege model needed to be explicit because SQL functions can outlive the assumptions of their initial app caller.
+
+#### Suggested Next Steps
+- Reply to and resolve the PR #22 Copilot/Codex review threads with this commit reference.
+- Request a fresh `@Codex review` after the current review threads are closed and CI is green.
+
 ### session v57: Address PR 21 CUBID onboarding review comments
 - timestamp: 2026-04-17T20:25:13-04:00
 - agent: **Codex (GPT-5)**
 - branch: **codex/address-wallet-review-comments**
-- head: TBD
+- head: 07d8bf8
 
 #### Objective
 Address the outstanding review threads from PR #21 after the CUBID onboarding work merged, focusing on trust-boundary fixes and reproducible dependency cleanup.
