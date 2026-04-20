@@ -194,7 +194,7 @@ Update profile and account surfaces so they stop behaving like FundLoop is the c
 - Timestamp started: 2026-04-20T03:20:34-04:00
 - Timestamp completed: 2026-04-20T03:24:45-04:00
 - Feature branch: codex/session-17-user-workspace
-- Head: TBD
+- Head: 13c9fa3
 - Session-log reference(s): session v60
 
 Build a coherent signed-in home for users. It should combine identity status, project discovery, participation context, and earnings visibility into one clear workspace instead of scattering that experience across unrelated pages. This is not the full payout product yet, but it should establish the long-term structure: current status, next actions, participation opportunities, and money-related visibility. The session should prioritize clarity and reduction of friction so regular users can understand where they stand in the system without reading multiple explainer pages.

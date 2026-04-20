@@ -2,7 +2,7 @@
 - timestamp: 2026-04-20T03:24:45-04:00
 - agent: **Codex (GPT-5)**
 - branch: **codex/session-17-user-workspace**
-- head: TBD
+- head: 13c9fa3
 
 #### Objective
 Complete Session 17 by turning `/workspace` into a useful signed-in user home that summarizes identity readiness, profile completion, participation, discovery, and current published results without pulling full payout/reporting routes forward.
