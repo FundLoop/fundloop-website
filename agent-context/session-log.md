@@ -1,8 +1,41 @@
+### session v67: Triage safe dependency updates after Session 19
+- timestamp: 2026-04-20T17:30:23-04:00
+- agent: **Codex (GPT-5)**
+- branch: **codex/session-19-payment-edge-functions**
+- head: pending final commit
+
+#### Objective
+Run the dedicated safe dependency triage pass requested with Session 19, updating latest stable patch and minor package versions while holding major TypeScript and ESLint upgrades.
+
+#### Actions Taken
+- Updated app/runtime dependencies including Next, React, Supabase SSR/client packages, TanStack Query, wagmi, viem, lucide-react, react-hook-form, Recharts, and related UI/runtime packages.
+- Updated dev/runtime tooling within current major lines, including Tailwind/PostCSS, Vite, Vitest, jsdom, eslint-config-next, and Node 22 typings.
+- Preserved the vendored local CUBID tarball dependencies and intentionally deferred TypeScript 6 and ESLint 10.
+- Updated `pnpm-lock.yaml` with the resolved package graph.
+- Backfilled the Session 19 todo/session-log head now that the implementation commit is known.
+
+#### Tests and Validation Notes
+- `pnpm outdated --format json` now reports only intentionally held major lines: `@types/node` latest major 25, ESLint 10, and TypeScript 6.
+- `pnpm dlx node@22.22.1 /opt/homebrew/bin/pnpm lint` passed.
+- `pnpm dlx node@22.22.1 /opt/homebrew/bin/pnpm test` passed.
+- `pnpm dlx node@22.22.1 /opt/homebrew/bin/pnpm typecheck` passed.
+- `pnpm dlx node@22.22.1 /opt/homebrew/bin/pnpm build` passed.
+
+#### Reflections
+- Running validation under Node 22 was the right source of truth because the ambient shell is currently Node 25 and intentionally outside the repo engine range.
+- Keeping TypeScript and ESLint majors out of this pass preserved the dependency goal without turning Session 19 into a toolchain migration.
+
+#### Suggested Next Steps
+- Yeet this branch into `dev` and let CI verify the updated dependency graph plus the new Edge Function import paths.
+- Plan a future toolchain-only pass if the project wants to evaluate TypeScript 6 or ESLint 10.
+
+---
+
 ### session v66: Migrate founder payment operation writes to Edge Functions
 - timestamp: 2026-04-20T17:27:41-04:00
 - agent: **Codex (GPT-5)**
 - branch: **codex/session-19-payment-edge-functions**
-- head: pending final commit
+- head: 0e9890c
 
 #### Objective
 Complete Session 19 by moving founder payment-route write operations and onchain receipt recording behind typed Supabase Edge Function commands while keeping the current payment UI and read paths stable.
