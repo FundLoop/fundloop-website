@@ -201,12 +201,12 @@ Build a coherent signed-in home for users. It should combine identity status, pr
 
 ## Session 18: Create a real founder and project workspace home
 
-- Status: Not started
-- Timestamp started: TBD
-- Timestamp completed: TBD
-- Feature branch: TBD
-- Head: TBD
-- Session-log reference(s): TBD
+- Status: Complete
+- Timestamp started: 2026-04-20T13:45:09-04:00
+- Timestamp completed: 2026-04-20T13:53:17-04:00
+- Feature branch: codex/session-18-founder-workspace
+- Head: pending final commit
+- Session-log reference(s): session v63
 
 Build the founder-facing home that ties together project setup, payment obligations, routes, team management, and growth reporting. Today those capabilities are spread across onboarding remnants, settings fragments, and payment-specific screens. This session should unify them into a stable project workspace entry point. The goal is to make the founder side of FundLoop feel like an operational tool, not a collection of special-case pages. This will become the main jumping-off point for later contribution cadence, attribution submission, and reporting work.
 

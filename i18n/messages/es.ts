@@ -506,42 +506,164 @@ export const esMessages = {
   },
   founderWorkspace: {
     eyebrow: "Espacio fundador",
-    title: "Un punto de entrada operativo estable para equipos de proyecto",
+    title: "La sala de operaciones de tus proyectos",
     body:
-      "Este shell es el primer paso hacia el espacio fundador completo. Da a los admins de proyecto un lugar claro para empezar y luego apunta hacia las superficies reales de pagos y zkAS que ya existen más adentro en la app.",
+      "Sigue preparación, obligaciones de contribución, datos de atribución y la siguiente acción operativa de cada proyecto que gestionas.",
     open: "Abrir",
+    stats: {
+      projects: "Proyectos gestionados",
+      ready: "Proyectos listos",
+      pending: "Pagos pendientes",
+      contributed: "Total contribuido",
+    },
+    warnings: {
+      title: "Algunos datos de fundador no están disponibles temporalmente",
+      body: "El espacio muestra datos parciales seguros. Las páginas operativas siguen enlazadas desde cada proyecto.",
+    },
+    identity: {
+      title: "La identidad de fundador necesita atención",
+      body: "Actualiza la identidad respaldada por CUBID y las preferencias locales para mantener atribuibles las operaciones.",
+      cta: "Revisar cuenta",
+    },
     empty: {
       title: "Todavía no hay proyectos gestionados",
       body:
         "Este espacio se activa cuando publicas un proyecto o te agregan como fundador/admin en uno. Hasta entonces, la ruta pública para fundadores y el onboarding siguen siendo los siguientes pasos correctos.",
       cta: "Abrir la ruta para fundadores",
+      accountCta: "Revisar cuenta",
+      panelTitle: "Qué aparecerá aquí",
+      panelBody:
+        "Preparación del proyecto, operaciones de contribución, datos de atribución, contexto de crecimiento y señales de equipo aparecerán aquí cuando gestiones un proyecto.",
     },
-    cards: {
+    actions: {
       projects: {
-        title: "Proyectos",
-        description: "Mira todos los proyectos que gestionas y elige la siguiente tarea operativa.",
+        title: "Revisar proyectos gestionados",
+        description: "Consulta preparación, piezas faltantes y el hogar canónico de cada proyecto.",
       },
-      operations: {
-        title: "Operaciones de contribución",
-        description: "Abre el flujo real de pagos y gestión de rutas desde el nuevo espacio fundador.",
+      contributions: {
+        title: "Abrir contribuciones",
+        description: "Entra a la superficie actual de pagos hasta que se mueva bajo el espacio fundador.",
       },
-      account: {
-        title: "Cuenta",
-        description: "Mantén las preferencias de fundador y el contexto del espacio en un solo lugar.",
+      attribution: {
+        title: "Revisar atribución",
+        description: "Abre la página zkAS actual para datos y reportes que ya existen.",
       },
+    },
+    projectList: {
+      eyebrow: "Proyectos operativos",
+      title: "Proyectos que necesitan tu atención",
+      cta: "Abrir todos los proyectos",
+      slugPending: "Slug pendiente",
+      methods: "Métodos",
+      datasets: "Datos",
+      members: "Miembros",
+    },
+    badges: {
+      ready: "Listo",
+      needsSetup: "Falta configurar",
     },
   },
   founderProjects: {
     eyebrow: "Proyectos gestionados",
-    title: "Elige un espacio de proyecto",
+    title: "Espacios de proyecto",
     body:
-      "Estas tarjetas conectan el nuevo shell fundador con las páginas operativas que ya son reales, aunque todavía viven bajo rutas específicas de proyecto.",
+      "Cada proyecto ahora tiene un hogar fundador ligero con preparación, pagos, atribución, crecimiento y contexto de equipo. Las operaciones profundas siguen en sus rutas actuales por ahora.",
+    empty: {
+      title: "Todavía no hay proyectos que gestionar",
+      body: "Cuando publiques un proyecto o recibas acceso fundador/admin, aparecerá aquí con sus enlaces operativos.",
+      cta: "Abrir la ruta para fundadores",
+    },
+    warnings: {
+      title: "Algunos detalles del proyecto no están disponibles temporalmente",
+      body: "El índice usa datos parciales seguros. Revisa las páginas operativas enlazadas para los registros más recientes.",
+    },
+    badges: {
+      ready: "Listo",
+      needsSetup: "Falta configurar",
+    },
+    metrics: {
+      methods: "Métodos",
+      pending: "Pendientes",
+      datasets: "Datos",
+      members: "Miembros",
+    },
+    setup: {
+      title: "Faltantes de configuración",
+      missing: {
+        slug: "slug",
+        contribution_rate: "tasa de contribución",
+        payment_method: "método de pago activo",
+        default_payment_method: "método predeterminado",
+      },
+    },
     links: {
+      workspace: "Abrir hogar fundador",
       project: "Abrir perfil público del proyecto",
       payments: "Abrir operaciones de contribución",
       zkas: "Abrir zkAS del proyecto",
     },
     missingSlug: "Publica o corrige el slug del proyecto antes de enlazar rutas de fundador más profundas.",
+    missingSlugAction: "Los enlaces de fundador se activan cuando este proyecto tiene slug.",
+  },
+  founderProjectHome: {
+    eyebrow: "Espacio de proyecto",
+    fallbackDescription: "Este hogar de proyecto reúne contexto operativo mientras las rutas profundas de contribución y atribución permanecen donde están.",
+    none: "Ninguno",
+    yes: "Sí",
+    no: "No",
+    badges: {
+      ready: "Listo",
+      needsSetup: "Falta configurar",
+    },
+    warnings: {
+      title: "Algunos datos del proyecto no están disponibles temporalmente",
+      body: "Esta página muestra datos parciales seguros y conserva enlaces a las superficies operativas existentes.",
+    },
+    stats: {
+      revenue: "Ingresos seguidos",
+      contribution: "Contribuciones",
+      datasets: "Datos",
+      members: "Miembros",
+    },
+    payments: {
+      title: "Operaciones de contribución",
+      description: "Las obligaciones de pago siguen en la superficie actual de proyecto hasta una migración posterior.",
+      pending: "Pendientes",
+      confirmed: "Confirmados",
+      latest: "Último periodo",
+      cta: "Abrir pagos",
+    },
+    setup: {
+      title: "Preparación",
+      description: "El proyecto necesita slug, tasa de contribución y método de pago predeterminado activo.",
+      methods: "Métodos",
+      rate: "Tasa",
+      defaultMethod: "Método predeterminado",
+      publicProfile: "Perfil público",
+      needsWork: "Resuelve los faltantes antes de tratar este proyecto como plenamente operativo.",
+    },
+    attribution: {
+      title: "Atribución y zkAS",
+      description: "Los datos y zkAS siguen gestionándose en la página zkAS actual del proyecto.",
+      latestDataset: "Últimos datos",
+      status: "Estado",
+      rows: "Filas",
+      cta: "Abrir zkAS",
+    },
+    growth: {
+      title: "Crecimiento y reportes",
+      description: "Las estadísticas mensuales y resúmenes zkAS publicados aparecen aquí cuando existen.",
+      latest: "Último mes",
+      users: "Usuarios",
+      revenue: "Ingresos",
+      payout: "Pago",
+    },
+    links: {
+      public: "Perfil público",
+      payments: "Operaciones de contribución",
+      zkas: "zkAS del proyecto",
+      allProjects: "Todos los proyectos fundador",
+    },
   },
   founderAccount: {
     heading: "Cuenta fundador",

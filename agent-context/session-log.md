@@ -1,3 +1,42 @@
+### session v63: Build the founder and project workspace home
+- timestamp: 2026-04-20T13:53:17-04:00
+- agent: **Codex (GPT-5)**
+- branch: **codex/session-18-founder-workspace**
+- head: pending final commit
+
+#### Objective
+Implement Session 18 by turning the founder workspace entry points into operational homes while keeping existing contribution and zkAS operation routes in place.
+
+#### Actions Taken
+- Added a server-only founder workspace read model that summarizes managed projects, setup readiness, payment status, attribution/reporting state, growth stats, team counts, and non-fatal warnings using `getNavigationContext().managedProjects` as the access boundary.
+- Rebuilt `/[locale]/founder` and `/[locale]/founder/projects`, and added `/[locale]/founder/projects/[slug]` as the first canonical per-project founder home.
+- Retired the mock organization detail page by redirecting `/[locale]/organizations/[id]` to `/[locale]/founder/projects`.
+- Localized the new founder workspace copy in English, French, and Spanish.
+- Updated engineering navigation and route-inventory docs, plus Session 18 backlog metadata.
+
+#### Tests and Validation Notes
+- `pnpm test -- founder-workspace` passed with the ambient Node 25 shell; it also executed the full Vitest suite.
+- `pnpm lint` passed with the ambient Node 25 shell.
+- `pnpm test` passed with the ambient Node 25 shell.
+- `pnpm typecheck` passed with the ambient Node 25 shell.
+- `pnpm build` passed with the ambient Node 25 shell.
+- `pnpm dlx node@22.22.1 /opt/homebrew/bin/pnpm lint` passed.
+- `pnpm dlx node@22.22.1 /opt/homebrew/bin/pnpm test` passed.
+- `pnpm dlx node@22.22.1 /opt/homebrew/bin/pnpm typecheck` passed.
+- `pnpm dlx node@22.22.1 /opt/homebrew/bin/pnpm build` passed.
+- Manual unauthenticated smoke against local Next verified `/en/founder` and `/en/founder/projects` redirect to `/en/join`, and `/en/organizations/test` redirects to `/en/founder/projects`.
+- Authenticated founder light/dark smoke was not completed because no seeded authenticated founder browser session was available in this turn.
+
+#### Reflections
+- The founder side now has the same operational center of gravity that Session 17 created for regular users, without prematurely moving the payment or zkAS routes.
+- The read-model-first approach kept the route pages straightforward and gave us useful unit coverage around the most important access and summary behavior.
+
+#### Suggested Next Steps
+- Yeet this branch into `dev` for review.
+- Session 19 can now start migrating project payment and route write paths while linking from the founder workspace remains stable.
+
+---
+
 ### session v62: Address PR 23 Codex workspace read-model review comments
 - timestamp: 2026-04-20T04:07:11-04:00
 - agent: **Codex (GPT-5)**
