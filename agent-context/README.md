@@ -6,22 +6,22 @@ Keep this folder small and current. It should hold the working context agents ne
 
 ## Live Agent Context
 
-- [Backgrounder for Agents](/Users/botmaster/src/fundloop/agent-context/backgrounder-for-agents.md)
+- [Backgrounder for Agents](./backgrounder-for-agents.md)
   Product intent, users, and decision-making context.
-- [Current-State Architecture](/Users/botmaster/src/fundloop/agent-context/current-state-architecture.md)
+- [Current-State Architecture](./current-state-architecture.md)
   Repo-grounded summary of how the app is structured today.
-- [Target-State Architecture](/Users/botmaster/src/fundloop/agent-context/target-state-architecture.md)
+- [Target-State Architecture](./target-state-architecture.md)
   Intended operating model for the production FundLoop system.
-- [TODO Roadmap](/Users/botmaster/src/fundloop/agent-context/todo.md)
+- [TODO Roadmap](./todo.md)
   Sequenced execution backlog, one agentic coding session per item.
-- [Session Log](/Users/botmaster/src/fundloop/agent-context/session-log.md)
+- [Session Log](./session-log.md)
   Commit-by-commit record of completed work, validation, and next steps.
 
 ## Long-Lived Engineering Docs
 
-- [Engineering Docs Index](/Users/botmaster/src/fundloop/docs/engineering/README.md)
-- [Information Architecture](/Users/botmaster/src/fundloop/docs/engineering/information-architecture.md)
-- [Route Inventory](/Users/botmaster/src/fundloop/docs/engineering/route-inventory.md)
+- [Engineering Docs Index](../docs/engineering/README.md)
+- [Information Architecture](../docs/engineering/information-architecture.md)
+- [Route Inventory](../docs/engineering/route-inventory.md)
 
 ## How To Use This Folder
 

@@ -10,7 +10,7 @@ Session 07 establishes the shared token model for FundLoop’s light and dark th
 
 ## Token families
 
-Primary token definitions live in [app/globals.css](/Users/botmaster/src/fundloop/app/globals.css).
+Primary token definitions live in [app/globals.css](../../app/globals.css).
 
 ### Core shadcn-compatible tokens
 
@@ -77,16 +77,16 @@ Use these for shared marketing/layout primitives so spacing and typography stay 
 
 Shared primitives that should consume the token system first:
 
-- [components/ui/button.tsx](/Users/botmaster/src/fundloop/components/ui/button.tsx)
-- [components/ui/card.tsx](/Users/botmaster/src/fundloop/components/ui/card.tsx)
-- [components/ui/input.tsx](/Users/botmaster/src/fundloop/components/ui/input.tsx)
-- [components/ui/textarea.tsx](/Users/botmaster/src/fundloop/components/ui/textarea.tsx)
-- [components/ui/select.tsx](/Users/botmaster/src/fundloop/components/ui/select.tsx)
-- [components/marketing/page-chrome.tsx](/Users/botmaster/src/fundloop/components/marketing/page-chrome.tsx)
+- [components/ui/button.tsx](../../components/ui/button.tsx)
+- [components/ui/card.tsx](../../components/ui/card.tsx)
+- [components/ui/input.tsx](../../components/ui/input.tsx)
+- [components/ui/textarea.tsx](../../components/ui/textarea.tsx)
+- [components/ui/select.tsx](../../components/ui/select.tsx)
+- [components/marketing/page-chrome.tsx](../../components/marketing/page-chrome.tsx)
 
 ## Practical rules
 
 - Prefer semantic token variables over raw palette classes for shared UI.
 - Keep page-level exceptions localized; if the same styling appears more than twice, promote it into the shared token system or primitive layer.
 - Preserve strong contrast in both themes before introducing additional accent colors or decorative surfaces.
-- When architecture or theming assumptions change, update this doc and [docs/engineering/README.md](/Users/botmaster/src/fundloop/docs/engineering/README.md) before closing the task.
+- When architecture or theming assumptions change, update this doc and [docs/engineering/README.md](./README.md) before closing the task.

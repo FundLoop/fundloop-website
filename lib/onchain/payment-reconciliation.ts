@@ -12,7 +12,7 @@ import {
   type OnchainSubmissionSummary,
 } from "@/lib/onchain/payment-submissions"
 import { getAdminSupabaseClient } from "@/lib/supabase-admin"
-import type { Tables, TablesUpdate } from "@/types/supabase"
+import type { Tables } from "@/types/supabase"
 
 export type ReconciliationRunSource = "cron" | "admin_manual"
 
@@ -426,79 +426,44 @@ async function updateSubmissionAndPayment(
     } satisfies ReconciliationOutcome
   }
 
-  const submissionUpdate: TablesUpdate<"onchain_payment_submissions"> = {
-    status: evaluation.status,
-    last_checked_at: checkedAt,
-    confirmation_count: evaluation.confirmationCount,
-    matched_log_index: evaluation.matchedLogIndex,
-    failure_code: evaluation.failureCode,
-    failure_reason: evaluation.failureReason,
-  }
+  const submissionConfirmedAt = evaluation.status === "confirmed" ? checkedAt : null
+  const submissionReconciledAt = evaluation.status === "confirmed" || evaluation.status === "failed" ? checkedAt : null
+  const paymentStatusId =
+    row.payment_id === null
+      ? null
+      : evaluation.status === "confirmed"
+        ? paymentStatusIds.confirmed
+        : evaluation.status === "failed"
+          ? paymentStatusIds.failed
+          : paymentStatusIds.awaitingConfirmation
+  const paymentConfirmedAt = evaluation.status === "confirmed" ? checkedAt : null
+  const paymentNote =
+    evaluation.status === "failed"
+      ? appendPaymentNote(
+          row.payments?.notes,
+          `Onchain reconciliation failed: ${formatFailureMessage(evaluation.failureCode, evaluation.failureReason)}`,
+        )
+      : null
 
-  if (evaluation.status === "confirmed") {
-    submissionUpdate.confirmed_at = checkedAt
-    submissionUpdate.reconciled_at = checkedAt
-  }
+  const { error: finalizeError } = await supabase.rpc("finalize_onchain_payment_reconciliation", {
+    p_submission_id: row.id,
+    p_payment_id: row.payment_id,
+    p_submission_status: evaluation.status,
+    p_last_checked_at: checkedAt,
+    p_confirmation_count: evaluation.confirmationCount,
+    p_matched_log_index: evaluation.matchedLogIndex,
+    p_failure_code: evaluation.failureCode,
+    p_failure_reason: evaluation.failureReason,
+    p_submission_confirmed_at: submissionConfirmedAt,
+    p_submission_reconciled_at: submissionReconciledAt,
+    p_payment_status_id: paymentStatusId,
+    p_payment_confirmed_at: paymentConfirmedAt,
+    p_payment_note: paymentNote,
+    p_payment_updated_at: checkedAt,
+  })
 
-  if (evaluation.status === "failed") {
-    submissionUpdate.reconciled_at = checkedAt
-  }
-
-  const { error: submissionError } = await supabase
-    .from("onchain_payment_submissions")
-    .update(submissionUpdate)
-    .eq("id", row.id)
-
-  if (submissionError) {
-    throw new Error(submissionError.message)
-  }
-
-  if (row.payment_id !== null) {
-    if (evaluation.status === "confirmed") {
-      const { error: paymentError } = await supabase
-        .from("payments")
-        .update({
-          status_id: paymentStatusIds.confirmed,
-          confirmed_at: checkedAt,
-          updated_at: checkedAt,
-        })
-        .eq("id", row.payment_id)
-
-      if (paymentError) {
-        throw new Error(paymentError.message)
-      }
-    }
-
-    if (evaluation.status === "failed") {
-      const failureNote = formatFailureMessage(evaluation.failureCode, evaluation.failureReason)
-      const { error: paymentError } = await supabase
-        .from("payments")
-        .update({
-          status_id: paymentStatusIds.failed,
-          confirmed_at: null,
-          updated_at: checkedAt,
-          notes: appendPaymentNote(row.payments?.notes, `Onchain reconciliation failed: ${failureNote}`),
-        })
-        .eq("id", row.payment_id)
-
-      if (paymentError) {
-        throw new Error(paymentError.message)
-      }
-    }
-
-    if (evaluation.status === "confirming") {
-      const { error: paymentError } = await supabase
-        .from("payments")
-        .update({
-          status_id: paymentStatusIds.awaitingConfirmation,
-          updated_at: checkedAt,
-        })
-        .eq("id", row.payment_id)
-
-      if (paymentError) {
-        throw new Error(paymentError.message)
-      }
-    }
+  if (finalizeError) {
+    throw new Error(finalizeError.message)
   }
 
   return {

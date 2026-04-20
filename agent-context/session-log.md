@@ -1,4 +1,154 @@
----
+### session v58: Address PR 22 reconciliation RPC review comments
+- timestamp: 2026-04-19T21:54:03-04:00
+- agent: **Codex (GPT-5)**
+- branch: **codex/address-wallet-review-comments**
+- head: 8797552
+
+#### Objective
+Address the first review pass on PR #22 after the cleanup branch was opened against `dev`, focusing on the reconciliation finalizer RPC security and session-log metadata.
+
+#### Actions Taken
+- Changed `public.finalize_onchain_payment_reconciliation(...)` from `SECURITY DEFINER` to `SECURITY INVOKER`.
+- Added an explicit `auth.role() = 'service_role'` guard so broad function execution grants cannot mutate payment or submission state.
+- Added function-level grants that revoke execution from broad roles and grant execution only to `service_role`.
+- Matched `p_payment_status_id` to the schema `integer` type used by `payments.status_id`.
+- Tightened the submission update so the target submission must be linked to the provided payment id before either terminal update proceeds.
+- Replaced the stale `head: TBD` in the prior session-log entry with the actual `07d8bf8` commit hash.
+
+#### Tests and Validation Notes
+- `pnpm dlx node@22.22.1 /opt/homebrew/bin/pnpm exec vitest run tests/onchain-reconciliation-route.test.ts tests/payment-reconciliation.test.ts tests/project-payment-observability-actions.test.ts` passed
+- `pnpm dlx node@22.22.1 /opt/homebrew/bin/pnpm lint` passed
+- `pnpm dlx node@22.22.1 /opt/homebrew/bin/pnpm typecheck` passed
+
+#### Reflections
+- The RPC is still the right transaction boundary, but the privilege model needed to be explicit because SQL functions can outlive the assumptions of their initial app caller.
+
+#### Suggested Next Steps
+- Reply to and resolve the PR #22 Copilot/Codex review threads with this commit reference.
+- Request a fresh `@Codex review` after the current review threads are closed and CI is green.
+
+### session v57: Address PR 21 CUBID onboarding review comments
+- timestamp: 2026-04-17T20:25:13-04:00
+- agent: **Codex (GPT-5)**
+- branch: **codex/address-wallet-review-comments**
+- head: 07d8bf8
+
+#### Objective
+Address the outstanding review threads from PR #21 after the CUBID onboarding work merged, focusing on trust-boundary fixes and reproducible dependency cleanup.
+
+#### Actions Taken
+- Removed internal session-planning wording from the CUBID browser bridge unsupported-operation error.
+- Verified the outdated package and lockfile comments were already addressed on the merged tip by switching `@cubid/*` dependencies to repo-vendored tarballs under `vendor/cubid/`.
+- Extended the shared Edge Function command runtime to return the authenticated Supabase client alongside the service-role client.
+- Changed `project-onboarding-publish` so the project publish RPC runs through the authenticated client while privileged reads/writes remain on the admin client.
+- Added an optional `rpcSupabase` command input for `executeProjectOnboardingPublishCommand(...)` and covered that handoff in command tests.
+- Preserved existing `users.invited_by_code` during user publish when the draft does not provide a new invite code.
+- Enforced signed-in email matching in the CUBID resolve and sync Edge Functions so client-provided email overrides cannot link or sync another email identity.
+
+#### Tests and Validation Notes
+- `pnpm dlx node@22.22.1 /opt/homebrew/bin/pnpm exec vitest run tests/project-onboarding-commands.test.ts tests/user-onboarding-commands.test.ts tests/onboarding-edge-adapters.test.ts tests/cubid-resolve-email-command.test.ts tests/cubid-read-model.test.ts` passed
+- `pnpm dlx node@22.22.1 /opt/homebrew/bin/pnpm lint` passed
+- `pnpm dlx node@22.22.1 /opt/homebrew/bin/pnpm typecheck` passed
+
+#### Reflections
+- The project publish path now preserves the intended split: service role for privileged server-owned data access, user JWT for the RPC that depends on `auth.uid()`.
+- The CUBID email guard is deliberately duplicated across resolve and sync because both are user-facing identity writes and should share the same trust boundary.
+
+#### Suggested Next Steps
+- Reply to and resolve the seven PR #21 review threads with the relevant commit references.
+- Open a fresh cleanup PR from `codex/address-wallet-review-comments` into `dev` after all review threads are closed.
+
+### session v56: Address PR 20 public discovery review comments
+- timestamp: 2026-04-17T20:22:03-04:00
+- agent: **Codex (GPT-5)**
+- branch: **codex/address-wallet-review-comments**
+- head: f4ce96d
+
+#### Objective
+Address the outstanding review threads from PR #20 after the public funnel and discovery work merged, focusing on truthful public rendering and consistent discovery semantics.
+
+#### Actions Taken
+- Removed the stray opening YAML frontmatter delimiter from `agent-context/session-log.md` so the log renders as normal Markdown.
+- Updated public project participant totals to count only active users, matching project detail visibility.
+- Reworked public user-directory project slug derivation to use a precomputed `projectId -> slug` map instead of filtering all projects for every user.
+- Added an all-project membership guard so the users directory only includes active public users who participate in at least one public project.
+- Changed the FAQ closing CTA eyebrow to a dedicated localized CTA label instead of reusing the hero eyebrow.
+- Changed blog-post rendering so missing publish/create timestamps show an explicit pending publication label rather than pretending the post was published today.
+- Noted that the PR #20 doc-link comments were already fixed by the preceding PR #19 cleanup commit, `7a53688`.
+
+#### Tests and Validation Notes
+- `pnpm dlx node@22.22.1 /opt/homebrew/bin/pnpm lint` passed
+- `pnpm dlx node@22.22.1 /opt/homebrew/bin/pnpm typecheck` passed
+
+#### Reflections
+- The directory count and membership fixes keep list and detail pages aligned around the same public/active participation rules.
+- The blog timestamp fallback was a small but important honesty fix: no fabricated dates, even for edge-case content.
+
+#### Suggested Next Steps
+- Reply to and resolve the nine PR #20 review threads with the relevant commit references.
+- Continue the same review-fix-resolve loop with the outstanding PR #21 comments.
+
+### session v55: Address PR 19 shell and planning-doc review comments
+- timestamp: 2026-04-17T20:19:02-04:00
+- agent: **Codex (GPT-5)**
+- branch: **codex/address-wallet-review-comments**
+- head: 7a53688
+
+#### Objective
+Address the outstanding review threads from PR #19 after the app-shell and locale-routing work merged, keeping the fixes focused on review cleanup rather than additional shell refactors.
+
+#### Actions Taken
+- Converted the active planning, engineering, README, and local-seed documentation links from machine-local `/Users/...` targets to repo-relative links.
+- Left historical session-log command paths intact because those entries describe prior local validation commands rather than navigable documentation.
+- Updated `docs/engineering/i18n.md` to record that FundLoop is on Next.js 16 and intentionally uses the active `proxy.ts` convention rather than adding deprecated `middleware.ts`.
+- Hardened `lib/navigation-context.ts` so Supabase read errors are no longer silently ignored.
+- Added explicit navigation-context logging for auth, profile, CUBID snapshot, participant, organization, project, interest, occupation, and location reads.
+- Kept navigation fallbacks conservative when reads fail so the app shell can still render while avoiding inflated founder/admin/project access from partial data.
+
+#### Tests and Validation Notes
+- `pnpm dlx node@22.22.1 /opt/homebrew/bin/pnpm lint` passed
+- `pnpm dlx node@22.22.1 /opt/homebrew/bin/pnpm typecheck` passed
+- `rg -n '/Users/botmaster/src/fundloop|/Users/' README.md agent-context docs i18n proxy.ts lib/navigation-context.ts` now only reports historical session-log entries.
+
+#### Reflections
+- The middleware review note was correct for older Next.js versions but stale for this repo’s Next.js 16 baseline. Documenting the convention is safer than adding a conflicting `middleware.ts`.
+- Navigation context should stay resilient, but explicit logging gives future agents and operators a trail when role-aware shell state falls back because a read failed.
+
+#### Suggested Next Steps
+- Reply to and resolve the eight PR #19 review threads with this commit reference.
+- Continue the same review-fix-resolve loop with the outstanding PR #20 comments.
+
+### session v54: Address PR 18 payment and onchain reconciliation review comments
+- timestamp: 2026-04-17T20:08:59-0400
+- agent: **Codex (GPT-5)**
+- branch: **codex/address-wallet-review-comments**
+- head: 36cfd26
+
+#### Objective
+Address the outstanding review threads from PR #18 after the wallet payments and Edge Function groundwork was approved and merged, without reopening the original stacked branch.
+
+#### Actions Taken
+- Converted the PR #18 doc links called out in review from machine-local `/Users/...` targets to repo-relative links in:
+  - `docs/engineering/README.md`
+  - `README.md`
+- Added runtime validation and string-to-number coercion for the internal onchain reconciliation route body in `app/api/internal/payments/reconcile-onchain/route.ts`.
+- Added route coverage proving valid numeric strings are accepted and invalid numeric filters return `400` before reaching reconciliation.
+- Hardened `recordOnchainPaymentSubmission(...)` so the submitted onchain decimal amount must match the canonical `payments.payment_amount` before a submission is stored.
+- Added the forward-only migration `supabase/migrations/20260417193000_onchain_reconciliation_atomic_update.sql` with `public.finalize_onchain_payment_reconciliation(...)`.
+- Switched reconciliation finalization in `lib/onchain/payment-reconciliation.ts` to call the new RPC so terminal submission state and linked payment state update inside one database transaction.
+- Updated `types/supabase.ts` with the new RPC signature.
+
+#### Tests and Validation Notes
+- `pnpm dlx node@22.22.1 /opt/homebrew/bin/pnpm exec vitest run tests/onchain-reconciliation-route.test.ts tests/payment-reconciliation.test.ts tests/project-payment-observability-actions.test.ts` passed
+- `pnpm dlx node@22.22.1 /opt/homebrew/bin/pnpm typecheck` passed
+
+#### Reflections
+- The two P1 review comments were tightly coupled: canonical amount validation prevents underpayment snapshots from entering the reconciliation queue, and atomic finalization prevents payment/submission status drift once reconciliation starts.
+- The RPC keeps the application-level logic readable while giving Postgres ownership of the transactional boundary.
+
+#### Suggested Next Steps
+- Reply to and resolve the five PR #18 review threads with this commit reference.
+- Continue the same review-fix-resolve loop with the outstanding PR #19 comments.
 
 ### session v53: Remove duplicate bootstrap from the founder CUBID project gate
 - timestamp: 2026-04-17T19:37:49-0400

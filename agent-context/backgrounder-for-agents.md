@@ -1,10 +1,10 @@
 # backgrounder-for-agents.md
 
 Related planning docs:
-- [Agent Context Index](/Users/botmaster/src/fundloop/agent-context/README.md)
-- [Current-State Architecture](/Users/botmaster/src/fundloop/agent-context/current-state-architecture.md)
-- [Target-State Architecture](/Users/botmaster/src/fundloop/agent-context/target-state-architecture.md)
-- [TODO Roadmap](/Users/botmaster/src/fundloop/agent-context/todo.md)
+- [Agent Context Index](./README.md)
+- [Current-State Architecture](./current-state-architecture.md)
+- [Target-State Architecture](./target-state-architecture.md)
+- [TODO Roadmap](./todo.md)
 
 ## Purpose of this Document
 

@@ -34,6 +34,7 @@ type ProjectDraftClearInput = {
 
 type ProjectPublishInput = {
   actorUserId: string
+  rpcSupabase?: OnboardingCommandClient
 }
 
 type ProjectCommandFailure<TCode extends string> = {
@@ -192,7 +193,8 @@ export async function executeProjectOnboardingPublishCommand(
     }
   }
 
-  const { data: publishedProject, error: publishError } = await supabase
+  const rpcSupabase = input.rpcSupabase ?? supabase
+  const { data: publishedProject, error: publishError } = await rpcSupabase
     .rpc("publish_project_onboarding_draft_atomic", {
       p_name: payload.name.trim(),
       p_slug: payload.slug.trim(),

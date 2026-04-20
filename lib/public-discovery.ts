@@ -140,7 +140,7 @@ export async function getPublicProjectsDirectoryData({
 
     const { data: participantRows, error: participantError } =
       projectIds.length > 0
-        ? await supabase.from("participants").select("project_id, user_id").in("project_id", projectIds)
+        ? await supabase.from("participants").select("project_id, user_id, users(status)").in("project_id", projectIds)
         : { data: [], error: null }
 
     if (participantError) {
@@ -149,6 +149,11 @@ export async function getPublicProjectsDirectoryData({
 
     const participantCounts = new Map<number, Set<string>>()
     for (const row of participantRows ?? []) {
+      const participantUser = row.users as { status?: string } | null
+      if (participantUser?.status !== "active") {
+        continue
+      }
+
       const current = participantCounts.get(row.project_id) ?? new Set<string>()
       current.add(row.user_id)
       participantCounts.set(row.project_id, current)
@@ -336,6 +341,7 @@ export async function getPublicUsersDirectoryData({
     }
 
     const locationMap = new Map((locationRows ?? []).map((location) => [location.id, location.name]))
+    const projectSlugById = new Map((publicProjects ?? []).map((project) => [project.id, project.slug ?? String(project.id)]))
     const participantProjectsByUser = new Map<string, Set<number>>()
 
     for (const row of participantRows ?? []) {
@@ -360,9 +366,7 @@ export async function getPublicUsersDirectoryData({
           createdAt: user.created_at,
           location: user.location_id ? locationMap.get(user.location_id) ?? null : null,
           projectCount: projectIdsForUser.length,
-          projectSlugs: (publicProjects ?? [])
-            .filter((project) => projectIdsForUser.includes(project.id))
-            .map((project) => project.slug ?? String(project.id)),
+          projectSlugs: projectIdsForUser.map((userProjectId) => projectSlugById.get(userProjectId)).filter((slug): slug is string => Boolean(slug)),
           cubidIdentityStatus: user.cubid_identity_status ?? "unlinked",
           cubidScore: user.cubid_score ?? null,
         }
@@ -372,7 +376,12 @@ export async function getPublicUsersDirectoryData({
           return false
         }
 
-        if (projectId && !(participantProjectsByUser.get(user.userId) ?? new Set<number>()).has(projectId)) {
+        const userProjectIds = participantProjectsByUser.get(user.userId) ?? new Set<number>()
+        if (projectId && !userProjectIds.has(projectId)) {
+          return false
+        }
+
+        if (!projectId && userProjectIds.size === 0) {
           return false
         }
 

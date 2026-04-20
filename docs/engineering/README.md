@@ -11,13 +11,13 @@ Use this directory for material that should outlive a single agent session, incl
 
 Current high-signal docs:
 
-- [CUBID Identity and Snapshot Model](/Users/botmaster/src/fundloop/docs/engineering/cubid-identity.md)
-- [Design Tokens](/Users/botmaster/src/fundloop/docs/engineering/design-tokens.md)
-- [Edge Function Contract Pattern](/Users/botmaster/src/fundloop/docs/engineering/edge-functions.md)
-- [Information Architecture](/Users/botmaster/src/fundloop/docs/engineering/information-architecture.md)
-- [Internationalization](/Users/botmaster/src/fundloop/docs/engineering/i18n.md)
-- [Local Seed Fixtures](/Users/botmaster/src/fundloop/docs/engineering/local-seed.md)
-- [Navigation and Shell Architecture](/Users/botmaster/src/fundloop/docs/engineering/navigation-shell.md)
-- [Route Inventory](/Users/botmaster/src/fundloop/docs/engineering/route-inventory.md)
+- [CUBID Identity and Snapshot Model](./cubid-identity.md)
+- [Design Tokens](./design-tokens.md)
+- [Edge Function Contract Pattern](./edge-functions.md)
+- [Information Architecture](./information-architecture.md)
+- [Internationalization](./i18n.md)
+- [Local Seed Fixtures](./local-seed.md)
+- [Navigation and Shell Architecture](./navigation-shell.md)
+- [Route Inventory](./route-inventory.md)
 
-Agent-only live context still belongs in [agent-context](/Users/botmaster/src/fundloop/agent-context/README.md).
+Agent-only live context still belongs in [agent-context](../../agent-context/README.md).

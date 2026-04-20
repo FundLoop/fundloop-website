@@ -72,4 +72,58 @@ describe("POST /api/internal/payments/reconcile-onchain", () => {
       },
     })
   })
+
+  it("coerces numeric JSON strings before running reconciliation", async () => {
+    runOnchainPaymentReconciliation.mockResolvedValue({
+      source: "cron",
+      processedCount: 0,
+      confirmedCount: 0,
+      failedCount: 0,
+      confirmingCount: 0,
+      unresolvedCount: 0,
+      results: [],
+      touchedProjectSlugs: [],
+    })
+
+    const { POST } = await import("@/app/api/internal/payments/reconcile-onchain/route")
+    const response = await POST(
+      new Request("http://localhost/api/internal/payments/reconcile-onchain", {
+        method: "POST",
+        headers: {
+          authorization: "Bearer test-secret",
+          "content-type": "application/json",
+        },
+        body: JSON.stringify({ limit: "5", paymentId: "17", submissionId: "21" }),
+      }),
+    )
+
+    expect(runOnchainPaymentReconciliation).toHaveBeenCalledWith({
+      source: "cron",
+      limit: 5,
+      paymentId: 17,
+      submissionId: 21,
+    })
+    expect(response.status).toBe(200)
+  })
+
+  it("rejects invalid numeric filters", async () => {
+    const { POST } = await import("@/app/api/internal/payments/reconcile-onchain/route")
+    const response = await POST(
+      new Request("http://localhost/api/internal/payments/reconcile-onchain", {
+        method: "POST",
+        headers: {
+          authorization: "Bearer test-secret",
+          "content-type": "application/json",
+        },
+        body: JSON.stringify({ limit: -1 }),
+      }),
+    )
+
+    expect(response.status).toBe(400)
+    expect(runOnchainPaymentReconciliation).not.toHaveBeenCalled()
+    await expect(response.json()).resolves.toMatchObject({
+      ok: false,
+      error: "limit must be a positive integer.",
+    })
+  })
 })

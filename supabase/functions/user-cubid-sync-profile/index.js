@@ -23,9 +23,18 @@ async function handleRequest(request) {
     return json(edgeCommandFailure(auth.code ?? "function_not_configured", auth.error))
   }
 
+  const sessionEmail = auth.user.email?.trim().toLowerCase() ?? null
+  if (!sessionEmail) {
+    return json(edgeCommandFailure("email_required", "A signed-in email is required to sync CUBID identity."))
+  }
+
+  if (validation.data.emailOverride && validation.data.emailOverride !== sessionEmail) {
+    return json(edgeCommandFailure("email_mismatch", "CUBID identity must be synced with the signed-in email."))
+  }
+
   const result = await executeSyncCubidProfileCommand(auth.adminClient, {
     actorUserId: auth.user.id,
-    actorEmail: validation.data.emailOverride ?? auth.user.email ?? null,
+    actorEmail: sessionEmail,
   })
 
   if (!result.ok) {

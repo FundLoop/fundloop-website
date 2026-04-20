@@ -130,7 +130,7 @@ export default async function FAQPage({ params }: PageProps) {
       <MarketingSection className="pb-24 pt-14">
         <Reveal>
           <div className="rounded-[2rem] border border-[color:var(--marketing-line)] bg-[linear-gradient(135deg,rgba(255,248,238,0.84),rgba(244,203,141,0.2))] p-8 dark:bg-[linear-gradient(135deg,rgba(18,27,25,0.94),rgba(239,139,87,0.12))] sm:p-10">
-            <SectionEyebrow>{t("hero.eyebrow")}</SectionEyebrow>
+            <SectionEyebrow>{t("cta.eyebrow")}</SectionEyebrow>
             <SectionTitle className="mt-4 max-w-4xl text-5xl sm:text-6xl">{t("cta.title")}</SectionTitle>
             <SectionBody className="mt-5 max-w-3xl">{t("cta.body")}</SectionBody>
             <div className="mt-8 flex flex-col gap-4 sm:flex-row">

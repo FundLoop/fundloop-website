@@ -3,12 +3,12 @@
 Last reviewed: 2026-04-15
 
 Related planning docs:
-- [Engineering Docs Index](/Users/botmaster/src/fundloop/docs/engineering/README.md)
-- [Agent Context Index](/Users/botmaster/src/fundloop/agent-context/README.md)
-- [Current-State Architecture](/Users/botmaster/src/fundloop/agent-context/current-state-architecture.md)
-- [Target-State Architecture](/Users/botmaster/src/fundloop/agent-context/target-state-architecture.md)
-- [Information Architecture](/Users/botmaster/src/fundloop/docs/engineering/information-architecture.md)
-- [TODO Roadmap](/Users/botmaster/src/fundloop/agent-context/todo.md)
+- [Engineering Docs Index](./README.md)
+- [Agent Context Index](../../agent-context/README.md)
+- [Current-State Architecture](../../agent-context/current-state-architecture.md)
+- [Target-State Architecture](../../agent-context/target-state-architecture.md)
+- [Information Architecture](./information-architecture.md)
+- [TODO Roadmap](../../agent-context/todo.md)
 
 This inventory covers every current `page.tsx` and `route.ts` surface under `app/`. Each entry records who the surface is for, its current state, the evidence that matters for planning, the intended disposition, the canonical future destination, and the roadmap session that should absorb the work.
 

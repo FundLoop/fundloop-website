@@ -56,6 +56,7 @@ export default async function BlogPostPage({ params, searchParams }: PageProps) 
 
   const backHref = origin === "benefits" ? "/" : "/blog"
   const backText = origin === "benefits" ? t("backToHome") : t("backToBlog")
+  const publishedDate = post.publishedAt ?? post.createdAt
 
   return (
     <MarketingPage>
@@ -77,7 +78,7 @@ export default async function BlogPostPage({ params, searchParams }: PageProps) 
       <MarketingSection className="pt-0">
         <div className="mx-auto max-w-4xl">
           <Reveal>
-            <SectionEyebrow>{t("publishedLabel", { date: formatDate(locale, post.publishedAt ?? post.createdAt ?? new Date().toISOString()) })}</SectionEyebrow>
+            <SectionEyebrow>{publishedDate ? t("publishedLabel", { date: formatDate(locale, publishedDate) }) : t("unpublishedLabel")}</SectionEyebrow>
             <SectionTitle className="mt-4 max-w-4xl text-5xl sm:text-6xl lg:text-7xl">{post.title}</SectionTitle>
             {post.subtitle ? <SectionBody className="mt-6 max-w-3xl">{post.subtitle}</SectionBody> : null}
           </Reveal>

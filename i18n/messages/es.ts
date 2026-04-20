@@ -1083,6 +1083,7 @@ export const esMessages = {
     missingTitle: "Artículo no encontrado",
     missingBody: "El artículo solicitado no existe o ya no está publicado.",
     publishedLabel: "Publicado el {date}",
+    unpublishedLabel: "Fecha de publicación pendiente",
   },
   ecosystemPage: {
     backToHome: "Volver al inicio",
@@ -1103,6 +1104,7 @@ export const esMessages = {
         "La versión corta sigue siendo simple: los usuarios no pagan por unirse, los proyectos alineados sostienen el loop cuando existe valor para compartir, y FundLoop está construyendo infraestructura de producto para una participación más justa.",
     },
     cta: {
+      eyebrow: "Próximos pasos",
       title: "¿Todavía necesitas ayuda?",
       body: "La siguiente mejor parada depende del tema: participación, ruta de fundadores o soporte.",
       participation: "Ver participación",

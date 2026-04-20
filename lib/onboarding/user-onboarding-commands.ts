@@ -148,6 +148,9 @@ export async function executeUserOnboardingPublishCommand(
     )
   }
 
+  const inviteCode = payload.inviteCode.trim()
+  const invitedByCode = existingProfile.invited_by_code ?? (inviteCode || null)
+
   const { error: updateError } = await supabase
     .from("users")
     .update({
@@ -160,7 +163,7 @@ export async function executeUserOnboardingPublishCommand(
       gender_id: genderId,
       profile_headline: payload.profileHeadline.trim() || null,
       email: input.actorEmail ?? null,
-      invited_by_code: payload.inviteCode.trim() || null,
+      invited_by_code: invitedByCode,
       is_public: payload.visibility.isPublic,
       is_name_public: payload.visibility.isNamePublic,
       is_pfp_public: payload.visibility.isPfpPublic,
@@ -199,18 +202,18 @@ export async function executeUserOnboardingPublishCommand(
     }
   }
 
-  if (payload.inviteCode.trim() && !existingProfile?.invited_by_code) {
+  if (inviteCode && !existingProfile?.invited_by_code) {
     const { data: inviteRow } = await supabase
       .from("invitation_codes")
       .select("usage_count")
-      .eq("code", payload.inviteCode.trim())
+      .eq("code", inviteCode)
       .single()
 
     if (inviteRow) {
       await supabase
         .from("invitation_codes")
         .update({ usage_count: inviteRow.usage_count + 1 })
-        .eq("code", payload.inviteCode.trim())
+        .eq("code", inviteCode)
     }
   }
 

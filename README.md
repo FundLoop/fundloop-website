@@ -104,13 +104,13 @@ After a local reset, these stable public smoke targets should exist:
 - `/en/projects/open-transit-ledger`
 - `/en/users/00000000-0000-4000-8000-000000000101`
 
-See [Local Seed Fixtures](/Users/botmaster/src/fundloop/docs/engineering/local-seed.md) for the full deterministic fixture set.
+See [Local Seed Fixtures](docs/engineering/local-seed.md) for the full deterministic fixture set.
 
 ## Wallet Deployment Workflow
 
 Wallet execution uses a hybrid model:
 
-- tracked manifests under [`lib/onchain/deployments/`](/Users/botmaster/src/fundloop/lib/onchain/deployments) are the source of truth for deployed intake contract and treasury addresses
+- tracked manifests under [`lib/onchain/deployments/`](lib/onchain/deployments/) are the source of truth for deployed intake contract and treasury addresses
 - Supabase `chain_intake_contracts` rows remain the runtime source used by project payment routes
 - the sync script applies manifest changes into Supabase explicitly instead of mutating the database at app startup
 
