@@ -198,6 +198,73 @@ describe("buildFounderWorkspaceHome", () => {
     expect(home.totals.totalContributionAmount).toBe(0)
   })
 
+  it("uses the latest published month across all managed projects for aggregate reporting", () => {
+    const home = buildFounderWorkspaceHome({
+      managedProjects: [
+        { id: 1, slug: "alpha-project", name: "Alpha Project" },
+        { id: 2, slug: "zeta-project", name: "Zeta Project" },
+      ],
+      projectRows: [
+        {
+          id: 1,
+          slug: "alpha-project",
+          name: "Alpha Project",
+          description: null,
+          logo_url: null,
+          is_public: true,
+          status: "active",
+          payment_percentage: 1,
+          default_payment_method_id: null,
+        },
+        {
+          id: 2,
+          slug: "zeta-project",
+          name: "Zeta Project",
+          description: null,
+          logo_url: null,
+          is_public: true,
+          status: "active",
+          payment_percentage: 1,
+          default_payment_method_id: null,
+        },
+      ],
+      payments: [],
+      paymentMethods: [],
+      participants: [],
+      datasets: [],
+      runSummaries: [
+        {
+          project_id: 1,
+          run_id: 21,
+          active_user_count: 5,
+          published_user_count: 4,
+          attributed_payout_usd: 20,
+          contributed_amount_usd: 25,
+          created_at: "2026-02-16T00:00:00Z",
+        },
+        {
+          project_id: 2,
+          run_id: 22,
+          active_user_count: 8,
+          published_user_count: 7,
+          attributed_payout_usd: 30,
+          contributed_amount_usd: 35,
+          created_at: "2026-04-16T00:00:00Z",
+        },
+      ],
+      runs: [
+        { id: 21, month: "2026-02", published_at: "2026-02-17T00:00:00Z" },
+        { id: 22, month: "2026-04", published_at: "2026-04-17T00:00:00Z" },
+      ],
+      stats: [],
+      warnings: [],
+    })
+
+    expect(home.projects[0]?.reporting.latestPublishedMonth).toBe("2026-02")
+    expect(home.projects[1]?.reporting.latestPublishedMonth).toBe("2026-04")
+    expect(home.totals.latestPublishedMonth).toBe("2026-04")
+  })
+
   it("only resolves per-project homes for managed slugs", () => {
     const home = buildHome()
 

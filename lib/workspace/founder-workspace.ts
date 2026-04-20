@@ -220,6 +220,25 @@ function sortByDateDescending<T>(rows: T[], readDate: (row: T) => string | null 
   return [...rows].sort((left, right) => new Date(readDate(right) ?? 0).getTime() - new Date(readDate(left) ?? 0).getTime())
 }
 
+function groupRowsByProjectId<TRow extends { project_id: number | null | undefined }>(rows: TRow[]) {
+  const rowsByProjectId = new Map<number, TRow[]>()
+
+  for (const row of rows) {
+    if (row.project_id === null || row.project_id === undefined) {
+      continue
+    }
+
+    const existingRows = rowsByProjectId.get(row.project_id)
+    if (existingRows) {
+      existingRows.push(row)
+    } else {
+      rowsByProjectId.set(row.project_id, [row])
+    }
+  }
+
+  return rowsByProjectId
+}
+
 export function buildFounderWorkspaceHome({
   managedProjects,
   projectRows,
@@ -245,22 +264,28 @@ export function buildFounderWorkspaceHome({
 }): FounderWorkspaceHome {
   const projectRowById = new Map(projectRows.map((project) => [project.id, project]))
   const runById = new Map(runs.map((run) => [run.id, run]))
+  const paymentsByProjectId = groupRowsByProjectId(payments)
+  const paymentMethodsByProjectId = groupRowsByProjectId(paymentMethods)
+  const participantsByProjectId = groupRowsByProjectId(participants)
+  const datasetsByProjectId = groupRowsByProjectId(datasets)
+  const runSummariesByProjectId = groupRowsByProjectId(runSummaries)
+  const statsByProjectId = groupRowsByProjectId(stats)
   const projects = managedProjects.map((managedProject) => {
     const project = projectRowById.get(managedProject.id)
-    const projectPayments = payments.filter((payment) => payment.project_id === managedProject.id)
-    const projectPaymentMethods = paymentMethods.filter((method) => method.project_id === managedProject.id)
-    const projectParticipants = participants.filter((participant) => participant.project_id === managedProject.id)
+    const projectPayments = paymentsByProjectId.get(managedProject.id) ?? []
+    const projectPaymentMethods = paymentMethodsByProjectId.get(managedProject.id) ?? []
+    const projectParticipants = participantsByProjectId.get(managedProject.id) ?? []
     const projectDatasets = sortByDateDescending(
-      datasets.filter((dataset) => dataset.project_id === managedProject.id),
+      datasetsByProjectId.get(managedProject.id) ?? [],
       (dataset) => dataset.created_at,
     )
     const projectRunSummaries = sortByDateDescending(
-      runSummaries.filter((summary) => summary.project_id === managedProject.id),
+      runSummariesByProjectId.get(managedProject.id) ?? [],
       (summary) => runById.get(summary.run_id)?.published_at ?? summary.created_at,
     )
-    const projectStats = [...stats]
-      .filter((stat) => stat.project_id === managedProject.id)
-      .sort((left, right) => right.year - left.year || right.month - left.month)
+    const projectStats = [...(statsByProjectId.get(managedProject.id) ?? [])].sort(
+      (left, right) => right.year - left.year || right.month - left.month,
+    )
     const enabledPaymentMethodCount = projectPaymentMethods.filter((method) => method.is_enabled === true).length
     const hasDefaultPaymentMethod =
       project?.default_payment_method_id !== null &&
@@ -348,7 +373,14 @@ export function buildFounderWorkspaceHome({
       ),
       confirmedPaymentCount: projects.reduce((sum, project) => sum + project.payments.confirmedCount, 0),
       datasetCount: projects.reduce((sum, project) => sum + project.attribution.datasetCount, 0),
-      latestPublishedMonth: projects.find((project) => project.reporting.latestPublishedMonth)?.reporting.latestPublishedMonth ?? null,
+      latestPublishedMonth: projects.reduce<string | null>((latestMonth, project) => {
+        const projectLatestMonth = project.reporting.latestPublishedMonth
+        if (!projectLatestMonth) {
+          return latestMonth
+        }
+
+        return latestMonth === null || projectLatestMonth > latestMonth ? projectLatestMonth : latestMonth
+      }, null),
     },
     warnings,
   }

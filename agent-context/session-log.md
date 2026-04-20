@@ -1,3 +1,35 @@
+### session v65: Address PR 24 founder workspace review comments
+- timestamp: 2026-04-20T16:50:06-04:00
+- agent: **Codex (GPT-5)**
+- branch: **codex/session-18-founder-workspace**
+- head: pending final commit
+
+#### Objective
+Address automated review feedback on PR #24 from Copilot and Codex for the founder workspace read model and organization redirect route typing.
+
+#### Actions Taken
+- Changed the founder workspace builder to group read rows by `project_id` once before mapping managed projects, avoiding repeated per-project scans across payments, methods, participants, datasets, run summaries, and monthly stats.
+- Changed aggregate `latestPublishedMonth` to choose the maximum non-null `YYYY-MM` month across all managed projects instead of the first project with a report.
+- Added a regression test proving aggregate reporting selects the latest month across projects.
+- Updated the organization redirect route props to include the dynamic `[id]` param even though the handler redirects without using it.
+
+#### Tests and Validation Notes
+- `pnpm test -- founder-workspace` passed.
+- `pnpm lint` passed.
+- `pnpm typecheck` passed.
+- `pnpm dlx node@22.22.1 /opt/homebrew/bin/pnpm test -- founder-workspace` passed.
+- `pnpm dlx node@22.22.1 /opt/homebrew/bin/pnpm lint` passed.
+- `pnpm dlx node@22.22.1 /opt/homebrew/bin/pnpm typecheck` passed.
+
+#### Reflections
+- The reviewer suggestions were practical and tightened both correctness and scaling characteristics without changing the UI contract.
+
+#### Suggested Next Steps
+- Push this review-fix commit and resolve the corresponding PR review threads.
+- Re-check CI after the push before requesting/awaiting final approval.
+
+---
+
 ### session v64: Add authenticated local founder seed and smoke Session 18
 - timestamp: 2026-04-20T16:28:45-04:00
 - agent: **Codex (GPT-5)**
