@@ -51,6 +51,7 @@ export type UserWorkspaceHome = {
     founderProjectCount: number
     favoriteProjectCount: number
     recentProjects: UserWorkspaceProject[]
+    hasUnavailableProjectDetails: boolean
   }
   discovery: {
     recommendedProjects: UserWorkspaceRecommendedProject[]
@@ -169,7 +170,9 @@ export function buildUserWorkspaceHome({
   const user = navigationContext.user
   const joinedProjectById = new Map(joinedProjects.map((project) => [project.id, project]))
   const runById = new Map(runs.map((run) => [run.id, run]))
-  const recentProjects = participantRows
+  const visibleParticipantRows = participantRows.filter((participant) => joinedProjectById.has(participant.project_id))
+  const hasJoinedProjectReadWarning = warnings.some((warning) => warning.scope === "joined-projects")
+  const recentProjects = visibleParticipantRows
     .map((participant) => {
       const project = joinedProjectById.get(participant.project_id)
       return project ? mapProjectWithParticipation(project, participant) : null
@@ -188,10 +191,11 @@ export function buildUserWorkspaceHome({
       missingItems: user?.profileCompletionMissingItems ?? [],
     },
     participation: {
-      joinedProjectCount: participantRows.length,
-      founderProjectCount: participantRows.filter((participant) => participant.is_admin === true).length,
-      favoriteProjectCount: participantRows.filter((participant) => participant.is_favorite === true).length,
+      joinedProjectCount: visibleParticipantRows.length,
+      founderProjectCount: visibleParticipantRows.filter((participant) => participant.is_admin === true).length,
+      favoriteProjectCount: visibleParticipantRows.filter((participant) => participant.is_favorite === true).length,
       recentProjects,
+      hasUnavailableProjectDetails: hasJoinedProjectReadWarning && participantRows.length > 0,
     },
     discovery: {
       recommendedProjects: recommendedProjects.slice(0, 3).map(mapRecommendedProject),
@@ -230,7 +234,7 @@ export async function getUserWorkspaceHome(navigationContext: NavigationContext)
   }
 
   const supabase = await createServerSupabaseClient()
-  const [participantRows, publishedResults, publicProjects] = await Promise.all([
+  const [participantRows, publishedResults] = await Promise.all([
     readWorkspaceData<ParticipantRow[]>(
       "participation",
       supabase
@@ -251,22 +255,19 @@ export async function getUserWorkspaceHome(navigationContext: NavigationContext)
       warnings,
       [],
     ),
-    readWorkspaceData<ProjectRow[]>(
-      "discovery",
-      supabase
-        .from("projects")
-        .select("id, slug, name, description, logo_url")
-        .eq("status", "active")
-        .eq("is_public", true)
-        .is("deleted_at", null)
-        .order("created_at", { ascending: false })
-        .limit(8),
-      warnings,
-      [],
-    ),
   ])
 
   const joinedProjectIds = Array.from(new Set(participantRows.map((participant) => participant.project_id)))
+  const publicProjectsQuery = supabase
+    .from("projects")
+    .select("id, slug, name, description, logo_url")
+    .eq("status", "active")
+    .eq("is_public", true)
+    .is("deleted_at", null)
+    .order("created_at", { ascending: false })
+    .limit(3)
+  const unjoinedPublicProjectsQuery =
+    joinedProjectIds.length > 0 ? publicProjectsQuery.not("id", "in", `(${joinedProjectIds.join(",")})`) : publicProjectsQuery
   const joinedProjects =
     joinedProjectIds.length > 0
       ? await readWorkspaceData<ProjectRow[]>(
@@ -281,17 +282,17 @@ export async function getUserWorkspaceHome(navigationContext: NavigationContext)
         )
       : []
   const resultRunIds = Array.from(new Set(publishedResults.map((result) => result.run_id)))
-  const runs =
+  const [runs, recommendedProjects] = await Promise.all([
     resultRunIds.length > 0
-      ? await readWorkspaceData<RunRow[]>(
+      ? readWorkspaceData<RunRow[]>(
           "result-runs",
           supabase.from("zkas_runs").select("id, month").in("id", resultRunIds),
           warnings,
           [],
         )
-      : []
-  const joinedProjectIdSet = new Set(joinedProjectIds)
-  const recommendedProjects = publicProjects.filter((project) => !joinedProjectIdSet.has(project.id))
+      : Promise.resolve([]),
+    readWorkspaceData<ProjectRow[]>("discovery", unjoinedPublicProjectsQuery, warnings, []),
+  ])
 
   return buildUserWorkspaceHome({
     navigationContext,

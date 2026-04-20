@@ -1,3 +1,29 @@
+### session v62: Address PR 23 Codex workspace read-model review comments
+- timestamp: 2026-04-20T04:07:11-04:00
+- agent: **Codex (GPT-5)**
+- branch: **codex/session-17-user-workspace**
+- head: TBD
+
+#### Objective
+Address the chatgpt-codex-connector review comments on PR #23 around workspace discovery sparsity and participation counters.
+
+#### Actions Taken
+- Changed the workspace discovery query so joined project IDs are excluded before the recommendation limit is applied.
+- Changed participation metrics to count only participant rows that hydrate to non-deleted project rows.
+- Added an explicit unavailable-project-details flag so the workspace can avoid claiming there are no joined projects when project-detail reads fail.
+- Added read-model tests for soft-deleted/unhydrated project exclusion and temporary joined-project detail failures.
+
+#### Tests and Validation Notes
+- `pnpm dlx node@22.22.1 /opt/homebrew/bin/pnpm exec vitest run tests/user-workspace.test.ts` passed.
+- `pnpm dlx node@22.22.1 /opt/homebrew/bin/pnpm lint` passed.
+- `pnpm dlx node@22.22.1 /opt/homebrew/bin/pnpm typecheck` passed.
+
+#### Reflections
+- The workspace home should be optimistic but not misleading: counters should reflect visible, non-deleted projects, while read failures need a distinct temporary state.
+
+#### Suggested Next Steps
+- Push the Codex fixes, reply to the Codex threads with the commit reference, and resolve those threads.
+
 ### session v61: Address PR 23 Copilot workspace review comments
 - timestamp: 2026-04-20T03:54:49-04:00
 - agent: **Codex (GPT-5)**

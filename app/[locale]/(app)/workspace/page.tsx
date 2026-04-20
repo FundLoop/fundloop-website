@@ -224,7 +224,7 @@ export default async function WorkspacePage({ params }: WorkspacePageProps) {
                   </Link>
                 ))}
               </div>
-            ) : workspace.participation.joinedProjectCount === 0 ? (
+            ) : workspace.participation.joinedProjectCount === 0 && !workspace.participation.hasUnavailableProjectDetails ? (
               <div className="rounded-2xl border border-dashed border-[color:var(--surface-border-strong)] bg-[var(--surface-panel)] p-5">
                 <p className="font-semibold text-[var(--text-strong)]">{t("participation.emptyTitle")}</p>
                 <p className="mt-2 text-sm leading-6 text-[var(--text-muted)]">{t("participation.emptyBody")}</p>

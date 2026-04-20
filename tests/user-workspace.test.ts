@@ -82,6 +82,7 @@ describe("buildUserWorkspaceHome", () => {
       missingItems: ["cubid_phone"],
     })
     expect(home.participation.joinedProjectCount).toBe(0)
+    expect(home.participation.hasUnavailableProjectDetails).toBe(false)
     expect(home.participation.recentProjects).toEqual([])
     expect(home.discovery.recommendedProjects).toHaveLength(1)
     expect(home.results.latest).toBeNull()
@@ -146,6 +147,7 @@ describe("buildUserWorkspaceHome", () => {
     expect(home.participation.joinedProjectCount).toBe(2)
     expect(home.participation.favoriteProjectCount).toBe(1)
     expect(home.participation.founderProjectCount).toBe(1)
+    expect(home.participation.hasUnavailableProjectDetails).toBe(false)
     expect(home.participation.recentProjects[0]?.name).toBe("Solar Commons")
     expect(home.results.latest).toMatchObject({
       allocationUsd: 125,
@@ -169,5 +171,66 @@ describe("buildUserWorkspaceHome", () => {
 
     expect(home.warnings).toEqual([{ scope: "results", message: "network unavailable" }])
     expect(home.results.detailHref).toBe("/settings/zkas")
+  })
+
+  it("excludes participant rows without hydrated non-deleted projects from counters", () => {
+    const home = buildUserWorkspaceHome({
+      navigationContext: navigationContext(),
+      participantRows: [
+        {
+          project_id: 1,
+          is_admin: true,
+          is_favorite: true,
+          joined_at: "2026-04-01T00:00:00Z",
+        },
+        {
+          project_id: 99,
+          is_admin: true,
+          is_favorite: true,
+          joined_at: "2026-04-02T00:00:00Z",
+        },
+      ],
+      joinedProjects: [
+        {
+          id: 1,
+          slug: "open-gardens",
+          name: "Open Gardens",
+          description: "Garden coordination",
+          logo_url: null,
+        },
+      ],
+      recommendedProjects: [],
+      publishedResults: [],
+      runs: [],
+      warnings: [],
+    })
+
+    expect(home.participation.joinedProjectCount).toBe(1)
+    expect(home.participation.favoriteProjectCount).toBe(1)
+    expect(home.participation.founderProjectCount).toBe(1)
+    expect(home.participation.recentProjects).toHaveLength(1)
+  })
+
+  it("flags temporarily unavailable project details without inflating counters", () => {
+    const home = buildUserWorkspaceHome({
+      navigationContext: navigationContext(),
+      participantRows: [
+        {
+          project_id: 1,
+          is_admin: true,
+          is_favorite: true,
+          joined_at: "2026-04-01T00:00:00Z",
+        },
+      ],
+      joinedProjects: [],
+      recommendedProjects: [],
+      publishedResults: [],
+      runs: [],
+      warnings: [{ scope: "joined-projects", message: "network unavailable" }],
+    })
+
+    expect(home.participation.joinedProjectCount).toBe(0)
+    expect(home.participation.hasUnavailableProjectDetails).toBe(true)
+    expect(home.participation.recentProjects).toEqual([])
   })
 })
