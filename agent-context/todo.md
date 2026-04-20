@@ -47,23 +47,23 @@ Restructure the app map around the three real personas: regular users, founders/
 
 ## Session 04: Introduce a backend-contract layer for Supabase Edge Functions
 
-- Status: Not started
-- Timestamp started: TBD
-- Timestamp completed: TBD
-- Feature branch: TBD
-- Head: TBD
-- Session-log reference(s): TBD
+- Status: Complete
+- Timestamp started: 2026-04-14T23:28:41Z
+- Timestamp completed: 2026-04-14T23:28:41Z
+- Feature branch: codex/wallet-production-readiness
+- Head: 56599f9a9eb72692bdbafaa2b3ddbc6b6ccbf558
+- Session-log reference(s): session v38
 
 Create the application-side foundation for the future read/write model. The web app should gain a consistent client for calling Supabase Edge Functions, typed request and response envelopes, shared auth/error handling, and a clear place to put function-specific adapters. Do not migrate all behavior yet. The goal is to remove the current ambiguity where writes happen in server actions and reads often happen straight from the browser. This session creates the transport contract every later migration will depend on.
 
 ## Session 05: Stand up the first real Edge Function domain boundary
 
-- Status: Not started
-- Timestamp started: TBD
-- Timestamp completed: TBD
-- Feature branch: TBD
-- Head: TBD
-- Session-log reference(s): TBD
+- Status: Complete
+- Timestamp started: 2026-04-14T23:36:10Z
+- Timestamp completed: 2026-04-14T23:36:10Z
+- Feature branch: codex/wallet-production-readiness
+- Head: f2bd1b5f6d9876b48a579efb45d0f8f2eb8c38e2
+- Session-log reference(s): session v39
 
 Pick one narrow but meaningful domain, likely onboarding drafts or project payment draft creation, and implement the first production-style Supabase Edge Function with schema validation, auth checks, and a typed web adapter. This session proves the new backend pattern in a real workflow. It should include local development ergonomics, shared error shapes, and a small test harness. The goal is to establish a repeatable template so later sessions can migrate more domains without inventing a new style each time.
 

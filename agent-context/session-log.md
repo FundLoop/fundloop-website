@@ -1,3 +1,26 @@
+### session v59: Reconcile completed Edge Function backlog metadata
+- timestamp: 2026-04-20T03:19:55-04:00
+- agent: **Codex (GPT-5)**
+- branch: **codex/session-17-user-workspace**
+- head: TBD
+
+#### Objective
+Correct stale backlog metadata for Sessions 04 and 05 so future agents do not re-run already-completed Edge Function contract and project payment draft migration work.
+
+#### Actions Taken
+- Marked Session 04 complete in `agent-context/todo.md` using the existing `session v38` timestamp, branch, head, and reference.
+- Marked Session 05 complete in `agent-context/todo.md` using the existing `session v39` timestamp, branch, head, and reference.
+- Kept this pass limited to backlog hygiene; no product code or Edge Function implementation changed.
+
+#### Tests and Validation Notes
+- Not run; documentation metadata only.
+
+#### Reflections
+- The Edge Function contract and first payment draft command are already present in the repo and documented in `docs/engineering/edge-functions.md`; leaving the backlog as `Not started` would invite duplicate implementation work.
+
+#### Suggested Next Steps
+- Start Session 17 on this branch by rebuilding `/workspace` into the signed-in user workspace home.
+
 ### session v58: Address PR 22 reconciliation RPC review comments
 - timestamp: 2026-04-19T21:54:03-04:00
 - agent: **Codex (GPT-5)**
