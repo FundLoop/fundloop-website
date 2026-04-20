@@ -1,3 +1,29 @@
+### session v61: Address PR 23 Copilot workspace review comments
+- timestamp: 2026-04-20T03:54:49-04:00
+- agent: **Codex (GPT-5)**
+- branch: **codex/session-17-user-workspace**
+- head: TBD
+
+#### Objective
+Address the Copilot review comments on PR #23 before requesting the next Codex review pass.
+
+#### Actions Taken
+- Changed the workspace CUBID Passport link to use `navigationContext.cubidPassportOrigin` with the production Passport origin as a fallback.
+- Made workspace result publish-date formatting timezone-stable by formatting dates in UTC.
+- Reworked the participation empty-state branch so users with joined projects do not see "no joined projects" when project detail hydration is temporarily unavailable.
+- Added localized copy for the temporary participation-detail-unavailable state in English, French, and Spanish.
+
+#### Tests and Validation Notes
+- `pnpm dlx node@22.22.1 /opt/homebrew/bin/pnpm lint` passed.
+- `pnpm dlx node@22.22.1 /opt/homebrew/bin/pnpm typecheck` passed.
+- `pnpm dlx node@22.22.1 /opt/homebrew/bin/pnpm exec vitest run tests/user-workspace.test.ts` passed.
+
+#### Reflections
+- These fixes keep the workspace aligned with environment-specific CUBID configuration and avoid misleading user states when supporting reads partially fail.
+
+#### Suggested Next Steps
+- Push the Copilot fixes, reply to the three Copilot threads with the commit reference, and resolve those threads.
+
 ### session v60: Build the regular-user workspace home
 - timestamp: 2026-04-20T03:24:45-04:00
 - agent: **Codex (GPT-5)**

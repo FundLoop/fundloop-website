@@ -467,6 +467,7 @@ export const esMessages = {
       projectFallback: "Abre este proyecto para ver su contexto público actual.",
       emptyTitle: "Todavía no te uniste a proyectos",
       emptyBody: "Empieza con el descubrimiento público, elige proyectos que encajen con tus intereses y construye señal antes de los futuros flujos de pago.",
+      detailsUnavailable: "Te uniste a proyectos, pero sus detalles no se pudieron cargar ahora mismo. Intenta actualizar en un momento.",
     },
     results: {
       title: "Visibilidad de resultados actuales",

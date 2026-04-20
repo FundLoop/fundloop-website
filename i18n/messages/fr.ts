@@ -467,6 +467,7 @@ export const frMessages = {
       projectFallback: "Ouvrez ce projet pour voir son contexte public actuel.",
       emptyTitle: "Aucun projet rejoint pour le moment",
       emptyBody: "Commencez par la découverte publique, choisissez des projets alignés avec vos intérêts et construisez du signal avant les futurs flux de paiement.",
+      detailsUnavailable: "Vous avez rejoint des projets, mais leurs détails ne peuvent pas être chargés pour le moment. Réessayez dans un instant.",
     },
     results: {
       title: "Visibilité des résultats actuels",

@@ -475,6 +475,7 @@ export const enMessages = {
       projectFallback: "Open this project to see the current public context.",
       emptyTitle: "No joined projects yet",
       emptyBody: "Start with public discovery, choose projects that fit your interests, and build signal before later payout flows arrive.",
+      detailsUnavailable: "You have joined projects, but their details could not be loaded right now. Try refreshing in a moment.",
     },
     results: {
       title: "Current results visibility",

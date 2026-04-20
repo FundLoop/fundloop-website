@@ -36,6 +36,7 @@ function formatDate(locale: string, value: string | null) {
     month: "short",
     day: "numeric",
     year: "numeric",
+    timeZone: "UTC",
   }).format(date)
 }
 
@@ -59,6 +60,7 @@ export default async function WorkspacePage({ params }: WorkspacePageProps) {
         : "border-amber-200 bg-amber-50/85 text-amber-950 dark:border-amber-400/30 dark:bg-amber-400/10 dark:text-amber-100"
   const latestResultDate = formatDate(locale, workspace.results.latest?.publishedAt ?? null)
   const hasResolvedIdentity = isResolvedCubidIdentityStatus(cubidStatus)
+  const cubidPassportHref = new URL("/", navigationContext.cubidPassportOrigin ?? "https://passport.cubid.me").toString()
   const primaryActions = [
     {
       href: "/workspace/account",
@@ -144,7 +146,7 @@ export default async function WorkspacePage({ params }: WorkspacePageProps) {
                 <Link href="/workspace/account">{t("identity.accountCta")}</Link>
               </Button>
               <Button asChild variant="outline">
-                <a href="https://passport.cubid.me" target="_blank" rel="noreferrer">
+                <a href={cubidPassportHref} target="_blank" rel="noreferrer">
                   {t("identity.passportCta")}
                 </a>
               </Button>
@@ -222,11 +224,15 @@ export default async function WorkspacePage({ params }: WorkspacePageProps) {
                   </Link>
                 ))}
               </div>
-            ) : (
+            ) : workspace.participation.joinedProjectCount === 0 ? (
               <div className="rounded-2xl border border-dashed border-[color:var(--surface-border-strong)] bg-[var(--surface-panel)] p-5">
                 <p className="font-semibold text-[var(--text-strong)]">{t("participation.emptyTitle")}</p>
                 <p className="mt-2 text-sm leading-6 text-[var(--text-muted)]">{t("participation.emptyBody")}</p>
               </div>
+            ) : (
+              <p className="rounded-2xl border border-[color:var(--surface-border)] bg-[var(--surface-panel)] p-5 text-sm leading-6 text-[var(--text-muted)]">
+                {t("participation.detailsUnavailable")}
+              </p>
             )}
           </CardContent>
         </Card>
