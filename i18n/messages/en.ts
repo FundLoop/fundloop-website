@@ -428,15 +428,24 @@ export const enMessages = {
   },
   workspace: {
     eyebrow: "User workspace",
-    title: "A clearer home for your FundLoop activity",
+    title: "Your participation, identity, and current results in one place",
     body:
-      "This is the new entry point for the participant side of FundLoop. The fuller workspace arrives later, but from here you can already track identity readiness, local profile preferences, participation context, and published results.",
-    open: "Open",
+      "Use this workspace to understand where you stand today: identity readiness, profile completion, project participation, discovery opportunities, and the published results FundLoop can already show.",
+    stats: {
+      projects: "Joined projects",
+      results: "Published result runs",
+      totalAllocation: "Published allocation",
+    },
+    warnings: {
+      title: "Some workspace data is temporarily unavailable.",
+      body: "The page is showing the parts that loaded safely. Try refreshing later if participation or results look incomplete.",
+    },
     identity: {
-      title: "Identity status now matters before value can move",
-      cta: "Open CUBID Passport",
-      followUp:
-        "If this still shows as unlinked, finish the CUBID resolution step in onboarding or visit the account tab to understand what is missing before publish and payout-touching actions.",
+      title: "Identity readiness",
+      signedIn: "Signed in as",
+      unknownEmail: "Email unavailable",
+      accountCta: "Open account",
+      passportCta: "Open CUBID Passport",
       status: {
         unlinked: "Not linked yet",
         linked: "Linked",
@@ -451,23 +460,50 @@ export const enMessages = {
           "Your signed-in account is linked to CUBID and the latest response shows a verified email identity, which is the strongest state currently surfaced in FundLoop.",
       },
     },
-    cards: {
-      account: {
-        title: "Account",
-        description: "Manage the account settings and payout-touching preferences that now belong in your workspace.",
-      },
-      participation: {
-        title: "Participation",
-        description: "Return to the public participation guide while the full workspace home is still being rebuilt.",
-      },
-      results: {
-        title: "Published results",
-        description: "Review the personal zkAS publication surface that will later move into workspace reporting.",
-      },
-      founder: {
-        title: "Founder workspace",
-        description: "Jump directly into the project-operations side of FundLoop when you are managing a project.",
-      },
+    completion: {
+      title: "Profile completion",
+      description:
+        "This blends FundLoop-managed profile context with CUBID-backed trust signals, so you can see which parts improve discoverability and future eligibility.",
+      complete: "All current completion items are covered.",
+    },
+    participation: {
+      title: "Participation footprint",
+      description: "Projects you have joined or help administer create the participation signal that future monthly cycles can use.",
+      joined: "Joined",
+      favorites: "Favorites",
+      admin: "Admin",
+      projectFallback: "Open this project to see the current public context.",
+      emptyTitle: "No joined projects yet",
+      emptyBody: "Start with public discovery, choose projects that fit your interests, and build signal before later payout flows arrive.",
+    },
+    results: {
+      title: "Current results visibility",
+      description:
+        "This is not the full payout workspace yet. It summarizes published zkAS results that are already available for your account.",
+      latestMeta: "Aggregate score {score}, published {date}",
+      pendingDate: "date pending",
+      emptyTitle: "No published results yet",
+      emptyBody: "When a verified monthly result is published for you, the latest allocation and score will appear here.",
+      cta: "Open result history",
+    },
+    discovery: {
+      title: "Projects to explore",
+      description: "Recommended public projects exclude the ones you already joined, so discovery stays useful.",
+      projectFallback: "Open this project to learn how people participate.",
+      empty: "No new public project recommendations are available right now.",
+      cta: "Browse all projects",
+    },
+    actions: {
+      title: "Next actions",
+      description: "Jump to the parts of FundLoop that matter most from the user workspace.",
+      account: "Account",
+      accountDescription: "Refresh identity, manage profile preferences, wallets, and account settings.",
+      discover: "Discover projects",
+      discoverDescription: "Find active public projects where your participation can build signal.",
+      results: "Result history",
+      resultsDescription: "Review the interim detailed publication view while reporting is consolidated.",
+      founder: "Founder workspace",
+      founderDescription: "Switch to project operations when you manage a project.",
     },
   },
   workspaceAccount: {

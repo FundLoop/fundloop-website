@@ -113,6 +113,12 @@ Session 13 made identity state a first-class part of the authenticated shell.
 - `/[locale]/workspace/account` now includes a dedicated identity panel that points users to `passport.cubid.me` as the source-of-truth identity authority
 - user and project onboarding now begin with an explicit CUBID prerequisite step, and both publish paths require a linked identity before completion
 
+Session 17 turned `/[locale]/workspace` into the real regular-user workspace home.
+
+- `/[locale]/workspace` now summarizes identity readiness, hybrid profile completion, participation footprint, project discovery, and current published zkAS result visibility.
+- The detailed personal result history temporarily remains at `/[locale]/settings/zkas` until the later reporting and payout workspace sessions create the final `/workspace/reporting` and `/workspace/earnings` surfaces.
+- Workspace data is read server-side and should degrade to safe empty/warning states rather than crashing the signed-in home when one non-critical read fails.
+
 ## Canonical Entry Routes
 
 Session 08 introduced the first IA-aligned entry routes:

@@ -1,8 +1,38 @@
+### session v60: Build the regular-user workspace home
+- timestamp: 2026-04-20T03:24:45-04:00
+- agent: **Codex (GPT-5)**
+- branch: **codex/session-17-user-workspace**
+- head: TBD
+
+#### Objective
+Complete Session 17 by turning `/workspace` into a useful signed-in user home that summarizes identity readiness, profile completion, participation, discovery, and current published results without pulling full payout/reporting routes forward.
+
+#### Actions Taken
+- Added a server-only user workspace read model under `lib/workspace/` that gathers participation rows, joined projects, public project recommendations, published zkAS results, run labels, and non-fatal warning state.
+- Rebuilt `/[locale]/workspace` around clear workspace sections for identity readiness, profile completion, participation footprint, discovery, current results visibility, and conditional founder shortcuts.
+- Localized the new workspace copy in English, French, and Spanish.
+- Added focused coverage for the workspace read model and updated engineering docs to record `/workspace` as the real Session 17 user home while `/settings/zkas` remains the interim detailed result history.
+- Updated Session 17 status metadata in `agent-context/todo.md`.
+
+#### Tests and Validation Notes
+- `pnpm exec vitest run tests/user-workspace.test.ts` passed.
+- `pnpm lint`, `pnpm test`, `pnpm typecheck`, and `pnpm build` passed.
+- Re-ran the full gate set through `pnpm dlx node@22.22.1 /opt/homebrew/bin/pnpm ...`; lint, test, typecheck, and build all passed in the repo's expected Node 22 runtime.
+- Smoke-checked `GET /en/workspace` against `next start` on port `3107`; unauthenticated access returned a `307` redirect to `/en/join`.
+- Did not complete an authenticated browser smoke in this session; the signed-in page behavior is covered by build, model tests, and existing app-shell redirect behavior.
+
+#### Reflections
+- Keeping detailed results under `/settings/zkas` preserves the current truthful endpoint while giving users a much better workspace summary now.
+- The read model intentionally degrades partial Supabase read failures into warnings and empty states because the signed-in home should remain useful even if one supporting table is temporarily unavailable.
+
+#### Suggested Next Steps
+- Start Session 18 to give founders and project members the same level of workspace orientation around managed projects, contribution operations, and project growth.
+
 ### session v59: Reconcile completed Edge Function backlog metadata
 - timestamp: 2026-04-20T03:19:55-04:00
 - agent: **Codex (GPT-5)**
 - branch: **codex/session-17-user-workspace**
-- head: TBD
+- head: 0fb3eff1635824c53009b1dc7e23c05de5c05157
 
 #### Objective
 Correct stale backlog metadata for Sessions 04 and 05 so future agents do not re-run already-completed Edge Function contract and project payment draft migration work.
