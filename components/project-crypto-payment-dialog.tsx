@@ -4,7 +4,7 @@ import { useCallback, useEffect, useMemo, useState, useTransition } from "react"
 import { useAccount, usePublicClient, useSwitchChain, useWaitForTransactionReceipt, useWriteContract } from "wagmi"
 import { formatUnits, parseUnits } from "viem"
 import { Loader2, Wallet } from "lucide-react"
-import { recordOnchainPaymentSubmission } from "@/app/actions/project-payment-actions"
+import { invokeProjectOnchainPaymentSubmissionRecordBrowser } from "@/lib/edge-functions/project-payment-operations"
 import { useWalletRuntime } from "@/components/web3-provider"
 import { erc20Abi, fundLoopIntakeAbi } from "@/lib/onchain/fundloop-intake-abi"
 import { getRequiredConfirmationDepth } from "@/lib/onchain/runtime-config"
@@ -356,7 +356,7 @@ export function ProjectCryptoPaymentDialog({
         },
       })
 
-      const result = await recordOnchainPaymentSubmission({
+      const result = await invokeProjectOnchainPaymentSubmissionRecordBrowser({
         projectSlug,
         attemptId: activeAttemptId,
         paymentId: payment.id,
@@ -378,11 +378,11 @@ export function ProjectCryptoPaymentDialog({
           stage: "submission_record",
           outcome: "failure",
           errorCode: "submission_record_failed",
-          errorMessage: result.error,
+          errorMessage: result.error.message,
         })
         toast({
           title: "Payment receipt could not be stored",
-          description: result.error,
+          description: result.error.message,
           variant: "destructive",
         })
         return

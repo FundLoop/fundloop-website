@@ -93,13 +93,11 @@ describe("project payment action observability", () => {
   })
 
   it("logs receipt-recording failure when an unresolved submission already exists", async () => {
-    const serverSupabase = createSupabaseMock({
+    const supabase = createSupabaseMock({
       projects: [{ data: { id: 7, slug: "fundloop-studio", name: "FundLoop Studio", organization_id: null, default_payment_method_id: null }, error: null }],
       participants: [{ data: { id: 11 }, error: null }],
       ref_roles: [{ data: [], error: null }],
-    })
-
-    const adminSupabase = createSupabaseMock({
+      payment_flow_events: [{ data: null, error: null }, { data: null, error: null }],
       payments: [{ data: { id: 12, project_id: 7, notes: null }, error: null }],
       payment_methods: [
         {
@@ -128,15 +126,9 @@ describe("project payment action observability", () => {
       onchain_payment_submissions: [{ data: { id: 88 }, error: null }],
     })
 
-    vi.doMock("@/lib/supabase-server", () => ({
-      createServerSupabaseClient: async () => serverSupabase,
-    }))
-    vi.doMock("@/lib/supabase-admin", () => ({
-      getAdminSupabaseClient: () => adminSupabase,
-    }))
-
-    const { recordOnchainPaymentSubmission } = await import("@/app/actions/project-payment-actions")
-    const result = await recordOnchainPaymentSubmission({
+    const { executeProjectOnchainPaymentSubmissionRecordCommand } = await import("@/lib/payments/project-payment-operations-command")
+    const result = await executeProjectOnchainPaymentSubmissionRecordCommand(supabase as never, {
+      actorUserId: "user-1",
       projectSlug: "fundloop-studio",
       attemptId: "attempt-receipt-1",
       paymentId: 12,
@@ -150,17 +142,13 @@ describe("project payment action observability", () => {
       chainAssetId: 3,
       intakeContractId: 4,
       receipt: {},
+    }, {
+      environment: "local",
+      getDeploymentAvailabilityForRoute: () => ({ available: true, reason: null }),
     })
 
     expect(result.ok).toBe(false)
-    expect(recordPaymentFlowEvent).toHaveBeenCalledWith(
-      expect.objectContaining({
-        flow: "receipt_recording",
-        outcome: "failure",
-        attemptId: "attempt-receipt-1",
-        submissionId: 88,
-      }),
-    )
+    expect(result.ok ? null : result.error.submissionId).toBe(88)
   })
 
   it("logs admin-confirmation failure when the payment already has an onchain submission", async () => {

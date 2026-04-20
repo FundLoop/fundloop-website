@@ -3,12 +3,12 @@
 import { useEffect, useMemo, useState, useTransition } from "react"
 import { AlertTriangle, ArrowDown, ArrowUp, Plus, Save, Trash2 } from "lucide-react"
 import {
-  createProjectCryptoPaymentMethod,
-  moveProjectCryptoPaymentMethod,
-  toggleProjectCryptoPaymentMethodEnabled,
-  updateProjectCryptoPaymentMethod,
-  type ManagedCryptoPaymentMethodSummary,
-} from "@/app/actions/project-payment-actions"
+  invokeProjectCryptoRouteCreateBrowser,
+  invokeProjectCryptoRouteEnabledSetBrowser,
+  invokeProjectCryptoRouteMoveBrowser,
+  invokeProjectCryptoRouteUpdateBrowser,
+} from "@/lib/edge-functions/project-payment-operations"
+import type { ManagedCryptoPaymentMethodSummary } from "@/app/actions/project-payment-actions"
 import { useWalletRuntime } from "@/components/web3-provider"
 import { getSupabaseBrowserClient } from "@/lib/supabase"
 import { getDeploymentAvailabilityForRoute } from "@/lib/onchain/runtime-config"
@@ -259,18 +259,18 @@ export function ProjectCryptoRouteManager({ projectSlug, routes, onRoutesChange 
       }
 
       const result = route.persisted && route.paymentMethodId !== null
-        ? await updateProjectCryptoPaymentMethod({
+        ? await invokeProjectCryptoRouteUpdateBrowser({
             ...payload,
             paymentMethodId: route.paymentMethodId,
           })
-        : await createProjectCryptoPaymentMethod(payload)
+        : await invokeProjectCryptoRouteCreateBrowser(payload)
 
       setBusyRouteId(null)
 
       if (!result.ok) {
         toast({
           title: route.persisted ? "Route update failed" : "Route creation failed",
-          description: result.error,
+          description: result.error.message,
           variant: "destructive",
         })
         return
@@ -294,7 +294,7 @@ export function ProjectCryptoRouteManager({ projectSlug, routes, onRoutesChange 
     const paymentMethodId = route.paymentMethodId
     setBusyRouteId(route.localId)
     startTransition(async () => {
-      const result = await moveProjectCryptoPaymentMethod({
+      const result = await invokeProjectCryptoRouteMoveBrowser({
         projectSlug,
         paymentMethodId,
         direction,
@@ -305,7 +305,7 @@ export function ProjectCryptoRouteManager({ projectSlug, routes, onRoutesChange 
       if (!result.ok) {
         toast({
           title: "Route reorder failed",
-          description: result.error,
+          description: result.error.message,
           variant: "destructive",
         })
         return
@@ -323,7 +323,7 @@ export function ProjectCryptoRouteManager({ projectSlug, routes, onRoutesChange 
     const paymentMethodId = route.paymentMethodId
     setBusyRouteId(route.localId)
     startTransition(async () => {
-      const result = await toggleProjectCryptoPaymentMethodEnabled({
+      const result = await invokeProjectCryptoRouteEnabledSetBrowser({
         projectSlug,
         paymentMethodId,
         enabled,
@@ -334,7 +334,7 @@ export function ProjectCryptoRouteManager({ projectSlug, routes, onRoutesChange 
       if (!result.ok) {
         toast({
           title: enabled ? "Could not enable route" : "Could not disable route",
-          description: result.error,
+          description: result.error.message,
           variant: "destructive",
         })
         return

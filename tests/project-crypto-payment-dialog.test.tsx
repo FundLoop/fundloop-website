@@ -20,8 +20,8 @@ vi.mock("@/components/web3-provider", () => ({
   }),
 }))
 
-vi.mock("@/app/actions/project-payment-actions", () => ({
-  recordOnchainPaymentSubmission: vi.fn(),
+vi.mock("@/lib/edge-functions/project-payment-operations", () => ({
+  invokeProjectOnchainPaymentSubmissionRecordBrowser: vi.fn(),
 }))
 
 vi.mock("wagmi", () => ({

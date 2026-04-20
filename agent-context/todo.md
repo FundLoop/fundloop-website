@@ -212,12 +212,12 @@ Build the founder-facing home that ties together project setup, payment obligati
 
 ## Session 19: Move project payment and route write paths to Edge Functions
 
-- Status: Not started
-- Timestamp started: TBD
-- Timestamp completed: TBD
-- Feature branch: TBD
-- Head: TBD
-- Session-log reference(s): TBD
+- Status: Complete
+- Timestamp started: 2026-04-20T17:17:29-04:00
+- Timestamp completed: 2026-04-20T17:27:41-04:00
+- Feature branch: codex/session-19-payment-edge-functions
+- Head: pending final commit
+- Session-log reference(s): session v66
 
 Migrate the current payment command layer out of `app/actions/project-payment-actions.ts` and into Edge Functions, starting with payment draft creation, route create/update/reorder/disable, and receipt recording. Keep the existing UI intact where possible, but change its backend contract. This session should start decomposing the current hotspot without requiring a huge UI rewrite. The outcome should be a cleaner boundary: the web app invokes typed backend commands, and the payment domain is no longer anchored primarily in one giant server-action file.
 

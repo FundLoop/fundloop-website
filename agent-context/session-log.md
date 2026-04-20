@@ -1,3 +1,36 @@
+### session v66: Migrate founder payment operation writes to Edge Functions
+- timestamp: 2026-04-20T17:27:41-04:00
+- agent: **Codex (GPT-5)**
+- branch: **codex/session-19-payment-edge-functions**
+- head: pending final commit
+
+#### Objective
+Complete Session 19 by moving founder payment-route write operations and onchain receipt recording behind typed Supabase Edge Function commands while keeping the current payment UI and read paths stable.
+
+#### Actions Taken
+- Added typed contracts and browser/server adapters for project crypto route create, update, move, enable/disable, and onchain receipt recording commands.
+- Extracted the founder payment operation domain logic into a shared command module for project-admin authorization, route validation, default promotion, deployment availability checks, receipt validation, and receipt-recording observability.
+- Added one Supabase Edge Function per new command using the existing bearer-token authentication and service-role-after-auth pattern.
+- Rewired the route manager and crypto payment dialog to call browser Edge Function adapters directly, leaving server actions as compatibility wrappers.
+- Updated engineering docs and route inventory to record the Session 19 backend boundary change.
+
+#### Tests and Validation Notes
+- `pnpm test -- project-payment-operations project-payment-observability-actions project-crypto-payment-dialog project-crypto-routes` passed with the ambient Node 25 shell.
+- `pnpm lint` passed with the ambient Node 25 shell.
+- `pnpm test` passed with the ambient Node 25 shell.
+- `pnpm typecheck` passed with the ambient Node 25 shell.
+- `pnpm build` passed with the ambient Node 25 shell.
+
+#### Reflections
+- Dependency-injecting deployment availability kept the shared command module usable from both Next server code and Deno Edge Functions without importing the full wallet runtime stack into Deno.
+- Keeping reads in place made this migration reviewable while still removing the highest-risk remaining client-to-server-action writes from the founder payment flow.
+
+#### Suggested Next Steps
+- Run the safe dependency triage pass as a separate commit on this branch.
+- After dependency validation, yeet the branch to `dev` and let CI exercise the Edge Function import paths.
+
+---
+
 ### session v65: Address PR 24 founder workspace review comments
 - timestamp: 2026-04-20T16:50:06-04:00
 - agent: **Codex (GPT-5)**

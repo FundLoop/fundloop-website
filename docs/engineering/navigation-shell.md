@@ -127,6 +127,12 @@ Session 18 turned the founder entry routes into operational workspace homes.
 - Existing deep operation routes remain in place for now: contribution/payment work stays at `/[locale]/projects/[slug]/payments`, and project zkAS work stays at `/[locale]/projects/[slug]/zkas`.
 - `/[locale]/organizations/[id]` now redirects to `/[locale]/founder/projects` instead of rendering the old mock organization detail surface.
 
+Session 19 hardened the payment operation path without moving URLs.
+
+- Founder route-management writes and onchain receipt recording now go through Supabase Edge Function commands.
+- Payment-route reads, payment table reads, and latest-submission reads still temporarily load from the existing app-side read path.
+- `/[locale]/projects/[slug]/payments` remains the active deep operation route until the later monthly contribution workspace sessions relocate or redesign it.
+
 ## Canonical Entry Routes
 
 Session 08 introduced the first IA-aligned entry routes:

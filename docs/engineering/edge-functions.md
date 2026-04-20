@@ -32,6 +32,12 @@ The app should treat a declared failure envelope differently from transport or i
 The first migrated domains are:
 
 - `project-payment-drafts-create`
+- founder payment operations:
+  - `project-crypto-route-create`
+  - `project-crypto-route-update`
+  - `project-crypto-route-move`
+  - `project-crypto-route-enabled-set`
+  - `project-onchain-payment-submission-record`
 - `user-cubid-resolve-email`
 - `user-cubid-sync-profile`
 - onboarding writes:
@@ -48,6 +54,13 @@ The canonical write path is now:
 - the Supabase function authenticates with the bearer token from `functions.invoke(...)`
 - the function runs the shared payment-draft command module
 - the legacy server action remains only as a compatibility wrapper around the server invoker
+
+For founder payment operations:
+
+- the payment-route manager calls browser Edge Function adapters for route create, update, move, enable, and disable commands
+- the crypto payment dialog records onchain submissions through `project-onchain-payment-submission-record`
+- the extracted command module owns project-admin authorization, route reference validation, default promotion, deployment availability checks, receipt validation, and receipt-recording observability
+- read paths for payment routes and latest submissions still temporarily live outside Edge Functions
 
 For onboarding:
 
@@ -84,6 +97,11 @@ supabase functions serve project-onboarding-draft-upsert --env-file .env.local
 supabase functions serve project-onboarding-publish --env-file .env.local
 supabase functions serve user-cubid-resolve-email --env-file .env.local
 supabase functions serve user-cubid-sync-profile --env-file .env.local
+supabase functions serve project-crypto-route-create --env-file .env.local
+supabase functions serve project-crypto-route-update --env-file .env.local
+supabase functions serve project-crypto-route-move --env-file .env.local
+supabase functions serve project-crypto-route-enabled-set --env-file .env.local
+supabase functions serve project-onchain-payment-submission-record --env-file .env.local
 ```
 
 Once the local stack is running, invoke the command through the app or by calling the local functions endpoint with an authenticated bearer token.
