@@ -1,6 +1,6 @@
 # FundLoop Route Inventory
 
-Last reviewed: 2026-04-15
+Last reviewed: 2026-04-20
 
 Related planning docs:
 - [Engineering Docs Index](./README.md)
@@ -17,7 +17,7 @@ This inventory covers every current `page.tsx` and `route.ts` surface under `app
 - `/admin` currently links to missing routes: `/admin/projects`, `/admin/users`, and `/admin/analytics`.
 - `/settings` currently links to missing routes: `/settings/notifications` and `/settings/security`.
 - `/my-profile` currently links to missing `/organizations`.
-- `/invitations/[token]` and `/organizations/[id]` are demo/mock surfaces and should not be treated as production-ready flows.
+- `/invitations/[token]` is a legacy invitation redirect, and `/organizations/[id]` is now a founder-workspace redirect instead of a mock organization page.
 - `/about`, `/api`, and `/analytics` are now legacy public entry points and should remain redirects only.
 
 ## Public Site and Discovery Surfaces
@@ -55,11 +55,12 @@ This inventory covers every current `page.tsx` and `route.ts` surface under `app
 | --- | --- | --- | --- | --- | --- | --- |
 | `/workspace` | Signed-in users | Real regular-user workspace home. | Session 17 rebuilt the route around identity readiness, profile completion, participation footprint, discovery next actions, and current published result visibility. | finish | User workspace home | 17 |
 | `/workspace/account` | Signed-in users | Workspace account hub with explicit identity ownership split. | Sessions 15 and 16 made CUBID-managed identity read-only here and separated it from FundLoop-managed profile/preferences. | finish | User workspace account settings | 16, 42 |
-| `/founder` | Founders, project members | New lightweight founder-workspace entry shell. | Session 08 introduced this as the canonical founder start point while deeper project operations remain under project-specific routes. | finish | Founder workspace home | 18 |
-| `/founder/projects` | Founders, project members | New founder project index shell. | Bridges the new founder shell to existing project operations routes. | finish | Founder workspace projects | 18 |
+| `/founder` | Founders, project members | Real founder workspace home. | Session 18 summarizes managed projects, setup readiness, contribution/payment status, attribution readiness, identity reminders, and next actions while keeping deep operations in their current routes. | finish | Founder workspace home | 18 |
+| `/founder/projects` | Founders, project members | Real founder project index. | Session 18 added per-project setup, payment, attribution, reporting, and team badges with links to canonical founder project homes and existing operations. | finish | Founder workspace projects | 18 |
+| `/founder/projects/[slug]` | Founders, project members | Thin canonical per-project founder home. | Session 18 added the route and gates it to slugs in `getNavigationContext().managedProjects`; payment and zkAS actions still link to existing `/projects/[slug]/*` operations. | finish | Founder workspace project home | 18, 33, 36 |
 | `/founder/account` | Founders, project members | Founder account shell with the same read-only CUBID identity summary. | Sessions 15 and 16 aligned founder account with the shared identity authority model. | finish | Founder workspace account settings | 16, 18, 42 |
 | `/my-profile` | Signed-in users | Redirect-only legacy entry. | Session 08 retired the old mixed profile/dashboard entry in favor of `/workspace`. | redirect | `/workspace` | 16, 17, 42 |
-| `/organizations/[id]` | Founder/org members | Mock organization detail page. | Uses explicit mock data and placeholder logos. | remove | Founder workspace organization view once real | 18 |
+| `/organizations/[id]` | Founder/org members | Redirect-only legacy organization route. | Session 18 retired the mock organization detail surface and points users to the founder project index instead. | redirect | `/founder/projects` | 18 |
 | `/projects/[slug]/payments` | Project admins | Real founder operations surface. | Production payment and route management now lives here. | finish | Founder workspace project contributions | 18, 33 |
 | `/projects/[slug]/zkas` | Project admins, operators | Transitional project-side zkAS page. | Belongs to monthly cycle and reporting rather than standalone project leaf. | merge | Founder workspace cycle and reporting area | 33, 36 |
 | `/projects/[slug]/zkas/uploads/[id]` | Project admins, operators | Transitional upload-detail leaf. | Should live under project contribution-data submission and audit flow. | merge | Founder workspace attribution/data submission history | 34 |

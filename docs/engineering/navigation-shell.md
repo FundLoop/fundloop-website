@@ -119,6 +119,14 @@ Session 17 turned `/[locale]/workspace` into the real regular-user workspace hom
 - The detailed personal result history temporarily remains at `/[locale]/settings/zkas` until the later reporting and payout workspace sessions create the final `/workspace/reporting` and `/workspace/earnings` surfaces.
 - Workspace data is read server-side and should degrade to safe empty/warning states rather than crashing the signed-in home when one non-critical read fails.
 
+Session 18 turned the founder entry routes into operational workspace homes.
+
+- `/[locale]/founder` now summarizes managed project count, setup readiness, payment/contribution status, attribution readiness, founder identity reminders, and next actions.
+- `/[locale]/founder/projects` is now the canonical founder project index with setup, payment, attribution, and team badges for each managed project.
+- `/[locale]/founder/projects/[slug]` is the first thin per-project founder home and only resolves slugs already present in `getNavigationContext().managedProjects`.
+- Existing deep operation routes remain in place for now: contribution/payment work stays at `/[locale]/projects/[slug]/payments`, and project zkAS work stays at `/[locale]/projects/[slug]/zkas`.
+- `/[locale]/organizations/[id]` now redirects to `/[locale]/founder/projects` instead of rendering the old mock organization detail surface.
+
 ## Canonical Entry Routes
 
 Session 08 introduced the first IA-aligned entry routes:
@@ -127,10 +135,11 @@ Session 08 introduced the first IA-aligned entry routes:
 - `/[locale]/workspace/account`
 - `/[locale]/founder`
 - `/[locale]/founder/projects`
+- `/[locale]/founder/projects/[slug]`
 - `/[locale]/founder/account`
 - `/[locale]/founders`
 
-These are intentionally thin entry shells, not the final content-heavy homes from later sessions.
+`/workspace`, `/founder`, and `/founder/projects` are now real homes after Sessions 17 and 18. Deeper contribution, attribution, reporting, and payout work is still intentionally deferred to later sessions.
 
 ## Transitional Redirects
 
@@ -139,6 +148,7 @@ Session 08 neutralized the most confusing legacy entry points:
 - `/[locale]/my-profile` -> `/[locale]/workspace`
 - `/[locale]/settings` -> `/[locale]/workspace/account`
 - `/[locale]/settings/account` -> `/[locale]/workspace/account`
+- `/[locale]/organizations/[id]` -> `/[locale]/founder/projects`
 
 Deep operational routes stay live for now:
 

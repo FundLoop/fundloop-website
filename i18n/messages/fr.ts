@@ -506,42 +506,164 @@ export const frMessages = {
   },
   founderWorkspace: {
     eyebrow: "Espace fondateur",
-    title: "Un point d’entrée opérationnel stable pour les équipes projet",
+    title: "La salle d’opérations de vos projets",
     body:
-      "Cette coquille est la première étape vers l’espace fondateur complet. Elle donne un démarrage clair aux admins projet et pointe ensuite vers les surfaces réelles de paiement et de zkAS déjà présentes plus en profondeur.",
+      "Suivez la préparation, les obligations de contribution, les données d’attribution et la prochaine action opérationnelle pour chaque projet que vous gérez.",
     open: "Ouvrir",
+    stats: {
+      projects: "Projets gérés",
+      ready: "Projets prêts",
+      pending: "Paiements en attente",
+      contributed: "Total contribué",
+    },
+    warnings: {
+      title: "Certaines données fondateur sont temporairement indisponibles",
+      body: "L’espace affiche des données partielles sûres. Les pages opérationnelles restent liées depuis chaque projet.",
+    },
+    identity: {
+      title: "L’identité fondateur demande encore de l’attention",
+      body: "Actualisez l’identité CUBID et les préférences locales pour garder les opérations projet attribuables.",
+      cta: "Vérifier le compte",
+    },
     empty: {
       title: "Aucun projet géré pour le moment",
       body:
         "Cet espace s’active une fois qu’un projet est publié ou qu’un accès fondateur/admin vous est accordé. En attendant, le parcours public fondateur et l’onboarding restent les bonnes prochaines étapes.",
       cta: "Ouvrir le parcours fondateur",
+      accountCta: "Vérifier le compte",
+      panelTitle: "Ce qui apparaîtra ici",
+      panelBody:
+        "Préparation projet, opérations de contribution, jeux de données d’attribution, contexte de croissance et signaux d’équipe apparaîtront ici dès que vous gérez un projet.",
     },
-    cards: {
+    actions: {
       projects: {
-        title: "Projets",
-        description: "Voyez tous les projets que vous gérez et choisissez la prochaine tâche opérationnelle.",
+        title: "Voir les projets gérés",
+        description: "Consultez l’état de préparation, les pièces manquantes et l’accueil canonique de chaque projet.",
       },
-      operations: {
-        title: "Opérations de contribution",
-        description: "Ouvrez le flux réel de paiements et de routes de collecte depuis le nouvel espace fondateur.",
+      contributions: {
+        title: "Ouvrir les contributions",
+        description: "Accédez à la page de paiements existante jusqu’à son déplacement sous l’espace fondateur.",
       },
-      account: {
-        title: "Compte",
-        description: "Gardez les préférences fondateur et le contexte de l’espace au même endroit.",
+      attribution: {
+        title: "Vérifier l’attribution",
+        description: "Ouvrez la page zkAS actuelle pour les jeux de données et le reporting déjà disponibles.",
       },
+    },
+    projectList: {
+      eyebrow: "Projets opérationnels",
+      title: "Projets qui demandent votre attention",
+      cta: "Ouvrir tous les projets",
+      slugPending: "Slug en attente",
+      methods: "Méthodes",
+      datasets: "Jeux",
+      members: "Membres",
+    },
+    badges: {
+      ready: "Prêt",
+      needsSetup: "À configurer",
     },
   },
   founderProjects: {
     eyebrow: "Projets gérés",
-    title: "Choisissez un espace projet",
+    title: "Espaces projet",
     body:
-      "Ces cartes relient le nouvel espace fondateur aux pages opérationnelles déjà réelles, qui vivent encore sous des routes spécifiques aux projets.",
+      "Chaque projet dispose maintenant d’un accueil fondateur léger avec préparation, paiements, attribution, croissance et contexte d’équipe. Les opérations profondes restent sur leurs routes actuelles pour l’instant.",
+    empty: {
+      title: "Aucun projet à gérer pour le moment",
+      body: "Quand vous publiez un projet ou recevez un accès fondateur/admin, il apparaîtra ici avec ses liens opérationnels.",
+      cta: "Ouvrir le parcours fondateur",
+    },
+    warnings: {
+      title: "Certains détails projet sont temporairement indisponibles",
+      body: "L’index utilise des données partielles sûres. Consultez les pages opérationnelles liées pour les derniers enregistrements.",
+    },
+    badges: {
+      ready: "Prêt",
+      needsSetup: "À configurer",
+    },
+    metrics: {
+      methods: "Méthodes",
+      pending: "En attente",
+      datasets: "Jeux",
+      members: "Membres",
+    },
+    setup: {
+      title: "Éléments manquants",
+      missing: {
+        slug: "slug",
+        contribution_rate: "taux de contribution",
+        payment_method: "méthode de paiement active",
+        default_payment_method: "méthode par défaut",
+      },
+    },
     links: {
+      workspace: "Ouvrir l’accueil fondateur",
       project: "Ouvrir la fiche publique du projet",
       payments: "Ouvrir les opérations de contribution",
       zkas: "Ouvrir le zkAS projet",
     },
     missingSlug: "Publiez ou réparez le slug du projet avant de lier des routes fondateur plus profondes.",
+    missingSlugAction: "Les liens fondateur se débloquent quand ce projet possède un slug.",
+  },
+  founderProjectHome: {
+    eyebrow: "Espace projet",
+    fallbackDescription: "Cet accueil projet regroupe le contexte opérationnel pendant que les routes de contribution et d’attribution restent en place.",
+    none: "Aucun",
+    yes: "Oui",
+    no: "Non",
+    badges: {
+      ready: "Prêt",
+      needsSetup: "À configurer",
+    },
+    warnings: {
+      title: "Certaines données projet sont temporairement indisponibles",
+      body: "Cette page affiche des données partielles sûres et garde les liens vers les surfaces opérationnelles existantes.",
+    },
+    stats: {
+      revenue: "Revenus suivis",
+      contribution: "Contributions",
+      datasets: "Jeux",
+      members: "Membres",
+    },
+    payments: {
+      title: "Opérations de contribution",
+      description: "Les obligations de paiement restent sur la page projet existante jusqu’à la migration de routes ultérieure.",
+      pending: "En attente",
+      confirmed: "Confirmés",
+      latest: "Dernière période",
+      cta: "Ouvrir les paiements",
+    },
+    setup: {
+      title: "Préparation",
+      description: "Le projet a besoin d’un slug, d’un taux de contribution et d’une méthode de paiement par défaut active.",
+      methods: "Méthodes",
+      rate: "Taux",
+      defaultMethod: "Méthode par défaut",
+      publicProfile: "Profil public",
+      needsWork: "Corrigez les éléments manquants avant de considérer ce projet comme pleinement opérationnel.",
+    },
+    attribution: {
+      title: "Attribution et zkAS",
+      description: "Les jeux de données et le zkAS restent gérés par la page zkAS actuelle du projet.",
+      latestDataset: "Dernier jeu",
+      status: "Statut",
+      rows: "Lignes",
+      cta: "Ouvrir zkAS",
+    },
+    growth: {
+      title: "Croissance et reporting",
+      description: "Les statistiques mensuelles et résumés zkAS publiés apparaissent ici quand ils existent.",
+      latest: "Dernier mois",
+      users: "Utilisateurs",
+      revenue: "Revenus",
+      payout: "Paiement",
+    },
+    links: {
+      public: "Profil public",
+      payments: "Opérations de contribution",
+      zkas: "zkAS projet",
+      allProjects: "Tous les projets fondateur",
+    },
   },
   founderAccount: {
     heading: "Compte fondateur",

@@ -1,3 +1,108 @@
+### session v65: Address PR 24 founder workspace review comments
+- timestamp: 2026-04-20T16:50:06-04:00
+- agent: **Codex (GPT-5)**
+- branch: **codex/session-18-founder-workspace**
+- head: pending final commit
+
+#### Objective
+Address automated review feedback on PR #24 from Copilot and Codex for the founder workspace read model and organization redirect route typing.
+
+#### Actions Taken
+- Changed the founder workspace builder to group read rows by `project_id` once before mapping managed projects, avoiding repeated per-project scans across payments, methods, participants, datasets, run summaries, and monthly stats.
+- Changed aggregate `latestPublishedMonth` to choose the maximum non-null `YYYY-MM` month across all managed projects instead of the first project with a report.
+- Added a regression test proving aggregate reporting selects the latest month across projects.
+- Updated the organization redirect route props to include the dynamic `[id]` param even though the handler redirects without using it.
+
+#### Tests and Validation Notes
+- `pnpm test -- founder-workspace` passed.
+- `pnpm lint` passed.
+- `pnpm typecheck` passed.
+- `pnpm dlx node@22.22.1 /opt/homebrew/bin/pnpm test -- founder-workspace` passed.
+- `pnpm dlx node@22.22.1 /opt/homebrew/bin/pnpm lint` passed.
+- `pnpm dlx node@22.22.1 /opt/homebrew/bin/pnpm typecheck` passed.
+
+#### Reflections
+- The reviewer suggestions were practical and tightened both correctness and scaling characteristics without changing the UI contract.
+
+#### Suggested Next Steps
+- Push this review-fix commit and resolve the corresponding PR review threads.
+- Re-check CI after the push before requesting/awaiting final approval.
+
+---
+
+### session v64: Add authenticated local founder seed and smoke Session 18
+- timestamp: 2026-04-20T16:28:45-04:00
+- agent: **Codex (GPT-5)**
+- branch: **codex/session-18-founder-workspace**
+- head: pending final commit
+
+#### Objective
+Add a deterministic authenticated founder fixture to the local seed and rerun the Session 18 founder workspace smoke against a real signed-in founder session.
+
+#### Actions Taken
+- Added a local-only Supabase Auth fixture for `maya@fundloop.example.com` with password `FundLoopFounder123!`, matched to the deterministic public user `00000000-0000-4000-8000-000000000101`.
+- Documented the authenticated founder smoke fixture in `docs/engineering/local-seed.md`.
+- Extended the local seed test to assert the Auth user and identity fixture stay present.
+- Reset the local FundLoop Supabase database and verified the seeded founder can sign in through `/api/internal/e2e/login`.
+- Used Playwright CLI to authenticate as Maya and smoke `/en/founder`, `/en/founder/projects`, `/en/founder/projects/civic-mesh`, `/en/organizations/test`, and the founder project home dark-mode toggle.
+
+#### Tests and Validation Notes
+- `supabase start --exclude logflare --ignore-health-check` succeeded after the analytics/logflare container failed the default health check.
+- `supabase db reset` passed after adjusting the Auth seed to avoid generated columns and null token-string fields.
+- `pnpm lint` passed.
+- `pnpm test -- local-public-seed` passed with the ambient Node 25 shell.
+- `pnpm dlx node@22.22.1 /opt/homebrew/bin/pnpm test -- local-public-seed` passed.
+- Browser smoke verified authenticated founder pages render with zero console errors and the expected founder nav, project data, project-home links, organization redirect, and dark theme class.
+
+#### Reflections
+- The founder workspace is now smoke-testable locally without relying on an ad hoc browser session.
+- Supabase Auth seed rows are pickier than the column nullability suggests; generated `confirmed_at` and token columns need local-compatible handling.
+
+#### Suggested Next Steps
+- Yeet the Session 18 branch into `dev` for review.
+- Consider adding an explicit Playwright spec for the seeded founder workspace fixture once the PR is open.
+
+---
+
+### session v63: Build the founder and project workspace home
+- timestamp: 2026-04-20T13:53:17-04:00
+- agent: **Codex (GPT-5)**
+- branch: **codex/session-18-founder-workspace**
+- head: 67243d2
+
+#### Objective
+Implement Session 18 by turning the founder workspace entry points into operational homes while keeping existing contribution and zkAS operation routes in place.
+
+#### Actions Taken
+- Added a server-only founder workspace read model that summarizes managed projects, setup readiness, payment status, attribution/reporting state, growth stats, team counts, and non-fatal warnings using `getNavigationContext().managedProjects` as the access boundary.
+- Rebuilt `/[locale]/founder` and `/[locale]/founder/projects`, and added `/[locale]/founder/projects/[slug]` as the first canonical per-project founder home.
+- Retired the mock organization detail page by redirecting `/[locale]/organizations/[id]` to `/[locale]/founder/projects`.
+- Localized the new founder workspace copy in English, French, and Spanish.
+- Updated engineering navigation and route-inventory docs, plus Session 18 backlog metadata.
+
+#### Tests and Validation Notes
+- `pnpm test -- founder-workspace` passed with the ambient Node 25 shell; it also executed the full Vitest suite.
+- `pnpm lint` passed with the ambient Node 25 shell.
+- `pnpm test` passed with the ambient Node 25 shell.
+- `pnpm typecheck` passed with the ambient Node 25 shell.
+- `pnpm build` passed with the ambient Node 25 shell.
+- `pnpm dlx node@22.22.1 /opt/homebrew/bin/pnpm lint` passed.
+- `pnpm dlx node@22.22.1 /opt/homebrew/bin/pnpm test` passed.
+- `pnpm dlx node@22.22.1 /opt/homebrew/bin/pnpm typecheck` passed.
+- `pnpm dlx node@22.22.1 /opt/homebrew/bin/pnpm build` passed.
+- Manual unauthenticated smoke against local Next verified `/en/founder` and `/en/founder/projects` redirect to `/en/join`, and `/en/organizations/test` redirects to `/en/founder/projects`.
+- Authenticated founder light/dark smoke was not completed because no seeded authenticated founder browser session was available in this turn.
+
+#### Reflections
+- The founder side now has the same operational center of gravity that Session 17 created for regular users, without prematurely moving the payment or zkAS routes.
+- The read-model-first approach kept the route pages straightforward and gave us useful unit coverage around the most important access and summary behavior.
+
+#### Suggested Next Steps
+- Yeet this branch into `dev` for review.
+- Session 19 can now start migrating project payment and route write paths while linking from the founder workspace remains stable.
+
+---
+
 ### session v62: Address PR 23 Codex workspace read-model review comments
 - timestamp: 2026-04-20T04:07:11-04:00
 - agent: **Codex (GPT-5)**

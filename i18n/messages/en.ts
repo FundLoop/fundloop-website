@@ -514,42 +514,164 @@ export const enMessages = {
   },
   founderWorkspace: {
     eyebrow: "Founder workspace",
-    title: "A stable operations entry point for project teams",
+    title: "Your project operating room",
     body:
-      "This shell is the first step toward the full founder workspace coming later. It gives project admins a durable place to start, then points into the real payment and zkAS surfaces that already exist deeper in the app.",
+      "Track setup readiness, contribution obligations, attribution data, and the next operational step for every project you manage.",
     open: "Open",
+    stats: {
+      projects: "Managed projects",
+      ready: "Ready projects",
+      pending: "Pending payments",
+      contributed: "Contribution total",
+    },
+    warnings: {
+      title: "Some founder data is temporarily unavailable",
+      body: "The workspace is showing safe partial data. Operational pages remain linked from each project.",
+    },
+    identity: {
+      title: "Founder identity still needs attention",
+      body: "Refresh CUBID-backed identity and local profile preferences so project operations stay attributable.",
+      cta: "Review account",
+    },
     empty: {
       title: "No managed projects yet",
       body:
         "This workspace becomes active once you publish a project or are added as a founder/admin on one. Until then, the public founder path and onboarding flow remain the right next steps.",
       cta: "Open the founder path",
+      accountCta: "Review account",
+      panelTitle: "What unlocks here",
+      panelBody:
+        "Project readiness, contribution operations, attribution datasets, growth context, and team/member signals will appear here once you manage a project.",
     },
-    cards: {
+    actions: {
       projects: {
-        title: "Projects",
-        description: "See every project you currently manage and choose the next operational task.",
+        title: "Review managed projects",
+        description: "See setup status, missing operational pieces, and the canonical project home for each project.",
       },
-      operations: {
-        title: "Contribution operations",
-        description: "Open the currently real project payments and route-management flow from the new founder shell.",
+      contributions: {
+        title: "Open contribution operations",
+        description: "Jump into the existing project payments surface until it moves under the founder workspace.",
       },
-      account: {
-        title: "Account",
-        description: "Keep founder-facing account preferences and workspace guidance in one place.",
+      attribution: {
+        title: "Check attribution readiness",
+        description: "Open the current project zkAS page for dataset and reporting work that already exists.",
       },
+    },
+    projectList: {
+      eyebrow: "Operational projects",
+      title: "Projects needing your attention",
+      cta: "Open all projects",
+      slugPending: "Slug pending",
+      methods: "Methods",
+      datasets: "Datasets",
+      members: "Members",
+    },
+    badges: {
+      ready: "Ready",
+      needsSetup: "Needs setup",
     },
   },
   founderProjects: {
     eyebrow: "Managed projects",
-    title: "Choose a project workspace",
+    title: "Project workspaces",
     body:
-      "These cards are the bridge between the new founder shell and the already-real operational pages that still live under project-specific routes for now.",
+      "Each project now has a thin founder home with readiness, payment, attribution, growth, and team context. Deep contribution and zkAS operations stay in their existing routes for now.",
+    empty: {
+      title: "No projects to manage yet",
+      body: "When you publish a project or receive founder/admin access, it will appear here with operational links.",
+      cta: "Open the founder path",
+    },
+    warnings: {
+      title: "Some project details are temporarily unavailable",
+      body: "The index is using safe partial data. Check the linked operational pages for the latest records.",
+    },
+    badges: {
+      ready: "Ready",
+      needsSetup: "Needs setup",
+    },
+    metrics: {
+      methods: "Methods",
+      pending: "Pending",
+      datasets: "Datasets",
+      members: "Members",
+    },
+    setup: {
+      title: "Setup gaps",
+      missing: {
+        slug: "slug",
+        contribution_rate: "contribution rate",
+        payment_method: "enabled payment method",
+        default_payment_method: "default payment method",
+      },
+    },
     links: {
+      workspace: "Open founder home",
       project: "Open public project profile",
       payments: "Open contribution operations",
       zkas: "Open project zkAS",
     },
     missingSlug: "Publish or repair the project slug before deeper founder routes can be linked.",
+    missingSlugAction: "Founder project links unlock once this project has a slug.",
+  },
+  founderProjectHome: {
+    eyebrow: "Project workspace",
+    fallbackDescription: "This project home collects operational context while the deeper contribution and attribution routes remain in place.",
+    none: "None",
+    yes: "Yes",
+    no: "No",
+    badges: {
+      ready: "Ready",
+      needsSetup: "Needs setup",
+    },
+    warnings: {
+      title: "Some project data is temporarily unavailable",
+      body: "This page is showing safe partial data and still links to the existing operation surfaces.",
+    },
+    stats: {
+      revenue: "Revenue tracked",
+      contribution: "Contributions",
+      datasets: "Datasets",
+      members: "Members",
+    },
+    payments: {
+      title: "Contribution operations",
+      description: "Payment obligations remain in the existing project payments surface until the later route migration.",
+      pending: "Pending",
+      confirmed: "Confirmed",
+      latest: "Latest period",
+      cta: "Open payments",
+    },
+    setup: {
+      title: "Setup readiness",
+      description: "The project needs a slug, contribution rate, and enabled default payment method before operations are clean.",
+      methods: "Methods",
+      rate: "Rate",
+      defaultMethod: "Default method",
+      publicProfile: "Public profile",
+      needsWork: "Resolve setup gaps before treating this project as fully operational.",
+    },
+    attribution: {
+      title: "Attribution and zkAS",
+      description: "Dataset and zkAS work is still handled by the current project zkAS page.",
+      latestDataset: "Latest dataset",
+      status: "Status",
+      rows: "Rows",
+      cta: "Open zkAS",
+    },
+    growth: {
+      title: "Growth and reporting",
+      description: "Monthly project stats and published zkAS summaries appear here when available.",
+      latest: "Latest month",
+      users: "Users",
+      revenue: "Revenue",
+      payout: "Payout",
+    },
+    links: {
+      public: "Public profile",
+      payments: "Contribution operations",
+      zkas: "Project zkAS",
+      allProjects: "All founder projects",
+    },
   },
   founderAccount: {
     heading: "Founder account",
