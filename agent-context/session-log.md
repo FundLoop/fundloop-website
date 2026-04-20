@@ -1,3 +1,108 @@
+### session v62: Address PR 23 Codex workspace read-model review comments
+- timestamp: 2026-04-20T04:07:11-04:00
+- agent: **Codex (GPT-5)**
+- branch: **codex/session-17-user-workspace**
+- head: 39da952
+
+#### Objective
+Address the chatgpt-codex-connector review comments on PR #23 around workspace discovery sparsity and participation counters.
+
+#### Actions Taken
+- Changed the workspace discovery query so joined project IDs are excluded before the recommendation limit is applied.
+- Changed participation metrics to count only participant rows that hydrate to non-deleted project rows.
+- Added an explicit unavailable-project-details flag so the workspace can avoid claiming there are no joined projects when project-detail reads fail.
+- Added read-model tests for soft-deleted/unhydrated project exclusion and temporary joined-project detail failures.
+
+#### Tests and Validation Notes
+- `pnpm dlx node@22.22.1 /opt/homebrew/bin/pnpm exec vitest run tests/user-workspace.test.ts` passed.
+- `pnpm dlx node@22.22.1 /opt/homebrew/bin/pnpm lint` passed.
+- `pnpm dlx node@22.22.1 /opt/homebrew/bin/pnpm typecheck` passed.
+
+#### Reflections
+- The workspace home should be optimistic but not misleading: counters should reflect visible, non-deleted projects, while read failures need a distinct temporary state.
+
+#### Suggested Next Steps
+- Push the Codex fixes, reply to the Codex threads with the commit reference, and resolve those threads.
+
+### session v61: Address PR 23 Copilot workspace review comments
+- timestamp: 2026-04-20T03:54:49-04:00
+- agent: **Codex (GPT-5)**
+- branch: **codex/session-17-user-workspace**
+- head: 6257ba7
+
+#### Objective
+Address the Copilot review comments on PR #23 before requesting the next Codex review pass.
+
+#### Actions Taken
+- Changed the workspace CUBID Passport link to use `navigationContext.cubidPassportOrigin` with the production Passport origin as a fallback.
+- Made workspace result publish-date formatting timezone-stable by formatting dates in UTC.
+- Reworked the participation empty-state branch so users with joined projects do not see "no joined projects" when project detail hydration is temporarily unavailable.
+- Added localized copy for the temporary participation-detail-unavailable state in English, French, and Spanish.
+
+#### Tests and Validation Notes
+- `pnpm dlx node@22.22.1 /opt/homebrew/bin/pnpm lint` passed.
+- `pnpm dlx node@22.22.1 /opt/homebrew/bin/pnpm typecheck` passed.
+- `pnpm dlx node@22.22.1 /opt/homebrew/bin/pnpm exec vitest run tests/user-workspace.test.ts` passed.
+
+#### Reflections
+- These fixes keep the workspace aligned with environment-specific CUBID configuration and avoid misleading user states when supporting reads partially fail.
+
+#### Suggested Next Steps
+- Push the Copilot fixes, reply to the three Copilot threads with the commit reference, and resolve those threads.
+
+### session v60: Build the regular-user workspace home
+- timestamp: 2026-04-20T03:24:45-04:00
+- agent: **Codex (GPT-5)**
+- branch: **codex/session-17-user-workspace**
+- head: 13c9fa3
+
+#### Objective
+Complete Session 17 by turning `/workspace` into a useful signed-in user home that summarizes identity readiness, profile completion, participation, discovery, and current published results without pulling full payout/reporting routes forward.
+
+#### Actions Taken
+- Added a server-only user workspace read model under `lib/workspace/` that gathers participation rows, joined projects, public project recommendations, published zkAS results, run labels, and non-fatal warning state.
+- Rebuilt `/[locale]/workspace` around clear workspace sections for identity readiness, profile completion, participation footprint, discovery, current results visibility, and conditional founder shortcuts.
+- Localized the new workspace copy in English, French, and Spanish.
+- Added focused coverage for the workspace read model and updated engineering docs to record `/workspace` as the real Session 17 user home while `/settings/zkas` remains the interim detailed result history.
+- Updated Session 17 status metadata in `agent-context/todo.md`.
+
+#### Tests and Validation Notes
+- `pnpm exec vitest run tests/user-workspace.test.ts` passed.
+- `pnpm lint`, `pnpm test`, `pnpm typecheck`, and `pnpm build` passed.
+- Re-ran the full gate set through `pnpm dlx node@22.22.1 /opt/homebrew/bin/pnpm ...`; lint, test, typecheck, and build all passed in the repo's expected Node 22 runtime.
+- Smoke-checked `GET /en/workspace` against `next start` on port `3107`; unauthenticated access returned a `307` redirect to `/en/join`.
+- Did not complete an authenticated browser smoke in this session; the signed-in page behavior is covered by build, model tests, and existing app-shell redirect behavior.
+
+#### Reflections
+- Keeping detailed results under `/settings/zkas` preserves the current truthful endpoint while giving users a much better workspace summary now.
+- The read model intentionally degrades partial Supabase read failures into warnings and empty states because the signed-in home should remain useful even if one supporting table is temporarily unavailable.
+
+#### Suggested Next Steps
+- Start Session 18 to give founders and project members the same level of workspace orientation around managed projects, contribution operations, and project growth.
+
+### session v59: Reconcile completed Edge Function backlog metadata
+- timestamp: 2026-04-20T03:19:55-04:00
+- agent: **Codex (GPT-5)**
+- branch: **codex/session-17-user-workspace**
+- head: 0fb3eff1635824c53009b1dc7e23c05de5c05157
+
+#### Objective
+Correct stale backlog metadata for Sessions 04 and 05 so future agents do not re-run already-completed Edge Function contract and project payment draft migration work.
+
+#### Actions Taken
+- Marked Session 04 complete in `agent-context/todo.md` using the existing `session v38` timestamp, branch, head, and reference.
+- Marked Session 05 complete in `agent-context/todo.md` using the existing `session v39` timestamp, branch, head, and reference.
+- Kept this pass limited to backlog hygiene; no product code or Edge Function implementation changed.
+
+#### Tests and Validation Notes
+- Not run; documentation metadata only.
+
+#### Reflections
+- The Edge Function contract and first payment draft command are already present in the repo and documented in `docs/engineering/edge-functions.md`; leaving the backlog as `Not started` would invite duplicate implementation work.
+
+#### Suggested Next Steps
+- Start Session 17 on this branch by rebuilding `/workspace` into the signed-in user workspace home.
+
 ### session v58: Address PR 22 reconciliation RPC review comments
 - timestamp: 2026-04-19T21:54:03-04:00
 - agent: **Codex (GPT-5)**

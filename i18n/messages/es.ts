@@ -420,15 +420,24 @@ export const esMessages = {
   },
   workspace: {
     eyebrow: "Espacio de usuario",
-    title: "Un punto de partida más claro para tu actividad en FundLoop",
+    title: "Tu participación, identidad y resultados actuales en un solo lugar",
     body:
-      "Esta es la nueva entrada para el lado participante de FundLoop. El espacio completo llegará después, pero desde aquí ya puedes moverte hacia la cuenta, el contexto de participación y los resultados publicados.",
-    open: "Abrir",
+      "Usa este espacio para entender dónde estás hoy: preparación de identidad, completitud del perfil, participación en proyectos, oportunidades de descubrimiento y resultados publicados que FundLoop ya puede mostrar.",
+    stats: {
+      projects: "Proyectos unidos",
+      results: "Ciclos de resultados publicados",
+      totalAllocation: "Asignación publicada",
+    },
+    warnings: {
+      title: "Algunos datos del espacio no están disponibles temporalmente.",
+      body: "La página muestra las partes que cargaron con seguridad. Vuelve a intentar más tarde si la participación o los resultados parecen incompletos.",
+    },
     identity: {
-      title: "El estado de identidad ya importa antes de que el valor pueda moverse",
-      cta: "Abrir CUBID Passport",
-      followUp:
-        "Si esto sigue apareciendo como no enlazado, completa el paso de resolución de CUBID en onboarding o abre la pestaña de cuenta para entender qué falta antes de publicar o tocar flujos de pago.",
+      title: "Preparación de identidad",
+      signedIn: "Sesión iniciada como",
+      unknownEmail: "Correo no disponible",
+      accountCta: "Abrir cuenta",
+      passportCta: "Abrir CUBID Passport",
       status: {
         unlinked: "Aún sin enlazar",
         linked: "Enlazado",
@@ -443,23 +452,51 @@ export const esMessages = {
           "Tu cuenta conectada está enlazada con CUBID y la última respuesta muestra una identidad de correo verificada, el estado más fuerte que hoy expone FundLoop.",
       },
     },
-    cards: {
-      account: {
-        title: "Cuenta",
-        description: "Gestiona la configuración de cuenta y las preferencias relacionadas con pagos que ahora viven en tu espacio.",
-      },
-      participation: {
-        title: "Participación",
-        description: "Vuelve a la guía pública de participación mientras el hogar completo del espacio todavía se reconstruye.",
-      },
-      results: {
-        title: "Resultados publicados",
-        description: "Revisa la superficie personal de zkAS que más adelante se moverá al reporting del espacio.",
-      },
-      founder: {
-        title: "Espacio fundador",
-        description: "Salta directamente al lado operativo de proyectos en FundLoop cuando estés gestionando un proyecto.",
-      },
+    completion: {
+      title: "Completitud del perfil",
+      description:
+        "Combina el contexto de perfil gestionado por FundLoop con señales de confianza de CUBID, para mostrar qué mejora la descubribilidad y la elegibilidad futura.",
+      complete: "Todos los elementos actuales de completitud están cubiertos.",
+    },
+    participation: {
+      title: "Huella de participación",
+      description: "Los proyectos a los que te unes o ayudas a administrar crean la señal que podrán usar los futuros ciclos mensuales.",
+      joined: "Unidos",
+      favorites: "Favoritos",
+      admin: "Admin",
+      projectFallback: "Abre este proyecto para ver su contexto público actual.",
+      emptyTitle: "Todavía no te uniste a proyectos",
+      emptyBody: "Empieza con el descubrimiento público, elige proyectos que encajen con tus intereses y construye señal antes de los futuros flujos de pago.",
+      detailsUnavailable: "Te uniste a proyectos, pero sus detalles no se pudieron cargar ahora mismo. Intenta actualizar en un momento.",
+    },
+    results: {
+      title: "Visibilidad de resultados actuales",
+      description:
+        "Este todavía no es el espacio completo de pagos. Resume los resultados zkAS publicados que ya están disponibles para tu cuenta.",
+      latestMeta: "Puntaje agregado {score}, publicado {date}",
+      pendingDate: "fecha pendiente",
+      emptyTitle: "Todavía no hay resultados publicados",
+      emptyBody: "Cuando se publique un resultado mensual verificado para ti, la última asignación y el puntaje aparecerán aquí.",
+      cta: "Abrir historial de resultados",
+    },
+    discovery: {
+      title: "Proyectos para explorar",
+      description: "Las recomendaciones públicas excluyen los proyectos a los que ya te uniste, para que el descubrimiento siga siendo útil.",
+      projectFallback: "Abre este proyecto para ver cómo participan las personas.",
+      empty: "No hay nuevas recomendaciones de proyectos públicos disponibles ahora mismo.",
+      cta: "Explorar todos los proyectos",
+    },
+    actions: {
+      title: "Próximas acciones",
+      description: "Salta a las partes de FundLoop más importantes desde el espacio de usuario.",
+      account: "Cuenta",
+      accountDescription: "Actualiza identidad, preferencias de perfil, wallets y configuración de cuenta.",
+      discover: "Descubrir proyectos",
+      discoverDescription: "Encuentra proyectos públicos activos donde tu participación pueda construir señal.",
+      results: "Historial de resultados",
+      resultsDescription: "Revisa la vista detallada provisional mientras se consolida el reporting.",
+      founder: "Espacio fundador",
+      founderDescription: "Cambia a operaciones de proyecto cuando gestionas un proyecto.",
     },
   },
   workspaceAccount: {
