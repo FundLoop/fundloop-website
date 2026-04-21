@@ -5,6 +5,13 @@ import { createServerSupabaseClient } from "@/lib/supabase-server"
 import { getAdminSupabaseClient } from "@/lib/supabase-admin"
 import { invokeProjectPaymentDraftsCreateServer } from "@/lib/edge-functions/project-payment-drafts-create-server"
 import {
+  invokeProjectCryptoRouteCreateServer,
+  invokeProjectCryptoRouteEnabledSetServer,
+  invokeProjectCryptoRouteMoveServer,
+  invokeProjectCryptoRouteUpdateServer,
+  invokeProjectOnchainPaymentSubmissionRecordServer,
+} from "@/lib/edge-functions/project-payment-operations-server"
+import {
   getPromotedDefaultRouteId,
   moveProjectCryptoRouteState,
   renumberProjectCryptoRouteStates,
@@ -682,330 +689,49 @@ export async function listProjectLatestOnchainSubmissions(
 export async function createProjectCryptoPaymentMethod(
   input: CreateProjectCryptoPaymentMethodInput,
 ): Promise<ActionResult<ManagedCryptoPaymentMethodSummary[]>> {
-  const context = await getProjectAdminContext(input.projectSlug)
-  if (!context.ok) {
-    return context
+  const result = await invokeProjectCryptoRouteCreateServer(input)
+  if (!result.ok) {
+    return { ok: false, error: result.error.message }
   }
 
-  const referenceValidation = await validateManagedCryptoRouteReferences(input)
-  if (!referenceValidation.ok) {
-    return referenceValidation
-  }
-
-  try {
-    const cryptoContractMethodId = await getCryptoContractMethodId()
-    const duplicateValidation = await ensureNoDuplicateEnabledCryptoRoute({
-      projectId: context.data.project.id,
-      chainId: input.chainId,
-      chainAssetId: input.chainAssetId,
-      intakeContractId: input.intakeContractId,
-    })
-
-    if (!duplicateValidation.ok) {
-      return duplicateValidation
-    }
-
-    const currentStates = await getProjectCryptoRouteStates(context.data.project.id)
-    const shouldDefault = input.isDefault || currentStates.filter((route) => route.is_enabled).length === 0
-    const runtimeAvailability = await getManagedRouteDeploymentAvailability({
-      chainId: input.chainId,
-      intakeContractId: input.intakeContractId,
-    })
-
-    if (shouldDefault && !runtimeAvailability.available) {
-      return {
-        ok: false,
-        error:
-          runtimeAvailability.reason ??
-          "Sync the deployment manifest into Supabase before making this route the default payment route.",
-      }
-    }
-
-    const supabase = getAdminSupabaseClient()
-
-    if (shouldDefault) {
-      const { error: clearDefaultError } = await supabase
-        .from("payment_methods")
-        .update({ is_default: false })
-        .eq("project_id", context.data.project.id)
-        .eq("collection_mode", "contract")
-
-      if (clearDefaultError) {
-        return { ok: false, error: clearDefaultError.message }
-      }
-    }
-
-    const { error: insertError } = await supabase.from("payment_methods").insert({
-      project_id: context.data.project.id,
-      method_id: cryptoContractMethodId,
-      collection_mode: "contract",
-      chain_id: input.chainId,
-      chain_asset_id: input.chainAssetId,
-      intake_contract_id: input.intakeContractId,
-      is_default: shouldDefault,
-      is_enabled: true,
-      label: normalizeManagedRouteLabel(input.label),
-      sort_order: currentStates.length + 1,
-      details: {
-        manager_source: "project_payments_v2",
-        preferred_chain_asset_id: input.chainAssetId,
-      },
-    })
-
-    if (insertError) {
-      return { ok: false, error: insertError.message }
-    }
-
-    await syncProjectCryptoContractDefault(context.data.project, cryptoContractMethodId)
-
-    return {
-      ok: true,
-      data: await refreshProjectManagedRoutes(context.data.project),
-    }
-  } catch (error) {
-    return {
-      ok: false,
-      error: error instanceof Error ? error.message : "Could not add the crypto route.",
-    }
-  }
+  revalidatePath(`/projects/${input.projectSlug}/payments`)
+  return { ok: true, data: result.data }
 }
 
 export async function updateProjectCryptoPaymentMethod(
   input: UpdateProjectCryptoPaymentMethodInput,
 ): Promise<ActionResult<ManagedCryptoPaymentMethodSummary[]>> {
-  const context = await getProjectAdminContext(input.projectSlug)
-  if (!context.ok) {
-    return context
+  const result = await invokeProjectCryptoRouteUpdateServer(input)
+  if (!result.ok) {
+    return { ok: false, error: result.error.message }
   }
 
-  const referenceValidation = await validateManagedCryptoRouteReferences(input)
-  if (!referenceValidation.ok) {
-    return referenceValidation
-  }
-
-  try {
-    const supabase = getAdminSupabaseClient()
-    const { data: route, error: routeError } = await supabase
-      .from("payment_methods")
-      .select(
-        "id, project_id, method_id, chain_id, chain_asset_id, intake_contract_id, is_default, is_enabled, sort_order, collection_mode",
-      )
-      .eq("id", input.paymentMethodId)
-      .eq("project_id", context.data.project.id)
-      .single()
-
-    if (routeError || !route || route.collection_mode !== "contract") {
-      return { ok: false, error: routeError?.message ?? "Crypto route not found." }
-    }
-
-    if (!route.is_enabled && input.isDefault) {
-      return { ok: false, error: "Disabled routes cannot be marked as default." }
-    }
-
-    if (route.is_enabled) {
-      const duplicateValidation = await ensureNoDuplicateEnabledCryptoRoute({
-        projectId: context.data.project.id,
-        chainId: input.chainId,
-        chainAssetId: input.chainAssetId,
-        intakeContractId: input.intakeContractId,
-        excludePaymentMethodId: route.id,
-      })
-
-      if (!duplicateValidation.ok) {
-        return duplicateValidation
-      }
-    }
-
-    const runtimeEligibility = await getManagedRouteDeploymentAvailability({
-      chainId: input.chainId,
-      intakeContractId: input.intakeContractId,
-    })
-
-    if (input.isDefault && !runtimeEligibility.available) {
-      return {
-        ok: false,
-        error:
-          runtimeEligibility.reason ??
-          "Sync the deployment manifest into Supabase before making this route the default payment route.",
-      }
-    }
-
-    if (input.isDefault) {
-      const { error: clearDefaultError } = await supabase
-        .from("payment_methods")
-        .update({ is_default: false })
-        .eq("project_id", context.data.project.id)
-        .eq("collection_mode", "contract")
-
-      if (clearDefaultError) {
-        return { ok: false, error: clearDefaultError.message }
-      }
-    }
-
-    const { error: updateError } = await supabase
-      .from("payment_methods")
-      .update({
-        chain_id: input.chainId,
-        chain_asset_id: input.chainAssetId,
-        intake_contract_id: input.intakeContractId,
-        label: normalizeManagedRouteLabel(input.label),
-        is_default: input.isDefault,
-      })
-      .eq("id", route.id)
-      .eq("project_id", context.data.project.id)
-
-    if (updateError) {
-      return { ok: false, error: updateError.message }
-    }
-
-    const cryptoContractMethodId = await getCryptoContractMethodId()
-    await syncProjectCryptoContractDefault(context.data.project, cryptoContractMethodId)
-
-    return {
-      ok: true,
-      data: await refreshProjectManagedRoutes(context.data.project),
-    }
-  } catch (error) {
-    return {
-      ok: false,
-      error: error instanceof Error ? error.message : "Could not update the crypto route.",
-    }
-  }
+  revalidatePath(`/projects/${input.projectSlug}/payments`)
+  return { ok: true, data: result.data }
 }
 
 export async function moveProjectCryptoPaymentMethod(
   input: MoveProjectCryptoPaymentMethodInput,
 ): Promise<ActionResult<ManagedCryptoPaymentMethodSummary[]>> {
-  const context = await getProjectAdminContext(input.projectSlug)
-  if (!context.ok) {
-    return context
+  const result = await invokeProjectCryptoRouteMoveServer(input)
+  if (!result.ok) {
+    return { ok: false, error: result.error.message }
   }
 
-  try {
-    const currentStates = await getProjectCryptoRouteStates(context.data.project.id)
-    if (!currentStates.some((route) => route.id === input.paymentMethodId)) {
-      return { ok: false, error: "Crypto route not found." }
-    }
-
-    const nextStates = moveProjectCryptoRouteState(currentStates, input.paymentMethodId, input.direction)
-    await applyProjectCryptoRouteStates(context.data.project.id, nextStates)
-
-    return {
-      ok: true,
-      data: await refreshProjectManagedRoutes(context.data.project),
-    }
-  } catch (error) {
-    return {
-      ok: false,
-      error: error instanceof Error ? error.message : "Could not reorder the crypto route.",
-    }
-  }
+  revalidatePath(`/projects/${input.projectSlug}/payments`)
+  return { ok: true, data: result.data }
 }
 
 export async function toggleProjectCryptoPaymentMethodEnabled(
   input: ToggleProjectCryptoPaymentMethodEnabledInput,
 ): Promise<ActionResult<ManagedCryptoPaymentMethodSummary[]>> {
-  const context = await getProjectAdminContext(input.projectSlug)
-  if (!context.ok) {
-    return context
+  const result = await invokeProjectCryptoRouteEnabledSetServer(input)
+  if (!result.ok) {
+    return { ok: false, error: result.error.message }
   }
 
-  try {
-    const supabase = getAdminSupabaseClient()
-    const { data: route, error: routeError } = await supabase
-      .from("payment_methods")
-      .select(
-        "id, project_id, method_id, chain_id, chain_asset_id, intake_contract_id, is_default, is_enabled, sort_order, collection_mode",
-      )
-      .eq("id", input.paymentMethodId)
-      .eq("project_id", context.data.project.id)
-      .single()
-
-    if (routeError || !route || route.collection_mode !== "contract") {
-      return { ok: false, error: routeError?.message ?? "Crypto route not found." }
-    }
-
-    if (route.is_enabled === input.enabled) {
-      return {
-        ok: true,
-        data: await refreshProjectManagedRoutes(context.data.project),
-      }
-    }
-
-    const currentStates = await getProjectCryptoRouteStates(context.data.project.id)
-    const nextStates = currentStates.map((state) => ({ ...state }))
-    const targetRoute = nextStates.find((state) => state.id === route.id)
-
-    if (!targetRoute) {
-      return { ok: false, error: "Crypto route not found." }
-    }
-
-    if (input.enabled) {
-      const referenceValidation = await validateManagedCryptoRouteReferences({
-        chainId: route.chain_id ?? 0,
-        chainAssetId: route.chain_asset_id ?? 0,
-        intakeContractId: route.intake_contract_id ?? 0,
-      })
-
-      if (!referenceValidation.ok) {
-        return referenceValidation
-      }
-
-      const duplicateValidation = await ensureNoDuplicateEnabledCryptoRoute({
-        projectId: context.data.project.id,
-        chainId: route.chain_id ?? 0,
-        chainAssetId: route.chain_asset_id ?? 0,
-        intakeContractId: route.intake_contract_id ?? 0,
-        excludePaymentMethodId: route.id,
-      })
-
-      if (!duplicateValidation.ok) {
-        return duplicateValidation
-      }
-
-      targetRoute.is_enabled = true
-
-      const routes = await listProjectManagedCryptoPaymentMethodsForProjectId(context.data.project.id)
-      const managedRoute = routes.find((managed) => managed.id === route.id)
-      if (managedRoute && managedRoute.is_default && !managedRoute.is_runtime_available) {
-        return {
-          ok: false,
-          error:
-            managedRoute.runtime_availability_issue ??
-            "Sync the deployment manifest into Supabase before re-enabling this route as the default.",
-        }
-      }
-    } else {
-      const disabledRouteWasDefault = Boolean(targetRoute.is_default)
-      targetRoute.is_enabled = false
-      targetRoute.is_default = false
-
-      if (disabledRouteWasDefault) {
-        const promotedDefaultId = getPromotedDefaultRouteId(nextStates, route.id)
-        if (promotedDefaultId !== null) {
-          const promotedRoute = nextStates.find((state) => state.id === promotedDefaultId)
-          if (promotedRoute) {
-            promotedRoute.is_default = true
-          }
-        }
-      }
-    }
-
-    await applyProjectCryptoRouteStates(context.data.project.id, nextStates)
-
-    const cryptoContractMethodId = await getCryptoContractMethodId()
-    await syncProjectCryptoContractDefault(context.data.project, cryptoContractMethodId)
-
-    return {
-      ok: true,
-      data: await refreshProjectManagedRoutes(context.data.project),
-    }
-  } catch (error) {
-    return {
-      ok: false,
-      error: error instanceof Error ? error.message : "Could not update the route state.",
-    }
-  }
+  revalidatePath(`/projects/${input.projectSlug}/payments`)
+  return { ok: true, data: result.data }
 }
 
 export async function createProjectPaymentDrafts(
@@ -1030,377 +756,14 @@ export async function createProjectPaymentDrafts(
 export async function recordOnchainPaymentSubmission(
   input: RecordOnchainPaymentInput,
 ): Promise<ActionResult<{ submissionId: number }>> {
-  const attemptId = getObservabilityAttemptId(input.attemptId)
-  const auth = await getAuthenticatedUserId()
-  const context = await getProjectAdminContext(input.projectSlug)
-  if (!context.ok) {
-    await recordActionObservabilityEvent({
-      flow: "receipt_recording",
-      stage: "submission_record",
-      outcome: "failure",
-      attemptId,
-      actorUserId: auth.ok ? auth.userId : null,
-      actorRole: auth.ok ? "authenticated_user" : "unauthenticated",
-      paymentId: input.paymentId,
-      paymentMethodId: input.paymentMethodId,
-      chainId: input.chainId,
-      chainAssetId: input.chainAssetId,
-      intakeContractId: input.intakeContractId,
-      txHash: input.txHash,
-      walletAddress: input.walletAddress,
-      error: context.error,
-      metadata: {
-        projectSlug: input.projectSlug,
-      },
-    })
-    return context
-  }
-
-  await recordActionObservabilityEvent({
-    flow: "receipt_recording",
-    stage: "submission_record",
-    outcome: "attempt",
-    attemptId,
-    actorUserId: context.data.userId,
-    actorRole: "project_admin",
-    projectId: context.data.project.id,
-    paymentId: input.paymentId,
-    paymentMethodId: input.paymentMethodId,
-    chainId: input.chainId,
-    chainAssetId: input.chainAssetId,
-    intakeContractId: input.intakeContractId,
-    txHash: input.txHash,
-    walletAddress: input.walletAddress,
-    metadata: {
-      periodId: input.periodId,
-    },
-  })
-
-  const supabase = getAdminSupabaseClient()
-
-  const [{ data: payment }, { data: paymentMethod }, { data: awaitingStatus }, { data: unresolvedSubmission }] =
-    await Promise.all([
-      supabase.from("payments").select("id, project_id, payment_amount, notes").eq("id", input.paymentId).single(),
-      supabase
-        .from("payment_methods")
-        .select(`
-          id,
-          method_id,
-          project_id,
-          chain_id,
-          chain_asset_id,
-          intake_contract_id,
-          ref_chains!inner(network_key),
-          chain_intake_contracts!inner(contract_address, treasury_address, abi_version),
-          ref_chain_assets!inner(token_address, is_native)
-        `)
-        .eq("id", input.paymentMethodId)
-        .single(),
-      supabase.from("ref_payment_statuses").select("id").eq("code", "awaiting_confirmation").single(),
-      supabase
-        .from("onchain_payment_submissions")
-        .select("id")
-        .eq("payment_id", input.paymentId)
-        .in("status", ["submitted", "confirming"])
-        .maybeSingle(),
-    ])
-
-  if (!payment || payment.project_id !== context.data.project.id) {
-    await recordActionObservabilityEvent({
-      flow: "receipt_recording",
-      stage: "submission_record",
-      outcome: "failure",
-      attemptId,
-      actorUserId: context.data.userId,
-      actorRole: "project_admin",
-      projectId: context.data.project.id,
-      paymentId: input.paymentId,
-      paymentMethodId: input.paymentMethodId,
-      error: "Payment record does not belong to this project",
-      metadata: {
-        requestedProjectSlug: input.projectSlug,
-      },
-    })
-    return { ok: false, error: "Payment record does not belong to this project" }
-  }
-
-  const paymentMethodSnapshot = paymentMethod as RecordOnchainPaymentRouteSnapshot | null
-
-  if (
-    !paymentMethodSnapshot ||
-    paymentMethodSnapshot.project_id !== context.data.project.id ||
-    paymentMethodSnapshot.chain_id !== input.chainId ||
-    paymentMethodSnapshot.chain_asset_id !== input.chainAssetId ||
-    paymentMethodSnapshot.intake_contract_id !== input.intakeContractId
-  ) {
-    await recordActionObservabilityEvent({
-      flow: "receipt_recording",
-      stage: "submission_record",
-      outcome: "failure",
-      attemptId,
-      actorUserId: context.data.userId,
-      actorRole: "project_admin",
-      projectId: context.data.project.id,
-      paymentId: input.paymentId,
-      paymentMethodId: input.paymentMethodId,
-      chainId: input.chainId,
-      chainAssetId: input.chainAssetId,
-      intakeContractId: input.intakeContractId,
-      error: "Selected crypto route is invalid for this project",
-    })
-    return { ok: false, error: "Selected crypto route is invalid for this project" }
-  }
-
-  if (unresolvedSubmission?.id) {
-    await recordActionObservabilityEvent({
-      flow: "receipt_recording",
-      stage: "submission_record",
-      outcome: "failure",
-      attemptId,
-      actorUserId: context.data.userId,
-      actorRole: "project_admin",
-      projectId: context.data.project.id,
-      paymentId: input.paymentId,
-      paymentMethodId: input.paymentMethodId,
-      submissionId: unresolvedSubmission.id,
-      txHash: input.txHash,
-      walletAddress: input.walletAddress,
-      error: "This payment already has an unresolved onchain submission. Wait for reconciliation or a failed result before retrying.",
-    })
-    return {
-      ok: false,
-      error: "This payment already has an unresolved onchain submission. Wait for reconciliation or a failed result before retrying.",
-    }
-  }
-
-  const executableRoutes = await listProjectManagedCryptoPaymentMethodsForProjectId(context.data.project.id)
-  const selectedRoute = executableRoutes.find((route) => route.id === input.paymentMethodId)
-  if (!selectedRoute?.is_runtime_available) {
-    const routeError =
-      selectedRoute?.runtime_availability_issue ??
-      "This crypto route is not available in the active wallet deployment for this environment."
-    await recordActionObservabilityEvent({
-      flow: "receipt_recording",
-      stage: "submission_record",
-      outcome: "failure",
-      attemptId,
-      actorUserId: context.data.userId,
-      actorRole: "project_admin",
-      projectId: context.data.project.id,
-      paymentId: input.paymentId,
-      paymentMethodId: input.paymentMethodId,
-      txHash: input.txHash,
-      walletAddress: input.walletAddress,
-      error: routeError,
-    })
-    return {
-      ok: false,
-      error: routeError,
-    }
-  }
-
-  if (!awaitingStatus?.id) {
-    await recordActionObservabilityEvent({
-      flow: "receipt_recording",
-      stage: "submission_record",
-      outcome: "failure",
-      attemptId,
-      actorUserId: context.data.userId,
-      actorRole: "project_admin",
-      projectId: context.data.project.id,
-      paymentId: input.paymentId,
-      paymentMethodId: input.paymentMethodId,
-      error: "The awaiting_confirmation payment status is not configured",
-    })
-    return { ok: false, error: "The awaiting_confirmation payment status is not configured" }
-  }
-
-  const amountDecimal = Number.parseFloat(input.amountDecimal)
-  if (!Number.isFinite(amountDecimal) || amountDecimal <= 0) {
-    await recordActionObservabilityEvent({
-      flow: "receipt_recording",
-      stage: "submission_record",
-      outcome: "failure",
-      attemptId,
-      actorUserId: context.data.userId,
-      actorRole: "project_admin",
-      projectId: context.data.project.id,
-      paymentId: input.paymentId,
-      paymentMethodId: input.paymentMethodId,
-      txHash: input.txHash,
-      walletAddress: input.walletAddress,
-      error: "Payment amount is invalid",
-    })
-    return { ok: false, error: "Payment amount is invalid" }
-  }
-
-  const expectedAmount = Number(payment.payment_amount)
-  if (!Number.isFinite(expectedAmount) || expectedAmount <= 0) {
-    await recordActionObservabilityEvent({
-      flow: "receipt_recording",
-      stage: "submission_record",
-      outcome: "failure",
-      attemptId,
-      actorUserId: context.data.userId,
-      actorRole: "project_admin",
-      projectId: context.data.project.id,
-      paymentId: input.paymentId,
-      paymentMethodId: input.paymentMethodId,
-      txHash: input.txHash,
-      walletAddress: input.walletAddress,
-      error: "Canonical payment amount is invalid",
-    })
-    return { ok: false, error: "Canonical payment amount is invalid" }
-  }
-
-  if (Math.abs(amountDecimal - expectedAmount) > 0.000001) {
-    await recordActionObservabilityEvent({
-      flow: "receipt_recording",
-      stage: "submission_record",
-      outcome: "failure",
-      attemptId,
-      actorUserId: context.data.userId,
-      actorRole: "project_admin",
-      projectId: context.data.project.id,
-      paymentId: input.paymentId,
-      paymentMethodId: input.paymentMethodId,
-      txHash: input.txHash,
-      walletAddress: input.walletAddress,
-      error: "Submitted onchain amount does not match the payment amount",
-      metadata: {
-        expectedAmount,
-        submittedAmount: amountDecimal,
-      },
-    })
-    return { ok: false, error: "Submitted onchain amount does not match the payment amount" }
-  }
-
-  if (!Number.isInteger(input.periodId) || input.periodId < 0 || input.periodId > 12) {
-    await recordActionObservabilityEvent({
-      flow: "receipt_recording",
-      stage: "submission_record",
-      outcome: "failure",
-      attemptId,
-      actorUserId: context.data.userId,
-      actorRole: "project_admin",
-      projectId: context.data.project.id,
-      paymentId: input.paymentId,
-      paymentMethodId: input.paymentMethodId,
-      error: "The selected period tag is invalid",
-      metadata: {
-        periodId: input.periodId,
-      },
-    })
-    return { ok: false, error: "The selected period tag is invalid" }
-  }
-
-  const { data: submission, error: submissionError } = await supabase
-    .from("onchain_payment_submissions")
-    .insert({
-      payment_id: input.paymentId,
-      project_id: context.data.project.id,
-      payment_method_id: input.paymentMethodId,
-      chain_id: input.chainId,
-      chain_asset_id: input.chainAssetId,
-      intake_contract_id: input.intakeContractId,
-      chain_network_key: paymentMethodSnapshot.ref_chains.network_key,
-      intake_contract_address: paymentMethodSnapshot.chain_intake_contracts.contract_address,
-      intake_treasury_address: paymentMethodSnapshot.chain_intake_contracts.treasury_address,
-      intake_abi_version: paymentMethodSnapshot.chain_intake_contracts.abi_version,
-      asset_token_address: paymentMethodSnapshot.ref_chain_assets.token_address,
-      asset_is_native: paymentMethodSnapshot.ref_chain_assets.is_native,
-      wallet_address: input.walletAddress,
-      tx_hash: input.txHash,
-      amount_raw: input.amountRaw,
-      amount_decimal: amountDecimal,
-      period_id: input.periodId,
-      status: "submitted",
-      block_number: input.blockNumber ?? null,
-      receipt: input.receipt,
-      metadata: {
-        source: "project_payments_page",
-        period_id: input.periodId,
-      },
-    })
-    .select("id")
-    .single()
-
-  if (submissionError || !submission) {
-    await recordActionObservabilityEvent({
-      flow: "receipt_recording",
-      stage: "submission_record",
-      outcome: "failure",
-      attemptId,
-      actorUserId: context.data.userId,
-      actorRole: "project_admin",
-      projectId: context.data.project.id,
-      paymentId: input.paymentId,
-      paymentMethodId: input.paymentMethodId,
-      txHash: input.txHash,
-      walletAddress: input.walletAddress,
-      error: submissionError?.message ?? "Could not store the onchain payment submission",
-    })
-    return { ok: false, error: submissionError?.message ?? "Could not store the onchain payment submission" }
-  }
-
-  const { error: paymentUpdateError } = await supabase
-    .from("payments")
-    .update({
-      status_id: awaitingStatus.id,
-      payment_method_id: paymentMethodSnapshot.method_id ?? null,
-      paid_at: new Date().toISOString(),
-      notes: appendPaymentNote(
-        payment.notes,
-        `Onchain payment submitted: ${input.txHash} (period tag: ${input.periodId === 0 ? "current" : input.periodId})`,
-      ),
-    })
-    .eq("id", input.paymentId)
-
-  if (paymentUpdateError) {
-    await recordActionObservabilityEvent({
-      flow: "receipt_recording",
-      stage: "submission_record",
-      outcome: "failure",
-      attemptId,
-      actorUserId: context.data.userId,
-      actorRole: "project_admin",
-      projectId: context.data.project.id,
-      paymentId: input.paymentId,
-      paymentMethodId: input.paymentMethodId,
-      submissionId: submission.id,
-      txHash: input.txHash,
-      walletAddress: input.walletAddress,
-      error: paymentUpdateError.message,
-    })
-    return { ok: false, error: paymentUpdateError.message }
+  const result = await invokeProjectOnchainPaymentSubmissionRecordServer(input)
+  if (!result.ok) {
+    return { ok: false, error: result.error.message }
   }
 
   revalidatePath(`/projects/${input.projectSlug}/payments`)
   revalidatePath("/admin/payments")
-
-  await recordActionObservabilityEvent({
-    flow: "receipt_recording",
-    stage: "submission_record",
-    outcome: "success",
-    attemptId,
-    actorUserId: context.data.userId,
-    actorRole: "project_admin",
-    projectId: context.data.project.id,
-    paymentId: input.paymentId,
-    paymentMethodId: input.paymentMethodId,
-    submissionId: submission.id,
-    chainId: input.chainId,
-    chainAssetId: input.chainAssetId,
-    intakeContractId: input.intakeContractId,
-    txHash: input.txHash,
-    walletAddress: input.walletAddress,
-    metadata: {
-      periodId: input.periodId,
-      amountRaw: input.amountRaw,
-    },
-  })
-
-  return { ok: true, data: { submissionId: submission.id } }
+  return { ok: true, data: result.data }
 }
 
 export async function runInternalOnchainPaymentReconciliation(input?: {

@@ -1,0 +1,172 @@
+name: Supabase Deploy
+
+on:
+  pull_request:
+    branches:
+      - dev
+      - main
+    paths:
+      - ".github/workflows/supabase-deploy.yml"
+      - "supabase/config.toml"
+      - "supabase/functions/**"
+      - "supabase/migrations/**"
+  push:
+    branches:
+      - dev
+      - main
+    paths:
+      - ".github/workflows/supabase-deploy.yml"
+      - "supabase/config.toml"
+      - "supabase/functions/**"
+      - "supabase/migrations/**"
+  workflow_dispatch:
+    inputs:
+      target_environment:
+        description: "Supabase target environment"
+        required: true
+        type: choice
+        options:
+          - dev
+          - main
+      mode:
+        description: "Run a dry-run or deploy to the selected Supabase target"
+        required: true
+        default: dry-run
+        type: choice
+        options:
+          - dry-run
+          - deploy
+
+concurrency:
+  group: supabase-${{ github.event_name == 'workflow_dispatch' && inputs.target_environment || github.base_ref || github.ref_name }}
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  supabase:
+    name: Supabase ${{ github.event_name == 'pull_request' && 'dry-run' || (github.event_name == 'workflow_dispatch' && inputs.mode || 'deploy') }}
+    runs-on: ubuntu-latest
+    environment: ${{ ((github.event_name == 'push' && github.ref_name == 'main') || (github.event_name == 'workflow_dispatch' && inputs.target_environment == 'main' && inputs.mode == 'deploy')) && 'Production' || 'Preview' }}
+    env:
+      DEV_SUPABASE_SESSION_POOLER_URL: ${{ secrets.DEV_SUPABASE_SESSION_POOLER_URL }}
+      MAIN_SUPABASE_SESSION_POOLER_URL: ${{ secrets.MAIN_SUPABASE_SESSION_POOLER_URL }}
+      SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Supabase CLI
+        uses: supabase/setup-cli@v1
+        with:
+          version: 2.90.0
+
+      - name: Resolve Supabase target
+        id: target
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          if [[ "${GITHUB_EVENT_NAME}" == "workflow_dispatch" ]]; then
+            target_environment="${{ inputs.target_environment }}"
+            mode="${{ inputs.mode }}"
+          elif [[ "${GITHUB_EVENT_NAME}" == "pull_request" ]]; then
+            target_environment="${GITHUB_BASE_REF}"
+            mode="dry-run"
+          else
+            target_environment="${GITHUB_REF_NAME}"
+            mode="deploy"
+          fi
+
+          case "${target_environment}" in
+            dev)
+              db_url="${DEV_SUPABASE_SESSION_POOLER_URL}"
+              ;;
+            main)
+              db_url="${MAIN_SUPABASE_SESSION_POOLER_URL}"
+              ;;
+            *)
+              echo "::error::Unsupported Supabase deploy target '${target_environment}'. Expected dev or main."
+              exit 1
+              ;;
+          esac
+
+          if [[ -z "${db_url}" ]]; then
+            echo "::error::Missing Supabase session pooler URL secret for target '${target_environment}'."
+            exit 1
+          fi
+
+          project_ref="$(
+            DB_URL="${db_url}" node <<'NODE'
+          const url = new URL(process.env.DB_URL)
+          const username = decodeURIComponent(url.username)
+          const match = username.match(/^postgres\.([a-z0-9]{20,})$/)
+          if (!match) {
+            throw new Error("Session pooler URL username must use the postgres.<project-ref> format.")
+          }
+          console.log(match[1])
+          NODE
+          )"
+
+          {
+            echo "target_environment=${target_environment}"
+            echo "mode=${mode}"
+            echo "project_ref=${project_ref}"
+          } >> "${GITHUB_OUTPUT}"
+
+      - name: Report target
+        run: |
+          echo "Supabase target: ${{ steps.target.outputs.target_environment }}"
+          echo "Supabase project ref: ${{ steps.target.outputs.project_ref }}"
+          echo "Mode: ${{ steps.target.outputs.mode }}"
+
+      - name: Dry-run database migrations
+        if: steps.target.outputs.mode == 'dry-run'
+        env:
+          TARGET_ENVIRONMENT: ${{ steps.target.outputs.target_environment }}
+        run: |
+          set -euo pipefail
+
+          case "${TARGET_ENVIRONMENT}" in
+            dev)
+              supabase_db_url="${DEV_SUPABASE_SESSION_POOLER_URL}"
+              ;;
+            main)
+              supabase_db_url="${MAIN_SUPABASE_SESSION_POOLER_URL}"
+              ;;
+            *)
+              echo "::error::Unsupported Supabase dry-run target '${TARGET_ENVIRONMENT}'. Expected dev or main."
+              exit 1
+              ;;
+          esac
+
+          supabase db push --db-url "$supabase_db_url" --dry-run
+
+      - name: Deploy database migrations
+        if: steps.target.outputs.mode == 'deploy'
+        env:
+          TARGET_ENVIRONMENT: ${{ steps.target.outputs.target_environment }}
+        run: |
+          set -euo pipefail
+
+          case "${TARGET_ENVIRONMENT}" in
+            dev)
+              supabase_db_url="${DEV_SUPABASE_SESSION_POOLER_URL}"
+              ;;
+            main)
+              supabase_db_url="${MAIN_SUPABASE_SESSION_POOLER_URL}"
+              ;;
+            *)
+              echo "::error::Unsupported Supabase deploy target '${TARGET_ENVIRONMENT}'. Expected dev or main."
+              exit 1
+              ;;
+          esac
+
+          supabase db push --db-url "$supabase_db_url"
+
+      - name: Deploy Edge Functions
+        if: steps.target.outputs.mode == 'deploy'
+        env:
+          SUPABASE_PROJECT_REF: ${{ steps.target.outputs.project_ref }}
+        run: supabase functions deploy --project-ref "$SUPABASE_PROJECT_REF"

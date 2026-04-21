@@ -1,3 +1,194 @@
+### session v71: Address Codex review feedback on PR 25
+- timestamp: 2026-04-21T02:05:24-04:00
+- agent: **Codex (GPT-5)**
+- branch: **codex/session-19-payment-edge-functions**
+- head: pending final commit
+
+#### Objective
+Address Codex review feedback on PR #25 about Edge Function runtime deployment manifest selection.
+
+#### Actions Taken
+- Updated the payment operation Edge Function shared runtime to import and use the tracked local, preview, and production wallet deployment manifests.
+- Preserved the local manifest JSON override behavior for local development while avoiding the disabled base fallback for preview and production.
+
+#### Tests and Validation Notes
+- `pnpm dlx node@22.22.1 /opt/homebrew/bin/pnpm lint` passed.
+- `pnpm dlx node@22.22.1 /opt/homebrew/bin/pnpm test -- project-payment-operations-command` passed.
+- `git diff --check` passed.
+- `pnpm dlx node@22.22.1 /opt/homebrew/bin/pnpm typecheck` passed.
+- `pnpm dlx node@22.22.1 /opt/homebrew/bin/pnpm build` passed.
+
+#### Reflections
+- Sharing the tracked manifests with the Edge Function keeps app runtime and function runtime availability decisions aligned as deployments are enabled.
+
+#### Suggested Next Steps
+- Push this Codex review fix, reply to the thread with the commit reference, and resolve the review thread.
+- Re-check CI and review state after the push.
+
+---
+
+### session v70: Address Copilot review feedback on PR 25
+- timestamp: 2026-04-21T01:49:08-04:00
+- agent: **Codex (GPT-5)**
+- branch: **codex/session-19-payment-edge-functions**
+- head: pending final commit
+
+#### Objective
+Address Copilot review comments on PR #25 for payment operation reliability and Supabase deploy reproducibility.
+
+#### Actions Taken
+- Returned `reference_data_unavailable` for participant admin lookup failures instead of falling through to permission denial.
+- Returned `reference_data_unavailable` for receipt-recording reference query failures instead of surfacing misleading payment, route, or status errors.
+- Added a compensating update that marks an inserted onchain submission `failed` if the subsequent payment update fails.
+- Guarded Edge Function runtime availability checks against unsupported network keys before reading Deno environment variables.
+- Pinned the Supabase CLI version used by the deploy workflow and documented deliberate CLI updates.
+- Added regression coverage for participant lookup errors, receipt reference lookup errors, and failed-payment-update compensation.
+
+#### Tests and Validation Notes
+- `pnpm dlx node@22.22.1 /opt/homebrew/bin/pnpm test -- project-payment-operations-command` passed.
+- `pnpm dlx node@22.22.1 /opt/homebrew/bin/pnpm lint` passed.
+- `ruby -e 'require "yaml"; YAML.load_file(".github/workflows/supabase-deploy.yml"); puts "workflow yaml parsed"'` passed.
+- `go run github.com/rhysd/actionlint/cmd/actionlint@latest .github/workflows/supabase-deploy.yml` passed.
+- `git diff --check` passed.
+- `pnpm dlx node@22.22.1 /opt/homebrew/bin/pnpm typecheck` passed.
+- `pnpm dlx node@22.22.1 /opt/homebrew/bin/pnpm build` passed.
+
+#### Reflections
+- The receipt-recording path still deserves a future RPC for full atomicity, but marking the inserted submission failed prevents the unresolved unique index from blocking retries if the second write fails.
+- Pinning the Supabase CLI keeps deploy behavior reproducible while preserving a clear update path during tooling triage.
+
+#### Suggested Next Steps
+- Push this review-fix commit, reply to each Copilot thread with the commit reference, and resolve the threads.
+- Re-run CI on PR #25 before requesting Codex review.
+
+---
+
+### session v69: Align Supabase deploy workflow with GitHub environment names
+- timestamp: 2026-04-21T01:29:27-04:00
+- agent: **Codex (GPT-5)**
+- branch: **codex/session-19-payment-edge-functions**
+- head: pending final commit
+
+#### Objective
+Update the new Supabase deploy workflow to use the repository's existing GitHub environment names.
+
+#### Actions Taken
+- Changed the Supabase deploy workflow environment expression from `production`/`supabase-dev` to `Production`/`Preview`.
+- Updated the Supabase deployment and Edge Function engineering docs to reference the actual environment names.
+
+#### Tests and Validation Notes
+- `ruby -e 'require "yaml"; YAML.load_file(".github/workflows/supabase-deploy.yml"); puts "workflow yaml parsed"'` passed.
+- `go run github.com/rhysd/actionlint/cmd/actionlint@latest .github/workflows/supabase-deploy.yml` passed.
+- `git diff --check` passed.
+
+#### Reflections
+- Matching the existing GitHub environment names avoids accidental environment auto-creation and makes the approval gate immediately usable.
+
+#### Suggested Next Steps
+- Push the branch and verify the first PR run attaches to the `Preview` environment and the first main deploy waits on `Production` approval.
+
+---
+
+### session v68: Add Supabase remote deployment workflow
+- timestamp: 2026-04-21T00:51:17-04:00
+- agent: **Codex (GPT-5)**
+- branch: **codex/session-19-payment-edge-functions**
+- head: pending final commit
+
+#### Objective
+Add a dedicated GitHub Actions workflow for safe remote Supabase migration dry-runs and branch-routed deployments of migrations plus Edge Functions.
+
+#### Actions Taken
+- Added `.github/workflows/supabase-deploy.yml` with PR dry-runs for `dev` and `main`, push deployments for `dev` and `main`, manual dry-run/deploy dispatch, and a `production` environment gate for main deploys.
+- Routed dev and main targets through separate session-pooler URL secrets and parsed the Supabase project ref from the standard `postgres.<project-ref>` pooler username.
+- Kept remote deploy behavior scoped to `supabase db push` and `supabase functions deploy`, with no seed, reset, or function-secret management.
+- Added `docs/engineering/supabase-deployments.md` and linked it from the engineering index and Edge Functions docs.
+
+#### Tests and Validation Notes
+- `ruby -e 'require "yaml"; YAML.load_file(".github/workflows/supabase-deploy.yml"); puts "workflow yaml parsed"'` passed.
+- `go run github.com/rhysd/actionlint/cmd/actionlint@latest .github/workflows/supabase-deploy.yml` passed.
+- `git diff --check` passed.
+- Secret-name and Supabase path-filter grep checks matched the documented workflow contract.
+- `pnpm dlx node@22.22.1 /opt/homebrew/bin/pnpm lint` passed.
+- `pnpm dlx node@22.22.1 /opt/homebrew/bin/pnpm test` passed.
+- `pnpm dlx node@22.22.1 /opt/homebrew/bin/pnpm typecheck` passed.
+
+#### Reflections
+- Avoiding secret-valued step outputs keeps the workflow friendlier to GitHub masking behavior while still letting the project ref flow to function deployment.
+- Keeping PRs dry-run only gives review branches signal without mutating shared Supabase databases.
+
+#### Suggested Next Steps
+- Add the required GitHub secrets and configure the `production` environment approval gate before relying on main deploys.
+- After this branch lands, open a Supabase-only PR to confirm dry-run behavior against the dev target.
+
+---
+
+### session v67: Triage safe dependency updates after Session 19
+- timestamp: 2026-04-20T17:30:23-04:00
+- agent: **Codex (GPT-5)**
+- branch: **codex/session-19-payment-edge-functions**
+- head: c952828
+
+#### Objective
+Run the dedicated safe dependency triage pass requested with Session 19, updating latest stable patch and minor package versions while holding major TypeScript and ESLint upgrades.
+
+#### Actions Taken
+- Updated app/runtime dependencies including Next, React, Supabase SSR/client packages, TanStack Query, wagmi, viem, lucide-react, react-hook-form, Recharts, and related UI/runtime packages.
+- Updated dev/runtime tooling within current major lines, including Tailwind/PostCSS, Vite, Vitest, jsdom, eslint-config-next, and Node 22 typings.
+- Preserved the vendored local CUBID tarball dependencies and intentionally deferred TypeScript 6 and ESLint 10.
+- Updated `pnpm-lock.yaml` with the resolved package graph.
+- Backfilled the Session 19 todo/session-log head now that the implementation commit is known.
+
+#### Tests and Validation Notes
+- `pnpm outdated --format json` now reports only intentionally held major lines: `@types/node` latest major 25, ESLint 10, and TypeScript 6.
+- `pnpm dlx node@22.22.1 /opt/homebrew/bin/pnpm lint` passed.
+- `pnpm dlx node@22.22.1 /opt/homebrew/bin/pnpm test` passed.
+- `pnpm dlx node@22.22.1 /opt/homebrew/bin/pnpm typecheck` passed.
+- `pnpm dlx node@22.22.1 /opt/homebrew/bin/pnpm build` passed.
+
+#### Reflections
+- Running validation under Node 22 was the right source of truth because the ambient shell is currently Node 25 and intentionally outside the repo engine range.
+- Keeping TypeScript and ESLint majors out of this pass preserved the dependency goal without turning Session 19 into a toolchain migration.
+
+#### Suggested Next Steps
+- Yeet this branch into `dev` and let CI verify the updated dependency graph plus the new Edge Function import paths.
+- Plan a future toolchain-only pass if the project wants to evaluate TypeScript 6 or ESLint 10.
+
+---
+
+### session v66: Migrate founder payment operation writes to Edge Functions
+- timestamp: 2026-04-20T17:27:41-04:00
+- agent: **Codex (GPT-5)**
+- branch: **codex/session-19-payment-edge-functions**
+- head: 0e9890c
+
+#### Objective
+Complete Session 19 by moving founder payment-route write operations and onchain receipt recording behind typed Supabase Edge Function commands while keeping the current payment UI and read paths stable.
+
+#### Actions Taken
+- Added typed contracts and browser/server adapters for project crypto route create, update, move, enable/disable, and onchain receipt recording commands.
+- Extracted the founder payment operation domain logic into a shared command module for project-admin authorization, route validation, default promotion, deployment availability checks, receipt validation, and receipt-recording observability.
+- Added one Supabase Edge Function per new command using the existing bearer-token authentication and service-role-after-auth pattern.
+- Rewired the route manager and crypto payment dialog to call browser Edge Function adapters directly, leaving server actions as compatibility wrappers.
+- Updated engineering docs and route inventory to record the Session 19 backend boundary change.
+
+#### Tests and Validation Notes
+- `pnpm test -- project-payment-operations project-payment-observability-actions project-crypto-payment-dialog project-crypto-routes` passed with the ambient Node 25 shell.
+- `pnpm lint` passed with the ambient Node 25 shell.
+- `pnpm test` passed with the ambient Node 25 shell.
+- `pnpm typecheck` passed with the ambient Node 25 shell.
+- `pnpm build` passed with the ambient Node 25 shell.
+
+#### Reflections
+- Dependency-injecting deployment availability kept the shared command module usable from both Next server code and Deno Edge Functions without importing the full wallet runtime stack into Deno.
+- Keeping reads in place made this migration reviewable while still removing the highest-risk remaining client-to-server-action writes from the founder payment flow.
+
+#### Suggested Next Steps
+- Run the safe dependency triage pass as a separate commit on this branch.
+- After dependency validation, yeet the branch to `dev` and let CI exercise the Edge Function import paths.
+
+---
+
 ### session v65: Address PR 24 founder workspace review comments
 - timestamp: 2026-04-20T16:50:06-04:00
 - agent: **Codex (GPT-5)**
