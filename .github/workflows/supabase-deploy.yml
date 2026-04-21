@@ -48,7 +48,7 @@ jobs:
   supabase:
     name: Supabase ${{ github.event_name == 'pull_request' && 'dry-run' || (github.event_name == 'workflow_dispatch' && inputs.mode || 'deploy') }}
     runs-on: ubuntu-latest
-    environment: ${{ ((github.event_name == 'push' && github.ref_name == 'main') || (github.event_name == 'workflow_dispatch' && inputs.target_environment == 'main' && inputs.mode == 'deploy')) && 'production' || 'supabase-dev' }}
+    environment: ${{ ((github.event_name == 'push' && github.ref_name == 'main') || (github.event_name == 'workflow_dispatch' && inputs.target_environment == 'main' && inputs.mode == 'deploy')) && 'Production' || 'Preview' }}
     env:
       DEV_SUPABASE_SESSION_POOLER_URL: ${{ secrets.DEV_SUPABASE_SESSION_POOLER_URL }}
       MAIN_SUPABASE_SESSION_POOLER_URL: ${{ secrets.MAIN_SUPABASE_SESSION_POOLER_URL }}

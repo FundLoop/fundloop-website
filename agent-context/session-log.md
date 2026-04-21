@@ -1,3 +1,29 @@
+### session v69: Align Supabase deploy workflow with GitHub environment names
+- timestamp: 2026-04-21T01:29:27-04:00
+- agent: **Codex (GPT-5)**
+- branch: **codex/session-19-payment-edge-functions**
+- head: pending final commit
+
+#### Objective
+Update the new Supabase deploy workflow to use the repository's existing GitHub environment names.
+
+#### Actions Taken
+- Changed the Supabase deploy workflow environment expression from `production`/`supabase-dev` to `Production`/`Preview`.
+- Updated the Supabase deployment and Edge Function engineering docs to reference the actual environment names.
+
+#### Tests and Validation Notes
+- `ruby -e 'require "yaml"; YAML.load_file(".github/workflows/supabase-deploy.yml"); puts "workflow yaml parsed"'` passed.
+- `go run github.com/rhysd/actionlint/cmd/actionlint@latest .github/workflows/supabase-deploy.yml` passed.
+- `git diff --check` passed.
+
+#### Reflections
+- Matching the existing GitHub environment names avoids accidental environment auto-creation and makes the approval gate immediately usable.
+
+#### Suggested Next Steps
+- Push the branch and verify the first PR run attaches to the `Preview` environment and the first main deploy waits on `Production` approval.
+
+---
+
 ### session v68: Add Supabase remote deployment workflow
 - timestamp: 2026-04-21T00:51:17-04:00
 - agent: **Codex (GPT-5)**

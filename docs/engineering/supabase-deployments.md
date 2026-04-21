@@ -9,8 +9,9 @@ FundLoop deploys Supabase schema migrations and Edge Functions through the `Supa
 - Pull requests into `dev` run a database migration dry-run against the dev Supabase project.
 - Pull requests into `main` run a database migration dry-run against the main Supabase project.
 - Pushes to `dev` deploy migrations and all tracked Edge Functions to the dev Supabase project.
-- Pushes to `main` deploy migrations and all tracked Edge Functions to the main Supabase project through the GitHub `production` environment gate.
-- Manual `workflow_dispatch` can run a `dry-run` or `deploy` against either target. Manual `main` deploys also use the `production` environment gate.
+- Pushes to `main` deploy migrations and all tracked Edge Functions to the main Supabase project through the GitHub `Production` environment gate.
+- Manual `workflow_dispatch` can run a `dry-run` or `deploy` against either target. Manual `main` deploys also use the `Production` environment gate.
+- All other runs use the GitHub `Preview` environment.
 
 PR runs intentionally do not mutate shared databases or deploy functions.
 

@@ -85,7 +85,7 @@ Remote Supabase deployment is handled by the `Supabase Deploy` GitHub Actions wo
 
 - PRs into `dev` and `main` run `supabase db push --dry-run` against the matching Supabase target.
 - Pushes to `dev` and `main` run `supabase db push` and `supabase functions deploy`.
-- `main` deploys use the GitHub `production` environment gate.
+- `main` deploys use the GitHub `Production` environment gate; non-production runs use `Preview`.
 - The workflow deploys all tracked Edge Functions in one command, but it does not manage function runtime secrets.
 
 See [Supabase Remote Deployments](./supabase-deployments.md) for the required GitHub secrets and target routing rules.
