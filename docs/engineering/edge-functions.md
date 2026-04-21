@@ -79,6 +79,17 @@ For CUBID:
 
 The migration is intentionally incremental so the transport layer can stabilize before broader read migration and later founder/user workspace work.
 
+## Remote Deployment
+
+Remote Supabase deployment is handled by the `Supabase Deploy` GitHub Actions workflow.
+
+- PRs into `dev` and `main` run `supabase db push --dry-run` against the matching Supabase target.
+- Pushes to `dev` and `main` run `supabase db push` and `supabase functions deploy`.
+- `main` deploys use the GitHub `production` environment gate.
+- The workflow deploys all tracked Edge Functions in one command, but it does not manage function runtime secrets.
+
+See [Supabase Remote Deployments](./supabase-deployments.md) for the required GitHub secrets and target routing rules.
+
 ## Local Development
 
 Typical local workflow:

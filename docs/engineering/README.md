@@ -19,5 +19,6 @@ Current high-signal docs:
 - [Local Seed Fixtures](./local-seed.md)
 - [Navigation and Shell Architecture](./navigation-shell.md)
 - [Route Inventory](./route-inventory.md)
+- [Supabase Remote Deployments](./supabase-deployments.md)
 
 Agent-only live context still belongs in [agent-context](../../agent-context/README.md).

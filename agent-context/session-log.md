@@ -1,8 +1,42 @@
+### session v68: Add Supabase remote deployment workflow
+- timestamp: 2026-04-21T00:51:17-04:00
+- agent: **Codex (GPT-5)**
+- branch: **codex/session-19-payment-edge-functions**
+- head: pending final commit
+
+#### Objective
+Add a dedicated GitHub Actions workflow for safe remote Supabase migration dry-runs and branch-routed deployments of migrations plus Edge Functions.
+
+#### Actions Taken
+- Added `.github/workflows/supabase-deploy.yml` with PR dry-runs for `dev` and `main`, push deployments for `dev` and `main`, manual dry-run/deploy dispatch, and a `production` environment gate for main deploys.
+- Routed dev and main targets through separate session-pooler URL secrets and parsed the Supabase project ref from the standard `postgres.<project-ref>` pooler username.
+- Kept remote deploy behavior scoped to `supabase db push` and `supabase functions deploy`, with no seed, reset, or function-secret management.
+- Added `docs/engineering/supabase-deployments.md` and linked it from the engineering index and Edge Functions docs.
+
+#### Tests and Validation Notes
+- `ruby -e 'require "yaml"; YAML.load_file(".github/workflows/supabase-deploy.yml"); puts "workflow yaml parsed"'` passed.
+- `go run github.com/rhysd/actionlint/cmd/actionlint@latest .github/workflows/supabase-deploy.yml` passed.
+- `git diff --check` passed.
+- Secret-name and Supabase path-filter grep checks matched the documented workflow contract.
+- `pnpm dlx node@22.22.1 /opt/homebrew/bin/pnpm lint` passed.
+- `pnpm dlx node@22.22.1 /opt/homebrew/bin/pnpm test` passed.
+- `pnpm dlx node@22.22.1 /opt/homebrew/bin/pnpm typecheck` passed.
+
+#### Reflections
+- Avoiding secret-valued step outputs keeps the workflow friendlier to GitHub masking behavior while still letting the project ref flow to function deployment.
+- Keeping PRs dry-run only gives review branches signal without mutating shared Supabase databases.
+
+#### Suggested Next Steps
+- Add the required GitHub secrets and configure the `production` environment approval gate before relying on main deploys.
+- After this branch lands, open a Supabase-only PR to confirm dry-run behavior against the dev target.
+
+---
+
 ### session v67: Triage safe dependency updates after Session 19
 - timestamp: 2026-04-20T17:30:23-04:00
 - agent: **Codex (GPT-5)**
 - branch: **codex/session-19-payment-edge-functions**
-- head: pending final commit
+- head: c952828
 
 #### Objective
 Run the dedicated safe dependency triage pass requested with Session 19, updating latest stable patch and minor package versions while holding major TypeScript and ESLint upgrades.
