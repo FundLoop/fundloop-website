@@ -1,3 +1,32 @@
+### session v71: Address Codex review feedback on PR 25
+- timestamp: 2026-04-21T02:05:24-04:00
+- agent: **Codex (GPT-5)**
+- branch: **codex/session-19-payment-edge-functions**
+- head: pending final commit
+
+#### Objective
+Address Codex review feedback on PR #25 about Edge Function runtime deployment manifest selection.
+
+#### Actions Taken
+- Updated the payment operation Edge Function shared runtime to import and use the tracked local, preview, and production wallet deployment manifests.
+- Preserved the local manifest JSON override behavior for local development while avoiding the disabled base fallback for preview and production.
+
+#### Tests and Validation Notes
+- `pnpm dlx node@22.22.1 /opt/homebrew/bin/pnpm lint` passed.
+- `pnpm dlx node@22.22.1 /opt/homebrew/bin/pnpm test -- project-payment-operations-command` passed.
+- `git diff --check` passed.
+- `pnpm dlx node@22.22.1 /opt/homebrew/bin/pnpm typecheck` passed.
+- `pnpm dlx node@22.22.1 /opt/homebrew/bin/pnpm build` passed.
+
+#### Reflections
+- Sharing the tracked manifests with the Edge Function keeps app runtime and function runtime availability decisions aligned as deployments are enabled.
+
+#### Suggested Next Steps
+- Push this Codex review fix, reply to the thread with the commit reference, and resolve the review thread.
+- Re-check CI and review state after the push.
+
+---
+
 ### session v70: Address Copilot review feedback on PR 25
 - timestamp: 2026-04-21T01:49:08-04:00
 - agent: **Codex (GPT-5)**

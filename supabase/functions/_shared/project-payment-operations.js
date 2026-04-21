@@ -1,33 +1,15 @@
 import { edgeCommandFailure, edgeCommandSuccess } from "../../../lib/edge-functions/result.ts"
+import localManifestJson from "../../../lib/onchain/deployments/local.json" with { type: "json" }
+import previewManifestJson from "../../../lib/onchain/deployments/preview.json" with { type: "json" }
+import productionManifestJson from "../../../lib/onchain/deployments/production.json" with { type: "json" }
 import { authenticateRequest, corsHeaders, json, parseJsonBody, serve } from "./command-runtime.js"
 
 const ZERO_REOWN_PROJECT_ID = "00000000000000000000000000000000"
 
-const BASE_MANIFEST = {
-  version: "fundloop-wallet-deployments.v1",
-  chains: [
-    {
-      networkKey: "ethereum",
-      enabled: false,
-      abiVersion: "fundloop-intake-v1",
-      contractAddress: "0x0000000000000000000000000000000000000000",
-      treasuryAddress: "0x0000000000000000000000000000000000000000",
-    },
-    {
-      networkKey: "base",
-      enabled: false,
-      abiVersion: "fundloop-intake-v1",
-      contractAddress: "0x0000000000000000000000000000000000000000",
-      treasuryAddress: "0x0000000000000000000000000000000000000000",
-    },
-    {
-      networkKey: "celo",
-      enabled: false,
-      abiVersion: "fundloop-intake-v1",
-      contractAddress: "0x0000000000000000000000000000000000000000",
-      treasuryAddress: "0x0000000000000000000000000000000000000000",
-    },
-  ],
+const DEPLOYMENT_MANIFESTS = {
+  local: localManifestJson,
+  preview: previewManifestJson,
+  production: productionManifestJson,
 }
 
 const RPC_ENV_BY_NETWORK = {
@@ -71,12 +53,12 @@ function getManifest(environment) {
       try {
         return JSON.parse(override)
       } catch {
-        return { ...BASE_MANIFEST, environment }
+        return DEPLOYMENT_MANIFESTS.local
       }
     }
   }
 
-  return { ...BASE_MANIFEST, environment }
+  return DEPLOYMENT_MANIFESTS[environment]
 }
 
 function normalizeAddress(value) {
