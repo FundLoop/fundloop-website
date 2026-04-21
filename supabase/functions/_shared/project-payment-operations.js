@@ -92,15 +92,24 @@ function buildPaymentOperationDeps() {
   return {
     environment,
     getDeploymentAvailabilityForRoute(input) {
-      const manifestChain = (manifest.chains ?? []).find((chain) => chain.networkKey === input.networkKey && chain.enabled)
-      if (!manifestChain || !reownConfigured || !getEnv(RPC_ENV_BY_NETWORK[input.networkKey])) {
+      const networkKey = input.networkKey
+      const rpcEnvName = RPC_ENV_BY_NETWORK[networkKey]
+      if (!rpcEnvName) {
         return {
           available: false,
-          reason: `No enabled ${input.networkKey} wallet deployment is configured for ${environment}.`,
+          reason: `No enabled ${networkKey} wallet deployment is configured for ${environment}.`,
         }
       }
 
-      const displayName = DISPLAY_NAME_BY_NETWORK[input.networkKey] ?? input.networkKey
+      const manifestChain = (manifest.chains ?? []).find((chain) => chain.networkKey === networkKey && chain.enabled)
+      if (!manifestChain || !reownConfigured || !getEnv(rpcEnvName)) {
+        return {
+          available: false,
+          reason: `No enabled ${networkKey} wallet deployment is configured for ${environment}.`,
+        }
+      }
+
+      const displayName = DISPLAY_NAME_BY_NETWORK[networkKey] ?? networkKey
       if (normalizeAddress(manifestChain.contractAddress) !== normalizeAddress(input.contractAddress)) {
         return {
           available: false,

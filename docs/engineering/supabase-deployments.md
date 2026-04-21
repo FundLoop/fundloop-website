@@ -49,6 +49,8 @@ Edge Functions are deployed in one command:
 supabase functions deploy --project-ref "$SUPABASE_PROJECT_REF"
 ```
 
+The workflow pins the Supabase CLI version instead of using `latest`; update it deliberately during normal dependency/tooling triage.
+
 The workflow never runs remote seeds, never resets a remote database, and never writes Supabase function secrets.
 
 ## Function Runtime Secrets

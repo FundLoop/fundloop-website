@@ -387,7 +387,7 @@ export async function resolveProjectPaymentAdminContext(
     return commandFailure("project_not_found", projectError?.message ?? "Project not found.")
   }
 
-  const [{ data: participant }, { data: adminRoles, error: roleError }] = await Promise.all([
+  const [{ data: participant, error: participantError }, { data: adminRoles, error: roleError }] = await Promise.all([
     supabase
       .from("participants")
       .select("id")
@@ -397,6 +397,10 @@ export async function resolveProjectPaymentAdminContext(
       .maybeSingle(),
     supabase.from("ref_roles").select("id").in("name", ["Founder", "Admin"]),
   ])
+
+  if (participantError) {
+    return commandFailure("reference_data_unavailable", participantError.message, { projectId: project.id })
+  }
 
   if (participant) {
     return { ok: true, data: { actorUserId, project } }
@@ -1086,12 +1090,16 @@ export async function executeProjectOnchainPaymentSubmissionRecordCommand(
     metadata: { periodId: input.periodId },
   })
 
-  const [{ data: payment }, { data: paymentMethod }, { data: awaitingStatus }, { data: unresolvedSubmission }] =
-    await Promise.all([
-      supabase.from("payments").select("id, project_id, payment_amount, notes").eq("id", input.paymentId).single(),
-      supabase
-        .from("payment_methods")
-        .select(`
+  const [
+    { data: payment, error: paymentError },
+    { data: paymentMethod, error: paymentMethodError },
+    { data: awaitingStatus, error: awaitingStatusError },
+    { data: unresolvedSubmission, error: unresolvedSubmissionError },
+  ] = await Promise.all([
+    supabase.from("payments").select("id, project_id, payment_amount, notes").eq("id", input.paymentId).single(),
+    supabase
+      .from("payment_methods")
+      .select(`
           id,
           method_id,
           project_id,
@@ -1102,16 +1110,38 @@ export async function executeProjectOnchainPaymentSubmissionRecordCommand(
           chain_intake_contracts!inner(contract_address, treasury_address, abi_version),
           ref_chain_assets!inner(token_address, is_native)
         `)
-        .eq("id", input.paymentMethodId)
-        .single(),
-      supabase.from("ref_payment_statuses").select("id").eq("code", "awaiting_confirmation").single(),
-      supabase
-        .from("onchain_payment_submissions")
-        .select("id")
-        .eq("payment_id", input.paymentId)
-        .in("status", ["submitted", "confirming"])
-        .maybeSingle(),
-    ])
+      .eq("id", input.paymentMethodId)
+      .single(),
+    supabase.from("ref_payment_statuses").select("id").eq("code", "awaiting_confirmation").single(),
+    supabase
+      .from("onchain_payment_submissions")
+      .select("id")
+      .eq("payment_id", input.paymentId)
+      .in("status", ["submitted", "confirming"])
+      .maybeSingle(),
+  ])
+
+  const referenceDataError = paymentError ?? paymentMethodError ?? awaitingStatusError ?? unresolvedSubmissionError
+  if (referenceDataError) {
+    const message = referenceDataError.message
+    await recordReceiptEvent(supabase, deps, {
+      stage: "submission_record",
+      outcome: "failure",
+      attemptId: input.attemptId,
+      actorUserId: context.data.actorUserId,
+      actorRole: "project_admin",
+      projectId: context.data.project.id,
+      paymentId: input.paymentId,
+      paymentMethodId: input.paymentMethodId,
+      error: message,
+      metadata: { referenceData: "receipt_recording" },
+    })
+    return commandFailure("reference_data_unavailable", message, {
+      projectId: context.data.project.id,
+      paymentId: input.paymentId,
+      paymentMethodId: input.paymentMethodId,
+    })
+  }
 
   if (!payment || payment.project_id !== context.data.project.id) {
     const message = "Payment record does not belong to this project"
@@ -1393,6 +1423,27 @@ export async function executeProjectOnchainPaymentSubmissionRecordCommand(
     .eq("id", input.paymentId)
 
   if (paymentUpdateError) {
+    const failedAt = new Date().toISOString()
+    const { error: submissionFailureError } = await supabase
+      .from("onchain_payment_submissions")
+      .update({
+        status: "failed",
+        failure_code: "payment_update_failed",
+        failure_reason: paymentUpdateError.message,
+        last_checked_at: failedAt,
+        reconciled_at: failedAt,
+        metadata: {
+          source: "project_payments_page",
+          period_id: input.periodId,
+          compensation_reason: "payment_update_failed",
+        },
+      })
+      .eq("id", submission.id)
+
+    const failureMessage = submissionFailureError
+      ? `${paymentUpdateError.message}; additionally could not mark the onchain submission failed: ${submissionFailureError.message}`
+      : paymentUpdateError.message
+
     await recordReceiptEvent(supabase, deps, {
       stage: "submission_record",
       outcome: "failure",
@@ -1405,9 +1456,12 @@ export async function executeProjectOnchainPaymentSubmissionRecordCommand(
       submissionId: submission.id,
       txHash: input.txHash,
       walletAddress: input.walletAddress,
-      error: paymentUpdateError.message,
+      error: failureMessage,
+      metadata: {
+        compensation: submissionFailureError ? "submission_failure_update_failed" : "submission_marked_failed",
+      },
     })
-    return commandFailure("payment_update_failed", paymentUpdateError.message, {
+    return commandFailure("payment_update_failed", failureMessage, {
       projectId: context.data.project.id,
       paymentId: input.paymentId,
       paymentMethodId: input.paymentMethodId,

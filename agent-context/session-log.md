@@ -1,3 +1,39 @@
+### session v70: Address Copilot review feedback on PR 25
+- timestamp: 2026-04-21T01:49:08-04:00
+- agent: **Codex (GPT-5)**
+- branch: **codex/session-19-payment-edge-functions**
+- head: pending final commit
+
+#### Objective
+Address Copilot review comments on PR #25 for payment operation reliability and Supabase deploy reproducibility.
+
+#### Actions Taken
+- Returned `reference_data_unavailable` for participant admin lookup failures instead of falling through to permission denial.
+- Returned `reference_data_unavailable` for receipt-recording reference query failures instead of surfacing misleading payment, route, or status errors.
+- Added a compensating update that marks an inserted onchain submission `failed` if the subsequent payment update fails.
+- Guarded Edge Function runtime availability checks against unsupported network keys before reading Deno environment variables.
+- Pinned the Supabase CLI version used by the deploy workflow and documented deliberate CLI updates.
+- Added regression coverage for participant lookup errors, receipt reference lookup errors, and failed-payment-update compensation.
+
+#### Tests and Validation Notes
+- `pnpm dlx node@22.22.1 /opt/homebrew/bin/pnpm test -- project-payment-operations-command` passed.
+- `pnpm dlx node@22.22.1 /opt/homebrew/bin/pnpm lint` passed.
+- `ruby -e 'require "yaml"; YAML.load_file(".github/workflows/supabase-deploy.yml"); puts "workflow yaml parsed"'` passed.
+- `go run github.com/rhysd/actionlint/cmd/actionlint@latest .github/workflows/supabase-deploy.yml` passed.
+- `git diff --check` passed.
+- `pnpm dlx node@22.22.1 /opt/homebrew/bin/pnpm typecheck` passed.
+- `pnpm dlx node@22.22.1 /opt/homebrew/bin/pnpm build` passed.
+
+#### Reflections
+- The receipt-recording path still deserves a future RPC for full atomicity, but marking the inserted submission failed prevents the unresolved unique index from blocking retries if the second write fails.
+- Pinning the Supabase CLI keeps deploy behavior reproducible while preserving a clear update path during tooling triage.
+
+#### Suggested Next Steps
+- Push this review-fix commit, reply to each Copilot thread with the commit reference, and resolve the threads.
+- Re-run CI on PR #25 before requesting Codex review.
+
+---
+
 ### session v69: Align Supabase deploy workflow with GitHub environment names
 - timestamp: 2026-04-21T01:29:27-04:00
 - agent: **Codex (GPT-5)**
