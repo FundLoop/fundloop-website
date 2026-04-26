@@ -30,7 +30,8 @@ The app should treat a declared failure envelope differently from transport or i
 - helper-only directories under `supabase/functions/` such as `_shared` and `_vendor` are part of the bundle graph, but they must be excluded from function deployment enumeration
 - shared modules imported by Edge Functions should use explicit `.ts` or `.json` local specifiers because the Supabase bundle step runs on Deno resolution rules, not Node-style extension guessing
 - shared modules imported by Edge Functions must not rely on Next-only runtime markers such as `import "server-only"`; keep those markers on Next-only wrappers instead
-- vendored packages that are not published to npm or JSR must be mapped explicitly in `supabase/functions/deno.json` when Edge Functions import them through shared modules, and those mappings should point to repo-tracked Deno-visible files rather than CI-specific `node_modules` paths
+- packages consumed by Edge Functions through shared modules must be mapped explicitly in `supabase/functions/deno.json` when Deno cannot resolve the normal app import directly
+- the current `@cubid/api` mapping points at the installed package entrypoint under the repo root `node_modules/` so the app no longer needs a function-local `_vendor` mirror; switch that mapping to a `jsr:` package import once the Cubid repo publishes the package
 - the root Next.js `tsc` run excludes `supabase/functions/` because those files are Deno-targeted and validated through the Supabase CLI and deploy workflow rather than the app TypeScript program
 - the deploy workflow installs repo dependencies before function bundling and `supabase/functions/deno.json` enables `nodeModulesDir` so vendored package dependencies remain available during remote bundling
 
@@ -45,6 +46,9 @@ The first migrated domains are:
   - `project-crypto-route-move`
   - `project-crypto-route-enabled-set`
   - `project-onchain-payment-submission-record`
+- internal payment operations:
+  - `admin-payment-receipt-confirm`
+  - `admin-onchain-payment-reconciliation-run`
 - `user-cubid-resolve-email`
 - `user-cubid-sync-profile`
 - onboarding writes:
@@ -84,6 +88,14 @@ For CUBID:
 - the app invokes browser adapters from onboarding and account/workspace surfaces, while server-side publish commands still enforce the same identity requirement for bypass safety
 - phone OTP and verified-stamp persistence use authenticated internal Next route handlers as a browser bridge so `CUBID_API_KEY` never enters the client bundle
 
+For internal payment operations:
+
+- admin payment confirmation now goes through `admin-payment-receipt-confirm`
+- admin/manual and cron-triggered reconciliation now go through `admin-onchain-payment-reconciliation-run`
+- browser admin UI calls the browser adapters directly
+- the stable internal route `/api/internal/payments/reconcile-onchain` is now only a secret-gated wrapper around the reconciliation Edge Function
+- operator Edge Functions can authenticate either through a real Supabase user JWT or through `x-fundloop-cron-secret` for internal system callers
+
 The migration is intentionally incremental so the transport layer can stabilize before broader read migration and later founder/user workspace work.
 
 ## Remote Deployment
@@ -120,6 +132,8 @@ supabase functions serve project-crypto-route-update --env-file .env.local
 supabase functions serve project-crypto-route-move --env-file .env.local
 supabase functions serve project-crypto-route-enabled-set --env-file .env.local
 supabase functions serve project-onchain-payment-submission-record --env-file .env.local
+supabase functions serve admin-payment-receipt-confirm --env-file .env.local
+supabase functions serve admin-onchain-payment-reconciliation-run --env-file .env.local
 ```
 
 Once the local stack is running, invoke the command through the app or by calling the local functions endpoint with an authenticated bearer token.

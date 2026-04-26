@@ -223,12 +223,12 @@ Migrate the current payment command layer out of `app/actions/project-payment-ac
 
 ## Session 20: Move admin payment and reconciliation commands to Edge Functions
 
-- Status: Not started
-- Timestamp started: TBD
-- Timestamp completed: TBD
-- Feature branch: TBD
-- Head: TBD
-- Session-log reference(s): TBD
+- Status: Complete
+- Timestamp started: 2026-04-26T18:11:00-04:00
+- Timestamp completed: 2026-04-26T18:17:29-04:00
+- Feature branch: codex/session-20-admin-edge-functions
+- Head: pending final commit
+- Session-log reference(s): session v82
 
 Continue the backend migration by moving internal admin payment actions behind Edge Functions as well. This includes reconciliation replay, manual non-onchain confirmation, and later monthly-cycle operator commands. The main benefit is consistency: the same backend contract pattern should apply to project and internal workflows. This session should also establish stronger internal operator request logging, since these commands affect money and workflow state. By the end, the app should be materially closer to the target rule that all writes go through Supabase Edge Functions.
 

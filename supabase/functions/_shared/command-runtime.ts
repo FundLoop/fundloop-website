@@ -4,7 +4,7 @@ export const corsHeaders = {
   "content-type": "application/json",
   "access-control-allow-origin": "*",
   "access-control-allow-methods": "POST, OPTIONS",
-  "access-control-allow-headers": "authorization, x-client-info, apikey, content-type",
+  "access-control-allow-headers": "authorization, x-client-info, apikey, content-type, x-fundloop-cron-secret",
 }
 
 function getDenoRuntime() {
@@ -91,6 +91,67 @@ export async function authenticateRequest(request) {
 
   return {
     ok: true,
+    authClient: clients.authClient,
+    adminClient: clients.adminClient,
+    user,
+  }
+}
+
+export async function authenticateRequestOrInternalSecret(
+  request,
+  options = { secretEnvName: "FUNDLOOP_PAYMENTS_CRON_SECRET", secretHeaderName: "x-fundloop-cron-secret" },
+) {
+  const clients = createFunctionClients(request)
+  if (!clients.ok) {
+    return clients
+  }
+
+  const requestSecret = request.headers.get(options.secretHeaderName)?.trim()
+  const configuredSecret = getEnv(options.secretEnvName)?.trim()
+
+  if (requestSecret) {
+    if (!configuredSecret) {
+      return {
+        ok: false,
+        error: `${options.secretEnvName} is not configured.`,
+        code: "misconfigured_secret",
+      }
+    }
+
+    if (requestSecret !== configuredSecret) {
+      return {
+        ok: false,
+        error: "Invalid internal secret.",
+        code: "invalid_internal_secret",
+      }
+    }
+
+    return {
+      ok: true,
+      mode: "internal_secret",
+      adminClient: clients.adminClient,
+      user: null,
+    }
+  }
+
+  const {
+    data: { user },
+    error,
+  } = await clients.authClient.auth.getUser()
+
+  if (error || !user) {
+    return {
+      ok: false,
+      error: error?.message ?? "User not authenticated.",
+      code: "not_authenticated",
+      adminClient: clients.adminClient,
+      user: null,
+    }
+  }
+
+  return {
+    ok: true,
+    mode: "user",
     authClient: clients.authClient,
     adminClient: clients.adminClient,
     user,

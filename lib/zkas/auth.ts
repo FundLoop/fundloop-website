@@ -1,6 +1,7 @@
 import "server-only"
 
 import { cache } from "react"
+import { isInternalAdminEmail as checkInternalAdminEmail } from "@/lib/internal-admin-emails"
 import { createServerSupabaseClient } from "@/lib/supabase-server"
 import { getAdminSupabaseClient } from "@/lib/supabase-admin"
 import { ZKAS_ACCESS_ROLE_NAME } from "@/lib/zkas/constants"
@@ -16,15 +17,6 @@ type ProjectMembership = {
   projectSlug: string | null
   isProjectAdmin: boolean
   hasZkasAccess: boolean
-}
-
-function parseEmailAllowlist() {
-  return new Set(
-    (process.env.FUNDLOOP_INTERNAL_ADMIN_EMAILS ?? "")
-      .split(",")
-      .map((value) => value.trim().toLowerCase())
-      .filter(Boolean),
-  )
 }
 
 function parseSuperadminAllowlist() {
@@ -65,11 +57,7 @@ export async function getAuthenticatedActor(): Promise<AuthenticatedActor> {
 }
 
 export function isInternalAdminEmail(email: string | null) {
-  if (!email) {
-    return false
-  }
-
-  return parseEmailAllowlist().has(email.toLowerCase())
+  return checkInternalAdminEmail(email, process.env.FUNDLOOP_INTERNAL_ADMIN_EMAILS)
 }
 
 export function isZkasSuperadminEmail(email: string | null) {

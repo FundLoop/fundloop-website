@@ -1,6 +1,6 @@
 {
   "imports": {
-    "@cubid/api": "./_vendor/cubid-api/index.mjs",
+    "@cubid/api": "../../node_modules/@cubid/api/dist/index.mjs",
     "@supabase/supabase-js": "npm:@supabase/supabase-js@2.104.0"
   },
   "nodeModulesDir": "auto"

@@ -1,18 +1,20 @@
+import type { SupabaseClient } from "@supabase/supabase-js"
 import { createPublicClient, decodeEventLog, http } from "viem"
 import type { Log, TransactionReceipt } from "viem"
-import { fundLoopIntakeAbi } from "@/lib/onchain/fundloop-intake-abi"
+import { fundLoopIntakeAbi } from "./fundloop-intake-abi.ts"
 import {
+  getDefaultRuntimeEnv,
   getRequiredConfirmationDepth,
   getWalletRuntimeConfig,
   ZERO_ADDRESS,
-} from "@/lib/onchain/runtime-config"
-import { createConfiguredChain, getSupportedChainConfig } from "@/lib/onchain/supported-chains"
+} from "./runtime-config.ts"
+import { createConfiguredChain, getSupportedChainConfig } from "./supported-chains.ts"
 import {
   type OnchainSubmissionStatus,
   type OnchainSubmissionSummary,
-} from "@/lib/onchain/payment-submissions"
-import { getAdminSupabaseClient } from "@/lib/supabase-admin"
-import type { Tables } from "@/types/supabase"
+} from "./payment-submissions.ts"
+import { createAdminSupabaseClient } from "../supabase-admin-client"
+import type { Database, Tables } from "../../types/supabase.ts"
 
 export type ReconciliationRunSource = "cron" | "admin_manual"
 
@@ -44,6 +46,10 @@ export type OnchainReconciliationRunSummary = {
   unresolvedCount: number
   results: ReconciliationOutcome[]
   touchedProjectSlugs: string[]
+}
+
+type PaymentReconciliationDeps = {
+  supabase?: SupabaseClient<Database>
 }
 
 export type ReconciliationReceiptLike = Pick<TransactionReceipt, "status" | "to" | "blockNumber"> & {
@@ -156,7 +162,7 @@ function getConfiguredPublicClient(networkKey: string) {
     throw new Error(`Unsupported reconciliation chain: ${networkKey}`)
   }
 
-  const rpcUrl = process.env[supported.rpcEnvVar]?.trim()
+  const rpcUrl = getDefaultRuntimeEnv()[supported.rpcEnvVar]?.trim()
   if (!rpcUrl) {
     throw new Error(`${supported.rpcEnvVar} is required to reconcile ${networkKey} payments.`)
   }
@@ -315,8 +321,7 @@ function mapOnchainSubmissionSummary(row: OnchainSubmissionSummaryRow): OnchainS
   }
 }
 
-async function getPaymentStatusIds() {
-  const supabase = getAdminSupabaseClient()
+async function getPaymentStatusIds(supabase: SupabaseClient<Database>) {
   const { data, error } = await supabase
     .from("ref_payment_statuses")
     .select("id, code")
@@ -342,8 +347,10 @@ async function getPaymentStatusIds() {
   }
 }
 
-async function fetchReconciliationRows(input: RunOnchainPaymentReconciliationInput) {
-  const supabase = getAdminSupabaseClient()
+async function fetchReconciliationRows(
+  input: RunOnchainPaymentReconciliationInput,
+  supabase: SupabaseClient<Database>,
+) {
   let query = supabase
     .from("onchain_payment_submissions")
     .select(`
@@ -396,9 +403,9 @@ async function fetchReconciliationRows(input: RunOnchainPaymentReconciliationInp
 async function updateSubmissionAndPayment(
   row: ReconciliationSubmissionRow,
   evaluation: ReconciliationEvaluation | null,
+  supabase: SupabaseClient<Database>,
 ) {
-  const supabase = getAdminSupabaseClient()
-  const paymentStatusIds = await getPaymentStatusIds()
+  const paymentStatusIds = await getPaymentStatusIds(supabase)
   const checkedAt = new Date().toISOString()
 
   if (!evaluation) {
@@ -479,7 +486,7 @@ async function updateSubmissionAndPayment(
   } satisfies ReconciliationOutcome
 }
 
-async function reconcileSubmission(row: ReconciliationSubmissionRow) {
+async function reconcileSubmission(row: ReconciliationSubmissionRow, supabase: SupabaseClient<Database>) {
   const confirmationDepth = getConfirmationDepth(row.chain_network_key)
   const client = getConfiguredPublicClient(row.chain_network_key)
   const snapshot: ReconciliationSubmissionSnapshot = {
@@ -504,17 +511,15 @@ async function reconcileSubmission(row: ReconciliationSubmissionRow) {
       hash: row.tx_hash as `0x${string}`,
     })
   } catch {
-    return updateSubmissionAndPayment(row, null)
+    return updateSubmissionAndPayment(row, null, supabase)
   }
 
   const currentBlockNumber = await client.getBlockNumber()
   const evaluation = evaluateSubmissionAgainstReceipt(snapshot, receipt, currentBlockNumber, confirmationDepth)
-  return updateSubmissionAndPayment(row, evaluation)
+  return updateSubmissionAndPayment(row, evaluation, supabase)
 }
 
-async function writeCronLog(input: { status: string; note: string }) {
-  const supabase = getAdminSupabaseClient()
-
+async function writeCronLog(input: { status: string; note: string }, supabase: SupabaseClient<Database>) {
   await supabase.from("cron_logs").insert({
     id: crypto.randomUUID(),
     status: input.status,
@@ -523,12 +528,15 @@ async function writeCronLog(input: { status: string; note: string }) {
   })
 }
 
-export async function listLatestOnchainSubmissionsForPaymentIds(paymentIds: number[]) {
+export async function listLatestOnchainSubmissionsForPaymentIds(
+  paymentIds: number[],
+  deps: PaymentReconciliationDeps = {},
+) {
   if (paymentIds.length === 0) {
     return new Map<number, OnchainSubmissionSummary>()
   }
 
-  const supabase = getAdminSupabaseClient()
+  const supabase = deps.supabase ?? createAdminSupabaseClient()
   const { data, error } = await supabase
     .from("onchain_payment_submissions")
     .select(`
@@ -572,8 +580,8 @@ export async function listLatestOnchainSubmissionsForPaymentIds(paymentIds: numb
   return latestByPayment
 }
 
-export async function listProjectOnchainSubmissionSummaries(projectId: number) {
-  const supabase = getAdminSupabaseClient()
+export async function listProjectOnchainSubmissionSummaries(projectId: number, deps: PaymentReconciliationDeps = {}) {
+  const supabase = deps.supabase ?? createAdminSupabaseClient()
   const { data, error } = await supabase
     .from("onchain_payment_submissions")
     .select(`
@@ -606,8 +614,8 @@ export async function listProjectOnchainSubmissionSummaries(projectId: number) {
   return ((data ?? []) as OnchainSubmissionSummaryRow[]).map(mapOnchainSubmissionSummary)
 }
 
-export async function listReconciliationQueue(limit = 50) {
-  const supabase = getAdminSupabaseClient()
+export async function listReconciliationQueue(limit = 50, deps: PaymentReconciliationDeps = {}) {
+  const supabase = deps.supabase ?? createAdminSupabaseClient()
   const { data, error } = await supabase
     .from("onchain_payment_submissions")
     .select(`
@@ -642,13 +650,15 @@ export async function listReconciliationQueue(limit = 50) {
 
 export async function runOnchainPaymentReconciliation(
   input: RunOnchainPaymentReconciliationInput,
+  deps: PaymentReconciliationDeps = {},
 ): Promise<OnchainReconciliationRunSummary> {
+  const supabase = deps.supabase ?? createAdminSupabaseClient()
   try {
-    const rows = await fetchReconciliationRows(input)
+    const rows = await fetchReconciliationRows(input, supabase)
     const results: ReconciliationOutcome[] = []
 
     for (const row of rows) {
-      results.push(await reconcileSubmission(row))
+      results.push(await reconcileSubmission(row, supabase))
     }
 
     const summary: OnchainReconciliationRunSummary = {
@@ -672,7 +682,7 @@ export async function runOnchainPaymentReconciliation(
         confirmingCount: summary.confirmingCount,
         unresolvedCount: summary.unresolvedCount,
       }),
-    })
+    }, supabase)
 
     return summary
   } catch (error) {
@@ -682,7 +692,7 @@ export async function runOnchainPaymentReconciliation(
         source: input.source,
         error: error instanceof Error ? error.message : "Unknown reconciliation error",
       }),
-    })
+    }, supabase)
 
     throw error
   }

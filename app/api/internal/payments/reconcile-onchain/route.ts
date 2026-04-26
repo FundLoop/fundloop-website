@@ -1,5 +1,9 @@
 import { NextResponse } from "next/server"
-import { runOnchainPaymentReconciliation } from "@/lib/onchain/payment-reconciliation"
+import { invokeInternalServerEdgeCommand } from "@/lib/edge-functions/invoke-internal-server"
+import {
+  ADMIN_ONCHAIN_PAYMENT_RECONCILIATION_RUN_FUNCTION,
+  normalizeAdminOnchainPaymentReconciliationRunResult,
+} from "@/lib/edge-functions/admin-payment-operations-contract"
 
 function getRequestSecret(request: Request) {
   const authorization = request.headers.get("authorization")
@@ -83,7 +87,8 @@ export async function POST(request: Request) {
   }
 
   const requestSecret = getRequestSecret(request)
-  if (!requestSecret || requestSecret !== configuredSecret) {
+  const isSecretCaller = Boolean(requestSecret && requestSecret === configuredSecret)
+  if (!isSecretCaller) {
     return NextResponse.json(
       {
         ok: false,
@@ -112,17 +117,24 @@ export async function POST(request: Request) {
   }
 
   try {
-    const summary = await runOnchainPaymentReconciliation({
-      source: "cron",
-      limit: body.value.limit,
-      paymentId: body.value.paymentId,
-      submissionId: body.value.submissionId,
-    })
+    const result = await normalizeAdminOnchainPaymentReconciliationRunResult(
+      await invokeInternalServerEdgeCommand(
+        ADMIN_ONCHAIN_PAYMENT_RECONCILIATION_RUN_FUNCTION,
+        body.value,
+      ),
+    )
 
-    return NextResponse.json({
-      ok: true,
-      data: summary,
-    })
+    if (!result.ok) {
+      return NextResponse.json(
+        {
+          ok: false,
+          error: result.error.message,
+        },
+        { status: result.error.code === "invalid_payload" ? 400 : result.error.code === "invalid_internal_secret" ? 401 : 500 },
+      )
+    }
+
+    return NextResponse.json({ ok: true, data: result.data })
   } catch (error) {
     return NextResponse.json(
       {

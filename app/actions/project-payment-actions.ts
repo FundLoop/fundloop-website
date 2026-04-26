@@ -3,6 +3,10 @@
 import { revalidatePath } from "next/cache"
 import { createServerSupabaseClient } from "@/lib/supabase-server"
 import { getAdminSupabaseClient } from "@/lib/supabase-admin"
+import {
+  invokeAdminOnchainPaymentReconciliationRunServer,
+  invokeAdminPaymentReceiptConfirmServer,
+} from "@/lib/edge-functions/admin-payment-operations-server"
 import { invokeProjectPaymentDraftsCreateServer } from "@/lib/edge-functions/project-payment-drafts-create-server"
 import {
   invokeProjectCryptoRouteCreateServer,
@@ -18,25 +22,13 @@ import {
   type RouteMoveDirection,
   type ProjectCryptoRouteState,
 } from "@/lib/project-crypto-routes"
-import { requireInternalAdminActor } from "@/lib/zkas/auth"
 import {
   getDeploymentAvailabilityForRoute,
   getWalletRuntimeConfig,
-  resolveDeploymentEnvironment,
   type DeploymentAvailability,
 } from "@/lib/onchain/runtime-config"
-import {
-  listProjectOnchainSubmissionSummaries,
-  runOnchainPaymentReconciliation,
-  type OnchainReconciliationRunSummary,
-} from "@/lib/onchain/payment-reconciliation"
+import { listProjectOnchainSubmissionSummaries, type OnchainReconciliationRunSummary } from "@/lib/onchain/payment-reconciliation"
 import type { OnchainSubmissionSummary } from "@/lib/onchain/payment-submissions"
-import {
-  normalizePaymentFlowErrorCode,
-  normalizePaymentFlowErrorMessage,
-  type PaymentFlowActorRole,
-} from "@/lib/observability/payment-flow"
-import { recordPaymentFlowEvent } from "@/lib/observability/payment-flow-server"
 import type { PaymentRecordSummary } from "@/lib/payments/payment-record-summary"
 import type { Json, Tables } from "@/types/supabase"
 import type { ProjectPaymentDraftsCreateInput } from "@/lib/edge-functions/project-payment-drafts-create-contract"
@@ -279,54 +271,6 @@ async function getProjectAdminContext(projectSlug: string): Promise<ActionResult
   }
 
   return { ok: false, error: "You do not have permission to manage payments for this project" }
-}
-
-async function recordActionObservabilityEvent(input: {
-  flow: "payment_save" | "receipt_recording" | "admin_confirmation"
-  stage: "validation" | "submit" | "submission_record"
-  outcome: "attempt" | "success" | "failure"
-  attemptId: string
-  actorUserId?: string | null
-  actorRole?: PaymentFlowActorRole
-  projectId?: number | null
-  paymentId?: number | null
-  submissionId?: number | null
-  paymentMethodId?: number | null
-  chainId?: number | null
-  chainAssetId?: number | null
-  intakeContractId?: number | null
-  txHash?: string | null
-  walletAddress?: string | null
-  error?: unknown
-  metadata?: Json
-}) {
-  await recordPaymentFlowEvent({
-    flow: input.flow,
-    stage: input.stage,
-    outcome: input.outcome,
-    severity:
-      input.outcome === "failure"
-        ? input.stage === "validation"
-          ? "warning"
-          : "error"
-        : "info",
-    attemptId: input.attemptId,
-    actorUserId: input.actorUserId ?? null,
-    actorRole: input.actorRole,
-    projectId: input.projectId ?? null,
-    paymentId: input.paymentId ?? null,
-    submissionId: input.submissionId ?? null,
-    paymentMethodId: input.paymentMethodId ?? null,
-    chainId: input.chainId ?? null,
-    chainAssetId: input.chainAssetId ?? null,
-    intakeContractId: input.intakeContractId ?? null,
-    txHash: input.txHash ?? null,
-    walletAddress: input.walletAddress ?? null,
-    environment: resolveDeploymentEnvironment(),
-    errorCode: input.error ? normalizePaymentFlowErrorCode(input.stage, input.error) : null,
-    errorMessage: input.error ? normalizePaymentFlowErrorMessage(input.error) : null,
-    metadata: input.metadata,
-  })
 }
 
 function mapManagedCryptoPaymentMethodSummary(row: ManagedCryptoPaymentMethodRow): ManagedCryptoPaymentMethodSummary {
@@ -771,39 +715,28 @@ export async function runInternalOnchainPaymentReconciliation(input?: {
   paymentId?: number
   submissionId?: number
 }): Promise<ActionResult<OnchainReconciliationRunSummary>> {
-  try {
-    await requireInternalAdminActor()
-  } catch (error) {
+  const result = await invokeAdminOnchainPaymentReconciliationRunServer({
+    limit: input?.limit,
+    paymentId: input?.paymentId,
+    submissionId: input?.submissionId,
+  })
+  if (!result.ok) {
     return {
       ok: false,
-      error: error instanceof Error ? error.message : "You do not have internal admin access.",
+      error: result.error.message,
     }
   }
 
-  try {
-    const summary = await runOnchainPaymentReconciliation({
-      source: "admin_manual",
-      limit: input?.limit,
-      paymentId: input?.paymentId,
-      submissionId: input?.submissionId,
-    })
+  revalidatePath("/admin/payments")
+  revalidatePath("/admin/payments/reconciliation")
 
-    revalidatePath("/admin/payments")
-    revalidatePath("/admin/payments/reconciliation")
+  for (const projectSlug of result.data.touchedProjectSlugs) {
+    revalidatePath(`/projects/${projectSlug}/payments`)
+  }
 
-    for (const projectSlug of summary.touchedProjectSlugs) {
-      revalidatePath(`/projects/${projectSlug}/payments`)
-    }
-
-    return {
-      ok: true,
-      data: summary,
-    }
-  } catch (error) {
-    return {
-      ok: false,
-      error: error instanceof Error ? error.message : "Could not run onchain payment reconciliation.",
-    }
+  return {
+    ok: true,
+    data: result.data,
   }
 }
 
@@ -811,158 +744,34 @@ export async function confirmInternalPaymentReceipt(
   paymentId: number,
   attemptId?: string,
 ): Promise<ActionResult<{ paymentId: number; statusCode: string; confirmedAt: string }>> {
-  const resolvedAttemptId = getObservabilityAttemptId(attemptId)
-  try {
-    await requireInternalAdminActor()
-  } catch (error) {
-    await recordActionObservabilityEvent({
-      flow: "admin_confirmation",
-      stage: "submit",
-      outcome: "failure",
-      attemptId: resolvedAttemptId,
-      actorRole: "unauthenticated",
-      paymentId,
-      error,
-    })
-    return {
-      ok: false,
-      error: error instanceof Error ? error.message : "You do not have internal admin access.",
-    }
-  }
-
-  await recordActionObservabilityEvent({
-    flow: "admin_confirmation",
-    stage: "submit",
-    outcome: "attempt",
-    attemptId: resolvedAttemptId,
-    actorRole: "internal_admin",
+  const result = await invokeAdminPaymentReceiptConfirmServer({
     paymentId,
+    attemptId: getObservabilityAttemptId(attemptId),
   })
-
-  const supabase = getAdminSupabaseClient()
-  const [{ data: payment }, { data: confirmedStatus }, { data: onchainSubmission }] = await Promise.all([
-    supabase.from("payments").select("id, project_id, projects(slug)").eq("id", paymentId).single(),
-    supabase.from("ref_payment_statuses").select("id, code").eq("code", "confirmed").single(),
-    supabase.from("onchain_payment_submissions").select("id").eq("payment_id", paymentId).limit(1).maybeSingle(),
-  ])
-
-  if (!payment) {
-    await recordActionObservabilityEvent({
-      flow: "admin_confirmation",
-      stage: "submit",
-      outcome: "failure",
-      attemptId: resolvedAttemptId,
-      actorRole: "internal_admin",
-      paymentId,
-      error: "Payment not found.",
-    })
-    return { ok: false, error: "Payment not found." }
-  }
-
-  if (onchainSubmission?.id) {
-    await recordActionObservabilityEvent({
-      flow: "admin_confirmation",
-      stage: "submit",
-      outcome: "failure",
-      attemptId: resolvedAttemptId,
-      actorRole: "internal_admin",
-      projectId: payment.project_id,
-      paymentId,
-      submissionId: onchainSubmission.id,
-      error: "Crypto-submitted payments must be advanced by onchain reconciliation instead of manual confirmation.",
-    })
+  if (!result.ok) {
     return {
       ok: false,
-      error: "Crypto-submitted payments must be advanced by onchain reconciliation instead of manual confirmation.",
+      error: result.error.message,
     }
-  }
-
-  if (!confirmedStatus?.id) {
-    await recordActionObservabilityEvent({
-      flow: "admin_confirmation",
-      stage: "submit",
-      outcome: "failure",
-      attemptId: resolvedAttemptId,
-      actorRole: "internal_admin",
-      projectId: payment.project_id,
-      paymentId,
-      error: "The confirmed payment status is not configured.",
-    })
-    return { ok: false, error: "The confirmed payment status is not configured." }
-  }
-
-  const confirmedAt = new Date().toISOString()
-
-  const { error: paymentError } = await supabase
-    .from("payments")
-    .update({
-      status_id: confirmedStatus.id,
-      confirmed_at: confirmedAt,
-      updated_at: confirmedAt,
-    })
-    .eq("id", paymentId)
-
-  if (paymentError) {
-    await recordActionObservabilityEvent({
-      flow: "admin_confirmation",
-      stage: "submit",
-      outcome: "failure",
-      attemptId: resolvedAttemptId,
-      actorRole: "internal_admin",
-      projectId: payment.project_id,
-      paymentId,
-      error: paymentError.message,
-    })
-    return { ok: false, error: paymentError.message }
-  }
-
-  const { error: submissionError } = await supabase
-    .from("onchain_payment_submissions")
-    .update({
-      status: "confirmed",
-      confirmed_at: confirmedAt,
-    })
-    .eq("payment_id", paymentId)
-
-  if (submissionError) {
-    await recordActionObservabilityEvent({
-      flow: "admin_confirmation",
-      stage: "submit",
-      outcome: "failure",
-      attemptId: resolvedAttemptId,
-      actorRole: "internal_admin",
-      projectId: payment.project_id,
-      paymentId,
-      error: submissionError.message,
-    })
-    return { ok: false, error: submissionError.message }
   }
 
   revalidatePath("/admin/payments")
-  const projectSlug = payment.projects && !Array.isArray(payment.projects) ? payment.projects.slug : null
+  revalidatePath("/admin/payments/reconciliation")
+
+  const payment = result.data
+  const adminSupabase = getAdminSupabaseClient()
+  const { data: paymentRow } = await adminSupabase
+    .from("payments")
+    .select("projects(slug)")
+    .eq("id", paymentId)
+    .maybeSingle()
+  const projectSlug = paymentRow?.projects && !Array.isArray(paymentRow.projects) ? paymentRow.projects.slug : null
   if (projectSlug) {
     revalidatePath(`/projects/${projectSlug}/payments`)
   }
 
-  await recordActionObservabilityEvent({
-    flow: "admin_confirmation",
-    stage: "submit",
-    outcome: "success",
-    attemptId: resolvedAttemptId,
-    actorRole: "internal_admin",
-    projectId: payment.project_id,
-    paymentId,
-    metadata: {
-      confirmedAt,
-    },
-  })
-
   return {
     ok: true,
-    data: {
-      paymentId,
-      statusCode: confirmedStatus.code,
-      confirmedAt,
-    },
+    data: payment,
   }
 }

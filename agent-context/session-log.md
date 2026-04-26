@@ -1,3 +1,60 @@
+### session v82: Move admin payment operations behind Edge Functions
+- timestamp: 2026-04-26T18:17:29-04:00
+- agent: **Codex (GPT-5)**
+- branch: **codex/session-20-admin-edge-functions**
+- head: pending final commit
+
+#### Objective
+Complete Session 20 by moving the remaining admin payment confirmation and reconciliation write flows behind typed Supabase Edge Function commands, while also removing the temporary FundLoop-local CUBID Deno mirror and documenting the remaining Cubid publication follow-up.
+
+#### Actions Taken
+- Added the new admin payment command layer in `lib/payments/admin-payment-operations-command.ts` with shared observability writes for `admin_confirmation` and the new `admin_reconciliation` flow.
+- Added typed contracts and adapters for:
+  - `admin-payment-receipt-confirm`
+  - `admin-onchain-payment-reconciliation-run`
+- Added the corresponding Supabase Edge Function entrypoints plus a shared admin operation handler and dual auth mode support for:
+  - authenticated internal-admin Supabase users
+  - secret-gated internal system callers through `x-fundloop-cron-secret`
+- Reworked `app/actions/project-payment-actions.ts` so the admin mutation exports are now thin compatibility wrappers around the new server invokers.
+- Reworked `components/admin/payments-console.tsx` and `components/admin/reconciliation-run-button.tsx` so the browser UI now calls the browser Edge adapters directly instead of importing server actions.
+- Reworked `/api/internal/payments/reconcile-onchain` into a thin secret-gated wrapper around the reconciliation Edge Function using a new privileged internal server invoker helper.
+- Extended `payment_flow_events` via a forward migration so observability now supports:
+  - `flow = 'admin_reconciliation'`
+  - `actor_role = 'system'`
+- Finished the Deno-safe shared-runtime refactor by:
+  - exporting a runtime-agnostic env helper
+  - removing remaining hidden Node assumptions from reconciliation/admin-client helpers
+  - adding an internal-admin allowlist helper shared across Next and Edge runtimes
+- Removed the repo-local Supabase-function CUBID mirror and changed `supabase/functions/deno.json` to resolve `@cubid/api` from the installed package entrypoint under the repo root `node_modules/`.
+- Prepared the adjacent Cubid SDK v2 source tree for npm/JSR publication:
+  - added `packages/api/jsr.json`
+  - added `packages/api/README.md`
+  - added a Deno check script and explicit `.ts` source specifiers for Deno importability
+  - documented Supabase Edge / Deno usage in the Cubid README
+  - actual npm/JSR publication was blocked here because publish auth was not available and the local Cubid SDK directory was not a git checkout in this workspace
+- Updated engineering docs for the new admin command pattern, secret-gated internal route behavior, and the post-mirror CUBID import mapping.
+
+#### Tests and Validation Notes
+- `pnpm typecheck` passed.
+- `pnpm test -- admin-payment-operations-contract admin-payment-operations-command onchain-reconciliation-route admin-payments-console reconciliation-run-button project-payment-observability-actions` passed.
+- `deno info --config supabase/functions/deno.json supabase/functions/user-cubid-resolve-email/index.ts` resolved cleanly against the installed `@cubid/api` package entrypoint.
+- `deno info --config supabase/functions/deno.json supabase/functions/user-cubid-sync-profile/index.ts` resolved cleanly against the installed `@cubid/api` package entrypoint.
+- `pnpm lint` passed.
+- `pnpm test` passed.
+- `pnpm typecheck` passed.
+- `pnpm build` passed.
+- `go run github.com/rhysd/actionlint/cmd/actionlint@latest .github/workflows/supabase-deploy.yml` passed.
+
+#### Reflections
+- The admin payment write path now follows the same typed Edge Function contract model as the founder payment and onboarding domains, which makes the remaining operator/backend migrations much more mechanical.
+- Removing the function-local CUBID mirror is a real simplification, but the final ideal state still depends on publishing `@cubid/api` to npm and JSR so FundLoop can stop depending on an installed-package path mapping.
+
+#### Suggested Next Steps
+- Publish `@cubid/api` from the Cubid repo to npm and JSR, then switch `supabase/functions/deno.json` from the installed package path to the canonical `jsr:` import.
+- Continue with Session 21 or the next operator/payment-cycle domain now that both founder and internal payment writes share the same Edge command architecture.
+
+---
+
 ### session v81: Exclude Supabase helper directories from function deployment
 - timestamp: 2026-04-26T16:02:58-04:00
 - agent: **Codex (GPT-5)**
