@@ -1,3 +1,28 @@
+### session v76: Fix pnpm bootstrap in Supabase deploy workflow
+- timestamp: 2026-04-26T05:16:30-04:00
+- agent: **Codex (GPT-5)**
+- branch: **codex/supabase-function-bundling-repair**
+- head: pending final commit
+
+#### Objective
+Repair the follow-up PR dry-run failure from Session v75 so the Supabase deploy workflow can bootstrap Node tooling before the database dry-run executes.
+
+#### Actions Taken
+- Removed `cache: pnpm` from the `actions/setup-node@v4` step in `supabase-deploy.yml`.
+- Kept `corepack enable` as the pnpm bootstrap path so deploy runs can still execute `pnpm install --frozen-lockfile` before Edge Function bundling.
+
+#### Tests and Validation Notes
+- `go run github.com/rhysd/actionlint/cmd/actionlint@latest .github/workflows/supabase-deploy.yml` passed.
+- `ruby -e 'require "yaml"; YAML.load_file(".github/workflows/supabase-deploy.yml"); puts "workflow yaml parsed"'` passed.
+
+#### Reflections
+- The Deno bundle repair was sound; the PR dry-run caught a separate workflow bootstrap assumption before it could waste another full deploy cycle.
+
+#### Suggested Next Steps
+- Push this workflow-only follow-up to PR #29, confirm the PR dry-run turns green, then merge and watch the real `dev` deploy run again.
+
+---
+
 ### session v75: Repair Supabase Edge Function bundling for remote deploys
 - timestamp: 2026-04-26T05:11:00-04:00
 - agent: **Codex (GPT-5)**
