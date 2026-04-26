@@ -1,5 +1,3 @@
-import "server-only"
-
 import { createCubidApiClient } from "@cubid/api"
 import { createCubidWeb2Client } from "@cubid/web2"
 import { getCubidConfig, getCubidWeb2Config } from "./config.ts"

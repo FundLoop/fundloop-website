@@ -1,5 +1,3 @@
-import "server-only"
-
 import type { SupabaseClient } from "@supabase/supabase-js"
 import type { Database } from "../../types/supabase.ts"
 import { executeResolveCubidIdentityByEmailCommand } from "./resolve-email-command.ts"

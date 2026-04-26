@@ -28,6 +28,7 @@ The app should treat a declared failure envelope differently from transport or i
 - function names should follow command-style naming such as `project-payment-drafts-create`
 - each function directory should use an `index.ts` entrypoint so the Supabase CLI can bundle and deploy it consistently
 - shared modules imported by Edge Functions should use explicit `.ts` or `.json` local specifiers because the Supabase bundle step runs on Deno resolution rules, not Node-style extension guessing
+- shared modules imported by Edge Functions must not rely on Next-only runtime markers such as `import "server-only"`; keep those markers on Next-only wrappers instead
 - the root Next.js `tsc` run excludes `supabase/functions/` because those files are Deno-targeted and validated through the Supabase CLI and deploy workflow rather than the app TypeScript program
 - the deploy workflow installs repo dependencies before function bundling and `supabase/functions/deno.json` enables `nodeModulesDir` so vendored package dependencies remain available during remote bundling
 

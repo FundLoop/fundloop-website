@@ -1,3 +1,32 @@
+### session v77: Remove Next-only server markers from Edge Function shared modules
+- timestamp: 2026-04-26T05:20:30-04:00
+- agent: **Codex (GPT-5)**
+- branch: **codex/supabase-function-bundling-repair**
+- head: pending final commit
+
+#### Objective
+Fix the latest `dev` deploy failure after PR #29 by removing Next-only `server-only` imports from modules that are shared with Supabase Edge Functions.
+
+#### Actions Taken
+- Removed `import "server-only"` from the shared onboarding and CUBID command modules that the Edge Function deploy step bundles.
+- Removed the same marker from the shared CUBID server client helper used by the sync command.
+- Updated the Edge Function engineering doc to state that Next-only runtime markers must stay on Next-only wrappers rather than shared modules imported by Edge Functions.
+
+#### Tests and Validation Notes
+- A reachability script confirmed there are no remaining `server-only` markers in the 46 TypeScript files reachable from `supabase/functions/`.
+- `pnpm dlx node@22.22.1 /opt/homebrew/bin/pnpm lint` passed.
+- `pnpm dlx node@22.22.1 /opt/homebrew/bin/pnpm typecheck` passed.
+- `pnpm dlx node@22.22.1 /opt/homebrew/bin/pnpm test` passed.
+- `pnpm dlx node@22.22.1 /opt/homebrew/bin/pnpm build` passed.
+
+#### Reflections
+- The remote deploy path is now failing on genuinely incremental runtime-compatibility issues rather than broad workflow design problems, which means the repair work is converging.
+
+#### Suggested Next Steps
+- Push this follow-up to the same repair branch, confirm the PR checks stay green, and rerun the push-triggered `dev` Supabase deploy until every tracked function deploys successfully.
+
+---
+
 ### session v76: Fix pnpm bootstrap in Supabase deploy workflow
 - timestamp: 2026-04-26T05:16:30-04:00
 - agent: **Codex (GPT-5)**

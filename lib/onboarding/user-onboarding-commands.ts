@@ -1,5 +1,3 @@
-import "server-only"
-
 import type { Tables } from "../../types/supabase.ts"
 import {
   mergeUserOnboardingPayload,
