@@ -26,6 +26,8 @@ The app should treat a declared failure envelope differently from transport or i
 - server callers use the SSR-aware server Supabase client through the matching server invoker
 - function-specific adapters live under `lib/edge-functions/`
 - function names should follow command-style naming such as `project-payment-drafts-create`
+- each function directory should use an `index.ts` entrypoint so the Supabase CLI can bundle and deploy it consistently
+- the root Next.js `tsc` run excludes `supabase/functions/` because those files are Deno-targeted and validated through the Supabase CLI and deploy workflow rather than the app TypeScript program
 
 ## Current First Command
 
@@ -84,7 +86,7 @@ The migration is intentionally incremental so the transport layer can stabilize 
 Remote Supabase deployment is handled by the `Supabase Deploy` GitHub Actions workflow.
 
 - PRs into `dev` and `main` run `supabase db push --dry-run` against the matching Supabase target.
-- Pushes to `dev` and `main` run `supabase db push` and `supabase functions deploy`.
+- Pushes to `dev` and `main` run `supabase db push` and then deploy each tracked function directory explicitly.
 - `main` deploys use the GitHub `Production` environment gate; non-production runs use `Preview`.
 - The workflow deploys all tracked Edge Functions in one command, but it does not manage function runtime secrets.
 

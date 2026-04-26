@@ -1,3 +1,32 @@
+### session v74: Align Supabase function entrypoints with CLI deploy expectations
+- timestamp: 2026-04-26T04:57:45-04:00
+- agent: **Codex (GPT-5)**
+- branch: **codex/supabase-function-entrypoints**
+- head: pending final commit
+
+#### Objective
+Fix the remaining `Supabase Deploy` failure on `dev` by aligning the function tree with the Supabase CLI's expected entrypoint naming.
+
+#### Actions Taken
+- Renamed every tracked Supabase function entrypoint from `index.js` to `index.ts`.
+- Renamed the shared Edge Function helpers under `supabase/functions/_shared/` from `.js` to `.ts` and updated all relative imports.
+- Excluded `supabase/functions/` from the root Next.js TypeScript program so Deno-targeted Edge Function sources do not get typechecked as part of the app runtime.
+- Updated the Edge Functions engineering doc to capture the `index.ts` convention and the explicit per-function deploy behavior.
+
+#### Tests and Validation Notes
+- `pnpm dlx node@22.22.1 /opt/homebrew/bin/pnpm lint` passed.
+- `pnpm dlx node@22.22.1 /opt/homebrew/bin/pnpm typecheck` passed after excluding the Deno-targeted function tree from the app TypeScript program.
+- `git diff --check` passed.
+- `find supabase/functions -mindepth 1 -maxdepth 2 -type f | sort` confirmed every tracked deployable function now uses an `index.ts` entrypoint and the shared helpers live under `.ts` filenames.
+
+#### Reflections
+- The deploy workflow fixes were correct; the remaining issue was the function source layout itself, not the CI routing or migration path.
+
+#### Suggested Next Steps
+- Validate the renamed function tree locally and statically, PR it into `dev`, and confirm the next push-triggered `Supabase Deploy` run succeeds end-to-end.
+
+---
+
 ### session v73: Repair Supabase function deploy enumeration
 - timestamp: 2026-04-26T04:48:22-04:00
 - agent: **Codex (GPT-5)**

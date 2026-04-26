@@ -1,7 +1,7 @@
 import { validateProjectOnboardingDraftClearInput } from "../../../lib/edge-functions/project-onboarding-draft-clear-contract.ts"
 import { edgeCommandFailure, edgeCommandSuccess } from "../../../lib/edge-functions/result.ts"
 import { executeProjectOnboardingDraftClearCommand } from "../../../lib/onboarding/project-onboarding-commands.ts"
-import { authenticateRequest, corsHeaders, json, serve } from "../_shared/command-runtime.js"
+import { authenticateRequest, corsHeaders, json, serve } from "../_shared/command-runtime.ts"
 
 async function handleRequest(request) {
   if (request.method === "OPTIONS") {

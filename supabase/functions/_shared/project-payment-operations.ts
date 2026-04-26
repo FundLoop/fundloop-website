@@ -2,7 +2,7 @@ import { edgeCommandFailure, edgeCommandSuccess } from "../../../lib/edge-functi
 import localManifestJson from "../../../lib/onchain/deployments/local.json" with { type: "json" }
 import previewManifestJson from "../../../lib/onchain/deployments/preview.json" with { type: "json" }
 import productionManifestJson from "../../../lib/onchain/deployments/production.json" with { type: "json" }
-import { authenticateRequest, corsHeaders, json, parseJsonBody, serve } from "./command-runtime.js"
+import { authenticateRequest, corsHeaders, json, parseJsonBody, serve } from "./command-runtime.ts"
 
 const ZERO_REOWN_PROJECT_ID = "00000000000000000000000000000000"
 

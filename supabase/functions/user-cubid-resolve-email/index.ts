@@ -1,7 +1,7 @@
 import { validateUserCubidResolveEmailInput } from "../../../lib/edge-functions/user-cubid-resolve-email-contract.ts"
 import { edgeCommandFailure, edgeCommandSuccess } from "../../../lib/edge-functions/result.ts"
 import { executeResolveCubidIdentityByEmailCommand } from "../../../lib/cubid/resolve-email-command.ts"
-import { authenticateRequest, corsHeaders, json, parseJsonBody, serve } from "../_shared/command-runtime.js"
+import { authenticateRequest, corsHeaders, json, parseJsonBody, serve } from "../_shared/command-runtime.ts"
 
 async function handleRequest(request) {
   if (request.method === "OPTIONS") {
