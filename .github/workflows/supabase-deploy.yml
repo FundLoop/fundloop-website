@@ -195,7 +195,13 @@ jobs:
           set -euo pipefail
 
           function_names="$(
-            find supabase/functions -mindepth 1 -maxdepth 1 -type d ! -name "_shared" -exec basename {} \; | sort
+            find supabase/functions \
+              -mindepth 1 \
+              -maxdepth 1 \
+              -type d \
+              ! -name "_shared" \
+              ! -name "_vendor" \
+              -exec basename {} \; | sort
           )"
 
           if [[ -z "${function_names}" ]]; then

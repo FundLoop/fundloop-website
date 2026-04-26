@@ -43,7 +43,7 @@ Pull requests use the same target resolution but run:
 supabase db push --yes --db-url "$SUPABASE_DB_URL" --dry-run
 ```
 
-Edge Functions are deployed by enumerating each local function directory under `supabase/functions/` except `_shared` and deploying them one by one:
+Edge Functions are deployed by enumerating each local function directory under `supabase/functions/` except `_shared` and `_vendor`, then deploying the remaining function directories one by one:
 
 ```bash
 supabase functions deploy "<function-name>" --project-ref "$SUPABASE_PROJECT_REF"

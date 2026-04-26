@@ -27,6 +27,7 @@ The app should treat a declared failure envelope differently from transport or i
 - function-specific adapters live under `lib/edge-functions/`
 - function names should follow command-style naming such as `project-payment-drafts-create`
 - each function directory should use an `index.ts` entrypoint so the Supabase CLI can bundle and deploy it consistently
+- helper-only directories under `supabase/functions/` such as `_shared` and `_vendor` are part of the bundle graph, but they must be excluded from function deployment enumeration
 - shared modules imported by Edge Functions should use explicit `.ts` or `.json` local specifiers because the Supabase bundle step runs on Deno resolution rules, not Node-style extension guessing
 - shared modules imported by Edge Functions must not rely on Next-only runtime markers such as `import "server-only"`; keep those markers on Next-only wrappers instead
 - vendored packages that are not published to npm or JSR must be mapped explicitly in `supabase/functions/deno.json` when Edge Functions import them through shared modules, and those mappings should point to repo-tracked Deno-visible files rather than CI-specific `node_modules` paths
