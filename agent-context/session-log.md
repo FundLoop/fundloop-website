@@ -1,3 +1,62 @@
+### session v78: Broaden Supabase deploy workflow path triggers
+- timestamp: 2026-04-26T05:25:30-04:00
+- agent: **Codex (GPT-5)**
+- branch: **codex/supabase-function-bundling-repair**
+- head: pending final commit
+
+#### Objective
+Ensure the Supabase deploy workflow actually runs when shared Edge Function dependencies change outside `supabase/functions/`, `supabase/migrations/`, or the workflow file itself.
+
+#### Actions Taken
+- Expanded the `Supabase Deploy` workflow `pull_request` and `push` path filters to include:
+  - `lib/**`
+  - `types/**`
+  - `package.json`
+  - `pnpm-lock.yaml`
+  - `vendor/cubid/**`
+- Kept the existing Supabase-specific path filters intact so direct schema/function changes still route the same way.
+
+#### Tests and Validation Notes
+- `go run github.com/rhysd/actionlint/cmd/actionlint@latest .github/workflows/supabase-deploy.yml` passed.
+- `ruby -e 'require "yaml"; YAML.load_file(".github/workflows/supabase-deploy.yml"); puts "workflow yaml parsed"'` passed.
+
+#### Reflections
+- Shared command logic living under `lib/` is now part of the effective Edge Function deployment surface, so the workflow trigger contract needed to reflect the real architecture instead of just the filesystem location of entrypoints.
+
+#### Suggested Next Steps
+- Push this trigger-scope follow-up to PR #30 so the Supabase dry-run reruns on the PR, then merge and watch the real `dev` deploy again.
+
+---
+
+### session v77: Remove Next-only server markers from Edge Function shared modules
+- timestamp: 2026-04-26T05:20:30-04:00
+- agent: **Codex (GPT-5)**
+- branch: **codex/supabase-function-bundling-repair**
+- head: pending final commit
+
+#### Objective
+Fix the latest `dev` deploy failure after PR #29 by removing Next-only `server-only` imports from modules that are shared with Supabase Edge Functions.
+
+#### Actions Taken
+- Removed `import "server-only"` from the shared onboarding and CUBID command modules that the Edge Function deploy step bundles.
+- Removed the same marker from the shared CUBID server client helper used by the sync command.
+- Updated the Edge Function engineering doc to state that Next-only runtime markers must stay on Next-only wrappers rather than shared modules imported by Edge Functions.
+
+#### Tests and Validation Notes
+- A reachability script confirmed there are no remaining `server-only` markers in the 46 TypeScript files reachable from `supabase/functions/`.
+- `pnpm dlx node@22.22.1 /opt/homebrew/bin/pnpm lint` passed.
+- `pnpm dlx node@22.22.1 /opt/homebrew/bin/pnpm typecheck` passed.
+- `pnpm dlx node@22.22.1 /opt/homebrew/bin/pnpm test` passed.
+- `pnpm dlx node@22.22.1 /opt/homebrew/bin/pnpm build` passed.
+
+#### Reflections
+- The remote deploy path is now failing on genuinely incremental runtime-compatibility issues rather than broad workflow design problems, which means the repair work is converging.
+
+#### Suggested Next Steps
+- Push this follow-up to the same repair branch, confirm the PR checks stay green, and rerun the push-triggered `dev` Supabase deploy until every tracked function deploys successfully.
+
+---
+
 ### session v76: Fix pnpm bootstrap in Supabase deploy workflow
 - timestamp: 2026-04-26T05:16:30-04:00
 - agent: **Codex (GPT-5)**
