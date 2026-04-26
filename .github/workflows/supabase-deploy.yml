@@ -7,18 +7,28 @@ on:
       - main
     paths:
       - ".github/workflows/supabase-deploy.yml"
+      - "lib/**"
+      - "types/**"
+      - "package.json"
+      - "pnpm-lock.yaml"
       - "supabase/config.toml"
       - "supabase/functions/**"
       - "supabase/migrations/**"
+      - "vendor/cubid/**"
   push:
     branches:
       - dev
       - main
     paths:
       - ".github/workflows/supabase-deploy.yml"
+      - "lib/**"
+      - "types/**"
+      - "package.json"
+      - "pnpm-lock.yaml"
       - "supabase/config.toml"
       - "supabase/functions/**"
       - "supabase/migrations/**"
+      - "vendor/cubid/**"
   workflow_dispatch:
     inputs:
       target_environment:

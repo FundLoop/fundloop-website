@@ -1,3 +1,33 @@
+### session v78: Broaden Supabase deploy workflow path triggers
+- timestamp: 2026-04-26T05:25:30-04:00
+- agent: **Codex (GPT-5)**
+- branch: **codex/supabase-function-bundling-repair**
+- head: pending final commit
+
+#### Objective
+Ensure the Supabase deploy workflow actually runs when shared Edge Function dependencies change outside `supabase/functions/`, `supabase/migrations/`, or the workflow file itself.
+
+#### Actions Taken
+- Expanded the `Supabase Deploy` workflow `pull_request` and `push` path filters to include:
+  - `lib/**`
+  - `types/**`
+  - `package.json`
+  - `pnpm-lock.yaml`
+  - `vendor/cubid/**`
+- Kept the existing Supabase-specific path filters intact so direct schema/function changes still route the same way.
+
+#### Tests and Validation Notes
+- `go run github.com/rhysd/actionlint/cmd/actionlint@latest .github/workflows/supabase-deploy.yml` passed.
+- `ruby -e 'require "yaml"; YAML.load_file(".github/workflows/supabase-deploy.yml"); puts "workflow yaml parsed"'` passed.
+
+#### Reflections
+- Shared command logic living under `lib/` is now part of the effective Edge Function deployment surface, so the workflow trigger contract needed to reflect the real architecture instead of just the filesystem location of entrypoints.
+
+#### Suggested Next Steps
+- Push this trigger-scope follow-up to PR #30 so the Supabase dry-run reruns on the PR, then merge and watch the real `dev` deploy again.
+
+---
+
 ### session v77: Remove Next-only server markers from Edge Function shared modules
 - timestamp: 2026-04-26T05:20:30-04:00
 - agent: **Codex (GPT-5)**
