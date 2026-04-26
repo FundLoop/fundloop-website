@@ -1,4 +1,4 @@
-import type { Json } from "../../types/supabase"
+import type { Json } from "../../types/supabase.ts"
 import {
   type ManagedCryptoPaymentMethodSummary,
   type ProjectCryptoRouteCreateInput,
@@ -6,8 +6,8 @@ import {
   type ProjectCryptoRouteMoveInput,
   type ProjectCryptoRouteUpdateInput,
   type ProjectOnchainPaymentSubmissionRecordInput,
-} from "../payments/project-payment-operations-command"
-import { edgeCommandFailure, edgeCommandSuccess, type EdgeCommandResult } from "./result"
+} from "../payments/project-payment-operations-command.ts"
+import { edgeCommandFailure, edgeCommandSuccess, type EdgeCommandResult } from "./result.ts"
 
 export const PROJECT_CRYPTO_ROUTE_CREATE_FUNCTION = "project-crypto-route-create"
 export const PROJECT_CRYPTO_ROUTE_UPDATE_FUNCTION = "project-crypto-route-update"

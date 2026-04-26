@@ -1,4 +1,4 @@
-import type { Tables } from "../../types/supabase"
+import type { Tables } from "../../types/supabase.ts"
 
 export function isPlainObject(value: unknown): value is Record<string, unknown> {
   return Boolean(value && typeof value === "object" && !Array.isArray(value))

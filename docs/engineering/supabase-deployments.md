@@ -49,6 +49,8 @@ Edge Functions are deployed by enumerating each local function directory under `
 supabase functions deploy "<function-name>" --project-ref "$SUPABASE_PROJECT_REF"
 ```
 
+Before bundling functions on deploy runs, the workflow installs repo dependencies with `pnpm install --frozen-lockfile` so vendored package dependencies such as the local CUBID packages are available to the Deno bundler. `supabase/functions/deno.json` enables `nodeModulesDir` for that bundle step.
+
 The workflow pins the Supabase CLI version instead of using `latest`; update it deliberately during normal dependency/tooling triage.
 
 The workflow never runs remote seeds, never resets a remote database, and never writes Supabase function secrets.

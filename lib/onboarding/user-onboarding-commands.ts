@@ -1,13 +1,13 @@
 import "server-only"
 
-import type { Tables } from "../../types/supabase"
+import type { Tables } from "../../types/supabase.ts"
 import {
   mergeUserOnboardingPayload,
   type UserOnboardingPayload,
   type UserOnboardingScreen,
-} from "../onboarding"
-import type { OnboardingCommandClient } from "./command-utils"
-import { parseInteger } from "./command-utils"
+} from "../onboarding.ts"
+import type { OnboardingCommandClient } from "./command-utils.ts"
+import { parseInteger } from "./command-utils.ts"
 
 type UserDraftCommandFailureCode = "not_authenticated" | "draft_save_failed" | "draft_clear_failed"
 type UserPublishCommandFailureCode =

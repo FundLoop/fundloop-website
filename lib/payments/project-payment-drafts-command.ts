@@ -1,7 +1,7 @@
 import type { SupabaseClient } from "@supabase/supabase-js"
-import type { Database } from "../../types/supabase"
-import type { NormalizedProjectPaymentDraft } from "../payments"
-import { mapPaymentRecordSummary, type PaymentRecordSummary, type PaymentRecordSummaryRow } from "./payment-record-summary"
+import type { Database } from "../../types/supabase.ts"
+import type { NormalizedProjectPaymentDraft } from "../payments.ts"
+import { mapPaymentRecordSummary, type PaymentRecordSummary, type PaymentRecordSummaryRow } from "./payment-record-summary.ts"
 
 type ProjectAdminProjectRow = {
   id: number

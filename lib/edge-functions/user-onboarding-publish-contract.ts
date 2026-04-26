@@ -1,6 +1,6 @@
-import type { RelationshipChoice } from "../onboarding"
-import { edgeCommandFailure, edgeCommandSuccess, type EdgeCommandResult } from "./result"
-import { isPlainObject } from "./onboarding-contract-utils"
+import type { RelationshipChoice } from "../onboarding.ts"
+import { edgeCommandFailure, edgeCommandSuccess, type EdgeCommandResult } from "./result.ts"
+import { isPlainObject } from "./onboarding-contract-utils.ts"
 
 export const USER_ONBOARDING_PUBLISH_FUNCTION = "user-onboarding-publish"
 

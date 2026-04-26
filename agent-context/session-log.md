@@ -1,3 +1,39 @@
+### session v75: Repair Supabase Edge Function bundling for remote deploys
+- timestamp: 2026-04-26T05:11:00-04:00
+- agent: **Codex (GPT-5)**
+- branch: **codex/supabase-function-bundling-repair**
+- head: pending final commit
+
+#### Objective
+Fix the remaining `Supabase Deploy` failure on `dev` after the entrypoint repair by making the shared Edge Function import graph and CI bundle environment Deno-compatible.
+
+#### Actions Taken
+- Rewrote the shared Edge Function dependency graph to use explicit `.ts` and `.json` local import specifiers anywhere the Supabase Deno bundle step reaches into `lib/`.
+- Replaced `@/` alias usage in the CUBID snapshot/sync modules that are imported by Edge Functions with explicit relative imports.
+- Added `allowImportingTsExtensions` to the root TypeScript config so the app-side typecheck and build continue to accept the Deno-safe import specifiers.
+- Added `supabase/functions/deno.json` with `nodeModulesDir` enabled so vendored package dependencies remain available during Supabase function bundling.
+- Updated the Supabase deploy workflow to install repo dependencies before deploying Edge Functions.
+- Updated the Edge Function and Supabase deployment engineering docs to capture the Deno import rules and bundle dependency install requirement.
+
+#### Tests and Validation Notes
+- `pnpm dlx node@22.22.1 /opt/homebrew/bin/pnpm lint` passed.
+- `pnpm dlx node@22.22.1 /opt/homebrew/bin/pnpm typecheck` passed.
+- `pnpm dlx node@22.22.1 /opt/homebrew/bin/pnpm test` passed.
+- `pnpm dlx node@22.22.1 /opt/homebrew/bin/pnpm build` passed.
+- `go run github.com/rhysd/actionlint/cmd/actionlint@latest .github/workflows/supabase-deploy.yml` passed.
+- `ruby -e 'require "yaml"; YAML.load_file(".github/workflows/supabase-deploy.yml"); puts "workflow yaml parsed"'` passed.
+- `git diff --check` passed.
+- A reachability script confirmed every TypeScript file in the Supabase function dependency graph now uses explicit `.ts` or `.json` local specifiers.
+- Local `supabase functions serve` smoke was blocked because the currently running local Supabase containers are under the older `everfund` project id while `supabase/config.toml` now targets `fundloop`, so the CLI reported the local stack as not running for this worktree.
+
+#### Reflections
+- The real deploy path is now healthy for migrations, directory enumeration, and entrypoint naming; the last unstable layer was the Deno bundler reaching app-shared modules that still assumed Node-style resolution and preinstalled dependencies.
+
+#### Suggested Next Steps
+- Push this branch, open a PR to `dev`, confirm the PR-scoped dry-run stays green, merge, and watch the follow-up push-triggered `Supabase Deploy` run until Edge Function deployment succeeds end to end.
+
+---
+
 ### session v74: Align Supabase function entrypoints with CLI deploy expectations
 - timestamp: 2026-04-26T04:57:45-04:00
 - agent: **Codex (GPT-5)**
