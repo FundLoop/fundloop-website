@@ -1,7 +1,7 @@
 import { validateUserCubidSyncProfileInput } from "../../../lib/edge-functions/user-cubid-sync-profile-contract.ts"
 import { edgeCommandFailure, edgeCommandSuccess } from "../../../lib/edge-functions/result.ts"
 import { executeSyncCubidProfileCommand } from "../../../lib/cubid/sync-profile-command.ts"
-import { authenticateRequest, corsHeaders, json, parseJsonBody, serve } from "../_shared/command-runtime.js"
+import { authenticateRequest, corsHeaders, json, parseJsonBody, serve } from "../_shared/command-runtime.ts"
 
 async function handleRequest(request) {
   if (request.method === "OPTIONS") {

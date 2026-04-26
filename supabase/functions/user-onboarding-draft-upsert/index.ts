@@ -1,7 +1,7 @@
-import { validateUserOnboardingPublishInput } from "../../../lib/edge-functions/user-onboarding-publish-contract.ts"
+import { validateUserOnboardingDraftUpsertInput } from "../../../lib/edge-functions/user-onboarding-draft-upsert-contract.ts"
 import { edgeCommandFailure, edgeCommandSuccess } from "../../../lib/edge-functions/result.ts"
-import { executeUserOnboardingPublishCommand } from "../../../lib/onboarding/user-onboarding-commands.ts"
-import { authenticateRequest, corsHeaders, json, parseJsonBody, serve } from "../_shared/command-runtime.js"
+import { executeUserOnboardingDraftUpsertCommand } from "../../../lib/onboarding/user-onboarding-commands.ts"
+import { authenticateRequest, corsHeaders, json, parseJsonBody, serve } from "../_shared/command-runtime.ts"
 
 async function handleRequest(request) {
   if (request.method === "OPTIONS") {
@@ -13,7 +13,11 @@ async function handleRequest(request) {
   }
 
   const bodyResult = await parseJsonBody(request)
-  const validation = validateUserOnboardingPublishInput(bodyResult.ok ? bodyResult.body : undefined)
+  if (!bodyResult.ok) {
+    return json(edgeCommandFailure("invalid_payload", bodyResult.error))
+  }
+
+  const validation = validateUserOnboardingDraftUpsertInput(bodyResult.body)
   if (!validation.ok) {
     return json(validation)
   }
@@ -23,9 +27,10 @@ async function handleRequest(request) {
     return json(edgeCommandFailure(auth.code ?? "function_not_configured", auth.error))
   }
 
-  const result = await executeUserOnboardingPublishCommand(auth.adminClient, {
+  const result = await executeUserOnboardingDraftUpsertCommand(auth.adminClient, {
     actorUserId: auth.user.id,
-    actorEmail: auth.user.email ?? null,
+    currentScreen: validation.data.currentScreen,
+    payload: validation.data.payload,
   })
 
   if (!result.ok) {
