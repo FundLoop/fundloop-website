@@ -34,13 +34,13 @@ The workflow parses `<project-ref>` from that username and fails before deployme
 Database migrations are deployed with:
 
 ```bash
-supabase db push --db-url "$SUPABASE_DB_URL"
+supabase db push --yes --db-url "$SUPABASE_DB_URL"
 ```
 
 Pull requests use the same target resolution but run:
 
 ```bash
-supabase db push --db-url "$SUPABASE_DB_URL" --dry-run
+supabase db push --yes --db-url "$SUPABASE_DB_URL" --dry-run
 ```
 
 Edge Functions are deployed in one command:
