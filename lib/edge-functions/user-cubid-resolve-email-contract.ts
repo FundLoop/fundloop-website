@@ -1,4 +1,4 @@
-import { edgeCommandFailure, edgeCommandSuccess, type EdgeCommandResult } from "./result"
+import { edgeCommandFailure, edgeCommandSuccess, type EdgeCommandResult } from "./result.ts"
 
 export const USER_CUBID_RESOLVE_EMAIL_FUNCTION = "user-cubid-resolve-email"
 

@@ -2,7 +2,7 @@ import "server-only"
 
 import { createCubidApiClient } from "@cubid/api"
 import { createCubidWeb2Client } from "@cubid/web2"
-import { getCubidConfig, getCubidWeb2Config } from "./config"
+import { getCubidConfig, getCubidWeb2Config } from "./config.ts"
 
 export function createServerCubidApiClient() {
   const config = getCubidConfig()

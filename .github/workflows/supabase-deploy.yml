@@ -57,6 +57,14 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Enable Corepack
+        run: corepack enable
+
       - name: Setup Supabase CLI
         uses: supabase/setup-cli@v1
         with:
@@ -164,6 +172,10 @@ jobs:
           esac
 
           supabase db push --yes --db-url "$supabase_db_url"
+
+      - name: Install function bundle dependencies
+        if: steps.target.outputs.mode == 'deploy'
+        run: pnpm install --frozen-lockfile
 
       - name: Deploy Edge Functions
         if: steps.target.outputs.mode == 'deploy'

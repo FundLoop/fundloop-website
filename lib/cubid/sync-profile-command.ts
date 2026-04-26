@@ -1,16 +1,16 @@
 import "server-only"
 
 import type { SupabaseClient } from "@supabase/supabase-js"
-import type { Database } from "@/types/supabase"
-import { executeResolveCubidIdentityByEmailCommand } from "@/lib/cubid/resolve-email-command"
-import { createServerCubidApiClient } from "@/lib/cubid/server-client"
-import { getMissingRecommendedCredentials, inferSnapshotIdentityStatus, normalizeCubidIdentitySnapshot } from "@/lib/cubid/snapshot"
+import type { Database } from "../../types/supabase.ts"
+import { executeResolveCubidIdentityByEmailCommand } from "./resolve-email-command.ts"
+import { createServerCubidApiClient } from "./server-client.ts"
+import { getMissingRecommendedCredentials, inferSnapshotIdentityStatus, normalizeCubidIdentitySnapshot } from "./snapshot.ts"
 import {
   isResolvedCubidIdentityStatus,
   toCubidIdentitySnapshot,
   toCubidIdentitySnapshotSummary,
   type CubidIdentitySnapshotRecord,
-} from "@/lib/cubid/types"
+} from "./types.ts"
 
 type CubidSyncFailureCode =
   | "missing_email"

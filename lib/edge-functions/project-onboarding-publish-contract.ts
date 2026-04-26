@@ -1,5 +1,5 @@
-import { edgeCommandFailure, edgeCommandSuccess, type EdgeCommandResult } from "./result"
-import { isPlainObject, isNullableString } from "./onboarding-contract-utils"
+import { edgeCommandFailure, edgeCommandSuccess, type EdgeCommandResult } from "./result.ts"
+import { isPlainObject, isNullableString } from "./onboarding-contract-utils.ts"
 
 export const PROJECT_ONBOARDING_PUBLISH_FUNCTION = "project-onboarding-publish"
 

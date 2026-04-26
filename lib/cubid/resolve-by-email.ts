@@ -1,7 +1,7 @@
 import type { CubidApiClient, CubidApiClientConfig } from "@cubid/api"
 import { createCubidApiClient } from "@cubid/api"
-import { getCubidConfig, type CubidConfig } from "./config"
-import type { CubidIdentityLinkState } from "./types"
+import { getCubidConfig, type CubidConfig } from "./config.ts"
+import type { CubidIdentityLinkState } from "./types.ts"
 
 type ResolveCubidIdentityByEmailInput = {
   email: string

@@ -1,12 +1,12 @@
 import type { SupabaseClient } from "@supabase/supabase-js"
-import type { Database, Json, Tables } from "../../types/supabase"
+import type { Database, Json, Tables } from "../../types/supabase.ts"
 import {
   getPromotedDefaultRouteId,
   moveProjectCryptoRouteState,
   renumberProjectCryptoRouteStates,
   type ProjectCryptoRouteState,
   type RouteMoveDirection,
-} from "../project-crypto-routes"
+} from "../project-crypto-routes.ts"
 
 export type ManagedCryptoPaymentMethodSummary = {
   id: number

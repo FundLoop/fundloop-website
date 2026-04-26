@@ -1,6 +1,6 @@
-import { validateProjectPaymentDrafts, type NormalizedProjectPaymentDraft, type ProjectPaymentDraftInput } from "../payments"
-import type { PaymentRecordSummary } from "../payments/payment-record-summary"
-import { edgeCommandFailure, edgeCommandSuccess, type EdgeCommandResult } from "./result"
+import { validateProjectPaymentDrafts, type NormalizedProjectPaymentDraft, type ProjectPaymentDraftInput } from "../payments.ts"
+import type { PaymentRecordSummary } from "../payments/payment-record-summary.ts"
+import { edgeCommandFailure, edgeCommandSuccess, type EdgeCommandResult } from "./result.ts"
 
 export const PROJECT_PAYMENT_DRAFTS_CREATE_FUNCTION = "project-payment-drafts-create"
 

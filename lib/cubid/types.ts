@@ -1,4 +1,4 @@
-import type { Database, Json } from "../../types/supabase"
+import type { Database, Json } from "../../types/supabase.ts"
 
 export type CubidIdentityStatus = Database["public"]["Enums"]["cubid_identity_status"]
 

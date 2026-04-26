@@ -1,4 +1,4 @@
-import { edgeCommandSuccess, type EdgeCommandResult } from "./result"
+import { edgeCommandSuccess, type EdgeCommandResult } from "./result.ts"
 
 export const PROJECT_ONBOARDING_DRAFT_CLEAR_FUNCTION = "project-onboarding-draft-clear"
 

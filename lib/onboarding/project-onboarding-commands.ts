@@ -1,13 +1,13 @@
 import "server-only"
 
-import type { Json, Tables } from "../../types/supabase"
+import type { Json, Tables } from "../../types/supabase.ts"
 import {
   mergeProjectOnboardingPayload,
   type ProjectOnboardingPayload,
   type ProjectOnboardingScreen,
-} from "../onboarding"
-import type { OnboardingCommandClient } from "./command-utils"
-import { getCryptoContractMethodId, parseDecimal, parseInteger } from "./command-utils"
+} from "../onboarding.ts"
+import type { OnboardingCommandClient } from "./command-utils.ts"
+import { getCryptoContractMethodId, parseDecimal, parseInteger } from "./command-utils.ts"
 
 type ProjectDraftCommandFailureCode = "not_authenticated" | "draft_save_failed" | "draft_clear_failed"
 type ProjectPublishCommandFailureCode =

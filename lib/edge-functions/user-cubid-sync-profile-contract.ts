@@ -1,4 +1,4 @@
-import { edgeCommandFailure, edgeCommandSuccess, type EdgeCommandResult } from "./result"
+import { edgeCommandFailure, edgeCommandSuccess, type EdgeCommandResult } from "./result.ts"
 
 export const USER_CUBID_SYNC_PROFILE_FUNCTION = "user-cubid-sync-profile"
 

@@ -1,4 +1,4 @@
-import type { OnchainSubmissionSummary } from "../onchain/payment-submissions"
+import type { OnchainSubmissionSummary } from "../onchain/payment-submissions.ts"
 
 export type PaymentRecordSummary = {
   id: number

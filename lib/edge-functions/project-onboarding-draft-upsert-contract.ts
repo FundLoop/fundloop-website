@@ -4,10 +4,10 @@ import {
   sanitizeProjectOnboardingPayload,
   type ProjectOnboardingPayload,
   type ProjectOnboardingScreen,
-} from "../onboarding"
-import type { Tables } from "../../types/supabase"
-import { edgeCommandFailure, edgeCommandSuccess, type EdgeCommandResult } from "./result"
-import { isPlainObject, isProjectOnboardingDraftRow } from "./onboarding-contract-utils"
+} from "../onboarding.ts"
+import type { Tables } from "../../types/supabase.ts"
+import { edgeCommandFailure, edgeCommandSuccess, type EdgeCommandResult } from "./result.ts"
+import { isPlainObject, isProjectOnboardingDraftRow } from "./onboarding-contract-utils.ts"
 
 export const PROJECT_ONBOARDING_DRAFT_UPSERT_FUNCTION = "project-onboarding-draft-upsert"
 

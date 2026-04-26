@@ -1,11 +1,11 @@
 import type { FetchIdentityResponse, FetchScoreResponse, FetchStampsResponse, FetchUserDataResponse } from "@cubid/api"
-import type { Json } from "@/types/supabase"
+import type { Json } from "../../types/supabase.ts"
 import {
   CUBID_RECOMMENDED_STAMPS,
   type CubidIdentitySnapshot,
   type CubidIdentityStatus,
   toDistinctStrings,
-} from "./types"
+} from "./types.ts"
 
 type CubidSnapshotNormalizationInput = {
   cubidUserId: string

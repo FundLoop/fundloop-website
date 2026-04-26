@@ -1,7 +1,7 @@
 import type { SupabaseClient } from "@supabase/supabase-js"
-import type { Database } from "../../types/supabase"
-import { resolveCubidIdentityByEmail } from "./resolve-by-email"
-import { type CubidIdentityLinkState, isResolvedCubidIdentityStatus } from "./types"
+import type { Database } from "../../types/supabase.ts"
+import { resolveCubidIdentityByEmail } from "./resolve-by-email.ts"
+import { type CubidIdentityLinkState, isResolvedCubidIdentityStatus } from "./types.ts"
 
 type CubidResolutionCommandFailureCode =
   | "missing_email"
