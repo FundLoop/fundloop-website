@@ -1,3 +1,31 @@
+### session v81: Exclude Supabase helper directories from function deployment
+- timestamp: 2026-04-26T16:02:58-04:00
+- agent: **Codex (GPT-5)**
+- branch: **codex/supabase-skip-vendor-dir**
+- head: pending final commit
+
+#### Objective
+Fix the follow-up `dev` Supabase deploy failure after PR #32 by teaching the deploy workflow to skip helper-only directories such as `_vendor` when enumerating Edge Functions.
+
+#### Actions Taken
+- Updated `.github/workflows/supabase-deploy.yml` so the function deploy loop ignores both `_shared` and `_vendor`.
+- Updated the Supabase deployment and Edge Function docs to record that helper directories participate in bundling but are not deployable functions.
+
+#### Tests and Validation Notes
+- `go run github.com/rhysd/actionlint/cmd/actionlint@latest .github/workflows/supabase-deploy.yml` passed.
+- `ruby -e 'require "yaml"; YAML.load_file(".github/workflows/supabase-deploy.yml"); puts "yaml ok"'` passed.
+- `git diff --check` passed.
+- End-to-end confirmation will come from the PR dry-run plus the post-merge `dev` Supabase deploy workflow.
+
+#### Reflections
+- The Cubid import-path repair is holding; this second failure is just a deployment enumerator assumption that no longer matches the repo layout.
+- Keeping helper directories prefixed and documented reduces the chance of repeating this class of workflow mistake as more function-local runtime assets are added.
+
+#### Suggested Next Steps
+- Validate the workflow, land this narrow follow-up, and confirm the next `dev` Supabase deploy runs green end to end.
+
+---
+
 ### session v80: Vendor a Deno-visible CUBID API shim for Supabase deploys
 - timestamp: 2026-04-26T15:56:07-04:00
 - agent: **Codex (GPT-5)**
