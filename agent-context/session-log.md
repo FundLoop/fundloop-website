@@ -1,3 +1,30 @@
+### session v73: Repair Supabase function deploy enumeration
+- timestamp: 2026-04-26T04:48:22-04:00
+- agent: **Codex (GPT-5)**
+- branch: **codex/supabase-function-deploy-repair**
+- head: pending final commit
+
+#### Objective
+Fix the push-triggered Supabase deploy workflow after the migration repair landed but Edge Function deployment still failed on `dev`.
+
+#### Actions Taken
+- Changed the workflow's Edge Function deploy step to enumerate every directory under `supabase/functions/` except `_shared` and deploy each function explicitly.
+- Updated the Supabase deployment engineering doc to match the per-function deploy behavior required by the current Supabase CLI.
+
+#### Tests and Validation Notes
+- `ruby -e 'require "yaml"; YAML.load_file(".github/workflows/supabase-deploy.yml"); puts "workflow yaml parsed"'` passed.
+- `go run github.com/rhysd/actionlint/cmd/actionlint@latest .github/workflows/supabase-deploy.yml` passed.
+- `git diff --check` passed.
+- `find supabase/functions -mindepth 1 -maxdepth 1 -type d ! -name '_shared' -exec basename {} \; | sort` returned the expected deployable function list.
+
+#### Reflections
+- The migration repair was correct; the remaining failure was a CLI-behavior mismatch in the workflow, not another remote schema problem.
+
+#### Suggested Next Steps
+- Validate the updated workflow statically, PR it into `dev`, and confirm the follow-up push-triggered `Supabase Deploy` run completes both migrations and function deploys.
+
+---
+
 ### session v72: Repair Supabase deploy path for remote sequence drift
 - timestamp: 2026-04-26T04:40:39-04:00
 - agent: **Codex (GPT-5)**

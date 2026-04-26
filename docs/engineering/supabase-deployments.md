@@ -43,10 +43,10 @@ Pull requests use the same target resolution but run:
 supabase db push --yes --db-url "$SUPABASE_DB_URL" --dry-run
 ```
 
-Edge Functions are deployed in one command:
+Edge Functions are deployed by enumerating each local function directory under `supabase/functions/` except `_shared` and deploying them one by one:
 
 ```bash
-supabase functions deploy --project-ref "$SUPABASE_PROJECT_REF"
+supabase functions deploy "<function-name>" --project-ref "$SUPABASE_PROJECT_REF"
 ```
 
 The workflow pins the Supabase CLI version instead of using `latest`; update it deliberately during normal dependency/tooling triage.

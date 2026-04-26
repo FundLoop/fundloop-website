@@ -169,4 +169,19 @@ jobs:
         if: steps.target.outputs.mode == 'deploy'
         env:
           SUPABASE_PROJECT_REF: ${{ steps.target.outputs.project_ref }}
-        run: supabase functions deploy --project-ref "$SUPABASE_PROJECT_REF"
+        run: |
+          set -euo pipefail
+
+          function_names="$(
+            find supabase/functions -mindepth 1 -maxdepth 1 -type d ! -name "_shared" -exec basename {} \; | sort
+          )"
+
+          if [[ -z "${function_names}" ]]; then
+            echo "::error::No deployable Supabase Edge Functions were found under supabase/functions."
+            exit 1
+          fi
+
+          while IFS= read -r function_name; do
+            echo "Deploying Edge Function: ${function_name}"
+            supabase functions deploy "${function_name}" --project-ref "$SUPABASE_PROJECT_REF"
+          done <<< "${function_names}"
