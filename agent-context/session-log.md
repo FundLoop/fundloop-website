@@ -1,3 +1,38 @@
+### session v79: Map vendored CUBID packages for Supabase Deno bundling
+- timestamp: 2026-04-26T15:49:30-04:00
+- agent: **Codex (GPT-5)**
+- branch: **codex/supabase-cubid-deno-repair**
+- head: pending final commit
+
+#### Objective
+Fix the remaining `dev` Supabase deploy failure after payment and onboarding functions were already deploying successfully by making the CUBID Edge Function bundle path Deno-compatible.
+
+#### Actions Taken
+- Removed the unused server-side `@cubid/web2` coupling from `lib/cubid/server-client.ts` so shared Edge Function code only depends on the API package.
+- Added explicit Deno import mappings in `supabase/functions/deno.json` for:
+  - `@cubid/api`
+  - `@supabase/supabase-js`
+- Updated the Edge Function and Supabase deployment docs to capture the rule that vendored bare package specifiers must be mapped explicitly for the Supabase Deno bundler.
+
+#### Tests and Validation Notes
+- `deno info --config supabase/functions/deno.json supabase/functions/user-cubid-resolve-email/index.ts` resolved cleanly with no missing import-map dependencies.
+- `deno info --config supabase/functions/deno.json supabase/functions/user-cubid-sync-profile/index.ts` resolved cleanly with no missing import-map dependencies.
+- `pnpm dlx node@22.22.1 /opt/homebrew/bin/pnpm lint` passed.
+- `pnpm dlx node@22.22.1 /opt/homebrew/bin/pnpm typecheck` passed.
+- `pnpm dlx node@22.22.1 /opt/homebrew/bin/pnpm test` passed.
+- `pnpm dlx node@22.22.1 /opt/homebrew/bin/pnpm build` passed.
+- `go run github.com/rhysd/actionlint/cmd/actionlint@latest .github/workflows/supabase-deploy.yml` passed.
+- `git diff --check` passed.
+
+#### Reflections
+- The deploy repair is now down to a narrow runtime integration boundary with the vendored CUBID packages rather than a broader workflow or schema problem.
+- Longer term, publishing Deno-friendly `@cubid/api` and `@cubid/web2` packages from the Cubid repo would remove the need for local import-map wiring in downstream Edge runtimes.
+
+#### Suggested Next Steps
+- Push this branch, open a PR to `dev`, confirm the Supabase dry-run stays green, merge, and watch the push-triggered `dev` Supabase deploy until the CUBID functions deploy cleanly too.
+
+---
+
 ### session v78: Broaden Supabase deploy workflow path triggers
 - timestamp: 2026-04-26T05:25:30-04:00
 - agent: **Codex (GPT-5)**
