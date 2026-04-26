@@ -1,6 +1,5 @@
 import { createCubidApiClient } from "@cubid/api"
-import { createCubidWeb2Client } from "@cubid/web2"
-import { getCubidConfig, getCubidWeb2Config } from "./config.ts"
+import { getCubidConfig } from "./config.ts"
 
 export function createServerCubidApiClient() {
   const config = getCubidConfig()
@@ -10,15 +9,5 @@ export function createServerCubidApiClient() {
     baseUrl: config.baseUrl,
     dappId: config.dappId,
     fetch,
-  })
-}
-
-export function createServerCubidWeb2Client() {
-  const config = getCubidWeb2Config()
-  const apiClient = createServerCubidApiClient()
-
-  return createCubidWeb2Client(apiClient, {
-    allowPath: "/widget-allow",
-    passportOrigin: new URL(config.baseUrl).origin,
   })
 }
