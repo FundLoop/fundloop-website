@@ -1,3 +1,35 @@
+### session v80: Vendor a Deno-visible CUBID API shim for Supabase deploys
+- timestamp: 2026-04-26T15:56:07-04:00
+- agent: **Codex (GPT-5)**
+- branch: **codex/supabase-cubid-vendor-repair**
+- head: pending final commit
+
+#### Objective
+Fix the remaining `dev` Supabase deploy failure by replacing the CI-fragile `node_modules` import-map path for `@cubid/api` with a repo-tracked Deno-visible runtime mirror.
+
+#### Actions Taken
+- Repointed `supabase/functions/deno.json` so `@cubid/api` resolves to a repo-owned file under `supabase/functions/_vendor/` instead of a runner-specific `node_modules` path.
+- Added a minimal runtime-compatible `@cubid/api` mirror for the Supabase Edge Function graph covering the CUBID methods used by the onboarding and identity sync commands.
+- Updated the Supabase deployment and Edge Function engineering docs to record that unpublished packages used by Edge Functions must resolve to repo-tracked Deno-visible files.
+
+#### Tests and Validation Notes
+- `deno info --config supabase/functions/deno.json supabase/functions/user-cubid-resolve-email/index.ts` resolved cleanly and loaded the vendored CUBID API mirror.
+- `deno info --config supabase/functions/deno.json supabase/functions/user-cubid-sync-profile/index.ts` resolved cleanly and loaded the vendored CUBID API mirror.
+- `pnpm dlx node@22.22.1 /opt/homebrew/bin/pnpm lint` passed.
+- `pnpm dlx node@22.22.1 /opt/homebrew/bin/pnpm test` passed.
+- `pnpm dlx node@22.22.1 /opt/homebrew/bin/pnpm build` passed.
+- `pnpm dlx node@22.22.1 /opt/homebrew/bin/pnpm typecheck` passed after the build regenerated `.next/types`.
+- `git diff --check` passed.
+
+#### Reflections
+- The failure mode was path determinism inside the Supabase bundling container, not the CUBID command logic itself.
+- FundLoop is now insulated from pnpm layout differences, but the healthier long-term fix is still to publish a first-class Deno/Edge-consumable `@cubid/api` package from the Cubid repo.
+
+#### Suggested Next Steps
+- Run the standard repo gates, push this repair branch, open a PR to `dev`, and confirm both the PR dry-run and the post-merge `dev` Supabase deploy succeed end to end.
+
+---
+
 ### session v79: Map vendored CUBID packages for Supabase Deno bundling
 - timestamp: 2026-04-26T15:49:30-04:00
 - agent: **Codex (GPT-5)**
