@@ -141,7 +141,7 @@ jobs:
               ;;
           esac
 
-          supabase db push --db-url "$supabase_db_url" --dry-run
+          supabase db push --yes --db-url "$supabase_db_url" --dry-run
 
       - name: Deploy database migrations
         if: steps.target.outputs.mode == 'deploy'
@@ -163,7 +163,7 @@ jobs:
               ;;
           esac
 
-          supabase db push --db-url "$supabase_db_url"
+          supabase db push --yes --db-url "$supabase_db_url"
 
       - name: Deploy Edge Functions
         if: steps.target.outputs.mode == 'deploy'

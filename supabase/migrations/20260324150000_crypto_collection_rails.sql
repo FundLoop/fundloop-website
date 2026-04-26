@@ -138,18 +138,85 @@ ON public.onchain_payment_submissions (project_id, submitted_at DESC);
 CREATE INDEX idx_onchain_payment_submissions_payment_id
 ON public.onchain_payment_submissions (payment_id);
 
-INSERT INTO public.ref_payment_methods (name, code, description, display_order)
-VALUES (
-  'Crypto Contract',
-  'crypto_contract',
-  'Pay through a supported FundLoop intake contract and tag the payment with your project ID.',
-  50
-)
-ON CONFLICT (code) DO UPDATE
-SET
-  name = EXCLUDED.name,
-  description = EXCLUDED.description,
-  display_order = EXCLUDED.display_order;
+do $$
+declare
+  current_method_id integer;
+  reserved_method_id constant integer := 999;
+begin
+  select id
+  into current_method_id
+  from public.ref_payment_methods
+  where code = 'crypto_contract';
+
+  if current_method_id is null then
+    insert into public.ref_payment_methods (id, name, code, description, display_order)
+    overriding system value
+    values (
+      reserved_method_id,
+      'Crypto Contract',
+      'crypto_contract',
+      'Pay through a supported FundLoop intake contract and tag the payment with your project ID.',
+      50
+    );
+  elsif current_method_id <> reserved_method_id then
+    if exists (
+      select 1
+      from public.ref_payment_methods
+      where id = reserved_method_id
+        and code <> 'crypto_contract'
+    ) then
+      raise exception 'ref_payment_methods id % is already in use by a different method', reserved_method_id;
+    end if;
+
+    update public.ref_payment_methods
+    set
+      name = format('Crypto Contract Legacy %s', current_method_id),
+      code = format('crypto_contract_legacy_%s', current_method_id)
+    where id = current_method_id;
+
+    insert into public.ref_payment_methods (id, name, code, description, display_order)
+    overriding system value
+    values (
+      reserved_method_id,
+      'Crypto Contract',
+      'crypto_contract',
+      'Pay through a supported FundLoop intake contract and tag the payment with your project ID.',
+      50
+    );
+
+    update public.payment_methods
+    set method_id = reserved_method_id
+    where method_id = current_method_id;
+
+    update public.payments
+    set payment_method_id = reserved_method_id
+    where payment_method_id = current_method_id;
+
+    update public.projects
+    set default_payment_method_id = reserved_method_id
+    where default_payment_method_id = current_method_id;
+
+    delete from public.ref_payment_methods
+    where id = current_method_id;
+  else
+    update public.ref_payment_methods
+    set
+      name = 'Crypto Contract',
+      description = 'Pay through a supported FundLoop intake contract and tag the payment with your project ID.',
+      display_order = 50
+    where id = reserved_method_id;
+  end if;
+
+  perform setval(
+    pg_get_serial_sequence('public.ref_payment_methods', 'id'),
+    greatest(
+      reserved_method_id,
+      coalesce((select max(id) from public.ref_payment_methods), reserved_method_id)
+    ),
+    true
+  );
+end
+$$;
 
 INSERT INTO public.ref_chain_assets (
   chain_id,

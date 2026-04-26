@@ -71,14 +71,77 @@ CREATE INDEX idx_zkas_published_user_results_user_id ON public.zkas_published_us
 CREATE INDEX idx_zkas_run_project_summaries_run_id ON public.zkas_run_project_summaries (run_id, project_id);
 CREATE INDEX idx_zkas_run_project_cubid_buckets_run_id ON public.zkas_run_project_cubid_buckets (run_id, project_id);
 
-INSERT INTO public.ref_notification_types (name, code, description, display_order)
-VALUES (
-  'zkAS Published Result',
-  'zkas_published_result',
-  'Notifies a user that a verified zkActivitySum allocation has been published.',
-  200
-)
-ON CONFLICT (code) DO NOTHING;
+do $$
+declare
+  current_notification_id integer;
+  reserved_notification_id constant integer := 999;
+begin
+  select id
+  into current_notification_id
+  from public.ref_notification_types
+  where code = 'zkas_published_result';
+
+  if current_notification_id is null then
+    insert into public.ref_notification_types (id, name, code, description, display_order)
+    overriding system value
+    values (
+      reserved_notification_id,
+      'zkAS Published Result',
+      'zkas_published_result',
+      'Notifies a user that a verified zkActivitySum allocation has been published.',
+      200
+    );
+  elsif current_notification_id <> reserved_notification_id then
+    if exists (
+      select 1
+      from public.ref_notification_types
+      where id = reserved_notification_id
+        and code <> 'zkas_published_result'
+    ) then
+      raise exception 'ref_notification_types id % is already in use by a different notification type', reserved_notification_id;
+    end if;
+
+    update public.ref_notification_types
+    set
+      name = format('zkAS Published Result Legacy %s', current_notification_id),
+      code = format('zkas_published_result_legacy_%s', current_notification_id)
+    where id = current_notification_id;
+
+    insert into public.ref_notification_types (id, name, code, description, display_order)
+    overriding system value
+    values (
+      reserved_notification_id,
+      'zkAS Published Result',
+      'zkas_published_result',
+      'Notifies a user that a verified zkActivitySum allocation has been published.',
+      200
+    );
+
+    update public.user_notifications
+    set type_id = reserved_notification_id
+    where type_id = current_notification_id;
+
+    delete from public.ref_notification_types
+    where id = current_notification_id;
+  else
+    update public.ref_notification_types
+    set
+      name = 'zkAS Published Result',
+      description = 'Notifies a user that a verified zkActivitySum allocation has been published.',
+      display_order = 200
+    where id = reserved_notification_id;
+  end if;
+
+  perform setval(
+    pg_get_serial_sequence('public.ref_notification_types', 'id'),
+    greatest(
+      reserved_notification_id,
+      coalesce((select max(id) from public.ref_notification_types), reserved_notification_id)
+    ),
+    true
+  );
+end
+$$;
 
 ALTER TABLE public.zkas_published_user_results ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.zkas_run_project_summaries ENABLE ROW LEVEL SECURITY;

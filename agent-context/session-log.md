@@ -1,3 +1,34 @@
+### session v72: Repair Supabase deploy path for remote sequence drift
+- timestamp: 2026-04-26T04:40:39-04:00
+- agent: **Codex (GPT-5)**
+- branch: **codex/supabase-deploy-repair**
+- head: pending final commit
+
+#### Objective
+Repair the new remote Supabase deploy workflow so pending migrations apply cleanly against the existing dev remote and the workflow runs fully non-interactively.
+
+#### Actions Taken
+- Added `--yes` to Supabase workflow `db push` calls for both PR dry-runs and push/manual deploys.
+- Reworked the pending `crypto_contract`, `zkas_access`, and `zkas_published_result` reference-row migrations to reserve deterministic IDs, update existing rows safely, and reset identity sequences explicitly instead of relying on the remote's current identity sequence.
+- Updated the Supabase deployment engineering doc to reflect the non-interactive `db push` contract.
+
+#### Tests and Validation Notes
+- `ruby -e 'require "yaml"; YAML.load_file(".github/workflows/supabase-deploy.yml"); puts "workflow yaml parsed"'` passed.
+- `go run github.com/rhysd/actionlint/cmd/actionlint@latest .github/workflows/supabase-deploy.yml` passed.
+- `git diff --check` passed.
+- `supabase db reset --local --yes` applied every migration through `20260417193000_onchain_reconciliation_atomic_update.sql` and seeded `supabase/seed.sql`; the post-reset container restart briefly tripped a local storage readiness error before recovering.
+- `supabase status` returned healthy local URLs after the reset finished settling.
+
+#### Reflections
+- `ref_payment_methods` was only the first visible failure; patching the other pending reference-row inserts on the same branch avoids a second and third remote deploy failure immediately after the first repair lands.
+- The later rekey migrations already established the right deterministic-ID pattern, so pulling that logic forward was the least risky repair.
+
+#### Suggested Next Steps
+- Push this branch, open a PR to `dev`, and confirm the PR-scoped `Supabase dry-run` stays green against the dev target.
+- Merge once the dry-run and validation checks pass, then watch the follow-up push-triggered `Supabase Deploy` run on `dev` until database migrations and function deploy both succeed.
+
+---
+
 ### session v71: Address Codex review feedback on PR 25
 - timestamp: 2026-04-21T02:05:24-04:00
 - agent: **Codex (GPT-5)**
