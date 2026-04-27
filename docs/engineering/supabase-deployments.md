@@ -49,7 +49,9 @@ Edge Functions are deployed by enumerating each local function directory under `
 supabase functions deploy "<function-name>" --project-ref "$SUPABASE_PROJECT_REF"
 ```
 
-Before bundling functions on deploy runs, the workflow installs repo dependencies with `pnpm install --frozen-lockfile` so vendored package dependencies remain available to the Deno bundler. `supabase/functions/deno.json` enables `nodeModulesDir` for that bundle step and maps unpublished bare package specifiers such as `@cubid/api` to repo-tracked Deno-visible ESM mirrors under `supabase/functions/_vendor/` instead of relying on runner-specific `node_modules` paths.
+Before bundling functions on deploy runs, the workflow installs repo dependencies with `pnpm install --frozen-lockfile` so package dependencies remain available to the Deno bundler. `supabase/functions/deno.json` enables `nodeModulesDir` for that bundle step and can map shared-package imports explicitly when Deno cannot resolve the normal app import path on its own.
+
+FundLoop no longer keeps a function-local CUBID mirror under `supabase/functions/_vendor/`. Until the Cubid repo publishes a first-class JSR package for `@cubid/api`, the Edge runtime maps `@cubid/api` to the installed package entrypoint under the repo root `node_modules/`. That means remote deploys still require the workflow’s `pnpm install --frozen-lockfile` bootstrap before function bundling.
 
 The workflow pins the Supabase CLI version instead of using `latest`; update it deliberately during normal dependency/tooling triage.
 
@@ -58,5 +60,11 @@ The workflow never runs remote seeds, never resets a remote database, and never 
 ## Function Runtime Secrets
 
 Each Supabase project must already have the runtime secrets needed by the functions, including Supabase URL/key values, CUBID credentials, wallet/runtime configuration, and any future integration keys.
+
+Operator-style functions that support internal system callers also require:
+
+- `FUNDLOOP_PAYMENTS_CRON_SECRET`
+
+That secret must be configured both in the Next.js runtime and in the target Supabase project so the secret-gated internal route can invoke the matching Edge Function safely.
 
 Use Supabase project settings or the Supabase CLI secrets workflow to manage those values deliberately per environment.

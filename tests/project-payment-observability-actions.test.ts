@@ -1,8 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from "vitest"
 
 const revalidatePath = vi.fn()
-const recordPaymentFlowEvent = vi.fn()
-const requireInternalAdminActor = vi.fn()
 
 function createQueryResponse(response: unknown) {
   return {
@@ -65,14 +63,6 @@ vi.mock("next/cache", () => ({
   revalidatePath,
 }))
 
-vi.mock("@/lib/observability/payment-flow-server", () => ({
-  recordPaymentFlowEvent,
-}))
-
-vi.mock("@/lib/zkas/auth", () => ({
-  requireInternalAdminActor,
-}))
-
 vi.mock("@/lib/onchain/payment-reconciliation", () => ({
   listProjectOnchainSubmissionSummaries: vi.fn(),
   runOnchainPaymentReconciliation: vi.fn(),
@@ -88,8 +78,6 @@ describe("project payment action observability", () => {
   beforeEach(() => {
     vi.resetModules()
     revalidatePath.mockReset()
-    recordPaymentFlowEvent.mockReset()
-    requireInternalAdminActor.mockReset()
   })
 
   it("logs receipt-recording failure when an unresolved submission already exists", async () => {
@@ -149,36 +137,5 @@ describe("project payment action observability", () => {
 
     expect(result.ok).toBe(false)
     expect(result.ok ? null : result.error.submissionId).toBe(88)
-  })
-
-  it("logs admin-confirmation failure when the payment already has an onchain submission", async () => {
-    requireInternalAdminActor.mockResolvedValue({ userId: "admin-1" })
-
-    const adminSupabase = createSupabaseMock({
-      payments: [{ data: { id: 22, project_id: 7, projects: { slug: "fundloop-studio" } }, error: null }],
-      ref_payment_statuses: [{ data: { id: 9, code: "confirmed" }, error: null }],
-      onchain_payment_submissions: [{ data: { id: 44 }, error: null }],
-    })
-
-    vi.doMock("@/lib/supabase-admin", () => ({
-      getAdminSupabaseClient: () => adminSupabase,
-    }))
-    vi.doMock("@/lib/supabase-server", () => ({
-      createServerSupabaseClient: async () => createSupabaseMock({}),
-    }))
-
-    const { confirmInternalPaymentReceipt } = await import("@/app/actions/project-payment-actions")
-    const result = await confirmInternalPaymentReceipt(22, "attempt-admin-1")
-
-    expect(result.ok).toBe(false)
-    expect(recordPaymentFlowEvent).toHaveBeenCalledWith(
-      expect.objectContaining({
-        flow: "admin_confirmation",
-        outcome: "failure",
-        attemptId: "attempt-admin-1",
-        paymentId: 22,
-        submissionId: 44,
-      }),
-    )
   })
 })

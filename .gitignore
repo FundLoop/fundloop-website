@@ -3,6 +3,7 @@
 # dependencies
 /node_modules
 /contracts/node_modules
+/supabase/functions/node_modules
 /contracts/artifacts
 /contracts/cache
 /contracts/coverage

@@ -1,8 +1,8 @@
 import { z } from "zod"
-import localManifestJson from "@/lib/onchain/deployments/local.json"
-import previewManifestJson from "@/lib/onchain/deployments/preview.json"
-import productionManifestJson from "@/lib/onchain/deployments/production.json"
-import { SUPPORTED_CHAIN_CONFIGS, SUPPORTED_CHAIN_KEYS, type SupportedChainKey } from "@/lib/onchain/supported-chains"
+import localManifestJson from "./deployments/local.json" with { type: "json" }
+import previewManifestJson from "./deployments/preview.json" with { type: "json" }
+import productionManifestJson from "./deployments/production.json" with { type: "json" }
+import { SUPPORTED_CHAIN_CONFIGS, SUPPORTED_CHAIN_KEYS, type SupportedChainKey } from "./supported-chains.ts"
 
 export const ZERO_ADDRESS = "0x0000000000000000000000000000000000000000"
 export const ZERO_REOWN_PROJECT_ID = "00000000000000000000000000000000"
@@ -40,6 +40,40 @@ export type WalletRuntimeConfig = {
 export type DeploymentAvailability = {
   available: boolean
   reason: string | null
+}
+
+export type RuntimeEnv = Record<string, string | undefined>
+
+function getDenoRuntime() {
+  const runtime = globalThis as typeof globalThis & {
+    Deno?: {
+      env?: {
+        get?: (name: string) => string | undefined
+      }
+    }
+  }
+
+  return typeof globalThis === "object" && globalThis && "Deno" in runtime ? runtime.Deno : undefined
+}
+
+export function getDefaultRuntimeEnv(): RuntimeEnv {
+  if (typeof process !== "undefined" && process?.env) {
+    return process.env as RuntimeEnv
+  }
+
+  const denoRuntime = getDenoRuntime()
+  return new Proxy(
+    {},
+    {
+      get(_target, property) {
+        if (typeof property !== "string") {
+          return undefined
+        }
+
+        return denoRuntime?.env?.get?.(property)
+      },
+    },
+  ) as RuntimeEnv
 }
 
 const deploymentEnvironmentSchema = z.enum(["local", "preview", "production"])
@@ -120,7 +154,7 @@ const DEPLOYMENT_MANIFESTS: Record<DeploymentEnvironment, DeploymentManifest> = 
   production: manifestSchema.parse(productionManifestJson),
 }
 
-function getManifestOverride(environment: DeploymentEnvironment, env: NodeJS.ProcessEnv = process.env) {
+function getManifestOverride(environment: DeploymentEnvironment, env: RuntimeEnv = getDefaultRuntimeEnv()) {
   if (environment !== "local") {
     return null
   }
@@ -146,7 +180,7 @@ function isConfiguredReownProjectId(value: string | undefined) {
   return normalized.length > 0 && normalized !== ZERO_REOWN_PROJECT_ID
 }
 
-export function resolveDeploymentEnvironment(env: NodeJS.ProcessEnv = process.env): DeploymentEnvironment {
+export function resolveDeploymentEnvironment(env: RuntimeEnv = getDefaultRuntimeEnv()): DeploymentEnvironment {
   const explicitValue = env.FUNDLOOP_DEPLOYMENT_ENV?.trim().toLowerCase()
   const parsedExplicit = deploymentEnvironmentSchema.safeParse(explicitValue)
   if (parsedExplicit.success) {
@@ -162,7 +196,7 @@ export function resolveDeploymentEnvironment(env: NodeJS.ProcessEnv = process.en
   return "local"
 }
 
-export function getDeploymentManifest(environment: DeploymentEnvironment, env: NodeJS.ProcessEnv = process.env): DeploymentManifest {
+export function getDeploymentManifest(environment: DeploymentEnvironment, env: RuntimeEnv = getDefaultRuntimeEnv()): DeploymentManifest {
   return getManifestOverride(environment, env) ?? DEPLOYMENT_MANIFESTS[environment]
 }
 
@@ -171,7 +205,7 @@ export function isStrictWalletValidationEnvironment(environment: DeploymentEnvir
 }
 
 export function buildWalletRuntimeConfig(
-  env: NodeJS.ProcessEnv = process.env,
+  env: RuntimeEnv = getDefaultRuntimeEnv(),
   environment = resolveDeploymentEnvironment(env),
 ): WalletRuntimeConfig {
   const manifest = getDeploymentManifest(environment, env)
@@ -237,7 +271,7 @@ export function buildWalletRuntimeConfig(
   }
 }
 
-export function getWalletRuntimeConfig(env: NodeJS.ProcessEnv = process.env) {
+export function getWalletRuntimeConfig(env: RuntimeEnv = getDefaultRuntimeEnv()) {
   return buildWalletRuntimeConfig(env)
 }
 

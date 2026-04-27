@@ -1,9 +1,9 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
 
-const runOnchainPaymentReconciliation = vi.fn()
+const invokeInternalServerEdgeCommand = vi.fn()
 
-vi.mock("@/lib/onchain/payment-reconciliation", () => ({
-  runOnchainPaymentReconciliation,
+vi.mock("@/lib/edge-functions/invoke-internal-server", () => ({
+  invokeInternalServerEdgeCommand,
 }))
 
 describe("POST /api/internal/payments/reconcile-onchain", () => {
@@ -11,7 +11,7 @@ describe("POST /api/internal/payments/reconcile-onchain", () => {
 
   beforeEach(() => {
     process.env.FUNDLOOP_PAYMENTS_CRON_SECRET = "test-secret"
-    runOnchainPaymentReconciliation.mockReset()
+    invokeInternalServerEdgeCommand.mockReset()
   })
 
   afterEach(() => {
@@ -34,15 +34,18 @@ describe("POST /api/internal/payments/reconcile-onchain", () => {
   })
 
   it("runs reconciliation when the bearer secret matches", async () => {
-    runOnchainPaymentReconciliation.mockResolvedValue({
-      source: "cron",
-      processedCount: 1,
-      confirmedCount: 1,
-      failedCount: 0,
-      confirmingCount: 0,
-      unresolvedCount: 0,
-      results: [],
-      touchedProjectSlugs: ["fundloop-studio"],
+    invokeInternalServerEdgeCommand.mockResolvedValue({
+      ok: true,
+      data: {
+        source: "cron",
+        processedCount: 1,
+        confirmedCount: 1,
+        failedCount: 0,
+        confirmingCount: 0,
+        unresolvedCount: 0,
+        results: [],
+        touchedProjectSlugs: ["fundloop-studio"],
+      },
     })
 
     const { POST } = await import("@/app/api/internal/payments/reconcile-onchain/route")
@@ -57,8 +60,7 @@ describe("POST /api/internal/payments/reconcile-onchain", () => {
       }),
     )
 
-    expect(runOnchainPaymentReconciliation).toHaveBeenCalledWith({
-      source: "cron",
+    expect(invokeInternalServerEdgeCommand).toHaveBeenCalledWith("admin-onchain-payment-reconciliation-run", {
       limit: 5,
       paymentId: 17,
       submissionId: undefined,
@@ -74,15 +76,18 @@ describe("POST /api/internal/payments/reconcile-onchain", () => {
   })
 
   it("coerces numeric JSON strings before running reconciliation", async () => {
-    runOnchainPaymentReconciliation.mockResolvedValue({
-      source: "cron",
-      processedCount: 0,
-      confirmedCount: 0,
-      failedCount: 0,
-      confirmingCount: 0,
-      unresolvedCount: 0,
-      results: [],
-      touchedProjectSlugs: [],
+    invokeInternalServerEdgeCommand.mockResolvedValue({
+      ok: true,
+      data: {
+        source: "cron",
+        processedCount: 0,
+        confirmedCount: 0,
+        failedCount: 0,
+        confirmingCount: 0,
+        unresolvedCount: 0,
+        results: [],
+        touchedProjectSlugs: [],
+      },
     })
 
     const { POST } = await import("@/app/api/internal/payments/reconcile-onchain/route")
@@ -97,8 +102,7 @@ describe("POST /api/internal/payments/reconcile-onchain", () => {
       }),
     )
 
-    expect(runOnchainPaymentReconciliation).toHaveBeenCalledWith({
-      source: "cron",
+    expect(invokeInternalServerEdgeCommand).toHaveBeenCalledWith("admin-onchain-payment-reconciliation-run", {
       limit: 5,
       paymentId: 17,
       submissionId: 21,
@@ -120,10 +124,31 @@ describe("POST /api/internal/payments/reconcile-onchain", () => {
     )
 
     expect(response.status).toBe(400)
-    expect(runOnchainPaymentReconciliation).not.toHaveBeenCalled()
+    expect(invokeInternalServerEdgeCommand).not.toHaveBeenCalled()
     await expect(response.json()).resolves.toMatchObject({
       ok: false,
       error: "limit must be a positive integer.",
+    })
+  })
+
+  it("rejects malformed JSON without running reconciliation", async () => {
+    const { POST } = await import("@/app/api/internal/payments/reconcile-onchain/route")
+    const response = await POST(
+      new Request("http://localhost/api/internal/payments/reconcile-onchain", {
+        method: "POST",
+        headers: {
+          authorization: "Bearer test-secret",
+          "content-type": "application/json",
+        },
+        body: "{",
+      }),
+    )
+
+    expect(response.status).toBe(400)
+    expect(invokeInternalServerEdgeCommand).not.toHaveBeenCalled()
+    await expect(response.json()).resolves.toMatchObject({
+      ok: false,
+      error: "Request body must be valid JSON.",
     })
   })
 })

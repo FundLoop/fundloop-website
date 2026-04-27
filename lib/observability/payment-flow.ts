@@ -1,11 +1,12 @@
 import { z } from "zod"
-import type { Json } from "@/types/supabase"
+import type { Json } from "../../types/supabase.ts"
 
 export const PAYMENT_FLOWS = [
   "wallet_connect",
   "payment_save",
   "receipt_recording",
   "admin_confirmation",
+  "admin_reconciliation",
 ] as const
 
 export const PAYMENT_FLOW_OUTCOMES = ["attempt", "success", "failure"] as const
@@ -15,6 +16,7 @@ export const PAYMENT_FLOW_ACTOR_ROLES = [
   "authenticated_user",
   "project_admin",
   "internal_admin",
+  "system",
 ] as const
 export const PAYMENT_FLOW_STAGES = [
   "cta_click",
@@ -47,6 +49,7 @@ const FLOW_STAGE_MAP: Record<PaymentFlow, readonly PaymentFlowStage[]> = {
   payment_save: ["validation", "submit"],
   receipt_recording: ["runtime_blocked", "chain_switch", "approval", "deposit", "submission_record"],
   admin_confirmation: ["submit"],
+  admin_reconciliation: ["submit"],
 }
 
 const MAX_METADATA_DEPTH = 3

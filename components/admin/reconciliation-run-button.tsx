@@ -3,9 +3,9 @@
 import { useRouter } from "next/navigation"
 import { useTransition } from "react"
 import { Loader2, RefreshCw } from "lucide-react"
-import { runInternalOnchainPaymentReconciliation } from "@/app/actions/project-payment-actions"
 import { Button, type ButtonProps } from "@/components/ui/button"
 import { toast } from "@/components/ui/use-toast"
+import { invokeAdminOnchainPaymentReconciliationRunBrowser } from "@/lib/edge-functions/admin-payment-operations"
 
 type ReconciliationRunButtonProps = {
   label: string
@@ -37,7 +37,7 @@ export function ReconciliationRunButton({
       disabled={pending}
       onClick={() => {
         startTransition(async () => {
-          const result = await runInternalOnchainPaymentReconciliation({
+          const result = await invokeAdminOnchainPaymentReconciliationRunBrowser({
             limit,
             paymentId,
             submissionId,
@@ -46,7 +46,7 @@ export function ReconciliationRunButton({
           if (!result.ok) {
             toast({
               title: "Reconciliation failed",
-              description: result.error,
+              description: result.error.message,
               variant: "destructive",
             })
             return

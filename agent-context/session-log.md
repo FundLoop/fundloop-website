@@ -1,3 +1,176 @@
+### session v86: Preserve admin confirmation domain errors
+- timestamp: 2026-04-27T17:04:48-04:00
+- agent: **Codex (GPT-5)**
+- branch: **codex/session-20-admin-edge-functions**
+- head: pending final commit
+
+#### Objective
+Address the late Codex review feedback that the query-failure guard could hide expected missing-record domain errors in admin payment confirmation.
+
+#### Actions Taken
+- Changed the payment and confirmed-status prerequisite reads from `.single()` to `.maybeSingle()` so missing rows stay in the intended `payment_not_found` and `status_not_configured` branches.
+- Added regression tests proving no-row payment and no-row confirmed-status lookups preserve those specific error codes.
+
+#### Tests and Validation Notes
+- `pnpm test -- admin-payment-operations-command` passed.
+- `pnpm lint` passed.
+- `pnpm typecheck` passed.
+- Local pnpm commands emitted the existing Node engine warning because this shell is using Node 25 while the repo expects Node 22.
+
+#### Reflections
+- This was a useful guardrail after the earlier query-error hardening: transport/query failures and expected absence cases now remain distinct.
+
+#### Suggested Next Steps
+- Push the fix, reply to and resolve the Codex thread, then wait for the final CI pass to return green.
+
+---
+
+### session v85: Address Codex Edge bundling review
+- timestamp: 2026-04-27T16:59:31-04:00
+- agent: **Codex (GPT-5)**
+- branch: **codex/session-20-admin-edge-functions**
+- head: pending final commit
+
+#### Objective
+Address Codex review feedback on PR #34 by making the admin payment Edge Function bundle path Deno-safe.
+
+#### Actions Taken
+- Removed the admin operation handler's dependency on the broader wallet runtime config module and replaced it with a small Edge-local deployment-environment resolver.
+- Added Deno-compatible JSON import attributes to the wallet deployment manifests so shared runtime config can be resolved in Deno contexts.
+- Replaced the onchain supported-chain import from `wagmi/chains` with `viem/chains`, avoiding an unnecessary React/wagmi dependency in Edge function graphs.
+- Added explicit Supabase function import-map entries for `viem`, `viem/chains`, and `zod`.
+- Made the admin Supabase client type import relative and extensioned so Deno can resolve it.
+- Added `supabase/functions/deno.lock` for deterministic Deno npm resolution and ignored the generated Supabase function `node_modules` cache.
+
+#### Tests and Validation Notes
+- `deno info --config supabase/functions/deno.json supabase/functions/admin-payment-receipt-confirm/index.ts` resolved cleanly with no missing, unsupported, or unmapped imports.
+- `deno info --config supabase/functions/deno.json supabase/functions/admin-onchain-payment-reconciliation-run/index.ts` resolved cleanly with no missing, unsupported, or unmapped imports.
+- `pnpm lint` passed.
+- `pnpm typecheck` passed.
+- `pnpm test -- admin-payment-operations-command onchain-reconciliation-route runtime-config` passed.
+- Local pnpm commands emitted the existing Node engine warning because this shell is using Node 25 while the repo expects Node 22.
+
+#### Reflections
+- The review surfaced a deploy-time boundary issue that local app tests would not catch; keeping Edge import graphs explicitly Deno-visible should prevent the post-merge Supabase deploy from failing late.
+
+#### Suggested Next Steps
+- Push the fix, reply to the Codex thread with the commit reference, resolve it, and wait for CI to return green one last time.
+
+---
+
+### session v84: Address Copilot review on admin payment edge migration
+- timestamp: 2026-04-27T16:49:34-04:00
+- agent: **Codex (GPT-5)**
+- branch: **codex/session-20-admin-edge-functions**
+- head: pending final commit
+
+#### Objective
+Address Copilot's review feedback on PR #34 before requesting the next review phase.
+
+#### Actions Taken
+- Changed the internal reconciliation route so malformed JSON returns a 400 instead of being treated like an empty request body.
+- Added explicit Supabase query-error handling for admin payment confirmation prerequisites so operational read failures are no longer misclassified as missing records.
+- Removed the redundant manual-confirmation update against `onchain_payment_submissions`, avoiding a race-prone confirmation path that the command already rejects.
+- Normalized the shared Edge `authenticateRequest()` success shape with `mode: "user"` so admin operation handlers can branch consistently across user and internal-secret auth modes.
+- Added focused regression coverage for malformed internal reconciliation requests, prerequisite query failures, and the removed onchain submission update.
+
+#### Tests and Validation Notes
+- `pnpm test -- admin-payment-operations-command onchain-reconciliation-route` passed.
+- `pnpm lint` passed.
+- `pnpm typecheck` passed.
+- Local commands emitted the existing Node engine warning because this shell is using Node 25 while the repo expects Node 22.
+
+#### Reflections
+- The review comments were good operational-hardening catches around error classification and race safety, not broad design changes.
+
+#### Suggested Next Steps
+- Push the fixes, reply to each Copilot thread with the commit reference, resolve the threads, and re-check CI before requesting Codex review.
+
+---
+
+### session v83: Record repository cleanup audit
+- timestamp: 2026-04-27T16:36:55-04:00
+- agent: **Codex (GPT-5)**
+- branch: **codex/session-20-admin-edge-functions**
+- head: pending final commit
+
+#### Objective
+Capture a lightweight repository cleanup audit before publishing the current Session 20 branch, so follow-up agents can distinguish safe hygiene from work that should wait until the branch lands.
+
+#### Actions Taken
+- Added `agent-context/repo-status.md` with a concise status matrix covering docs, agent context, CUBID packaging, CI, Supabase deploy, Edge Function compliance, local artifacts, and branch hygiene.
+- Reconciled the Session 20 session-log head now that the implementation commit exists locally.
+- Kept the cleanup pass non-destructive: no branches were deleted, no ignored build artifacts were removed, and no product code was changed.
+
+#### Tests and Validation Notes
+- `git status` was inspected to verify the only new cleanup artifact before this session-log entry was `agent-context/repo-status.md`.
+- No runtime tests were run because this is documentation and repository hygiene only.
+
+#### Reflections
+- The repo is in a healthy enough state to publish the active branch, but the cleanup audit makes clear that Session 20 should land before the next roadmap implementation starts.
+
+#### Suggested Next Steps
+- Push this branch, open a draft PR into `dev`, and let the normal CI/review loop validate the combined Session 20 and cleanup-audit work.
+
+---
+
+### session v82: Move admin payment operations behind Edge Functions
+- timestamp: 2026-04-26T18:17:29-04:00
+- agent: **Codex (GPT-5)**
+- branch: **codex/session-20-admin-edge-functions**
+- head: e6d4dc5c22229a832125c8181b3c1be2cae084a0 - feat(payments): migrate admin payment ops to edge commands
+
+#### Objective
+Complete Session 20 by moving the remaining admin payment confirmation and reconciliation write flows behind typed Supabase Edge Function commands, while also removing the temporary FundLoop-local CUBID Deno mirror and documenting the remaining Cubid publication follow-up.
+
+#### Actions Taken
+- Added the new admin payment command layer in `lib/payments/admin-payment-operations-command.ts` with shared observability writes for `admin_confirmation` and the new `admin_reconciliation` flow.
+- Added typed contracts and adapters for:
+  - `admin-payment-receipt-confirm`
+  - `admin-onchain-payment-reconciliation-run`
+- Added the corresponding Supabase Edge Function entrypoints plus a shared admin operation handler and dual auth mode support for:
+  - authenticated internal-admin Supabase users
+  - secret-gated internal system callers through `x-fundloop-cron-secret`
+- Reworked `app/actions/project-payment-actions.ts` so the admin mutation exports are now thin compatibility wrappers around the new server invokers.
+- Reworked `components/admin/payments-console.tsx` and `components/admin/reconciliation-run-button.tsx` so the browser UI now calls the browser Edge adapters directly instead of importing server actions.
+- Reworked `/api/internal/payments/reconcile-onchain` into a thin secret-gated wrapper around the reconciliation Edge Function using a new privileged internal server invoker helper.
+- Extended `payment_flow_events` via a forward migration so observability now supports:
+  - `flow = 'admin_reconciliation'`
+  - `actor_role = 'system'`
+- Finished the Deno-safe shared-runtime refactor by:
+  - exporting a runtime-agnostic env helper
+  - removing remaining hidden Node assumptions from reconciliation/admin-client helpers
+  - adding an internal-admin allowlist helper shared across Next and Edge runtimes
+- Removed the repo-local Supabase-function CUBID mirror and changed `supabase/functions/deno.json` to resolve `@cubid/api` from the installed package entrypoint under the repo root `node_modules/`.
+- Prepared the adjacent Cubid SDK v2 source tree for npm/JSR publication:
+  - added `packages/api/jsr.json`
+  - added `packages/api/README.md`
+  - added a Deno check script and explicit `.ts` source specifiers for Deno importability
+  - documented Supabase Edge / Deno usage in the Cubid README
+  - actual npm/JSR publication was blocked here because publish auth was not available and the local Cubid SDK directory was not a git checkout in this workspace
+- Updated engineering docs for the new admin command pattern, secret-gated internal route behavior, and the post-mirror CUBID import mapping.
+
+#### Tests and Validation Notes
+- `pnpm typecheck` passed.
+- `pnpm test -- admin-payment-operations-contract admin-payment-operations-command onchain-reconciliation-route admin-payments-console reconciliation-run-button project-payment-observability-actions` passed.
+- `deno info --config supabase/functions/deno.json supabase/functions/user-cubid-resolve-email/index.ts` resolved cleanly against the installed `@cubid/api` package entrypoint.
+- `deno info --config supabase/functions/deno.json supabase/functions/user-cubid-sync-profile/index.ts` resolved cleanly against the installed `@cubid/api` package entrypoint.
+- `pnpm lint` passed.
+- `pnpm test` passed.
+- `pnpm typecheck` passed.
+- `pnpm build` passed.
+- `go run github.com/rhysd/actionlint/cmd/actionlint@latest .github/workflows/supabase-deploy.yml` passed.
+
+#### Reflections
+- The admin payment write path now follows the same typed Edge Function contract model as the founder payment and onboarding domains, which makes the remaining operator/backend migrations much more mechanical.
+- Removing the function-local CUBID mirror is a real simplification, but the final ideal state still depends on publishing `@cubid/api` to npm and JSR so FundLoop can stop depending on an installed-package path mapping.
+
+#### Suggested Next Steps
+- Publish `@cubid/api` from the Cubid repo to npm and JSR, then switch `supabase/functions/deno.json` from the installed package path to the canonical `jsr:` import.
+- Continue with Session 21 or the next operator/payment-cycle domain now that both founder and internal payment writes share the same Edge command architecture.
+
+---
+
 ### session v81: Exclude Supabase helper directories from function deployment
 - timestamp: 2026-04-26T16:02:58-04:00
 - agent: **Codex (GPT-5)**
