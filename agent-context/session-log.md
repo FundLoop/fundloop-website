@@ -1,3 +1,30 @@
+### session v91: Delete stale wallet readiness branch
+- timestamp: 2026-04-27T19:33:21-04:00
+- agent: **Codex (GPT-5)**
+- branch: **codex/docs-context-cleanup**
+- head: pending final commit
+
+#### Objective
+Finish branch hygiene by deleting the remaining stale `codex/wallet-production-readiness` branch after analysis showed it had no salvage-worthy unique work.
+
+#### Actions Taken
+- Rechecked local branches and confirmed `codex/docs-context-cleanup` was the active cleanup branch.
+- Deleted `codex/wallet-production-readiness`.
+- Verified the only remaining local `codex/*` branch is `codex/docs-context-cleanup`.
+- Updated `agent-context/repo-status.md` to mark branch hygiene complete.
+
+#### Tests and Validation Notes
+- No runtime tests were run because this pass only deleted a local branch and updated cleanup documentation.
+- `git branch` confirmed no stale local `codex/*` branches remain.
+
+#### Reflections
+- The branch list is now intentionally small: only `dev` and the active cleanup branch remain locally.
+
+#### Suggested Next Steps
+- Yeet the cleanup branch to `dev`, then continue with Session 21.
+
+---
+
 ### session v90: Document environment lanes and testing ownership
 - timestamp: 2026-04-27T19:18:50-04:00
 - agent: **Codex (GPT-5)**
