@@ -130,6 +130,52 @@ describe("admin payment operation commands", () => {
     expect(supabase.inserts.filter((entry) => entry.table === "payment_flow_events")).toHaveLength(2)
   })
 
+  it("preserves payment-not-found when the payment lookup returns no row", async () => {
+    const supabase = createSupabaseMock({
+      payments: [{ data: null, error: null }],
+      ref_payment_statuses: [{ data: { id: 9, code: "confirmed" }, error: null }],
+      onchain_payment_submissions: [{ data: null, error: null }],
+      payment_flow_events: [{ data: null, error: null }, { data: null, error: null }],
+    })
+
+    const result = await executeAdminPaymentReceiptConfirmCommand(
+      supabase as never,
+      {
+        actorUserId: "admin-1",
+        actorRole: "internal_admin",
+        attemptId: "attempt-admin-payment-missing",
+        paymentId: 404,
+      },
+      deps,
+    )
+
+    expect(result.ok).toBe(false)
+    expect(result.ok ? null : result.error.code).toBe("payment_not_found")
+  })
+
+  it("preserves status-not-configured when the confirmed status lookup returns no row", async () => {
+    const supabase = createSupabaseMock({
+      payments: [{ data: { id: 22, project_id: 7, projects: { slug: "fundloop-studio" } }, error: null }],
+      ref_payment_statuses: [{ data: null, error: null }],
+      onchain_payment_submissions: [{ data: null, error: null }],
+      payment_flow_events: [{ data: null, error: null }, { data: null, error: null }],
+    })
+
+    const result = await executeAdminPaymentReceiptConfirmCommand(
+      supabase as never,
+      {
+        actorUserId: "admin-1",
+        actorRole: "internal_admin",
+        attemptId: "attempt-admin-status-missing",
+        paymentId: 22,
+      },
+      deps,
+    )
+
+    expect(result.ok).toBe(false)
+    expect(result.ok ? null : result.error.code).toBe("status_not_configured")
+  })
+
   it("confirms a manual payment and records observability", async () => {
     const supabase = createSupabaseMock({
       payments: [{ data: { id: 22, project_id: 7, projects: { slug: "fundloop-studio" } }, error: null }],

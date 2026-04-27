@@ -139,8 +139,8 @@ export async function executeAdminPaymentReceiptConfirmCommand(
     { data: confirmedStatus, error: confirmedStatusError },
     { data: onchainSubmission, error: onchainSubmissionError },
   ] = await Promise.all([
-    supabase.from("payments").select("id, project_id, projects(slug)").eq("id", input.paymentId).single(),
-    supabase.from("ref_payment_statuses").select("id, code").eq("code", "confirmed").single(),
+    supabase.from("payments").select("id, project_id, projects(slug)").eq("id", input.paymentId).maybeSingle(),
+    supabase.from("ref_payment_statuses").select("id, code").eq("code", "confirmed").maybeSingle(),
     supabase.from("onchain_payment_submissions").select("id").eq("payment_id", input.paymentId).limit(1).maybeSingle(),
   ])
 

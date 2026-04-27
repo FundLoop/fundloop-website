@@ -1,3 +1,30 @@
+### session v86: Preserve admin confirmation domain errors
+- timestamp: 2026-04-27T17:04:48-04:00
+- agent: **Codex (GPT-5)**
+- branch: **codex/session-20-admin-edge-functions**
+- head: pending final commit
+
+#### Objective
+Address the late Codex review feedback that the query-failure guard could hide expected missing-record domain errors in admin payment confirmation.
+
+#### Actions Taken
+- Changed the payment and confirmed-status prerequisite reads from `.single()` to `.maybeSingle()` so missing rows stay in the intended `payment_not_found` and `status_not_configured` branches.
+- Added regression tests proving no-row payment and no-row confirmed-status lookups preserve those specific error codes.
+
+#### Tests and Validation Notes
+- `pnpm test -- admin-payment-operations-command` passed.
+- `pnpm lint` passed.
+- `pnpm typecheck` passed.
+- Local pnpm commands emitted the existing Node engine warning because this shell is using Node 25 while the repo expects Node 22.
+
+#### Reflections
+- This was a useful guardrail after the earlier query-error hardening: transport/query failures and expected absence cases now remain distinct.
+
+#### Suggested Next Steps
+- Push the fix, reply to and resolve the Codex thread, then wait for the final CI pass to return green.
+
+---
+
 ### session v85: Address Codex Edge bundling review
 - timestamp: 2026-04-27T16:59:31-04:00
 - agent: **Codex (GPT-5)**
