@@ -138,16 +138,24 @@ To run scheduled payment reconciliation, post to `/api/internal/payments/reconci
 
 FundLoop is migrating backend workflow access onto Supabase Edge Functions behind shared, typed app-side adapters. New write paths should use command-style Edge Functions unless an engineering doc explicitly records a temporary exception. Authenticated reads that feed workflows, agents, or cross-surface product state should also move toward server-owned read models or typed Edge Function boundaries instead of ad hoc browser table access.
 
-Current command domains include:
+Current concrete command slugs include:
 
 - `project-payment-drafts-create`
-- onboarding draft save, clear, and publish commands for users and projects
+- `user-onboarding-draft-upsert`
+- `user-onboarding-draft-clear`
+- `user-onboarding-publish`
+- `project-onboarding-draft-upsert`
+- `project-onboarding-draft-clear`
+- `project-onboarding-publish`
 - `user-cubid-resolve-email`
 - `user-cubid-sync-profile`
-- project crypto route create, update, move, and enablement commands
-- project onchain payment submission recording
-- admin payment receipt confirmation
-- admin onchain payment reconciliation
+- `project-crypto-route-create`
+- `project-crypto-route-update`
+- `project-crypto-route-move`
+- `project-crypto-route-enabled-set`
+- `project-onchain-payment-submission-record`
+- `admin-payment-receipt-confirm`
+- `admin-onchain-payment-reconciliation-run`
 
 Run the first local function smoke once the local Supabase stack is up:
 

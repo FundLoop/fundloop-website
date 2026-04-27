@@ -5,7 +5,7 @@ This file is the current execution roadmap for bringing FundLoop from the presen
 Each item below is intentionally sized to one agentic coding session. The sequence matters. Later work should assume the earlier sessions are complete unless the backlog is deliberately re-planned.
 
 ## Execution Rules
-- Always build on feature branches. 
+- Always build on feature branches.
 - When starting a task: update the status to "started", set the branch and timestamp started. Reference `docs/engineering/backgrounder-for-agents.md`, `docs/engineering/current-state-architecture.md`, and `docs/engineering/target-state-architecture.md` before starting to build.
 - While building: Make underway commits if needed, always with an accompanying session-log entry. Build unit tests and smoke tests for new features as needed. Smoke test before reporting complete. Do not write in this doc what you actually did, instead write that in the session-log.
 - At the end of each task: update relevant long-lived engineering docs in `docs/engineering/` whenever architecture, route decisions, workflows, or operating assumptions changed.
