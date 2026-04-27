@@ -130,4 +130,25 @@ describe("POST /api/internal/payments/reconcile-onchain", () => {
       error: "limit must be a positive integer.",
     })
   })
+
+  it("rejects malformed JSON without running reconciliation", async () => {
+    const { POST } = await import("@/app/api/internal/payments/reconcile-onchain/route")
+    const response = await POST(
+      new Request("http://localhost/api/internal/payments/reconcile-onchain", {
+        method: "POST",
+        headers: {
+          authorization: "Bearer test-secret",
+          "content-type": "application/json",
+        },
+        body: "{",
+      }),
+    )
+
+    expect(response.status).toBe(400)
+    expect(invokeInternalServerEdgeCommand).not.toHaveBeenCalled()
+    await expect(response.json()).resolves.toMatchObject({
+      ok: false,
+      error: "Request body must be valid JSON.",
+    })
+  })
 })

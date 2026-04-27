@@ -134,11 +134,35 @@ export async function executeAdminPaymentReceiptConfirmCommand(
     paymentId: input.paymentId,
   })
 
-  const [{ data: payment }, { data: confirmedStatus }, { data: onchainSubmission }] = await Promise.all([
+  const [
+    { data: payment, error: paymentError },
+    { data: confirmedStatus, error: confirmedStatusError },
+    { data: onchainSubmission, error: onchainSubmissionError },
+  ] = await Promise.all([
     supabase.from("payments").select("id, project_id, projects(slug)").eq("id", input.paymentId).single(),
     supabase.from("ref_payment_statuses").select("id, code").eq("code", "confirmed").single(),
     supabase.from("onchain_payment_submissions").select("id").eq("payment_id", input.paymentId).limit(1).maybeSingle(),
   ])
+
+  if (paymentError || confirmedStatusError || onchainSubmissionError) {
+    const error = "Failed to load payment confirmation prerequisites."
+    await recordAdminPaymentEvent(supabase, deps, {
+      flow: "admin_confirmation",
+      stage: "submit",
+      outcome: "failure",
+      attemptId: input.attemptId,
+      actorUserId: input.actorUserId,
+      actorRole: input.actorRole,
+      paymentId: input.paymentId,
+      error,
+      metadata: {
+        paymentQueryFailed: Boolean(paymentError),
+        confirmedStatusQueryFailed: Boolean(confirmedStatusError),
+        onchainSubmissionQueryFailed: Boolean(onchainSubmissionError),
+      },
+    })
+    return commandFailure("query_failed", error, { paymentId: input.paymentId })
+  }
 
   if (!payment) {
     const error = "Payment not found."
@@ -196,7 +220,7 @@ export async function executeAdminPaymentReceiptConfirmCommand(
   }
 
   const confirmedAt = new Date().toISOString()
-  const { error: paymentError } = await supabase
+  const { error: updatePaymentError } = await supabase
     .from("payments")
     .update({
       status_id: confirmedStatus.id,
@@ -205,7 +229,7 @@ export async function executeAdminPaymentReceiptConfirmCommand(
     })
     .eq("id", input.paymentId)
 
-  if (paymentError) {
+  if (updatePaymentError) {
     await recordAdminPaymentEvent(supabase, deps, {
       flow: "admin_confirmation",
       stage: "submit",
@@ -215,35 +239,9 @@ export async function executeAdminPaymentReceiptConfirmCommand(
       actorRole: input.actorRole,
       projectId: payment.project_id,
       paymentId: input.paymentId,
-      error: paymentError.message,
+      error: updatePaymentError.message,
     })
-    return commandFailure("update_failed", paymentError.message, {
-      projectId: payment.project_id,
-      paymentId: input.paymentId,
-    })
-  }
-
-  const { error: submissionError } = await supabase
-    .from("onchain_payment_submissions")
-    .update({
-      status: "confirmed",
-      confirmed_at: confirmedAt,
-    })
-    .eq("payment_id", input.paymentId)
-
-  if (submissionError) {
-    await recordAdminPaymentEvent(supabase, deps, {
-      flow: "admin_confirmation",
-      stage: "submit",
-      outcome: "failure",
-      attemptId: input.attemptId,
-      actorUserId: input.actorUserId,
-      actorRole: input.actorRole,
-      projectId: payment.project_id,
-      paymentId: input.paymentId,
-      error: submissionError.message,
-    })
-    return commandFailure("update_failed", submissionError.message, {
+    return commandFailure("update_failed", updatePaymentError.message, {
       projectId: payment.project_id,
       paymentId: input.paymentId,
     })

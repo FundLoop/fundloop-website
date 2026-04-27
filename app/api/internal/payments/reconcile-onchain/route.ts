@@ -74,6 +74,22 @@ function parseRequestBody(value: unknown) {
   }
 }
 
+async function readOptionalJsonBody(request: Request) {
+  const text = await request.text()
+  if (!text.trim()) {
+    return { ok: true as const, value: undefined }
+  }
+
+  try {
+    return { ok: true as const, value: JSON.parse(text) as unknown }
+  } catch {
+    return {
+      ok: false as const,
+      error: "Request body must be valid JSON.",
+    }
+  }
+}
+
 export async function POST(request: Request) {
   const configuredSecret = process.env.FUNDLOOP_PAYMENTS_CRON_SECRET?.trim()
   if (!configuredSecret) {
@@ -98,14 +114,18 @@ export async function POST(request: Request) {
     )
   }
 
-  let rawBody: unknown = undefined
-  try {
-    rawBody = await request.json()
-  } catch {
-    rawBody = undefined
+  const rawBody = await readOptionalJsonBody(request)
+  if (!rawBody.ok) {
+    return NextResponse.json(
+      {
+        ok: false,
+        error: rawBody.error,
+      },
+      { status: 400 },
+    )
   }
 
-  const body = parseRequestBody(rawBody)
+  const body = parseRequestBody(rawBody.value)
   if (!body.ok) {
     return NextResponse.json(
       {

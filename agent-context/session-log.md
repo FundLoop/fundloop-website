@@ -1,3 +1,33 @@
+### session v84: Address Copilot review on admin payment edge migration
+- timestamp: 2026-04-27T16:49:34-04:00
+- agent: **Codex (GPT-5)**
+- branch: **codex/session-20-admin-edge-functions**
+- head: pending final commit
+
+#### Objective
+Address Copilot's review feedback on PR #34 before requesting the next review phase.
+
+#### Actions Taken
+- Changed the internal reconciliation route so malformed JSON returns a 400 instead of being treated like an empty request body.
+- Added explicit Supabase query-error handling for admin payment confirmation prerequisites so operational read failures are no longer misclassified as missing records.
+- Removed the redundant manual-confirmation update against `onchain_payment_submissions`, avoiding a race-prone confirmation path that the command already rejects.
+- Normalized the shared Edge `authenticateRequest()` success shape with `mode: "user"` so admin operation handlers can branch consistently across user and internal-secret auth modes.
+- Added focused regression coverage for malformed internal reconciliation requests, prerequisite query failures, and the removed onchain submission update.
+
+#### Tests and Validation Notes
+- `pnpm test -- admin-payment-operations-command onchain-reconciliation-route` passed.
+- `pnpm lint` passed.
+- `pnpm typecheck` passed.
+- Local commands emitted the existing Node engine warning because this shell is using Node 25 while the repo expects Node 22.
+
+#### Reflections
+- The review comments were good operational-hardening catches around error classification and race safety, not broad design changes.
+
+#### Suggested Next Steps
+- Push the fixes, reply to each Copilot thread with the commit reference, resolve the threads, and re-check CI before requesting Codex review.
+
+---
+
 ### session v83: Record repository cleanup audit
 - timestamp: 2026-04-27T16:36:55-04:00
 - agent: **Codex (GPT-5)**

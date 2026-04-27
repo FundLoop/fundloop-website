@@ -105,11 +105,36 @@ describe("admin payment operation commands", () => {
     expect(supabase.inserts.filter((entry) => entry.table === "payment_flow_events")).toHaveLength(2)
   })
 
+  it("returns a query failure when confirmation prerequisites cannot be loaded", async () => {
+    const supabase = createSupabaseMock({
+      payments: [{ data: null, error: { message: "database timeout" } }],
+      ref_payment_statuses: [{ data: { id: 9, code: "confirmed" }, error: null }],
+      onchain_payment_submissions: [{ data: null, error: null }],
+      payment_flow_events: [{ data: null, error: null }, { data: null, error: null }],
+    })
+
+    const result = await executeAdminPaymentReceiptConfirmCommand(
+      supabase as never,
+      {
+        actorUserId: "admin-1",
+        actorRole: "internal_admin",
+        attemptId: "attempt-admin-query-failed",
+        paymentId: 22,
+      },
+      deps,
+    )
+
+    expect(result.ok).toBe(false)
+    expect(result.ok ? null : result.error.code).toBe("query_failed")
+    expect(supabase.inserts).not.toContainEqual(expect.objectContaining({ table: "payments:update" }))
+    expect(supabase.inserts.filter((entry) => entry.table === "payment_flow_events")).toHaveLength(2)
+  })
+
   it("confirms a manual payment and records observability", async () => {
     const supabase = createSupabaseMock({
       payments: [{ data: { id: 22, project_id: 7, projects: { slug: "fundloop-studio" } }, error: null }],
       ref_payment_statuses: [{ data: { id: 9, code: "confirmed" }, error: null }],
-      onchain_payment_submissions: [{ data: null, error: null }, { data: null, error: null }],
+      onchain_payment_submissions: [{ data: null, error: null }],
       payment_flow_events: [{ data: null, error: null }, { data: null, error: null }],
     })
 
@@ -139,6 +164,7 @@ describe("admin payment operation commands", () => {
         }),
       }),
     )
+    expect(supabase.inserts).not.toContainEqual(expect.objectContaining({ table: "onchain_payment_submissions:update" }))
     expect(supabase.inserts.filter((entry) => entry.table === "payment_flow_events")).toHaveLength(2)
   })
 
