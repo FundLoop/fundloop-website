@@ -1,3 +1,31 @@
+### session v87: Move durable architecture docs out of agent context
+- timestamp: 2026-04-27T18:42:11-04:00
+- agent: **Codex (GPT-5)**
+- branch: **codex/docs-context-cleanup**
+- head: pending final commit
+
+#### Objective
+Complete the first repo-cleanup documentation bundle by keeping `agent-context/` lightweight, moving long-lived architecture docs into engineering docs, and tightening the Edge Function backend-boundary guidance.
+
+#### Actions Taken
+- Moved the backgrounder, current-state architecture, and target-state architecture docs from `agent-context/` into `docs/engineering/`.
+- Updated `agent-context/README.md`, `docs/engineering/README.md`, route/IA docs, and the backlog header so planning links point at the new canonical engineering-doc locations.
+- Refreshed the README Edge Function section so it reflects the current migrated command domains, CUBID Edge Function paths, and the temporary package/import-map state.
+- Tightened `AGENTS.md` to state the repo-wide Edge Function command rule for new writes, the migration posture for legacy direct writes, and the preferred boundary for workflow/agent-facing reads.
+- Updated `agent-context/repo-status.md` to reflect that Session 20 has landed and that the docs/context cleanup items are now resolved.
+
+#### Tests and Validation Notes
+- Repo-wide reference search confirmed no live docs still point to moved architecture files under `agent-context/`; remaining matches are historical session-log entries.
+- Validation is documentation-focused; no runtime behavior changed.
+
+#### Reflections
+- Keeping durable architecture under `docs/engineering/` makes `agent-context/` much less noisy for implementation agents while preserving the planning trail.
+
+#### Suggested Next Steps
+- Continue with Session 21 now that the active context surface is lighter and the Edge Function backend-boundary rule is explicit.
+
+---
+
 ### session v86: Preserve admin confirmation domain errors
 - timestamp: 2026-04-27T17:04:48-04:00
 - agent: **Codex (GPT-5)**

@@ -3,10 +3,11 @@
 Last drafted: 2026-04-14
 
 Related planning docs:
-- [Agent Context Index](./README.md)
+- [Engineering Docs Index](./README.md)
+- [Agent Context Index](../../agent-context/README.md)
 - [Backgrounder for Agents](./backgrounder-for-agents.md)
 - [Current-State Architecture](./current-state-architecture.md)
-- [TODO Roadmap](./todo.md)
+- [TODO Roadmap](../../agent-context/todo.md)
 
 ## 1. North Star
 

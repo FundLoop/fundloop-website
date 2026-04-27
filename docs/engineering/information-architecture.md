@@ -5,9 +5,9 @@ Last reviewed: 2026-04-14
 Related planning docs:
 - [Engineering Docs Index](./README.md)
 - [Agent Context Index](../../agent-context/README.md)
-- [Backgrounder for Agents](../../agent-context/backgrounder-for-agents.md)
-- [Current-State Architecture](../../agent-context/current-state-architecture.md)
-- [Target-State Architecture](../../agent-context/target-state-architecture.md)
+- [Backgrounder for Agents](./backgrounder-for-agents.md)
+- [Current-State Architecture](./current-state-architecture.md)
+- [Target-State Architecture](./target-state-architecture.md)
 - [Route Inventory](./route-inventory.md)
 - [TODO Roadmap](../../agent-context/todo.md)
 

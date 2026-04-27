@@ -80,6 +80,14 @@ Use the modern SSR approach already established in the repo:
 - no service-role logic in client bundles
 - no direct reintroduction of deprecated auth-helper packages
 
+Supabase Edge Functions are the repo-wide backend command boundary:
+
+- all new writes should go through typed Supabase Edge Function commands unless the relevant engineering doc explicitly records a temporary exception
+- existing direct server-action or route-handler writes should be treated as migration targets, not as patterns to copy
+- most authenticated reads should move toward typed Edge Function or server-owned read-model boundaries when they feed workflows, agents, or cross-surface product state
+- browser code must not write directly to Supabase tables or call service-role-backed routes
+- MCP and future non-web clients should use the same Edge Function and protocol contracts as the web app, not a parallel backend path
+
 If a change affects schema:
 
 1. Add a forward-only migration in `supabase/migrations/`

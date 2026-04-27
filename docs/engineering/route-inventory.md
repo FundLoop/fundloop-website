@@ -5,8 +5,8 @@ Last reviewed: 2026-04-20
 Related planning docs:
 - [Engineering Docs Index](./README.md)
 - [Agent Context Index](../../agent-context/README.md)
-- [Current-State Architecture](../../agent-context/current-state-architecture.md)
-- [Target-State Architecture](../../agent-context/target-state-architecture.md)
+- [Current-State Architecture](./current-state-architecture.md)
+- [Target-State Architecture](./target-state-architecture.md)
 - [Information Architecture](./information-architecture.md)
 - [TODO Roadmap](../../agent-context/todo.md)
 

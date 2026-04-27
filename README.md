@@ -132,19 +132,30 @@ To run scheduled payment reconciliation, post to `/api/internal/payments/reconci
 
 ## Supabase Edge Functions
 
-FundLoop is migrating write-heavy flows onto Supabase Edge Functions behind shared app-side adapters.
+FundLoop is migrating backend workflow access onto Supabase Edge Functions behind shared, typed app-side adapters. New write paths should use command-style Edge Functions unless an engineering doc explicitly records a temporary exception. Authenticated reads that feed workflows, agents, or cross-surface product state should also move toward server-owned read models or typed Edge Function boundaries instead of ad hoc browser table access.
 
-The first real command is:
+Current command domains include:
 
 - `project-payment-drafts-create`
+- onboarding draft save, clear, and publish commands for users and projects
+- `user-cubid-resolve-email`
+- `user-cubid-sync-profile`
+- project crypto route create, update, move, and enablement commands
+- project onchain payment submission recording
+- admin payment receipt confirmation
+- admin onchain payment reconciliation
 
-Run it locally once the local Supabase stack is up:
+Run the first local function smoke once the local Supabase stack is up:
 
 ```bash
 pnpm supabase:functions:serve:project-payment-drafts-create
 ```
 
-The browser path for project payment draft creation now calls the function directly via the shared Edge Function adapter, while the legacy server action remains as a compatibility wrapper.
+The browser paths call function-specific adapters under `lib/edge-functions/`. Legacy server actions remain only as temporary compatibility wrappers while older callers are migrated.
+
+CUBID identity writes also use Edge Functions. FundLoop currently depends on local CUBID package artifacts for `@cubid/api`, `@cubid/web2`, and `@cubid/web2-react`; the Supabase function import map resolves `@cubid/api` from the installed package until the CUBID repo publishes a first-class npm/JSR package. Do not put `CUBID_API_KEY` in client code.
+
+See [Edge Function Contract Pattern](docs/engineering/edge-functions.md), [CUBID Identity and Snapshot Model](docs/engineering/cubid-identity.md), and [Supabase Remote Deployments](docs/engineering/supabase-deployments.md) for the current backend contract details.
 
 ## Playwright E2E Workflow
 
@@ -231,7 +242,7 @@ If you are working on zkAS changes, expect to touch both the app layer and the S
 - `tests/` contains Vitest coverage.
 - `types/` contains shared TypeScript and Supabase types.
 - `zkas/` contains the local zkActivitySum execution engine and runner-related code.
-- `agent-context/` contains lightweight live agent context such as the backlog and session log.
+- `agent-context/` contains lightweight live agent context such as the backlog, repo-status snapshot, and session log.
 
 ## Notes
 
