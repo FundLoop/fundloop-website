@@ -1,3 +1,36 @@
+### session v89: Prune merged local feature branches
+- timestamp: 2026-04-27T19:14:00-04:00
+- agent: **Codex (GPT-5)**
+- branch: **codex/docs-context-cleanup**
+- head: pending final commit
+
+#### Objective
+Complete the branch-hygiene item from the repository cleanup audit by removing local `codex/*` branches that are clearly merged into `dev`.
+
+#### Actions Taken
+- Checked local `codex/*` branches against `origin/dev` and GitHub PR state.
+- Deleted the safe merged local branches:
+  - `codex/participation-marketing-refresh` from merged PR #17
+  - `codex/supabase-function-entrypoints` from merged PR #28
+  - `codex/supabase-function-bundling-repair` from merged PRs #29 and #30
+  - `codex/supabase-cubid-deno-repair` from merged PR #31
+- Left `codex/docs-context-cleanup` because it is the active cleanup branch.
+- Left `codex/wallet-production-readiness` because it has no GitHub PR and diverges from `dev`, so it is not mechanically safe to delete without a separate decision.
+- Updated `agent-context/repo-status.md` with the branch-hygiene outcome and remaining recommendation.
+
+#### Tests and Validation Notes
+- Verified each deleted branch was listed as merged into `origin/dev` and had a merged PR where available.
+- No runtime tests were run because this pass only deleted local Git branches and updated cleanup documentation.
+
+#### Reflections
+- The local branch list is now small enough to reason about: one active cleanup branch plus one older divergent wallet branch that needs a human/archive decision.
+
+#### Suggested Next Steps
+- Decide whether to archive or delete `codex/wallet-production-readiness` after confirming no unique work needs to be salvaged.
+- Yeet the cleanup branch once the repo-cleanup bundle is complete.
+
+---
+
 ### session v88: Remove ignored local build artifacts
 - timestamp: 2026-04-27T18:46:11-04:00
 - agent: **Codex (GPT-5)**
