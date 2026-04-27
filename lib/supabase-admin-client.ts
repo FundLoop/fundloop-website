@@ -1,5 +1,5 @@
 import { createClient, type SupabaseClient } from "@supabase/supabase-js"
-import type { Database } from "@/types/supabase"
+import type { Database } from "../types/supabase.ts"
 
 type RuntimeEnv = Record<string, string | undefined>
 

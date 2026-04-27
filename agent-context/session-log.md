@@ -1,3 +1,36 @@
+### session v85: Address Codex Edge bundling review
+- timestamp: 2026-04-27T16:59:31-04:00
+- agent: **Codex (GPT-5)**
+- branch: **codex/session-20-admin-edge-functions**
+- head: pending final commit
+
+#### Objective
+Address Codex review feedback on PR #34 by making the admin payment Edge Function bundle path Deno-safe.
+
+#### Actions Taken
+- Removed the admin operation handler's dependency on the broader wallet runtime config module and replaced it with a small Edge-local deployment-environment resolver.
+- Added Deno-compatible JSON import attributes to the wallet deployment manifests so shared runtime config can be resolved in Deno contexts.
+- Replaced the onchain supported-chain import from `wagmi/chains` with `viem/chains`, avoiding an unnecessary React/wagmi dependency in Edge function graphs.
+- Added explicit Supabase function import-map entries for `viem`, `viem/chains`, and `zod`.
+- Made the admin Supabase client type import relative and extensioned so Deno can resolve it.
+- Added `supabase/functions/deno.lock` for deterministic Deno npm resolution and ignored the generated Supabase function `node_modules` cache.
+
+#### Tests and Validation Notes
+- `deno info --config supabase/functions/deno.json supabase/functions/admin-payment-receipt-confirm/index.ts` resolved cleanly with no missing, unsupported, or unmapped imports.
+- `deno info --config supabase/functions/deno.json supabase/functions/admin-onchain-payment-reconciliation-run/index.ts` resolved cleanly with no missing, unsupported, or unmapped imports.
+- `pnpm lint` passed.
+- `pnpm typecheck` passed.
+- `pnpm test -- admin-payment-operations-command onchain-reconciliation-route runtime-config` passed.
+- Local pnpm commands emitted the existing Node engine warning because this shell is using Node 25 while the repo expects Node 22.
+
+#### Reflections
+- The review surfaced a deploy-time boundary issue that local app tests would not catch; keeping Edge import graphs explicitly Deno-visible should prevent the post-merge Supabase deploy from failing late.
+
+#### Suggested Next Steps
+- Push the fix, reply to the Codex thread with the commit reference, resolve it, and wait for CI to return green one last time.
+
+---
+
 ### session v84: Address Copilot review on admin payment edge migration
 - timestamp: 2026-04-27T16:49:34-04:00
 - agent: **Codex (GPT-5)**

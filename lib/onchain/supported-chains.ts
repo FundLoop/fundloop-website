@@ -1,5 +1,5 @@
-import { base, celo, mainnet } from "wagmi/chains"
 import type { Chain } from "viem"
+import { base, celo, mainnet } from "viem/chains"
 
 export type SupportedChainKey = "ethereum" | "base" | "celo"
 

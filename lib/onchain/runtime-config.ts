@@ -1,7 +1,7 @@
 import { z } from "zod"
-import localManifestJson from "./deployments/local.json"
-import previewManifestJson from "./deployments/preview.json"
-import productionManifestJson from "./deployments/production.json"
+import localManifestJson from "./deployments/local.json" with { type: "json" }
+import previewManifestJson from "./deployments/preview.json" with { type: "json" }
+import productionManifestJson from "./deployments/production.json" with { type: "json" }
 import { SUPPORTED_CHAIN_CONFIGS, SUPPORTED_CHAIN_KEYS, type SupportedChainKey } from "./supported-chains.ts"
 
 export const ZERO_ADDRESS = "0x0000000000000000000000000000000000000000"

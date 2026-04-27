@@ -13,7 +13,7 @@ import {
   type OnchainSubmissionStatus,
   type OnchainSubmissionSummary,
 } from "./payment-submissions.ts"
-import { createAdminSupabaseClient } from "../supabase-admin-client"
+import { createAdminSupabaseClient } from "../supabase-admin-client.ts"
 import type { Database, Tables } from "../../types/supabase.ts"
 
 export type ReconciliationRunSource = "cron" | "admin_manual"

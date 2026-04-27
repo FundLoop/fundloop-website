@@ -1,7 +1,10 @@
 {
   "imports": {
     "@cubid/api": "../../node_modules/@cubid/api/dist/index.mjs",
-    "@supabase/supabase-js": "npm:@supabase/supabase-js@2.104.0"
+    "@supabase/supabase-js": "npm:@supabase/supabase-js@2.104.0",
+    "viem": "npm:viem@2.48.1",
+    "viem/chains": "npm:viem@2.48.1/chains",
+    "zod": "npm:zod@4.3.6"
   },
   "nodeModulesDir": "auto"
 }

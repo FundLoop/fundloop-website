@@ -1,6 +1,5 @@
 import { edgeCommandFailure, edgeCommandSuccess } from "../../../lib/edge-functions/result.ts"
 import { isInternalAdminEmail } from "../../../lib/internal-admin-emails.ts"
-import { resolveDeploymentEnvironment } from "../../../lib/onchain/runtime-config.ts"
 import {
   authenticateRequest,
   authenticateRequestOrInternalSecret,
@@ -10,6 +9,22 @@ import {
   parseJsonBody,
   serve,
 } from "./command-runtime.ts"
+
+const DEPLOYMENT_ENVIRONMENTS = new Set(["local", "preview", "production"])
+
+function resolveDeploymentEnvironment() {
+  const explicitEnvironment = getEnv("FUNDLOOP_DEPLOYMENT_ENV")?.trim().toLowerCase()
+  if (explicitEnvironment && DEPLOYMENT_ENVIRONMENTS.has(explicitEnvironment)) {
+    return explicitEnvironment
+  }
+
+  const vercelEnvironment = getEnv("VERCEL_ENV")?.trim().toLowerCase()
+  if (vercelEnvironment && DEPLOYMENT_ENVIRONMENTS.has(vercelEnvironment)) {
+    return vercelEnvironment
+  }
+
+  return "local"
+}
 
 function getActorRole(user) {
   if (!user?.email || !isInternalAdminEmail(user.email, getEnv("FUNDLOOP_INTERNAL_ADMIN_EMAILS"))) {
