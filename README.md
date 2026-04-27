@@ -36,6 +36,8 @@ Copy the example file if you want to run auth and data-backed features locally:
 cp .env.example .env.local
 ```
 
+Use `.env.local` for local development, preferably pointed at local Supabase. If you keep shared non-production credentials for remote-safe smoke testing, use a separate ignored file such as `.env.remote.local` and copy or export those values only for the command that needs them. Never keep production secrets in local repo env files.
+
 Required Supabase variables:
 
 ```env
@@ -44,6 +46,8 @@ NEXT_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key
 ```
 
 Static validation commands work in a fresh clone without real Supabase credentials. Interactive auth and database-backed screens still require valid Supabase env vars.
+
+See [Environment And Testing Guide](docs/engineering/env-and-testing.md) for the local-vs-remote Supabase conventions and validation ownership map.
 
 Wallet-related variables:
 
@@ -181,6 +185,8 @@ Notes:
 - `POST /api/internal/e2e/login` is disabled unless `FUNDLOOP_E2E_ENABLED=true`, `FUNDLOOP_E2E_SECRET` is configured, and `NODE_ENV` is not `production`.
 - The local-wallet runner starts the local Hardhat node and the Next dev server for you, but it expects local Supabase env vars to already point at a running local Supabase stack.
 - The local-wallet runner temporarily overrides the local deployment manifest through `NEXT_PUBLIC_FUNDLOOP_LOCAL_WALLET_MANIFEST_JSON` so tracked manifest files stay unchanged in Git.
+
+Use `remote-safe` only with non-production Supabase credentials. Use `local-wallet` when the flow depends on local Supabase plus local chain/runtime control.
 
 ### Run the app
 

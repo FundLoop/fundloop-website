@@ -16,6 +16,7 @@ Current high-signal docs:
 - [CUBID Identity and Snapshot Model](./cubid-identity.md)
 - [Design Tokens](./design-tokens.md)
 - [Edge Function Contract Pattern](./edge-functions.md)
+- [Environment And Testing Guide](./env-and-testing.md)
 - [Information Architecture](./information-architecture.md)
 - [Internationalization](./i18n.md)
 - [Local Seed Fixtures](./local-seed.md)

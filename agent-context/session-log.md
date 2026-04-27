@@ -1,3 +1,32 @@
+### session v90: Document environment lanes and testing ownership
+- timestamp: 2026-04-27T19:18:50-04:00
+- agent: **Codex (GPT-5)**
+- branch: **codex/docs-context-cleanup**
+- head: pending final commit
+
+#### Objective
+Complete the environment and testing guidance item from the repository cleanup audit.
+
+#### Actions Taken
+- Added `docs/engineering/env-and-testing.md` to define local, remote preview/dev, and production Supabase environment lanes.
+- Documented env-file conventions for `.env.example`, `.env.local`, and optional ignored `.env.remote.local`.
+- Added a concise testing ownership table that maps common change types to their expected validation lanes.
+- Updated `README.md`, `AGENTS.md`, and `docs/engineering/README.md` to point agents and contributors at the new guide.
+- Updated `agent-context/repo-status.md` to mark environment conventions and testing strategy guidance complete.
+
+#### Tests and Validation Notes
+- Validation was documentation-focused.
+- `git diff --check` passed.
+- Reference search confirmed the new environment/testing guide is linked from the README, AGENTS guide, and engineering docs index.
+
+#### Reflections
+- The repo now has a single place to answer “which Supabase am I using?” and “which tests own this kind of change?”, which should reduce accidental remote coupling and over/under-testing.
+
+#### Suggested Next Steps
+- Decide whether to yeet the cleanup branch now or do one more pass on the remaining divergent `codex/wallet-production-readiness` branch.
+
+---
+
 ### session v89: Prune merged local feature branches
 - timestamp: 2026-04-27T19:14:00-04:00
 - agent: **Codex (GPT-5)**

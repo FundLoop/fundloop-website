@@ -199,6 +199,8 @@ For local UI-flow verification, prefer real browser smoke tests. If the task cal
 
 Do not claim a feature works unless you ran the relevant checks.
 
+For local-vs-remote Supabase env handling and test ownership by change type, use `docs/engineering/env-and-testing.md`.
+
 ---
 
 ## 7. Supabase Workflow
