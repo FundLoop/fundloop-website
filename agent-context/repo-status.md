@@ -18,5 +18,5 @@ Last reviewed: 2026-04-27
 | Supabase deploy path | Pass: the dedicated deploy workflow exists, uses branch-scoped environments, and Session 20's function/deploy hardening has landed on `dev`. |
 | Supabase Edge Function compliance | Partial: the repo guidance and docs now clearly require typed Edge Function command paths for writes, but remaining direct server/zkAS workflows should still be retired through the roadmap. |
 | Environment conventions | Partial: `.env.example` and README environment notes exist; local-vs-remote Supabase environment switching could be safer with clearer named files or scripts. |
-| Artifact hygiene | Partial: large local artifacts are ignored but present locally, including `.next`, `node_modules`, `contracts/node_modules`, `tsconfig.tsbuildinfo`, `.DS_Store`, `.playwright-cli`, and `output`. |
+| Artifact hygiene | Pass: disposable ignored artifacts were removed locally, including `.next`, `.playwright-cli`, `output`, `.DS_Store`, `tsconfig.tsbuildinfo`, and `supabase/functions/node_modules`; dependency installs under `node_modules` and `contracts/node_modules` were intentionally retained. |
 | Branch hygiene | Partial: several old local `codex/*` branches are present; deletion should be done only after checking merge/PR status so the active Session 20 branch is preserved. |

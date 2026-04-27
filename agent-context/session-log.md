@@ -1,3 +1,36 @@
+### session v88: Remove ignored local build artifacts
+- timestamp: 2026-04-27T18:46:11-04:00
+- agent: **Codex (GPT-5)**
+- branch: **codex/docs-context-cleanup**
+- head: pending final commit
+
+#### Objective
+Complete the local artifact hygiene item from the repository cleanup audit without touching tracked source files or dependency installs.
+
+#### Actions Taken
+- Removed ignored local build/cache artifacts:
+  - `.next`
+  - `.playwright-cli`
+  - `output`
+  - `.DS_Store`
+  - `tsconfig.tsbuildinfo`
+  - `supabase/functions/node_modules`
+- Preserved tracked files such as `supabase/functions/deno.lock`.
+- Preserved installed dependencies under root `node_modules` and `contracts/node_modules` so local development remains ready.
+- Updated `agent-context/repo-status.md` to mark artifact hygiene complete.
+
+#### Tests and Validation Notes
+- Verified `git status` stayed clean except for the tracked `repo-status` and session-log updates.
+- No runtime tests were run because this pass only removed ignored local artifacts.
+
+#### Reflections
+- This reclaimed local build/cache space while avoiding dependency reinstall churn.
+
+#### Suggested Next Steps
+- Continue the cleanup branch with branch hygiene or yeet the docs/context plus artifact-status cleanup when ready.
+
+---
+
 ### session v87: Move durable architecture docs out of agent context
 - timestamp: 2026-04-27T18:42:11-04:00
 - agent: **Codex (GPT-5)**
