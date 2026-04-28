@@ -1,3 +1,178 @@
+### session v92: Address PR 35 review comments
+- timestamp: 2026-04-27T19:49:10-04:00
+- agent: **Codex (GPT-5)**
+- branch: **codex/docs-context-cleanup**
+- head: pending final commit
+
+#### Objective
+Address actionable Copilot review feedback on PR #35 before merge.
+
+#### Actions Taken
+- Removed trailing whitespace from the backlog execution-rules header.
+- Clarified the README Edge Function section by listing concrete command slugs instead of mixing command names with domain descriptions.
+
+#### Tests and Validation Notes
+- Validation was scoped to the documentation-only review fixes.
+- `git diff --check` passed after the edits.
+
+#### Reflections
+- The follow-up keeps the cleanup PR focused while making the Edge Function inventory more useful for future agents.
+
+#### Suggested Next Steps
+- Resolve the addressed Copilot threads and continue PR review follow-through.
+
+---
+
+### session v91: Delete stale wallet readiness branch
+- timestamp: 2026-04-27T19:33:21-04:00
+- agent: **Codex (GPT-5)**
+- branch: **codex/docs-context-cleanup**
+- head: pending final commit
+
+#### Objective
+Finish branch hygiene by deleting the remaining stale `codex/wallet-production-readiness` branch after analysis showed it had no salvage-worthy unique work.
+
+#### Actions Taken
+- Rechecked local branches and confirmed `codex/docs-context-cleanup` was the active cleanup branch.
+- Deleted `codex/wallet-production-readiness`.
+- Verified the only remaining local `codex/*` branch is `codex/docs-context-cleanup`.
+- Updated `agent-context/repo-status.md` to mark branch hygiene complete.
+
+#### Tests and Validation Notes
+- No runtime tests were run because this pass only deleted a local branch and updated cleanup documentation.
+- `git branch` confirmed no stale local `codex/*` branches remain.
+
+#### Reflections
+- The branch list is now intentionally small: only `dev` and the active cleanup branch remain locally.
+
+#### Suggested Next Steps
+- Yeet the cleanup branch to `dev`, then continue with Session 21.
+
+---
+
+### session v90: Document environment lanes and testing ownership
+- timestamp: 2026-04-27T19:18:50-04:00
+- agent: **Codex (GPT-5)**
+- branch: **codex/docs-context-cleanup**
+- head: pending final commit
+
+#### Objective
+Complete the environment and testing guidance item from the repository cleanup audit.
+
+#### Actions Taken
+- Added `docs/engineering/env-and-testing.md` to define local, remote preview/dev, and production Supabase environment lanes.
+- Documented env-file conventions for `.env.example`, `.env.local`, and optional ignored `.env.remote.local`.
+- Added a concise testing ownership table that maps common change types to their expected validation lanes.
+- Updated `README.md`, `AGENTS.md`, and `docs/engineering/README.md` to point agents and contributors at the new guide.
+- Updated `agent-context/repo-status.md` to mark environment conventions and testing strategy guidance complete.
+
+#### Tests and Validation Notes
+- Validation was documentation-focused.
+- `git diff --check` passed.
+- Reference search confirmed the new environment/testing guide is linked from the README, AGENTS guide, and engineering docs index.
+
+#### Reflections
+- The repo now has a single place to answer “which Supabase am I using?” and “which tests own this kind of change?”, which should reduce accidental remote coupling and over/under-testing.
+
+#### Suggested Next Steps
+- Decide whether to yeet the cleanup branch now or do one more pass on the remaining divergent `codex/wallet-production-readiness` branch.
+
+---
+
+### session v89: Prune merged local feature branches
+- timestamp: 2026-04-27T19:14:00-04:00
+- agent: **Codex (GPT-5)**
+- branch: **codex/docs-context-cleanup**
+- head: pending final commit
+
+#### Objective
+Complete the branch-hygiene item from the repository cleanup audit by removing local `codex/*` branches that are clearly merged into `dev`.
+
+#### Actions Taken
+- Checked local `codex/*` branches against `origin/dev` and GitHub PR state.
+- Deleted the safe merged local branches:
+  - `codex/participation-marketing-refresh` from merged PR #17
+  - `codex/supabase-function-entrypoints` from merged PR #28
+  - `codex/supabase-function-bundling-repair` from merged PRs #29 and #30
+  - `codex/supabase-cubid-deno-repair` from merged PR #31
+- Left `codex/docs-context-cleanup` because it is the active cleanup branch.
+- Left `codex/wallet-production-readiness` because it has no GitHub PR and diverges from `dev`, so it is not mechanically safe to delete without a separate decision.
+- Updated `agent-context/repo-status.md` with the branch-hygiene outcome and remaining recommendation.
+
+#### Tests and Validation Notes
+- Verified each deleted branch was listed as merged into `origin/dev` and had a merged PR where available.
+- No runtime tests were run because this pass only deleted local Git branches and updated cleanup documentation.
+
+#### Reflections
+- The local branch list is now small enough to reason about: one active cleanup branch plus one older divergent wallet branch that needs a human/archive decision.
+
+#### Suggested Next Steps
+- Decide whether to archive or delete `codex/wallet-production-readiness` after confirming no unique work needs to be salvaged.
+- Yeet the cleanup branch once the repo-cleanup bundle is complete.
+
+---
+
+### session v88: Remove ignored local build artifacts
+- timestamp: 2026-04-27T18:46:11-04:00
+- agent: **Codex (GPT-5)**
+- branch: **codex/docs-context-cleanup**
+- head: pending final commit
+
+#### Objective
+Complete the local artifact hygiene item from the repository cleanup audit without touching tracked source files or dependency installs.
+
+#### Actions Taken
+- Removed ignored local build/cache artifacts:
+  - `.next`
+  - `.playwright-cli`
+  - `output`
+  - `.DS_Store`
+  - `tsconfig.tsbuildinfo`
+  - `supabase/functions/node_modules`
+- Preserved tracked files such as `supabase/functions/deno.lock`.
+- Preserved installed dependencies under root `node_modules` and `contracts/node_modules` so local development remains ready.
+- Updated `agent-context/repo-status.md` to mark artifact hygiene complete.
+
+#### Tests and Validation Notes
+- Verified `git status` stayed clean except for the tracked `repo-status` and session-log updates.
+- No runtime tests were run because this pass only removed ignored local artifacts.
+
+#### Reflections
+- This reclaimed local build/cache space while avoiding dependency reinstall churn.
+
+#### Suggested Next Steps
+- Continue the cleanup branch with branch hygiene or yeet the docs/context plus artifact-status cleanup when ready.
+
+---
+
+### session v87: Move durable architecture docs out of agent context
+- timestamp: 2026-04-27T18:42:11-04:00
+- agent: **Codex (GPT-5)**
+- branch: **codex/docs-context-cleanup**
+- head: pending final commit
+
+#### Objective
+Complete the first repo-cleanup documentation bundle by keeping `agent-context/` lightweight, moving long-lived architecture docs into engineering docs, and tightening the Edge Function backend-boundary guidance.
+
+#### Actions Taken
+- Moved the backgrounder, current-state architecture, and target-state architecture docs from `agent-context/` into `docs/engineering/`.
+- Updated `agent-context/README.md`, `docs/engineering/README.md`, route/IA docs, and the backlog header so planning links point at the new canonical engineering-doc locations.
+- Refreshed the README Edge Function section so it reflects the current migrated command domains, CUBID Edge Function paths, and the temporary package/import-map state.
+- Tightened `AGENTS.md` to state the repo-wide Edge Function command rule for new writes, the migration posture for legacy direct writes, and the preferred boundary for workflow/agent-facing reads.
+- Updated `agent-context/repo-status.md` to reflect that Session 20 has landed and that the docs/context cleanup items are now resolved.
+
+#### Tests and Validation Notes
+- Repo-wide reference search confirmed no live docs still point to moved architecture files under `agent-context/`; remaining matches are historical session-log entries.
+- Validation is documentation-focused; no runtime behavior changed.
+
+#### Reflections
+- Keeping durable architecture under `docs/engineering/` makes `agent-context/` much less noisy for implementation agents while preserving the planning trail.
+
+#### Suggested Next Steps
+- Continue with Session 21 now that the active context surface is lighter and the Edge Function backend-boundary rule is explicit.
+
+---
+
 ### session v86: Preserve admin confirmation domain errors
 - timestamp: 2026-04-27T17:04:48-04:00
 - agent: **Codex (GPT-5)**

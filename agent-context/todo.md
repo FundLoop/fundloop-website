@@ -1,12 +1,12 @@
 # FundLoop TODO
 
-This file is the current execution roadmap for bringing FundLoop from the present semi-finished app shell to the target operational architecture described in `current-state-architecture.md`, `target-state-architecture.md`, and `backgrounder-for-agents.md`.
+This file is the current execution roadmap for bringing FundLoop from the present semi-finished app shell to the target operational architecture described in `docs/engineering/current-state-architecture.md`, `docs/engineering/target-state-architecture.md`, and `docs/engineering/backgrounder-for-agents.md`.
 
 Each item below is intentionally sized to one agentic coding session. The sequence matters. Later work should assume the earlier sessions are complete unless the backlog is deliberately re-planned.
 
 ## Execution Rules
-- Always build on feature branches. 
-- When starting a task: update the status to "started", set the branch and timestamp started. Reference `backgrounder-for-agents.md`, `current-state-architecture.md`, and `target-state-architecture.md` before starting to build.
+- Always build on feature branches.
+- When starting a task: update the status to "started", set the branch and timestamp started. Reference `docs/engineering/backgrounder-for-agents.md`, `docs/engineering/current-state-architecture.md`, and `docs/engineering/target-state-architecture.md` before starting to build.
 - While building: Make underway commits if needed, always with an accompanying session-log entry. Build unit tests and smoke tests for new features as needed. Smoke test before reporting complete. Do not write in this doc what you actually did, instead write that in the session-log.
 - At the end of each task: update relevant long-lived engineering docs in `docs/engineering/` whenever architecture, route decisions, workflows, or operating assumptions changed.
 - If a todo needs to be split, or if any spillover actions were not completed, then remove those words from your todo and instead create new minor todo at the right place in the document, for example a new `12.1` immediately after todo 12.

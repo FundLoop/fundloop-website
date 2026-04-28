@@ -1,10 +1,11 @@
 # backgrounder-for-agents.md
 
 Related planning docs:
-- [Agent Context Index](./README.md)
+- [Engineering Docs Index](./README.md)
+- [Agent Context Index](../../agent-context/README.md)
 - [Current-State Architecture](./current-state-architecture.md)
 - [Target-State Architecture](./target-state-architecture.md)
-- [TODO Roadmap](./todo.md)
+- [TODO Roadmap](../../agent-context/todo.md)
 
 ## Purpose of this Document
 

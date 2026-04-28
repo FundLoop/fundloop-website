@@ -3,10 +3,11 @@
 Last reviewed: 2026-04-14
 
 Related planning docs:
-- [Agent Context Index](./README.md)
+- [Engineering Docs Index](./README.md)
+- [Agent Context Index](../../agent-context/README.md)
 - [Backgrounder for Agents](./backgrounder-for-agents.md)
 - [Target-State Architecture](./target-state-architecture.md)
-- [TODO Roadmap](./todo.md)
+- [TODO Roadmap](../../agent-context/todo.md)
 
 ## 1. What This Repo Is Today
 

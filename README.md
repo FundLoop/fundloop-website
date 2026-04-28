@@ -36,6 +36,8 @@ Copy the example file if you want to run auth and data-backed features locally:
 cp .env.example .env.local
 ```
 
+Use `.env.local` for local development, preferably pointed at local Supabase. If you keep shared non-production credentials for remote-safe smoke testing, use a separate ignored file such as `.env.remote.local` and copy or export those values only for the command that needs them. Never keep production secrets in local repo env files.
+
 Required Supabase variables:
 
 ```env
@@ -44,6 +46,8 @@ NEXT_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key
 ```
 
 Static validation commands work in a fresh clone without real Supabase credentials. Interactive auth and database-backed screens still require valid Supabase env vars.
+
+See [Environment And Testing Guide](docs/engineering/env-and-testing.md) for the local-vs-remote Supabase conventions and validation ownership map.
 
 Wallet-related variables:
 
@@ -132,19 +136,38 @@ To run scheduled payment reconciliation, post to `/api/internal/payments/reconci
 
 ## Supabase Edge Functions
 
-FundLoop is migrating write-heavy flows onto Supabase Edge Functions behind shared app-side adapters.
+FundLoop is migrating backend workflow access onto Supabase Edge Functions behind shared, typed app-side adapters. New write paths should use command-style Edge Functions unless an engineering doc explicitly records a temporary exception. Authenticated reads that feed workflows, agents, or cross-surface product state should also move toward server-owned read models or typed Edge Function boundaries instead of ad hoc browser table access.
 
-The first real command is:
+Current concrete command slugs include:
 
 - `project-payment-drafts-create`
+- `user-onboarding-draft-upsert`
+- `user-onboarding-draft-clear`
+- `user-onboarding-publish`
+- `project-onboarding-draft-upsert`
+- `project-onboarding-draft-clear`
+- `project-onboarding-publish`
+- `user-cubid-resolve-email`
+- `user-cubid-sync-profile`
+- `project-crypto-route-create`
+- `project-crypto-route-update`
+- `project-crypto-route-move`
+- `project-crypto-route-enabled-set`
+- `project-onchain-payment-submission-record`
+- `admin-payment-receipt-confirm`
+- `admin-onchain-payment-reconciliation-run`
 
-Run it locally once the local Supabase stack is up:
+Run the first local function smoke once the local Supabase stack is up:
 
 ```bash
 pnpm supabase:functions:serve:project-payment-drafts-create
 ```
 
-The browser path for project payment draft creation now calls the function directly via the shared Edge Function adapter, while the legacy server action remains as a compatibility wrapper.
+The browser paths call function-specific adapters under `lib/edge-functions/`. Legacy server actions remain only as temporary compatibility wrappers while older callers are migrated.
+
+CUBID identity writes also use Edge Functions. FundLoop currently depends on local CUBID package artifacts for `@cubid/api`, `@cubid/web2`, and `@cubid/web2-react`; the Supabase function import map resolves `@cubid/api` from the installed package until the CUBID repo publishes a first-class npm/JSR package. Do not put `CUBID_API_KEY` in client code.
+
+See [Edge Function Contract Pattern](docs/engineering/edge-functions.md), [CUBID Identity and Snapshot Model](docs/engineering/cubid-identity.md), and [Supabase Remote Deployments](docs/engineering/supabase-deployments.md) for the current backend contract details.
 
 ## Playwright E2E Workflow
 
@@ -170,6 +193,8 @@ Notes:
 - `POST /api/internal/e2e/login` is disabled unless `FUNDLOOP_E2E_ENABLED=true`, `FUNDLOOP_E2E_SECRET` is configured, and `NODE_ENV` is not `production`.
 - The local-wallet runner starts the local Hardhat node and the Next dev server for you, but it expects local Supabase env vars to already point at a running local Supabase stack.
 - The local-wallet runner temporarily overrides the local deployment manifest through `NEXT_PUBLIC_FUNDLOOP_LOCAL_WALLET_MANIFEST_JSON` so tracked manifest files stay unchanged in Git.
+
+Use `remote-safe` only with non-production Supabase credentials. Use `local-wallet` when the flow depends on local Supabase plus local chain/runtime control.
 
 ### Run the app
 
@@ -231,7 +256,7 @@ If you are working on zkAS changes, expect to touch both the app layer and the S
 - `tests/` contains Vitest coverage.
 - `types/` contains shared TypeScript and Supabase types.
 - `zkas/` contains the local zkActivitySum execution engine and runner-related code.
-- `agent-context/` contains lightweight live agent context such as the backlog and session log.
+- `agent-context/` contains lightweight live agent context such as the backlog, repo-status snapshot, and session log.
 
 ## Notes
 
