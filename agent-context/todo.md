@@ -245,12 +245,12 @@ Add the core schema and application model for monthly economic cycles. Today mon
 
 ## Session 22: Build the end-of-month lock workflow
 
-- Status: Not started
-- Timestamp started: TBD
-- Timestamp completed: TBD
-- Feature branch: TBD
-- Head: TBD
-- Session-log reference(s): TBD
+- Status: Complete
+- Timestamp started: 2026-04-28T04:39:34-0400
+- Timestamp completed: 2026-04-28T04:42:45-0400
+- Feature branch: codex/session-22-monthly-cycle-lock
+- Head: pending final commit
+- Session-log reference(s): session v95
 
 Implement the first monthly cycle command: lock the cycle. This should freeze the eligible contribution inputs, identity snapshot references, and relevant payment/reconciliation state needed for deterministic downstream computation. The lock step should be explicit, repeat-safe, and auditable. This is where the product starts to become a true monthly coordination engine rather than just a payment collection app. The output of this session should be that operators can close a month intentionally instead of relying on a shifting combination of live rows and mental bookkeeping.
 

@@ -46,6 +46,10 @@ export type MonthlyCycleRow = Pick<
   | "status"
   | "opened_at"
   | "locked_at"
+  | "locked_manifest_hash"
+  | "locked_by_user_id"
+  | "lock_override_unresolved_onchain"
+  | "lock_override_reason"
   | "prep_started_at"
   | "calculation_started_at"
   | "verification_started_at"
@@ -121,6 +125,12 @@ export type MonthlyCycleAdminSummary = {
   notes: {
     operatorNote: string | null
     statusNote: string | null
+  }
+  lock: {
+    lockedManifestHash: string | null
+    lockedByUserId: string | null
+    overrideUnresolvedOnchain: boolean
+    overrideReason: string | null
   }
   payments: {
     count: number
@@ -238,6 +248,12 @@ export function buildMonthlyCycleAdminOverview(input: {
         operatorNote: cycle.operator_note,
         statusNote: cycle.status_note,
       },
+      lock: {
+        lockedManifestHash: cycle.locked_manifest_hash,
+        lockedByUserId: cycle.locked_by_user_id,
+        overrideUnresolvedOnchain: cycle.lock_override_unresolved_onchain,
+        overrideReason: cycle.lock_override_reason,
+      },
       payments: {
         count: countByCycle(input.payments, cycle.id),
         confirmedCount: countByCycle(input.payments, cycle.id, (payment) => payment.ref_payment_statuses?.code === "confirmed"),
@@ -311,7 +327,7 @@ export async function loadMonthlyCycleAdminOverview(): Promise<MonthlyCycleAdmin
       supabase
         .from("monthly_cycles")
         .select(
-          "id, cycle_key, year, month, period_start, period_end, status, opened_at, locked_at, prep_started_at, calculation_started_at, verification_started_at, approval_started_at, distribution_started_at, completed_at, reporting_published_at, operator_note, status_note",
+          "id, cycle_key, year, month, period_start, period_end, status, opened_at, locked_at, locked_manifest_hash, locked_by_user_id, lock_override_unresolved_onchain, lock_override_reason, prep_started_at, calculation_started_at, verification_started_at, approval_started_at, distribution_started_at, completed_at, reporting_published_at, operator_note, status_note",
         )
         .order("period_start", { ascending: false })
         .limit(18),

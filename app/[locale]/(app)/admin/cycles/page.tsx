@@ -1,5 +1,6 @@
 import Link from "next/link"
 import { AlertTriangle, CalendarClock, DollarSign, FileText, Sigma } from "lucide-react"
+import { MonthlyCycleLockButton } from "@/components/admin/monthly-cycle-lock-button"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -60,8 +61,8 @@ export default async function AdminMonthlyCyclesPage() {
               Monthly Cycles
             </h1>
             <p className="max-w-2xl text-base leading-7 text-[var(--text-muted)]">
-              Read-only operator overview of the economic month records that now anchor payments, onchain reconciliation,
-              zkAS datasets, calculation outputs, and later payout/reporting steps.
+              Operator overview of the economic month records that now anchor payments, onchain reconciliation, zkAS
+              datasets, calculation outputs, and later payout/reporting steps.
             </p>
           </div>
           <div className="flex flex-wrap gap-3">
@@ -147,9 +148,9 @@ export default async function AdminMonthlyCyclesPage() {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-3xl font-semibold">Read-only</div>
+            <div className="text-3xl font-semibold">Lock-ready</div>
             <p className="mt-2 text-xs uppercase tracking-[0.16em] text-[var(--text-soft)]">
-              Lock commands start in Session 22
+              Open cycles can be frozen into manifests
             </p>
           </CardContent>
         </Card>
@@ -172,12 +173,13 @@ export default async function AdminMonthlyCyclesPage() {
                 <TableHead>Reconciliation</TableHead>
                 <TableHead>zkAS</TableHead>
                 <TableHead>Reporting</TableHead>
+                <TableHead>Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {data.cycles.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={6} className="py-10 text-center text-[var(--text-muted)]">
+                  <TableCell colSpan={7} className="py-10 text-center text-[var(--text-muted)]">
                     No monthly cycles exist yet. The migration backfill will create cycles once month-bearing payment,
                     project stats, or zkAS rows are present.
                   </TableCell>
@@ -195,6 +197,11 @@ export default async function AdminMonthlyCyclesPage() {
                       <Badge variant={statusVariant(cycle.status)}>{monthlyCycleStatusLabels[cycle.status]}</Badge>
                       {cycle.stageTimestamps.lockedAt ? (
                         <div className="mt-1 text-xs text-[var(--text-muted)]">Locked {new Date(cycle.stageTimestamps.lockedAt).toLocaleString()}</div>
+                      ) : null}
+                      {cycle.lock.lockedManifestHash ? (
+                        <div className="mt-1 font-mono text-[0.68rem] text-[var(--text-soft)]">
+                          {cycle.lock.lockedManifestHash.slice(0, 12)}...
+                        </div>
                       ) : null}
                     </TableCell>
                     <TableCell>
@@ -224,6 +231,13 @@ export default async function AdminMonthlyCyclesPage() {
                       <div className="text-xs text-[var(--text-muted)]">
                         {cycle.zkas.publishedResultCount} user results · {cycle.zkas.projectSummaryCount} project summaries
                       </div>
+                    </TableCell>
+                    <TableCell>
+                      {cycle.status === "open" ? (
+                        <MonthlyCycleLockButton cycleKey={cycle.cycleKey} />
+                      ) : (
+                        <span className="text-xs text-[var(--text-muted)]">No lock action</span>
+                      )}
                     </TableCell>
                   </TableRow>
                 ))

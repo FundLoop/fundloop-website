@@ -135,10 +135,10 @@ Session 19 hardened the payment operation path without moving URLs.
 
 Session 21 added the first-class monthly cycle operator surface.
 
-- `/[locale]/admin/cycles` is now the read-only operator overview for economic month records.
+- `/[locale]/admin/cycles` is now the operator overview for economic month records and exposes the audited lock action for open cycles.
 - Monthly cycles are the canonical anchor for payment totals, onchain reconciliation, zkAS datasets/runs, and later payout/reporting stages.
 - The app-shell admin subnav now includes Monthly Cycles beside Payments and zkAS.
-- Session 21 did not add lock or transition commands; those begin in Session 22.
+- Session 22 added the first monthly-cycle command, `monthly-cycle-lock`; later transition commands should extend the same operator workspace instead of creating separate admin roots.
 
 ## Canonical Entry Routes
 

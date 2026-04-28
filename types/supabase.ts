@@ -227,6 +227,11 @@ export type Database = {
           distribution_started_at: string | null
           id: number
           locked_at: string | null
+          locked_by_user_id: string | null
+          locked_manifest: Json | null
+          locked_manifest_hash: string | null
+          lock_override_reason: string | null
+          lock_override_unresolved_onchain: boolean
           month: number
           opened_at: string
           operator_note: string | null
@@ -251,6 +256,11 @@ export type Database = {
           distribution_started_at?: string | null
           id?: number
           locked_at?: string | null
+          locked_by_user_id?: string | null
+          locked_manifest?: Json | null
+          locked_manifest_hash?: string | null
+          lock_override_reason?: string | null
+          lock_override_unresolved_onchain?: boolean
           month: number
           opened_at?: string
           operator_note?: string | null
@@ -275,6 +285,11 @@ export type Database = {
           distribution_started_at?: string | null
           id?: number
           locked_at?: string | null
+          locked_by_user_id?: string | null
+          locked_manifest?: Json | null
+          locked_manifest_hash?: string | null
+          lock_override_reason?: string | null
+          lock_override_unresolved_onchain?: boolean
           month?: number
           opened_at?: string
           operator_note?: string | null
@@ -298,11 +313,78 @@ export type Database = {
             referencedColumns: ["user_id"]
           },
           {
+            foreignKeyName: "monthly_cycles_locked_by_user_id_fkey"
+            columns: ["locked_by_user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["user_id"]
+          },
+          {
             foreignKeyName: "monthly_cycles_updated_by_user_id_fkey"
             columns: ["updated_by_user_id"]
             isOneToOne: false
             referencedRelation: "users"
             referencedColumns: ["user_id"]
+          },
+        ]
+      }
+      monthly_cycle_events: {
+        Row: {
+          actor_role: string
+          actor_user_id: string | null
+          attempt_id: string
+          created_at: string
+          cycle_key: string
+          event_type: string
+          id: number
+          message: string | null
+          metadata: Json
+          monthly_cycle_id: number | null
+          outcome: string
+          severity: string
+        }
+        Insert: {
+          actor_role: string
+          actor_user_id?: string | null
+          attempt_id: string
+          created_at?: string
+          cycle_key: string
+          event_type: string
+          id?: number
+          message?: string | null
+          metadata?: Json
+          monthly_cycle_id?: number | null
+          outcome: string
+          severity?: string
+        }
+        Update: {
+          actor_role?: string
+          actor_user_id?: string | null
+          attempt_id?: string
+          created_at?: string
+          cycle_key?: string
+          event_type?: string
+          id?: number
+          message?: string | null
+          metadata?: Json
+          monthly_cycle_id?: number | null
+          outcome?: string
+          severity?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "monthly_cycle_events_actor_user_id_fkey"
+            columns: ["actor_user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "monthly_cycle_events_monthly_cycle_id_fkey"
+            columns: ["monthly_cycle_id"]
+            isOneToOne: false
+            referencedRelation: "monthly_cycles"
+            referencedColumns: ["id"]
           },
         ]
       }

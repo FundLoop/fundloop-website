@@ -49,6 +49,8 @@ The first migrated domains are:
 - internal payment operations:
   - `admin-payment-receipt-confirm`
   - `admin-onchain-payment-reconciliation-run`
+- monthly-cycle operations:
+  - `monthly-cycle-lock`
 - `user-cubid-resolve-email`
 - `user-cubid-sync-profile`
 - onboarding writes:
@@ -96,6 +98,12 @@ For internal payment operations:
 - the stable internal route `/api/internal/payments/reconcile-onchain` is now only a secret-gated wrapper around the reconciliation Edge Function
 - operator Edge Functions can authenticate either through a real Supabase user JWT or through `x-fundloop-cron-secret` for internal system callers
 
+For monthly-cycle operations:
+
+- `monthly-cycle-lock` is the first command in the monthly cadence domain
+- the command authenticates an internal admin, reattaches same-month operational rows, blocks unresolved onchain submissions by default, and stores a deterministic lock manifest plus hash on `monthly_cycles`
+- the admin cycles UI calls the browser adapter directly and only permits unresolved-onchain override after a blocked attempt plus an explicit operator reason
+
 The migration is intentionally incremental so the transport layer can stabilize before broader read migration and later founder/user workspace work.
 
 ## Remote Deployment
@@ -134,6 +142,7 @@ supabase functions serve project-crypto-route-enabled-set --env-file .env.local
 supabase functions serve project-onchain-payment-submission-record --env-file .env.local
 supabase functions serve admin-payment-receipt-confirm --env-file .env.local
 supabase functions serve admin-onchain-payment-reconciliation-run --env-file .env.local
+supabase functions serve monthly-cycle-lock --env-file .env.local
 ```
 
 Once the local stack is running, invoke the command through the app or by calling the local functions endpoint with an authenticated bearer token.

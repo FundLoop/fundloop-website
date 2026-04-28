@@ -1,3 +1,41 @@
+### session v95: Add monthly-cycle lock workflow
+- timestamp: 2026-04-28T04:42:45-04:00
+- agent: **Codex (GPT-5)**
+- branch: **codex/session-22-monthly-cycle-lock**
+- head: pending final commit
+
+#### Objective
+Implement Session 22 by adding the first monthly-cycle mutation: an audited end-of-month lock command that freezes an open cycle into a deterministic manifest for later prep, calculation, payout, and reporting work.
+
+#### Actions Taken
+- Added a forward migration for monthly-cycle lock fields and `monthly_cycle_events` audit records.
+- Added the typed `monthly-cycle-lock` Edge Function contract, browser/server adapters, Deno function entrypoint, and shared domain command.
+- Implemented lock behavior that reattaches same-month operational rows, snapshots confirmed payments, onchain reconciliation state, approved zkAS inputs, and active participants' CUBID identity summary, then stores a SHA-256 manifest hash.
+- Blocked unresolved onchain submissions by default and added a strongly worded admin override modal that requires an explicit reason before retrying.
+- Updated `/[locale]/admin/cycles` from read-only overview to a lock-capable operator surface for open cycles.
+- Updated monthly-cycle, Edge Function, navigation, and route inventory docs, plus Session 22 backlog metadata.
+
+#### Tests and Validation Notes
+- `pnpm test tests/monthly-cycle-lock-contract.test.ts tests/monthly-cycle-lock-button.test.tsx tests/monthly-cycle-lock-command.test.ts tests/monthly-cycles.test.ts` passed.
+- `pnpm lint` passed.
+- `pnpm test` passed.
+- `pnpm typecheck` passed.
+- `pnpm build` passed.
+- `pnpm dlx node@22.22.1 /opt/homebrew/bin/pnpm check` passed.
+- `git diff --check` passed.
+- Local Supabase migration smoke was attempted, but `supabase start` tore the stack down because analytics/realtime/studio did not become healthy and `supabase_db_fundloop` was not available afterward.
+- The local shell still emits the repo's existing Node 25 engine warning for commands run without the Node 22 wrapper; the Node 22 `pnpm check` gate passed.
+
+#### Reflections
+- The lock point now creates the first durable handoff artifact in the monthly cadence. That makes downstream prep and calculation sessions much safer because they can depend on a frozen manifest rather than live mutable rows.
+- The unresolved-onchain override is intentionally available but uncomfortable, which fits the bookkeeping risk: operators can proceed when needed, but the reason is permanently attached to the cycle.
+
+#### Suggested Next Steps
+- Repair the local Supabase health issue separately so migration smoke can be rerun before or during the PR.
+- Implement Session 23: cycle prep and exception review workspace using the locked manifest as the input boundary.
+
+---
+
 ### session v94: Smoke monthly-cycle migration locally
 - timestamp: 2026-04-28T03:14:30-04:00
 - agent: **Codex (GPT-5)**
