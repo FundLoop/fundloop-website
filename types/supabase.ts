@@ -216,6 +216,96 @@ export type Database = {
         }
         Relationships: []
       }
+      monthly_cycles: {
+        Row: {
+          approval_started_at: string | null
+          calculation_started_at: string | null
+          completed_at: string | null
+          created_at: string
+          created_by_user_id: string | null
+          cycle_key: string
+          distribution_started_at: string | null
+          id: number
+          locked_at: string | null
+          month: number
+          opened_at: string
+          operator_note: string | null
+          period_end: string
+          period_start: string
+          prep_started_at: string | null
+          reporting_published_at: string | null
+          status: Database["public"]["Enums"]["monthly_cycle_status"]
+          status_note: string | null
+          updated_at: string
+          updated_by_user_id: string | null
+          verification_started_at: string | null
+          year: number
+        }
+        Insert: {
+          approval_started_at?: string | null
+          calculation_started_at?: string | null
+          completed_at?: string | null
+          created_at?: string
+          created_by_user_id?: string | null
+          cycle_key: string
+          distribution_started_at?: string | null
+          id?: number
+          locked_at?: string | null
+          month: number
+          opened_at?: string
+          operator_note?: string | null
+          period_end: string
+          period_start: string
+          prep_started_at?: string | null
+          reporting_published_at?: string | null
+          status?: Database["public"]["Enums"]["monthly_cycle_status"]
+          status_note?: string | null
+          updated_at?: string
+          updated_by_user_id?: string | null
+          verification_started_at?: string | null
+          year: number
+        }
+        Update: {
+          approval_started_at?: string | null
+          calculation_started_at?: string | null
+          completed_at?: string | null
+          created_at?: string
+          created_by_user_id?: string | null
+          cycle_key?: string
+          distribution_started_at?: string | null
+          id?: number
+          locked_at?: string | null
+          month?: number
+          opened_at?: string
+          operator_note?: string | null
+          period_end?: string
+          period_start?: string
+          prep_started_at?: string | null
+          reporting_published_at?: string | null
+          status?: Database["public"]["Enums"]["monthly_cycle_status"]
+          status_note?: string | null
+          updated_at?: string
+          updated_by_user_id?: string | null
+          verification_started_at?: string | null
+          year?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "monthly_cycles_created_by_user_id_fkey"
+            columns: ["created_by_user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "monthly_cycles_updated_by_user_id_fkey"
+            columns: ["updated_by_user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["user_id"]
+          },
+        ]
+      }
       newsletter_subscribers: {
         Row: {
           email: string
@@ -518,6 +608,7 @@ export type Database = {
           last_checked_at: string | null
           matched_log_index: number | null
           metadata: Json | null
+          monthly_cycle_id: number | null
           payment_id: number | null
           payment_method_id: number
           period_id: number
@@ -550,6 +641,7 @@ export type Database = {
           last_checked_at?: string | null
           matched_log_index?: number | null
           metadata?: Json | null
+          monthly_cycle_id?: number | null
           payment_id?: number | null
           payment_method_id: number
           period_id: number
@@ -582,6 +674,7 @@ export type Database = {
           last_checked_at?: string | null
           matched_log_index?: number | null
           metadata?: Json | null
+          monthly_cycle_id?: number | null
           payment_id?: number | null
           payment_method_id?: number
           period_id?: number
@@ -613,6 +706,13 @@ export type Database = {
             columns: ["intake_contract_id"]
             isOneToOne: false
             referencedRelation: "chain_intake_contracts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "onchain_payment_submissions_monthly_cycle_id_fkey"
+            columns: ["monthly_cycle_id"]
+            isOneToOne: false
+            referencedRelation: "monthly_cycles"
             referencedColumns: ["id"]
           },
           {
@@ -734,6 +834,7 @@ export type Database = {
           created_at: string | null
           deleted_at: string | null
           id: number
+          monthly_cycle_id: number | null
           notes: string | null
           paid_at: string | null
           payment_amount: number
@@ -753,6 +854,7 @@ export type Database = {
           created_at?: string | null
           deleted_at?: string | null
           id?: number
+          monthly_cycle_id?: number | null
           notes?: string | null
           paid_at?: string | null
           payment_amount: number
@@ -772,6 +874,7 @@ export type Database = {
           created_at?: string | null
           deleted_at?: string | null
           id?: number
+          monthly_cycle_id?: number | null
           notes?: string | null
           paid_at?: string | null
           payment_amount?: number
@@ -787,6 +890,13 @@ export type Database = {
           updated_by?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "payments_monthly_cycle_id_fkey"
+            columns: ["monthly_cycle_id"]
+            isOneToOne: false
+            referencedRelation: "monthly_cycles"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "payments_payment_method_id_fkey"
             columns: ["payment_method_id"]
@@ -972,6 +1082,7 @@ export type Database = {
           created_at: string | null
           id: number
           month: number | null
+          monthly_cycle_id: number | null
           monthly_revenue: number
           pledged_percentage: number | null
           project_id: number
@@ -985,6 +1096,7 @@ export type Database = {
           created_at?: string | null
           id?: number
           month?: number | null
+          monthly_cycle_id?: number | null
           monthly_revenue: number
           pledged_percentage?: number | null
           project_id: number
@@ -998,6 +1110,7 @@ export type Database = {
           created_at?: string | null
           id?: number
           month?: number | null
+          monthly_cycle_id?: number | null
           monthly_revenue?: number
           pledged_percentage?: number | null
           project_id?: number
@@ -1006,6 +1119,13 @@ export type Database = {
           year?: number | null
         }
         Relationships: [
+          {
+            foreignKeyName: "project_stats_monthly_monthly_cycle_id_fkey"
+            columns: ["monthly_cycle_id"]
+            isOneToOne: false
+            referencedRelation: "monthly_cycles"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "project_stats_monthly_project_id_fkey"
             columns: ["project_id"]
@@ -2372,6 +2492,7 @@ export type Database = {
           format: string
           id: number
           month: string
+          monthly_cycle_id: number | null
           note: string | null
           object_path: string
           project_id: number
@@ -2392,6 +2513,7 @@ export type Database = {
           format: string
           id?: number
           month: string
+          monthly_cycle_id?: number | null
           note?: string | null
           object_path: string
           project_id: number
@@ -2412,6 +2534,7 @@ export type Database = {
           format?: string
           id?: number
           month?: string
+          monthly_cycle_id?: number | null
           note?: string | null
           object_path?: string
           project_id?: number
@@ -2430,6 +2553,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "users"
             referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "zkas_datasets_monthly_cycle_id_fkey"
+            columns: ["monthly_cycle_id"]
+            isOneToOne: false
+            referencedRelation: "monthly_cycles"
+            referencedColumns: ["id"]
           },
           {
             foreignKeyName: "zkas_datasets_project_id_fkey"
@@ -2461,6 +2591,7 @@ export type Database = {
           file_name: string
           id: number
           month: string
+          monthly_cycle_id: number | null
           note: string | null
           object_path: string
           provider: string
@@ -2475,6 +2606,7 @@ export type Database = {
           file_name: string
           id?: number
           month: string
+          monthly_cycle_id?: number | null
           note?: string | null
           object_path: string
           provider?: string
@@ -2489,6 +2621,7 @@ export type Database = {
           file_name?: string
           id?: number
           month?: string
+          monthly_cycle_id?: number | null
           note?: string | null
           object_path?: string
           provider?: string
@@ -2498,6 +2631,13 @@ export type Database = {
           uploaded_by_user_id?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "zkas_identity_artifacts_monthly_cycle_id_fkey"
+            columns: ["monthly_cycle_id"]
+            isOneToOne: false
+            referencedRelation: "monthly_cycles"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "zkas_identity_artifacts_uploaded_by_user_id_fkey"
             columns: ["uploaded_by_user_id"]
@@ -2513,6 +2653,7 @@ export type Database = {
           allocation_usd: number
           created_at: string
           id: number
+          monthly_cycle_id: number | null
           notification_id: number | null
           published_at: string
           run_id: number
@@ -2524,6 +2665,7 @@ export type Database = {
           allocation_usd: number
           created_at?: string
           id?: number
+          monthly_cycle_id?: number | null
           notification_id?: number | null
           published_at?: string
           run_id: number
@@ -2535,6 +2677,7 @@ export type Database = {
           allocation_usd?: number
           created_at?: string
           id?: number
+          monthly_cycle_id?: number | null
           notification_id?: number | null
           published_at?: string
           run_id?: number
@@ -2542,6 +2685,13 @@ export type Database = {
           zkas_user_id?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "zkas_published_user_results_monthly_cycle_id_fkey"
+            columns: ["monthly_cycle_id"]
+            isOneToOne: false
+            referencedRelation: "monthly_cycles"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "zkas_published_user_results_notification_id_fkey"
             columns: ["notification_id"]
@@ -2573,6 +2723,7 @@ export type Database = {
           id: number
           logs: string | null
           mode: Database["public"]["Enums"]["zkas_execution_mode"]
+          monthly_cycle_id: number | null
           run_id: number
           started_at: string | null
           status: string
@@ -2585,6 +2736,7 @@ export type Database = {
           id?: number
           logs?: string | null
           mode?: Database["public"]["Enums"]["zkas_execution_mode"]
+          monthly_cycle_id?: number | null
           run_id: number
           started_at?: string | null
           status?: string
@@ -2597,12 +2749,20 @@ export type Database = {
           id?: number
           logs?: string | null
           mode?: Database["public"]["Enums"]["zkas_execution_mode"]
+          monthly_cycle_id?: number | null
           run_id?: number
           started_at?: string | null
           status?: string
           worker_job_id?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "zkas_run_attempts_monthly_cycle_id_fkey"
+            columns: ["monthly_cycle_id"]
+            isOneToOne: false
+            referencedRelation: "monthly_cycles"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "zkas_run_attempts_run_id_fkey"
             columns: ["run_id"]
@@ -2672,6 +2832,7 @@ export type Database = {
           amount_usd: number
           created_at: string
           id: number
+          monthly_cycle_id: number | null
           payment_id: number
           period_end: string
           project_id: number
@@ -2681,6 +2842,7 @@ export type Database = {
           amount_usd: number
           created_at?: string
           id?: number
+          monthly_cycle_id?: number | null
           payment_id: number
           period_end: string
           project_id: number
@@ -2690,12 +2852,20 @@ export type Database = {
           amount_usd?: number
           created_at?: string
           id?: number
+          monthly_cycle_id?: number | null
           payment_id?: number
           period_end?: string
           project_id?: number
           run_id?: number
         }
         Relationships: [
+          {
+            foreignKeyName: "zkas_run_payments_monthly_cycle_id_fkey"
+            columns: ["monthly_cycle_id"]
+            isOneToOne: false
+            referencedRelation: "monthly_cycles"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "zkas_run_payments_payment_id_fkey"
             columns: ["payment_id"]
@@ -2725,6 +2895,7 @@ export type Database = {
           bucket_label: string
           created_at: string
           id: number
+          monthly_cycle_id: number | null
           project_id: number
           run_id: number
           user_count: number
@@ -2734,6 +2905,7 @@ export type Database = {
           bucket_label: string
           created_at?: string
           id?: number
+          monthly_cycle_id?: number | null
           project_id: number
           run_id: number
           user_count?: number
@@ -2743,11 +2915,19 @@ export type Database = {
           bucket_label?: string
           created_at?: string
           id?: number
+          monthly_cycle_id?: number | null
           project_id?: number
           run_id?: number
           user_count?: number
         }
         Relationships: [
+          {
+            foreignKeyName: "zkas_run_project_cubid_buckets_monthly_cycle_id_fkey"
+            columns: ["monthly_cycle_id"]
+            isOneToOne: false
+            referencedRelation: "monthly_cycles"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "zkas_run_project_cubid_buckets_project_id_fkey"
             columns: ["project_id"]
@@ -2774,6 +2954,7 @@ export type Database = {
           created_at: string
           dataset_id: number
           id: number
+          monthly_cycle_id: number | null
           project_id: number
           published_user_count: number
           run_id: number
@@ -2787,6 +2968,7 @@ export type Database = {
           created_at?: string
           dataset_id: number
           id?: number
+          monthly_cycle_id?: number | null
           project_id: number
           published_user_count?: number
           run_id: number
@@ -2800,6 +2982,7 @@ export type Database = {
           created_at?: string
           dataset_id?: number
           id?: number
+          monthly_cycle_id?: number | null
           project_id?: number
           published_user_count?: number
           run_id?: number
@@ -2810,6 +2993,13 @@ export type Database = {
             columns: ["dataset_id"]
             isOneToOne: false
             referencedRelation: "zkas_datasets"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "zkas_run_project_summaries_monthly_cycle_id_fkey"
+            columns: ["monthly_cycle_id"]
+            isOneToOne: false
+            referencedRelation: "monthly_cycles"
             referencedColumns: ["id"]
           },
           {
@@ -2836,6 +3026,7 @@ export type Database = {
           created_at: string
           eligibility: boolean
           id: number
+          monthly_cycle_id: number | null
           output_row_hash: string
           project_count: number
           run_id: number
@@ -2848,6 +3039,7 @@ export type Database = {
           created_at?: string
           eligibility: boolean
           id?: number
+          monthly_cycle_id?: number | null
           output_row_hash: string
           project_count?: number
           run_id: number
@@ -2860,12 +3052,20 @@ export type Database = {
           created_at?: string
           eligibility?: boolean
           id?: number
+          monthly_cycle_id?: number | null
           output_row_hash?: string
           project_count?: number
           run_id?: number
           zkas_user_id?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "zkas_run_results_monthly_cycle_id_fkey"
+            columns: ["monthly_cycle_id"]
+            isOneToOne: false
+            referencedRelation: "monthly_cycles"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "zkas_run_results_run_id_fkey"
             columns: ["run_id"]
@@ -2891,6 +3091,7 @@ export type Database = {
           locked_manifest: Json | null
           locked_manifest_hash: string | null
           month: string
+          monthly_cycle_id: number | null
           note: string | null
           publication_note: string | null
           published_at: string | null
@@ -2924,6 +3125,7 @@ export type Database = {
           locked_manifest?: Json | null
           locked_manifest_hash?: string | null
           month: string
+          monthly_cycle_id?: number | null
           note?: string | null
           publication_note?: string | null
           published_at?: string | null
@@ -2957,6 +3159,7 @@ export type Database = {
           locked_manifest?: Json | null
           locked_manifest_hash?: string | null
           month?: string
+          monthly_cycle_id?: number | null
           note?: string | null
           publication_note?: string | null
           published_at?: string | null
@@ -2988,6 +3191,13 @@ export type Database = {
             columns: ["identity_artifact_id"]
             isOneToOne: false
             referencedRelation: "zkas_identity_artifacts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "zkas_runs_monthly_cycle_id_fkey"
+            columns: ["monthly_cycle_id"]
+            isOneToOne: false
+            referencedRelation: "monthly_cycles"
             referencedColumns: ["id"]
           },
           {
@@ -3141,6 +3351,16 @@ export type Database = {
     }
     Enums: {
       cubid_identity_status: "unlinked" | "linked" | "verified"
+      monthly_cycle_status:
+        | "open"
+        | "locked"
+        | "prep"
+        | "calculation"
+        | "verification"
+        | "approval"
+        | "distribution"
+        | "completed"
+        | "reporting"
       organization_members_status: "active" | "inactive" | "deleted"
       payment_collection_mode: "contract" | "deposit_address"
       organizations_status: "active" | "inactive" | "deleted"

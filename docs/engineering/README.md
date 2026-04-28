@@ -20,6 +20,7 @@ Current high-signal docs:
 - [Information Architecture](./information-architecture.md)
 - [Internationalization](./i18n.md)
 - [Local Seed Fixtures](./local-seed.md)
+- [Monthly Cycle Domain Model](./monthly-cycles.md)
 - [Navigation and Shell Architecture](./navigation-shell.md)
 - [Route Inventory](./route-inventory.md)
 - [Supabase Remote Deployments](./supabase-deployments.md)

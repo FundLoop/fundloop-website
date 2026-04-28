@@ -133,6 +133,13 @@ Session 19 hardened the payment operation path without moving URLs.
 - Payment-route reads, payment table reads, and latest-submission reads still temporarily load from the existing app-side read path.
 - `/[locale]/projects/[slug]/payments` remains the active deep operation route until the later monthly contribution workspace sessions relocate or redesign it.
 
+Session 21 added the first-class monthly cycle operator surface.
+
+- `/[locale]/admin/cycles` is now the read-only operator overview for economic month records.
+- Monthly cycles are the canonical anchor for payment totals, onchain reconciliation, zkAS datasets/runs, and later payout/reporting stages.
+- The app-shell admin subnav now includes Monthly Cycles beside Payments and zkAS.
+- Session 21 did not add lock or transition commands; those begin in Session 22.
+
 ## Canonical Entry Routes
 
 Session 08 introduced the first IA-aligned entry routes:

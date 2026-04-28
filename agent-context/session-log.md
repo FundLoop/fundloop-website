@@ -1,3 +1,39 @@
+### session v93: Introduce first-class monthly cycles
+- timestamp: 2026-04-27T20:13:22-04:00
+- agent: **Codex (GPT-5)**
+- branch: **codex/session-21-monthly-cycles**
+- head: pending final commit
+
+#### Objective
+Implement Session 21 by adding a durable monthly-cycle domain model and a read-only operator overview that future lock, prep, zkAS, payout, and reporting work can attach to.
+
+#### Actions Taken
+- Added a forward Supabase migration for `monthly_cycle_status`, `monthly_cycles`, nullable `monthly_cycle_id` foreign keys across payment/onchain/zkAS/monthly stats tables, backfill logic, and lookup indexes.
+- Added `lib/monthly-cycles/` with month parsing, status labels, a pure admin overview builder, and a server-side loader that degrades partial read failures into warnings.
+- Added `/[locale]/admin/cycles` as a read-only operator page and linked it from the admin dashboard and app-shell admin subnav.
+- Updated generated Supabase types, route/navigation docs, the engineering docs index, and a new monthly-cycle engineering reference.
+- Added focused monthly-cycle unit tests for month parsing, empty state handling, linked summaries, lifecycle counts, and warning preservation.
+
+#### Tests and Validation Notes
+- `pnpm test tests/monthly-cycles.test.ts` passed.
+- `pnpm typecheck` passed.
+- `pnpm lint` passed.
+- `pnpm test` passed.
+- `pnpm build` passed.
+- `pnpm dlx node@22.22.1 /opt/homebrew/bin/pnpm check` passed.
+- Local Supabase migration smoke was not run because the local Supabase DB container is not currently available (`supabase_db_fundloop` missing).
+- The local shell is on Node 25, so pnpm emitted the existing repo engine warning for `>=22 <23`; validation still completed successfully.
+
+#### Reflections
+- Monthly cadence now has an explicit database object and operator read model instead of relying on scattered month strings and period dates.
+- The nullable FK rollout keeps current workflows stable while later sessions tighten lock and transition semantics.
+
+#### Suggested Next Steps
+- Yeet Session 21 to `dev`.
+- Implement Session 22: the first monthly-cycle mutation, `monthly-cycle-lock`, behind a typed Edge Function command.
+
+---
+
 ### session v92: Address PR 35 review comments
 - timestamp: 2026-04-27T19:49:10-04:00
 - agent: **Codex (GPT-5)**
