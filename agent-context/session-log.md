@@ -1,3 +1,36 @@
+### session v94: Smoke monthly-cycle migration locally
+- timestamp: 2026-04-28T03:14:30-04:00
+- agent: **Codex (GPT-5)**
+- branch: **codex/session-21-monthly-cycles**
+- head: pending final commit
+
+#### Objective
+Resolve the local Supabase availability issue and rerun the Session 21 migration smoke against the local FundLoop stack.
+
+#### Actions Taken
+- Confirmed FundLoop was unavailable because a different local Supabase stack, `everfund`, was running while FundLoop expected `supabase_db_fundloop`.
+- Stopped the `everfund` Supabase stack and removed one leftover unhealthy `supabase_analytics_everfund` container that was still holding port `54327`.
+- Started the FundLoop local Supabase stack.
+- Applied pending local migrations, including `20260428000500_monthly_cycles.sql`.
+- Queried the local database to verify the `monthly_cycle_status` enum, backfilled `monthly_cycles` rows, and linked monthly-cycle payment rows.
+
+#### Tests and Validation Notes
+- `supabase migration up` passed locally.
+- Local SQL smoke passed:
+  - `monthly_cycle_status` exists.
+  - `public.monthly_cycles` contains 17 backfilled rows.
+  - `public.payments` has 5 rows linked with `monthly_cycle_id`.
+  - `public.zkas_runs` has 0 linked rows in the current local data set, which is expected because this local seed has no zkAS run rows requiring linkage.
+
+#### Reflections
+- The earlier smoke blocker was environmental rather than a migration failure: stale `everfund` containers were occupying the local Supabase ports.
+
+#### Suggested Next Steps
+- Yeet Session 21 to `dev`.
+- Keep the FundLoop local Supabase stack running only while actively smoke testing, or stop it before switching repos to avoid future project-id port conflicts.
+
+---
+
 ### session v93: Introduce first-class monthly cycles
 - timestamp: 2026-04-27T20:13:22-04:00
 - agent: **Codex (GPT-5)**
