@@ -192,6 +192,9 @@ export default async function AdminCycleZkasPage({ params }: PageProps) {
             <Button asChild className="w-full">
               <Link href={`/admin/cycles/${stage.cycle.cycleKey}/prep`}>Open prep review</Link>
             </Button>
+            <Button asChild className="w-full" variant="secondary">
+              <Link href={`/admin/cycles/${stage.cycle.cycleKey}/verification`}>Open result review</Link>
+            </Button>
             <Button asChild className="w-full" variant="outline">
               <Link href="/admin/zkas/uploads">Review uploads</Link>
             </Button>

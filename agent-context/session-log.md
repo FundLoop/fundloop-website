@@ -1,3 +1,41 @@
+### session v100: Add monthly-cycle verification and approval review
+- timestamp: 2026-04-29T14:05:47-04:00
+- agent: **Codex (GPT-5)**
+- branch: **codex/session-23-cycle-prep-review**
+- head: pending final commit
+
+#### Objective
+Implement Session 26 by adding the cleanup, verification, and approval stages for calculated monthly-cycle results without starting distribution or payout creation yet.
+
+#### Actions Taken
+- Added `/[locale]/admin/cycles/[cycleKey]/verification` as the operator workspace for result cleanup checks, cycle verification, and approval for distribution.
+- Added `lib/monthly-cycles/monthly-cycle-verification.ts` to compare completed zkAS output against result rows, artifact hashes, run verification state, failed-run warnings, and allocation totals.
+- Added `monthly-cycle-verification-review` and `monthly-cycle-approval` typed Edge Function commands with browser adapters and Supabase function handlers.
+- Added the monthly-cycle verification command module that records required-note decisions, writes audit events, moves clean cycles to `verification`, records cleanup-needed notes without advancing, and moves verified cycles to `approval`.
+- Linked cycle overview and cycle zkAS pages into the new result-review workspace.
+- Updated monthly-cycle, Edge Function, navigation, and route-inventory engineering docs.
+- Added focused contract, read-model, and command tests.
+
+#### Tests and Validation Notes
+- `pnpm test tests/monthly-cycle-verification.test.ts tests/monthly-cycle-verification-contract.test.ts tests/monthly-cycle-calculation-package-command.test.ts` passed.
+- `pnpm lint` passed.
+- `pnpm typecheck` passed.
+- `pnpm test` passed.
+- `pnpm build` passed and included `/[locale]/admin/cycles/[cycleKey]/verification`.
+- `pnpm dlx node@22.22.1 /opt/homebrew/bin/pnpm check` passed.
+- `supabase status` confirmed the FundLoop local stack is running.
+- Direct local `pnpm` commands still emit the known Node 25 engine warning; the Node 22 wrapper gate passed.
+
+#### Reflections
+- Monthly-cycle results now have an explicit operational checkpoint between calculation and distribution instead of relying on hidden run-level verification state alone.
+- The approval command intentionally stops at `approval`; payout intent creation belongs to Session 27.
+
+#### Suggested Next Steps
+- Yeet the stacked Session 23-26 branch to `dev`.
+- Implement Session 27 by creating the outbound payout domain model that consumes approved monthly-cycle outputs.
+
+---
+
 ### session v99: Add deterministic monthly calculation packaging
 - timestamp: 2026-04-29T13:54:51-04:00
 - agent: **Codex (GPT-5)**

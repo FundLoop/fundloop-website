@@ -249,6 +249,9 @@ export default async function AdminMonthlyCyclesPage({ params }: PageProps) {
                         <Button asChild size="sm" variant="ghost">
                           <Link href={`/admin/cycles/${cycle.cycleKey}/zkas`}>zkAS stage</Link>
                         </Button>
+                        <Button asChild size="sm" variant="ghost">
+                          <Link href={`/admin/cycles/${cycle.cycleKey}/verification`}>Result review</Link>
+                        </Button>
                       </div>
                     </TableCell>
                   </TableRow>
