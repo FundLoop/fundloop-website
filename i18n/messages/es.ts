@@ -192,6 +192,7 @@ export const esMessages = {
       },
       admin: {
         overview: "Resumen",
+        cycles: "Ciclos mensuales",
         payments: "Pagos",
         zkas: "zkAS",
       },

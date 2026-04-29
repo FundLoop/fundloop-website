@@ -192,6 +192,7 @@ export const frMessages = {
       },
       admin: {
         overview: "Vue d’ensemble",
+        cycles: "Cycles mensuels",
         payments: "Paiements",
         zkas: "zkAS",
       },

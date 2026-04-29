@@ -77,6 +77,7 @@ export function AppShell({ children, navigationContext }: AppShellProps) {
     if (currentSection === "admin") {
       return [
         { href: "/admin", label: t("appShell.admin.overview") },
+        { href: "/admin/cycles", label: t("appShell.admin.cycles") },
         { href: "/admin/payments", label: t("appShell.admin.payments") },
         { href: "/admin/zkas", label: t("appShell.admin.zkas") },
       ]

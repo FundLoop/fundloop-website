@@ -1,3 +1,142 @@
+### session v96: Address PR 36 Copilot lock review
+- timestamp: 2026-04-29T04:43:27-04:00
+- agent: **Codex (GPT-5)**
+- branch: **codex/session-22-monthly-cycle-lock**
+- head: pending final commit
+
+#### Objective
+Address Copilot review feedback on PR #36 before requesting or acting on the Codex review phase.
+
+#### Actions Taken
+- Made monthly-cycle audit event insertion explicit by returning insert errors and failing lock attempts when the audit write cannot be recorded.
+- Reattached onchain submissions by their payment's monthly cycle rather than by submission timestamp, preventing late prior-cycle submissions from being assigned to the wrong economic month.
+- Shared unresolved onchain submission status logic so the admin overview counts `confirming` rows the same way the lock command blocks them.
+- Replaced locale-sensitive manifest ordering with a stable string comparator for lock-manifest inputs.
+- Added the missing `server-only` guard to the server Edge Function adapter.
+- Updated `/admin/cycles` to use locale-aware navigation and active-locale currency formatting.
+- Added regression tests for audit insert failures and late submitted onchain receipts.
+
+#### Tests and Validation Notes
+- `pnpm test tests/monthly-cycle-lock-command.test.ts tests/monthly-cycle-lock-contract.test.ts tests/monthly-cycle-lock-button.test.tsx tests/monthly-cycles.test.ts` passed.
+- `pnpm typecheck` passed.
+- `pnpm lint` passed.
+- Full gates will be rerun before pushing the review-fix commit.
+
+#### Reflections
+- The review found exactly the right class of issues for this domain: determinism, audit guarantees, and month attribution. Tightening those now keeps the lock manifest trustworthy before downstream sessions start depending on it.
+
+#### Suggested Next Steps
+- Push the review-fix commit, confirm CI returns green, then resolve/comment on the Copilot threads before moving to the Codex review gate.
+
+---
+
+### session v95: Add monthly-cycle lock workflow
+- timestamp: 2026-04-28T04:42:45-04:00
+- agent: **Codex (GPT-5)**
+- branch: **codex/session-22-monthly-cycle-lock**
+- head: pending final commit
+
+#### Objective
+Implement Session 22 by adding the first monthly-cycle mutation: an audited end-of-month lock command that freezes an open cycle into a deterministic manifest for later prep, calculation, payout, and reporting work.
+
+#### Actions Taken
+- Added a forward migration for monthly-cycle lock fields and `monthly_cycle_events` audit records.
+- Added the typed `monthly-cycle-lock` Edge Function contract, browser/server adapters, Deno function entrypoint, and shared domain command.
+- Implemented lock behavior that reattaches same-month operational rows, snapshots confirmed payments, onchain reconciliation state, approved zkAS inputs, and active participants' CUBID identity summary, then stores a SHA-256 manifest hash.
+- Blocked unresolved onchain submissions by default and added a strongly worded admin override modal that requires an explicit reason before retrying.
+- Updated `/[locale]/admin/cycles` from read-only overview to a lock-capable operator surface for open cycles.
+- Updated monthly-cycle, Edge Function, navigation, and route inventory docs, plus Session 22 backlog metadata.
+
+#### Tests and Validation Notes
+- `pnpm test tests/monthly-cycle-lock-contract.test.ts tests/monthly-cycle-lock-button.test.tsx tests/monthly-cycle-lock-command.test.ts tests/monthly-cycles.test.ts` passed.
+- `pnpm lint` passed.
+- `pnpm test` passed.
+- `pnpm typecheck` passed.
+- `pnpm build` passed.
+- `pnpm dlx node@22.22.1 /opt/homebrew/bin/pnpm check` passed.
+- `git diff --check` passed.
+- Local Supabase migration smoke was attempted, but `supabase start` tore the stack down because analytics/realtime/studio did not become healthy and `supabase_db_fundloop` was not available afterward.
+- The local shell still emits the repo's existing Node 25 engine warning for commands run without the Node 22 wrapper; the Node 22 `pnpm check` gate passed.
+
+#### Reflections
+- The lock point now creates the first durable handoff artifact in the monthly cadence. That makes downstream prep and calculation sessions much safer because they can depend on a frozen manifest rather than live mutable rows.
+- The unresolved-onchain override is intentionally available but uncomfortable, which fits the bookkeeping risk: operators can proceed when needed, but the reason is permanently attached to the cycle.
+
+#### Suggested Next Steps
+- Repair the local Supabase health issue separately so migration smoke can be rerun before or during the PR.
+- Implement Session 23: cycle prep and exception review workspace using the locked manifest as the input boundary.
+
+---
+
+### session v94: Smoke monthly-cycle migration locally
+- timestamp: 2026-04-28T03:14:30-04:00
+- agent: **Codex (GPT-5)**
+- branch: **codex/session-21-monthly-cycles**
+- head: pending final commit
+
+#### Objective
+Resolve the local Supabase availability issue and rerun the Session 21 migration smoke against the local FundLoop stack.
+
+#### Actions Taken
+- Confirmed FundLoop was unavailable because a different local Supabase stack, `everfund`, was running while FundLoop expected `supabase_db_fundloop`.
+- Stopped the `everfund` Supabase stack and removed one leftover unhealthy `supabase_analytics_everfund` container that was still holding port `54327`.
+- Started the FundLoop local Supabase stack.
+- Applied pending local migrations, including `20260428000500_monthly_cycles.sql`.
+- Queried the local database to verify the `monthly_cycle_status` enum, backfilled `monthly_cycles` rows, and linked monthly-cycle payment rows.
+
+#### Tests and Validation Notes
+- `supabase migration up` passed locally.
+- Local SQL smoke passed:
+  - `monthly_cycle_status` exists.
+  - `public.monthly_cycles` contains 17 backfilled rows.
+  - `public.payments` has 5 rows linked with `monthly_cycle_id`.
+  - `public.zkas_runs` has 0 linked rows in the current local data set, which is expected because this local seed has no zkAS run rows requiring linkage.
+
+#### Reflections
+- The earlier smoke blocker was environmental rather than a migration failure: stale `everfund` containers were occupying the local Supabase ports.
+
+#### Suggested Next Steps
+- Yeet Session 21 to `dev`.
+- Keep the FundLoop local Supabase stack running only while actively smoke testing, or stop it before switching repos to avoid future project-id port conflicts.
+
+---
+
+### session v93: Introduce first-class monthly cycles
+- timestamp: 2026-04-27T20:13:22-04:00
+- agent: **Codex (GPT-5)**
+- branch: **codex/session-21-monthly-cycles**
+- head: pending final commit
+
+#### Objective
+Implement Session 21 by adding a durable monthly-cycle domain model and a read-only operator overview that future lock, prep, zkAS, payout, and reporting work can attach to.
+
+#### Actions Taken
+- Added a forward Supabase migration for `monthly_cycle_status`, `monthly_cycles`, nullable `monthly_cycle_id` foreign keys across payment/onchain/zkAS/monthly stats tables, backfill logic, and lookup indexes.
+- Added `lib/monthly-cycles/` with month parsing, status labels, a pure admin overview builder, and a server-side loader that degrades partial read failures into warnings.
+- Added `/[locale]/admin/cycles` as a read-only operator page and linked it from the admin dashboard and app-shell admin subnav.
+- Updated generated Supabase types, route/navigation docs, the engineering docs index, and a new monthly-cycle engineering reference.
+- Added focused monthly-cycle unit tests for month parsing, empty state handling, linked summaries, lifecycle counts, and warning preservation.
+
+#### Tests and Validation Notes
+- `pnpm test tests/monthly-cycles.test.ts` passed.
+- `pnpm typecheck` passed.
+- `pnpm lint` passed.
+- `pnpm test` passed.
+- `pnpm build` passed.
+- `pnpm dlx node@22.22.1 /opt/homebrew/bin/pnpm check` passed.
+- Local Supabase migration smoke was not run because the local Supabase DB container is not currently available (`supabase_db_fundloop` missing).
+- The local shell is on Node 25, so pnpm emitted the existing repo engine warning for `>=22 <23`; validation still completed successfully.
+
+#### Reflections
+- Monthly cadence now has an explicit database object and operator read model instead of relying on scattered month strings and period dates.
+- The nullable FK rollout keeps current workflows stable while later sessions tighten lock and transition semantics.
+
+#### Suggested Next Steps
+- Yeet Session 21 to `dev`.
+- Implement Session 22: the first monthly-cycle mutation, `monthly-cycle-lock`, behind a typed Edge Function command.
+
+---
+
 ### session v92: Address PR 35 review comments
 - timestamp: 2026-04-27T19:49:10-04:00
 - agent: **Codex (GPT-5)**

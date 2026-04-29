@@ -234,23 +234,23 @@ Continue the backend migration by moving internal admin payment actions behind E
 
 ## Session 21: Introduce a first-class monthly cycle domain model
 
-- Status: Not started
-- Timestamp started: TBD
-- Timestamp completed: TBD
-- Feature branch: TBD
-- Head: TBD
-- Session-log reference(s): TBD
+- Status: Complete
+- Timestamp started: 2026-04-27T20:04:59-0400
+- Timestamp completed: 2026-04-27T20:13:22-0400
+- Feature branch: codex/session-21-monthly-cycles
+- Head: pending final commit
+- Session-log reference(s): session v93
 
 Add the core schema and application model for monthly economic cycles. Today month-based behavior is implicit across payments, reconciliation, and zkAS logic. This session should create explicit cycle records with lifecycle states, timestamps, and references to locked inputs and outputs. The goal is to stop treating “the current month” as a loose concept and instead introduce a real operational object that later steps can build on for locking, prep, calculation, verification, payout, and reporting.
 
 ## Session 22: Build the end-of-month lock workflow
 
-- Status: Not started
-- Timestamp started: TBD
-- Timestamp completed: TBD
-- Feature branch: TBD
-- Head: TBD
-- Session-log reference(s): TBD
+- Status: Complete
+- Timestamp started: 2026-04-28T04:39:34-0400
+- Timestamp completed: 2026-04-28T04:42:45-0400
+- Feature branch: codex/session-22-monthly-cycle-lock
+- Head: pending final commit
+- Session-log reference(s): session v95
 
 Implement the first monthly cycle command: lock the cycle. This should freeze the eligible contribution inputs, identity snapshot references, and relevant payment/reconciliation state needed for deterministic downstream computation. The lock step should be explicit, repeat-safe, and auditable. This is where the product starts to become a true monthly coordination engine rather than just a payment collection app. The output of this session should be that operators can close a month intentionally instead of relying on a shifting combination of live rows and mental bookkeeping.
 

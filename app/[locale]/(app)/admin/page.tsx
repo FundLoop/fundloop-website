@@ -1,5 +1,5 @@
 import { redirect } from "next/navigation"
-import { BrainCircuit, DollarSign, Eye, Fingerprint, Shield, Wallet } from "lucide-react"
+import { BrainCircuit, CalendarClock, DollarSign, Eye, Fingerprint, Shield, Wallet } from "lucide-react"
 import { Link } from "@/i18n/navigation"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -28,6 +28,14 @@ const adminDestinations = [
     icon: BrainCircuit,
     cta: "Open zkAS",
     variant: "secondary" as const,
+  },
+  {
+    title: "Monthly Cycles",
+    description: "Inspect the economic month records that anchor payments, reconciliation, zkAS, and reporting",
+    href: "/admin/cycles",
+    icon: CalendarClock,
+    cta: "Open Cycles",
+    variant: "outline" as const,
   },
   {
     title: "Wallet Deployments",

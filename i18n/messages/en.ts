@@ -192,6 +192,7 @@ export const enMessages = {
       },
       admin: {
         overview: "Overview",
+        cycles: "Monthly cycles",
         payments: "Payments",
         zkas: "zkAS",
       },

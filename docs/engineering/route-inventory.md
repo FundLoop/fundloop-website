@@ -73,6 +73,7 @@ This inventory covers every current `page.tsx` and `route.ts` surface under `app
 | Path | Audience | Current state | Evidence / notes | Disposition | Canonical target | Follow-up session |
 | --- | --- | --- | --- | --- | --- | --- |
 | `/admin` | Internal operators | Operator workspace landing page. | Session 08 removed the broken child links and now points only to real operator destinations. | finish | Internal operator workspace home | 44 |
+| `/admin/cycles` | Internal operators | Monthly cycle overview and first lock action. | Session 21 added first-class economic month records and linked payment/reconciliation/zkAS summaries; Session 22 added the audited lock command with unresolved-onchain override workflow. | finish | Operator monthly cycle workspace | 21, 22, 36 |
 | `/admin/identity` | Internal operators | Read-only operator identity-health surface. | Sessions 15 and 16 added stale-snapshot, sync-error, and linkage visibility without cross-user identity writes. | finish | Internal operator identity health | 15, 16, 44 |
 | `/admin/payments` | Internal operators | Real payments operations hub. | Already meaningful and linked to observability, reconciliation, deployments. | finish | Operator payments workspace | 20, 37 |
 | `/admin/payments/deployments` | Internal operators | Real wallet-deployment audit page. | Supports runtime drift and env validation. | finish | Operator payments deployment audit | 44 |
