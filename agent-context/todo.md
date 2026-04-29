@@ -267,12 +267,12 @@ After lock comes prep. Create the operator-facing prep surface that validates wh
 
 ## Session 24: Refactor zkAS around the monthly cycle contract
 
-- Status: Not started
-- Timestamp started: TBD
-- Timestamp completed: TBD
-- Feature branch: TBD
-- Head: TBD
-- Session-log reference(s): TBD
+- Status: Complete
+- Timestamp started: 2026-04-29T13:14:00-0400
+- Timestamp completed: 2026-04-29T13:22:19-0400
+- Feature branch: codex/session-23-cycle-prep-review
+- Head: pending final commit
+- Session-log reference(s): session v98
 
 Bring the current zkAS subsystem into alignment with the explicit monthly cycle model. Instead of feeling like a parallel control plane, its datasets, run manifests, and publication outputs should anchor to a cycle record and a stable preparation state. This session should reduce conceptual duplication between payment operations and zk operations. The result should make it obvious that zkAS is one stage of the monthly cadence, not a separate product hidden inside the repo.
 

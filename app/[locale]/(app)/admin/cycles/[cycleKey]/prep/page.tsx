@@ -198,6 +198,18 @@ export default async function AdminCyclePrepPage({ params }: PageProps) {
 
           <Card>
             <CardHeader>
+              <CardTitle>Next monthly stage</CardTitle>
+              <CardDescription>Review the cycle-anchored zkAS stage before calculation packaging.</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <Button asChild className="w-full" variant="outline">
+                <Link href={`/admin/cycles/${review.cycle.cycleKey}/zkas`}>Open cycle zkAS stage</Link>
+              </Button>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
               <CardTitle>Live-row drift</CardTitle>
               <CardDescription>These are informational only; calculation should use the locked manifest.</CardDescription>
             </CardHeader>

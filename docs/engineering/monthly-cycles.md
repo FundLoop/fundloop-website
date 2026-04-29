@@ -55,6 +55,8 @@ Open cycles expose a lock action that calls the `monthly-cycle-lock` Edge Functi
 
 Locked cycles link to `/[locale]/admin/cycles/[cycleKey]/prep`, the Session 23 prep and exception review workspace. This route is intentionally read-only: it checks whether the locked manifest is safe to hand into calculation packaging, but it does not transition status or produce calculation artifacts yet.
 
+Session 24 added `/[locale]/admin/cycles/[cycleKey]/zkas` as the cycle-anchored zkAS stage view. This route reads datasets, identity artifacts, runs, run results, published user results, and project summaries through `monthly_cycle_id` so operators can inspect zkAS as part of the monthly cadence instead of as a parallel control plane.
+
 ## Lock Manifest
 
 `monthly-cycle-lock` persists a deterministic JSON manifest and SHA-256 hash on the cycle row. The manifest is the v1 immutable input snapshot for later prep, calculation, verification, payout, and reporting work.
@@ -90,9 +92,23 @@ The prep workspace surfaces:
 
 Live drift is informational because downstream calculation should use the locked manifest, not mutable current rows. Prep does not create zkAS runs, package calculation inputs, approve exceptions, or move the cycle into the next status. Those responsibilities remain later sessions.
 
+## zkAS Stage Alignment
+
+`lib/monthly-cycles/monthly-cycle-zkas.ts` owns the cycle-specific zkAS read model. It returns a posture:
+
+- `not_locked`
+- `missing_inputs`
+- `ready_for_packaging`
+- `calculation_started`
+- `published`
+
+The posture is derived from the monthly cycle lock state, approved cycle-linked attribution datasets, approved cycle-linked identity artifacts, cycle-linked zkAS runs, and published cycle results. The page links back to prep review and into the existing upload/run consoles, because those older routes still own the operational actions until calculation packaging and verification commands are introduced.
+
+The important boundary is conceptual and data-oriented: `month` strings remain for compatibility and storage paths, while `monthly_cycle_id` is the canonical way to determine what belongs to a cycle. New zkAS calculation, verification, publication, and reporting work should start from the cycle row and its linked records.
+
 ## Operating Rule
 
-New monthly cadence work should attach to `monthly_cycles` instead of independently interpreting month strings. Existing zkAS `month` fields and payment period fields remain in place for compatibility, but `monthly_cycle_id` is the canonical join point for lock, prep, calculation, verification, payout, and reporting sessions.
+New monthly cadence work should attach to `monthly_cycles` instead of independently interpreting month strings. Existing zkAS `month` fields and payment period fields remain in place for compatibility, but `monthly_cycle_id` is the canonical join point for lock, prep, zkAS calculation, verification, payout, and reporting sessions.
 
 All monthly-cycle mutations should follow the Edge Function command boundary. Session 22 intentionally added only locking; Session 23 added read-only prep checks. Calculation packaging, payout creation, and reporting publication remain later sessions.
 

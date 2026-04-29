@@ -1,6 +1,7 @@
 "use server"
 
 import { revalidatePath } from "next/cache"
+import { parseMonthlyCycleKey } from "@/lib/monthly-cycles"
 import { getAdminSupabaseClient } from "@/lib/supabase-admin"
 import {
   getAuthenticatedActor,
@@ -98,6 +99,50 @@ function revalidateZkasPaths(runId: number, projectSlugs: string[] = []) {
   for (const slug of projectSlugs) {
     revalidatePath(`/projects/${slug}/zkas`)
   }
+}
+
+function revalidateMonthlyCycleZkasPaths(month: string) {
+  revalidatePath("/admin/cycles")
+  revalidatePath(`/admin/cycles/${month}/prep`)
+  revalidatePath(`/admin/cycles/${month}/zkas`)
+}
+
+async function getOrCreateMonthlyCycleIdForMonth(month: string, actorUserId: string | null = null) {
+  const supabase = getAdminSupabaseClient()
+  const parsed = parseMonthlyCycleKey(month)
+  const { data: existing, error: existingError } = await supabase
+    .from("monthly_cycles")
+    .select("id")
+    .eq("cycle_key", parsed.cycleKey)
+    .maybeSingle()
+
+  if (existingError) {
+    throw new Error(existingError.message)
+  }
+
+  if (existing) {
+    return existing.id
+  }
+
+  const { data, error } = await supabase
+    .from("monthly_cycles")
+    .insert({
+      cycle_key: parsed.cycleKey,
+      year: parsed.year,
+      month: parsed.month,
+      period_start: parsed.periodStart,
+      period_end: parsed.periodEnd,
+      created_by_user_id: actorUserId,
+      updated_by_user_id: actorUserId,
+    })
+    .select("id")
+    .single()
+
+  if (error || !data) {
+    throw new Error(error?.message ?? `Could not resolve monthly cycle ${month}`)
+  }
+
+  return data.id
 }
 
 async function getConfirmedPaymentsForMonth(month: string) {
@@ -330,12 +375,14 @@ export async function uploadZkasDataset(formData: FormData): Promise<void> {
   const content = await file.text()
   const fileHash = hashTextContent(content)
   const objectPath = `${month}/project-${membership.projectId}/dataset-${fileHash}.${format}`
+  const monthlyCycleId = await getOrCreateMonthlyCycleIdForMonth(month, actor.userId)
 
   const { data: dataset, error: insertError } = await supabase
     .from("zkas_datasets")
     .insert({
       project_id: membership.projectId,
       month,
+      monthly_cycle_id: monthlyCycleId,
       format,
       file_name: file.name,
       object_path: objectPath,
@@ -401,6 +448,7 @@ export async function uploadZkasDataset(formData: FormData): Promise<void> {
   }
 
   revalidatePath(`/projects/${projectSlug}/zkas`)
+  revalidateMonthlyCycleZkasPaths(month)
 }
 
 export async function uploadZkasIdentityArtifact(formData: FormData): Promise<void> {
@@ -422,6 +470,7 @@ export async function uploadZkasIdentityArtifact(formData: FormData): Promise<vo
   await uploadBinaryArtifact(ZKAS_IDENTITY_BUCKET, objectPath, file, "application/json")
 
   const supabase = getAdminSupabaseClient()
+  const monthlyCycleId = await getOrCreateMonthlyCycleIdForMonth(month, actor.userId)
   const { data: existing } = await supabase
     .from("zkas_identity_artifacts")
     .select("id")
@@ -437,6 +486,7 @@ export async function uploadZkasIdentityArtifact(formData: FormData): Promise<vo
     .from("zkas_identity_artifacts")
     .insert({
       month,
+      monthly_cycle_id: monthlyCycleId,
       file_name: file.name,
       object_path: objectPath,
       artifact_hash: artifactHash,
@@ -451,6 +501,7 @@ export async function uploadZkasIdentityArtifact(formData: FormData): Promise<vo
   }
 
   revalidatePath("/admin/zkas/uploads")
+  revalidateMonthlyCycleZkasPaths(month)
 }
 
 export async function approveZkasDataset(formData: FormData): Promise<void> {
@@ -497,12 +548,14 @@ export async function approveZkasDataset(formData: FormData): Promise<void> {
     }
   }
 
+  const monthlyCycleId = dataset.monthly_cycle_id ?? (await getOrCreateMonthlyCycleIdForMonth(dataset.month, actor.userId))
   const { error } = await supabase
     .from("zkas_datasets")
     .update({
       status: "approved",
       approved_at: new Date().toISOString(),
       approved_by_user_id: actor.userId,
+      monthly_cycle_id: monthlyCycleId,
     })
     .eq("id", dataset.id)
     .eq("status", "validated")
@@ -513,6 +566,7 @@ export async function approveZkasDataset(formData: FormData): Promise<void> {
 
   revalidatePath("/admin/zkas/uploads")
   revalidatePath(`/admin/zkas/uploads/${dataset.id}`)
+  revalidateMonthlyCycleZkasPaths(dataset.month)
 }
 
 export async function rejectZkasDataset(formData: FormData): Promise<void> {
@@ -523,6 +577,7 @@ export async function rejectZkasDataset(formData: FormData): Promise<void> {
   }
 
   const supabase = getAdminSupabaseClient()
+  const { data: dataset } = await supabase.from("zkas_datasets").select("month").eq("id", datasetId).maybeSingle()
   const { error } = await supabase.from("zkas_datasets").update({ status: "failed" }).eq("id", datasetId)
   if (error) {
     throw new Error(error.message)
@@ -530,6 +585,9 @@ export async function rejectZkasDataset(formData: FormData): Promise<void> {
 
   revalidatePath("/admin/zkas/uploads")
   revalidatePath(`/admin/zkas/uploads/${datasetId}`)
+  if (dataset?.month) {
+    revalidateMonthlyCycleZkasPaths(dataset.month)
+  }
 }
 
 export async function createZkasRunDraft(formData: FormData): Promise<void> {
@@ -578,11 +636,25 @@ export async function createZkasRunDraft(formData: FormData): Promise<void> {
     const payments = await getConfirmedPaymentsForMonth(month)
     const usdPool = payments.reduce((total, payment) => total + Number(payment.payment_amount), 0)
     const identityArtifact = await getApprovedIdentityArtifact(month)
+    const monthlyCycleId = await getOrCreateMonthlyCycleIdForMonth(month, actor.userId)
+    const [{ error: datasetCycleError }, { error: artifactCycleError }] = await Promise.all([
+      supabase.from("zkas_datasets").update({ monthly_cycle_id: monthlyCycleId }).in("id", datasetIds),
+      supabase.from("zkas_identity_artifacts").update({ monthly_cycle_id: monthlyCycleId }).eq("id", identityArtifact.id),
+    ])
+
+    if (datasetCycleError) {
+      throw new Error(datasetCycleError.message)
+    }
+
+    if (artifactCycleError) {
+      throw new Error(artifactCycleError.message)
+    }
 
     const { data: run, error: runError } = await supabase
       .from("zkas_runs")
       .insert({
         month,
+        monthly_cycle_id: monthlyCycleId,
         status: "draft",
         usd_pool: usdPool,
         identity_artifact_id: identityArtifact.id,
@@ -631,6 +703,7 @@ export async function createZkasRunDraft(formData: FormData): Promise<void> {
 
     revalidatePath("/admin/zkas/runs")
     revalidatePath(`/admin/zkas/runs/${run.id}`)
+    revalidateMonthlyCycleZkasPaths(month)
 }
 
 export async function lockZkasRun(formData: FormData): Promise<void> {
@@ -645,6 +718,7 @@ export async function lockZkasRun(formData: FormData): Promise<void> {
     if (run.status !== "draft") {
       throw new Error("Only draft runs can be locked")
     }
+    const monthlyCycleId = run.monthly_cycle_id ?? (await getOrCreateMonthlyCycleIdForMonth(run.month))
 
     const manifest: ZkasRunManifest = {
       version: "run-manifest.v1",
@@ -688,6 +762,7 @@ export async function lockZkasRun(formData: FormData): Promise<void> {
     const { error: runUpdateError } = await supabase
       .from("zkas_runs")
       .update({
+        monthly_cycle_id: monthlyCycleId,
         status: "locked",
         locked_at: new Date().toISOString(),
         locked_manifest: manifest,
@@ -701,7 +776,7 @@ export async function lockZkasRun(formData: FormData): Promise<void> {
 
     const { error: datasetUpdateError } = await supabase
       .from("zkas_datasets")
-      .update({ status: "included" })
+      .update({ status: "included", monthly_cycle_id: monthlyCycleId })
       .in(
         "id",
         datasets.map((dataset) => dataset.dataset_id),
@@ -713,6 +788,7 @@ export async function lockZkasRun(formData: FormData): Promise<void> {
 
     revalidatePath("/admin/zkas/runs")
     revalidatePath(`/admin/zkas/runs/${run.id}`)
+    revalidateMonthlyCycleZkasPaths(run.month)
 }
 
 export async function dispatchZkasRun(formData: FormData): Promise<void> {
@@ -727,6 +803,7 @@ export async function dispatchZkasRun(formData: FormData): Promise<void> {
     if (!["locked", "failed"].includes(run.status)) {
       throw new Error("Only locked or failed runs can be dispatched")
     }
+    const monthlyCycleId = run.monthly_cycle_id ?? (await getOrCreateMonthlyCycleIdForMonth(run.month))
 
     const { data: attempt, error: attemptError } = await supabase
       .from("zkas_run_attempts")
@@ -788,6 +865,7 @@ export async function dispatchZkasRun(formData: FormData): Promise<void> {
       const { error: resultsError } = await supabase.from("zkas_run_results").insert(
         result.rows.map((row) => ({
           run_id: run.id,
+          monthly_cycle_id: monthlyCycleId,
           zkas_user_id: row.zkas_user_id,
           eligibility: row.eligibility,
           aggregate_score: row.aggregate_score,
@@ -815,6 +893,7 @@ export async function dispatchZkasRun(formData: FormData): Promise<void> {
       await supabase
         .from("zkas_runs")
         .update({
+          monthly_cycle_id: monthlyCycleId,
           status: "completed",
           verification_status: "pending",
           verified_by_user_id: null,
@@ -847,6 +926,7 @@ export async function dispatchZkasRun(formData: FormData): Promise<void> {
 
     revalidatePath("/admin/zkas/runs")
     revalidatePath(`/admin/zkas/runs/${run.id}`)
+    revalidateMonthlyCycleZkasPaths(run.month)
 }
 
 export async function verifyZkasRun(formData: FormData): Promise<void> {
@@ -861,7 +941,7 @@ export async function verifyZkasRun(formData: FormData): Promise<void> {
   const supabase = getAdminSupabaseClient()
   const { data: run, error } = await supabase
     .from("zkas_runs")
-    .select("id, status, verification_status, published_at")
+    .select("id, month, status, verification_status, published_at")
     .eq("id", runId)
     .single()
 
@@ -894,6 +974,7 @@ export async function verifyZkasRun(formData: FormData): Promise<void> {
   const { datasets } = await getLockedRunContext(runId)
   const projectSlugs = await getRunProjectSlugs(datasets.map((dataset) => dataset.project_id))
   revalidateZkasPaths(runId, projectSlugs)
+  revalidateMonthlyCycleZkasPaths(run.month)
 }
 
 export async function rejectZkasRunVerification(formData: FormData): Promise<void> {
@@ -908,7 +989,7 @@ export async function rejectZkasRunVerification(formData: FormData): Promise<voi
   const supabase = getAdminSupabaseClient()
   const { data: run, error } = await supabase
     .from("zkas_runs")
-    .select("id, status, published_at")
+    .select("id, month, status, published_at")
     .eq("id", runId)
     .single()
 
@@ -941,6 +1022,7 @@ export async function rejectZkasRunVerification(formData: FormData): Promise<voi
   const { datasets } = await getLockedRunContext(runId)
   const projectSlugs = await getRunProjectSlugs(datasets.map((dataset) => dataset.project_id))
   revalidateZkasPaths(runId, projectSlugs)
+  revalidateMonthlyCycleZkasPaths(run.month)
 }
 
 export async function publishZkasRun(formData: FormData): Promise<void> {
@@ -968,6 +1050,7 @@ export async function publishZkasRun(formData: FormData): Promise<void> {
   }
 
   const publishedAt = new Date().toISOString()
+  const monthlyCycleId = context.run.monthly_cycle_id ?? (await getOrCreateMonthlyCycleIdForMonth(context.run.month, actor.userId))
   const materialization = buildPublicationMaterialization({
     runId: context.run.id,
     publishedAt,
@@ -1025,6 +1108,7 @@ export async function publishZkasRun(formData: FormData): Promise<void> {
 
     const publishedRowsPayload = materialization.publishedUserResults.map((row) => ({
       run_id: row.run_id,
+      monthly_cycle_id: monthlyCycleId,
       user_id: row.user_id,
       zkas_user_id: row.zkas_user_id,
       allocation_usd: row.allocation_usd,
@@ -1044,6 +1128,7 @@ export async function publishZkasRun(formData: FormData): Promise<void> {
       const { error } = await supabase.from("zkas_run_project_summaries").insert(
         materialization.projectSummaries.map((summary: ZkasProjectAnalyticsSummary) => ({
           run_id: summary.run_id,
+          monthly_cycle_id: monthlyCycleId,
           project_id: summary.project_id,
           dataset_id: summary.dataset_id,
           contributed_amount_usd: summary.contributed_amount_usd,
@@ -1080,6 +1165,7 @@ export async function publishZkasRun(formData: FormData): Promise<void> {
       .from("zkas_runs")
       .update({
         status: "finalized",
+        monthly_cycle_id: monthlyCycleId,
         finalized_at: publishedAt,
         published_by_user_id: actor.userId,
         published_at: publishedAt,
@@ -1101,6 +1187,7 @@ export async function publishZkasRun(formData: FormData): Promise<void> {
   }
 
   revalidateZkasPaths(runId, projectSlugs)
+  revalidateMonthlyCycleZkasPaths(context.run.month)
 }
 
 export async function finalizeZkasRun(formData: FormData): Promise<void> {
@@ -1113,7 +1200,7 @@ export async function finalizeZkasRun(formData: FormData): Promise<void> {
     const supabase = getAdminSupabaseClient()
     const { data: run, error } = await supabase
       .from("zkas_runs")
-      .select("id, status, published_at")
+      .select("id, month, status, published_at")
       .eq("id", runId)
       .single()
     if (error || !run) {
@@ -1138,6 +1225,7 @@ export async function finalizeZkasRun(formData: FormData): Promise<void> {
 
     revalidatePath("/admin/zkas/runs")
     revalidatePath(`/admin/zkas/runs/${runId}`)
+    revalidateMonthlyCycleZkasPaths(run.month)
 }
 
 export async function getCurrentZkasViewerProjects() {

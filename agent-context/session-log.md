@@ -1,3 +1,42 @@
+### session v98: Refactor zkAS around monthly-cycle contract
+- timestamp: 2026-04-29T13:22:19-04:00
+- agent: **Codex (GPT-5)**
+- branch: **codex/session-23-cycle-prep-review**
+- head: pending final commit
+
+#### Objective
+Implement Session 24 on the existing stacked feature branch by making zkAS read and write paths visibly attach to the first-class monthly-cycle contract, and clarify branch expectations in `AGENTS.md`.
+
+#### Actions Taken
+- Updated `AGENTS.md` to clarify that feature work belongs on feature branches, but related numbered sessions can be stacked on the same branch with separate commits and session-log entries.
+- Added `lib/monthly-cycles/monthly-cycle-zkas.ts` as the server-owned cycle zkAS read model, deriving `not_locked`, `missing_inputs`, `ready_for_packaging`, `calculation_started`, and `published` postures from cycle-linked rows.
+- Added `/[locale]/admin/cycles/[cycleKey]/zkas` as the operator view for cycle-linked datasets, identity artifacts, runs, run results, published user results, and project summaries.
+- Linked monthly cycles and prep review into the new cycle zkAS stage while keeping existing `/admin/zkas` upload and run consoles as the action surfaces for now.
+- Updated zkAS server actions so newly uploaded datasets, identity artifacts, draft runs, run results, and published outputs resolve and write `monthly_cycle_id` where the current schema supports it.
+- Updated monthly-cycle, navigation-shell, and route-inventory engineering docs to record that zkAS is now anchored to the monthly cadence.
+- Added focused tests for the new monthly-cycle zkAS read model.
+
+#### Tests and Validation Notes
+- `pnpm test tests/monthly-cycle-zkas.test.ts tests/monthly-cycle-prep.test.ts tests/monthly-cycles.test.ts` passed.
+- `pnpm lint` passed.
+- `pnpm typecheck` passed.
+- `pnpm test` passed.
+- `pnpm build` passed and included `/[locale]/admin/cycles/[cycleKey]/zkas`.
+- `pnpm dlx node@22.22.1 /opt/homebrew/bin/pnpm check` passed.
+- `supabase status` confirmed the FundLoop local stack is running.
+- SQL smoke against local Supabase confirmed recent `monthly_cycles` rows are queryable with cycle-linked zkAS dataset/run counts.
+- Direct local `pnpm` commands still emit the known Node 25 engine warning; the Node 22 wrapper gate passed.
+
+#### Reflections
+- This keeps Session 24 appropriately bounded: zkAS is now cycle-visible and writes attach to cycle rows, but calculation packaging and verification commands remain deferred.
+- The old `/admin/zkas` routes still matter as operational consoles. The new cycle page gives operators the missing monthly-cadence mental model without forcing a risky route move.
+
+#### Suggested Next Steps
+- Yeet the stacked Session 23/24 branch to `dev`.
+- Implement Session 25 by turning the ready cycle/zkAS posture into a deterministic calculation package and artifact flow.
+
+---
+
 ### session v97: Add monthly-cycle prep review workspace
 - timestamp: 2026-04-29T12:58:12-04:00
 - agent: **Codex (GPT-5)**

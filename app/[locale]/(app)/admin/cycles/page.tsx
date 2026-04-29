@@ -238,13 +238,18 @@ export default async function AdminMonthlyCyclesPage({ params }: PageProps) {
                       </div>
                     </TableCell>
                     <TableCell>
-                      {cycle.status === "open" ? (
-                        <MonthlyCycleLockButton cycleKey={cycle.cycleKey} />
-                      ) : (
-                        <Button asChild size="sm" variant="outline">
-                          <Link href={`/admin/cycles/${cycle.cycleKey}/prep`}>Prep review</Link>
+                      <div className="flex flex-col gap-2">
+                        {cycle.status === "open" ? (
+                          <MonthlyCycleLockButton cycleKey={cycle.cycleKey} />
+                        ) : (
+                          <Button asChild size="sm" variant="outline">
+                            <Link href={`/admin/cycles/${cycle.cycleKey}/prep`}>Prep review</Link>
+                          </Button>
+                        )}
+                        <Button asChild size="sm" variant="ghost">
+                          <Link href={`/admin/cycles/${cycle.cycleKey}/zkas`}>zkAS stage</Link>
                         </Button>
-                      )}
+                      </div>
                     </TableCell>
                   </TableRow>
                 ))
