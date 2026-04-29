@@ -1,8 +1,44 @@
+### session v102: Build chain-abstracted execution interface
+- timestamp: 2026-04-29T15:36:35-04:00
+- agent: **Codex (GPT-5)**
+- branch: **codex/session-23-cycle-prep-review**
+- head: pending final commit
+
+#### Objective
+Implement Session 28 by adding the backend-facing execution boundary that future EVM, Solana, and fiat adapters will implement without moving the existing live EVM payment flow yet.
+
+#### Actions Taken
+- Added `lib/execution/` with FundLoop-centric contracts for deposit intent creation, deposit receipt verification, payout batch creation, payout execution, and payout reconciliation.
+- Added an execution adapter registry for `evm`, `solana`, and `fiat_stub`.
+- Added an EVM scaffold that can produce a FundLoop-facing deposit intent from an existing route snapshot while leaving receipt verification and payout execution explicit as unsupported.
+- Added Solana and fiat-stub scaffold adapters with deterministic payout batch draft support and explicit unsupported execution/reconciliation responses.
+- Added a deterministic payout batch draft builder that validates same rail/currency, requires routed positive intents, sorts items stably, and produces a stable execution payload.
+- Added focused execution-interface tests.
+- Updated payout, monthly-cycle, Edge Function, and navigation engineering docs with the new adapter boundary.
+
+#### Tests and Validation Notes
+- `pnpm test tests/execution-interface.test.ts` passed.
+- `pnpm lint` passed.
+- `pnpm typecheck` passed.
+- `pnpm test` passed.
+- `pnpm build` passed.
+- `pnpm dlx node@22.22.1 /opt/homebrew/bin/pnpm check` passed.
+
+#### Reflections
+- The boundary is intentionally boring in the best way: workflows can now ask for FundLoop concepts like deposits, payout batches, and reconciliation without knowing whether the rail is EVM, Solana, or fiat.
+- Keeping unsupported capabilities explicit should prevent future agents from mistaking scaffolding for live payout execution.
+
+#### Suggested Next Steps
+- Implement Session 29 by moving the existing EVM inbound payment path behind the execution adapter without changing user-facing payment behavior.
+- Continue to keep payout execution itself deferred until the rail adapter sessions have made the execution semantics concrete.
+
+---
+
 ### session v101: Create outbound payout domain model
 - timestamp: 2026-04-29T15:27:56-04:00
 - agent: **Codex (GPT-5)**
 - branch: **codex/session-23-cycle-prep-review**
-- head: pending final commit
+- head: 83264aadee313bb6f6b806e999b67c1c60c960e1
 
 #### Objective
 Implement Session 27 by introducing the outbound payout domain model and the first command that turns approved monthly-cycle user results into concrete payout work items.

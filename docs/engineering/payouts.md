@@ -33,4 +33,4 @@ This keeps missing user preferences visible without blocking the whole cycle fro
 
 ## What Is Not Included Yet
 
-Session 27 does not execute payouts, build EVM/Solana/fiat adapters, publish user earnings history, or reconcile external transfers. Those remain later payout execution and user workspace sessions.
+Session 28 added the chain-abstracted execution interface in `lib/execution/`. It can now build deterministic payout batch drafts from ready intents, but it still does not execute payouts, publish user earnings history, or reconcile external transfers. Those remain later payout execution and user workspace sessions.

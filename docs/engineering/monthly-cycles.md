@@ -64,6 +64,8 @@ Session 26 added `/[locale]/admin/cycles/[cycleKey]/verification` as the cleanup
 
 Session 27 added `/[locale]/admin/cycles/[cycleKey]/payouts` as the first operator view over outbound payout work. It converts approved published user results into payout intents through the `monthly-cycle-payout-intents-create` Edge Function command, then moves the cycle into `distribution`. Payout execution, rail batching, and reconciliation remain later sessions.
 
+Session 28 added the chain-abstracted execution interface under `lib/execution/`. Monthly-cycle payout work should use that interface for batch planning and future rail execution instead of branching directly on EVM, Solana, or fiat details.
+
 ## Lock Manifest
 
 `monthly-cycle-lock` persists a deterministic JSON manifest and SHA-256 hash on the cycle row. The manifest is the v1 immutable input snapshot for later prep, calculation, verification, payout, and reporting work.
@@ -156,7 +158,7 @@ The package manifest intentionally excludes mutable packaging timestamps so the 
 - marks intents `draft` with `missing_default_payout_route` when a route is not configured yet
 - advances the cycle to `distribution` and records audit events for attempt and success/failure outcomes
 
-The command does not execute payouts, create rail-specific batches, or reconcile outbound transfers. Those responsibilities stay with later payout adapter and execution sessions.
+The command does not execute payouts or reconcile outbound transfers. Session 28 added the adapter interface and deterministic batch-draft builder that later payout commands should use to create rail-specific batches from ready intents.
 
 ## Operating Rule
 

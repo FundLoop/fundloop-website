@@ -143,6 +143,7 @@ Session 21 added the first-class monthly cycle operator surface.
 - Monthly cycles are the canonical anchor for payment totals, onchain reconciliation, zkAS datasets/runs, and later payout/reporting stages.
 - The app-shell admin subnav now includes Monthly Cycles beside Payments and zkAS.
 - Session 22 added `monthly-cycle-lock`; Session 23 added read-only prep review; Session 25 added `monthly-cycle-calculation-package`; Session 26 added verification and approval commands; Session 27 added `monthly-cycle-payout-intents-create`. Later transition commands should extend the same operator workspace instead of creating separate admin roots.
+- Session 28 added the backend execution interface. Route work should keep operator pages FundLoop-centric and leave rail-specific EVM/Solana/fiat behavior behind `lib/execution/` adapters.
 
 ## Canonical Entry Routes
 

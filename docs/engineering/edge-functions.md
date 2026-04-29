@@ -112,6 +112,11 @@ For monthly-cycle operations:
 - `monthly-cycle-approval` requires verified completed calculation output and advances the cycle to `approval`, creating the checkpoint future payout/distribution work must consume
 - `monthly-cycle-payout-intents-create` requires an approved cycle, converts published user results into idempotent payout intents, and advances the cycle into `distribution`
 
+For chain and payout execution:
+
+- `lib/execution/` is now the backend-facing execution boundary for deposit intent creation, deposit verification, payout batch creation, payout execution, and payout reconciliation
+- future Edge Function commands should call the execution registry/adapters instead of embedding EVM, Solana, or fiat branching directly in command handlers
+
 The migration is intentionally incremental so the transport layer can stabilize before broader read migration and later founder/user workspace work.
 
 ## Remote Deployment
