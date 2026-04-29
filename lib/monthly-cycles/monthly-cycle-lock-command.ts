@@ -1,5 +1,6 @@
 import type { SupabaseClient } from "@supabase/supabase-js"
 import type { Database, Json } from "../../types/supabase.ts"
+import { isUnresolvedOnchainSubmissionStatus } from "./monthly-cycle-statuses.ts"
 
 export type MonthlyCycleLockInput = {
   cycleKey: string
@@ -42,8 +43,6 @@ type CommandDeps = {
 
 type CycleRow = Database["public"]["Tables"]["monthly_cycles"]["Row"]
 
-const UNRESOLVED_ONCHAIN_STATUSES = new Set(["submitted", "confirming", "awaiting_confirmation", "pending"])
-
 function success<T>(data: T): MonthlyCycleLockCommandResult<T> {
   return { ok: true, data }
 }
@@ -52,16 +51,18 @@ function failure(code: string, message: string): MonthlyCycleLockCommandResult<n
   return { ok: false, error: { code, message } }
 }
 
-function toDateOnly(value: string) {
-  return value.slice(0, 10)
-}
-
 function asArray<T>(value: T[] | null | undefined): T[] {
   return Array.isArray(value) ? value : []
 }
 
 function sortedUnique<T>(values: T[]) {
-  return [...new Set(values)].sort((a, b) => String(a).localeCompare(String(b)))
+  return [...new Set(values)].sort((a, b) => compareStableStrings(String(a), String(b)))
+}
+
+function compareStableStrings(a: string, b: string) {
+  if (a < b) return -1
+  if (a > b) return 1
+  return 0
 }
 
 function normalizeNumber(value: unknown) {
@@ -110,7 +111,7 @@ async function insertCycleEvent(
     metadata?: Json
   },
 ) {
-  await supabase.from("monthly_cycle_events").insert({
+  const { error } = await supabase.from("monthly_cycle_events").insert({
     monthly_cycle_id: params.cycleId,
     cycle_key: input.cycleKey,
     event_type: params.eventType,
@@ -122,6 +123,7 @@ async function insertCycleEvent(
     message: params.message ?? null,
     metadata: params.metadata ?? {},
   })
+  return error
 }
 
 async function reattachCycleRows(supabase: SupabaseClient<Database>, cycle: CycleRow) {
@@ -133,13 +135,17 @@ async function reattachCycleRows(supabase: SupabaseClient<Database>, cycle: Cycl
     .lte("period_end", cycle.period_end)
   if (paymentUpdate.error) return paymentUpdate.error
 
-  const submissionUpdate = await supabase
-    .from("onchain_payment_submissions")
-    .update({ monthly_cycle_id: cycle.id })
-    .is("monthly_cycle_id", null)
-    .gte("submitted_at", `${cycle.period_start}T00:00:00Z`)
-    .lt("submitted_at", `${toDateOnly(new Date(new Date(cycle.period_end).getTime() + 86_400_000).toISOString())}T00:00:00Z`)
-  if (submissionUpdate.error) return submissionUpdate.error
+  const cyclePayments = await supabase.from("payments").select("id").eq("monthly_cycle_id", cycle.id)
+  if (cyclePayments.error) return cyclePayments.error
+  const cyclePaymentIds = asArray(cyclePayments.data).map((payment) => payment.id)
+  if (cyclePaymentIds.length > 0) {
+    const submissionUpdate = await supabase
+      .from("onchain_payment_submissions")
+      .update({ monthly_cycle_id: cycle.id })
+      .is("monthly_cycle_id", null)
+      .in("payment_id", cyclePaymentIds)
+    if (submissionUpdate.error) return submissionUpdate.error
+  }
 
   for (const table of ["zkas_datasets", "zkas_identity_artifacts", "zkas_runs"] as const) {
     const update = await supabase.from(table).update({ monthly_cycle_id: cycle.id }).is("monthly_cycle_id", null).eq("month", cycle.cycle_key)
@@ -191,17 +197,18 @@ export async function executeMonthlyCycleLockCommand(
   }
 
   if (!cycle) {
-    await insertCycleEvent(supabase, input, {
+    const notFoundEventError = await insertCycleEvent(supabase, input, {
       cycleId: null,
       eventType: "lock_failure",
       outcome: "failure",
       severity: "warning",
       message: "Cycle not found.",
     })
+    if (notFoundEventError) return failure("query_failed", notFoundEventError.message)
     return failure("cycle_not_found", "Monthly cycle not found.")
   }
 
-  await insertCycleEvent(supabase, input, {
+  const attemptEventError = await insertCycleEvent(supabase, input, {
     cycleId: cycle.id,
     eventType: "lock_attempt",
     outcome: "attempt",
@@ -210,9 +217,10 @@ export async function executeMonthlyCycleLockCommand(
       overrideUnresolvedOnchain: Boolean(input.overrideUnresolvedOnchain),
     },
   })
+  if (attemptEventError) return failure("query_failed", attemptEventError.message)
 
   if (cycle.status !== "open") {
-    await insertCycleEvent(supabase, input, {
+    const eventError = await insertCycleEvent(supabase, input, {
       cycleId: cycle.id,
       eventType: "lock_failure",
       outcome: "failure",
@@ -220,18 +228,20 @@ export async function executeMonthlyCycleLockCommand(
       message: "Cycle is not open.",
       metadata: { status: cycle.status },
     })
+    if (eventError) return failure("query_failed", eventError.message)
     return failure("cycle_not_open", "Only open monthly cycles can be locked.")
   }
 
   const attachError = await reattachCycleRows(supabase, cycle)
   if (attachError) {
-    await insertCycleEvent(supabase, input, {
+    const eventError = await insertCycleEvent(supabase, input, {
       cycleId: cycle.id,
       eventType: "lock_failure",
       outcome: "failure",
       severity: "error",
       message: attachError.message,
     })
+    if (eventError) return failure("query_failed", eventError.message)
     return failure("query_failed", attachError.message)
   }
 
@@ -261,11 +271,11 @@ export async function executeMonthlyCycleLockCommand(
       cycle.id,
     )
     const unresolvedSubmissions = onchainSubmissions.filter((submission) =>
-      UNRESOLVED_ONCHAIN_STATUSES.has(String(submission.status ?? "")),
+      isUnresolvedOnchainSubmissionStatus(String(submission.status ?? "")),
     )
 
     if (unresolvedSubmissions.length > 0 && !input.overrideUnresolvedOnchain) {
-      await insertCycleEvent(supabase, input, {
+      const eventError = await insertCycleEvent(supabase, input, {
         cycleId: cycle.id,
         eventType: "lock_failure",
         outcome: "failure",
@@ -277,6 +287,7 @@ export async function executeMonthlyCycleLockCommand(
             .filter((id): id is number => Number.isInteger(id)),
         },
       })
+      if (eventError) return failure("query_failed", eventError.message)
       return failure(
         "unresolved_onchain_submissions",
         `${unresolvedSubmissions.length} onchain submission(s) are still unresolved. Reconcile them or provide a lock override reason.`,
@@ -356,7 +367,7 @@ export async function executeMonthlyCycleLockCommand(
           last_synced_at: normalizeString(snapshot?.last_synced_at),
         }
       })
-      .sort((a, b) => String(a.user_id).localeCompare(String(b.user_id)))
+      .sort((a, b) => compareStableStrings(String(a.user_id), String(b.user_id)))
 
     const lockedAt = (deps.now?.() ?? new Date()).toISOString()
     const counts = {
@@ -462,7 +473,7 @@ export async function executeMonthlyCycleLockCommand(
     if (updateError) return failure("lock_failed", updateError.message)
     if (!updatedCycle) return failure("cycle_not_open", "Monthly cycle changed before the lock could be saved.")
 
-    await insertCycleEvent(supabase, input, {
+    const successEventError = await insertCycleEvent(supabase, input, {
       cycleId: cycle.id,
       eventType: "lock_success",
       outcome: "success",
@@ -473,6 +484,7 @@ export async function executeMonthlyCycleLockCommand(
         overrideApplied: Boolean(input.overrideUnresolvedOnchain),
       },
     })
+    if (successEventError) return failure("query_failed", successEventError.message)
 
     return success({
       cycleId: cycle.id,
@@ -485,13 +497,14 @@ export async function executeMonthlyCycleLockCommand(
     })
   } catch (error) {
     const message = error instanceof Error ? error.message : "Monthly-cycle lock failed."
-    await insertCycleEvent(supabase, input, {
+    const eventError = await insertCycleEvent(supabase, input, {
       cycleId: cycle.id,
       eventType: "lock_failure",
       outcome: "failure",
       severity: "error",
       message,
     })
+    if (eventError) return failure("query_failed", eventError.message)
     return failure("lock_failed", message)
   }
 }

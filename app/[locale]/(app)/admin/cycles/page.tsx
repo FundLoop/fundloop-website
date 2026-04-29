@@ -1,5 +1,5 @@
-import Link from "next/link"
 import { AlertTriangle, CalendarClock, DollarSign, FileText, Sigma } from "lucide-react"
+import { Link } from "@/i18n/navigation"
 import { MonthlyCycleLockButton } from "@/components/admin/monthly-cycle-lock-button"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -8,8 +8,12 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { loadMonthlyCycleAdminOverview, monthlyCycleStatusLabels, type MonthlyCycleStatus } from "@/lib/monthly-cycles"
 import { requireInternalAdminActor } from "@/lib/zkas/auth"
 
-function formatCurrency(value: number) {
-  return new Intl.NumberFormat("en-US", {
+type PageProps = {
+  params: Promise<{ locale: string }>
+}
+
+function formatCurrency(locale: string, value: number) {
+  return new Intl.NumberFormat(locale, {
     style: "currency",
     currency: "USD",
     maximumFractionDigits: 0,
@@ -28,7 +32,8 @@ function statusVariant(status: MonthlyCycleStatus) {
   return "outline" as const
 }
 
-export default async function AdminMonthlyCyclesPage() {
+export default async function AdminMonthlyCyclesPage({ params }: PageProps) {
+  const { locale } = await params
   const data = await (async () => {
     await requireInternalAdminActor()
     return loadMonthlyCycleAdminOverview()
@@ -120,7 +125,7 @@ export default async function AdminMonthlyCyclesPage() {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-3xl font-semibold">{formatCurrency(data.totals.totalContributionAmount)}</div>
+            <div className="text-3xl font-semibold">{formatCurrency(locale, data.totals.totalContributionAmount)}</div>
             <p className="mt-2 text-xs uppercase tracking-[0.16em] text-[var(--text-soft)]">
               {data.totals.paymentCount} linked payment rows
             </p>
@@ -205,7 +210,7 @@ export default async function AdminMonthlyCyclesPage() {
                       ) : null}
                     </TableCell>
                     <TableCell>
-                      <div className="font-medium">{formatCurrency(cycle.payments.totalContributionAmount)}</div>
+                      <div className="font-medium">{formatCurrency(locale, cycle.payments.totalContributionAmount)}</div>
                       <div className="text-xs text-[var(--text-muted)]">
                         {cycle.payments.count} rows · {cycle.payments.confirmedCount} confirmed ·{" "}
                         {cycle.payments.awaitingConfirmationCount} awaiting
@@ -227,7 +232,7 @@ export default async function AdminMonthlyCyclesPage() {
                       </div>
                     </TableCell>
                     <TableCell>
-                      <div className="font-medium">{formatCurrency(cycle.zkas.totalPublishedAllocationUsd)}</div>
+                      <div className="font-medium">{formatCurrency(locale, cycle.zkas.totalPublishedAllocationUsd)}</div>
                       <div className="text-xs text-[var(--text-muted)]">
                         {cycle.zkas.publishedResultCount} user results · {cycle.zkas.projectSummaryCount} project summaries
                       </div>

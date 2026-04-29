@@ -45,6 +45,7 @@ function buildOverview(overrides: Partial<Parameters<typeof buildMonthlyCycleAdm
     ],
     onchainSubmissions: [
       { monthly_cycle_id: 1, status: "submitted" },
+      { monthly_cycle_id: 1, status: "confirming" },
       { monthly_cycle_id: 1, status: "confirmed" },
       { monthly_cycle_id: 1, status: "failed" },
     ],
@@ -128,9 +129,9 @@ describe("buildMonthlyCycleAdminOverview", () => {
         totalContributionAmount: 90,
       },
       reconciliation: {
-        submissionCount: 3,
+        submissionCount: 4,
         confirmedCount: 1,
-        unresolvedCount: 1,
+        unresolvedCount: 2,
         failedCount: 1,
       },
       zkas: {

@@ -1,3 +1,5 @@
+import "server-only"
+
 import { invokeServerEdgeCommand } from "./invoke-server"
 import {
   MONTHLY_CYCLE_LOCK_FUNCTION,

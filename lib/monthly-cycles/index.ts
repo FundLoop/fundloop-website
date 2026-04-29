@@ -3,6 +3,7 @@ import "server-only"
 import { getAdminSupabaseClient } from "@/lib/supabase-admin"
 import { assertMonthString, getMonthBounds, isValidMonthString } from "@/lib/zkas/month"
 import type { Database } from "@/types/supabase"
+import { isUnresolvedOnchainSubmissionStatus } from "./monthly-cycle-statuses"
 
 export const monthlyCycleStatuses = [
   "open",
@@ -272,7 +273,7 @@ export function buildMonthlyCycleAdminOverview(input: {
         submissionCount: countByCycle(input.onchainSubmissions, cycle.id),
         confirmedCount: countByCycle(input.onchainSubmissions, cycle.id, (submission) => submission.status === "confirmed"),
         unresolvedCount: countByCycle(input.onchainSubmissions, cycle.id, (submission) =>
-          ["submitted", "awaiting_confirmation", "pending"].includes(submission.status),
+          isUnresolvedOnchainSubmissionStatus(submission.status),
         ),
         failedCount: countByCycle(input.onchainSubmissions, cycle.id, (submission) => submission.status === "failed"),
       },

@@ -88,6 +88,8 @@ class FakeBuilder {
 
   private execute() {
     if (this.mutation?.kind === "insert") {
+      const insertError = this.db.insertErrors[this.table]
+      if (insertError) return { data: null, error: insertError }
       this.db.inserts[this.table] ??= []
       this.db.inserts[this.table].push(this.mutation.payload)
       return { data: null, error: null }
@@ -96,12 +98,14 @@ class FakeBuilder {
     if (this.mutation?.kind === "update") {
       this.db.updates[this.table] ??= []
       this.db.updates[this.table].push(this.mutation.payload)
-      if (this.table === "monthly_cycles") {
-        const row = this.db.rows.monthly_cycles.find((candidate) =>
-          this.filters.every((filter) => matchesFilter(candidate, filter)),
-        )
-        if (!row) return { data: null, error: null }
+      const rows = this.db.rows[this.table] ?? []
+      const matchingRows = rows.filter((candidate) => this.filters.every((filter) => matchesFilter(candidate, filter)))
+      for (const row of matchingRows) {
         Object.assign(row, this.mutation.payload)
+      }
+      if (this.table === "monthly_cycles") {
+        const row = matchingRows[0]
+        if (!row) return { data: null, error: null }
         return this.maybeSingleResult ? { data: { id: row.id }, error: null } : { data: [{ id: row.id }], error: null }
       }
       return { data: null, error: null }
@@ -116,6 +120,7 @@ class FakeBuilder {
 class FakeSupabase {
   inserts: Record<string, Array<Record<string, unknown>>> = {}
   updates: Record<string, Array<Record<string, unknown>>> = {}
+  insertErrors: Record<string, { message: string }> = {}
 
   constructor(public rows: Record<string, Array<Record<string, unknown>>>) {}
 
@@ -234,6 +239,38 @@ describe("executeMonthlyCycleLockCommand", () => {
         overrideApplied: true,
         counts: { unresolvedOnchainSubmissions: 1 },
       },
+    })
+  })
+
+  it("fails before lock mutations when audit event insertion fails", async () => {
+    const supabase = makeSupabase()
+    supabase.insertErrors.monthly_cycle_events = { message: "event insert failed" }
+
+    const result = await executeMonthlyCycleLockCommand(supabase as never, commandInput)
+
+    expect(result).toMatchObject({ ok: false, error: { code: "query_failed", message: "event insert failed" } })
+    expect(supabase.updates.monthly_cycles ?? []).toEqual([])
+  })
+
+  it("reattaches onchain submissions through the payment cycle instead of submitted month", async () => {
+    const supabase = makeSupabase({
+      onchain_payment_submissions: [
+        {
+          id: 30,
+          payment_id: 10,
+          monthly_cycle_id: null,
+          status: "confirmed",
+          submitted_at: "2026-05-04T00:00:00Z",
+        },
+      ],
+    })
+
+    const result = await executeMonthlyCycleLockCommand(supabase as never, commandInput)
+
+    expect(result.ok ? result.data.counts.onchainSubmissions : null).toBe(1)
+    expect(supabase.rows.onchain_payment_submissions[0]).toMatchObject({
+      id: 30,
+      monthly_cycle_id: 1,
     })
   })
 })

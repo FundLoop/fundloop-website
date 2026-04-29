@@ -1,3 +1,35 @@
+### session v96: Address PR 36 Copilot lock review
+- timestamp: 2026-04-29T04:43:27-04:00
+- agent: **Codex (GPT-5)**
+- branch: **codex/session-22-monthly-cycle-lock**
+- head: pending final commit
+
+#### Objective
+Address Copilot review feedback on PR #36 before requesting or acting on the Codex review phase.
+
+#### Actions Taken
+- Made monthly-cycle audit event insertion explicit by returning insert errors and failing lock attempts when the audit write cannot be recorded.
+- Reattached onchain submissions by their payment's monthly cycle rather than by submission timestamp, preventing late prior-cycle submissions from being assigned to the wrong economic month.
+- Shared unresolved onchain submission status logic so the admin overview counts `confirming` rows the same way the lock command blocks them.
+- Replaced locale-sensitive manifest ordering with a stable string comparator for lock-manifest inputs.
+- Added the missing `server-only` guard to the server Edge Function adapter.
+- Updated `/admin/cycles` to use locale-aware navigation and active-locale currency formatting.
+- Added regression tests for audit insert failures and late submitted onchain receipts.
+
+#### Tests and Validation Notes
+- `pnpm test tests/monthly-cycle-lock-command.test.ts tests/monthly-cycle-lock-contract.test.ts tests/monthly-cycle-lock-button.test.tsx tests/monthly-cycles.test.ts` passed.
+- `pnpm typecheck` passed.
+- `pnpm lint` passed.
+- Full gates will be rerun before pushing the review-fix commit.
+
+#### Reflections
+- The review found exactly the right class of issues for this domain: determinism, audit guarantees, and month attribution. Tightening those now keeps the lock manifest trustworthy before downstream sessions start depending on it.
+
+#### Suggested Next Steps
+- Push the review-fix commit, confirm CI returns green, then resolve/comment on the Copilot threads before moving to the Codex review gate.
+
+---
+
 ### session v95: Add monthly-cycle lock workflow
 - timestamp: 2026-04-28T04:42:45-04:00
 - agent: **Codex (GPT-5)**
