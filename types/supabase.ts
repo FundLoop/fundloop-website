@@ -7,10 +7,30 @@ export type Json =
   | Json[]
 
 export type Database = {
-  // Allows to automatically instantiate createClient with right options
-  // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
-  __InternalSupabase: {
-    PostgrestVersion: "12.2.3 (519615d)"
+  graphql_public: {
+    Tables: {
+      [_ in never]: never
+    }
+    Views: {
+      [_ in never]: never
+    }
+    Functions: {
+      graphql: {
+        Args: {
+          extensions?: Json
+          operationName?: string
+          query?: string
+          variables?: Json
+        }
+        Returns: Json
+      }
+    }
+    Enums: {
+      [_ in never]: never
+    }
+    CompositeTypes: {
+      [_ in never]: never
+    }
   }
   public: {
     Tables: {
@@ -106,6 +126,50 @@ export type Database = {
           },
         ]
       }
+      chain_intake_contracts: {
+        Row: {
+          abi_version: string
+          chain_id: number
+          collection_mode: Database["public"]["Enums"]["payment_collection_mode"]
+          contract_address: string
+          created_at: string
+          id: number
+          is_active: boolean
+          treasury_address: string
+          updated_at: string
+        }
+        Insert: {
+          abi_version?: string
+          chain_id: number
+          collection_mode?: Database["public"]["Enums"]["payment_collection_mode"]
+          contract_address: string
+          created_at?: string
+          id?: number
+          is_active?: boolean
+          treasury_address: string
+          updated_at?: string
+        }
+        Update: {
+          abi_version?: string
+          chain_id?: number
+          collection_mode?: Database["public"]["Enums"]["payment_collection_mode"]
+          contract_address?: string
+          created_at?: string
+          id?: number
+          is_active?: boolean
+          treasury_address?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "chain_intake_contracts_chain_id_fkey"
+            columns: ["chain_id"]
+            isOneToOne: false
+            referencedRelation: "ref_chains"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       cron_logs: {
         Row: {
           id: string
@@ -126,6 +190,62 @@ export type Database = {
           timestamp?: string | null
         }
         Relationships: []
+      }
+      cubid_identity_snapshots: {
+        Row: {
+          available_stamp_types: string[]
+          cubid_score: number | null
+          cubid_user_id: string
+          last_sync_error_code: string | null
+          last_sync_error_message: string | null
+          last_synced_at: string | null
+          primary_email: string | null
+          primary_name: string | null
+          primary_phone: string | null
+          raw_identity: Json
+          raw_stamps: Json
+          user_id: string
+          verified_stamp_types: string[]
+        }
+        Insert: {
+          available_stamp_types?: string[]
+          cubid_score?: number | null
+          cubid_user_id: string
+          last_sync_error_code?: string | null
+          last_sync_error_message?: string | null
+          last_synced_at?: string | null
+          primary_email?: string | null
+          primary_name?: string | null
+          primary_phone?: string | null
+          raw_identity?: Json
+          raw_stamps?: Json
+          user_id: string
+          verified_stamp_types?: string[]
+        }
+        Update: {
+          available_stamp_types?: string[]
+          cubid_score?: number | null
+          cubid_user_id?: string
+          last_sync_error_code?: string | null
+          last_sync_error_message?: string | null
+          last_synced_at?: string | null
+          primary_email?: string | null
+          primary_name?: string | null
+          primary_phone?: string | null
+          raw_identity?: Json
+          raw_stamps?: Json
+          user_id?: string
+          verified_stamp_types?: string[]
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cubid_identity_snapshots_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: true
+            referencedRelation: "users"
+            referencedColumns: ["user_id"]
+          },
+        ]
       }
       debug_log: {
         Row: {
@@ -174,154 +294,6 @@ export type Database = {
           {
             foreignKeyName: "fk_invitation_created_by"
             columns: ["created_by"]
-            isOneToOne: false
-            referencedRelation: "users"
-            referencedColumns: ["user_id"]
-          },
-        ]
-      }
-      monthly_network_stats: {
-        Row: {
-          avg_salary: number
-          created_at: string | null
-          id: number
-          month: number
-          project_count: number
-          total_funds: number
-          updated_at: string | null
-          user_count: number
-          year: number
-        }
-        Insert: {
-          avg_salary: number
-          created_at?: string | null
-          id?: never
-          month: number
-          project_count: number
-          total_funds: number
-          updated_at?: string | null
-          user_count: number
-          year: number
-        }
-        Update: {
-          avg_salary?: number
-          created_at?: string | null
-          id?: never
-          month?: number
-          project_count?: number
-          total_funds?: number
-          updated_at?: string | null
-          user_count?: number
-          year?: number
-        }
-        Relationships: []
-      }
-      monthly_cycles: {
-        Row: {
-          approval_started_at: string | null
-          calculation_started_at: string | null
-          completed_at: string | null
-          created_at: string
-          created_by_user_id: string | null
-          cycle_key: string
-          distribution_started_at: string | null
-          id: number
-          locked_at: string | null
-          locked_by_user_id: string | null
-          locked_manifest: Json | null
-          locked_manifest_hash: string | null
-          lock_override_reason: string | null
-          lock_override_unresolved_onchain: boolean
-          month: number
-          opened_at: string
-          operator_note: string | null
-          period_end: string
-          period_start: string
-          prep_started_at: string | null
-          reporting_published_at: string | null
-          status: Database["public"]["Enums"]["monthly_cycle_status"]
-          status_note: string | null
-          updated_at: string
-          updated_by_user_id: string | null
-          verification_started_at: string | null
-          year: number
-        }
-        Insert: {
-          approval_started_at?: string | null
-          calculation_started_at?: string | null
-          completed_at?: string | null
-          created_at?: string
-          created_by_user_id?: string | null
-          cycle_key: string
-          distribution_started_at?: string | null
-          id?: number
-          locked_at?: string | null
-          locked_by_user_id?: string | null
-          locked_manifest?: Json | null
-          locked_manifest_hash?: string | null
-          lock_override_reason?: string | null
-          lock_override_unresolved_onchain?: boolean
-          month: number
-          opened_at?: string
-          operator_note?: string | null
-          period_end: string
-          period_start: string
-          prep_started_at?: string | null
-          reporting_published_at?: string | null
-          status?: Database["public"]["Enums"]["monthly_cycle_status"]
-          status_note?: string | null
-          updated_at?: string
-          updated_by_user_id?: string | null
-          verification_started_at?: string | null
-          year: number
-        }
-        Update: {
-          approval_started_at?: string | null
-          calculation_started_at?: string | null
-          completed_at?: string | null
-          created_at?: string
-          created_by_user_id?: string | null
-          cycle_key?: string
-          distribution_started_at?: string | null
-          id?: number
-          locked_at?: string | null
-          locked_by_user_id?: string | null
-          locked_manifest?: Json | null
-          locked_manifest_hash?: string | null
-          lock_override_reason?: string | null
-          lock_override_unresolved_onchain?: boolean
-          month?: number
-          opened_at?: string
-          operator_note?: string | null
-          period_end?: string
-          period_start?: string
-          prep_started_at?: string | null
-          reporting_published_at?: string | null
-          status?: Database["public"]["Enums"]["monthly_cycle_status"]
-          status_note?: string | null
-          updated_at?: string
-          updated_by_user_id?: string | null
-          verification_started_at?: string | null
-          year?: number
-        }
-        Relationships: [
-          {
-            foreignKeyName: "monthly_cycles_created_by_user_id_fkey"
-            columns: ["created_by_user_id"]
-            isOneToOne: false
-            referencedRelation: "users"
-            referencedColumns: ["user_id"]
-          },
-          {
-            foreignKeyName: "monthly_cycles_locked_by_user_id_fkey"
-            columns: ["locked_by_user_id"]
-            isOneToOne: false
-            referencedRelation: "users"
-            referencedColumns: ["user_id"]
-          },
-          {
-            foreignKeyName: "monthly_cycles_updated_by_user_id_fkey"
-            columns: ["updated_by_user_id"]
             isOneToOne: false
             referencedRelation: "users"
             referencedColumns: ["user_id"]
@@ -388,6 +360,154 @@ export type Database = {
           },
         ]
       }
+      monthly_cycles: {
+        Row: {
+          approval_started_at: string | null
+          calculation_started_at: string | null
+          completed_at: string | null
+          created_at: string
+          created_by_user_id: string | null
+          cycle_key: string
+          distribution_started_at: string | null
+          id: number
+          lock_override_reason: string | null
+          lock_override_unresolved_onchain: boolean
+          locked_at: string | null
+          locked_by_user_id: string | null
+          locked_manifest: Json | null
+          locked_manifest_hash: string | null
+          month: number
+          opened_at: string
+          operator_note: string | null
+          period_end: string
+          period_start: string
+          prep_started_at: string | null
+          reporting_published_at: string | null
+          status: Database["public"]["Enums"]["monthly_cycle_status"]
+          status_note: string | null
+          updated_at: string
+          updated_by_user_id: string | null
+          verification_started_at: string | null
+          year: number
+        }
+        Insert: {
+          approval_started_at?: string | null
+          calculation_started_at?: string | null
+          completed_at?: string | null
+          created_at?: string
+          created_by_user_id?: string | null
+          cycle_key: string
+          distribution_started_at?: string | null
+          id?: number
+          lock_override_reason?: string | null
+          lock_override_unresolved_onchain?: boolean
+          locked_at?: string | null
+          locked_by_user_id?: string | null
+          locked_manifest?: Json | null
+          locked_manifest_hash?: string | null
+          month: number
+          opened_at?: string
+          operator_note?: string | null
+          period_end: string
+          period_start: string
+          prep_started_at?: string | null
+          reporting_published_at?: string | null
+          status?: Database["public"]["Enums"]["monthly_cycle_status"]
+          status_note?: string | null
+          updated_at?: string
+          updated_by_user_id?: string | null
+          verification_started_at?: string | null
+          year: number
+        }
+        Update: {
+          approval_started_at?: string | null
+          calculation_started_at?: string | null
+          completed_at?: string | null
+          created_at?: string
+          created_by_user_id?: string | null
+          cycle_key?: string
+          distribution_started_at?: string | null
+          id?: number
+          lock_override_reason?: string | null
+          lock_override_unresolved_onchain?: boolean
+          locked_at?: string | null
+          locked_by_user_id?: string | null
+          locked_manifest?: Json | null
+          locked_manifest_hash?: string | null
+          month?: number
+          opened_at?: string
+          operator_note?: string | null
+          period_end?: string
+          period_start?: string
+          prep_started_at?: string | null
+          reporting_published_at?: string | null
+          status?: Database["public"]["Enums"]["monthly_cycle_status"]
+          status_note?: string | null
+          updated_at?: string
+          updated_by_user_id?: string | null
+          verification_started_at?: string | null
+          year?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "monthly_cycles_created_by_user_id_fkey"
+            columns: ["created_by_user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "monthly_cycles_locked_by_user_id_fkey"
+            columns: ["locked_by_user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "monthly_cycles_updated_by_user_id_fkey"
+            columns: ["updated_by_user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["user_id"]
+          },
+        ]
+      }
+      monthly_network_stats: {
+        Row: {
+          avg_salary: number
+          created_at: string | null
+          id: number
+          month: number
+          project_count: number
+          total_funds: number
+          updated_at: string | null
+          user_count: number
+          year: number
+        }
+        Insert: {
+          avg_salary: number
+          created_at?: string | null
+          id?: never
+          month: number
+          project_count: number
+          total_funds: number
+          updated_at?: string | null
+          user_count: number
+          year: number
+        }
+        Update: {
+          avg_salary?: number
+          created_at?: string | null
+          id?: never
+          month?: number
+          project_count?: number
+          total_funds?: number
+          updated_at?: string | null
+          user_count?: number
+          year?: number
+        }
+        Relationships: []
+      }
       newsletter_subscribers: {
         Row: {
           email: string
@@ -405,6 +525,158 @@ export type Database = {
           subscribed_at?: string | null
         }
         Relationships: []
+      }
+      onchain_payment_submissions: {
+        Row: {
+          amount_decimal: number
+          amount_raw: string
+          asset_is_native: boolean
+          asset_token_address: string | null
+          block_number: number | null
+          chain_asset_id: number
+          chain_id: number
+          chain_network_key: string
+          confirmation_count: number
+          confirmed_at: string | null
+          failure_code: string | null
+          failure_reason: string | null
+          id: number
+          intake_abi_version: string
+          intake_contract_address: string
+          intake_contract_id: number
+          intake_treasury_address: string
+          last_checked_at: string | null
+          matched_log_index: number | null
+          metadata: Json | null
+          monthly_cycle_id: number | null
+          payment_id: number | null
+          payment_method_id: number
+          period_id: number
+          project_id: number
+          receipt: Json | null
+          reconciled_at: string | null
+          status: string
+          submitted_at: string
+          tx_hash: string
+          wallet_address: string
+        }
+        Insert: {
+          amount_decimal: number
+          amount_raw: string
+          asset_is_native: boolean
+          asset_token_address?: string | null
+          block_number?: number | null
+          chain_asset_id: number
+          chain_id: number
+          chain_network_key: string
+          confirmation_count?: number
+          confirmed_at?: string | null
+          failure_code?: string | null
+          failure_reason?: string | null
+          id?: number
+          intake_abi_version: string
+          intake_contract_address: string
+          intake_contract_id: number
+          intake_treasury_address: string
+          last_checked_at?: string | null
+          matched_log_index?: number | null
+          metadata?: Json | null
+          monthly_cycle_id?: number | null
+          payment_id?: number | null
+          payment_method_id: number
+          period_id: number
+          project_id: number
+          receipt?: Json | null
+          reconciled_at?: string | null
+          status?: string
+          submitted_at?: string
+          tx_hash: string
+          wallet_address: string
+        }
+        Update: {
+          amount_decimal?: number
+          amount_raw?: string
+          asset_is_native?: boolean
+          asset_token_address?: string | null
+          block_number?: number | null
+          chain_asset_id?: number
+          chain_id?: number
+          chain_network_key?: string
+          confirmation_count?: number
+          confirmed_at?: string | null
+          failure_code?: string | null
+          failure_reason?: string | null
+          id?: number
+          intake_abi_version?: string
+          intake_contract_address?: string
+          intake_contract_id?: number
+          intake_treasury_address?: string
+          last_checked_at?: string | null
+          matched_log_index?: number | null
+          metadata?: Json | null
+          monthly_cycle_id?: number | null
+          payment_id?: number | null
+          payment_method_id?: number
+          period_id?: number
+          project_id?: number
+          receipt?: Json | null
+          reconciled_at?: string | null
+          status?: string
+          submitted_at?: string
+          tx_hash?: string
+          wallet_address?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "onchain_payment_submissions_chain_asset_id_fkey"
+            columns: ["chain_asset_id"]
+            isOneToOne: false
+            referencedRelation: "ref_chain_assets"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "onchain_payment_submissions_chain_id_fkey"
+            columns: ["chain_id"]
+            isOneToOne: false
+            referencedRelation: "ref_chains"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "onchain_payment_submissions_intake_contract_id_fkey"
+            columns: ["intake_contract_id"]
+            isOneToOne: false
+            referencedRelation: "chain_intake_contracts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "onchain_payment_submissions_monthly_cycle_id_fkey"
+            columns: ["monthly_cycle_id"]
+            isOneToOne: false
+            referencedRelation: "monthly_cycles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "onchain_payment_submissions_payment_id_fkey"
+            columns: ["payment_id"]
+            isOneToOne: false
+            referencedRelation: "payments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "onchain_payment_submissions_payment_method_id_fkey"
+            columns: ["payment_method_id"]
+            isOneToOne: false
+            referencedRelation: "payment_methods"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "onchain_payment_submissions_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       organization_invitations: {
         Row: {
@@ -668,154 +940,127 @@ export type Database = {
           },
         ]
       }
-      onchain_payment_submissions: {
+      payment_flow_events: {
         Row: {
-          amount_decimal: number
-          amount_raw: string
-          asset_is_native: boolean
-          asset_token_address: string | null
-          block_number: number | null
-          chain_asset_id: number
-          chain_id: number
-          chain_network_key: string
-          confirmation_count: number
-          confirmed_at: string | null
-          failure_code: string | null
-          failure_reason: string | null
+          actor_role: string
+          actor_user_id: string | null
+          attempt_id: string
+          chain_asset_id: number | null
+          chain_id: number | null
+          created_at: string
+          environment: string
+          error_code: string | null
+          error_message: string | null
+          flow: string
           id: number
-          intake_abi_version: string
-          intake_contract_id: number
-          intake_contract_address: string
-          intake_treasury_address: string
-          last_checked_at: string | null
-          matched_log_index: number | null
-          metadata: Json | null
-          monthly_cycle_id: number | null
+          intake_contract_id: number | null
+          metadata: Json
+          outcome: string
           payment_id: number | null
-          payment_method_id: number
-          period_id: number
-          project_id: number
-          reconciled_at: string | null
-          receipt: Json | null
-          status: string
-          submitted_at: string
-          tx_hash: string
-          wallet_address: string
+          payment_method_id: number | null
+          project_id: number | null
+          severity: string
+          stage: string
+          submission_id: number | null
+          tx_hash: string | null
+          wallet_address: string | null
         }
         Insert: {
-          amount_decimal: number
-          amount_raw: string
-          asset_is_native: boolean
-          asset_token_address?: string | null
-          block_number?: number | null
-          chain_asset_id: number
-          chain_id: number
-          chain_network_key: string
-          confirmation_count?: number
-          confirmed_at?: string | null
-          failure_code?: string | null
-          failure_reason?: string | null
+          actor_role?: string
+          actor_user_id?: string | null
+          attempt_id: string
+          chain_asset_id?: number | null
+          chain_id?: number | null
+          created_at?: string
+          environment: string
+          error_code?: string | null
+          error_message?: string | null
+          flow: string
           id?: number
-          intake_abi_version: string
-          intake_contract_id: number
-          intake_contract_address: string
-          intake_treasury_address: string
-          last_checked_at?: string | null
-          matched_log_index?: number | null
-          metadata?: Json | null
-          monthly_cycle_id?: number | null
+          intake_contract_id?: number | null
+          metadata?: Json
+          outcome: string
           payment_id?: number | null
-          payment_method_id: number
-          period_id: number
-          project_id: number
-          reconciled_at?: string | null
-          receipt?: Json | null
-          status?: string
-          submitted_at?: string
-          tx_hash: string
-          wallet_address: string
+          payment_method_id?: number | null
+          project_id?: number | null
+          severity?: string
+          stage: string
+          submission_id?: number | null
+          tx_hash?: string | null
+          wallet_address?: string | null
         }
         Update: {
-          amount_decimal?: number
-          amount_raw?: string
-          asset_is_native?: boolean
-          asset_token_address?: string | null
-          block_number?: number | null
-          chain_asset_id?: number
-          chain_id?: number
-          chain_network_key?: string
-          confirmation_count?: number
-          confirmed_at?: string | null
-          failure_code?: string | null
-          failure_reason?: string | null
+          actor_role?: string
+          actor_user_id?: string | null
+          attempt_id?: string
+          chain_asset_id?: number | null
+          chain_id?: number | null
+          created_at?: string
+          environment?: string
+          error_code?: string | null
+          error_message?: string | null
+          flow?: string
           id?: number
-          intake_abi_version?: string
-          intake_contract_id?: number
-          intake_contract_address?: string
-          intake_treasury_address?: string
-          last_checked_at?: string | null
-          matched_log_index?: number | null
-          metadata?: Json | null
-          monthly_cycle_id?: number | null
+          intake_contract_id?: number | null
+          metadata?: Json
+          outcome?: string
           payment_id?: number | null
-          payment_method_id?: number
-          period_id?: number
-          project_id?: number
-          reconciled_at?: string | null
-          receipt?: Json | null
-          status?: string
-          submitted_at?: string
-          tx_hash?: string
-          wallet_address?: string
+          payment_method_id?: number | null
+          project_id?: number | null
+          severity?: string
+          stage?: string
+          submission_id?: number | null
+          tx_hash?: string | null
+          wallet_address?: string | null
         }
         Relationships: [
           {
-            foreignKeyName: "onchain_payment_submissions_chain_asset_id_fkey"
+            foreignKeyName: "payment_flow_events_chain_asset_id_fkey"
             columns: ["chain_asset_id"]
             isOneToOne: false
             referencedRelation: "ref_chain_assets"
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "onchain_payment_submissions_chain_id_fkey"
+            foreignKeyName: "payment_flow_events_chain_id_fkey"
             columns: ["chain_id"]
             isOneToOne: false
             referencedRelation: "ref_chains"
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "onchain_payment_submissions_intake_contract_id_fkey"
+            foreignKeyName: "payment_flow_events_intake_contract_id_fkey"
             columns: ["intake_contract_id"]
             isOneToOne: false
             referencedRelation: "chain_intake_contracts"
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "onchain_payment_submissions_monthly_cycle_id_fkey"
-            columns: ["monthly_cycle_id"]
-            isOneToOne: false
-            referencedRelation: "monthly_cycles"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "onchain_payment_submissions_payment_id_fkey"
+            foreignKeyName: "payment_flow_events_payment_id_fkey"
             columns: ["payment_id"]
             isOneToOne: false
             referencedRelation: "payments"
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "onchain_payment_submissions_payment_method_id_fkey"
+            foreignKeyName: "payment_flow_events_payment_method_id_fkey"
             columns: ["payment_method_id"]
             isOneToOne: false
             referencedRelation: "payment_methods"
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "onchain_payment_submissions_project_id_fkey"
+            foreignKeyName: "payment_flow_events_project_id_fkey"
             columns: ["project_id"]
             isOneToOne: false
             referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "payment_flow_events_submission_id_fkey"
+            columns: ["submission_id"]
+            isOneToOne: false
+            referencedRelation: "onchain_payment_submissions"
             referencedColumns: ["id"]
           },
         ]
@@ -1002,127 +1247,281 @@ export type Database = {
           },
         ]
       }
-      payment_flow_events: {
+      payout_batch_items: {
         Row: {
-          actor_role: string
-          actor_user_id: string | null
-          attempt_id: string
-          chain_asset_id: number | null
-          chain_id: number | null
+          amount_usd: number
           created_at: string
-          environment: string
-          error_code: string | null
-          error_message: string | null
-          flow: string
           id: number
-          intake_contract_id: number | null
-          metadata: Json
-          outcome: string
-          payment_id: number | null
-          payment_method_id: number | null
-          project_id: number | null
-          severity: string
-          stage: string
-          submission_id: number | null
-          tx_hash: string | null
-          wallet_address: string | null
+          payout_batch_id: number
+          payout_intent_id: number
+          position: number
+          status: Database["public"]["Enums"]["payout_intent_status"]
         }
         Insert: {
-          actor_role?: string
-          actor_user_id?: string | null
-          attempt_id: string
-          chain_asset_id?: number | null
-          chain_id?: number | null
+          amount_usd: number
           created_at?: string
-          environment: string
-          error_code?: string | null
-          error_message?: string | null
-          flow: string
           id?: number
-          intake_contract_id?: number | null
-          metadata?: Json
-          outcome: string
-          payment_id?: number | null
-          payment_method_id?: number | null
-          project_id?: number | null
-          severity?: string
-          stage: string
-          submission_id?: number | null
-          tx_hash?: string | null
-          wallet_address?: string | null
+          payout_batch_id: number
+          payout_intent_id: number
+          position?: number
+          status?: Database["public"]["Enums"]["payout_intent_status"]
         }
         Update: {
-          actor_role?: string
-          actor_user_id?: string | null
-          attempt_id?: string
-          chain_asset_id?: number | null
-          chain_id?: number | null
+          amount_usd?: number
           created_at?: string
-          environment?: string
-          error_code?: string | null
-          error_message?: string | null
-          flow?: string
           id?: number
-          intake_contract_id?: number | null
-          metadata?: Json
-          outcome?: string
-          payment_id?: number | null
-          payment_method_id?: number | null
-          project_id?: number | null
-          severity?: string
-          stage?: string
-          submission_id?: number | null
-          tx_hash?: string | null
-          wallet_address?: string | null
+          payout_batch_id?: number
+          payout_intent_id?: number
+          position?: number
+          status?: Database["public"]["Enums"]["payout_intent_status"]
         }
         Relationships: [
           {
-            foreignKeyName: "payment_flow_events_chain_asset_id_fkey"
-            columns: ["chain_asset_id"]
+            foreignKeyName: "payout_batch_items_payout_batch_id_fkey"
+            columns: ["payout_batch_id"]
             isOneToOne: false
-            referencedRelation: "ref_chain_assets"
+            referencedRelation: "payout_batches"
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "payment_flow_events_chain_id_fkey"
-            columns: ["chain_id"]
+            foreignKeyName: "payout_batch_items_payout_intent_id_fkey"
+            columns: ["payout_intent_id"]
+            isOneToOne: true
+            referencedRelation: "payout_intents"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      payout_batches: {
+        Row: {
+          created_at: string
+          created_by_user_id: string | null
+          currency_code: string
+          execution_payload: Json
+          execution_reference: string | null
+          id: number
+          intent_count: number
+          monthly_cycle_id: number
+          rail: Database["public"]["Enums"]["payout_rail"]
+          status: Database["public"]["Enums"]["payout_batch_status"]
+          total_amount_usd: number
+          updated_at: string
+          updated_by_user_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          created_by_user_id?: string | null
+          currency_code?: string
+          execution_payload?: Json
+          execution_reference?: string | null
+          id?: number
+          intent_count?: number
+          monthly_cycle_id: number
+          rail: Database["public"]["Enums"]["payout_rail"]
+          status?: Database["public"]["Enums"]["payout_batch_status"]
+          total_amount_usd?: number
+          updated_at?: string
+          updated_by_user_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          created_by_user_id?: string | null
+          currency_code?: string
+          execution_payload?: Json
+          execution_reference?: string | null
+          id?: number
+          intent_count?: number
+          monthly_cycle_id?: number
+          rail?: Database["public"]["Enums"]["payout_rail"]
+          status?: Database["public"]["Enums"]["payout_batch_status"]
+          total_amount_usd?: number
+          updated_at?: string
+          updated_by_user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "payout_batches_created_by_user_id_fkey"
+            columns: ["created_by_user_id"]
             isOneToOne: false
-            referencedRelation: "ref_chains"
+            referencedRelation: "users"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "payout_batches_monthly_cycle_id_fkey"
+            columns: ["monthly_cycle_id"]
+            isOneToOne: false
+            referencedRelation: "monthly_cycles"
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "payment_flow_events_intake_contract_id_fkey"
-            columns: ["intake_contract_id"]
+            foreignKeyName: "payout_batches_updated_by_user_id_fkey"
+            columns: ["updated_by_user_id"]
             isOneToOne: false
-            referencedRelation: "chain_intake_contracts"
+            referencedRelation: "users"
+            referencedColumns: ["user_id"]
+          },
+        ]
+      }
+      payout_intents: {
+        Row: {
+          amount_usd: number
+          created_at: string
+          created_by_user_id: string | null
+          currency_code: string
+          id: number
+          idempotency_key: string
+          monthly_cycle_id: number
+          payout_route_id: number | null
+          rail: Database["public"]["Enums"]["payout_rail"] | null
+          source_result_id: number | null
+          status: Database["public"]["Enums"]["payout_intent_status"]
+          status_reason: string | null
+          updated_at: string
+          updated_by_user_id: string | null
+          user_id: string
+        }
+        Insert: {
+          amount_usd: number
+          created_at?: string
+          created_by_user_id?: string | null
+          currency_code?: string
+          id?: number
+          idempotency_key: string
+          monthly_cycle_id: number
+          payout_route_id?: number | null
+          rail?: Database["public"]["Enums"]["payout_rail"] | null
+          source_result_id?: number | null
+          status?: Database["public"]["Enums"]["payout_intent_status"]
+          status_reason?: string | null
+          updated_at?: string
+          updated_by_user_id?: string | null
+          user_id: string
+        }
+        Update: {
+          amount_usd?: number
+          created_at?: string
+          created_by_user_id?: string | null
+          currency_code?: string
+          id?: number
+          idempotency_key?: string
+          monthly_cycle_id?: number
+          payout_route_id?: number | null
+          rail?: Database["public"]["Enums"]["payout_rail"] | null
+          source_result_id?: number | null
+          status?: Database["public"]["Enums"]["payout_intent_status"]
+          status_reason?: string | null
+          updated_at?: string
+          updated_by_user_id?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "payout_intents_created_by_user_id_fkey"
+            columns: ["created_by_user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "payout_intents_monthly_cycle_id_fkey"
+            columns: ["monthly_cycle_id"]
+            isOneToOne: false
+            referencedRelation: "monthly_cycles"
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "payment_flow_events_payment_id_fkey"
-            columns: ["payment_id"]
+            foreignKeyName: "payout_intents_payout_route_id_fkey"
+            columns: ["payout_route_id"]
             isOneToOne: false
-            referencedRelation: "payments"
+            referencedRelation: "user_payout_routes"
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "payment_flow_events_payment_method_id_fkey"
-            columns: ["payment_method_id"]
+            foreignKeyName: "payout_intents_source_result_id_fkey"
+            columns: ["source_result_id"]
             isOneToOne: false
-            referencedRelation: "payment_methods"
+            referencedRelation: "zkas_published_user_results"
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "payment_flow_events_project_id_fkey"
-            columns: ["project_id"]
+            foreignKeyName: "payout_intents_updated_by_user_id_fkey"
+            columns: ["updated_by_user_id"]
             isOneToOne: false
-            referencedRelation: "projects"
+            referencedRelation: "users"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "payout_intents_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["user_id"]
+          },
+        ]
+      }
+      payout_reconciliation_events: {
+        Row: {
+          created_at: string
+          created_by_user_id: string | null
+          external_reference: string | null
+          id: number
+          metadata: Json
+          note: string | null
+          observed_amount_usd: number | null
+          payout_batch_id: number | null
+          payout_intent_id: number | null
+          rail: Database["public"]["Enums"]["payout_rail"] | null
+          resolved_at: string | null
+          status: Database["public"]["Enums"]["payout_reconciliation_status"]
+        }
+        Insert: {
+          created_at?: string
+          created_by_user_id?: string | null
+          external_reference?: string | null
+          id?: number
+          metadata?: Json
+          note?: string | null
+          observed_amount_usd?: number | null
+          payout_batch_id?: number | null
+          payout_intent_id?: number | null
+          rail?: Database["public"]["Enums"]["payout_rail"] | null
+          resolved_at?: string | null
+          status?: Database["public"]["Enums"]["payout_reconciliation_status"]
+        }
+        Update: {
+          created_at?: string
+          created_by_user_id?: string | null
+          external_reference?: string | null
+          id?: number
+          metadata?: Json
+          note?: string | null
+          observed_amount_usd?: number | null
+          payout_batch_id?: number | null
+          payout_intent_id?: number | null
+          rail?: Database["public"]["Enums"]["payout_rail"] | null
+          resolved_at?: string | null
+          status?: Database["public"]["Enums"]["payout_reconciliation_status"]
+        }
+        Relationships: [
+          {
+            foreignKeyName: "payout_reconciliation_events_created_by_user_id_fkey"
+            columns: ["created_by_user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "payout_reconciliation_events_payout_batch_id_fkey"
+            columns: ["payout_batch_id"]
+            isOneToOne: false
+            referencedRelation: "payout_batches"
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "payment_flow_events_submission_id_fkey"
-            columns: ["submission_id"]
+            foreignKeyName: "payout_reconciliation_events_payout_intent_id_fkey"
+            columns: ["payout_intent_id"]
             isOneToOne: false
-            referencedRelation: "onchain_payment_submissions"
+            referencedRelation: "payout_intents"
             referencedColumns: ["id"]
           },
         ]
@@ -1154,6 +1553,44 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "projects"
             referencedColumns: ["id"]
+          },
+        ]
+      }
+      project_onboarding_drafts: {
+        Row: {
+          completed_at: string | null
+          current_screen: string
+          id: number
+          payload: Json
+          started_at: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          completed_at?: string | null
+          current_screen: string
+          id?: number
+          payload?: Json
+          started_at?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          completed_at?: string | null
+          current_screen?: string
+          id?: number
+          payload?: Json
+          started_at?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "project_onboarding_drafts_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: true
+            referencedRelation: "users"
+            referencedColumns: ["user_id"]
           },
         ]
       }
@@ -1309,44 +1746,6 @@ export type Database = {
           },
         ]
       }
-      project_onboarding_drafts: {
-        Row: {
-          completed_at: string | null
-          current_screen: string
-          id: number
-          payload: Json
-          started_at: string
-          updated_at: string
-          user_id: string
-        }
-        Insert: {
-          completed_at?: string | null
-          current_screen: string
-          id?: number
-          payload?: Json
-          started_at?: string
-          updated_at?: string
-          user_id: string
-        }
-        Update: {
-          completed_at?: string | null
-          current_screen?: string
-          id?: number
-          payload?: Json
-          started_at?: string
-          updated_at?: string
-          user_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "project_onboarding_drafts_user_id_fkey"
-            columns: ["user_id"]
-            isOneToOne: true
-            referencedRelation: "users"
-            referencedColumns: ["user_id"]
-          },
-        ]
-      }
       projects: {
         Row: {
           billing_email: string | null
@@ -1487,50 +1886,6 @@ export type Database = {
             columns: ["updated_by"]
             isOneToOne: false
             referencedRelation: "users"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      chain_intake_contracts: {
-        Row: {
-          abi_version: string
-          chain_id: number
-          collection_mode: Database["public"]["Enums"]["payment_collection_mode"]
-          contract_address: string
-          created_at: string
-          id: number
-          is_active: boolean
-          treasury_address: string
-          updated_at: string
-        }
-        Insert: {
-          abi_version?: string
-          chain_id: number
-          collection_mode?: Database["public"]["Enums"]["payment_collection_mode"]
-          contract_address: string
-          created_at?: string
-          id?: number
-          is_active?: boolean
-          treasury_address: string
-          updated_at?: string
-        }
-        Update: {
-          abi_version?: string
-          chain_id?: number
-          collection_mode?: Database["public"]["Enums"]["payment_collection_mode"]
-          contract_address?: string
-          created_at?: string
-          id?: number
-          is_active?: boolean
-          treasury_address?: string
-          updated_at?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "chain_intake_contracts_chain_id_fkey"
-            columns: ["chain_id"]
-            isOneToOne: false
-            referencedRelation: "ref_chains"
             referencedColumns: ["id"]
           },
         ]
@@ -1978,100 +2333,6 @@ export type Database = {
         }
         Relationships: []
       }
-      user_onboarding_drafts: {
-        Row: {
-          completed_at: string | null
-          current_screen: string
-          id: number
-          payload: Json
-          started_at: string
-          updated_at: string
-          user_id: string
-        }
-        Insert: {
-          completed_at?: string | null
-          current_screen: string
-          id?: number
-          payload?: Json
-          started_at?: string
-          updated_at?: string
-          user_id: string
-        }
-        Update: {
-          completed_at?: string | null
-          current_screen?: string
-          id?: number
-          payload?: Json
-          started_at?: string
-          updated_at?: string
-          user_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "user_onboarding_drafts_user_id_fkey"
-            columns: ["user_id"]
-            isOneToOne: true
-            referencedRelation: "users"
-            referencedColumns: ["user_id"]
-          },
-        ]
-      }
-      cubid_identity_snapshots: {
-        Row: {
-          available_stamp_types: string[]
-          cubid_score: number | null
-          cubid_user_id: string
-          last_sync_error_code: string | null
-          last_sync_error_message: string | null
-          last_synced_at: string | null
-          primary_email: string | null
-          primary_name: string | null
-          primary_phone: string | null
-          raw_identity: Json
-          raw_stamps: Json
-          user_id: string
-          verified_stamp_types: string[]
-        }
-        Insert: {
-          available_stamp_types?: string[]
-          cubid_score?: number | null
-          cubid_user_id: string
-          last_sync_error_code?: string | null
-          last_sync_error_message?: string | null
-          last_synced_at?: string | null
-          primary_email?: string | null
-          primary_name?: string | null
-          primary_phone?: string | null
-          raw_identity?: Json
-          raw_stamps?: Json
-          user_id: string
-          verified_stamp_types?: string[]
-        }
-        Update: {
-          available_stamp_types?: string[]
-          cubid_score?: number | null
-          cubid_user_id?: string
-          last_sync_error_code?: string | null
-          last_sync_error_message?: string | null
-          last_synced_at?: string | null
-          primary_email?: string | null
-          primary_name?: string | null
-          primary_phone?: string | null
-          raw_identity?: Json
-          raw_stamps?: Json
-          user_id?: string
-          verified_stamp_types?: string[]
-        }
-        Relationships: [
-          {
-            foreignKeyName: "cubid_identity_snapshots_user_id_fkey"
-            columns: ["user_id"]
-            isOneToOne: true
-            referencedRelation: "users"
-            referencedColumns: ["user_id"]
-          },
-        ]
-      }
       user_interests: {
         Row: {
           created_at: string | null
@@ -2143,6 +2404,111 @@ export type Database = {
           },
           {
             foreignKeyName: "user_notifications_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["user_id"]
+          },
+        ]
+      }
+      user_onboarding_drafts: {
+        Row: {
+          completed_at: string | null
+          current_screen: string
+          id: number
+          payload: Json
+          started_at: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          completed_at?: string | null
+          current_screen: string
+          id?: number
+          payload?: Json
+          started_at?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          completed_at?: string | null
+          current_screen?: string
+          id?: number
+          payload?: Json
+          started_at?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_onboarding_drafts_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: true
+            referencedRelation: "users"
+            referencedColumns: ["user_id"]
+          },
+        ]
+      }
+      user_payout_routes: {
+        Row: {
+          created_at: string
+          created_by_user_id: string | null
+          currency_code: string
+          destination: Json
+          id: number
+          is_default: boolean
+          label: string
+          rail: Database["public"]["Enums"]["payout_rail"]
+          status: Database["public"]["Enums"]["payout_route_status"]
+          updated_at: string
+          updated_by_user_id: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          created_by_user_id?: string | null
+          currency_code?: string
+          destination?: Json
+          id?: number
+          is_default?: boolean
+          label?: string
+          rail: Database["public"]["Enums"]["payout_rail"]
+          status?: Database["public"]["Enums"]["payout_route_status"]
+          updated_at?: string
+          updated_by_user_id?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          created_by_user_id?: string | null
+          currency_code?: string
+          destination?: Json
+          id?: number
+          is_default?: boolean
+          label?: string
+          rail?: Database["public"]["Enums"]["payout_rail"]
+          status?: Database["public"]["Enums"]["payout_route_status"]
+          updated_at?: string
+          updated_by_user_id?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_payout_routes_created_by_user_id_fkey"
+            columns: ["created_by_user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "user_payout_routes_updated_by_user_id_fkey"
+            columns: ["updated_by_user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "user_payout_routes_user_id_fkey"
             columns: ["user_id"]
             isOneToOne: false
             referencedRelation: "users"
@@ -3367,18 +3733,18 @@ export type Database = {
       finalize_onchain_payment_reconciliation: {
         Args: {
           p_confirmation_count: number
-          p_failure_code: string | null
-          p_failure_reason: string | null
+          p_failure_code: string
+          p_failure_reason: string
           p_last_checked_at: string
-          p_matched_log_index: number | null
-          p_payment_confirmed_at: string | null
-          p_payment_id: number | null
-          p_payment_note: string | null
-          p_payment_status_id: number | null
+          p_matched_log_index: number
+          p_payment_confirmed_at: string
+          p_payment_id: number
+          p_payment_note: string
+          p_payment_status_id: number
           p_payment_updated_at: string
-          p_submission_confirmed_at: string | null
+          p_submission_confirmed_at: string
           p_submission_id: number
-          p_submission_reconciled_at: string | null
+          p_submission_reconciled_at: string
           p_submission_status: string
         }
         Returns: undefined
@@ -3395,19 +3761,19 @@ export type Database = {
       }
       publish_project_onboarding_draft_atomic: {
         Args: {
-          p_billing_email: string | null
-          p_billing_frequency: string | null
+          p_billing_email: string
+          p_billing_frequency: string
           p_category_ids: number[]
-          p_contact_email: string | null
-          p_default_payment_method_id: number | null
+          p_contact_email: string
+          p_default_payment_method_id: number
           p_description: string
-          p_detailed_description: string | null
-          p_logo_url: string | null
+          p_detailed_description: string
+          p_logo_url: string
           p_name: string
           p_payment_percentage: number
-          p_payment_periodicity_id: number | null
+          p_payment_periodicity_id: number
           p_slug: string
-          p_website: string | null
+          p_website: string
         }
         Returns: {
           project_id: number
@@ -3444,9 +3810,32 @@ export type Database = {
         | "completed"
         | "reporting"
       organization_members_status: "active" | "inactive" | "deleted"
-      payment_collection_mode: "contract" | "deposit_address"
       organizations_status: "active" | "inactive" | "deleted"
+      payment_collection_mode: "contract" | "deposit_address"
       payments_status: "active" | "inactive" | "deleted"
+      payout_batch_status:
+        | "draft"
+        | "ready"
+        | "processing"
+        | "completed"
+        | "failed"
+        | "cancelled"
+      payout_intent_status:
+        | "draft"
+        | "ready"
+        | "batched"
+        | "processing"
+        | "paid"
+        | "failed"
+        | "cancelled"
+      payout_rail: "evm" | "solana" | "fiat_stub"
+      payout_reconciliation_status:
+        | "pending"
+        | "matched"
+        | "mismatch"
+        | "manual_review"
+        | "resolved"
+      payout_route_status: "draft" | "active" | "disabled"
       projects_status: "active" | "inactive" | "deleted"
       users_status: "active" | "inactive" | "deleted"
       wallet_accounts_status: "active" | "inactive" | "deleted"
@@ -3594,17 +3983,77 @@ export type CompositeTypes<
     : never
 
 export const Constants = {
+  graphql_public: {
+    Enums: {},
+  },
   public: {
     Enums: {
       cubid_identity_status: ["unlinked", "linked", "verified"],
+      monthly_cycle_status: [
+        "open",
+        "locked",
+        "prep",
+        "calculation",
+        "verification",
+        "approval",
+        "distribution",
+        "completed",
+        "reporting",
+      ],
       organization_members_status: ["active", "inactive", "deleted"],
-      payment_collection_mode: ["contract", "deposit_address"],
       organizations_status: ["active", "inactive", "deleted"],
+      payment_collection_mode: ["contract", "deposit_address"],
       payments_status: ["active", "inactive", "deleted"],
+      payout_batch_status: [
+        "draft",
+        "ready",
+        "processing",
+        "completed",
+        "failed",
+        "cancelled",
+      ],
+      payout_intent_status: [
+        "draft",
+        "ready",
+        "batched",
+        "processing",
+        "paid",
+        "failed",
+        "cancelled",
+      ],
+      payout_rail: ["evm", "solana", "fiat_stub"],
+      payout_reconciliation_status: [
+        "pending",
+        "matched",
+        "mismatch",
+        "manual_review",
+        "resolved",
+      ],
+      payout_route_status: ["draft", "active", "disabled"],
       projects_status: ["active", "inactive", "deleted"],
       users_status: ["active", "inactive", "deleted"],
       wallet_accounts_status: ["active", "inactive", "deleted"],
       wallet_connections_status: ["active", "inactive", "deleted"],
+      zkas_dataset_status: [
+        "uploaded",
+        "validated",
+        "failed",
+        "approved",
+        "included",
+        "replaced",
+        "archived",
+      ],
+      zkas_execution_mode: ["local", "nitro"],
+      zkas_issue_severity: ["error", "warning"],
+      zkas_run_status: [
+        "draft",
+        "locked",
+        "running",
+        "completed",
+        "failed",
+        "finalized",
+      ],
+      zkas_verification_status: ["pending", "verified", "rejected"],
     },
   },
 } as const

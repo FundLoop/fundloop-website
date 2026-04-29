@@ -55,6 +55,11 @@ export default async function AdminCycleVerificationPage({ params }: PageProps) 
               {review.cycle.status}
             </Badge>
             <p className="mt-3 text-sm text-[var(--text-muted)]">{review.cycle.periodStart} to {review.cycle.periodEnd}</p>
+            {review.cycle.status === "approval" ? (
+              <Button asChild variant="outline" size="sm" className="mt-4">
+                <Link href={`/admin/cycles/${review.cycle.cycleKey}/payouts`}>Open payout work</Link>
+              </Button>
+            ) : null}
           </div>
         </div>
       </section>

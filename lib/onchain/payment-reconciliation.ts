@@ -452,7 +452,7 @@ async function updateSubmissionAndPayment(
         )
       : null
 
-  const { error: finalizeError } = await supabase.rpc("finalize_onchain_payment_reconciliation", {
+  const finalizeArgs = {
     p_submission_id: row.id,
     p_payment_id: row.payment_id,
     p_submission_status: evaluation.status,
@@ -467,7 +467,9 @@ async function updateSubmissionAndPayment(
     p_payment_confirmed_at: paymentConfirmedAt,
     p_payment_note: paymentNote,
     p_payment_updated_at: checkedAt,
-  })
+  } as unknown as Database["public"]["Functions"]["finalize_onchain_payment_reconciliation"]["Args"]
+
+  const { error: finalizeError } = await supabase.rpc("finalize_onchain_payment_reconciliation", finalizeArgs)
 
   if (finalizeError) {
     throw new Error(finalizeError.message)

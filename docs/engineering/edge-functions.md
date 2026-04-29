@@ -110,6 +110,7 @@ For monthly-cycle operations:
 - the command authenticates an internal admin, reads cycle-linked approved zkAS inputs, writes deterministic package/run manifest artifacts to Supabase Storage, creates a locked zkAS run, and advances the cycle into `calculation`
 - `monthly-cycle-verification-review` records cycle-level result review decisions after calculation and either moves the cycle to `verification` or records that cleanup is needed
 - `monthly-cycle-approval` requires verified completed calculation output and advances the cycle to `approval`, creating the checkpoint future payout/distribution work must consume
+- `monthly-cycle-payout-intents-create` requires an approved cycle, converts published user results into idempotent payout intents, and advances the cycle into `distribution`
 
 The migration is intentionally incremental so the transport layer can stabilize before broader read migration and later founder/user workspace work.
 
@@ -150,6 +151,7 @@ supabase functions serve project-onchain-payment-submission-record --env-file .e
 supabase functions serve admin-payment-receipt-confirm --env-file .env.local
 supabase functions serve admin-onchain-payment-reconciliation-run --env-file .env.local
 supabase functions serve monthly-cycle-lock --env-file .env.local
+supabase functions serve monthly-cycle-payout-intents-create --env-file .env.local
 ```
 
 Once the local stack is running, invoke the command through the app or by calling the local functions endpoint with an authenticated bearer token.

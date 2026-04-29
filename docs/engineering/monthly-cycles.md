@@ -2,6 +2,7 @@
 
 Session 21 introduced `public.monthly_cycles` as the canonical operational anchor for FundLoop's economic month.
 Session 22 added the first mutation command, `monthly-cycle-lock`, so operators can freeze an open cycle into an immutable lock manifest.
+Session 27 added the outbound payout domain model and the first payout-intent creation command.
 
 ## Schema Contract
 
@@ -60,6 +61,8 @@ Session 24 added `/[locale]/admin/cycles/[cycleKey]/zkas` as the cycle-anchored 
 Session 25 added the first deterministic calculation-package command, `monthly-cycle-calculation-package`. It packages a locked/prep cycle into a cycle-level calculation manifest, uploads the package and run manifest artifacts to Supabase Storage, creates a locked zkAS run, links run datasets/payments, marks approved datasets as included, and advances the cycle into `calculation`.
 
 Session 26 added `/[locale]/admin/cycles/[cycleKey]/verification` as the cleanup, verification, and approval workspace for calculated results. It also added the `monthly-cycle-verification-review` and `monthly-cycle-approval` Edge Function commands so operators can record cleanup-needed decisions, mark a cycle verified, and approve verified results for distribution with audit events and required notes.
+
+Session 27 added `/[locale]/admin/cycles/[cycleKey]/payouts` as the first operator view over outbound payout work. It converts approved published user results into payout intents through the `monthly-cycle-payout-intents-create` Edge Function command, then moves the cycle into `distribution`. Payout execution, rail batching, and reconciliation remain later sessions.
 
 ## Lock Manifest
 
@@ -142,11 +145,24 @@ The package manifest intentionally excludes mutable packaging timestamps so the 
 
 `monthly-cycle-approval` requires a verified completed run and moves the cycle to `approval` with `approval_started_at`. This is the explicit checkpoint before later distribution and payout sessions create outbound obligations.
 
+## Payout Intent Creation
+
+`monthly-cycle-payout-intents-create` is the command boundary between approved distribution results and concrete outbound payout work. The command:
+
+- requires the cycle to be in `approval` or `distribution`
+- reads positive `zkas_published_user_results` attached through `monthly_cycle_id`
+- creates one idempotent `payout_intents` row per published user result
+- marks intents `ready` when the user has an active default payout route
+- marks intents `draft` with `missing_default_payout_route` when a route is not configured yet
+- advances the cycle to `distribution` and records audit events for attempt and success/failure outcomes
+
+The command does not execute payouts, create rail-specific batches, or reconcile outbound transfers. Those responsibilities stay with later payout adapter and execution sessions.
+
 ## Operating Rule
 
 New monthly cadence work should attach to `monthly_cycles` instead of independently interpreting month strings. Existing zkAS `month` fields and payment period fields remain in place for compatibility, but `monthly_cycle_id` is the canonical join point for lock, prep, zkAS calculation, verification, payout, and reporting sessions.
 
-All monthly-cycle mutations should follow the Edge Function command boundary. Session 22 added locking, Session 23 added read-only prep checks, Session 24 aligned zkAS reads/writes to cycle ownership, Session 25 added deterministic calculation packaging, and Session 26 added verification/approval checkpoints. Payout creation and reporting publication remain later sessions.
+All monthly-cycle mutations should follow the Edge Function command boundary. Session 22 added locking, Session 23 added read-only prep checks, Session 24 aligned zkAS reads/writes to cycle ownership, Session 25 added deterministic calculation packaging, Session 26 added verification/approval checkpoints, and Session 27 added payout-intent creation. Payout execution and reporting publication remain later sessions.
 
 ## Local Supabase Note
 

@@ -1,8 +1,48 @@
+### session v101: Create outbound payout domain model
+- timestamp: 2026-04-29T15:27:56-04:00
+- agent: **Codex (GPT-5)**
+- branch: **codex/session-23-cycle-prep-review**
+- head: pending final commit
+
+#### Objective
+Implement Session 27 by introducing the outbound payout domain model and the first command that turns approved monthly-cycle user results into concrete payout work items.
+
+#### Actions Taken
+- Added payout route, payout intent, payout batch, batch item, and payout reconciliation tables with lifecycle enums, indexes, RLS, and monthly-cycle event support.
+- Added `monthly-cycle-payout-intents-create` typed Edge Function contracts, browser/server adapters, and Supabase function handler.
+- Added `lib/monthly-cycles/monthly-cycle-payout-intents-command.ts` to create idempotent payout intents from positive published user results, classify missing-route intents as drafts, and advance approved cycles into `distribution`.
+- Added `/[locale]/admin/cycles/[cycleKey]/payouts` plus an operator action button and links from the monthly-cycle overview/result-review surfaces.
+- Added the payout overview read model and focused command/contract tests.
+- Regenerated `types/supabase.ts` from the local migrated Supabase schema and made two existing RPC call sites explicit about generated-type compatibility for nullable runtime arguments.
+- Updated monthly-cycle, payout, Edge Function, navigation, and route-inventory engineering docs.
+
+#### Tests and Validation Notes
+- `supabase migration up` applied `20260429140700_payout_domain.sql` locally.
+- `supabase gen types typescript --local > types/supabase.ts` completed against the local schema.
+- `pnpm test tests/monthly-cycle-payout-intents-contract.test.ts tests/monthly-cycle-payout-intents-command.test.ts` passed.
+- `pnpm lint` passed.
+- `pnpm typecheck` passed.
+- `pnpm test` passed.
+- `pnpm build` passed and included `/[locale]/admin/cycles/[cycleKey]/payouts`.
+- `pnpm dlx node@22.22.1 /opt/homebrew/bin/pnpm check` passed.
+- `supabase status` confirmed the FundLoop local stack is running.
+- Direct local `pnpm` commands still emit the known Node 25 engine warning; the Node 22 wrapper gate passed.
+
+#### Reflections
+- The outbound money model is now separate from founder payment collection, which makes the monthly-cycle handoff much easier to reason about.
+- Missing user payout preferences are represented as draft payout intents rather than blocking the entire distribution stage.
+
+#### Suggested Next Steps
+- Yeet the stacked monthly-cycle branch to `dev` once the user is ready.
+- Implement Session 28 by adding the chain-abstracted execution interface that will consume payout intents and create rail-specific batches.
+
+---
+
 ### session v100: Add monthly-cycle verification and approval review
 - timestamp: 2026-04-29T14:05:47-04:00
 - agent: **Codex (GPT-5)**
 - branch: **codex/session-23-cycle-prep-review**
-- head: pending final commit
+- head: 918818d805546db7292fcc7cf8bc915d0af59838
 
 #### Objective
 Implement Session 26 by adding the cleanup, verification, and approval stages for calculated monthly-cycle results without starting distribution or payout creation yet.

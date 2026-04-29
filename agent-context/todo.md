@@ -300,12 +300,12 @@ Build the post-calculation review phase where operators verify totals, compare e
 
 ## Session 27: Create the outbound payout domain model
 
-- Status: Not started
-- Timestamp started: TBD
-- Timestamp completed: TBD
-- Feature branch: TBD
-- Head: TBD
-- Session-log reference(s): TBD
+- Status: Complete
+- Timestamp started: 2026-04-29T14:07:04-0400
+- Timestamp completed: 2026-04-29T15:27:56-0400
+- Feature branch: codex/session-23-cycle-prep-review
+- Head: pending final commit
+- Session-log reference(s): session v101
 
 Introduce payout intents, payout batches, payout route preferences, lifecycle states, and reconciliation placeholders. Even if execution is still partially stubbed, this domain needs to exist independently of payments collected from founders. This session lays the foundation for user earnings management and future rail adapters. It should also establish how monthly approved distribution results become concrete payout work items rather than staying as abstract calculation outputs.
 

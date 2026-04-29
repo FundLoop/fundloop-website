@@ -1,4 +1,4 @@
-import type { Json, Tables } from "../../types/supabase.ts"
+import type { Database, Tables } from "../../types/supabase.ts"
 import {
   mergeProjectOnboardingPayload,
   type ProjectOnboardingPayload,
@@ -192,8 +192,7 @@ export async function executeProjectOnboardingPublishCommand(
   }
 
   const rpcSupabase = input.rpcSupabase ?? supabase
-  const { data: publishedProject, error: publishError } = await rpcSupabase
-    .rpc("publish_project_onboarding_draft_atomic", {
+  const publishProjectArgs = {
       p_name: payload.name.trim(),
       p_slug: payload.slug.trim(),
       p_description: payload.description.trim(),
@@ -207,7 +206,10 @@ export async function executeProjectOnboardingPublishCommand(
       p_payment_periodicity_id: parseInteger(payload.paymentPeriodicityId),
       p_default_payment_method_id: cryptoContractMethodId,
       p_category_ids: categoryIds,
-    } satisfies Record<string, Json>)
+    } as unknown as Database["public"]["Functions"]["publish_project_onboarding_draft_atomic"]["Args"]
+
+  const { data: publishedProject, error: publishError } = await rpcSupabase
+    .rpc("publish_project_onboarding_draft_atomic", publishProjectArgs)
     .single()
 
   if (publishError || !publishedProject) {

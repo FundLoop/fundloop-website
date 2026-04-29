@@ -139,9 +139,10 @@ Session 21 added the first-class monthly cycle operator surface.
 - `/[locale]/admin/cycles/[cycleKey]/prep` is the read-only prep and exception review workspace for locked manifests.
 - `/[locale]/admin/cycles/[cycleKey]/zkas` is the cycle-anchored zkAS stage view for linked datasets, identity artifacts, runs, and published outputs.
 - `/[locale]/admin/cycles/[cycleKey]/verification` is the result cleanup, verification, and approval workspace for calculated outputs.
+- `/[locale]/admin/cycles/[cycleKey]/payouts` is the outbound payout domain view for turning approved user results into payout intents.
 - Monthly cycles are the canonical anchor for payment totals, onchain reconciliation, zkAS datasets/runs, and later payout/reporting stages.
 - The app-shell admin subnav now includes Monthly Cycles beside Payments and zkAS.
-- Session 22 added `monthly-cycle-lock`; Session 23 added read-only prep review; Session 25 added `monthly-cycle-calculation-package`; Session 26 added verification and approval commands. Later transition commands should extend the same operator workspace instead of creating separate admin roots.
+- Session 22 added `monthly-cycle-lock`; Session 23 added read-only prep review; Session 25 added `monthly-cycle-calculation-package`; Session 26 added verification and approval commands; Session 27 added `monthly-cycle-payout-intents-create`. Later transition commands should extend the same operator workspace instead of creating separate admin roots.
 
 ## Canonical Entry Routes
 
