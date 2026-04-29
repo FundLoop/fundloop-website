@@ -1,3 +1,46 @@
+### session v97: Add monthly-cycle prep review workspace
+- timestamp: 2026-04-29T12:58:12-04:00
+- agent: **Codex (GPT-5)**
+- branch: **codex/session-23-cycle-prep-review**
+- head: pending final commit
+
+#### Objective
+Repair the local Supabase health issue noted in Session 22 and implement Session 23 by adding a read-only prep and exception review workspace on top of locked monthly-cycle manifests.
+
+#### Actions Taken
+- Stopped the competing `Genero` Supabase containers that were preventing this repo from finding `supabase_db_fundloop`.
+- Started the FundLoop local Supabase stack and applied pending local migrations, including the Session 22 lock migration.
+- Added `lib/monthly-cycles/monthly-cycle-prep.ts` with a server-owned prep read model that evaluates locked manifests into `not_locked`, `blocked`, `needs_review`, or `ready` postures.
+- Added `/[locale]/admin/cycles/[cycleKey]/prep` as the operator prep and exception review workspace.
+- Linked locked/non-open cycles from `/[locale]/admin/cycles` into the prep review route.
+- Surfaced prep blockers and warnings for missing manifests, hash mismatches, unresolved onchain submissions, missing zkAS inputs, missing identity artifacts, and CUBID identity snapshot issues.
+- Added informational live-row drift checks so operators can see current DB differences without treating live rows as the calculation source of truth.
+- Updated monthly-cycle, navigation, and route-inventory engineering docs.
+- Added focused unit tests for the prep review model.
+
+#### Tests and Validation Notes
+- Local Supabase repair and migration smoke passed:
+  - `supabase start` restored the FundLoop stack after stopping competing containers.
+  - `supabase migration up` applied `20260428093000_monthly_cycle_lock.sql`.
+  - SQL smoke confirmed `public.monthly_cycles` has 17 local rows and `public.monthly_cycle_events` exists.
+- `pnpm test tests/monthly-cycle-prep.test.ts tests/monthly-cycles.test.ts` passed.
+- `pnpm lint` passed.
+- `pnpm test` passed.
+- `pnpm typecheck` passed.
+- `pnpm build` passed.
+- `pnpm dlx node@22.22.1 /opt/homebrew/bin/pnpm check` passed.
+- Commands run directly under the local shell still emit the known Node 25 engine warning; the Node 22 wrapper gate passed.
+
+#### Reflections
+- Prep now gives operators a concrete review posture without prematurely adding transition commands or calculation artifacts.
+- Keeping live drift informational reinforces the intended contract: downstream calculation should use the immutable lock manifest, not mutable current rows.
+
+#### Suggested Next Steps
+- Yeet Session 23 to `dev`.
+- Implement Session 24: align zkAS datasets, run manifests, and publication outputs more tightly with the monthly-cycle contract.
+
+---
+
 ### session v96: Address PR 36 Copilot lock review
 - timestamp: 2026-04-29T04:43:27-04:00
 - agent: **Codex (GPT-5)**

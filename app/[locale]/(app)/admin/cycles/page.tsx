@@ -241,7 +241,9 @@ export default async function AdminMonthlyCyclesPage({ params }: PageProps) {
                       {cycle.status === "open" ? (
                         <MonthlyCycleLockButton cycleKey={cycle.cycleKey} />
                       ) : (
-                        <span className="text-xs text-[var(--text-muted)]">No lock action</span>
+                        <Button asChild size="sm" variant="outline">
+                          <Link href={`/admin/cycles/${cycle.cycleKey}/prep`}>Prep review</Link>
+                        </Button>
                       )}
                     </TableCell>
                   </TableRow>

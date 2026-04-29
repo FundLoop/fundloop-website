@@ -53,6 +53,8 @@ It then attaches nullable `monthly_cycle_id` references to operational rows. The
 
 Open cycles expose a lock action that calls the `monthly-cycle-lock` Edge Function. The first attempt blocks if same-cycle onchain submissions are still `submitted`, `confirming`, `awaiting_confirmation`, or `pending`. If that happens, the UI opens a strongly worded override modal. A retry can only proceed when the operator supplies an explicit reason, and the reason is written into both the manifest and audit event stream.
 
+Locked cycles link to `/[locale]/admin/cycles/[cycleKey]/prep`, the Session 23 prep and exception review workspace. This route is intentionally read-only: it checks whether the locked manifest is safe to hand into calculation packaging, but it does not transition status or produce calculation artifacts yet.
+
 ## Lock Manifest
 
 `monthly-cycle-lock` persists a deterministic JSON manifest and SHA-256 hash on the cycle row. The manifest is the v1 immutable input snapshot for later prep, calculation, verification, payout, and reporting work.
@@ -68,8 +70,32 @@ The manifest includes:
 
 The command reattaches newly-created month-bearing rows to the cycle before reading. It updates the cycle from `open` to `locked` with an optimistic `status = open` guard so concurrent or repeated locks fail safely instead of overwriting an already-transitioned cycle.
 
+## Prep Review
+
+`lib/monthly-cycles/monthly-cycle-prep.ts` owns the prep read model. It evaluates the locked manifest and returns a posture:
+
+- `not_locked`
+- `blocked`
+- `needs_review`
+- `ready`
+
+The prep workspace surfaces:
+
+- missing or mismatched lock manifest/hash
+- unresolved onchain submissions, including override reasons
+- missing confirmed contribution inputs
+- missing approved zkAS datasets or identity artifacts
+- missing or unlinked CUBID participant snapshots
+- informational live-row drift between current linked rows and the immutable manifest
+
+Live drift is informational because downstream calculation should use the locked manifest, not mutable current rows. Prep does not create zkAS runs, package calculation inputs, approve exceptions, or move the cycle into the next status. Those responsibilities remain later sessions.
+
 ## Operating Rule
 
 New monthly cadence work should attach to `monthly_cycles` instead of independently interpreting month strings. Existing zkAS `month` fields and payment period fields remain in place for compatibility, but `monthly_cycle_id` is the canonical join point for lock, prep, calculation, verification, payout, and reporting sessions.
 
-All monthly-cycle mutations should follow the Edge Function command boundary. Session 22 intentionally adds only locking; prep checks, calculation packaging, payout creation, and reporting publication remain later sessions.
+All monthly-cycle mutations should follow the Edge Function command boundary. Session 22 intentionally added only locking; Session 23 added read-only prep checks. Calculation packaging, payout creation, and reporting publication remain later sessions.
+
+## Local Supabase Note
+
+If local Supabase reports `supabase_db_fundloop` missing, check for another repo's Supabase containers holding the ports. On 2026-04-29 the blocker was a competing `Genero` Supabase stack. Stopping those containers allowed `supabase start` to restore the FundLoop stack and `supabase migration up` to apply the lock migration locally.
