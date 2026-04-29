@@ -58,6 +58,43 @@ describe("chain-abstracted execution interface", () => {
     })
   })
 
+  it("verifies EVM deposit receipts through the execution adapter", async () => {
+    const adapter = getExecutionAdapter("evm")
+    const result = await adapter.verifyDepositReceipt({
+      rail: "evm",
+      paymentId: 10,
+      depositIntentReference: "payment:10",
+      submittedTxHash: "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      expectedAmountUsd: 25,
+      submittedAmountUsd: 25,
+      receipt: { transactionHash: "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa" },
+    })
+
+    expect(result).toMatchObject({
+      ok: true,
+      data: {
+        verified: true,
+        externalReference: "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        status: "submitted",
+      },
+    })
+  })
+
+  it("rejects mismatched EVM deposit receipt amounts through the execution adapter", async () => {
+    const adapter = getExecutionAdapter("evm")
+    const result = await adapter.verifyDepositReceipt({
+      rail: "evm",
+      paymentId: 10,
+      depositIntentReference: "payment:10",
+      submittedTxHash: "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      expectedAmountUsd: 25,
+      submittedAmountUsd: 10,
+      receipt: {},
+    })
+
+    expect(result).toMatchObject({ ok: false, error: { code: "amount_mismatch", rail: "evm" } })
+  })
+
   it("keeps Solana and fiat execution as explicit unsupported scaffolds for now", async () => {
     const solana = getExecutionAdapter("solana")
     const result = await solana.executePayoutBatch({

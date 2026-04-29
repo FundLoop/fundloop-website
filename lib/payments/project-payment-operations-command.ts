@@ -1,5 +1,6 @@
 import type { SupabaseClient } from "@supabase/supabase-js"
 import type { Database, Json, Tables } from "../../types/supabase.ts"
+import { getExecutionAdapter } from "../execution/index.ts"
 import {
   getPromotedDefaultRouteId,
   moveProjectCryptoRouteState,
@@ -279,7 +280,7 @@ async function recordReceiptEvent(
   supabase: SupabaseClient<Database>,
   deps: PaymentOperationsCommandDeps,
   input: {
-    stage: "submission_record"
+    stage: "deposit_intent" | "receipt_verification" | "submission_record"
     outcome: "attempt" | "success" | "failure"
     attemptId: string
     actorUserId?: string | null
@@ -1356,6 +1357,103 @@ export async function executeProjectOnchainPaymentSubmissionRecordCommand(
     })
   }
 
+  const evmAdapter = getExecutionAdapter("evm")
+  const depositIntent = await evmAdapter.createDepositIntent({
+    projectId: context.data.project.id,
+    projectSlug: input.projectSlug,
+    paymentId: input.paymentId,
+    paymentMethodId: input.paymentMethodId,
+    rail: "evm",
+    money: {
+      amountUsd: expectedAmount,
+      currencyCode: "USD",
+    },
+    reference: `payment:${input.paymentId}:method:${input.paymentMethodId}:attempt:${input.attemptId}`,
+    route: {
+      chainId: input.chainId,
+      chainNetworkKey: paymentMethodSnapshot.ref_chains.network_key,
+      chainAssetId: input.chainAssetId,
+      intakeContractId: input.intakeContractId,
+      contractAddress: paymentMethodSnapshot.chain_intake_contracts.contract_address,
+      treasuryAddress: paymentMethodSnapshot.chain_intake_contracts.treasury_address,
+      tokenAddress: paymentMethodSnapshot.ref_chain_assets.token_address,
+      isNativeAsset: paymentMethodSnapshot.ref_chain_assets.is_native,
+    },
+    metadata: {
+      source: "project_payments_page",
+      period_id: input.periodId,
+    },
+  })
+
+  if (!depositIntent.ok) {
+    await recordReceiptEvent(supabase, deps, {
+      stage: "deposit_intent",
+      outcome: "failure",
+      attemptId: input.attemptId,
+      actorUserId: context.data.actorUserId,
+      actorRole: "project_admin",
+      projectId: context.data.project.id,
+      paymentId: input.paymentId,
+      paymentMethodId: input.paymentMethodId,
+      chainId: input.chainId,
+      chainAssetId: input.chainAssetId,
+      intakeContractId: input.intakeContractId,
+      txHash: input.txHash,
+      walletAddress: input.walletAddress,
+      error: depositIntent.error.message,
+    })
+    return commandFailure(depositIntent.error.code, depositIntent.error.message, {
+      projectId: context.data.project.id,
+      paymentId: input.paymentId,
+      paymentMethodId: input.paymentMethodId,
+    })
+  }
+
+  const receiptVerification = await evmAdapter.verifyDepositReceipt({
+    rail: "evm",
+    paymentId: input.paymentId,
+    depositIntentReference: depositIntent.data.reference,
+    submittedTxHash: input.txHash,
+    receipt: input.receipt,
+    expectedAmountUsd: expectedAmount,
+    submittedAmountUsd: amountDecimal,
+    metadata: {
+      period_id: input.periodId,
+      amount_raw: input.amountRaw,
+    },
+  })
+
+  if (!receiptVerification.ok || !receiptVerification.data.verified) {
+    const message = receiptVerification.ok ? "EVM receipt could not be verified." : receiptVerification.error.message
+    const code = receiptVerification.ok ? "receipt_verification_failed" : receiptVerification.error.code
+    await recordReceiptEvent(supabase, deps, {
+      stage: "receipt_verification",
+      outcome: "failure",
+      attemptId: input.attemptId,
+      actorUserId: context.data.actorUserId,
+      actorRole: "project_admin",
+      projectId: context.data.project.id,
+      paymentId: input.paymentId,
+      paymentMethodId: input.paymentMethodId,
+      chainId: input.chainId,
+      chainAssetId: input.chainAssetId,
+      intakeContractId: input.intakeContractId,
+      txHash: input.txHash,
+      walletAddress: input.walletAddress,
+      error: message,
+    })
+    return commandFailure(code, message, {
+      projectId: context.data.project.id,
+      paymentId: input.paymentId,
+      paymentMethodId: input.paymentMethodId,
+    })
+  }
+
+  const depositNetworkKey = depositIntent.data.destination.networkKey ?? paymentMethodSnapshot.ref_chains.network_key
+  const depositContractAddress =
+    (depositIntent.data.destination.kind === "contract" ? depositIntent.data.destination.address : null) ??
+    paymentMethodSnapshot.chain_intake_contracts.contract_address
+
   const { data: submission, error: submissionError } = await supabase
     .from("onchain_payment_submissions")
     .insert({
@@ -1365,23 +1463,27 @@ export async function executeProjectOnchainPaymentSubmissionRecordCommand(
       chain_id: input.chainId,
       chain_asset_id: input.chainAssetId,
       intake_contract_id: input.intakeContractId,
-      chain_network_key: paymentMethodSnapshot.ref_chains.network_key,
-      intake_contract_address: paymentMethodSnapshot.chain_intake_contracts.contract_address,
+      chain_network_key: depositNetworkKey,
+      intake_contract_address: depositContractAddress,
       intake_treasury_address: paymentMethodSnapshot.chain_intake_contracts.treasury_address,
       intake_abi_version: paymentMethodSnapshot.chain_intake_contracts.abi_version,
-      asset_token_address: paymentMethodSnapshot.ref_chain_assets.token_address,
+      asset_token_address: depositIntent.data.destination.tokenAddress,
       asset_is_native: paymentMethodSnapshot.ref_chain_assets.is_native,
       wallet_address: input.walletAddress,
-      tx_hash: input.txHash,
+      tx_hash: receiptVerification.data.externalReference ?? input.txHash,
       amount_raw: input.amountRaw,
       amount_decimal: amountDecimal,
       period_id: input.periodId,
-      status: "submitted",
+      status: receiptVerification.data.status,
       block_number: input.blockNumber ?? null,
       receipt: input.receipt,
       metadata: {
-        source: "project_payments_page",
+        source: "execution-interface.v1",
+        previous_source: "project_payments_page",
         period_id: input.periodId,
+        deposit_intent_reference: depositIntent.data.reference,
+        deposit_destination_kind: depositIntent.data.destination.kind,
+        receipt_verification: receiptVerification.data.metadata,
       },
     })
     .select("id")

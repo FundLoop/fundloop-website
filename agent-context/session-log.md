@@ -1,8 +1,44 @@
+### session v103: Move EVM inbound receipts behind execution interface
+- timestamp: 2026-04-29T18:53:51-04:00
+- agent: **Codex (GPT-5)**
+- branch: **codex/session-23-cycle-prep-review**
+- head: pending final commit
+
+#### Objective
+Implement Session 29 by refactoring the existing EVM inbound receipt-recording path behind the chain-abstracted execution interface without changing the founder-facing payment flow.
+
+#### Actions Taken
+- Extended the EVM execution adapter with receipt verification semantics for transaction hash presence, positive amount checks, and expected-vs-submitted amount matching.
+- Updated `executeProjectOnchainPaymentSubmissionRecordCommand` so it creates an EVM deposit intent and verifies the submitted receipt through `lib/execution/` before inserting `onchain_payment_submissions`.
+- Preserved the existing Edge Function, browser adapter, wallet UI, observability behavior, unresolved-submission guard, runtime deployment availability checks, and payment update behavior.
+- Recorded execution-interface provenance in onchain submission metadata.
+- Added focused tests for EVM receipt verification and updated the payment command test to assert execution-interface metadata on recorded submissions.
+- Updated execution-interface, Edge Function, and navigation engineering docs.
+
+#### Tests and Validation Notes
+- `pnpm test tests/execution-interface.test.ts tests/project-payment-operations-command.test.ts` passed.
+- `pnpm typecheck` passed.
+- `pnpm lint` passed.
+- `pnpm test` passed.
+- `pnpm build` passed.
+- `pnpm dlx node@22.22.1 /opt/homebrew/bin/pnpm check` passed.
+- Direct local `pnpm` commands still emit the known Node 25 engine warning; the Node 22 wrapper gate passed.
+
+#### Reflections
+- This keeps the user-visible EVM flow stable while moving the backend acceptance boundary into the new rail adapter model.
+- The wallet UI still uses wagmi/viem for browser transaction submission, which is appropriate for now; the backend command no longer needs to own EVM acceptance semantics inline.
+
+#### Suggested Next Steps
+- Yeet the stacked monthly-cycle/execution branch once the user is ready.
+- Implement Session 30 by adding the first Solana inbound contribution adapter behind the same deposit interfaces.
+
+---
+
 ### session v102: Build chain-abstracted execution interface
 - timestamp: 2026-04-29T15:36:35-04:00
 - agent: **Codex (GPT-5)**
 - branch: **codex/session-23-cycle-prep-review**
-- head: pending final commit
+- head: f86fae0a6809c3dd7e7ba4d175b362c5e94d822e
 
 #### Objective
 Implement Session 28 by adding the backend-facing execution boundary that future EVM, Solana, and fiat adapters will implement without moving the existing live EVM payment flow yet.

@@ -1,5 +1,5 @@
 import { createScaffoldAdapter } from "../adapter-utils"
-import { executionFailure, executionSuccess, type DepositIntentCreateInput } from "../types"
+import { executionFailure, executionSuccess, type DepositIntentCreateInput, type DepositReceiptVerificationInput } from "../types"
 
 function createEvmDepositIntent(input: DepositIntentCreateInput) {
   if (input.rail !== "evm") {
@@ -45,7 +45,51 @@ function createEvmDepositIntent(input: DepositIntentCreateInput) {
   )
 }
 
+function readReceiptTransactionHash(receipt: unknown) {
+  if (!receipt || typeof receipt !== "object" || Array.isArray(receipt)) return null
+  const candidate = (receipt as { transactionHash?: unknown }).transactionHash
+  return typeof candidate === "string" && candidate.trim() ? candidate.trim() : null
+}
+
+function verifyEvmDepositReceipt(input: DepositReceiptVerificationInput) {
+  if (input.rail !== "evm") {
+    return Promise.resolve(executionFailure("invalid_rail", "The EVM adapter can only verify EVM deposit receipts.", { rail: "evm" }))
+  }
+
+  if (!input.submittedTxHash.trim()) {
+    return Promise.resolve(executionFailure("missing_tx_hash", "An EVM receipt requires a transaction hash.", { rail: "evm" }))
+  }
+
+  if (!Number.isFinite(input.submittedAmountUsd) || input.submittedAmountUsd <= 0) {
+    return Promise.resolve(executionFailure("invalid_amount", "Submitted amount must be positive.", { rail: "evm" }))
+  }
+
+  if (!Number.isFinite(input.expectedAmountUsd) || input.expectedAmountUsd <= 0) {
+    return Promise.resolve(executionFailure("invalid_expected_amount", "Expected amount must be positive.", { rail: "evm" }))
+  }
+
+  if (Math.abs(input.submittedAmountUsd - input.expectedAmountUsd) > 0.000001) {
+    return Promise.resolve(executionFailure("amount_mismatch", "Submitted amount does not match the deposit intent amount.", { rail: "evm" }))
+  }
+
+  return Promise.resolve(
+    executionSuccess({
+      rail: "evm" as const,
+      paymentId: input.paymentId,
+      verified: true,
+      externalReference: readReceiptTransactionHash(input.receipt) ?? input.submittedTxHash,
+      observedAmountUsd: input.submittedAmountUsd,
+      status: "submitted" as const,
+      metadata: {
+        source: "execution-interface.v1",
+        depositIntentReference: input.depositIntentReference,
+      },
+    }),
+  )
+}
+
 export const evmExecutionAdapter = createScaffoldAdapter({
   rail: "evm",
   createDepositIntent: createEvmDepositIntent,
+  verifyDepositReceipt: verifyEvmDepositReceipt,
 })

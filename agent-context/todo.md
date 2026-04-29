@@ -322,12 +322,12 @@ Create the stable execution boundary that later EVM, Solana, and fiat adapters w
 
 ## Session 29: Refactor the existing EVM inbound flow behind the new execution interface
 
-- Status: Not started
-- Timestamp started: TBD
-- Timestamp completed: TBD
-- Feature branch: TBD
-- Head: TBD
-- Session-log reference(s): TBD
+- Status: Complete
+- Timestamp started: 2026-04-29T18:49:45-0400
+- Timestamp completed: 2026-04-29T18:53:51-0400
+- Feature branch: codex/session-23-cycle-prep-review
+- Head: pending final commit
+- Session-log reference(s): session v103
 
 Take the current EVM-based intake and reconciliation flow and move it behind the newly created chain abstraction. The web app and cycle workflows should talk to the abstract interface, while the EVM adapter preserves the current functionality. This session should reduce direct coupling to viem-specific logic in product code and prepare the system to add Solana without cloning the entire payment subsystem. It is an architectural cleanup session that protects the multi-rail future from becoming a second copy of the current EVM path.
 

@@ -65,7 +65,9 @@ export type DepositReceiptVerificationInput = {
   rail: FundLoopExecutionRail
   paymentId: number
   depositIntentReference: string
+  submittedTxHash: string
   receipt: Json
+  expectedAmountUsd: number
   submittedAmountUsd: number
   metadata?: Json
 }

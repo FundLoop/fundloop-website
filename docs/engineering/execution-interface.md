@@ -1,6 +1,7 @@
 # Chain-Abstracted Execution Interface
 
 Session 28 introduced the backend-facing execution interface that future EVM, Solana, and fiat adapters should implement.
+Session 29 moved the existing EVM inbound receipt-recording command behind that interface.
 
 The goal is to keep pages, monthly-cycle workflow code, and agent protocols FundLoop-centric. Chain details should live behind execution adapters instead of leaking into route handlers or UI components.
 
@@ -24,10 +25,11 @@ The initial rails are:
 
 ## Current Adapter State
 
-Session 28 does not move the existing live payment flow yet.
+Session 29 moved the existing live EVM payment receipt-recording flow behind the adapter boundary while preserving the user-facing wallet flow.
 
 - The EVM adapter can create a FundLoop-facing deposit intent from an existing route snapshot.
-- EVM payout execution and reconciliation are explicit `capability_not_implemented` responses for now.
+- The EVM adapter verifies submitted receipt metadata and amount matching before the payment command records an `onchain_payment_submissions` row.
+- EVM payout execution and payout reconciliation are explicit `capability_not_implemented` responses for now.
 - Solana and fiat-stub adapters are registered scaffolds with payout-batch draft creation available and execution still unsupported.
 - Payout batch draft creation is rail-agnostic and deterministic: it validates same rail/currency, requires routed positive intents, sorts by user/id, and produces a stable execution payload.
 
@@ -37,7 +39,7 @@ Sessions 29-32 should use this boundary before adding or moving rail-specific lo
 
 Expected next steps:
 
-- Session 29 moves the existing EVM inbound write/read execution path behind the adapter contract.
+- Session 29 moved the existing EVM inbound receipt-recording command behind the adapter contract.
 - Session 30 adds Solana inbound scaffolding behind the same deposit interfaces.
 - Session 31 extends payout execution scaffolding for Solana.
 - Session 32 adds intentional fiat stubs for inbound and outbound rails.
