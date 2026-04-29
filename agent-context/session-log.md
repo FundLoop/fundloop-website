@@ -1,3 +1,41 @@
+### session v99: Add deterministic monthly calculation packaging
+- timestamp: 2026-04-29T13:54:51-04:00
+- agent: **Codex (GPT-5)**
+- branch: **codex/session-23-cycle-prep-review**
+- head: pending final commit
+
+#### Objective
+Implement Session 25 on the existing stacked branch by adding a deterministic calculation-package command and artifact flow for locked monthly cycles.
+
+#### Actions Taken
+- Added the `monthly-cycle-calculation-package` typed Edge Function contract, browser/server adapters, and Supabase Edge Function.
+- Added `lib/monthly-cycles/monthly-cycle-calculation-package-command.ts` to package cycle-linked approved datasets, the approved identity artifact, and confirmed payments into deterministic calculation artifacts.
+- Wrote package artifacts to Supabase Storage under `zkas-runs/{cycleKey}/cycle-{cycleId}/calculation-package.v1.json` and locked run manifests under `zkas-runs/{cycleKey}/run-{runId}/run-manifest.v1.json`.
+- Created locked `zkas_runs` rows, linked `zkas_run_datasets` and `zkas_run_payments`, marked datasets as included, and advanced the cycle to `calculation`.
+- Added a client packaging button on `/[locale]/admin/cycles/[cycleKey]/zkas` that calls the Edge Function and refreshes the operator view.
+- Updated monthly-cycle, Edge Function, navigation, and route-inventory engineering docs.
+- Added contract and command tests for payload validation, invalid Edge responses, successful packaging, invalid cycle states, missing inputs, duplicate datasets, and ambiguous identity artifacts.
+
+#### Tests and Validation Notes
+- `pnpm test tests/monthly-cycle-calculation-package-contract.test.ts tests/monthly-cycle-calculation-package-command.test.ts tests/monthly-cycle-zkas.test.ts tests/monthly-cycle-prep.test.ts` passed.
+- `pnpm lint` passed.
+- `pnpm typecheck` passed.
+- `pnpm test` passed.
+- `pnpm build` passed.
+- `pnpm dlx node@22.22.1 /opt/homebrew/bin/pnpm check` passed.
+- `supabase status` confirmed the FundLoop local stack is running.
+- Direct local `pnpm` commands still emit the known Node 25 engine warning; the Node 22 wrapper gate passed.
+
+#### Reflections
+- The calculation package now gives the monthly pipeline a durable handoff artifact instead of relying on operators to mentally connect prep review to manual zkAS run creation.
+- The cycle package hash is the stable audit artifact. The current run manifest remains run-scoped because the existing execution engine consumes `run_id`.
+
+#### Suggested Next Steps
+- Yeet the stacked Session 23-25 branch to `dev`.
+- Implement Session 26 by adding verification and approval stages around calculated outputs before distribution/payout work begins.
+
+---
+
 ### session v98: Refactor zkAS around monthly-cycle contract
 - timestamp: 2026-04-29T13:22:19-04:00
 - agent: **Codex (GPT-5)**

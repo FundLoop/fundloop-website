@@ -57,6 +57,8 @@ Locked cycles link to `/[locale]/admin/cycles/[cycleKey]/prep`, the Session 23 p
 
 Session 24 added `/[locale]/admin/cycles/[cycleKey]/zkas` as the cycle-anchored zkAS stage view. This route reads datasets, identity artifacts, runs, run results, published user results, and project summaries through `monthly_cycle_id` so operators can inspect zkAS as part of the monthly cadence instead of as a parallel control plane.
 
+Session 25 added the first deterministic calculation-package command, `monthly-cycle-calculation-package`. It packages a locked/prep cycle into a cycle-level calculation manifest, uploads the package and run manifest artifacts to Supabase Storage, creates a locked zkAS run, links run datasets/payments, marks approved datasets as included, and advances the cycle into `calculation`.
+
 ## Lock Manifest
 
 `monthly-cycle-lock` persists a deterministic JSON manifest and SHA-256 hash on the cycle row. The manifest is the v1 immutable input snapshot for later prep, calculation, verification, payout, and reporting work.
@@ -106,11 +108,25 @@ The posture is derived from the monthly cycle lock state, approved cycle-linked 
 
 The important boundary is conceptual and data-oriented: `month` strings remain for compatibility and storage paths, while `monthly_cycle_id` is the canonical way to determine what belongs to a cycle. New zkAS calculation, verification, publication, and reporting work should start from the cycle row and its linked records.
 
+## Calculation Packaging
+
+`monthly-cycle-calculation-package` is the command boundary between prep review and computation. The command:
+
+- requires a locked, prep, or already-calculation cycle with a lock manifest and hash
+- rejects missing approved attribution datasets, missing approved identity artifacts, duplicate project datasets, or multiple approved identity artifacts
+- deterministically orders datasets and payments before hashing artifacts
+- writes `monthly-cycle-calculation-package.v1` to `zkas-runs/{cycleKey}/cycle-{cycleId}/calculation-package.v1.json`
+- writes the locked run manifest to `zkas-runs/{cycleKey}/run-{runId}/run-manifest.v1.json`
+- creates a locked `zkas_runs` row and links `zkas_run_datasets` / `zkas_run_payments`
+- records monthly-cycle audit events for attempt and success/failure outcomes
+
+The package manifest intentionally excludes mutable packaging timestamps so the same locked inputs produce the same package hash. The run manifest still includes `run_id` because the current execution engine consumes run-scoped manifests; the cycle package hash is the stable cross-run audit artifact.
+
 ## Operating Rule
 
 New monthly cadence work should attach to `monthly_cycles` instead of independently interpreting month strings. Existing zkAS `month` fields and payment period fields remain in place for compatibility, but `monthly_cycle_id` is the canonical join point for lock, prep, zkAS calculation, verification, payout, and reporting sessions.
 
-All monthly-cycle mutations should follow the Edge Function command boundary. Session 22 intentionally added only locking; Session 23 added read-only prep checks. Calculation packaging, payout creation, and reporting publication remain later sessions.
+All monthly-cycle mutations should follow the Edge Function command boundary. Session 22 added locking, Session 23 added read-only prep checks, Session 24 aligned zkAS reads/writes to cycle ownership, and Session 25 added deterministic calculation packaging. Verification, payout creation, and reporting publication remain later sessions.
 
 ## Local Supabase Note
 

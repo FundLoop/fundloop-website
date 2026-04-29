@@ -51,6 +51,7 @@ The first migrated domains are:
   - `admin-onchain-payment-reconciliation-run`
 - monthly-cycle operations:
   - `monthly-cycle-lock`
+  - `monthly-cycle-calculation-package`
 - `user-cubid-resolve-email`
 - `user-cubid-sync-profile`
 - onboarding writes:
@@ -103,6 +104,8 @@ For monthly-cycle operations:
 - `monthly-cycle-lock` is the first command in the monthly cadence domain
 - the command authenticates an internal admin, reattaches same-month operational rows, blocks unresolved onchain submissions by default, and stores a deterministic lock manifest plus hash on `monthly_cycles`
 - the admin cycles UI calls the browser adapter directly and only permits unresolved-onchain override after a blocked attempt plus an explicit operator reason
+- `monthly-cycle-calculation-package` is the next command in the monthly cadence domain
+- the command authenticates an internal admin, reads cycle-linked approved zkAS inputs, writes deterministic package/run manifest artifacts to Supabase Storage, creates a locked zkAS run, and advances the cycle into `calculation`
 
 The migration is intentionally incremental so the transport layer can stabilize before broader read migration and later founder/user workspace work.
 

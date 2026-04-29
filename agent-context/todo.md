@@ -278,12 +278,12 @@ Bring the current zkAS subsystem into alignment with the explicit monthly cycle 
 
 ## Session 25: Build the deterministic calculation package and artifact flow
 
-- Status: Not started
-- Timestamp started: TBD
-- Timestamp completed: TBD
-- Feature branch: TBD
-- Head: TBD
-- Session-log reference(s): TBD
+- Status: Complete
+- Timestamp started: 2026-04-29T13:51:56-0400
+- Timestamp completed: 2026-04-29T13:54:51-0400
+- Feature branch: codex/session-23-cycle-prep-review
+- Head: pending final commit
+- Session-log reference(s): session v99
 
 Create the cycle calculation packaging step that produces deterministic inputs, manifests, and stored artifacts for zk-calculation or its equivalent. This session should emphasize replayability and auditability: same locked cycle inputs should always yield the same packaged calculation input set. Use Supabase Storage intentionally for these artifacts. This becomes the contract between operational prep and the computation stage, and it is critical for future verification, publication, and agent-driven audit retrieval.
 

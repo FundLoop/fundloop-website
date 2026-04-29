@@ -140,7 +140,7 @@ Session 21 added the first-class monthly cycle operator surface.
 - `/[locale]/admin/cycles/[cycleKey]/zkas` is the cycle-anchored zkAS stage view for linked datasets, identity artifacts, runs, and published outputs.
 - Monthly cycles are the canonical anchor for payment totals, onchain reconciliation, zkAS datasets/runs, and later payout/reporting stages.
 - The app-shell admin subnav now includes Monthly Cycles beside Payments and zkAS.
-- Session 22 added the first monthly-cycle command, `monthly-cycle-lock`; Session 23 added read-only prep review. Later transition commands should extend the same operator workspace instead of creating separate admin roots.
+- Session 22 added `monthly-cycle-lock`; Session 23 added read-only prep review; Session 25 added `monthly-cycle-calculation-package` from the cycle zkAS stage. Later transition commands should extend the same operator workspace instead of creating separate admin roots.
 
 ## Canonical Entry Routes
 

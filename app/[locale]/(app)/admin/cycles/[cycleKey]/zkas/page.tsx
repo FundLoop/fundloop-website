@@ -1,5 +1,6 @@
 import { notFound } from "next/navigation"
 import { ArrowLeft, FileCheck2, Sigma, UsersRound } from "lucide-react"
+import { MonthlyCycleCalculationPackageButton } from "@/components/admin/monthly-cycle-calculation-package-button"
 import { DatasetStatusBadge } from "@/components/zkas/dataset-status-badge"
 import { RunStatusBadge } from "@/components/zkas/run-status-badge"
 import { VerificationStatusBadge } from "@/components/zkas/verification-status-badge"
@@ -187,6 +188,7 @@ export default async function AdminCycleZkasPage({ params }: PageProps) {
             <CardDescription>The monthly cycle is the anchor; existing zkAS routes remain the action surfaces for now.</CardDescription>
           </CardHeader>
           <CardContent className="space-y-3">
+            <MonthlyCycleCalculationPackageButton cycleKey={stage.cycle.cycleKey} disabled={stage.posture !== "ready_for_packaging"} />
             <Button asChild className="w-full">
               <Link href={`/admin/cycles/${stage.cycle.cycleKey}/prep`}>Open prep review</Link>
             </Button>
