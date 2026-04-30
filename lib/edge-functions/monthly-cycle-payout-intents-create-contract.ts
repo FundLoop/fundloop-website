@@ -1,4 +1,4 @@
-import { edgeCommandFailure, edgeCommandSuccess, type EdgeCommandResult } from "./result"
+import { edgeCommandFailure, edgeCommandSuccess, type EdgeCommandResult } from "./result.ts"
 
 export const MONTHLY_CYCLE_PAYOUT_INTENTS_CREATE_FUNCTION = "monthly-cycle-payout-intents-create"
 

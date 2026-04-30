@@ -1,4 +1,4 @@
-import { edgeCommandFailure, edgeCommandSuccess, type EdgeCommandResult } from "./result"
+import { edgeCommandFailure, edgeCommandSuccess, type EdgeCommandResult } from "./result.ts"
 
 export const MONTHLY_CYCLE_LOCK_FUNCTION = "monthly-cycle-lock"
 

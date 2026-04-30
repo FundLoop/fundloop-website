@@ -1,7 +1,7 @@
-import { evmExecutionAdapter } from "./adapters/evm"
-import { fiatStubExecutionAdapter } from "./adapters/fiat-stub"
-import { solanaExecutionAdapter } from "./adapters/solana"
-import { executionFailure, isExecutionRail, type FundLoopExecutionAdapter, type FundLoopExecutionRail } from "./types"
+import { evmExecutionAdapter } from "./adapters/evm.ts"
+import { fiatStubExecutionAdapter } from "./adapters/fiat-stub.ts"
+import { solanaExecutionAdapter } from "./adapters/solana.ts"
+import { executionFailure, isExecutionRail, type FundLoopExecutionAdapter, type FundLoopExecutionRail } from "./types.ts"
 
 const adapters = {
   evm: evmExecutionAdapter,

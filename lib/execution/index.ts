@@ -1,3 +1,3 @@
-export * from "./types"
-export * from "./payout-batches"
-export * from "./registry"
+export * from "./types.ts"
+export * from "./payout-batches.ts"
+export * from "./registry.ts"

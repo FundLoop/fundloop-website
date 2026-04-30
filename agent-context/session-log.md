@@ -1,3 +1,37 @@
+### session v105: Repair Deno-safe Supabase function imports
+- timestamp: 2026-04-30T21:26:04Z
+- agent: **Codex (GPT-5)**
+- branch: **codex/supabase-deno-import-repair**
+- head: pending final commit
+
+#### Objective
+Repair the post-merge dev Supabase deploy failure by making shared Edge Function import graphs Deno-safe.
+
+#### Actions Taken
+- Stopped a conflicting Smartrust local Supabase stack that was occupying the standard local Supabase ports.
+- Started the FundLoop local Supabase stack and confirmed the merged migrations and seed replay locally.
+- Added explicit `.ts` extensions to monthly-cycle Edge Function contract imports that are consumed by Supabase Edge Function bundling.
+- Added explicit `.ts` extensions and relative type imports through the execution-interface module graph so Deno can resolve the EVM receipt path and future execution adapters without relying on Next/Vite aliases.
+
+#### Tests and Validation Notes
+- `supabase start` succeeded after stopping the conflicting Smartrust stack.
+- `deno cache --config supabase/functions/deno.json supabase/functions/monthly-cycle-approval/index.ts supabase/functions/monthly-cycle-calculation-package/index.ts supabase/functions/monthly-cycle-lock/index.ts supabase/functions/monthly-cycle-payout-intents-create/index.ts supabase/functions/monthly-cycle-verification-review/index.ts supabase/functions/project-onchain-payment-submission-record/index.ts` passed.
+- Local `supabase functions serve` smoke returned expected unauthenticated envelopes for `monthly-cycle-verification-review`, `monthly-cycle-payout-intents-create`, and `project-onchain-payment-submission-record` instead of module-resolution failures.
+- `pnpm dlx node@22.22.1 /opt/homebrew/bin/pnpm test tests/monthly-cycle-calculation-package-contract.test.ts tests/monthly-cycle-verification-contract.test.ts tests/monthly-cycle-payout-intents-contract.test.ts tests/execution-interface.test.ts` passed.
+- `pnpm dlx node@22.22.1 /opt/homebrew/bin/pnpm typecheck` passed.
+- `pnpm dlx node@22.22.1 /opt/homebrew/bin/pnpm lint` passed.
+- Strict `deno check` now resolves the module graph but still reports pre-existing implicit-`any` typing debt in shared function runtime helpers, so this repair uses Deno cache plus local serve smoke as the deployment-shape validation.
+
+#### Reflections
+- The remote failure was a classic Deno-vs-Next import boundary issue: TypeScript app imports tolerated extensionless local modules, but Supabase Edge bundling requires browser/Deno-style specifiers.
+- Keeping this branch narrowly focused avoids turning a deploy repair into a broader function-runtime typing cleanup.
+
+#### Suggested Next Steps
+- Yeet this repair to `dev` and confirm the dev Supabase deploy workflow reaches the later monthly-cycle functions successfully.
+- Follow up separately on strict Deno type-checking for shared Edge Function runtime helpers if we want `deno check` to become a formal CI gate.
+
+---
+
 ### session v104: Address PR 37 automated review feedback
 - timestamp: 2026-04-30T14:28:59Z
 - agent: **Codex (GPT-5)**

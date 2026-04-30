@@ -1,4 +1,4 @@
-import { edgeCommandFailure, edgeCommandSuccess, type EdgeCommandResult } from "./result"
+import { edgeCommandFailure, edgeCommandSuccess, type EdgeCommandResult } from "./result.ts"
 
 export const MONTHLY_CYCLE_CALCULATION_PACKAGE_FUNCTION = "monthly-cycle-calculation-package"
 
