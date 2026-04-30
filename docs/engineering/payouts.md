@@ -37,4 +37,6 @@ Session 28 added the chain-abstracted execution interface in `lib/execution/`. I
 
 Session 31 added Solana-specific payout batch draft scaffolding. Solana payout drafts now validate Solana destination addresses and produce a `fundloop-solana-payout-batch.v1` payload with manual-transfer scaffold metadata, network keys, and token mint summaries.
 
+Session 32 added fiat payout batch stubs. Fiat drafts validate placeholder destination methods or account references and produce a `fundloop-fiat-payout-batch.v1` payload with `provider_not_configured` metadata. This lets the product model fiat routes without implying a live payout provider.
+
 The app still does not execute payouts, publish user earnings history, or reconcile external transfers. Those remain later payout execution and user workspace sessions.

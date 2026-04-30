@@ -19,7 +19,10 @@ describe("chain-abstracted execution interface", () => {
         rail: "solana",
         capabilities: expect.objectContaining({ createDepositIntent: true, verifyDepositReceipt: true, createPayoutBatch: true }),
       }),
-      expect.objectContaining({ rail: "fiat_stub", capabilities: expect.objectContaining({ createPayoutBatch: true }) }),
+      expect.objectContaining({
+        rail: "fiat_stub",
+        capabilities: expect.objectContaining({ createDepositIntent: true, verifyDepositReceipt: true, createPayoutBatch: true }),
+      }),
     ])
 
     expect(resolveExecutionAdapter("evm")).toMatchObject({ ok: true, data: { rail: "evm" } })
@@ -305,6 +308,132 @@ describe("chain-abstracted execution interface", () => {
     })
 
     expect(result).toMatchObject({ ok: false, error: { code: "invalid_payout_destination", rail: "solana" } })
+  })
+
+  it("creates fiat inbound deposit intents as provider-not-configured stubs", async () => {
+    const fiat = getExecutionAdapter("fiat_stub")
+    const result = await fiat.createDepositIntent({
+      projectId: 1,
+      projectSlug: "civic-mesh",
+      paymentId: 10,
+      paymentMethodId: 20,
+      rail: "fiat_stub",
+      money: { amountUsd: 25, currencyCode: "USD" },
+      reference: "payment:10",
+      route: {},
+      metadata: { workflow: "receipt-recording", source: "caller" },
+    })
+
+    expect(result).toMatchObject({
+      ok: true,
+      data: {
+        rail: "fiat_stub",
+        destination: {
+          kind: "external",
+          networkKey: "fiat_stub",
+          address: null,
+          tokenAddress: null,
+        },
+        metadata: {
+          workflow: "receipt-recording",
+          source: "execution-interface.v1",
+          rail: "fiat_stub",
+          execution_mode: "provider_not_configured",
+          provider: "unconfigured",
+        },
+      },
+    })
+  })
+
+  it("keeps fiat receipt verification disabled until a provider is configured", async () => {
+    const fiat = getExecutionAdapter("fiat_stub")
+    const result = await fiat.verifyDepositReceipt({
+      rail: "fiat_stub",
+      paymentId: 10,
+      depositIntentReference: "payment:10",
+      submittedTxHash: "external-reference-1",
+      expectedAmountUsd: 25,
+      submittedAmountUsd: 25,
+      receipt: { providerReference: "external-reference-1" },
+    })
+
+    expect(result).toMatchObject({ ok: false, error: { code: "fiat_provider_not_configured", rail: "fiat_stub" } })
+  })
+
+  it("builds fiat payout batch drafts as provider-not-configured stubs", async () => {
+    const fiat = getExecutionAdapter("fiat_stub")
+    const result = await fiat.createPayoutBatch({
+      monthlyCycleId: 1,
+      cycleKey: "2026-04",
+      rail: "fiat_stub",
+      currencyCode: "USD",
+      actor,
+      intents: [
+        {
+          intentId: 2,
+          userId: "user-b",
+          routeId: 20,
+          rail: "fiat_stub",
+          currencyCode: "USD",
+          amountUsd: 10.5,
+          destination: { method: "ach", accountReference: "bank-account-b" },
+        },
+        {
+          intentId: 1,
+          userId: "user-a",
+          routeId: 10,
+          rail: "fiat_stub",
+          currencyCode: "USD",
+          amountUsd: 20,
+          destination: { method: "ach", accountReference: "bank-account-a" },
+        },
+      ],
+    })
+
+    expect(result).toMatchObject({
+      ok: true,
+      data: {
+        rail: "fiat_stub",
+        totalAmountUsd: 30.5,
+        intentCount: 2,
+        executionPayload: {
+          version: "fundloop-fiat-payout-batch.v1",
+          execution_mode: "provider_not_configured",
+          rail: "fiat_stub",
+          provider: "unconfigured",
+          currency_codes: ["USD"],
+          destination_methods: ["ach"],
+        },
+        items: [
+          { intentId: 1, amountUsd: 20, position: 0 },
+          { intentId: 2, amountUsd: 10.5, position: 1 },
+        ],
+      },
+    })
+  })
+
+  it("rejects fiat payout batch drafts without placeholder destinations", async () => {
+    const fiat = getExecutionAdapter("fiat_stub")
+    const result = await fiat.createPayoutBatch({
+      monthlyCycleId: 1,
+      cycleKey: "2026-04",
+      rail: "fiat_stub",
+      currencyCode: "USD",
+      actor,
+      intents: [
+        {
+          intentId: 1,
+          userId: "user-a",
+          routeId: 10,
+          rail: "fiat_stub",
+          currencyCode: "USD",
+          amountUsd: 20,
+          destination: {},
+        },
+      ],
+    })
+
+    expect(result).toMatchObject({ ok: false, error: { code: "invalid_payout_destination", rail: "fiat_stub" } })
   })
 
   it("builds deterministic payout batch drafts from ready payout intents", () => {

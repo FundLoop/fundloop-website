@@ -355,12 +355,12 @@ Extend the payout side of the execution layer to support Solana as well. This sh
 
 ## Session 32: Add fiat inbound and outbound stubs behind the same abstraction
 
-- Status: Not started
-- Timestamp started: TBD
-- Timestamp completed: TBD
-- Feature branch: TBD
-- Head: TBD
-- Session-log reference(s): TBD
+- Status: Complete
+- Timestamp started: 2026-04-30T22:46:34Z
+- Timestamp completed: 2026-04-30T22:49:32Z
+- Feature branch: codex/supabase-deno-import-repair
+- Head: pending final commit
+- Session-log reference(s): session v108
 
 Introduce intentionally stubbed fiat adapters for inbound project funding and outbound user payouts. The product should be able to present fiat rails as planned, controlled options without implying they are already fully live. This session should define the right contracts, placeholder statuses, and UI affordances so the rest of the product can be multi-rail even before a real fiat provider is chosen. The value here is architectural completeness and future readiness, not pretending fiat is done.
 

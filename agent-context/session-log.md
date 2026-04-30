@@ -1,3 +1,38 @@
+### session v108: Add fiat inbound and outbound execution stubs
+- timestamp: 2026-04-30T22:49:32Z
+- agent: **Codex (GPT-5)**
+- branch: **codex/supabase-deno-import-repair**
+- head: pending final commit
+
+#### Objective
+Implement Session 32 by adding intentional fiat inbound and outbound stubs behind the shared execution interface without implying that fiat funding or payouts are live.
+
+#### Actions Taken
+- Added fiat provider-not-configured deposit intent creation for product workflow planning.
+- Added fiat receipt verification as an explicit `fiat_provider_not_configured` failure.
+- Added fiat payout batch draft scaffolding with placeholder destination validation and `fundloop-fiat-payout-batch.v1` payload metadata.
+- Kept fiat payout execution and reconciliation as explicit `capability_not_implemented` responses.
+- Added execution-interface tests for fiat inbound intent creation, receipt verification failure, payout draft creation, and invalid fiat destination failure.
+- Updated execution, payout, monthly-cycle, Edge Function, and backlog docs to record the Session 32 fiat scaffold.
+
+#### Tests and Validation Notes
+- `pnpm dlx node@22.22.1 /opt/homebrew/bin/pnpm test tests/execution-interface.test.ts` passed.
+- `pnpm dlx node@22.22.1 /opt/homebrew/bin/pnpm typecheck` passed.
+- `pnpm dlx node@22.22.1 /opt/homebrew/bin/pnpm lint` passed.
+- `deno cache --config supabase/functions/deno.json supabase/functions/project-onchain-payment-submission-record/index.ts` passed.
+- `pnpm dlx node@22.22.1 /opt/homebrew/bin/pnpm test` passed.
+- `pnpm dlx node@22.22.1 /opt/homebrew/bin/pnpm check` passed.
+
+#### Reflections
+- Fiat now has the same execution-boundary shape as EVM and Solana, but the provider-not-configured metadata prevents the app from pretending a provider integration exists.
+- Keeping receipt verification as a hard failure is safer than storing faux successful fiat receipts before a real processor contract is chosen.
+
+#### Suggested Next Steps
+- Yeet the stacked branch so the Supabase deploy repair and Sessions 30-32 can be reviewed together.
+- Session 33 can now build founder monthly contribution workflows against a complete multi-rail abstraction rather than EVM-only assumptions.
+
+---
+
 ### session v107: Add Solana payout adapter scaffolding
 - timestamp: 2026-04-30T22:25:38Z
 - agent: **Codex (GPT-5)**
