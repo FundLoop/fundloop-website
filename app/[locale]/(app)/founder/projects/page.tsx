@@ -103,6 +103,9 @@ export default async function FounderProjectsPage({ params }: FounderProjectsPag
                     <Link href={`/projects/${project.slug}/payments`} className="text-sm font-semibold text-[var(--interactive-primary)]">
                       {t("links.payments")}
                     </Link>
+                    <Link href={`/founder/projects/${project.slug}/contributions`} className="text-sm font-semibold text-[var(--interactive-primary)]">
+                      {t("links.contributions")}
+                    </Link>
                     <Link href={`/projects/${project.slug}/zkas`} className="text-sm font-semibold text-[var(--interactive-primary)]">
                       {t("links.zkas")}
                     </Link>

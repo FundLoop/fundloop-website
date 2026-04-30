@@ -1,3 +1,37 @@
+### session v109: Build founder monthly contribution workflow
+- timestamp: 2026-04-30T23:00:06Z
+- agent: **Codex (GPT-5)**
+- branch: **codex/supabase-deno-import-repair**
+- head: pending final commit
+
+#### Objective
+Implement Session 33 by giving founders a monthly contribution workflow that organizes obligations, route readiness, submission state, and attribution handoff without moving the underlying payment write paths yet.
+
+#### Actions Taken
+- Added `/[locale]/founder/projects/[slug]/contributions` as the founder-facing monthly contribution workflow.
+- Extended the founder workspace read model with economic-month contribution cycle summaries derived from existing payment obligations.
+- Linked the new workflow from the founder home, project index, and per-project founder home while preserving existing payment and zkAS operation routes.
+- Localized the new workflow copy in English, French, and Spanish.
+- Updated navigation and route-inventory engineering docs plus backlog metadata to record the Session 33 route.
+
+#### Tests and Validation Notes
+- `pnpm dlx node@22.22.1 /opt/homebrew/bin/pnpm test tests/founder-workspace.test.ts` passed.
+- `pnpm dlx node@22.22.1 /opt/homebrew/bin/pnpm typecheck` passed.
+- `pnpm dlx node@22.22.1 /opt/homebrew/bin/pnpm lint` passed.
+- `pnpm dlx node@22.22.1 /opt/homebrew/bin/pnpm test` passed.
+- `deno cache --config supabase/functions/deno.json supabase/functions/project-onchain-payment-submission-record/index.ts` passed.
+- `pnpm dlx node@22.22.1 /opt/homebrew/bin/pnpm check` passed.
+
+#### Reflections
+- The founder workflow now has a clean monthly cadence view, but payment creation, route management, and receipt submission remain on the already-hardened payment operations page.
+- Grouping payments by economic month gives Session 34 and later reporting/payout work a clearer founder-facing anchor without creating new write surfaces prematurely.
+
+#### Suggested Next Steps
+- Yeet this stacked branch so the deploy repair and Sessions 30-33 can land together.
+- Session 34 should build the project attribution/contribution-data submission workflow and can link from this monthly contribution page.
+
+---
+
 ### session v108: Add fiat inbound and outbound execution stubs
 - timestamp: 2026-04-30T22:49:32Z
 - agent: **Codex (GPT-5)**

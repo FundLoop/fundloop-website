@@ -35,6 +35,7 @@ export type FounderWorkspaceProject = {
     totalContributionAmount: number
     latestPeriodLabel: string | null
   }
+  contributionCycles: FounderContributionCycle[]
   attribution: {
     datasetCount: number
     latestDatasetStatus: string | null
@@ -60,6 +61,21 @@ export type FounderWorkspaceProject = {
     memberCount: number
     adminCount: number
   }
+}
+
+export type FounderContributionCycleStatus = "draft" | "needs_submission" | "awaiting_confirmation" | "confirmed" | "mixed"
+
+export type FounderContributionCycle = {
+  cycleKey: string
+  periodLabel: string
+  paymentCount: number
+  revenue: number
+  contributionAmount: number
+  draftCount: number
+  pendingCount: number
+  awaitingConfirmationCount: number
+  confirmedCount: number
+  status: FounderContributionCycleStatus
 }
 
 export type FounderWorkspaceHome = {
@@ -208,6 +224,84 @@ function periodLabel(payment: PaymentRow | null): string | null {
   return payment.period_end ?? payment.period_start
 }
 
+function cycleKeyForPayment(payment: PaymentRow): string {
+  const dateValue = payment.period_end ?? payment.period_start
+  return dateValue?.slice(0, 7) ?? "unknown"
+}
+
+function periodLabelForCycle(payments: PaymentRow[], cycleKey: string) {
+  const sorted = sortByDateDescending(payments, (payment) => payment.period_end ?? payment.period_start)
+  return periodLabel(sorted[0] ?? null) ?? cycleKey
+}
+
+function cycleStatus(input: {
+  draftCount: number
+  pendingCount: number
+  awaitingConfirmationCount: number
+  confirmedCount: number
+  paymentCount: number
+}): FounderContributionCycleStatus {
+  if (input.paymentCount > 0 && input.confirmedCount === input.paymentCount) {
+    return "confirmed"
+  }
+
+  if (input.awaitingConfirmationCount > 0) {
+    return "awaiting_confirmation"
+  }
+
+  if (input.pendingCount > 0) {
+    return "needs_submission"
+  }
+
+  if (input.draftCount === input.paymentCount) {
+    return "draft"
+  }
+
+  return "mixed"
+}
+
+function buildContributionCycles(payments: PaymentRow[]): FounderContributionCycle[] {
+  const paymentsByCycle = new Map<string, PaymentRow[]>()
+
+  for (const payment of payments) {
+    const cycleKey = cycleKeyForPayment(payment)
+    const cyclePayments = paymentsByCycle.get(cycleKey)
+    if (cyclePayments) {
+      cyclePayments.push(payment)
+    } else {
+      paymentsByCycle.set(cycleKey, [payment])
+    }
+  }
+
+  return Array.from(paymentsByCycle.entries())
+    .map(([cycleKey, cyclePayments]) => {
+      const draftCount = cyclePayments.filter((payment) => statusCode(payment) === "draft").length
+      const pendingCount = cyclePayments.filter((payment) => statusCode(payment) === "pending").length
+      const awaitingConfirmationCount = cyclePayments.filter((payment) => statusCode(payment) === "awaiting_confirmation").length
+      const confirmedCount = cyclePayments.filter((payment) => statusCode(payment) === "confirmed").length
+
+      return {
+        cycleKey,
+        periodLabel: periodLabelForCycle(cyclePayments, cycleKey),
+        paymentCount: cyclePayments.length,
+        revenue: cyclePayments.reduce((sum, payment) => sum + numberValue(payment.revenue), 0),
+        contributionAmount: cyclePayments.reduce((sum, payment) => sum + numberValue(payment.payment_amount), 0),
+        draftCount,
+        pendingCount,
+        awaitingConfirmationCount,
+        confirmedCount,
+        status: cycleStatus({
+          draftCount,
+          pendingCount,
+          awaitingConfirmationCount,
+          confirmedCount,
+          paymentCount: cyclePayments.length,
+        }),
+      }
+    })
+    .sort((left, right) => right.cycleKey.localeCompare(left.cycleKey))
+}
+
 function statMonthLabel(stat: ProjectStatsMonthlyRow | null): string | null {
   if (!stat) {
     return null
@@ -302,6 +396,7 @@ export function buildFounderWorkspaceHome({
     const latestRunSummary = projectRunSummaries[0] ?? null
     const latestRun = latestRunSummary ? runById.get(latestRunSummary.run_id) : null
     const latestStat = projectStats[0] ?? null
+    const contributionCycles = buildContributionCycles(projectPayments)
 
     return {
       id: managedProject.id,
@@ -329,6 +424,7 @@ export function buildFounderWorkspaceHome({
         totalContributionAmount: projectPayments.reduce((sum, payment) => sum + numberValue(payment.payment_amount), 0),
         latestPeriodLabel: periodLabel(sortByDateDescending(projectPayments, (payment) => payment.period_end ?? payment.period_start)[0] ?? null),
       },
+      contributionCycles,
       attribution: {
         datasetCount: projectDatasets.length,
         latestDatasetStatus: latestDataset?.status ?? null,

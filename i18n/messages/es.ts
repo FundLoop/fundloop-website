@@ -601,6 +601,7 @@ export const esMessages = {
       workspace: "Abrir hogar fundador",
       project: "Abrir perfil público del proyecto",
       payments: "Abrir operaciones de contribución",
+      contributions: "Abrir flujo mensual",
       zkas: "Abrir zkAS del proyecto",
     },
     missingSlug: "Publica o corrige el slug del proyecto antes de enlazar rutas de fundador más profundas.",
@@ -633,6 +634,7 @@ export const esMessages = {
       confirmed: "Confirmados",
       latest: "Último periodo",
       cta: "Abrir pagos",
+      workflowCta: "Abrir flujo mensual",
     },
     setup: {
       title: "Preparación",
@@ -662,8 +664,83 @@ export const esMessages = {
     links: {
       public: "Perfil público",
       payments: "Operaciones de contribución",
+      contributions: "Flujo mensual",
       zkas: "zkAS del proyecto",
       allProjects: "Todos los proyectos fundador",
+    },
+  },
+  founderContributions: {
+    eyebrow: "Flujo mensual de contribuciones",
+    title: "Cadencia de contribución de {project}",
+    body:
+      "Revisa obligaciones mensuales, preparación de rutas, estado de envíos y traspaso a atribución en un solo flujo para fundadores. Las páginas de pagos y zkAS siguen siendo las superficies de acción por ahora.",
+    primaryCta: "Abrir operaciones de pago",
+    secondaryCta: "Abrir datos de atribución",
+    none: "Ninguno",
+    ready: "Listo",
+    needsWork: "Necesita trabajo",
+    summary: {
+      latest: "Último ciclo",
+      open: "Ciclos abiertos",
+      contribution: "Contribución total",
+    },
+    warnings: {
+      title: "Algunos datos de contribución no están disponibles temporalmente",
+      body: "Este flujo muestra datos parciales seguros. Usa las páginas operativas enlazadas para los registros más recientes.",
+    },
+    readiness: {
+      setup: {
+        title: "Configuración del proyecto",
+        ready: "Slug, tasa de contribución y método predeterminado están listos.",
+        needsWork: "Resuelve faltantes antes de tratar las contribuciones mensuales como limpias.",
+      },
+      route: {
+        title: "Rutas de pago",
+        ready: "Hay al menos una ruta de pago activa disponible.",
+        needsWork: "Añade una ruta activa antes de esperar envíos limpios.",
+      },
+      attribution: {
+        title: "Datos de atribución",
+        ready: "Existen datos recientes de atribución para la revisión mensual.",
+        needsWork: "Envía datos de atribución para dar contexto al cálculo mensual.",
+      },
+    },
+    cycles: {
+      title: "Obligaciones mensuales",
+      description: "Cada ciclo agrupa las obligaciones de pago ya registradas para este proyecto.",
+    },
+    cycleMetrics: {
+      draft: "Borrador",
+      pending: "Pendiente",
+      awaiting: "Esperando",
+      confirmed: "Confirmado",
+    },
+    status: {
+      draft: "Borrador",
+      needs_submission: "Requiere envío",
+      awaiting_confirmation: "Esperando confirmación",
+      confirmed: "Confirmado",
+      mixed: "Mixto",
+    },
+    empty: {
+      title: "Aún no hay obligaciones mensuales",
+      body: "Crea o guarda borradores de pago desde la página de operaciones. Aparecerán aquí por mes económico.",
+      cta: "Abrir operaciones de pago",
+    },
+    next: {
+      title: "Secuencia operativa",
+      actionable: "Hay ciclos abiertos que todavía necesitan trabajo de contribución.",
+      clear: "Todos los ciclos registrados están confirmados. Mantén actualizados los datos de atribución para el próximo cierre.",
+      steps: {
+        review: "Revisar ingresos y obligaciones de contribución calculadas.",
+        route: "Confirmar que el proyecto tenga una ruta de pago activa.",
+        submit: "Enviar evidencia de contribución onchain o fiat planificada.",
+        verify: "Seguir confirmación y reconciliación antes del cierre mensual.",
+      },
+    },
+    links: {
+      payments: "Abrir operaciones de pago",
+      projectHome: "Volver al proyecto",
     },
   },
   founderAccount: {

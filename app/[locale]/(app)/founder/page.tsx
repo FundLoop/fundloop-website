@@ -79,7 +79,7 @@ export default async function FounderPage({ params }: FounderPageProps) {
     {
       title: t("actions.contributions.title"),
       description: t("actions.contributions.description"),
-      href: firstProjectWithSlug?.slug ? `/projects/${firstProjectWithSlug.slug}/payments` : "/founder/projects",
+      href: firstProjectWithSlug?.slug ? `/founder/projects/${firstProjectWithSlug.slug}/contributions` : "/founder/projects",
     },
     {
       title: t("actions.attribution.title"),

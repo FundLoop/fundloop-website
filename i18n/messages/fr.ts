@@ -601,6 +601,7 @@ export const frMessages = {
       workspace: "Ouvrir l’accueil fondateur",
       project: "Ouvrir la fiche publique du projet",
       payments: "Ouvrir les opérations de contribution",
+      contributions: "Ouvrir le workflow mensuel",
       zkas: "Ouvrir le zkAS projet",
     },
     missingSlug: "Publiez ou réparez le slug du projet avant de lier des routes fondateur plus profondes.",
@@ -633,6 +634,7 @@ export const frMessages = {
       confirmed: "Confirmés",
       latest: "Dernière période",
       cta: "Ouvrir les paiements",
+      workflowCta: "Ouvrir le workflow mensuel",
     },
     setup: {
       title: "Préparation",
@@ -662,8 +664,83 @@ export const frMessages = {
     links: {
       public: "Profil public",
       payments: "Opérations de contribution",
+      contributions: "Workflow mensuel",
       zkas: "zkAS projet",
       allProjects: "Tous les projets fondateur",
+    },
+  },
+  founderContributions: {
+    eyebrow: "Workflow de contribution mensuelle",
+    title: "Cadence de contribution de {project}",
+    body:
+      "Passez en revue les obligations mensuelles, la préparation des routes, l’état des soumissions et le lien vers l’attribution dans un seul workflow fondateur. Les pages paiements et zkAS restent les surfaces d’action pour l’instant.",
+    primaryCta: "Ouvrir les opérations de paiement",
+    secondaryCta: "Ouvrir les données d’attribution",
+    none: "Aucun",
+    ready: "Prêt",
+    needsWork: "À corriger",
+    summary: {
+      latest: "Dernier cycle",
+      open: "Cycles ouverts",
+      contribution: "Contribution totale",
+    },
+    warnings: {
+      title: "Certaines données de contribution sont temporairement indisponibles",
+      body: "Ce workflow affiche des données partielles sûres. Utilisez les pages opérationnelles liées pour les derniers enregistrements.",
+    },
+    readiness: {
+      setup: {
+        title: "Configuration du projet",
+        ready: "Le slug, le taux de contribution et la méthode par défaut sont prêts.",
+        needsWork: "Corrigez les lacunes avant de traiter les contributions mensuelles comme propres.",
+      },
+      route: {
+        title: "Routes de paiement",
+        ready: "Au moins une route de paiement active est disponible.",
+        needsWork: "Ajoutez une route active avant d’attendre des soumissions propres.",
+      },
+      attribution: {
+        title: "Données d’attribution",
+        ready: "Des données d’attribution récentes existent pour la revue mensuelle.",
+        needsWork: "Soumettez des données d’attribution pour contextualiser le calcul mensuel.",
+      },
+    },
+    cycles: {
+      title: "Obligations mensuelles",
+      description: "Chaque cycle regroupe les obligations de paiement déjà suivies pour ce projet.",
+    },
+    cycleMetrics: {
+      draft: "Brouillon",
+      pending: "En attente",
+      awaiting: "Confirmation",
+      confirmed: "Confirmés",
+    },
+    status: {
+      draft: "Brouillon",
+      needs_submission: "Soumission requise",
+      awaiting_confirmation: "Confirmation en attente",
+      confirmed: "Confirmé",
+      mixed: "Mixte",
+    },
+    empty: {
+      title: "Aucune obligation mensuelle pour le moment",
+      body: "Créez ou enregistrez des brouillons de paiement depuis la page d’opérations. Ils apparaîtront ici par mois économique.",
+      cta: "Ouvrir les opérations de paiement",
+    },
+    next: {
+      title: "Séquence opérationnelle",
+      actionable: "Certains cycles ouverts nécessitent encore du travail de contribution.",
+      clear: "Tous les cycles suivis sont confirmés. Gardez les données d’attribution à jour pour le prochain verrouillage.",
+      steps: {
+        review: "Vérifier les revenus et obligations de contribution calculées.",
+        route: "Confirmer que le projet possède une route de paiement active.",
+        submit: "Soumettre une preuve de contribution onchain ou fiat planifiée.",
+        verify: "Suivre la confirmation et la réconciliation avant le verrouillage mensuel.",
+      },
+    },
+    links: {
+      payments: "Ouvrir les opérations de paiement",
+      projectHome: "Retour au projet",
     },
   },
   founderAccount: {

@@ -609,6 +609,7 @@ export const enMessages = {
       workspace: "Open founder home",
       project: "Open public project profile",
       payments: "Open contribution operations",
+      contributions: "Open monthly workflow",
       zkas: "Open project zkAS",
     },
     missingSlug: "Publish or repair the project slug before deeper founder routes can be linked.",
@@ -641,6 +642,7 @@ export const enMessages = {
       confirmed: "Confirmed",
       latest: "Latest period",
       cta: "Open payments",
+      workflowCta: "Open monthly workflow",
     },
     setup: {
       title: "Setup readiness",
@@ -670,8 +672,83 @@ export const enMessages = {
     links: {
       public: "Public profile",
       payments: "Contribution operations",
+      contributions: "Monthly workflow",
       zkas: "Project zkAS",
       allProjects: "All founder projects",
+    },
+  },
+  founderContributions: {
+    eyebrow: "Monthly contribution workflow",
+    title: "{project} contribution cadence",
+    body:
+      "Review monthly obligations, route readiness, submission state, and attribution handoff in one founder-facing workflow. The existing payments and zkAS pages remain the action surfaces for now.",
+    primaryCta: "Open payment operations",
+    secondaryCta: "Open attribution data",
+    none: "None",
+    ready: "Ready",
+    needsWork: "Needs work",
+    summary: {
+      latest: "Latest cycle",
+      open: "Open cycles",
+      contribution: "Total contribution",
+    },
+    warnings: {
+      title: "Some contribution data is temporarily unavailable",
+      body: "This workflow is showing safe partial data. Use the linked operation pages for the latest records.",
+    },
+    readiness: {
+      setup: {
+        title: "Project setup",
+        ready: "Slug, contribution rate, and default payment method are ready.",
+        needsWork: "Resolve setup gaps before treating monthly contributions as clean.",
+      },
+      route: {
+        title: "Payment routes",
+        ready: "At least one enabled payment route is available.",
+        needsWork: "Add an enabled payment route before expecting clean submissions.",
+      },
+      attribution: {
+        title: "Attribution data",
+        ready: "Recent project attribution data exists for monthly review.",
+        needsWork: "Submit attribution data so the monthly calculation has project context.",
+      },
+    },
+    cycles: {
+      title: "Monthly obligations",
+      description: "Each cycle groups the payment obligations already tracked for this project.",
+    },
+    cycleMetrics: {
+      draft: "Draft",
+      pending: "Pending",
+      awaiting: "Awaiting",
+      confirmed: "Confirmed",
+    },
+    status: {
+      draft: "Draft",
+      needs_submission: "Needs submission",
+      awaiting_confirmation: "Awaiting confirmation",
+      confirmed: "Confirmed",
+      mixed: "Mixed",
+    },
+    empty: {
+      title: "No monthly obligations yet",
+      body: "Create or save payment drafts from the existing payment operations page. They will appear here by economic month.",
+      cta: "Open payment operations",
+    },
+    next: {
+      title: "Operating sequence",
+      actionable: "There are open cycles that still need contribution work.",
+      clear: "All tracked cycles are confirmed. Keep attribution data current for the next lock.",
+      steps: {
+        review: "Review revenue and calculated contribution obligations.",
+        route: "Confirm the project has an enabled payment route.",
+        submit: "Submit onchain or planned fiat contribution evidence.",
+        verify: "Watch confirmation and reconciliation before the monthly lock.",
+      },
+    },
+    links: {
+      payments: "Open payment operations",
+      projectHome: "Back to project home",
     },
   },
   founderAccount: {
