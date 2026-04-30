@@ -1,4 +1,5 @@
 import { createScaffoldAdapter } from "../adapter-utils.ts"
+import { buildPayoutBatchDraft } from "../payout-batches.ts"
 import {
   executionFailure,
   executionSuccess,
@@ -7,6 +8,8 @@ import {
   type DepositReceiptVerification,
   type DepositReceiptVerificationInput,
   type ExecutionCommandResult,
+  type PayoutBatchCreateInput,
+  type PayoutBatchDraft,
 } from "../types.ts"
 import type { Json } from "../../../types/supabase.ts"
 
@@ -17,6 +20,10 @@ function isPlainRecord(value: unknown): value is Record<string, unknown> {
 function normalizeText(value: string | null | undefined) {
   const next = value?.trim()
   return next && next.length > 0 ? next : null
+}
+
+function isNonEmptyString(value: string | null): value is string {
+  return value !== null
 }
 
 function mergeMetadata(metadata: Json | undefined, next: Record<string, unknown>): Json {
@@ -36,6 +43,60 @@ function readReceiptSignature(receipt: Json) {
   const txHash = typeof receipt.txHash === "string" ? receipt.txHash.trim() : null
 
   return signature || transactionHash || txHash || null
+}
+
+function readDestinationField(destination: Json, field: string) {
+  if (!isPlainRecord(destination)) {
+    return null
+  }
+
+  const value = destination[field]
+  return typeof value === "string" ? normalizeText(value) : null
+}
+
+function createSolanaPayoutBatch(input: PayoutBatchCreateInput): ExecutionCommandResult<PayoutBatchDraft> {
+  if (input.rail !== "solana") {
+    return executionFailure("invalid_rail", "Solana payout batches must use the solana execution rail.", {
+      rail: "solana",
+      retryable: false,
+    })
+  }
+
+  const invalidDestination = input.intents.find((intent) => {
+    const address = readDestinationField(intent.destination, "address")
+    const network = readDestinationField(intent.destination, "network")
+    return !address || (network !== null && !network.startsWith("solana"))
+  })
+
+  if (invalidDestination) {
+    return executionFailure(
+      "invalid_payout_destination",
+      "Solana payout intents require a destination address and may only specify a Solana network.",
+      { rail: "solana", retryable: false },
+    )
+  }
+
+  const draft = buildPayoutBatchDraft(input)
+  if (!draft.ok) {
+    return draft
+  }
+
+  const payload = isPlainRecord(draft.data.executionPayload) ? draft.data.executionPayload : {}
+  return executionSuccess({
+    ...draft.data,
+    executionPayload: {
+      ...payload,
+      version: "fundloop-solana-payout-batch.v1",
+      execution_mode: "manual_transfer_scaffold",
+      rail: "solana",
+      network_keys: Array.from(
+        new Set(input.intents.map((intent) => readDestinationField(intent.destination, "network") ?? "solana-mainnet")),
+      ).sort(),
+      token_addresses: Array.from(
+        new Set(input.intents.map((intent) => readDestinationField(intent.destination, "tokenAddress")).filter(isNonEmptyString)),
+      ).sort(),
+    } as Json,
+  })
 }
 
 async function createSolanaDepositIntent(
@@ -148,4 +209,5 @@ export const solanaExecutionAdapter = createScaffoldAdapter({
   rail: "solana",
   createDepositIntent: createSolanaDepositIntent,
   verifyDepositReceipt: verifySolanaDepositReceipt,
+  createPayoutBatch: createSolanaPayoutBatch,
 })

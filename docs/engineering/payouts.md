@@ -33,4 +33,8 @@ This keeps missing user preferences visible without blocking the whole cycle fro
 
 ## What Is Not Included Yet
 
-Session 28 added the chain-abstracted execution interface in `lib/execution/`. It can now build deterministic payout batch drafts from ready intents, but it still does not execute payouts, publish user earnings history, or reconcile external transfers. Those remain later payout execution and user workspace sessions.
+Session 28 added the chain-abstracted execution interface in `lib/execution/`. It can now build deterministic payout batch drafts from ready intents.
+
+Session 31 added Solana-specific payout batch draft scaffolding. Solana payout drafts now validate Solana destination addresses and produce a `fundloop-solana-payout-batch.v1` payload with manual-transfer scaffold metadata, network keys, and token mint summaries.
+
+The app still does not execute payouts, publish user earnings history, or reconcile external transfers. Those remain later payout execution and user workspace sessions.

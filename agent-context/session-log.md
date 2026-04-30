@@ -1,3 +1,37 @@
+### session v107: Add Solana payout adapter scaffolding
+- timestamp: 2026-04-30T22:25:38Z
+- agent: **Codex (GPT-5)**
+- branch: **codex/supabase-deno-import-repair**
+- head: pending final commit
+
+#### Objective
+Implement Session 31 by extending the outbound payout side of the execution interface so Solana can be modeled as a first-class payout rail without enabling live transfer execution yet.
+
+#### Actions Taken
+- Added Solana payout batch draft scaffolding that validates Solana destination addresses and Solana network metadata.
+- Wrapped the generic deterministic payout draft with a Solana-specific `fundloop-solana-payout-batch.v1` payload, manual-transfer scaffold marker, network-key summary, and token-mint summary.
+- Kept Solana payout execution and payout reconciliation as explicit `capability_not_implemented` responses.
+- Added execution-interface tests for Solana payout draft success and invalid destination failure.
+- Updated execution, payout, monthly-cycle, Edge Function, and backlog docs to record the Session 31 scaffold.
+
+#### Tests and Validation Notes
+- `pnpm dlx node@22.22.1 /opt/homebrew/bin/pnpm test tests/execution-interface.test.ts` passed.
+- `pnpm dlx node@22.22.1 /opt/homebrew/bin/pnpm typecheck` passed.
+- `pnpm dlx node@22.22.1 /opt/homebrew/bin/pnpm lint` passed.
+- `deno cache --config supabase/functions/deno.json supabase/functions/project-onchain-payment-submission-record/index.ts` passed.
+- `pnpm dlx node@22.22.1 /opt/homebrew/bin/pnpm test` passed.
+- `pnpm dlx node@22.22.1 /opt/homebrew/bin/pnpm check` passed.
+
+#### Reflections
+- This keeps the payout side honest: Solana now has a real deterministic batch shape, but no code pretends outbound transfers or reconciliation are live.
+- The shared builder remained useful; the Solana adapter only needed rail-specific destination validation and payload metadata.
+
+#### Suggested Next Steps
+- Yeet the stacked branch so the Supabase deploy repair and Sessions 30-31 can go through CI together.
+- Session 32 can add fiat inbound/outbound stubs on the same execution boundary.
+
+---
+
 ### session v106: Add Solana inbound contribution adapter
 - timestamp: 2026-04-30T21:52:24Z
 - agent: **Codex (GPT-5)**

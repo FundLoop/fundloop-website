@@ -64,7 +64,7 @@ Session 26 added `/[locale]/admin/cycles/[cycleKey]/verification` as the cleanup
 
 Session 27 added `/[locale]/admin/cycles/[cycleKey]/payouts` as the first operator view over outbound payout work. It converts approved published user results into payout intents through the `monthly-cycle-payout-intents-create` Edge Function command, then moves the cycle into `distribution`. Payout execution, rail batching, and reconciliation remain later sessions.
 
-Session 28 added the chain-abstracted execution interface under `lib/execution/`. Monthly-cycle payout work should use that interface for batch planning and future rail execution instead of branching directly on EVM, Solana, or fiat details.
+Session 28 added the chain-abstracted execution interface under `lib/execution/`. Session 31 added Solana-specific payout batch draft scaffolding on that boundary. Monthly-cycle payout work should use the execution interface for batch planning and future rail execution instead of branching directly on EVM, Solana, or fiat details.
 
 ## Lock Manifest
 

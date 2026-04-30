@@ -225,6 +225,88 @@ describe("chain-abstracted execution interface", () => {
     expect(result).toMatchObject({ ok: false, error: { code: "capability_not_implemented", rail: "solana" } })
   })
 
+  it("builds Solana payout batch drafts with Solana-specific execution scaffolding", async () => {
+    const solana = getExecutionAdapter("solana")
+    const result = await solana.createPayoutBatch({
+      monthlyCycleId: 1,
+      cycleKey: "2026-04",
+      rail: "solana",
+      currencyCode: "USD",
+      actor,
+      intents: [
+        {
+          intentId: 2,
+          userId: "user-b",
+          routeId: 20,
+          rail: "solana",
+          currencyCode: "USD",
+          amountUsd: 10.5,
+          destination: {
+            network: "solana-mainnet",
+            address: "RecipientSolanaWallet222222222222222222222",
+            tokenAddress: "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v",
+          },
+        },
+        {
+          intentId: 1,
+          userId: "user-a",
+          routeId: 10,
+          rail: "solana",
+          currencyCode: "USD",
+          amountUsd: 20,
+          destination: {
+            network: "solana-mainnet",
+            address: "RecipientSolanaWallet111111111111111111111",
+          },
+        },
+      ],
+    })
+
+    expect(result).toMatchObject({
+      ok: true,
+      data: {
+        rail: "solana",
+        totalAmountUsd: 30.5,
+        intentCount: 2,
+        executionPayload: {
+          version: "fundloop-solana-payout-batch.v1",
+          execution_mode: "manual_transfer_scaffold",
+          rail: "solana",
+          network_keys: ["solana-mainnet"],
+          token_addresses: ["EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v"],
+        },
+        items: [
+          { intentId: 1, amountUsd: 20, position: 0 },
+          { intentId: 2, amountUsd: 10.5, position: 1 },
+        ],
+      },
+    })
+  })
+
+  it("rejects Solana payout batch drafts without Solana destination addresses", async () => {
+    const solana = getExecutionAdapter("solana")
+    const result = await solana.createPayoutBatch({
+      monthlyCycleId: 1,
+      cycleKey: "2026-04",
+      rail: "solana",
+      currencyCode: "USD",
+      actor,
+      intents: [
+        {
+          intentId: 1,
+          userId: "user-a",
+          routeId: 10,
+          rail: "solana",
+          currencyCode: "USD",
+          amountUsd: 20,
+          destination: { network: "ethereum" },
+        },
+      ],
+    })
+
+    expect(result).toMatchObject({ ok: false, error: { code: "invalid_payout_destination", rail: "solana" } })
+  })
+
   it("builds deterministic payout batch drafts from ready payout intents", () => {
     const result = buildPayoutBatchDraft({
       monthlyCycleId: 1,
