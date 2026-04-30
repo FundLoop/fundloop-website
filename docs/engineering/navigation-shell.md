@@ -125,6 +125,7 @@ Session 18 turned the founder entry routes into operational workspace homes.
 - `/[locale]/founder/projects` is now the canonical founder project index with setup, payment, attribution, and team badges for each managed project.
 - `/[locale]/founder/projects/[slug]` is the first thin per-project founder home and only resolves slugs already present in `getNavigationContext().managedProjects`.
 - `/[locale]/founder/projects/[slug]/contributions` is the founder-facing monthly contribution workflow. It groups existing payment obligations by economic month, shows setup/payment-route/attribution readiness, and links into the current payment and zkAS operation routes.
+- `/[locale]/founder/projects/[slug]/attribution` is the founder-facing contribution-data workflow. It exposes the structured zkAS dataset contract, recent validation/approval state, and links into the current dataset upload/detail routes.
 - Existing deep operation routes remain in place for now: contribution/payment work stays at `/[locale]/projects/[slug]/payments`, and project zkAS work stays at `/[locale]/projects/[slug]/zkas`.
 - `/[locale]/organizations/[id]` now redirects to `/[locale]/founder/projects` instead of rendering the old mock organization detail surface.
 
@@ -147,6 +148,7 @@ Session 21 added the first-class monthly cycle operator surface.
 - Session 28 added the backend execution interface. Route work should keep operator pages FundLoop-centric and leave rail-specific EVM/Solana/fiat behavior behind `lib/execution/` adapters.
 - Session 29 moved EVM inbound receipt recording behind that execution interface without changing the founder payment route.
 - Session 33 added the founder monthly contribution workflow under `/founder/projects/[slug]/contributions` while keeping actual payment writes on the existing Edge Function-backed operations page.
+- Session 34 added the founder attribution-data workflow under `/founder/projects/[slug]/attribution` while keeping dataset upload writes on the existing project zkAS surface.
 
 ## Canonical Entry Routes
 
@@ -158,6 +160,7 @@ Session 08 introduced the first IA-aligned entry routes:
 - `/[locale]/founder/projects`
 - `/[locale]/founder/projects/[slug]`
 - `/[locale]/founder/projects/[slug]/contributions`
+- `/[locale]/founder/projects/[slug]/attribution`
 - `/[locale]/founder/account`
 - `/[locale]/founders`
 

@@ -77,7 +77,7 @@ export default async function FounderProjectContributionsPage({ params }: Founde
               >
                 {t("primaryCta")}
               </Link>
-              <Link href={`/projects/${projectSlug}/zkas`} className="rounded-full border border-[color:var(--surface-border)] px-5 py-3 text-sm font-semibold text-[var(--text-strong)]">
+              <Link href={`/founder/projects/${projectSlug}/attribution`} className="rounded-full border border-[color:var(--surface-border)] px-5 py-3 text-sm font-semibold text-[var(--text-strong)]">
                 {t("secondaryCta")}
               </Link>
             </div>
@@ -167,6 +167,9 @@ export default async function FounderProjectContributionsPage({ params }: Founde
             <div className="flex flex-col gap-3 pt-2">
               <Link href={`/projects/${projectSlug}/payments`} className="text-sm font-semibold text-[var(--interactive-primary)]">
                 {t("links.payments")}
+              </Link>
+              <Link href={`/founder/projects/${projectSlug}/attribution`} className="text-sm font-semibold text-[var(--interactive-primary)]">
+                {t("links.attribution")}
               </Link>
               <Link href={`/founder/projects/${projectSlug}`} className="text-sm font-semibold text-[var(--interactive-primary)]">
                 {t("links.projectHome")}

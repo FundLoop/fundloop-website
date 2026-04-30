@@ -1,3 +1,37 @@
+### session v110: Build founder attribution submission workflow
+- timestamp: 2026-04-30T23:11:55Z
+- agent: **Codex (GPT-5)**
+- branch: **codex/supabase-deno-import-repair**
+- head: pending final commit
+
+#### Objective
+Implement Session 34 by adding a canonical founder attribution workflow that makes contribution-data submission readiness, template expectations, validation state, and upload history visible without duplicating the existing zkAS upload write path.
+
+#### Actions Taken
+- Added `/[locale]/founder/projects/[slug]/attribution` as the founder-facing attribution and contribution-data workflow.
+- Extended the founder workspace read model with approved dataset counts, validation issue counts, and recent attribution submissions.
+- Linked the attribution workflow from founder home, project index, project home, and monthly contribution workflow surfaces.
+- Localized the new workflow copy in English, French, and Spanish.
+- Updated monthly-cycle, navigation, route-inventory, and backlog docs to record the Session 34 attribution route and the current transitional zkAS upload ownership.
+
+#### Tests and Validation Notes
+- `pnpm dlx node@22.22.1 /opt/homebrew/bin/pnpm test tests/founder-workspace.test.ts` passed.
+- `pnpm dlx node@22.22.1 /opt/homebrew/bin/pnpm typecheck` passed.
+- `pnpm dlx node@22.22.1 /opt/homebrew/bin/pnpm lint` passed.
+- `pnpm dlx node@22.22.1 /opt/homebrew/bin/pnpm test` passed.
+- `deno cache --config supabase/functions/deno.json supabase/functions/project-onchain-payment-submission-record/index.ts` passed.
+- `pnpm dlx node@22.22.1 /opt/homebrew/bin/pnpm check` passed.
+
+#### Reflections
+- The founder attribution route now gives project teams a structured monthly-cycle entry point while the existing `/projects/[slug]/zkas` route remains the actual upload and detail surface.
+- This keeps Session 34 focused on workflow clarity and readiness instead of creating a second data-submission write path before zkAS upload writes are migrated.
+
+#### Suggested Next Steps
+- Yeet this stacked branch so the deploy repair and Sessions 30-34 can be reviewed together.
+- Session 35 should build the user earnings and payout workspace on top of the monthly-cycle, calculation, and payout-domain work already in place.
+
+---
+
 ### session v109: Build founder monthly contribution workflow
 - timestamp: 2026-04-30T23:00:06Z
 - agent: **Codex (GPT-5)**

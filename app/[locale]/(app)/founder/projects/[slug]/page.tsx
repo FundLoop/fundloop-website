@@ -120,7 +120,7 @@ export default async function FounderProjectHomePage({ params }: FounderProjectH
               <Mini label={t("attribution.status")} value={project.attribution.latestDatasetStatus ?? t("none")} />
               <Mini label={t("attribution.rows")} value={String(project.attribution.latestDatasetRowCount ?? 0)} />
             </div>
-            <Link href={`/projects/${project.slug}/zkas`} className="text-sm font-semibold text-[var(--interactive-primary)]">
+            <Link href={`/founder/projects/${project.slug}/attribution`} className="text-sm font-semibold text-[var(--interactive-primary)]">
               {t("attribution.cta")}
             </Link>
           </CardContent>
@@ -154,6 +154,9 @@ export default async function FounderProjectHomePage({ params }: FounderProjectH
         </Link>
         <Link href={`/projects/${project.slug}/zkas`} className="text-sm font-semibold text-[var(--interactive-primary)]">
           {t("links.zkas")}
+        </Link>
+        <Link href={`/founder/projects/${project.slug}/attribution`} className="text-sm font-semibold text-[var(--interactive-primary)]">
+          {t("links.attribution")}
         </Link>
         <Link href="/founder/projects" className="text-sm font-semibold text-[var(--interactive-primary)]">
           {t("links.allProjects")}

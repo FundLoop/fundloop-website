@@ -66,6 +66,8 @@ Session 27 added `/[locale]/admin/cycles/[cycleKey]/payouts` as the first operat
 
 Session 28 added the chain-abstracted execution interface under `lib/execution/`. Session 31 added Solana-specific payout batch draft scaffolding on that boundary, and Session 32 added fiat provider-not-configured payout draft stubs. Monthly-cycle payout work should use the execution interface for batch planning and future rail execution instead of branching directly on EVM, Solana, or fiat details.
 
+Session 34 added `/[locale]/founder/projects/[slug]/attribution` as the founder-facing contribution-data workflow. It does not move dataset writes yet; the existing project zkAS page still owns uploads and dataset detail routes while the founder workflow exposes the structured contract, readiness state, and recent submissions.
+
 ## Lock Manifest
 
 `monthly-cycle-lock` persists a deterministic JSON manifest and SHA-256 hash on the cycle row. The manifest is the v1 immutable input snapshot for later prep, calculation, verification, payout, and reporting work.

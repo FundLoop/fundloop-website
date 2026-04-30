@@ -377,12 +377,12 @@ Create the founder-facing monthly flow that ties obligations, route selection, s
 
 ## Session 34: Build the project attribution and contribution-data submission workflow
 
-- Status: Not started
-- Timestamp started: TBD
-- Timestamp completed: TBD
-- Feature branch: TBD
-- Head: TBD
-- Session-log reference(s): TBD
+- Status: Complete
+- Timestamp started: 2026-04-30T23:04:37Z
+- Timestamp completed: 2026-04-30T23:09:21Z
+- Feature branch: codex/supabase-deno-import-repair
+- Head: pending final commit
+- Session-log reference(s): session v110
 
 Add the founder/project-member tools for submitting participation and attribution data that feeds the monthly calculation. This is essential because FundLoop is not just collecting money; it is coordinating money with contribution data. This session should create explicit founder workflows, validations, and storage for that data, with auditability and replay in mind. It should also align with the MCP future by favoring structured, automatable payloads over UI-only forms that hide the real shape of the submission.
 

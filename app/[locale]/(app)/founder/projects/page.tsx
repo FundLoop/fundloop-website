@@ -109,6 +109,9 @@ export default async function FounderProjectsPage({ params }: FounderProjectsPag
                     <Link href={`/projects/${project.slug}/zkas`} className="text-sm font-semibold text-[var(--interactive-primary)]">
                       {t("links.zkas")}
                     </Link>
+                    <Link href={`/founder/projects/${project.slug}/attribution`} className="text-sm font-semibold text-[var(--interactive-primary)]">
+                      {t("links.attribution")}
+                    </Link>
                   </>
                 ) : (
                   <span className="text-sm text-[var(--text-muted)]">{t("missingSlugAction")}</span>

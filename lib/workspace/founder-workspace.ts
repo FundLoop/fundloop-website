@@ -38,9 +38,12 @@ export type FounderWorkspaceProject = {
   contributionCycles: FounderContributionCycle[]
   attribution: {
     datasetCount: number
+    approvedDatasetCount: number
+    issueCount: number
     latestDatasetStatus: string | null
     latestDatasetMonth: string | null
     latestDatasetRowCount: number | null
+    recentSubmissions: FounderAttributionSubmission[]
   }
   reporting: {
     latestPublishedMonth: string | null
@@ -76,6 +79,16 @@ export type FounderContributionCycle = {
   awaitingConfirmationCount: number
   confirmedCount: number
   status: FounderContributionCycleStatus
+}
+
+export type FounderAttributionSubmission = {
+  id: number
+  month: string
+  fileName: string
+  rowCount: number
+  status: string
+  issueCount: number
+  createdAt: string
 }
 
 export type FounderWorkspaceHome = {
@@ -129,10 +142,13 @@ type ParticipantRow = {
 }
 
 type ZkasDatasetRow = {
+  id: number
   project_id: number
   month: string
+  file_name: string
   status: string
   row_count: number | null
+  validation_summary: unknown
   created_at: string
 }
 
@@ -310,6 +326,16 @@ function statMonthLabel(stat: ProjectStatsMonthlyRow | null): string | null {
   return `${stat.year}-${String(stat.month).padStart(2, "0")}`
 }
 
+function datasetIssueCount(dataset: Pick<ZkasDatasetRow, "validation_summary">): number {
+  const summary = dataset.validation_summary
+  if (!summary || typeof summary !== "object") {
+    return 0
+  }
+
+  const issueCounts = (summary as { issueCounts?: { errors?: number; warnings?: number } }).issueCounts
+  return Number(issueCounts?.errors ?? 0) + Number(issueCounts?.warnings ?? 0)
+}
+
 function sortByDateDescending<T>(rows: T[], readDate: (row: T) => string | null | undefined): T[] {
   return [...rows].sort((left, right) => new Date(readDate(right) ?? 0).getTime() - new Date(readDate(left) ?? 0).getTime())
 }
@@ -427,9 +453,20 @@ export function buildFounderWorkspaceHome({
       contributionCycles,
       attribution: {
         datasetCount: projectDatasets.length,
+        approvedDatasetCount: projectDatasets.filter((dataset) => ["approved", "included"].includes(dataset.status)).length,
+        issueCount: projectDatasets.reduce((sum, dataset) => sum + datasetIssueCount(dataset), 0),
         latestDatasetStatus: latestDataset?.status ?? null,
         latestDatasetMonth: latestDataset?.month ?? null,
         latestDatasetRowCount: latestDataset?.row_count ?? null,
+        recentSubmissions: projectDatasets.slice(0, 5).map((dataset) => ({
+          id: dataset.id,
+          month: dataset.month,
+          fileName: dataset.file_name,
+          rowCount: dataset.row_count ?? 0,
+          status: dataset.status,
+          issueCount: datasetIssueCount(dataset),
+          createdAt: dataset.created_at,
+        })),
       },
       reporting: {
         latestPublishedMonth: latestRun?.published_at ? latestRun.month : null,
@@ -559,7 +596,7 @@ export async function getFounderWorkspaceHome(navigationContext: NavigationConte
       "zkas-datasets",
       supabase
         .from("zkas_datasets")
-        .select("project_id, month, status, row_count, created_at")
+        .select("id, project_id, month, file_name, status, row_count, validation_summary, created_at")
         .in("project_id", projectIds)
         .order("created_at", { ascending: false })
         .returns<ZkasDatasetRow[]>(),

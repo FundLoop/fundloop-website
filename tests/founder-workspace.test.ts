@@ -68,10 +68,13 @@ function buildHome(overrides: Partial<Parameters<typeof buildFounderWorkspaceHom
     ],
     datasets: [
       {
+        id: 100,
         project_id: 1,
         month: "2026-04",
+        file_name: "solar-commons-2026-04.csv",
         status: "ready",
         row_count: 42,
+        validation_summary: { issueCounts: { errors: 0, warnings: 1 } },
         created_at: "2026-04-15T00:00:00Z",
       },
     ],
@@ -162,9 +165,19 @@ describe("buildFounderWorkspaceHome", () => {
     ])
     expect(project?.attribution).toMatchObject({
       datasetCount: 1,
+      approvedDatasetCount: 0,
+      issueCount: 1,
       latestDatasetMonth: "2026-04",
       latestDatasetStatus: "ready",
       latestDatasetRowCount: 42,
+      recentSubmissions: [
+        expect.objectContaining({
+          id: 100,
+          fileName: "solar-commons-2026-04.csv",
+          issueCount: 1,
+          rowCount: 42,
+        }),
+      ],
     })
     expect(project?.reporting).toMatchObject({
       latestPublishedMonth: "2026-04",
