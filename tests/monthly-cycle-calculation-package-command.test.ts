@@ -26,6 +26,9 @@ class FakeStorageBucket {
   constructor(private db: FakeSupabase) {}
 
   async upload(path: string, file: Blob) {
+    if (this.db.failUploads) {
+      return { data: null, error: { message: "Storage upload failed" } }
+    }
     this.db.uploads[path] = await file.text()
     return { data: { path }, error: null }
   }
@@ -135,6 +138,7 @@ class FakeSupabase {
   inserts: Record<string, Array<Record<string, unknown>>> = {}
   updates: Record<string, Array<Record<string, unknown>>> = {}
   uploads: Record<string, string> = {}
+  failUploads = false
   storage = {
     from: () => new FakeStorageBucket(this),
   }
@@ -234,6 +238,47 @@ describe("executeMonthlyCycleCalculationPackageCommand", () => {
       "calculation_package_attempt",
       "calculation_package_success",
     ])
+  })
+
+  it("returns the persisted package hash when a package already exists", async () => {
+    const result = await executeMonthlyCycleCalculationPackageCommand(
+      makeSupabase({
+        zkas_runs: [
+          {
+            id: 88,
+            monthly_cycle_id: 1,
+            month: "2026-04",
+            status: "locked",
+            locked_at: "2026-05-01T01:00:00.000Z",
+            locked_manifest_hash: "run-manifest-hash",
+            locked_manifest: { package_artifact_hash: "package-artifact-hash" },
+          },
+        ],
+      }) as never,
+      commandInput,
+    )
+
+    expect(result).toMatchObject({
+      ok: true,
+      data: {
+        runId: 88,
+        packageArtifactHash: "package-artifact-hash",
+        runManifestHash: "run-manifest-hash",
+      },
+    })
+  })
+
+  it("marks a partially-created run failed when artifact upload fails so operators can retry", async () => {
+    const supabase = makeSupabase()
+    supabase.failUploads = true
+
+    const result = await executeMonthlyCycleCalculationPackageCommand(supabase as never, commandInput)
+
+    expect(result).toMatchObject({ ok: false, error: { code: "artifact_upload_failed" } })
+    expect(supabase.updates.zkas_runs[0]).toMatchObject({
+      status: "failed",
+      note: "Storage upload failed",
+    })
   })
 
   it("rejects cycles that are not locked", async () => {

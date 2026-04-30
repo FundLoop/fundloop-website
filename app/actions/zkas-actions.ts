@@ -110,23 +110,9 @@ function revalidateMonthlyCycleZkasPaths(month: string) {
 async function getOrCreateMonthlyCycleIdForMonth(month: string, actorUserId: string | null = null) {
   const supabase = getAdminSupabaseClient()
   const parsed = parseMonthlyCycleKey(month)
-  const { data: existing, error: existingError } = await supabase
-    .from("monthly_cycles")
-    .select("id")
-    .eq("cycle_key", parsed.cycleKey)
-    .maybeSingle()
-
-  if (existingError) {
-    throw new Error(existingError.message)
-  }
-
-  if (existing) {
-    return existing.id
-  }
-
   const { data, error } = await supabase
     .from("monthly_cycles")
-    .insert({
+    .upsert({
       cycle_key: parsed.cycleKey,
       year: parsed.year,
       month: parsed.month,
@@ -134,15 +120,32 @@ async function getOrCreateMonthlyCycleIdForMonth(month: string, actorUserId: str
       period_end: parsed.periodEnd,
       created_by_user_id: actorUserId,
       updated_by_user_id: actorUserId,
+    }, {
+      onConflict: "cycle_key",
+      ignoreDuplicates: true,
     })
     .select("id")
-    .single()
+    .maybeSingle()
 
-  if (error || !data) {
-    throw new Error(error?.message ?? `Could not resolve monthly cycle ${month}`)
+  if (error) {
+    throw new Error(error.message)
   }
 
-  return data.id
+  if (data) {
+    return data.id
+  }
+
+  const { data: existing, error: existingError } = await supabase
+    .from("monthly_cycles")
+    .select("id")
+    .eq("cycle_key", parsed.cycleKey)
+    .maybeSingle()
+
+  if (existingError || !existing) {
+    throw new Error(existingError?.message ?? `Could not resolve monthly cycle ${month}`)
+  }
+
+  return existing.id
 }
 
 async function getConfirmedPaymentsForMonth(month: string) {

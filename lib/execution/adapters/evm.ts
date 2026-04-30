@@ -1,6 +1,11 @@
 import { createScaffoldAdapter } from "../adapter-utils"
 import { executionFailure, executionSuccess, type DepositIntentCreateInput, type DepositReceiptVerificationInput } from "../types"
 
+function metadataRecord(metadata: DepositIntentCreateInput["metadata"] | DepositReceiptVerificationInput["metadata"]) {
+  if (!metadata || typeof metadata !== "object" || Array.isArray(metadata)) return {}
+  return metadata
+}
+
 function createEvmDepositIntent(input: DepositIntentCreateInput) {
   if (input.rail !== "evm") {
     return Promise.resolve(executionFailure("invalid_rail", "The EVM adapter can only create EVM deposit intents.", { rail: "evm" }))
@@ -35,6 +40,7 @@ function createEvmDepositIntent(input: DepositIntentCreateInput) {
         "Return the transaction receipt to FundLoop for verification.",
       ],
       metadata: {
+        ...metadataRecord(input.metadata),
         chainId: input.route.chainId ?? null,
         chainAssetId: input.route.chainAssetId ?? null,
         intakeContractId: input.route.intakeContractId ?? null,
@@ -72,15 +78,23 @@ function verifyEvmDepositReceipt(input: DepositReceiptVerificationInput) {
     return Promise.resolve(executionFailure("amount_mismatch", "Submitted amount does not match the deposit intent amount.", { rail: "evm" }))
   }
 
+  const receiptTransactionHash = readReceiptTransactionHash(input.receipt)
+  if (receiptTransactionHash && receiptTransactionHash !== input.submittedTxHash) {
+    return Promise.resolve(
+      executionFailure("tx_hash_mismatch", "Receipt transaction hash does not match the submitted transaction hash.", { rail: "evm" }),
+    )
+  }
+
   return Promise.resolve(
     executionSuccess({
       rail: "evm" as const,
       paymentId: input.paymentId,
       verified: true,
-      externalReference: readReceiptTransactionHash(input.receipt) ?? input.submittedTxHash,
+      externalReference: receiptTransactionHash ?? input.submittedTxHash,
       observedAmountUsd: input.submittedAmountUsd,
       status: "submitted" as const,
       metadata: {
+        ...metadataRecord(input.metadata),
         source: "execution-interface.v1",
         depositIntentReference: input.depositIntentReference,
       },

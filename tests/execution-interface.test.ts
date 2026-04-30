@@ -42,6 +42,7 @@ describe("chain-abstracted execution interface", () => {
         tokenAddress: null,
         isNativeAsset: true,
       },
+      metadata: { workflow: "receipt-recording", source: "caller" },
     })
 
     expect(result).toMatchObject({
@@ -53,6 +54,10 @@ describe("chain-abstracted execution interface", () => {
           kind: "contract",
           networkKey: "ethereum",
           address: "0x0000000000000000000000000000000000000001",
+        },
+        metadata: {
+          workflow: "receipt-recording",
+          source: "execution-interface.v1",
         },
       },
     })
@@ -68,6 +73,7 @@ describe("chain-abstracted execution interface", () => {
       expectedAmountUsd: 25,
       submittedAmountUsd: 25,
       receipt: { transactionHash: "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa" },
+      metadata: { workflow: "receipt-recording", source: "caller" },
     })
 
     expect(result).toMatchObject({
@@ -76,8 +82,27 @@ describe("chain-abstracted execution interface", () => {
         verified: true,
         externalReference: "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
         status: "submitted",
+        metadata: {
+          workflow: "receipt-recording",
+          source: "execution-interface.v1",
+        },
       },
     })
+  })
+
+  it("rejects EVM deposit receipts whose embedded transaction hash differs from the submitted hash", async () => {
+    const adapter = getExecutionAdapter("evm")
+    const result = await adapter.verifyDepositReceipt({
+      rail: "evm",
+      paymentId: 10,
+      depositIntentReference: "payment:10",
+      submittedTxHash: "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      expectedAmountUsd: 25,
+      submittedAmountUsd: 25,
+      receipt: { transactionHash: "0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb" },
+    })
+
+    expect(result).toMatchObject({ ok: false, error: { code: "tx_hash_mismatch", rail: "evm" } })
   })
 
   it("rejects mismatched EVM deposit receipt amounts through the execution adapter", async () => {
@@ -124,8 +149,8 @@ describe("chain-abstracted execution interface", () => {
           routeId: 20,
           rail: "evm",
           currencyCode: "USD",
-          amountUsd: 10.1234564,
-          destination: { address: "0xb" },
+          amountUsd: 10.1234566,
+          destination: { network: "ethereum", address: "0xb", nested: { z: true, a: "first" } },
         },
         {
           intentId: 1,
@@ -142,13 +167,19 @@ describe("chain-abstracted execution interface", () => {
     expect(result).toMatchObject({
       ok: true,
       data: {
-        totalAmountUsd: 30.123456,
+        totalAmountUsd: 30.123457,
         intentCount: 2,
         items: [
           { intentId: 1, amountUsd: 20, position: 0 },
-          { intentId: 2, amountUsd: 10.123456, position: 1 },
+          { intentId: 2, amountUsd: 10.123457, position: 1 },
         ],
       },
+    })
+    const payload = result.ok ? result.data.executionPayload as { intents: Array<{ destination: unknown }> } : null
+    expect(payload?.intents[1]?.destination).toEqual({
+      address: "0xb",
+      nested: { a: "first", z: true },
+      network: "ethereum",
     })
   })
 

@@ -62,13 +62,17 @@ function sumAllocations(rows: ResultRow[]) {
   return rows.reduce((sum, row) => sum + Number(row.allocation_usd ?? 0), 0)
 }
 
+function isCompletedOrFinalizedRun(run: RunRow) {
+  return run.status === "completed" || run.status === "finalized"
+}
+
 export function buildMonthlyCycleVerificationReview(input: {
   cycle: CycleRow
   runs: RunRow[]
   results: ResultRow[]
 }): MonthlyCycleVerificationReview {
   const runs = [...input.runs].sort((left, right) => right.created_at.localeCompare(left.created_at))
-  const latestCompletedRun = runs.find((run) => run.status === "completed") ?? null
+  const latestCompletedRun = runs.find(isCompletedOrFinalizedRun) ?? null
   const issues: MonthlyCycleVerificationIssue[] = []
 
   if (!["calculation", "verification", "approval"].includes(input.cycle.status)) {
@@ -148,7 +152,7 @@ export function buildMonthlyCycleVerificationReview(input: {
     latestCompletedRun,
     totals: {
       runCount: runs.length,
-      completedRunCount: runs.filter((run) => run.status === "completed").length,
+      completedRunCount: runs.filter(isCompletedOrFinalizedRun).length,
       failedRunCount: runs.filter((run) => run.status === "failed").length,
       resultCount: input.results.length,
       eligibleResultCount: input.results.filter((row) => row.eligibility).length,

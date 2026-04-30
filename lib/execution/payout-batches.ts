@@ -11,8 +11,19 @@ function roundUsd(value: number) {
   return Math.round((value + Number.EPSILON) * 1_000_000) / 1_000_000
 }
 
-function stableDestination(value: Json) {
+function stableDestination(value: Json): Json {
   if (!value || typeof value !== "object" || Array.isArray(value)) return {}
+  return Object.fromEntries(
+    Object.entries(value)
+      .sort(([left], [right]) => left.localeCompare(right))
+      .map(([key, child]) => [key, stableDestinationValue(child)]),
+  )
+}
+
+function stableDestinationValue(value: Json | undefined): Json {
+  if (value === undefined) return null
+  if (Array.isArray(value)) return value.map((child) => stableDestinationValue(child))
+  if (value && typeof value === "object") return stableDestination(value)
   return value
 }
 
@@ -40,7 +51,11 @@ export function buildPayoutBatchDraft(input: PayoutBatchCreateInput): ExecutionC
   }
 
   const sortedIntents = [...input.intents].sort((left, right) => left.userId.localeCompare(right.userId) || left.intentId - right.intentId)
-  const totalAmountUsd = roundUsd(sortedIntents.reduce((total, intent) => total + intent.amountUsd, 0))
+  const roundedIntents = sortedIntents.map((intent) => ({
+    ...intent,
+    amountUsd: roundUsd(intent.amountUsd),
+  }))
+  const totalAmountUsd = roundUsd(roundedIntents.reduce((total, intent) => total + intent.amountUsd, 0))
 
   return executionSuccess({
     monthlyCycleId: input.monthlyCycleId,
@@ -55,18 +70,18 @@ export function buildPayoutBatchDraft(input: PayoutBatchCreateInput): ExecutionC
       rail: input.rail,
       currencyCode: input.currencyCode,
       totalAmountUsd,
-      intents: sortedIntents.map((intent, index) => ({
+      intents: roundedIntents.map((intent, index) => ({
         position: index,
         intentId: intent.intentId,
         userId: intent.userId,
         routeId: intent.routeId,
-        amountUsd: roundUsd(intent.amountUsd),
+        amountUsd: intent.amountUsd,
         destination: stableDestination(intent.destination),
       })),
     },
-    items: sortedIntents.map((intent, index) => ({
+    items: roundedIntents.map((intent, index) => ({
       intentId: intent.intentId,
-      amountUsd: roundUsd(intent.amountUsd),
+      amountUsd: intent.amountUsd,
       position: index,
     })),
   })

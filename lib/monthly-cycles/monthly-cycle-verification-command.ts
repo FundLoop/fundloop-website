@@ -68,7 +68,7 @@ async function getLatestCompletedRun(supabase: SupabaseClient<Database>, cycleId
     .from("zkas_runs")
     .select("id, status, verification_status, total_allocated_usd, user_count, result_artifact_hash, published_at")
     .eq("monthly_cycle_id", cycleId)
-    .eq("status", "completed")
+    .in("status", ["completed", "finalized"])
     .order("created_at", { ascending: false })
 
   if (error) return { data: null, error }

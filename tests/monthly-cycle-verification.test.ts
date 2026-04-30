@@ -185,6 +185,20 @@ describe("monthly-cycle verification review", () => {
     ])
   })
 
+  it("accepts finalized verified runs as completed cycle outputs", async () => {
+    const supabase = makeSupabase({
+      zkas_runs: [{ ...completedRun, status: "finalized", monthly_cycle_id: 1 }],
+    })
+
+    const verified = await executeMonthlyCycleVerificationReviewCommand(supabase as never, {
+      ...commandInput,
+      decision: "verified",
+      note: "Published output remains valid for monthly-cycle verification.",
+    })
+
+    expect(verified).toMatchObject({ ok: true, data: { status: "verification" } })
+  })
+
   it("records cleanup-needed without advancing to verification", async () => {
     const supabase = makeSupabase({ zkas_runs: [] })
     const result = await executeMonthlyCycleVerificationReviewCommand(supabase as never, {

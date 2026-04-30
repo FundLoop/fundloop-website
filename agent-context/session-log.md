@@ -1,3 +1,38 @@
+### session v104: Address PR 37 automated review feedback
+- timestamp: 2026-04-30T14:28:59Z
+- agent: **Codex (GPT-5)**
+- branch: **codex/session-23-cycle-prep-review**
+- head: pending final commit
+
+#### Objective
+Harden the stacked monthly-cycle and execution-interface branch in response to automated Copilot and Codex PR review feedback before completing the yeet review gates.
+
+#### Actions Taken
+- Added a forward migration so `payment_flow_events.stage` accepts the new execution-interface receipt stages.
+- Made calculation packaging retry-safe by marking partially-created runs failed after artifact or persistence failures, and returned the persisted package artifact hash for existing packages.
+- Allowed finalized zkAS runs to satisfy monthly-cycle verification and approval checks.
+- Tightened EVM receipt verification by rejecting mismatched embedded transaction hashes and preserving caller metadata with adapter-owned keys taking precedence.
+- Made payout batch drafts sum rounded item amounts and canonicalize destination payload objects.
+- Made monthly-cycle payout overview throw query errors instead of presenting them as missing cycles.
+- Changed monthly-cycle creation for zkAS uploads to use an idempotent upsert/reselect flow.
+- Added focused tests for the review-driven cases.
+
+#### Tests and Validation Notes
+- `pnpm test tests/monthly-cycle-calculation-package-command.test.ts tests/monthly-cycle-verification.test.ts tests/execution-interface.test.ts` passed once under the local default Node runtime, then the rerun was repeated with the repo-standard Node 22 wrapper after the default Node 25 runner hung.
+- `pnpm lint` passed.
+- `pnpm typecheck` passed.
+- `pnpm dlx node@22.22.1 /opt/homebrew/bin/pnpm test tests/monthly-cycle-calculation-package-command.test.ts tests/monthly-cycle-verification.test.ts tests/execution-interface.test.ts` passed.
+- `pnpm dlx node@22.22.1 /opt/homebrew/bin/pnpm typecheck` passed.
+
+#### Reflections
+- The comments were useful: most fixes were small, but they closed real operational traps around retryability, deterministic artifacts, and receipt provenance.
+- The Node 22 wrapper remains the reliable local gate for this repo while the desktop default runtime is newer than the supported engine range.
+
+#### Suggested Next Steps
+- Push this review-fix commit, re-check CI, reply to and resolve the PR review comments, then continue the yeet gates through the existing Codex review.
+
+---
+
 ### session v103: Move EVM inbound receipts behind execution interface
 - timestamp: 2026-04-29T18:53:51-04:00
 - agent: **Codex (GPT-5)**

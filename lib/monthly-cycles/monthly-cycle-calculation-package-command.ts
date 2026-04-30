@@ -50,7 +50,7 @@ type PaymentRow = {
 }
 type ExistingRunRow = Pick<
   Database["public"]["Tables"]["zkas_runs"]["Row"],
-  "id" | "status" | "locked_at" | "locked_manifest_hash" | "month"
+  "id" | "status" | "locked_at" | "locked_manifest" | "locked_manifest_hash" | "month"
 >
 
 type CalculationPackageManifest = {
@@ -224,6 +224,7 @@ function buildRunManifest(input: {
   packageManifest: CalculationPackageManifest
   runId: number
   gitRef: string
+  packageArtifactHash: string
 }) {
   return {
     version: "run-manifest.v1" as const,
@@ -237,6 +238,7 @@ function buildRunManifest(input: {
       config_version: "local-v1",
     },
     schema_version: input.packageManifest.schema_version,
+    package_artifact_hash: input.packageArtifactHash,
     datasets: input.packageManifest.datasets.map((dataset) => ({
       dataset_id: dataset.dataset_id,
       project_id: dataset.project_id,
@@ -262,6 +264,27 @@ async function uploadTextArtifact(
   })
 
   return error
+}
+
+function readPackageArtifactHashFromRun(run: ExistingRunRow) {
+  const manifest = run.locked_manifest
+  if (!manifest || typeof manifest !== "object" || Array.isArray(manifest)) return ""
+  const hash = (manifest as { package_artifact_hash?: unknown }).package_artifact_hash
+  return typeof hash === "string" ? hash : ""
+}
+
+async function markRunFailedAfterPackagingError(
+  supabase: SupabaseClient<Database>,
+  runId: number,
+  message: string,
+) {
+  await supabase
+    .from("zkas_runs")
+    .update({
+      status: "failed",
+      note: message,
+    })
+    .eq("id", runId)
 }
 
 export async function executeMonthlyCycleCalculationPackageCommand(
@@ -314,7 +337,7 @@ export async function executeMonthlyCycleCalculationPackageCommand(
 
   const { data: existingRuns, error: existingRunsError } = await supabase
     .from("zkas_runs")
-    .select("id, month, status, locked_at, locked_manifest_hash")
+    .select("id, month, status, locked_at, locked_manifest, locked_manifest_hash")
     .eq("monthly_cycle_id", cycle.id)
     .neq("status", "failed")
     .order("id", { ascending: true })
@@ -339,7 +362,7 @@ export async function executeMonthlyCycleCalculationPackageCommand(
       runId: existingPackage.id,
       runStatus: "locked",
       packageArtifactPath: `${cycle.cycle_key}/cycle-${cycle.id}/calculation-package.v1.json`,
-      packageArtifactHash: existingPackage.locked_manifest_hash ?? "",
+      packageArtifactHash: readPackageArtifactHashFromRun(existingPackage),
       runManifestHash: existingPackage.locked_manifest_hash ?? "",
       counts: {
         datasets: 0,
@@ -431,16 +454,23 @@ export async function executeMonthlyCycleCalculationPackageCommand(
     packageManifest,
     runId: run.id,
     gitRef,
+    packageArtifactHash,
   })
   const runManifestText = `${stableStringify(runManifest)}\n`
   const runManifestHash = await sha256Hex(runManifestText)
   const runManifestPath = `${cycle.cycle_key}/run-${run.id}/run-manifest.v1.json`
 
   const uploadPackageError = await uploadTextArtifact(supabase, packageArtifactPath, packageText)
-  if (uploadPackageError) return failure("artifact_upload_failed", uploadPackageError.message)
+  if (uploadPackageError) {
+    await markRunFailedAfterPackagingError(supabase, run.id, uploadPackageError.message)
+    return failure("artifact_upload_failed", uploadPackageError.message)
+  }
 
   const uploadRunManifestError = await uploadTextArtifact(supabase, runManifestPath, runManifestText)
-  if (uploadRunManifestError) return failure("artifact_upload_failed", uploadRunManifestError.message)
+  if (uploadRunManifestError) {
+    await markRunFailedAfterPackagingError(supabase, run.id, uploadRunManifestError.message)
+    return failure("artifact_upload_failed", uploadRunManifestError.message)
+  }
 
   const runDatasetsPayload = packageManifest.datasets.map((dataset) => ({
     run_id: run.id,
@@ -461,12 +491,18 @@ export async function executeMonthlyCycleCalculationPackageCommand(
 
   if (runDatasetsPayload.length > 0) {
     const { error } = await supabase.from("zkas_run_datasets").insert(runDatasetsPayload)
-    if (error) return failure("package_failed", error.message)
+    if (error) {
+      await markRunFailedAfterPackagingError(supabase, run.id, error.message)
+      return failure("package_failed", error.message)
+    }
   }
 
   if (runPaymentsPayload.length > 0) {
     const { error } = await supabase.from("zkas_run_payments").insert(runPaymentsPayload)
-    if (error) return failure("package_failed", error.message)
+    if (error) {
+      await markRunFailedAfterPackagingError(supabase, run.id, error.message)
+      return failure("package_failed", error.message)
+    }
   }
 
   const [{ error: datasetUpdateError }, { error: runUpdateError }, { data: updatedCycle, error: cycleUpdateError }] = await Promise.all([
@@ -494,10 +530,22 @@ export async function executeMonthlyCycleCalculationPackageCommand(
       .maybeSingle(),
   ])
 
-  if (datasetUpdateError) return failure("package_failed", datasetUpdateError.message)
-  if (runUpdateError) return failure("package_failed", runUpdateError.message)
-  if (cycleUpdateError) return failure("package_failed", cycleUpdateError.message)
-  if (!updatedCycle) return failure("cycle_not_ready", "Cycle changed state before calculation packaging could complete.")
+  if (datasetUpdateError) {
+    await markRunFailedAfterPackagingError(supabase, run.id, datasetUpdateError.message)
+    return failure("package_failed", datasetUpdateError.message)
+  }
+  if (runUpdateError) {
+    await markRunFailedAfterPackagingError(supabase, run.id, runUpdateError.message)
+    return failure("package_failed", runUpdateError.message)
+  }
+  if (cycleUpdateError) {
+    await markRunFailedAfterPackagingError(supabase, run.id, cycleUpdateError.message)
+    return failure("package_failed", cycleUpdateError.message)
+  }
+  if (!updatedCycle) {
+    await markRunFailedAfterPackagingError(supabase, run.id, "Cycle changed state before calculation packaging could complete.")
+    return failure("cycle_not_ready", "Cycle changed state before calculation packaging could complete.")
+  }
 
   const successEventError = await insertCycleEvent(supabase, input, {
     cycleId: cycle.id,

@@ -158,7 +158,8 @@ export async function loadMonthlyCyclePayoutOverview(cycleKey: string): Promise<
     .eq("cycle_key", cycleKey)
     .maybeSingle()
 
-  if (cycleError || !cycle) return null
+  if (cycleError) throw new Error(cycleError.message)
+  if (!cycle) return null
 
   const [publishedResults, intents, batches] = await Promise.all([
     softRead<PublishedResultRow>(
