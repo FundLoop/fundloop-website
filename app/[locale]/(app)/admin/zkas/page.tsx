@@ -1,6 +1,6 @@
-import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { Link } from "@/i18n/navigation"
 import { getAdminSupabaseClient } from "@/lib/supabase-admin"
 import { requireInternalAdminActor } from "@/lib/zkas/auth"
 
@@ -47,7 +47,10 @@ export default async function ZkasAdminPage() {
     <div className="container mx-auto px-4 py-12 space-y-8">
       <div>
         <h1 className="text-3xl font-bold">zkActivitySum Admin</h1>
-        <p className="text-slate-600 dark:text-slate-300">Operator control plane for datasets, runs, and artifacts.</p>
+        <p className="text-slate-600 dark:text-slate-300">
+          Operator control plane for datasets, runs, and artifacts. Monthly cycles are now the canonical way to inspect
+          end-to-end zkAS readiness.
+        </p>
       </div>
 
       <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-4">
@@ -105,6 +108,17 @@ export default async function ZkasAdminPage() {
           <CardContent>
             <Button asChild className="w-full">
               <Link href="/admin/zkas/runs">Open Runs</Link>
+            </Button>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader>
+            <CardTitle>Monthly Cycle View</CardTitle>
+            <CardDescription>Inspect zkAS as one stage of the locked monthly-cycle cadence.</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <Button asChild className="w-full" variant="outline">
+              <Link href="/admin/cycles">Open Monthly Cycles</Link>
             </Button>
           </CardContent>
         </Card>

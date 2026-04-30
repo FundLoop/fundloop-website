@@ -296,6 +296,18 @@ describe("project payment operation commands", () => {
     expect(result.ok ? null : result.error.code).toBe("payment_update_failed")
     expect(supabase.inserts).toContainEqual(
       expect.objectContaining({
+        table: "onchain_payment_submissions",
+        payload: expect.objectContaining({
+          status: "submitted",
+          metadata: expect.objectContaining({
+            source: "execution-interface.v1",
+            deposit_intent_reference: "payment:12:method:55:attempt:attempt-receipt-update-failure",
+          }),
+        }),
+      }),
+    )
+    expect(supabase.inserts).toContainEqual(
+      expect.objectContaining({
         table: "onchain_payment_submissions:update",
         payload: expect.objectContaining({
           failure_code: "payment_update_failed",

@@ -51,6 +51,9 @@ The first migrated domains are:
   - `admin-onchain-payment-reconciliation-run`
 - monthly-cycle operations:
   - `monthly-cycle-lock`
+  - `monthly-cycle-calculation-package`
+  - `monthly-cycle-verification-review`
+  - `monthly-cycle-approval`
 - `user-cubid-resolve-email`
 - `user-cubid-sync-profile`
 - onboarding writes:
@@ -103,6 +106,17 @@ For monthly-cycle operations:
 - `monthly-cycle-lock` is the first command in the monthly cadence domain
 - the command authenticates an internal admin, reattaches same-month operational rows, blocks unresolved onchain submissions by default, and stores a deterministic lock manifest plus hash on `monthly_cycles`
 - the admin cycles UI calls the browser adapter directly and only permits unresolved-onchain override after a blocked attempt plus an explicit operator reason
+- `monthly-cycle-calculation-package` is the next command in the monthly cadence domain
+- the command authenticates an internal admin, reads cycle-linked approved zkAS inputs, writes deterministic package/run manifest artifacts to Supabase Storage, creates a locked zkAS run, and advances the cycle into `calculation`
+- `monthly-cycle-verification-review` records cycle-level result review decisions after calculation and either moves the cycle to `verification` or records that cleanup is needed
+- `monthly-cycle-approval` requires verified completed calculation output and advances the cycle to `approval`, creating the checkpoint future payout/distribution work must consume
+- `monthly-cycle-payout-intents-create` requires an approved cycle, converts published user results into idempotent payout intents, and advances the cycle into `distribution`
+
+For chain and payout execution:
+
+- `lib/execution/` is now the backend-facing execution boundary for deposit intent creation, deposit verification, payout batch creation, payout execution, and payout reconciliation
+- `project-onchain-payment-submission-record` now calls the EVM execution adapter to create a deposit intent and verify receipt/amount semantics before recording the onchain submission
+- future Edge Function commands should keep calling the execution registry/adapters instead of embedding EVM, Solana, or fiat branching directly in command handlers
 
 The migration is intentionally incremental so the transport layer can stabilize before broader read migration and later founder/user workspace work.
 
@@ -143,6 +157,7 @@ supabase functions serve project-onchain-payment-submission-record --env-file .e
 supabase functions serve admin-payment-receipt-confirm --env-file .env.local
 supabase functions serve admin-onchain-payment-reconciliation-run --env-file .env.local
 supabase functions serve monthly-cycle-lock --env-file .env.local
+supabase functions serve monthly-cycle-payout-intents-create --env-file .env.local
 ```
 
 Once the local stack is running, invoke the command through the app or by calling the local functions endpoint with an authenticated bearer token.

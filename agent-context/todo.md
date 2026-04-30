@@ -256,78 +256,78 @@ Implement the first monthly cycle command: lock the cycle. This should freeze th
 
 ## Session 23: Build the cycle prep and exception review workspace
 
-- Status: Not started
-- Timestamp started: TBD
-- Timestamp completed: TBD
-- Feature branch: TBD
-- Head: TBD
-- Session-log reference(s): TBD
+- Status: Complete
+- Timestamp started: 2026-04-29T12:52:10-0400
+- Timestamp completed: 2026-04-29T12:58:12-0400
+- Feature branch: codex/session-23-cycle-prep-review
+- Head: pending final commit
+- Session-log reference(s): session v97
 
 After lock comes prep. Create the operator-facing prep surface that validates whether a cycle is ready for calculation. It should surface missing project submissions, identity sync problems, reconciliation gaps, and other exceptions that would make the month unsafe to compute. This session should focus on exception visibility and operational triage, not on final distribution math yet. The system needs a clear “ready / blocked / needs review” posture before any zk or payout work can be trusted.
 
 ## Session 24: Refactor zkAS around the monthly cycle contract
 
-- Status: Not started
-- Timestamp started: TBD
-- Timestamp completed: TBD
-- Feature branch: TBD
-- Head: TBD
-- Session-log reference(s): TBD
+- Status: Complete
+- Timestamp started: 2026-04-29T13:14:00-0400
+- Timestamp completed: 2026-04-29T13:22:19-0400
+- Feature branch: codex/session-23-cycle-prep-review
+- Head: pending final commit
+- Session-log reference(s): session v98
 
 Bring the current zkAS subsystem into alignment with the explicit monthly cycle model. Instead of feeling like a parallel control plane, its datasets, run manifests, and publication outputs should anchor to a cycle record and a stable preparation state. This session should reduce conceptual duplication between payment operations and zk operations. The result should make it obvious that zkAS is one stage of the monthly cadence, not a separate product hidden inside the repo.
 
 ## Session 25: Build the deterministic calculation package and artifact flow
 
-- Status: Not started
-- Timestamp started: TBD
-- Timestamp completed: TBD
-- Feature branch: TBD
-- Head: TBD
-- Session-log reference(s): TBD
+- Status: Complete
+- Timestamp started: 2026-04-29T13:51:56-0400
+- Timestamp completed: 2026-04-29T13:54:51-0400
+- Feature branch: codex/session-23-cycle-prep-review
+- Head: pending final commit
+- Session-log reference(s): session v99
 
 Create the cycle calculation packaging step that produces deterministic inputs, manifests, and stored artifacts for zk-calculation or its equivalent. This session should emphasize replayability and auditability: same locked cycle inputs should always yield the same packaged calculation input set. Use Supabase Storage intentionally for these artifacts. This becomes the contract between operational prep and the computation stage, and it is critical for future verification, publication, and agent-driven audit retrieval.
 
 ## Session 26: Add cleanup, verification, and approval stages for calculated results
 
-- Status: Not started
-- Timestamp started: TBD
-- Timestamp completed: TBD
-- Feature branch: TBD
-- Head: TBD
-- Session-log reference(s): TBD
+- Status: Complete
+- Timestamp started: 2026-04-29T13:58:38-0400
+- Timestamp completed: 2026-04-29T14:05:47-0400
+- Feature branch: codex/session-23-cycle-prep-review
+- Head: pending final commit
+- Session-log reference(s): session v100
 
 Build the post-calculation review phase where operators verify totals, compare expected versus actual outputs, resolve cleanup issues, and approve a cycle for distribution. This should include structured statuses, review notes, and explicit approval actions. Avoid a hidden “looks good, ship it” pattern. The system needs durable operator intent and a clear checkpoint before money moves outward. This session is where the monthly cadence starts feeling complete enough to trust with production bookkeeping.
 
 ## Session 27: Create the outbound payout domain model
 
-- Status: Not started
-- Timestamp started: TBD
-- Timestamp completed: TBD
-- Feature branch: TBD
-- Head: TBD
-- Session-log reference(s): TBD
+- Status: Complete
+- Timestamp started: 2026-04-29T14:07:04-0400
+- Timestamp completed: 2026-04-29T15:27:56-0400
+- Feature branch: codex/session-23-cycle-prep-review
+- Head: pending final commit
+- Session-log reference(s): session v101
 
 Introduce payout intents, payout batches, payout route preferences, lifecycle states, and reconciliation placeholders. Even if execution is still partially stubbed, this domain needs to exist independently of payments collected from founders. This session lays the foundation for user earnings management and future rail adapters. It should also establish how monthly approved distribution results become concrete payout work items rather than staying as abstract calculation outputs.
 
 ## Session 28: Build the chain-abstracted execution interface
 
-- Status: Not started
-- Timestamp started: TBD
-- Timestamp completed: TBD
-- Feature branch: TBD
-- Head: TBD
-- Session-log reference(s): TBD
+- Status: Complete
+- Timestamp started: 2026-04-29T15:32:39-0400
+- Timestamp completed: 2026-04-29T15:36:35-0400
+- Feature branch: codex/session-23-cycle-prep-review
+- Head: pending final commit
+- Session-log reference(s): session v102
 
 Create the stable execution boundary that later EVM, Solana, and fiat adapters will implement. It should cover deposit intent creation, deposit verification, payout batch creation, payout execution, and payout reconciliation. Keep the interface FundLoop-centric rather than chain-centric. This is a key target-state move because it prevents chain logic from leaking into pages and workflow code. The output should be backend-facing TypeScript contracts and the first set of adapter scaffolds, not a fully finished multi-chain implementation.
 
 ## Session 29: Refactor the existing EVM inbound flow behind the new execution interface
 
-- Status: Not started
-- Timestamp started: TBD
-- Timestamp completed: TBD
-- Feature branch: TBD
-- Head: TBD
-- Session-log reference(s): TBD
+- Status: Complete
+- Timestamp started: 2026-04-29T18:49:45-0400
+- Timestamp completed: 2026-04-29T18:53:51-0400
+- Feature branch: codex/session-23-cycle-prep-review
+- Head: pending final commit
+- Session-log reference(s): session v103
 
 Take the current EVM-based intake and reconciliation flow and move it behind the newly created chain abstraction. The web app and cycle workflows should talk to the abstract interface, while the EVM adapter preserves the current functionality. This session should reduce direct coupling to viem-specific logic in product code and prepare the system to add Solana without cloning the entire payment subsystem. It is an architectural cleanup session that protects the multi-rail future from becoming a second copy of the current EVM path.
 

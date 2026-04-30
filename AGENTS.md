@@ -43,7 +43,10 @@ Agents in this repo must optimize for:
   - `pnpm build`
   - `pnpm check`
 - Standard branch flow is:
-  - create feature work on a non-`dev` branch
+  - create feature work on a non-`dev` branch, typically from the current `dev`
+  - keep work on feature branches, but do not require one branch per numbered session
+  - stack multiple related sessions on one feature branch when the user asks or when it keeps a coherent PR together
+  - keep commits and `agent-context/session-log.md` entries separated by session or meaningful checkpoint
   - open PRs from feature branches into `dev`
   - open PRs from `dev` into `main`
 - Do not push feature work directly to `dev` or `main` unless the user explicitly instructs you to do so.

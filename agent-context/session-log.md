@@ -1,3 +1,308 @@
+### session v104: Address PR 37 automated review feedback
+- timestamp: 2026-04-30T14:28:59Z
+- agent: **Codex (GPT-5)**
+- branch: **codex/session-23-cycle-prep-review**
+- head: pending final commit
+
+#### Objective
+Harden the stacked monthly-cycle and execution-interface branch in response to automated Copilot and Codex PR review feedback before completing the yeet review gates.
+
+#### Actions Taken
+- Added a forward migration so `payment_flow_events.stage` accepts the new execution-interface receipt stages.
+- Made calculation packaging retry-safe by marking partially-created runs failed after artifact or persistence failures, and returned the persisted package artifact hash for existing packages.
+- Allowed finalized zkAS runs to satisfy monthly-cycle verification and approval checks.
+- Tightened EVM receipt verification by rejecting mismatched embedded transaction hashes and preserving caller metadata with adapter-owned keys taking precedence.
+- Made payout batch drafts sum rounded item amounts and canonicalize destination payload objects.
+- Made monthly-cycle payout overview throw query errors instead of presenting them as missing cycles.
+- Changed monthly-cycle creation for zkAS uploads to use an idempotent upsert/reselect flow.
+- Added focused tests for the review-driven cases.
+
+#### Tests and Validation Notes
+- `pnpm test tests/monthly-cycle-calculation-package-command.test.ts tests/monthly-cycle-verification.test.ts tests/execution-interface.test.ts` passed once under the local default Node runtime, then the rerun was repeated with the repo-standard Node 22 wrapper after the default Node 25 runner hung.
+- `pnpm lint` passed.
+- `pnpm typecheck` passed.
+- `pnpm dlx node@22.22.1 /opt/homebrew/bin/pnpm test tests/monthly-cycle-calculation-package-command.test.ts tests/monthly-cycle-verification.test.ts tests/execution-interface.test.ts` passed.
+- `pnpm dlx node@22.22.1 /opt/homebrew/bin/pnpm typecheck` passed.
+
+#### Reflections
+- The comments were useful: most fixes were small, but they closed real operational traps around retryability, deterministic artifacts, and receipt provenance.
+- The Node 22 wrapper remains the reliable local gate for this repo while the desktop default runtime is newer than the supported engine range.
+
+#### Suggested Next Steps
+- Push this review-fix commit, re-check CI, reply to and resolve the PR review comments, then continue the yeet gates through the existing Codex review.
+
+---
+
+### session v103: Move EVM inbound receipts behind execution interface
+- timestamp: 2026-04-29T18:53:51-04:00
+- agent: **Codex (GPT-5)**
+- branch: **codex/session-23-cycle-prep-review**
+- head: pending final commit
+
+#### Objective
+Implement Session 29 by refactoring the existing EVM inbound receipt-recording path behind the chain-abstracted execution interface without changing the founder-facing payment flow.
+
+#### Actions Taken
+- Extended the EVM execution adapter with receipt verification semantics for transaction hash presence, positive amount checks, and expected-vs-submitted amount matching.
+- Updated `executeProjectOnchainPaymentSubmissionRecordCommand` so it creates an EVM deposit intent and verifies the submitted receipt through `lib/execution/` before inserting `onchain_payment_submissions`.
+- Preserved the existing Edge Function, browser adapter, wallet UI, observability behavior, unresolved-submission guard, runtime deployment availability checks, and payment update behavior.
+- Recorded execution-interface provenance in onchain submission metadata.
+- Added focused tests for EVM receipt verification and updated the payment command test to assert execution-interface metadata on recorded submissions.
+- Updated execution-interface, Edge Function, and navigation engineering docs.
+
+#### Tests and Validation Notes
+- `pnpm test tests/execution-interface.test.ts tests/project-payment-operations-command.test.ts` passed.
+- `pnpm typecheck` passed.
+- `pnpm lint` passed.
+- `pnpm test` passed.
+- `pnpm build` passed.
+- `pnpm dlx node@22.22.1 /opt/homebrew/bin/pnpm check` passed.
+- Direct local `pnpm` commands still emit the known Node 25 engine warning; the Node 22 wrapper gate passed.
+
+#### Reflections
+- This keeps the user-visible EVM flow stable while moving the backend acceptance boundary into the new rail adapter model.
+- The wallet UI still uses wagmi/viem for browser transaction submission, which is appropriate for now; the backend command no longer needs to own EVM acceptance semantics inline.
+
+#### Suggested Next Steps
+- Yeet the stacked monthly-cycle/execution branch once the user is ready.
+- Implement Session 30 by adding the first Solana inbound contribution adapter behind the same deposit interfaces.
+
+---
+
+### session v102: Build chain-abstracted execution interface
+- timestamp: 2026-04-29T15:36:35-04:00
+- agent: **Codex (GPT-5)**
+- branch: **codex/session-23-cycle-prep-review**
+- head: f86fae0a6809c3dd7e7ba4d175b362c5e94d822e
+
+#### Objective
+Implement Session 28 by adding the backend-facing execution boundary that future EVM, Solana, and fiat adapters will implement without moving the existing live EVM payment flow yet.
+
+#### Actions Taken
+- Added `lib/execution/` with FundLoop-centric contracts for deposit intent creation, deposit receipt verification, payout batch creation, payout execution, and payout reconciliation.
+- Added an execution adapter registry for `evm`, `solana`, and `fiat_stub`.
+- Added an EVM scaffold that can produce a FundLoop-facing deposit intent from an existing route snapshot while leaving receipt verification and payout execution explicit as unsupported.
+- Added Solana and fiat-stub scaffold adapters with deterministic payout batch draft support and explicit unsupported execution/reconciliation responses.
+- Added a deterministic payout batch draft builder that validates same rail/currency, requires routed positive intents, sorts items stably, and produces a stable execution payload.
+- Added focused execution-interface tests.
+- Updated payout, monthly-cycle, Edge Function, and navigation engineering docs with the new adapter boundary.
+
+#### Tests and Validation Notes
+- `pnpm test tests/execution-interface.test.ts` passed.
+- `pnpm lint` passed.
+- `pnpm typecheck` passed.
+- `pnpm test` passed.
+- `pnpm build` passed.
+- `pnpm dlx node@22.22.1 /opt/homebrew/bin/pnpm check` passed.
+
+#### Reflections
+- The boundary is intentionally boring in the best way: workflows can now ask for FundLoop concepts like deposits, payout batches, and reconciliation without knowing whether the rail is EVM, Solana, or fiat.
+- Keeping unsupported capabilities explicit should prevent future agents from mistaking scaffolding for live payout execution.
+
+#### Suggested Next Steps
+- Implement Session 29 by moving the existing EVM inbound payment path behind the execution adapter without changing user-facing payment behavior.
+- Continue to keep payout execution itself deferred until the rail adapter sessions have made the execution semantics concrete.
+
+---
+
+### session v101: Create outbound payout domain model
+- timestamp: 2026-04-29T15:27:56-04:00
+- agent: **Codex (GPT-5)**
+- branch: **codex/session-23-cycle-prep-review**
+- head: 83264aadee313bb6f6b806e999b67c1c60c960e1
+
+#### Objective
+Implement Session 27 by introducing the outbound payout domain model and the first command that turns approved monthly-cycle user results into concrete payout work items.
+
+#### Actions Taken
+- Added payout route, payout intent, payout batch, batch item, and payout reconciliation tables with lifecycle enums, indexes, RLS, and monthly-cycle event support.
+- Added `monthly-cycle-payout-intents-create` typed Edge Function contracts, browser/server adapters, and Supabase function handler.
+- Added `lib/monthly-cycles/monthly-cycle-payout-intents-command.ts` to create idempotent payout intents from positive published user results, classify missing-route intents as drafts, and advance approved cycles into `distribution`.
+- Added `/[locale]/admin/cycles/[cycleKey]/payouts` plus an operator action button and links from the monthly-cycle overview/result-review surfaces.
+- Added the payout overview read model and focused command/contract tests.
+- Regenerated `types/supabase.ts` from the local migrated Supabase schema and made two existing RPC call sites explicit about generated-type compatibility for nullable runtime arguments.
+- Updated monthly-cycle, payout, Edge Function, navigation, and route-inventory engineering docs.
+
+#### Tests and Validation Notes
+- `supabase migration up` applied `20260429140700_payout_domain.sql` locally.
+- `supabase gen types typescript --local > types/supabase.ts` completed against the local schema.
+- `pnpm test tests/monthly-cycle-payout-intents-contract.test.ts tests/monthly-cycle-payout-intents-command.test.ts` passed.
+- `pnpm lint` passed.
+- `pnpm typecheck` passed.
+- `pnpm test` passed.
+- `pnpm build` passed and included `/[locale]/admin/cycles/[cycleKey]/payouts`.
+- `pnpm dlx node@22.22.1 /opt/homebrew/bin/pnpm check` passed.
+- `supabase status` confirmed the FundLoop local stack is running.
+- Direct local `pnpm` commands still emit the known Node 25 engine warning; the Node 22 wrapper gate passed.
+
+#### Reflections
+- The outbound money model is now separate from founder payment collection, which makes the monthly-cycle handoff much easier to reason about.
+- Missing user payout preferences are represented as draft payout intents rather than blocking the entire distribution stage.
+
+#### Suggested Next Steps
+- Yeet the stacked monthly-cycle branch to `dev` once the user is ready.
+- Implement Session 28 by adding the chain-abstracted execution interface that will consume payout intents and create rail-specific batches.
+
+---
+
+### session v100: Add monthly-cycle verification and approval review
+- timestamp: 2026-04-29T14:05:47-04:00
+- agent: **Codex (GPT-5)**
+- branch: **codex/session-23-cycle-prep-review**
+- head: 918818d805546db7292fcc7cf8bc915d0af59838
+
+#### Objective
+Implement Session 26 by adding the cleanup, verification, and approval stages for calculated monthly-cycle results without starting distribution or payout creation yet.
+
+#### Actions Taken
+- Added `/[locale]/admin/cycles/[cycleKey]/verification` as the operator workspace for result cleanup checks, cycle verification, and approval for distribution.
+- Added `lib/monthly-cycles/monthly-cycle-verification.ts` to compare completed zkAS output against result rows, artifact hashes, run verification state, failed-run warnings, and allocation totals.
+- Added `monthly-cycle-verification-review` and `monthly-cycle-approval` typed Edge Function commands with browser adapters and Supabase function handlers.
+- Added the monthly-cycle verification command module that records required-note decisions, writes audit events, moves clean cycles to `verification`, records cleanup-needed notes without advancing, and moves verified cycles to `approval`.
+- Linked cycle overview and cycle zkAS pages into the new result-review workspace.
+- Updated monthly-cycle, Edge Function, navigation, and route-inventory engineering docs.
+- Added focused contract, read-model, and command tests.
+
+#### Tests and Validation Notes
+- `pnpm test tests/monthly-cycle-verification.test.ts tests/monthly-cycle-verification-contract.test.ts tests/monthly-cycle-calculation-package-command.test.ts` passed.
+- `pnpm lint` passed.
+- `pnpm typecheck` passed.
+- `pnpm test` passed.
+- `pnpm build` passed and included `/[locale]/admin/cycles/[cycleKey]/verification`.
+- `pnpm dlx node@22.22.1 /opt/homebrew/bin/pnpm check` passed.
+- `supabase status` confirmed the FundLoop local stack is running.
+- Direct local `pnpm` commands still emit the known Node 25 engine warning; the Node 22 wrapper gate passed.
+
+#### Reflections
+- Monthly-cycle results now have an explicit operational checkpoint between calculation and distribution instead of relying on hidden run-level verification state alone.
+- The approval command intentionally stops at `approval`; payout intent creation belongs to Session 27.
+
+#### Suggested Next Steps
+- Yeet the stacked Session 23-26 branch to `dev`.
+- Implement Session 27 by creating the outbound payout domain model that consumes approved monthly-cycle outputs.
+
+---
+
+### session v99: Add deterministic monthly calculation packaging
+- timestamp: 2026-04-29T13:54:51-04:00
+- agent: **Codex (GPT-5)**
+- branch: **codex/session-23-cycle-prep-review**
+- head: pending final commit
+
+#### Objective
+Implement Session 25 on the existing stacked branch by adding a deterministic calculation-package command and artifact flow for locked monthly cycles.
+
+#### Actions Taken
+- Added the `monthly-cycle-calculation-package` typed Edge Function contract, browser/server adapters, and Supabase Edge Function.
+- Added `lib/monthly-cycles/monthly-cycle-calculation-package-command.ts` to package cycle-linked approved datasets, the approved identity artifact, and confirmed payments into deterministic calculation artifacts.
+- Wrote package artifacts to Supabase Storage under `zkas-runs/{cycleKey}/cycle-{cycleId}/calculation-package.v1.json` and locked run manifests under `zkas-runs/{cycleKey}/run-{runId}/run-manifest.v1.json`.
+- Created locked `zkas_runs` rows, linked `zkas_run_datasets` and `zkas_run_payments`, marked datasets as included, and advanced the cycle to `calculation`.
+- Added a client packaging button on `/[locale]/admin/cycles/[cycleKey]/zkas` that calls the Edge Function and refreshes the operator view.
+- Updated monthly-cycle, Edge Function, navigation, and route-inventory engineering docs.
+- Added contract and command tests for payload validation, invalid Edge responses, successful packaging, invalid cycle states, missing inputs, duplicate datasets, and ambiguous identity artifacts.
+
+#### Tests and Validation Notes
+- `pnpm test tests/monthly-cycle-calculation-package-contract.test.ts tests/monthly-cycle-calculation-package-command.test.ts tests/monthly-cycle-zkas.test.ts tests/monthly-cycle-prep.test.ts` passed.
+- `pnpm lint` passed.
+- `pnpm typecheck` passed.
+- `pnpm test` passed.
+- `pnpm build` passed.
+- `pnpm dlx node@22.22.1 /opt/homebrew/bin/pnpm check` passed.
+- `supabase status` confirmed the FundLoop local stack is running.
+- Direct local `pnpm` commands still emit the known Node 25 engine warning; the Node 22 wrapper gate passed.
+
+#### Reflections
+- The calculation package now gives the monthly pipeline a durable handoff artifact instead of relying on operators to mentally connect prep review to manual zkAS run creation.
+- The cycle package hash is the stable audit artifact. The current run manifest remains run-scoped because the existing execution engine consumes `run_id`.
+
+#### Suggested Next Steps
+- Yeet the stacked Session 23-25 branch to `dev`.
+- Implement Session 26 by adding verification and approval stages around calculated outputs before distribution/payout work begins.
+
+---
+
+### session v98: Refactor zkAS around monthly-cycle contract
+- timestamp: 2026-04-29T13:22:19-04:00
+- agent: **Codex (GPT-5)**
+- branch: **codex/session-23-cycle-prep-review**
+- head: pending final commit
+
+#### Objective
+Implement Session 24 on the existing stacked feature branch by making zkAS read and write paths visibly attach to the first-class monthly-cycle contract, and clarify branch expectations in `AGENTS.md`.
+
+#### Actions Taken
+- Updated `AGENTS.md` to clarify that feature work belongs on feature branches, but related numbered sessions can be stacked on the same branch with separate commits and session-log entries.
+- Added `lib/monthly-cycles/monthly-cycle-zkas.ts` as the server-owned cycle zkAS read model, deriving `not_locked`, `missing_inputs`, `ready_for_packaging`, `calculation_started`, and `published` postures from cycle-linked rows.
+- Added `/[locale]/admin/cycles/[cycleKey]/zkas` as the operator view for cycle-linked datasets, identity artifacts, runs, run results, published user results, and project summaries.
+- Linked monthly cycles and prep review into the new cycle zkAS stage while keeping existing `/admin/zkas` upload and run consoles as the action surfaces for now.
+- Updated zkAS server actions so newly uploaded datasets, identity artifacts, draft runs, run results, and published outputs resolve and write `monthly_cycle_id` where the current schema supports it.
+- Updated monthly-cycle, navigation-shell, and route-inventory engineering docs to record that zkAS is now anchored to the monthly cadence.
+- Added focused tests for the new monthly-cycle zkAS read model.
+
+#### Tests and Validation Notes
+- `pnpm test tests/monthly-cycle-zkas.test.ts tests/monthly-cycle-prep.test.ts tests/monthly-cycles.test.ts` passed.
+- `pnpm lint` passed.
+- `pnpm typecheck` passed.
+- `pnpm test` passed.
+- `pnpm build` passed and included `/[locale]/admin/cycles/[cycleKey]/zkas`.
+- `pnpm dlx node@22.22.1 /opt/homebrew/bin/pnpm check` passed.
+- `supabase status` confirmed the FundLoop local stack is running.
+- SQL smoke against local Supabase confirmed recent `monthly_cycles` rows are queryable with cycle-linked zkAS dataset/run counts.
+- Direct local `pnpm` commands still emit the known Node 25 engine warning; the Node 22 wrapper gate passed.
+
+#### Reflections
+- This keeps Session 24 appropriately bounded: zkAS is now cycle-visible and writes attach to cycle rows, but calculation packaging and verification commands remain deferred.
+- The old `/admin/zkas` routes still matter as operational consoles. The new cycle page gives operators the missing monthly-cadence mental model without forcing a risky route move.
+
+#### Suggested Next Steps
+- Yeet the stacked Session 23/24 branch to `dev`.
+- Implement Session 25 by turning the ready cycle/zkAS posture into a deterministic calculation package and artifact flow.
+
+---
+
+### session v97: Add monthly-cycle prep review workspace
+- timestamp: 2026-04-29T12:58:12-04:00
+- agent: **Codex (GPT-5)**
+- branch: **codex/session-23-cycle-prep-review**
+- head: pending final commit
+
+#### Objective
+Repair the local Supabase health issue noted in Session 22 and implement Session 23 by adding a read-only prep and exception review workspace on top of locked monthly-cycle manifests.
+
+#### Actions Taken
+- Stopped the competing `Genero` Supabase containers that were preventing this repo from finding `supabase_db_fundloop`.
+- Started the FundLoop local Supabase stack and applied pending local migrations, including the Session 22 lock migration.
+- Added `lib/monthly-cycles/monthly-cycle-prep.ts` with a server-owned prep read model that evaluates locked manifests into `not_locked`, `blocked`, `needs_review`, or `ready` postures.
+- Added `/[locale]/admin/cycles/[cycleKey]/prep` as the operator prep and exception review workspace.
+- Linked locked/non-open cycles from `/[locale]/admin/cycles` into the prep review route.
+- Surfaced prep blockers and warnings for missing manifests, hash mismatches, unresolved onchain submissions, missing zkAS inputs, missing identity artifacts, and CUBID identity snapshot issues.
+- Added informational live-row drift checks so operators can see current DB differences without treating live rows as the calculation source of truth.
+- Updated monthly-cycle, navigation, and route-inventory engineering docs.
+- Added focused unit tests for the prep review model.
+
+#### Tests and Validation Notes
+- Local Supabase repair and migration smoke passed:
+  - `supabase start` restored the FundLoop stack after stopping competing containers.
+  - `supabase migration up` applied `20260428093000_monthly_cycle_lock.sql`.
+  - SQL smoke confirmed `public.monthly_cycles` has 17 local rows and `public.monthly_cycle_events` exists.
+- `pnpm test tests/monthly-cycle-prep.test.ts tests/monthly-cycles.test.ts` passed.
+- `pnpm lint` passed.
+- `pnpm test` passed.
+- `pnpm typecheck` passed.
+- `pnpm build` passed.
+- `pnpm dlx node@22.22.1 /opt/homebrew/bin/pnpm check` passed.
+- Commands run directly under the local shell still emit the known Node 25 engine warning; the Node 22 wrapper gate passed.
+
+#### Reflections
+- Prep now gives operators a concrete review posture without prematurely adding transition commands or calculation artifacts.
+- Keeping live drift informational reinforces the intended contract: downstream calculation should use the immutable lock manifest, not mutable current rows.
+
+#### Suggested Next Steps
+- Yeet Session 23 to `dev`.
+- Implement Session 24: align zkAS datasets, run manifests, and publication outputs more tightly with the monthly-cycle contract.
+
+---
+
 ### session v96: Address PR 36 Copilot lock review
 - timestamp: 2026-04-29T04:43:27-04:00
 - agent: **Codex (GPT-5)**
