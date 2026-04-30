@@ -15,7 +15,10 @@ describe("chain-abstracted execution interface", () => {
   it("exposes the expected execution rails and capabilities", () => {
     expect(listExecutionAdapterCapabilities()).toEqual([
       expect.objectContaining({ rail: "evm", capabilities: expect.objectContaining({ createDepositIntent: true }) }),
-      expect.objectContaining({ rail: "solana", capabilities: expect.objectContaining({ createPayoutBatch: true }) }),
+      expect.objectContaining({
+        rail: "solana",
+        capabilities: expect.objectContaining({ createDepositIntent: true, verifyDepositReceipt: true, createPayoutBatch: true }),
+      }),
       expect.objectContaining({ rail: "fiat_stub", capabilities: expect.objectContaining({ createPayoutBatch: true }) }),
     ])
 
@@ -120,7 +123,94 @@ describe("chain-abstracted execution interface", () => {
     expect(result).toMatchObject({ ok: false, error: { code: "amount_mismatch", rail: "evm" } })
   })
 
-  it("keeps Solana and fiat execution as explicit unsupported scaffolds for now", async () => {
+  it("creates a Solana deposit intent using the configured deposit address", async () => {
+    const adapter = getExecutionAdapter("solana")
+    const result = await adapter.createDepositIntent({
+      projectId: 1,
+      projectSlug: "civic-mesh",
+      paymentId: 10,
+      paymentMethodId: 20,
+      rail: "solana",
+      money: { amountUsd: 25, currencyCode: "USD" },
+      reference: "payment:10",
+      route: {
+        chainId: 4,
+        chainNetworkKey: "solana-mainnet",
+        chainAssetId: 5,
+        intakeContractId: 6,
+        contractAddress: "11111111111111111111111111111111",
+        treasuryAddress: "FundLoopSolanaTreasury111111111111111111111",
+        tokenAddress: "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v",
+        isNativeAsset: false,
+      },
+      metadata: { workflow: "receipt-recording", source: "caller" },
+    })
+
+    expect(result).toMatchObject({
+      ok: true,
+      data: {
+        rail: "solana",
+        paymentId: 10,
+        destination: {
+          kind: "address",
+          networkKey: "solana-mainnet",
+          address: "FundLoopSolanaTreasury111111111111111111111",
+          tokenAddress: "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v",
+        },
+        metadata: {
+          workflow: "receipt-recording",
+          source: "execution-interface.v1",
+          rail: "solana",
+        },
+      },
+    })
+  })
+
+  it("verifies Solana deposit receipts by matching the submitted signature", async () => {
+    const adapter = getExecutionAdapter("solana")
+    const signature = "5NnY2hRr7H6d8RooKq4QgE3ffkU3e1zjfwj7cD2D8mN4L2iB44Q9PbBvHfcp7W4dTeuAsvQhMRBb1bQycWm9zYp"
+    const result = await adapter.verifyDepositReceipt({
+      rail: "solana",
+      paymentId: 10,
+      depositIntentReference: "payment:10",
+      submittedTxHash: signature,
+      expectedAmountUsd: 25,
+      submittedAmountUsd: 25,
+      receipt: { signature, slot: 123456 },
+      metadata: { workflow: "receipt-recording", source: "caller" },
+    })
+
+    expect(result).toMatchObject({
+      ok: true,
+      data: {
+        verified: true,
+        externalReference: signature,
+        status: "submitted",
+        metadata: {
+          workflow: "receipt-recording",
+          source: "execution-interface.v1",
+          rail: "solana",
+        },
+      },
+    })
+  })
+
+  it("rejects Solana receipts whose embedded signature differs from the submitted signature", async () => {
+    const adapter = getExecutionAdapter("solana")
+    const result = await adapter.verifyDepositReceipt({
+      rail: "solana",
+      paymentId: 10,
+      depositIntentReference: "payment:10",
+      submittedTxHash: "5NnY2hRr7H6d8RooKq4QgE3ffkU3e1zjfwj7cD2D8mN4L2iB44Q9PbBvHfcp7W4dTeuAsvQhMRBb1bQycWm9zYp",
+      expectedAmountUsd: 25,
+      submittedAmountUsd: 25,
+      receipt: { signature: "4qixV2TQ6vV4Xe3R9ryS14CjhmT6b2oZs68gqsJZpLJ9aLV4d8sUGvCfy6QqEKbfHF5tw8LZ4SWUBekUhTmtL7A" },
+    })
+
+    expect(result).toMatchObject({ ok: false, error: { code: "signature_mismatch", rail: "solana" } })
+  })
+
+  it("keeps Solana payout execution as an explicit unsupported scaffold for now", async () => {
     const solana = getExecutionAdapter("solana")
     const result = await solana.executePayoutBatch({
       batchId: 1,

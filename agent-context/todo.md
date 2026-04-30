@@ -333,12 +333,12 @@ Take the current EVM-based intake and reconciliation flow and move it behind the
 
 ## Session 30: Add the Solana inbound contribution adapter
 
-- Status: Not started
-- Timestamp started: TBD
-- Timestamp completed: TBD
-- Feature branch: TBD
-- Head: TBD
-- Session-log reference(s): TBD
+- Status: Complete
+- Timestamp started: 2026-04-30T21:47:05Z
+- Timestamp completed: 2026-04-30T21:52:24Z
+- Feature branch: codex/supabase-deno-import-repair
+- Head: pending final commit
+- Session-log reference(s): session v106
 
 Implement the first Solana contribution adapter behind the shared execution interface. Keep the first pass narrow: route representation, intent creation, receipt verification scaffolding, and storage model alignment with the existing inbound payment lifecycle. The goal is not to ship every Solana edge case at once. The goal is to prove the architecture can support a second chain family without contorting the app or schema. This session should also surface any abstractions that were still secretly EVM-shaped and fix them while the scope is still controlled.
 

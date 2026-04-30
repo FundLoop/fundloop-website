@@ -1,3 +1,39 @@
+### session v106: Add Solana inbound contribution adapter
+- timestamp: 2026-04-30T21:52:24Z
+- agent: **Codex (GPT-5)**
+- branch: **codex/supabase-deno-import-repair**
+- head: pending final commit
+
+#### Objective
+Implement Session 30 by proving the shared execution interface can support Solana inbound contribution recording without duplicating the existing EVM payment subsystem.
+
+#### Actions Taken
+- Added Solana deposit-intent creation and signature/amount receipt-verification behavior behind `lib/execution`.
+- Updated the project onchain payment submission command to select the execution adapter from the route chain ecosystem instead of hard-coding EVM.
+- Added Solana reference data for `solana-mainnet`, SOL/USDC assets, and a `deposit_address` intake route that stays inactive unless a real treasury address is configured.
+- Taught runtime deployment availability checks to allow configured Solana deposit-address routes outside the EVM wallet manifest.
+- Updated execution-interface, Edge Function, route-inventory, and backlog docs to record the Session 30 adapter state.
+
+#### Tests and Validation Notes
+- `pnpm dlx node@22.22.1 /opt/homebrew/bin/pnpm test tests/execution-interface.test.ts tests/project-payment-operations-command.test.ts` passed.
+- `pnpm dlx node@22.22.1 /opt/homebrew/bin/pnpm typecheck` passed.
+- `pnpm dlx node@22.22.1 /opt/homebrew/bin/pnpm lint` passed.
+- `supabase migration up` applied `20260430215000_solana_inbound_reference_data.sql` locally.
+- `deno cache --config supabase/functions/deno.json supabase/functions/project-onchain-payment-submission-record/index.ts` passed.
+- `pnpm dlx node@22.22.1 /opt/homebrew/bin/pnpm test` passed.
+- `pnpm dlx node@22.22.1 /opt/homebrew/bin/pnpm build` passed.
+- `pnpm dlx node@22.22.1 /opt/homebrew/bin/pnpm check` passed.
+
+#### Reflections
+- The storage model was already close: `chain_intake_contracts.collection_mode = deposit_address` gave Solana a home without new tables.
+- The most important architectural cleanup was removing the remaining hard-coded EVM adapter choice from receipt recording.
+
+#### Suggested Next Steps
+- Yeet the stacked deploy-repair plus Session 30 branch to `dev` and confirm the Supabase deploy dry-run still sees the new migration and Edge Function graph cleanly.
+- Session 31 can now add Solana payout adapter scaffolding without touching the inbound receipt-recording path again.
+
+---
+
 ### session v105: Repair Deno-safe Supabase function imports
 - timestamp: 2026-04-30T21:26:04Z
 - agent: **Codex (GPT-5)**

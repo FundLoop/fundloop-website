@@ -115,7 +115,7 @@ For monthly-cycle operations:
 For chain and payout execution:
 
 - `lib/execution/` is now the backend-facing execution boundary for deposit intent creation, deposit verification, payout batch creation, payout execution, and payout reconciliation
-- `project-onchain-payment-submission-record` now calls the EVM execution adapter to create a deposit intent and verify receipt/amount semantics before recording the onchain submission
+- `project-onchain-payment-submission-record` now selects the EVM or Solana execution adapter from the route's chain ecosystem before creating a deposit intent and verifying receipt/amount semantics
 - future Edge Function commands should keep calling the execution registry/adapters instead of embedding EVM, Solana, or fiat branching directly in command handlers
 
 The migration is intentionally incremental so the transport layer can stabilize before broader read migration and later founder/user workspace work.

@@ -171,6 +171,10 @@ function normalizeAddress(value: string) {
   return value.trim().toLowerCase()
 }
 
+function isSolanaDepositAddressRoute(input: { networkKey: string; treasuryAddress: string; abiVersion: string }) {
+  return input.networkKey.startsWith("solana") && input.abiVersion.startsWith("solana-") && input.treasuryAddress.trim().length > 0
+}
+
 function isConfiguredReownProjectId(value: string | undefined) {
   if (!value) {
     return false
@@ -319,6 +323,10 @@ export function getDeploymentAvailabilityForRoute(
     abiVersion: string
   },
 ): DeploymentAvailability {
+  if (isSolanaDepositAddressRoute(input)) {
+    return { available: true, reason: null }
+  }
+
   const runtimeChain = getRuntimeChainByNetworkKey(runtimeConfig, input.networkKey)
   if (!runtimeChain) {
     return {

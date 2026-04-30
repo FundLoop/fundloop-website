@@ -65,6 +65,12 @@ function normalizeAddress(value) {
   return String(value ?? "").trim().toLowerCase()
 }
 
+function isSolanaDepositAddressRoute(input) {
+  return String(input.networkKey ?? "").startsWith("solana") &&
+    String(input.abiVersion ?? "").startsWith("solana-") &&
+    String(input.treasuryAddress ?? "").trim().length > 0
+}
+
 function buildPaymentOperationDeps() {
   const environment = resolveDeploymentEnvironment()
   const manifest = getManifest(environment)
@@ -74,6 +80,10 @@ function buildPaymentOperationDeps() {
   return {
     environment,
     getDeploymentAvailabilityForRoute(input) {
+      if (isSolanaDepositAddressRoute(input)) {
+        return { available: true, reason: null }
+      }
+
       const networkKey = input.networkKey
       const rpcEnvName = RPC_ENV_BY_NETWORK[networkKey]
       if (!rpcEnvName) {
