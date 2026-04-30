@@ -116,7 +116,8 @@ Session 13 made identity state a first-class part of the authenticated shell.
 Session 17 turned `/[locale]/workspace` into the real regular-user workspace home.
 
 - `/[locale]/workspace` now summarizes identity readiness, hybrid profile completion, participation footprint, project discovery, and current published zkAS result visibility.
-- The detailed personal result history temporarily remains at `/[locale]/settings/zkas` until the later reporting and payout workspace sessions create the final `/workspace/reporting` and `/workspace/earnings` surfaces.
+- `/[locale]/workspace/earnings` is the Session 35 user money workspace. It connects published monthly results, payout intents, payout route readiness, batch status, and reconciliation cues into one signed-in surface.
+- The raw personal result history temporarily remains at `/[locale]/settings/zkas` until the later reporting publication session absorbs it into the final reporting model.
 - Workspace data is read server-side and should degrade to safe empty/warning states rather than crashing the signed-in home when one non-critical read fails.
 
 Session 18 turned the founder entry routes into operational workspace homes.
@@ -155,6 +156,7 @@ Session 21 added the first-class monthly cycle operator surface.
 Session 08 introduced the first IA-aligned entry routes:
 
 - `/[locale]/workspace`
+- `/[locale]/workspace/earnings`
 - `/[locale]/workspace/account`
 - `/[locale]/founder`
 - `/[locale]/founder/projects`

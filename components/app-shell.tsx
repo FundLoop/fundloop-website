@@ -85,8 +85,8 @@ export function AppShell({ children, navigationContext }: AppShellProps) {
 
     return [
       { href: "/workspace", label: t("appShell.workspace.overview") },
+      { href: "/workspace/earnings", label: t("appShell.workspace.earnings") },
       { href: "/workspace/account", label: t("appShell.workspace.account") },
-      { href: "/settings/zkas", label: t("appShell.workspace.reporting") },
     ]
   }, [currentSection, t])
 

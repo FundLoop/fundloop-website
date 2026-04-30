@@ -162,11 +162,13 @@ The package manifest intentionally excludes mutable packaging timestamps so the 
 
 The command does not execute payouts or reconcile outbound transfers. Session 28 added the adapter interface and deterministic batch-draft builder that later payout commands should use to create rail-specific batches from ready intents.
 
+Session 35 added `/[locale]/workspace/earnings` as the user-facing earnings and payout workspace. It reads monthly-cycle published results, payout intents, payout routes, batch status, and reconciliation cues so users can understand what they are owed and which stage each payout is in while payout execution remains operator-controlled.
+
 ## Operating Rule
 
 New monthly cadence work should attach to `monthly_cycles` instead of independently interpreting month strings. Existing zkAS `month` fields and payment period fields remain in place for compatibility, but `monthly_cycle_id` is the canonical join point for lock, prep, zkAS calculation, verification, payout, and reporting sessions.
 
-All monthly-cycle mutations should follow the Edge Function command boundary. Session 22 added locking, Session 23 added read-only prep checks, Session 24 aligned zkAS reads/writes to cycle ownership, Session 25 added deterministic calculation packaging, Session 26 added verification/approval checkpoints, and Session 27 added payout-intent creation. Payout execution and reporting publication remain later sessions.
+All monthly-cycle mutations should follow the Edge Function command boundary. Session 22 added locking, Session 23 added read-only prep checks, Session 24 aligned zkAS reads/writes to cycle ownership, Session 25 added deterministic calculation packaging, Session 26 added verification/approval checkpoints, and Session 27 added payout-intent creation. Session 35 made those outputs visible to users. Payout execution and reporting publication remain later sessions.
 
 ## Local Supabase Note
 

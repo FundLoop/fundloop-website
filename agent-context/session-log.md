@@ -1,3 +1,37 @@
+### session v111: Build user earnings and payout workspace
+- timestamp: 2026-04-30T23:53:53Z
+- agent: **Codex (GPT-5)**
+- branch: **codex/supabase-deno-import-repair**
+- head: pending final commit
+
+#### Objective
+Implement Session 35 by giving regular users a real money workspace that connects published monthly results to payout intent, route, batch, and reconciliation state without adding premature payout execution controls.
+
+#### Actions Taken
+- Added `/[locale]/workspace/earnings` as the signed-in user earnings and payout workspace.
+- Added a server-only earnings read model that summarizes published allocations, payout intents, payout routes, batch status, reconciliation cues, pending distributions, and payout history.
+- Updated the workspace home and app-shell navigation so earnings is the canonical user money destination while `/settings/zkas` remains a raw interim result-history link.
+- Localized the new earnings workspace copy in English, French, and Spanish.
+- Added focused read-model tests and updated navigation, payout, monthly-cycle, route-inventory, and backlog docs.
+
+#### Tests and Validation Notes
+- `pnpm dlx node@22.22.1 /opt/homebrew/bin/pnpm test tests/user-workspace.test.ts tests/user-earnings-workspace.test.ts` passed.
+- `pnpm dlx node@22.22.1 /opt/homebrew/bin/pnpm typecheck` passed.
+- `pnpm dlx node@22.22.1 /opt/homebrew/bin/pnpm lint` passed.
+- `pnpm dlx node@22.22.1 /opt/homebrew/bin/pnpm test` passed.
+- `deno cache --config supabase/functions/deno.json supabase/functions/monthly-cycle-payout-intents-create/index.ts` passed.
+- `pnpm dlx node@22.22.1 /opt/homebrew/bin/pnpm check` passed.
+
+#### Reflections
+- The user side now has a durable earnings view tied to the payout domain, but payout route editing and actual execution remain intentionally outside this session.
+- Keeping `/settings/zkas` as a raw history link lets the app preserve the old truthful result surface while the workspace becomes the user-facing mental model.
+
+#### Suggested Next Steps
+- Yeet this stacked branch so the deploy repair and Sessions 30-35 can be reviewed together.
+- Session 36 should publish role-appropriate monthly reports and can treat `/workspace/earnings` as the user money source of truth.
+
+---
+
 ### session v110: Build founder attribution submission workflow
 - timestamp: 2026-04-30T23:11:55Z
 - agent: **Codex (GPT-5)**

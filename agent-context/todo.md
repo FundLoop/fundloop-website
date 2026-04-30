@@ -388,12 +388,12 @@ Add the founder/project-member tools for submitting participation and attributio
 
 ## Session 35: Build the user earnings and payout workspace
 
-- Status: Not started
-- Timestamp started: TBD
-- Timestamp completed: TBD
-- Feature branch: TBD
-- Head: TBD
-- Session-log reference(s): TBD
+- Status: Complete
+- Timestamp started: 2026-04-30T23:45:34Z
+- Timestamp completed: 2026-04-30T23:53:53Z
+- Feature branch: codex/supabase-deno-import-repair
+- Head: pending final commit
+- Session-log reference(s): session v111
 
 Turn the user side into a real money-management experience. Add views for pending distributions, locked monthly results, payout history, payout route preferences, and payout execution status. This session should connect the monthly cycle outputs to the user-facing experience in a way that is transparent and trust-building. Users should be able to understand what they are owed, why, and what stage their payout is in. This is where FundLoop starts looking like a real citizen-salary product instead of only a founder contribution product.
 

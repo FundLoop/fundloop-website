@@ -54,6 +54,7 @@ This inventory covers every current `page.tsx` and `route.ts` surface under `app
 | Path | Audience | Current state | Evidence / notes | Disposition | Canonical target | Follow-up session |
 | --- | --- | --- | --- | --- | --- | --- |
 | `/workspace` | Signed-in users | Real regular-user workspace home. | Session 17 rebuilt the route around identity readiness, profile completion, participation footprint, discovery next actions, and current published result visibility. | finish | User workspace home | 17 |
+| `/workspace/earnings` | Signed-in users | Real user earnings and payout workspace. | Session 35 connects published monthly results, payout intents, payout routes, batch status, and reconciliation cues into one user-facing money view without adding payout-route write controls yet. | finish | User earnings and payout workspace | 35, 36 |
 | `/workspace/account` | Signed-in users | Workspace account hub with explicit identity ownership split. | Sessions 15 and 16 made CUBID-managed identity read-only here and separated it from FundLoop-managed profile/preferences. | finish | User workspace account settings | 16, 42 |
 | `/founder` | Founders, project members | Real founder workspace home. | Session 18 summarizes managed projects, setup readiness, contribution/payment status, attribution readiness, identity reminders, and next actions while keeping deep operations in their current routes. | finish | Founder workspace home | 18 |
 | `/founder/projects` | Founders, project members | Real founder project index. | Session 18 added per-project setup, payment, attribution, reporting, and team badges with links to canonical founder project homes and existing operations. | finish | Founder workspace projects | 18 |
@@ -68,7 +69,7 @@ This inventory covers every current `page.tsx` and `route.ts` surface under `app
 | `/projects/[slug]/zkas/uploads/[id]` | Project admins, operators | Transitional upload-detail leaf. | Session 34 links this from the founder attribution workflow as the current dataset validation/audit detail surface. | merge | Founder workspace attribution/data submission history | 34 |
 | `/settings` | Signed-in users | Redirect-only legacy entry. | Session 08 collapsed the old settings hub into `/workspace/account` to remove dead-end settings navigation. | redirect | `/workspace/account` | 42 |
 | `/settings/account` | Signed-in users | Redirect-only legacy account leaf. | Session 08 redirected the old account route to the new workspace account surface. | redirect | `/workspace/account` | 16, 42 |
-| `/settings/zkas` | Signed-in users | Transitional personal zkAS results detail page. | Session 17 summarizes published results from `/workspace`, but keeps this route as the truthful interim detailed history until reporting/earnings routes are built. | merge | User workspace reporting and results | 35, 36 |
+| `/settings/zkas` | Signed-in users | Transitional raw personal zkAS results detail page. | Session 35 moved the user-facing money model to `/workspace/earnings`; this route remains a raw published-result history link until Session 36 reporting publication absorbs it. | merge | User workspace reporting and results | 36 |
 
 ## Internal Operator and Admin Surfaces
 
