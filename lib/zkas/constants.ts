@@ -1,7 +1,9 @@
+import { STORAGE_BUCKETS } from "@/lib/storage/artifacts"
+
 export const ZKAS_ACCESS_ROLE_NAME = "zkas_access"
-export const ZKAS_DATASET_BUCKET = "zkas-datasets"
-export const ZKAS_IDENTITY_BUCKET = "zkas-identities"
-export const ZKAS_RUN_BUCKET = "zkas-runs"
+export const ZKAS_DATASET_BUCKET = STORAGE_BUCKETS.zkasDatasets
+export const ZKAS_IDENTITY_BUCKET = STORAGE_BUCKETS.zkasIdentities
+export const ZKAS_RUN_BUCKET = STORAGE_BUCKETS.zkasRuns
 export const ZKAS_SCHEMA_VERSION = "zkas.v1"
 export const ZKAS_PUBLISHED_RESULT_NOTIFICATION_CODE = "zkas_published_result"
 

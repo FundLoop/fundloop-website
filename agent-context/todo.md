@@ -476,12 +476,12 @@ By this point the major product surfaces should exist. Use this session to remov
 
 ## Session 43: Productionize Supabase Storage usage across artifacts and media
 
-- Status: Not started
-- Timestamp started: TBD
-- Timestamp completed: TBD
-- Feature branch: TBD
-- Head: TBD
-- Session-log reference(s): TBD
+- Status: Complete
+- Timestamp started: 2026-05-01T09:00:46Z
+- Timestamp completed: 2026-05-01T09:05:07Z
+- Feature branch: codex/session-37-40-mcp-observability
+- Head: pending final commit
+- Session-log reference(s): session v120
 
 Audit all file and artifact handling and move the product to a consistent Supabase Storage model. This includes project assets, onboarding uploads, reporting artifacts, zk inputs/outputs, exported bookkeeping files, and any proof attachments needed for audit. The important outcome is consistency: files should have lifecycle, ownership, naming, and retention rules instead of being scattered across ad hoc storage logic. This session should also ensure that the web app, Edge Functions, and MCP workflows can all refer to stored artifacts predictably.
 

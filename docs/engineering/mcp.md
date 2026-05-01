@@ -80,3 +80,7 @@ Current operations:
 - `operator.reporting.coverage`
 
 This keeps MCP read behavior behind the same auth and command envelope style as writes, while preserving narrow reader interfaces for future app-side reuse.
+
+## Artifact References
+
+Session 43 standardized Supabase Storage artifact references in `lib/storage/artifacts.ts`. MCP tools should return artifact metadata such as bucket, path, kind, hash, visibility, and retention instead of inventing paths or streaming private storage contents directly. Any future raw artifact download tool should be backed by a scoped Edge Function authorization check.

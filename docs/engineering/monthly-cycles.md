@@ -125,7 +125,7 @@ Live drift is informational because downstream calculation should use the locked
 
 The posture is derived from the monthly cycle lock state, approved cycle-linked attribution datasets, approved cycle-linked identity artifacts, cycle-linked zkAS runs, and published cycle results. The page links back to prep review and into the existing upload/run consoles, because those older routes still own the operational actions until calculation packaging and verification commands are introduced.
 
-The important boundary is conceptual and data-oriented: `month` strings remain for compatibility and storage paths, while `monthly_cycle_id` is the canonical way to determine what belongs to a cycle. New zkAS calculation, verification, publication, and reporting work should start from the cycle row and its linked records.
+The important boundary is conceptual and data-oriented: `month` strings remain for compatibility and storage paths, while `monthly_cycle_id` is the canonical way to determine what belongs to a cycle. New zkAS calculation, verification, publication, and reporting work should start from the cycle row and its linked records. Storage paths should use the shared helpers in `lib/storage/artifacts.ts` so cycle artifacts stay consistent across the app, Edge Functions, and MCP tooling.
 
 ## Calculation Packaging
 
@@ -175,6 +175,8 @@ The command does not execute payouts or reconcile outbound transfers. Session 28
 Session 35 added `/[locale]/workspace/earnings` as the user-facing earnings and payout workspace. It reads monthly-cycle published results, payout intents, payout routes, batch status, and reconciliation cues so users can understand what they are owed and which stage each payout is in while payout execution remains operator-controlled.
 
 Session 36 added `monthly_cycle_reports` and the `monthly-cycle-reports` Supabase Storage bucket as the durable reporting publication model. Public, user, founder, and operator pages now read report metadata through `lib/reporting/monthly-cycle-reports.ts`.
+
+Session 43 standardized Supabase Storage artifact buckets and path construction in `lib/storage/artifacts.ts`; cycle-bound artifacts should now use those helpers instead of inline string assembly.
 
 ## Operating Rule
 

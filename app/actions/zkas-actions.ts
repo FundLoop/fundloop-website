@@ -2,6 +2,11 @@
 
 import { revalidatePath } from "next/cache"
 import { parseMonthlyCycleKey } from "@/lib/monthly-cycles"
+import {
+  buildZkasDatasetArtifactPath,
+  buildZkasIdentityArtifactPath,
+  buildZkasRunArtifactPath,
+} from "@/lib/storage/artifacts"
 import { getAdminSupabaseClient } from "@/lib/supabase-admin"
 import {
   getAuthenticatedActor,
@@ -377,7 +382,12 @@ export async function uploadZkasDataset(formData: FormData): Promise<void> {
   const supabase = getAdminSupabaseClient()
   const content = await file.text()
   const fileHash = hashTextContent(content)
-  const objectPath = `${month}/project-${membership.projectId}/dataset-${fileHash}.${format}`
+  const objectPath = buildZkasDatasetArtifactPath({
+    cycleKey: month,
+    projectId: membership.projectId,
+    fileHash,
+    format,
+  })
   const monthlyCycleId = await getOrCreateMonthlyCycleIdForMonth(month, actor.userId)
 
   const { data: dataset, error: insertError } = await supabase
@@ -469,7 +479,10 @@ export async function uploadZkasIdentityArtifact(formData: FormData): Promise<vo
   parseIdentityArtifact(content)
 
   const artifactHash = hashTextContent(content)
-  const objectPath = `${month}/identity-${artifactHash}.json`
+  const objectPath = buildZkasIdentityArtifactPath({
+    cycleKey: month,
+    artifactHash,
+  })
   await uploadBinaryArtifact(ZKAS_IDENTITY_BUCKET, objectPath, file, "application/json")
 
   const supabase = getAdminSupabaseClient()
@@ -759,7 +772,11 @@ export async function lockZkasRun(formData: FormData): Promise<void> {
 
     const manifestText = serializeManifest(manifest)
     const manifestHash = hashManifest(manifest)
-    const manifestPath = `${run.month}/run-${run.id}/run-manifest.v1.json`
+    const manifestPath = buildZkasRunArtifactPath({
+      cycleKey: run.month,
+      runId: run.id,
+      artifact: "run-manifest",
+    })
     await uploadTextArtifact(ZKAS_RUN_BUCKET, manifestPath, manifestText, "application/json")
 
     const { error: runUpdateError } = await supabase
@@ -861,7 +878,11 @@ export async function dispatchZkasRun(formData: FormData): Promise<void> {
       })
 
       const resultText = JSON.stringify(result, null, 2)
-      const resultPath = `${run.month}/run-${run.id}/run-result.v1.json`
+      const resultPath = buildZkasRunArtifactPath({
+        cycleKey: run.month,
+        runId: run.id,
+        artifact: "run-result",
+      })
       await uploadTextArtifact(ZKAS_RUN_BUCKET, resultPath, resultText, "application/json")
 
       await supabase.from("zkas_run_results").delete().eq("run_id", run.id)

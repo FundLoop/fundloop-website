@@ -8,6 +8,7 @@ Session 36 introduced the first durable reporting publication model.
 - `monthly_cycle_report_audience` scopes each report to `public`, `user`, `founder`, or `operator`.
 - `monthly-cycle-reports` is the Supabase Storage bucket reserved for generated report artifacts.
 - Report rows may point at stored JSON, Markdown, or PDF artifacts through `artifact_bucket`, `artifact_path`, `artifact_mime_type`, and `artifact_hash`.
+- Report artifact paths should be generated with `buildMonthlyCycleReportArtifactPath(...)` from `lib/storage/artifacts.ts`.
 
 The table is intentionally metadata-first. Later generation commands can write artifacts to Supabase Storage and upsert matching report rows without changing the page contracts.
 

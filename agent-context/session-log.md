@@ -1,3 +1,35 @@
+### session v120: Standardize Supabase Storage artifact contracts
+- timestamp: 2026-05-01T09:05:07Z
+- agent: **Codex (GPT-5)**
+- branch: **codex/session-37-40-mcp-observability**
+- head: pending final commit
+
+#### Objective
+Implement Session 43 by turning Supabase Storage usage into a documented, reusable artifact model for zkAS, reporting, project media, onboarding uploads, bookkeeping exports, and audit proofs.
+
+#### Actions Taken
+- Added `lib/storage/artifacts.ts` with canonical bucket names, lifecycle metadata, artifact reference normalization, and path builders for cycle-bound and product-owned artifacts.
+- Rewired active zkAS dataset, identity, run manifest, run result, and calculation-package paths to use the shared builders.
+- Normalized monthly report artifact references through the shared storage reference helper.
+- Added a forward migration that creates the remaining private product artifact buckets and normalizes existing zkAS/reporting bucket settings.
+- Added storage artifact tests and updated engineering docs for monthly cycles, reporting, MCP artifact references, and the engineering docs index.
+- Updated backlog metadata for Session 43.
+
+#### Tests and Validation Notes
+- `pnpm test tests/storage-artifacts.test.ts tests/monthly-cycle-calculation-package-command.test.ts tests/monthly-cycle-reports.test.ts` passed.
+- `deno cache --config supabase/functions/deno.json supabase/functions/monthly-cycle-calculation-package/index.ts` passed.
+- `pnpm typecheck` passed.
+- `pnpm lint` passed.
+
+#### Reflections
+- Storage is now governed by a stable app contract rather than scattered string assembly.
+- The buckets remain private and server/Edge-owned; future raw artifact downloads should be explicit Edge Function capabilities, not direct public bucket access.
+
+#### Suggested Next Steps
+- Session 44 should turn the repo’s deployment, operations, and incident posture into a practical runbook that references the new storage/deploy/cycle boundaries.
+
+---
+
 ### session v119: Collapse remaining settings result surfaces into workspace IA
 - timestamp: 2026-05-01T08:57:55Z
 - agent: **Codex (GPT-5)**
