@@ -3,6 +3,13 @@ import { createMcpAuthContext } from "./auth.ts"
 import { createSupabaseEdgeCommandClient, type EdgeCommandClient } from "./edge-client.ts"
 import { createSupabaseFounderWorkflowReader, type FounderWorkflowReader } from "./founder-reader.ts"
 import { registerFounderMcpTools } from "./founder-tools.ts"
+import {
+  createSupabaseOperatorWorkflowReader,
+  createSupabaseProjectMemberWorkflowReader,
+  type OperatorWorkflowReader,
+  type ProjectMemberWorkflowReader,
+} from "./member-operator-readers.ts"
+import { registerProjectMemberAndOperatorMcpTools } from "./member-operator-tools.ts"
 import { createBaseMcpToolRegistry, type McpToolRegistry } from "./tools.ts"
 import { isJsonRpcRequest, type JsonRpcResponse } from "./protocol.ts"
 
@@ -10,6 +17,8 @@ export type McpServerContext = {
   auth: ReturnType<typeof createMcpAuthContext>
   edge: EdgeCommandClient
   founderReader?: FounderWorkflowReader
+  projectMemberReader?: ProjectMemberWorkflowReader
+  operatorReader?: OperatorWorkflowReader
   registry: McpToolRegistry
 }
 
@@ -57,6 +66,8 @@ export async function handleMcpRequest(
       auth: context.auth,
       edge: context.edge,
       founderReader: context.founderReader,
+      projectMemberReader: context.projectMemberReader,
+      operatorReader: context.operatorReader,
     })
     return response(id, result)
   }
@@ -76,11 +87,14 @@ function createDefaultServerContext(): McpServerContext {
       .filter(Boolean),
   })
   registerFounderMcpTools(registry)
+  registerProjectMemberAndOperatorMcpTools(registry)
 
   return {
     auth: createMcpAuthContext(),
     edge: createSupabaseEdgeCommandClient(),
     founderReader: createSupabaseFounderWorkflowReader(),
+    projectMemberReader: createSupabaseProjectMemberWorkflowReader(),
+    operatorReader: createSupabaseOperatorWorkflowReader(),
     registry,
   }
 }

@@ -443,12 +443,12 @@ Expose the first founder-facing protocol operations through the MCP server. This
 
 ## Session 40: Add project-member and operator MCP workflows
 
-- Status: Not started
-- Timestamp started: TBD
-- Timestamp completed: TBD
-- Feature branch: TBD
-- Head: TBD
-- Session-log reference(s): TBD
+- Status: Complete
+- Timestamp started: 2026-05-01T08:13:16Z
+- Timestamp completed: 2026-05-01T08:16:06Z
+- Feature branch: codex/session-37-40-mcp-observability
+- Head: pending final commit
+- Session-log reference(s): session v117
 
 Expand the MCP layer to support project-member tasks and selected operator-safe reads such as cycle status, reporting access, reconciliation visibility, and observability lookup. This session should maintain strict role boundaries while proving that FundLoop’s operational model is programmatically accessible. Avoid exposing unsafe internal mutation tools too early. The emphasis is on trustworthy structured interaction, not maximum surface area. By the end, the MCP server should feel like a real control interface rather than a demo plugin.
 

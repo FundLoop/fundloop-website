@@ -1,12 +1,15 @@
 import type { McpAuthContext } from "./auth.ts"
 import type { EdgeCommandClient } from "./edge-client.ts"
 import type { FounderWorkflowReader } from "./founder-reader.ts"
+import type { OperatorWorkflowReader, ProjectMemberWorkflowReader } from "./member-operator-readers.ts"
 import { errorResult, jsonTextResult, type McpToolDefinition, type McpToolResult } from "./protocol.ts"
 
 export type McpToolHandlerContext = {
   auth: McpAuthContext
   edge: EdgeCommandClient
   founderReader?: FounderWorkflowReader
+  projectMemberReader?: ProjectMemberWorkflowReader
+  operatorReader?: OperatorWorkflowReader
 }
 
 export type McpToolHandler = (input: unknown, context: McpToolHandlerContext) => Promise<McpToolResult> | McpToolResult

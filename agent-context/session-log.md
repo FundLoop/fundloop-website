@@ -1,3 +1,34 @@
+### session v117: Add project-member and operator MCP reads
+- timestamp: 2026-05-01T08:16:06Z
+- agent: **Codex (GPT-5)**
+- branch: **codex/session-37-40-mcp-observability**
+- head: pending final commit
+
+#### Objective
+Implement Session 40 by expanding the MCP server with project-member and operator-safe read workflows while avoiding broad internal mutation tools.
+
+#### Actions Taken
+- Added project-member and operator workflow reader boundaries plus Supabase REST-backed default readers.
+- Added a project-member reporting-status MCP tool for visible project reporting and attribution status.
+- Added read-only operator MCP tools for monthly cycle status, monthly-cycle observability, onchain reconciliation visibility, and reporting coverage.
+- Wired the new readers and tools into the default MCP server context.
+- Added focused tests for tool registration, project-member reads, operator reads, and missing-reader error behavior.
+- Updated MCP, monthly-cycle, target architecture, and backlog docs.
+
+#### Tests and Validation Notes
+- `pnpm test tests/mcp-server.test.ts tests/mcp-founder-tools.test.ts tests/mcp-member-operator-tools.test.ts` passed.
+- `pnpm typecheck` passed.
+- `pnpm lint` passed.
+
+#### Reflections
+- The operator MCP surface is intentionally read-only for this pass. That keeps the protocol useful without opening risky internal state transitions too early.
+- The reader interfaces are deliberately narrow so Session 41 can replace direct read implementations with Edge Function read contracts.
+
+#### Suggested Next Steps
+- Session 41 should move the most important MCP/web reads behind typed Edge Function read models, starting with founder workspace, user earnings, cycle status, and operator dashboards.
+
+---
+
 ### session v116: Add founder MCP workflow tools
 - timestamp: 2026-05-01T08:13:16Z
 - agent: **Codex (GPT-5)**

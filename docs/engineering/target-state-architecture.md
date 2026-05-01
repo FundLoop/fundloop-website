@@ -425,6 +425,8 @@ Session 38 introduced the first `packages/mcp-server` skeleton with auth context
 
 Session 39 added the first founder MCP tools for managed project discovery, project cycle status reads, payment-route creation/update, and onchain receipt recording. The write tools reuse the existing Edge Function command names used by the web app.
 
+Session 40 added read-only project-member and operator MCP tools for reporting status, cycle status, cycle observability, reconciliation visibility, and reporting coverage. These tools establish protocol access without exposing broad operator mutations.
+
 ## 10. Frontend Experience Direction
 
 The target frontend should be:

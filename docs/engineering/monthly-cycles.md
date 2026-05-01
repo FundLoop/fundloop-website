@@ -72,6 +72,7 @@ Session 37 added `/[locale]/admin/cycles/observability` as the operator drill-do
 - Use `attempt_id` as the cross-stage handle when an operator or agent retries a monthly-cycle command.
 - Keep MCP and future non-web clients pointed at this same event stream. Do not create a parallel protocol-only observability log.
 - Payment-specific wallet and receipt telemetry still lives in `payment_flow_events`; monthly-cycle stage telemetry lives in `monthly_cycle_events`.
+- Session 40 exposed read-only operator MCP tools for cycle statuses, cycle observability, reconciliation visibility, and reporting coverage. Those tools should remain read-only until a later session explicitly introduces safe operator mutations.
 
 Session 28 added the chain-abstracted execution interface under `lib/execution/`. Session 31 added Solana-specific payout batch draft scaffolding on that boundary, and Session 32 added fiat provider-not-configured payout draft stubs. Monthly-cycle payout work should use the execution interface for batch planning and future rail execution instead of branching directly on EVM, Solana, or fiat details.
 

@@ -52,3 +52,15 @@ Session 39 added the first explicit founder tools:
 Founder reads go through a `FounderWorkflowReader` boundary. The default implementation uses authenticated Supabase REST reads with the same bearer token as the agent. Founder writes call the existing typed Edge Function command names for route management and onchain receipt recording.
 
 Sessions 40 should add project-member and operator workflows so agents do not need to use the low-level invoker directly.
+
+## Project-Member And Operator Tools
+
+Session 40 added read-only project-member and operator tools:
+
+- `project_member.project.reporting_status`
+- `operator.cycles.list`
+- `operator.cycle.observability`
+- `operator.payments.reconciliation_visibility`
+- `operator.reporting.coverage`
+
+These tools intentionally do not mutate state. They use `ProjectMemberWorkflowReader` and `OperatorWorkflowReader` boundaries so the implementation can move from direct authenticated Supabase REST reads to Edge Function read models in Session 41 without changing the MCP tool contract.
