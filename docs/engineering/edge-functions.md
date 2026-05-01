@@ -122,6 +122,7 @@ For chain and payout execution:
 - monthly-cycle Edge Function commands should write stage attempts, successes, failures, and warnings to `monthly_cycle_events`; Session 37 exposes those events through `/admin/cycles/observability` and future MCP tools should consume the same event stream
 - the MCP server skeleton in `packages/mcp-server` invokes Edge Functions through the same standard command envelope and must keep low-level invocation allowlisted
 - Session 39 founder MCP write tools call the existing project payment route and receipt-recording Edge Function command names instead of adding MCP-only mutation paths
+- Session 41 added `mcp-workflow-read` as the first typed read gateway for MCP-facing founder, project-member, and operator workflow reads
 
 The migration is intentionally incremental so the transport layer can stabilize before broader read migration and later founder/user workspace work.
 

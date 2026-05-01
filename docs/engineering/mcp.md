@@ -64,3 +64,19 @@ Session 40 added read-only project-member and operator tools:
 - `operator.reporting.coverage`
 
 These tools intentionally do not mutate state. They use `ProjectMemberWorkflowReader` and `OperatorWorkflowReader` boundaries so the implementation can move from direct authenticated Supabase REST reads to Edge Function read models in Session 41 without changing the MCP tool contract.
+
+## Read Boundary
+
+Session 41 added `mcp-workflow-read` as the first typed Edge Function read gateway for MCP-facing workflow reads. The default MCP founder, project-member, and operator readers now call this Edge Function instead of reading Supabase REST tables directly.
+
+Current operations:
+
+- `founder.projects.list`
+- `founder.project.cycle_status`
+- `project_member.project.reporting_status`
+- `operator.cycles.list`
+- `operator.cycle.observability`
+- `operator.payments.reconciliation_visibility`
+- `operator.reporting.coverage`
+
+This keeps MCP read behavior behind the same auth and command envelope style as writes, while preserving narrow reader interfaces for future app-side reuse.

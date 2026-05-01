@@ -427,6 +427,8 @@ Session 39 added the first founder MCP tools for managed project discovery, proj
 
 Session 40 added read-only project-member and operator MCP tools for reporting status, cycle status, cycle observability, reconciliation visibility, and reporting coverage. These tools establish protocol access without exposing broad operator mutations.
 
+Session 41 moved those MCP-facing workflow reads behind `mcp-workflow-read`, a typed Supabase Edge Function read gateway. The MCP server no longer defaults to direct Supabase REST table reads for its high-value founder/project-member/operator tools.
+
 ## 10. Frontend Experience Direction
 
 The target frontend should be:

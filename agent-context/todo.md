@@ -454,12 +454,12 @@ Expand the MCP layer to support project-member tasks and selected operator-safe 
 
 ## Session 41: Move remaining high-value reads behind Edge Functions
 
-- Status: Not started
-- Timestamp started: TBD
-- Timestamp completed: TBD
-- Feature branch: TBD
-- Head: TBD
-- Session-log reference(s): TBD
+- Status: Complete
+- Timestamp started: 2026-05-01T08:20:00Z
+- Timestamp completed: 2026-05-01T08:24:00Z
+- Feature branch: codex/session-37-40-mcp-observability
+- Head: pending final commit
+- Session-log reference(s): session v118
 
 Finish the architectural shift by moving the remaining important web reads away from direct browser/table access and behind stable backend contracts. Prioritize founder workspace reads, user earnings reads, cycle status reads, and admin/operator dashboards. This session should reduce the remaining tight coupling between pages and raw Supabase tables. It is a key target-state milestone because the app and MCP server both need stable read models, not a growing set of page-specific queries and implicit authorization assumptions.
 

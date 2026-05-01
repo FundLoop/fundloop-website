@@ -1,11 +1,11 @@
 #!/usr/bin/env node
 import { createMcpAuthContext } from "./auth.ts"
 import { createSupabaseEdgeCommandClient, type EdgeCommandClient } from "./edge-client.ts"
-import { createSupabaseFounderWorkflowReader, type FounderWorkflowReader } from "./founder-reader.ts"
+import { createEdgeFounderWorkflowReader, type FounderWorkflowReader } from "./founder-reader.ts"
 import { registerFounderMcpTools } from "./founder-tools.ts"
 import {
-  createSupabaseOperatorWorkflowReader,
-  createSupabaseProjectMemberWorkflowReader,
+  createEdgeOperatorWorkflowReader,
+  createEdgeProjectMemberWorkflowReader,
   type OperatorWorkflowReader,
   type ProjectMemberWorkflowReader,
 } from "./member-operator-readers.ts"
@@ -89,12 +89,13 @@ function createDefaultServerContext(): McpServerContext {
   registerFounderMcpTools(registry)
   registerProjectMemberAndOperatorMcpTools(registry)
 
+  const edge = createSupabaseEdgeCommandClient()
   return {
     auth: createMcpAuthContext(),
-    edge: createSupabaseEdgeCommandClient(),
-    founderReader: createSupabaseFounderWorkflowReader(),
-    projectMemberReader: createSupabaseProjectMemberWorkflowReader(),
-    operatorReader: createSupabaseOperatorWorkflowReader(),
+    edge,
+    founderReader: createEdgeFounderWorkflowReader(edge),
+    projectMemberReader: createEdgeProjectMemberWorkflowReader(edge),
+    operatorReader: createEdgeOperatorWorkflowReader(edge),
     registry,
   }
 }

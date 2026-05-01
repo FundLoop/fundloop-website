@@ -1,3 +1,33 @@
+### session v118: Move MCP workflow reads behind an Edge Function
+- timestamp: 2026-05-01T08:24:00Z
+- agent: **Codex (GPT-5)**
+- branch: **codex/session-37-40-mcp-observability**
+- head: pending final commit
+
+#### Objective
+Implement Session 41 by moving the new high-value MCP workflow reads behind a typed Supabase Edge Function read gateway.
+
+#### Actions Taken
+- Added the `mcp-workflow-read` Edge Function contract and Supabase function.
+- Implemented authenticated read operations for founder managed projects, founder project cycle status, project-member reporting status, operator cycle statuses, cycle observability, reconciliation visibility, and reporting coverage.
+- Reworked the default MCP founder, project-member, and operator readers to call `mcp-workflow-read` through the shared Edge Function envelope instead of reading Supabase REST tables directly.
+- Updated MCP, Edge Function, target architecture, and backlog docs.
+
+#### Tests and Validation Notes
+- `pnpm test tests/mcp-server.test.ts tests/mcp-founder-tools.test.ts tests/mcp-member-operator-tools.test.ts` passed.
+- `pnpm typecheck` passed.
+- `pnpm lint` passed.
+- `deno cache --config supabase/functions/deno.json supabase/functions/mcp-workflow-read/index.ts` passed.
+
+#### Reflections
+- This does not migrate every app page read yet, but it moves the new protocol-facing high-value reads behind the backend boundary before MCP usage spreads.
+- The reader interfaces remain stable, so web pages can adopt the same Edge-backed read gateway later without rewriting tool contracts.
+
+#### Suggested Next Steps
+- Session 42 should clean up remaining settings/account IA leftovers now that the main workspace and protocol surfaces are in place.
+
+---
+
 ### session v117: Add project-member and operator MCP reads
 - timestamp: 2026-05-01T08:16:06Z
 - agent: **Codex (GPT-5)**

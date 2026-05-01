@@ -6,19 +6,18 @@ export {
   type EdgeCommandClient,
 } from "./edge-client.ts"
 export {
-  SupabaseFounderWorkflowReader,
-  createSupabaseFounderWorkflowReader,
-  readSupabaseRestClientConfig,
+  EdgeFounderWorkflowReader,
+  createEdgeFounderWorkflowReader,
   type FounderManagedProjectSummary,
   type FounderProjectCycleStatus,
   type FounderWorkflowReader,
 } from "./founder-reader.ts"
 export { registerFounderMcpTools } from "./founder-tools.ts"
 export {
-  SupabaseOperatorWorkflowReader,
-  SupabaseProjectMemberWorkflowReader,
-  createSupabaseOperatorWorkflowReader,
-  createSupabaseProjectMemberWorkflowReader,
+  EdgeOperatorWorkflowReader,
+  EdgeProjectMemberWorkflowReader,
+  createEdgeOperatorWorkflowReader,
+  createEdgeProjectMemberWorkflowReader,
   type OperatorCycleEvent,
   type OperatorCycleStatus,
   type OperatorReconciliationVisibility,
