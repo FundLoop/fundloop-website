@@ -421,12 +421,12 @@ The repo already has payment-flow observability. Expand that into a broader oper
 
 ## Session 38: Build the first MCP server skeleton
 
-- Status: Not started
-- Timestamp started: TBD
-- Timestamp completed: TBD
-- Feature branch: TBD
-- Head: TBD
-- Session-log reference(s): TBD
+- Status: Complete
+- Timestamp started: 2026-05-01T08:06:35Z
+- Timestamp completed: 2026-05-01T08:09:51Z
+- Feature branch: codex/session-37-40-mcp-observability
+- Head: pending final commit
+- Session-log reference(s): session v115
 
 Create the MCP server foundation with authentication strategy, tool registration, typed request/response envelopes, and a backend adapter layer that calls the same Edge Function contracts as the web app. The server does not need every tool immediately. This session should focus on the protocol foundation and local development ergonomics so later agent workflows can build cleanly. The key architectural rule is that MCP should not invent a second backend or special-case business logic.
 

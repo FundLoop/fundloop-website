@@ -21,6 +21,7 @@ Current high-signal docs:
 - [Internationalization](./i18n.md)
 - [Local Seed Fixtures](./local-seed.md)
 - [Monthly Cycle Domain Model](./monthly-cycles.md)
+- [MCP Server](./mcp.md)
 - [Navigation and Shell Architecture](./navigation-shell.md)
 - [Reporting Publication](./reporting.md)
 - [Route Inventory](./route-inventory.md)

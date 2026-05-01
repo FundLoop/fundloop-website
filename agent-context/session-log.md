@@ -1,3 +1,33 @@
+### session v115: Build the first MCP server skeleton
+- timestamp: 2026-05-01T08:09:51Z
+- agent: **Codex (GPT-5)**
+- branch: **codex/session-37-40-mcp-observability**
+- head: pending final commit
+
+#### Objective
+Implement Session 38 by adding the first MCP server foundation without creating a parallel backend path.
+
+#### Actions Taken
+- Added `packages/mcp-server` to the pnpm workspace.
+- Added MCP auth context creation, protocol response helpers, tool registration/dispatch, a Supabase Edge Function command client, and a stdio JSON-RPC server entrypoint.
+- Added base tools for health checks and allowlisted low-level Edge Function invocation.
+- Added focused tests for auth, tool listing/calling, JSON-RPC handling, and allowlist enforcement.
+- Added the long-lived MCP engineering doc and updated Edge Function and target architecture docs.
+
+#### Tests and Validation Notes
+- `pnpm test tests/mcp-server.test.ts` passed.
+- `pnpm typecheck` passed.
+- `pnpm lint` passed.
+
+#### Reflections
+- The low-level Edge Function invoker is useful for the skeleton, but it is intentionally allowlisted so later sessions can add safer domain-specific tools.
+- The MCP server now has a place to grow while preserving the rule that the web app and agents share backend contracts.
+
+#### Suggested Next Steps
+- Session 39 should add founder-facing MCP workflows as explicit tools, starting with project/cycle reads and the safest existing founder commands.
+
+---
+
 ### session v114: Extend monthly pipeline observability
 - timestamp: 2026-05-01T08:06:35Z
 - agent: **Codex (GPT-5)**

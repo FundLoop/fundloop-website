@@ -421,6 +421,8 @@ Capabilities should include:
 
 The MCP server should not bypass business rules. It should sit above the same Edge Function and execution interfaces used by the web app.
 
+Session 38 introduced the first `packages/mcp-server` skeleton with auth context, tool registration, a stdio JSON-RPC entrypoint, and an allowlisted Edge Function command adapter. Later MCP sessions should add explicit domain tools rather than encouraging generic backend invocation.
+
 ## 10. Frontend Experience Direction
 
 The target frontend should be:
