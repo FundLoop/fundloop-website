@@ -15,6 +15,7 @@ import {
 } from "@/components/marketing/page-chrome"
 import { Reveal } from "@/components/marketing/reveal"
 import { NetworkConstellation } from "@/components/marketing/network-constellation"
+import { JourneyConfidenceBand, type JourneyConfidenceItem } from "@/components/marketing/journey-confidence-band"
 import { ecosystemSites, resourceLinks } from "@/lib/public-site"
 import { useCases } from "@/lib/use-cases"
 
@@ -65,6 +66,7 @@ export default async function Home({ params }: PageProps) {
   }
 
   const t = await getTranslations({ locale, namespace: "home" })
+  const polishT = await getTranslations({ locale, namespace: "journeyPolish.home" })
   const shellT = await getTranslations({ locale, namespace: "shell" })
   const loopSteps = t.raw("howItWorks.steps") as HomeStep[]
   const entryPaths = t.raw("entryPaths") as EntryPath[]
@@ -123,6 +125,17 @@ export default async function Home({ params }: PageProps) {
           </Reveal>
         </div>
       </section>
+
+      <JourneyConfidenceBand
+        eyebrow={polishT("eyebrow")}
+        title={polishT("title")}
+        body={polishT("body")}
+        primaryCta={polishT("primaryCta")}
+        primaryHref="/participation"
+        secondaryCta={polishT("secondaryCta")}
+        secondaryHref="/founders"
+        items={polishT.raw("items") as JourneyConfidenceItem[]}
+      />
 
       <MarketingSection className="border-y border-[color:var(--marketing-line)] bg-white/34 dark:bg-white/[0.02]">
         <div className="grid gap-12 lg:grid-cols-[minmax(0,0.88fr)_minmax(0,1.12fr)]">

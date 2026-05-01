@@ -14,6 +14,7 @@ import {
   SectionTitle,
 } from "@/components/marketing/page-chrome"
 import { Reveal } from "@/components/marketing/reveal"
+import { JourneyConfidenceBand, type JourneyConfidenceItem } from "@/components/marketing/journey-confidence-band"
 
 type ParticipationItem = {
   step?: string
@@ -51,6 +52,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
 export default async function ParticipationPage({ params }: PageProps) {
   const { locale } = await params
   const t = await getTranslations({ locale, namespace: "participation" })
+  const polishT = await getTranslations({ locale, namespace: "journeyPolish.participation" })
   const navigationContext = await getNavigationContext()
   const ctaState = getPublicUserCtaState(navigationContext)
   const whyJoinItems = t.raw("whyJoin.items") as ParticipationItem[]
@@ -114,6 +116,17 @@ export default async function ParticipationPage({ params }: PageProps) {
           </Reveal>
         </div>
       </MarketingSection>
+
+      <JourneyConfidenceBand
+        eyebrow={polishT("eyebrow")}
+        title={polishT("title")}
+        body={polishT("body")}
+        primaryCta={getPrimaryLabel(ctaState, t)}
+        primaryHref={getPublicUserPrimaryHref(navigationContext)}
+        secondaryCta={polishT("secondaryCta")}
+        secondaryHref="/projects"
+        items={polishT.raw("items") as JourneyConfidenceItem[]}
+      />
 
       <MarketingSection className="border-y border-[color:var(--marketing-line)] bg-white/34 dark:bg-white/[0.02]">
         <div className="grid gap-12 lg:grid-cols-[minmax(0,0.74fr)_minmax(0,1.26fr)]">

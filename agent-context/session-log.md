@@ -1,3 +1,33 @@
+### session v122: Polish the public user and founder conversion handoff
+- timestamp: 2026-05-01T09:13:05Z
+- agent: **Codex (GPT-5)**
+- branch: **codex/session-37-40-mcp-observability**
+- head: pending final commit
+
+#### Objective
+Implement Session 45 by tightening the public user/founder journey polish now that the operational workspaces, identity model, monthly cycle pipeline, reporting, storage, and runbook foundations exist.
+
+#### Actions Taken
+- Added a reusable `JourneyConfidenceBand` marketing component with a stronger visual treatment and simple dual-CTA structure.
+- Added the conversion band to the home, participation, and founders pages so each path reinforces what is real now and where the visitor should go next.
+- Added localized English, French, and Spanish copy for the new public journey polish content.
+- Updated i18n coverage to assert the new localized message domain.
+- Updated backlog metadata for Session 45.
+
+#### Tests and Validation Notes
+- `pnpm test tests/i18n.test.ts` passed.
+- `pnpm typecheck` passed.
+- `pnpm lint` passed.
+
+#### Reflections
+- This is an intentional polish pass, not a full redesign: the public funnels now better communicate that the backend system has become operational without adding new workflow promises.
+- Manual browser visual smoke is still a good follow-up before yeeting the stacked branch.
+
+#### Suggested Next Steps
+- Run a broader `pnpm test` / `pnpm build` pass and then yeet the stacked Sessions 37-45 branch for review.
+
+---
+
 ### session v121: Add the operator operations runbook
 - timestamp: 2026-05-01T09:09:31Z
 - agent: **Codex (GPT-5)**

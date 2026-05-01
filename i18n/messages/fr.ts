@@ -1634,6 +1634,70 @@ export const frMessages = {
       support: "Contacter le support",
     },
   },
+  journeyPolish: {
+    home: {
+      eyebrow: "Choisir la bonne porte",
+      title: "Une boucle, deux chemins clairs.",
+      body: "FundLoop relie maintenant ses parcours publics aux espaces authentifiés, à l'état d'identité, aux cycles mensuels et à la visibilité des rapports.",
+      primaryCta: "Commencer comme participant",
+      secondaryCta: "Explorer le parcours fondateur",
+      items: [
+        {
+          label: "L'identité est explicite",
+          body: "L'identité appuyée par CUBID est visible avant que les workflows sensibles à la valeur en dépendent.",
+        },
+        {
+          label: "Les cycles sont réels",
+          body: "Verrouillage, préparation, calcul, paiements et rapports mensuels ont maintenant des surfaces opérateur.",
+        },
+        {
+          label: "Les espaces poursuivent le parcours",
+          body: "Utilisateurs et fondateurs arrivent dans des espaces par rôle plutôt que dans des pages publiques isolées.",
+        },
+      ],
+    },
+    participation: {
+      eyebrow: "Après l'inscription",
+      title: "La participation mène maintenant à un endroit utile.",
+      body: "Le parcours public ne s'arrête plus à l'inscription. Il mène à l'identité, à la découverte, aux résultats actuels et aux espaces orientés paiements.",
+      secondaryCta: "Parcourir les projets",
+      items: [
+        {
+          label: "Voir votre préparation",
+          body: "L'espace de travail montre le lien CUBID, la complétude du profil et les prochaines étapes manquantes.",
+        },
+        {
+          label: "Découvrir avec contexte",
+          body: "Les pages projets et personnes cadrent la découverte autour de la participation et des signaux de confiance.",
+        },
+        {
+          label: "Voir les résultats actuels",
+          body: "Les rapports et gains montrent ce qui est publié sans prétendre que tout le système de paiement est terminé.",
+        },
+      ],
+    },
+    founders: {
+      eyebrow: "Passage fondateur",
+      title: "Un chemin plus net de la promesse aux opérations.",
+      body: "Le parcours fondateur mène à l'onboarding projet, puis à un vrai espace pour les routes de contribution, l'attribution, l'état mensuel et les rapports.",
+      primaryCta: "Démarrer l'onboarding projet",
+      secondaryCta: "Lire la documentation",
+      items: [
+        {
+          label: "L'engagement est concret",
+          body: "Le modèle du 1 %, la cadence mensuelle et les exigences d'identité sont expliqués avant l'inscription.",
+        },
+        {
+          label: "Les opérations sont trouvables",
+          body: "Les espaces projet relient contributions, attribution, paiements et rapports sans masquer les routes profondes actuelles.",
+        },
+        {
+          label: "Les opérateurs ont un runbook",
+          body: "Les équipes internes ont maintenant des checklists pour cycles, déploiements, identité, paiements et artefacts.",
+        },
+      ],
+    },
+  },
   legalPages: {
     backToHome: "Retour à l’accueil",
     updatedLabel: "Dernière mise à jour : {date}",
