@@ -487,12 +487,12 @@ Audit all file and artifact handling and move the product to a consistent Supaba
 
 ## Session 44: Build a deployment and operations runbook into the product and repo
 
-- Status: Not started
-- Timestamp started: TBD
-- Timestamp completed: TBD
-- Feature branch: TBD
-- Head: TBD
-- Session-log reference(s): TBD
+- Status: Complete
+- Timestamp started: 2026-05-01T09:06:32Z
+- Timestamp completed: 2026-05-01T09:09:31Z
+- Feature branch: codex/session-37-40-mcp-observability
+- Head: pending final commit
+- Session-log reference(s): session v121
 
 Translate the architecture into operational reliability. This session should produce and wire the runbooks, admin affordances, and environment expectations needed to operate the system: cycle operations, chain deployment syncs, identity sync troubleshooting, payout incident handling, and release health checks. Some of this belongs in docs, but some belongs in the operator UI itself. The goal is to make FundLoop operable by a small team without hidden tribal knowledge. This is a prerequisite for calling the product truly out of mothballs.
 

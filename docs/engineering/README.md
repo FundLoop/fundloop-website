@@ -23,6 +23,7 @@ Current high-signal docs:
 - [Monthly Cycle Domain Model](./monthly-cycles.md)
 - [MCP Server](./mcp.md)
 - [Navigation and Shell Architecture](./navigation-shell.md)
+- [Operations Runbook](./operations-runbook.md)
 - [Reporting Publication](./reporting.md)
 - [Route Inventory](./route-inventory.md)
 - [Supabase Storage Artifacts](./storage-artifacts.md)

@@ -154,6 +154,7 @@ Session 21 added the first-class monthly cycle operator surface.
 - Session 33 added the founder monthly contribution workflow under `/founder/projects/[slug]/contributions` while keeping actual payment writes on the existing Edge Function-backed operations page.
 - Session 37 added `/admin/cycles/observability` as the monthly-pipeline event drill-down. It complements payment-flow observability and is the operator-facing source future MCP tools should read for cycle-stage attempts, warnings, and failures.
 - Session 34 added the founder attribution-data workflow under `/founder/projects/[slug]/attribution` while keeping dataset upload writes on the existing project zkAS surface.
+- Session 44 added `/admin/operations` as the in-product operator runbook that links release, cycle, identity, payment/payout, and artifact checklists to the relevant admin surfaces and engineering docs.
 
 ## Canonical Entry Routes
 

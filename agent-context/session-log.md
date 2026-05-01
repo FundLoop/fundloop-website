@@ -1,3 +1,35 @@
+### session v121: Add the operator operations runbook
+- timestamp: 2026-05-01T09:09:31Z
+- agent: **Codex (GPT-5)**
+- branch: **codex/session-37-40-mcp-observability**
+- head: pending final commit
+
+#### Objective
+Implement Session 44 by turning release health, cycle operations, identity sync, payment/payout incidents, and artifact evidence into explicit operator guidance.
+
+#### Actions Taken
+- Added `lib/operations/runbook.ts` as the structured source for operations domains, checks, escalation rules, live admin actions, and engineering references.
+- Added `/[locale]/admin/operations` as an authenticated internal-operator runbook page.
+- Linked the operations runbook from the admin dashboard.
+- Added `docs/engineering/operations-runbook.md` and indexed it from the engineering docs README.
+- Updated route inventory and navigation-shell docs to record the new operator route.
+- Added focused unit coverage for the runbook data contract.
+- Updated backlog metadata for Session 44.
+
+#### Tests and Validation Notes
+- `pnpm test tests/operations-runbook.test.ts` passed.
+- `pnpm typecheck` passed.
+- `pnpm lint` passed.
+
+#### Reflections
+- The app now has a first-class place for operators to answer “what should I check next?” without digging through chat history or tribal memory.
+- The runbook intentionally points to existing operator surfaces rather than creating new mutation paths.
+
+#### Suggested Next Steps
+- Session 45 should do the final UX polish and conversion pass across user and founder journeys, especially copy, empty states, visual hierarchy, and multilingual polish.
+
+---
+
 ### session v120: Standardize Supabase Storage artifact contracts
 - timestamp: 2026-05-01T09:05:07Z
 - agent: **Codex (GPT-5)**
