@@ -152,6 +152,7 @@ Session 21 added the first-class monthly cycle operator surface.
 - Session 28 added the backend execution interface. Route work should keep operator pages FundLoop-centric and leave rail-specific EVM/Solana/fiat behavior behind `lib/execution/` adapters.
 - Session 29 moved EVM inbound receipt recording behind that execution interface without changing the founder payment route.
 - Session 33 added the founder monthly contribution workflow under `/founder/projects/[slug]/contributions` while keeping actual payment writes on the existing Edge Function-backed operations page.
+- Session 37 added `/admin/cycles/observability` as the monthly-pipeline event drill-down. It complements payment-flow observability and is the operator-facing source future MCP tools should read for cycle-stage attempts, warnings, and failures.
 - Session 34 added the founder attribution-data workflow under `/founder/projects/[slug]/attribution` while keeping dataset upload writes on the existing project zkAS surface.
 
 ## Canonical Entry Routes

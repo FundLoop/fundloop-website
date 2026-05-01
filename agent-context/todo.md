@@ -410,12 +410,12 @@ Create the reporting layer that publishes the results of each monthly cycle in r
 
 ## Session 37: Extend observability from payment flows to the whole monthly pipeline
 
-- Status: Not started
-- Timestamp started: TBD
-- Timestamp completed: TBD
-- Feature branch: TBD
-- Head: TBD
-- Session-log reference(s): TBD
+- Status: Complete
+- Timestamp started: 2026-05-01T08:04:23Z
+- Timestamp completed: 2026-05-01T08:06:35Z
+- Feature branch: codex/session-37-40-mcp-observability
+- Head: pending final commit
+- Session-log reference(s): session v114
 
 The repo already has payment-flow observability. Expand that into a broader operational telemetry layer for cycle lock, prep, calculation packaging, verification, payout creation, payout execution, and publication failures. This session should keep the same internal DB-backed philosophy while broadening coverage to the monthly engine. The result should be that operators can inspect a full cycle end to end, not just wallet and payment events. This is important before adding more automation and agent-driven workflows.
 

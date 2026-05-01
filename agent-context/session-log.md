@@ -1,3 +1,33 @@
+### session v114: Extend monthly pipeline observability
+- timestamp: 2026-05-01T08:06:35Z
+- agent: **Codex (GPT-5)**
+- branch: **codex/session-37-40-mcp-observability**
+- head: pending final commit
+
+#### Objective
+Implement Session 37 by broadening monthly-cycle observability from lock-specific audit rows into an operator-facing event stream for the full monthly pipeline.
+
+#### Actions Taken
+- Added a forward migration that expands accepted `monthly_cycle_events.event_type` values for prep, payout execution, and reporting publication stages and adds event lookup indexes.
+- Added `lib/observability/monthly-cycle-events.ts` with stage inference, summary building, filtered event loading, and attempt drill-down read models.
+- Added `/admin/cycles/observability` for internal operators to inspect monthly cycle attempts, warnings, failures, stage summaries, and per-attempt event history.
+- Linked the cycle observability page from the monthly cycles dashboard.
+- Updated monthly-cycle, Edge Function, navigation, route-inventory, and backlog docs to record the canonical event stream.
+
+#### Tests and Validation Notes
+- `pnpm test tests/monthly-cycle-observability.test.ts tests/monthly-cycles.test.ts` passed.
+- `pnpm typecheck` passed.
+- `pnpm lint` passed.
+
+#### Reflections
+- This keeps monthly observability in the existing database-backed operating model instead of inventing a separate MCP/protocol log.
+- Payment-specific wallet telemetry remains in `payment_flow_events`; cycle-stage workflow telemetry now has its own operator drill-down.
+
+#### Suggested Next Steps
+- Session 38 should build the first MCP server skeleton and read from the same app/Edge Function contracts rather than bypassing these observability boundaries.
+
+---
+
 ### session v113: Address PR 38 automated review feedback
 - timestamp: 2026-05-01T00:33:08Z
 - agent: **Codex (GPT-5)**
