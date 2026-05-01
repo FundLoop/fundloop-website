@@ -39,4 +39,16 @@ Session 38 registers:
 - `fundloop.health`: returns service and actor context.
 - `fundloop.edge_command.invoke`: low-level allowlisted Edge Function invocation for local development and early integration tests.
 
-Sessions 39 and 40 should add first-class domain tools for founder, project-member, and operator workflows so agents do not need to use the low-level invoker directly.
+## Founder Tools
+
+Session 39 added the first explicit founder tools:
+
+- `founder.projects.list`
+- `founder.project.cycle_status`
+- `founder.project.crypto_route.create`
+- `founder.project.crypto_route.update`
+- `founder.project.onchain_receipt.record`
+
+Founder reads go through a `FounderWorkflowReader` boundary. The default implementation uses authenticated Supabase REST reads with the same bearer token as the agent. Founder writes call the existing typed Edge Function command names for route management and onchain receipt recording.
+
+Sessions 40 should add project-member and operator workflows so agents do not need to use the low-level invoker directly.

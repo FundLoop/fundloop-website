@@ -1,3 +1,34 @@
+### session v116: Add founder MCP workflow tools
+- timestamp: 2026-05-01T08:13:16Z
+- agent: **Codex (GPT-5)**
+- branch: **codex/session-37-40-mcp-observability**
+- head: pending final commit
+
+#### Objective
+Implement Session 39 by adding the first founder-facing MCP workflows without bypassing web-app backend contracts.
+
+#### Actions Taken
+- Added a founder workflow reader boundary and a Supabase REST-backed default reader for managed project and project cycle status reads.
+- Added explicit MCP tools for listing managed projects and reading a founder project's monthly cycle, payment, and route status.
+- Added explicit MCP tools for project crypto route create/update and onchain receipt recording, all routed through existing Edge Function command names.
+- Wired founder tools into the default MCP server registry.
+- Added focused tests for founder tool registration, reader-backed status reads, Edge Function write routing, and missing-reader error behavior.
+- Updated MCP, Edge Function, target architecture, and backlog docs.
+
+#### Tests and Validation Notes
+- `pnpm test tests/mcp-server.test.ts tests/mcp-founder-tools.test.ts` passed.
+- `pnpm typecheck` passed.
+- `pnpm lint` passed.
+
+#### Reflections
+- Founder MCP writes now reuse the same project payment command boundary as the web UI, which keeps the protocol surface from becoming a privileged shortcut.
+- The reader boundary gives us a clean seam for Session 41's future read-model migration to Edge Functions.
+
+#### Suggested Next Steps
+- Session 40 should add project-member and operator-safe MCP workflows, especially cycle status, reporting access, reconciliation visibility, and observability lookup.
+
+---
+
 ### session v115: Build the first MCP server skeleton
 - timestamp: 2026-05-01T08:09:51Z
 - agent: **Codex (GPT-5)**

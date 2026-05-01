@@ -423,6 +423,8 @@ The MCP server should not bypass business rules. It should sit above the same Ed
 
 Session 38 introduced the first `packages/mcp-server` skeleton with auth context, tool registration, a stdio JSON-RPC entrypoint, and an allowlisted Edge Function command adapter. Later MCP sessions should add explicit domain tools rather than encouraging generic backend invocation.
 
+Session 39 added the first founder MCP tools for managed project discovery, project cycle status reads, payment-route creation/update, and onchain receipt recording. The write tools reuse the existing Edge Function command names used by the web app.
+
 ## 10. Frontend Experience Direction
 
 The target frontend should be:

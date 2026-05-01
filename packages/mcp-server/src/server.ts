@@ -1,12 +1,15 @@
 #!/usr/bin/env node
 import { createMcpAuthContext } from "./auth.ts"
 import { createSupabaseEdgeCommandClient, type EdgeCommandClient } from "./edge-client.ts"
+import { createSupabaseFounderWorkflowReader, type FounderWorkflowReader } from "./founder-reader.ts"
+import { registerFounderMcpTools } from "./founder-tools.ts"
 import { createBaseMcpToolRegistry, type McpToolRegistry } from "./tools.ts"
 import { isJsonRpcRequest, type JsonRpcResponse } from "./protocol.ts"
 
 export type McpServerContext = {
   auth: ReturnType<typeof createMcpAuthContext>
   edge: EdgeCommandClient
+  founderReader?: FounderWorkflowReader
   registry: McpToolRegistry
 }
 
@@ -53,6 +56,7 @@ export async function handleMcpRequest(
     const result = await context.registry.call(params.name, params.arguments ?? {}, {
       auth: context.auth,
       edge: context.edge,
+      founderReader: context.founderReader,
     })
     return response(id, result)
   }
@@ -65,15 +69,19 @@ export async function handleMcpRequest(
 }
 
 function createDefaultServerContext(): McpServerContext {
+  const registry = createBaseMcpToolRegistry({
+    allowedFunctionNames: (process.env.FUNDLOOP_MCP_ALLOWED_EDGE_FUNCTIONS ?? "")
+      .split(",")
+      .map((value) => value.trim())
+      .filter(Boolean),
+  })
+  registerFounderMcpTools(registry)
+
   return {
     auth: createMcpAuthContext(),
     edge: createSupabaseEdgeCommandClient(),
-    registry: createBaseMcpToolRegistry({
-      allowedFunctionNames: (process.env.FUNDLOOP_MCP_ALLOWED_EDGE_FUNCTIONS ?? "")
-        .split(",")
-        .map((value) => value.trim())
-        .filter(Boolean),
-    }),
+    founderReader: createSupabaseFounderWorkflowReader(),
+    registry,
   }
 }
 

@@ -432,12 +432,12 @@ Create the MCP server foundation with authentication strategy, tool registration
 
 ## Session 39: Add founder MCP workflows
 
-- Status: Not started
-- Timestamp started: TBD
-- Timestamp completed: TBD
-- Feature branch: TBD
-- Head: TBD
-- Session-log reference(s): TBD
+- Status: Complete
+- Timestamp started: 2026-05-01T08:09:51Z
+- Timestamp completed: 2026-05-01T08:13:16Z
+- Feature branch: codex/session-37-40-mcp-observability
+- Head: pending final commit
+- Session-log reference(s): session v116
 
 Expose the first founder-facing protocol operations through the MCP server. This should include reading project obligation state, route state, monthly cycle status, and creating or updating the operational records founders actually need to manage their project. Keep the toolset intentionally small but real. The goal is to prove that an agent can participate meaningfully in FundLoop’s project workflows without depending on the UI. This session is central to the “agents are first-class users” principle in the backgrounder.
 
