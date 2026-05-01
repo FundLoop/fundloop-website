@@ -399,12 +399,12 @@ Turn the user side into a real money-management experience. Add views for pendin
 
 ## Session 36: Build reporting publication for users, founders, and operators
 
-- Status: Not started
-- Timestamp started: TBD
-- Timestamp completed: TBD
-- Feature branch: TBD
-- Head: TBD
-- Session-log reference(s): TBD
+- Status: Complete
+- Timestamp started: 2026-05-01T00:01:07Z
+- Timestamp completed: 2026-05-01T00:11:55Z
+- Feature branch: codex/supabase-deno-import-repair
+- Head: pending final commit
+- Session-log reference(s): session v112
 
 Create the reporting layer that publishes the results of each monthly cycle in role-appropriate forms. Users need payout explanations, founders need contribution and growth reporting, and operators need complete audit and exception views. This session should use Supabase Storage for generated artifacts and create stable read models for web and agents. The goal is not decorative analytics. It is transparent reporting that explains the loop and proves the system is working.
 

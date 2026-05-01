@@ -360,6 +360,102 @@ export type Database = {
           },
         ]
       }
+      monthly_cycle_reports: {
+        Row: {
+          artifact_bucket: string
+          artifact_hash: string | null
+          artifact_mime_type: string | null
+          artifact_path: string | null
+          audience: Database["public"]["Enums"]["monthly_cycle_report_audience"]
+          created_at: string
+          created_by_user_id: string | null
+          id: number
+          monthly_cycle_id: number
+          payload: Json
+          published_at: string
+          subject_project_id: number | null
+          subject_user_id: string | null
+          summary: string
+          title: string
+          updated_at: string
+          updated_by_user_id: string | null
+        }
+        Insert: {
+          artifact_bucket?: string
+          artifact_hash?: string | null
+          artifact_mime_type?: string | null
+          artifact_path?: string | null
+          audience: Database["public"]["Enums"]["monthly_cycle_report_audience"]
+          created_at?: string
+          created_by_user_id?: string | null
+          id?: number
+          monthly_cycle_id: number
+          payload?: Json
+          published_at?: string
+          subject_project_id?: number | null
+          subject_user_id?: string | null
+          summary?: string
+          title: string
+          updated_at?: string
+          updated_by_user_id?: string | null
+        }
+        Update: {
+          artifact_bucket?: string
+          artifact_hash?: string | null
+          artifact_mime_type?: string | null
+          artifact_path?: string | null
+          audience?: Database["public"]["Enums"]["monthly_cycle_report_audience"]
+          created_at?: string
+          created_by_user_id?: string | null
+          id?: number
+          monthly_cycle_id?: number
+          payload?: Json
+          published_at?: string
+          subject_project_id?: number | null
+          subject_user_id?: string | null
+          summary?: string
+          title?: string
+          updated_at?: string
+          updated_by_user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "monthly_cycle_reports_created_by_user_id_fkey"
+            columns: ["created_by_user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "monthly_cycle_reports_monthly_cycle_id_fkey"
+            columns: ["monthly_cycle_id"]
+            isOneToOne: false
+            referencedRelation: "monthly_cycles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "monthly_cycle_reports_subject_project_id_fkey"
+            columns: ["subject_project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "monthly_cycle_reports_subject_user_id_fkey"
+            columns: ["subject_user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "monthly_cycle_reports_updated_by_user_id_fkey"
+            columns: ["updated_by_user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["user_id"]
+          },
+        ]
+      }
       monthly_cycles: {
         Row: {
           approval_started_at: string | null
@@ -3799,6 +3895,7 @@ export type Database = {
     }
     Enums: {
       cubid_identity_status: "unlinked" | "linked" | "verified"
+      monthly_cycle_report_audience: "public" | "user" | "founder" | "operator"
       monthly_cycle_status:
         | "open"
         | "locked"
@@ -3989,6 +4086,7 @@ export const Constants = {
   public: {
     Enums: {
       cubid_identity_status: ["unlinked", "linked", "verified"],
+      monthly_cycle_report_audience: ["public", "user", "founder", "operator"],
       monthly_cycle_status: [
         "open",
         "locked",

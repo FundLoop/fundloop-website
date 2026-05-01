@@ -2,6 +2,7 @@ import type { Metadata } from "next"
 import { getTranslations } from "next-intl/server"
 import { ArrowRight } from "lucide-react"
 import { Link } from "@/i18n/navigation"
+import { loadPublicReportingOverview } from "@/lib/reporting/monthly-cycle-reports"
 import { Button } from "@/components/ui/button"
 import {
   MarketingPage,
@@ -42,6 +43,7 @@ export default async function ReportsPage({ params }: PageProps) {
   const t = await getTranslations({ locale, namespace: "reportsPage" })
   const todayItems = t.raw("today.items") as ReportCard[]
   const futureSteps = t.raw("future.steps") as ReportStep[]
+  const publishedReports = await loadPublicReportingOverview()
 
   return (
     <MarketingPage>
@@ -80,6 +82,33 @@ export default async function ReportsPage({ params }: PageProps) {
               </Reveal>
             ))}
           </div>
+        </div>
+      </MarketingSection>
+
+      <MarketingSection>
+        <Reveal>
+          <SectionEyebrow>{t("published.eyebrow")}</SectionEyebrow>
+          <SectionTitle className="mt-4 max-w-4xl text-5xl sm:text-6xl">{t("published.title")}</SectionTitle>
+          <SectionBody className="mt-5 max-w-3xl">{t("published.body")}</SectionBody>
+        </Reveal>
+        <div className="mt-10 grid gap-5 lg:grid-cols-3">
+          {publishedReports.reports.length > 0 ? (
+            publishedReports.reports.slice(0, 3).map((report, index) => (
+              <Reveal key={report.id ?? report.cycleId} delay={index * 80}>
+                <div className="h-full rounded-[1.5rem] border border-[color:var(--marketing-line)] bg-white/45 p-6 dark:bg-white/[0.03]">
+                  <p className="text-[0.68rem] font-semibold uppercase tracking-[0.24em] text-[var(--marketing-muted)]">{report.cycleKey}</p>
+                  <h2 className="mt-4 text-2xl font-semibold tracking-[-0.04em]">{report.title}</h2>
+                  <p className="mt-3 text-sm leading-7 text-[var(--marketing-muted-strong)]">{report.summary}</p>
+                </div>
+              </Reveal>
+            ))
+          ) : (
+            <Reveal>
+              <div className="rounded-[1.5rem] border border-dashed border-[color:var(--marketing-line-strong)] p-6 text-sm leading-7 text-[var(--marketing-muted-strong)] lg:col-span-3">
+                {t("published.empty")}
+              </div>
+            </Reveal>
+          )}
         </div>
       </MarketingSection>
 

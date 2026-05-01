@@ -183,6 +183,7 @@ export const enMessages = {
       workspace: {
         overview: "Overview",
         earnings: "Earnings",
+        reporting: "Reporting",
         account: "Account",
       },
       founder: {
@@ -638,6 +639,93 @@ export const enMessages = {
     description:
       "FundLoop now separates CUBID-managed identity from local profile preferences. Use this account hub to see that split clearly, refresh synced identity data, and manage the product-specific settings that still belong here.",
   },
+  workspaceReporting: {
+    eyebrow: "User reporting",
+    title: "Monthly explanations for your results",
+    body:
+      "Reporting turns published results into durable explanations. User reports can point to stored artifacts when they exist, while unpublished report rows still show as pending explanations tied to your monthly results.",
+    artifact: "Artifact",
+    warnings: {
+      title: "Some reporting data is temporarily unavailable.",
+      body: "The page is showing safe partial data. Try refreshing later if report cards look incomplete.",
+    },
+    stats: {
+      results: "Published results",
+      allocation: "Total allocation",
+      reports: "Report artifacts",
+    },
+    empty: {
+      title: "No user reports yet",
+      body: "When monthly reporting artifacts are published for your account, they will appear here with the cycle context.",
+      earningsCta: "Open earnings",
+      projectsCta: "Find projects",
+    },
+  },
+  founderReporting: {
+    eyebrow: "Founder reporting",
+    title: "{project} reporting",
+    body:
+      "Founder reports explain what a project contributed, how many users were included, and how attribution mapped into the monthly payout story.",
+    actions: {
+      attribution: "Attribution data",
+      contributions: "Contributions",
+    },
+    warnings: {
+      title: "Some founder reporting data is temporarily unavailable",
+      body: "The page is showing safe partial data. Try refreshing later if summaries look incomplete.",
+    },
+    stats: {
+      reports: "Reports",
+      users: "Published users",
+      payout: "Attributed payout",
+    },
+    reports: {
+      title: "Published report artifacts",
+      description: "Stored project reports appear here when generated for a monthly cycle.",
+      empty: "No founder report artifacts have been published for this project yet.",
+    },
+    summaries: {
+      title: "Monthly project summaries",
+      description: "These rows come from published zkAS project summaries and remain visible before formal report artifacts exist.",
+      empty: "No monthly project summaries are available yet.",
+    },
+    table: {
+      cycle: "Cycle",
+      users: "Users",
+      contributed: "Contributed",
+      payout: "Payout",
+    },
+  },
+  adminCycleReporting: {
+    denied: {
+      title: "Access denied",
+    },
+    eyebrow: "Reporting publication",
+    title: "{cycle} reports",
+    body:
+      "Operator reporting shows which role-specific reports and storage artifacts exist for the cycle, plus the result coverage that should be explained before publication is considered complete.",
+    actions: {
+      payouts: "Payout work",
+      verification: "Verification",
+    },
+    stats: {
+      users: "User results",
+      projects: "Project summaries",
+      artifacts: "Artifacts",
+      allocation: "Published allocation",
+    },
+    canonical: {
+      title: "Canonical reports",
+      description: "Public and operator reports are the cycle-level artifacts that explain the month to readers and auditors.",
+      empty: "No public or operator report artifact exists for this cycle yet.",
+    },
+    coverage: {
+      title: "Role coverage",
+      description: "Counts for user- and founder-specific report rows linked to this cycle.",
+      userReports: "User reports",
+      founderReports: "Founder reports",
+    },
+  },
   founderWorkspace: {
     eyebrow: "Founder workspace",
     title: "Your project operating room",
@@ -736,6 +824,7 @@ export const enMessages = {
       payments: "Open contribution operations",
       contributions: "Open monthly workflow",
       attribution: "Open attribution workflow",
+      reporting: "Open reporting",
       zkas: "Open project zkAS",
     },
     missingSlug: "Publish or repair the project slug before deeper founder routes can be linked.",
@@ -800,6 +889,7 @@ export const enMessages = {
       payments: "Contribution operations",
       contributions: "Monthly workflow",
       attribution: "Attribution workflow",
+      reporting: "Reporting",
       zkas: "Project zkAS",
       allProjects: "All founder projects",
     },
@@ -1612,6 +1702,13 @@ export const enMessages = {
           body: "How the network explains a given month without leaking sensitive operator-only detail or pretending incomplete inputs are final.",
         },
       ],
+    },
+    published: {
+      eyebrow: "Published reports",
+      title: "Monthly reports will appear here as durable artifacts.",
+      body:
+        "Session 36 adds the reporting publication model. When public monthly report artifacts exist, this page lists the latest ones without inventing placeholder analytics.",
+      empty: "No public monthly report artifacts have been published yet.",
     },
     guardrails: {
       eyebrow: "Public guardrails",

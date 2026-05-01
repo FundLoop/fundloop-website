@@ -158,6 +158,9 @@ export default async function FounderProjectHomePage({ params }: FounderProjectH
         <Link href={`/founder/projects/${project.slug}/attribution`} className="text-sm font-semibold text-[var(--interactive-primary)]">
           {t("links.attribution")}
         </Link>
+        <Link href={`/founder/projects/${project.slug}/reporting`} className="text-sm font-semibold text-[var(--interactive-primary)]">
+          {t("links.reporting")}
+        </Link>
         <Link href="/founder/projects" className="text-sm font-semibold text-[var(--interactive-primary)]">
           {t("links.allProjects")}
         </Link>

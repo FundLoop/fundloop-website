@@ -1,3 +1,38 @@
+### session v112: Build monthly reporting publication surfaces
+- timestamp: 2026-05-01T00:11:55Z
+- agent: **Codex (GPT-5)**
+- branch: **codex/supabase-deno-import-repair**
+- head: pending final commit
+
+#### Objective
+Implement Session 36 by introducing a durable reporting publication model and role-specific report views for users, founders, public readers, and operators.
+
+#### Actions Taken
+- Added `monthly_cycle_report_audience`, `monthly_cycle_reports`, and the `monthly-cycle-reports` Supabase Storage bucket contract.
+- Added `lib/reporting/monthly-cycle-reports.ts` with stable read models for public, user, founder/project, and operator cycle reporting views.
+- Added `/workspace/reporting`, `/founder/projects/[slug]/reporting`, and `/admin/cycles/[cycleKey]/reporting`.
+- Updated the public `/reports` page to list published public monthly report artifacts when they exist.
+- Linked reporting from app-shell workspace navigation, founder project surfaces, and admin cycle rows.
+- Updated localized copy, generated Supabase types, reporting docs, navigation docs, monthly-cycle docs, route inventory, backlog metadata, and focused tests.
+
+#### Tests and Validation Notes
+- `pnpm dlx node@22.22.1 /opt/homebrew/bin/pnpm test tests/monthly-cycle-reports.test.ts` passed.
+- `pnpm dlx node@22.22.1 /opt/homebrew/bin/pnpm typecheck` passed.
+- `pnpm dlx node@22.22.1 /opt/homebrew/bin/pnpm lint` passed.
+- `pnpm dlx node@22.22.1 /opt/homebrew/bin/pnpm test` passed.
+- `supabase migration up` initially timed out against local Postgres, then passed on retry once the local stack responded.
+- `pnpm dlx node@22.22.1 /opt/homebrew/bin/pnpm check` passed.
+
+#### Reflections
+- Reporting now has a real database and storage artifact contract, but report generation remains intentionally deferred.
+- The pages read published report metadata and existing zkAS/payout summaries without creating new operator mutation paths.
+
+#### Suggested Next Steps
+- Yeet this stacked branch so the deploy repair and Sessions 30-36 can be reviewed together.
+- Session 37 should expand monthly-pipeline observability across lock, prep, calculation, verification, payout, and publication.
+
+---
+
 ### session v111: Build user earnings and payout workspace
 - timestamp: 2026-04-30T23:53:53Z
 - agent: **Codex (GPT-5)**

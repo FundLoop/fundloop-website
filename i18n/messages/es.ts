@@ -183,6 +183,7 @@ export const esMessages = {
       workspace: {
         overview: "Resumen",
         earnings: "Ganancias",
+        reporting: "Reporting",
         account: "Cuenta",
       },
       founder: {
@@ -631,6 +632,93 @@ export const esMessages = {
     description:
       "Gestiona los datos personales, direcciones de correo y direcciones de wallet que todavía viven localmente en FundLoop mientras llega el modelo de cuenta respaldado por CUBID.",
   },
+  workspaceReporting: {
+    eyebrow: "Reporting de usuario",
+    title: "Explicaciones mensuales de tus resultados",
+    body:
+      "El reporting convierte resultados publicados en explicaciones duraderas. Los reportes de usuario pueden apuntar a artefactos almacenados cuando existen, mientras las filas no publicadas aparecen como explicaciones pendientes.",
+    artifact: "Artefacto",
+    warnings: {
+      title: "Algunos datos de reporting no están disponibles temporalmente.",
+      body: "La página muestra datos parciales seguros. Vuelve a intentar más tarde si las tarjetas parecen incompletas.",
+    },
+    stats: {
+      results: "Resultados publicados",
+      allocation: "Asignación total",
+      reports: "Artefactos de reporte",
+    },
+    empty: {
+      title: "Todavía no hay reportes de usuario",
+      body: "Cuando se publiquen artefactos mensuales para tu cuenta, aparecerán aquí con el contexto del ciclo.",
+      earningsCta: "Abrir ganancias",
+      projectsCta: "Encontrar proyectos",
+    },
+  },
+  founderReporting: {
+    eyebrow: "Reporting fundador",
+    title: "Reporting de {project}",
+    body:
+      "Los reportes de fundador explican qué contribuyó un proyecto, cuántos usuarios fueron incluidos y cómo la atribución entró en la historia mensual de pagos.",
+    actions: {
+      attribution: "Datos de atribución",
+      contributions: "Contribuciones",
+    },
+    warnings: {
+      title: "Algunos datos de reporting fundador no están disponibles temporalmente",
+      body: "La página muestra datos parciales seguros. Vuelve a intentar más tarde si los resúmenes parecen incompletos.",
+    },
+    stats: {
+      reports: "Reportes",
+      users: "Usuarios publicados",
+      payout: "Pago atribuido",
+    },
+    reports: {
+      title: "Artefactos de reporte publicados",
+      description: "Los reportes de proyecto almacenados aparecen aquí cuando se generan para un ciclo mensual.",
+      empty: "Todavía no se publicaron artefactos de reporte fundador para este proyecto.",
+    },
+    summaries: {
+      title: "Resúmenes mensuales del proyecto",
+      description: "Estas filas vienen de resúmenes zkAS publicados y siguen visibles antes de los artefactos formales.",
+      empty: "Todavía no hay resúmenes mensuales del proyecto.",
+    },
+    table: {
+      cycle: "Ciclo",
+      users: "Usuarios",
+      contributed: "Contribuido",
+      payout: "Pago",
+    },
+  },
+  adminCycleReporting: {
+    denied: {
+      title: "Acceso denegado",
+    },
+    eyebrow: "Publicación de reporting",
+    title: "Reportes de {cycle}",
+    body:
+      "El reporting operador muestra qué reportes y artefactos existen para el ciclo, más la cobertura de resultados que debe explicarse antes de considerar completa la publicación.",
+    actions: {
+      payouts: "Pagos",
+      verification: "Verificación",
+    },
+    stats: {
+      users: "Resultados de usuario",
+      projects: "Resúmenes de proyecto",
+      artifacts: "Artefactos",
+      allocation: "Asignación publicada",
+    },
+    canonical: {
+      title: "Reportes canónicos",
+      description: "Los reportes públicos y de operador son los artefactos de ciclo que explican el mes a lectores y auditores.",
+      empty: "Todavía no existe artefacto de reporte público u operador para este ciclo.",
+    },
+    coverage: {
+      title: "Cobertura por rol",
+      description: "Conteos de reportes de usuario y fundador vinculados a este ciclo.",
+      userReports: "Reportes de usuario",
+      founderReports: "Reportes fundador",
+    },
+  },
   founderWorkspace: {
     eyebrow: "Espacio fundador",
     title: "La sala de operaciones de tus proyectos",
@@ -729,6 +817,7 @@ export const esMessages = {
       payments: "Abrir operaciones de contribución",
       contributions: "Abrir flujo mensual",
       attribution: "Abrir flujo de atribución",
+      reporting: "Abrir reporting",
       zkas: "Abrir zkAS del proyecto",
     },
     missingSlug: "Publica o corrige el slug del proyecto antes de enlazar rutas de fundador más profundas.",
@@ -793,6 +882,7 @@ export const esMessages = {
       payments: "Operaciones de contribución",
       contributions: "Flujo mensual",
       attribution: "Flujo de atribución",
+      reporting: "Reporting",
       zkas: "zkAS del proyecto",
       allProjects: "Todos los proyectos fundador",
     },
@@ -1481,6 +1571,13 @@ export const esMessages = {
       title: "El reporte público debe ser honesto, verificable y estar ligado a operaciones mensuales reales.",
       body:
         "Esta página no es un panel analítico falso. Es la explicación pública de lo que FundLoop planea publicar a medida que se complete el pipeline mensual de contribución, verificación y publicación.",
+    },
+    published: {
+      eyebrow: "Reportes publicados",
+      title: "Los reportes mensuales aparecerán aquí como artefactos duraderos.",
+      body:
+        "La sesión 36 agrega el modelo de publicación de reporting. Cuando existan artefactos mensuales públicos, esta página listará los más recientes sin inventar analíticas falsas.",
+      empty: "Todavía no se publicó ningún artefacto mensual público.",
     },
     cta: {
       documentation: "Leer documentación",

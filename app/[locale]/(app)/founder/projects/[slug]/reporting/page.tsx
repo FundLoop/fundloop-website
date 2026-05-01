@@ -1,0 +1,139 @@
+import { notFound, redirect } from "next/navigation"
+import { getTranslations } from "next-intl/server"
+import { BarChart3, FileText, UsersRound } from "lucide-react"
+import { Link } from "@/i18n/navigation"
+import { getNavigationContext } from "@/lib/navigation-context"
+import { loadFounderProjectReportingWorkspace } from "@/lib/reporting/monthly-cycle-reports"
+import { Badge } from "@/components/ui/badge"
+import { Button } from "@/components/ui/button"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
+
+type PageProps = {
+  params: Promise<{ locale: string; slug: string }>
+}
+
+function formatCurrency(locale: string, value: number) {
+  return new Intl.NumberFormat(locale, { style: "currency", currency: "USD", maximumFractionDigits: 0 }).format(value)
+}
+
+export default async function FounderProjectReportingPage({ params }: PageProps) {
+  const { locale, slug } = await params
+  const navigationContext = await getNavigationContext()
+  const t = await getTranslations("founderReporting")
+
+  if (!navigationContext.isAuthenticated) {
+    redirect(`/${locale}/join`)
+  }
+
+  const managedProject = navigationContext.managedProjects.find((project) => project.slug === slug)
+  if (!managedProject) {
+    notFound()
+  }
+
+  const reporting = await loadFounderProjectReportingWorkspace(managedProject.id, slug)
+  if (!reporting) {
+    notFound()
+  }
+
+  const latestSummary = reporting.summaries[0] ?? null
+
+  return (
+    <div className="space-y-8">
+      <section className="rounded-[calc(var(--radius-2xl)+0.25rem)] border border-[color:var(--surface-border)] bg-[var(--surface-panel)] p-8 shadow-[var(--surface-shadow-panel)]">
+        <div className="flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
+          <div className="max-w-3xl space-y-4">
+            <p className="text-[0.72rem] font-semibold uppercase tracking-[0.28em] text-[var(--interactive-primary)]">{t("eyebrow")}</p>
+            <h1 className="text-4xl font-semibold tracking-[var(--tracking-display)] text-[var(--text-strong)]">
+              {t("title", { project: reporting.project.name })}
+            </h1>
+            <p className="text-base leading-7 text-[var(--text-muted)]">{t("body")}</p>
+          </div>
+          <div className="flex flex-wrap gap-3">
+            <Button asChild variant="outline"><Link href={`/founder/projects/${slug}/attribution`}>{t("actions.attribution")}</Link></Button>
+            <Button asChild><Link href={`/founder/projects/${slug}/contributions`}>{t("actions.contributions")}</Link></Button>
+          </div>
+        </div>
+      </section>
+
+      {reporting.warnings.length > 0 ? (
+        <section className="rounded-3xl border border-amber-300/70 bg-amber-50/80 p-5 text-sm leading-6 text-amber-950 dark:border-amber-400/30 dark:bg-amber-400/10 dark:text-amber-100">
+          <p className="font-semibold">{t("warnings.title")}</p>
+          <p>{t("warnings.body")}</p>
+        </section>
+      ) : null}
+
+      <section className="grid gap-5 md:grid-cols-3">
+        <Card>
+          <CardHeader className="pb-2"><CardTitle className="flex items-center gap-2 text-sm"><FileText className="h-4 w-4" />{t("stats.reports")}</CardTitle></CardHeader>
+          <CardContent className="text-3xl font-semibold">{reporting.reports.length}</CardContent>
+        </Card>
+        <Card>
+          <CardHeader className="pb-2"><CardTitle className="flex items-center gap-2 text-sm"><UsersRound className="h-4 w-4" />{t("stats.users")}</CardTitle></CardHeader>
+          <CardContent className="text-3xl font-semibold">{latestSummary?.publishedUserCount ?? 0}</CardContent>
+        </Card>
+        <Card>
+          <CardHeader className="pb-2"><CardTitle className="flex items-center gap-2 text-sm"><BarChart3 className="h-4 w-4" />{t("stats.payout")}</CardTitle></CardHeader>
+          <CardContent className="text-3xl font-semibold">{formatCurrency(locale, latestSummary?.attributedPayoutUsd ?? 0)}</CardContent>
+        </Card>
+      </section>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>{t("reports.title")}</CardTitle>
+          <CardDescription>{t("reports.description")}</CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          {reporting.reports.length === 0 ? (
+            <p className="rounded-2xl border border-dashed border-[color:var(--surface-border-strong)] p-5 text-sm text-[var(--text-muted)]">{t("reports.empty")}</p>
+          ) : (
+            reporting.reports.map((report) => (
+              <div key={report.id ?? report.cycleId} className="rounded-2xl border border-[color:var(--surface-border)] bg-[var(--surface-panel)] p-4">
+                <div className="flex flex-wrap items-center justify-between gap-3">
+                  <div>
+                    <p className="font-semibold text-[var(--text-strong)]">{report.title}</p>
+                    <p className="text-sm text-[var(--text-muted)]">{report.summary}</p>
+                  </div>
+                  <Badge variant="outline">{report.cycleKey}</Badge>
+                </div>
+              </div>
+            ))
+          )}
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>{t("summaries.title")}</CardTitle>
+          <CardDescription>{t("summaries.description")}</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>{t("table.cycle")}</TableHead>
+                <TableHead>{t("table.users")}</TableHead>
+                <TableHead>{t("table.contributed")}</TableHead>
+                <TableHead>{t("table.payout")}</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {reporting.summaries.length === 0 ? (
+                <TableRow><TableCell colSpan={4} className="py-8 text-center text-[var(--text-muted)]">{t("summaries.empty")}</TableCell></TableRow>
+              ) : (
+                reporting.summaries.map((summary) => (
+                  <TableRow key={summary.cycleKey}>
+                    <TableCell>{summary.cycleKey}</TableCell>
+                    <TableCell>{summary.publishedUserCount} / {summary.activeUserCount}</TableCell>
+                    <TableCell>{formatCurrency(locale, summary.contributedAmountUsd)}</TableCell>
+                    <TableCell>{formatCurrency(locale, summary.attributedPayoutUsd)}</TableCell>
+                  </TableRow>
+                ))
+              )}
+            </TableBody>
+          </Table>
+        </CardContent>
+      </Card>
+    </div>
+  )
+}

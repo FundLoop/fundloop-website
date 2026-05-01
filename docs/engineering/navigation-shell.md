@@ -117,7 +117,8 @@ Session 17 turned `/[locale]/workspace` into the real regular-user workspace hom
 
 - `/[locale]/workspace` now summarizes identity readiness, hybrid profile completion, participation footprint, project discovery, and current published zkAS result visibility.
 - `/[locale]/workspace/earnings` is the Session 35 user money workspace. It connects published monthly results, payout intents, payout route readiness, batch status, and reconciliation cues into one signed-in surface.
-- The raw personal result history temporarily remains at `/[locale]/settings/zkas` until the later reporting publication session absorbs it into the final reporting model.
+- `/[locale]/workspace/reporting` is the Session 36 user reporting workspace for monthly explanations and stored report artifacts.
+- The raw personal result history temporarily remains at `/[locale]/settings/zkas` as a low-level fallback while reporting artifacts are produced.
 - Workspace data is read server-side and should degrade to safe empty/warning states rather than crashing the signed-in home when one non-critical read fails.
 
 Session 18 turned the founder entry routes into operational workspace homes.
@@ -127,6 +128,7 @@ Session 18 turned the founder entry routes into operational workspace homes.
 - `/[locale]/founder/projects/[slug]` is the first thin per-project founder home and only resolves slugs already present in `getNavigationContext().managedProjects`.
 - `/[locale]/founder/projects/[slug]/contributions` is the founder-facing monthly contribution workflow. It groups existing payment obligations by economic month, shows setup/payment-route/attribution readiness, and links into the current payment and zkAS operation routes.
 - `/[locale]/founder/projects/[slug]/attribution` is the founder-facing contribution-data workflow. It exposes the structured zkAS dataset contract, recent validation/approval state, and links into the current dataset upload/detail routes.
+- `/[locale]/founder/projects/[slug]/reporting` is the founder-facing monthly reporting workspace for project summaries and stored report artifacts.
 - Existing deep operation routes remain in place for now: contribution/payment work stays at `/[locale]/projects/[slug]/payments`, and project zkAS work stays at `/[locale]/projects/[slug]/zkas`.
 - `/[locale]/organizations/[id]` now redirects to `/[locale]/founder/projects` instead of rendering the old mock organization detail surface.
 
@@ -143,6 +145,7 @@ Session 21 added the first-class monthly cycle operator surface.
 - `/[locale]/admin/cycles/[cycleKey]/zkas` is the cycle-anchored zkAS stage view for linked datasets, identity artifacts, runs, and published outputs.
 - `/[locale]/admin/cycles/[cycleKey]/verification` is the result cleanup, verification, and approval workspace for calculated outputs.
 - `/[locale]/admin/cycles/[cycleKey]/payouts` is the outbound payout domain view for turning approved user results into payout intents.
+- `/[locale]/admin/cycles/[cycleKey]/reporting` is the operator reporting publication view for role-specific report coverage and storage artifact metadata.
 - Monthly cycles are the canonical anchor for payment totals, onchain reconciliation, zkAS datasets/runs, and later payout/reporting stages.
 - The app-shell admin subnav now includes Monthly Cycles beside Payments and zkAS.
 - Session 22 added `monthly-cycle-lock`; Session 23 added read-only prep review; Session 25 added `monthly-cycle-calculation-package`; Session 26 added verification and approval commands; Session 27 added `monthly-cycle-payout-intents-create`. Later transition commands should extend the same operator workspace instead of creating separate admin roots.
@@ -157,12 +160,14 @@ Session 08 introduced the first IA-aligned entry routes:
 
 - `/[locale]/workspace`
 - `/[locale]/workspace/earnings`
+- `/[locale]/workspace/reporting`
 - `/[locale]/workspace/account`
 - `/[locale]/founder`
 - `/[locale]/founder/projects`
 - `/[locale]/founder/projects/[slug]`
 - `/[locale]/founder/projects/[slug]/contributions`
 - `/[locale]/founder/projects/[slug]/attribution`
+- `/[locale]/founder/projects/[slug]/reporting`
 - `/[locale]/founder/account`
 - `/[locale]/founders`
 
