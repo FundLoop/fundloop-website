@@ -2,6 +2,7 @@ import { z } from "zod"
 import localManifestJson from "./deployments/local.json" with { type: "json" }
 import previewManifestJson from "./deployments/preview.json" with { type: "json" }
 import productionManifestJson from "./deployments/production.json" with { type: "json" }
+import { isSolanaDepositAddressRoute } from "./route-availability.ts"
 import { SUPPORTED_CHAIN_CONFIGS, SUPPORTED_CHAIN_KEYS, type SupportedChainKey } from "./supported-chains.ts"
 
 export const ZERO_ADDRESS = "0x0000000000000000000000000000000000000000"
@@ -169,10 +170,6 @@ function getManifestOverride(environment: DeploymentEnvironment, env: RuntimeEnv
 
 function normalizeAddress(value: string) {
   return value.trim().toLowerCase()
-}
-
-function isSolanaDepositAddressRoute(input: { networkKey: string; treasuryAddress: string; abiVersion: string }) {
-  return input.networkKey.startsWith("solana") && input.abiVersion.startsWith("solana-") && input.treasuryAddress.trim().length > 0
 }
 
 function isConfiguredReownProjectId(value: string | undefined) {

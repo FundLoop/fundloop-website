@@ -638,6 +638,7 @@ export const esMessages = {
     body:
       "El reporting convierte resultados publicados en explicaciones duraderas. Los reportes de usuario pueden apuntar a artefactos almacenados cuando existen, mientras las filas no publicadas aparecen como explicaciones pendientes.",
     artifact: "Artefacto",
+    publicationPending: "Publicación pendiente",
     warnings: {
       title: "Algunos datos de reporting no están disponibles temporalmente.",
       body: "La página muestra datos parciales seguros. Vuelve a intentar más tarde si las tarjetas parecen incompletas.",

@@ -23,7 +23,17 @@ function formatDate(locale: string, value: string | null) {
   return new Intl.DateTimeFormat(locale, { month: "short", day: "numeric", year: "numeric", timeZone: "UTC" }).format(date)
 }
 
-function ReportCard({ report, locale, artifactLabel }: { report: MonthlyReportCard; locale: string; artifactLabel: string }) {
+function ReportCard({
+  report,
+  locale,
+  artifactLabel,
+  publicationPendingLabel,
+}: {
+  report: MonthlyReportCard
+  locale: string
+  artifactLabel: string
+  publicationPendingLabel: string
+}) {
   return (
     <Card className="bg-[var(--surface-panel)]">
       <CardHeader>
@@ -38,7 +48,7 @@ function ReportCard({ report, locale, artifactLabel }: { report: MonthlyReportCa
       <CardContent className="space-y-4">
         <p className="text-sm leading-6 text-[var(--text-muted)]">{report.summary}</p>
         <div className="flex flex-wrap items-center gap-3 text-xs text-[var(--text-soft)]">
-          <span>{formatDate(locale, report.publishedAt) ?? "Publication pending"}</span>
+          <span>{formatDate(locale, report.publishedAt) ?? publicationPendingLabel}</span>
           {report.artifact?.path ? <span className="font-mono">{artifactLabel}: {report.artifact.path}</span> : null}
         </div>
       </CardContent>
@@ -91,7 +101,15 @@ export default async function WorkspaceReportingPage({ params }: PageProps) {
 
       <section className="grid gap-5">
         {reporting.reports.length > 0 ? (
-          reporting.reports.map((report) => <ReportCard key={`${report.cycleId}-${report.id ?? "placeholder"}`} report={report} locale={locale} artifactLabel={t("artifact")} />)
+          reporting.reports.map((report) => (
+            <ReportCard
+              key={`${report.cycleId}-${report.id ?? "placeholder"}`}
+              report={report}
+              locale={locale}
+              artifactLabel={t("artifact")}
+              publicationPendingLabel={t("publicationPending")}
+            />
+          ))
         ) : (
           <Card>
             <CardHeader>

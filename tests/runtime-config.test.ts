@@ -54,6 +54,21 @@ describe("wallet runtime config", () => {
     expect(availability.reason).toMatch(/No enabled base wallet deployment/)
   })
 
+  it("treats Solana deposit-address routes as available without EVM manifest deployment", () => {
+    const config = buildWalletRuntimeConfig({
+      FUNDLOOP_DEPLOYMENT_ENV: "local",
+    } as unknown as NodeJS.ProcessEnv)
+
+    const availability = getDeploymentAvailabilityForRoute(config, {
+      networkKey: "solana-devnet",
+      contractAddress: "",
+      treasuryAddress: "FundLoopSolanaTreasury111111111111111111111",
+      abiVersion: "solana-usdc-transfer-v1",
+    })
+
+    expect(availability).toEqual({ available: true, reason: null })
+  })
+
   it("reads confirmation depth from the manifest even when the chain is disabled", () => {
     const config = buildWalletRuntimeConfig({
       FUNDLOOP_DEPLOYMENT_ENV: "production",

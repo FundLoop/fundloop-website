@@ -157,10 +157,17 @@ function resultCycleKey(result: PublishedResultRow, cycleById: Map<number, Cycle
   return runById.get(result.run_id)?.month ?? `Run ${result.run_id}`
 }
 
-function latestReconciliationStatus(intentId: number, reconciliationRows: ReconciliationRow[]) {
-  return reconciliationRows
-    .filter((row) => row.payout_intent_id === intentId)
-    .sort((left, right) => new Date(right.created_at).getTime() - new Date(left.created_at).getTime())[0]?.status ?? null
+function buildLatestReconciliationStatusByIntent(reconciliationRows: ReconciliationRow[]) {
+  const latestByIntent = new Map<number, Database["public"]["Enums"]["payout_reconciliation_status"]>()
+  const sortedRows = [...reconciliationRows].sort((left, right) => new Date(right.created_at).getTime() - new Date(left.created_at).getTime())
+
+  for (const row of sortedRows) {
+    if (row.payout_intent_id && !latestByIntent.has(row.payout_intent_id)) {
+      latestByIntent.set(row.payout_intent_id, row.status)
+    }
+  }
+
+  return latestByIntent
 }
 
 function isPendingPayout(status: UserEarningsCycle["payoutStatus"]) {
@@ -198,6 +205,7 @@ export function buildUserEarningsWorkspace({
   const intentByResultId = new Map(payoutIntents.filter((intent) => intent.source_result_id).map((intent) => [intent.source_result_id as number, intent]))
   const batchById = new Map(batches.map((batch) => [batch.id, batch]))
   const batchItemByIntentId = new Map(batchItems.map((item) => [item.payout_intent_id, item]))
+  const latestReconciliationStatusByIntent = buildLatestReconciliationStatusByIntent(reconciliationEvents)
   const mappedRoutes = payoutRoutes.map(mapRoute)
   const defaultRoute = mappedRoutes.find((route) => route.status === "active" && route.isDefault) ?? null
 
@@ -223,7 +231,7 @@ export function buildUserEarningsWorkspace({
         routeLabel: routeLabel(route),
         statusReason: intent?.status_reason ?? null,
         batchStatus: batch?.status ?? null,
-        reconciliationStatus: intent ? latestReconciliationStatus(intent.id, reconciliationEvents) : null,
+        reconciliationStatus: intent ? (latestReconciliationStatusByIntent.get(intent.id) ?? null) : null,
       }
     })
     .sort((left, right) => new Date(right.publishedAt).getTime() - new Date(left.publishedAt).getTime())

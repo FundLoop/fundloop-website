@@ -1,3 +1,36 @@
+### session v113: Address PR 38 automated review feedback
+- timestamp: 2026-05-01T00:33:08Z
+- agent: **Codex (GPT-5)**
+- branch: **codex/supabase-deno-import-repair**
+- head: pending final commit
+
+#### Objective
+Address actionable Copilot and Codex review feedback on PR #38 before moving through the remaining publish gates.
+
+#### Actions Taken
+- Added a forward migration with `monthly_cycle_reports` public and user-self select policies so request-scoped reporting reads are allowed under RLS.
+- Extracted Solana deposit-address route detection into a shared Deno-safe helper used by both runtime config and Edge Function payment operation deps.
+- Replaced per-row reconciliation sorting with a precomputed latest-status map in the user earnings read model.
+- Localized the workspace reporting publication-pending fallback.
+- Added runtime-config coverage for Solana deposit-address availability.
+
+#### Tests and Validation Notes
+- `pnpm dlx node@22.22.1 /opt/homebrew/bin/pnpm test tests/runtime-config.test.ts tests/user-earnings-workspace.test.ts tests/monthly-cycle-reports.test.ts` passed.
+- `pnpm dlx node@22.22.1 /opt/homebrew/bin/pnpm typecheck` passed.
+- `pnpm dlx node@22.22.1 /opt/homebrew/bin/pnpm lint` passed.
+- `deno cache --config supabase/functions/deno.json supabase/functions/project-onchain-payment-submission-record/index.ts` passed.
+- `supabase migration up` passed.
+
+#### Reflections
+- The RLS comment caught a real production-read blocker for authenticated user report reads.
+- The Solana helper extraction is small, but it reduces drift risk across app and Edge Function runtime availability checks.
+
+#### Suggested Next Steps
+- Push this review-fix commit to PR #38, reply to the automated review threads, and wait for CI to return green.
+- Continue the Copilot then Codex review gates until all actionable comments are resolved.
+
+---
+
 ### session v112: Build monthly reporting publication surfaces
 - timestamp: 2026-05-01T00:11:55Z
 - agent: **Codex (GPT-5)**

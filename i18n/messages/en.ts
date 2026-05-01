@@ -645,6 +645,7 @@ export const enMessages = {
     body:
       "Reporting turns published results into durable explanations. User reports can point to stored artifacts when they exist, while unpublished report rows still show as pending explanations tied to your monthly results.",
     artifact: "Artifact",
+    publicationPending: "Publication pending",
     warnings: {
       title: "Some reporting data is temporarily unavailable.",
       body: "The page is showing safe partial data. Try refreshing later if report cards look incomplete.",

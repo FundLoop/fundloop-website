@@ -638,6 +638,7 @@ export const frMessages = {
     body:
       "Le reporting transforme les résultats publiés en explications durables. Les rapports utilisateur peuvent pointer vers des artefacts stockés lorsqu’ils existent, et les lignes non publiées apparaissent comme explications en attente.",
     artifact: "Artefact",
+    publicationPending: "Publication en attente",
     warnings: {
       title: "Certaines données de reporting sont temporairement indisponibles.",
       body: "La page affiche des données partielles sûres. Réessayez plus tard si les cartes semblent incomplètes.",
