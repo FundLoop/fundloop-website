@@ -150,7 +150,7 @@ export default async function ZkasSuperadminPage() {
       <Card>
         <CardHeader>
           <CardTitle>Publication History</CardTitle>
-          <CardDescription>Published runs remain available to users in-app at `/settings/zkas`.</CardDescription>
+          <CardDescription>Published runs remain available to users in-app at `/workspace/reporting`.</CardDescription>
         </CardHeader>
         <CardContent className="space-y-3 text-sm text-slate-600 dark:text-slate-300">
           <p>Superadmin access is currently enforced through the `FUNDLOOP_ZKAS_SUPERADMIN_EMAILS` allowlist.</p>

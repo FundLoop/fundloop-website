@@ -93,8 +93,8 @@ function revalidateZkasPaths(runId: number, projectSlugs: string[] = []) {
   revalidatePath(`/admin/zkas/runs/${runId}`)
   revalidatePath("/admin/superadmin/zkas")
   revalidatePath(`/admin/superadmin/zkas/runs/${runId}`)
-  revalidatePath("/settings")
-  revalidatePath("/settings/zkas")
+  revalidatePath("/workspace")
+  revalidatePath("/workspace/reporting")
 
   for (const slug of projectSlugs) {
     revalidatePath(`/projects/${slug}/zkas`)
@@ -1087,7 +1087,7 @@ export async function publishZkasRun(formData: FormData): Promise<void> {
       run_id: context.run.id,
       month: context.run.month,
       allocation_usd: row.allocation_usd,
-      destination: "/settings/zkas",
+      destination: "/workspace/reporting",
     } satisfies ZkasPublishedResultNotificationPayload,
   }))
 

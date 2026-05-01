@@ -465,12 +465,12 @@ Finish the architectural shift by moving the remaining important web reads away 
 
 ## Session 42: Finish the settings and account IA cleanup
 
-- Status: Not started
-- Timestamp started: TBD
-- Timestamp completed: TBD
-- Feature branch: TBD
-- Head: TBD
-- Session-log reference(s): TBD
+- Status: Complete
+- Timestamp started: 2026-05-01T08:52:00Z
+- Timestamp completed: 2026-05-01T08:57:55Z
+- Feature branch: codex/session-37-40-mcp-observability
+- Head: pending final commit
+- Session-log reference(s): session v119
 
 By this point the major product surfaces should exist. Use this session to remove the remaining awkward settings leftovers, merge duplicated pages, and ensure every account or configuration action lives in the right place. The goal is a simple, clean UX where users and founders do not need to hunt across “settings,” “project,” and “admin” for related capabilities. This session is mostly IA and interaction cleanup, but it will likely involve real route and component changes to eliminate the last structural confusion.
 

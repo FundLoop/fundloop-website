@@ -159,8 +159,8 @@ export function OrganizationMembers({
         description: `You have left ${organizationName}.`,
       })
 
-      // Redirect to home or profile page
-      window.location.href = "/my-profile"
+      // Legacy profile routes now resolve through the workspace IA.
+      window.location.href = "/workspace"
     } catch (error) {
       console.error("Error leaving organization:", error)
       toast({

@@ -1246,7 +1246,7 @@ export const frMessages = {
         {
           label: "Les résultats actuels existent avant le produit paiement complet",
           body:
-            "Aujourd’hui, l’endpoint intermédiaire honnête reste la surface des résultats publiés dans les paramètres. Ce n’est pas encore l’espace gains final, mais cela montre la direction.",
+            "Aujourd’hui, la surface honnête des résultats vit dans l’espace reporting du workspace. Elle reste modeste, mais elle fait maintenant partie du même modèle gains et paiements.",
         },
       ],
     },

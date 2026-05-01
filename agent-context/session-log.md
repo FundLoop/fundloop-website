@@ -1,3 +1,34 @@
+### session v119: Collapse remaining settings result surfaces into workspace IA
+- timestamp: 2026-05-01T08:57:55Z
+- agent: **Codex (GPT-5)**
+- branch: **codex/session-37-40-mcp-observability**
+- head: pending final commit
+
+#### Objective
+Implement Session 42 by removing the remaining settings-centered account/result assumptions now that workspace account, earnings, and reporting surfaces exist.
+
+#### Actions Taken
+- Converted `/settings/zkas` into a locale-preserving redirect to `/workspace/reporting`.
+- Updated earnings, participation, zkAS actions, and admin copy so result/reporting links point at workspace reporting instead of settings.
+- Updated stale account/profile menu links to use `/workspace` and `/workspace/account`.
+- Updated organization-member leave flow to return users to `/workspace` rather than the old profile route.
+- Updated route inventory, navigation, IA docs, translations, and backlog metadata.
+- Added focused redirect coverage for `/settings`, `/settings/account`, and `/settings/zkas`.
+
+#### Tests and Validation Notes
+- `pnpm test tests/settings-route-redirects.test.ts tests/user-earnings-workspace.test.ts tests/public-user-journey.test.ts` passed.
+- `pnpm typecheck` passed after fixing the updated dropdown icon import.
+- `pnpm lint` passed after fixing the updated dropdown icon import.
+
+#### Reflections
+- Settings is now fully subordinate to the workspace IA rather than a competing product destination.
+- The old raw zkAS route remains compatible as a redirect, but no shared surface should promote it as a primary path.
+
+#### Suggested Next Steps
+- Session 43 should audit artifact/media handling and align project assets, reports, zk artifacts, and MCP references around a consistent Supabase Storage model.
+
+---
+
 ### session v118: Move MCP workflow reads behind an Edge Function
 - timestamp: 2026-05-01T08:24:00Z
 - agent: **Codex (GPT-5)**

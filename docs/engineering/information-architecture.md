@@ -138,7 +138,7 @@ Rules:
 | `/my-profile` | `/workspace` and `/workspace/account` | Split mixed profile/dashboard behavior into user home plus account settings. |
 | `/settings` | `/workspace/account` or `/founder/account` | Keep as a supporting surface, not the main product home. |
 | `/settings/account` | `/workspace/account` or `/founder/account` | Survives as a settings leaf under role workspaces. |
-| `/settings/zkas` | `/workspace/reporting` | Personal results belong with reporting and earnings context. |
+| `/settings/zkas` | `/workspace/reporting` | Personal results belong with reporting and earnings context; Session 42 made this redirect-only. |
 | `/projects/[slug]` | `/projects/[slug]` | Keep public detail here; link into founder workspace when the viewer has access. |
 | `/projects/[slug]/payments` | `/founder/projects/[slug]/contributions` | Canonical founder contribution and route-management surface. |
 | `/projects/[slug]/zkas` | `/founder/projects/[slug]/reporting` | Project-side zkAS detail becomes reporting-oriented. |

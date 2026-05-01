@@ -15,7 +15,7 @@ This inventory covers every current `page.tsx` and `route.ts` surface under `app
 ## Cross-Cutting Findings
 
 - `/admin` currently links to missing routes: `/admin/projects`, `/admin/users`, and `/admin/analytics`.
-- `/settings` currently links to missing routes: `/settings/notifications` and `/settings/security`.
+- `/settings` no longer owns product work; Session 42 keeps it redirect-only and moves remaining result links into the workspace.
 - `/my-profile` currently links to missing `/organizations`.
 - `/invitations/[token]` is a legacy invitation redirect, and `/organizations/[id]` is now a founder-workspace redirect instead of a mock organization page.
 - `/about`, `/api`, and `/analytics` are now legacy public entry points and should remain redirects only.
@@ -71,7 +71,7 @@ This inventory covers every current `page.tsx` and `route.ts` surface under `app
 | `/projects/[slug]/zkas/uploads/[id]` | Project admins, operators | Transitional upload-detail leaf. | Session 34 links this from the founder attribution workflow as the current dataset validation/audit detail surface. | merge | Founder workspace attribution/data submission history | 34 |
 | `/settings` | Signed-in users | Redirect-only legacy entry. | Session 08 collapsed the old settings hub into `/workspace/account` to remove dead-end settings navigation. | redirect | `/workspace/account` | 42 |
 | `/settings/account` | Signed-in users | Redirect-only legacy account leaf. | Session 08 redirected the old account route to the new workspace account surface. | redirect | `/workspace/account` | 16, 42 |
-| `/settings/zkas` | Signed-in users | Transitional raw personal zkAS results detail page. | Session 35 moved the user-facing money model to `/workspace/earnings`; this route remains a raw published-result history link until Session 36 reporting publication absorbs it. | merge | User workspace reporting and results | 36 |
+| `/settings/zkas` | Signed-in users | Redirect-only legacy raw result history. | Session 42 collapsed the last settings-owned result surface into `/workspace/reporting`; earnings now links to workspace reporting instead of settings. | redirect | `/workspace/reporting` | 36, 42 |
 
 ## Internal Operator and Admin Surfaces
 

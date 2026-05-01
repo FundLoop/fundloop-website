@@ -179,7 +179,7 @@ export default async function ParticipationPage({ params }: PageProps) {
                 </Link>
               </Button>
               <Button asChild variant="outline" size="lg" className="rounded-full border-[color:var(--marketing-line-strong)] bg-transparent px-7 hover:bg-black/[0.04] dark:hover:bg-white/[0.06]">
-                <LocaleLink href="/settings/zkas">{t("identity.resultsCta")}</LocaleLink>
+                <LocaleLink href="/workspace/reporting">{t("identity.resultsCta")}</LocaleLink>
               </Button>
             </div>
           </Reveal>

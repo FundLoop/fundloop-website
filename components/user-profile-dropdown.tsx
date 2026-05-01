@@ -11,7 +11,7 @@ import {
 } from "@/components/ui/dropdown-menu"
 import { Button } from "@/components/ui/button"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
-import { User, Settings, LogOut } from "lucide-react"
+import { Home, Settings, LogOut, User } from "lucide-react"
 
 export function UserProfileDropdown() {
   // In a real app, you would get this from your auth context
@@ -50,15 +50,15 @@ export function UserProfileDropdown() {
         </div>
         <DropdownMenuSeparator />
         <DropdownMenuItem asChild>
-          <Link href="/my-profile" className="cursor-pointer">
-            <User className="mr-2 h-4 w-4" />
-            <span>My Profile</span>
+          <Link href="/workspace" className="cursor-pointer">
+            <Home className="mr-2 h-4 w-4" />
+            <span>Workspace</span>
           </Link>
         </DropdownMenuItem>
         <DropdownMenuItem asChild>
-          <Link href="/settings" className="cursor-pointer">
+          <Link href="/workspace/account" className="cursor-pointer">
             <Settings className="mr-2 h-4 w-4" />
-            <span>Settings</span>
+            <span>Account</span>
           </Link>
         </DropdownMenuItem>
         <DropdownMenuSeparator />

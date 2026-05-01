@@ -1246,7 +1246,7 @@ export const esMessages = {
         {
           label: "Los resultados actuales existen antes de que el producto de pagos esté completo",
           body:
-            "Hoy el endpoint intermedio honesto sigue siendo la superficie de resultados publicados en settings. Todavía no es el hogar final de ganancias, pero sí muestra la dirección.",
+            "Hoy la superficie honesta de resultados vive en el área de reportes del workspace. Es modesta, pero ya forma parte del mismo modelo mental de ganancias y pagos.",
         },
       ],
     },

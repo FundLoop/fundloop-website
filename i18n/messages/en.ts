@@ -1253,7 +1253,7 @@ export const enMessages = {
         {
           label: "Current results are visible before the payout product is complete",
           body:
-            "Today the honest interim endpoint is the published results surface under settings. It is not yet a finished earnings workspace, but it does show the direction of travel.",
+            "Today the honest results surface lives in the workspace reporting area. It is modest, but it is now part of the same earnings and payout mental model.",
         },
       ],
     },
