@@ -35,11 +35,15 @@ export type FounderWorkspaceProject = {
     totalContributionAmount: number
     latestPeriodLabel: string | null
   }
+  contributionCycles: FounderContributionCycle[]
   attribution: {
     datasetCount: number
+    approvedDatasetCount: number
+    issueCount: number
     latestDatasetStatus: string | null
     latestDatasetMonth: string | null
     latestDatasetRowCount: number | null
+    recentSubmissions: FounderAttributionSubmission[]
   }
   reporting: {
     latestPublishedMonth: string | null
@@ -60,6 +64,31 @@ export type FounderWorkspaceProject = {
     memberCount: number
     adminCount: number
   }
+}
+
+export type FounderContributionCycleStatus = "draft" | "needs_submission" | "awaiting_confirmation" | "confirmed" | "mixed"
+
+export type FounderContributionCycle = {
+  cycleKey: string
+  periodLabel: string
+  paymentCount: number
+  revenue: number
+  contributionAmount: number
+  draftCount: number
+  pendingCount: number
+  awaitingConfirmationCount: number
+  confirmedCount: number
+  status: FounderContributionCycleStatus
+}
+
+export type FounderAttributionSubmission = {
+  id: number
+  month: string
+  fileName: string
+  rowCount: number
+  status: string
+  issueCount: number
+  createdAt: string
 }
 
 export type FounderWorkspaceHome = {
@@ -113,10 +142,13 @@ type ParticipantRow = {
 }
 
 type ZkasDatasetRow = {
+  id: number
   project_id: number
   month: string
+  file_name: string
   status: string
   row_count: number | null
+  validation_summary: unknown
   created_at: string
 }
 
@@ -208,12 +240,100 @@ function periodLabel(payment: PaymentRow | null): string | null {
   return payment.period_end ?? payment.period_start
 }
 
+function cycleKeyForPayment(payment: PaymentRow): string {
+  const dateValue = payment.period_end ?? payment.period_start
+  return dateValue?.slice(0, 7) ?? "unknown"
+}
+
+function periodLabelForCycle(payments: PaymentRow[], cycleKey: string) {
+  const sorted = sortByDateDescending(payments, (payment) => payment.period_end ?? payment.period_start)
+  return periodLabel(sorted[0] ?? null) ?? cycleKey
+}
+
+function cycleStatus(input: {
+  draftCount: number
+  pendingCount: number
+  awaitingConfirmationCount: number
+  confirmedCount: number
+  paymentCount: number
+}): FounderContributionCycleStatus {
+  if (input.paymentCount > 0 && input.confirmedCount === input.paymentCount) {
+    return "confirmed"
+  }
+
+  if (input.awaitingConfirmationCount > 0) {
+    return "awaiting_confirmation"
+  }
+
+  if (input.pendingCount > 0) {
+    return "needs_submission"
+  }
+
+  if (input.draftCount === input.paymentCount) {
+    return "draft"
+  }
+
+  return "mixed"
+}
+
+function buildContributionCycles(payments: PaymentRow[]): FounderContributionCycle[] {
+  const paymentsByCycle = new Map<string, PaymentRow[]>()
+
+  for (const payment of payments) {
+    const cycleKey = cycleKeyForPayment(payment)
+    const cyclePayments = paymentsByCycle.get(cycleKey)
+    if (cyclePayments) {
+      cyclePayments.push(payment)
+    } else {
+      paymentsByCycle.set(cycleKey, [payment])
+    }
+  }
+
+  return Array.from(paymentsByCycle.entries())
+    .map(([cycleKey, cyclePayments]) => {
+      const draftCount = cyclePayments.filter((payment) => statusCode(payment) === "draft").length
+      const pendingCount = cyclePayments.filter((payment) => statusCode(payment) === "pending").length
+      const awaitingConfirmationCount = cyclePayments.filter((payment) => statusCode(payment) === "awaiting_confirmation").length
+      const confirmedCount = cyclePayments.filter((payment) => statusCode(payment) === "confirmed").length
+
+      return {
+        cycleKey,
+        periodLabel: periodLabelForCycle(cyclePayments, cycleKey),
+        paymentCount: cyclePayments.length,
+        revenue: cyclePayments.reduce((sum, payment) => sum + numberValue(payment.revenue), 0),
+        contributionAmount: cyclePayments.reduce((sum, payment) => sum + numberValue(payment.payment_amount), 0),
+        draftCount,
+        pendingCount,
+        awaitingConfirmationCount,
+        confirmedCount,
+        status: cycleStatus({
+          draftCount,
+          pendingCount,
+          awaitingConfirmationCount,
+          confirmedCount,
+          paymentCount: cyclePayments.length,
+        }),
+      }
+    })
+    .sort((left, right) => right.cycleKey.localeCompare(left.cycleKey))
+}
+
 function statMonthLabel(stat: ProjectStatsMonthlyRow | null): string | null {
   if (!stat) {
     return null
   }
 
   return `${stat.year}-${String(stat.month).padStart(2, "0")}`
+}
+
+function datasetIssueCount(dataset: Pick<ZkasDatasetRow, "validation_summary">): number {
+  const summary = dataset.validation_summary
+  if (!summary || typeof summary !== "object") {
+    return 0
+  }
+
+  const issueCounts = (summary as { issueCounts?: { errors?: number; warnings?: number } }).issueCounts
+  return Number(issueCounts?.errors ?? 0) + Number(issueCounts?.warnings ?? 0)
 }
 
 function sortByDateDescending<T>(rows: T[], readDate: (row: T) => string | null | undefined): T[] {
@@ -302,6 +422,7 @@ export function buildFounderWorkspaceHome({
     const latestRunSummary = projectRunSummaries[0] ?? null
     const latestRun = latestRunSummary ? runById.get(latestRunSummary.run_id) : null
     const latestStat = projectStats[0] ?? null
+    const contributionCycles = buildContributionCycles(projectPayments)
 
     return {
       id: managedProject.id,
@@ -329,11 +450,23 @@ export function buildFounderWorkspaceHome({
         totalContributionAmount: projectPayments.reduce((sum, payment) => sum + numberValue(payment.payment_amount), 0),
         latestPeriodLabel: periodLabel(sortByDateDescending(projectPayments, (payment) => payment.period_end ?? payment.period_start)[0] ?? null),
       },
+      contributionCycles,
       attribution: {
         datasetCount: projectDatasets.length,
+        approvedDatasetCount: projectDatasets.filter((dataset) => ["approved", "included"].includes(dataset.status)).length,
+        issueCount: projectDatasets.reduce((sum, dataset) => sum + datasetIssueCount(dataset), 0),
         latestDatasetStatus: latestDataset?.status ?? null,
         latestDatasetMonth: latestDataset?.month ?? null,
         latestDatasetRowCount: latestDataset?.row_count ?? null,
+        recentSubmissions: projectDatasets.slice(0, 5).map((dataset) => ({
+          id: dataset.id,
+          month: dataset.month,
+          fileName: dataset.file_name,
+          rowCount: dataset.row_count ?? 0,
+          status: dataset.status,
+          issueCount: datasetIssueCount(dataset),
+          createdAt: dataset.created_at,
+        })),
       },
       reporting: {
         latestPublishedMonth: latestRun?.published_at ? latestRun.month : null,
@@ -463,7 +596,7 @@ export async function getFounderWorkspaceHome(navigationContext: NavigationConte
       "zkas-datasets",
       supabase
         .from("zkas_datasets")
-        .select("project_id, month, status, row_count, created_at")
+        .select("id, project_id, month, file_name, status, row_count, validation_summary, created_at")
         .in("project_id", projectIds)
         .order("created_at", { ascending: false })
         .returns<ZkasDatasetRow[]>(),

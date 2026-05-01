@@ -1,11 +1,11 @@
-import type { Json } from "@/types/supabase"
+import type { Json } from "../../types/supabase.ts"
 import {
   executionFailure,
   executionSuccess,
   type ExecutionCommandResult,
   type PayoutBatchCreateInput,
   type PayoutBatchDraft,
-} from "./types"
+} from "./types.ts"
 
 function roundUsd(value: number) {
   return Math.round((value + Number.EPSILON) * 1_000_000) / 1_000_000

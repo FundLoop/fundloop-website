@@ -2,6 +2,7 @@ import { edgeCommandFailure, edgeCommandSuccess } from "../../../lib/edge-functi
 import localManifestJson from "../../../lib/onchain/deployments/local.json" with { type: "json" }
 import previewManifestJson from "../../../lib/onchain/deployments/preview.json" with { type: "json" }
 import productionManifestJson from "../../../lib/onchain/deployments/production.json" with { type: "json" }
+import { isSolanaDepositAddressRoute } from "../../../lib/onchain/route-availability.ts"
 import { authenticateRequest, corsHeaders, json, parseJsonBody, serve } from "./command-runtime.ts"
 
 const ZERO_REOWN_PROJECT_ID = "00000000000000000000000000000000"
@@ -74,6 +75,10 @@ function buildPaymentOperationDeps() {
   return {
     environment,
     getDeploymentAvailabilityForRoute(input) {
+      if (isSolanaDepositAddressRoute(input)) {
+        return { available: true, reason: null }
+      }
+
       const networkKey = input.networkKey
       const rpcEnvName = RPC_ENV_BY_NETWORK[networkKey]
       if (!rpcEnvName) {

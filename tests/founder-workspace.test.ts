@@ -68,10 +68,13 @@ function buildHome(overrides: Partial<Parameters<typeof buildFounderWorkspaceHom
     ],
     datasets: [
       {
+        id: 100,
         project_id: 1,
         month: "2026-04",
+        file_name: "solar-commons-2026-04.csv",
         status: "ready",
         row_count: 42,
+        validation_summary: { issueCounts: { errors: 0, warnings: 1 } },
         created_at: "2026-04-15T00:00:00Z",
       },
     ],
@@ -144,11 +147,37 @@ describe("buildFounderWorkspaceHome", () => {
       totalContributionAmount: 66,
       latestPeriodLabel: "2026-04-01 - 2026-04-30",
     })
+    expect(project?.contributionCycles).toEqual([
+      expect.objectContaining({
+        cycleKey: "2026-04",
+        status: "awaiting_confirmation",
+        revenue: 1200,
+        contributionAmount: 36,
+        awaitingConfirmationCount: 1,
+      }),
+      expect.objectContaining({
+        cycleKey: "2026-03",
+        status: "confirmed",
+        revenue: 1000,
+        contributionAmount: 30,
+        confirmedCount: 1,
+      }),
+    ])
     expect(project?.attribution).toMatchObject({
       datasetCount: 1,
+      approvedDatasetCount: 0,
+      issueCount: 1,
       latestDatasetMonth: "2026-04",
       latestDatasetStatus: "ready",
       latestDatasetRowCount: 42,
+      recentSubmissions: [
+        expect.objectContaining({
+          id: 100,
+          fileName: "solar-commons-2026-04.csv",
+          issueCount: 1,
+          rowCount: 42,
+        }),
+      ],
     })
     expect(project?.reporting).toMatchObject({
       latestPublishedMonth: "2026-04",
@@ -186,6 +215,41 @@ describe("buildFounderWorkspaceHome", () => {
       "contribution_rate",
       "payment_method",
       "default_payment_method",
+    ])
+  })
+
+  it("groups monthly contribution cycles by period and exposes actionable statuses", () => {
+    const home = buildHome({
+      payments: [
+        {
+          project_id: 1,
+          period_start: "2026-05-01",
+          period_end: "2026-05-31",
+          revenue: 1500,
+          payment_amount: 45,
+          ref_payment_statuses: { code: "pending" },
+        },
+        {
+          project_id: 1,
+          period_start: "2026-05-01",
+          period_end: "2026-05-31",
+          revenue: 500,
+          payment_amount: 15,
+          ref_payment_statuses: { code: "draft" },
+        },
+      ],
+    })
+
+    expect(home.projects[0]?.contributionCycles).toEqual([
+      expect.objectContaining({
+        cycleKey: "2026-05",
+        paymentCount: 2,
+        revenue: 2000,
+        contributionAmount: 60,
+        draftCount: 1,
+        pendingCount: 1,
+        status: "needs_submission",
+      }),
     ])
   })
 

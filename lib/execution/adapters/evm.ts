@@ -1,5 +1,5 @@
-import { createScaffoldAdapter } from "../adapter-utils"
-import { executionFailure, executionSuccess, type DepositIntentCreateInput, type DepositReceiptVerificationInput } from "../types"
+import { createScaffoldAdapter } from "../adapter-utils.ts"
+import { executionFailure, executionSuccess, type DepositIntentCreateInput, type DepositReceiptVerificationInput } from "../types.ts"
 
 function metadataRecord(metadata: DepositIntentCreateInput["metadata"] | DepositReceiptVerificationInput["metadata"]) {
   if (!metadata || typeof metadata !== "object" || Array.isArray(metadata)) return {}

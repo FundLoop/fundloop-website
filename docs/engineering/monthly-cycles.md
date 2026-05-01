@@ -64,7 +64,9 @@ Session 26 added `/[locale]/admin/cycles/[cycleKey]/verification` as the cleanup
 
 Session 27 added `/[locale]/admin/cycles/[cycleKey]/payouts` as the first operator view over outbound payout work. It converts approved published user results into payout intents through the `monthly-cycle-payout-intents-create` Edge Function command, then moves the cycle into `distribution`. Payout execution, rail batching, and reconciliation remain later sessions.
 
-Session 28 added the chain-abstracted execution interface under `lib/execution/`. Monthly-cycle payout work should use that interface for batch planning and future rail execution instead of branching directly on EVM, Solana, or fiat details.
+Session 28 added the chain-abstracted execution interface under `lib/execution/`. Session 31 added Solana-specific payout batch draft scaffolding on that boundary, and Session 32 added fiat provider-not-configured payout draft stubs. Monthly-cycle payout work should use the execution interface for batch planning and future rail execution instead of branching directly on EVM, Solana, or fiat details.
+
+Session 34 added `/[locale]/founder/projects/[slug]/attribution` as the founder-facing contribution-data workflow. It does not move dataset writes yet; the existing project zkAS page still owns uploads and dataset detail routes while the founder workflow exposes the structured contract, readiness state, and recent submissions.
 
 ## Lock Manifest
 
@@ -160,11 +162,15 @@ The package manifest intentionally excludes mutable packaging timestamps so the 
 
 The command does not execute payouts or reconcile outbound transfers. Session 28 added the adapter interface and deterministic batch-draft builder that later payout commands should use to create rail-specific batches from ready intents.
 
+Session 35 added `/[locale]/workspace/earnings` as the user-facing earnings and payout workspace. It reads monthly-cycle published results, payout intents, payout routes, batch status, and reconciliation cues so users can understand what they are owed and which stage each payout is in while payout execution remains operator-controlled.
+
+Session 36 added `monthly_cycle_reports` and the `monthly-cycle-reports` Supabase Storage bucket as the durable reporting publication model. Public, user, founder, and operator pages now read report metadata through `lib/reporting/monthly-cycle-reports.ts`.
+
 ## Operating Rule
 
 New monthly cadence work should attach to `monthly_cycles` instead of independently interpreting month strings. Existing zkAS `month` fields and payment period fields remain in place for compatibility, but `monthly_cycle_id` is the canonical join point for lock, prep, zkAS calculation, verification, payout, and reporting sessions.
 
-All monthly-cycle mutations should follow the Edge Function command boundary. Session 22 added locking, Session 23 added read-only prep checks, Session 24 aligned zkAS reads/writes to cycle ownership, Session 25 added deterministic calculation packaging, Session 26 added verification/approval checkpoints, and Session 27 added payout-intent creation. Payout execution and reporting publication remain later sessions.
+All monthly-cycle mutations should follow the Edge Function command boundary. Session 22 added locking, Session 23 added read-only prep checks, Session 24 aligned zkAS reads/writes to cycle ownership, Session 25 added deterministic calculation packaging, Session 26 added verification/approval checkpoints, and Session 27 added payout-intent creation. Session 35 made those outputs visible to users, and Session 36 added reporting publication read models and artifact metadata. Payout execution and report generation commands remain later sessions.
 
 ## Local Supabase Note
 

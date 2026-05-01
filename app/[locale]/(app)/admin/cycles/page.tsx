@@ -255,6 +255,9 @@ export default async function AdminMonthlyCyclesPage({ params }: PageProps) {
                         <Button asChild size="sm" variant="ghost">
                           <Link href={`/admin/cycles/${cycle.cycleKey}/payouts`}>Payout work</Link>
                         </Button>
+                        <Button asChild size="sm" variant="ghost">
+                          <Link href={`/admin/cycles/${cycle.cycleKey}/reporting`}>Reporting</Link>
+                        </Button>
                       </div>
                     </TableCell>
                   </TableRow>

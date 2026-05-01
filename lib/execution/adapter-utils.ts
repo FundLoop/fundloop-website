@@ -1,6 +1,6 @@
 import {
   buildPayoutBatchDraft,
-} from "./payout-batches"
+} from "./payout-batches.ts"
 import {
   executionFailure,
   type DepositIntent,
@@ -16,7 +16,7 @@ import {
   type PayoutBatchExecutionInput,
   type PayoutReconciliation,
   type PayoutReconciliationInput,
-} from "./types"
+} from "./types.ts"
 
 export function unsupported<T>(rail: FundLoopExecutionRail, capability: string): ExecutionCommandResult<T> {
   return executionFailure("capability_not_implemented", `${capability} is not implemented for the ${rail} adapter yet.`, {

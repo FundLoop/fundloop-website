@@ -22,6 +22,7 @@ Current high-signal docs:
 - [Local Seed Fixtures](./local-seed.md)
 - [Monthly Cycle Domain Model](./monthly-cycles.md)
 - [Navigation and Shell Architecture](./navigation-shell.md)
+- [Reporting Publication](./reporting.md)
 - [Route Inventory](./route-inventory.md)
 - [Supabase Remote Deployments](./supabase-deployments.md)
 - [Target-State Architecture](./target-state-architecture.md)

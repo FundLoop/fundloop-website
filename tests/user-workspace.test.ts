@@ -170,7 +170,7 @@ describe("buildUserWorkspaceHome", () => {
     })
 
     expect(home.warnings).toEqual([{ scope: "results", message: "network unavailable" }])
-    expect(home.results.detailHref).toBe("/settings/zkas")
+    expect(home.results.detailHref).toBe("/workspace/earnings")
   })
 
   it("excludes participant rows without hydrated non-deleted projects from counters", () => {

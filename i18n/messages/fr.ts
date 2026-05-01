@@ -182,8 +182,9 @@ export const frMessages = {
       productShell: "Espace produit",
       workspace: {
         overview: "Vue d’ensemble",
+        earnings: "Revenus",
+        reporting: "Reporting",
         account: "Compte",
-        reporting: "Résultats publiés",
       },
       founder: {
         overview: "Vue d’ensemble",
@@ -473,12 +474,12 @@ export const frMessages = {
     results: {
       title: "Visibilité des résultats actuels",
       description:
-        "Ce n’est pas encore l’espace complet de paiement. Cette carte résume les résultats zkAS publiés déjà disponibles pour votre compte.",
+        "Cette carte résume les résultats zkAS publiés et mène vers l’espace revenus pour suivre les paiements.",
       latestMeta: "Score agrégé {score}, publié le {date}",
       pendingDate: "date en attente",
       emptyTitle: "Aucun résultat publié pour le moment",
       emptyBody: "Quand un résultat mensuel vérifié sera publié pour vous, la dernière allocation et le score apparaîtront ici.",
-      cta: "Ouvrir l’historique des résultats",
+      cta: "Ouvrir l’espace revenus",
     },
     discovery: {
       title: "Projets à explorer",
@@ -500,10 +501,224 @@ export const frMessages = {
       founderDescription: "Passez aux opérations projet lorsque vous gérez un projet.",
     },
   },
+  workspaceEarnings: {
+    eyebrow: "Espace revenus",
+    title: "Vos résultats, votre préparation payout et l’état des distributions",
+    body:
+      "Suivez les résultats mensuels publiés, les intentions de paiement en attente, la préparation des routes et les distributions terminées ou échouées. C’est la vue argent côté utilisateur pendant que l’exécution détaillée reste opérée par les admins.",
+    rawResultsCta: "Ouvrir l’historique brut",
+    stats: {
+      published: "Allocation publiée",
+      pending: "Paiement en attente",
+      paid: "Payé",
+      routes: "Routes actives",
+    },
+    warnings: {
+      title: "Certaines données de revenus sont temporairement indisponibles.",
+      body: "La page affiche les parties chargées sans risque. Réessayez plus tard si l’état des paiements ou l’historique semblent incomplets.",
+    },
+    nextAction: {
+      title: "Prochaine étape recommandée",
+      accountCta: "Vérifier le compte",
+      discoveryCta: "Trouver des projets",
+      add_payout_route: {
+        title: "Ajouter une route de paiement par défaut",
+        body: "FundLoop peut publier vos résultats, mais les intentions de paiement restent en brouillon tant qu’aucune destination active par défaut n’existe.",
+        detail:
+          "Utilisez le compte pour revoir l’identité et les préférences de paiement. L’édition des routes reste limitée jusqu’à la prochaine session dédiée aux préférences.",
+      },
+      wait_for_distribution: {
+        title: "Suivre ce cycle pendant la distribution",
+        body: "Vous avez des intentions de paiement en attente d’exécution, de regroupement ou de réconciliation.",
+        detail: "Aucune action n’est nécessaire sauf si une ligne indique qu’une route manque. Gardez votre identité et vos préférences à jour.",
+      },
+      review_history: {
+        title: "Relire votre historique publié",
+        body: "Aucune intention de paiement n’est en attente pour le moment, donc cet espace sert de registre de revenus actuel.",
+        detail: "À mesure que de nouveaux cycles mensuels seront publiés, FundLoop attachera ici leur état de paiement.",
+      },
+    },
+    routes: {
+      title: "Préférences de route payout",
+      description: "Les routes sont des destinations de paiement détenues par l’utilisateur. Cette session les affiche; l’édition reste un travail de compte/flux ultérieur.",
+      default: "Défaut",
+      emptyTitle: "Aucune route de paiement pour le moment",
+      emptyBody: "Les futures intentions de paiement peuvent être créées en brouillon, mais elles auront besoin d’une route active par défaut pour être prêtes à la distribution.",
+    },
+    pending: {
+      title: "Distributions en attente",
+      description: "Résultats publiés dont les intentions de paiement sont encore en brouillon, prêtes, regroupées ou en traitement.",
+      empty: "Aucune distribution en attente n’est disponible pour le moment.",
+    },
+    history: {
+      title: "Historique mensuel des revenus",
+      description: "Chaque résultat publié apparaît avec son état de paiement, sa route, son lot et son indice de réconciliation.",
+      empty: "Aucun résultat mensuel publié n’est disponible pour le moment.",
+    },
+    status: {
+      title: "Résumé des états payout",
+      description: "Une vue compacte des états qui demandent souvent de l’attention pendant la distribution.",
+      ready: "Intentions prêtes",
+      missingRoute: "Brouillons sans route",
+      failed: "Montant échoué",
+    },
+    table: {
+      cycle: "Cycle",
+      result: "Résultat",
+      payout: "Paiement",
+      route: "Route",
+      status: "État",
+      published: "Publié le {date}",
+      notCreated: "Pas encore créé",
+      batch: "Lot {status}",
+      unbatched: "Pas en lot",
+      noRoute: "Aucune route sélectionnée",
+    },
+    payoutStatus: {
+      not_created: "Résultat seul",
+      draft: "Brouillon",
+      ready: "Prêt",
+      batched: "En lot",
+      processing: "En traitement",
+      paid: "Payé",
+      failed: "Échoué",
+      cancelled: "Annulé",
+    },
+    routeStatus: {
+      draft: "Brouillon",
+      active: "Active",
+      disabled: "Désactivée",
+    },
+    batchStatus: {
+      draft: "brouillon",
+      ready: "prêt",
+      processing: "traitement",
+      completed: "terminé",
+      failed: "échoué",
+      cancelled: "annulé",
+    },
+    reconciliationStatus: {
+      pending: "Réconciliation en attente",
+      matched: "Réconcilié",
+      mismatch: "Écart",
+      manual_review: "Revue manuelle",
+      resolved: "Résolu",
+    },
+    cycleStatus: {
+      unassigned: "Cycle en attente",
+      open: "Ouvert",
+      locked: "Verrouillé",
+      prep: "Préparation",
+      calculation: "Calcul",
+      verification: "Vérification",
+      approval: "Approbation",
+      distribution: "Distribution",
+      reporting: "Reporting",
+      completed: "Terminé",
+      cancelled: "Annulé",
+    },
+    rail: {
+      evm: "EVM",
+      solana: "Solana",
+      fiat_stub: "Fiat",
+      pending: "Rail en attente",
+    },
+    reason: {
+      missing_default_payout_route: "Route de paiement par défaut requise",
+    },
+  },
   workspaceAccount: {
     heading: "Compte",
     description:
       "Gérez les détails personnels, les adresses e-mail et les adresses de wallet qui vivent encore localement dans FundLoop pendant que le modèle de compte adossé à CUBID arrive.",
+  },
+  workspaceReporting: {
+    eyebrow: "Reporting utilisateur",
+    title: "Explications mensuelles de vos résultats",
+    body:
+      "Le reporting transforme les résultats publiés en explications durables. Les rapports utilisateur peuvent pointer vers des artefacts stockés lorsqu’ils existent, et les lignes non publiées apparaissent comme explications en attente.",
+    artifact: "Artefact",
+    publicationPending: "Publication en attente",
+    warnings: {
+      title: "Certaines données de reporting sont temporairement indisponibles.",
+      body: "La page affiche des données partielles sûres. Réessayez plus tard si les cartes semblent incomplètes.",
+    },
+    stats: {
+      results: "Résultats publiés",
+      allocation: "Allocation totale",
+      reports: "Artefacts de rapport",
+    },
+    empty: {
+      title: "Aucun rapport utilisateur pour le moment",
+      body: "Quand des artefacts de reporting mensuel seront publiés pour votre compte, ils apparaîtront ici avec le contexte du cycle.",
+      earningsCta: "Ouvrir les revenus",
+      projectsCta: "Trouver des projets",
+    },
+  },
+  founderReporting: {
+    eyebrow: "Reporting fondateur",
+    title: "Reporting de {project}",
+    body:
+      "Les rapports fondateur expliquent ce qu’un projet a contribué, combien d’utilisateurs ont été inclus et comment l’attribution nourrit l’histoire mensuelle des paiements.",
+    actions: {
+      attribution: "Données d’attribution",
+      contributions: "Contributions",
+    },
+    warnings: {
+      title: "Certaines données de reporting fondateur sont temporairement indisponibles",
+      body: "La page affiche des données partielles sûres. Réessayez plus tard si les résumés semblent incomplets.",
+    },
+    stats: {
+      reports: "Rapports",
+      users: "Utilisateurs publiés",
+      payout: "Paiement attribué",
+    },
+    reports: {
+      title: "Artefacts de rapport publiés",
+      description: "Les rapports projet stockés apparaissent ici lorsqu’ils sont générés pour un cycle mensuel.",
+      empty: "Aucun artefact de rapport fondateur n’a encore été publié pour ce projet.",
+    },
+    summaries: {
+      title: "Résumés mensuels du projet",
+      description: "Ces lignes viennent des résumés projet zkAS publiés et restent visibles avant les artefacts formels.",
+      empty: "Aucun résumé mensuel de projet n’est disponible pour le moment.",
+    },
+    table: {
+      cycle: "Cycle",
+      users: "Utilisateurs",
+      contributed: "Contribué",
+      payout: "Paiement",
+    },
+  },
+  adminCycleReporting: {
+    denied: {
+      title: "Accès refusé",
+    },
+    eyebrow: "Publication reporting",
+    title: "Rapports {cycle}",
+    body:
+      "Le reporting opérateur montre quels rapports et artefacts existent pour le cycle, ainsi que la couverture de résultats à expliquer avant de considérer la publication complète.",
+    actions: {
+      payouts: "Paiements",
+      verification: "Vérification",
+    },
+    stats: {
+      users: "Résultats utilisateur",
+      projects: "Résumés projet",
+      artifacts: "Artefacts",
+      allocation: "Allocation publiée",
+    },
+    canonical: {
+      title: "Rapports canoniques",
+      description: "Les rapports publics et opérateur sont les artefacts de cycle qui expliquent le mois aux lecteurs et auditeurs.",
+      empty: "Aucun artefact de rapport public ou opérateur n’existe encore pour ce cycle.",
+    },
+    coverage: {
+      title: "Couverture par rôle",
+      description: "Comptes des rapports utilisateur et fondateur liés à ce cycle.",
+      userReports: "Rapports utilisateur",
+      founderReports: "Rapports fondateur",
+    },
   },
   founderWorkspace: {
     eyebrow: "Espace fondateur",
@@ -601,6 +816,9 @@ export const frMessages = {
       workspace: "Ouvrir l’accueil fondateur",
       project: "Ouvrir la fiche publique du projet",
       payments: "Ouvrir les opérations de contribution",
+      contributions: "Ouvrir le workflow mensuel",
+      attribution: "Ouvrir le workflow d’attribution",
+      reporting: "Ouvrir le reporting",
       zkas: "Ouvrir le zkAS projet",
     },
     missingSlug: "Publiez ou réparez le slug du projet avant de lier des routes fondateur plus profondes.",
@@ -633,6 +851,7 @@ export const frMessages = {
       confirmed: "Confirmés",
       latest: "Dernière période",
       cta: "Ouvrir les paiements",
+      workflowCta: "Ouvrir le workflow mensuel",
     },
     setup: {
       title: "Préparation",
@@ -649,7 +868,7 @@ export const frMessages = {
       latestDataset: "Dernier jeu",
       status: "Statut",
       rows: "Lignes",
-      cta: "Ouvrir zkAS",
+      cta: "Ouvrir le workflow d’attribution",
     },
     growth: {
       title: "Croissance et reporting",
@@ -662,8 +881,144 @@ export const frMessages = {
     links: {
       public: "Profil public",
       payments: "Opérations de contribution",
+      contributions: "Workflow mensuel",
+      attribution: "Workflow d’attribution",
+      reporting: "Reporting",
       zkas: "zkAS projet",
       allProjects: "Tous les projets fondateur",
+    },
+  },
+  founderContributions: {
+    eyebrow: "Workflow de contribution mensuelle",
+    title: "Cadence de contribution de {project}",
+    body:
+      "Passez en revue les obligations mensuelles, la préparation des routes, l’état des soumissions et le lien vers l’attribution dans un seul workflow fondateur. Les pages paiements et zkAS restent les surfaces d’action pour l’instant.",
+    primaryCta: "Ouvrir les opérations de paiement",
+    secondaryCta: "Ouvrir les données d’attribution",
+    none: "Aucun",
+    ready: "Prêt",
+    needsWork: "À corriger",
+    summary: {
+      latest: "Dernier cycle",
+      open: "Cycles ouverts",
+      contribution: "Contribution totale",
+    },
+    warnings: {
+      title: "Certaines données de contribution sont temporairement indisponibles",
+      body: "Ce workflow affiche des données partielles sûres. Utilisez les pages opérationnelles liées pour les derniers enregistrements.",
+    },
+    readiness: {
+      setup: {
+        title: "Configuration du projet",
+        ready: "Le slug, le taux de contribution et la méthode par défaut sont prêts.",
+        needsWork: "Corrigez les lacunes avant de traiter les contributions mensuelles comme propres.",
+      },
+      route: {
+        title: "Routes de paiement",
+        ready: "Au moins une route de paiement active est disponible.",
+        needsWork: "Ajoutez une route active avant d’attendre des soumissions propres.",
+      },
+      attribution: {
+        title: "Données d’attribution",
+        ready: "Des données d’attribution récentes existent pour la revue mensuelle.",
+        needsWork: "Soumettez des données d’attribution pour contextualiser le calcul mensuel.",
+      },
+    },
+    cycles: {
+      title: "Obligations mensuelles",
+      description: "Chaque cycle regroupe les obligations de paiement déjà suivies pour ce projet.",
+    },
+    cycleMetrics: {
+      draft: "Brouillon",
+      pending: "En attente",
+      awaiting: "Confirmation",
+      confirmed: "Confirmés",
+    },
+    status: {
+      draft: "Brouillon",
+      needs_submission: "Soumission requise",
+      awaiting_confirmation: "Confirmation en attente",
+      confirmed: "Confirmé",
+      mixed: "Mixte",
+    },
+    empty: {
+      title: "Aucune obligation mensuelle pour le moment",
+      body: "Créez ou enregistrez des brouillons de paiement depuis la page d’opérations. Ils apparaîtront ici par mois économique.",
+      cta: "Ouvrir les opérations de paiement",
+    },
+    next: {
+      title: "Séquence opérationnelle",
+      actionable: "Certains cycles ouverts nécessitent encore du travail de contribution.",
+      clear: "Tous les cycles suivis sont confirmés. Gardez les données d’attribution à jour pour le prochain verrouillage.",
+      steps: {
+        review: "Vérifier les revenus et obligations de contribution calculées.",
+        route: "Confirmer que le projet possède une route de paiement active.",
+        submit: "Soumettre une preuve de contribution onchain ou fiat planifiée.",
+        verify: "Suivre la confirmation et la réconciliation avant le verrouillage mensuel.",
+      },
+    },
+    links: {
+      payments: "Ouvrir les opérations de paiement",
+      attribution: "Ouvrir le workflow d’attribution",
+      projectHome: "Retour au projet",
+    },
+  },
+  founderAttribution: {
+    eyebrow: "Workflow de données d’attribution",
+    title: "Données de contribution de {project}",
+    body:
+      "Préparez, validez et suivez le jeu de données projet qui alimente le calcul zkAS mensuel. Les téléversements restent sur la surface zkAS existante, mais ce workflow rend le contrat de données explicite.",
+    primaryCta: "Ouvrir le téléversement",
+    secondaryCta: "Retour au workflow de contribution",
+    none: "Aucun",
+    summary: {
+      latestCycle: "Dernier cycle",
+      latestDataset: "Dernier jeu",
+      approved: "Jeux approuvés",
+    },
+    warnings: {
+      title: "Certaines données d’attribution sont temporairement indisponibles",
+      body: "Ce workflow affiche des données partielles sûres. Utilisez les pages zkAS liées pour les derniers enregistrements.",
+    },
+    readiness: {
+      cycle: {
+        title: "Ancrage du cycle",
+        ready: "Un cycle de contribution courant existe pour ce projet.",
+        needsWork: "Créez les obligations mensuelles avant le passage final à l’attribution.",
+      },
+      dataset: {
+        title: "Couverture du jeu",
+        ready: "Le dernier jeu correspond au dernier cycle de contribution.",
+        needsWork: "Téléversez ou validez un jeu pour le dernier cycle de contribution.",
+      },
+      validation: {
+        title: "Problèmes de validation",
+        ready: "Aucun problème de validation visible dans les soumissions récentes.",
+        needsWork: "Passez en revue les erreurs et avertissements avant l’approbation opérateur.",
+      },
+    },
+    guide: {
+      title: "Contrat de soumission",
+      description: "Utilisez cette structure pour que les humains et les futurs agents/MCP puissent relire les données projet.",
+      derive: "Comment dériver le jeu mensuel",
+      checklist: "Checklist de soumission",
+      identity: "Compatibilité avec l’artifact d’identité",
+      csv: "Télécharger le modèle CSV",
+      json: "Télécharger l’exemple JSON",
+    },
+    submissions: {
+      title: "Soumissions récentes",
+      description: "Jeux récemment soumis pour ce projet, avec validation et état d’approbation.",
+      month: "Mois",
+      file: "Fichier",
+      rows: "Lignes",
+      issues: "Problèmes",
+      status: "Statut",
+      empty: "Aucun jeu d’attribution n’a encore été téléversé.",
+    },
+    links: {
+      upload: "Ouvrir le téléversement",
+      projectHome: "Retour au projet",
     },
   },
   founderAccount: {
@@ -1217,6 +1572,13 @@ export const frMessages = {
       title: "Le reporting public doit être honnête, vérifiable et lié à de vraies opérations mensuelles.",
       body:
         "Cette page n’est pas un faux tableau analytique. C’est l’explication publique de ce que FundLoop prévoit de publier à mesure que le pipeline mensuel de contribution, vérification et publication se complète.",
+    },
+    published: {
+      eyebrow: "Rapports publiés",
+      title: "Les rapports mensuels apparaîtront ici comme artefacts durables.",
+      body:
+        "La session 36 ajoute le modèle de publication reporting. Quand des artefacts mensuels publics existent, cette page liste les plus récents sans inventer d’analytics factices.",
+      empty: "Aucun artefact de rapport mensuel public n’a encore été publié.",
     },
     cta: {
       documentation: "Lire la documentation",

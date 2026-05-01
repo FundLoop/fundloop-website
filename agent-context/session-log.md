@@ -1,3 +1,312 @@
+### session v113: Address PR 38 automated review feedback
+- timestamp: 2026-05-01T00:33:08Z
+- agent: **Codex (GPT-5)**
+- branch: **codex/supabase-deno-import-repair**
+- head: pending final commit
+
+#### Objective
+Address actionable Copilot and Codex review feedback on PR #38 before moving through the remaining publish gates.
+
+#### Actions Taken
+- Added a forward migration with `monthly_cycle_reports` public and user-self select policies so request-scoped reporting reads are allowed under RLS.
+- Extracted Solana deposit-address route detection into a shared Deno-safe helper used by both runtime config and Edge Function payment operation deps.
+- Replaced per-row reconciliation sorting with a precomputed latest-status map in the user earnings read model.
+- Localized the workspace reporting publication-pending fallback.
+- Added runtime-config coverage for Solana deposit-address availability.
+
+#### Tests and Validation Notes
+- `pnpm dlx node@22.22.1 /opt/homebrew/bin/pnpm test tests/runtime-config.test.ts tests/user-earnings-workspace.test.ts tests/monthly-cycle-reports.test.ts` passed.
+- `pnpm dlx node@22.22.1 /opt/homebrew/bin/pnpm typecheck` passed.
+- `pnpm dlx node@22.22.1 /opt/homebrew/bin/pnpm lint` passed.
+- `deno cache --config supabase/functions/deno.json supabase/functions/project-onchain-payment-submission-record/index.ts` passed.
+- `supabase migration up` passed.
+
+#### Reflections
+- The RLS comment caught a real production-read blocker for authenticated user report reads.
+- The Solana helper extraction is small, but it reduces drift risk across app and Edge Function runtime availability checks.
+
+#### Suggested Next Steps
+- Push this review-fix commit to PR #38, reply to the automated review threads, and wait for CI to return green.
+- Continue the Copilot then Codex review gates until all actionable comments are resolved.
+
+---
+
+### session v112: Build monthly reporting publication surfaces
+- timestamp: 2026-05-01T00:11:55Z
+- agent: **Codex (GPT-5)**
+- branch: **codex/supabase-deno-import-repair**
+- head: pending final commit
+
+#### Objective
+Implement Session 36 by introducing a durable reporting publication model and role-specific report views for users, founders, public readers, and operators.
+
+#### Actions Taken
+- Added `monthly_cycle_report_audience`, `monthly_cycle_reports`, and the `monthly-cycle-reports` Supabase Storage bucket contract.
+- Added `lib/reporting/monthly-cycle-reports.ts` with stable read models for public, user, founder/project, and operator cycle reporting views.
+- Added `/workspace/reporting`, `/founder/projects/[slug]/reporting`, and `/admin/cycles/[cycleKey]/reporting`.
+- Updated the public `/reports` page to list published public monthly report artifacts when they exist.
+- Linked reporting from app-shell workspace navigation, founder project surfaces, and admin cycle rows.
+- Updated localized copy, generated Supabase types, reporting docs, navigation docs, monthly-cycle docs, route inventory, backlog metadata, and focused tests.
+
+#### Tests and Validation Notes
+- `pnpm dlx node@22.22.1 /opt/homebrew/bin/pnpm test tests/monthly-cycle-reports.test.ts` passed.
+- `pnpm dlx node@22.22.1 /opt/homebrew/bin/pnpm typecheck` passed.
+- `pnpm dlx node@22.22.1 /opt/homebrew/bin/pnpm lint` passed.
+- `pnpm dlx node@22.22.1 /opt/homebrew/bin/pnpm test` passed.
+- `supabase migration up` initially timed out against local Postgres, then passed on retry once the local stack responded.
+- `pnpm dlx node@22.22.1 /opt/homebrew/bin/pnpm check` passed.
+
+#### Reflections
+- Reporting now has a real database and storage artifact contract, but report generation remains intentionally deferred.
+- The pages read published report metadata and existing zkAS/payout summaries without creating new operator mutation paths.
+
+#### Suggested Next Steps
+- Yeet this stacked branch so the deploy repair and Sessions 30-36 can be reviewed together.
+- Session 37 should expand monthly-pipeline observability across lock, prep, calculation, verification, payout, and publication.
+
+---
+
+### session v111: Build user earnings and payout workspace
+- timestamp: 2026-04-30T23:53:53Z
+- agent: **Codex (GPT-5)**
+- branch: **codex/supabase-deno-import-repair**
+- head: pending final commit
+
+#### Objective
+Implement Session 35 by giving regular users a real money workspace that connects published monthly results to payout intent, route, batch, and reconciliation state without adding premature payout execution controls.
+
+#### Actions Taken
+- Added `/[locale]/workspace/earnings` as the signed-in user earnings and payout workspace.
+- Added a server-only earnings read model that summarizes published allocations, payout intents, payout routes, batch status, reconciliation cues, pending distributions, and payout history.
+- Updated the workspace home and app-shell navigation so earnings is the canonical user money destination while `/settings/zkas` remains a raw interim result-history link.
+- Localized the new earnings workspace copy in English, French, and Spanish.
+- Added focused read-model tests and updated navigation, payout, monthly-cycle, route-inventory, and backlog docs.
+
+#### Tests and Validation Notes
+- `pnpm dlx node@22.22.1 /opt/homebrew/bin/pnpm test tests/user-workspace.test.ts tests/user-earnings-workspace.test.ts` passed.
+- `pnpm dlx node@22.22.1 /opt/homebrew/bin/pnpm typecheck` passed.
+- `pnpm dlx node@22.22.1 /opt/homebrew/bin/pnpm lint` passed.
+- `pnpm dlx node@22.22.1 /opt/homebrew/bin/pnpm test` passed.
+- `deno cache --config supabase/functions/deno.json supabase/functions/monthly-cycle-payout-intents-create/index.ts` passed.
+- `pnpm dlx node@22.22.1 /opt/homebrew/bin/pnpm check` passed.
+
+#### Reflections
+- The user side now has a durable earnings view tied to the payout domain, but payout route editing and actual execution remain intentionally outside this session.
+- Keeping `/settings/zkas` as a raw history link lets the app preserve the old truthful result surface while the workspace becomes the user-facing mental model.
+
+#### Suggested Next Steps
+- Yeet this stacked branch so the deploy repair and Sessions 30-35 can be reviewed together.
+- Session 36 should publish role-appropriate monthly reports and can treat `/workspace/earnings` as the user money source of truth.
+
+---
+
+### session v110: Build founder attribution submission workflow
+- timestamp: 2026-04-30T23:11:55Z
+- agent: **Codex (GPT-5)**
+- branch: **codex/supabase-deno-import-repair**
+- head: pending final commit
+
+#### Objective
+Implement Session 34 by adding a canonical founder attribution workflow that makes contribution-data submission readiness, template expectations, validation state, and upload history visible without duplicating the existing zkAS upload write path.
+
+#### Actions Taken
+- Added `/[locale]/founder/projects/[slug]/attribution` as the founder-facing attribution and contribution-data workflow.
+- Extended the founder workspace read model with approved dataset counts, validation issue counts, and recent attribution submissions.
+- Linked the attribution workflow from founder home, project index, project home, and monthly contribution workflow surfaces.
+- Localized the new workflow copy in English, French, and Spanish.
+- Updated monthly-cycle, navigation, route-inventory, and backlog docs to record the Session 34 attribution route and the current transitional zkAS upload ownership.
+
+#### Tests and Validation Notes
+- `pnpm dlx node@22.22.1 /opt/homebrew/bin/pnpm test tests/founder-workspace.test.ts` passed.
+- `pnpm dlx node@22.22.1 /opt/homebrew/bin/pnpm typecheck` passed.
+- `pnpm dlx node@22.22.1 /opt/homebrew/bin/pnpm lint` passed.
+- `pnpm dlx node@22.22.1 /opt/homebrew/bin/pnpm test` passed.
+- `deno cache --config supabase/functions/deno.json supabase/functions/project-onchain-payment-submission-record/index.ts` passed.
+- `pnpm dlx node@22.22.1 /opt/homebrew/bin/pnpm check` passed.
+
+#### Reflections
+- The founder attribution route now gives project teams a structured monthly-cycle entry point while the existing `/projects/[slug]/zkas` route remains the actual upload and detail surface.
+- This keeps Session 34 focused on workflow clarity and readiness instead of creating a second data-submission write path before zkAS upload writes are migrated.
+
+#### Suggested Next Steps
+- Yeet this stacked branch so the deploy repair and Sessions 30-34 can be reviewed together.
+- Session 35 should build the user earnings and payout workspace on top of the monthly-cycle, calculation, and payout-domain work already in place.
+
+---
+
+### session v109: Build founder monthly contribution workflow
+- timestamp: 2026-04-30T23:00:06Z
+- agent: **Codex (GPT-5)**
+- branch: **codex/supabase-deno-import-repair**
+- head: pending final commit
+
+#### Objective
+Implement Session 33 by giving founders a monthly contribution workflow that organizes obligations, route readiness, submission state, and attribution handoff without moving the underlying payment write paths yet.
+
+#### Actions Taken
+- Added `/[locale]/founder/projects/[slug]/contributions` as the founder-facing monthly contribution workflow.
+- Extended the founder workspace read model with economic-month contribution cycle summaries derived from existing payment obligations.
+- Linked the new workflow from the founder home, project index, and per-project founder home while preserving existing payment and zkAS operation routes.
+- Localized the new workflow copy in English, French, and Spanish.
+- Updated navigation and route-inventory engineering docs plus backlog metadata to record the Session 33 route.
+
+#### Tests and Validation Notes
+- `pnpm dlx node@22.22.1 /opt/homebrew/bin/pnpm test tests/founder-workspace.test.ts` passed.
+- `pnpm dlx node@22.22.1 /opt/homebrew/bin/pnpm typecheck` passed.
+- `pnpm dlx node@22.22.1 /opt/homebrew/bin/pnpm lint` passed.
+- `pnpm dlx node@22.22.1 /opt/homebrew/bin/pnpm test` passed.
+- `deno cache --config supabase/functions/deno.json supabase/functions/project-onchain-payment-submission-record/index.ts` passed.
+- `pnpm dlx node@22.22.1 /opt/homebrew/bin/pnpm check` passed.
+
+#### Reflections
+- The founder workflow now has a clean monthly cadence view, but payment creation, route management, and receipt submission remain on the already-hardened payment operations page.
+- Grouping payments by economic month gives Session 34 and later reporting/payout work a clearer founder-facing anchor without creating new write surfaces prematurely.
+
+#### Suggested Next Steps
+- Yeet this stacked branch so the deploy repair and Sessions 30-33 can land together.
+- Session 34 should build the project attribution/contribution-data submission workflow and can link from this monthly contribution page.
+
+---
+
+### session v108: Add fiat inbound and outbound execution stubs
+- timestamp: 2026-04-30T22:49:32Z
+- agent: **Codex (GPT-5)**
+- branch: **codex/supabase-deno-import-repair**
+- head: pending final commit
+
+#### Objective
+Implement Session 32 by adding intentional fiat inbound and outbound stubs behind the shared execution interface without implying that fiat funding or payouts are live.
+
+#### Actions Taken
+- Added fiat provider-not-configured deposit intent creation for product workflow planning.
+- Added fiat receipt verification as an explicit `fiat_provider_not_configured` failure.
+- Added fiat payout batch draft scaffolding with placeholder destination validation and `fundloop-fiat-payout-batch.v1` payload metadata.
+- Kept fiat payout execution and reconciliation as explicit `capability_not_implemented` responses.
+- Added execution-interface tests for fiat inbound intent creation, receipt verification failure, payout draft creation, and invalid fiat destination failure.
+- Updated execution, payout, monthly-cycle, Edge Function, and backlog docs to record the Session 32 fiat scaffold.
+
+#### Tests and Validation Notes
+- `pnpm dlx node@22.22.1 /opt/homebrew/bin/pnpm test tests/execution-interface.test.ts` passed.
+- `pnpm dlx node@22.22.1 /opt/homebrew/bin/pnpm typecheck` passed.
+- `pnpm dlx node@22.22.1 /opt/homebrew/bin/pnpm lint` passed.
+- `deno cache --config supabase/functions/deno.json supabase/functions/project-onchain-payment-submission-record/index.ts` passed.
+- `pnpm dlx node@22.22.1 /opt/homebrew/bin/pnpm test` passed.
+- `pnpm dlx node@22.22.1 /opt/homebrew/bin/pnpm check` passed.
+
+#### Reflections
+- Fiat now has the same execution-boundary shape as EVM and Solana, but the provider-not-configured metadata prevents the app from pretending a provider integration exists.
+- Keeping receipt verification as a hard failure is safer than storing faux successful fiat receipts before a real processor contract is chosen.
+
+#### Suggested Next Steps
+- Yeet the stacked branch so the Supabase deploy repair and Sessions 30-32 can be reviewed together.
+- Session 33 can now build founder monthly contribution workflows against a complete multi-rail abstraction rather than EVM-only assumptions.
+
+---
+
+### session v107: Add Solana payout adapter scaffolding
+- timestamp: 2026-04-30T22:25:38Z
+- agent: **Codex (GPT-5)**
+- branch: **codex/supabase-deno-import-repair**
+- head: pending final commit
+
+#### Objective
+Implement Session 31 by extending the outbound payout side of the execution interface so Solana can be modeled as a first-class payout rail without enabling live transfer execution yet.
+
+#### Actions Taken
+- Added Solana payout batch draft scaffolding that validates Solana destination addresses and Solana network metadata.
+- Wrapped the generic deterministic payout draft with a Solana-specific `fundloop-solana-payout-batch.v1` payload, manual-transfer scaffold marker, network-key summary, and token-mint summary.
+- Kept Solana payout execution and payout reconciliation as explicit `capability_not_implemented` responses.
+- Added execution-interface tests for Solana payout draft success and invalid destination failure.
+- Updated execution, payout, monthly-cycle, Edge Function, and backlog docs to record the Session 31 scaffold.
+
+#### Tests and Validation Notes
+- `pnpm dlx node@22.22.1 /opt/homebrew/bin/pnpm test tests/execution-interface.test.ts` passed.
+- `pnpm dlx node@22.22.1 /opt/homebrew/bin/pnpm typecheck` passed.
+- `pnpm dlx node@22.22.1 /opt/homebrew/bin/pnpm lint` passed.
+- `deno cache --config supabase/functions/deno.json supabase/functions/project-onchain-payment-submission-record/index.ts` passed.
+- `pnpm dlx node@22.22.1 /opt/homebrew/bin/pnpm test` passed.
+- `pnpm dlx node@22.22.1 /opt/homebrew/bin/pnpm check` passed.
+
+#### Reflections
+- This keeps the payout side honest: Solana now has a real deterministic batch shape, but no code pretends outbound transfers or reconciliation are live.
+- The shared builder remained useful; the Solana adapter only needed rail-specific destination validation and payload metadata.
+
+#### Suggested Next Steps
+- Yeet the stacked branch so the Supabase deploy repair and Sessions 30-31 can go through CI together.
+- Session 32 can add fiat inbound/outbound stubs on the same execution boundary.
+
+---
+
+### session v106: Add Solana inbound contribution adapter
+- timestamp: 2026-04-30T21:52:24Z
+- agent: **Codex (GPT-5)**
+- branch: **codex/supabase-deno-import-repair**
+- head: pending final commit
+
+#### Objective
+Implement Session 30 by proving the shared execution interface can support Solana inbound contribution recording without duplicating the existing EVM payment subsystem.
+
+#### Actions Taken
+- Added Solana deposit-intent creation and signature/amount receipt-verification behavior behind `lib/execution`.
+- Updated the project onchain payment submission command to select the execution adapter from the route chain ecosystem instead of hard-coding EVM.
+- Added Solana reference data for `solana-mainnet`, SOL/USDC assets, and a `deposit_address` intake route that stays inactive unless a real treasury address is configured.
+- Taught runtime deployment availability checks to allow configured Solana deposit-address routes outside the EVM wallet manifest.
+- Updated execution-interface, Edge Function, route-inventory, and backlog docs to record the Session 30 adapter state.
+
+#### Tests and Validation Notes
+- `pnpm dlx node@22.22.1 /opt/homebrew/bin/pnpm test tests/execution-interface.test.ts tests/project-payment-operations-command.test.ts` passed.
+- `pnpm dlx node@22.22.1 /opt/homebrew/bin/pnpm typecheck` passed.
+- `pnpm dlx node@22.22.1 /opt/homebrew/bin/pnpm lint` passed.
+- `supabase migration up` applied `20260430215000_solana_inbound_reference_data.sql` locally.
+- `deno cache --config supabase/functions/deno.json supabase/functions/project-onchain-payment-submission-record/index.ts` passed.
+- `pnpm dlx node@22.22.1 /opt/homebrew/bin/pnpm test` passed.
+- `pnpm dlx node@22.22.1 /opt/homebrew/bin/pnpm build` passed.
+- `pnpm dlx node@22.22.1 /opt/homebrew/bin/pnpm check` passed.
+
+#### Reflections
+- The storage model was already close: `chain_intake_contracts.collection_mode = deposit_address` gave Solana a home without new tables.
+- The most important architectural cleanup was removing the remaining hard-coded EVM adapter choice from receipt recording.
+
+#### Suggested Next Steps
+- Yeet the stacked deploy-repair plus Session 30 branch to `dev` and confirm the Supabase deploy dry-run still sees the new migration and Edge Function graph cleanly.
+- Session 31 can now add Solana payout adapter scaffolding without touching the inbound receipt-recording path again.
+
+---
+
+### session v105: Repair Deno-safe Supabase function imports
+- timestamp: 2026-04-30T21:26:04Z
+- agent: **Codex (GPT-5)**
+- branch: **codex/supabase-deno-import-repair**
+- head: pending final commit
+
+#### Objective
+Repair the post-merge dev Supabase deploy failure by making shared Edge Function import graphs Deno-safe.
+
+#### Actions Taken
+- Stopped a conflicting Smartrust local Supabase stack that was occupying the standard local Supabase ports.
+- Started the FundLoop local Supabase stack and confirmed the merged migrations and seed replay locally.
+- Added explicit `.ts` extensions to monthly-cycle Edge Function contract imports that are consumed by Supabase Edge Function bundling.
+- Added explicit `.ts` extensions and relative type imports through the execution-interface module graph so Deno can resolve the EVM receipt path and future execution adapters without relying on Next/Vite aliases.
+
+#### Tests and Validation Notes
+- `supabase start` succeeded after stopping the conflicting Smartrust stack.
+- `deno cache --config supabase/functions/deno.json supabase/functions/monthly-cycle-approval/index.ts supabase/functions/monthly-cycle-calculation-package/index.ts supabase/functions/monthly-cycle-lock/index.ts supabase/functions/monthly-cycle-payout-intents-create/index.ts supabase/functions/monthly-cycle-verification-review/index.ts supabase/functions/project-onchain-payment-submission-record/index.ts` passed.
+- Local `supabase functions serve` smoke returned expected unauthenticated envelopes for `monthly-cycle-verification-review`, `monthly-cycle-payout-intents-create`, and `project-onchain-payment-submission-record` instead of module-resolution failures.
+- `pnpm dlx node@22.22.1 /opt/homebrew/bin/pnpm test tests/monthly-cycle-calculation-package-contract.test.ts tests/monthly-cycle-verification-contract.test.ts tests/monthly-cycle-payout-intents-contract.test.ts tests/execution-interface.test.ts` passed.
+- `pnpm dlx node@22.22.1 /opt/homebrew/bin/pnpm typecheck` passed.
+- `pnpm dlx node@22.22.1 /opt/homebrew/bin/pnpm lint` passed.
+- Strict `deno check` now resolves the module graph but still reports pre-existing implicit-`any` typing debt in shared function runtime helpers, so this repair uses Deno cache plus local serve smoke as the deployment-shape validation.
+
+#### Reflections
+- The remote failure was a classic Deno-vs-Next import boundary issue: TypeScript app imports tolerated extensionless local modules, but Supabase Edge bundling requires browser/Deno-style specifiers.
+- Keeping this branch narrowly focused avoids turning a deploy repair into a broader function-runtime typing cleanup.
+
+#### Suggested Next Steps
+- Yeet this repair to `dev` and confirm the dev Supabase deploy workflow reaches the later monthly-cycle functions successfully.
+- Follow up separately on strict Deno type-checking for shared Edge Function runtime helpers if we want `deno check` to become a formal CI gate.
+
+---
+
 ### session v104: Address PR 37 automated review feedback
 - timestamp: 2026-04-30T14:28:59Z
 - agent: **Codex (GPT-5)**

@@ -1,4 +1,4 @@
-import type { Json } from "@/types/supabase"
+import type { Json } from "../../types/supabase.ts"
 
 export const fundLoopExecutionRails = ["evm", "solana", "fiat_stub"] as const
 

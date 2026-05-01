@@ -2,6 +2,7 @@ import { z } from "zod"
 import localManifestJson from "./deployments/local.json" with { type: "json" }
 import previewManifestJson from "./deployments/preview.json" with { type: "json" }
 import productionManifestJson from "./deployments/production.json" with { type: "json" }
+import { isSolanaDepositAddressRoute } from "./route-availability.ts"
 import { SUPPORTED_CHAIN_CONFIGS, SUPPORTED_CHAIN_KEYS, type SupportedChainKey } from "./supported-chains.ts"
 
 export const ZERO_ADDRESS = "0x0000000000000000000000000000000000000000"
@@ -319,6 +320,10 @@ export function getDeploymentAvailabilityForRoute(
     abiVersion: string
   },
 ): DeploymentAvailability {
+  if (isSolanaDepositAddressRoute(input)) {
+    return { available: true, reason: null }
+  }
+
   const runtimeChain = getRuntimeChainByNetworkKey(runtimeConfig, input.networkKey)
   if (!runtimeChain) {
     return {

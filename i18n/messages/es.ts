@@ -182,8 +182,9 @@ export const esMessages = {
       productShell: "Espacio del producto",
       workspace: {
         overview: "Resumen",
+        earnings: "Ganancias",
+        reporting: "Reporting",
         account: "Cuenta",
-        reporting: "Resultados publicados",
       },
       founder: {
         overview: "Resumen",
@@ -473,12 +474,12 @@ export const esMessages = {
     results: {
       title: "Visibilidad de resultados actuales",
       description:
-        "Este todavía no es el espacio completo de pagos. Resume los resultados zkAS publicados que ya están disponibles para tu cuenta.",
+        "Resume los resultados zkAS publicados y lleva al espacio de ganancias para seguir el estado de pagos.",
       latestMeta: "Puntaje agregado {score}, publicado {date}",
       pendingDate: "fecha pendiente",
       emptyTitle: "Todavía no hay resultados publicados",
       emptyBody: "Cuando se publique un resultado mensual verificado para ti, la última asignación y el puntaje aparecerán aquí.",
-      cta: "Abrir historial de resultados",
+      cta: "Abrir espacio de ganancias",
     },
     discovery: {
       title: "Proyectos para explorar",
@@ -500,10 +501,224 @@ export const esMessages = {
       founderDescription: "Cambia a operaciones de proyecto cuando gestionas un proyecto.",
     },
   },
+  workspaceEarnings: {
+    eyebrow: "Espacio de ganancias",
+    title: "Tus resultados, preparación de pago y estado de distribución",
+    body:
+      "Sigue resultados mensuales publicados, intenciones de pago pendientes, preparación de rutas y distribuciones completadas o fallidas. Esta es la vista de dinero para usuarios mientras la ejecución detallada sigue controlada por operadores.",
+    rawResultsCta: "Abrir historial bruto",
+    stats: {
+      published: "Asignación publicada",
+      pending: "Pago pendiente",
+      paid: "Pagado",
+      routes: "Rutas activas",
+    },
+    warnings: {
+      title: "Algunos datos de ganancias no están disponibles temporalmente.",
+      body: "La página muestra las partes que cargaron con seguridad. Vuelve a intentar más tarde si el estado de pago o el historial parecen incompletos.",
+    },
+    nextAction: {
+      title: "Siguiente paso recomendado",
+      accountCta: "Revisar cuenta",
+      discoveryCta: "Encontrar proyectos",
+      add_payout_route: {
+        title: "Agrega una ruta de pago predeterminada",
+        body: "FundLoop puede publicar tus resultados, pero las intenciones de pago quedan en borrador hasta que exista un destino activo predeterminado.",
+        detail:
+          "Usa el área de cuenta para revisar identidad y preferencias de pago. La edición de rutas sigue limitada hasta la próxima sesión de preferencias.",
+      },
+      wait_for_distribution: {
+        title: "Sigue este ciclo durante la distribución",
+        body: "Tienes intenciones de pago esperando ejecución, agrupación o conciliación operativa.",
+        detail: "No necesitas actuar ahora salvo que una fila indique que falta la ruta. Mantén frescas tu identidad y preferencias.",
+      },
+      review_history: {
+        title: "Revisa tu historial publicado",
+        body: "No hay intenciones de pago pendientes ahora mismo, así que este espacio funciona como tu registro actual de ganancias.",
+        detail: "Cuando se publiquen nuevos ciclos mensuales, FundLoop adjuntará aquí su estado de pago.",
+      },
+    },
+    routes: {
+      title: "Preferencias de ruta de pago",
+      description: "Las rutas son destinos de pago propiedad del usuario. Esta sesión las muestra; la edición queda para trabajo posterior de cuenta/flujo.",
+      default: "Predeterminada",
+      emptyTitle: "Todavía no hay ruta de pago",
+      emptyBody: "Las futuras intenciones de pago pueden crearse como borradores, pero necesitan una ruta activa predeterminada antes de estar listas para distribución.",
+    },
+    pending: {
+      title: "Distribuciones pendientes",
+      description: "Resultados publicados con intenciones de pago todavía en borrador, listas, agrupadas o en procesamiento.",
+      empty: "No hay distribuciones de pago pendientes ahora mismo.",
+    },
+    history: {
+      title: "Historial mensual de ganancias",
+      description: "Cada resultado publicado aparece con su estado de pago, ruta, lote y señal de conciliación.",
+      empty: "Todavía no hay resultados mensuales publicados.",
+    },
+    status: {
+      title: "Resumen de estado de pagos",
+      description: "Una vista compacta de los estados que suelen requerir atención durante la distribución.",
+      ready: "Intenciones listas",
+      missingRoute: "Borradores sin ruta",
+      failed: "Monto fallido",
+    },
+    table: {
+      cycle: "Ciclo",
+      result: "Resultado",
+      payout: "Pago",
+      route: "Ruta",
+      status: "Estado",
+      published: "Publicado {date}",
+      notCreated: "Aún no creado",
+      batch: "Lote {status}",
+      unbatched: "Sin lote",
+      noRoute: "Sin ruta seleccionada",
+    },
+    payoutStatus: {
+      not_created: "Solo resultado",
+      draft: "Borrador",
+      ready: "Listo",
+      batched: "En lote",
+      processing: "Procesando",
+      paid: "Pagado",
+      failed: "Fallido",
+      cancelled: "Cancelado",
+    },
+    routeStatus: {
+      draft: "Borrador",
+      active: "Activa",
+      disabled: "Desactivada",
+    },
+    batchStatus: {
+      draft: "borrador",
+      ready: "listo",
+      processing: "procesando",
+      completed: "completado",
+      failed: "fallido",
+      cancelled: "cancelado",
+    },
+    reconciliationStatus: {
+      pending: "Conciliación pendiente",
+      matched: "Conciliado",
+      mismatch: "Diferencia",
+      manual_review: "Revisión manual",
+      resolved: "Resuelto",
+    },
+    cycleStatus: {
+      unassigned: "Ciclo pendiente",
+      open: "Abierto",
+      locked: "Bloqueado",
+      prep: "Preparación",
+      calculation: "Cálculo",
+      verification: "Verificación",
+      approval: "Aprobación",
+      distribution: "Distribución",
+      reporting: "Reporting",
+      completed: "Completo",
+      cancelled: "Cancelado",
+    },
+    rail: {
+      evm: "EVM",
+      solana: "Solana",
+      fiat_stub: "Fiat",
+      pending: "Rail pendiente",
+    },
+    reason: {
+      missing_default_payout_route: "Se requiere ruta de pago predeterminada",
+    },
+  },
   workspaceAccount: {
     heading: "Cuenta",
     description:
       "Gestiona los datos personales, direcciones de correo y direcciones de wallet que todavía viven localmente en FundLoop mientras llega el modelo de cuenta respaldado por CUBID.",
+  },
+  workspaceReporting: {
+    eyebrow: "Reporting de usuario",
+    title: "Explicaciones mensuales de tus resultados",
+    body:
+      "El reporting convierte resultados publicados en explicaciones duraderas. Los reportes de usuario pueden apuntar a artefactos almacenados cuando existen, mientras las filas no publicadas aparecen como explicaciones pendientes.",
+    artifact: "Artefacto",
+    publicationPending: "Publicación pendiente",
+    warnings: {
+      title: "Algunos datos de reporting no están disponibles temporalmente.",
+      body: "La página muestra datos parciales seguros. Vuelve a intentar más tarde si las tarjetas parecen incompletas.",
+    },
+    stats: {
+      results: "Resultados publicados",
+      allocation: "Asignación total",
+      reports: "Artefactos de reporte",
+    },
+    empty: {
+      title: "Todavía no hay reportes de usuario",
+      body: "Cuando se publiquen artefactos mensuales para tu cuenta, aparecerán aquí con el contexto del ciclo.",
+      earningsCta: "Abrir ganancias",
+      projectsCta: "Encontrar proyectos",
+    },
+  },
+  founderReporting: {
+    eyebrow: "Reporting fundador",
+    title: "Reporting de {project}",
+    body:
+      "Los reportes de fundador explican qué contribuyó un proyecto, cuántos usuarios fueron incluidos y cómo la atribución entró en la historia mensual de pagos.",
+    actions: {
+      attribution: "Datos de atribución",
+      contributions: "Contribuciones",
+    },
+    warnings: {
+      title: "Algunos datos de reporting fundador no están disponibles temporalmente",
+      body: "La página muestra datos parciales seguros. Vuelve a intentar más tarde si los resúmenes parecen incompletos.",
+    },
+    stats: {
+      reports: "Reportes",
+      users: "Usuarios publicados",
+      payout: "Pago atribuido",
+    },
+    reports: {
+      title: "Artefactos de reporte publicados",
+      description: "Los reportes de proyecto almacenados aparecen aquí cuando se generan para un ciclo mensual.",
+      empty: "Todavía no se publicaron artefactos de reporte fundador para este proyecto.",
+    },
+    summaries: {
+      title: "Resúmenes mensuales del proyecto",
+      description: "Estas filas vienen de resúmenes zkAS publicados y siguen visibles antes de los artefactos formales.",
+      empty: "Todavía no hay resúmenes mensuales del proyecto.",
+    },
+    table: {
+      cycle: "Ciclo",
+      users: "Usuarios",
+      contributed: "Contribuido",
+      payout: "Pago",
+    },
+  },
+  adminCycleReporting: {
+    denied: {
+      title: "Acceso denegado",
+    },
+    eyebrow: "Publicación de reporting",
+    title: "Reportes de {cycle}",
+    body:
+      "El reporting operador muestra qué reportes y artefactos existen para el ciclo, más la cobertura de resultados que debe explicarse antes de considerar completa la publicación.",
+    actions: {
+      payouts: "Pagos",
+      verification: "Verificación",
+    },
+    stats: {
+      users: "Resultados de usuario",
+      projects: "Resúmenes de proyecto",
+      artifacts: "Artefactos",
+      allocation: "Asignación publicada",
+    },
+    canonical: {
+      title: "Reportes canónicos",
+      description: "Los reportes públicos y de operador son los artefactos de ciclo que explican el mes a lectores y auditores.",
+      empty: "Todavía no existe artefacto de reporte público u operador para este ciclo.",
+    },
+    coverage: {
+      title: "Cobertura por rol",
+      description: "Conteos de reportes de usuario y fundador vinculados a este ciclo.",
+      userReports: "Reportes de usuario",
+      founderReports: "Reportes fundador",
+    },
   },
   founderWorkspace: {
     eyebrow: "Espacio fundador",
@@ -601,6 +816,9 @@ export const esMessages = {
       workspace: "Abrir hogar fundador",
       project: "Abrir perfil público del proyecto",
       payments: "Abrir operaciones de contribución",
+      contributions: "Abrir flujo mensual",
+      attribution: "Abrir flujo de atribución",
+      reporting: "Abrir reporting",
       zkas: "Abrir zkAS del proyecto",
     },
     missingSlug: "Publica o corrige el slug del proyecto antes de enlazar rutas de fundador más profundas.",
@@ -633,6 +851,7 @@ export const esMessages = {
       confirmed: "Confirmados",
       latest: "Último periodo",
       cta: "Abrir pagos",
+      workflowCta: "Abrir flujo mensual",
     },
     setup: {
       title: "Preparación",
@@ -649,7 +868,7 @@ export const esMessages = {
       latestDataset: "Últimos datos",
       status: "Estado",
       rows: "Filas",
-      cta: "Abrir zkAS",
+      cta: "Abrir flujo de atribución",
     },
     growth: {
       title: "Crecimiento y reportes",
@@ -662,8 +881,144 @@ export const esMessages = {
     links: {
       public: "Perfil público",
       payments: "Operaciones de contribución",
+      contributions: "Flujo mensual",
+      attribution: "Flujo de atribución",
+      reporting: "Reporting",
       zkas: "zkAS del proyecto",
       allProjects: "Todos los proyectos fundador",
+    },
+  },
+  founderContributions: {
+    eyebrow: "Flujo mensual de contribuciones",
+    title: "Cadencia de contribución de {project}",
+    body:
+      "Revisa obligaciones mensuales, preparación de rutas, estado de envíos y traspaso a atribución en un solo flujo para fundadores. Las páginas de pagos y zkAS siguen siendo las superficies de acción por ahora.",
+    primaryCta: "Abrir operaciones de pago",
+    secondaryCta: "Abrir datos de atribución",
+    none: "Ninguno",
+    ready: "Listo",
+    needsWork: "Necesita trabajo",
+    summary: {
+      latest: "Último ciclo",
+      open: "Ciclos abiertos",
+      contribution: "Contribución total",
+    },
+    warnings: {
+      title: "Algunos datos de contribución no están disponibles temporalmente",
+      body: "Este flujo muestra datos parciales seguros. Usa las páginas operativas enlazadas para los registros más recientes.",
+    },
+    readiness: {
+      setup: {
+        title: "Configuración del proyecto",
+        ready: "Slug, tasa de contribución y método predeterminado están listos.",
+        needsWork: "Resuelve faltantes antes de tratar las contribuciones mensuales como limpias.",
+      },
+      route: {
+        title: "Rutas de pago",
+        ready: "Hay al menos una ruta de pago activa disponible.",
+        needsWork: "Añade una ruta activa antes de esperar envíos limpios.",
+      },
+      attribution: {
+        title: "Datos de atribución",
+        ready: "Existen datos recientes de atribución para la revisión mensual.",
+        needsWork: "Envía datos de atribución para dar contexto al cálculo mensual.",
+      },
+    },
+    cycles: {
+      title: "Obligaciones mensuales",
+      description: "Cada ciclo agrupa las obligaciones de pago ya registradas para este proyecto.",
+    },
+    cycleMetrics: {
+      draft: "Borrador",
+      pending: "Pendiente",
+      awaiting: "Esperando",
+      confirmed: "Confirmado",
+    },
+    status: {
+      draft: "Borrador",
+      needs_submission: "Requiere envío",
+      awaiting_confirmation: "Esperando confirmación",
+      confirmed: "Confirmado",
+      mixed: "Mixto",
+    },
+    empty: {
+      title: "Aún no hay obligaciones mensuales",
+      body: "Crea o guarda borradores de pago desde la página de operaciones. Aparecerán aquí por mes económico.",
+      cta: "Abrir operaciones de pago",
+    },
+    next: {
+      title: "Secuencia operativa",
+      actionable: "Hay ciclos abiertos que todavía necesitan trabajo de contribución.",
+      clear: "Todos los ciclos registrados están confirmados. Mantén actualizados los datos de atribución para el próximo cierre.",
+      steps: {
+        review: "Revisar ingresos y obligaciones de contribución calculadas.",
+        route: "Confirmar que el proyecto tenga una ruta de pago activa.",
+        submit: "Enviar evidencia de contribución onchain o fiat planificada.",
+        verify: "Seguir confirmación y reconciliación antes del cierre mensual.",
+      },
+    },
+    links: {
+      payments: "Abrir operaciones de pago",
+      attribution: "Abrir flujo de atribución",
+      projectHome: "Volver al proyecto",
+    },
+  },
+  founderAttribution: {
+    eyebrow: "Flujo de datos de atribución",
+    title: "Datos de contribución de {project}",
+    body:
+      "Prepara, valida y sigue el conjunto de datos del proyecto que alimenta el cálculo zkAS mensual. Las cargas siguen en la superficie zkAS existente, pero este flujo hace explícito el contrato de datos.",
+    primaryCta: "Abrir carga de datos",
+    secondaryCta: "Volver al flujo de contribución",
+    none: "Ninguno",
+    summary: {
+      latestCycle: "Último ciclo",
+      latestDataset: "Últimos datos",
+      approved: "Datos aprobados",
+    },
+    warnings: {
+      title: "Algunos datos de atribución no están disponibles temporalmente",
+      body: "Este flujo muestra datos parciales seguros. Usa las páginas zkAS enlazadas para los registros más recientes.",
+    },
+    readiness: {
+      cycle: {
+        title: "Anclaje de ciclo",
+        ready: "Existe un ciclo de contribución actual para este proyecto.",
+        needsWork: "Crea obligaciones mensuales antes del traspaso final a atribución.",
+      },
+      dataset: {
+        title: "Cobertura de datos",
+        ready: "El último conjunto coincide con el último ciclo de contribución.",
+        needsWork: "Carga o valida datos para el último ciclo de contribución.",
+      },
+      validation: {
+        title: "Problemas de validación",
+        ready: "No hay problemas visibles en las presentaciones recientes.",
+        needsWork: "Revisa errores y advertencias antes de la aprobación operativa.",
+      },
+    },
+    guide: {
+      title: "Contrato de presentación",
+      description: "Usa esta estructura para que humanos y futuros agentes/MCP puedan revisar los datos del proyecto.",
+      derive: "Cómo derivar el conjunto mensual",
+      checklist: "Lista de verificación",
+      identity: "Compatibilidad con artefacto de identidad",
+      csv: "Descargar plantilla CSV",
+      json: "Descargar ejemplo JSON",
+    },
+    submissions: {
+      title: "Presentaciones recientes",
+      description: "Datos enviados recientemente para este proyecto, con validación y estado de aprobación.",
+      month: "Mes",
+      file: "Archivo",
+      rows: "Filas",
+      issues: "Problemas",
+      status: "Estado",
+      empty: "Todavía no se han cargado datos de atribución.",
+    },
+    links: {
+      upload: "Abrir carga de datos",
+      projectHome: "Volver al proyecto",
     },
   },
   founderAccount: {
@@ -1217,6 +1572,13 @@ export const esMessages = {
       title: "El reporte público debe ser honesto, verificable y estar ligado a operaciones mensuales reales.",
       body:
         "Esta página no es un panel analítico falso. Es la explicación pública de lo que FundLoop planea publicar a medida que se complete el pipeline mensual de contribución, verificación y publicación.",
+    },
+    published: {
+      eyebrow: "Reportes publicados",
+      title: "Los reportes mensuales aparecerán aquí como artefactos duraderos.",
+      body:
+        "La sesión 36 agrega el modelo de publicación de reporting. Cuando existan artefactos mensuales públicos, esta página listará los más recientes sin inventar analíticas falsas.",
+      empty: "Todavía no se publicó ningún artefacto mensual público.",
     },
     cta: {
       documentation: "Leer documentación",

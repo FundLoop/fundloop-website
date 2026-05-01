@@ -1,6 +1,6 @@
 import type { SupabaseClient } from "@supabase/supabase-js"
 import type { Database, Json, Tables } from "../../types/supabase.ts"
-import { getExecutionAdapter } from "../execution/index.ts"
+import { getExecutionAdapter, type FundLoopExecutionRail } from "../execution/index.ts"
 import {
   getPromotedDefaultRouteId,
   moveProjectCryptoRouteState,
@@ -20,6 +20,7 @@ export type ManagedCryptoPaymentMethodSummary = {
   chain: {
     id: number
     display_name: string
+    ecosystem: string
     network_key: string
     evm_chain_id: number
     native_asset_symbol: string
@@ -58,7 +59,7 @@ type ManagedCryptoPaymentMethodRow = {
   collection_mode: "contract" | "deposit_address"
   ref_chains: Pick<
     Tables<"ref_chains">,
-    "id" | "display_name" | "network_key" | "evm_chain_id" | "native_asset_symbol" | "is_active"
+    "id" | "display_name" | "ecosystem" | "network_key" | "evm_chain_id" | "native_asset_symbol" | "is_active"
   >
   ref_chain_assets: Pick<
     Tables<"ref_chain_assets">,
@@ -84,6 +85,7 @@ type RecordOnchainPaymentRouteSnapshot = {
   intake_contract_id: number | null
   ref_chains: {
     network_key: string
+    ecosystem: string
   }
   chain_intake_contracts: {
     contract_address: string
@@ -197,7 +199,7 @@ const MANAGED_CRYPTO_PAYMENT_METHOD_SELECT = `
   chain_asset_id,
   intake_contract_id,
   collection_mode,
-  ref_chains!inner(id, display_name, network_key, evm_chain_id, native_asset_symbol, is_active),
+  ref_chains!inner(id, display_name, ecosystem, network_key, evm_chain_id, native_asset_symbol, is_active),
   ref_chain_assets!inner(id, symbol, name, token_address, decimals, is_native, is_stablecoin, is_active),
   chain_intake_contracts!inner(id, contract_address, treasury_address, abi_version, is_active)
 `
@@ -223,6 +225,18 @@ function commandFailure(
       submissionId: options?.submissionId ?? null,
     },
   }
+}
+
+function resolveDepositExecutionRail(ecosystem: string | null | undefined): FundLoopExecutionRail | null {
+  if (ecosystem === "evm") {
+    return "evm"
+  }
+
+  if (ecosystem === "solana") {
+    return "solana"
+  }
+
+  return null
 }
 
 function normalizePaymentFlowErrorCode(stage: string, error: unknown) {
@@ -348,6 +362,7 @@ function mapManagedCryptoPaymentMethodSummary(
     chain: {
       id: row.ref_chains.id,
       display_name: row.ref_chains.display_name,
+      ecosystem: row.ref_chains.ecosystem,
       network_key: row.ref_chains.network_key,
       evm_chain_id: row.ref_chains.evm_chain_id,
       native_asset_symbol: row.ref_chains.native_asset_symbol,
@@ -521,9 +536,9 @@ async function validateManagedCryptoRouteReferences(
   if (
     !intakeContract?.is_active ||
     intakeContract.chain_id !== input.chainId ||
-    intakeContract.collection_mode !== "contract"
+    (intakeContract.collection_mode !== "contract" && intakeContract.collection_mode !== "deposit_address")
   ) {
-    return commandFailure("invalid_reference", "The selected intake contract is invalid for that chain.")
+    return commandFailure("invalid_reference", "The selected intake route is invalid for that chain.")
   }
 
   return { ok: true as const }
@@ -1107,7 +1122,7 @@ export async function executeProjectOnchainPaymentSubmissionRecordCommand(
           chain_id,
           chain_asset_id,
           intake_contract_id,
-          ref_chains!inner(network_key),
+          ref_chains!inner(network_key, ecosystem),
           chain_intake_contracts!inner(contract_address, treasury_address, abi_version),
           ref_chain_assets!inner(token_address, is_native)
         `)
@@ -1357,13 +1372,39 @@ export async function executeProjectOnchainPaymentSubmissionRecordCommand(
     })
   }
 
-  const evmAdapter = getExecutionAdapter("evm")
-  const depositIntent = await evmAdapter.createDepositIntent({
+  const executionRail = resolveDepositExecutionRail(paymentMethodSnapshot.ref_chains.ecosystem)
+  if (!executionRail) {
+    const message = `The ${paymentMethodSnapshot.ref_chains.ecosystem || "unknown"} payment rail is not supported for onchain receipt recording.`
+    await recordReceiptEvent(supabase, deps, {
+      stage: "deposit_intent",
+      outcome: "failure",
+      attemptId: input.attemptId,
+      actorUserId: context.data.actorUserId,
+      actorRole: "project_admin",
+      projectId: context.data.project.id,
+      paymentId: input.paymentId,
+      paymentMethodId: input.paymentMethodId,
+      chainId: input.chainId,
+      chainAssetId: input.chainAssetId,
+      intakeContractId: input.intakeContractId,
+      txHash: input.txHash,
+      walletAddress: input.walletAddress,
+      error: message,
+    })
+    return commandFailure("unsupported_rail", message, {
+      projectId: context.data.project.id,
+      paymentId: input.paymentId,
+      paymentMethodId: input.paymentMethodId,
+    })
+  }
+
+  const executionAdapter = getExecutionAdapter(executionRail)
+  const depositIntent = await executionAdapter.createDepositIntent({
     projectId: context.data.project.id,
     projectSlug: input.projectSlug,
     paymentId: input.paymentId,
     paymentMethodId: input.paymentMethodId,
-    rail: "evm",
+    rail: executionRail,
     money: {
       amountUsd: expectedAmount,
       currencyCode: "USD",
@@ -1381,6 +1422,7 @@ export async function executeProjectOnchainPaymentSubmissionRecordCommand(
     },
     metadata: {
       source: "project_payments_page",
+      rail: executionRail,
       period_id: input.periodId,
     },
   })
@@ -1409,8 +1451,8 @@ export async function executeProjectOnchainPaymentSubmissionRecordCommand(
     })
   }
 
-  const receiptVerification = await evmAdapter.verifyDepositReceipt({
-    rail: "evm",
+  const receiptVerification = await executionAdapter.verifyDepositReceipt({
+    rail: executionRail,
     paymentId: input.paymentId,
     depositIntentReference: depositIntent.data.reference,
     submittedTxHash: input.txHash,
@@ -1420,11 +1462,12 @@ export async function executeProjectOnchainPaymentSubmissionRecordCommand(
     metadata: {
       period_id: input.periodId,
       amount_raw: input.amountRaw,
+      rail: executionRail,
     },
   })
 
   if (!receiptVerification.ok || !receiptVerification.data.verified) {
-    const message = receiptVerification.ok ? "EVM receipt could not be verified." : receiptVerification.error.message
+    const message = receiptVerification.ok ? "Onchain receipt could not be verified." : receiptVerification.error.message
     const code = receiptVerification.ok ? "receipt_verification_failed" : receiptVerification.error.code
     await recordReceiptEvent(supabase, deps, {
       stage: "receipt_verification",
@@ -1480,6 +1523,7 @@ export async function executeProjectOnchainPaymentSubmissionRecordCommand(
       metadata: {
         source: "execution-interface.v1",
         previous_source: "project_payments_page",
+        rail: executionRail,
         period_id: input.periodId,
         deposit_intent_reference: depositIntent.data.reference,
         deposit_destination_kind: depositIntent.data.destination.kind,

@@ -182,8 +182,9 @@ export const enMessages = {
       productShell: "Product workspace",
       workspace: {
         overview: "Overview",
+        earnings: "Earnings",
+        reporting: "Reporting",
         account: "Account",
-        reporting: "Published results",
       },
       founder: {
         overview: "Overview",
@@ -481,12 +482,12 @@ export const enMessages = {
     results: {
       title: "Current results visibility",
       description:
-        "This is not the full payout workspace yet. It summarizes published zkAS results that are already available for your account.",
+        "This summarizes published zkAS results and points into the user earnings workspace for payout status.",
       latestMeta: "Aggregate score {score}, published {date}",
       pendingDate: "date pending",
       emptyTitle: "No published results yet",
       emptyBody: "When a verified monthly result is published for you, the latest allocation and score will appear here.",
-      cta: "Open result history",
+      cta: "Open earnings workspace",
     },
     discovery: {
       title: "Projects to explore",
@@ -508,10 +509,223 @@ export const enMessages = {
       founderDescription: "Switch to project operations when you manage a project.",
     },
   },
+  workspaceEarnings: {
+    eyebrow: "Earnings workspace",
+    title: "Your results, payout readiness, and distribution status",
+    body:
+      "Track published monthly results, pending payout intents, route readiness, and completed or failed distributions. This is the user-facing money view while detailed execution remains operator-controlled.",
+    rawResultsCta: "Open raw result history",
+    stats: {
+      published: "Published allocation",
+      pending: "Pending payout",
+      paid: "Paid out",
+      routes: "Active routes",
+    },
+    warnings: {
+      title: "Some earnings data is temporarily unavailable.",
+      body: "The page is showing the parts that loaded safely. Try refreshing later if payout status or history looks incomplete.",
+    },
+    nextAction: {
+      title: "Recommended next step",
+      accountCta: "Review account",
+      discoveryCta: "Find projects",
+      add_payout_route: {
+        title: "Add a default payout route",
+        body: "FundLoop can publish results for you, but payout intents stay in draft until an active default payout destination exists.",
+        detail: "Use the account area to review identity and payout preferences. Route editing remains intentionally limited until the next payout-preference write session lands.",
+      },
+      wait_for_distribution: {
+        title: "Watch this cycle move through distribution",
+        body: "You have payout intents waiting for operator execution, batching, or reconciliation.",
+        detail: "No action is required right now unless a row says the route is missing. Keep your identity and payout preferences fresh.",
+      },
+      review_history: {
+        title: "Review your published history",
+        body: "There are no pending payout intents right now, so this workspace is your current earnings record.",
+        detail: "As new monthly cycles publish, FundLoop will attach payout intent status here.",
+      },
+    },
+    routes: {
+      title: "Payout route preferences",
+      description: "Routes are user-owned payout destinations. This session displays them; route editing stays in account/workflow follow-up work.",
+      default: "Default",
+      emptyTitle: "No payout route yet",
+      emptyBody: "Future payout intents can still be created as drafts, but they need a default active route before they become ready for distribution.",
+    },
+    pending: {
+      title: "Pending distributions",
+      description: "Published results that have payout intents still moving through draft, ready, batched, or processing states.",
+      empty: "No pending payout distributions are available right now.",
+    },
+    history: {
+      title: "Monthly earnings history",
+      description: "Every published result is listed with its current payout status, route, batch, and reconciliation cue.",
+      empty: "No published monthly results are available yet.",
+    },
+    status: {
+      title: "Payout status summary",
+      description: "A compact view of the statuses that usually need attention during distribution.",
+      ready: "Ready intents",
+      missingRoute: "Missing route drafts",
+      failed: "Failed amount",
+    },
+    table: {
+      cycle: "Cycle",
+      result: "Result",
+      payout: "Payout",
+      route: "Route",
+      status: "Status",
+      published: "Published {date}",
+      notCreated: "Not created yet",
+      batch: "Batch {status}",
+      unbatched: "Not batched",
+      noRoute: "No route selected",
+    },
+    payoutStatus: {
+      not_created: "Result only",
+      draft: "Draft",
+      ready: "Ready",
+      batched: "Batched",
+      processing: "Processing",
+      paid: "Paid",
+      failed: "Failed",
+      cancelled: "Cancelled",
+    },
+    routeStatus: {
+      draft: "Draft",
+      active: "Active",
+      disabled: "Disabled",
+    },
+    batchStatus: {
+      draft: "draft",
+      ready: "ready",
+      processing: "processing",
+      completed: "completed",
+      failed: "failed",
+      cancelled: "cancelled",
+    },
+    reconciliationStatus: {
+      pending: "Reconciliation pending",
+      matched: "Reconciled",
+      mismatch: "Mismatch",
+      manual_review: "Manual review",
+      resolved: "Resolved",
+    },
+    cycleStatus: {
+      unassigned: "Cycle pending",
+      open: "Open",
+      locked: "Locked",
+      prep: "Prep",
+      calculation: "Calculation",
+      verification: "Verification",
+      approval: "Approval",
+      distribution: "Distribution",
+      reporting: "Reporting",
+      completed: "Completed",
+      cancelled: "Cancelled",
+    },
+    rail: {
+      evm: "EVM",
+      solana: "Solana",
+      fiat_stub: "Fiat",
+      pending: "Rail pending",
+    },
+    reason: {
+      missing_default_payout_route: "Default payout route required",
+    },
+  },
   workspaceAccount: {
     heading: "Account",
     description:
       "FundLoop now separates CUBID-managed identity from local profile preferences. Use this account hub to see that split clearly, refresh synced identity data, and manage the product-specific settings that still belong here.",
+  },
+  workspaceReporting: {
+    eyebrow: "User reporting",
+    title: "Monthly explanations for your results",
+    body:
+      "Reporting turns published results into durable explanations. User reports can point to stored artifacts when they exist, while unpublished report rows still show as pending explanations tied to your monthly results.",
+    artifact: "Artifact",
+    publicationPending: "Publication pending",
+    warnings: {
+      title: "Some reporting data is temporarily unavailable.",
+      body: "The page is showing safe partial data. Try refreshing later if report cards look incomplete.",
+    },
+    stats: {
+      results: "Published results",
+      allocation: "Total allocation",
+      reports: "Report artifacts",
+    },
+    empty: {
+      title: "No user reports yet",
+      body: "When monthly reporting artifacts are published for your account, they will appear here with the cycle context.",
+      earningsCta: "Open earnings",
+      projectsCta: "Find projects",
+    },
+  },
+  founderReporting: {
+    eyebrow: "Founder reporting",
+    title: "{project} reporting",
+    body:
+      "Founder reports explain what a project contributed, how many users were included, and how attribution mapped into the monthly payout story.",
+    actions: {
+      attribution: "Attribution data",
+      contributions: "Contributions",
+    },
+    warnings: {
+      title: "Some founder reporting data is temporarily unavailable",
+      body: "The page is showing safe partial data. Try refreshing later if summaries look incomplete.",
+    },
+    stats: {
+      reports: "Reports",
+      users: "Published users",
+      payout: "Attributed payout",
+    },
+    reports: {
+      title: "Published report artifacts",
+      description: "Stored project reports appear here when generated for a monthly cycle.",
+      empty: "No founder report artifacts have been published for this project yet.",
+    },
+    summaries: {
+      title: "Monthly project summaries",
+      description: "These rows come from published zkAS project summaries and remain visible before formal report artifacts exist.",
+      empty: "No monthly project summaries are available yet.",
+    },
+    table: {
+      cycle: "Cycle",
+      users: "Users",
+      contributed: "Contributed",
+      payout: "Payout",
+    },
+  },
+  adminCycleReporting: {
+    denied: {
+      title: "Access denied",
+    },
+    eyebrow: "Reporting publication",
+    title: "{cycle} reports",
+    body:
+      "Operator reporting shows which role-specific reports and storage artifacts exist for the cycle, plus the result coverage that should be explained before publication is considered complete.",
+    actions: {
+      payouts: "Payout work",
+      verification: "Verification",
+    },
+    stats: {
+      users: "User results",
+      projects: "Project summaries",
+      artifacts: "Artifacts",
+      allocation: "Published allocation",
+    },
+    canonical: {
+      title: "Canonical reports",
+      description: "Public and operator reports are the cycle-level artifacts that explain the month to readers and auditors.",
+      empty: "No public or operator report artifact exists for this cycle yet.",
+    },
+    coverage: {
+      title: "Role coverage",
+      description: "Counts for user- and founder-specific report rows linked to this cycle.",
+      userReports: "User reports",
+      founderReports: "Founder reports",
+    },
   },
   founderWorkspace: {
     eyebrow: "Founder workspace",
@@ -609,6 +823,9 @@ export const enMessages = {
       workspace: "Open founder home",
       project: "Open public project profile",
       payments: "Open contribution operations",
+      contributions: "Open monthly workflow",
+      attribution: "Open attribution workflow",
+      reporting: "Open reporting",
       zkas: "Open project zkAS",
     },
     missingSlug: "Publish or repair the project slug before deeper founder routes can be linked.",
@@ -641,6 +858,7 @@ export const enMessages = {
       confirmed: "Confirmed",
       latest: "Latest period",
       cta: "Open payments",
+      workflowCta: "Open monthly workflow",
     },
     setup: {
       title: "Setup readiness",
@@ -657,7 +875,7 @@ export const enMessages = {
       latestDataset: "Latest dataset",
       status: "Status",
       rows: "Rows",
-      cta: "Open zkAS",
+      cta: "Open attribution workflow",
     },
     growth: {
       title: "Growth and reporting",
@@ -670,8 +888,144 @@ export const enMessages = {
     links: {
       public: "Public profile",
       payments: "Contribution operations",
+      contributions: "Monthly workflow",
+      attribution: "Attribution workflow",
+      reporting: "Reporting",
       zkas: "Project zkAS",
       allProjects: "All founder projects",
+    },
+  },
+  founderContributions: {
+    eyebrow: "Monthly contribution workflow",
+    title: "{project} contribution cadence",
+    body:
+      "Review monthly obligations, route readiness, submission state, and attribution handoff in one founder-facing workflow. The existing payments and zkAS pages remain the action surfaces for now.",
+    primaryCta: "Open payment operations",
+    secondaryCta: "Open attribution data",
+    none: "None",
+    ready: "Ready",
+    needsWork: "Needs work",
+    summary: {
+      latest: "Latest cycle",
+      open: "Open cycles",
+      contribution: "Total contribution",
+    },
+    warnings: {
+      title: "Some contribution data is temporarily unavailable",
+      body: "This workflow is showing safe partial data. Use the linked operation pages for the latest records.",
+    },
+    readiness: {
+      setup: {
+        title: "Project setup",
+        ready: "Slug, contribution rate, and default payment method are ready.",
+        needsWork: "Resolve setup gaps before treating monthly contributions as clean.",
+      },
+      route: {
+        title: "Payment routes",
+        ready: "At least one enabled payment route is available.",
+        needsWork: "Add an enabled payment route before expecting clean submissions.",
+      },
+      attribution: {
+        title: "Attribution data",
+        ready: "Recent project attribution data exists for monthly review.",
+        needsWork: "Submit attribution data so the monthly calculation has project context.",
+      },
+    },
+    cycles: {
+      title: "Monthly obligations",
+      description: "Each cycle groups the payment obligations already tracked for this project.",
+    },
+    cycleMetrics: {
+      draft: "Draft",
+      pending: "Pending",
+      awaiting: "Awaiting",
+      confirmed: "Confirmed",
+    },
+    status: {
+      draft: "Draft",
+      needs_submission: "Needs submission",
+      awaiting_confirmation: "Awaiting confirmation",
+      confirmed: "Confirmed",
+      mixed: "Mixed",
+    },
+    empty: {
+      title: "No monthly obligations yet",
+      body: "Create or save payment drafts from the existing payment operations page. They will appear here by economic month.",
+      cta: "Open payment operations",
+    },
+    next: {
+      title: "Operating sequence",
+      actionable: "There are open cycles that still need contribution work.",
+      clear: "All tracked cycles are confirmed. Keep attribution data current for the next lock.",
+      steps: {
+        review: "Review revenue and calculated contribution obligations.",
+        route: "Confirm the project has an enabled payment route.",
+        submit: "Submit onchain or planned fiat contribution evidence.",
+        verify: "Watch confirmation and reconciliation before the monthly lock.",
+      },
+    },
+    links: {
+      payments: "Open payment operations",
+      attribution: "Open attribution workflow",
+      projectHome: "Back to project home",
+    },
+  },
+  founderAttribution: {
+    eyebrow: "Attribution data workflow",
+    title: "{project} contribution data",
+    body:
+      "Prepare, validate, and track the project dataset that feeds monthly zkAS calculation. Uploads still happen on the existing zkAS surface, but this workflow makes the data contract explicit.",
+    primaryCta: "Open dataset upload",
+    secondaryCta: "Back to contribution workflow",
+    none: "None",
+    summary: {
+      latestCycle: "Latest cycle",
+      latestDataset: "Latest dataset",
+      approved: "Approved datasets",
+    },
+    warnings: {
+      title: "Some attribution data is temporarily unavailable",
+      body: "This workflow is showing safe partial data. Use the linked zkAS pages for the latest records.",
+    },
+    readiness: {
+      cycle: {
+        title: "Cycle anchor",
+        ready: "A current contribution cycle exists for this project.",
+        needsWork: "Create monthly contribution obligations before final attribution handoff.",
+      },
+      dataset: {
+        title: "Dataset coverage",
+        ready: "The latest dataset matches the latest contribution cycle.",
+        needsWork: "Upload or validate a dataset for the latest contribution cycle.",
+      },
+      validation: {
+        title: "Validation issues",
+        ready: "No validation issues are visible in recent submissions.",
+        needsWork: "Review validation errors and warnings before operator approval.",
+      },
+    },
+    guide: {
+      title: "Submission contract",
+      description: "Use this structure so project data can be reviewed by humans and future agent/MCP workflows.",
+      derive: "How to derive the monthly dataset",
+      checklist: "Submission checklist",
+      identity: "Identity artifact compatibility",
+      csv: "Download CSV template",
+      json: "Download JSON example",
+    },
+    submissions: {
+      title: "Recent submissions",
+      description: "Recent datasets submitted for this project, including validation and approval state.",
+      month: "Month",
+      file: "File",
+      rows: "Rows",
+      issues: "Issues",
+      status: "Status",
+      empty: "No attribution datasets have been uploaded yet.",
+    },
+    links: {
+      upload: "Open dataset upload",
+      projectHome: "Back to project home",
     },
   },
   founderAccount: {
@@ -1349,6 +1703,13 @@ export const enMessages = {
           body: "How the network explains a given month without leaking sensitive operator-only detail or pretending incomplete inputs are final.",
         },
       ],
+    },
+    published: {
+      eyebrow: "Published reports",
+      title: "Monthly reports will appear here as durable artifacts.",
+      body:
+        "Session 36 adds the reporting publication model. When public monthly report artifacts exist, this page lists the latest ones without inventing placeholder analytics.",
+      empty: "No public monthly report artifacts have been published yet.",
     },
     guardrails: {
       eyebrow: "Public guardrails",

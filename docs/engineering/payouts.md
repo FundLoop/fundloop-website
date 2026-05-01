@@ -33,4 +33,14 @@ This keeps missing user preferences visible without blocking the whole cycle fro
 
 ## What Is Not Included Yet
 
-Session 28 added the chain-abstracted execution interface in `lib/execution/`. It can now build deterministic payout batch drafts from ready intents, but it still does not execute payouts, publish user earnings history, or reconcile external transfers. Those remain later payout execution and user workspace sessions.
+Session 28 added the chain-abstracted execution interface in `lib/execution/`. It can now build deterministic payout batch drafts from ready intents.
+
+Session 31 added Solana-specific payout batch draft scaffolding. Solana payout drafts now validate Solana destination addresses and produce a `fundloop-solana-payout-batch.v1` payload with manual-transfer scaffold metadata, network keys, and token mint summaries.
+
+Session 32 added fiat payout batch stubs. Fiat drafts validate placeholder destination methods or account references and produce a `fundloop-fiat-payout-batch.v1` payload with `provider_not_configured` metadata. This lets the product model fiat routes without implying a live payout provider.
+
+Session 35 added the first signed-in user earnings workspace at `/[locale]/workspace/earnings`.
+
+That page is read-only for now. It shows published monthly results, payout intents, route readiness, batch status, and reconciliation cues using the existing payout domain tables. It deliberately does not add payout-route editing or payout execution controls; those remain separate write-path sessions.
+
+The app still does not execute payouts or reconcile external transfers from user-facing pages. Those remain later payout execution sessions.

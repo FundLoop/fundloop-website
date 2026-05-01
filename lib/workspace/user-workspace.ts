@@ -36,7 +36,7 @@ export type UserWorkspaceResultSummary = {
   } | null
   totalAllocationUsd: number
   resultCount: number
-  detailHref: "/settings/zkas"
+  detailHref: "/workspace/earnings"
 }
 
 export type UserWorkspaceHome = {
@@ -211,7 +211,7 @@ export function buildUserWorkspaceHome({
         : null,
       totalAllocationUsd: publishedResults.reduce((sum, result) => sum + Number(result.allocation_usd), 0),
       resultCount: publishedResults.length,
-      detailHref: "/settings/zkas",
+      detailHref: "/workspace/earnings",
     },
     warnings,
   }

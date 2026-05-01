@@ -87,6 +87,9 @@ export default async function FounderProjectHomePage({ params }: FounderProjectH
             <Link href={`/projects/${project.slug}/payments`} className="text-sm font-semibold text-[var(--interactive-primary)]">
               {t("payments.cta")}
             </Link>
+            <Link href={`/founder/projects/${project.slug}/contributions`} className="ml-4 text-sm font-semibold text-[var(--interactive-primary)]">
+              {t("payments.workflowCta")}
+            </Link>
           </CardContent>
         </Card>
 
@@ -117,7 +120,7 @@ export default async function FounderProjectHomePage({ params }: FounderProjectH
               <Mini label={t("attribution.status")} value={project.attribution.latestDatasetStatus ?? t("none")} />
               <Mini label={t("attribution.rows")} value={String(project.attribution.latestDatasetRowCount ?? 0)} />
             </div>
-            <Link href={`/projects/${project.slug}/zkas`} className="text-sm font-semibold text-[var(--interactive-primary)]">
+            <Link href={`/founder/projects/${project.slug}/attribution`} className="text-sm font-semibold text-[var(--interactive-primary)]">
               {t("attribution.cta")}
             </Link>
           </CardContent>
@@ -146,8 +149,17 @@ export default async function FounderProjectHomePage({ params }: FounderProjectH
         <Link href={`/projects/${project.slug}/payments`} className="text-sm font-semibold text-[var(--interactive-primary)]">
           {t("links.payments")}
         </Link>
+        <Link href={`/founder/projects/${project.slug}/contributions`} className="text-sm font-semibold text-[var(--interactive-primary)]">
+          {t("links.contributions")}
+        </Link>
         <Link href={`/projects/${project.slug}/zkas`} className="text-sm font-semibold text-[var(--interactive-primary)]">
           {t("links.zkas")}
+        </Link>
+        <Link href={`/founder/projects/${project.slug}/attribution`} className="text-sm font-semibold text-[var(--interactive-primary)]">
+          {t("links.attribution")}
+        </Link>
+        <Link href={`/founder/projects/${project.slug}/reporting`} className="text-sm font-semibold text-[var(--interactive-primary)]">
+          {t("links.reporting")}
         </Link>
         <Link href="/founder/projects" className="text-sm font-semibold text-[var(--interactive-primary)]">
           {t("links.allProjects")}
