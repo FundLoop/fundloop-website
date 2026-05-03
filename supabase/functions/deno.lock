@@ -1,10 +1,16 @@
 {
   "version": "5",
   "specifiers": {
+    "jsr:@cubid/core@0.1.0": "0.1.0",
     "npm:@supabase/supabase-js@2": "2.104.0",
     "npm:@supabase/supabase-js@2.104.0": "2.104.0",
     "npm:viem@2.48.1": "2.48.1_zod@4.3.6",
     "npm:zod@4.3.6": "4.3.6"
+  },
+  "jsr": {
+    "@cubid/core@0.1.0": {
+      "integrity": "8ffee39868cc6f1563c86639017b1e8321859c641afd3dbfdb2ebec0df46d7ee"
+    }
   },
   "npm": {
     "@adraffy/ens-normalize@1.11.1": {
@@ -161,6 +167,7 @@
   },
   "workspace": {
     "dependencies": [
+      "jsr:@cubid/core@0.1.0",
       "npm:@supabase/supabase-js@2.104.0",
       "npm:viem@2.48.1",
       "npm:zod@4.3.6"

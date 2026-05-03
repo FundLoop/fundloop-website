@@ -1,4 +1,4 @@
-import type { FetchIdentityResponse, FetchScoreResponse, FetchStampsResponse, FetchUserDataResponse } from "@cubid/api"
+import type { FetchIdentityResponse, FetchScoreResponse, FetchStampsResponse, FetchUserDataResponse } from "@cubid/core"
 import type { Json } from "../../types/supabase.ts"
 import {
   CUBID_RECOMMENDED_STAMPS,
@@ -39,7 +39,7 @@ export function normalizeCubidIdentitySnapshot(input: CubidSnapshotNormalization
   return {
     cubidUserId: input.cubidUserId,
     primaryName: input.userData?.name?.trim() || null,
-    primaryEmail: input.stamps.email,
+    primaryEmail: input.stamps.email ?? null,
     primaryPhone: pickPrimaryPhone(input.stamps.allStamps),
     cubidScore: input.score?.cubidScore ?? null,
     availableStampTypes,

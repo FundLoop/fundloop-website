@@ -506,3 +506,91 @@ Translate the architecture into operational reliability. This session should pro
 - Session-log reference(s): session v122
 
 After the heavy architecture and workflow work is in place, do the intentional finish pass. This session should refine copy, empty states, motion, visual hierarchy, multilingual edge cases, and the most important conversion points for both users and founders. It should also tighten the balance between “visually stunning” and “simple, clean UX.” The goal is not random polish. It is aligning the product’s presentation with the fact that the underlying system is now real, operational, and trustworthy.
+
+## Session 46: Verify remote deploy health after the operations and MCP merge
+
+- Status: Complete
+- Timestamp started: 2026-05-03T17:10:26-0400
+- Timestamp completed: 2026-05-03T17:13:21-0400
+- Feature branch: codex/session-46-deploy-health
+- Head: pending final commit
+- Session-log reference(s): session v125
+
+Confirm that the merged Sessions 37-45 stack actually landed cleanly in shared infrastructure, not just in local tests. This session should inspect the post-merge GitHub Actions results, verify the Supabase deploy workflow applied the new migrations and deployed the new Edge Functions on the dev target, and smoke the new operator/MCP-adjacent surfaces against the deployed environment where credentials allow. Fix small deployment-script, Deno import, or environment-documentation issues if discovered. Do not add product scope unless the deploy verification reveals a real blocker.
+
+## Session 46.1: Confirm the post-merge dev Supabase deploy
+
+- Status: Not started
+- Timestamp started: TBD
+- Timestamp completed: TBD
+- Feature branch: TBD
+- Head: TBD
+- Session-log reference(s): TBD
+
+After the Session 46 repair PR merges to `dev`, verify the push-triggered `Supabase Deploy` workflow succeeds end to end against the dev Supabase target. Confirm the deploy run includes `user-cubid-resolve-email`, `user-cubid-sync-profile`, and `mcp-workflow-read`, and that no function attempts to resolve `node_modules/@cubid/api/dist/index.mjs`. If the deploy still fails, keep the follow-up narrow and repair only the failing deploy/runtime boundary before moving to Session 47.
+
+## Session 47: Run a production-readiness smoke and beta blocker audit
+
+- Status: Not started
+- Timestamp started: TBD
+- Timestamp completed: TBD
+- Feature branch: TBD
+- Head: TBD
+- Session-log reference(s): TBD
+
+Perform a focused end-to-end beta readiness audit now that the public funnels, workspaces, monthly cycle pipeline, reporting, storage, and MCP foundation exist. Cover the highest-risk user journeys: visitor conversion, user onboarding, founder onboarding, contribution submission, monthly cycle operator flow, user earnings/reporting, admin operations, and key localization paths. Record concrete blockers in this backlog, fix only small obvious breakages, and avoid reopening completed architecture decisions unless runtime evidence proves they are wrong. The output should be a launch-oriented punch list with severity, owner surface, and suggested session order.
+
+## Session 48: Harden seeded local and preview smoke personas
+
+- Status: Not started
+- Timestamp started: TBD
+- Timestamp completed: TBD
+- Feature branch: TBD
+- Head: TBD
+- Session-log reference(s): TBD
+
+Make the local and preview smoke environment more dependable for future agents and reviewers. Ensure the tracked seed supports at least one regular user, one founder/project admin, one internal operator, active projects, payment routes, monthly cycles across multiple statuses, published reports, payout rows, and representative identity states without requiring remote data pulls. Keep secrets out of the seed, keep the dataset small, and update `docs/engineering/local-seed.md` plus testing guidance so smoke credentials and expected routes are obvious. This session should reduce the recurring “can we even smoke this?” drag.
+
+## Session 49: Package and document MCP runtime deployment
+
+- Status: Not started
+- Timestamp started: TBD
+- Timestamp completed: TBD
+- Feature branch: TBD
+- Head: TBD
+- Session-log reference(s): TBD
+
+Turn the MCP server from a repo package into a deployable and supportable runtime artifact. Add a documented local launch path, environment contract, health or version command, and packaging guidance for whichever host or agent runtime will consume it first. Verify the stdio framing path and Edge-backed readers in a realistic local smoke, then update `docs/engineering/mcp.md` with setup, auth, troubleshooting, and safe tool-extension rules. Do not expand tool scope in this session; the goal is making the existing MCP surface easy to run and hard to misuse.
+
+## Session 50: Move operator dashboard reads fully onto stable read contracts
+
+- Status: Not started
+- Timestamp started: TBD
+- Timestamp completed: TBD
+- Feature branch: TBD
+- Head: TBD
+- Session-log reference(s): TBD
+
+Complete the remaining high-value operator read-model migration by aligning admin dashboard, monthly cycle, observability, reconciliation, reporting, and operations-runbook surfaces with stable server or Edge Function read contracts. The current app has the right architectural direction, but this session should verify no operator page still depends on scattered page-local Supabase queries that duplicate authorization or shape data differently from MCP. Preserve current UI behavior while consolidating read boundaries, adding tests for partial-read failure states, and updating Edge Function/read-path documentation where the contract becomes canonical.
+
+## Session 51: Add runtime guardrails for beta-critical abuse and data safety
+
+- Status: Not started
+- Timestamp started: TBD
+- Timestamp completed: TBD
+- Feature branch: TBD
+- Head: TBD
+- Session-log reference(s): TBD
+
+Move the most important beta safety expectations from docs into runtime checks where practical. Prioritize rate limits or idempotency on expensive command paths, clearer authorization failures for founder/operator commands, safer file-artifact access patterns, and explicit audit events for sensitive cycle or payout operations that are not yet covered. This should be a precise hardening pass, not broad security theater: document what is actually enforced, what remains runbook-only, and which deferred controls need external infrastructure later. Add tests around the new guardrails and avoid weakening existing RLS or Edge Function ownership checks.
+
+## Session 52: Prepare the dev-to-main release candidate path
+
+- Status: Not started
+- Timestamp started: TBD
+- Timestamp completed: TBD
+- Feature branch: TBD
+- Head: TBD
+- Session-log reference(s): TBD
+
+Once dev deploy health and beta smoke blockers are understood, prepare the first credible release-candidate path from `dev` toward `main`. This session should verify branch protection, production environment approval, Supabase main-target deployment settings, required secrets, migration ordering, rollback notes, and the minimum manual smoke checklist for Production. Update the README and operations runbook only where they differ from current truth. The output should be a small release-readiness PR that makes the main promotion path boring, explicit, and reviewable before any production data is touched.

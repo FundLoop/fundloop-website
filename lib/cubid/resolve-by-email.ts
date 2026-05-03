@@ -1,5 +1,5 @@
-import type { CubidApiClient, CubidApiClientConfig } from "@cubid/api"
-import { createCubidApiClient } from "@cubid/api"
+import type { CubidApiClient, CubidApiClientOptions } from "@cubid/core"
+import { createCubidApiClient } from "@cubid/core"
 import { getCubidConfig, type CubidConfig } from "./config.ts"
 import type { CubidIdentityLinkState } from "./types.ts"
 
@@ -22,7 +22,8 @@ function isVerifiedIdentityEmail(
   return response.stampDetails.some(
     (detail) =>
       detail.stampType === "email" &&
-      detail.value?.trim().toLowerCase() === normalizedEmail &&
+      typeof detail.value === "string" &&
+      detail.value.trim().toLowerCase() === normalizedEmail &&
       detail.status?.trim().toLowerCase() === "verified",
   )
 }
@@ -33,7 +34,7 @@ function createClientFromInput(input: ResolveCubidIdentityByEmailInput) {
   }
 
   const config = input.config ?? getCubidConfig()
-  const clientConfig: CubidApiClientConfig = {
+  const clientConfig: CubidApiClientOptions = {
     apiKey: config.apiKey,
     baseUrl: config.baseUrl,
     dappId: config.dappId,
@@ -52,7 +53,7 @@ export async function resolveCubidIdentityByEmail(
   }
 
   const client = createClientFromInput(input)
-  const created = await client.createUser({ email })
+  const created = await client.ensureUserByEmail({ email })
 
   if (!created.userId) {
     throw new Error("CUBID did not return a user identifier for this email.")
