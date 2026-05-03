@@ -15,7 +15,7 @@ Session 27 added the outbound payout domain model and the first payout-intent cr
 - lock fields store `locked_manifest`, `locked_manifest_hash`, `locked_by_user_id`, and deliberate unresolved-onchain override metadata
 - operator notes and user audit fields are present for future commands
 
-`monthly_cycle_events` records lock attempts, successes, and failures with actor, attempt id, severity, message, and structured metadata. Later transition commands should extend this event-log pattern instead of inventing separate audit tables for each lifecycle step.
+`monthly_cycle_events` records cycle pipeline attempts, successes, failures, warnings, actor, attempt id, message, and structured metadata. Session 37 broadened this from the original lock-focused audit stream into the canonical observability stream for lock, prep, calculation, verification, approval, distribution, payout execution, and reporting publication. Later transition commands should extend this event-log pattern instead of inventing separate audit tables for each lifecycle step.
 
 Status values are:
 
@@ -63,6 +63,16 @@ Session 25 added the first deterministic calculation-package command, `monthly-c
 Session 26 added `/[locale]/admin/cycles/[cycleKey]/verification` as the cleanup, verification, and approval workspace for calculated results. It also added the `monthly-cycle-verification-review` and `monthly-cycle-approval` Edge Function commands so operators can record cleanup-needed decisions, mark a cycle verified, and approve verified results for distribution with audit events and required notes.
 
 Session 27 added `/[locale]/admin/cycles/[cycleKey]/payouts` as the first operator view over outbound payout work. It converts approved published user results into payout intents through the `monthly-cycle-payout-intents-create` Edge Function command, then moves the cycle into `distribution`. Payout execution, rail batching, and reconciliation remain later sessions.
+
+## Pipeline Observability
+
+Session 37 added `/[locale]/admin/cycles/observability` as the operator drill-down over `monthly_cycle_events`.
+
+- Use this page to inspect lock, prep, calculation, verification, approval, distribution, and reporting events.
+- Use `attempt_id` as the cross-stage handle when an operator or agent retries a monthly-cycle command.
+- Keep MCP and future non-web clients pointed at this same event stream. Do not create a parallel protocol-only observability log.
+- Payment-specific wallet and receipt telemetry still lives in `payment_flow_events`; monthly-cycle stage telemetry lives in `monthly_cycle_events`.
+- Session 40 exposed read-only operator MCP tools for cycle statuses, cycle observability, reconciliation visibility, and reporting coverage. Those tools should remain read-only until a later session explicitly introduces safe operator mutations.
 
 Session 28 added the chain-abstracted execution interface under `lib/execution/`. Session 31 added Solana-specific payout batch draft scaffolding on that boundary, and Session 32 added fiat provider-not-configured payout draft stubs. Monthly-cycle payout work should use the execution interface for batch planning and future rail execution instead of branching directly on EVM, Solana, or fiat details.
 
@@ -115,7 +125,7 @@ Live drift is informational because downstream calculation should use the locked
 
 The posture is derived from the monthly cycle lock state, approved cycle-linked attribution datasets, approved cycle-linked identity artifacts, cycle-linked zkAS runs, and published cycle results. The page links back to prep review and into the existing upload/run consoles, because those older routes still own the operational actions until calculation packaging and verification commands are introduced.
 
-The important boundary is conceptual and data-oriented: `month` strings remain for compatibility and storage paths, while `monthly_cycle_id` is the canonical way to determine what belongs to a cycle. New zkAS calculation, verification, publication, and reporting work should start from the cycle row and its linked records.
+The important boundary is conceptual and data-oriented: `month` strings remain for compatibility and storage paths, while `monthly_cycle_id` is the canonical way to determine what belongs to a cycle. New zkAS calculation, verification, publication, and reporting work should start from the cycle row and its linked records. Storage paths should use the shared helpers in `lib/storage/artifacts.ts` so cycle artifacts stay consistent across the app, Edge Functions, and MCP tooling.
 
 ## Calculation Packaging
 
@@ -165,6 +175,8 @@ The command does not execute payouts or reconcile outbound transfers. Session 28
 Session 35 added `/[locale]/workspace/earnings` as the user-facing earnings and payout workspace. It reads monthly-cycle published results, payout intents, payout routes, batch status, and reconciliation cues so users can understand what they are owed and which stage each payout is in while payout execution remains operator-controlled.
 
 Session 36 added `monthly_cycle_reports` and the `monthly-cycle-reports` Supabase Storage bucket as the durable reporting publication model. Public, user, founder, and operator pages now read report metadata through `lib/reporting/monthly-cycle-reports.ts`.
+
+Session 43 standardized Supabase Storage artifact buckets and path construction in `lib/storage/artifacts.ts`; cycle-bound artifacts should now use those helpers instead of inline string assembly.
 
 ## Operating Rule
 

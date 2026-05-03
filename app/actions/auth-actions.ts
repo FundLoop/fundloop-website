@@ -152,7 +152,7 @@ export async function addWallet(walletAddress: string, walletType = "ethereum", 
 
   if (error) throw error
 
-  revalidatePath("/settings/account")
+  revalidatePath("/workspace/account")
   return data
 }
 
@@ -173,7 +173,7 @@ export async function setWalletAsPrimary(walletId: number) {
 
   if (error) throw error
 
-  revalidatePath("/settings/account")
+  revalidatePath("/workspace/account")
 }
 
 export async function removeWallet(walletId: number) {
@@ -193,7 +193,7 @@ export async function removeWallet(walletId: number) {
 
   if (error) throw error
 
-  revalidatePath("/settings/account")
+  revalidatePath("/workspace/account")
 }
 
 export async function updateWalletName(walletId: number, walletName: string) {
@@ -213,5 +213,5 @@ export async function updateWalletName(walletId: number, walletName: string) {
 
   if (error) throw error
 
-  revalidatePath("/settings/account")
+  revalidatePath("/workspace/account")
 }

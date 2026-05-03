@@ -1,5 +1,5 @@
 import { redirect } from "next/navigation"
-import { BrainCircuit, CalendarClock, DollarSign, Eye, Fingerprint, Shield, Wallet } from "lucide-react"
+import { BookOpenCheck, BrainCircuit, CalendarClock, DollarSign, Eye, Fingerprint, Shield, Wallet } from "lucide-react"
 import { Link } from "@/i18n/navigation"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -60,6 +60,14 @@ const adminDestinations = [
     icon: Eye,
     cta: "Open Observability",
     variant: "secondary" as const,
+  },
+  {
+    title: "Operations Runbook",
+    description: "Use release, cycle, identity, payment, payout, and artifact checklists without relying on tribal knowledge",
+    href: "/admin/operations",
+    icon: BookOpenCheck,
+    cta: "Open Runbook",
+    variant: "outline" as const,
   },
   {
     title: "Superadmin Queue",

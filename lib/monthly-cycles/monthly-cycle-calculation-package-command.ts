@@ -1,7 +1,8 @@
 import type { SupabaseClient } from "@supabase/supabase-js"
+import { buildZkasRunArtifactPath, STORAGE_BUCKETS } from "../storage/artifacts.ts"
 import type { Database, Json } from "../../types/supabase.ts"
 
-const ZKAS_RUN_BUCKET = "zkas-runs"
+const ZKAS_RUN_BUCKET = STORAGE_BUCKETS.zkasRuns
 const ZKAS_SCHEMA_VERSION = "zkas.v1"
 
 export type MonthlyCycleCalculationPackageInput = {
@@ -361,7 +362,11 @@ export async function executeMonthlyCycleCalculationPackageCommand(
       calculationStartedAt: cycle.calculation_started_at ?? calculationStartedAt,
       runId: existingPackage.id,
       runStatus: "locked",
-      packageArtifactPath: `${cycle.cycle_key}/cycle-${cycle.id}/calculation-package.v1.json`,
+      packageArtifactPath: buildZkasRunArtifactPath({
+        cycleKey: cycle.cycle_key,
+        cycleId: cycle.id,
+        artifact: "calculation-package",
+      }),
       packageArtifactHash: readPackageArtifactHashFromRun(existingPackage),
       runManifestHash: existingPackage.locked_manifest_hash ?? "",
       counts: {
@@ -426,7 +431,11 @@ export async function executeMonthlyCycleCalculationPackageCommand(
     identityArtifact: approvedArtifacts[0],
     payments: paymentRows,
   })
-  const packageArtifactPath = `${cycle.cycle_key}/cycle-${cycle.id}/calculation-package.v1.json`
+  const packageArtifactPath = buildZkasRunArtifactPath({
+    cycleKey: cycle.cycle_key,
+    cycleId: cycle.id,
+    artifact: "calculation-package",
+  })
   const packageText = `${stableStringify(packageManifest)}\n`
   const packageArtifactHash = await sha256Hex(packageText)
 
@@ -458,7 +467,11 @@ export async function executeMonthlyCycleCalculationPackageCommand(
   })
   const runManifestText = `${stableStringify(runManifest)}\n`
   const runManifestHash = await sha256Hex(runManifestText)
-  const runManifestPath = `${cycle.cycle_key}/run-${run.id}/run-manifest.v1.json`
+  const runManifestPath = buildZkasRunArtifactPath({
+    cycleKey: cycle.cycle_key,
+    runId: run.id,
+    artifact: "run-manifest",
+  })
 
   const uploadPackageError = await uploadTextArtifact(supabase, packageArtifactPath, packageText)
   if (uploadPackageError) {

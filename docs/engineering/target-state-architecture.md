@@ -421,6 +421,14 @@ Capabilities should include:
 
 The MCP server should not bypass business rules. It should sit above the same Edge Function and execution interfaces used by the web app.
 
+Session 38 introduced the first `packages/mcp-server` skeleton with auth context, tool registration, a stdio JSON-RPC entrypoint, and an allowlisted Edge Function command adapter. Later MCP sessions should add explicit domain tools rather than encouraging generic backend invocation.
+
+Session 39 added the first founder MCP tools for managed project discovery, project cycle status reads, payment-route creation/update, and onchain receipt recording. The write tools reuse the existing Edge Function command names used by the web app.
+
+Session 40 added read-only project-member and operator MCP tools for reporting status, cycle status, cycle observability, reconciliation visibility, and reporting coverage. These tools establish protocol access without exposing broad operator mutations.
+
+Session 41 moved those MCP-facing workflow reads behind `mcp-workflow-read`, a typed Supabase Edge Function read gateway. The MCP server no longer defaults to direct Supabase REST table reads for its high-value founder/project-member/operator tools.
+
 ## 10. Frontend Experience Direction
 
 The target frontend should be:

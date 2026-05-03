@@ -1253,7 +1253,7 @@ export const enMessages = {
         {
           label: "Current results are visible before the payout product is complete",
           body:
-            "Today the honest interim endpoint is the published results surface under settings. It is not yet a finished earnings workspace, but it does show the direction of travel.",
+            "Today the honest results surface lives in the workspace reporting area. It is modest, but it is now part of the same earnings and payout mental model.",
         },
       ],
     },
@@ -1861,6 +1861,70 @@ export const enMessages = {
       participation: "View participation",
       founders: "View founder path",
       support: "Contact support",
+    },
+  },
+  journeyPolish: {
+    home: {
+      eyebrow: "Choose the right door",
+      title: "One loop, two clear paths.",
+      body: "FundLoop now has real public funnels, authenticated workspaces, identity status, monthly-cycle operations, and reporting visibility behind the story.",
+      primaryCta: "Start as a participant",
+      secondaryCta: "Explore founder path",
+      items: [
+        {
+          label: "Identity is explicit",
+          body: "CUBID-backed identity is visible before value-sensitive workflows depend on it.",
+        },
+        {
+          label: "Cycles are real",
+          body: "Monthly lock, prep, calculation, payout, and reporting stages now have operator surfaces.",
+        },
+        {
+          label: "Workspaces continue the journey",
+          body: "Users and founders land in role-aware homes instead of disconnected public pages.",
+        },
+      ],
+    },
+    participation: {
+      eyebrow: "What happens after joining",
+      title: "Participation now lands somewhere useful.",
+      body: "The public path no longer ends at signup. It points into identity readiness, project discovery, current results visibility, and payout-aware workspaces.",
+      secondaryCta: "Browse projects",
+      items: [
+        {
+          label: "Know your readiness",
+          body: "Workspace status shows CUBID linkage, profile completion, and missing next steps.",
+        },
+        {
+          label: "Discover with context",
+          body: "Project and people pages now frame discovery around participation and trust signals.",
+        },
+        {
+          label: "See current results",
+          body: "Reporting and earnings surfaces show what is already published without pretending payouts are finished.",
+        },
+      ],
+    },
+    founders: {
+      eyebrow: "Founder handoff",
+      title: "A cleaner path from promise to operations.",
+      body: "The founder funnel now points into project onboarding, then into a real workspace for contribution routes, attribution, monthly status, and reporting.",
+      primaryCta: "Start project onboarding",
+      secondaryCta: "Read documentation",
+      items: [
+        {
+          label: "Commitment is concrete",
+          body: "The 1% model, monthly cadence, and identity requirements are explained before signup.",
+        },
+        {
+          label: "Operations are findable",
+          body: "Founder project homes link to contributions, attribution, payments, and reporting without hiding the current deep routes.",
+        },
+        {
+          label: "Operators have a runbook",
+          body: "Internal teams now have cycle, deploy, identity, payout, and artifact checklists when founders need support.",
+        },
+      ],
     },
   },
   legalPages: {

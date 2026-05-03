@@ -5,6 +5,7 @@ import { ArrowRight, BadgeCheck, CalendarRange, Wallet, Waypoints } from "lucide
 import { Link } from "@/i18n/navigation"
 import { Button } from "@/components/ui/button"
 import { Reveal } from "@/components/marketing/reveal"
+import { JourneyConfidenceBand, type JourneyConfidenceItem } from "@/components/marketing/journey-confidence-band"
 import {
   MarketingPage,
   MarketingSection,
@@ -52,6 +53,7 @@ export default async function FoundersPage({ params }: PageProps) {
   }
 
   const t = await getTranslations({ locale, namespace: "founders" })
+  const polishT = await getTranslations({ locale, namespace: "journeyPolish.founders" })
   const heroHighlights = t.raw("hero.highlights") as Highlight[]
   const commitmentPillars = t.raw("commitment.pillars") as Pillar[]
   const supportPrinciples = t.raw("supportModel.principles") as Pillar[]
@@ -124,6 +126,17 @@ export default async function FoundersPage({ params }: PageProps) {
           </Reveal>
         </div>
       </MarketingSection>
+
+      <JourneyConfidenceBand
+        eyebrow={polishT("eyebrow")}
+        title={polishT("title")}
+        body={polishT("body")}
+        primaryCta={polishT("primaryCta")}
+        primaryHref="/?onboarding=project"
+        secondaryCta={polishT("secondaryCta")}
+        secondaryHref="/documentation"
+        items={polishT.raw("items") as JourneyConfidenceItem[]}
+      />
 
       <MarketingSection
         id="commitment"

@@ -77,6 +77,9 @@ export default async function AdminMonthlyCyclesPage({ params }: PageProps) {
             <Button asChild variant="outline">
               <Link href="/admin/zkas">zkAS console</Link>
             </Button>
+            <Button asChild variant="outline">
+              <Link href="/admin/cycles/observability">Cycle events</Link>
+            </Button>
           </div>
         </div>
       </section>

@@ -1246,7 +1246,7 @@ export const esMessages = {
         {
           label: "Los resultados actuales existen antes de que el producto de pagos esté completo",
           body:
-            "Hoy el endpoint intermedio honesto sigue siendo la superficie de resultados publicados en settings. Todavía no es el hogar final de ganancias, pero sí muestra la dirección.",
+            "Hoy la superficie honesta de resultados vive en el área de reportes del workspace. Es modesta, pero ya forma parte del mismo modelo mental de ganancias y pagos.",
         },
       ],
     },
@@ -1632,6 +1632,70 @@ export const esMessages = {
       participation: "Ver participación",
       founders: "Ver ruta de fundadores",
       support: "Contactar soporte",
+    },
+  },
+  journeyPolish: {
+    home: {
+      eyebrow: "Elige la puerta correcta",
+      title: "Un loop, dos caminos claros.",
+      body: "FundLoop ya conecta sus embudos públicos con espacios autenticados, estado de identidad, operaciones mensuales y visibilidad de reportes.",
+      primaryCta: "Empezar como participante",
+      secondaryCta: "Explorar ruta de fundadores",
+      items: [
+        {
+          label: "La identidad es explícita",
+          body: "La identidad respaldada por CUBID aparece antes de que los flujos sensibles a valor dependan de ella.",
+        },
+        {
+          label: "Los ciclos son reales",
+          body: "Bloqueo, preparación, cálculo, pagos y reportes mensuales ya tienen superficies operativas.",
+        },
+        {
+          label: "Los espacios continúan el camino",
+          body: "Usuarios y fundadores llegan a hogares por rol en vez de páginas públicas desconectadas.",
+        },
+      ],
+    },
+    participation: {
+      eyebrow: "Qué pasa después de unirte",
+      title: "La participación ahora llega a un lugar útil.",
+      body: "El camino público ya no termina en el registro. Conduce a identidad, descubrimiento, resultados actuales y espacios preparados para pagos.",
+      secondaryCta: "Explorar proyectos",
+      items: [
+        {
+          label: "Conoce tu preparación",
+          body: "El espacio de trabajo muestra enlace CUBID, completitud de perfil y próximos pasos pendientes.",
+        },
+        {
+          label: "Descubre con contexto",
+          body: "Las páginas de proyectos y personas presentan descubrimiento alrededor de participación y señales de confianza.",
+        },
+        {
+          label: "Ve resultados actuales",
+          body: "Reportes y ganancias muestran lo publicado sin fingir que todo el sistema de pagos está terminado.",
+        },
+      ],
+    },
+    founders: {
+      eyebrow: "Handoff para fundadores",
+      title: "Un camino más claro de promesa a operación.",
+      body: "El embudo de fundadores lleva al onboarding de proyecto y luego a un espacio real para rutas de contribución, atribución, estado mensual y reportes.",
+      primaryCta: "Iniciar onboarding de proyecto",
+      secondaryCta: "Leer documentación",
+      items: [
+        {
+          label: "El compromiso es concreto",
+          body: "El modelo del 1 %, la cadencia mensual y los requisitos de identidad se explican antes del registro.",
+        },
+        {
+          label: "Las operaciones son visibles",
+          body: "Los hogares de proyecto enlazan contribuciones, atribución, pagos y reportes sin ocultar las rutas profundas actuales.",
+        },
+        {
+          label: "Operadores tienen runbook",
+          body: "Los equipos internos ya tienen checklists de ciclos, despliegues, identidad, pagos y artefactos para apoyar a fundadores.",
+        },
+      ],
     },
   },
   legalPages: {

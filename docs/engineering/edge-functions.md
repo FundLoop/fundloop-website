@@ -119,6 +119,10 @@ For chain and payout execution:
 - Solana payout batch drafts now use Solana-specific scaffold payloads through the same execution interface, while actual payout transfer execution remains disabled until a later command session
 - Fiat inbound and outbound stubs now live on the same execution interface with provider-not-configured payloads, but no fiat receipt verification or transfer execution is live yet
 - future Edge Function commands should keep calling the execution registry/adapters instead of embedding EVM, Solana, or fiat branching directly in command handlers
+- monthly-cycle Edge Function commands should write stage attempts, successes, failures, and warnings to `monthly_cycle_events`; Session 37 exposes those events through `/admin/cycles/observability` and future MCP tools should consume the same event stream
+- the MCP server skeleton in `packages/mcp-server` invokes Edge Functions through the same standard command envelope and must keep low-level invocation allowlisted
+- Session 39 founder MCP write tools call the existing project payment route and receipt-recording Edge Function command names instead of adding MCP-only mutation paths
+- Session 41 added `mcp-workflow-read` as the first typed read gateway for MCP-facing founder, project-member, and operator workflow reads
 
 The migration is intentionally incremental so the transport layer can stabilize before broader read migration and later founder/user workspace work.
 

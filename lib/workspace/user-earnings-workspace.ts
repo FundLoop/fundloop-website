@@ -59,7 +59,7 @@ export type UserEarningsWorkspace = {
   pendingDistributions: UserEarningsCycle[]
   payoutHistory: UserEarningsCycle[]
   warnings: UserEarningsWarning[]
-  rawResultsHref: "/settings/zkas"
+  rawResultsHref: "/workspace/reporting"
 }
 
 type SupabaseReadResult<T> = {
@@ -276,7 +276,7 @@ export function buildUserEarningsWorkspace({
     pendingDistributions,
     payoutHistory,
     warnings,
-    rawResultsHref: "/settings/zkas",
+    rawResultsHref: "/workspace/reporting",
   }
 }
 

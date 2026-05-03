@@ -1,3 +1,314 @@
+### session v123: Address PR #39 MCP and Edge read review feedback
+- timestamp: 2026-05-03T00:43:17Z
+- agent: **Codex (GPT-5)**
+- branch: **codex/session-37-40-mcp-observability**
+- head: pending review-fix commit
+
+#### Objective
+Address the first automated review round on PR #39 without changing the public product scope of Sessions 37-45.
+
+#### Actions Taken
+- Updated `founder.projects.list` in `mcp-workflow-read` so organization `Founder`/`Admin` managers are listed consistently with project access checks.
+- Changed explicit missing cycle-key reads to fail closed with `cycle_not_found` rather than silently aggregating unscoped metrics.
+- Increased attempt-specific monthly-cycle event reads while keeping the default event list compact.
+- Replaced capped latest-row reconciliation visibility with exact status counts.
+- Switched the MCP stdio loop from newline-delimited JSON to Content-Length framed MCP messages.
+- Removed TypeScript parameter properties from MCP runtime classes so the Node 22 executable entrypoint can run in strip-only TypeScript mode.
+- Added focused parser serialization coverage for MCP stdio frames.
+
+#### Tests and Validation Notes
+- `pnpm test tests/mcp-server.test.ts tests/mcp-founder-tools.test.ts tests/mcp-member-operator-tools.test.ts` passed.
+- `deno cache --config supabase/functions/deno.json supabase/functions/mcp-workflow-read/index.ts` passed.
+- `FUNDLOOP_MCP_BEARER_TOKEN=x NEXT_PUBLIC_SUPABASE_URL=https://example.supabase.co NEXT_PUBLIC_SUPABASE_ANON_KEY=x node packages/mcp-server/src/server.ts </dev/null` exited successfully, with Node's expected typeless-package warning for the root shared TS module.
+- `pnpm typecheck` passed.
+- `pnpm lint` passed.
+
+#### Reflections
+- The MCP package remains lightweight, but it now speaks the framing expected by real MCP stdio clients.
+- The Edge read gateway now avoids several misleading partial/overbroad operator results.
+
+#### Suggested Next Steps
+- Push the review-fix commit, let CI return green, then reply to and resolve the Copilot threads before handling the existing Codex review threads.
+
+---
+
+### session v122: Polish the public user and founder conversion handoff
+- timestamp: 2026-05-01T09:13:05Z
+- agent: **Codex (GPT-5)**
+- branch: **codex/session-37-40-mcp-observability**
+- head: pending final commit
+
+#### Objective
+Implement Session 45 by tightening the public user/founder journey polish now that the operational workspaces, identity model, monthly cycle pipeline, reporting, storage, and runbook foundations exist.
+
+#### Actions Taken
+- Added a reusable `JourneyConfidenceBand` marketing component with a stronger visual treatment and simple dual-CTA structure.
+- Added the conversion band to the home, participation, and founders pages so each path reinforces what is real now and where the visitor should go next.
+- Added localized English, French, and Spanish copy for the new public journey polish content.
+- Updated i18n coverage to assert the new localized message domain.
+- Updated backlog metadata for Session 45.
+
+#### Tests and Validation Notes
+- `pnpm test tests/i18n.test.ts` passed.
+- `pnpm typecheck` passed.
+- `pnpm lint` passed.
+
+#### Reflections
+- This is an intentional polish pass, not a full redesign: the public funnels now better communicate that the backend system has become operational without adding new workflow promises.
+- Manual browser visual smoke is still a good follow-up before yeeting the stacked branch.
+
+#### Suggested Next Steps
+- Run a broader `pnpm test` / `pnpm build` pass and then yeet the stacked Sessions 37-45 branch for review.
+
+---
+
+### session v121: Add the operator operations runbook
+- timestamp: 2026-05-01T09:09:31Z
+- agent: **Codex (GPT-5)**
+- branch: **codex/session-37-40-mcp-observability**
+- head: pending final commit
+
+#### Objective
+Implement Session 44 by turning release health, cycle operations, identity sync, payment/payout incidents, and artifact evidence into explicit operator guidance.
+
+#### Actions Taken
+- Added `lib/operations/runbook.ts` as the structured source for operations domains, checks, escalation rules, live admin actions, and engineering references.
+- Added `/[locale]/admin/operations` as an authenticated internal-operator runbook page.
+- Linked the operations runbook from the admin dashboard.
+- Added `docs/engineering/operations-runbook.md` and indexed it from the engineering docs README.
+- Updated route inventory and navigation-shell docs to record the new operator route.
+- Added focused unit coverage for the runbook data contract.
+- Updated backlog metadata for Session 44.
+
+#### Tests and Validation Notes
+- `pnpm test tests/operations-runbook.test.ts` passed.
+- `pnpm typecheck` passed.
+- `pnpm lint` passed.
+
+#### Reflections
+- The app now has a first-class place for operators to answer “what should I check next?” without digging through chat history or tribal memory.
+- The runbook intentionally points to existing operator surfaces rather than creating new mutation paths.
+
+#### Suggested Next Steps
+- Session 45 should do the final UX polish and conversion pass across user and founder journeys, especially copy, empty states, visual hierarchy, and multilingual polish.
+
+---
+
+### session v120: Standardize Supabase Storage artifact contracts
+- timestamp: 2026-05-01T09:05:07Z
+- agent: **Codex (GPT-5)**
+- branch: **codex/session-37-40-mcp-observability**
+- head: pending final commit
+
+#### Objective
+Implement Session 43 by turning Supabase Storage usage into a documented, reusable artifact model for zkAS, reporting, project media, onboarding uploads, bookkeeping exports, and audit proofs.
+
+#### Actions Taken
+- Added `lib/storage/artifacts.ts` with canonical bucket names, lifecycle metadata, artifact reference normalization, and path builders for cycle-bound and product-owned artifacts.
+- Rewired active zkAS dataset, identity, run manifest, run result, and calculation-package paths to use the shared builders.
+- Normalized monthly report artifact references through the shared storage reference helper.
+- Added a forward migration that creates the remaining private product artifact buckets and normalizes existing zkAS/reporting bucket settings.
+- Added storage artifact tests and updated engineering docs for monthly cycles, reporting, MCP artifact references, and the engineering docs index.
+- Updated backlog metadata for Session 43.
+
+#### Tests and Validation Notes
+- `pnpm test tests/storage-artifacts.test.ts tests/monthly-cycle-calculation-package-command.test.ts tests/monthly-cycle-reports.test.ts` passed.
+- `deno cache --config supabase/functions/deno.json supabase/functions/monthly-cycle-calculation-package/index.ts` passed.
+- `pnpm typecheck` passed.
+- `pnpm lint` passed.
+
+#### Reflections
+- Storage is now governed by a stable app contract rather than scattered string assembly.
+- The buckets remain private and server/Edge-owned; future raw artifact downloads should be explicit Edge Function capabilities, not direct public bucket access.
+
+#### Suggested Next Steps
+- Session 44 should turn the repo’s deployment, operations, and incident posture into a practical runbook that references the new storage/deploy/cycle boundaries.
+
+---
+
+### session v119: Collapse remaining settings result surfaces into workspace IA
+- timestamp: 2026-05-01T08:57:55Z
+- agent: **Codex (GPT-5)**
+- branch: **codex/session-37-40-mcp-observability**
+- head: pending final commit
+
+#### Objective
+Implement Session 42 by removing the remaining settings-centered account/result assumptions now that workspace account, earnings, and reporting surfaces exist.
+
+#### Actions Taken
+- Converted `/settings/zkas` into a locale-preserving redirect to `/workspace/reporting`.
+- Updated earnings, participation, zkAS actions, and admin copy so result/reporting links point at workspace reporting instead of settings.
+- Updated stale account/profile menu links to use `/workspace` and `/workspace/account`.
+- Updated organization-member leave flow to return users to `/workspace` rather than the old profile route.
+- Updated route inventory, navigation, IA docs, translations, and backlog metadata.
+- Added focused redirect coverage for `/settings`, `/settings/account`, and `/settings/zkas`.
+
+#### Tests and Validation Notes
+- `pnpm test tests/settings-route-redirects.test.ts tests/user-earnings-workspace.test.ts tests/public-user-journey.test.ts` passed.
+- `pnpm typecheck` passed after fixing the updated dropdown icon import.
+- `pnpm lint` passed after fixing the updated dropdown icon import.
+
+#### Reflections
+- Settings is now fully subordinate to the workspace IA rather than a competing product destination.
+- The old raw zkAS route remains compatible as a redirect, but no shared surface should promote it as a primary path.
+
+#### Suggested Next Steps
+- Session 43 should audit artifact/media handling and align project assets, reports, zk artifacts, and MCP references around a consistent Supabase Storage model.
+
+---
+
+### session v118: Move MCP workflow reads behind an Edge Function
+- timestamp: 2026-05-01T08:24:00Z
+- agent: **Codex (GPT-5)**
+- branch: **codex/session-37-40-mcp-observability**
+- head: pending final commit
+
+#### Objective
+Implement Session 41 by moving the new high-value MCP workflow reads behind a typed Supabase Edge Function read gateway.
+
+#### Actions Taken
+- Added the `mcp-workflow-read` Edge Function contract and Supabase function.
+- Implemented authenticated read operations for founder managed projects, founder project cycle status, project-member reporting status, operator cycle statuses, cycle observability, reconciliation visibility, and reporting coverage.
+- Reworked the default MCP founder, project-member, and operator readers to call `mcp-workflow-read` through the shared Edge Function envelope instead of reading Supabase REST tables directly.
+- Updated MCP, Edge Function, target architecture, and backlog docs.
+
+#### Tests and Validation Notes
+- `pnpm test tests/mcp-server.test.ts tests/mcp-founder-tools.test.ts tests/mcp-member-operator-tools.test.ts` passed.
+- `pnpm typecheck` passed.
+- `pnpm lint` passed.
+- `deno cache --config supabase/functions/deno.json supabase/functions/mcp-workflow-read/index.ts` passed.
+
+#### Reflections
+- This does not migrate every app page read yet, but it moves the new protocol-facing high-value reads behind the backend boundary before MCP usage spreads.
+- The reader interfaces remain stable, so web pages can adopt the same Edge-backed read gateway later without rewriting tool contracts.
+
+#### Suggested Next Steps
+- Session 42 should clean up remaining settings/account IA leftovers now that the main workspace and protocol surfaces are in place.
+
+---
+
+### session v117: Add project-member and operator MCP reads
+- timestamp: 2026-05-01T08:16:06Z
+- agent: **Codex (GPT-5)**
+- branch: **codex/session-37-40-mcp-observability**
+- head: pending final commit
+
+#### Objective
+Implement Session 40 by expanding the MCP server with project-member and operator-safe read workflows while avoiding broad internal mutation tools.
+
+#### Actions Taken
+- Added project-member and operator workflow reader boundaries plus Supabase REST-backed default readers.
+- Added a project-member reporting-status MCP tool for visible project reporting and attribution status.
+- Added read-only operator MCP tools for monthly cycle status, monthly-cycle observability, onchain reconciliation visibility, and reporting coverage.
+- Wired the new readers and tools into the default MCP server context.
+- Added focused tests for tool registration, project-member reads, operator reads, and missing-reader error behavior.
+- Updated MCP, monthly-cycle, target architecture, and backlog docs.
+
+#### Tests and Validation Notes
+- `pnpm test tests/mcp-server.test.ts tests/mcp-founder-tools.test.ts tests/mcp-member-operator-tools.test.ts` passed.
+- `pnpm typecheck` passed.
+- `pnpm lint` passed.
+
+#### Reflections
+- The operator MCP surface is intentionally read-only for this pass. That keeps the protocol useful without opening risky internal state transitions too early.
+- The reader interfaces are deliberately narrow so Session 41 can replace direct read implementations with Edge Function read contracts.
+
+#### Suggested Next Steps
+- Session 41 should move the most important MCP/web reads behind typed Edge Function read models, starting with founder workspace, user earnings, cycle status, and operator dashboards.
+
+---
+
+### session v116: Add founder MCP workflow tools
+- timestamp: 2026-05-01T08:13:16Z
+- agent: **Codex (GPT-5)**
+- branch: **codex/session-37-40-mcp-observability**
+- head: pending final commit
+
+#### Objective
+Implement Session 39 by adding the first founder-facing MCP workflows without bypassing web-app backend contracts.
+
+#### Actions Taken
+- Added a founder workflow reader boundary and a Supabase REST-backed default reader for managed project and project cycle status reads.
+- Added explicit MCP tools for listing managed projects and reading a founder project's monthly cycle, payment, and route status.
+- Added explicit MCP tools for project crypto route create/update and onchain receipt recording, all routed through existing Edge Function command names.
+- Wired founder tools into the default MCP server registry.
+- Added focused tests for founder tool registration, reader-backed status reads, Edge Function write routing, and missing-reader error behavior.
+- Updated MCP, Edge Function, target architecture, and backlog docs.
+
+#### Tests and Validation Notes
+- `pnpm test tests/mcp-server.test.ts tests/mcp-founder-tools.test.ts` passed.
+- `pnpm typecheck` passed.
+- `pnpm lint` passed.
+
+#### Reflections
+- Founder MCP writes now reuse the same project payment command boundary as the web UI, which keeps the protocol surface from becoming a privileged shortcut.
+- The reader boundary gives us a clean seam for Session 41's future read-model migration to Edge Functions.
+
+#### Suggested Next Steps
+- Session 40 should add project-member and operator-safe MCP workflows, especially cycle status, reporting access, reconciliation visibility, and observability lookup.
+
+---
+
+### session v115: Build the first MCP server skeleton
+- timestamp: 2026-05-01T08:09:51Z
+- agent: **Codex (GPT-5)**
+- branch: **codex/session-37-40-mcp-observability**
+- head: pending final commit
+
+#### Objective
+Implement Session 38 by adding the first MCP server foundation without creating a parallel backend path.
+
+#### Actions Taken
+- Added `packages/mcp-server` to the pnpm workspace.
+- Added MCP auth context creation, protocol response helpers, tool registration/dispatch, a Supabase Edge Function command client, and a stdio JSON-RPC server entrypoint.
+- Added base tools for health checks and allowlisted low-level Edge Function invocation.
+- Added focused tests for auth, tool listing/calling, JSON-RPC handling, and allowlist enforcement.
+- Added the long-lived MCP engineering doc and updated Edge Function and target architecture docs.
+
+#### Tests and Validation Notes
+- `pnpm test tests/mcp-server.test.ts` passed.
+- `pnpm typecheck` passed.
+- `pnpm lint` passed.
+
+#### Reflections
+- The low-level Edge Function invoker is useful for the skeleton, but it is intentionally allowlisted so later sessions can add safer domain-specific tools.
+- The MCP server now has a place to grow while preserving the rule that the web app and agents share backend contracts.
+
+#### Suggested Next Steps
+- Session 39 should add founder-facing MCP workflows as explicit tools, starting with project/cycle reads and the safest existing founder commands.
+
+---
+
+### session v114: Extend monthly pipeline observability
+- timestamp: 2026-05-01T08:06:35Z
+- agent: **Codex (GPT-5)**
+- branch: **codex/session-37-40-mcp-observability**
+- head: pending final commit
+
+#### Objective
+Implement Session 37 by broadening monthly-cycle observability from lock-specific audit rows into an operator-facing event stream for the full monthly pipeline.
+
+#### Actions Taken
+- Added a forward migration that expands accepted `monthly_cycle_events.event_type` values for prep, payout execution, and reporting publication stages and adds event lookup indexes.
+- Added `lib/observability/monthly-cycle-events.ts` with stage inference, summary building, filtered event loading, and attempt drill-down read models.
+- Added `/admin/cycles/observability` for internal operators to inspect monthly cycle attempts, warnings, failures, stage summaries, and per-attempt event history.
+- Linked the cycle observability page from the monthly cycles dashboard.
+- Updated monthly-cycle, Edge Function, navigation, route-inventory, and backlog docs to record the canonical event stream.
+
+#### Tests and Validation Notes
+- `pnpm test tests/monthly-cycle-observability.test.ts tests/monthly-cycles.test.ts` passed.
+- `pnpm typecheck` passed.
+- `pnpm lint` passed.
+
+#### Reflections
+- This keeps monthly observability in the existing database-backed operating model instead of inventing a separate MCP/protocol log.
+- Payment-specific wallet telemetry remains in `payment_flow_events`; cycle-stage workflow telemetry now has its own operator drill-down.
+
+#### Suggested Next Steps
+- Session 38 should build the first MCP server skeleton and read from the same app/Edge Function contracts rather than bypassing these observability boundaries.
+
+---
+
 ### session v113: Address PR 38 automated review feedback
 - timestamp: 2026-05-01T00:33:08Z
 - agent: **Codex (GPT-5)**

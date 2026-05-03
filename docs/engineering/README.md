@@ -21,9 +21,12 @@ Current high-signal docs:
 - [Internationalization](./i18n.md)
 - [Local Seed Fixtures](./local-seed.md)
 - [Monthly Cycle Domain Model](./monthly-cycles.md)
+- [MCP Server](./mcp.md)
 - [Navigation and Shell Architecture](./navigation-shell.md)
+- [Operations Runbook](./operations-runbook.md)
 - [Reporting Publication](./reporting.md)
 - [Route Inventory](./route-inventory.md)
+- [Supabase Storage Artifacts](./storage-artifacts.md)
 - [Supabase Remote Deployments](./supabase-deployments.md)
 - [Target-State Architecture](./target-state-architecture.md)
 

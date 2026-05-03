@@ -1,0 +1,13 @@
+{
+  "name": "@fundloop/mcp-server",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "FundLoop MCP server skeleton for agent access to protocol workflows.",
+  "bin": {
+    "fundloop-mcp-server": "./src/server.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit"
+  }
+}

@@ -51,6 +51,8 @@ describe("i18n message loading", () => {
     expect(messages.projectsDirectory.hero.eyebrow).toBe("Découverte de projets")
     expect(messages.usersDirectory.hero.eyebrow).toBe("Personnes dans la boucle")
     expect(messages.participation.nextSteps.steps[0]?.step).toBe("01")
+    expect(messages.journeyPolish.home.items).toHaveLength(3)
+    expect(messages.journeyPolish.founders.primaryCta).toBe("Démarrer l'onboarding projet")
     expect(messages.documentationPage.hero.eyebrow).toBe("Documentation")
     expect(messages.reportsPage.hero.eyebrow).toBe("Rapports")
   })

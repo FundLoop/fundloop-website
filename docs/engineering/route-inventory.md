@@ -15,7 +15,7 @@ This inventory covers every current `page.tsx` and `route.ts` surface under `app
 ## Cross-Cutting Findings
 
 - `/admin` currently links to missing routes: `/admin/projects`, `/admin/users`, and `/admin/analytics`.
-- `/settings` currently links to missing routes: `/settings/notifications` and `/settings/security`.
+- `/settings` no longer owns product work; Session 42 keeps it redirect-only and moves remaining result links into the workspace.
 - `/my-profile` currently links to missing `/organizations`.
 - `/invitations/[token]` is a legacy invitation redirect, and `/organizations/[id]` is now a founder-workspace redirect instead of a mock organization page.
 - `/about`, `/api`, and `/analytics` are now legacy public entry points and should remain redirects only.
@@ -71,7 +71,7 @@ This inventory covers every current `page.tsx` and `route.ts` surface under `app
 | `/projects/[slug]/zkas/uploads/[id]` | Project admins, operators | Transitional upload-detail leaf. | Session 34 links this from the founder attribution workflow as the current dataset validation/audit detail surface. | merge | Founder workspace attribution/data submission history | 34 |
 | `/settings` | Signed-in users | Redirect-only legacy entry. | Session 08 collapsed the old settings hub into `/workspace/account` to remove dead-end settings navigation. | redirect | `/workspace/account` | 42 |
 | `/settings/account` | Signed-in users | Redirect-only legacy account leaf. | Session 08 redirected the old account route to the new workspace account surface. | redirect | `/workspace/account` | 16, 42 |
-| `/settings/zkas` | Signed-in users | Transitional raw personal zkAS results detail page. | Session 35 moved the user-facing money model to `/workspace/earnings`; this route remains a raw published-result history link until Session 36 reporting publication absorbs it. | merge | User workspace reporting and results | 36 |
+| `/settings/zkas` | Signed-in users | Redirect-only legacy raw result history. | Session 42 collapsed the last settings-owned result surface into `/workspace/reporting`; earnings now links to workspace reporting instead of settings. | redirect | `/workspace/reporting` | 36, 42 |
 
 ## Internal Operator and Admin Surfaces
 
@@ -85,9 +85,11 @@ This inventory covers every current `page.tsx` and `route.ts` surface under `app
 | `/admin/cycles/[cycleKey]/payouts` | Internal operators | Outbound payout domain view for approved cycle results. | Session 27 added payout routes, payout intents, batches, reconciliation placeholders, and the first command that creates payout intents from published user results. | finish | Operator monthly cycle payout workspace | 27, 28, 35 |
 | `/admin/cycles/[cycleKey]/reporting` | Internal operators | Operator reporting publication view. | Session 36 shows public/operator report artifacts plus user/founder report coverage for a cycle. | finish | Operator monthly cycle reporting workspace | 36 |
 | `/admin/identity` | Internal operators | Read-only operator identity-health surface. | Sessions 15 and 16 added stale-snapshot, sync-error, and linkage visibility without cross-user identity writes. | finish | Internal operator identity health | 15, 16, 44 |
+| `/admin/operations` | Internal operators | Operator runbook and escalation checklist. | Session 44 added the first in-product operations runbook for release health, monthly cycles, identity sync, payment/payout incidents, and storage artifacts. | finish | Internal operator operations runbook | 44 |
 | `/admin/payments` | Internal operators | Real payments operations hub. | Already meaningful and linked to observability, reconciliation, deployments. | finish | Operator payments workspace | 20, 37 |
 | `/admin/payments/deployments` | Internal operators | Real wallet-deployment audit page. | Supports runtime drift and env validation. | finish | Operator payments deployment audit | 44 |
 | `/admin/payments/observability` | Internal operators | Real payment observability surface. | Part of the operator control plane. | finish | Operator payments observability | 37 |
+| `/admin/cycles/observability` | Internal operators | Real monthly-pipeline observability surface. | Session 37 added this as the canonical operator drill-down over `monthly_cycle_events` across lock, prep, calculation, verification, payout, and reporting stages. | finish | Operator cycle observability | 37 |
 | `/admin/payments/reconciliation` | Internal operators | Real onchain reconciliation page. | Fits the operator payments domain cleanly. | finish | Operator payments reconciliation | 20, 37 |
 | `/admin/superadmin` | Superadmins | Transitional superadmin entry point. | Role split is valid, but IA should absorb it into the operator workspace rather than a parallel top-level mental model. | merge | Operator workspace with superadmin-gated sections | 03, 44 |
 | `/admin/superadmin/zkas` | Superadmins | Real but specialized superadmin queue. | Should remain role-gated but feel like part of one operator workspace. | merge | Operator zkAS superadmin area | 24, 44 |

@@ -410,99 +410,99 @@ Create the reporting layer that publishes the results of each monthly cycle in r
 
 ## Session 37: Extend observability from payment flows to the whole monthly pipeline
 
-- Status: Not started
-- Timestamp started: TBD
-- Timestamp completed: TBD
-- Feature branch: TBD
-- Head: TBD
-- Session-log reference(s): TBD
+- Status: Complete
+- Timestamp started: 2026-05-01T08:04:23Z
+- Timestamp completed: 2026-05-01T08:06:35Z
+- Feature branch: codex/session-37-40-mcp-observability
+- Head: pending final commit
+- Session-log reference(s): session v114
 
 The repo already has payment-flow observability. Expand that into a broader operational telemetry layer for cycle lock, prep, calculation packaging, verification, payout creation, payout execution, and publication failures. This session should keep the same internal DB-backed philosophy while broadening coverage to the monthly engine. The result should be that operators can inspect a full cycle end to end, not just wallet and payment events. This is important before adding more automation and agent-driven workflows.
 
 ## Session 38: Build the first MCP server skeleton
 
-- Status: Not started
-- Timestamp started: TBD
-- Timestamp completed: TBD
-- Feature branch: TBD
-- Head: TBD
-- Session-log reference(s): TBD
+- Status: Complete
+- Timestamp started: 2026-05-01T08:06:35Z
+- Timestamp completed: 2026-05-01T08:09:51Z
+- Feature branch: codex/session-37-40-mcp-observability
+- Head: pending final commit
+- Session-log reference(s): session v115
 
 Create the MCP server foundation with authentication strategy, tool registration, typed request/response envelopes, and a backend adapter layer that calls the same Edge Function contracts as the web app. The server does not need every tool immediately. This session should focus on the protocol foundation and local development ergonomics so later agent workflows can build cleanly. The key architectural rule is that MCP should not invent a second backend or special-case business logic.
 
 ## Session 39: Add founder MCP workflows
 
-- Status: Not started
-- Timestamp started: TBD
-- Timestamp completed: TBD
-- Feature branch: TBD
-- Head: TBD
-- Session-log reference(s): TBD
+- Status: Complete
+- Timestamp started: 2026-05-01T08:09:51Z
+- Timestamp completed: 2026-05-01T08:13:16Z
+- Feature branch: codex/session-37-40-mcp-observability
+- Head: pending final commit
+- Session-log reference(s): session v116
 
 Expose the first founder-facing protocol operations through the MCP server. This should include reading project obligation state, route state, monthly cycle status, and creating or updating the operational records founders actually need to manage their project. Keep the toolset intentionally small but real. The goal is to prove that an agent can participate meaningfully in FundLoop’s project workflows without depending on the UI. This session is central to the “agents are first-class users” principle in the backgrounder.
 
 ## Session 40: Add project-member and operator MCP workflows
 
-- Status: Not started
-- Timestamp started: TBD
-- Timestamp completed: TBD
-- Feature branch: TBD
-- Head: TBD
-- Session-log reference(s): TBD
+- Status: Complete
+- Timestamp started: 2026-05-01T08:13:16Z
+- Timestamp completed: 2026-05-01T08:16:06Z
+- Feature branch: codex/session-37-40-mcp-observability
+- Head: pending final commit
+- Session-log reference(s): session v117
 
 Expand the MCP layer to support project-member tasks and selected operator-safe reads such as cycle status, reporting access, reconciliation visibility, and observability lookup. This session should maintain strict role boundaries while proving that FundLoop’s operational model is programmatically accessible. Avoid exposing unsafe internal mutation tools too early. The emphasis is on trustworthy structured interaction, not maximum surface area. By the end, the MCP server should feel like a real control interface rather than a demo plugin.
 
 ## Session 41: Move remaining high-value reads behind Edge Functions
 
-- Status: Not started
-- Timestamp started: TBD
-- Timestamp completed: TBD
-- Feature branch: TBD
-- Head: TBD
-- Session-log reference(s): TBD
+- Status: Complete
+- Timestamp started: 2026-05-01T08:20:00Z
+- Timestamp completed: 2026-05-01T08:24:00Z
+- Feature branch: codex/session-37-40-mcp-observability
+- Head: pending final commit
+- Session-log reference(s): session v118
 
 Finish the architectural shift by moving the remaining important web reads away from direct browser/table access and behind stable backend contracts. Prioritize founder workspace reads, user earnings reads, cycle status reads, and admin/operator dashboards. This session should reduce the remaining tight coupling between pages and raw Supabase tables. It is a key target-state milestone because the app and MCP server both need stable read models, not a growing set of page-specific queries and implicit authorization assumptions.
 
 ## Session 42: Finish the settings and account IA cleanup
 
-- Status: Not started
-- Timestamp started: TBD
-- Timestamp completed: TBD
-- Feature branch: TBD
-- Head: TBD
-- Session-log reference(s): TBD
+- Status: Complete
+- Timestamp started: 2026-05-01T08:52:00Z
+- Timestamp completed: 2026-05-01T08:57:55Z
+- Feature branch: codex/session-37-40-mcp-observability
+- Head: pending final commit
+- Session-log reference(s): session v119
 
 By this point the major product surfaces should exist. Use this session to remove the remaining awkward settings leftovers, merge duplicated pages, and ensure every account or configuration action lives in the right place. The goal is a simple, clean UX where users and founders do not need to hunt across “settings,” “project,” and “admin” for related capabilities. This session is mostly IA and interaction cleanup, but it will likely involve real route and component changes to eliminate the last structural confusion.
 
 ## Session 43: Productionize Supabase Storage usage across artifacts and media
 
-- Status: Not started
-- Timestamp started: TBD
-- Timestamp completed: TBD
-- Feature branch: TBD
-- Head: TBD
-- Session-log reference(s): TBD
+- Status: Complete
+- Timestamp started: 2026-05-01T09:00:46Z
+- Timestamp completed: 2026-05-01T09:05:07Z
+- Feature branch: codex/session-37-40-mcp-observability
+- Head: pending final commit
+- Session-log reference(s): session v120
 
 Audit all file and artifact handling and move the product to a consistent Supabase Storage model. This includes project assets, onboarding uploads, reporting artifacts, zk inputs/outputs, exported bookkeeping files, and any proof attachments needed for audit. The important outcome is consistency: files should have lifecycle, ownership, naming, and retention rules instead of being scattered across ad hoc storage logic. This session should also ensure that the web app, Edge Functions, and MCP workflows can all refer to stored artifacts predictably.
 
 ## Session 44: Build a deployment and operations runbook into the product and repo
 
-- Status: Not started
-- Timestamp started: TBD
-- Timestamp completed: TBD
-- Feature branch: TBD
-- Head: TBD
-- Session-log reference(s): TBD
+- Status: Complete
+- Timestamp started: 2026-05-01T09:06:32Z
+- Timestamp completed: 2026-05-01T09:09:31Z
+- Feature branch: codex/session-37-40-mcp-observability
+- Head: pending final commit
+- Session-log reference(s): session v121
 
 Translate the architecture into operational reliability. This session should produce and wire the runbooks, admin affordances, and environment expectations needed to operate the system: cycle operations, chain deployment syncs, identity sync troubleshooting, payout incident handling, and release health checks. Some of this belongs in docs, but some belongs in the operator UI itself. The goal is to make FundLoop operable by a small team without hidden tribal knowledge. This is a prerequisite for calling the product truly out of mothballs.
 
 ## Session 45: Do the final UX polish and conversion pass across user and founder journeys
 
-- Status: Not started
-- Timestamp started: TBD
-- Timestamp completed: TBD
-- Feature branch: TBD
-- Head: TBD
-- Session-log reference(s): TBD
+- Status: Complete
+- Timestamp started: 2026-05-01T09:10:23Z
+- Timestamp completed: 2026-05-01T09:13:05Z
+- Feature branch: codex/session-37-40-mcp-observability
+- Head: pending final commit
+- Session-log reference(s): session v122
 
 After the heavy architecture and workflow work is in place, do the intentional finish pass. This session should refine copy, empty states, motion, visual hierarchy, multilingual edge cases, and the most important conversion points for both users and founders. It should also tighten the balance between “visually stunning” and “simple, clean UX.” The goal is not random polish. It is aligning the product’s presentation with the fact that the underlying system is now real, operational, and trustworthy.

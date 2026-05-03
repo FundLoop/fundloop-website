@@ -2,10 +2,11 @@ import "server-only"
 
 import { getAdminSupabaseClient } from "@/lib/supabase-admin"
 import { createServerSupabaseClient } from "@/lib/supabase-server"
+import { normalizeStorageArtifactReference, STORAGE_BUCKETS } from "@/lib/storage/artifacts"
 import type { NavigationContext } from "@/lib/navigation-context"
 import type { Database, Json } from "@/types/supabase"
 
-export const MONTHLY_CYCLE_REPORTS_BUCKET = "monthly-cycle-reports"
+export const MONTHLY_CYCLE_REPORTS_BUCKET = STORAGE_BUCKETS.monthlyCycleReports
 
 export type ReportingWarning = {
   scope: string
@@ -159,13 +160,17 @@ function payloadText(payload: Json, key: string) {
 }
 
 function artifactFromReport(report: ReportRow): ReportingArtifact | null {
-  if (!report.artifact_path) return null
-  return {
-    bucket: report.artifact_bucket,
+  const artifact = normalizeStorageArtifactReference({
+    bucket: report.artifact_bucket as typeof MONTHLY_CYCLE_REPORTS_BUCKET,
     path: report.artifact_path,
+    kind: "monthly_cycle_report",
     mimeType: report.artifact_mime_type,
     hash: report.artifact_hash,
-  }
+    visibility: "public_read_model",
+    retention: "published",
+  })
+
+  return artifact
 }
 
 function cardFromReport(report: ReportRow, cycleById: Map<number, CycleRow>): MonthlyReportCard {
