@@ -100,23 +100,53 @@ function createDefaultServerContext(): McpServerContext {
   }
 }
 
+export function encodeMcpStdioMessage(message: JsonRpcResponse) {
+  const payload = JSON.stringify(message)
+  return `Content-Length: ${Buffer.byteLength(payload, "utf8")}\r\n\r\n${payload}`
+}
+
+export function parseMcpStdioMessages(buffer: Buffer<ArrayBufferLike>): { messages: unknown[]; remaining: Buffer<ArrayBufferLike> } {
+  const messages: unknown[] = []
+  let remaining = buffer
+
+  while (remaining.length > 0) {
+    const headerEnd = remaining.indexOf("\r\n\r\n")
+    if (headerEnd < 0) break
+
+    const header = remaining.subarray(0, headerEnd).toString("utf8")
+    const contentLengthLine = header
+      .split("\r\n")
+      .find((line) => line.toLowerCase().startsWith("content-length:"))
+    const contentLength = Number(contentLengthLine?.slice("content-length:".length).trim())
+
+    if (!Number.isInteger(contentLength) || contentLength < 0) {
+      throw new Error("Invalid MCP stdio frame: missing Content-Length header.")
+    }
+
+    const bodyStart = headerEnd + 4
+    const frameEnd = bodyStart + contentLength
+    if (remaining.length < frameEnd) break
+
+    const body = remaining.subarray(bodyStart, frameEnd).toString("utf8")
+    messages.push(JSON.parse(body) as unknown)
+    remaining = remaining.subarray(frameEnd)
+  }
+
+  return { messages, remaining }
+}
+
 async function main() {
-  let buffer = ""
-  process.stdin.setEncoding("utf8")
+  let buffer: Buffer<ArrayBufferLike> = Buffer.alloc(0)
   for await (const chunk of process.stdin) {
-    buffer += chunk
-    let newlineIndex = buffer.indexOf("\n")
-    while (newlineIndex >= 0) {
-      const line = buffer.slice(0, newlineIndex).trim()
-      buffer = buffer.slice(newlineIndex + 1)
-      if (line) {
-        const payload = JSON.parse(line) as unknown
-        const result = await handleMcpRequest(payload)
-        if (result) {
-          process.stdout.write(`${JSON.stringify(result)}\n`)
-        }
+    buffer = Buffer.concat([buffer, Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk)])
+    const parsed = parseMcpStdioMessages(buffer)
+    buffer = parsed.remaining
+
+    for (const payload of parsed.messages) {
+      const result = await handleMcpRequest(payload)
+      if (result) {
+        process.stdout.write(encodeMcpStdioMessage(result))
       }
-      newlineIndex = buffer.indexOf("\n")
     }
   }
 }

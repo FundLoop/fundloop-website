@@ -75,7 +75,11 @@ async function invokeRead<T>(edge: EdgeCommandClient, input: Record<string, unkn
 }
 
 export class EdgeProjectMemberWorkflowReader implements ProjectMemberWorkflowReader {
-  constructor(private readonly edge: EdgeCommandClient) {}
+  private readonly edge: EdgeCommandClient
+
+  constructor(edge: EdgeCommandClient) {
+    this.edge = edge
+  }
 
   async getProjectReportingStatus(
     input: { projectSlug: string; cycleKey?: string },
@@ -86,7 +90,11 @@ export class EdgeProjectMemberWorkflowReader implements ProjectMemberWorkflowRea
 }
 
 export class EdgeOperatorWorkflowReader implements OperatorWorkflowReader {
-  constructor(private readonly edge: EdgeCommandClient) {}
+  private readonly edge: EdgeCommandClient
+
+  constructor(edge: EdgeCommandClient) {
+    this.edge = edge
+  }
 
   async listCycleStatuses(auth: McpAuthContext): Promise<OperatorCycleStatus[]> {
     return invokeRead(this.edge, { operation: "operator.cycles.list" }, auth)

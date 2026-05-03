@@ -79,20 +79,48 @@ async function requireProjectMember(adminClient, userId, projectSlug) {
 }
 
 async function listManagedProjects(adminClient, userId) {
-  const { data: rows, error } = await adminClient
-    .from("participants")
-    .select("projects(id,slug,name)")
-    .eq("user_id", userId)
-    .eq("is_admin", true)
-  if (error) return { ok: false, code: "query_failed", message: error.message }
+  const [{ data: participantRows, error: participantError }, { data: roleRows, error: roleError }] = await Promise.all([
+    adminClient.from("participants").select("projects(id,slug,name)").eq("user_id", userId).eq("is_admin", true),
+    adminClient.from("ref_roles").select("id").in("name", ["Founder", "Admin"]),
+  ])
+  if (participantError) return { ok: false, code: "query_failed", message: participantError.message }
+  if (roleError) return { ok: false, code: "query_failed", message: roleError.message }
 
-  return {
-    ok: true,
-    data: asArray(rows)
-      .map((row) => readProject(row.projects))
-      .filter((project) => Boolean(project?.id))
-      .map(normalizeProject),
+  const roleIds = asArray(roleRows).map((role) => role.id)
+  const organizationProjects =
+    roleIds.length > 0
+      ? await (async () => {
+          const { data: memberships, error: membershipError } = await adminClient
+            .from("organization_members")
+            .select("organization_id")
+            .eq("user_id", userId)
+            .eq("status", "active")
+            .in("role_id", roleIds)
+          if (membershipError) return { ok: false, code: "query_failed", message: membershipError.message }
+
+          const organizationIds = Array.from(new Set(asArray(memberships).map((membership) => membership.organization_id).filter(Boolean)))
+          if (organizationIds.length === 0) return { ok: true, data: [] }
+
+          const { data: projects, error: projectsError } = await adminClient
+            .from("projects")
+            .select("id, slug, name")
+            .in("organization_id", organizationIds)
+          if (projectsError) return { ok: false, code: "query_failed", message: projectsError.message }
+          return { ok: true, data: asArray(projects) }
+        })()
+      : { ok: true, data: [] }
+
+  if (!organizationProjects.ok) return organizationProjects
+
+  const projectsById = new Map()
+  for (const project of [
+    ...asArray(participantRows).map((row) => readProject(row.projects)).filter((project) => Boolean(project?.id)),
+    ...organizationProjects.data,
+  ]) {
+    projectsById.set(project.id, normalizeProject(project))
   }
+
+  return { ok: true, data: [...projectsById.values()].sort((left, right) => left.name.localeCompare(right.name)) }
 }
 
 async function readLatestOrSelectedCycle(adminClient, cycleKey) {
@@ -101,6 +129,7 @@ async function readLatestOrSelectedCycle(adminClient, cycleKey) {
     ? await query.eq("cycle_key", cycleKey).limit(1)
     : await query.order("period_start", { ascending: false }).limit(1)
   if (error) return { ok: false, code: "query_failed", message: error.message }
+  if (cycleKey && !data?.[0]) return { ok: false, code: "cycle_not_found", message: "Monthly cycle not found." }
   return { ok: true, cycle: data?.[0] ?? null }
 }
 
@@ -212,7 +241,7 @@ async function operatorEvents(adminClient, input) {
     .from("monthly_cycle_events")
     .select("cycle_key, event_type, outcome, severity, attempt_id, message, created_at")
     .order("created_at", { ascending: false })
-    .limit(50)
+    .limit(input.attemptId ? 500 : 50)
   if (input.cycleKey) query = query.eq("cycle_key", input.cycleKey)
   if (input.attemptId) query = query.eq("attempt_id", input.attemptId)
   const { data, error } = await query
@@ -232,17 +261,23 @@ async function operatorEvents(adminClient, input) {
 }
 
 async function reconciliationVisibility(adminClient) {
-  const { data, error } = await adminClient.from("onchain_payment_submissions").select("status").order("created_at", { ascending: false }).limit(500)
-  if (error) return { ok: false, code: "query_failed", message: error.message }
-  const rows = data ?? []
+  const statuses = ["submitted", "confirming", "awaiting_confirmation", "confirmed", "failed"]
+  const results = await Promise.all(
+    statuses.map((status) => adminClient.from("onchain_payment_submissions").select("id", { count: "exact", head: true }).eq("status", status)),
+  )
+
+  const failed = results.find((result) => result.error)
+  if (failed?.error) return { ok: false, code: "query_failed", message: failed.error.message }
+
+  const counts = Object.fromEntries(statuses.map((status, index) => [status, results[index].count ?? 0]))
   return {
     ok: true,
     data: {
-      submitted: rows.filter((row) => row.status === "submitted").length,
-      confirming: rows.filter((row) => row.status === "confirming").length,
-      awaitingConfirmation: rows.filter((row) => row.status === "awaiting_confirmation").length,
-      confirmed: rows.filter((row) => row.status === "confirmed").length,
-      failed: rows.filter((row) => row.status === "failed").length,
+      submitted: counts.submitted,
+      confirming: counts.confirming,
+      awaitingConfirmation: counts.awaiting_confirmation,
+      confirmed: counts.confirmed,
+      failed: counts.failed,
     },
   }
 }

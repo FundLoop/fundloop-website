@@ -31,7 +31,11 @@ export function readSupabaseEdgeCommandClientConfig(
 }
 
 export class SupabaseEdgeCommandClient implements EdgeCommandClient {
-  constructor(private readonly config: SupabaseEdgeCommandClientConfig) {}
+  private readonly config: SupabaseEdgeCommandClientConfig
+
+  constructor(config: SupabaseEdgeCommandClientConfig) {
+    this.config = config
+  }
 
   async invoke<TInput, TOutput>(
     functionName: string,

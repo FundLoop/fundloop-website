@@ -1,3 +1,37 @@
+### session v123: Address PR #39 MCP and Edge read review feedback
+- timestamp: 2026-05-03T00:43:17Z
+- agent: **Codex (GPT-5)**
+- branch: **codex/session-37-40-mcp-observability**
+- head: pending review-fix commit
+
+#### Objective
+Address the first automated review round on PR #39 without changing the public product scope of Sessions 37-45.
+
+#### Actions Taken
+- Updated `founder.projects.list` in `mcp-workflow-read` so organization `Founder`/`Admin` managers are listed consistently with project access checks.
+- Changed explicit missing cycle-key reads to fail closed with `cycle_not_found` rather than silently aggregating unscoped metrics.
+- Increased attempt-specific monthly-cycle event reads while keeping the default event list compact.
+- Replaced capped latest-row reconciliation visibility with exact status counts.
+- Switched the MCP stdio loop from newline-delimited JSON to Content-Length framed MCP messages.
+- Removed TypeScript parameter properties from MCP runtime classes so the Node 22 executable entrypoint can run in strip-only TypeScript mode.
+- Added focused parser serialization coverage for MCP stdio frames.
+
+#### Tests and Validation Notes
+- `pnpm test tests/mcp-server.test.ts tests/mcp-founder-tools.test.ts tests/mcp-member-operator-tools.test.ts` passed.
+- `deno cache --config supabase/functions/deno.json supabase/functions/mcp-workflow-read/index.ts` passed.
+- `FUNDLOOP_MCP_BEARER_TOKEN=x NEXT_PUBLIC_SUPABASE_URL=https://example.supabase.co NEXT_PUBLIC_SUPABASE_ANON_KEY=x node packages/mcp-server/src/server.ts </dev/null` exited successfully, with Node's expected typeless-package warning for the root shared TS module.
+- `pnpm typecheck` passed.
+- `pnpm lint` passed.
+
+#### Reflections
+- The MCP package remains lightweight, but it now speaks the framing expected by real MCP stdio clients.
+- The Edge read gateway now avoids several misleading partial/overbroad operator results.
+
+#### Suggested Next Steps
+- Push the review-fix commit, let CI return green, then reply to and resolve the Copilot threads before handling the existing Codex review threads.
+
+---
+
 ### session v122: Polish the public user and founder conversion handoff
 - timestamp: 2026-05-01T09:13:05Z
 - agent: **Codex (GPT-5)**

@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest"
 import { edgeCommandSuccess, type EdgeCommandResult } from "@/lib/edge-functions/result"
 import { createMcpAuthContext } from "@/packages/mcp-server/src/auth"
 import { createBaseMcpToolRegistry } from "@/packages/mcp-server/src/tools"
-import { handleMcpRequest } from "@/packages/mcp-server/src/server"
+import { encodeMcpStdioMessage, handleMcpRequest, parseMcpStdioMessages } from "@/packages/mcp-server/src/server"
 import type { EdgeCommandClient } from "@/packages/mcp-server/src/edge-client"
 
 const auth = {
@@ -91,5 +91,25 @@ describe("FundLoop MCP server skeleton", () => {
         content: [expect.objectContaining({ type: "text" })],
       },
     })
+  })
+
+  it("parses and serializes MCP Content-Length stdio frames", () => {
+    const first = { jsonrpc: "2.0", id: 1, method: "initialize" }
+    const second = { jsonrpc: "2.0", id: 2, method: "tools/list" }
+    const firstBody = JSON.stringify(first)
+    const secondBody = JSON.stringify(second)
+    const framed = Buffer.from(
+      `Content-Length: ${Buffer.byteLength(firstBody, "utf8")}\r\n\r\n${firstBody}` +
+        `Content-Length: ${Buffer.byteLength(secondBody, "utf8")}\r\n\r\n${secondBody}`,
+    )
+
+    expect(parseMcpStdioMessages(framed)).toEqual({
+      messages: [first, second],
+      remaining: Buffer.alloc(0),
+    })
+
+    expect(encodeMcpStdioMessage({ jsonrpc: "2.0", id: 1, result: { ok: true } })).toBe(
+      'Content-Length: 45\r\n\r\n{"jsonrpc":"2.0","id":1,"result":{"ok":true}}',
+    )
   })
 })

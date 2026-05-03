@@ -40,7 +40,11 @@ function requireEdgeData<T>(result: Awaited<ReturnType<EdgeCommandClient["invoke
 }
 
 export class EdgeFounderWorkflowReader implements FounderWorkflowReader {
-  constructor(private readonly edge: EdgeCommandClient) {}
+  private readonly edge: EdgeCommandClient
+
+  constructor(edge: EdgeCommandClient) {
+    this.edge = edge
+  }
 
   async listManagedProjects(auth: McpAuthContext): Promise<FounderManagedProjectSummary[]> {
     return requireEdgeData(
