@@ -520,12 +520,12 @@ Confirm that the merged Sessions 37-45 stack actually landed cleanly in shared i
 
 ## Session 46.1: Confirm the post-merge dev Supabase deploy
 
-- Status: Not started
-- Timestamp started: TBD
-- Timestamp completed: TBD
-- Feature branch: TBD
-- Head: TBD
-- Session-log reference(s): TBD
+- Status: Complete
+- Timestamp started: 2026-05-03T18:25:21-0400
+- Timestamp completed: 2026-05-03T18:25:21-0400
+- Feature branch: codex/session-46-1-and-47-beta-smoke
+- Head: pending metadata commit
+- Session-log reference(s): session v127
 
 After the Session 46 repair PR merges to `dev`, verify the push-triggered `Supabase Deploy` workflow succeeds end to end against the dev Supabase target. Confirm the deploy run includes `user-cubid-resolve-email`, `user-cubid-sync-profile`, and `mcp-workflow-read`, and that no function attempts to resolve `node_modules/@cubid/api/dist/index.mjs`. If the deploy still fails, keep the follow-up narrow and repair only the failing deploy/runtime boundary before moving to Session 47.
 

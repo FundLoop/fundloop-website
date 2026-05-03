@@ -1,3 +1,32 @@
+### session v127: Confirm post-merge dev Supabase deploy
+- timestamp: 2026-05-03T18:25:21-0400
+- agent: **Codex (GPT-5)**
+- branch: **codex/session-46-1-and-47-beta-smoke**
+- head: pending metadata commit
+
+#### Objective
+Close Session 46.1 by recording that the PR #40 post-merge `dev` Supabase Deploy run succeeded end to end.
+
+#### Actions Taken
+- Confirmed PR #40 merged to `dev` at merge commit `e9b9f80`.
+- Watched the push-triggered `Supabase Deploy` run `25291992377` complete successfully.
+- Verified the run deployed `mcp-workflow-read`, `user-cubid-resolve-email`, and `user-cubid-sync-profile`.
+- Confirmed the repaired deploy path did not hit the previous `node_modules/@cubid/api/dist/index.mjs` bundling failure.
+- Updated Session 46.1 metadata in `agent-context/todo.md`.
+
+#### Tests and Validation Notes
+- `gh run watch 25291992377 --repo FundLoop/fundloop-website --interval 20 --exit-status` passed.
+- `gh run view 25291992377 --repo FundLoop/fundloop-website --log` showed the target functions deployed successfully.
+
+#### Reflections
+- The Session 46 repair fixed the failing push-triggered deploy path; the dev Supabase target is no longer blocked on CUBID package resolution.
+- The workflow still emits GitHub's Node 20 action deprecation warning for upstream actions, which is not blocking but should be handled in a later CI hygiene pass if it persists.
+
+#### Suggested Next Steps
+- Start Session 47 beta readiness smoke from a clean local Supabase baseline.
+
+---
+
 ### session v126: Address PR #40 Copilot documentation feedback
 - timestamp: 2026-05-03T17:32:02-0400
 - agent: **Codex (GPT-5)**
