@@ -71,7 +71,7 @@ Phone and extra provider stamps improve profile completion but do not block publ
 
 ## Browser Bridge
 
-Session 14 uses a split CUBID package model:
+The current CUBID package model is split by runtime:
 
 - server and Edge identity resolution/sync use `@cubid/core`
 - `@cubid/api`

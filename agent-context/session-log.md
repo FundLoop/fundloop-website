@@ -1,3 +1,26 @@
+### session v126: Address PR #40 Copilot documentation feedback
+- timestamp: 2026-05-03T17:32:02-0400
+- agent: **Codex (GPT-5)**
+- branch: **codex/session-46-deploy-health**
+- head: pending review-fix commit
+
+#### Objective
+Address Copilot feedback on PR #40 without changing the Session 46 deploy repair behavior.
+
+#### Actions Taken
+- Reworded the CUBID identity engineering doc so the `@cubid/core` and browser-package split is described as the current runtime model, not as something introduced by Session 14.
+
+#### Tests and Validation Notes
+- `pnpm dlx node@22.22.1 /opt/homebrew/bin/pnpm lint` passed.
+
+#### Reflections
+- The package split is important deploy truth, but the historical attribution needed to be precise so future agents do not misread old sessions.
+
+#### Suggested Next Steps
+- Push the review-fix commit, reply to the Copilot thread, resolve it, and re-check CI before moving to the Codex review gate.
+
+---
+
 ### session v125: Repair CUBID Edge deploy package resolution
 - timestamp: 2026-05-03T17:13:21-0400
 - agent: **Codex (GPT-5)**
