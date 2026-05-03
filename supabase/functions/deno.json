@@ -1,6 +1,6 @@
 {
   "imports": {
-    "@cubid/api": "../../node_modules/@cubid/api/dist/index.mjs",
+    "@cubid/core": "jsr:@cubid/core@0.1.0",
     "@supabase/supabase-js": "npm:@supabase/supabase-js@2.104.0",
     "viem": "npm:viem@2.48.1",
     "viem/chains": "npm:viem@2.48.1/chains",

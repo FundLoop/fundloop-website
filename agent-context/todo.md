@@ -509,6 +509,17 @@ After the heavy architecture and workflow work is in place, do the intentional f
 
 ## Session 46: Verify remote deploy health after the operations and MCP merge
 
+- Status: Complete
+- Timestamp started: 2026-05-03T17:10:26-0400
+- Timestamp completed: 2026-05-03T17:13:21-0400
+- Feature branch: codex/session-46-deploy-health
+- Head: pending final commit
+- Session-log reference(s): session v125
+
+Confirm that the merged Sessions 37-45 stack actually landed cleanly in shared infrastructure, not just in local tests. This session should inspect the post-merge GitHub Actions results, verify the Supabase deploy workflow applied the new migrations and deployed the new Edge Functions on the dev target, and smoke the new operator/MCP-adjacent surfaces against the deployed environment where credentials allow. Fix small deployment-script, Deno import, or environment-documentation issues if discovered. Do not add product scope unless the deploy verification reveals a real blocker.
+
+## Session 46.1: Confirm the post-merge dev Supabase deploy
+
 - Status: Not started
 - Timestamp started: TBD
 - Timestamp completed: TBD
@@ -516,7 +527,7 @@ After the heavy architecture and workflow work is in place, do the intentional f
 - Head: TBD
 - Session-log reference(s): TBD
 
-Confirm that the merged Sessions 37-45 stack actually landed cleanly in shared infrastructure, not just in local tests. This session should inspect the post-merge GitHub Actions results, verify the Supabase deploy workflow applied the new migrations and deployed the new Edge Functions on the dev target, and smoke the new operator/MCP-adjacent surfaces against the deployed environment where credentials allow. Fix small deployment-script, Deno import, or environment-documentation issues if discovered. Do not add product scope unless the deploy verification reveals a real blocker.
+After the Session 46 repair PR merges to `dev`, verify the push-triggered `Supabase Deploy` workflow succeeds end to end against the dev Supabase target. Confirm the deploy run includes `user-cubid-resolve-email`, `user-cubid-sync-profile`, and `mcp-workflow-read`, and that no function attempts to resolve `node_modules/@cubid/api/dist/index.mjs`. If the deploy still fails, keep the follow-up narrow and repair only the failing deploy/runtime boundary before moving to Session 47.
 
 ## Session 47: Run a production-readiness smoke and beta blocker audit
 

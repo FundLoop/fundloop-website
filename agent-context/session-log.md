@@ -1,3 +1,39 @@
+### session v125: Repair CUBID Edge deploy package resolution
+- timestamp: 2026-05-03T17:13:21-0400
+- agent: **Codex (GPT-5)**
+- branch: **codex/session-46-deploy-health**
+- head: pending final commit
+
+#### Objective
+Implement Session 46 by repairing the post-merge `dev` Supabase deploy failure where `user-cubid-resolve-email` could not bundle `node_modules/@cubid/api/dist/index.mjs`.
+
+#### Actions Taken
+- Inspected the failed `dev` Supabase Deploy run for merge commit `1332f3f` and confirmed migrations applied before function bundling failed on the CUBID package import path.
+- Added `@cubid/core@0.1.0` and moved server/Edge-facing CUBID identity resolution and snapshot normalization imports from `@cubid/api` to `@cubid/core`.
+- Updated `supabase/functions/deno.json` so Supabase Deno resolves `@cubid/core` from `jsr:@cubid/core@0.1.0`.
+- Kept the local `@cubid/api`, `@cubid/web2`, and `@cubid/web2-react` tarballs for browser compatibility flows that still need them.
+- Updated deployment, Edge Function, and CUBID identity docs to record that Edge Functions must use `@cubid/core` rather than the old `node_modules/@cubid/api/dist/index.mjs` path.
+- Added Session 46.1 as a narrow post-merge deploy-confirmation spillover, because the push-triggered dev deploy can only be verified after this repair lands on `dev`.
+
+#### Tests and Validation Notes
+- `pnpm install --frozen-lockfile` passed.
+- `deno cache --config supabase/functions/deno.json supabase/functions/user-cubid-resolve-email/index.ts` passed.
+- `deno cache --config supabase/functions/deno.json supabase/functions/user-cubid-sync-profile/index.ts` passed.
+- `deno cache --config supabase/functions/deno.json supabase/functions/mcp-workflow-read/index.ts` passed.
+- `pnpm lint` passed, then `pnpm dlx node@22.22.1 /opt/homebrew/bin/pnpm lint` also passed.
+- `pnpm test` passed: 74 files and 287 tests; the Node 22 rerun also passed with the same file/test counts.
+- `pnpm typecheck` passed, then `pnpm dlx node@22.22.1 /opt/homebrew/bin/pnpm typecheck` also passed.
+- `pnpm build` passed, then `pnpm dlx node@22.22.1 /opt/homebrew/bin/pnpm build` also passed.
+
+#### Reflections
+- The PR dry-run was not enough to catch this because it did not deploy or bundle Edge Functions; the failure only appeared in the push-triggered deploy path.
+- Using the JSR-published runtime-agnostic CUBID core package gives Supabase Edge a stable Deno-native import path and removes the brittle repo-root `node_modules` dependency from function bundling.
+
+#### Suggested Next Steps
+- Yeet this repair to `dev`; after merge, complete Session 46.1 by confirming the push-triggered dev Supabase Deploy run succeeds through all functions.
+
+---
+
 ### session v124: Add the next roadmap tranche
 - timestamp: 2026-05-03T13:50:16Z
 - agent: **Codex (GPT-5)**

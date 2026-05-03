@@ -1,4 +1,4 @@
-import { createCubidApiClient } from "@cubid/api"
+import { createCubidApiClient } from "@cubid/core"
 import { getCubidConfig } from "./config.ts"
 
 export function createServerCubidApiClient() {

@@ -16,6 +16,9 @@ importers:
       '@cubid/api':
         specifier: file:vendor/cubid/cubid-api-0.1.0.tgz
         version: file:vendor/cubid/cubid-api-0.1.0.tgz
+      '@cubid/core':
+        specifier: 0.1.0
+        version: 0.1.0
       '@cubid/web2':
         specifier: file:vendor/cubid/cubid-web2-0.1.0.tgz
         version: file:vendor/cubid/cubid-web2-0.1.0.tgz
@@ -255,6 +258,8 @@ importers:
         specifier: ^3.0.7
         version: 3.2.0(bufferutil@4.1.0)(utf-8-validate@6.0.6)
 
+  packages/mcp-server: {}
+
 packages:
 
   '@actions/core@1.11.1':
@@ -414,6 +419,9 @@ packages:
   '@cubid/api@file:vendor/cubid/cubid-api-0.1.0.tgz':
     resolution: {integrity: sha512-FtzkdHlL2SfjrYyMmhLeZ1Sr5SL3RRwOsSkJJyrt3hdr5oqEvIkquqawG0hgmGMhZJQ4jfxPH9XdsNRweTYyWw==, tarball: file:vendor/cubid/cubid-api-0.1.0.tgz}
     version: 0.1.0
+
+  '@cubid/core@0.1.0':
+    resolution: {integrity: sha512-EJ0eM/DWhzUcqvHSTjDgmjSw1/QTEyW1cqocWlXcLsj+1WXojipr65YG1+zcyz555LXqyF3xwFFFJgZRq3Dqcw==}
 
   '@cubid/web2-react@file:vendor/cubid/cubid-web2-react-0.1.0.tgz':
     resolution: {integrity: sha512-ImP5mYICXBiKLhWSUsnLbB71hhKg2KLYfYCrnYmqTIHOJ0/KfB7DsL3xJADkS/tvuoISoJt66FrKZU3OuPhQEg==, tarball: file:vendor/cubid/cubid-web2-react-0.1.0.tgz}
@@ -6249,6 +6257,8 @@ snapshots:
   '@csstools/css-tokenizer@4.0.0': {}
 
   '@cubid/api@file:vendor/cubid/cubid-api-0.1.0.tgz': {}
+
+  '@cubid/core@0.1.0': {}
 
   '@cubid/web2-react@file:vendor/cubid/cubid-web2-react-0.1.0.tgz(react-dom@19.2.5(react@19.2.5))(react@19.2.5)':
     dependencies:

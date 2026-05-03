@@ -71,11 +71,14 @@ Phone and extra provider stamps improve profile completion but do not block publ
 
 ## Browser Bridge
 
-Session 14 uses the local CUBID v2 packages:
+Session 14 uses a split CUBID package model:
 
+- server and Edge identity resolution/sync use `@cubid/core`
 - `@cubid/api`
 - `@cubid/web2`
 - `@cubid/web2-react`
+
+`@cubid/api` remains present for the local browser compatibility tarballs. Edge Functions should import `@cubid/core`, which is available to Supabase Deno through JSR.
 
 The browser does not receive `CUBID_API_KEY`.
 

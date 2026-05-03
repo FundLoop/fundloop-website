@@ -49,9 +49,9 @@ Edge Functions are deployed by enumerating each local function directory under `
 supabase functions deploy "<function-name>" --project-ref "$SUPABASE_PROJECT_REF"
 ```
 
-Before bundling functions on deploy runs, the workflow installs repo dependencies with `pnpm install --frozen-lockfile` so package dependencies remain available to the Deno bundler. `supabase/functions/deno.json` enables `nodeModulesDir` for that bundle step and can map shared-package imports explicitly when Deno cannot resolve the normal app import path on its own.
+Before bundling functions on deploy runs, the workflow installs repo dependencies with `pnpm install --frozen-lockfile` so package dependencies remain available to the Deno bundler. `supabase/functions/deno.json` enables `nodeModulesDir` for that bundle step and maps Edge-safe package imports explicitly when needed.
 
-FundLoop no longer keeps a function-local CUBID mirror under `supabase/functions/_vendor/`. Until the Cubid repo publishes a first-class JSR package for `@cubid/api`, the Edge runtime maps `@cubid/api` to the installed package entrypoint under the repo root `node_modules/`. That means remote deploys still require the workflow’s `pnpm install --frozen-lockfile` bootstrap before function bundling.
+FundLoop no longer keeps a function-local CUBID mirror under `supabase/functions/_vendor/`. CUBID server and Edge code imports the runtime-agnostic `@cubid/core` package, and the Supabase Deno import map resolves it through `jsr:@cubid/core@0.1.0`. Browser-only CUBID compatibility helpers may still depend on local vendored tarballs, but Edge Functions must not depend on `node_modules/@cubid/api/dist/index.mjs`.
 
 The workflow pins the Supabase CLI version instead of using `latest`; update it deliberately during normal dependency/tooling triage.
 

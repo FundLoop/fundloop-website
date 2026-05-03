@@ -40,6 +40,7 @@
   },
   "dependencies": {
     "@cubid/api": "file:vendor/cubid/cubid-api-0.1.0.tgz",
+    "@cubid/core": "0.1.0",
     "@cubid/web2": "file:vendor/cubid/cubid-web2-0.1.0.tgz",
     "@cubid/web2-react": "file:vendor/cubid/cubid-web2-react-0.1.0.tgz",
     "@hookform/resolvers": "^5.2.2",
