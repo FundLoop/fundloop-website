@@ -1,3 +1,39 @@
+### session v128: Run beta readiness smoke
+- timestamp: 2026-05-04T05:36:28-0400
+- agent: **Codex (GPT-5)**
+- branch: **codex/session-46-1-and-47-beta-smoke**
+- head: pending session 47 commit
+
+#### Objective
+Complete Session 47 by running a focused local beta readiness smoke across public routes, authenticated workspaces, founder operations, monthly-cycle/operator surfaces, and MCP-adjacent test coverage.
+
+#### Actions Taken
+- Stopped the competing EverFund Supabase stack before starting FundLoop local Supabase.
+- Recovered the local FundLoop stack from stale container and Colima interruptions, then started Supabase with Logflare excluded because the analytics container repeatedly failed health checks.
+- Reset the local database through the full migration chain and tracked seed.
+- Ran focused Vitest coverage for seeded public data, route redirects, user/founder workspaces, monthly cycles, reporting, earnings, MCP tools, observability, and E2E auth configuration.
+- Smoked localized public routes, public redirects, authenticated workspace/founder/admin routes, founder payment/contribution/attribution/reporting surfaces, and operator pages against the local app.
+- Recorded the beta readiness punch list in `agent-context/todo.md`, scoped mainly to Session 48 smoke-environment hardening.
+
+#### Tests and Validation Notes
+- `DOCKER_HOST=unix:///var/run/docker.sock supabase db reset` passed after starting the local stack with `supabase start -x logflare`.
+- `pnpm test tests/local-public-seed.test.ts tests/public-route-redirects.test.ts tests/public-user-journey.test.ts tests/user-workspace.test.ts tests/founder-workspace.test.ts tests/monthly-cycles.test.ts tests/monthly-cycle-reports.test.ts tests/user-earnings-workspace.test.ts` passed: 8 files, 37 tests.
+- Public HTTP smoke returned 200 for `/en`, `/fr`, `/es`, `/en/participation`, `/fr/participation`, `/es/support`, `/en/founders`, `/en/projects`, `/en/projects/civic-mesh`, `/en/users`, `/en/users/00000000-0000-4000-8000-000000000101`, `/en/reports`, `/en/documentation`, `/en/blog`, `/en/faq`, `/en/ecosystem`, `/en/privacy`, `/en/terms`, and `/en/cookies`.
+- Redirect smoke confirmed `/`, `/participation`, `/en/about`, `/en/api`, `/en/analytics`, `/en/pledge`, `/en/pricing`, `/en/my-profile`, `/en/settings`, `/en/settings/account`, and `/en/organizations/test` route to their canonical destinations.
+- Authenticated Playwright smoke with `maya@fundloop.example.com` passed for `/en/workspace`, `/en/workspace/account`, `/en/workspace/earnings`, `/en/workspace/reporting`, `/en/founder`, `/en/founder/projects`, `/en/founder/projects/civic-mesh`, `/en/admin`, `/en/admin/cycles`, `/en/admin/operations`, `/en/admin/identity`, `/en/admin/payments`, `/en/admin/cycles/observability`, `/en/admin/zkas`, `/en/admin/superadmin/zkas`, `/en/projects/civic-mesh/payments`, `/en/projects/civic-mesh/zkas`, `/en/founder/projects/civic-mesh/contributions`, `/en/founder/projects/civic-mesh/attribution`, and `/en/founder/projects/civic-mesh/reporting`.
+- `pnpm test tests/mcp-founder-tools.test.ts tests/monthly-cycle-observability.test.ts tests/e2e-config.test.ts` passed: 3 files, 9 tests.
+
+#### Reflections
+- The product surface is much more smokeable than it was before the workspace/monthly-cycle/reporting sessions; the meaningful blockers were local smoke environment reliability issues rather than obvious broken beta routes.
+- Local operator smoke depends on explicit allowlist env, so the seed guide needs to describe not just the account credentials but the env needed to make that persona an operator.
+- The local Logflare failure is a good example of why Session 48 should focus on making the smoke harness boring and repeatable before more beta-hardening work piles on top.
+
+#### Suggested Next Steps
+- Run Session 48 next to harden seeded local/preview personas, document required operator env, and either repair or formalize the local `supabase start -x logflare` smoke mode.
+- Then continue to Session 49 MCP runtime packaging once local smoke setup is boring enough for future agents and reviewers.
+
+---
+
 ### session v127: Confirm post-merge dev Supabase deploy
 - timestamp: 2026-05-03T18:25:21-0400
 - agent: **Codex (GPT-5)**
