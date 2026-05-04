@@ -1,3 +1,36 @@
+### session v131: Package MCP runtime launch and smoke path
+- timestamp: 2026-05-04T08:01:03-0400
+- agent: **Codex (GPT-5)**
+- branch: **codex/session-46-1-and-47-beta-smoke**
+- head: pending session 49 commit
+
+#### Objective
+Complete Session 49 by making the existing MCP server runtime easier to launch, smoke, inspect, and document without expanding the tool surface.
+
+#### Actions Taken
+- Added root MCP commands for local launch, smoke testing, package tests, inspector launch, and publication guidance.
+- Added MCP package exports and package-level scripts for stdio runtime execution, focused tests, smoke validation, and inspector usage.
+- Added a Content-Length framed stdio smoke harness that initializes the MCP server, lists tools, and calls `fundloop.health`.
+- Added a package README for `packages/mcp-server` and expanded `docs/engineering/mcp.md` with runtime environment, local launch, packaging status, troubleshooting, and safe extension guidance.
+- Marked Session 49 complete in `agent-context/todo.md`.
+
+#### Tests and Validation Notes
+- `pnpm mcp:smoke` passed.
+- `pnpm mcp:test` passed.
+- `pnpm --filter @fundloop/mcp-server typecheck` passed.
+- `pnpm dlx node@22.22.1 /opt/homebrew/bin/pnpm lint` passed.
+- `pnpm dlx node@22.22.1 /opt/homebrew/bin/pnpm typecheck` passed.
+- `pnpm dlx node@22.22.1 /opt/homebrew/bin/pnpm build` passed.
+
+#### Reflections
+- Session 49 intentionally keeps MCP scope stable while making the existing protocol runtime less fragile for future agents and reviewers.
+- The smoke path now validates real MCP stdio framing without requiring a live Supabase actor or touching workflow data.
+
+#### Suggested Next Steps
+- Continue with Session 50 to move the remaining operator dashboard reads onto stable read contracts.
+
+---
+
 ### session v130: Harden local smoke personas and dev browser noise
 - timestamp: 2026-05-04T05:58:04-0400
 - agent: **Codex (GPT-5)**

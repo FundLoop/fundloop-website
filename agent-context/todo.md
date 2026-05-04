@@ -559,12 +559,12 @@ Make the local and preview smoke environment more dependable for future agents a
 
 ## Session 49: Package and document MCP runtime deployment
 
-- Status: Not started
-- Timestamp started: TBD
-- Timestamp completed: TBD
-- Feature branch: TBD
-- Head: TBD
-- Session-log reference(s): TBD
+- Status: Complete
+- Timestamp started: 2026-05-04T07:57:57-0400
+- Timestamp completed: 2026-05-04T08:01:03-0400
+- Feature branch: codex/session-46-1-and-47-beta-smoke
+- Head: pending session 49 commit
+- Session-log reference(s): session v131
 
 Turn the MCP server from a repo package into a deployable and supportable runtime artifact. Add a documented local launch path, environment contract, health or version command, and packaging guidance for whichever host or agent runtime will consume it first. Verify the stdio framing path and Edge-backed readers in a realistic local smoke, then update `docs/engineering/mcp.md` with setup, auth, troubleshooting, and safe tool-extension rules. Do not expand tool scope in this session; the goal is making the existing MCP surface easy to run and hard to misuse.
 

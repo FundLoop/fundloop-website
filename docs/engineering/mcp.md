@@ -16,7 +16,7 @@ Session 38 introduced `packages/mcp-server` as a lightweight workspace package.
 
 ## Runtime Configuration
 
-The skeleton expects:
+The stdio runtime expects:
 
 - `FUNDLOOP_MCP_BEARER_TOKEN`: Supabase user bearer token for the agent's current actor.
 - `NEXT_PUBLIC_SUPABASE_URL` or `SUPABASE_URL`: Supabase project URL.
@@ -25,12 +25,98 @@ The skeleton expects:
 
 The generic Edge Function invoker is intentionally allowlisted. Product tools added in later sessions should prefer explicit typed handlers over exposing arbitrary function names to agents.
 
+## Local Runtime
+
+Session 49 made the package runnable through repo-owned scripts.
+
+Run the stdio server from the repo root:
+
+```bash
+pnpm mcp:dev
+```
+
+Equivalent package command:
+
+```bash
+pnpm --filter @fundloop/mcp-server dev
+```
+
+The server speaks MCP-style JSON-RPC over Content-Length framed stdio messages. Protocol output goes to stdout. Operational logs and fatal startup errors must go to stderr so stdio clients do not receive non-protocol bytes.
+The package launch scripts suppress Node's `MODULE_TYPELESS_PACKAGE_JSON` warning for the shared root TypeScript import path so local MCP clients and smoke output stay focused on protocol behavior.
+
+For local smoke without a live Supabase session, the package exposes a non-mutating health smoke:
+
+```bash
+pnpm mcp:smoke
+```
+
+The smoke harness sends:
+
+- `initialize`
+- `tools/list`
+- `tools/call` for `fundloop.health`
+
+It verifies framing, server identity, tool registration, and health response shape. It does not call workflow read tools or mutating tools.
+
+For package tests:
+
+```bash
+pnpm mcp:test
+```
+
+For interactive inspection when the MCP Inspector is available:
+
+```bash
+pnpm mcp:inspect
+```
+
+`mcp:inspect` launches the upstream inspector through `npx` against the local stdio server. Keep real bearer tokens scoped to non-production actors unless explicitly validating a protected environment.
+
+## Environment Contract
+
+Minimum local stdio runtime:
+
+```env
+FUNDLOOP_MCP_BEARER_TOKEN=non_production_supabase_access_token
+NEXT_PUBLIC_SUPABASE_URL=http://127.0.0.1:54321
+NEXT_PUBLIC_SUPABASE_ANON_KEY=local_publishable_or_anon_key
+```
+
+Optional low-level invoker allowlist:
+
+```env
+FUNDLOOP_MCP_ALLOWED_EDGE_FUNCTIONS=project-crypto-route-create,project-crypto-route-update
+```
+
+The explicit workflow tools do not require the low-level allowlist. They call typed reader/writer boundaries directly. Leave `FUNDLOOP_MCP_ALLOWED_EDGE_FUNCTIONS` empty unless a session specifically needs a generic command bridge for integration work.
+
+## Packaging Status
+
+`packages/mcp-server` is currently a private workspace package and local stdio runtime. It is not yet published to npm, the official MCP registry, Smithery, Docker, or any hosted remote runtime.
+
+Current package entrypoints:
+
+- package export: `@fundloop/mcp-server`
+- stdio server export: `@fundloop/mcp-server/server`
+- bin name: `fundloop-mcp-server`
+
+The root `pnpm mcp:publish` command is intentionally metadata-only guidance for now. Actual publication should happen only after the MCP-specific roadmap in `agent-context/todo-mcp.md` defines the target registry, auth model, hosted endpoint, and validation transcript.
+
+## Troubleshooting
+
+- `FUNDLOOP_MCP_BEARER_TOKEN is required`: provide a Supabase user access token for the actor the agent represents.
+- `NEXT_PUBLIC_SUPABASE_URL or SUPABASE_URL is required`: point the runtime at local, preview, or production Supabase.
+- `invalid_edge_response`: the target Edge Function did not return the standard `{ ok: true, data } | { ok: false, error }` envelope.
+- `not allowlisted`: the generic `fundloop.edge_command.invoke` tool was asked to call a function not listed in `FUNDLOOP_MCP_ALLOWED_EDGE_FUNCTIONS`.
+- stdio client hangs: confirm the client is sending Content-Length framed messages, not newline-delimited JSON.
+
 ## Tool Rules
 
 - Tool inputs and outputs should be stable, typed, and small.
 - Founder/project-member tools should enforce role boundaries through the same Edge Function commands and read models used by the app.
 - Internal-operator tools should start read-only unless a session explicitly introduces a safe mutation.
 - Tool failures should return protocol-visible error content and should also be visible through the relevant app observability stream.
+- Do not log bearer tokens, Supabase keys, service role keys, raw private artifact URLs, or command payloads containing secrets.
 
 ## Current Skeleton
 

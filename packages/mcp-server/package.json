@@ -7,7 +7,16 @@
   "bin": {
     "fundloop-mcp-server": "./src/server.ts"
   },
+  "exports": {
+    ".": "./src/index.ts",
+    "./server": "./src/server.ts"
+  },
   "scripts": {
+    "dev": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON src/server.ts",
+    "inspect": "npx @modelcontextprotocol/inspector node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON src/server.ts",
+    "publish:metadata": "node -e \"console.log('MCP registry publication is not enabled yet. See docs/engineering/mcp.md.')\"",
+    "smoke": "node ../../scripts/smoke-mcp-stdio.mjs",
+    "test": "cd ../.. && vitest run tests/mcp-server.test.ts tests/mcp-founder-tools.test.ts tests/mcp-member-operator-tools.test.ts",
     "typecheck": "tsc --noEmit"
   }
 }
