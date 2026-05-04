@@ -600,3 +600,7 @@ Move the most important beta safety expectations from docs into runtime checks w
 - Session-log reference(s): TBD
 
 Once dev deploy health and beta smoke blockers are understood, prepare the first credible release-candidate path from `dev` toward `main`. This session should verify branch protection, production environment approval, Supabase main-target deployment settings, required secrets, migration ordering, rollback notes, and the minimum manual smoke checklist for Production. Update the README and operations runbook only where they differ from current truth. The output should be a small release-readiness PR that makes the main promotion path boring, explicit, and reviewable before any production data is touched.
+
+## Backlog continuation after Session 52
+
+Once Sessions 1 through 52 are complete and this backlog has no active spillover items, rename this document to `todo-1-through-52.md`. Continue the next MCP-focused roadmap from `agent-context/todo-mcp.md`, keeping the same metadata and session-log discipline for each MCP task.

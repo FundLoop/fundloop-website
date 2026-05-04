@@ -1,3 +1,28 @@
+### session v129: Track MCP backlog handoff
+- timestamp: 2026-05-04T05:54:48-0400
+- agent: **Codex (GPT-5)**
+- branch: **codex/session-46-1-and-47-beta-smoke**
+- head: pending MCP backlog metadata commit
+
+#### Objective
+Track the MCP backlog draft and make the handoff from the numbered Session 1-52 roadmap explicit.
+
+#### Actions Taken
+- Started tracking `agent-context/todo-mcp.md` so the MCP roadmap is no longer a local-only artifact.
+- Added a closing note to `agent-context/todo.md` instructing agents to rename it to `todo-1-through-52.md` after Session 52 is complete, then continue with `agent-context/todo-mcp.md`.
+
+#### Tests and Validation Notes
+- No code validation was run because this was metadata/backlog tracking only.
+- The next step is Session 48 implementation on the same feature branch.
+
+#### Reflections
+- Making the roadmap transition explicit should prevent future agents from mixing MCP capability planning into the already-scoped production-readiness tranche.
+
+#### Suggested Next Steps
+- Start Session 48 by hardening local and preview smoke personas around the Session 47 findings.
+
+---
+
 ### session v128: Run beta readiness smoke
 - timestamp: 2026-05-04T05:36:28-0400
 - agent: **Codex (GPT-5)**
