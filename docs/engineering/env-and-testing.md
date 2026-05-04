@@ -42,6 +42,24 @@ DOCKER_HOST=unix:///var/run/docker.sock supabase start
 DOCKER_HOST=unix:///var/run/docker.sock supabase db reset
 ```
 
+If the local analytics/Logflare container repeatedly fails health checks on a development machine, use the official smoke-mode fallback:
+
+```bash
+DOCKER_HOST=unix:///var/run/docker.sock supabase start -x logflare
+DOCKER_HOST=unix:///var/run/docker.sock supabase db reset
+```
+
+This keeps database, auth, REST, storage, and Edge Functions available for app smoke tests while excluding the local analytics container. Record that fallback in the session log when used. Do not use this fallback to validate analytics-specific behavior.
+
+For the deterministic seeded operator smoke persona, set the non-production allowlists before starting Next:
+
+```bash
+FUNDLOOP_INTERNAL_ADMIN_EMAILS=maya@fundloop.example.com
+FUNDLOOP_ZKAS_SUPERADMIN_EMAILS=maya@fundloop.example.com
+```
+
+These values are local/preview smoke fixtures only. Production operator allowlists must be managed separately and should never be inferred from `supabase/seed.sql`.
+
 Use local Supabase when:
 
 - adding or changing migrations

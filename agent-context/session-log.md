@@ -1,3 +1,37 @@
+### session v130: Harden local smoke personas and dev browser noise
+- timestamp: 2026-05-04T05:58:04-0400
+- agent: **Codex (GPT-5)**
+- branch: **codex/session-46-1-and-47-beta-smoke**
+- head: pending session 48 commit
+
+#### Objective
+Complete Session 48 by making the local and preview smoke path more explicit and less noisy after the Session 47 beta readiness audit.
+
+#### Actions Taken
+- Documented the seeded internal-operator smoke contract in `docs/engineering/local-seed.md`, including the Maya fixture account, required internal-admin allowlists, and expected operator routes.
+- Updated `docs/engineering/env-and-testing.md` and `README.md` with the official local smoke fallback `supabase start -x logflare` for machines where the local analytics/Logflare container fails health checks.
+- Clarified that the Logflare fallback is valid for app smoke coverage but not analytics-specific validation.
+- Added the seeded operator allowlist values to local/preview smoke guidance without treating them as production defaults.
+- Added `allowedDevOrigins: ["127.0.0.1"]` to the Next config to reduce HMR cross-origin noise during local browser smoke.
+- Added a lightweight `/favicon.ico` route so local browser smoke no longer reports a favicon 404 as a false console failure.
+- Marked Session 48 complete in `agent-context/todo.md`.
+
+#### Tests and Validation Notes
+- `git diff --check` passed.
+- `pnpm dlx node@22.22.1 /opt/homebrew/bin/pnpm lint` passed.
+- `pnpm dlx node@22.22.1 /opt/homebrew/bin/pnpm typecheck` passed.
+- `pnpm dlx node@22.22.1 /opt/homebrew/bin/pnpm build` passed.
+- Live local smoke of `/favicon.ico` returned HTTP 200 with `content-type: image/svg+xml; charset=utf-8`.
+
+#### Reflections
+- Session 48 deliberately hardens the smoke harness rather than widening product scope; the goal is making future verification boring enough that real product regressions stand out.
+- Keeping the seeded operator env explicit should prevent another round of confusing admin redirects that are actually missing allowlist config.
+
+#### Suggested Next Steps
+- Continue with Session 49 to package and document the MCP runtime deployment path.
+
+---
+
 ### session v129: Track MCP backlog handoff
 - timestamp: 2026-05-04T05:54:48-0400
 - agent: **Codex (GPT-5)**

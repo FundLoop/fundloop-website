@@ -93,6 +93,24 @@ DOCKER_HOST=unix:///var/run/docker.sock supabase start
 DOCKER_HOST=unix:///var/run/docker.sock supabase db reset
 ```
 
+If the local Supabase analytics/Logflare container is unhealthy on your machine, use the documented smoke fallback:
+
+```bash
+DOCKER_HOST=unix:///var/run/docker.sock supabase start -x logflare
+DOCKER_HOST=unix:///var/run/docker.sock supabase db reset
+```
+
+That mode is valid for app smoke tests that need database, auth, storage, REST, and Edge Functions, but it does not validate analytics behavior.
+
+For the deterministic seeded founder/operator smoke persona, use:
+
+```env
+FUNDLOOP_INTERNAL_ADMIN_EMAILS=maya@fundloop.example.com
+FUNDLOOP_ZKAS_SUPERADMIN_EMAILS=maya@fundloop.example.com
+```
+
+See [Local Seed Fixtures](docs/engineering/local-seed.md) for the seeded credentials and expected smoke routes.
+
 Common commands:
 
 ```bash

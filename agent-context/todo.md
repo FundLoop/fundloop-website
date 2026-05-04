@@ -548,12 +548,12 @@ Session 47 beta readiness punch list:
 
 ## Session 48: Harden seeded local and preview smoke personas
 
-- Status: Not started
-- Timestamp started: TBD
-- Timestamp completed: TBD
-- Feature branch: TBD
-- Head: TBD
-- Session-log reference(s): TBD
+- Status: Complete
+- Timestamp started: 2026-05-04T05:55:27-0400
+- Timestamp completed: 2026-05-04T05:58:04-0400
+- Feature branch: codex/session-46-1-and-47-beta-smoke
+- Head: pending session 48 commit
+- Session-log reference(s): session v130
 
 Make the local and preview smoke environment more dependable for future agents and reviewers. Ensure the tracked seed supports at least one regular user, one founder/project admin, one internal operator, active projects, payment routes, monthly cycles across multiple statuses, published reports, payout rows, and representative identity states without requiring remote data pulls. Include the Session 47 findings: document or repair the local Logflare/analytics startup issue, record the required internal-admin and zkAS-superadmin allowlists for the seeded operator, and make browser smoke quieter where practical. Keep secrets out of the seed, keep the dataset small, and update `docs/engineering/local-seed.md` plus testing guidance so smoke credentials and expected routes are obvious. This session should reduce the recurring “can we even smoke this?” drag.
 
