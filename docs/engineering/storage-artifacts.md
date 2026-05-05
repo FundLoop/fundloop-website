@@ -40,6 +40,8 @@ Current canonical paths:
 
 Cycle-bound paths must start with a valid `YYYY-MM` cycle key. This keeps storage references aligned with `monthly_cycles` and makes MCP/operator tooling predictable.
 
+Private artifact downloads must validate stored paths before touching Supabase Storage. Session 51 added runtime guards that reject traversal, absolute paths, mismatched cycle/run prefixes, and mismatched zkAS artifact kinds for the superadmin zkAS artifact route.
+
 ## Access Rules
 
 Storage access should happen through server-owned or Edge Function-owned paths.

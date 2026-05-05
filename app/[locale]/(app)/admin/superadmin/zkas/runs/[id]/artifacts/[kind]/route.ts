@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server"
+import { assertZkasRunDownloadArtifactPath } from "@/lib/storage/artifacts"
 import { getAdminSupabaseClient } from "@/lib/supabase-admin"
 import { ZKAS_RUN_BUCKET } from "@/lib/zkas/constants"
 import { requireZkasSuperadmin } from "@/lib/zkas/auth"
@@ -18,7 +19,7 @@ export async function GET(
   const supabase = getAdminSupabaseClient()
   const { data: run, error } = await supabase
     .from("zkas_runs")
-    .select("month, result_artifact_path, attestation_artifact_path")
+    .select("id, month, result_artifact_path, attestation_artifact_path")
     .eq("id", runId)
     .single()
 
@@ -26,8 +27,20 @@ export async function GET(
     return NextResponse.json({ error: error?.message ?? "Run not found" }, { status: 404 })
   }
 
-  const objectPath = kind === "result" ? run.result_artifact_path : run.attestation_artifact_path
-  if (!objectPath) {
+  const rawObjectPath = kind === "result" ? run.result_artifact_path : run.attestation_artifact_path
+  if (!rawObjectPath) {
+    return NextResponse.json({ error: "Artifact not available" }, { status: 404 })
+  }
+
+  let objectPath: string
+  try {
+    objectPath = assertZkasRunDownloadArtifactPath({
+      cycleKey: run.month,
+      runId: run.id,
+      artifact: kind as "result" | "attestation",
+      path: rawObjectPath,
+    })
+  } catch {
     return NextResponse.json({ error: "Artifact not available" }, { status: 404 })
   }
 
@@ -43,6 +56,8 @@ export async function GET(
     headers: {
       "content-type": contentType,
       "content-disposition": `attachment; filename="${filename}"`,
+      "cache-control": "no-store",
+      "x-content-type-options": "nosniff",
     },
   })
 }

@@ -178,4 +178,17 @@ describe("monthly-cycle payout intent creation", () => {
 
     expect(result).toMatchObject({ ok: false, error: { code: "published_results_required" } })
   })
+
+  it("rejects non-admin payout intent callers before mutation", async () => {
+    const supabase = makeSupabase()
+
+    const result = await executeMonthlyCyclePayoutIntentsCreateCommand(supabase as never, {
+      ...commandInput,
+      actorRole: "system",
+    })
+
+    expect(result).toMatchObject({ ok: false, error: { code: "forbidden" } })
+    expect(supabase.inserts.monthly_cycle_events ?? []).toEqual([])
+    expect(supabase.inserts.payout_intents ?? []).toEqual([])
+  })
 })

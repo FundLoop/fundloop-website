@@ -80,6 +80,7 @@ export async function executeMonthlyCycleVerificationReviewCommand(
   input: MonthlyCycleVerificationReviewInput,
   deps: CommandDeps = {},
 ) {
+  if (input.actorRole !== "internal_admin") return failure("forbidden", "Only internal admins can review monthly-cycle verification.")
   const note = input.note.trim()
   if (!note) return failure("note_required", "A verification note is required.")
   const now = (deps.now?.() ?? new Date()).toISOString()
@@ -151,6 +152,7 @@ export async function executeMonthlyCycleApprovalCommand(
   input: MonthlyCycleApprovalInput,
   deps: CommandDeps = {},
 ) {
+  if (input.actorRole !== "internal_admin") return failure("forbidden", "Only internal admins can approve monthly cycles.")
   const note = input.note.trim()
   if (!note) return failure("note_required", "An approval note is required.")
   const now = (deps.now?.() ?? new Date()).toISOString()
@@ -158,14 +160,52 @@ export async function executeMonthlyCycleApprovalCommand(
   if (cycleError) return failure("query_failed", cycleError.message)
   if (!cycle) return failure("cycle_not_found", "Monthly cycle not found.")
   if (cycle.status !== "verification" && cycle.status !== "approval") {
+    await insertCycleEvent(supabase, input, {
+      cycleId: cycle.id,
+      eventType: "approval_review",
+      outcome: "failure",
+      severity: "warning",
+      message: "Cycle is not in verification or approval.",
+      metadata: { status: cycle.status },
+    })
     return failure("cycle_not_verified", "Cycle must be in verification before approval.")
   }
 
   const { data: run, error: runError } = await getLatestCompletedRun(supabase, cycle.id)
   if (runError) return failure("query_failed", runError.message)
-  if (!run) return failure("completed_run_required", "A completed zkAS run is required before approval.")
-  if (run.verification_status !== "verified") return failure("run_verification_required", "The completed zkAS run must be verified first.")
-  if (!run.result_artifact_hash) return failure("result_artifact_required", "A result artifact hash is required before approval.")
+  if (!run) {
+    await insertCycleEvent(supabase, input, {
+      cycleId: cycle.id,
+      eventType: "approval_review",
+      outcome: "failure",
+      severity: "warning",
+      message: "Approval requires a completed zkAS run.",
+      metadata: { status: cycle.status },
+    })
+    return failure("completed_run_required", "A completed zkAS run is required before approval.")
+  }
+  if (run.verification_status !== "verified") {
+    await insertCycleEvent(supabase, input, {
+      cycleId: cycle.id,
+      eventType: "approval_review",
+      outcome: "failure",
+      severity: "warning",
+      message: "Approval requires a verified zkAS run.",
+      metadata: { runId: run.id, verificationStatus: run.verification_status },
+    })
+    return failure("run_verification_required", "The completed zkAS run must be verified first.")
+  }
+  if (!run.result_artifact_hash) {
+    await insertCycleEvent(supabase, input, {
+      cycleId: cycle.id,
+      eventType: "approval_review",
+      outcome: "failure",
+      severity: "warning",
+      message: "Approval requires a result artifact hash.",
+      metadata: { runId: run.id },
+    })
+    return failure("result_artifact_required", "A result artifact hash is required before approval.")
+  }
 
   const { data: updatedCycle, error: updateError } = await supabase
     .from("monthly_cycles")
@@ -179,8 +219,28 @@ export async function executeMonthlyCycleApprovalCommand(
     .in("status", ["verification", "approval"])
     .select("id, approval_started_at")
     .maybeSingle()
-  if (updateError) return failure("approval_failed", updateError.message)
-  if (!updatedCycle) return failure("cycle_state_changed", "Cycle changed state before approval could complete.")
+  if (updateError) {
+    await insertCycleEvent(supabase, input, {
+      cycleId: cycle.id,
+      eventType: "approval_review",
+      outcome: "failure",
+      severity: "error",
+      message: updateError.message,
+      metadata: { runId: run.id },
+    })
+    return failure("approval_failed", updateError.message)
+  }
+  if (!updatedCycle) {
+    await insertCycleEvent(supabase, input, {
+      cycleId: cycle.id,
+      eventType: "approval_review",
+      outcome: "failure",
+      severity: "warning",
+      message: "Cycle changed state before approval could complete.",
+      metadata: { runId: run.id },
+    })
+    return failure("cycle_state_changed", "Cycle changed state before approval could complete.")
+  }
 
   const eventError = await insertCycleEvent(supabase, input, {
     cycleId: cycle.id,

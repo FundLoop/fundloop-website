@@ -199,6 +199,50 @@ describe("monthly-cycle verification review", () => {
     expect(verified).toMatchObject({ ok: true, data: { status: "verification" } })
   })
 
+  it("audits approval failures once the cycle is known", async () => {
+    const supabase = makeSupabase({
+      monthly_cycles: [{ ...cycle, status: "verification" }],
+      zkas_runs: [{ ...completedRun, monthly_cycle_id: 1, verification_status: "pending" }],
+    })
+
+    const result = await executeMonthlyCycleApprovalCommand(supabase as never, {
+      ...commandInput,
+      note: "Trying to approve before the run is verified.",
+    })
+
+    expect(result).toMatchObject({ ok: false, error: { code: "run_verification_required" } })
+    expect(supabase.inserts.monthly_cycle_events).toEqual([
+      expect.objectContaining({
+        event_type: "approval_review",
+        outcome: "failure",
+        severity: "warning",
+        message: "Approval requires a verified zkAS run.",
+      }),
+    ])
+  })
+
+  it("rejects non-admin cycle review and approval callers before mutation", async () => {
+    const supabase = makeSupabase()
+
+    await expect(
+      executeMonthlyCycleVerificationReviewCommand(supabase as never, {
+        ...commandInput,
+        actorRole: "system",
+        decision: "verified",
+        note: "System caller should not review.",
+      }),
+    ).resolves.toMatchObject({ ok: false, error: { code: "forbidden" } })
+    await expect(
+      executeMonthlyCycleApprovalCommand(supabase as never, {
+        ...commandInput,
+        actorRole: "system",
+        note: "System caller should not approve.",
+      }),
+    ).resolves.toMatchObject({ ok: false, error: { code: "forbidden" } })
+    expect(supabase.inserts.monthly_cycle_events ?? []).toEqual([])
+    expect(supabase.updates.monthly_cycles ?? []).toEqual([])
+  })
+
   it("records cleanup-needed without advancing to verification", async () => {
     const supabase = makeSupabase({ zkas_runs: [] })
     const result = await executeMonthlyCycleVerificationReviewCommand(supabase as never, {

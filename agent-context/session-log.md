@@ -1,3 +1,37 @@
+### session v133: Add beta-critical runtime guardrails
+- timestamp: 2026-05-05T08:55:56-0400
+- agent: **Codex (GPT-5)**
+- branch: **codex/session-46-1-and-47-beta-smoke**
+- head: pending session 51 commit
+
+#### Objective
+Complete Session 51 by moving a small set of beta-critical safety expectations from docs into enforceable runtime checks.
+
+#### Actions Taken
+- Added storage path validation helpers that reject traversal, absolute paths, mismatched prefixes, and mismatched zkAS artifact kinds before private artifact download.
+- Hardened the superadmin zkAS run artifact route to validate stored artifact paths against the requested cycle, run, and artifact kind before reading Supabase Storage.
+- Added no-store and nosniff response headers to private zkAS artifact downloads.
+- Added command-level internal-admin actor checks for monthly-cycle verification review, monthly-cycle approval, and payout-intent creation before mutation.
+- Added approval failure audit events for known-cycle rejection paths such as wrong status, missing completed run, unverified run, missing result artifact hash, failed update, and state race.
+- Added `docs/engineering/beta-guardrails.md` and updated storage, monthly-cycle, Edge Function, and engineering index docs.
+- Marked Session 51 complete in `agent-context/todo.md`.
+
+#### Tests and Validation Notes
+- `pnpm vitest run tests/storage-artifacts.test.ts tests/monthly-cycle-verification.test.ts tests/monthly-cycle-payout-intents-command.test.ts` passed.
+- `pnpm dlx node@22.22.1 /opt/homebrew/bin/pnpm test` passed.
+- `pnpm dlx node@22.22.1 /opt/homebrew/bin/pnpm lint` passed.
+- `pnpm dlx node@22.22.1 /opt/homebrew/bin/pnpm typecheck` passed.
+- `pnpm dlx node@22.22.1 /opt/homebrew/bin/pnpm build` passed.
+
+#### Reflections
+- The pass intentionally avoids fake in-memory serverless rate limits. Distributed throttling still needs shared infrastructure and is documented as deferred.
+- The useful beta improvement here is making sensitive paths fail closed and auditable with the infrastructure already present.
+
+#### Suggested Next Steps
+- Continue with Session 52 to prepare the dev-to-main release-candidate path and production promotion checklist.
+
+---
+
 ### session v132: Consolidate operator payment read workspaces
 - timestamp: 2026-05-04T21:20:51-0400
 - agent: **Codex (GPT-5)**

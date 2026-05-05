@@ -581,12 +581,12 @@ Complete the remaining high-value operator read-model migration by aligning admi
 
 ## Session 51: Add runtime guardrails for beta-critical abuse and data safety
 
-- Status: Not started
-- Timestamp started: TBD
-- Timestamp completed: TBD
-- Feature branch: TBD
-- Head: TBD
-- Session-log reference(s): TBD
+- Status: Complete
+- Timestamp started: 2026-05-05T08:50:10-0400
+- Timestamp completed: 2026-05-05T08:55:56-0400
+- Feature branch: codex/session-46-1-and-47-beta-smoke
+- Head: pending session 51 commit
+- Session-log reference(s): session v133
 
 Move the most important beta safety expectations from docs into runtime checks where practical. Prioritize rate limits or idempotency on expensive command paths, clearer authorization failures for founder/operator commands, safer file-artifact access patterns, and explicit audit events for sensitive cycle or payout operations that are not yet covered. This should be a precise hardening pass, not broad security theater: document what is actually enforced, what remains runbook-only, and which deferred controls need external infrastructure later. Add tests around the new guardrails and avoid weakening existing RLS or Edge Function ownership checks.
 
