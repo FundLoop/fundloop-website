@@ -1,6 +1,6 @@
 # Supabase Remote Deployments
 
-Last reviewed: 2026-04-21
+Last reviewed: 2026-05-05
 
 FundLoop deploys Supabase schema migrations and Edge Functions through the `Supabase Deploy` GitHub Actions workflow.
 
@@ -14,6 +14,8 @@ FundLoop deploys Supabase schema migrations and Edge Functions through the `Supa
 - All other runs use the GitHub `Preview` environment.
 
 PR runs intentionally do not mutate shared databases or deploy functions.
+
+Session 52 verified the workflow routing and GitHub environment names. The `Preview` and `Production` environments exist, but the GitHub API reported no environment protection rules on 2026-05-05. Add required reviewers to `Production` before treating the main deploy as approval-gated.
 
 ## Required GitHub Secrets
 

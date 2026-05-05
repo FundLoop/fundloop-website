@@ -592,12 +592,12 @@ Move the most important beta safety expectations from docs into runtime checks w
 
 ## Session 52: Prepare the dev-to-main release candidate path
 
-- Status: Not started
-- Timestamp started: TBD
-- Timestamp completed: TBD
-- Feature branch: TBD
-- Head: TBD
-- Session-log reference(s): TBD
+- Status: Complete
+- Timestamp started: 2026-05-05T19:16:50-0400
+- Timestamp completed: 2026-05-05T19:18:07-0400
+- Feature branch: codex/session-46-1-and-47-beta-smoke
+- Head: pending session 52 commit
+- Session-log reference(s): session v134
 
 Once dev deploy health and beta smoke blockers are understood, prepare the first credible release-candidate path from `dev` toward `main`. This session should verify branch protection, production environment approval, Supabase main-target deployment settings, required secrets, migration ordering, rollback notes, and the minimum manual smoke checklist for Production. Update the README and operations runbook only where they differ from current truth. The output should be a small release-readiness PR that makes the main promotion path boring, explicit, and reviewable before any production data is touched.
 

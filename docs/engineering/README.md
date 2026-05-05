@@ -26,6 +26,7 @@ Current high-signal docs:
 - [Navigation and Shell Architecture](./navigation-shell.md)
 - [Operations Runbook](./operations-runbook.md)
 - [Reporting Publication](./reporting.md)
+- [Release Candidate Path](./release-candidate.md)
 - [Route Inventory](./route-inventory.md)
 - [Supabase Storage Artifacts](./storage-artifacts.md)
 - [Supabase Remote Deployments](./supabase-deployments.md)

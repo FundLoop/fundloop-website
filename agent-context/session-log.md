@@ -1,3 +1,41 @@
+### session v134: Prepare the dev-to-main release candidate path
+- timestamp: 2026-05-05T19:18:07-0400
+- agent: **Codex (GPT-5)**
+- branch: **codex/session-46-1-and-47-beta-smoke**
+- head: pending session 52 commit
+
+#### Objective
+Complete Session 52 by making the first dev-to-main release-candidate path explicit, reviewable, and grounded in current GitHub/Supabase workflow truth.
+
+#### Actions Taken
+- Added `docs/engineering/release-candidate.md` with the promotion sequence, required GitHub settings, Supabase secrets, migration/rollback rules, and minimum production smoke checklist.
+- Verified through GitHub API that `Preview` and `Production` environments exist, while `dev` and `main` currently report no branch protection and `Production` currently reports no required reviewer protection rules.
+- Updated app CI to run on pushes to `dev` as well as `main`, `codex/**`, and PRs.
+- Updated README, the operations runbook, Supabase deployment docs, engineering docs index, and repo-status metadata with the current release-candidate path and blockers.
+- Marked Session 52 complete in `agent-context/todo.md`.
+
+#### Tests and Validation Notes
+- `gh repo view --json nameWithOwner,defaultBranchRef,url` verified repository identity and default branch.
+- `gh api repos/:owner/:repo/branches/main/protection` returned `Branch not protected`.
+- `gh api repos/:owner/:repo/branches/dev/protection` returned `Branch not protected`.
+- `gh api repos/:owner/:repo/environments` verified `Preview` and `Production` exist and currently have no protection rules.
+- `ruby -e 'require "yaml"; ...' .github/workflows/ci.yml .github/workflows/supabase-deploy.yml` parsed both workflow files successfully.
+- `pnpm dlx actionlint@latest ...` could not validate because the package exposed no runnable binary through pnpm dlx.
+- `pnpm dlx node@22.22.1 /opt/homebrew/bin/pnpm lint` passed.
+- `pnpm dlx node@22.22.1 /opt/homebrew/bin/pnpm test` passed.
+- `pnpm dlx node@22.22.1 /opt/homebrew/bin/pnpm typecheck` passed.
+- `pnpm dlx node@22.22.1 /opt/homebrew/bin/pnpm build` passed.
+
+#### Reflections
+- The important finding is operational rather than code-level: the repo has a credible workflow shape, but branch protection and the Production approval gate still need repository settings before a main promotion should be trusted.
+- Adding `dev` push CI closes a small evidence gap after merges, so both app CI and Supabase deploy health can be checked on the integration branch.
+
+#### Suggested Next Steps
+- Yeet the completed Sessions 47-52 stack to `dev`, resolve CI/review feedback, and confirm the post-merge dev Supabase deploy remains green.
+- After this backlog is accepted and merged, rename `agent-context/todo.md` to `todo-1-through-52.md` and continue the MCP-specific roadmap from `agent-context/todo-mcp.md`.
+
+---
+
 ### session v133: Add beta-critical runtime guardrails
 - timestamp: 2026-05-05T08:55:56-0400
 - agent: **Codex (GPT-5)**
