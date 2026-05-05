@@ -40,24 +40,53 @@ function waitForResponses(child, expectedCount) {
   const responses = []
 
   return new Promise((resolve, reject) => {
+    let settled = false
+    const stderrText = () => Buffer.concat(stderrChunks).toString("utf8").trim()
+    const fail = (error) => {
+      if (settled) return
+      settled = true
+      clearTimeout(timeout)
+      reject(error)
+    }
+    const finish = () => {
+      if (settled) return
+      settled = true
+      clearTimeout(timeout)
+      resolve(responses)
+    }
     const timeout = setTimeout(() => {
-      reject(new Error(`Timed out waiting for ${expectedCount} MCP stdio responses.`))
+      fail(new Error(`Timed out waiting for ${expectedCount} MCP stdio responses. ${stderrText()}`.trim()))
     }, 10_000)
 
     child.stdout.on("data", (chunk) => {
-      buffer = Buffer.concat([buffer, Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk)])
-      const parsed = parseFrames(buffer)
-      buffer = parsed.remaining
-      responses.push(...parsed.messages)
-      if (responses.length >= expectedCount) {
-        clearTimeout(timeout)
-        resolve(responses)
+      try {
+        buffer = Buffer.concat([buffer, Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk)])
+        const parsed = parseFrames(buffer)
+        buffer = parsed.remaining
+        responses.push(...parsed.messages)
+        if (responses.length >= expectedCount) {
+          finish()
+        }
+      } catch (error) {
+        fail(
+          new Error(
+            `Failed to parse MCP stdio response: ${error instanceof Error ? error.message : String(error)} ${stderrText()}`.trim(),
+          ),
+        )
       }
     })
 
     child.once("error", (error) => {
-      clearTimeout(timeout)
-      reject(error)
+      fail(error)
+    })
+
+    child.once("exit", (code, signal) => {
+      if (settled) return
+      fail(
+        new Error(
+          `MCP server exited before ${expectedCount} responses were received. code=${code ?? "null"} signal=${signal ?? "null"} ${stderrText()}`.trim(),
+        ),
+      )
     })
   })
 }

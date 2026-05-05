@@ -49,7 +49,7 @@ export async function GET(
     return NextResponse.json({ error: downloadError?.message ?? "Could not download artifact" }, { status: 500 })
   }
 
-  const filename = objectPath.split("/").pop() ?? `${kind}-artifact.json`
+  const filename = `zkas-${kind}-${run.month}-run-${run.id}.json`
   const contentType = artifact.type || "application/octet-stream"
 
   return new NextResponse(await artifact.arrayBuffer(), {

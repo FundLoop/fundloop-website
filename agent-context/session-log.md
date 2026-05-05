@@ -1,3 +1,32 @@
+### session v135: Address PR 41 automated review feedback
+- timestamp: 2026-05-05T19:46:00-0400
+- agent: **Codex (GPT-5)**
+- branch: **codex/session-46-1-and-47-beta-smoke**
+- head: pending PR 41 review-fix commit
+
+#### Objective
+Address the actionable Copilot and Codex automated review comments on PR #41 before requesting any further review.
+
+#### Actions Taken
+- Changed the MCP inspector script from `npx` to `pnpm dlx` to keep package-manager usage aligned with repo policy.
+- Hardened the MCP stdio smoke harness so parser errors reject the promise cleanly and early server exits include stderr context instead of timing out opaquely.
+- Replaced stored-path-derived artifact download filenames with deterministic trusted filenames based on artifact kind, cycle month, and run id.
+- Updated the MCP engineering doc to match the `pnpm dlx` inspector path.
+
+#### Tests and Validation Notes
+- `pnpm mcp:smoke` passed.
+- `pnpm vitest run tests/storage-artifacts.test.ts` passed.
+- `pnpm dlx node@22.22.1 /opt/homebrew/bin/pnpm lint` passed.
+- `pnpm dlx node@22.22.1 /opt/homebrew/bin/pnpm typecheck` passed.
+
+#### Reflections
+- The comments were useful polish: the MCP smoke path now fails with better diagnostics, and the artifact route no longer reflects database path bytes into a response header.
+
+#### Suggested Next Steps
+- Push the review-fix commit, reply to and resolve the automated review comments, then re-check CI before continuing the review gates.
+
+---
+
 ### session v134: Prepare the dev-to-main release candidate path
 - timestamp: 2026-05-05T19:18:07-0400
 - agent: **Codex (GPT-5)**

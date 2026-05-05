@@ -70,7 +70,7 @@ For interactive inspection when the MCP Inspector is available:
 pnpm mcp:inspect
 ```
 
-`mcp:inspect` launches the upstream inspector through `npx` against the local stdio server. Keep real bearer tokens scoped to non-production actors unless explicitly validating a protected environment.
+`mcp:inspect` launches the upstream inspector through `pnpm dlx` against the local stdio server. Keep real bearer tokens scoped to non-production actors unless explicitly validating a protected environment.
 
 ## Environment Contract
 
