@@ -123,6 +123,7 @@ For chain and payout execution:
 - the MCP server skeleton in `packages/mcp-server` invokes Edge Functions through the same standard command envelope and must keep low-level invocation allowlisted
 - Session 39 founder MCP write tools call the existing project payment route and receipt-recording Edge Function command names instead of adding MCP-only mutation paths
 - Session 41 added `mcp-workflow-read` as the first typed read gateway for MCP-facing founder, project-member, and operator workflow reads
+- Session 50 added the app-side `lib/operator/payment-workspaces.ts` read-model boundary for operator payment operations and reconciliation visibility. Until those reads move fully into Edge Functions, app pages should use that stable module rather than page-local Supabase joins.
 
 The migration is intentionally incremental so the transport layer can stabilize before broader read migration and later founder/user workspace work.
 

@@ -570,12 +570,12 @@ Turn the MCP server from a repo package into a deployable and supportable runtim
 
 ## Session 50: Move operator dashboard reads fully onto stable read contracts
 
-- Status: Not started
-- Timestamp started: TBD
-- Timestamp completed: TBD
-- Feature branch: TBD
-- Head: TBD
-- Session-log reference(s): TBD
+- Status: Complete
+- Timestamp started: 2026-05-04T21:15:25-0400
+- Timestamp completed: 2026-05-04T21:20:51-0400
+- Feature branch: codex/session-46-1-and-47-beta-smoke
+- Head: pending session 50 commit
+- Session-log reference(s): session v132
 
 Complete the remaining high-value operator read-model migration by aligning admin dashboard, monthly cycle, observability, reconciliation, reporting, and operations-runbook surfaces with stable server or Edge Function read contracts. The current app has the right architectural direction, but this session should verify no operator page still depends on scattered page-local Supabase queries that duplicate authorization or shape data differently from MCP. Preserve current UI behavior while consolidating read boundaries, adding tests for partial-read failure states, and updating Edge Function/read-path documentation where the contract becomes canonical.
 

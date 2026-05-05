@@ -137,7 +137,7 @@ Session 39 added the first explicit founder tools:
 
 Founder reads go through a `FounderWorkflowReader` boundary. The default implementation uses authenticated Supabase REST reads with the same bearer token as the agent. Founder writes call the existing typed Edge Function command names for route management and onchain receipt recording.
 
-Sessions 40 should add project-member and operator workflows so agents do not need to use the low-level invoker directly.
+Session 40 added project-member and operator workflows so agents do not need to use the low-level invoker directly.
 
 ## Project-Member And Operator Tools
 
@@ -166,6 +166,8 @@ Current operations:
 - `operator.reporting.coverage`
 
 This keeps MCP read behavior behind the same auth and command envelope style as writes, while preserving narrow reader interfaces for future app-side reuse.
+
+Session 50 aligned the app-side operator payment operations and reconciliation pages around `lib/operator/payment-workspaces.ts`. That module is the web-app counterpart to the MCP operator read contract for payment and reconciliation visibility: pages should consume stable workspace shapes and warnings rather than reconstructing raw Supabase rows locally.
 
 ## Artifact References
 

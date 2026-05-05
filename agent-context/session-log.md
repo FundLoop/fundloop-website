@@ -1,3 +1,36 @@
+### session v132: Consolidate operator payment read workspaces
+- timestamp: 2026-05-04T21:20:51-0400
+- agent: **Codex (GPT-5)**
+- branch: **codex/session-46-1-and-47-beta-smoke**
+- head: pending session 50 commit
+
+#### Objective
+Complete Session 50 by moving remaining high-value operator payment and reconciliation reads out of page-local Supabase shaping and into stable read-model workspaces.
+
+#### Actions Taken
+- Added `lib/operator/payment-workspaces.ts` as the shared server-only read boundary for operator payment operations and reconciliation visibility.
+- Reworked `/admin/payments` to consume the payment operations workspace, including explicit partial-read warnings for non-critical onchain-submission and failure-summary reads.
+- Reworked `/admin/payments/reconciliation` to consume the reconciliation workspace, including optional project/payment context and warning handling when enrichment reads fail.
+- Added focused read-model tests for payment mapping, reconciliation queue enrichment, partial-read fallback warnings, and failure-summary formatting.
+- Updated MCP, Edge Function, navigation-shell, and route-inventory docs to record the operator read boundary and remove stale future-tense MCP wording.
+- Marked Session 50 complete in `agent-context/todo.md`.
+
+#### Tests and Validation Notes
+- `pnpm vitest run tests/operator-payment-workspaces.test.ts tests/admin-payments-console.test.tsx tests/monthly-cycle-observability.test.ts` passed.
+- `pnpm dlx node@22.22.1 /opt/homebrew/bin/pnpm test` passed.
+- `pnpm dlx node@22.22.1 /opt/homebrew/bin/pnpm lint` passed.
+- `pnpm dlx node@22.22.1 /opt/homebrew/bin/pnpm typecheck` passed.
+- `pnpm dlx node@22.22.1 /opt/homebrew/bin/pnpm build` passed.
+
+#### Reflections
+- The operator pages now read like thin renderers again, while the read module carries the workflow shape and non-fatal failure behavior future MCP/operator clients can share.
+- Session 50 does not move these app reads into a new Edge Function yet; it deliberately creates one stable app-side boundary first so a later transport migration can be boring.
+
+#### Suggested Next Steps
+- Continue with Session 51 to add beta-critical runtime guardrails around expensive commands, artifact access, and sensitive operator flows.
+
+---
+
 ### session v131: Package MCP runtime launch and smoke path
 - timestamp: 2026-05-04T08:01:03-0400
 - agent: **Codex (GPT-5)**
