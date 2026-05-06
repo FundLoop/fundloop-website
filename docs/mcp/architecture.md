@@ -37,6 +37,8 @@ Tool handlers should be thin orchestration layers:
 4. Return stable `structuredContent` that contains no secrets or privileged internal payloads.
 5. Record or rely on the same workflow audit events used by the app.
 
+Session MCP-4 moved the first validation and output-safety checks into the shared registry path so SDK, stdio, and remote Streamable HTTP transports all enforce the same limits before handlers run. Tool-specific handlers may still validate domain rules, but they should not be the only place that rejects unknown fields, oversized values, unsafe URL-shaped input, or malformed ids/slugs.
+
 MCP tools must not query raw tables directly in production unless a design doc records the temporary exception and the same authorization logic is reusable outside MCP.
 
 ## Auth Model

@@ -31,5 +31,6 @@ export { registerProjectMemberAndOperatorMcpTools } from "./member-operator-tool
 export { createBaseMcpToolRegistry, McpToolRegistry, type McpRegisteredTool } from "./tools.ts"
 export { createRemoteMcpAuthContext, createValidatedRemoteMcpAuthContext, type RemoteMcpAuthResult } from "./http-auth.ts"
 export { mcpInputSchemaToZod, registerRegistryToolsWithSdkServer, type SdkMcpServerLike } from "./sdk-adapter.ts"
+export { sanitizeMcpText, sanitizeMcpToolResult, validateMcpToolInput, type McpSafetyResult } from "./safety.ts"
 export { handleMcpRequest } from "./server.ts"
 export type { McpToolDefinition, McpToolResult } from "./protocol.ts"

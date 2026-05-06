@@ -15,8 +15,21 @@ export type SdkMcpServerLike = {
 }
 
 function zodForProperty(property: NonNullable<McpToolDefinition["inputSchema"]["properties"]>[string]) {
-  if (property.type === "string") return z.string()
-  if (property.type === "number") return z.number()
+  if (property.type === "string") {
+    let schema = z.string()
+    if (property.minLength !== undefined) schema = schema.min(property.minLength)
+    if (property.maxLength !== undefined) schema = schema.max(property.maxLength)
+    if (property.pattern) schema = schema.regex(new RegExp(property.pattern))
+    if (property.enum) schema = schema.refine((value) => property.enum?.includes(value), "Unsupported value.")
+    return schema
+  }
+  if (property.type === "number") {
+    let schema = z.number()
+    if (property.integer) schema = schema.int()
+    if (property.minimum !== undefined) schema = schema.min(property.minimum)
+    if (property.maximum !== undefined) schema = schema.max(property.maximum)
+    return schema
+  }
   if (property.type === "boolean") return z.boolean()
   if (property.type === "object") return z.record(z.string(), z.unknown())
   return z.unknown()

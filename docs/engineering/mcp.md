@@ -26,6 +26,8 @@ Session MCP-2 added `supabase/functions/mcp/index.ts` as the remote Streamable H
 
 Session MCP-3 hardened the remote endpoint so `POST` tool traffic must validate the bearer token through Supabase `auth.getUser()` before tool registration or dispatch. The MCP registry also applies a front-door tool authorization layer for authenticated calls, operator-prefixed tools, and operator/destructive generic Edge command names.
 
+Session MCP-4 added a registry-level safety layer for tool inputs and outputs. Tool calls now pass through strict JSON-object validation, unknown-field rejection, payload size limits, string/number/object bounds, slug/cycle/transaction/wallet format checks, URL rejection for non-URL fields, and output redaction before results return to MCP clients.
+
 ## Runtime Configuration
 
 The stdio runtime expects:
@@ -128,6 +130,8 @@ The root `pnpm mcp:publish` command is intentionally metadata-only guidance for 
 - `FUNDLOOP_MCP_BEARER_TOKEN is required`: provide a Supabase user access token for the actor the agent represents.
 - `NEXT_PUBLIC_SUPABASE_URL or SUPABASE_URL is required`: point the runtime at local, preview, or production Supabase.
 - `invalid_edge_response`: the target Edge Function did not return the standard `{ ok: true, data } | { ok: false, error }` envelope.
+- `invalid_payload`: the MCP input did not match the tool's strict schema, used an unsupported field, or provided an unsafe value such as an unexpected URL.
+- `payload_too_large`: the MCP input exceeded registry-level byte, string, object, array, or nesting limits.
 - `not allowlisted`: the generic `fundloop.edge_command.invoke` tool was asked to call a function not listed in `FUNDLOOP_MCP_ALLOWED_EDGE_FUNCTIONS`.
 - stdio client hangs: confirm the client is sending Content-Length framed messages, not newline-delimited JSON.
 - Edge MCP `not_authenticated`: include `Authorization: Bearer <non-production Supabase access token>` for `POST /functions/v1/mcp`; `GET /health` is the only public endpoint.
@@ -136,6 +140,8 @@ The root `pnpm mcp:publish` command is intentionally metadata-only guidance for 
 ## Tool Rules
 
 - Tool inputs and outputs should be stable, typed, and small.
+- Tool schemas should include concrete limits: required fields, `additionalProperties: false` by default, max string lengths, integer/range constraints for ids, and format markers for slugs, cycle keys, tx hashes, wallet addresses, and attempt ids.
+- The registry validates inputs before handlers run and sanitizes text output before returning it to clients.
 - Founder/project-member tools should enforce role boundaries through the same Edge Function commands and read models used by the app.
 - Internal-operator tools should start read-only unless a session explicitly introduces a safe mutation.
 - Operator tools are blocked before handler execution unless `FUNDLOOP_INTERNAL_ADMIN_EMAILS` includes the authenticated user's email.

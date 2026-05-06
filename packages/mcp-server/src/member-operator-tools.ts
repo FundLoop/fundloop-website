@@ -21,8 +21,8 @@ export function registerProjectMemberAndOperatorMcpTools(registry: McpToolRegist
       inputSchema: {
         type: "object",
         properties: {
-          projectSlug: { type: "string" },
-          cycleKey: { type: "string" },
+          projectSlug: { type: "string", format: "slug", minLength: 1, maxLength: 80 },
+          cycleKey: { type: "string", format: "cycle_key" },
         },
         required: ["projectSlug"],
         additionalProperties: false,
@@ -64,8 +64,8 @@ export function registerProjectMemberAndOperatorMcpTools(registry: McpToolRegist
       inputSchema: {
         type: "object",
         properties: {
-          cycleKey: { type: "string" },
-          attemptId: { type: "string" },
+          cycleKey: { type: "string", format: "cycle_key" },
+          attemptId: { type: "string", format: "attempt_id" },
         },
         additionalProperties: false,
       },
@@ -104,7 +104,7 @@ export function registerProjectMemberAndOperatorMcpTools(registry: McpToolRegist
       inputSchema: {
         type: "object",
         properties: {
-          cycleKey: { type: "string" },
+          cycleKey: { type: "string", format: "cycle_key" },
         },
         additionalProperties: false,
       },

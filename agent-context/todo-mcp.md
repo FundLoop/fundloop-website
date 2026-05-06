@@ -21,6 +21,17 @@ Tool handlers should normally call the same Supabase Edge Function middleware or
 
 # MCP server capability TODOs
 
+## Platform follow-up. Rebrand EverFund references to VentureFamily
+
+- Status: Not started
+- Timestamp started: TBD
+- Head when starting: TBD
+- Timestamp completed: TBD
+- Feature branch(es): TBD
+- Session-log reference(s): TBD
+
+Check out a new feature branch from current `dev`, then rename this tool/platform from EverFund to VentureFamily throughout the repo. When the name is printed in user-facing UI, docs intended for users, marketing copy, navigation, or support surfaces, stylize it as `VentureFamily`. Keep code identifiers, filenames, and migration names reviewable and only rename technical symbols when doing so is safe and clearly tied to visible branding. Do not start this rebrand from the current MCP branch; it should be isolated as a future product/platform branch.
+
 ## MCP-0. Initialize this document
 
 - Status: Complete
@@ -214,16 +225,16 @@ Readiness assessment: FundLoop already has a useful local stdio MCP package, exp
 
 ## MCP-4. Input validation, output safety, and threat protection
 
-- Status: Not started
-- Timestamp started: TBD
-- Head when starting: TBD
-- Timestamp completed: TBD
-- Feature branch(es): TBD
-- Session-log reference(s): TBD
+- Status: Complete
+- Timestamp started: 2026-05-06T08:29:03-0400
+- Head when starting: 2a75cee
+- Timestamp completed: 2026-05-06T08:32:04-0400
+- Feature branch(es): codex/mcp-roadmap-kickoff
+- Session-log reference(s): session v139
 
-* [ ] Define all tool input schemas with strict validation, preferably using Zod or the project’s existing schema system.
-* [ ] Reject unknown fields unless there is a specific reason to allow them.
-* [ ] Add limits for:
+* [x] Define all tool input schemas with strict validation, preferably using Zod or the project’s existing schema system.
+* [x] Reject unknown fields unless there is a specific reason to allow them.
+* [x] Add limits for:
 
   * string length
   * array length
@@ -233,31 +244,31 @@ Readiness assessment: FundLoop already has a useful local stdio MCP package, exp
   * number of IDs
   * nested object depth
 
-* [ ] Validate IDs, slugs, enum values, URLs, email addresses, and date ranges.
-* [ ] Never concatenate user input into SQL, shell commands, filesystem paths, or URLs.
-* [ ] Use parameterized queries and safe APIs. Snyk’s MCP security guidance specifically recommends strict input validation, safe APIs such as `execFile` instead of `exec`, parameterized queries, defense in depth, SAST, least privilege, and documenting the security model. ([Snyk][8])
-* [ ] Block SSRF-prone behavior:
+* [x] Validate IDs, slugs, enum values, URLs, email addresses, and date ranges.
+* [x] Never concatenate user input into SQL, shell commands, filesystem paths, or URLs.
+* [x] Use parameterized queries and safe APIs. Snyk’s MCP security guidance specifically recommends strict input validation, safe APIs such as `execFile` instead of `exec`, parameterized queries, defense in depth, SAST, least privilege, and documenting the security model. ([Snyk][8])
+* [x] Block SSRF-prone behavior:
 
   * no arbitrary outbound URL fetching unless explicitly required
   * if URL fetching is required, use allowlists
   * block local IP ranges, metadata services, private networks, and redirects to forbidden destinations
 
-* [ ] Treat all external text returned by tools as untrusted data.
-* [ ] Do not let tool output contain instructions telling the model to ignore previous instructions, change auth behavior, reveal secrets, or call other tools.
-* [ ] Add output sanitization for HTML, markdown, URLs, and user-generated content.
-* [ ] Add structured error responses with stable error codes.
-* [ ] Do not expose internal stack traces to MCP clients.
-* [ ] Add rate limiting per user, per tenant, per token/client, and per tool.
-* [ ] Add abuse detection for repeated failed auth, repeated destructive calls, unusually large queries, and automated scraping.
+* [x] Treat all external text returned by tools as untrusted data.
+* [x] Do not let tool output contain instructions telling the model to ignore previous instructions, change auth behavior, reveal secrets, or call other tools.
+* [x] Add output sanitization for HTML, markdown, URLs, and user-generated content.
+* [x] Add structured error responses with stable error codes.
+* [x] Do not expose internal stack traces to MCP clients.
+* [ ] Add rate limiting per user, per tenant, per token/client, and per tool. Deferred to MCP-6 because it needs a durable remote runtime strategy rather than an in-memory Edge-process counter.
+* [ ] Add abuse detection for repeated failed auth, repeated destructive calls, unusually large queries, and automated scraping. Deferred to MCP-6 with rate limiting and operator alerting.
 
 **Acceptance criteria**
 
-* [ ] Injection test cases fail safely.
-* [ ] SSRF test cases fail safely.
-* [ ] Oversized inputs fail safely.
-* [ ] Unauthorized tenant/entity access fails safely.
-* [ ] Tool output never includes secrets.
-* [ ] Error responses are useful but do not leak internals.
+* [x] Injection test cases fail safely.
+* [x] SSRF test cases fail safely.
+* [x] Oversized inputs fail safely.
+* [x] Unauthorized tenant/entity access fails safely through MCP-3 auth plus existing Edge/domain authorization.
+* [x] Tool output never includes secrets.
+* [x] Error responses are useful but do not leak internals.
 
 ---
 

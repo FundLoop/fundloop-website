@@ -4,6 +4,7 @@ import type { FounderWorkflowReader } from "./founder-reader.ts"
 import type { OperatorWorkflowReader, ProjectMemberWorkflowReader } from "./member-operator-readers.ts"
 import { errorResult, jsonTextResult, type McpToolDefinition, type McpToolResult } from "./protocol.ts"
 import { authorizeMcpToolCall } from "./authorization.ts"
+import { sanitizeMcpToolResult, validateMcpToolInput } from "./safety.ts"
 
 export type McpToolHandlerContext = {
   auth: McpAuthContext
@@ -58,9 +59,18 @@ export class McpToolRegistry {
       }
     }
 
+    const validation = validateMcpToolInput(tool.definition, input)
+    if (!validation.ok) {
+      auditMcpToolEvent("validation_failure", { toolName: name, auth: context.auth, code: validation.code })
+      return {
+        ...errorResult(validation.message),
+        errorCode: validation.code,
+      }
+    }
+
     const result = await tool.handler(input, context)
     auditMcpToolEvent("tool_success", { toolName: name, auth: context.auth })
-    return result
+    return sanitizeMcpToolResult(result)
   }
 }
 
@@ -94,8 +104,8 @@ export function createBaseMcpToolRegistry(options: BaseMcpToolRegistryOptions = 
       inputSchema: {
         type: "object",
         properties: {
-          functionName: { type: "string" },
-          input: { type: "object" },
+          functionName: { type: "string", minLength: 1, maxLength: 96, pattern: "^[a-z0-9][a-z0-9-]*$" },
+          input: { type: "object", maxProperties: 24, maxDepth: 4 },
         },
         required: ["functionName"],
         additionalProperties: false,
@@ -119,7 +129,10 @@ export function createBaseMcpToolRegistry(options: BaseMcpToolRegistryOptions = 
   return registry
 }
 
-function auditMcpToolEvent(eventType: "authorization_failure" | "tool_success", input: { toolName: string; auth: McpAuthContext; code?: string }) {
+function auditMcpToolEvent(
+  eventType: "authorization_failure" | "validation_failure" | "tool_success",
+  input: { toolName: string; auth: McpAuthContext; code?: string },
+) {
   const event = {
     event: eventType,
     surface: "mcp",
@@ -131,7 +144,7 @@ function auditMcpToolEvent(eventType: "authorization_failure" | "tool_success", 
     code: input.code ?? null,
   }
 
-  if (eventType === "authorization_failure") {
+  if (eventType === "authorization_failure" || eventType === "validation_failure") {
     writeMcpAudit("warn", event)
     return
   }

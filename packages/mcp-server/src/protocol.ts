@@ -3,6 +3,22 @@ export type McpToolContent = {
   text: string
 }
 
+export type McpToolInputProperty = {
+  type?: "string" | "number" | "boolean" | "object"
+  description?: string
+  enum?: string[]
+  format?: "slug" | "cycle_key" | "tx_hash" | "wallet_address" | "attempt_id"
+  pattern?: string
+  minLength?: number
+  maxLength?: number
+  minimum?: number
+  maximum?: number
+  integer?: boolean
+  maxProperties?: number
+  maxDepth?: number
+  additionalProperties?: boolean
+}
+
 export type McpToolResult = {
   content: McpToolContent[]
   isError?: boolean
@@ -14,15 +30,10 @@ export type McpToolDefinition = {
   description: string
   inputSchema: {
     type: "object"
-    properties?: Record<
-      string,
-      {
-        type?: "string" | "number" | "boolean" | "object"
-        description?: string
-      }
-    >
+    properties?: Record<string, McpToolInputProperty>
     required?: string[]
     additionalProperties?: boolean
+    maxProperties?: number
   }
 }
 

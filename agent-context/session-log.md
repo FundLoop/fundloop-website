@@ -1,3 +1,40 @@
+### session v139: Add MCP input safety and output redaction
+- timestamp: 2026-05-06T08:29:03-0400
+- agent: **Codex (GPT-5)**
+- branch: **codex/mcp-roadmap-kickoff**
+- head: pending MCP-4 commit
+
+#### Objective
+Complete MCP-4 by adding strict input validation, payload limits, output redaction, and documentation for the current MCP tool surface, while parking the requested VentureFamily rebrand as a future isolated todo.
+
+#### Actions Taken
+- Added a future platform todo to rebrand EverFund references to `VentureFamily` from a new branch based on `dev`, without implementing the rebrand in this MCP branch.
+- Added `packages/mcp-server/src/safety.ts` with registry-level MCP input validation, size/depth limits, URL-shaped input rejection, and output sanitization.
+- Extended MCP tool schema metadata with string, number, object, enum, and format constraints.
+- Updated base, founder, project-member, and operator tool schemas with slug, cycle-key, transaction-hash, wallet-address, attempt-id, integer, range, and length constraints.
+- Changed the registry to validate inputs before handler execution, return stable `invalid_payload` and `payload_too_large` error codes, and sanitize output before returning it to MCP clients.
+- Added tests for unknown-field rejection, oversized payload rejection, SSRF-shaped URL rejection, output redaction, and stricter founder receipt validation.
+- Marked MCP-4 complete in `agent-context/todo-mcp.md` and refreshed MCP security, architecture, and runtime docs.
+
+#### Tests and Validation Notes
+- `pnpm mcp:test` passed: 4 files, 29 tests.
+- `deno cache --config supabase/functions/deno.json supabase/functions/mcp/index.ts` passed.
+- `pnpm mcp:smoke` passed.
+- `FUNDLOOP_MCP_HTTP_URL=http://127.0.0.1:8000 FUNDLOOP_MCP_BEARER_TOKEN=local-smoke-token pnpm mcp:edge:smoke` passed against the Deno-served Edge handler with `FUNDLOOP_MCP_ALLOW_LOCAL_TEST_TOKEN=true`.
+- `pnpm lint` passed.
+- `pnpm test` passed: 76 files, 310 tests.
+- `pnpm typecheck` passed.
+- `pnpm build` passed.
+- `pnpm dlx node@22.22.1 /opt/homebrew/bin/pnpm check` passed.
+
+#### Reflections
+- The shared registry is the right first safety boundary because it covers stdio, SDK, and remote Streamable HTTP without requiring each transport or handler to remember the same defensive checks.
+
+#### Suggested Next Steps
+- Continue MCP-5 by expanding tool-specific TODOs from `docs/mcp/tool-catalog.md`, while keeping rate limiting and abuse detection as an MCP-6 remote-runtime concern.
+
+---
+
 ### session v138: Harden MCP remote auth and tool authorization
 - timestamp: 2026-05-06T08:00:15-0400
 - agent: **Codex (GPT-5)**

@@ -89,7 +89,7 @@ describe("founder MCP tools", () => {
     )
     await registry.call(
       "founder.project.onchain_receipt.record",
-      { projectSlug: "civic-mesh", paymentId: 11, paymentMethodId: 10, txHash: "0xabc" },
+      { projectSlug: "civic-mesh", paymentId: 11, paymentMethodId: 10, txHash: `0x${"a".repeat(64)}` },
       context,
     )
 

@@ -49,9 +49,12 @@ MCP responses may include public and authorized workflow data. MCP responses mus
 ## Tool Safety
 
 - Inputs must use strict schemas and reject unknown or oversized data.
+- Tool schemas should set explicit string, number, object, and nesting limits rather than relying only on handler-level checks.
+- Non-URL string fields reject URL-shaped values. If a future tool needs URL fetching, it must declare and enforce an allowlist and block local/private network targets.
 - Write tools should use typed Edge Function commands and idempotency/attempt IDs where the domain supports retries.
 - Tools must return stable error codes without stack traces.
 - Tool output should be concise and structured; avoid dumping raw database rows or raw external API payloads.
+- Text output is treated as untrusted data and redacted for obvious bearer tokens, JWT-shaped values, secret assignments, script tags, and common prompt-injection phrases before being returned to MCP clients.
 - Private artifacts should be represented by metadata and scoped retrieval references, not streamed through generic MCP tools.
 
 ## Rate Limiting And Abuse Controls

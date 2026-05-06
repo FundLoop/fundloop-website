@@ -43,8 +43,8 @@ export function registerFounderMcpTools(registry: McpToolRegistry) {
       inputSchema: {
         type: "object",
         properties: {
-          projectSlug: { type: "string" },
-          cycleKey: { type: "string" },
+          projectSlug: { type: "string", format: "slug", minLength: 1, maxLength: 80 },
+          cycleKey: { type: "string", format: "cycle_key" },
         },
         required: ["projectSlug"],
         additionalProperties: false,
@@ -66,11 +66,11 @@ export function registerFounderMcpTools(registry: McpToolRegistry) {
       inputSchema: {
         type: "object",
         properties: {
-          projectSlug: { type: "string" },
-          chainId: { type: "number" },
-          chainAssetId: { type: "number" },
-          intakeContractId: { type: "number" },
-          label: { type: "string" },
+          projectSlug: { type: "string", format: "slug", minLength: 1, maxLength: 80 },
+          chainId: { type: "number", integer: true, minimum: 1, maximum: 2_147_483_647 },
+          chainAssetId: { type: "number", integer: true, minimum: 1, maximum: 2_147_483_647 },
+          intakeContractId: { type: "number", integer: true, minimum: 1, maximum: 2_147_483_647 },
+          label: { type: "string", maxLength: 80 },
           isDefault: { type: "boolean" },
         },
         required: ["projectSlug", "chainId", "chainAssetId", "intakeContractId"],
@@ -89,9 +89,9 @@ export function registerFounderMcpTools(registry: McpToolRegistry) {
       inputSchema: {
         type: "object",
         properties: {
-          projectSlug: { type: "string" },
-          paymentMethodId: { type: "number" },
-          label: { type: "string" },
+          projectSlug: { type: "string", format: "slug", minLength: 1, maxLength: 80 },
+          paymentMethodId: { type: "number", integer: true, minimum: 1, maximum: 2_147_483_647 },
+          label: { type: "string", maxLength: 80 },
           isDefault: { type: "boolean" },
         },
         required: ["projectSlug", "paymentMethodId"],
@@ -110,16 +110,16 @@ export function registerFounderMcpTools(registry: McpToolRegistry) {
       inputSchema: {
         type: "object",
         properties: {
-          projectSlug: { type: "string" },
-          paymentId: { type: "number" },
-          paymentMethodId: { type: "number" },
-          txHash: { type: "string" },
-          walletAddress: { type: "string" },
-          amount: { type: "string" },
-          attemptId: { type: "string" },
+          projectSlug: { type: "string", format: "slug", minLength: 1, maxLength: 80 },
+          paymentId: { type: "number", integer: true, minimum: 1, maximum: 2_147_483_647 },
+          paymentMethodId: { type: "number", integer: true, minimum: 1, maximum: 2_147_483_647 },
+          txHash: { type: "string", format: "tx_hash" },
+          walletAddress: { type: "string", format: "wallet_address" },
+          amount: { type: "string", minLength: 1, maxLength: 80, pattern: "^\\d+(\\.\\d+)?$" },
+          attemptId: { type: "string", format: "attempt_id" },
         },
         required: ["projectSlug", "paymentId", "paymentMethodId", "txHash"],
-        additionalProperties: true,
+        additionalProperties: false,
       },
     },
     async handler(input, context) {
