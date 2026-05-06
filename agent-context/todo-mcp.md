@@ -425,12 +425,12 @@ Finalize the founder crypto-route update tool as a mutating project-admin operat
 
 ### MCP-5.8. Finalize `founder.project.onchain_receipt.record`
 
-- Status: Not started
-- Timestamp started: TBD
-- Head when starting: TBD
-- Timestamp completed: TBD
-- Feature branch(es): TBD
-- Session-log reference(s): TBD
+- Status: Complete
+- Timestamp started: 2026-05-06T18:50:17-0400
+- Head when starting: ab6f7ad
+- Timestamp completed: 2026-05-06T18:53:00-0400
+- Feature branch(es): codex/mcp-roadmap-kickoff
+- Session-log reference(s): session v147
 
 Finalize onchain receipt recording as a mutating founder/project-admin tool backed by `project-onchain-payment-submission-record`. Require valid project slug, payment id, payment method id, transaction hash, and optional wallet/amount/attempt fields within strict limits. Add write annotations, structured output, and tests for success, invalid tx hash/wallet/amount, project-payment mismatch, duplicate unresolved submission, forbidden project, and backend amount mismatch failures. Preserve existing payment-flow observability and ensure the tool never asks agents to infer confirmations or bypass the reconciliation pipeline.
 

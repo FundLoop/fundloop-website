@@ -256,24 +256,60 @@ export function registerFounderMcpTools(registry: McpToolRegistry) {
   registry.register({
     definition: {
       name: "founder.project.onchain_receipt.record",
+      title: "Record Founder Onchain Receipt",
       description: "Record a founder onchain payment receipt through the canonical Edge Function command.",
+      annotations: {
+        readOnlyHint: false,
+        destructiveHint: false,
+        openWorldHint: false,
+      },
       inputSchema: {
         type: "object",
         properties: {
           projectSlug: { type: "string", format: "slug", minLength: 1, maxLength: 80 },
           paymentId: { type: "number", integer: true, minimum: 1, maximum: 2_147_483_647 },
           paymentMethodId: { type: "number", integer: true, minimum: 1, maximum: 2_147_483_647 },
+          chainId: { type: "number", integer: true, minimum: 1, maximum: 2_147_483_647 },
+          chainAssetId: { type: "number", integer: true, minimum: 1, maximum: 2_147_483_647 },
+          intakeContractId: { type: "number", integer: true, minimum: 1, maximum: 2_147_483_647 },
           txHash: { type: "string", format: "tx_hash" },
           walletAddress: { type: "string", format: "wallet_address" },
-          amount: { type: "string", minLength: 1, maxLength: 80, pattern: "^\\d+(\\.\\d+)?$" },
+          amountRaw: { type: "string", minLength: 1, maxLength: 120, pattern: "^\\d+$" },
+          amountDecimal: { type: "string", minLength: 1, maxLength: 80, pattern: "^\\d+(\\.\\d+)?$" },
+          periodId: { type: "number", integer: true, minimum: 0, maximum: 12 },
+          blockNumber: { type: "number", integer: true, minimum: 0 },
+          receipt: { type: "object", maxProperties: 24, maxDepth: 5 },
           attemptId: { type: "string", format: "attempt_id" },
         },
-        required: ["projectSlug", "paymentId", "paymentMethodId", "txHash"],
+        required: [
+          "projectSlug",
+          "paymentId",
+          "paymentMethodId",
+          "chainId",
+          "chainAssetId",
+          "intakeContractId",
+          "txHash",
+          "walletAddress",
+          "amountRaw",
+          "amountDecimal",
+          "periodId",
+          "receipt",
+        ],
+        additionalProperties: false,
+      },
+      outputSchema: {
+        type: "object",
+        properties: {
+          ok: { type: "boolean" },
+          data: { type: "object" },
+          error: { type: "object" },
+        },
+        required: ["ok"],
         additionalProperties: false,
       },
     },
     async handler(input, context) {
-      return jsonTextResult(await context.edge.invoke(PROJECT_ONCHAIN_PAYMENT_SUBMISSION_RECORD_FUNCTION, input, context.auth))
+      return edgeCommandToolResult(context, PROJECT_ONCHAIN_PAYMENT_SUBMISSION_RECORD_FUNCTION, input)
     },
   })
 }

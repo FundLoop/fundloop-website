@@ -163,7 +163,7 @@ Session 39 added the first explicit founder tools:
 - `founder.project.cycle_status`: read-only, annotated, structured project/cycle briefing with payment, route, cycle status, safe next-action hints, and no raw backend payload leakage.
 - `founder.project.crypto_route.create`: annotated founder write tool backed by the typed `project-crypto-route-create` Edge command, with strict curated-route inputs and protocol-visible Edge failure codes.
 - `founder.project.crypto_route.update`: annotated founder write tool backed by the typed `project-crypto-route-update` Edge command, with strict route-reference inputs and stable backend failure envelopes.
-- `founder.project.onchain_receipt.record`
+- `founder.project.onchain_receipt.record`: annotated founder write tool backed by the typed `project-onchain-payment-submission-record` Edge command, requiring explicit receipt, wallet, amount, period, and curated route references without bypassing reconciliation.
 
 Founder reads go through a `FounderWorkflowReader` boundary. The default implementation uses authenticated Supabase REST reads with the same bearer token as the agent. Founder writes call the existing typed Edge Function command names for route management and onchain receipt recording.
 

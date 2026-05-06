@@ -1,3 +1,36 @@
+### session v147: Finalize founder onchain receipt MCP tool
+- timestamp: 2026-05-06T18:50:17-0400
+- agent: **Codex (GPT-5)**
+- branch: **codex/mcp-roadmap-kickoff**
+- head: pending MCP-5.8 commit
+
+#### Objective
+Complete MCP-5.8 by making `founder.project.onchain_receipt.record` a fully annotated founder write tool backed by the typed onchain receipt Edge command.
+
+#### Actions Taken
+- Added title, write-oriented annotations, and output-schema metadata to `founder.project.onchain_receipt.record`.
+- Tightened the MCP input schema to match the canonical `project-onchain-payment-submission-record` Edge contract, including curated route references, wallet, raw/decimal amounts, period id, and receipt object.
+- Reused the shared Edge-command tool result helper so receipt-recording successes and backend failures return stable structured envelopes.
+- Added tests for receipt metadata, successful structured Edge envelope output, malformed receipt input rejection before dispatch, and stable backend failure propagation.
+- Marked MCP-5.8 started in `agent-context/todo-mcp.md` and refreshed the MCP engineering doc.
+
+#### Tests and Validation Notes
+- `pnpm mcp:test` passed: 4 files, 43 tests.
+- `deno cache --config supabase/functions/deno.json supabase/functions/mcp/index.ts` passed.
+- `pnpm lint` passed.
+- `pnpm typecheck` passed.
+- `pnpm test` passed: 76 files, 324 tests.
+- `pnpm build` passed.
+- `pnpm dlx node@22.22.1 /opt/homebrew/bin/pnpm check` passed.
+
+#### Reflections
+- The MCP surface now makes receipt recording explicit rather than letting agents infer missing wallet, amount, route, or receipt details that the reconciliation pipeline needs.
+
+#### Suggested Next Steps
+- Continue with MCP-5.9 by finalizing `project_member.project.reporting_status` as the first project-member read tool.
+
+---
+
 ### session v146: Finalize founder crypto-route update MCP tool
 - timestamp: 2026-05-06T18:02:23-0400
 - agent: **Codex (GPT-5)**

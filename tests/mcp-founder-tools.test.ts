@@ -32,6 +32,25 @@ const founderReader: FounderWorkflowReader = {
   },
 }
 
+const validReceiptInput = {
+  projectSlug: "civic-mesh",
+  paymentId: 11,
+  paymentMethodId: 10,
+  chainId: 1,
+  chainAssetId: 2,
+  intakeContractId: 3,
+  txHash: `0x${"a".repeat(64)}`,
+  walletAddress: `0x${"b".repeat(40)}`,
+  amountRaw: "90000000",
+  amountDecimal: "90",
+  periodId: 4,
+  receipt: {
+    transactionHash: `0x${"a".repeat(64)}`,
+    status: "success",
+  },
+  attemptId: "mcp-receipt-1",
+}
+
 function createEdgeClient(calls: Array<{ functionName: string; input: unknown }>): EdgeCommandClient {
   return {
     async invoke<TInput, TOutput>(functionName: string, input: TInput): Promise<EdgeCommandResult<TOutput>> {
@@ -99,6 +118,29 @@ describe("founder MCP tools", () => {
         required: expect.arrayContaining(["ok"]),
       }),
     })
+    expect(tools.find((tool) => tool.name === "founder.project.onchain_receipt.record")).toMatchObject({
+      title: "Record Founder Onchain Receipt",
+      annotations: { readOnlyHint: false, destructiveHint: false, openWorldHint: false },
+      inputSchema: expect.objectContaining({
+        required: expect.arrayContaining([
+          "projectSlug",
+          "paymentId",
+          "paymentMethodId",
+          "chainId",
+          "chainAssetId",
+          "intakeContractId",
+          "txHash",
+          "walletAddress",
+          "amountRaw",
+          "amountDecimal",
+          "periodId",
+          "receipt",
+        ]),
+      }),
+      outputSchema: expect.objectContaining({
+        required: expect.arrayContaining(["ok"]),
+      }),
+    })
   })
 
   it("reads managed projects and project cycle status through the founder reader boundary", async () => {
@@ -158,9 +200,9 @@ describe("founder MCP tools", () => {
       },
       context,
     )
-    await registry.call(
+    const receiptResult = await registry.call(
       "founder.project.onchain_receipt.record",
-      { projectSlug: "civic-mesh", paymentId: 11, paymentMethodId: 10, txHash: `0x${"a".repeat(64)}` },
+      validReceiptInput,
       context,
     )
 
@@ -171,6 +213,7 @@ describe("founder MCP tools", () => {
     ])
     expect(createResult.structuredContent).toMatchObject({ ok: true, data: { accepted: true } })
     expect(updateResult.structuredContent).toMatchObject({ ok: true, data: { accepted: true } })
+    expect(receiptResult.structuredContent).toMatchObject({ ok: true, data: { accepted: true } })
   })
 
   it("rejects malformed crypto route create input before dispatch", async () => {
@@ -265,6 +308,62 @@ describe("founder MCP tools", () => {
       structuredContent: { ok: false, error: { code: "route_not_found" } },
     })
     expect(result.content[0]?.text).toContain("not found")
+  })
+
+  it("rejects malformed onchain receipt input before dispatch", async () => {
+    const calls: Array<{ functionName: string; input: unknown }> = []
+    const registry = createRegistry()
+    const context = { auth, edge: createEdgeClient(calls), founderReader }
+
+    const invalidTxHash = await registry.call(
+      "founder.project.onchain_receipt.record",
+      { ...validReceiptInput, txHash: "not-a-hash" },
+      context,
+    )
+    const invalidWallet = await registry.call(
+      "founder.project.onchain_receipt.record",
+      { ...validReceiptInput, walletAddress: "0x123" },
+      context,
+    )
+    const invalidAmount = await registry.call(
+      "founder.project.onchain_receipt.record",
+      { ...validReceiptInput, amountDecimal: "90 USD" },
+      context,
+    )
+    const { receipt: _receipt, ...inputWithoutReceipt } = validReceiptInput
+    const missingReceipt = await registry.call(
+      "founder.project.onchain_receipt.record",
+      inputWithoutReceipt,
+      context,
+    )
+
+    expect(invalidTxHash).toMatchObject({ isError: true, errorCode: "invalid_payload" })
+    expect(invalidWallet).toMatchObject({ isError: true, errorCode: "invalid_payload" })
+    expect(invalidAmount).toMatchObject({ isError: true, errorCode: "invalid_payload" })
+    expect(missingReceipt).toMatchObject({ isError: true, errorCode: "invalid_payload" })
+    expect(calls).toHaveLength(0)
+  })
+
+  it("returns stable errors when onchain receipt recording is rejected by the Edge command", async () => {
+    const calls: Array<{ functionName: string; input: unknown }> = []
+    const registry = createRegistry()
+    const result = await registry.call(
+      "founder.project.onchain_receipt.record",
+      validReceiptInput,
+      {
+        auth,
+        edge: createFailingEdgeClient(calls, "amount_mismatch", "Receipt amount does not match the payment."),
+        founderReader,
+      },
+    )
+
+    expect(calls).toHaveLength(1)
+    expect(result).toMatchObject({
+      isError: true,
+      errorCode: "amount_mismatch",
+      structuredContent: { ok: false, error: { code: "amount_mismatch" } },
+    })
+    expect(result.content[0]?.text).toContain("does not match")
   })
 
   it("returns a protocol-visible error when founder reads are not configured", async () => {
