@@ -13,6 +13,13 @@ const auth = {
   isInternalOperator: true,
 }
 
+const nonOperatorAuth = {
+  actorRole: "project_member" as const,
+  bearerToken: "member-token",
+  userId: "member-1",
+  email: "member@example.com",
+}
+
 const edge: EdgeCommandClient = {
   async invoke<TInput, TOutput>(functionName: string, input: TInput): Promise<EdgeCommandResult<TOutput>> {
     return edgeCommandSuccess({ functionName, input }) as EdgeCommandResult<TOutput>
@@ -103,6 +110,13 @@ describe("project-member and operator MCP tools", () => {
         required: expect.arrayContaining(["ok", "projectSlug", "cycleKey", "reports", "attribution", "nextActions"]),
       }),
     })
+    expect(tools.find((tool) => tool.name === "operator.cycles.list")).toMatchObject({
+      title: "List Operator Monthly Cycles",
+      annotations: { readOnlyHint: true, destructiveHint: false, openWorldHint: false },
+      outputSchema: expect.objectContaining({
+        required: expect.arrayContaining(["ok", "count", "cycles"]),
+      }),
+    })
   })
 
   it("reads project-member reporting status", async () => {
@@ -168,8 +182,21 @@ describe("project-member and operator MCP tools", () => {
     const registry = createRegistry()
     const context = { auth, edge, projectMemberReader, operatorReader }
 
-    await expect(registry.call("operator.cycles.list", {}, context)).resolves.toMatchObject({
-      content: [expect.objectContaining({ text: expect.stringContaining("reporting") })],
+    const cycles = await registry.call("operator.cycles.list", {}, context)
+    expect(cycles.content[0]?.text).toContain("reporting")
+    expect(cycles.structuredContent).toMatchObject({
+      ok: true,
+      count: 1,
+      cycles: [
+        {
+          cycleKey: "2026-04",
+          status: "reporting",
+          lockedAt: "2026-05-01T00:00:00Z",
+          calculationStartedAt: "2026-05-02T00:00:00Z",
+          distributionStartedAt: "2026-05-03T00:00:00Z",
+          reportingPublishedAt: "2026-05-04T00:00:00Z",
+        },
+      ],
     })
     await expect(registry.call("operator.cycle.observability", { cycleKey: "2026-04" }, context)).resolves.toMatchObject({
       content: [expect.objectContaining({ text: expect.stringContaining("reporting_publication_success") })],
@@ -189,6 +216,56 @@ describe("project-member and operator MCP tools", () => {
 
     expect(memberResult).toMatchObject({ isError: true, errorCode: "reader_not_configured" })
     expect(operatorResult.isError).toBe(true)
+  })
+
+  it("blocks non-operators from listing cycles before the handler runs", async () => {
+    const forbiddenReader: OperatorWorkflowReader = {
+      ...operatorReader,
+      async listCycleStatuses() {
+        throw new Error("handler should not run")
+      },
+    }
+
+    const result = await createRegistry().call(
+      "operator.cycles.list",
+      {},
+      { auth: nonOperatorAuth, edge, projectMemberReader, operatorReader: forbiddenReader },
+    )
+
+    expect(result).toMatchObject({ isError: true, errorCode: "forbidden" })
+    expect(result.content[0]?.text).toContain("internal operator")
+  })
+
+  it("returns calm operator cycle empty states", async () => {
+    const emptyReader: OperatorWorkflowReader = {
+      ...operatorReader,
+      async listCycleStatuses() {
+        return []
+      },
+    }
+    const result = await createRegistry().call("operator.cycles.list", {}, { auth, edge, projectMemberReader, operatorReader: emptyReader })
+
+    expect(result.structuredContent).toMatchObject({
+      ok: true,
+      count: 0,
+      cycles: [],
+      emptyState: "No monthly cycles are available to review.",
+    })
+  })
+
+  it("returns safe operator cycle errors when the read gateway fails", async () => {
+    const failingReader: OperatorWorkflowReader = {
+      ...operatorReader,
+      async listCycleStatuses() {
+        throw new Error("select locked_manifest from private_table using service_role")
+      },
+    }
+    const result = await createRegistry().call("operator.cycles.list", {}, { auth, edge, projectMemberReader, operatorReader: failingReader })
+
+    expect(result).toMatchObject({ isError: true, errorCode: "workflow_read_failed" })
+    expect(result.content[0]?.text).toContain("temporarily unavailable")
+    expect(result.content[0]?.text).not.toContain("locked_manifest")
+    expect(result.content[0]?.text).not.toContain("service_role")
   })
 
   it("returns safe project-member reporting errors when the read gateway fails", async () => {

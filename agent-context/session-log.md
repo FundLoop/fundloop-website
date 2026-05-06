@@ -1,3 +1,36 @@
+### session v149: Finalize operator cycle-list MCP tool
+- timestamp: 2026-05-06T19:12:56-0400
+- agent: **Codex (GPT-5)**
+- branch: **codex/mcp-roadmap-kickoff**
+- head: pending MCP-5.10 commit
+
+#### Objective
+Complete MCP-5.10 by making `operator.cycles.list` a structured, read-only, internal-operator monthly-cycle overview tool.
+
+#### Actions Taken
+- Added title, read-only annotations, and output-schema metadata to `operator.cycles.list`.
+- Normalized operator cycle rows into a bounded `{ ok, count, cycles }` response with lifecycle timestamps and a calm empty state.
+- Added safe protocol-visible errors for missing reader configuration and read-gateway failures without exposing raw backend exception details.
+- Added tests for metadata, structured operator output, non-operator authorization blocking before handler execution, empty states, and backend failure redaction.
+- Marked MCP-5.10 started in `agent-context/todo-mcp.md` and refreshed the MCP engineering doc.
+
+#### Tests and Validation Notes
+- `pnpm mcp:test` passed: 4 files, 49 tests.
+- `deno cache --config supabase/functions/deno.json supabase/functions/mcp/index.ts` passed.
+- `pnpm lint` passed.
+- `pnpm typecheck` passed.
+- `pnpm test` passed: 76 files, 330 tests.
+- `pnpm build` passed.
+- `pnpm dlx node@22.22.1 /opt/homebrew/bin/pnpm check` passed.
+
+#### Reflections
+- This keeps internal cycle visibility useful for agents while preserving the MCP-3 operator allowlist as the front-door gate.
+
+#### Suggested Next Steps
+- Continue with MCP-5.11 by finalizing `operator.cycle.observability` as a bounded internal read for cycle events.
+
+---
+
 ### session v148: Finalize project-member reporting-status MCP tool
 - timestamp: 2026-05-06T19:07:24-0400
 - agent: **Codex (GPT-5)**

@@ -174,7 +174,7 @@ Session 40 added project-member and operator workflows so agents do not need to 
 Session 40 added read-only project-member and operator tools:
 
 - `project_member.project.reporting_status`: annotated read-only project-member status tool backed by `mcp-workflow-read`, returning compact reporting counts, attribution readiness, and safe next-action hints without artifact paths or operator-only internals.
-- `operator.cycles.list`
+- `operator.cycles.list`: annotated internal-operator read-only overview backed by `mcp-workflow-read`, returning a bounded recent-cycle list with lifecycle timestamps and safe empty/error states.
 - `operator.cycle.observability`
 - `operator.payments.reconciliation_visibility`
 - `operator.reporting.coverage`

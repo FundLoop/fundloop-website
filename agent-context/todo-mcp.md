@@ -447,12 +447,12 @@ Finalize the project-member reporting-status tool as a read-only status briefing
 
 ### MCP-5.10. Finalize `operator.cycles.list`
 
-- Status: Not started
-- Timestamp started: TBD
-- Head when starting: TBD
-- Timestamp completed: TBD
-- Feature branch(es): TBD
-- Session-log reference(s): TBD
+- Status: Complete
+- Timestamp started: 2026-05-06T19:12:56-0400
+- Head when starting: 4d9c904
+- Timestamp completed: 2026-05-06T19:15:55-0400
+- Feature branch(es): codex/mcp-roadmap-kickoff
+- Session-log reference(s): session v149
 
 Finalize the operator monthly-cycle listing tool as an internal-operator read-only overview. Require internal-operator context from the MCP-3 allowlist gate, keep output compact and paginated or bounded, and call the `mcp-workflow-read` operation. Add read-only/admin annotations, structured output, stable errors, and tests proving non-operators are blocked before handler execution, operators receive bounded cycle summaries, read failures are safe, and no private manifest contents, artifact bodies, service keys, or raw exception payloads appear in tool output.
 

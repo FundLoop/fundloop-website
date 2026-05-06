@@ -1,5 +1,5 @@
 import { errorResult, jsonTextResult } from "./protocol.ts"
-import type { ProjectMemberReportingStatus } from "./member-operator-readers.ts"
+import type { OperatorCycleStatus, ProjectMemberReportingStatus } from "./member-operator-readers.ts"
 import type { McpToolRegistry } from "./tools.ts"
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -30,6 +30,17 @@ function deriveReportingStatusNextActions(status: ProjectMemberReportingStatus) 
   }
 
   return actions
+}
+
+function summarizeOperatorCycle(cycle: OperatorCycleStatus) {
+  return {
+    cycleKey: cycle.cycleKey,
+    status: cycle.status,
+    lockedAt: cycle.lockedAt,
+    calculationStartedAt: cycle.calculationStartedAt,
+    distributionStartedAt: cycle.distributionStartedAt,
+    reportingPublishedAt: cycle.reportingPublishedAt,
+  }
 }
 
 export function registerProjectMemberAndOperatorMcpTools(registry: McpToolRegistry) {
@@ -98,16 +109,49 @@ export function registerProjectMemberAndOperatorMcpTools(registry: McpToolRegist
   registry.register({
     definition: {
       name: "operator.cycles.list",
+      title: "List Operator Monthly Cycles",
       description: "List recent monthly cycles and lifecycle statuses for an internal operator.",
+      annotations: {
+        readOnlyHint: true,
+        destructiveHint: false,
+        openWorldHint: false,
+      },
       inputSchema: {
         type: "object",
         properties: {},
         additionalProperties: false,
       },
+      outputSchema: {
+        type: "object",
+        properties: {
+          ok: { type: "boolean" },
+          count: { type: "number", integer: true, minimum: 0 },
+          cycles: { type: "array" },
+          emptyState: { type: "string", maxLength: 240 },
+        },
+        required: ["ok", "count", "cycles"],
+        additionalProperties: false,
+      },
     },
     async handler(_input, context) {
-      if (!context.operatorReader) return errorResult("Operator workflow reader is not configured.")
-      return jsonTextResult(await context.operatorReader.listCycleStatuses(context.auth))
+      if (!context.operatorReader) {
+        return { ...errorResult("Operator workflow reader is not configured."), errorCode: "reader_not_configured" }
+      }
+      try {
+        const cycles = (await context.operatorReader.listCycleStatuses(context.auth)).slice(0, 12).map(summarizeOperatorCycle)
+
+        return jsonTextResult({
+          ok: true,
+          count: cycles.length,
+          cycles,
+          ...(cycles.length === 0 ? { emptyState: "No monthly cycles are available to review." } : {}),
+        })
+      } catch {
+        return {
+          ...errorResult("Operator monthly cycles are temporarily unavailable."),
+          errorCode: "workflow_read_failed",
+        }
+      }
     },
   })
 
