@@ -1,3 +1,30 @@
+### session v140: Expand MCP tool implementation backlog
+- timestamp: 2026-05-06T09:29:38-0400
+- agent: **Codex (GPT-5)**
+- branch: **codex/mcp-roadmap-kickoff**
+- head: pending MCP-5.1 commit
+
+#### Objective
+Complete MCP-5.1 by turning the MCP tool catalog into one implementation-ready backlog item per current or candidate tool.
+
+#### Actions Taken
+- Marked MCP-5.1 complete in `agent-context/todo-mcp.md`.
+- Added follow-up MCP todos for the current tool surface: health, generic Edge command invocation, founder project reads/writes, project-member reporting, and internal operator reads.
+- Added candidate MCP todos for contribution submission, payment draft creation, user workspace summary, payout route listing, and operator cycle lock.
+- Captured each tool's intended read/write/admin/destructive posture, source boundary, authorization expectations, validation needs, test coverage, and known deferrals.
+
+#### Tests and Validation Notes
+- Documentation/backlog-only change; no runtime tests were required.
+- `git diff --check` passed.
+
+#### Reflections
+- The roadmap is now easier for future agents to execute safely: each MCP tool has its own reviewable slice instead of living inside one large generic "implement tools" bucket.
+
+#### Suggested Next Steps
+- Start MCP-5.2 by hardening and annotating `fundloop.health`, then proceed through the tool todos in order.
+
+---
+
 ### session v139: Add MCP input safety and output redaction
 - timestamp: 2026-05-06T08:29:03-0400
 - agent: **Codex (GPT-5)**

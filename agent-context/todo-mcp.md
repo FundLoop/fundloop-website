@@ -278,14 +278,14 @@ Create tools around product workflows, not implementation details.
 
 ### MCP-5.1. Create a TODO for each of the tools
 
-- Status: Not started
-- Timestamp started: TBD
-- Head when starting: TBD
-- Timestamp completed: TBD
-- Feature branch(es): TBD
-- Session-log reference(s): TBD
+- Status: Complete
+- Timestamp started: 2026-05-06T09:29:38-0400
+- Head when starting: b8768f1
+- Timestamp completed: 2026-05-06T09:29:38-0400
+- Feature branch(es): codex/mcp-roadmap-kickoff
+- Session-log reference(s): session v140
 
-* [ ] For each of the tools in `docs/mcp/tool-catalog.md` create a new sub-TODO, starting at 5.2. Use the following FundLoop-oriented baseline pattern, replacing the example tool names with catalog entries as needed:
+* [x] For each of the tools in `docs/mcp/tool-catalog.md` create a new sub-TODO, starting at 5.2. Use the following FundLoop-oriented baseline pattern, replacing the example tool names with catalog entries as needed:
 
 ```template
 
@@ -357,7 +357,192 @@ Create tools around product workflows, not implementation details.
 
 ```end of template
 
-*** insert MCP-5.2 and following tasks here***
+### MCP-5.2. Harden and annotate `fundloop.health`
+
+- Status: Not started
+- Timestamp started: TBD
+- Head when starting: TBD
+- Timestamp completed: TBD
+- Feature branch(es): TBD
+- Session-log reference(s): TBD
+
+Finish `fundloop.health` as the canonical remote/readiness smoke tool. Keep it read-only and non-sensitive: it may return service name, version, transport capability, and a minimal actor summary for authenticated tool traffic, but it must not expose bearer tokens, Supabase project secrets, service-role state, tenant data, or environment internals. Add accurate tool annotations, a concise human-readable summary, and machine-readable structured output once the MCP result shape supports it. Preserve public `GET /health` as the unauthenticated health endpoint and keep `tools/call` health authenticated on remote POST. Add tests covering stdio smoke, remote authenticated health, no-secret output, and malformed input rejection.
+
+### MCP-5.3. Harden and constrain `fundloop.edge_command.invoke`
+
+- Status: Not started
+- Timestamp started: TBD
+- Head when starting: TBD
+- Timestamp completed: TBD
+- Feature branch(es): TBD
+- Session-log reference(s): TBD
+
+Keep `fundloop.edge_command.invoke` as a narrow transitional bridge, not a permanent broad backend portal. Require authenticated actor context, a configured allowlist, strict function-name validation, and stable Edge command envelopes. Preserve the MCP-3 operator/destructive command block for non-operators and extend tests so allowlisted founder commands succeed while unallowlisted, malformed, oversized, and operator/destructive names fail before dispatch. Add explicit annotations reflecting that the tool can mutate state depending on the target command, document that product-specific tools are preferred, and avoid adding generic payload freedoms beyond the current bounded object contract.
+
+### MCP-5.4. Finalize `founder.projects.list`
+
+- Status: Not started
+- Timestamp started: TBD
+- Head when starting: TBD
+- Timestamp completed: TBD
+- Feature branch(es): TBD
+- Session-log reference(s): TBD
+
+Finalize the founder project listing tool as a compact read-only workspace index for founders and project members. It should call the existing `mcp-workflow-read` operation, return only projects visible to the authenticated actor, and provide stable summaries with project id, slug, name, setup/status cues, and next-action hints where already available. Add read-only annotations, structured output, stable error codes, and tests proving authenticated users only receive scoped projects, no-project users get a calm empty state, and reader failures return protocol-visible errors without stack traces or raw Supabase payloads.
+
+### MCP-5.5. Finalize `founder.project.cycle_status`
+
+- Status: Not started
+- Timestamp started: TBD
+- Head when starting: TBD
+- Timestamp completed: TBD
+- Feature branch(es): TBD
+- Session-log reference(s): TBD
+
+Finalize the founder project cycle-status tool as a read-only project/cycle briefing. Require a valid `projectSlug` and optional `cycleKey`, call the `mcp-workflow-read` operation, and return cycle status, payment readiness, reporting readiness, outstanding actions, and non-fatal warnings in compact structured output. Keep project ownership enforced by the read gateway rather than duplicating membership rules locally. Add tests for valid slugs, invalid cycle keys, forbidden/unknown projects, partial warning output, and no leakage of raw database rows, private artifact paths, or internal operator-only data.
+
+### MCP-5.6. Finalize `founder.project.crypto_route.create`
+
+- Status: Not started
+- Timestamp started: TBD
+- Head when starting: TBD
+- Timestamp completed: TBD
+- Feature branch(es): TBD
+- Session-log reference(s): TBD
+
+Finalize the founder crypto-route creation tool as a mutating project-admin operation backed only by the typed `project-crypto-route-create` Edge Function. Require strict ids, project slug, and an idempotency/attempt identifier if the underlying command supports or can safely accept one. Add write annotations, concise success/failure summaries, structured Edge envelope output, and tests for valid creation, duplicate/inactive-reference failures, forbidden project behavior, malformed ids, oversized labels, and retry-safe behavior. Do not let this tool accept arbitrary chain/token configuration outside the existing curated reference-data model.
+
+### MCP-5.7. Finalize `founder.project.crypto_route.update`
+
+- Status: Not started
+- Timestamp started: TBD
+- Head when starting: TBD
+- Timestamp completed: TBD
+- Feature branch(es): TBD
+- Session-log reference(s): TBD
+
+Finalize the founder crypto-route update tool as a mutating project-admin operation backed only by the typed `project-crypto-route-update` Edge Function. Require valid `projectSlug` and `paymentMethodId`, keep updates limited to supported mutable fields, and preserve the existing backend rules for default-route safety and ownership. Add write annotations, structured output, stable errors, and tests for success, missing route, disabled/default conflicts, malformed payloads, forbidden projects, and no handler execution when MCP validation fails. Do not expand this into move/enable/disable variants unless the catalog and roadmap explicitly add separate tools.
+
+### MCP-5.8. Finalize `founder.project.onchain_receipt.record`
+
+- Status: Not started
+- Timestamp started: TBD
+- Head when starting: TBD
+- Timestamp completed: TBD
+- Feature branch(es): TBD
+- Session-log reference(s): TBD
+
+Finalize onchain receipt recording as a mutating founder/project-admin tool backed by `project-onchain-payment-submission-record`. Require valid project slug, payment id, payment method id, transaction hash, and optional wallet/amount/attempt fields within strict limits. Add write annotations, structured output, and tests for success, invalid tx hash/wallet/amount, project-payment mismatch, duplicate unresolved submission, forbidden project, and backend amount mismatch failures. Preserve existing payment-flow observability and ensure the tool never asks agents to infer confirmations or bypass the reconciliation pipeline.
+
+### MCP-5.9. Finalize `project_member.project.reporting_status`
+
+- Status: Not started
+- Timestamp started: TBD
+- Head when starting: TBD
+- Timestamp completed: TBD
+- Feature branch(es): TBD
+- Session-log reference(s): TBD
+
+Finalize the project-member reporting-status tool as a read-only status briefing for members who contribute attribution/reporting data. Require valid `projectSlug` and optional `cycleKey`, call the `mcp-workflow-read` operation, and return reporting status, attribution/data-submission readiness, published report availability, and next actions. Add read-only annotations, structured output, and tests for accessible project, forbidden project, invalid cycle key, no-current-cycle empty state, partial warnings, and no exposure of founder-only payment route details or operator-private artifact internals.
+
+### MCP-5.10. Finalize `operator.cycles.list`
+
+- Status: Not started
+- Timestamp started: TBD
+- Head when starting: TBD
+- Timestamp completed: TBD
+- Feature branch(es): TBD
+- Session-log reference(s): TBD
+
+Finalize the operator monthly-cycle listing tool as an internal-operator read-only overview. Require internal-operator context from the MCP-3 allowlist gate, keep output compact and paginated or bounded, and call the `mcp-workflow-read` operation. Add read-only/admin annotations, structured output, stable errors, and tests proving non-operators are blocked before handler execution, operators receive bounded cycle summaries, read failures are safe, and no private manifest contents, artifact bodies, service keys, or raw exception payloads appear in tool output.
+
+### MCP-5.11. Finalize `operator.cycle.observability`
+
+- Status: Not started
+- Timestamp started: TBD
+- Head when starting: TBD
+- Timestamp completed: TBD
+- Feature branch(es): TBD
+- Session-log reference(s): TBD
+
+Finalize the operator cycle-observability tool as a bounded internal read for cycle events by `cycleKey` or `attemptId`. Require internal-operator authorization, strict cycle/attempt validation, and compact event summaries with severity, event type, outcome, timestamp, and safe messages. Add read-only/admin annotations, structured output, and tests for valid filters, no-filter defaults, invalid filters, non-operator rejection, partial read failures, and output redaction of any sensitive payload fragments. Keep this read-only; mutation or replay actions belong in separate explicitly confirmed tools.
+
+### MCP-5.12. Finalize `operator.payments.reconciliation_visibility`
+
+- Status: Not started
+- Timestamp started: TBD
+- Head when starting: TBD
+- Timestamp completed: TBD
+- Feature branch(es): TBD
+- Session-log reference(s): TBD
+
+Finalize the operator reconciliation visibility tool as a read-only internal health summary for payment reconciliation queues. Require internal-operator authorization and call the `mcp-workflow-read` operation rather than direct table reads. Return bounded counts, warning states, stale-queue indicators, and safe next-action hints. Add read-only/admin annotations, structured output, stable errors, and tests for operator success, non-operator rejection, empty queues, partial read warnings, and no leakage of private wallet credentials, service-role details, raw transaction payloads, or command bodies.
+
+### MCP-5.13. Finalize `operator.reporting.coverage`
+
+- Status: Not started
+- Timestamp started: TBD
+- Head when starting: TBD
+- Timestamp completed: TBD
+- Feature branch(es): TBD
+- Session-log reference(s): TBD
+
+Finalize the operator reporting-coverage tool as a read-only internal overview of public, user, founder, and operator report publication coverage. Require internal-operator authorization, optional valid `cycleKey`, and the existing `mcp-workflow-read` operation. Return compact coverage counts, gaps, warning states, and safe links or identifiers where appropriate. Add read-only/admin annotations, structured output, and tests for current-cycle default, explicit cycle, invalid cycle key, non-operator rejection, partial warnings, and no private artifact body or storage signed URL leakage.
+
+### MCP-5.14. Candidate `founder.project.contribution.submit`
+
+- Status: Not started
+- Timestamp started: TBD
+- Head when starting: TBD
+- Timestamp completed: TBD
+- Feature branch(es): TBD
+- Session-log reference(s): TBD
+
+Design and implement this candidate only after the founder attribution/contribution Edge command is explicitly ready for MCP use. The tool should submit structured founder contribution data for a project/cycle, require project-admin or authorized member context, use strict schemas with idempotency, and return a compact submission summary. Before enabling it, document the exact source Edge Function, audit event, retry behavior, and confirmation model if the submission changes locked-cycle artifacts. Add tests for tenant scoping, idempotency, malformed data, forbidden projects, and backend validation failures.
+
+### MCP-5.15. Candidate `founder.project.payment_drafts.create`
+
+- Status: Not started
+- Timestamp started: TBD
+- Head when starting: TBD
+- Timestamp completed: TBD
+- Feature branch(es): TBD
+- Session-log reference(s): TBD
+
+Design and implement this candidate only if founder agents should draft monthly payment obligations through MCP. It should wrap the existing `project-payment-drafts-create` command, require project-admin access, strict project/cycle/payment input validation, and idempotent attempt handling. Output should summarize created draft rows and warnings, not raw payment rows. Add write annotations, tests for validation failure, permission failure, backend failure, success, and retry behavior. Keep actual payment confirmation, reconciliation, and monthly-cycle lock flows in their existing dedicated operator/founder tools.
+
+### MCP-5.16. Candidate `user.workspace.summary`
+
+- Status: Not started
+- Timestamp started: TBD
+- Head when starting: TBD
+- Timestamp completed: TBD
+- Feature branch(es): TBD
+- Session-log reference(s): TBD
+
+Design and implement this candidate as the first regular-user MCP read tool only after the user workspace read boundary is confirmed safe for agent access. It should return identity/completion status, participation footprint, current results visibility, payout readiness summary, and discovery next actions for the authenticated user only. Add read-only annotations, structured output, stable empty states, and tests for unauthenticated rejection, active user with no participation, user with results, partial read warnings, and no leakage of CUBID raw payloads, private payout credentials, or other users' data.
+
+### MCP-5.17. Candidate `user.payout.routes.list`
+
+- Status: Not started
+- Timestamp started: TBD
+- Head when starting: TBD
+- Timestamp completed: TBD
+- Feature branch(es): TBD
+- Session-log reference(s): TBD
+
+Design and implement this candidate only after payout route read models are stable and safe for agent exposure. It should list the authenticated user's payout readiness and route summaries without revealing secrets, private wallet credentials, or raw provider tokens. Keep it read-only unless a later session introduces explicit payout-route mutation tools with confirmation and idempotency. Add read-only annotations, structured output, and tests for no routes, configured routes, provider warning states, unauthorized access, partial read failures, and output redaction.
+
+### MCP-5.18. Candidate `operator.cycle.lock`
+
+- Status: Not started
+- Timestamp started: TBD
+- Head when starting: TBD
+- Timestamp completed: TBD
+- Feature branch(es): TBD
+- Session-log reference(s): TBD
+
+Do not expose this candidate until remote MCP auth, operator authorization, confirmation, audit, and abuse controls are strong enough for a sensitive monthly-cycle mutation. If implemented, it must wrap `monthly-cycle-lock`, require internal-operator access, exact cycle key, `confirm: true`, an explicit reason, and any unresolved-onchain override fields required by the backend command. Add destructive/admin annotations, idempotency/attempt handling, and tests for non-operator rejection, missing confirmation, unresolved-onchain block, override reason requirement, success, and audit logging. This remains candidate-only until explicitly approved.
 
 **Acceptance criteria for TODO 5**
 
