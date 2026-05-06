@@ -18,10 +18,12 @@ This is useful for local and controlled agent experiments, but it is not yet the
 
 The target production shape is a remote MCP server over Streamable HTTP, deployed as a Supabase Edge Function once auth and operational controls are ready.
 
-- Remote endpoint: `https://<project-ref>.functions.supabase.co/mcp`.
+- Remote endpoint: `https://<project-ref>.supabase.co/functions/v1/mcp`.
 - Local endpoint for Edge development: `http://127.0.0.1:54321/functions/v1/mcp`.
 - Local stdio wrapper: optional compatibility layer that forwards to the same tool registry and Edge/read contracts.
 - SDK choice: official MCP TypeScript SDK with an Edge-compatible Streamable HTTP transport if it bundles cleanly under Supabase Deno; otherwise evaluate `mcp-lite` or `mcp-handler` as a narrow runtime adapter.
+
+Session MCP-2 added `supabase/functions/mcp/index.ts` as the first remote Streamable HTTP endpoint. It uses the official MCP TypeScript SDK with `WebStandardStreamableHTTPServerTransport`, while the local stdio package remains the compatibility harness for local clients and smoke checks.
 
 ## Tool Handler Rule
 
@@ -39,6 +41,8 @@ MCP tools must not query raw tables directly in production unless a design doc r
 
 Initial production auth should use Supabase JWT validation for first-party or workspace-bound clients. OAuth 2.1 can be added later for broader third-party MCP clients.
 
+- `GET /health` is public and returns only non-sensitive service metadata.
+- Streamable HTTP `POST` requests require an `Authorization: Bearer <token>` header before tool registration or dispatch.
 - User/founder/project-member tools run as the signed-in Supabase user.
 - Operator tools require the same internal-admin allowlist and role checks used by the app.
 - Generic command invocation remains disabled unless explicitly allowlisted for a non-production integration.
@@ -56,6 +60,7 @@ FundLoop tenancy is role and entity scoped rather than a separate tenant table.
 ## Deployment Environments
 
 - Local: stdio package plus local Supabase; useful for smoke and tool development.
+- Local Edge smoke: `FUNDLOOP_MCP_HTTP_URL=http://127.0.0.1:54321/functions/v1/mcp pnpm mcp:edge:smoke`.
 - Preview/dev: remote Supabase project and Preview app environment; suitable for MCP integration testing with non-production actors.
 - Production/main: only after Streamable HTTP auth, rate limiting, audit expectations, and publication docs are complete.
 

@@ -19,7 +19,10 @@ Session 38 introduced `packages/mcp-server` as a lightweight workspace package.
 - `src/auth.ts` creates an MCP actor context from an authenticated bearer token.
 - `src/edge-client.ts` invokes Supabase Edge Functions with the standard `{ ok, data | error }` command envelope.
 - `src/tools.ts` owns tool registration and dispatch.
+- `src/sdk-adapter.ts` adapts the same registry tools into the official MCP TypeScript SDK for Streamable HTTP.
 - `src/server.ts` provides the stdio server entrypoint for local MCP clients.
+
+Session MCP-2 added `supabase/functions/mcp/index.ts` as the remote Streamable HTTP endpoint. The remote function reuses the same registry/tool modules, creates request-scoped bearer-token context, and invokes the same Edge Function command/read gateways as stdio.
 
 ## Runtime Configuration
 
@@ -64,6 +67,14 @@ The smoke harness sends:
 - `tools/call` for `fundloop.health`
 
 It verifies framing, server identity, tool registration, and health response shape. It does not call workflow read tools or mutating tools.
+
+For local Edge Function smoke after serving `mcp`, use:
+
+```bash
+FUNDLOOP_MCP_HTTP_URL=http://127.0.0.1:54321/functions/v1/mcp pnpm mcp:edge:smoke
+```
+
+The Edge smoke checks `GET /health`, `initialize`, `tools/list`, and `tools/call` for `fundloop.health`.
 
 For package tests:
 
@@ -116,6 +127,7 @@ The root `pnpm mcp:publish` command is intentionally metadata-only guidance for 
 - `invalid_edge_response`: the target Edge Function did not return the standard `{ ok: true, data } | { ok: false, error }` envelope.
 - `not allowlisted`: the generic `fundloop.edge_command.invoke` tool was asked to call a function not listed in `FUNDLOOP_MCP_ALLOWED_EDGE_FUNCTIONS`.
 - stdio client hangs: confirm the client is sending Content-Length framed messages, not newline-delimited JSON.
+- Edge MCP `not_authenticated`: include `Authorization: Bearer <non-production Supabase access token>` for `POST /functions/v1/mcp`; `GET /health` is the only public endpoint.
 
 ## Tool Rules
 

@@ -1,3 +1,41 @@
+### session v137: Add remote MCP Edge Function endpoint
+- timestamp: 2026-05-06T05:09:22-0400
+- agent: **Codex (GPT-5)**
+- branch: **codex/mcp-roadmap-kickoff**
+- head: pending MCP-2 commit
+
+#### Objective
+Complete MCP-2 by adding a remote Streamable HTTP MCP endpoint on Supabase Edge Functions while preserving the existing stdio package as the local MCP harness.
+
+#### Actions Taken
+- Added `supabase/functions/mcp/index.ts` using the official MCP TypeScript SDK and `WebStandardStreamableHTTPServerTransport`.
+- Added a public non-sensitive `GET /health` route and bearer-token enforcement for remote MCP `POST`/`DELETE` traffic.
+- Added a runtime-agnostic MCP SDK adapter so the remote endpoint registers the same `McpToolRegistry` tools used by the stdio server.
+- Added remote bearer-auth helpers, a local Edge HTTP smoke script, and the `pnpm mcp:edge:smoke` command.
+- Updated the Supabase Deno import map with pinned MCP SDK import aliases.
+- Added focused tests for schema conversion, SDK registration, and remote bearer-auth rejection.
+- Marked MCP-2 complete in `agent-context/todo-mcp.md` and refreshed MCP architecture/security/runtime docs.
+
+#### Tests and Validation Notes
+- `pnpm mcp:test` passed.
+- `deno cache --config supabase/functions/deno.json supabase/functions/mcp/index.ts` passed and updated the Supabase functions lockfile for the pinned MCP SDK import.
+- `pnpm mcp:smoke` passed.
+- `pnpm lint` passed.
+- `pnpm typecheck` passed.
+- `pnpm test` passed: 76 files, 298 tests.
+- `pnpm build` passed.
+- `FUNDLOOP_MCP_HTTP_URL=http://127.0.0.1:8000 FUNDLOOP_MCP_BEARER_TOKEN=local-smoke-token pnpm mcp:edge:smoke` passed against the Deno-served Edge handler.
+- Re-ran the main gates through Node 22.22.1: `pnpm lint`, `pnpm test`, `pnpm typecheck`, and `pnpm build` all passed.
+- `supabase status` did not report a healthy local FundLoop stack because `supabase_db_fundloop` was missing, so no Supabase-stack function serve/reset was attempted.
+
+#### Reflections
+- The remote endpoint stays thin by adapting the existing registry rather than creating a second MCP tool set. This keeps the local stdio harness and remote Streamable HTTP path aligned.
+
+#### Suggested Next Steps
+- Run MCP-3 next to deepen authentication, authorization scopes, and production rollout controls before publishing or broadening remote MCP access.
+
+---
+
 ### session v136: Kick off MCP roadmap
 - timestamp: 2026-05-06T04:42:09-0400
 - agent: **Codex (GPT-5)**

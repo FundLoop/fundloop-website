@@ -17,6 +17,8 @@ Current stdio development uses `FUNDLOOP_MCP_BEARER_TOKEN` as a Supabase user be
 
 Rules:
 
+- `GET /functions/v1/mcp/health` is public and must remain non-sensitive.
+- Streamable HTTP tool traffic must include `Authorization: Bearer <token>` before the MCP server registers and dispatches tools.
 - Missing credentials fail closed for every non-health workflow tool.
 - Tokens must be validated for issuer, expiration, and intended FundLoop/Supabase audience.
 - Tokens issued for other services must not be accepted.
@@ -53,7 +55,7 @@ MCP responses may include public and authorized workflow data. MCP responses mus
 
 FundLoop does not yet have a complete distributed MCP-specific rate limiter. Until it does:
 
-- keep the public remote MCP endpoint unavailable,
+- keep the public remote MCP endpoint limited to authenticated non-production smoke unless an explicit production rollout approves it,
 - keep generic Edge invocation disabled by default,
 - prefer read-only operator tools,
 - document any temporary integration allowlist,

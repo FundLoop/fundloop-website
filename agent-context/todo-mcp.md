@@ -111,43 +111,44 @@ Readiness assessment: FundLoop already has a useful local stdio MCP package, exp
 
 ## MCP-2. Create the Supabase Edge Function MCP server
 
-- Status: Not started
-- Timestamp started: TBD
-- Head when starting: TBD
-- Timestamp completed: TBD
-- Feature branch(es): TBD
-- Session-log reference(s): TBD
+- Status: Complete
+- Timestamp started: 2026-05-06T05:09:22-0400
+- Head when starting: c5ea417
+- Timestamp completed: 2026-05-06T05:09:22-0400
+- Feature branch(es): codex/mcp-roadmap-kickoff
+- Session-log reference(s): session v137
 
-* [ ] Add or promote a Supabase Edge Function for remote MCP over Streamable HTTP, preferably `supabase/functions/mcp/index.ts`, unless product conventions require another name.
-* [ ] Keep the current `packages/mcp-server` stdio runtime as the local compatibility harness unless this session replaces it with a wrapper around the remote implementation.
-* [ ] Use an Edge-compatible MCP implementation:
+* [x] Add or promote a Supabase Edge Function for remote MCP over Streamable HTTP, preferably `supabase/functions/mcp/index.ts`, unless product conventions require another name.
+* [x] Keep the current `packages/mcp-server` stdio runtime as the local compatibility harness unless this session replaces it with a wrapper around the remote implementation.
+* [x] Use an Edge-compatible MCP implementation:
 
   * preferred: official MCP TypeScript SDK with `WebStandardStreamableHTTPServerTransport`
   * acceptable: `mcp-lite` or `mcp-handler` if better suited to Supabase Edge Functions
-* [ ] Add routing for FundLoop deployed function URLs:
+* [x] Add routing for FundLoop deployed function URLs:
 
   * local: `http://127.0.0.1:54321/functions/v1/mcp`
-  * preview/production: `https://<supabase-project-ref>.functions.supabase.co/mcp`
-* [ ] Add a simple `GET /health` or equivalent health endpoint that does not expose sensitive data.
-* [ ] Implement MCP initialization, capability negotiation, `tools/list`, and `tools/call`.
-* [ ] Ensure the server returns correct MCP/JSON-RPC responses over Streamable HTTP.
-* [ ] For local unauthenticated development only, document when `supabase functions serve --no-verify-jwt mcp` is acceptable. For authenticated production, do not deploy in a way that bypasses auth unless the MCP handler itself fully validates credentials.
-* [ ] Add Deno tasks or package scripts:
+  * preview/production: `https://<supabase-project-ref>.supabase.co/functions/v1/mcp`
+* [x] Add a simple `GET /health` or equivalent health endpoint that does not expose sensitive data.
+* [x] Implement MCP initialization, capability negotiation, `tools/list`, and `tools/call`.
+* [x] Ensure the server returns correct MCP/JSON-RPC responses over Streamable HTTP.
+* [x] For local unauthenticated development only, document when `supabase functions serve --no-verify-jwt mcp` is acceptable. For authenticated production, do not deploy in a way that bypasses auth unless the MCP handler itself fully validates credentials.
+* [x] Add Deno tasks or package scripts:
 
   * `mcp:dev`
   * `mcp:test`
   * `mcp:smoke`
   * `mcp:inspect`
   * `mcp:publish`
-* [ ] Ensure logs do not write protocol-breaking output to stdout for `stdio` mode. MCP’s transport docs allow logging to stderr for `stdio`, while JSON-RPC messages flow over stdin/stdout. ([Model Context Protocol][1])
+  * `mcp:edge:smoke`
+* [x] Ensure logs do not write protocol-breaking output to stdout for `stdio` mode. MCP’s transport docs allow logging to stderr for `stdio`, while JSON-RPC messages flow over stdin/stdout. ([Model Context Protocol][1])
 
 **Acceptance criteria**
 
-* [ ] `initialize` works locally.
-* [ ] `tools/list` returns the expected tool list.
-* [ ] At least one read-only tool works locally.
-* [ ] The server has no direct privileged database access unless explicitly justified in `docs/mcp/security-model.md`.
-* [ ] The server can run under Supabase local development.
+* [x] `initialize` works locally.
+* [x] `tools/list` returns the expected tool list.
+* [x] At least one read-only tool works locally.
+* [x] The server has no direct privileged database access unless explicitly justified in `docs/mcp/security-model.md`.
+* [x] The server can run under Supabase local development.
 
 ---
 

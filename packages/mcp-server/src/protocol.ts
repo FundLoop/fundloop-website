@@ -13,7 +13,13 @@ export type McpToolDefinition = {
   description: string
   inputSchema: {
     type: "object"
-    properties?: Record<string, unknown>
+    properties?: Record<
+      string,
+      {
+        type?: "string" | "number" | "boolean" | "object"
+        description?: string
+      }
+    >
     required?: string[]
     additionalProperties?: boolean
   }
