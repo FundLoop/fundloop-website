@@ -480,12 +480,12 @@ Finalize the operator reconciliation visibility tool as a read-only internal hea
 
 ### MCP-5.13. Finalize `operator.reporting.coverage`
 
-- Status: Not started
-- Timestamp started: TBD
-- Head when starting: TBD
-- Timestamp completed: TBD
-- Feature branch(es): TBD
-- Session-log reference(s): TBD
+- Status: Complete
+- Timestamp started: 2026-05-06T19:52:17-0400
+- Head when starting: d083707
+- Timestamp completed: 2026-05-06T19:55:29-0400
+- Feature branch(es): codex/mcp-roadmap-kickoff
+- Session-log reference(s): session v152
 
 Finalize the operator reporting-coverage tool as a read-only internal overview of public, user, founder, and operator report publication coverage. Require internal-operator authorization, optional valid `cycleKey`, and the existing `mcp-workflow-read` operation. Return compact coverage counts, gaps, warning states, and safe links or identifiers where appropriate. Add read-only/admin annotations, structured output, and tests for current-cycle default, explicit cycle, invalid cycle key, non-operator rejection, partial warnings, and no private artifact body or storage signed URL leakage.
 

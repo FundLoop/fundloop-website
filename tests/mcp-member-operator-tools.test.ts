@@ -131,6 +131,13 @@ describe("project-member and operator MCP tools", () => {
         required: expect.arrayContaining(["ok", "counts", "openQueueCount", "warningStates", "nextActions"]),
       }),
     })
+    expect(tools.find((tool) => tool.name === "operator.reporting.coverage")).toMatchObject({
+      title: "Read Operator Reporting Coverage",
+      annotations: { readOnlyHint: true, destructiveHint: false, openWorldHint: false },
+      outputSchema: expect.objectContaining({
+        required: expect.arrayContaining(["ok", "cycleKey", "counts", "missingAudiences", "warningStates", "nextActions"]),
+      }),
+    })
   })
 
   it("reads project-member reporting status", async () => {
@@ -242,8 +249,15 @@ describe("project-member and operator MCP tools", () => {
         "Let chain confirmation or reconciliation jobs continue before manually confirming payments.",
       ],
     })
-    await expect(registry.call("operator.reporting.coverage", { cycleKey: "2026-04" }, context)).resolves.toMatchObject({
-      content: [expect.objectContaining({ text: expect.stringContaining("artifactCount") })],
+    const coverage = await registry.call("operator.reporting.coverage", { cycleKey: "2026-04" }, context)
+    expect(coverage.content[0]?.text).toContain("artifactCount")
+    expect(coverage.structuredContent).toMatchObject({
+      ok: true,
+      cycleKey: "2026-04",
+      counts: { publicReports: 1, userReports: 12, founderReports: 2, operatorReports: 1, artifactCount: 16 },
+      missingAudiences: [],
+      warningStates: [],
+      nextActions: ["Reporting coverage is complete for the available audience counts."],
     })
   })
 
@@ -308,6 +322,76 @@ describe("project-member and operator MCP tools", () => {
 
     expect(result).toMatchObject({ isError: true, errorCode: "forbidden" })
     expect(result.content[0]?.text).toContain("internal operator")
+  })
+
+  it("blocks non-operators from reading reporting coverage before the handler runs", async () => {
+    const forbiddenReader: OperatorWorkflowReader = {
+      ...operatorReader,
+      async getReportingCoverage() {
+        throw new Error("handler should not run")
+      },
+    }
+
+    const result = await createRegistry().call(
+      "operator.reporting.coverage",
+      { cycleKey: "2026-04" },
+      { auth: nonOperatorAuth, edge, projectMemberReader, operatorReader: forbiddenReader },
+    )
+
+    expect(result).toMatchObject({ isError: true, errorCode: "forbidden" })
+    expect(result.content[0]?.text).toContain("internal operator")
+  })
+
+  it("rejects invalid reporting coverage filters before the reader runs", async () => {
+    const result = await createRegistry().call("operator.reporting.coverage", { cycleKey: "2026-99" }, { auth, edge, projectMemberReader, operatorReader })
+
+    expect(result).toMatchObject({ isError: true, errorCode: "invalid_payload" })
+  })
+
+  it("returns reporting coverage gaps and safe next actions", async () => {
+    const gapReader: OperatorWorkflowReader = {
+      ...operatorReader,
+      async getReportingCoverage(input) {
+        return {
+          cycleKey: input.cycleKey ?? null,
+          publicReports: 0,
+          userReports: 3,
+          founderReports: 0,
+          operatorReports: 1,
+          artifactCount: 0,
+        }
+      },
+    }
+    const result = await createRegistry().call("operator.reporting.coverage", { cycleKey: "2026-04" }, { auth, edge, projectMemberReader, operatorReader: gapReader })
+
+    expect(result.structuredContent).toMatchObject({
+      ok: true,
+      cycleKey: "2026-04",
+      counts: { publicReports: 0, userReports: 3, founderReports: 0, operatorReports: 1, artifactCount: 0 },
+      missingAudiences: ["public", "founder"],
+      warningStates: ["missing_report_audiences", "missing_report_artifacts"],
+      nextActions: [
+        "Publish or verify missing report audiences: public, founder.",
+        "Verify that report artifacts were generated and attached before treating coverage as complete.",
+      ],
+    })
+    expect(result.content[0]?.text).not.toContain("signedUrl")
+  })
+
+  it("returns safe reporting coverage errors when the read gateway fails", async () => {
+    const failingReader: OperatorWorkflowReader = {
+      ...operatorReader,
+      async getReportingCoverage() {
+        throw new Error("select artifact_body, signed_storage_url from private_report_table using service_role")
+      },
+    }
+    const result = await createRegistry().call("operator.reporting.coverage", { cycleKey: "2026-04" }, { auth, edge, projectMemberReader, operatorReader: failingReader })
+
+    expect(result).toMatchObject({ isError: true, errorCode: "workflow_read_failed" })
+    expect(result.content[0]?.text).toContain("temporarily unavailable")
+    expect(result.content[0]?.text).not.toContain("artifact_body")
+    expect(result.content[0]?.text).not.toContain("signed_storage_url")
+    expect(result.content[0]?.text).not.toContain("service_role")
   })
 
   it("returns no-action reconciliation guidance for empty queues", async () => {

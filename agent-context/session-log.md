@@ -1,3 +1,36 @@
+### session v152: Finalize operator reporting-coverage MCP tool
+- timestamp: 2026-05-06T19:52:17-0400
+- agent: **Codex (GPT-5)**
+- branch: **codex/mcp-roadmap-kickoff**
+- head: pending MCP-5.13 commit
+
+#### Objective
+Complete MCP-5.13 by making `operator.reporting.coverage` a structured, read-only, internal-operator reporting publication coverage tool.
+
+#### Actions Taken
+- Added title, read-only annotations, and output-schema metadata to `operator.reporting.coverage`.
+- Normalized coverage counts into a structured response with audience counts, missing audience gaps, artifact coverage warnings, and safe next-action hints.
+- Added safe protocol-visible errors for missing reader configuration and read-gateway failures without exposing raw backend exception details.
+- Added tests for metadata, operator success, non-operator authorization blocking before handler execution, invalid cycle filters, coverage gaps, and backend failure redaction.
+- Marked MCP-5.13 started in `agent-context/todo-mcp.md` and refreshed the MCP engineering doc.
+
+#### Tests and Validation Notes
+- `pnpm mcp:test` passed: 4 files, 62 tests.
+- `deno cache --config supabase/functions/deno.json supabase/functions/mcp/index.ts` passed.
+- `pnpm lint` passed.
+- `pnpm typecheck` passed.
+- `pnpm test` passed: 76 files, 343 tests.
+- `pnpm build` passed.
+- `pnpm dlx node@22.22.1 /opt/homebrew/bin/pnpm check` passed.
+
+#### Reflections
+- This completes the current concrete MCP-5 operator read tranche without exposing report artifact bodies, signed URLs, or private storage details.
+
+#### Suggested Next Steps
+- Pause before candidate MCP tools unless the next source Edge Function is ready; otherwise prepare this MCP tranche for review.
+
+---
+
 ### session v151: Finalize operator reconciliation-visibility MCP tool
 - timestamp: 2026-05-06T19:21:32-0400
 - agent: **Codex (GPT-5)**

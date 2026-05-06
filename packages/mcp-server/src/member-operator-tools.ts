@@ -3,6 +3,7 @@ import type {
   OperatorCycleEvent,
   OperatorCycleStatus,
   OperatorReconciliationVisibility,
+  OperatorReportingCoverage,
   ProjectMemberReportingStatus,
 } from "./member-operator-readers.ts"
 import type { McpToolRegistry } from "./tools.ts"
@@ -84,6 +85,44 @@ function deriveReconciliationHealth(input: OperatorReconciliationVisibility) {
   return {
     counts: input,
     openQueueCount,
+    warningStates,
+    nextActions,
+  }
+}
+
+function deriveReportingCoverage(input: OperatorReportingCoverage) {
+  const counts = {
+    publicReports: input.publicReports,
+    userReports: input.userReports,
+    founderReports: input.founderReports,
+    operatorReports: input.operatorReports,
+    artifactCount: input.artifactCount,
+  }
+  const missingAudiences = [
+    ...(input.publicReports === 0 ? ["public"] : []),
+    ...(input.userReports === 0 ? ["user"] : []),
+    ...(input.founderReports === 0 ? ["founder"] : []),
+    ...(input.operatorReports === 0 ? ["operator"] : []),
+  ]
+  const warningStates: string[] = []
+  const nextActions: string[] = []
+
+  if (missingAudiences.length > 0) {
+    warningStates.push("missing_report_audiences")
+    nextActions.push(`Publish or verify missing report audiences: ${missingAudiences.join(", ")}.`)
+  }
+  if (input.artifactCount === 0) {
+    warningStates.push("missing_report_artifacts")
+    nextActions.push("Verify that report artifacts were generated and attached before treating coverage as complete.")
+  }
+  if (warningStates.length === 0) {
+    nextActions.push("Reporting coverage is complete for the available audience counts.")
+  }
+
+  return {
+    cycleKey: input.cycleKey,
+    counts,
+    missingAudiences,
     warningStates,
     nextActions,
   }
@@ -313,7 +352,13 @@ export function registerProjectMemberAndOperatorMcpTools(registry: McpToolRegist
   registry.register({
     definition: {
       name: "operator.reporting.coverage",
+      title: "Read Operator Reporting Coverage",
       description: "Read monthly report publication coverage counts for internal operators.",
+      annotations: {
+        readOnlyHint: true,
+        destructiveHint: false,
+        openWorldHint: false,
+      },
       inputSchema: {
         type: "object",
         properties: {
@@ -321,10 +366,37 @@ export function registerProjectMemberAndOperatorMcpTools(registry: McpToolRegist
         },
         additionalProperties: false,
       },
+      outputSchema: {
+        type: "object",
+        properties: {
+          ok: { type: "boolean" },
+          cycleKey: { type: "string" },
+          counts: { type: "object" },
+          missingAudiences: { type: "array" },
+          warningStates: { type: "array" },
+          nextActions: { type: "array" },
+        },
+        required: ["ok", "cycleKey", "counts", "missingAudiences", "warningStates", "nextActions"],
+        additionalProperties: false,
+      },
     },
     async handler(input, context) {
-      if (!context.operatorReader) return errorResult("Operator workflow reader is not configured.")
-      return jsonTextResult(await context.operatorReader.getReportingCoverage({ cycleKey: readOptionalString(input, "cycleKey") }, context.auth))
+      if (!context.operatorReader) {
+        return { ...errorResult("Operator workflow reader is not configured."), errorCode: "reader_not_configured" }
+      }
+      try {
+        return jsonTextResult({
+          ok: true,
+          ...deriveReportingCoverage(
+            await context.operatorReader.getReportingCoverage({ cycleKey: readOptionalString(input, "cycleKey") }, context.auth),
+          ),
+        })
+      } catch {
+        return {
+          ...errorResult("Operator reporting coverage is temporarily unavailable."),
+          errorCode: "workflow_read_failed",
+        }
+      }
     },
   })
 }
