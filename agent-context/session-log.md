@@ -1,3 +1,38 @@
+### session v143: Finalize founder project listing MCP tool
+- timestamp: 2026-05-06T17:36:18-0400
+- agent: **Codex (GPT-5)**
+- branch: **codex/mcp-roadmap-kickoff**
+- head: pending MCP-5.4 commit
+
+#### Objective
+Complete MCP-5.4 by making `founder.projects.list` a structured, read-only, safe founder/project-member project index.
+
+#### Actions Taken
+- Added title, read-only annotations, and output-schema metadata to `founder.projects.list`.
+- Normalized founder project list results into `{ ok, count, projects, emptyState? }` structured output.
+- Preserved compact project summaries with id, slug, name, setup status when available, and next-action hints when available.
+- Added safe protocol-visible errors for missing reader configuration and workflow-read failures without exposing raw backend exception details.
+- Added tests for metadata, structured output, no-token output, empty state, safe reader failure, and malformed input rejection.
+- Marked MCP-5.4 complete in `agent-context/todo-mcp.md` and refreshed the MCP engineering doc.
+
+#### Tests and Validation Notes
+- `pnpm mcp:test` passed: 4 files, 34 tests.
+- `deno cache --config supabase/functions/deno.json supabase/functions/mcp/index.ts` passed.
+- `pnpm typecheck` passed.
+- An initial `pnpm check` run stalled during Vitest with no output and was stopped; rerunning the gates separately showed the code path was healthy.
+- `pnpm lint` passed.
+- `pnpm test` passed: 76 files, 315 tests.
+- `pnpm build` passed.
+- `pnpm dlx node@22.22.1 /opt/homebrew/bin/pnpm check` passed.
+
+#### Reflections
+- This keeps the first real workflow read useful for agents without making the MCP layer responsible for project membership logic; ownership still lives in `mcp-workflow-read`.
+
+#### Suggested Next Steps
+- Start MCP-5.5 by finalizing `founder.project.cycle_status` with structured output and safe warning/error handling.
+
+---
+
 ### session v142: Constrain MCP generic Edge command bridge
 - timestamp: 2026-05-06T09:36:50-0400
 - agent: **Codex (GPT-5)**

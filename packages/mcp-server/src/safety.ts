@@ -126,6 +126,9 @@ function validateProperty(value: unknown, property: McpToolInputProperty, path: 
     return typeof value === "boolean" ? { ok: true } : { ok: false, code: "invalid_payload", message: `${path} must be a boolean.` }
   }
   if (property.type === "object") return validateObject(value, property, path, depth)
+  if (property.type === "array") {
+    return Array.isArray(value) ? validateUnknown(value, path, depth) : { ok: false, code: "invalid_payload", message: `${path} must be an array.` }
+  }
 
   return validateUnknown(value, path, depth)
 }

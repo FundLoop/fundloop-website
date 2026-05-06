@@ -159,7 +159,7 @@ Session 38 registered the base tools, and Session MCP-5.2 finalized health as th
 
 Session 39 added the first explicit founder tools:
 
-- `founder.projects.list`
+- `founder.projects.list`: read-only, annotated, structured founder/project-member project index with compact project summaries, setup status when available, and safe empty/error states.
 - `founder.project.cycle_status`
 - `founder.project.crypto_route.create`
 - `founder.project.crypto_route.update`

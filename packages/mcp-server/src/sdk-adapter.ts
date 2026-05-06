@@ -40,6 +40,7 @@ function zodForProperty(property: McpToolInputProperty) {
   }
   if (property.type === "boolean") return z.boolean()
   if (property.type === "object") return z.record(z.string(), z.unknown())
+  if (property.type === "array") return z.array(z.unknown())
   return z.unknown()
 }
 

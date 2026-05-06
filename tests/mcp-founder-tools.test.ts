@@ -20,7 +20,7 @@ const auth = {
 
 const founderReader: FounderWorkflowReader = {
   async listManagedProjects() {
-    return [{ id: 7, slug: "civic-mesh", name: "Civic Mesh" }]
+    return [{ id: 7, slug: "civic-mesh", name: "Civic Mesh", setupStatus: "ready", nextActions: ["Review cycle status"] }]
   },
   async getProjectCycleStatus(input) {
     return {
@@ -49,7 +49,8 @@ function createRegistry() {
 
 describe("founder MCP tools", () => {
   it("registers founder workflow tools", () => {
-    expect(createRegistry().list().map((tool) => tool.name)).toEqual(
+    const tools = createRegistry().list()
+    expect(tools.map((tool) => tool.name)).toEqual(
       expect.arrayContaining([
         "founder.projects.list",
         "founder.project.cycle_status",
@@ -58,6 +59,13 @@ describe("founder MCP tools", () => {
         "founder.project.onchain_receipt.record",
       ]),
     )
+    expect(tools.find((tool) => tool.name === "founder.projects.list")).toMatchObject({
+      title: "List Founder Projects",
+      annotations: { readOnlyHint: true, destructiveHint: false, openWorldHint: false },
+      outputSchema: expect.objectContaining({
+        required: expect.arrayContaining(["ok", "count", "projects"]),
+      }),
+    })
   })
 
   it("reads managed projects and project cycle status through the founder reader boundary", async () => {
@@ -66,6 +74,20 @@ describe("founder MCP tools", () => {
 
     const projects = await registry.call("founder.projects.list", {}, context)
     expect(projects.content[0]?.text).toContain("civic-mesh")
+    expect(projects.structuredContent).toMatchObject({
+      ok: true,
+      count: 1,
+      projects: [
+        {
+          id: 7,
+          slug: "civic-mesh",
+          name: "Civic Mesh",
+          setupStatus: "ready",
+          nextActions: ["Review cycle status"],
+        },
+      ],
+    })
+    expect(projects.content[0]?.text).not.toContain("token")
 
     const cycle = await registry.call("founder.project.cycle_status", { projectSlug: "civic-mesh", cycleKey: "2026-04" }, context)
     expect(cycle.content[0]?.text).toContain("locked")
@@ -103,7 +125,46 @@ describe("founder MCP tools", () => {
   it("returns a protocol-visible error when founder reads are not configured", async () => {
     const result = await createRegistry().call("founder.projects.list", {}, { auth, edge: createEdgeClient([]) })
 
-    expect(result.isError).toBe(true)
+    expect(result).toMatchObject({ isError: true, errorCode: "reader_not_configured" })
     expect(result.content[0]?.text).toContain("not configured")
+  })
+
+  it("returns a calm empty state when no managed projects are visible", async () => {
+    const emptyReader: FounderWorkflowReader = {
+      ...founderReader,
+      async listManagedProjects() {
+        return []
+      },
+    }
+    const result = await createRegistry().call("founder.projects.list", {}, { auth, edge: createEdgeClient([]), founderReader: emptyReader })
+
+    expect(result.structuredContent).toMatchObject({
+      ok: true,
+      count: 0,
+      projects: [],
+      emptyState: "No managed projects are available for this actor.",
+    })
+  })
+
+  it("returns a safe error when the founder project reader fails", async () => {
+    const failingReader: FounderWorkflowReader = {
+      ...founderReader,
+      async listManagedProjects() {
+        throw new Error("select * from private_table with service_role_key")
+      },
+    }
+    const result = await createRegistry().call("founder.projects.list", {}, { auth, edge: createEdgeClient([]), founderReader: failingReader })
+
+    expect(result).toMatchObject({ isError: true, errorCode: "workflow_read_failed" })
+    expect(result.content[0]?.text).toContain("temporarily unavailable")
+    expect(result.content[0]?.text).not.toContain("private_table")
+    expect(result.content[0]?.text).not.toContain("service_role")
+  })
+
+  it("rejects malformed founder project list input before the reader runs", async () => {
+    const result = await createRegistry().call("founder.projects.list", { unexpected: true }, { auth, edge: createEdgeClient([]), founderReader })
+
+    expect(result).toMatchObject({ isError: true, errorCode: "invalid_payload" })
+    expect(result.content[0]?.text).toContain("unexpected")
   })
 })

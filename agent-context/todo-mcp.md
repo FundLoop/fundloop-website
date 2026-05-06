@@ -381,12 +381,12 @@ Keep `fundloop.edge_command.invoke` as a narrow transitional bridge, not a perma
 
 ### MCP-5.4. Finalize `founder.projects.list`
 
-- Status: Not started
-- Timestamp started: TBD
-- Head when starting: TBD
-- Timestamp completed: TBD
-- Feature branch(es): TBD
-- Session-log reference(s): TBD
+- Status: Complete
+- Timestamp started: 2026-05-06T17:36:18-0400
+- Head when starting: 9fe1bd3
+- Timestamp completed: 2026-05-06T17:41:27-0400
+- Feature branch(es): codex/mcp-roadmap-kickoff
+- Session-log reference(s): session v143
 
 Finalize the founder project listing tool as a compact read-only workspace index for founders and project members. It should call the existing `mcp-workflow-read` operation, return only projects visible to the authenticated actor, and provide stable summaries with project id, slug, name, setup/status cues, and next-action hints where already available. Add read-only annotations, structured output, stable error codes, and tests proving authenticated users only receive scoped projects, no-project users get a calm empty state, and reader failures return protocol-visible errors without stack traces or raw Supabase payloads.
 

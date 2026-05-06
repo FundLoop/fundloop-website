@@ -6,6 +6,8 @@ export type FounderManagedProjectSummary = {
   id: number
   slug: string | null
   name: string
+  setupStatus?: string | null
+  nextActions?: string[]
 }
 
 export type FounderProjectCycleStatus = {

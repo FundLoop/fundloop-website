@@ -23,16 +23,56 @@ export function registerFounderMcpTools(registry: McpToolRegistry) {
   registry.register({
     definition: {
       name: "founder.projects.list",
+      title: "List Founder Projects",
       description: "List projects managed by the authenticated founder or project admin.",
+      annotations: {
+        readOnlyHint: true,
+        destructiveHint: false,
+        openWorldHint: false,
+      },
       inputSchema: {
         type: "object",
         properties: {},
         additionalProperties: false,
       },
+      outputSchema: {
+        type: "object",
+        properties: {
+          ok: { type: "boolean" },
+          count: { type: "number", integer: true, minimum: 0 },
+          projects: { type: "array" },
+          emptyState: { type: "string", maxLength: 240 },
+        },
+        required: ["ok", "count", "projects"],
+        additionalProperties: false,
+      },
     },
     async handler(_input, context) {
-      if (!context.founderReader) return errorResult("Founder workflow reader is not configured.")
-      return jsonTextResult(await context.founderReader.listManagedProjects(context.auth))
+      if (!context.founderReader) {
+        return { ...errorResult("Founder workflow reader is not configured."), errorCode: "reader_not_configured" }
+      }
+
+      try {
+        const projects = (await context.founderReader.listManagedProjects(context.auth)).map((project) => ({
+          id: project.id,
+          slug: project.slug,
+          name: project.name,
+          setupStatus: project.setupStatus ?? null,
+          nextActions: project.nextActions ?? [],
+        }))
+
+        return jsonTextResult({
+          ok: true,
+          count: projects.length,
+          projects,
+          ...(projects.length === 0 ? { emptyState: "No managed projects are available for this actor." } : {}),
+        })
+      } catch {
+        return {
+          ...errorResult("Founder project list is temporarily unavailable."),
+          errorCode: "workflow_read_failed",
+        }
+      }
     },
   })
 
