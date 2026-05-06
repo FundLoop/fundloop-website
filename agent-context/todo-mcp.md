@@ -414,12 +414,12 @@ Finalize the founder crypto-route creation tool as a mutating project-admin oper
 
 ### MCP-5.7. Finalize `founder.project.crypto_route.update`
 
-- Status: Not started
-- Timestamp started: TBD
-- Head when starting: TBD
-- Timestamp completed: TBD
-- Feature branch(es): TBD
-- Session-log reference(s): TBD
+- Status: Complete
+- Timestamp started: 2026-05-06T18:02:23-0400
+- Head when starting: 9788902
+- Timestamp completed: 2026-05-06T18:05:17-0400
+- Feature branch(es): codex/mcp-roadmap-kickoff
+- Session-log reference(s): session v146
 
 Finalize the founder crypto-route update tool as a mutating project-admin operation backed only by the typed `project-crypto-route-update` Edge Function. Require valid `projectSlug` and `paymentMethodId`, keep updates limited to supported mutable fields, and preserve the existing backend rules for default-route safety and ownership. Add write annotations, structured output, stable errors, and tests for success, missing route, disabled/default conflicts, malformed payloads, forbidden projects, and no handler execution when MCP validation fails. Do not expand this into move/enable/disable variants unless the catalog and roadmap explicitly add separate tools.
 

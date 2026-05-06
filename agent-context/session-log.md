@@ -1,3 +1,36 @@
+### session v146: Finalize founder crypto-route update MCP tool
+- timestamp: 2026-05-06T18:02:23-0400
+- agent: **Codex (GPT-5)**
+- branch: **codex/mcp-roadmap-kickoff**
+- head: pending MCP-5.7 commit
+
+#### Objective
+Complete MCP-5.7 by making `founder.project.crypto_route.update` a fully annotated founder write tool backed by the typed Edge command contract.
+
+#### Actions Taken
+- Added title, write-oriented annotations, and output-schema metadata to `founder.project.crypto_route.update`.
+- Tightened the MCP input schema to match the canonical `project-crypto-route-update` Edge contract, including curated route references and explicit default-state input.
+- Reused the shared Edge-command tool result helper so update successes and failures return stable structured envelopes.
+- Added tests for update metadata, successful structured Edge envelope output, malformed payload rejection before dispatch, and stable backend failure propagation.
+- Marked MCP-5.7 started in `agent-context/todo-mcp.md` and refreshed the MCP engineering doc.
+
+#### Tests and Validation Notes
+- `pnpm mcp:test` passed: 4 files, 41 tests.
+- `deno cache --config supabase/functions/deno.json supabase/functions/mcp/index.ts` passed.
+- `pnpm lint` passed.
+- `pnpm typecheck` passed.
+- `pnpm build` passed.
+- An initial `pnpm test` run under local Node 25 had two unrelated 5-second UI test timeouts; rerunning `pnpm test` passed: 76 files, 322 tests.
+- `pnpm dlx node@22.22.1 /opt/homebrew/bin/pnpm check` passed.
+
+#### Reflections
+- Aligning the MCP schema with the real Edge contract keeps agents from treating route updates as a partial patch API when the backend currently expects a full curated-route update.
+
+#### Suggested Next Steps
+- Continue with MCP-5.8 by applying the same write-tool pattern to `founder.project.onchain_receipt.record`.
+
+---
+
 ### session v145: Finalize founder crypto-route create MCP tool
 - timestamp: 2026-05-06T17:54:46-0400
 - agent: **Codex (GPT-5)**

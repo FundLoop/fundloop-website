@@ -216,21 +216,40 @@ export function registerFounderMcpTools(registry: McpToolRegistry) {
   registry.register({
     definition: {
       name: "founder.project.crypto_route.update",
+      title: "Update Founder Crypto Route",
       description: "Update a project crypto payment route through the canonical Edge Function command.",
+      annotations: {
+        readOnlyHint: false,
+        destructiveHint: false,
+        openWorldHint: false,
+      },
       inputSchema: {
         type: "object",
         properties: {
           projectSlug: { type: "string", format: "slug", minLength: 1, maxLength: 80 },
           paymentMethodId: { type: "number", integer: true, minimum: 1, maximum: 2_147_483_647 },
+          chainId: { type: "number", integer: true, minimum: 1, maximum: 2_147_483_647 },
+          chainAssetId: { type: "number", integer: true, minimum: 1, maximum: 2_147_483_647 },
+          intakeContractId: { type: "number", integer: true, minimum: 1, maximum: 2_147_483_647 },
           label: { type: "string", maxLength: 80 },
           isDefault: { type: "boolean" },
         },
-        required: ["projectSlug", "paymentMethodId"],
+        required: ["projectSlug", "paymentMethodId", "chainId", "chainAssetId", "intakeContractId", "isDefault"],
+        additionalProperties: false,
+      },
+      outputSchema: {
+        type: "object",
+        properties: {
+          ok: { type: "boolean" },
+          data: { type: "object" },
+          error: { type: "object" },
+        },
+        required: ["ok"],
         additionalProperties: false,
       },
     },
     async handler(input, context) {
-      return jsonTextResult(await context.edge.invoke(PROJECT_CRYPTO_ROUTE_UPDATE_FUNCTION, input, context.auth))
+      return edgeCommandToolResult(context, PROJECT_CRYPTO_ROUTE_UPDATE_FUNCTION, input)
     },
   })
 

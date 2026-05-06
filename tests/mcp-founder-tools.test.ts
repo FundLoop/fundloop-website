@@ -89,6 +89,16 @@ describe("founder MCP tools", () => {
         required: expect.arrayContaining(["ok"]),
       }),
     })
+    expect(tools.find((tool) => tool.name === "founder.project.crypto_route.update")).toMatchObject({
+      title: "Update Founder Crypto Route",
+      annotations: { readOnlyHint: false, destructiveHint: false, openWorldHint: false },
+      inputSchema: expect.objectContaining({
+        required: expect.arrayContaining(["projectSlug", "paymentMethodId", "chainId", "chainAssetId", "intakeContractId", "isDefault"]),
+      }),
+      outputSchema: expect.objectContaining({
+        required: expect.arrayContaining(["ok"]),
+      }),
+    })
   })
 
   it("reads managed projects and project cycle status through the founder reader boundary", async () => {
@@ -135,9 +145,17 @@ describe("founder MCP tools", () => {
       { projectSlug: "civic-mesh", chainId: 1, chainAssetId: 2, intakeContractId: 3 },
       context,
     )
-    await registry.call(
+    const updateResult = await registry.call(
       "founder.project.crypto_route.update",
-      { projectSlug: "civic-mesh", paymentMethodId: 10, label: "Main route" },
+      {
+        projectSlug: "civic-mesh",
+        paymentMethodId: 10,
+        chainId: 1,
+        chainAssetId: 2,
+        intakeContractId: 3,
+        label: "Main route",
+        isDefault: true,
+      },
       context,
     )
     await registry.call(
@@ -152,6 +170,7 @@ describe("founder MCP tools", () => {
       PROJECT_ONCHAIN_PAYMENT_SUBMISSION_RECORD_FUNCTION,
     ])
     expect(createResult.structuredContent).toMatchObject({ ok: true, data: { accepted: true } })
+    expect(updateResult.structuredContent).toMatchObject({ ok: true, data: { accepted: true } })
   })
 
   it("rejects malformed crypto route create input before dispatch", async () => {
@@ -195,6 +214,57 @@ describe("founder MCP tools", () => {
       structuredContent: { ok: false, error: { code: "duplicate_route" } },
     })
     expect(result.content[0]?.text).toContain("already exists")
+  })
+
+  it("rejects malformed crypto route update input before dispatch", async () => {
+    const calls: Array<{ functionName: string; input: unknown }> = []
+    const registry = createRegistry()
+    const context = { auth, edge: createEdgeClient(calls), founderReader }
+
+    const missingReference = await registry.call(
+      "founder.project.crypto_route.update",
+      { projectSlug: "civic-mesh", paymentMethodId: 10, chainId: 1, chainAssetId: 2, isDefault: true },
+      context,
+    )
+    const invalidDefault = await registry.call(
+      "founder.project.crypto_route.update",
+      { projectSlug: "civic-mesh", paymentMethodId: 10, chainId: 1, chainAssetId: 2, intakeContractId: 3, isDefault: "yes" },
+      context,
+    )
+
+    expect(missingReference).toMatchObject({ isError: true, errorCode: "invalid_payload" })
+    expect(invalidDefault).toMatchObject({ isError: true, errorCode: "invalid_payload" })
+    expect(calls).toHaveLength(0)
+  })
+
+  it("returns stable errors when crypto route update is rejected by the Edge command", async () => {
+    const calls: Array<{ functionName: string; input: unknown }> = []
+    const registry = createRegistry()
+    const result = await registry.call(
+      "founder.project.crypto_route.update",
+      {
+        projectSlug: "civic-mesh",
+        paymentMethodId: 10,
+        chainId: 1,
+        chainAssetId: 2,
+        intakeContractId: 3,
+        label: "Main route",
+        isDefault: false,
+      },
+      {
+        auth,
+        edge: createFailingEdgeClient(calls, "route_not_found", "Payment route was not found."),
+        founderReader,
+      },
+    )
+
+    expect(calls).toHaveLength(1)
+    expect(result).toMatchObject({
+      isError: true,
+      errorCode: "route_not_found",
+      structuredContent: { ok: false, error: { code: "route_not_found" } },
+    })
+    expect(result.content[0]?.text).toContain("not found")
   })
 
   it("returns a protocol-visible error when founder reads are not configured", async () => {
