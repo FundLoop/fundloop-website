@@ -66,6 +66,27 @@ describe("MCP SDK adapter", () => {
     })
   })
 
+  it("registers the generic Edge command bridge with explicit non-read annotations", () => {
+    const registry = createBaseMcpToolRegistry()
+    const registerTool = vi.fn()
+    registerRegistryToolsWithSdkServer({ registerTool }, registry, { auth, edge })
+
+    expect(registerTool).toHaveBeenCalledWith(
+      "fundloop.edge_command.invoke",
+      expect.objectContaining({
+        title: "FundLoop Edge Command Invoke",
+        annotations: {
+          readOnlyHint: false,
+          destructiveHint: false,
+          openWorldHint: false,
+        },
+        inputSchema: expect.objectContaining({ safeParse: expect.any(Function) }),
+        outputSchema: expect.objectContaining({ safeParse: expect.any(Function) }),
+      }),
+      expect.any(Function),
+    )
+  })
+
   it("requires bearer auth for remote MCP requests without changing stdio env auth", () => {
     expect(createRemoteMcpAuthContext(null)).toMatchObject({
       ok: false,

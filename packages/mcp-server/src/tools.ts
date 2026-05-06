@@ -124,7 +124,13 @@ export function createBaseMcpToolRegistry(options: BaseMcpToolRegistryOptions = 
   registry.register({
     definition: {
       name: "fundloop.edge_command.invoke",
+      title: "FundLoop Edge Command Invoke",
       description: "Invoke an allowlisted FundLoop Edge Function command through the shared typed command envelope.",
+      annotations: {
+        readOnlyHint: false,
+        destructiveHint: false,
+        openWorldHint: false,
+      },
       inputSchema: {
         type: "object",
         properties: {
@@ -134,15 +140,28 @@ export function createBaseMcpToolRegistry(options: BaseMcpToolRegistryOptions = 
         required: ["functionName"],
         additionalProperties: false,
       },
+      outputSchema: {
+        type: "object",
+        properties: {
+          ok: { type: "boolean" },
+          data: { type: "object" },
+          error: { type: "object" },
+        },
+        required: ["ok"],
+        additionalProperties: false,
+      },
     },
     async handler(input, context) {
       if (!isRecord(input) || typeof input.functionName !== "string" || !input.functionName.trim()) {
-        return errorResult("functionName is required.")
+        return { ...errorResult("functionName is required."), errorCode: "invalid_payload" }
       }
 
       const functionName = input.functionName.trim()
       if (!allowedFunctionNames.has(functionName)) {
-        return errorResult(`Edge Function ${functionName} is not allowlisted for this MCP server.`)
+        return {
+          ...errorResult(`Edge Function ${functionName} is not allowlisted for this MCP server.`),
+          errorCode: "not_allowlisted",
+        }
       }
 
       const result = await context.edge.invoke(functionName, isRecord(input.input) ? input.input : {}, context.auth)

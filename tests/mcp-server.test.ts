@@ -71,7 +71,16 @@ describe("FundLoop MCP server skeleton", () => {
     )
 
     expect(result.isError).toBe(true)
+    expect(result.errorCode).toBe("not_allowlisted")
     expect(result.content[0]?.text).toContain("not allowlisted")
+  })
+
+  it("rejects malformed generic Edge Function names before allowlist checks", async () => {
+    const registry = createBaseMcpToolRegistry({ allowedFunctionNames: ["project-crypto-route-create"] })
+    const result = await registry.call("fundloop.edge_command.invoke", { functionName: "../project-crypto-route-create" }, { auth, edge })
+
+    expect(result).toMatchObject({ isError: true, errorCode: "invalid_payload" })
+    expect(result.content[0]?.text).toContain("invalid format")
   })
 
   it("rejects unknown fields before tool handlers run", async () => {

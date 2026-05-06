@@ -370,12 +370,12 @@ Finish `fundloop.health` as the canonical remote/readiness smoke tool. Keep it r
 
 ### MCP-5.3. Harden and constrain `fundloop.edge_command.invoke`
 
-- Status: Not started
-- Timestamp started: TBD
-- Head when starting: TBD
-- Timestamp completed: TBD
-- Feature branch(es): TBD
-- Session-log reference(s): TBD
+- Status: Complete
+- Timestamp started: 2026-05-06T09:36:50-0400
+- Head when starting: 9dd9e6d
+- Timestamp completed: 2026-05-06T09:39:15-0400
+- Feature branch(es): codex/mcp-roadmap-kickoff
+- Session-log reference(s): session v142
 
 Keep `fundloop.edge_command.invoke` as a narrow transitional bridge, not a permanent broad backend portal. Require authenticated actor context, a configured allowlist, strict function-name validation, and stable Edge command envelopes. Preserve the MCP-3 operator/destructive command block for non-operators and extend tests so allowlisted founder commands succeed while unallowlisted, malformed, oversized, and operator/destructive names fail before dispatch. Add explicit annotations reflecting that the tool can mutate state depending on the target command, document that product-specific tools are preferred, and avoid adding generic payload freedoms beyond the current bounded object contract.
 

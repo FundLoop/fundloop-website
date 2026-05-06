@@ -1,3 +1,34 @@
+### session v142: Constrain MCP generic Edge command bridge
+- timestamp: 2026-05-06T09:36:50-0400
+- agent: **Codex (GPT-5)**
+- branch: **codex/mcp-roadmap-kickoff**
+- head: pending MCP-5.3 commit
+
+#### Objective
+Complete MCP-5.3 by making `fundloop.edge_command.invoke` explicit, constrained, and clearly transitional instead of a broad backend bridge.
+
+#### Actions Taken
+- Added tool title, annotations, and output-schema metadata for `fundloop.edge_command.invoke`.
+- Marked the bridge as non-read-only, non-destructive by itself, and non-open-world because it only calls configured Supabase Edge Functions.
+- Added stable `not_allowlisted` and `invalid_payload` error codes for bridge-level failures.
+- Added tests for SDK registration annotations, malformed function-name rejection, and stable allowlist failure codes.
+- Marked MCP-5.3 complete in `agent-context/todo-mcp.md` and refreshed the MCP engineering doc.
+
+#### Tests and Validation Notes
+- `pnpm mcp:test` passed: 4 files, 31 tests.
+- `deno cache --config supabase/functions/deno.json supabase/functions/mcp/index.ts` passed.
+- `pnpm typecheck` passed.
+- `pnpm check` passed.
+- `pnpm dlx node@22.22.1 /opt/homebrew/bin/pnpm check` passed.
+
+#### Reflections
+- The generic bridge still has a job during integration, but the product-specific tools should remain the preferred path so agents do not learn backend implementation details as the interface.
+
+#### Suggested Next Steps
+- Start MCP-5.4 by finalizing `founder.projects.list` with structured output and read-only annotations.
+
+---
+
 ### session v141: Finalize MCP health tool contract
 - timestamp: 2026-05-06T09:31:13-0400
 - agent: **Codex (GPT-5)**
