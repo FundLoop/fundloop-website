@@ -52,7 +52,7 @@ Agents in this repo must optimize for:
 - Do not push feature work directly to `dev` or `main` unless the user explicitly instructs you to do so.
 - `agent-context/session-log.md` is a maintained repo artifact and must be updated for every commit.
 - At the start of a new session, inventory what is next from:
-  - `agent-context/todo.md` and any relevant `todo.md` files under feature folders
+  - the active roadmap in `agent-context/todo-mcp.md`, the archived `agent-context/todo-1-through-52.md` for historical context, and any relevant `todo.md` files under feature folders
   - larger planned work and implementation docs inside `docs/engineering/`
   - open GitHub issues when repo access is available
 

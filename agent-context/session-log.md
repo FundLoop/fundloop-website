@@ -1,3 +1,32 @@
+### session v136: Kick off MCP roadmap
+- timestamp: 2026-05-06T04:42:09-0400
+- agent: **Codex (GPT-5)**
+- branch: **codex/mcp-roadmap-kickoff**
+- head: pending MCP roadmap kickoff commit
+
+#### Objective
+Archive the completed Sessions 1-52 roadmap and start the MCP-focused roadmap with FundLoop-specific planning artifacts instead of a generic template.
+
+#### Actions Taken
+- Renamed `agent-context/todo.md` to `agent-context/todo-1-through-52.md` so the completed app/product roadmap remains available as historical context.
+- Updated `agent-context/README.md`, `AGENTS.md`, and long-lived engineering doc cross-links so agents now treat `agent-context/todo-mcp.md` as the active roadmap.
+- Customized `agent-context/todo-mcp.md` for FundLoop and marked MCP-0 and MCP-1 complete with branch, timestamp, and session-log metadata.
+- Added `docs/mcp/tool-catalog.md`, `docs/mcp/architecture.md`, and `docs/mcp/security-model.md` to define the current tool surface, target remote MCP architecture, and MCP security rules.
+- Linked the new MCP docs from `docs/engineering/README.md` and `docs/engineering/mcp.md`.
+
+#### Tests and Validation Notes
+- Reference scan for stale `agent-context/todo.md`, generic MCP placeholders, and `npx` MCP inspector usage returned no active matches in the updated roadmap/docs set.
+- `git diff --check` passed.
+- `pnpm mcp:smoke` passed, with the existing local Node 25 warning because the repo engine expects Node 22.
+
+#### Reflections
+- FundLoop already has a local stdio MCP package and workflow-read Edge gateway, so the next roadmap should not restart from a skeleton. The useful next work is production-safe remote MCP, auth, scopes, and publication discipline.
+
+#### Suggested Next Steps
+- Start MCP-2 by promoting or adding a Supabase Edge Function remote MCP endpoint while preserving the current stdio package as the local compatibility harness.
+
+---
+
 ### session v135: Address PR 41 automated review feedback
 - timestamp: 2026-05-05T19:46:00-0400
 - agent: **Codex (GPT-5)**

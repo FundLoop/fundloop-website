@@ -7,7 +7,8 @@ Related planning docs:
 - [Agent Context Index](../../agent-context/README.md)
 - [Backgrounder for Agents](./backgrounder-for-agents.md)
 - [Target-State Architecture](./target-state-architecture.md)
-- [TODO Roadmap](../../agent-context/todo.md)
+- [Archived Sessions 1-52 Roadmap](../../agent-context/todo-1-through-52.md)
+- [MCP TODO Roadmap](../../agent-context/todo-mcp.md)
 
 ## 1. What This Repo Is Today
 

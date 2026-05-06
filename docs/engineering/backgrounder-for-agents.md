@@ -5,7 +5,8 @@ Related planning docs:
 - [Agent Context Index](../../agent-context/README.md)
 - [Current-State Architecture](./current-state-architecture.md)
 - [Target-State Architecture](./target-state-architecture.md)
-- [TODO Roadmap](../../agent-context/todo.md)
+- [Archived Sessions 1-52 Roadmap](../../agent-context/todo-1-through-52.md)
+- [MCP TODO Roadmap](../../agent-context/todo-mcp.md)
 
 ## Purpose of this Document
 

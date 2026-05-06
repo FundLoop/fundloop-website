@@ -1,4 +1,4 @@
-# Read this first
+# FundLoop MCP Roadmap
 
 ## Recommended default architecture
 
@@ -23,31 +23,39 @@ Tool handlers should normally call the same Supabase Edge Function middleware or
 
 ## MCP-0. Initialize this document
 
-- Status: Not started
-- Timestamp started: TBD
-- Head when starting: TBD
-- Timestamp completed: TBD
-- Feature branch(es): TBD
-- Session-log reference(s): TBD
+- Status: Complete
+- Timestamp started: 2026-05-06T04:42:09-0400
+- Head when starting: c31e185
+- Timestamp completed: 2026-05-06T04:42:09-0400
+- Feature branch(es): codex/mcp-roadmap-kickoff
+- Session-log reference(s): session v136
 
-Below is a reusable, coding-agent-ready TODO template. It assumes each product already has a Supabase database, Supabase Edge Functions, a human UI, and engineering docs.
+This document is the FundLoop-specific MCP roadmap. The baseline product context is:
 
-* [ ] Initialize this document. Customize it for this repo by replacing placeholders like `{{PRODUCT_NAME}}`, `{{MCP_SERVER_NAME}}`, `{{BASE_URL}}`, `{{SUPABASE_PROJECT_REF}}`, `{{AUTH_MODE}}`, `{{TENANT_MODEL}}`, and `{{CONTACT_EMAIL}}` with relevant names, where it's warranted to do so.
+* [x] Product name: FundLoop.
+* [x] MCP server name: FundLoop MCP Server.
+* [x] Current local runtime: `packages/mcp-server` stdio package.
+* [x] Target remote runtime: Supabase Edge Function over Streamable HTTP.
+* [x] Local base URL: `http://127.0.0.1:54321`.
+* [x] Hosted base URL: the active Supabase project function URL for Preview or Production.
+* [x] Initial auth mode: Supabase JWT actor validation, with OAuth 2.1 deferred until third-party client onboarding is intentional.
+* [x] Tenant model: user-owned, project-scoped founder/member access, and internal-operator access for admin reads.
+* [x] Support path: internal FundLoop engineering/support operators through the normal repo and operations-runbook process.
 
 ---
 
 ## MCP-1. Discovery and design
 
-- Status: Not started
-- Timestamp started: TBD
-- Head when starting: TBD
-- Timestamp completed: TBD
-- Feature branch(es): TBD
-- Session-log reference(s): TBD
+- Status: Complete
+- Timestamp started: 2026-05-06T04:42:09-0400
+- Head when starting: c31e185
+- Timestamp completed: 2026-05-06T04:42:09-0400
+- Feature branch(es): codex/mcp-roadmap-kickoff
+- Session-log reference(s): session v136
 
-* [ ] Read the product’s engineering docs, API docs, database docs, auth docs, and existing Supabase Edge Function docs.
-* [ ] Identify the product’s core entities, workflows, and user roles.
-* [ ] Create `docs/mcp/tool-catalog.md` with a table for each proposed tool:
+* [x] Read the product’s engineering docs, API docs, database docs, auth docs, and existing Supabase Edge Function docs.
+* [x] Identify the product’s core entities, workflows, and user roles.
+* [x] Create `docs/mcp/tool-catalog.md` with a table for each proposed tool:
 
   * tool name
   * user intent
@@ -62,8 +70,8 @@ Below is a reusable, coding-agent-ready TODO template. It assumes each product a
   * audit log event
   * failure cases
 
-* [ ] Decide which capabilities should be MCP **tools**, **resources**, and **prompts**. MCP servers can expose tools, resources, and prompts; tools are callable actions, resources are contextual data, and prompts are reusable interaction templates. ([Model Context Protocol][5])
-* [ ] Create `docs/mcp/architecture.md` describing:
+* [x] Decide which capabilities should be MCP **tools**, **resources**, and **prompts**. MCP servers can expose tools, resources, and prompts; tools are callable actions, resources are contextual data, and prompts are reusable interaction templates. ([Model Context Protocol][5])
+* [x] Create `docs/mcp/architecture.md` describing:
 
   * transport: Streamable HTTP
   * runtime: Supabase Deno Edge Function
@@ -74,7 +82,7 @@ Below is a reusable, coding-agent-ready TODO template. It assumes each product a
   * deployment environments
   * publication plan
 
-* [ ] Create `docs/mcp/security-model.md` describing:
+* [x] Create `docs/mcp/security-model.md` describing:
 
   * authentication
   * authorization
@@ -87,15 +95,17 @@ Below is a reusable, coding-agent-ready TODO template. It assumes each product a
   * abuse handling
   * incident response contacts
 
-* [ ] If an MCP implementation had already been started, then update the language in todos below accordingly and as needed (e.g. update language from "create" to "modify").
-* [ ] Assess critically the repo readiness for MCP, and report out any suggested criteria or proposed gates prior to commencing work on the MCP functionality.
+* [x] If an MCP implementation had already been started, then update the language in todos below accordingly and as needed.
+* [x] Assess critically the repo readiness for MCP, and report out any suggested criteria or proposed gates prior to commencing work on the MCP functionality.
+
+Readiness assessment: FundLoop already has a useful local stdio MCP package, explicit founder/project-member/operator tools, and an `mcp-workflow-read` Edge Function gateway. The main gap is not another local skeleton; it is a production-safe remote MCP endpoint with validated auth, rate limits, publication metadata, and a tighter distinction between supported product tools and temporary generic command bridges.
 
 **Acceptance criteria**
 
-* [ ] `docs/mcp/tool-catalog.md` exists and has no vague tools like `run_action`, `query_database`, `call_api`, or `admin_tool`.
-* [ ] Every proposed tool maps to a real user/agent workflow.
-* [ ] Every proposed tool has an auth scope and tenant rule.
-* [ ] The design explicitly states which tools are read-only, mutating, destructive, or admin-level.
+* [x] `docs/mcp/tool-catalog.md` exists and has no vague tools like `run_action`, `query_database`, `call_api`, or `admin_tool`.
+* [x] Every proposed tool maps to a real user/agent workflow.
+* [x] Every proposed tool has an auth scope and tenant rule.
+* [x] The design explicitly states which tools are read-only, mutating, destructive, or admin-level.
 
 ---
 
@@ -108,15 +118,16 @@ Below is a reusable, coding-agent-ready TODO template. It assumes each product a
 - Feature branch(es): TBD
 - Session-log reference(s): TBD
 
-* [ ] Add a new Supabase Edge Function, preferably `supabase/functions/mcp/index.ts`, unless product conventions require another name.
+* [ ] Add or promote a Supabase Edge Function for remote MCP over Streamable HTTP, preferably `supabase/functions/mcp/index.ts`, unless product conventions require another name.
+* [ ] Keep the current `packages/mcp-server` stdio runtime as the local compatibility harness unless this session replaces it with a wrapper around the remote implementation.
 * [ ] Use an Edge-compatible MCP implementation:
 
   * preferred: official MCP TypeScript SDK with `WebStandardStreamableHTTPServerTransport`
   * acceptable: `mcp-lite` or `mcp-handler` if better suited to Supabase Edge Functions
-* [ ] Add routing for the product’s deployed function URL, for example:
+* [ ] Add routing for FundLoop deployed function URLs:
 
-  * local: `http://localhost:54321/functions/v1/mcp`
-  * production: `https://{{SUPABASE_PROJECT_REF}}.functions.supabase.co/mcp`
+  * local: `http://127.0.0.1:54321/functions/v1/mcp`
+  * preview/production: `https://<supabase-project-ref>.functions.supabase.co/mcp`
 * [ ] Add a simple `GET /health` or equivalent health endpoint that does not expose sensitive data.
 * [ ] Implement MCP initialization, capability negotiation, `tools/list`, and `tools/call`.
 * [ ] Ensure the server returns correct MCP/JSON-RPC responses over Streamable HTTP.
@@ -171,12 +182,11 @@ Below is a reusable, coding-agent-ready TODO template. It assumes each product a
 * [ ] Do not implement token passthrough to downstream services. MCP security guidance explicitly identifies token passthrough as a serious anti-pattern. ([Model Context Protocol][7])
 * [ ] Create a scope model, for example:
 
-  * `{{PRODUCT_NAME}}:read`
-  * `{{PRODUCT_NAME}}:search`
-  * `{{PRODUCT_NAME}}:create`
-  * `{{PRODUCT_NAME}}:update`
-  * `{{PRODUCT_NAME}}:delete`
-  * `{{PRODUCT_NAME}}:admin`
+  * `fundloop:read`
+  * `fundloop:search`
+  * `fundloop:create`
+  * `fundloop:update`
+  * `fundloop:admin`
 
 * [ ] Use least-privilege and progressive authorization. MCP security guidance recommends minimal scopes, avoiding wildcard scopes, and elevating permissions only when needed. ([Model Context Protocol][7])
 * [ ] Enforce authorization server-side for every tool call.
@@ -275,47 +285,48 @@ Create tools around product workflows, not implementation details.
 - Feature branch(es): TBD
 - Session-log reference(s): TBD
 
-* [ ] For each of the tools in `docs/mcp/tool-catalog.md` create a new sub-TODO, starting at 5.2, by copy-pasting the following suggested baseline tool pattern template:
+* [ ] For each of the tools in `docs/mcp/tool-catalog.md` create a new sub-TODO, starting at 5.2. Use the following FundLoop-oriented baseline pattern, replacing the example tool names with catalog entries as needed:
 
 ```template
 
-* [ ] `search_{{entity_plural}}`
+* [ ] `founder.projects.list`
 
   * read-only
-  * paginated
-  * filterable
-  * tenant-scoped
+  * project-scoped to the actor's managed projects
+  * returns compact summaries
 
-* [ ] `get_{{entity}}`
+* [ ] `founder.project.cycle_status`
 
   * read-only
-  * fetches one entity by ID/slug
-  * tenant-scoped
+  * fetches one project by slug
+  * founder/project-member scoped
 
-* [ ] `create_{{entity}}`
+* [ ] `founder.project.crypto_route.create`
 
   * mutating
   * idempotency key required
   * validates all required fields
 
-* [ ] `update_{{entity}}`
+* [ ] `founder.project.crypto_route.update`
 
   * mutating
-  * requires entity ID
+  * requires route ID and project slug
   * partial update schema
   * optimistic concurrency if available
 
-* [ ] `archive_{{entity}}` or `delete_{{entity}}`
+* [ ] `operator.cycle.lock`
 
-  * destructive
-  * only if product requirements justify it
+  * sensitive operator mutation
+  * only if product requirements and remote auth justify it
   * explicit confirmation required
 
-* [ ] `run_{{workflow}}`
+* [ ] `operator.reporting.coverage`
 
-  * for multi-step business workflows
-  * calls existing product workflow logic
+  * read-only operator workflow
+  * calls existing workflow/read-model logic
   * returns status and next steps
+
+```
 
 ### For each tool
 
@@ -497,16 +508,14 @@ curl -sS http://localhost:54321/functions/v1/mcp \
 curl -sS http://localhost:54321/functions/v1/mcp \
   -H "Content-Type: application/json" \
   -H "Accept: application/json, text/event-stream" \
-  -H "Authorization: Bearer {{LOCAL_TEST_TOKEN}}" \
+  -H "Authorization: Bearer $FUNDLOOP_MCP_LOCAL_TEST_TOKEN" \
   -d '{
     "jsonrpc": "2.0",
     "id": 3,
     "method": "tools/call",
     "params": {
-      "name": "{{TOOL_NAME}}",
-      "arguments": {
-        "{{ARG_NAME}}": "{{ARG_VALUE}}"
-      }
+      "name": "founder.projects.list",
+      "arguments": {}
     }
   }'
 ```
@@ -514,7 +523,7 @@ curl -sS http://localhost:54321/functions/v1/mcp \
 * [ ] Run the MCP Inspector:
 
 ```bash
-npx -y @modelcontextprotocol/inspector
+pnpm dlx @modelcontextprotocol/inspector
 ```
 
 The MCP Inspector is the official interactive tool for testing and debugging MCP servers, including listing tools/resources/prompts and testing tool calls. ([Model Context Protocol][9])
@@ -766,7 +775,7 @@ supabase functions deploy mcp
 Create a public MCP landing page first, for example:
 
 ```text
-{{BASE_URL}}/mcp
+https://<fundloop-web-base-url>/mcp
 ```
 
 It should include:

@@ -4,6 +4,13 @@ FundLoop's MCP server is the protocol-facing entry point for agents acting on be
 
 The server must not become a second backend. It should use the same typed Edge Function command contracts, read-model boundaries, authorization assumptions, and observability streams as the web app.
 
+The MCP-specific roadmap and design artifacts now live in:
+
+- `agent-context/todo-mcp.md` for active MCP session tracking.
+- `docs/mcp/tool-catalog.md` for current and candidate tool contracts.
+- `docs/mcp/architecture.md` for the target remote/runtime architecture.
+- `docs/mcp/security-model.md` for auth, authorization, data-safety, and threat-model rules.
+
 ## Package
 
 Session 38 introduced `packages/mcp-server` as a lightweight workspace package.

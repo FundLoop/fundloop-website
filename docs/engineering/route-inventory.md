@@ -8,7 +8,8 @@ Related planning docs:
 - [Current-State Architecture](./current-state-architecture.md)
 - [Target-State Architecture](./target-state-architecture.md)
 - [Information Architecture](./information-architecture.md)
-- [TODO Roadmap](../../agent-context/todo.md)
+- [Archived Sessions 1-52 Roadmap](../../agent-context/todo-1-through-52.md)
+- [MCP TODO Roadmap](../../agent-context/todo-mcp.md)
 
 This inventory covers every current `page.tsx` and `route.ts` surface under `app/`. Each entry records who the surface is for, its current state, the evidence that matters for planning, the intended disposition, the canonical future destination, and the roadmap session that should absorb the work.
 
