@@ -1,0 +1,924 @@
+# Read this first
+
+## Recommended default architecture
+
+Build a **remote MCP server over Streamable HTTP** as a Supabase Edge Function, with an optional local `stdio` wrapper only if the product needs local-client support. MCP supports `stdio` and Streamable HTTP transports, and remote servers are a natural fit for HTTP-based product APIs. Supabase’s current MCP guidance shows Edge Functions using the official MCP TypeScript SDK with `WebStandardStreamableHTTPServerTransport`, and also notes that `mcp-lite` / `mcp-handler` can work on the Edge Runtime. ([Model Context Protocol][1])
+
+For production, do **not** blindly copy the unauthenticated Supabase MCP quickstart. Supabase’s MCP guide currently says its example is for MCP servers that do not require authentication, and its local/deploy examples use `--no-verify-jwt`; authenticated product-control servers need explicit OAuth, JWT, or API-key validation inside the server or at a gateway. ([Supabase][2])
+
+Tool handlers should normally call the same Supabase Edge Function middleware or shared service layer that the Next.js UI uses. Do not let the MCP server become a backdoor that bypasses product business logic, tenant isolation, audit logging, RLS assumptions, or permission checks.
+
+## Non-negotiable implementation rules
+
+* Treat the MCP server as a **public product API surface**, not an internal dev helper.
+* Every tool must have explicit input schemas, output schemas, auth requirements, rate limits, and audit behavior.
+* Do not expose raw SQL, arbitrary URL fetchers, arbitrary filesystem access, shell execution, service-role keys, or generic “admin action” tools.
+* Do not map every backend endpoint into a tool. Create tools around clear user/agent intents, because Docker’s MCP guidance warns against simply exposing every API operation as a tool and recommends managing the “tool budget.” ([Docker][3])
+* All write/destructive tools must be idempotent or have idempotency keys, because model-driven clients may retry tool calls. OpenAI’s Apps SDK guidance also treats tool descriptors and handlers as the contract the model relies on. ([OpenAI Developers][4])
+* No secrets, API tokens, Supabase service keys, internal JWTs, private URLs, or privileged debug data may appear in MCP `content`, `structuredContent`, `_meta`, logs, or widget state. OpenAI’s Apps SDK guidance explicitly warns against embedding secrets in tool results or widget metadata. ([OpenAI Developers][4])
+
+---
+
+# MCP server capability TODOs
+
+## MCP-0. Initialize this document
+
+- Status: Not started
+- Timestamp started: TBD
+- Head when starting: TBD
+- Timestamp completed: TBD
+- Feature branch(es): TBD
+- Session-log reference(s): TBD
+
+Below is a reusable, coding-agent-ready TODO template. It assumes each product already has a Supabase database, Supabase Edge Functions, a human UI, and engineering docs.
+
+* [ ] Initialize this document. Customize it for this repo by replacing placeholders like `{{PRODUCT_NAME}}`, `{{MCP_SERVER_NAME}}`, `{{BASE_URL}}`, `{{SUPABASE_PROJECT_REF}}`, `{{AUTH_MODE}}`, `{{TENANT_MODEL}}`, and `{{CONTACT_EMAIL}}` with relevant names, where it's warranted to do so.
+
+---
+
+## MCP-1. Discovery and design
+
+- Status: Not started
+- Timestamp started: TBD
+- Head when starting: TBD
+- Timestamp completed: TBD
+- Feature branch(es): TBD
+- Session-log reference(s): TBD
+
+* [ ] Read the product’s engineering docs, API docs, database docs, auth docs, and existing Supabase Edge Function docs.
+* [ ] Identify the product’s core entities, workflows, and user roles.
+* [ ] Create `docs/mcp/tool-catalog.md` with a table for each proposed tool:
+
+  * tool name
+  * user intent
+  * entity or workflow touched
+  * read/write/destructive/admin classification
+  * required auth scope
+  * required tenant context
+  * input schema
+  * output schema
+  * source Edge Function or service method
+  * rate limit
+  * audit log event
+  * failure cases
+
+* [ ] Decide which capabilities should be MCP **tools**, **resources**, and **prompts**. MCP servers can expose tools, resources, and prompts; tools are callable actions, resources are contextual data, and prompts are reusable interaction templates. ([Model Context Protocol][5])
+* [ ] Create `docs/mcp/architecture.md` describing:
+
+  * transport: Streamable HTTP
+  * runtime: Supabase Deno Edge Function
+  * SDK/library: official MCP TypeScript SDK, `mcp-lite`, or another Edge-compatible MCP library
+  * auth mode
+  * tenant isolation model
+  * logging and monitoring
+  * deployment environments
+  * publication plan
+
+* [ ] Create `docs/mcp/security-model.md` describing:
+
+  * authentication
+  * authorization
+  * scope model
+  * tenant isolation
+  * data classification
+  * threat model
+  * rate limiting
+  * audit logging
+  * abuse handling
+  * incident response contacts
+
+* [ ] If an MCP implementation had already been started, then update the language in todos below accordingly and as needed (e.g. update language from "create" to "modify").
+* [ ] Assess critically the repo readiness for MCP, and report out any suggested criteria or proposed gates prior to commencing work on the MCP functionality.
+
+**Acceptance criteria**
+
+* [ ] `docs/mcp/tool-catalog.md` exists and has no vague tools like `run_action`, `query_database`, `call_api`, or `admin_tool`.
+* [ ] Every proposed tool maps to a real user/agent workflow.
+* [ ] Every proposed tool has an auth scope and tenant rule.
+* [ ] The design explicitly states which tools are read-only, mutating, destructive, or admin-level.
+
+---
+
+## MCP-2. Create the Supabase Edge Function MCP server
+
+- Status: Not started
+- Timestamp started: TBD
+- Head when starting: TBD
+- Timestamp completed: TBD
+- Feature branch(es): TBD
+- Session-log reference(s): TBD
+
+* [ ] Add a new Supabase Edge Function, preferably `supabase/functions/mcp/index.ts`, unless product conventions require another name.
+* [ ] Use an Edge-compatible MCP implementation:
+
+  * preferred: official MCP TypeScript SDK with `WebStandardStreamableHTTPServerTransport`
+  * acceptable: `mcp-lite` or `mcp-handler` if better suited to Supabase Edge Functions
+* [ ] Add routing for the product’s deployed function URL, for example:
+
+  * local: `http://localhost:54321/functions/v1/mcp`
+  * production: `https://{{SUPABASE_PROJECT_REF}}.functions.supabase.co/mcp`
+* [ ] Add a simple `GET /health` or equivalent health endpoint that does not expose sensitive data.
+* [ ] Implement MCP initialization, capability negotiation, `tools/list`, and `tools/call`.
+* [ ] Ensure the server returns correct MCP/JSON-RPC responses over Streamable HTTP.
+* [ ] For local unauthenticated development only, document when `supabase functions serve --no-verify-jwt mcp` is acceptable. For authenticated production, do not deploy in a way that bypasses auth unless the MCP handler itself fully validates credentials.
+* [ ] Add Deno tasks or package scripts:
+
+  * `mcp:dev`
+  * `mcp:test`
+  * `mcp:smoke`
+  * `mcp:inspect`
+  * `mcp:publish`
+* [ ] Ensure logs do not write protocol-breaking output to stdout for `stdio` mode. MCP’s transport docs allow logging to stderr for `stdio`, while JSON-RPC messages flow over stdin/stdout. ([Model Context Protocol][1])
+
+**Acceptance criteria**
+
+* [ ] `initialize` works locally.
+* [ ] `tools/list` returns the expected tool list.
+* [ ] At least one read-only tool works locally.
+* [ ] The server has no direct privileged database access unless explicitly justified in `docs/mcp/security-model.md`.
+* [ ] The server can run under Supabase local development.
+
+---
+
+## MCP-3. Authentication and authorization
+
+- Status: Not started
+- Timestamp started: TBD
+- Head when starting: TBD
+- Timestamp completed: TBD
+- Feature branch(es): TBD
+- Session-log reference(s): TBD
+
+* [ ] Decide the production auth mode:
+
+  * OAuth 2.1 for third-party remote clients
+  * Supabase JWT validation for first-party or workspace-bound clients
+  * signed API keys only for controlled internal integrations
+
+* [ ] If using OAuth, follow the MCP authorization spec:
+
+  * OAuth 2.1-compatible flow
+  * HTTPS-only auth endpoints
+  * PKCE
+  * bearer token validation
+  * issuer validation
+  * audience validation
+  * expiration validation
+  * scope validation
+  * dynamic client registration only if intentionally supported
+
+* [ ] Do not accept tokens issued for another audience. The MCP authorization spec says MCP servers must validate tokens for their own service and must not accept or pass through tokens intended for other services. ([Model Context Protocol][6])
+* [ ] Do not implement token passthrough to downstream services. MCP security guidance explicitly identifies token passthrough as a serious anti-pattern. ([Model Context Protocol][7])
+* [ ] Create a scope model, for example:
+
+  * `{{PRODUCT_NAME}}:read`
+  * `{{PRODUCT_NAME}}:search`
+  * `{{PRODUCT_NAME}}:create`
+  * `{{PRODUCT_NAME}}:update`
+  * `{{PRODUCT_NAME}}:delete`
+  * `{{PRODUCT_NAME}}:admin`
+
+* [ ] Use least-privilege and progressive authorization. MCP security guidance recommends minimal scopes, avoiding wildcard scopes, and elevating permissions only when needed. ([Model Context Protocol][7])
+* [ ] Enforce authorization server-side for every tool call.
+* [ ] Enforce tenant isolation server-side for every tool call.
+* [ ] For destructive/admin tools, require an explicit confirmation field in the input schema, such as:
+
+  * `confirm: true`
+  * exact entity ID
+  * exact entity name or slug
+  * reason string
+
+* [ ] Add audit logs for:
+
+  * authentication success/failure
+  * authorization failure
+  * tenant mismatch
+  * read tool calls
+  * write tool calls
+  * destructive/admin tool calls
+  * rate-limit violations
+
+* [ ] Redact secrets and sensitive tokens from all logs.
+
+**Acceptance criteria**
+
+* [ ] Missing credentials fail.
+* [ ] Expired credentials fail.
+* [ ] Wrong audience fails.
+* [ ] Wrong issuer fails.
+* [ ] Missing scope fails.
+* [ ] Cross-tenant access fails.
+* [ ] Destructive tools fail without explicit confirmation.
+* [ ] Auth decisions are tested and documented.
+
+---
+
+## MCP-4. Input validation, output safety, and threat protection
+
+- Status: Not started
+- Timestamp started: TBD
+- Head when starting: TBD
+- Timestamp completed: TBD
+- Feature branch(es): TBD
+- Session-log reference(s): TBD
+
+* [ ] Define all tool input schemas with strict validation, preferably using Zod or the project’s existing schema system.
+* [ ] Reject unknown fields unless there is a specific reason to allow them.
+* [ ] Add limits for:
+
+  * string length
+  * array length
+  * pagination size
+  * date ranges
+  * file size
+  * number of IDs
+  * nested object depth
+
+* [ ] Validate IDs, slugs, enum values, URLs, email addresses, and date ranges.
+* [ ] Never concatenate user input into SQL, shell commands, filesystem paths, or URLs.
+* [ ] Use parameterized queries and safe APIs. Snyk’s MCP security guidance specifically recommends strict input validation, safe APIs such as `execFile` instead of `exec`, parameterized queries, defense in depth, SAST, least privilege, and documenting the security model. ([Snyk][8])
+* [ ] Block SSRF-prone behavior:
+
+  * no arbitrary outbound URL fetching unless explicitly required
+  * if URL fetching is required, use allowlists
+  * block local IP ranges, metadata services, private networks, and redirects to forbidden destinations
+
+* [ ] Treat all external text returned by tools as untrusted data.
+* [ ] Do not let tool output contain instructions telling the model to ignore previous instructions, change auth behavior, reveal secrets, or call other tools.
+* [ ] Add output sanitization for HTML, markdown, URLs, and user-generated content.
+* [ ] Add structured error responses with stable error codes.
+* [ ] Do not expose internal stack traces to MCP clients.
+* [ ] Add rate limiting per user, per tenant, per token/client, and per tool.
+* [ ] Add abuse detection for repeated failed auth, repeated destructive calls, unusually large queries, and automated scraping.
+
+**Acceptance criteria**
+
+* [ ] Injection test cases fail safely.
+* [ ] SSRF test cases fail safely.
+* [ ] Oversized inputs fail safely.
+* [ ] Unauthorized tenant/entity access fails safely.
+* [ ] Tool output never includes secrets.
+* [ ] Error responses are useful but do not leak internals.
+
+---
+
+## MCP-5. Implement the tools
+
+Create tools around product workflows, not implementation details.
+
+### MCP-5.1. Create a TODO for each of the tools
+
+- Status: Not started
+- Timestamp started: TBD
+- Head when starting: TBD
+- Timestamp completed: TBD
+- Feature branch(es): TBD
+- Session-log reference(s): TBD
+
+* [ ] For each of the tools in `docs/mcp/tool-catalog.md` create a new sub-TODO, starting at 5.2, by copy-pasting the following suggested baseline tool pattern template:
+
+```template
+
+* [ ] `search_{{entity_plural}}`
+
+  * read-only
+  * paginated
+  * filterable
+  * tenant-scoped
+
+* [ ] `get_{{entity}}`
+
+  * read-only
+  * fetches one entity by ID/slug
+  * tenant-scoped
+
+* [ ] `create_{{entity}}`
+
+  * mutating
+  * idempotency key required
+  * validates all required fields
+
+* [ ] `update_{{entity}}`
+
+  * mutating
+  * requires entity ID
+  * partial update schema
+  * optimistic concurrency if available
+
+* [ ] `archive_{{entity}}` or `delete_{{entity}}`
+
+  * destructive
+  * only if product requirements justify it
+  * explicit confirmation required
+
+* [ ] `run_{{workflow}}`
+
+  * for multi-step business workflows
+  * calls existing product workflow logic
+  * returns status and next steps
+
+### For each tool
+
+* [ ] Register name, title, description, input schema, output schema, and annotations.
+* [ ] Use accurate annotations:
+
+  * read-only tools: `readOnlyHint: true`
+  * destructive tools: `destructiveHint: true`
+  * external-world tools: `openWorldHint: true`
+* [ ] Treat missing or inaccurate annotations as validation errors. OpenAI’s Apps SDK guidance requires accurate tool annotations such as `readOnlyHint`, `destructiveHint`, and `openWorldHint`. ([OpenAI Developers][4])
+* [ ] Call the existing Supabase Edge Function or shared service method.
+* [ ] Pass authenticated user/tenant context to the service layer.
+* [ ] Return `structuredContent` for machine-readable data.
+* [ ] Return short human-readable `content` summaries.
+* [ ] Return stable error codes for failures.
+* [ ] Add idempotency handling for writes.
+* [ ] Add audit logging.
+* [ ] Add unit and integration tests.
+
+**Acceptance criteria**
+
+* [ ] The tool has a strict schema.
+* [ ] The tool has tests.
+* [ ] The tool is tenant-scoped.
+* [ ] If mutating, the tool has idempotency or retry protection.
+* [ ] If destructive, the tool has explicit confirmation.
+* [ ] The tool does not bypass the product’s existing permission model.
+
+```end of template
+
+*** insert MCP-5.2 and following tasks here***
+
+**Acceptance criteria for TODO 5**
+
+* [ ] Every tool has a strict schema.
+* [ ] Every tool has tests.
+* [ ] Every tool is tenant-scoped.
+* [ ] Every mutating tool has idempotency or retry protection.
+* [ ] Every destructive tool has explicit confirmation.
+* [ ] No tool bypasses the product’s existing permission model.
+
+---
+
+## MCP-6. Implement resources and prompts where useful
+
+- Status: Not started
+- Timestamp started: TBD
+- Head when starting: TBD
+- Timestamp completed: TBD
+- Feature branch(es): TBD
+- Session-log reference(s): TBD
+
+* [ ] Add MCP resources only where agents benefit from browsing stable, read-only product context.
+* [ ] Add resources for:
+
+  * product documentation
+  * workspace/project summaries
+  * read-only entity snapshots
+  * user-accessible reports
+  * changelogs or activity feeds
+
+* [ ] Keep resources tenant-scoped and paginated.
+* [ ] Avoid exposing large unbounded datasets.
+* [ ] Add MCP prompts for common workflows, for example:
+
+  * “Create a funding update”
+  * “Summarize project status”
+  * “Prepare investor follow-up”
+  * “Review pending tasks”
+
+* [ ] Ensure prompts do not smuggle hidden instructions or override client/user intent.
+
+**Acceptance criteria**
+
+* [ ] `resources/list` works if resources are implemented.
+* [ ] `prompts/list` works if prompts are implemented.
+* [ ] Resources and prompts are documented.
+* [ ] Resources do not leak cross-tenant or private data.
+
+---
+
+## MCP-7. Optional: ChatGPT / OpenAI Apps SDK integration
+
+- Status: Not started
+- Timestamp started: TBD
+- Head when starting: TBD
+- Timestamp completed: TBD
+- Feature branch(es): TBD
+- Session-log reference(s): TBD
+
+Only do this if the product should expose interactive UI widgets inside ChatGPT or another Apps SDK-compatible client.
+
+* [ ] Add Apps SDK-compatible tool descriptors.
+* [ ] Add widget resources where useful.
+* [ ] Ensure the MCP server enforces auth and returns data; OpenAI’s Apps SDK describes the MCP server as the component that defines tools, enforces auth, returns data, and points tools to UI. ([OpenAI Developers][4])
+* [ ] Add `_meta["openai/outputTemplate"]` for tools that render widgets.
+* [ ] Add widget CSP via `_meta["openai/widgetCSP"]` or the current Apps SDK equivalent.
+* [ ] Restrict `connect_domains`, `resource_domains`, and `frame_domains`.
+* [ ] Avoid broad `frame_domains`; OpenAI’s guidance says frame domains are discouraged unless core to the experience. ([OpenAI Developers][4])
+* [ ] Do not rely on client-provided hints for auth or authorization.
+* [ ] Test read-only tools first.
+* [ ] Avoid destructive/admin tools in ChatGPT unless identity, auth, intent, and confirmation are very strong.
+
+**Acceptance criteria**
+
+* [ ] Apps SDK scan passes.
+* [ ] Widget CSP has no avoidable wildcard domains.
+* [ ] Widget state contains no secrets.
+* [ ] ChatGPT/client-side rendering works for at least one tool.
+
+---
+
+## MCP-8. Local development and smoke testing
+
+- Status: Not started
+- Timestamp started: TBD
+- Head when starting: TBD
+- Timestamp completed: TBD
+- Feature branch(es): TBD
+- Session-log reference(s): TBD
+
+* [ ] Add seed data for MCP tests in Supabase local development.
+* [ ] Start Supabase locally:
+
+```bash
+supabase start
+```
+
+* [ ] Serve the MCP Edge Function locally:
+
+```bash
+supabase functions serve mcp
+```
+
+* [ ] For unauthenticated local-only testing, document this separately:
+
+```bash
+supabase functions serve --no-verify-jwt mcp
+```
+
+* [ ] Test initialization with curl. Streamable HTTP requires the correct `Accept` header; Supabase’s MCP example uses `application/json, text/event-stream`. ([Supabase][2])
+
+```bash
+curl -sS http://localhost:54321/functions/v1/mcp \
+  -H "Content-Type: application/json" \
+  -H "Accept: application/json, text/event-stream" \
+  -d '{
+    "jsonrpc": "2.0",
+    "id": 1,
+    "method": "initialize",
+    "params": {
+      "protocolVersion": "2025-11-25",
+      "capabilities": {},
+      "clientInfo": {
+        "name": "local-smoke",
+        "version": "0.1.0"
+      }
+    }
+  }'
+```
+
+* [ ] Test `tools/list`:
+
+```bash
+curl -sS http://localhost:54321/functions/v1/mcp \
+  -H "Content-Type: application/json" \
+  -H "Accept: application/json, text/event-stream" \
+  -d '{
+    "jsonrpc": "2.0",
+    "id": 2,
+    "method": "tools/list",
+    "params": {}
+  }'
+```
+
+* [ ] Test one read-only tool:
+
+```bash
+curl -sS http://localhost:54321/functions/v1/mcp \
+  -H "Content-Type: application/json" \
+  -H "Accept: application/json, text/event-stream" \
+  -H "Authorization: Bearer {{LOCAL_TEST_TOKEN}}" \
+  -d '{
+    "jsonrpc": "2.0",
+    "id": 3,
+    "method": "tools/call",
+    "params": {
+      "name": "{{TOOL_NAME}}",
+      "arguments": {
+        "{{ARG_NAME}}": "{{ARG_VALUE}}"
+      }
+    }
+  }'
+```
+
+* [ ] Run the MCP Inspector:
+
+```bash
+npx -y @modelcontextprotocol/inspector
+```
+
+The MCP Inspector is the official interactive tool for testing and debugging MCP servers, including listing tools/resources/prompts and testing tool calls. ([Model Context Protocol][9])
+
+**Acceptance criteria**
+
+* [ ] Local curl initialization works.
+* [ ] Local `tools/list` works.
+* [ ] Local read-only tool call works.
+* [ ] Local write tool call works with valid auth and confirmation.
+* [ ] Invalid auth fails.
+* [ ] Cross-tenant access fails.
+* [ ] MCP Inspector connects successfully.
+* [ ] Smoke test transcript is saved to `docs/mcp/validation.md`.
+
+---
+
+## MCP-9. Automated tests
+
+- Status: Not started
+- Timestamp started: TBD
+- Head when starting: TBD
+- Timestamp completed: TBD
+- Feature branch(es): TBD
+- Session-log reference(s): TBD
+
+### Unit tests
+
+* [ ] Tool input schema validation.
+* [ ] Tool output schema validation.
+* [ ] Auth token parsing.
+* [ ] Scope checks.
+* [ ] Tenant checks.
+* [ ] Service adapter behavior.
+* [ ] Error formatting.
+* [ ] Secret redaction.
+
+### Integration tests
+
+* [ ] Supabase local database with seed data.
+* [ ] Existing Supabase Edge Functions called through the same paths used by the UI.
+* [ ] MCP server initialization.
+* [ ] `tools/list`.
+* [ ] One test per tool.
+* [ ] Write-tool idempotency.
+* [ ] Destructive-tool confirmation.
+* [ ] Rate limiting.
+* [ ] Audit log creation.
+
+### Security tests
+
+* [ ] SQL injection attempts.
+* [ ] Command injection attempts.
+* [ ] Path traversal attempts.
+* [ ] SSRF attempts.
+* [ ] Prompt-injection payloads in user-generated content.
+* [ ] Forged JWT.
+* [ ] Expired JWT.
+* [ ] Wrong-audience JWT.
+* [ ] Wrong-issuer JWT.
+* [ ] Missing scope.
+* [ ] Cross-tenant entity ID.
+* [ ] Oversized input.
+* [ ] Repeated failed calls.
+
+### Contract tests
+
+* [ ] MCP initialize contract.
+* [ ] Capability negotiation.
+* [ ] `tools/list` shape.
+* [ ] `tools/call` success shape.
+* [ ] `tools/call` error shape.
+* [ ] `resources/list` shape if resources exist.
+* [ ] `prompts/list` shape if prompts exist.
+* [ ] Concurrent calls.
+* [ ] Timeout behavior.
+* [ ] Retry behavior.
+
+MCP best-practice guidance recommends layered testing, including unit, integration, contract, load, and resilience testing. ([MCP Protocol][10])
+
+**Acceptance criteria**
+
+* [ ] All tests pass locally.
+* [ ] All tests pass in CI.
+* [ ] Security tests are included in CI.
+* [ ] Test coverage includes every tool.
+* [ ] CI fails if a tool is missing schema, auth, scope, tenant, or annotation metadata.
+
+---
+
+## MCP-10. Observability, operations, and runbook
+
+- Status: Not started
+- Timestamp started: TBD
+- Head when starting: TBD
+- Timestamp completed: TBD
+- Feature branch(es): TBD
+- Session-log reference(s): TBD
+
+* [ ] Add structured logs with:
+
+  * request ID
+  * client ID
+  * user ID hash
+  * tenant ID hash
+  * tool name
+  * tool category
+  * status
+  * latency
+  * error code
+* [ ] Redact:
+
+  * bearer tokens
+  * refresh tokens
+  * Supabase keys
+  * service-role keys
+  * authorization headers
+  * cookies
+  * raw secrets
+* [ ] Add metrics:
+
+  * calls per tool
+  * error rate per tool
+  * p50/p95/p99 latency
+  * auth failures
+  * authorization failures
+  * rate-limit hits
+  * tenant mismatch attempts
+* [ ] Add alerts for:
+
+  * elevated error rate
+  * auth failure spikes
+  * destructive tool spikes
+  * rate-limit spikes
+  * unusual data export volume
+* [ ] Create `docs/mcp/runbook.md` with:
+
+  * common failures
+  * how to revoke client access
+  * how to disable a tool
+  * how to rotate secrets
+  * how to inspect audit logs
+  * how to roll back a deployment
+  * incident escalation contacts
+
+**Acceptance criteria**
+
+* [ ] Logs are useful and redacted.
+* [ ] Metrics exist for every tool.
+* [ ] A tool can be disabled quickly.
+* [ ] Runbook exists and has rollback instructions.
+
+---
+
+## MCP-11. Deployment
+
+- Status: Not started
+- Timestamp started: TBD
+- Head when starting: TBD
+- Timestamp completed: TBD
+- Feature branch(es): TBD
+- Session-log reference(s): TBD
+
+* [ ] Add environment variables and secrets:
+
+  * auth issuer
+  * auth audience
+  * JWKS URL or verification secret
+  * allowed origins
+  * rate-limit config
+  * service URLs
+  * logging config
+* [ ] Verify production uses HTTPS.
+* [ ] Verify production auth is enabled.
+* [ ] Deploy the Edge Function:
+
+```bash
+supabase functions deploy mcp
+```
+
+* [ ] Only use `--no-verify-jwt` for public unauthenticated servers or when the MCP handler itself fully validates auth.
+* [ ] Run production smoke tests:
+
+  * health check
+  * initialize
+  * tools/list
+  * one read-only tool
+  * one write tool in a test tenant
+  * invalid auth
+  * invalid tenant
+  * rate-limit behavior
+* [ ] Run MCP Inspector against production.
+* [ ] Record production validation results in `docs/mcp/validation.md`.
+
+**Acceptance criteria**
+
+* [ ] Production endpoint works.
+* [ ] Production auth works.
+* [ ] Production invalid-auth test fails safely.
+* [ ] Production cross-tenant test fails safely.
+* [ ] Production smoke test transcript is saved.
+* [ ] Rollback path is documented.
+
+---
+
+## MCP-12. Packaging and official MCP registry publication
+
+- Status: Not started
+- Timestamp started: TBD
+- Head when starting: TBD
+- Timestamp completed: TBD
+- Feature branch(es): TBD
+- Session-log reference(s): TBD
+
+* [ ] Decide whether the server is published as:
+
+  * hosted remote MCP server only
+  * npm package
+  * Docker image
+  * GitHub release
+  * multiple formats
+
+* [ ] If publishing to the official MCP Registry, publish the actual server artifact somewhere first. The official registry currently hosts server metadata, not artifacts. ([Model Context Protocol][11])
+* [ ] Create `server.json` for the official MCP Registry.
+* [ ] Verify package name / MCP name ownership according to registry requirements.
+* [ ] Install `mcp-publisher`.
+* [ ] Run registry login.
+* [ ] Publish the registry entry.
+* [ ] Save registry URL and publication status in `docs/mcp/publication.md`.
+
+**Acceptance criteria**
+
+* [ ] `server.json` exists.
+* [ ] Official registry publication succeeds or has a documented pending/error state.
+* [ ] Public install/connect instructions are accurate.
+* [ ] Versioning policy is documented.
+
+---
+
+## MCP-13. Public directory submissions
+
+- Status: Not started
+- Timestamp started: TBD
+- Head when starting: TBD
+- Timestamp completed: TBD
+- Feature branch(es): TBD
+- Session-log reference(s): TBD
+
+Create a public MCP landing page first, for example:
+
+```text
+{{BASE_URL}}/mcp
+```
+
+It should include:
+
+* [ ] Server name.
+* [ ] Short description.
+* [ ] Supported tools.
+* [ ] Auth requirements.
+* [ ] Connection URL.
+* [ ] Install instructions.
+* [ ] Example use cases.
+* [ ] Security model summary.
+* [ ] Privacy/data handling summary.
+* [ ] Contact email.
+* [ ] Changelog.
+* [ ] Status page or uptime note, if available.
+
+Then submit to relevant directories:
+
+* [ ] **Official MCP Registry**
+  Publish via `mcp-publisher` and `server.json`. The official registry is intended as a central discovery location for MCP servers. ([Model Context Protocol][11])
+
+* [ ] **mcpservers.org**
+  Submit server name, short description, link, category, and contact email. ([Awesome MCP Servers][12])
+
+* [ ] **PulseMCP**
+  Submit or verify ingestion. PulseMCP says it ingests the official MCP Registry daily and processes submitted servers weekly. ([PulseMCP][13])
+
+* [ ] **Smithery**
+  Submit as an external or hosted MCP server if the product fits. Smithery’s publishing docs say remote servers should support Streamable HTTP and use OAuth if authentication is required. ([smithery.ai][14])
+
+* [ ] **mcp.so**
+  Submit via their GitHub issue flow with name, description, features, and connection information. ([MCP.so][15])
+
+* [ ] **Docker MCP Catalog**, if containerized
+  Submit a PR to Docker’s MCP registry if the server has a Docker image. Docker’s guidance highlights container isolation, provenance, SBOMs, and catalog submission. ([GitHub][16])
+
+* [ ] Optional: add GitHub topic `mcp-server`.
+
+* [ ] Optional: publish a product changelog post.
+
+* [ ] Optional: publish a developer docs page.
+
+* [ ] Optional: announce in relevant MCP communities.
+
+* [ ] Optional: submit to curated “awesome MCP” lists if the repo meets their contribution standards.
+
+**Acceptance criteria**
+
+* [ ] `docs/mcp/publication.md` lists every target directory.
+* [ ] Each directory has status: `not-started`, `submitted`, `accepted`, `rejected`, or `needs-follow-up`.
+* [ ] Public landing page exists.
+* [ ] Public connection instructions work.
+* [ ] Contact email works.
+
+---
+
+## MCP-14. Documentation deliverables
+
+- Status: Not started
+- Timestamp started: TBD
+- Head when starting: TBD
+- Timestamp completed: TBD
+- Feature branch(es): TBD
+- Session-log reference(s): TBD
+
+Create or update:
+
+* [ ] `docs/mcp/README.md`
+* [ ] `docs/mcp/architecture.md`
+* [ ] `docs/mcp/tool-catalog.md`
+* [ ] `docs/mcp/auth-and-scopes.md`
+* [ ] `docs/mcp/security-model.md`
+* [ ] `docs/mcp/testing.md`
+* [ ] `docs/mcp/validation.md`
+* [ ] `docs/mcp/publication.md`
+* [ ] `docs/mcp/runbook.md`
+* [ ] `docs/mcp/changelog.md`
+* [ ] `server.json`
+* [ ] public page: `/mcp`
+* [ ] optional: `.well-known/mcp/server-card.json` if useful for discovery or a target directory
+
+**Acceptance criteria**
+
+* [ ] A new engineer can connect to the MCP server from the docs alone.
+* [ ] A security reviewer can understand the auth, scope, tenant, and data model.
+* [ ] A coding agent can add a new tool by following documented patterns.
+* [ ] A support/operator can disable a bad tool or revoke client access.
+
+---
+
+## MCP-15. Final “done” checklist
+
+- Status: Not started
+- Timestamp started: TBD
+- Head when starting: TBD
+- Timestamp completed: TBD
+- Feature branch(es): TBD
+- Session-log reference(s): TBD
+
+The MCP capability is done only when all of the following are true:
+
+* [ ] MCP server runs locally.
+* [ ] MCP server runs in production.
+* [ ] Streamable HTTP endpoint works.
+* [ ] Auth is enforced in production.
+* [ ] Tenant isolation is enforced.
+* [ ] Every tool has strict schemas.
+* [ ] Every tool has correct annotations.
+* [ ] Every tool has tests.
+* [ ] Every write tool has idempotency or retry protection.
+* [ ] Every destructive tool requires confirmation.
+* [ ] No tool bypasses existing product authorization.
+* [ ] No secrets are exposed in results, logs, metadata, or widgets.
+* [ ] Local smoke tests pass.
+* [ ] Production smoke tests pass.
+* [ ] MCP Inspector validation passes.
+* [ ] CI tests pass.
+* [ ] Security tests pass.
+* [ ] Engineering docs are complete.
+* [ ] Runbook is complete.
+* [ ] Public landing page is live.
+* [ ] Official registry submission is complete or tracked.
+* [ ] Public directory submissions are complete or tracked.
+* [ ] Product changelog/docs mention the MCP server.
+* [ ] Owner, contact, version, and support process are documented.
+
+---
+
+## Appendix: Sources
+
+This checklist is grounded in the official MCP, Supabase, OpenAI Apps SDK, OWASP, Snyk, Docker, and registry/directory documentation below.
+
+[1]: https://modelcontextprotocol.io/specification/2025-11-25/basic/transports "Transports - Model Context Protocol"
+[2]: https://supabase.com/docs/guides/getting-started/byo-mcp "Deploy MCP servers | Supabase Docs"
+[3]: https://www.docker.com/blog/mcp-server-best-practices/ "Top 5 MCP Server Best Practices | Docker"
+[4]: https://developers.openai.com/apps-sdk/build/mcp-server "Build your MCP server – Apps SDK | OpenAI Developers"
+[5]: https://modelcontextprotocol.io/docs/develop/build-server "Build an MCP server - Model Context Protocol"
+[6]: https://modelcontextprotocol.io/specification/2025-11-25/basic/authorization "Authorization - Model Context Protocol"
+[7]: https://modelcontextprotocol.io/docs/tutorials/security/security_best_practices "Security Best Practices - Model Context Protocol"
+[8]: https://snyk.io/articles/building-secure-mcp-servers/ "Building Secure MCP Servers: A Developer's Guide to Avoiding Critical Vulnerabilities | Snyk"
+[9]: https://modelcontextprotocol.io/docs/tools/inspector "MCP Inspector - Model Context Protocol"
+[10]: https://modelcontextprotocol.info/docs/best-practices/ "MCP Best Practices: Architecture & Implementation Guide – Model Context Protocol （MCP）"
+[11]: https://modelcontextprotocol.io/registry/quickstart "Quickstart: Publish an MCP Server to the MCP Registry - Model Context Protocol"
+[12]: https://mcpservers.org/submit "Submit Your MCP Server | Awesome MCP Servers"
+[13]: https://www.pulsemcp.com/submit "
+  PulseMCP | Keep up-to-date with MCP
+"
+[14]: https://smithery.ai/docs/build/publish "Publish - Smithery Documentation"
+[15]: https://mcp.so/ "MCP Servers"
+[16]: https://github.com/docker/mcp-registry "GitHub - docker/mcp-registry: Official Docker MCP registry · GitHub"
+
+---
+
+EOD

@@ -37,6 +37,7 @@ export type StorageArtifactReference = {
 }
 
 const CYCLE_KEY_PATTERN = /^\d{4}-(0[1-9]|1[0-2])$/
+const UNSAFE_PATH_SEGMENTS = new Set(["", ".", ".."])
 
 function normalizeSegment(value: string | number) {
   return String(value)
@@ -59,6 +60,48 @@ function requireCycleKey(cycleKey: string) {
     throw new Error("Storage cycle keys must use YYYY-MM format.")
   }
   return cycleKey
+}
+
+export function assertSafeStorageObjectPath(path: string, options: { requiredPrefix?: string } = {}) {
+  const normalized = path.trim()
+  if (!normalized) {
+    throw new Error("Storage object path must be non-empty.")
+  }
+
+  if (normalized.startsWith("/") || normalized.includes("\\") || normalized.includes("//")) {
+    throw new Error("Storage object path must be a relative normalized path.")
+  }
+
+  const segments = normalized.split("/")
+  if (segments.some((segment) => UNSAFE_PATH_SEGMENTS.has(segment))) {
+    throw new Error("Storage object path contains an unsafe path segment.")
+  }
+
+  if (options.requiredPrefix && !normalized.startsWith(options.requiredPrefix)) {
+    throw new Error("Storage object path does not match the required artifact prefix.")
+  }
+
+  return normalized
+}
+
+export function assertZkasRunDownloadArtifactPath(input: {
+  cycleKey: string
+  runId: number
+  artifact: "result" | "attestation"
+  path: string
+}) {
+  const cycleKey = requireCycleKey(input.cycleKey)
+  const runSegment = requireSegment(input.runId, "Run id")
+  const requiredPrefix = `${cycleKey}/run-${runSegment}/`
+  const path = assertSafeStorageObjectPath(input.path, { requiredPrefix })
+  const expectedFilePrefix = input.artifact === "result" ? "run-result." : "attestation."
+  const fileName = path.slice(requiredPrefix.length)
+
+  if (!fileName.startsWith(expectedFilePrefix) || !fileName.endsWith(".json")) {
+    throw new Error("Storage object path does not match the requested zkAS artifact kind.")
+  }
+
+  return path
 }
 
 function normalizeFileName(fileName: string) {

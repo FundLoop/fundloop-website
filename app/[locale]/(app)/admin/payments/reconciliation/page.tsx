@@ -5,9 +5,7 @@ import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-import { listReconciliationQueue } from "@/lib/onchain/payment-reconciliation"
-import { getAdminSupabaseClient } from "@/lib/supabase-admin"
-import { requireInternalAdminActor } from "@/lib/zkas/auth"
+import { loadAdminPaymentReconciliationWorkspace } from "@/lib/operator/payment-workspaces"
 
 function getSubmissionBadge(status: string) {
   switch (status) {
@@ -25,28 +23,7 @@ function getSubmissionBadge(status: string) {
 }
 
 export default async function AdminPaymentsReconciliationPage() {
-  await requireInternalAdminActor()
-
-  const queue = await listReconciliationQueue(50)
-  const supabase = getAdminSupabaseClient()
-  const projectIds = Array.from(new Set(queue.map((entry) => entry.project_id)))
-  const paymentIds = Array.from(new Set(queue.map((entry) => entry.payment_id).filter((value): value is number => value !== null)))
-
-  const [{ data: projects }, { data: payments }] = await Promise.all([
-    projectIds.length > 0
-      ? supabase.from("projects").select("id, name, slug").in("id", projectIds)
-      : Promise.resolve({ data: [], error: null }),
-    paymentIds.length > 0
-      ? supabase
-          .from("payments")
-          .select("id, period_end, ref_payment_statuses(name, code)")
-          .in("id", paymentIds)
-      : Promise.resolve({ data: [], error: null }),
-  ])
-
-  const projectById = new Map((projects ?? []).map((project) => [project.id, project]))
-  const paymentById = new Map((payments ?? []).map((payment) => [payment.id, payment]))
-  const unresolvedCount = queue.filter((entry) => entry.status === "submitted" || entry.status === "confirming").length
+  const workspace = await loadAdminPaymentReconciliationWorkspace(50)
 
   return (
     <div className="container mx-auto space-y-8 px-4 py-12">
@@ -70,13 +47,26 @@ export default async function AdminPaymentsReconciliationPage() {
         <ReconciliationRunButton label="Run reconciliation now" />
       </div>
 
+      {workspace.warnings.length > 0 ? (
+        <div className="space-y-2">
+          {workspace.warnings.map((warning) => (
+            <Card
+              key={warning.code}
+              className="border-amber-200 bg-amber-50 text-amber-950 dark:border-amber-900 dark:bg-amber-950/30 dark:text-amber-100"
+            >
+              <CardContent className="p-3 text-sm">{warning.message}</CardContent>
+            </Card>
+          ))}
+        </div>
+      ) : null}
+
       <div className="grid gap-4 md:grid-cols-3">
         <Card>
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium">Tracked submissions</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{queue.length}</div>
+            <div className="text-2xl font-bold">{workspace.totals.trackedSubmissions}</div>
           </CardContent>
         </Card>
         <Card>
@@ -84,7 +74,7 @@ export default async function AdminPaymentsReconciliationPage() {
             <CardTitle className="text-sm font-medium">Unresolved</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{unresolvedCount}</div>
+            <div className="text-2xl font-bold">{workspace.totals.unresolvedSubmissions}</div>
           </CardContent>
         </Card>
         <Card>
@@ -92,7 +82,7 @@ export default async function AdminPaymentsReconciliationPage() {
             <CardTitle className="text-sm font-medium">Latest scope</CardTitle>
           </CardHeader>
           <CardContent>
-            <p className="text-sm text-slate-600">Showing the 50 most recent tracked submissions.</p>
+            <p className="text-sm text-slate-600">{workspace.totals.latestScopeLabel}</p>
           </CardContent>
         </Card>
       </div>
@@ -117,60 +107,50 @@ export default async function AdminPaymentsReconciliationPage() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {queue.length === 0 ? (
+              {workspace.rows.length === 0 ? (
                 <TableRow>
                   <TableCell colSpan={6} className="text-center text-slate-500">
                     No tracked onchain submissions yet.
                   </TableCell>
                 </TableRow>
               ) : (
-                queue.map((entry) => {
-                  const project = projectById.get(entry.project_id)
-                  const payment = entry.payment_id ? paymentById.get(entry.payment_id) : null
-
-                  return (
-                    <TableRow key={entry.id}>
-                      <TableCell>
-                        <div className="font-medium">{project?.name ?? `Project #${entry.project_id}`}</div>
-                        <div className="text-xs text-slate-500">{project?.slug ?? "No slug"}</div>
-                      </TableCell>
-                      <TableCell>
-                        <div className="font-medium">Payment #{entry.payment_id ?? "Unknown"}</div>
-                        <div className="text-xs text-slate-500">
-                          {payment?.period_end ?? "No period"} · {payment?.ref_payment_statuses?.code ?? "unknown"}
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <div className="font-medium">
-                          {entry.chain.display_name} {entry.asset.symbol}
-                        </div>
-                        <div className="max-w-xs break-all text-xs text-slate-500">{entry.tx_hash}</div>
-                      </TableCell>
-                      <TableCell>
-                        <div className="space-y-1">
-                          {getSubmissionBadge(entry.status)}
-                          <p className="max-w-xs text-xs text-slate-500">
-                            {entry.confirmation_count}/{entry.confirmation_depth} confirmations
-                          </p>
-                          {entry.failure_reason ? (
-                            <p className="max-w-xs text-xs text-rose-600">{entry.failure_reason}</p>
-                          ) : null}
-                        </div>
-                      </TableCell>
-                      <TableCell className="text-xs text-slate-500">
-                        {entry.last_checked_at ?? "Not checked yet"}
-                      </TableCell>
-                      <TableCell className="text-right">
-                        <ReconciliationRunButton
-                          label="Replay"
-                          submissionId={entry.id}
-                          variant="outline"
-                          size="sm"
-                        />
-                      </TableCell>
-                    </TableRow>
-                  )
-                })
+                workspace.rows.map(({ submission, project, payment }) => (
+                  <TableRow key={submission.id}>
+                    <TableCell>
+                      <div className="font-medium">{project?.name ?? `Project #${submission.project_id}`}</div>
+                      <div className="text-xs text-slate-500">{project?.slug ?? "No slug"}</div>
+                    </TableCell>
+                    <TableCell>
+                      <div className="font-medium">Payment #{submission.payment_id ?? "Unknown"}</div>
+                      <div className="text-xs text-slate-500">
+                        {payment?.period_end ?? "No period"} · {payment?.ref_payment_statuses?.code ?? "unknown"}
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      <div className="font-medium">
+                        {submission.chain.display_name} {submission.asset.symbol}
+                      </div>
+                      <div className="max-w-xs break-all text-xs text-slate-500">{submission.tx_hash}</div>
+                    </TableCell>
+                    <TableCell>
+                      <div className="space-y-1">
+                        {getSubmissionBadge(submission.status)}
+                        <p className="max-w-xs text-xs text-slate-500">
+                          {submission.confirmation_count}/{submission.confirmation_depth} confirmations
+                        </p>
+                        {submission.failure_reason ? (
+                          <p className="max-w-xs text-xs text-rose-600">{submission.failure_reason}</p>
+                        ) : null}
+                      </div>
+                    </TableCell>
+                    <TableCell className="text-xs text-slate-500">
+                      {submission.last_checked_at ?? "Not checked yet"}
+                    </TableCell>
+                    <TableCell className="text-right">
+                      <ReconciliationRunButton label="Replay" submissionId={submission.id} variant="outline" size="sm" />
+                    </TableCell>
+                  </TableRow>
+                ))
               )}
             </TableBody>
           </Table>

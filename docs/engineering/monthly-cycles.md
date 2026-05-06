@@ -62,6 +62,8 @@ Session 25 added the first deterministic calculation-package command, `monthly-c
 
 Session 26 added `/[locale]/admin/cycles/[cycleKey]/verification` as the cleanup, verification, and approval workspace for calculated results. It also added the `monthly-cycle-verification-review` and `monthly-cycle-approval` Edge Function commands so operators can record cleanup-needed decisions, mark a cycle verified, and approve verified results for distribution with audit events and required notes.
 
+Session 51 hardened sensitive monthly-cycle mutations: verification review, approval, and payout-intent creation now reject non-internal-admin actor roles before mutation, and approval records failure audit events once the target cycle is known and cannot safely advance.
+
 Session 27 added `/[locale]/admin/cycles/[cycleKey]/payouts` as the first operator view over outbound payout work. It converts approved published user results into payout intents through the `monthly-cycle-payout-intents-create` Edge Function command, then moves the cycle into `distribution`. Payout execution, rail batching, and reconciliation remain later sessions.
 
 ## Pipeline Observability

@@ -93,6 +93,24 @@ DOCKER_HOST=unix:///var/run/docker.sock supabase start
 DOCKER_HOST=unix:///var/run/docker.sock supabase db reset
 ```
 
+If the local Supabase analytics/Logflare container is unhealthy on your machine, use the documented smoke fallback:
+
+```bash
+DOCKER_HOST=unix:///var/run/docker.sock supabase start -x logflare
+DOCKER_HOST=unix:///var/run/docker.sock supabase db reset
+```
+
+That mode is valid for app smoke tests that need database, auth, storage, REST, and Edge Functions, but it does not validate analytics behavior.
+
+For the deterministic seeded founder/operator smoke persona, use:
+
+```env
+FUNDLOOP_INTERNAL_ADMIN_EMAILS=maya@fundloop.example.com
+FUNDLOOP_ZKAS_SUPERADMIN_EMAILS=maya@fundloop.example.com
+```
+
+See [Local Seed Fixtures](docs/engineering/local-seed.md) for the seeded credentials and expected smoke routes.
+
 Common commands:
 
 ```bash
@@ -165,9 +183,15 @@ pnpm supabase:functions:serve:project-payment-drafts-create
 
 The browser paths call function-specific adapters under `lib/edge-functions/`. Legacy server actions remain only as temporary compatibility wrappers while older callers are migrated.
 
-CUBID identity writes also use Edge Functions. FundLoop currently depends on local CUBID package artifacts for `@cubid/api`, `@cubid/web2`, and `@cubid/web2-react`; the Supabase function import map resolves `@cubid/api` from the installed package until the CUBID repo publishes a first-class npm/JSR package. Do not put `CUBID_API_KEY` in client code.
+CUBID identity writes also use Edge Functions. Server and Edge CUBID code should use the runtime-agnostic `@cubid/core` package through the Supabase Deno import map. Browser-only CUBID helpers may still depend on local compatibility artifacts for `@cubid/web2` and `@cubid/web2-react`. Do not put `CUBID_API_KEY` in client code.
 
 See [Edge Function Contract Pattern](docs/engineering/edge-functions.md), [CUBID Identity and Snapshot Model](docs/engineering/cubid-identity.md), and [Supabase Remote Deployments](docs/engineering/supabase-deployments.md) for the current backend contract details.
+
+## Release Candidate Path
+
+The current promotion path is feature branch to `dev`, then `dev` to `main`. App CI and Supabase dry-runs should pass before merging, and main-target Supabase deploys should use the GitHub `Production` environment approval gate.
+
+See [Dev To Main Release Candidate Path](docs/engineering/release-candidate.md) for the required branch protections, production environment gate, Supabase secrets, migration/rollback rules, and minimum production smoke checklist.
 
 ## Playwright E2E Workflow
 

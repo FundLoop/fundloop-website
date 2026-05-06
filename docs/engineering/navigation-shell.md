@@ -155,6 +155,7 @@ Session 21 added the first-class monthly cycle operator surface.
 - Session 37 added `/admin/cycles/observability` as the monthly-pipeline event drill-down. It complements payment-flow observability and is the operator-facing source future MCP tools should read for cycle-stage attempts, warnings, and failures.
 - Session 34 added the founder attribution-data workflow under `/founder/projects/[slug]/attribution` while keeping dataset upload writes on the existing project zkAS surface.
 - Session 44 added `/admin/operations` as the in-product operator runbook that links release, cycle, identity, payment/payout, and artifact checklists to the relevant admin surfaces and engineering docs.
+- Session 50 moved the remaining high-value payment operations and reconciliation page reads into `lib/operator/payment-workspaces.ts`. Operator pages should consume reusable read-model workspaces with explicit partial-read warnings instead of shaping Supabase rows inside page components.
 
 ## Canonical Entry Routes
 

@@ -5,6 +5,8 @@ import {
   buildMonthlyCycleReportArtifactPath,
   buildOnboardingUploadArtifactPath,
   buildProjectAssetArtifactPath,
+  assertSafeStorageObjectPath,
+  assertZkasRunDownloadArtifactPath,
   buildZkasDatasetArtifactPath,
   buildZkasIdentityArtifactPath,
   buildZkasRunArtifactPath,
@@ -65,6 +67,42 @@ describe("storage artifact paths", () => {
     expect(() => buildMonthlyCycleReportArtifactPath({ cycleKey: "2026-04", audience: "public", fileName: "  " })).toThrow(
       "file names",
     )
+  })
+
+  it("rejects unsafe storage paths before private artifact download", () => {
+    expect(assertSafeStorageObjectPath("2026-04/run-12/run-result.v1.json")).toBe("2026-04/run-12/run-result.v1.json")
+    expect(() => assertSafeStorageObjectPath("../secret.json")).toThrow("unsafe")
+    expect(() => assertSafeStorageObjectPath("/2026-04/run-12/run-result.v1.json")).toThrow("relative")
+    expect(() => assertSafeStorageObjectPath("2026-04//run-12/run-result.v1.json")).toThrow("relative")
+  })
+
+  it("requires zkAS download paths to match cycle, run, and artifact kind", () => {
+    expect(
+      assertZkasRunDownloadArtifactPath({
+        cycleKey: "2026-04",
+        runId: 12,
+        artifact: "result",
+        path: "2026-04/run-12/run-result.v1.json",
+      }),
+    ).toBe("2026-04/run-12/run-result.v1.json")
+
+    expect(() =>
+      assertZkasRunDownloadArtifactPath({
+        cycleKey: "2026-04",
+        runId: 12,
+        artifact: "result",
+        path: "2026-04/run-13/run-result.v1.json",
+      }),
+    ).toThrow("required artifact prefix")
+
+    expect(() =>
+      assertZkasRunDownloadArtifactPath({
+        cycleKey: "2026-04",
+        runId: 12,
+        artifact: "attestation",
+        path: "2026-04/run-12/run-result.v1.json",
+      }),
+    ).toThrow("artifact kind")
   })
 
   it("normalizes artifact references with lifecycle metadata", () => {

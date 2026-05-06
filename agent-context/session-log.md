@@ -1,3 +1,294 @@
+### session v135: Address PR 41 automated review feedback
+- timestamp: 2026-05-05T19:46:00-0400
+- agent: **Codex (GPT-5)**
+- branch: **codex/session-46-1-and-47-beta-smoke**
+- head: pending PR 41 review-fix commit
+
+#### Objective
+Address the actionable Copilot and Codex automated review comments on PR #41 before requesting any further review.
+
+#### Actions Taken
+- Changed the MCP inspector script from `npx` to `pnpm dlx` to keep package-manager usage aligned with repo policy.
+- Hardened the MCP stdio smoke harness so parser errors reject the promise cleanly and early server exits include stderr context instead of timing out opaquely.
+- Replaced stored-path-derived artifact download filenames with deterministic trusted filenames based on artifact kind, cycle month, and run id.
+- Updated the MCP engineering doc to match the `pnpm dlx` inspector path.
+
+#### Tests and Validation Notes
+- `pnpm mcp:smoke` passed.
+- `pnpm vitest run tests/storage-artifacts.test.ts` passed.
+- `pnpm dlx node@22.22.1 /opt/homebrew/bin/pnpm lint` passed.
+- `pnpm dlx node@22.22.1 /opt/homebrew/bin/pnpm typecheck` passed.
+
+#### Reflections
+- The comments were useful polish: the MCP smoke path now fails with better diagnostics, and the artifact route no longer reflects database path bytes into a response header.
+
+#### Suggested Next Steps
+- Push the review-fix commit, reply to and resolve the automated review comments, then re-check CI before continuing the review gates.
+
+---
+
+### session v134: Prepare the dev-to-main release candidate path
+- timestamp: 2026-05-05T19:18:07-0400
+- agent: **Codex (GPT-5)**
+- branch: **codex/session-46-1-and-47-beta-smoke**
+- head: pending session 52 commit
+
+#### Objective
+Complete Session 52 by making the first dev-to-main release-candidate path explicit, reviewable, and grounded in current GitHub/Supabase workflow truth.
+
+#### Actions Taken
+- Added `docs/engineering/release-candidate.md` with the promotion sequence, required GitHub settings, Supabase secrets, migration/rollback rules, and minimum production smoke checklist.
+- Verified through GitHub API that `Preview` and `Production` environments exist, while `dev` and `main` currently report no branch protection and `Production` currently reports no required reviewer protection rules.
+- Updated app CI to run on pushes to `dev` as well as `main`, `codex/**`, and PRs.
+- Updated README, the operations runbook, Supabase deployment docs, engineering docs index, and repo-status metadata with the current release-candidate path and blockers.
+- Marked Session 52 complete in `agent-context/todo.md`.
+
+#### Tests and Validation Notes
+- `gh repo view --json nameWithOwner,defaultBranchRef,url` verified repository identity and default branch.
+- `gh api repos/:owner/:repo/branches/main/protection` returned `Branch not protected`.
+- `gh api repos/:owner/:repo/branches/dev/protection` returned `Branch not protected`.
+- `gh api repos/:owner/:repo/environments` verified `Preview` and `Production` exist and currently have no protection rules.
+- `ruby -e 'require "yaml"; ...' .github/workflows/ci.yml .github/workflows/supabase-deploy.yml` parsed both workflow files successfully.
+- `pnpm dlx actionlint@latest ...` could not validate because the package exposed no runnable binary through pnpm dlx.
+- `pnpm dlx node@22.22.1 /opt/homebrew/bin/pnpm lint` passed.
+- `pnpm dlx node@22.22.1 /opt/homebrew/bin/pnpm test` passed.
+- `pnpm dlx node@22.22.1 /opt/homebrew/bin/pnpm typecheck` passed.
+- `pnpm dlx node@22.22.1 /opt/homebrew/bin/pnpm build` passed.
+
+#### Reflections
+- The important finding is operational rather than code-level: the repo has a credible workflow shape, but branch protection and the Production approval gate still need repository settings before a main promotion should be trusted.
+- Adding `dev` push CI closes a small evidence gap after merges, so both app CI and Supabase deploy health can be checked on the integration branch.
+
+#### Suggested Next Steps
+- Yeet the completed Sessions 47-52 stack to `dev`, resolve CI/review feedback, and confirm the post-merge dev Supabase deploy remains green.
+- After this backlog is accepted and merged, rename `agent-context/todo.md` to `todo-1-through-52.md` and continue the MCP-specific roadmap from `agent-context/todo-mcp.md`.
+
+---
+
+### session v133: Add beta-critical runtime guardrails
+- timestamp: 2026-05-05T08:55:56-0400
+- agent: **Codex (GPT-5)**
+- branch: **codex/session-46-1-and-47-beta-smoke**
+- head: pending session 51 commit
+
+#### Objective
+Complete Session 51 by moving a small set of beta-critical safety expectations from docs into enforceable runtime checks.
+
+#### Actions Taken
+- Added storage path validation helpers that reject traversal, absolute paths, mismatched prefixes, and mismatched zkAS artifact kinds before private artifact download.
+- Hardened the superadmin zkAS run artifact route to validate stored artifact paths against the requested cycle, run, and artifact kind before reading Supabase Storage.
+- Added no-store and nosniff response headers to private zkAS artifact downloads.
+- Added command-level internal-admin actor checks for monthly-cycle verification review, monthly-cycle approval, and payout-intent creation before mutation.
+- Added approval failure audit events for known-cycle rejection paths such as wrong status, missing completed run, unverified run, missing result artifact hash, failed update, and state race.
+- Added `docs/engineering/beta-guardrails.md` and updated storage, monthly-cycle, Edge Function, and engineering index docs.
+- Marked Session 51 complete in `agent-context/todo.md`.
+
+#### Tests and Validation Notes
+- `pnpm vitest run tests/storage-artifacts.test.ts tests/monthly-cycle-verification.test.ts tests/monthly-cycle-payout-intents-command.test.ts` passed.
+- `pnpm dlx node@22.22.1 /opt/homebrew/bin/pnpm test` passed.
+- `pnpm dlx node@22.22.1 /opt/homebrew/bin/pnpm lint` passed.
+- `pnpm dlx node@22.22.1 /opt/homebrew/bin/pnpm typecheck` passed.
+- `pnpm dlx node@22.22.1 /opt/homebrew/bin/pnpm build` passed.
+
+#### Reflections
+- The pass intentionally avoids fake in-memory serverless rate limits. Distributed throttling still needs shared infrastructure and is documented as deferred.
+- The useful beta improvement here is making sensitive paths fail closed and auditable with the infrastructure already present.
+
+#### Suggested Next Steps
+- Continue with Session 52 to prepare the dev-to-main release-candidate path and production promotion checklist.
+
+---
+
+### session v132: Consolidate operator payment read workspaces
+- timestamp: 2026-05-04T21:20:51-0400
+- agent: **Codex (GPT-5)**
+- branch: **codex/session-46-1-and-47-beta-smoke**
+- head: pending session 50 commit
+
+#### Objective
+Complete Session 50 by moving remaining high-value operator payment and reconciliation reads out of page-local Supabase shaping and into stable read-model workspaces.
+
+#### Actions Taken
+- Added `lib/operator/payment-workspaces.ts` as the shared server-only read boundary for operator payment operations and reconciliation visibility.
+- Reworked `/admin/payments` to consume the payment operations workspace, including explicit partial-read warnings for non-critical onchain-submission and failure-summary reads.
+- Reworked `/admin/payments/reconciliation` to consume the reconciliation workspace, including optional project/payment context and warning handling when enrichment reads fail.
+- Added focused read-model tests for payment mapping, reconciliation queue enrichment, partial-read fallback warnings, and failure-summary formatting.
+- Updated MCP, Edge Function, navigation-shell, and route-inventory docs to record the operator read boundary and remove stale future-tense MCP wording.
+- Marked Session 50 complete in `agent-context/todo.md`.
+
+#### Tests and Validation Notes
+- `pnpm vitest run tests/operator-payment-workspaces.test.ts tests/admin-payments-console.test.tsx tests/monthly-cycle-observability.test.ts` passed.
+- `pnpm dlx node@22.22.1 /opt/homebrew/bin/pnpm test` passed.
+- `pnpm dlx node@22.22.1 /opt/homebrew/bin/pnpm lint` passed.
+- `pnpm dlx node@22.22.1 /opt/homebrew/bin/pnpm typecheck` passed.
+- `pnpm dlx node@22.22.1 /opt/homebrew/bin/pnpm build` passed.
+
+#### Reflections
+- The operator pages now read like thin renderers again, while the read module carries the workflow shape and non-fatal failure behavior future MCP/operator clients can share.
+- Session 50 does not move these app reads into a new Edge Function yet; it deliberately creates one stable app-side boundary first so a later transport migration can be boring.
+
+#### Suggested Next Steps
+- Continue with Session 51 to add beta-critical runtime guardrails around expensive commands, artifact access, and sensitive operator flows.
+
+---
+
+### session v131: Package MCP runtime launch and smoke path
+- timestamp: 2026-05-04T08:01:03-0400
+- agent: **Codex (GPT-5)**
+- branch: **codex/session-46-1-and-47-beta-smoke**
+- head: pending session 49 commit
+
+#### Objective
+Complete Session 49 by making the existing MCP server runtime easier to launch, smoke, inspect, and document without expanding the tool surface.
+
+#### Actions Taken
+- Added root MCP commands for local launch, smoke testing, package tests, inspector launch, and publication guidance.
+- Added MCP package exports and package-level scripts for stdio runtime execution, focused tests, smoke validation, and inspector usage.
+- Added a Content-Length framed stdio smoke harness that initializes the MCP server, lists tools, and calls `fundloop.health`.
+- Added a package README for `packages/mcp-server` and expanded `docs/engineering/mcp.md` with runtime environment, local launch, packaging status, troubleshooting, and safe extension guidance.
+- Marked Session 49 complete in `agent-context/todo.md`.
+
+#### Tests and Validation Notes
+- `pnpm mcp:smoke` passed.
+- `pnpm mcp:test` passed.
+- `pnpm --filter @fundloop/mcp-server typecheck` passed.
+- `pnpm dlx node@22.22.1 /opt/homebrew/bin/pnpm lint` passed.
+- `pnpm dlx node@22.22.1 /opt/homebrew/bin/pnpm typecheck` passed.
+- `pnpm dlx node@22.22.1 /opt/homebrew/bin/pnpm build` passed.
+
+#### Reflections
+- Session 49 intentionally keeps MCP scope stable while making the existing protocol runtime less fragile for future agents and reviewers.
+- The smoke path now validates real MCP stdio framing without requiring a live Supabase actor or touching workflow data.
+
+#### Suggested Next Steps
+- Continue with Session 50 to move the remaining operator dashboard reads onto stable read contracts.
+
+---
+
+### session v130: Harden local smoke personas and dev browser noise
+- timestamp: 2026-05-04T05:58:04-0400
+- agent: **Codex (GPT-5)**
+- branch: **codex/session-46-1-and-47-beta-smoke**
+- head: pending session 48 commit
+
+#### Objective
+Complete Session 48 by making the local and preview smoke path more explicit and less noisy after the Session 47 beta readiness audit.
+
+#### Actions Taken
+- Documented the seeded internal-operator smoke contract in `docs/engineering/local-seed.md`, including the Maya fixture account, required internal-admin allowlists, and expected operator routes.
+- Updated `docs/engineering/env-and-testing.md` and `README.md` with the official local smoke fallback `supabase start -x logflare` for machines where the local analytics/Logflare container fails health checks.
+- Clarified that the Logflare fallback is valid for app smoke coverage but not analytics-specific validation.
+- Added the seeded operator allowlist values to local/preview smoke guidance without treating them as production defaults.
+- Added `allowedDevOrigins: ["127.0.0.1"]` to the Next config to reduce HMR cross-origin noise during local browser smoke.
+- Added a lightweight `/favicon.ico` route so local browser smoke no longer reports a favicon 404 as a false console failure.
+- Marked Session 48 complete in `agent-context/todo.md`.
+
+#### Tests and Validation Notes
+- `git diff --check` passed.
+- `pnpm dlx node@22.22.1 /opt/homebrew/bin/pnpm lint` passed.
+- `pnpm dlx node@22.22.1 /opt/homebrew/bin/pnpm typecheck` passed.
+- `pnpm dlx node@22.22.1 /opt/homebrew/bin/pnpm build` passed.
+- Live local smoke of `/favicon.ico` returned HTTP 200 with `content-type: image/svg+xml; charset=utf-8`.
+
+#### Reflections
+- Session 48 deliberately hardens the smoke harness rather than widening product scope; the goal is making future verification boring enough that real product regressions stand out.
+- Keeping the seeded operator env explicit should prevent another round of confusing admin redirects that are actually missing allowlist config.
+
+#### Suggested Next Steps
+- Continue with Session 49 to package and document the MCP runtime deployment path.
+
+---
+
+### session v129: Track MCP backlog handoff
+- timestamp: 2026-05-04T05:54:48-0400
+- agent: **Codex (GPT-5)**
+- branch: **codex/session-46-1-and-47-beta-smoke**
+- head: pending MCP backlog metadata commit
+
+#### Objective
+Track the MCP backlog draft and make the handoff from the numbered Session 1-52 roadmap explicit.
+
+#### Actions Taken
+- Started tracking `agent-context/todo-mcp.md` so the MCP roadmap is no longer a local-only artifact.
+- Added a closing note to `agent-context/todo.md` instructing agents to rename it to `todo-1-through-52.md` after Session 52 is complete, then continue with `agent-context/todo-mcp.md`.
+
+#### Tests and Validation Notes
+- No code validation was run because this was metadata/backlog tracking only.
+- The next step is Session 48 implementation on the same feature branch.
+
+#### Reflections
+- Making the roadmap transition explicit should prevent future agents from mixing MCP capability planning into the already-scoped production-readiness tranche.
+
+#### Suggested Next Steps
+- Start Session 48 by hardening local and preview smoke personas around the Session 47 findings.
+
+---
+
+### session v128: Run beta readiness smoke
+- timestamp: 2026-05-04T05:36:28-0400
+- agent: **Codex (GPT-5)**
+- branch: **codex/session-46-1-and-47-beta-smoke**
+- head: pending session 47 commit
+
+#### Objective
+Complete Session 47 by running a focused local beta readiness smoke across public routes, authenticated workspaces, founder operations, monthly-cycle/operator surfaces, and MCP-adjacent test coverage.
+
+#### Actions Taken
+- Stopped the competing EverFund Supabase stack before starting FundLoop local Supabase.
+- Recovered the local FundLoop stack from stale container and Colima interruptions, then started Supabase with Logflare excluded because the analytics container repeatedly failed health checks.
+- Reset the local database through the full migration chain and tracked seed.
+- Ran focused Vitest coverage for seeded public data, route redirects, user/founder workspaces, monthly cycles, reporting, earnings, MCP tools, observability, and E2E auth configuration.
+- Smoked localized public routes, public redirects, authenticated workspace/founder/admin routes, founder payment/contribution/attribution/reporting surfaces, and operator pages against the local app.
+- Recorded the beta readiness punch list in `agent-context/todo.md`, scoped mainly to Session 48 smoke-environment hardening.
+
+#### Tests and Validation Notes
+- `DOCKER_HOST=unix:///var/run/docker.sock supabase db reset` passed after starting the local stack with `supabase start -x logflare`.
+- `pnpm test tests/local-public-seed.test.ts tests/public-route-redirects.test.ts tests/public-user-journey.test.ts tests/user-workspace.test.ts tests/founder-workspace.test.ts tests/monthly-cycles.test.ts tests/monthly-cycle-reports.test.ts tests/user-earnings-workspace.test.ts` passed: 8 files, 37 tests.
+- Public HTTP smoke returned 200 for `/en`, `/fr`, `/es`, `/en/participation`, `/fr/participation`, `/es/support`, `/en/founders`, `/en/projects`, `/en/projects/civic-mesh`, `/en/users`, `/en/users/00000000-0000-4000-8000-000000000101`, `/en/reports`, `/en/documentation`, `/en/blog`, `/en/faq`, `/en/ecosystem`, `/en/privacy`, `/en/terms`, and `/en/cookies`.
+- Redirect smoke confirmed `/`, `/participation`, `/en/about`, `/en/api`, `/en/analytics`, `/en/pledge`, `/en/pricing`, `/en/my-profile`, `/en/settings`, `/en/settings/account`, and `/en/organizations/test` route to their canonical destinations.
+- Authenticated Playwright smoke with `maya@fundloop.example.com` passed for `/en/workspace`, `/en/workspace/account`, `/en/workspace/earnings`, `/en/workspace/reporting`, `/en/founder`, `/en/founder/projects`, `/en/founder/projects/civic-mesh`, `/en/admin`, `/en/admin/cycles`, `/en/admin/operations`, `/en/admin/identity`, `/en/admin/payments`, `/en/admin/cycles/observability`, `/en/admin/zkas`, `/en/admin/superadmin/zkas`, `/en/projects/civic-mesh/payments`, `/en/projects/civic-mesh/zkas`, `/en/founder/projects/civic-mesh/contributions`, `/en/founder/projects/civic-mesh/attribution`, and `/en/founder/projects/civic-mesh/reporting`.
+- `pnpm test tests/mcp-founder-tools.test.ts tests/monthly-cycle-observability.test.ts tests/e2e-config.test.ts` passed: 3 files, 9 tests.
+
+#### Reflections
+- The product surface is much more smokeable than it was before the workspace/monthly-cycle/reporting sessions; the meaningful blockers were local smoke environment reliability issues rather than obvious broken beta routes.
+- Local operator smoke depends on explicit allowlist env, so the seed guide needs to describe not just the account credentials but the env needed to make that persona an operator.
+- The local Logflare failure is a good example of why Session 48 should focus on making the smoke harness boring and repeatable before more beta-hardening work piles on top.
+
+#### Suggested Next Steps
+- Run Session 48 next to harden seeded local/preview personas, document required operator env, and either repair or formalize the local `supabase start -x logflare` smoke mode.
+- Then continue to Session 49 MCP runtime packaging once local smoke setup is boring enough for future agents and reviewers.
+
+---
+
+### session v127: Confirm post-merge dev Supabase deploy
+- timestamp: 2026-05-03T18:25:21-0400
+- agent: **Codex (GPT-5)**
+- branch: **codex/session-46-1-and-47-beta-smoke**
+- head: pending metadata commit
+
+#### Objective
+Close Session 46.1 by recording that the PR #40 post-merge `dev` Supabase Deploy run succeeded end to end.
+
+#### Actions Taken
+- Confirmed PR #40 merged to `dev` at merge commit `e9b9f80`.
+- Watched the push-triggered `Supabase Deploy` run `25291992377` complete successfully.
+- Verified the run deployed `mcp-workflow-read`, `user-cubid-resolve-email`, and `user-cubid-sync-profile`.
+- Confirmed the repaired deploy path did not hit the previous `node_modules/@cubid/api/dist/index.mjs` bundling failure.
+- Updated Session 46.1 metadata in `agent-context/todo.md`.
+
+#### Tests and Validation Notes
+- `gh run watch 25291992377 --repo FundLoop/fundloop-website --interval 20 --exit-status` passed.
+- `gh run view 25291992377 --repo FundLoop/fundloop-website --log` showed the target functions deployed successfully.
+
+#### Reflections
+- The Session 46 repair fixed the failing push-triggered deploy path; the dev Supabase target is no longer blocked on CUBID package resolution.
+- The workflow still emits GitHub's Node 20 action deprecation warning for upstream actions, which is not blocking but should be handled in a later CI hygiene pass if it persists.
+
+#### Suggested Next Steps
+- Start Session 47 beta readiness smoke from a clean local Supabase baseline.
+
+---
+
 ### session v126: Address PR #40 Copilot documentation feedback
 - timestamp: 2026-05-03T17:32:02-0400
 - agent: **Codex (GPT-5)**

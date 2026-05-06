@@ -120,9 +120,11 @@ For chain and payout execution:
 - Fiat inbound and outbound stubs now live on the same execution interface with provider-not-configured payloads, but no fiat receipt verification or transfer execution is live yet
 - future Edge Function commands should keep calling the execution registry/adapters instead of embedding EVM, Solana, or fiat branching directly in command handlers
 - monthly-cycle Edge Function commands should write stage attempts, successes, failures, and warnings to `monthly_cycle_events`; Session 37 exposes those events through `/admin/cycles/observability` and future MCP tools should consume the same event stream
+- Session 51 added beta guardrails for monthly-cycle commands: verification review, approval, and payout-intent creation reject non-internal-admin actors before mutation, and approval records failure audit events once the target cycle is known
 - the MCP server skeleton in `packages/mcp-server` invokes Edge Functions through the same standard command envelope and must keep low-level invocation allowlisted
 - Session 39 founder MCP write tools call the existing project payment route and receipt-recording Edge Function command names instead of adding MCP-only mutation paths
 - Session 41 added `mcp-workflow-read` as the first typed read gateway for MCP-facing founder, project-member, and operator workflow reads
+- Session 50 added the app-side `lib/operator/payment-workspaces.ts` read-model boundary for operator payment operations and reconciliation visibility. Until those reads move fully into Edge Functions, app pages should use that stable module rather than page-local Supabase joins.
 
 The migration is intentionally incremental so the transport layer can stabilize before broader read migration and later founder/user workspace work.
 

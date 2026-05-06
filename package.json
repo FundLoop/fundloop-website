@@ -34,6 +34,11 @@
     "test:e2e": "playwright test --project=remote-safe",
     "test:e2e:remote": "playwright test --project=remote-safe",
     "test:e2e:local": "node scripts/run-playwright-local-wallet.mjs",
+    "mcp:dev": "pnpm --filter @fundloop/mcp-server dev",
+    "mcp:test": "pnpm --filter @fundloop/mcp-server test",
+    "mcp:smoke": "pnpm --filter @fundloop/mcp-server smoke",
+    "mcp:inspect": "pnpm --filter @fundloop/mcp-server inspect",
+    "mcp:publish": "pnpm --filter @fundloop/mcp-server publish:metadata",
     "supabase:functions:serve:project-payment-drafts-create": "supabase functions serve project-payment-drafts-create --env-file .env.local",
     "typecheck": "tsc --noEmit",
     "check": "pnpm lint && pnpm test && pnpm typecheck && pnpm build"

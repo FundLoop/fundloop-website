@@ -102,6 +102,7 @@ export async function executeMonthlyCyclePayoutIntentsCreateCommand(
   input: MonthlyCyclePayoutIntentsCreateInput,
   deps: CommandDeps = {},
 ): Promise<CommandResult<MonthlyCyclePayoutIntentsCreateOutput>> {
+  if (input.actorRole !== "internal_admin") return failure("forbidden", "Only internal admins can create payout intents.")
   const now = (deps.now?.() ?? new Date()).toISOString()
   const { data: cycle, error: cycleError } = await supabase
     .from("monthly_cycles")

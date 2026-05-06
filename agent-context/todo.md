@@ -520,77 +520,87 @@ Confirm that the merged Sessions 37-45 stack actually landed cleanly in shared i
 
 ## Session 46.1: Confirm the post-merge dev Supabase deploy
 
-- Status: Not started
-- Timestamp started: TBD
-- Timestamp completed: TBD
-- Feature branch: TBD
-- Head: TBD
-- Session-log reference(s): TBD
+- Status: Complete
+- Timestamp started: 2026-05-03T18:25:21-0400
+- Timestamp completed: 2026-05-03T18:25:21-0400
+- Feature branch: codex/session-46-1-and-47-beta-smoke
+- Head: pending metadata commit
+- Session-log reference(s): session v127
 
 After the Session 46 repair PR merges to `dev`, verify the push-triggered `Supabase Deploy` workflow succeeds end to end against the dev Supabase target. Confirm the deploy run includes `user-cubid-resolve-email`, `user-cubid-sync-profile`, and `mcp-workflow-read`, and that no function attempts to resolve `node_modules/@cubid/api/dist/index.mjs`. If the deploy still fails, keep the follow-up narrow and repair only the failing deploy/runtime boundary before moving to Session 47.
 
 ## Session 47: Run a production-readiness smoke and beta blocker audit
 
-- Status: Not started
-- Timestamp started: TBD
-- Timestamp completed: TBD
-- Feature branch: TBD
-- Head: TBD
-- Session-log reference(s): TBD
+- Status: Complete
+- Timestamp started: 2026-05-03T18:26:24-0400
+- Timestamp completed: 2026-05-04T05:36:28-0400
+- Feature branch: codex/session-46-1-and-47-beta-smoke
+- Head: pending session 47 commit
+- Session-log reference(s): session v128
 
 Perform a focused end-to-end beta readiness audit now that the public funnels, workspaces, monthly cycle pipeline, reporting, storage, and MCP foundation exist. Cover the highest-risk user journeys: visitor conversion, user onboarding, founder onboarding, contribution submission, monthly cycle operator flow, user earnings/reporting, admin operations, and key localization paths. Record concrete blockers in this backlog, fix only small obvious breakages, and avoid reopening completed architecture decisions unless runtime evidence proves they are wrong. The output should be a launch-oriented punch list with severity, owner surface, and suggested session order.
 
+Session 47 beta readiness punch list:
+
+- P1, local smoke infrastructure, Session 48: FundLoop local Supabase only started reliably after excluding Logflare with `supabase start -x logflare`; the analytics container repeatedly restarted and was killed during health checks. Treat this as a smoke-environment reliability blocker, not as a product-route blocker. Session 48 should either repair the local analytics image/version/resource issue or document an official local smoke mode that excludes Logflare while keeping database, auth, storage, REST, and Edge Functions available.
+- P1, operator smoke persona and env ownership, Session 48: the seeded founder/operator account can exercise admin pages only when `FUNDLOOP_INTERNAL_ADMIN_EMAILS` and `FUNDLOOP_ZKAS_SUPERADMIN_EMAILS` include `maya@fundloop.example.com`. Without those env vars, `/admin/operations` redirects to `/workspace` and `/admin/cycles/observability` can produce a role error. Session 48 should make local and preview smoke setup explicit by documenting these allowlists, adding example env values, and ensuring the seed/persona guide matches the intended operator route coverage.
+- P2, developer browser ergonomics, Session 48 or 45 polish follow-up: local browser smoke from `127.0.0.1` logs Next dev HMR cross-origin warnings and `/favicon.ico` returns 404. These did not block route rendering, but they create noisy smoke output that can hide real console failures. A small polish/hygiene pass should add the local dev origin or standardize on `localhost`, and provide a favicon asset or route so future browser smoke is quieter.
+
 ## Session 48: Harden seeded local and preview smoke personas
 
-- Status: Not started
-- Timestamp started: TBD
-- Timestamp completed: TBD
-- Feature branch: TBD
-- Head: TBD
-- Session-log reference(s): TBD
+- Status: Complete
+- Timestamp started: 2026-05-04T05:55:27-0400
+- Timestamp completed: 2026-05-04T05:58:04-0400
+- Feature branch: codex/session-46-1-and-47-beta-smoke
+- Head: pending session 48 commit
+- Session-log reference(s): session v130
 
-Make the local and preview smoke environment more dependable for future agents and reviewers. Ensure the tracked seed supports at least one regular user, one founder/project admin, one internal operator, active projects, payment routes, monthly cycles across multiple statuses, published reports, payout rows, and representative identity states without requiring remote data pulls. Keep secrets out of the seed, keep the dataset small, and update `docs/engineering/local-seed.md` plus testing guidance so smoke credentials and expected routes are obvious. This session should reduce the recurring “can we even smoke this?” drag.
+Make the local and preview smoke environment more dependable for future agents and reviewers. Ensure the tracked seed supports at least one regular user, one founder/project admin, one internal operator, active projects, payment routes, monthly cycles across multiple statuses, published reports, payout rows, and representative identity states without requiring remote data pulls. Include the Session 47 findings: document or repair the local Logflare/analytics startup issue, record the required internal-admin and zkAS-superadmin allowlists for the seeded operator, and make browser smoke quieter where practical. Keep secrets out of the seed, keep the dataset small, and update `docs/engineering/local-seed.md` plus testing guidance so smoke credentials and expected routes are obvious. This session should reduce the recurring “can we even smoke this?” drag.
 
 ## Session 49: Package and document MCP runtime deployment
 
-- Status: Not started
-- Timestamp started: TBD
-- Timestamp completed: TBD
-- Feature branch: TBD
-- Head: TBD
-- Session-log reference(s): TBD
+- Status: Complete
+- Timestamp started: 2026-05-04T07:57:57-0400
+- Timestamp completed: 2026-05-04T08:01:03-0400
+- Feature branch: codex/session-46-1-and-47-beta-smoke
+- Head: pending session 49 commit
+- Session-log reference(s): session v131
 
 Turn the MCP server from a repo package into a deployable and supportable runtime artifact. Add a documented local launch path, environment contract, health or version command, and packaging guidance for whichever host or agent runtime will consume it first. Verify the stdio framing path and Edge-backed readers in a realistic local smoke, then update `docs/engineering/mcp.md` with setup, auth, troubleshooting, and safe tool-extension rules. Do not expand tool scope in this session; the goal is making the existing MCP surface easy to run and hard to misuse.
 
 ## Session 50: Move operator dashboard reads fully onto stable read contracts
 
-- Status: Not started
-- Timestamp started: TBD
-- Timestamp completed: TBD
-- Feature branch: TBD
-- Head: TBD
-- Session-log reference(s): TBD
+- Status: Complete
+- Timestamp started: 2026-05-04T21:15:25-0400
+- Timestamp completed: 2026-05-04T21:20:51-0400
+- Feature branch: codex/session-46-1-and-47-beta-smoke
+- Head: pending session 50 commit
+- Session-log reference(s): session v132
 
 Complete the remaining high-value operator read-model migration by aligning admin dashboard, monthly cycle, observability, reconciliation, reporting, and operations-runbook surfaces with stable server or Edge Function read contracts. The current app has the right architectural direction, but this session should verify no operator page still depends on scattered page-local Supabase queries that duplicate authorization or shape data differently from MCP. Preserve current UI behavior while consolidating read boundaries, adding tests for partial-read failure states, and updating Edge Function/read-path documentation where the contract becomes canonical.
 
 ## Session 51: Add runtime guardrails for beta-critical abuse and data safety
 
-- Status: Not started
-- Timestamp started: TBD
-- Timestamp completed: TBD
-- Feature branch: TBD
-- Head: TBD
-- Session-log reference(s): TBD
+- Status: Complete
+- Timestamp started: 2026-05-05T08:50:10-0400
+- Timestamp completed: 2026-05-05T08:55:56-0400
+- Feature branch: codex/session-46-1-and-47-beta-smoke
+- Head: pending session 51 commit
+- Session-log reference(s): session v133
 
 Move the most important beta safety expectations from docs into runtime checks where practical. Prioritize rate limits or idempotency on expensive command paths, clearer authorization failures for founder/operator commands, safer file-artifact access patterns, and explicit audit events for sensitive cycle or payout operations that are not yet covered. This should be a precise hardening pass, not broad security theater: document what is actually enforced, what remains runbook-only, and which deferred controls need external infrastructure later. Add tests around the new guardrails and avoid weakening existing RLS or Edge Function ownership checks.
 
 ## Session 52: Prepare the dev-to-main release candidate path
 
-- Status: Not started
-- Timestamp started: TBD
-- Timestamp completed: TBD
-- Feature branch: TBD
-- Head: TBD
-- Session-log reference(s): TBD
+- Status: Complete
+- Timestamp started: 2026-05-05T19:16:50-0400
+- Timestamp completed: 2026-05-05T19:18:07-0400
+- Feature branch: codex/session-46-1-and-47-beta-smoke
+- Head: pending session 52 commit
+- Session-log reference(s): session v134
 
 Once dev deploy health and beta smoke blockers are understood, prepare the first credible release-candidate path from `dev` toward `main`. This session should verify branch protection, production environment approval, Supabase main-target deployment settings, required secrets, migration ordering, rollback notes, and the minimum manual smoke checklist for Production. Update the README and operations runbook only where they differ from current truth. The output should be a small release-readiness PR that makes the main promotion path boring, explicit, and reviewable before any production data is touched.
+
+## Backlog continuation after Session 52
+
+Once Sessions 1 through 52 are complete and this backlog has no active spillover items, rename this document to `todo-1-through-52.md`. Continue the next MCP-focused roadmap from `agent-context/todo-mcp.md`, keeping the same metadata and session-log discipline for each MCP task.

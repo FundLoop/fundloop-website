@@ -12,6 +12,7 @@ Use this directory for material that should outlive a single agent session, incl
 Current high-signal docs:
 
 - [Backgrounder for Agents](./backgrounder-for-agents.md)
+- [Beta Runtime Guardrails](./beta-guardrails.md)
 - [Current-State Architecture](./current-state-architecture.md)
 - [CUBID Identity and Snapshot Model](./cubid-identity.md)
 - [Design Tokens](./design-tokens.md)
@@ -25,6 +26,7 @@ Current high-signal docs:
 - [Navigation and Shell Architecture](./navigation-shell.md)
 - [Operations Runbook](./operations-runbook.md)
 - [Reporting Publication](./reporting.md)
+- [Release Candidate Path](./release-candidate.md)
 - [Route Inventory](./route-inventory.md)
 - [Supabase Storage Artifacts](./storage-artifacts.md)
 - [Supabase Remote Deployments](./supabase-deployments.md)

@@ -17,9 +17,12 @@ Before treating a release as healthy:
 
 - Confirm app CI passed lint, tests, typecheck, build, and contract tests where relevant.
 - Confirm Supabase dry-run or deploy targeted the intended `Preview` or `Production` environment.
+- Confirm `dev` and `main` branch protections are active before relying on PR-only promotion.
+- Confirm the `Production` environment has required reviewers before merging a `dev` to `main` release-candidate PR.
 - Confirm the Supabase deploy workflow parsed the expected project ref from the correct pooler secret.
 - Confirm function runtime secrets already exist in the target Supabase project.
 - Confirm no remote seeds or remote resets were used as part of the deploy.
+- Use `docs/engineering/release-candidate.md` for the current dev-to-main promotion sequence and production smoke checklist.
 
 Escalate if the app deploy is healthy but Supabase migration/function deployment failed. In that state, avoid testing flows that depend on newly-added database columns, buckets, or Edge Functions until deploy health is restored.
 
