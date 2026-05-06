@@ -117,6 +117,13 @@ describe("project-member and operator MCP tools", () => {
         required: expect.arrayContaining(["ok", "count", "cycles"]),
       }),
     })
+    expect(tools.find((tool) => tool.name === "operator.cycle.observability")).toMatchObject({
+      title: "Read Operator Cycle Observability",
+      annotations: { readOnlyHint: true, destructiveHint: false, openWorldHint: false },
+      outputSchema: expect.objectContaining({
+        required: expect.arrayContaining(["ok", "count", "filters", "events"]),
+      }),
+    })
   })
 
   it("reads project-member reporting status", async () => {
@@ -198,8 +205,23 @@ describe("project-member and operator MCP tools", () => {
         },
       ],
     })
-    await expect(registry.call("operator.cycle.observability", { cycleKey: "2026-04" }, context)).resolves.toMatchObject({
-      content: [expect.objectContaining({ text: expect.stringContaining("reporting_publication_success") })],
+    const observability = await registry.call("operator.cycle.observability", { cycleKey: "2026-04" }, context)
+    expect(observability.content[0]?.text).toContain("reporting_publication_success")
+    expect(observability.structuredContent).toMatchObject({
+      ok: true,
+      count: 1,
+      filters: { cycleKey: "2026-04", attemptId: null },
+      events: [
+        {
+          cycleKey: "2026-04",
+          eventType: "reporting_publication_success",
+          outcome: "success",
+          severity: "info",
+          attemptId: "attempt-1",
+          message: "Published.",
+          createdAt: "2026-05-04T00:00:00Z",
+        },
+      ],
     })
     await expect(registry.call("operator.payments.reconciliation_visibility", {}, context)).resolves.toMatchObject({
       content: [expect.objectContaining({ text: expect.stringContaining("awaitingConfirmation") })],
@@ -234,6 +256,90 @@ describe("project-member and operator MCP tools", () => {
 
     expect(result).toMatchObject({ isError: true, errorCode: "forbidden" })
     expect(result.content[0]?.text).toContain("internal operator")
+  })
+
+  it("blocks non-operators from reading cycle observability before the handler runs", async () => {
+    const forbiddenReader: OperatorWorkflowReader = {
+      ...operatorReader,
+      async listCycleEvents() {
+        throw new Error("handler should not run")
+      },
+    }
+
+    const result = await createRegistry().call(
+      "operator.cycle.observability",
+      { cycleKey: "2026-04" },
+      { auth: nonOperatorAuth, edge, projectMemberReader, operatorReader: forbiddenReader },
+    )
+
+    expect(result).toMatchObject({ isError: true, errorCode: "forbidden" })
+    expect(result.content[0]?.text).toContain("internal operator")
+  })
+
+  it("rejects invalid operator observability filters before the reader runs", async () => {
+    const result = await createRegistry().call("operator.cycle.observability", { cycleKey: "2026-99" }, { auth, edge, projectMemberReader, operatorReader })
+
+    expect(result).toMatchObject({ isError: true, errorCode: "invalid_payload" })
+  })
+
+  it("returns calm operator observability empty states", async () => {
+    const emptyReader: OperatorWorkflowReader = {
+      ...operatorReader,
+      async listCycleEvents() {
+        return []
+      },
+    }
+    const result = await createRegistry().call("operator.cycle.observability", { attemptId: "attempt-1" }, { auth, edge, projectMemberReader, operatorReader: emptyReader })
+
+    expect(result.structuredContent).toMatchObject({
+      ok: true,
+      count: 0,
+      filters: { cycleKey: null, attemptId: "attempt-1" },
+      events: [],
+      emptyState: "No monthly-cycle events matched the current filters.",
+    })
+  })
+
+  it("returns safe operator observability errors and redacts event messages", async () => {
+    const noisyReader: OperatorWorkflowReader = {
+      ...operatorReader,
+      async listCycleEvents() {
+        return [
+          {
+            cycleKey: "2026-04",
+            eventType: "calculation_failed",
+            outcome: "failure",
+            severity: "error",
+            attemptId: "attempt-1",
+            message: "service_role:secret-token " + "x".repeat(400),
+            createdAt: "2026-05-04T00:00:00Z",
+          },
+        ]
+      },
+    }
+    const result = await createRegistry().call("operator.cycle.observability", { cycleKey: "2026-04" }, { auth, edge, projectMemberReader, operatorReader: noisyReader })
+
+    expect(result.content[0]?.text).not.toContain("secret-token")
+    expect(JSON.stringify(result.structuredContent)).not.toContain("secret-token")
+    expect(result.structuredContent).toMatchObject({
+      ok: true,
+      events: [expect.objectContaining({ message: expect.stringContaining("[redacted]") })],
+    })
+  })
+
+  it("returns safe operator observability errors when the read gateway fails", async () => {
+    const failingReader: OperatorWorkflowReader = {
+      ...operatorReader,
+      async listCycleEvents() {
+        throw new Error("select payload from private_event_table using service_role")
+      },
+    }
+    const result = await createRegistry().call("operator.cycle.observability", { cycleKey: "2026-04" }, { auth, edge, projectMemberReader, operatorReader: failingReader })
+
+    expect(result).toMatchObject({ isError: true, errorCode: "workflow_read_failed" })
+    expect(result.content[0]?.text).toContain("temporarily unavailable")
+    expect(result.content[0]?.text).not.toContain("private_event_table")
+    expect(result.content[0]?.text).not.toContain("service_role")
   })
 
   it("returns calm operator cycle empty states", async () => {

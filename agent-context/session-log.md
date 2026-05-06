@@ -1,3 +1,36 @@
+### session v150: Finalize operator cycle-observability MCP tool
+- timestamp: 2026-05-06T19:16:45-0400
+- agent: **Codex (GPT-5)**
+- branch: **codex/mcp-roadmap-kickoff**
+- head: pending MCP-5.11 commit
+
+#### Objective
+Complete MCP-5.11 by making `operator.cycle.observability` a structured, read-only, internal-operator cycle-event briefing tool.
+
+#### Actions Taken
+- Added title, read-only annotations, and output-schema metadata to `operator.cycle.observability`.
+- Normalized cycle events into a bounded `{ ok, count, filters, events }` response with compact event summaries and truncated messages.
+- Added safe protocol-visible errors for missing reader configuration and read-gateway failures without exposing raw backend exception details.
+- Added tests for metadata, structured filtered output, non-operator authorization blocking before handler execution, invalid filters, empty states, message redaction, and backend failure redaction.
+- Marked MCP-5.11 started in `agent-context/todo-mcp.md` and refreshed the MCP engineering doc.
+
+#### Tests and Validation Notes
+- `pnpm mcp:test` passed: 4 files, 54 tests.
+- `deno cache --config supabase/functions/deno.json supabase/functions/mcp/index.ts` passed.
+- `pnpm lint` passed.
+- `pnpm typecheck` passed.
+- `pnpm build` passed.
+- A local Node 25 `pnpm test` run stalled inside Vitest with no assertion output and was stopped; the Node 22 parity gate completed successfully.
+- `pnpm dlx node@22.22.1 /opt/homebrew/bin/pnpm check` passed: 76 files, 335 tests, typecheck, and build.
+
+#### Reflections
+- This keeps operator observability useful for incident review while avoiding raw event payloads, private manifests, or service-role error leakage.
+
+#### Suggested Next Steps
+- Continue with MCP-5.12 by finalizing `operator.payments.reconciliation_visibility` as a safe internal reconciliation health read.
+
+---
+
 ### session v149: Finalize operator cycle-list MCP tool
 - timestamp: 2026-05-06T19:12:56-0400
 - agent: **Codex (GPT-5)**

@@ -1,5 +1,5 @@
 import { errorResult, jsonTextResult } from "./protocol.ts"
-import type { OperatorCycleStatus, ProjectMemberReportingStatus } from "./member-operator-readers.ts"
+import type { OperatorCycleEvent, OperatorCycleStatus, ProjectMemberReportingStatus } from "./member-operator-readers.ts"
 import type { McpToolRegistry } from "./tools.ts"
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -40,6 +40,18 @@ function summarizeOperatorCycle(cycle: OperatorCycleStatus) {
     calculationStartedAt: cycle.calculationStartedAt,
     distributionStartedAt: cycle.distributionStartedAt,
     reportingPublishedAt: cycle.reportingPublishedAt,
+  }
+}
+
+function summarizeOperatorCycleEvent(event: OperatorCycleEvent) {
+  return {
+    cycleKey: event.cycleKey,
+    eventType: event.eventType,
+    outcome: event.outcome,
+    severity: event.severity,
+    attemptId: event.attemptId,
+    message: typeof event.message === "string" ? event.message.slice(0, 300) : null,
+    createdAt: event.createdAt,
   }
 }
 
@@ -158,7 +170,13 @@ export function registerProjectMemberAndOperatorMcpTools(registry: McpToolRegist
   registry.register({
     definition: {
       name: "operator.cycle.observability",
+      title: "Read Operator Cycle Observability",
       description: "Read monthly-cycle observability events by cycle key or attempt id.",
+      annotations: {
+        readOnlyHint: true,
+        destructiveHint: false,
+        openWorldHint: false,
+      },
       inputSchema: {
         type: "object",
         properties: {
@@ -167,15 +185,48 @@ export function registerProjectMemberAndOperatorMcpTools(registry: McpToolRegist
         },
         additionalProperties: false,
       },
+      outputSchema: {
+        type: "object",
+        properties: {
+          ok: { type: "boolean" },
+          count: { type: "number", integer: true, minimum: 0 },
+          filters: { type: "object" },
+          events: { type: "array" },
+          emptyState: { type: "string", maxLength: 240 },
+        },
+        required: ["ok", "count", "filters", "events"],
+        additionalProperties: false,
+      },
     },
     async handler(input, context) {
-      if (!context.operatorReader) return errorResult("Operator workflow reader is not configured.")
-      return jsonTextResult(
-        await context.operatorReader.listCycleEvents(
-          { cycleKey: readOptionalString(input, "cycleKey"), attemptId: readOptionalString(input, "attemptId") },
+      if (!context.operatorReader) {
+        return { ...errorResult("Operator workflow reader is not configured."), errorCode: "reader_not_configured" }
+      }
+      const filters = { cycleKey: readOptionalString(input, "cycleKey") ?? null, attemptId: readOptionalString(input, "attemptId") ?? null }
+      try {
+        const events = (await context.operatorReader.listCycleEvents(
+          {
+            cycleKey: filters.cycleKey ?? undefined,
+            attemptId: filters.attemptId ?? undefined,
+          },
           context.auth,
-        ),
-      )
+        ))
+          .slice(0, 50)
+          .map(summarizeOperatorCycleEvent)
+
+        return jsonTextResult({
+          ok: true,
+          count: events.length,
+          filters,
+          events,
+          ...(events.length === 0 ? { emptyState: "No monthly-cycle events matched the current filters." } : {}),
+        })
+      } catch {
+        return {
+          ...errorResult("Operator cycle observability is temporarily unavailable."),
+          errorCode: "workflow_read_failed",
+        }
+      }
     },
   })
 

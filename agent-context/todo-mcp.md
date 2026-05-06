@@ -458,12 +458,12 @@ Finalize the operator monthly-cycle listing tool as an internal-operator read-on
 
 ### MCP-5.11. Finalize `operator.cycle.observability`
 
-- Status: Not started
-- Timestamp started: TBD
-- Head when starting: TBD
-- Timestamp completed: TBD
-- Feature branch(es): TBD
-- Session-log reference(s): TBD
+- Status: Complete
+- Timestamp started: 2026-05-06T19:16:45-0400
+- Head when starting: a039783
+- Timestamp completed: 2026-05-06T19:20:42-0400
+- Feature branch(es): codex/mcp-roadmap-kickoff
+- Session-log reference(s): session v150
 
 Finalize the operator cycle-observability tool as a bounded internal read for cycle events by `cycleKey` or `attemptId`. Require internal-operator authorization, strict cycle/attempt validation, and compact event summaries with severity, event type, outcome, timestamp, and safe messages. Add read-only/admin annotations, structured output, and tests for valid filters, no-filter defaults, invalid filters, non-operator rejection, partial read failures, and output redaction of any sensitive payload fragments. Keep this read-only; mutation or replay actions belong in separate explicitly confirmed tools.
 
