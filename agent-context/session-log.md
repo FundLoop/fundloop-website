@@ -1,3 +1,36 @@
+### session v151: Finalize operator reconciliation-visibility MCP tool
+- timestamp: 2026-05-06T19:21:32-0400
+- agent: **Codex (GPT-5)**
+- branch: **codex/mcp-roadmap-kickoff**
+- head: pending MCP-5.12 commit
+
+#### Objective
+Complete MCP-5.12 by making `operator.payments.reconciliation_visibility` a structured, read-only, internal-operator reconciliation health tool.
+
+#### Actions Taken
+- Added title, read-only annotations, and output-schema metadata to `operator.payments.reconciliation_visibility`.
+- Normalized reconciliation counts into a structured health response with open queue totals, warning states, and safe next-action hints.
+- Added safe protocol-visible errors for missing reader configuration and read-gateway failures without exposing raw backend exception details.
+- Added tests for metadata, operator success, non-operator authorization blocking before handler execution, empty queues, failed-submission guidance, and backend failure redaction.
+- Marked MCP-5.12 started in `agent-context/todo-mcp.md` and refreshed the MCP engineering doc.
+
+#### Tests and Validation Notes
+- `pnpm mcp:test` passed: 4 files, 58 tests.
+- `deno cache --config supabase/functions/deno.json supabase/functions/mcp/index.ts` passed.
+- `pnpm lint` passed.
+- `pnpm typecheck` passed.
+- `pnpm test` passed: 76 files, 339 tests.
+- `pnpm build` passed.
+- `pnpm dlx node@22.22.1 /opt/homebrew/bin/pnpm check` passed.
+
+#### Reflections
+- This makes reconciliation visibility useful to agents without exposing wallet internals, raw command bodies, or private operational query details.
+
+#### Suggested Next Steps
+- Continue with MCP-5.13 by finalizing `operator.reporting.coverage` as the last current operator read tool in this tranche.
+
+---
+
 ### session v150: Finalize operator cycle-observability MCP tool
 - timestamp: 2026-05-06T19:16:45-0400
 - agent: **Codex (GPT-5)**

@@ -176,7 +176,7 @@ Session 40 added read-only project-member and operator tools:
 - `project_member.project.reporting_status`: annotated read-only project-member status tool backed by `mcp-workflow-read`, returning compact reporting counts, attribution readiness, and safe next-action hints without artifact paths or operator-only internals.
 - `operator.cycles.list`: annotated internal-operator read-only overview backed by `mcp-workflow-read`, returning a bounded recent-cycle list with lifecycle timestamps and safe empty/error states.
 - `operator.cycle.observability`: annotated internal-operator read-only event view backed by `mcp-workflow-read`, returning bounded cycle-event summaries by cycle key or attempt id with sanitized messages.
-- `operator.payments.reconciliation_visibility`
+- `operator.payments.reconciliation_visibility`: annotated internal-operator read-only reconciliation health view backed by `mcp-workflow-read`, returning status counts, open-queue totals, warning states, and safe next actions.
 - `operator.reporting.coverage`
 
 These tools intentionally do not mutate state. They use `ProjectMemberWorkflowReader` and `OperatorWorkflowReader` boundaries so the implementation can move from direct authenticated Supabase REST reads to Edge Function read models in Session 41 without changing the MCP tool contract.

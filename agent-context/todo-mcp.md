@@ -469,12 +469,12 @@ Finalize the operator cycle-observability tool as a bounded internal read for cy
 
 ### MCP-5.12. Finalize `operator.payments.reconciliation_visibility`
 
-- Status: Not started
-- Timestamp started: TBD
-- Head when starting: TBD
-- Timestamp completed: TBD
-- Feature branch(es): TBD
-- Session-log reference(s): TBD
+- Status: Complete
+- Timestamp started: 2026-05-06T19:21:32-0400
+- Head when starting: 7928247
+- Timestamp completed: 2026-05-06T19:24:35-0400
+- Feature branch(es): codex/mcp-roadmap-kickoff
+- Session-log reference(s): session v151
 
 Finalize the operator reconciliation visibility tool as a read-only internal health summary for payment reconciliation queues. Require internal-operator authorization and call the `mcp-workflow-read` operation rather than direct table reads. Return bounded counts, warning states, stale-queue indicators, and safe next-action hints. Add read-only/admin annotations, structured output, stable errors, and tests for operator success, non-operator rejection, empty queues, partial read warnings, and no leakage of private wallet credentials, service-role details, raw transaction payloads, or command bodies.
 

@@ -1,5 +1,10 @@
 import { errorResult, jsonTextResult } from "./protocol.ts"
-import type { OperatorCycleEvent, OperatorCycleStatus, ProjectMemberReportingStatus } from "./member-operator-readers.ts"
+import type {
+  OperatorCycleEvent,
+  OperatorCycleStatus,
+  OperatorReconciliationVisibility,
+  ProjectMemberReportingStatus,
+} from "./member-operator-readers.ts"
 import type { McpToolRegistry } from "./tools.ts"
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -52,6 +57,35 @@ function summarizeOperatorCycleEvent(event: OperatorCycleEvent) {
     attemptId: event.attemptId,
     message: typeof event.message === "string" ? event.message.slice(0, 300) : null,
     createdAt: event.createdAt,
+  }
+}
+
+function deriveReconciliationHealth(input: OperatorReconciliationVisibility) {
+  const openQueueCount = input.submitted + input.confirming + input.awaitingConfirmation
+  const warningStates: string[] = []
+  const nextActions: string[] = []
+
+  if (input.awaitingConfirmation > 0) {
+    warningStates.push("awaiting_confirmation_queue")
+    nextActions.push("Review onchain submissions awaiting operator confirmation.")
+  }
+  if (input.confirming > 0 || input.submitted > 0) {
+    warningStates.push("pending_chain_confirmation")
+    nextActions.push("Let chain confirmation or reconciliation jobs continue before manually confirming payments.")
+  }
+  if (input.failed > 0) {
+    warningStates.push("failed_submissions")
+    nextActions.push("Inspect failed onchain submissions in the admin reconciliation console.")
+  }
+  if (openQueueCount === 0 && input.failed === 0) {
+    nextActions.push("No immediate reconciliation action is required.")
+  }
+
+  return {
+    counts: input,
+    openQueueCount,
+    warningStates,
+    nextActions,
   }
 }
 
@@ -233,16 +267,46 @@ export function registerProjectMemberAndOperatorMcpTools(registry: McpToolRegist
   registry.register({
     definition: {
       name: "operator.payments.reconciliation_visibility",
+      title: "Read Operator Payment Reconciliation Visibility",
       description: "Read onchain reconciliation status counts for internal operators.",
+      annotations: {
+        readOnlyHint: true,
+        destructiveHint: false,
+        openWorldHint: false,
+      },
       inputSchema: {
         type: "object",
         properties: {},
         additionalProperties: false,
       },
+      outputSchema: {
+        type: "object",
+        properties: {
+          ok: { type: "boolean" },
+          counts: { type: "object" },
+          openQueueCount: { type: "number", integer: true, minimum: 0 },
+          warningStates: { type: "array" },
+          nextActions: { type: "array" },
+        },
+        required: ["ok", "counts", "openQueueCount", "warningStates", "nextActions"],
+        additionalProperties: false,
+      },
     },
     async handler(_input, context) {
-      if (!context.operatorReader) return errorResult("Operator workflow reader is not configured.")
-      return jsonTextResult(await context.operatorReader.getReconciliationVisibility(context.auth))
+      if (!context.operatorReader) {
+        return { ...errorResult("Operator workflow reader is not configured."), errorCode: "reader_not_configured" }
+      }
+      try {
+        return jsonTextResult({
+          ok: true,
+          ...deriveReconciliationHealth(await context.operatorReader.getReconciliationVisibility(context.auth)),
+        })
+      } catch {
+        return {
+          ...errorResult("Operator payment reconciliation visibility is temporarily unavailable."),
+          errorCode: "workflow_read_failed",
+        }
+      }
     },
   })
 

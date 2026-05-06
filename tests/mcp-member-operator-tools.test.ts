@@ -124,6 +124,13 @@ describe("project-member and operator MCP tools", () => {
         required: expect.arrayContaining(["ok", "count", "filters", "events"]),
       }),
     })
+    expect(tools.find((tool) => tool.name === "operator.payments.reconciliation_visibility")).toMatchObject({
+      title: "Read Operator Payment Reconciliation Visibility",
+      annotations: { readOnlyHint: true, destructiveHint: false, openWorldHint: false },
+      outputSchema: expect.objectContaining({
+        required: expect.arrayContaining(["ok", "counts", "openQueueCount", "warningStates", "nextActions"]),
+      }),
+    })
   })
 
   it("reads project-member reporting status", async () => {
@@ -223,8 +230,17 @@ describe("project-member and operator MCP tools", () => {
         },
       ],
     })
-    await expect(registry.call("operator.payments.reconciliation_visibility", {}, context)).resolves.toMatchObject({
-      content: [expect.objectContaining({ text: expect.stringContaining("awaitingConfirmation") })],
+    const reconciliation = await registry.call("operator.payments.reconciliation_visibility", {}, context)
+    expect(reconciliation.content[0]?.text).toContain("awaitingConfirmation")
+    expect(reconciliation.structuredContent).toMatchObject({
+      ok: true,
+      counts: { submitted: 1, confirming: 1, awaitingConfirmation: 2, confirmed: 5, failed: 0 },
+      openQueueCount: 4,
+      warningStates: ["awaiting_confirmation_queue", "pending_chain_confirmation"],
+      nextActions: [
+        "Review onchain submissions awaiting operator confirmation.",
+        "Let chain confirmation or reconciliation jobs continue before manually confirming payments.",
+      ],
     })
     await expect(registry.call("operator.reporting.coverage", { cycleKey: "2026-04" }, context)).resolves.toMatchObject({
       content: [expect.objectContaining({ text: expect.stringContaining("artifactCount") })],
@@ -274,6 +290,73 @@ describe("project-member and operator MCP tools", () => {
 
     expect(result).toMatchObject({ isError: true, errorCode: "forbidden" })
     expect(result.content[0]?.text).toContain("internal operator")
+  })
+
+  it("blocks non-operators from reading reconciliation visibility before the handler runs", async () => {
+    const forbiddenReader: OperatorWorkflowReader = {
+      ...operatorReader,
+      async getReconciliationVisibility() {
+        throw new Error("handler should not run")
+      },
+    }
+
+    const result = await createRegistry().call(
+      "operator.payments.reconciliation_visibility",
+      {},
+      { auth: nonOperatorAuth, edge, projectMemberReader, operatorReader: forbiddenReader },
+    )
+
+    expect(result).toMatchObject({ isError: true, errorCode: "forbidden" })
+    expect(result.content[0]?.text).toContain("internal operator")
+  })
+
+  it("returns no-action reconciliation guidance for empty queues", async () => {
+    const emptyReader: OperatorWorkflowReader = {
+      ...operatorReader,
+      async getReconciliationVisibility() {
+        return { submitted: 0, confirming: 0, awaitingConfirmation: 0, confirmed: 8, failed: 0 }
+      },
+    }
+    const result = await createRegistry().call("operator.payments.reconciliation_visibility", {}, { auth, edge, projectMemberReader, operatorReader: emptyReader })
+
+    expect(result.structuredContent).toMatchObject({
+      ok: true,
+      openQueueCount: 0,
+      warningStates: [],
+      nextActions: ["No immediate reconciliation action is required."],
+    })
+  })
+
+  it("returns failed-submission reconciliation guidance", async () => {
+    const failedReader: OperatorWorkflowReader = {
+      ...operatorReader,
+      async getReconciliationVisibility() {
+        return { submitted: 0, confirming: 0, awaitingConfirmation: 0, confirmed: 8, failed: 2 }
+      },
+    }
+    const result = await createRegistry().call("operator.payments.reconciliation_visibility", {}, { auth, edge, projectMemberReader, operatorReader: failedReader })
+
+    expect(result.structuredContent).toMatchObject({
+      ok: true,
+      openQueueCount: 0,
+      warningStates: ["failed_submissions"],
+      nextActions: ["Inspect failed onchain submissions in the admin reconciliation console."],
+    })
+  })
+
+  it("returns safe reconciliation visibility errors when the read gateway fails", async () => {
+    const failingReader: OperatorWorkflowReader = {
+      ...operatorReader,
+      async getReconciliationVisibility() {
+        throw new Error("select wallet_private_key, service_role from reconciliation internals")
+      },
+    }
+    const result = await createRegistry().call("operator.payments.reconciliation_visibility", {}, { auth, edge, projectMemberReader, operatorReader: failingReader })
+
+    expect(result).toMatchObject({ isError: true, errorCode: "workflow_read_failed" })
+    expect(result.content[0]?.text).toContain("temporarily unavailable")
+    expect(result.content[0]?.text).not.toContain("wallet_private_key")
+    expect(result.content[0]?.text).not.toContain("service_role")
   })
 
   it("rejects invalid operator observability filters before the reader runs", async () => {
