@@ -30,6 +30,13 @@ const projectMemberReader: ProjectMemberWorkflowReader = {
   },
 }
 
+const projectMemberAuth = {
+  actorRole: "project_member" as const,
+  bearerToken: "member-token",
+  userId: "member-1",
+  email: "member@example.com",
+}
+
 const operatorReader: OperatorWorkflowReader = {
   async listCycleStatuses() {
     return [
@@ -79,7 +86,8 @@ function createRegistry() {
 
 describe("project-member and operator MCP tools", () => {
   it("registers project-member and operator read tools", () => {
-    expect(createRegistry().list().map((tool) => tool.name)).toEqual(
+    const tools = createRegistry().list()
+    expect(tools.map((tool) => tool.name)).toEqual(
       expect.arrayContaining([
         "project_member.project.reporting_status",
         "operator.cycles.list",
@@ -88,17 +96,72 @@ describe("project-member and operator MCP tools", () => {
         "operator.reporting.coverage",
       ]),
     )
+    expect(tools.find((tool) => tool.name === "project_member.project.reporting_status")).toMatchObject({
+      title: "Read Project Member Reporting Status",
+      annotations: { readOnlyHint: true, destructiveHint: false, openWorldHint: false },
+      outputSchema: expect.objectContaining({
+        required: expect.arrayContaining(["ok", "projectSlug", "cycleKey", "reports", "attribution", "nextActions"]),
+      }),
+    })
   })
 
   it("reads project-member reporting status", async () => {
     const result = await createRegistry().call(
       "project_member.project.reporting_status",
       { projectSlug: "civic-mesh", cycleKey: "2026-04" },
-      { auth, edge, projectMemberReader, operatorReader },
+      { auth: projectMemberAuth, edge, projectMemberReader, operatorReader },
     )
 
     expect(result.content[0]?.text).toContain("civic-mesh")
     expect(result.content[0]?.text).toContain("approvedDatasetCount")
+    expect(result.structuredContent).toMatchObject({
+      ok: true,
+      projectSlug: "civic-mesh",
+      cycleKey: "2026-04",
+      reports: { founderReportCount: 1, artifactCount: 1 },
+      attribution: { approvedDatasetCount: 2, pendingDatasetCount: 0 },
+      nextActions: [],
+    })
+  })
+
+  it("returns next actions when project-member reporting data is incomplete", async () => {
+    const emptyReader: ProjectMemberWorkflowReader = {
+      async getProjectReportingStatus(input) {
+        return {
+          projectSlug: input.projectSlug,
+          cycleKey: null,
+          reports: { founderReportCount: 0, artifactCount: 0 },
+          attribution: { approvedDatasetCount: 0, pendingDatasetCount: 1 },
+        }
+      },
+    }
+    const result = await createRegistry().call(
+      "project_member.project.reporting_status",
+      { projectSlug: "civic-mesh" },
+      { auth: projectMemberAuth, edge, projectMemberReader: emptyReader, operatorReader },
+    )
+
+    expect(result.structuredContent).toMatchObject({
+      ok: true,
+      cycleKey: null,
+      nextActions: [
+        "Confirm the project is attached to an active monthly cycle.",
+        "Review pending attribution datasets.",
+        "Submit or approve attribution data for this cycle.",
+        "Wait for founder reporting to be published for this cycle.",
+      ],
+    })
+    expect(result.content[0]?.text).not.toContain("artifact_path")
+  })
+
+  it("rejects invalid project-member reporting input before the reader runs", async () => {
+    const result = await createRegistry().call(
+      "project_member.project.reporting_status",
+      { projectSlug: "civic-mesh", cycleKey: "2026-99" },
+      { auth: projectMemberAuth, edge, projectMemberReader, operatorReader },
+    )
+
+    expect(result).toMatchObject({ isError: true, errorCode: "invalid_payload" })
   })
 
   it("reads operator cycle, observability, reconciliation, and reporting visibility", async () => {
@@ -121,10 +184,28 @@ describe("project-member and operator MCP tools", () => {
 
   it("returns protocol-visible errors when required readers are missing", async () => {
     const registry = createRegistry()
-    const memberResult = await registry.call("project_member.project.reporting_status", { projectSlug: "civic-mesh" }, { auth, edge })
+    const memberResult = await registry.call("project_member.project.reporting_status", { projectSlug: "civic-mesh" }, { auth: projectMemberAuth, edge })
     const operatorResult = await registry.call("operator.cycles.list", {}, { auth, edge })
 
-    expect(memberResult.isError).toBe(true)
+    expect(memberResult).toMatchObject({ isError: true, errorCode: "reader_not_configured" })
     expect(operatorResult.isError).toBe(true)
+  })
+
+  it("returns safe project-member reporting errors when the read gateway fails", async () => {
+    const failingReader: ProjectMemberWorkflowReader = {
+      async getProjectReportingStatus() {
+        throw new Error("select artifact_path, private manifest from service_role")
+      },
+    }
+    const result = await createRegistry().call(
+      "project_member.project.reporting_status",
+      { projectSlug: "civic-mesh" },
+      { auth: projectMemberAuth, edge, projectMemberReader: failingReader, operatorReader },
+    )
+
+    expect(result).toMatchObject({ isError: true, errorCode: "workflow_read_failed" })
+    expect(result.content[0]?.text).toContain("temporarily unavailable")
+    expect(result.content[0]?.text).not.toContain("artifact_path")
+    expect(result.content[0]?.text).not.toContain("service_role")
   })
 })

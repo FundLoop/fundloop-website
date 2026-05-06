@@ -1,3 +1,36 @@
+### session v148: Finalize project-member reporting-status MCP tool
+- timestamp: 2026-05-06T19:07:24-0400
+- agent: **Codex (GPT-5)**
+- branch: **codex/mcp-roadmap-kickoff**
+- head: pending MCP-5.9 commit
+
+#### Objective
+Complete MCP-5.9 by making `project_member.project.reporting_status` a structured, read-only, safe project-member reporting briefing tool.
+
+#### Actions Taken
+- Added title, read-only annotations, and output-schema metadata to `project_member.project.reporting_status`.
+- Normalized project-member reporting results into structured output with reporting counts, attribution counts, cycle context, and derived next-action hints.
+- Added safe protocol-visible errors for missing reader configuration and read-gateway failures without exposing raw backend exception details.
+- Added tests for metadata, structured output, incomplete-cycle next actions, invalid input rejection, missing reader errors, and backend failure redaction.
+- Marked MCP-5.9 started in `agent-context/todo-mcp.md` and refreshed the MCP engineering doc.
+
+#### Tests and Validation Notes
+- `pnpm mcp:test` passed: 4 files, 46 tests.
+- `deno cache --config supabase/functions/deno.json supabase/functions/mcp/index.ts` passed.
+- `pnpm lint` passed.
+- `pnpm typecheck` passed.
+- `pnpm test` passed: 76 files, 327 tests.
+- `pnpm build` passed.
+- `pnpm dlx node@22.22.1 /opt/homebrew/bin/pnpm check` passed.
+
+#### Reflections
+- This gives project members a useful status briefing without leaking founder payment-route details, artifact paths, or operator-only internals.
+
+#### Suggested Next Steps
+- Continue with MCP-5.10 by finalizing `operator.cycles.list` as the first fully annotated internal-operator read tool.
+
+---
+
 ### session v147: Finalize founder onchain receipt MCP tool
 - timestamp: 2026-05-06T18:50:17-0400
 - agent: **Codex (GPT-5)**

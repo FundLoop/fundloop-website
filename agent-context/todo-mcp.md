@@ -436,12 +436,12 @@ Finalize onchain receipt recording as a mutating founder/project-admin tool back
 
 ### MCP-5.9. Finalize `project_member.project.reporting_status`
 
-- Status: Not started
-- Timestamp started: TBD
-- Head when starting: TBD
-- Timestamp completed: TBD
-- Feature branch(es): TBD
-- Session-log reference(s): TBD
+- Status: Complete
+- Timestamp started: 2026-05-06T19:07:24-0400
+- Head when starting: fa475b8
+- Timestamp completed: 2026-05-06T19:10:23-0400
+- Feature branch(es): codex/mcp-roadmap-kickoff
+- Session-log reference(s): session v148
 
 Finalize the project-member reporting-status tool as a read-only status briefing for members who contribute attribution/reporting data. Require valid `projectSlug` and optional `cycleKey`, call the `mcp-workflow-read` operation, and return reporting status, attribution/data-submission readiness, published report availability, and next actions. Add read-only annotations, structured output, and tests for accessible project, forbidden project, invalid cycle key, no-current-cycle empty state, partial warnings, and no exposure of founder-only payment route details or operator-private artifact internals.
 
