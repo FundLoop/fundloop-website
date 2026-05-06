@@ -3,8 +3,9 @@ import {
   PROJECT_CRYPTO_ROUTE_UPDATE_FUNCTION,
   PROJECT_ONCHAIN_PAYMENT_SUBMISSION_RECORD_FUNCTION,
 } from "../../../lib/edge-functions/project-payment-operations-contract.ts"
+import type { EdgeCommandResult } from "../../../lib/edge-functions/result.ts"
 import { errorResult, jsonTextResult } from "./protocol.ts"
-import type { McpToolRegistry } from "./tools.ts"
+import type { McpToolHandlerContext, McpToolRegistry } from "./tools.ts"
 import type { FounderWorkflowReader } from "./founder-reader.ts"
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -35,6 +36,24 @@ function deriveCycleStatusNextActions(status: Awaited<ReturnType<FounderWorkflow
   }
 
   return actions
+}
+
+async function edgeCommandToolResult<TOutput>(
+  context: McpToolHandlerContext,
+  functionName: string,
+  input: unknown,
+) {
+  const result = await context.edge.invoke<unknown, TOutput>(functionName, input, context.auth)
+  if (!result.ok) return edgeCommandFailureToolResult(result)
+  return jsonTextResult(result)
+}
+
+function edgeCommandFailureToolResult(result: Extract<EdgeCommandResult<unknown>, { ok: false }>) {
+  return {
+    ...errorResult(result.error.message),
+    structuredContent: result,
+    errorCode: result.error.code,
+  }
 }
 
 export function registerFounderMcpTools(registry: McpToolRegistry) {
@@ -158,7 +177,13 @@ export function registerFounderMcpTools(registry: McpToolRegistry) {
   registry.register({
     definition: {
       name: "founder.project.crypto_route.create",
+      title: "Create Founder Crypto Route",
       description: "Create a project crypto payment route through the canonical Edge Function command.",
+      annotations: {
+        readOnlyHint: false,
+        destructiveHint: false,
+        openWorldHint: false,
+      },
       inputSchema: {
         type: "object",
         properties: {
@@ -172,9 +197,19 @@ export function registerFounderMcpTools(registry: McpToolRegistry) {
         required: ["projectSlug", "chainId", "chainAssetId", "intakeContractId"],
         additionalProperties: false,
       },
+      outputSchema: {
+        type: "object",
+        properties: {
+          ok: { type: "boolean" },
+          data: { type: "object" },
+          error: { type: "object" },
+        },
+        required: ["ok"],
+        additionalProperties: false,
+      },
     },
     async handler(input, context) {
-      return jsonTextResult(await context.edge.invoke(PROJECT_CRYPTO_ROUTE_CREATE_FUNCTION, input, context.auth))
+      return edgeCommandToolResult(context, PROJECT_CRYPTO_ROUTE_CREATE_FUNCTION, input)
     },
   })
 

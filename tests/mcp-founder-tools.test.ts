@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest"
-import { edgeCommandSuccess, type EdgeCommandResult } from "@/lib/edge-functions/result"
+import { edgeCommandFailure, edgeCommandSuccess, type EdgeCommandResult } from "@/lib/edge-functions/result"
 import {
   PROJECT_CRYPTO_ROUTE_CREATE_FUNCTION,
   PROJECT_CRYPTO_ROUTE_UPDATE_FUNCTION,
@@ -41,6 +41,15 @@ function createEdgeClient(calls: Array<{ functionName: string; input: unknown }>
   }
 }
 
+function createFailingEdgeClient(calls: Array<{ functionName: string; input: unknown }>, code: string, message: string): EdgeCommandClient {
+  return {
+    async invoke<TInput, TOutput>(functionName: string, input: TInput): Promise<EdgeCommandResult<TOutput>> {
+      calls.push({ functionName, input })
+      return edgeCommandFailure(code, message)
+    },
+  }
+}
+
 function createRegistry() {
   const registry = createBaseMcpToolRegistry()
   registerFounderMcpTools(registry)
@@ -71,6 +80,13 @@ describe("founder MCP tools", () => {
       annotations: { readOnlyHint: true, destructiveHint: false, openWorldHint: false },
       outputSchema: expect.objectContaining({
         required: expect.arrayContaining(["ok", "project", "cycle", "payments", "routes", "nextActions"]),
+      }),
+    })
+    expect(tools.find((tool) => tool.name === "founder.project.crypto_route.create")).toMatchObject({
+      title: "Create Founder Crypto Route",
+      annotations: { readOnlyHint: false, destructiveHint: false, openWorldHint: false },
+      outputSchema: expect.objectContaining({
+        required: expect.arrayContaining(["ok"]),
       }),
     })
   })
@@ -114,7 +130,7 @@ describe("founder MCP tools", () => {
     const registry = createRegistry()
     const context = { auth, edge: createEdgeClient(calls), founderReader }
 
-    await registry.call(
+    const createResult = await registry.call(
       "founder.project.crypto_route.create",
       { projectSlug: "civic-mesh", chainId: 1, chainAssetId: 2, intakeContractId: 3 },
       context,
@@ -135,6 +151,50 @@ describe("founder MCP tools", () => {
       PROJECT_CRYPTO_ROUTE_UPDATE_FUNCTION,
       PROJECT_ONCHAIN_PAYMENT_SUBMISSION_RECORD_FUNCTION,
     ])
+    expect(createResult.structuredContent).toMatchObject({ ok: true, data: { accepted: true } })
+  })
+
+  it("rejects malformed crypto route create input before dispatch", async () => {
+    const calls: Array<{ functionName: string; input: unknown }> = []
+    const registry = createRegistry()
+    const context = { auth, edge: createEdgeClient(calls), founderReader }
+
+    const invalidChain = await registry.call(
+      "founder.project.crypto_route.create",
+      { projectSlug: "civic-mesh", chainId: 0, chainAssetId: 2, intakeContractId: 3 },
+      context,
+    )
+    const oversizedLabel = await registry.call(
+      "founder.project.crypto_route.create",
+      { projectSlug: "civic-mesh", chainId: 1, chainAssetId: 2, intakeContractId: 3, label: "x".repeat(120) },
+      context,
+    )
+
+    expect(invalidChain).toMatchObject({ isError: true, errorCode: "invalid_payload" })
+    expect(oversizedLabel).toMatchObject({ isError: true, errorCode: "payload_too_large" })
+    expect(calls).toHaveLength(0)
+  })
+
+  it("returns stable errors when crypto route create is rejected by the Edge command", async () => {
+    const calls: Array<{ functionName: string; input: unknown }> = []
+    const registry = createRegistry()
+    const result = await registry.call(
+      "founder.project.crypto_route.create",
+      { projectSlug: "civic-mesh", chainId: 1, chainAssetId: 2, intakeContractId: 3 },
+      {
+        auth,
+        edge: createFailingEdgeClient(calls, "duplicate_route", "A route already exists for this asset."),
+        founderReader,
+      },
+    )
+
+    expect(calls).toHaveLength(1)
+    expect(result).toMatchObject({
+      isError: true,
+      errorCode: "duplicate_route",
+      structuredContent: { ok: false, error: { code: "duplicate_route" } },
+    })
+    expect(result.content[0]?.text).toContain("already exists")
   })
 
   it("returns a protocol-visible error when founder reads are not configured", async () => {

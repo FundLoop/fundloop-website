@@ -1,3 +1,37 @@
+### session v145: Finalize founder crypto-route create MCP tool
+- timestamp: 2026-05-06T17:54:46-0400
+- agent: **Codex (GPT-5)**
+- branch: **codex/mcp-roadmap-kickoff**
+- head: pending MCP-5.6 commit
+
+#### Objective
+Complete MCP-5.6 by making `founder.project.crypto_route.create` a fully annotated founder write tool backed by the typed Edge command contract.
+
+#### Actions Taken
+- Added title, write-oriented annotations, and output-schema metadata to `founder.project.crypto_route.create`.
+- Added a shared Edge-command tool result helper for founder tools so Edge command failures become protocol-visible MCP errors with stable error codes and structured failure envelopes.
+- Kept route creation constrained to curated project slug, chain id, chain asset id, intake contract id, optional label, and optional default flag inputs.
+- Added tests for create-route metadata, successful structured Edge envelope output, malformed/oversized input rejection before dispatch, and stable backend failure propagation.
+- Marked MCP-5.6 complete in `agent-context/todo-mcp.md` and refreshed the MCP engineering doc.
+
+#### Tests and Validation Notes
+- `pnpm mcp:test` passed: 4 files, 39 tests.
+- `deno cache --config supabase/functions/deno.json supabase/functions/mcp/index.ts` passed.
+- `pnpm lint` passed.
+- `pnpm test` passed: 76 files, 320 tests.
+- `pnpm typecheck` passed.
+- `pnpm build` passed.
+- An initial `pnpm check` run under local Node 25 stalled during Vitest and was stopped; the separate gates plus the Node 22 parity gate completed successfully.
+- `pnpm dlx node@22.22.1 /opt/homebrew/bin/pnpm check` passed.
+
+#### Reflections
+- This is the first founder write tool with the intended MCP pattern: strict schema at the front door, typed Edge Function as the only write boundary, and useful errors without exposing backend internals.
+
+#### Suggested Next Steps
+- Continue with MCP-5.7 by applying the same write-tool pattern to `founder.project.crypto_route.update`.
+
+---
+
 ### session v144: Finalize founder project cycle-status MCP tool
 - timestamp: 2026-05-06T17:42:03-0400
 - agent: **Codex (GPT-5)**

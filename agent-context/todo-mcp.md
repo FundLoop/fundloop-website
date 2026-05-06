@@ -403,12 +403,12 @@ Finalize the founder project cycle-status tool as a read-only project/cycle brie
 
 ### MCP-5.6. Finalize `founder.project.crypto_route.create`
 
-- Status: Not started
-- Timestamp started: TBD
-- Head when starting: TBD
-- Timestamp completed: TBD
-- Feature branch(es): TBD
-- Session-log reference(s): TBD
+- Status: Complete
+- Timestamp started: 2026-05-06T17:54:46-0400
+- Head when starting: b5b3cc1
+- Timestamp completed: 2026-05-06T17:58:51-0400
+- Feature branch(es): codex/mcp-roadmap-kickoff
+- Session-log reference(s): session v145
 
 Finalize the founder crypto-route creation tool as a mutating project-admin operation backed only by the typed `project-crypto-route-create` Edge Function. Require strict ids, project slug, and an idempotency/attempt identifier if the underlying command supports or can safely accept one. Add write annotations, concise success/failure summaries, structured Edge envelope output, and tests for valid creation, duplicate/inactive-reference failures, forbidden project behavior, malformed ids, oversized labels, and retry-safe behavior. Do not let this tool accept arbitrary chain/token configuration outside the existing curated reference-data model.
 
