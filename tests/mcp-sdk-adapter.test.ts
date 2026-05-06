@@ -40,8 +40,17 @@ describe("MCP SDK adapter", () => {
     expect(registerTool).toHaveBeenCalledWith(
       "fundloop.health",
       expect.objectContaining({
+        title: "FundLoop MCP Health",
         description: expect.stringContaining("health"),
         inputSchema: expect.any(Object),
+        outputSchema: expect.objectContaining({
+          safeParse: expect.any(Function),
+        }),
+        annotations: expect.objectContaining({
+          readOnlyHint: true,
+          destructiveHint: false,
+          openWorldHint: false,
+        }),
       }),
       expect.any(Function),
     )
@@ -49,6 +58,11 @@ describe("MCP SDK adapter", () => {
     const healthHandler = registerTool.mock.calls.find(([name]) => name === "fundloop.health")?.[2]
     await expect(healthHandler({})).resolves.toMatchObject({
       content: [expect.objectContaining({ text: expect.stringContaining("fundloop-mcp-server") })],
+      structuredContent: expect.objectContaining({
+        ok: true,
+        service: "fundloop-mcp-server",
+        authenticated: false,
+      }),
     })
   })
 

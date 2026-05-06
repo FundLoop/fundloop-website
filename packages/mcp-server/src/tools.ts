@@ -81,10 +81,28 @@ export function createBaseMcpToolRegistry(options: BaseMcpToolRegistryOptions = 
   registry.register({
     definition: {
       name: "fundloop.health",
+      title: "FundLoop MCP Health",
       description: "Return the FundLoop MCP server health and authenticated actor context.",
+      annotations: {
+        readOnlyHint: true,
+        destructiveHint: false,
+        openWorldHint: false,
+      },
       inputSchema: {
         type: "object",
         properties: {},
+        additionalProperties: false,
+      },
+      outputSchema: {
+        type: "object",
+        properties: {
+          ok: { type: "boolean" },
+          service: { type: "string" },
+          version: { type: "string" },
+          authenticated: { type: "boolean" },
+          actor: { type: "object" },
+        },
+        required: ["ok", "service", "version", "authenticated", "actor"],
         additionalProperties: false,
       },
     },
@@ -92,8 +110,14 @@ export function createBaseMcpToolRegistry(options: BaseMcpToolRegistryOptions = 
       jsonTextResult({
         ok: true,
         service: "fundloop-mcp-server",
-        actorRole: context.auth.actorRole,
-        subject: context.auth.subject ?? null,
+        version: "0.1.0",
+        authenticated: Boolean(context.auth.userId),
+        actor: {
+          role: context.auth.actorRole,
+          subject: context.auth.subject ?? context.auth.email ?? context.auth.userId ?? null,
+          userId: context.auth.userId ?? null,
+          isInternalOperator: Boolean(context.auth.isInternalOperator),
+        },
       }),
   })
 

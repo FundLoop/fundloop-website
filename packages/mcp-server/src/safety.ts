@@ -82,6 +82,7 @@ export function sanitizeMcpToolResult(result: McpToolResult): McpToolResult {
       ...item,
       text: sanitizeMcpText(item.text),
     })),
+    structuredContent: sanitizeMcpStructuredContent(result.structuredContent),
   }
 }
 
@@ -100,6 +101,18 @@ export function sanitizeMcpText(source: string) {
   }
 
   return text
+}
+
+function sanitizeMcpStructuredContent(value: unknown): unknown {
+  if (typeof value === "string") return sanitizeMcpText(value)
+  if (Array.isArray(value)) return value.map((item) => sanitizeMcpStructuredContent(item))
+  if (value && typeof value === "object") {
+    return Object.fromEntries(
+      Object.entries(value as Record<string, unknown>).map(([key, nested]) => [key, sanitizeMcpStructuredContent(nested)]),
+    )
+  }
+
+  return value
 }
 
 function validateProperty(value: unknown, property: McpToolInputProperty, path: string, depth: number): McpSafetyResult {

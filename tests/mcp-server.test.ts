@@ -35,6 +35,19 @@ describe("FundLoop MCP server skeleton", () => {
     const result = await registry.call("fundloop.health", {}, { auth, edge })
     expect(result.isError).toBeUndefined()
     expect(result.content[0]?.text).toContain("fundloop-mcp-server")
+    expect(result.structuredContent).toMatchObject({
+      ok: true,
+      service: "fundloop-mcp-server",
+      version: "0.1.0",
+      authenticated: true,
+      actor: {
+        role: "founder",
+        subject: "founder@example.com",
+        userId: "user-1",
+        isInternalOperator: false,
+      },
+    })
+    expect(result.content[0]?.text).not.toContain("test-token")
   })
 
   it("invokes Edge Function commands through the shared command envelope", async () => {

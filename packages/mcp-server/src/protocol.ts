@@ -21,19 +21,32 @@ export type McpToolInputProperty = {
 
 export type McpToolResult = {
   content: McpToolContent[]
+  structuredContent?: unknown
   isError?: boolean
   errorCode?: string
 }
 
 export type McpToolDefinition = {
   name: string
+  title?: string
   description: string
+  annotations?: {
+    readOnlyHint?: boolean
+    destructiveHint?: boolean
+    openWorldHint?: boolean
+  }
   inputSchema: {
     type: "object"
     properties?: Record<string, McpToolInputProperty>
     required?: string[]
     additionalProperties?: boolean
     maxProperties?: number
+  }
+  outputSchema?: {
+    type: "object"
+    properties?: Record<string, McpToolInputProperty>
+    required?: string[]
+    additionalProperties?: boolean
   }
 }
 
@@ -73,7 +86,10 @@ export function errorResult(text: string): McpToolResult {
 }
 
 export function jsonTextResult(value: unknown): McpToolResult {
-  return textResult(JSON.stringify(value, null, 2))
+  return {
+    ...textResult(JSON.stringify(value, null, 2)),
+    structuredContent: value,
+  }
 }
 
 export function isJsonRpcRequest(value: unknown): value is JsonRpcRequest {

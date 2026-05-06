@@ -1,5 +1,5 @@
 import { z } from "zod"
-import type { McpToolDefinition } from "./protocol.ts"
+import type { McpToolDefinition, McpToolInputProperty } from "./protocol.ts"
 import type { McpToolHandlerContext, McpToolRegistry } from "./tools.ts"
 
 export type SdkMcpServerLike = {
@@ -9,12 +9,20 @@ export type SdkMcpServerLike = {
       title?: string
       description?: string
       inputSchema?: z.ZodType
+      outputSchema?: unknown
+      annotations?: McpToolDefinition["annotations"]
     },
     handler: (args: unknown) => Promise<unknown> | unknown,
   ): unknown
 }
 
-function zodForProperty(property: NonNullable<McpToolDefinition["inputSchema"]["properties"]>[string]) {
+type McpObjectSchema = {
+  properties?: Record<string, McpToolInputProperty>
+  required?: string[]
+  additionalProperties?: boolean
+}
+
+function zodForProperty(property: McpToolInputProperty) {
   if (property.type === "string") {
     let schema = z.string()
     if (property.minLength !== undefined) schema = schema.min(property.minLength)
@@ -36,8 +44,12 @@ function zodForProperty(property: NonNullable<McpToolDefinition["inputSchema"]["
 }
 
 export function mcpInputSchemaToZod(definition: McpToolDefinition) {
-  const properties = definition.inputSchema.properties ?? {}
-  const required = new Set(definition.inputSchema.required ?? [])
+  return mcpObjectSchemaToZod(definition.inputSchema)
+}
+
+function mcpObjectSchemaToZod(schemaDefinition: McpObjectSchema) {
+  const properties = schemaDefinition.properties ?? {}
+  const required = new Set(schemaDefinition.required ?? [])
   const shape: Record<string, z.ZodType> = {}
 
   for (const [key, property] of Object.entries(properties)) {
@@ -46,7 +58,7 @@ export function mcpInputSchemaToZod(definition: McpToolDefinition) {
   }
 
   const objectSchema = z.object(shape)
-  return definition.inputSchema.additionalProperties === false ? objectSchema.strict() : objectSchema.passthrough()
+  return schemaDefinition.additionalProperties === false ? objectSchema.strict() : objectSchema.passthrough()
 }
 
 export function registerRegistryToolsWithSdkServer(
@@ -58,9 +70,11 @@ export function registerRegistryToolsWithSdkServer(
     server.registerTool(
       definition.name,
       {
-        title: definition.name,
+        title: definition.title ?? definition.name,
         description: definition.description,
         inputSchema: mcpInputSchemaToZod(definition),
+        outputSchema: definition.outputSchema ? mcpObjectSchemaToZod(definition.outputSchema) : undefined,
+        annotations: definition.annotations,
       },
       async (args) => registry.call(definition.name, args, context),
     )

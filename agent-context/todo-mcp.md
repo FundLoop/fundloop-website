@@ -359,12 +359,12 @@ Create tools around product workflows, not implementation details.
 
 ### MCP-5.2. Harden and annotate `fundloop.health`
 
-- Status: Not started
-- Timestamp started: TBD
-- Head when starting: TBD
-- Timestamp completed: TBD
-- Feature branch(es): TBD
-- Session-log reference(s): TBD
+- Status: Complete
+- Timestamp started: 2026-05-06T09:31:13-0400
+- Head when starting: 2d52631
+- Timestamp completed: 2026-05-06T09:36:15-0400
+- Feature branch(es): codex/mcp-roadmap-kickoff
+- Session-log reference(s): session v141
 
 Finish `fundloop.health` as the canonical remote/readiness smoke tool. Keep it read-only and non-sensitive: it may return service name, version, transport capability, and a minimal actor summary for authenticated tool traffic, but it must not expose bearer tokens, Supabase project secrets, service-role state, tenant data, or environment internals. Add accurate tool annotations, a concise human-readable summary, and machine-readable structured output once the MCP result shape supports it. Preserve public `GET /health` as the unauthenticated health endpoint and keep `tools/call` health authenticated on remote POST. Add tests covering stdio smoke, remote authenticated health, no-secret output, and malformed input rejection.
 

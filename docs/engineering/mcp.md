@@ -150,9 +150,9 @@ The root `pnpm mcp:publish` command is intentionally metadata-only guidance for 
 
 ## Current Skeleton
 
-Session 38 registers:
+Session 38 registered the base tools, and Session MCP-5.2 finalized health as the canonical readiness smoke:
 
-- `fundloop.health`: returns service and actor context.
+- `fundloop.health`: read-only, annotated, structured health output with service/version and a minimal actor summary. It intentionally does not expose bearer tokens, Supabase keys, service-role state, tenant data, or environment internals.
 - `fundloop.edge_command.invoke`: low-level allowlisted Edge Function invocation for local development and early integration tests.
 
 ## Founder Tools

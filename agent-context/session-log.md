@@ -1,3 +1,39 @@
+### session v141: Finalize MCP health tool contract
+- timestamp: 2026-05-06T09:31:13-0400
+- agent: **Codex (GPT-5)**
+- branch: **codex/mcp-roadmap-kickoff**
+- head: pending MCP-5.2 commit
+
+#### Objective
+Complete MCP-5.2 by making `fundloop.health` a first-class read-only tool with annotations, structured output, and explicit no-secret behavior.
+
+#### Actions Taken
+- Extended MCP tool definitions and SDK registration with `title`, annotations, and output-schema metadata.
+- Extended MCP tool results with `structuredContent` and kept JSON text content for human-readable clients.
+- Updated `fundloop.health` to return service/version, authenticated state, and a minimal actor summary without bearer tokens or runtime secrets.
+- Propagated structured-content sanitization through the MCP safety layer.
+- Added tests for health annotations, output schema, structured output, authenticated actor details, and token redaction from health content.
+- Marked MCP-5.2 complete in `agent-context/todo-mcp.md` and refreshed `docs/engineering/mcp.md`.
+
+#### Tests and Validation Notes
+- `pnpm mcp:test` passed: 4 files, 29 tests.
+- `deno cache --config supabase/functions/deno.json supabase/functions/mcp/index.ts` passed.
+- `pnpm mcp:smoke` passed.
+- `FUNDLOOP_MCP_HTTP_URL=http://127.0.0.1:8000 FUNDLOOP_MCP_BEARER_TOKEN=local-smoke-token pnpm mcp:edge:smoke` passed against the Deno-served Edge handler with `FUNDLOOP_MCP_ALLOW_LOCAL_TEST_TOKEN=true`.
+- `pnpm lint` passed.
+- `pnpm test` passed: 76 files, 310 tests.
+- `pnpm typecheck` passed.
+- `pnpm build` passed.
+- `pnpm dlx node@22.22.1 /opt/homebrew/bin/pnpm check` passed.
+
+#### Reflections
+- Health is deliberately boring: it should be useful enough for smoke tests and client readiness checks, but too small to become a diagnostics leak.
+
+#### Suggested Next Steps
+- Start MCP-5.3 by hardening the transitional generic Edge command bridge and then move into the founder workflow tools.
+
+---
+
 ### session v140: Expand MCP tool implementation backlog
 - timestamp: 2026-05-06T09:29:38-0400
 - agent: **Codex (GPT-5)**
