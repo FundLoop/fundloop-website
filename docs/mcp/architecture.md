@@ -25,6 +25,8 @@ The target production shape is a remote MCP server over Streamable HTTP, deploye
 
 Session MCP-2 added `supabase/functions/mcp/index.ts` as the first remote Streamable HTTP endpoint. It uses the official MCP TypeScript SDK with `WebStandardStreamableHTTPServerTransport`, while the local stdio package remains the compatibility harness for local clients and smoke checks.
 
+Session MCP-3 hardened the remote endpoint so Streamable HTTP tool traffic must resolve to a real Supabase user through `auth.getUser()` before MCP tool registration or dispatch. The MCP registry now also performs a front-door authorization check for operator-prefixed tools and operator/destructive generic Edge command names.
+
 ## Tool Handler Rule
 
 Tool handlers should be thin orchestration layers:
@@ -39,14 +41,16 @@ MCP tools must not query raw tables directly in production unless a design doc r
 
 ## Auth Model
 
-Initial production auth should use Supabase JWT validation for first-party or workspace-bound clients. OAuth 2.1 can be added later for broader third-party MCP clients.
+Initial production auth uses Supabase JWT validation for first-party or workspace-bound clients. OAuth 2.1 can be added later for broader third-party MCP clients.
 
 - `GET /health` is public and returns only non-sensitive service metadata.
-- Streamable HTTP `POST` requests require an `Authorization: Bearer <token>` header before tool registration or dispatch.
+- Streamable HTTP `POST` requests require an `Authorization: Bearer <token>` header and a successful Supabase `auth.getUser()` lookup before tool registration or dispatch.
 - User/founder/project-member tools run as the signed-in Supabase user.
 - Operator tools require the same internal-admin allowlist and role checks used by the app.
 - Generic command invocation remains disabled unless explicitly allowlisted for a non-production integration.
 - No token passthrough to downstream services.
+
+MCP-3 keeps OAuth 2.1, PKCE, dynamic client registration, and public registry publication deferred. The only production auth model introduced here is first-party Supabase JWT validation.
 
 ## Tenant Model
 

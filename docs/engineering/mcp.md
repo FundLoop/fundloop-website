@@ -24,6 +24,8 @@ Session 38 introduced `packages/mcp-server` as a lightweight workspace package.
 
 Session MCP-2 added `supabase/functions/mcp/index.ts` as the remote Streamable HTTP endpoint. The remote function reuses the same registry/tool modules, creates request-scoped bearer-token context, and invokes the same Edge Function command/read gateways as stdio.
 
+Session MCP-3 hardened the remote endpoint so `POST` tool traffic must validate the bearer token through Supabase `auth.getUser()` before tool registration or dispatch. The MCP registry also applies a front-door tool authorization layer for authenticated calls, operator-prefixed tools, and operator/destructive generic Edge command names.
+
 ## Runtime Configuration
 
 The stdio runtime expects:
@@ -75,6 +77,7 @@ FUNDLOOP_MCP_HTTP_URL=http://127.0.0.1:54321/functions/v1/mcp pnpm mcp:edge:smok
 ```
 
 The Edge smoke checks `GET /health`, `initialize`, `tools/list`, and `tools/call` for `fundloop.health`.
+When running the Edge handler directly without a live Supabase auth service, set `FUNDLOOP_MCP_ALLOW_LOCAL_TEST_TOKEN=true` and use the default `local-smoke-token`. Do not set this flag in Preview or Production.
 
 For package tests:
 
@@ -128,12 +131,14 @@ The root `pnpm mcp:publish` command is intentionally metadata-only guidance for 
 - `not allowlisted`: the generic `fundloop.edge_command.invoke` tool was asked to call a function not listed in `FUNDLOOP_MCP_ALLOWED_EDGE_FUNCTIONS`.
 - stdio client hangs: confirm the client is sending Content-Length framed messages, not newline-delimited JSON.
 - Edge MCP `not_authenticated`: include `Authorization: Bearer <non-production Supabase access token>` for `POST /functions/v1/mcp`; `GET /health` is the only public endpoint.
+- Edge MCP `forbidden`: the authenticated user is missing the role required for the tool, most commonly internal-operator access for `operator.*` tools or operator/destructive generic Edge commands.
 
 ## Tool Rules
 
 - Tool inputs and outputs should be stable, typed, and small.
 - Founder/project-member tools should enforce role boundaries through the same Edge Function commands and read models used by the app.
 - Internal-operator tools should start read-only unless a session explicitly introduces a safe mutation.
+- Operator tools are blocked before handler execution unless `FUNDLOOP_INTERNAL_ADMIN_EMAILS` includes the authenticated user's email.
 - Tool failures should return protocol-visible error content and should also be visible through the relevant app observability stream.
 - Do not log bearer tokens, Supabase keys, service role keys, raw private artifact URLs, or command payloads containing secrets.
 

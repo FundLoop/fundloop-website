@@ -3,6 +3,7 @@ import type { EdgeCommandClient } from "./edge-client.ts"
 import type { FounderWorkflowReader } from "./founder-reader.ts"
 import type { OperatorWorkflowReader, ProjectMemberWorkflowReader } from "./member-operator-readers.ts"
 import { errorResult, jsonTextResult, type McpToolDefinition, type McpToolResult } from "./protocol.ts"
+import { authorizeMcpToolCall } from "./authorization.ts"
 
 export type McpToolHandlerContext = {
   auth: McpAuthContext
@@ -48,7 +49,18 @@ export class McpToolRegistry {
       return errorResult(`Unknown tool: ${name}`)
     }
 
-    return tool.handler(input, context)
+    const authorization = authorizeMcpToolCall(name, context.auth, input)
+    if (!authorization.ok) {
+      auditMcpToolEvent("authorization_failure", { toolName: name, auth: context.auth, code: authorization.code })
+      return {
+        ...errorResult(authorization.message),
+        errorCode: authorization.code,
+      }
+    }
+
+    const result = await tool.handler(input, context)
+    auditMcpToolEvent("tool_success", { toolName: name, auth: context.auth })
+    return result
   }
 }
 
@@ -105,4 +117,39 @@ export function createBaseMcpToolRegistry(options: BaseMcpToolRegistryOptions = 
   })
 
   return registry
+}
+
+function auditMcpToolEvent(eventType: "authorization_failure" | "tool_success", input: { toolName: string; auth: McpAuthContext; code?: string }) {
+  const event = {
+    event: eventType,
+    surface: "mcp",
+    toolName: input.toolName,
+    userId: input.auth.userId ?? null,
+    email: input.auth.email ?? null,
+    actorRole: input.auth.actorRole,
+    isInternalOperator: Boolean(input.auth.isInternalOperator),
+    code: input.code ?? null,
+  }
+
+  if (eventType === "authorization_failure") {
+    writeMcpAudit("warn", event)
+    return
+  }
+
+  writeMcpAudit("info", event)
+}
+
+function writeMcpAudit(level: "info" | "warn", event: Record<string, unknown>) {
+  const line = JSON.stringify(event)
+  if (typeof process !== "undefined" && process.env.FUNDLOOP_MCP_STDIO === "1") {
+    process.stderr.write(`${line}\n`)
+    return
+  }
+
+  if (level === "warn") {
+    console.warn(line)
+    return
+  }
+
+  console.info(line)
 }

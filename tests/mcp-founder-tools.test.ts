@@ -13,6 +13,8 @@ import type { FounderWorkflowReader } from "@/packages/mcp-server/src/founder-re
 const auth = {
   actorRole: "founder" as const,
   bearerToken: "token",
+  userId: "founder-1",
+  email: "founder@example.com",
   subject: "founder@example.com",
 }
 

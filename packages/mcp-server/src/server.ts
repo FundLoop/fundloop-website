@@ -136,6 +136,7 @@ export function parseMcpStdioMessages(buffer: Buffer<ArrayBufferLike>): { messag
 }
 
 async function main() {
+  process.env.FUNDLOOP_MCP_STDIO = "1"
   let buffer: Buffer<ArrayBufferLike> = Buffer.alloc(0)
   for await (const chunk of process.stdin) {
     buffer = Buffer.concat([buffer, Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk)])

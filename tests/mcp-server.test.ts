@@ -8,6 +8,8 @@ import type { EdgeCommandClient } from "@/packages/mcp-server/src/edge-client"
 const auth = {
   actorRole: "founder" as const,
   bearerToken: "test-token",
+  userId: "user-1",
+  email: "founder@example.com",
   subject: "founder@example.com",
 }
 
@@ -36,22 +38,22 @@ describe("FundLoop MCP server skeleton", () => {
   })
 
   it("invokes Edge Function commands through the shared command envelope", async () => {
-    const registry = createBaseMcpToolRegistry({ allowedFunctionNames: ["monthly-cycle-lock"] })
+    const registry = createBaseMcpToolRegistry({ allowedFunctionNames: ["project-crypto-route-create"] })
     const result = await registry.call(
       "fundloop.edge_command.invoke",
-      { functionName: "monthly-cycle-lock", input: { cycleKey: "2026-04" } },
+      { functionName: "project-crypto-route-create", input: { projectSlug: "civic-mesh" } },
       { auth, edge },
     )
 
-    expect(result.content[0]?.text).toContain("monthly-cycle-lock")
-    expect(result.content[0]?.text).toContain("2026-04")
+    expect(result.content[0]?.text).toContain("project-crypto-route-create")
+    expect(result.content[0]?.text).toContain("civic-mesh")
   })
 
   it("rejects non-allowlisted generic Edge Function invocations", async () => {
     const registry = createBaseMcpToolRegistry()
     const result = await registry.call(
       "fundloop.edge_command.invoke",
-      { functionName: "monthly-cycle-lock", input: { cycleKey: "2026-04" } },
+      { functionName: "project-crypto-route-create", input: { projectSlug: "civic-mesh" } },
       { auth, edge },
     )
 

@@ -5,6 +5,7 @@ export {
   readSupabaseEdgeCommandClientConfig,
   type EdgeCommandClient,
 } from "./edge-client.ts"
+export { authorizeMcpToolCall, isOperatorOrDestructiveEdgeFunctionName, type McpToolAuthorizationResult } from "./authorization.ts"
 export {
   EdgeFounderWorkflowReader,
   createEdgeFounderWorkflowReader,
@@ -28,7 +29,7 @@ export {
 } from "./member-operator-readers.ts"
 export { registerProjectMemberAndOperatorMcpTools } from "./member-operator-tools.ts"
 export { createBaseMcpToolRegistry, McpToolRegistry, type McpRegisteredTool } from "./tools.ts"
-export { createRemoteMcpAuthContext, type RemoteMcpAuthResult } from "./http-auth.ts"
+export { createRemoteMcpAuthContext, createValidatedRemoteMcpAuthContext, type RemoteMcpAuthResult } from "./http-auth.ts"
 export { mcpInputSchemaToZod, registerRegistryToolsWithSdkServer, type SdkMcpServerLike } from "./sdk-adapter.ts"
 export { handleMcpRequest } from "./server.ts"
 export type { McpToolDefinition, McpToolResult } from "./protocol.ts"

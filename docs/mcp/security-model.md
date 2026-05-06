@@ -13,12 +13,13 @@ FundLoop MCP is a product-control surface. Treat it like an API used by autonomo
 
 ## Authentication
 
-Current stdio development uses `FUNDLOOP_MCP_BEARER_TOKEN` as a Supabase user bearer token. Production remote MCP should validate Supabase JWTs at the MCP endpoint or inside the Edge Function handler.
+Current stdio development uses `FUNDLOOP_MCP_BEARER_TOKEN` as a Supabase user bearer token. Production remote MCP validates Supabase JWTs inside the Edge Function handler before creating the MCP server for tool traffic.
 
 Rules:
 
 - `GET /functions/v1/mcp/health` is public and must remain non-sensitive.
-- Streamable HTTP tool traffic must include `Authorization: Bearer <token>` before the MCP server registers and dispatches tools.
+- Streamable HTTP tool traffic must include `Authorization: Bearer <token>` and resolve a real Supabase user through `auth.getUser()` before the MCP server registers and dispatches tools.
+- `FUNDLOOP_MCP_ALLOW_LOCAL_TEST_TOKEN=true` may be used only for direct local Edge-handler smoke without a live Supabase auth service; it must not be configured in Preview or Production.
 - Missing credentials fail closed for every non-health workflow tool.
 - Tokens must be validated for issuer, expiration, and intended FundLoop/Supabase audience.
 - Tokens issued for other services must not be accepted.
@@ -31,6 +32,8 @@ Authorization is tool-specific and server-side.
 - Regular users can only access their own workspace, earnings, participation, identity status, and payout readiness.
 - Founders and project members can only access projects they manage or belong to through existing FundLoop membership checks.
 - Internal operators must pass the existing internal-admin authorization rules.
+- Operator-prefixed MCP tools are blocked before handler execution unless the authenticated user's email is present in `FUNDLOOP_INTERNAL_ADMIN_EMAILS`.
+- Generic Edge command invocation remains allowlisted and additionally blocks operator/destructive command names for non-operators.
 - Destructive or sensitive operator mutations require explicit confirmation and an audit reason if introduced later.
 
 ## Data Classification
@@ -76,6 +79,8 @@ At minimum, log or reuse existing workflow events for:
 - rate-limit failures once rate limiting exists.
 
 Logs must redact bearer tokens, service keys, private URLs, payment credentials, and CUBID API secrets.
+
+MCP-3 logs structured authentication failures, authorization failures, and successful tool dispatches without bearer tokens or payload bodies.
 
 ## Threat Model Summary
 

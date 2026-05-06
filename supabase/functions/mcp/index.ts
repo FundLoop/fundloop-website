@@ -3,7 +3,7 @@ import "jsr:@supabase/functions-js/edge-runtime.d.ts"
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js"
 import { WebStandardStreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/webStandardStreamableHttp.js"
 
-import { createRemoteMcpAuthContext } from "../../../packages/mcp-server/src/http-auth.ts"
+import { createValidatedRemoteMcpAuthContext } from "../../../packages/mcp-server/src/http-auth.ts"
 import { SupabaseEdgeCommandClient } from "../../../packages/mcp-server/src/edge-client.ts"
 import { createEdgeFounderWorkflowReader } from "../../../packages/mcp-server/src/founder-reader.ts"
 import { registerFounderMcpTools } from "../../../packages/mcp-server/src/founder-tools.ts"
@@ -14,7 +14,7 @@ import {
 import { registerProjectMemberAndOperatorMcpTools } from "../../../packages/mcp-server/src/member-operator-tools.ts"
 import { registerRegistryToolsWithSdkServer } from "../../../packages/mcp-server/src/sdk-adapter.ts"
 import { createBaseMcpToolRegistry } from "../../../packages/mcp-server/src/tools.ts"
-import { getEnv } from "../_shared/command-runtime.ts"
+import { createFunctionClients, getEnv } from "../_shared/command-runtime.ts"
 
 const mcpCorsHeaders = {
   "access-control-allow-origin": "*",
@@ -46,8 +46,23 @@ function readAllowedEdgeFunctions() {
     .filter(Boolean)
 }
 
-function buildMcpServer(request: Request) {
-  const authResult = createRemoteMcpAuthContext(request.headers.get("authorization"))
+async function buildMcpServer(request: Request) {
+  const clients = createFunctionClients(request)
+  if (!clients.ok) {
+    return {
+      ok: false as const,
+      status: 500,
+      code: "misconfigured",
+      message: clients.error,
+    }
+  }
+
+  const authResult = await createValidatedRemoteMcpAuthContext({
+    authorizationHeader: request.headers.get("authorization"),
+    authClient: clients.authClient,
+    internalAdminEmails: getEnv("FUNDLOOP_INTERNAL_ADMIN_EMAILS"),
+    allowLocalTestToken: getEnv("FUNDLOOP_MCP_ALLOW_LOCAL_TEST_TOKEN") === "true",
+  })
   if (!authResult.ok) return authResult
 
   const edge = new SupabaseEdgeCommandClient({
@@ -93,7 +108,7 @@ Deno.serve(async (request) => {
     return json({ ok: false, error: { code: "method_not_allowed", message: "Use POST for MCP requests." } }, { status: 405 })
   }
 
-  const serverResult = buildMcpServer(request)
+  const serverResult = await buildMcpServer(request)
   if (!serverResult.ok) {
     return json({ ok: false, error: { code: serverResult.code, message: serverResult.message } }, { status: serverResult.status })
   }

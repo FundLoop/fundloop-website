@@ -6,6 +6,7 @@ export type McpToolContent = {
 export type McpToolResult = {
   content: McpToolContent[]
   isError?: boolean
+  errorCode?: string
 }
 
 export type McpToolDefinition = {

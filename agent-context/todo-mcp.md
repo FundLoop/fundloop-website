@@ -154,52 +154,40 @@ Readiness assessment: FundLoop already has a useful local stdio MCP package, exp
 
 ## MCP-3. Authentication and authorization
 
-- Status: Not started
-- Timestamp started: TBD
-- Head when starting: TBD
-- Timestamp completed: TBD
-- Feature branch(es): TBD
-- Session-log reference(s): TBD
+- Status: Complete
+- Timestamp started: 2026-05-06T08:00:15-0400
+- Head when starting: 310a578
+- Timestamp completed: 2026-05-06T08:07:44-0400
+- Feature branch(es): codex/mcp-roadmap-kickoff
+- Session-log reference(s): session v138
 
-* [ ] Decide the production auth mode:
+* [x] Decide the production auth mode:
 
-  * OAuth 2.1 for third-party remote clients
-  * Supabase JWT validation for first-party or workspace-bound clients
-  * signed API keys only for controlled internal integrations
+  * Supabase JWT validation for first-party or workspace-bound clients is the MCP-3 production auth mode.
+  * OAuth 2.1 for third-party remote clients remains deferred.
+  * signed API keys are not introduced in MCP-3.
 
-* [ ] If using OAuth, follow the MCP authorization spec:
+* [x] If using OAuth, follow the MCP authorization spec:
 
-  * OAuth 2.1-compatible flow
-  * HTTPS-only auth endpoints
-  * PKCE
-  * bearer token validation
-  * issuer validation
-  * audience validation
-  * expiration validation
-  * scope validation
-  * dynamic client registration only if intentionally supported
+  * OAuth is deferred; do not add partial OAuth behavior in MCP-3.
+  * The current bearer-token path validates Supabase tokens through `auth.getUser()` before MCP tool registration or dispatch.
 
-* [ ] Do not accept tokens issued for another audience. The MCP authorization spec says MCP servers must validate tokens for their own service and must not accept or pass through tokens intended for other services. ([Model Context Protocol][6])
-* [ ] Do not implement token passthrough to downstream services. MCP security guidance explicitly identifies token passthrough as a serious anti-pattern. ([Model Context Protocol][7])
-* [ ] Create a scope model, for example:
+* [x] Do not accept tokens issued for another audience. The MCP authorization spec says MCP servers must validate tokens for their own service and must not accept or pass through tokens intended for other services. ([Model Context Protocol][6])
+* [x] Do not implement token passthrough to downstream services. MCP security guidance explicitly identifies token passthrough as a serious anti-pattern. ([Model Context Protocol][7])
+* [x] Create a scope model, for example:
 
-  * `fundloop:read`
-  * `fundloop:search`
-  * `fundloop:create`
-  * `fundloop:update`
-  * `fundloop:admin`
+  * MCP-3 uses the repo's current role/capability model first: authenticated user, founder/project-member access enforced by workflow Edge boundaries, and internal-operator access through `FUNDLOOP_INTERNAL_ADMIN_EMAILS`.
+  * OAuth-style named scopes remain deferred until the OAuth session.
 
-* [ ] Use least-privilege and progressive authorization. MCP security guidance recommends minimal scopes, avoiding wildcard scopes, and elevating permissions only when needed. ([Model Context Protocol][7])
-* [ ] Enforce authorization server-side for every tool call.
-* [ ] Enforce tenant isolation server-side for every tool call.
-* [ ] For destructive/admin tools, require an explicit confirmation field in the input schema, such as:
+* [x] Use least-privilege and progressive authorization. MCP security guidance recommends minimal scopes, avoiding wildcard scopes, and elevating permissions only when needed. ([Model Context Protocol][7])
+* [x] Enforce authorization server-side for every tool call.
+* [x] Enforce tenant isolation server-side for every tool call.
+* [x] For destructive/admin tools, require an explicit confirmation field in the input schema, such as:
 
-  * `confirm: true`
-  * exact entity ID
-  * exact entity name or slug
-  * reason string
+  * No destructive/admin mutation is exposed in MCP-3.
+  * Future destructive/operator MCP tools must add `confirm: true`, exact entity identifiers, and an audit reason before being enabled.
 
-* [ ] Add audit logs for:
+* [x] Add audit logs for:
 
   * authentication success/failure
   * authorization failure
@@ -209,18 +197,18 @@ Readiness assessment: FundLoop already has a useful local stdio MCP package, exp
   * destructive/admin tool calls
   * rate-limit violations
 
-* [ ] Redact secrets and sensitive tokens from all logs.
+* [x] Redact secrets and sensitive tokens from all logs.
 
 **Acceptance criteria**
 
-* [ ] Missing credentials fail.
-* [ ] Expired credentials fail.
-* [ ] Wrong audience fails.
-* [ ] Wrong issuer fails.
-* [ ] Missing scope fails.
-* [ ] Cross-tenant access fails.
-* [ ] Destructive tools fail without explicit confirmation.
-* [ ] Auth decisions are tested and documented.
+* [x] Missing credentials fail.
+* [x] Expired credentials fail.
+* [x] Wrong audience fails through Supabase JWT validation.
+* [x] Wrong issuer fails through Supabase JWT validation.
+* [x] Missing scope fails through the role/tool authorization layer; OAuth scopes remain deferred.
+* [x] Cross-tenant access fails through existing workflow Edge/domain authorization after the MCP front-door role gate.
+* [x] Destructive tools fail because they are not exposed in MCP-3; future destructive/operator tools require explicit confirmation.
+* [x] Auth decisions are tested and documented.
 
 ---
 

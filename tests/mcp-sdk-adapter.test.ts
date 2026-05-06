@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest"
-import { createRemoteMcpAuthContext } from "@/packages/mcp-server/src/http-auth"
+import { createRemoteMcpAuthContext, createValidatedRemoteMcpAuthContext } from "@/packages/mcp-server/src/http-auth"
 import { createBaseMcpToolRegistry } from "@/packages/mcp-server/src/tools"
 import { mcpInputSchemaToZod, registerRegistryToolsWithSdkServer } from "@/packages/mcp-server/src/sdk-adapter"
 import { edgeCommandSuccess, type EdgeCommandResult } from "@/lib/edge-functions/result"
@@ -62,5 +62,183 @@ describe("MCP SDK adapter", () => {
       ok: true,
       auth: { bearerToken: "remote-token", actorRole: "founder" },
     })
+  })
+
+  it("validates remote MCP bearer auth through Supabase user lookup", async () => {
+    const authClient = {
+      auth: {
+        getUser: vi.fn().mockResolvedValue({
+          data: { user: { id: "user-1", email: "founder@example.com" } },
+          error: null,
+        }),
+      },
+    }
+
+    await expect(
+      createValidatedRemoteMcpAuthContext({
+        authorizationHeader: "Bearer remote-token",
+        authClient,
+        internalAdminEmails: "",
+      }),
+    ).resolves.toMatchObject({
+      ok: true,
+      auth: {
+        bearerToken: "remote-token",
+        userId: "user-1",
+        email: "founder@example.com",
+        actorRole: "founder",
+        isInternalOperator: false,
+      },
+    })
+  })
+
+  it("rejects missing bearer tokens before Supabase user lookup", async () => {
+    const authClient = {
+      auth: {
+        getUser: vi.fn(),
+      },
+    }
+
+    await expect(
+      createValidatedRemoteMcpAuthContext({
+        authorizationHeader: null,
+        authClient,
+      }),
+    ).resolves.toMatchObject({
+      ok: false,
+      status: 401,
+      code: "not_authenticated",
+    })
+    expect(authClient.auth.getUser).not.toHaveBeenCalled()
+  })
+
+  it("rejects invalid or expired Supabase tokens", async () => {
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => {})
+    const authClient = {
+      auth: {
+        getUser: vi.fn().mockResolvedValue({
+          data: { user: null },
+          error: { message: "JWT expired" },
+        }),
+      },
+    }
+
+    await expect(
+      createValidatedRemoteMcpAuthContext({
+        authorizationHeader: "Bearer expired-token",
+        authClient,
+      }),
+    ).resolves.toMatchObject({
+      ok: false,
+      status: 401,
+      code: "not_authenticated",
+    })
+    expect(warn).toHaveBeenCalledWith(expect.stringContaining("auth_failure"))
+    expect(warn.mock.calls[0]?.[0]).not.toContain("expired-token")
+    warn.mockRestore()
+  })
+
+  it("allows the documented local smoke token only when explicitly enabled", async () => {
+    const authClient = {
+      auth: {
+        getUser: vi.fn(),
+      },
+    }
+
+    await expect(
+      createValidatedRemoteMcpAuthContext({
+        authorizationHeader: "Bearer local-smoke-token",
+        authClient,
+        allowLocalTestToken: true,
+      }),
+    ).resolves.toMatchObject({
+      ok: true,
+      auth: {
+        userId: "local-mcp-smoke-user",
+        email: "local-mcp-smoke@fundloop.example.com",
+      },
+    })
+    expect(authClient.auth.getUser).not.toHaveBeenCalled()
+  })
+
+  it("does not allow the local smoke token without the explicit local flag", async () => {
+    const authClient = {
+      auth: {
+        getUser: vi.fn().mockResolvedValue({
+          data: { user: null },
+          error: { message: "invalid token" },
+        }),
+      },
+    }
+
+    await expect(
+      createValidatedRemoteMcpAuthContext({
+        authorizationHeader: "Bearer local-smoke-token",
+        authClient,
+        allowLocalTestToken: false,
+      }),
+    ).resolves.toMatchObject({ ok: false, status: 401 })
+  })
+
+  it("derives internal operator access from the configured allowlist", async () => {
+    const authClient = {
+      auth: {
+        getUser: vi.fn().mockResolvedValue({
+          data: { user: { id: "operator-1", email: "maya@fundloop.example.com" } },
+          error: null,
+        }),
+      },
+    }
+
+    await expect(
+      createValidatedRemoteMcpAuthContext({
+        authorizationHeader: "Bearer operator-token",
+        authClient,
+        internalAdminEmails: "maya@fundloop.example.com",
+      }),
+    ).resolves.toMatchObject({
+      ok: true,
+      auth: {
+        actorRole: "internal_operator",
+        isInternalOperator: true,
+      },
+    })
+  })
+
+  it("blocks operator tools for non-operator actors before handler execution", async () => {
+    const registry = createBaseMcpToolRegistry()
+    registry.register({
+      definition: {
+        name: "operator.cycles.list",
+        description: "List operator cycles.",
+        inputSchema: { type: "object", properties: {}, additionalProperties: false },
+      },
+      handler: vi.fn(() => {
+        throw new Error("handler should not run")
+      }),
+    })
+
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => {})
+    const result = await registry.call("operator.cycles.list", {}, { auth: { ...auth, userId: "user-1" }, edge })
+    expect(result).toMatchObject({ isError: true, errorCode: "forbidden" })
+    expect(warn).toHaveBeenCalledWith(expect.stringContaining("authorization_failure"))
+    expect(warn.mock.calls[0]?.[0]).not.toContain("test-token")
+    warn.mockRestore()
+  })
+
+  it("blocks operator Edge commands for non-operator actors even when allowlisted", async () => {
+    const registry = createBaseMcpToolRegistry({ allowedFunctionNames: ["monthly-cycle-lock"] })
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => {})
+    const result = await registry.call(
+      "fundloop.edge_command.invoke",
+      { functionName: "monthly-cycle-lock", input: { cycleKey: "2026-04" } },
+      { auth: { ...auth, userId: "user-1" }, edge },
+    )
+
+    expect(result).toMatchObject({ isError: true, errorCode: "forbidden" })
+    expect(warn).toHaveBeenCalledWith(expect.stringContaining("authorization_failure"))
+    expect(warn.mock.calls[0]?.[0]).not.toContain("monthly-cycle-lock")
+    expect(warn.mock.calls[0]?.[0]).not.toContain("2026-04")
+    warn.mockRestore()
   })
 })

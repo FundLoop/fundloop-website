@@ -1,3 +1,41 @@
+### session v138: Harden MCP remote auth and tool authorization
+- timestamp: 2026-05-06T08:00:15-0400
+- agent: **Codex (GPT-5)**
+- branch: **codex/mcp-roadmap-kickoff**
+- head: pending MCP-3 commit
+
+#### Objective
+Complete MCP-3 by validating remote MCP bearer tokens through Supabase auth, deriving a real actor context, and gating tool dispatch before handlers run.
+
+#### Actions Taken
+- Extended the MCP actor context with validated user id, email, and internal-operator capability.
+- Changed the remote MCP Edge endpoint to call Supabase `auth.getUser()` before tool registration or dispatch.
+- Added front-door tool authorization for authenticated tool calls, operator-prefixed tools, and operator/destructive generic Edge command names.
+- Added structured MCP auth, authorization, and tool-dispatch audit logs without bearer tokens or payload bodies.
+- Added an explicit local-only smoke token bypass gated by `FUNDLOOP_MCP_ALLOW_LOCAL_TEST_TOKEN=true`.
+- Added tests for missing and invalid tokens, valid user derivation, internal-operator derivation, local smoke bypass, operator tool blocking, operator command blocking, and audit redaction.
+- Marked MCP-3 complete in `agent-context/todo-mcp.md` and refreshed MCP security, architecture, and runtime docs.
+
+#### Tests and Validation Notes
+- `pnpm mcp:test` passed: 4 files, 25 tests.
+- `deno cache --config supabase/functions/deno.json supabase/functions/mcp/index.ts` passed.
+- `pnpm mcp:smoke` passed and confirmed MCP audit logs stay off stdout in stdio mode.
+- `FUNDLOOP_MCP_HTTP_URL=http://127.0.0.1:8000 FUNDLOOP_MCP_BEARER_TOKEN=local-smoke-token pnpm mcp:edge:smoke` passed against the Deno-served Edge handler with `FUNDLOOP_MCP_ALLOW_LOCAL_TEST_TOKEN=true`.
+- `pnpm lint` passed.
+- `pnpm test` passed: 76 files, 306 tests.
+- `pnpm typecheck` passed.
+- `pnpm build` passed.
+- `pnpm check` passed.
+- `pnpm dlx node@22.22.1 /opt/homebrew/bin/pnpm check` passed.
+
+#### Reflections
+- MCP-3 keeps the remote endpoint first-party and JWT-backed instead of introducing partial OAuth. That is the safer bridge for Preview/dev smoke while the OAuth and registry sessions remain deliberately deferred.
+
+#### Suggested Next Steps
+- Run MCP-4 next to tighten input validation, output safety, limits, and threat-protection controls before expanding the tool surface.
+
+---
+
 ### session v137: Add remote MCP Edge Function endpoint
 - timestamp: 2026-05-06T05:09:22-0400
 - agent: **Codex (GPT-5)**

@@ -8,6 +8,9 @@ import type { OperatorWorkflowReader, ProjectMemberWorkflowReader } from "@/pack
 const auth = {
   actorRole: "internal_operator" as const,
   bearerToken: "token",
+  userId: "operator-1",
+  email: "maya@fundloop.example.com",
+  isInternalOperator: true,
 }
 
 const edge: EdgeCommandClient = {
