@@ -1,3 +1,34 @@
+### session v144: Finalize founder project cycle-status MCP tool
+- timestamp: 2026-05-06T17:42:03-0400
+- agent: **Codex (GPT-5)**
+- branch: **codex/mcp-roadmap-kickoff**
+- head: pending MCP-5.5 commit
+
+#### Objective
+Complete MCP-5.5 by making `founder.project.cycle_status` a structured, read-only, safe project/cycle briefing tool.
+
+#### Actions Taken
+- Added title, read-only annotations, and output-schema metadata to `founder.project.cycle_status`.
+- Normalized cycle-status results into structured output with project, cycle, payments, routes, and next-action hints.
+- Added safe protocol-visible errors for missing reader configuration, invalid input, and workflow-read failures without exposing raw backend exception details.
+- Added tests for metadata, structured output, invalid slug/month input, safe reader failure, and derived next actions for missing setup state.
+- Marked MCP-5.5 complete in `agent-context/todo-mcp.md` and refreshed the MCP engineering doc.
+
+#### Tests and Validation Notes
+- `pnpm mcp:test` passed: 4 files, 37 tests.
+- `deno cache --config supabase/functions/deno.json supabase/functions/mcp/index.ts` passed.
+- `pnpm typecheck` passed.
+- `pnpm check` passed.
+- `pnpm dlx node@22.22.1 /opt/homebrew/bin/pnpm check` passed.
+
+#### Reflections
+- The tool now gives agents a useful operational summary without letting MCP become the owner of project membership or monthly-cycle business logic.
+
+#### Suggested Next Steps
+- Start MCP-5.6 by finalizing `founder.project.crypto_route.create` as the first fully annotated founder write tool.
+
+---
+
 ### session v143: Finalize founder project listing MCP tool
 - timestamp: 2026-05-06T17:36:18-0400
 - agent: **Codex (GPT-5)**

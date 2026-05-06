@@ -19,6 +19,24 @@ function requireProjectSlug(input: unknown) {
   return input.projectSlug.trim()
 }
 
+function deriveCycleStatusNextActions(status: Awaited<ReturnType<FounderWorkflowReader["getProjectCycleStatus"]>>) {
+  const actions: string[] = []
+  if (status.routes.enabledCount === 0) {
+    actions.push("Add an enabled contribution route.")
+  }
+  if (status.routes.defaultCount === 0) {
+    actions.push("Choose a default contribution route.")
+  }
+  if (status.payments.awaitingConfirmationCount > 0) {
+    actions.push("Review payments awaiting confirmation.")
+  }
+  if (!status.cycle.status) {
+    actions.push("Confirm the project is attached to an active monthly cycle.")
+  }
+
+  return actions
+}
+
 export function registerFounderMcpTools(registry: McpToolRegistry) {
   registry.register({
     definition: {
@@ -79,7 +97,13 @@ export function registerFounderMcpTools(registry: McpToolRegistry) {
   registry.register({
     definition: {
       name: "founder.project.cycle_status",
+      title: "Read Founder Project Cycle Status",
       description: "Read monthly contribution, route, and cycle status for one managed founder project.",
+      annotations: {
+        readOnlyHint: true,
+        destructiveHint: false,
+        openWorldHint: false,
+      },
       inputSchema: {
         type: "object",
         properties: {
@@ -89,13 +113,45 @@ export function registerFounderMcpTools(registry: McpToolRegistry) {
         required: ["projectSlug"],
         additionalProperties: false,
       },
+      outputSchema: {
+        type: "object",
+        properties: {
+          ok: { type: "boolean" },
+          project: { type: "object" },
+          cycle: { type: "object" },
+          payments: { type: "object" },
+          routes: { type: "object" },
+          nextActions: { type: "array" },
+        },
+        required: ["ok", "project", "cycle", "payments", "routes", "nextActions"],
+        additionalProperties: false,
+      },
     },
     async handler(input, context) {
-      if (!context.founderReader) return errorResult("Founder workflow reader is not configured.")
+      if (!context.founderReader) {
+        return { ...errorResult("Founder workflow reader is not configured."), errorCode: "reader_not_configured" }
+      }
       const projectSlug = requireProjectSlug(input)
-      if (!projectSlug) return errorResult("projectSlug is required.")
+      if (!projectSlug) return { ...errorResult("projectSlug is required."), errorCode: "invalid_payload" }
       const cycleKey = isRecord(input) && typeof input.cycleKey === "string" ? input.cycleKey.trim() : undefined
-      return jsonTextResult(await context.founderReader.getProjectCycleStatus({ projectSlug, cycleKey }, context.auth))
+      try {
+        const status = await context.founderReader.getProjectCycleStatus({ projectSlug, cycleKey }, context.auth)
+        const nextActions = deriveCycleStatusNextActions(status)
+
+        return jsonTextResult({
+          ok: true,
+          project: status.project,
+          cycle: status.cycle,
+          payments: status.payments,
+          routes: status.routes,
+          nextActions,
+        })
+      } catch {
+        return {
+          ...errorResult("Founder project cycle status is temporarily unavailable."),
+          errorCode: "workflow_read_failed",
+        }
+      }
     },
   })
 

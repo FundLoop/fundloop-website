@@ -66,6 +66,13 @@ describe("founder MCP tools", () => {
         required: expect.arrayContaining(["ok", "count", "projects"]),
       }),
     })
+    expect(tools.find((tool) => tool.name === "founder.project.cycle_status")).toMatchObject({
+      title: "Read Founder Project Cycle Status",
+      annotations: { readOnlyHint: true, destructiveHint: false, openWorldHint: false },
+      outputSchema: expect.objectContaining({
+        required: expect.arrayContaining(["ok", "project", "cycle", "payments", "routes", "nextActions"]),
+      }),
+    })
   })
 
   it("reads managed projects and project cycle status through the founder reader boundary", async () => {
@@ -92,6 +99,14 @@ describe("founder MCP tools", () => {
     const cycle = await registry.call("founder.project.cycle_status", { projectSlug: "civic-mesh", cycleKey: "2026-04" }, context)
     expect(cycle.content[0]?.text).toContain("locked")
     expect(cycle.content[0]?.text).toContain("90")
+    expect(cycle.structuredContent).toMatchObject({
+      ok: true,
+      project: { id: 7, slug: "civic-mesh", name: "Civic Mesh" },
+      cycle: { cycleKey: "2026-04", status: "locked" },
+      payments: { awaitingConfirmationCount: 1 },
+      routes: { enabledCount: 1, defaultCount: 1 },
+      nextActions: ["Review payments awaiting confirmation."],
+    })
   })
 
   it("routes founder operational writes through typed Edge Function commands", async () => {
@@ -166,5 +181,69 @@ describe("founder MCP tools", () => {
 
     expect(result).toMatchObject({ isError: true, errorCode: "invalid_payload" })
     expect(result.content[0]?.text).toContain("unexpected")
+  })
+
+  it("rejects invalid founder project cycle input before the reader runs", async () => {
+    const registry = createRegistry()
+    const invalidCycle = await registry.call(
+      "founder.project.cycle_status",
+      { projectSlug: "civic-mesh", cycleKey: "2026-99" },
+      { auth, edge: createEdgeClient([]), founderReader },
+    )
+    const invalidSlug = await registry.call(
+      "founder.project.cycle_status",
+      { projectSlug: "https://127.0.0.1/private" },
+      { auth, edge: createEdgeClient([]), founderReader },
+    )
+
+    expect(invalidCycle).toMatchObject({ isError: true, errorCode: "invalid_payload" })
+    expect(invalidSlug).toMatchObject({ isError: true, errorCode: "invalid_payload" })
+  })
+
+  it("returns safe errors for founder project cycle reader failures", async () => {
+    const failingReader: FounderWorkflowReader = {
+      ...founderReader,
+      async getProjectCycleStatus() {
+        throw new Error("private artifact path: bucket/secret/report.json")
+      },
+    }
+
+    const result = await createRegistry().call(
+      "founder.project.cycle_status",
+      { projectSlug: "civic-mesh" },
+      { auth, edge: createEdgeClient([]), founderReader: failingReader },
+    )
+
+    expect(result).toMatchObject({ isError: true, errorCode: "workflow_read_failed" })
+    expect(result.content[0]?.text).toContain("temporarily unavailable")
+    expect(result.content[0]?.text).not.toContain("bucket/secret")
+  })
+
+  it("returns cycle next actions for missing setup state", async () => {
+    const setupReader: FounderWorkflowReader = {
+      ...founderReader,
+      async getProjectCycleStatus(input) {
+        return {
+          project: { id: 7, slug: input.projectSlug, name: "Civic Mesh" },
+          cycle: { cycleKey: null, status: null },
+          payments: { count: 0, confirmedCount: 0, awaitingConfirmationCount: 0, totalContributionAmount: 0 },
+          routes: { enabledCount: 0, defaultCount: 0 },
+        }
+      },
+    }
+
+    const result = await createRegistry().call(
+      "founder.project.cycle_status",
+      { projectSlug: "civic-mesh" },
+      { auth, edge: createEdgeClient([]), founderReader: setupReader },
+    )
+
+    expect(result.structuredContent).toMatchObject({
+      nextActions: [
+        "Add an enabled contribution route.",
+        "Choose a default contribution route.",
+        "Confirm the project is attached to an active monthly cycle.",
+      ],
+    })
   })
 })
