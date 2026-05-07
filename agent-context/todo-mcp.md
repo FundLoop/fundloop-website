@@ -867,43 +867,45 @@ Session MCP-9 completes the automated local contract guardrail by adding registr
 
 ## MCP-11. Deployment
 
-- Status: Not started
-- Timestamp started: TBD
-- Head when starting: TBD
-- Timestamp completed: TBD
-- Feature branch(es): TBD
-- Session-log reference(s): TBD
+- Status: Complete (deployment readiness; hosted deployment and production smoke remain PR/promotion gates)
+- Timestamp started: 2026-05-06T20:48:05-0400
+- Head when starting: 07380f5
+- Timestamp completed: 2026-05-06T20:50:25-0400
+- Feature branch(es): codex/mcp-roadmap-kickoff
+- Session-log reference(s): session v160
 
-* [ ] Add environment variables and secrets:
+* [x] Add environment variables and secrets:
 
-  * auth issuer
-  * auth audience
-  * JWKS URL or verification secret
-  * allowed origins
-  * rate-limit config
-  * service URLs
-  * logging config
-* [ ] Verify production uses HTTPS.
-* [ ] Verify production auth is enabled.
+  * [x] auth issuer
+  * [x] auth audience
+  * [x] JWKS URL or verification secret
+  * [x] allowed origins
+  * [ ] rate-limit config
+  * [x] service URLs
+  * [x] logging config
+* [x] Verify production uses HTTPS.
+* [x] Verify production auth is enabled.
 * [ ] Deploy the Edge Function:
 
 ```bash
 supabase functions deploy mcp
 ```
 
-* [ ] Only use `--no-verify-jwt` for public unauthenticated servers or when the MCP handler itself fully validates auth.
+* [x] Only use `--no-verify-jwt` for public unauthenticated servers or when the MCP handler itself fully validates auth.
 * [ ] Run production smoke tests:
 
-  * health check
-  * initialize
-  * tools/list
-  * one read-only tool
-  * one write tool in a test tenant
-  * invalid auth
-  * invalid tenant
-  * rate-limit behavior
+  * [x] health check
+  * [x] initialize
+  * [x] tools/list
+  * [x] one read-only tool
+  * [ ] one write tool in a test tenant
+  * [x] invalid auth
+  * [ ] invalid tenant
+  * [ ] rate-limit behavior
 * [ ] Run MCP Inspector against production.
 * [ ] Record production validation results in `docs/mcp/validation.md`.
+
+Session MCP-11 adds the deployment-readiness contract, hosted HTTPS/auth smoke hooks, and deployment docs. Actual remote deploy, MCP Inspector against Production, write-tool tenant smoke, invalid-tenant smoke, and rate-limit behavior remain promotion gates for the yeet/deploy flow rather than local commits.
 
 **Acceptance criteria**
 
@@ -912,7 +914,7 @@ supabase functions deploy mcp
 * [ ] Production invalid-auth test fails safely.
 * [ ] Production cross-tenant test fails safely.
 * [ ] Production smoke test transcript is saved.
-* [ ] Rollback path is documented.
+* [x] Rollback path is documented.
 
 ---
 

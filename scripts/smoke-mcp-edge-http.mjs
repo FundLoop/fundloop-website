@@ -2,6 +2,11 @@
 
 const baseUrl = (process.env.FUNDLOOP_MCP_HTTP_URL || "http://127.0.0.1:54321/functions/v1/mcp").replace(/\/$/, "")
 const bearerToken = process.env.FUNDLOOP_MCP_BEARER_TOKEN || "local-smoke-token"
+const requireHttps = process.env.FUNDLOOP_MCP_REQUIRE_HTTPS === "true"
+
+if (requireHttps && !baseUrl.startsWith("https://")) {
+  throw new Error("FUNDLOOP_MCP_REQUIRE_HTTPS=true requires FUNDLOOP_MCP_HTTP_URL to use https://.")
+}
 
 async function request(payload) {
   const response = await fetch(baseUrl, {
@@ -41,7 +46,23 @@ async function health() {
   return body
 }
 
+async function expectMissingAuthFailure() {
+  const response = await fetch(baseUrl, {
+    method: "POST",
+    headers: {
+      accept: "application/json, text/event-stream",
+      "content-type": "application/json",
+    },
+    body: JSON.stringify({ jsonrpc: "2.0", id: "missing-auth", method: "tools/list" }),
+  })
+  const text = await response.text()
+  if (response.status !== 401) {
+    throw new Error(`MCP Edge missing-auth smoke expected 401 and received ${response.status}: ${text}`)
+  }
+}
+
 const healthResult = await health()
+await expectMissingAuthFailure()
 const initialize = await request({
   jsonrpc: "2.0",
   id: 1,
@@ -109,6 +130,7 @@ console.log(
       toolCount: toolNames.length,
       resourceCount: resourceUris.length,
       promptCount: promptNames.length,
+      checkedAuthFailures: ["missing_bearer"],
       checkedTools: ["fundloop.health"],
       checkedResources: ["fundloop://docs/mcp-overview"],
       checkedPrompts: ["review-pending-tasks"],

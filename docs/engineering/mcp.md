@@ -9,6 +9,7 @@ The MCP-specific roadmap and design artifacts now live in:
 - `agent-context/todo-mcp.md` for active MCP session tracking.
 - `docs/mcp/tool-catalog.md` for current and candidate tool contracts.
 - `docs/mcp/architecture.md` for the target remote/runtime architecture.
+- `docs/mcp/deployment.md` for Preview/Production deploy and smoke expectations.
 - `docs/mcp/security-model.md` for auth, authorization, data-safety, and threat-model rules.
 - `docs/mcp/runbook.md` for MCP operations, disabling tools, log inspection, secret rotation, and rollback.
 
@@ -81,6 +82,7 @@ FUNDLOOP_MCP_HTTP_URL=http://127.0.0.1:54321/functions/v1/mcp pnpm mcp:edge:smok
 
 The Edge smoke checks `GET /health`, `initialize`, `tools/list`, and `tools/call` for `fundloop.health`.
 When running the Edge handler directly without a live Supabase auth service, set `FUNDLOOP_MCP_ALLOW_LOCAL_TEST_TOKEN=true` and use the default `local-smoke-token`. Do not set this flag in Preview or Production.
+For hosted smoke, set `FUNDLOOP_MCP_REQUIRE_HTTPS=true`; the smoke script also checks that missing bearer auth fails with `401`.
 
 For package tests:
 

@@ -67,6 +67,7 @@ supabase functions serve --no-verify-jwt mcp --env-file .env.local
 The Edge smoke script checks:
 
 - public `GET /health`
+- missing bearer token fails with `401`
 - authenticated `initialize`
 - `tools/list`
 - `resources/list`
@@ -92,6 +93,7 @@ Latest local Edge transcript:
   "toolCount": 15,
   "resourceCount": 4,
   "promptCount": 4,
+  "checkedAuthFailures": ["missing_bearer"],
   "checkedTools": ["fundloop.health"],
   "checkedResources": ["fundloop://docs/mcp-overview"],
   "checkedPrompts": ["review-pending-tasks"]

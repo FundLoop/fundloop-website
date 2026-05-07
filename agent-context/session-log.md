@@ -1,3 +1,32 @@
+### session v160: Document MCP deployment readiness
+- timestamp: 2026-05-06T20:50:25-0400
+- agent: **Codex (GPT-5)**
+- branch: **codex/mcp-roadmap-kickoff**
+- head: pending MCP-11 commit
+
+#### Objective
+Complete the MCP-11 deployment-readiness slice without mutating remote Supabase directly, so Preview/Production deployment and smoke expectations are explicit before the PR/deploy flow.
+
+#### Actions Taken
+- Added `docs/mcp/deployment.md` with Preview/Production environment expectations, required Supabase Edge Function secrets, hosted smoke runner variables, deploy workflow path, manual operator fallback, smoke coverage, and rollback notes.
+- Extended the Edge HTTP smoke script with an HTTPS-required guard for hosted targets and a missing-bearer `401` negative smoke.
+- Updated MCP engineering, architecture, and validation docs to point at the new deployment contract and hosted smoke behavior.
+- Marked MCP-11 complete as deployment readiness in `agent-context/todo-mcp.md`, while leaving actual remote deploy, production transcript, invalid-tenant smoke, write-tool tenant smoke, rate-limit behavior, and MCP Inspector validation as promotion gates.
+
+#### Tests and Validation Notes
+- `node --check scripts/smoke-mcp-edge-http.mjs` passed.
+- `pnpm mcp:smoke` passed for the local stdio harness.
+- `pnpm mcp:test` passed: 5 files, 81 tests.
+- `pnpm dlx node@22.22.1 /opt/homebrew/bin/pnpm check` passed, including lint, 78 test files / 365 tests, typecheck, and production build.
+
+#### Reflections
+- This keeps the hosted boundary clean: deployment is now documented and smokeable, but remote mutation still belongs to the normal PR/merge Supabase deploy workflow.
+
+#### Suggested Next Steps
+- Run the full Node 22-equivalent check, commit MCP-11, then continue to MCP-12 packaging/publication planning if the branch remains the active MCP roadmap branch.
+
+---
+
 ### session v159: Add MCP observability and runbook controls
 - timestamp: 2026-05-06T20:44:12-0400
 - agent: **Codex (GPT-5)**
