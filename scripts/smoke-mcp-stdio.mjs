@@ -113,6 +113,10 @@ const requests = [
   { jsonrpc: "2.0", id: 1, method: "initialize", params: { protocolVersion: "2024-11-05" } },
   { jsonrpc: "2.0", id: 2, method: "tools/list" },
   { jsonrpc: "2.0", id: 3, method: "tools/call", params: { name: "fundloop.health", arguments: {} } },
+  { jsonrpc: "2.0", id: 4, method: "resources/list" },
+  { jsonrpc: "2.0", id: 5, method: "resources/read", params: { uri: "fundloop://docs/mcp-overview" } },
+  { jsonrpc: "2.0", id: 6, method: "prompts/list" },
+  { jsonrpc: "2.0", id: 7, method: "prompts/get", params: { name: "review-pending-tasks", arguments: {} } },
 ]
 
 const responsesPromise = waitForResponses(child, requests.length)
@@ -125,6 +129,10 @@ await Promise.race([once(child, "exit"), new Promise((resolve) => setTimeout(res
 const initialize = responses.find((message) => message.id === 1)
 const toolsList = responses.find((message) => message.id === 2)
 const health = responses.find((message) => message.id === 3)
+const resourcesList = responses.find((message) => message.id === 4)
+const docsResource = responses.find((message) => message.id === 5)
+const promptsList = responses.find((message) => message.id === 6)
+const reviewPrompt = responses.find((message) => message.id === 7)
 
 if (initialize?.result?.serverInfo?.name !== "fundloop-mcp-server") {
   throw new Error("MCP initialize did not return fundloop-mcp-server.")
@@ -140,6 +148,26 @@ if (!healthText.includes("fundloop-mcp-server")) {
   throw new Error("MCP fundloop.health did not return service health content.")
 }
 
+const resourceUris = resourcesList?.result?.resources?.map((resource) => resource.uri) ?? []
+if (!resourceUris.includes("fundloop://docs/mcp-overview")) {
+  throw new Error("MCP resources/list did not include fundloop://docs/mcp-overview.")
+}
+
+const resourceText = docsResource?.result?.contents?.[0]?.text ?? ""
+if (!resourceText.includes("fundloop-mcp-server")) {
+  throw new Error("MCP resources/read did not return the MCP overview resource.")
+}
+
+const promptNames = promptsList?.result?.prompts?.map((prompt) => prompt.name) ?? []
+if (!promptNames.includes("review-pending-tasks")) {
+  throw new Error("MCP prompts/list did not include review-pending-tasks.")
+}
+
+const promptText = reviewPrompt?.result?.messages?.[0]?.content?.text ?? ""
+if (!promptText.includes("user.workspace.summary")) {
+  throw new Error("MCP prompts/get did not return the review-pending-tasks prompt.")
+}
+
 const stderr = Buffer.concat(stderrChunks).toString("utf8").trim()
 console.log(
   JSON.stringify(
@@ -147,7 +175,11 @@ console.log(
       ok: true,
       server: initialize.result.serverInfo,
       toolCount: toolNames.length,
+      resourceCount: resourceUris.length,
+      promptCount: promptNames.length,
       checkedTools: ["fundloop.health"],
+      checkedResources: ["fundloop://docs/mcp-overview"],
+      checkedPrompts: ["review-pending-tasks"],
       stderr: stderr || null,
     },
     null,

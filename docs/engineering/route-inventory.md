@@ -8,7 +8,8 @@ Related planning docs:
 - [Current-State Architecture](./current-state-architecture.md)
 - [Target-State Architecture](./target-state-architecture.md)
 - [Information Architecture](./information-architecture.md)
-- [TODO Roadmap](../../agent-context/todo.md)
+- [Archived Sessions 1-52 Roadmap](../../agent-context/todo-1-through-52.md)
+- [MCP TODO Roadmap](../../agent-context/todo-mcp.md)
 
 This inventory covers every current `page.tsx` and `route.ts` surface under `app/`. Each entry records who the surface is for, its current state, the evidence that matters for planning, the intended disposition, the canonical future destination, and the roadmap session that should absorb the work.
 
@@ -37,6 +38,7 @@ This inventory covers every current `page.tsx` and `route.ts` surface under `app
 | `/founders` | Prospective founders | Real founder acquisition funnel. | Session 09 consolidated the founder story here and made it the single public founder path. | finish | Public founder acquisition entry | 09 |
 | `/join` | Invited users | Real invite-code entry route. | Validates invite codes and hands off to onboarding. | finish | Public invitation and onboarding entry | 10, 12 |
 | `/invitations/[token]` | Invited users | Redirect-only legacy invitation route. | Session 11 retired the old mock invitation flow and now preserves the token into the real `/join?invite=...` path. | redirect | `/join` and the real invitation entry flow | 11 |
+| `/mcp` | Developers, partners, agents | Public MCP landing page. | MCP-13 added the public connection, tools, auth, privacy, directory status, and changelog surface for the FundLoop MCP Server. | finish | Public MCP integration landing page | MCP-13 |
 | `/participation` | Prospective users | Real public user funnel. | Session 10 made this the canonical public user acquisition and explanation path, with explicit onboarding, CUBID, project discovery, and results-visibility handoff. | finish | Public user discovery and participation explainer | 10 |
 | `/pledge` | Prospective founders | Redirect-only legacy founder page. | Session 09 merged pledge content into `/founders#commitment`. | redirect | `/founders#commitment` | 09 |
 | `/pricing` | Prospective founders | Redirect-only legacy founder page. | Session 09 merged support-model content into `/founders#support-model`. | redirect | `/founders#support-model` | 09 |

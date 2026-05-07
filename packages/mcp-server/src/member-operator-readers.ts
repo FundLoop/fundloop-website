@@ -15,6 +15,76 @@ export type ProjectMemberReportingStatus = {
   }
 }
 
+export type UserWorkspaceSummary = {
+  profileStatus: {
+    signedInEmail: string | null
+    cubidIdentityStatus: string
+    cubidScore: number | null
+    completionPercent: number
+    missingItems: string[]
+    identitySnapshot: {
+      primaryEmailPresent: boolean
+      primaryPhonePresent: boolean
+      verifiedStampTypes: string[]
+      lastSyncedAt: string | null
+      lastSyncErrorCode: string | null
+    } | null
+  }
+  participation: {
+    joinedProjectCount: number
+    founderProjectCount: number
+    favoriteProjectCount: number
+    recentProjects: Array<{
+      slug: string | null
+      name: string
+      joinedAt: string | null
+      isFavorite: boolean
+      isFounderRole: boolean
+    }>
+  }
+  results: {
+    latest: {
+      allocationUsd: number
+      aggregateScore: number
+      monthLabel: string
+      publishedAt: string
+    } | null
+    totalAllocationUsd: number
+    resultCount: number
+    detailHref: string
+  }
+  payoutReadiness: {
+    routeCount: number
+    activeRouteCount: number
+    hasDefaultRoute: boolean
+    rails: string[]
+    nextAction: string
+  }
+  discovery: {
+    recommendedProjects: Array<{ slug: string | null; name: string }>
+    nextActions: string[]
+  }
+  warnings: Array<{ scope: string; message: string }>
+}
+
+export type UserPayoutRoutesList = {
+  summary: {
+    routeCount: number
+    activeRouteCount: number
+    hasDefaultRoute: boolean
+    rails: string[]
+    nextAction: string
+  }
+  routes: Array<{
+    label: string
+    rail: string
+    currencyCode: string
+    status: string
+    isDefault: boolean
+  }>
+  warnings: Array<{ scope: string; message: string }>
+}
+
 export type OperatorCycleStatus = {
   cycleKey: string
   status: string
@@ -51,6 +121,11 @@ export type OperatorReportingCoverage = {
   artifactCount: number
 }
 
+export type UserWorkflowReader = {
+  getWorkspaceSummary(auth: McpAuthContext): Promise<UserWorkspaceSummary>
+  listPayoutRoutes(auth: McpAuthContext): Promise<UserPayoutRoutesList>
+}
+
 export type ProjectMemberWorkflowReader = {
   getProjectReportingStatus(
     input: { projectSlug: string; cycleKey?: string },
@@ -72,6 +147,22 @@ async function invokeRead<T>(edge: EdgeCommandClient, input: Record<string, unkn
   }
 
   return result.data as T
+}
+
+export class EdgeUserWorkflowReader implements UserWorkflowReader {
+  private readonly edge: EdgeCommandClient
+
+  constructor(edge: EdgeCommandClient) {
+    this.edge = edge
+  }
+
+  async getWorkspaceSummary(auth: McpAuthContext): Promise<UserWorkspaceSummary> {
+    return invokeRead(this.edge, { operation: "user.workspace.summary" }, auth)
+  }
+
+  async listPayoutRoutes(auth: McpAuthContext): Promise<UserPayoutRoutesList> {
+    return invokeRead(this.edge, { operation: "user.payout.routes.list" }, auth)
+  }
 }
 
 export class EdgeProjectMemberWorkflowReader implements ProjectMemberWorkflowReader {
@@ -111,6 +202,10 @@ export class EdgeOperatorWorkflowReader implements OperatorWorkflowReader {
   async getReportingCoverage(input: { cycleKey?: string }, auth: McpAuthContext): Promise<OperatorReportingCoverage> {
     return invokeRead(this.edge, { operation: "operator.reporting.coverage", ...input }, auth)
   }
+}
+
+export function createEdgeUserWorkflowReader(edge: EdgeCommandClient) {
+  return new EdgeUserWorkflowReader(edge)
 }
 
 export function createEdgeProjectMemberWorkflowReader(edge: EdgeCommandClient) {

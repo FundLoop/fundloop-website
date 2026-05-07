@@ -1,3 +1,1000 @@
+### session v166: Address Copilot MCP hardening review
+- timestamp: 2026-05-06T21:33:38-0400
+- agent: **Codex (GPT-5)**
+- branch: **codex/mcp-roadmap-kickoff**
+- head: pending Copilot review-fix commit
+
+#### Objective
+Address the Copilot PR review findings around MCP safety, prompt resilience, auth/runtime dependencies, and documentation drift.
+
+#### Actions Taken
+- Threaded MCP `maxDepth` limits through nested object and array validation.
+- Sanitized early tool error returns, including unknown tool, disabled tool, authorization failure, validation failure, and handler failure paths.
+- Wrapped prompt handlers in stable `prompt_failed` errors so prompt exceptions do not bubble through the protocol handler.
+- Replaced MCP workflow-read warning payloads with generic caller-safe warning messages while logging detailed error text server-side.
+- Removed the remote MCP Edge Function's unnecessary service-role client dependency by constructing a request-scoped auth client only.
+- Made the stdio harness create a local actor id/email by default so non-health local tools do not fail the front-door auth gate before backing Edge Functions enforce product authorization.
+- Updated MCP tool catalog docs so the generic Edge bridge uses `input?: object` and implemented tools are no longer listed as near-term candidates.
+
+#### Tests and Validation Notes
+- `pnpm --filter @fundloop/mcp-server test` passed: 5 files, 84 tests.
+- `deno cache --config supabase/functions/deno.json supabase/functions/mcp/index.ts` passed.
+- `pnpm dlx node@22.22.1 /opt/homebrew/bin/pnpm check` passed, including lint, 78 test files / 368 tests, typecheck, and production build.
+
+#### Reflections
+- This review batch tightened the boring but important edges: error paths, depth limits, local harness ergonomics, and docs truth.
+
+#### Suggested Next Steps
+- Commit and push the Copilot fixes, reply to and resolve each thread, then wait for CI to return green.
+
+---
+
+### session v165: Address MCP coverage schema review
+- timestamp: 2026-05-06T21:24:12-0400
+- agent: **Codex (GPT-5)**
+- branch: **codex/mcp-roadmap-kickoff**
+- head: 0f4ce94
+
+#### Objective
+Address the Codex PR review finding that aggregate operator reporting coverage can return `cycleKey: null` while the MCP output schema advertised a required string.
+
+#### Actions Taken
+- Updated the MCP protocol schema type to support JSON Schema nullable type arrays.
+- Updated the SDK adapter to convert nullable schema types into Zod unions for remote MCP registration.
+- Changed `operator.reporting.coverage` output schema so `cycleKey` accepts either a string or `null`.
+- Added member/operator MCP test coverage for aggregate reporting coverage returning `cycleKey: null`.
+
+#### Tests and Validation Notes
+- `pnpm --filter @fundloop/mcp-server test` passed: 5 files, 82 tests.
+- `pnpm dlx node@22.22.1 /opt/homebrew/bin/pnpm check` passed, including lint, 78 test files / 366 tests, typecheck, and production build.
+
+#### Reflections
+- This was a good protocol-contract catch: aggregate views should represent the absence of a selected cycle explicitly rather than forcing a fake cycle string.
+
+#### Suggested Next Steps
+- Commit and push the review fix, reply to the Codex thread, resolve it, and re-check CI.
+
+---
+
+### session v164: Record MCP readiness state
+- timestamp: 2026-05-06T21:10:42-0400
+- agent: **Codex (GPT-5)**
+- branch: **codex/mcp-roadmap-kickoff**
+- head: 0fc2002
+
+#### Objective
+Complete MCP-15 as a truthful final readiness pass that distinguishes implemented local capability from still-pending hosted production launch gates.
+
+#### Actions Taken
+- Added `docs/mcp/readiness.md` with completed gates, hosted launch blockers, deferred work, and a promotion checklist.
+- Linked the readiness ledger from the MCP docs index and engineering docs.
+- Updated MCP-15 in `agent-context/todo-mcp.md` with checked local implementation items and explicit pending hosted deploy, smoke, Inspector, CI, and publication gates.
+- Updated the MCP-14 session-log entry head now that its commit exists.
+
+#### Tests and Validation Notes
+- `pnpm dlx node@22.22.1 /opt/homebrew/bin/pnpm check` passed, including lint, 78 test files / 365 tests, typecheck, and production build with `/[locale]/mcp`.
+
+#### Reflections
+- The roadmap now avoids the classic trap of marking a remote integration done before the hosted endpoint has actually been smoked.
+
+#### Suggested Next Steps
+- Run the Node 22-equivalent check, commit MCP-15, then yeet the branch for CI and hosted deploy validation when the user is ready.
+
+---
+
+### session v163: Complete MCP documentation deliverables
+- timestamp: 2026-05-06T21:03:37-0400
+- agent: **Codex (GPT-5)**
+- branch: **codex/mcp-roadmap-kickoff**
+- head: 106f992
+
+#### Objective
+Complete MCP-14 by making the MCP documentation set navigable and useful for engineers, security reviewers, coding agents, and operators.
+
+#### Actions Taken
+- Added `docs/mcp/README.md` as the MCP docs index and quick-start entry.
+- Added `docs/mcp/auth-and-scopes.md` covering Supabase bearer auth, actor roles, tool authorization, deferred OAuth scopes, and revocation.
+- Added `docs/mcp/testing.md` covering MCP tests, stdio smoke, Edge smoke, registry metadata validation, negative tests, and deferred stress coverage.
+- Added `docs/mcp/changelog.md` summarizing the current 0.1.0 MCP capability baseline and deferred production/publication items.
+- Updated the engineering docs index and MCP engineering doc to link the expanded MCP documentation set.
+- Marked MCP-14 complete in `agent-context/todo-mcp.md`.
+
+#### Tests and Validation Notes
+- `pnpm dlx node@22.22.1 /opt/homebrew/bin/pnpm check` passed, including lint, 78 test files / 365 tests, typecheck, and production build with `/[locale]/mcp`.
+
+#### Reflections
+- The MCP docs now have an actual entrypoint instead of requiring future agents to infer the order from the roadmap.
+
+#### Suggested Next Steps
+- Run the full Node 22-equivalent check, commit MCP-14, then use MCP-15 as the final readiness checklist before yeeting the branch.
+
+---
+
+### session v162: Add public MCP landing page
+- timestamp: 2026-05-06T20:59:57-0400
+- agent: **Codex (GPT-5)**
+- branch: **codex/mcp-roadmap-kickoff**
+- head: pending MCP-13 commit
+
+#### Objective
+Complete MCP-13's local product/docs work by creating the public MCP landing page and directory-status tracking without submitting to external directories before hosted deployment gates are complete.
+
+#### Actions Taken
+- Added localized public `/mcp` landing page content for the FundLoop MCP Server, including connection URL, supported tools, auth requirements, setup steps, privacy/safety notes, example use cases, directory status, contact email, and changelog.
+- Added localized metadata and shell resource-link copy, and linked `/mcp` from public resource surfaces.
+- Updated `docs/mcp/publication.md` with directory target statuses.
+- Updated `docs/engineering/route-inventory.md` to record `/mcp` as the public MCP integration landing page.
+- Marked MCP-13 complete as landing-page/directory-tracking work in `agent-context/todo-mcp.md`, with external submissions deferred until hosted deploy, production smoke, and registry publication gates pass.
+
+#### Tests and Validation Notes
+- `pnpm lint` passed.
+- `pnpm mcp:registry:check` passed.
+- `pnpm typecheck` passed.
+- `pnpm dlx node@22.22.1 /opt/homebrew/bin/pnpm check` passed, including lint, 78 test files / 365 tests, typecheck, and production build with `/[locale]/mcp`.
+
+#### Reflections
+- This gives the MCP work a real public surface without overclaiming publication. External directory submissions should wait until the remote endpoint is intentionally public and smoke-verified.
+
+#### Suggested Next Steps
+- Run the full Node 22-equivalent check, commit MCP-13, then continue to MCP-14 documentation deliverables if this branch remains active.
+
+---
+
+### session v161: Prepare MCP registry metadata
+- timestamp: 2026-05-06T20:54:22-0400
+- agent: **Codex (GPT-5)**
+- branch: **codex/mcp-roadmap-kickoff**
+- head: pending MCP-12 commit
+
+#### Objective
+Complete MCP-12 as a metadata/publication-readiness pass without publishing the MCP server before the hosted deployment gates are complete.
+
+#### Actions Taken
+- Added `server.json` using the current official MCP Registry remote-server shape with a Streamable HTTP remote endpoint template and required secret `Authorization` header metadata.
+- Added a local `mcp:registry:check` script that validates the repo's registry metadata basics, including schema URL, reverse-DNS name format, HTTPS Supabase MCP endpoint template, required secret auth header, and GitHub repository metadata.
+- Added `docs/mcp/publication.md` with distribution decisions, publication blockers, publish flow, pending registry record, and version/publication guidance.
+- Updated MCP engineering and architecture docs to reference publication metadata and gates.
+- Marked MCP-12 complete as metadata prepared in `agent-context/todo-mcp.md`, with actual `mcp-publisher` login/publish deferred until hosted deploy and production smoke gates pass.
+
+#### Tests and Validation Notes
+- `pnpm mcp:registry:check` passed.
+- `node --check scripts/validate-mcp-server-json.mjs` passed.
+- `pnpm mcp:test` passed: 5 files, 81 tests.
+- `pnpm dlx node@22.22.1 /opt/homebrew/bin/pnpm check` passed, including lint, 78 test files / 365 tests, typecheck, and production build.
+
+#### Reflections
+- The official registry is still preview and supports remote `server.json` entries, so the safe move is to prepare metadata now and publish only after the remote endpoint is intentionally public and smoke-verified.
+
+#### Suggested Next Steps
+- Run the full Node 22-equivalent check, commit MCP-12, then continue to MCP-13 public landing page if the branch remains active.
+
+---
+
+### session v160: Document MCP deployment readiness
+- timestamp: 2026-05-06T20:50:25-0400
+- agent: **Codex (GPT-5)**
+- branch: **codex/mcp-roadmap-kickoff**
+- head: pending MCP-11 commit
+
+#### Objective
+Complete the MCP-11 deployment-readiness slice without mutating remote Supabase directly, so Preview/Production deployment and smoke expectations are explicit before the PR/deploy flow.
+
+#### Actions Taken
+- Added `docs/mcp/deployment.md` with Preview/Production environment expectations, required Supabase Edge Function secrets, hosted smoke runner variables, deploy workflow path, manual operator fallback, smoke coverage, and rollback notes.
+- Extended the Edge HTTP smoke script with an HTTPS-required guard for hosted targets and a missing-bearer `401` negative smoke.
+- Updated MCP engineering, architecture, and validation docs to point at the new deployment contract and hosted smoke behavior.
+- Marked MCP-11 complete as deployment readiness in `agent-context/todo-mcp.md`, while leaving actual remote deploy, production transcript, invalid-tenant smoke, write-tool tenant smoke, rate-limit behavior, and MCP Inspector validation as promotion gates.
+
+#### Tests and Validation Notes
+- `node --check scripts/smoke-mcp-edge-http.mjs` passed.
+- `pnpm mcp:smoke` passed for the local stdio harness.
+- `pnpm mcp:test` passed: 5 files, 81 tests.
+- `pnpm dlx node@22.22.1 /opt/homebrew/bin/pnpm check` passed, including lint, 78 test files / 365 tests, typecheck, and production build.
+
+#### Reflections
+- This keeps the hosted boundary clean: deployment is now documented and smokeable, but remote mutation still belongs to the normal PR/merge Supabase deploy workflow.
+
+#### Suggested Next Steps
+- Run the full Node 22-equivalent check, commit MCP-11, then continue to MCP-12 packaging/publication planning if the branch remains the active MCP roadmap branch.
+
+---
+
+### session v159: Add MCP observability and runbook controls
+- timestamp: 2026-05-06T20:44:12-0400
+- agent: **Codex (GPT-5)**
+- branch: **codex/mcp-roadmap-kickoff**
+- head: pending MCP-10 commit
+
+#### Objective
+Complete MCP-10 by adding redacted structured observability, emergency tool-disable controls, and an operations runbook for the current MCP runtime.
+
+#### Actions Taken
+- Added a shared MCP observability helper that creates request/client context, classifies tools, hashes actor/client identifiers, redacts secret-like values, and writes structured audit/metric events.
+- Extended MCP tool dispatch logs with request id, hashed client/user/tenant identifiers, actor role, tool name, tool category, status, latency, and error code.
+- Added `FUNDLOOP_MCP_DISABLED_TOOLS` support so operators can hide and block exact tools quickly without changing code.
+- Passed request-scoped observability context into the remote Supabase Edge MCP function.
+- Updated auth-failure logging to use the same redacted event writer.
+- Added `docs/mcp/runbook.md` with common failures, log/metric guidance, tool disablement, access revocation, secret rotation, audit inspection, rollback, and escalation guidance.
+- Updated MCP docs, security-model notes, architecture notes, validation coverage, and MCP-10 roadmap metadata.
+
+#### Tests and Validation Notes
+- `pnpm mcp:test` passed: 5 files, 81 tests.
+- `deno cache --config supabase/functions/deno.json supabase/functions/mcp/index.ts` passed.
+- `pnpm dlx node@22.22.1 /opt/homebrew/bin/pnpm check` passed after a small TypeScript strictness fix, including lint, 78 test files / 365 tests, typecheck, and production build.
+
+#### Reflections
+- The implementation deliberately emits log-metric-ready events instead of pretending a metrics backend exists. Hosted log metrics and alerts can now be configured around stable MCP fields.
+
+#### Suggested Next Steps
+- Run the full Node 22-equivalent check, commit MCP-10, then continue to MCP-11 deployment readiness when this branch is ready for the next roadmap slice.
+
+---
+
+### session v158: Harden MCP automated contract coverage
+- timestamp: 2026-05-06T20:37:38-0400
+- agent: **Codex (GPT-5)**
+- branch: **codex/mcp-roadmap-kickoff**
+- head: pending MCP-9 commit
+
+#### Objective
+Complete MCP-9 by adding automated guardrails that keep the current MCP tool, resource, prompt, auth, and safety contracts from drifting silently.
+
+#### Actions Taken
+- Added registry-wide MCP contract coverage for all currently registered tools, including strict input/output schema metadata, annotations, closed-world posture, auth requirements, operator gating, and valid-input dispatch.
+- Added automated checks for bounded resources, operator-only resource filtering, safe prompt metadata/content, unknown resource/prompt errors, malformed JSON-RPC tool/resource calls, output redaction, and audit-log redaction.
+- Included the new contract coverage file in the `@fundloop/mcp-server` package test command.
+- Documented MCP-9 automated coverage in the engineering MCP doc and validation runbook.
+- Marked MCP-9 complete in `agent-context/todo-mcp.md` with remaining hosted/stress checks called out as promotion gates.
+
+#### Tests and Validation Notes
+- `pnpm mcp:test` passed: 5 files, 80 tests.
+- `deno cache --config supabase/functions/deno.json supabase/functions/mcp/index.ts` passed.
+- `pnpm dlx node@22.22.1 /opt/homebrew/bin/pnpm check` passed, including lint, 78 test files / 364 tests, typecheck, and production build.
+
+#### Reflections
+- The first run caught a fixture mismatch against the real payment-draft Edge contract, which is exactly the kind of drift this test layer is meant to surface early.
+
+#### Suggested Next Steps
+- Run the full MCP/repo validation set, commit MCP-9, then continue to MCP-10 observability and operations if the branch remains the active MCP roadmap branch.
+
+---
+
+### session v157: Harden MCP local smoke coverage
+- timestamp: 2026-05-06T20:24:00-0400
+- agent: **Codex (GPT-5)**
+- branch: **codex/mcp-roadmap-kickoff**
+- head: pending MCP-8 commit
+
+#### Objective
+Complete MCP-8 by making local MCP smoke coverage verify tools, resources, prompts, and the remote Edge endpoint contract.
+
+#### Actions Taken
+- Extended the stdio smoke script to check `resources/list`, `resources/read`, `prompts/list`, and `prompts/get` in addition to initialize, tools/list, and `fundloop.health`.
+- Extended the Edge HTTP smoke script to check resources and prompts over Streamable HTTP.
+- Added `docs/mcp/validation.md` with the current stdio and local Edge smoke transcript, local Supabase serve guidance, curl shape, and required negative-smoke checklist.
+- Documented the local Colima/Docker socket workaround and the `host.docker.internal` function environment convention needed by local Edge runtime.
+- Marked MCP-8 complete in `agent-context/todo-mcp.md`.
+
+#### Tests and Validation Notes
+- `DOCKER_HOST=unix:///var/run/docker.sock supabase start` passed after clearing stale local FundLoop Supabase state with `supabase stop`.
+- `FUNDLOOP_MCP_HTTP_URL=http://127.0.0.1:54321/functions/v1/mcp FUNDLOOP_MCP_BEARER_TOKEN=local-smoke-token pnpm mcp:edge:smoke` passed against locally served `mcp`.
+- `pnpm mcp:smoke` passed for the stdio harness.
+- `deno cache --config supabase/functions/deno.json supabase/functions/mcp/index.ts` passed.
+- `pnpm mcp:test` passed: 4 files, 71 tests.
+- `pnpm dlx node@22.22.1 /opt/homebrew/bin/pnpm check` passed.
+
+#### Reflections
+- Local Edge smoke requires `--no-verify-jwt` for the documented `local-smoke-token`; otherwise the Supabase gateway rejects the token before FundLoop's local-test bypass can run.
+
+#### Suggested Next Steps
+- Continue to MCP-9 automated tests after this smoke hardening checkpoint is validated and committed.
+
+---
+
+### session v156: Add MCP resources and prompts
+- timestamp: 2026-05-06T20:20:30-0400
+- agent: **Codex (GPT-5)**
+- branch: **codex/mcp-roadmap-kickoff**
+- head: 718850b
+
+#### Objective
+Complete MCP-6 by adding first-class read-only MCP resources and workflow prompts to the stdio and remote Streamable HTTP MCP runtimes.
+
+#### Actions Taken
+- Added an MCP resource registry and prompt registry alongside the existing tool registry.
+- Added `resources/list`, `resources/read`, `prompts/list`, and `prompts/get` support to the local stdio JSON-RPC handler.
+- Registered resources and prompts on the official MCP SDK server used by the Supabase Edge Function remote endpoint.
+- Added bounded read-only resources for MCP overview, user workspace summary, user payout route readiness, founder projects, and internal-operator monthly cycles.
+- Added workflow starter prompts for funding updates, project status summaries, investor/supporter follow-up, and pending task review.
+- Documented resource/prompt safety expectations in the engineering MCP doc and MCP architecture/security docs.
+- Marked MCP-6 complete in `agent-context/todo-mcp.md`.
+
+#### Tests and Validation Notes
+- `pnpm mcp:test` passed: 4 files, 71 tests.
+- `deno cache --config supabase/functions/deno.json supabase/functions/mcp/index.ts` passed.
+- `pnpm lint` passed.
+- `pnpm typecheck` passed.
+- `pnpm test` passed: 77 files, 355 tests.
+- `pnpm build` passed.
+- `pnpm dlx node@22.22.1 /opt/homebrew/bin/pnpm check` passed.
+
+#### Reflections
+- Resources and prompts are useful now because they reuse the already-hardened read boundaries instead of expanding the command surface.
+
+#### Suggested Next Steps
+- MCP-7 remains optional Apps SDK work; MCP-8 local smoke hardening may be the next practical MCP infrastructure slice.
+
+---
+
+### session v155: Finalize user payout routes MCP tool
+- timestamp: 2026-05-06T20:10:50-0400
+- agent: **Codex (GPT-5)**
+- branch: **codex/mcp-roadmap-kickoff**
+- head: 5912fe4
+
+#### Objective
+Complete MCP-5.17 by adding a read-only MCP tool for authenticated user payout route readiness.
+
+#### Actions Taken
+- Added `user.payout.routes.list` with read-only annotations, strict empty input metadata, and structured output metadata.
+- Routed payout route reads through `mcp-workflow-read` via the existing `UserWorkflowReader` boundary.
+- Returned route label, rail, currency, status, default state, readiness counts, and warning states for the authenticated user only.
+- Deliberately omitted payout destinations, provider tokens, private wallet data, and raw route payloads from the MCP output.
+- Added tests for metadata, configured routes, empty/provider warning states, output redaction, and workflow-read contract acceptance.
+- Marked MCP-5.17 complete in `agent-context/todo-mcp.md` and refreshed the MCP engineering doc.
+
+#### Tests and Validation Notes
+- `pnpm mcp:test` passed: 4 files, 68 tests.
+- `deno cache --config supabase/functions/deno.json supabase/functions/mcp/index.ts` passed.
+- `pnpm lint` passed.
+- `pnpm typecheck` passed after completing the user reader test double.
+- `pnpm test` passed: 77 files, 352 tests.
+- `pnpm build` passed.
+- `pnpm dlx node@22.22.1 /opt/homebrew/bin/pnpm check` passed.
+
+#### Reflections
+- Payout route exposure is safe as a read summary because it mirrors workspace readiness without revealing destination credentials or mutable route payloads.
+
+#### Suggested Next Steps
+- Treat MCP-5.18 as sensitive and only expose `operator.cycle.lock` after explicit approval for destructive/operator MCP commands.
+
+---
+
+### session v154: Finalize user workspace summary MCP tool
+- timestamp: 2026-05-06T20:04:03-0400
+- agent: **Codex (GPT-5)**
+- branch: **codex/mcp-roadmap-kickoff**
+- head: 0ea6b1e
+
+#### Objective
+Complete MCP-5.16 by adding the first regular-user MCP read tool for authenticated workspace summaries.
+
+#### Actions Taken
+- Added `user.workspace.summary` with read-only annotations, strict empty input metadata, and structured output metadata.
+- Routed the tool through `mcp-workflow-read` via a `UserWorkflowReader` so regular-user MCP reads stay behind the shared Edge Function read gateway.
+- Added a redacted workspace summary operation with identity/completion status, participation footprint, results visibility, payout readiness, discovery next actions, and non-fatal warning states.
+- Avoided raw CUBID payloads, CUBID user ids, payout destinations, and other users' records in the MCP-facing output.
+- Added tests for metadata, populated workspace output, empty/partial warning states, and workflow-read contract acceptance.
+- Marked MCP-5.16 complete in `agent-context/todo-mcp.md` and refreshed the MCP engineering doc.
+
+#### Tests and Validation Notes
+- `pnpm mcp:test` passed: 4 files, 66 tests.
+- `deno cache --config supabase/functions/deno.json supabase/functions/mcp/index.ts` passed.
+- `pnpm lint` passed.
+- `pnpm typecheck` passed.
+- `pnpm test` passed: 77 files, 349 tests.
+- `pnpm build` passed.
+- `pnpm dlx node@22.22.1 /opt/homebrew/bin/pnpm check` passed.
+
+#### Reflections
+- The user workspace source boundary is now safe enough for first-party agents because it exposes the same high-level workspace concepts as the app without private identity or payout internals.
+
+#### Suggested Next Steps
+- Continue to MCP-5.17 only if payout route read summaries are ready to expose without destination secrets.
+
+---
+
+### session v153: Finalize founder payment-draft MCP tool
+- timestamp: 2026-05-06T19:58:24-0400
+- agent: **Codex (GPT-5)**
+- branch: **codex/mcp-roadmap-kickoff**
+- head: 664feef
+
+#### Objective
+Complete MCP-5.15 by adding a guarded `founder.project.payment_drafts.create` MCP tool backed by the existing typed payment-draft Edge command.
+
+#### Actions Taken
+- Skipped MCP-5.14 for now because no dedicated founder contribution-submission Edge command is ready for MCP exposure.
+- Added `founder.project.payment_drafts.create` with title, write annotations, strict input/output metadata, and required MCP `attemptId`.
+- Validated payment draft payloads before Edge dispatch using the existing `project-payment-drafts-create` contract.
+- Returned compact payment-draft summaries with created count, total amount, and period summaries instead of raw payment rows.
+- Added tests for metadata, successful dispatch, validation failure before dispatch, and stable backend failure propagation.
+- Marked MCP-5.15 started in `agent-context/todo-mcp.md` and refreshed the MCP engineering doc.
+
+#### Tests and Validation Notes
+- `pnpm mcp:test` passed: 4 files, 64 tests.
+- `deno cache --config supabase/functions/deno.json supabase/functions/mcp/index.ts` passed.
+- `pnpm lint` passed.
+- `pnpm typecheck` passed.
+- `pnpm test` passed: 76 files, 345 tests.
+- `pnpm build` passed.
+- `pnpm dlx node@22.22.1 /opt/homebrew/bin/pnpm check` passed.
+
+#### Reflections
+- This candidate has a clear source Edge command and preserves the product permission model, so it is safe to promote before the broader founder contribution-submission candidate.
+
+#### Suggested Next Steps
+- Continue only with candidate tools that already have safe source boundaries, or prepare this MCP tranche for review.
+
+---
+
+### session v152: Finalize operator reporting-coverage MCP tool
+- timestamp: 2026-05-06T19:52:17-0400
+- agent: **Codex (GPT-5)**
+- branch: **codex/mcp-roadmap-kickoff**
+- head: pending MCP-5.13 commit
+
+#### Objective
+Complete MCP-5.13 by making `operator.reporting.coverage` a structured, read-only, internal-operator reporting publication coverage tool.
+
+#### Actions Taken
+- Added title, read-only annotations, and output-schema metadata to `operator.reporting.coverage`.
+- Normalized coverage counts into a structured response with audience counts, missing audience gaps, artifact coverage warnings, and safe next-action hints.
+- Added safe protocol-visible errors for missing reader configuration and read-gateway failures without exposing raw backend exception details.
+- Added tests for metadata, operator success, non-operator authorization blocking before handler execution, invalid cycle filters, coverage gaps, and backend failure redaction.
+- Marked MCP-5.13 started in `agent-context/todo-mcp.md` and refreshed the MCP engineering doc.
+
+#### Tests and Validation Notes
+- `pnpm mcp:test` passed: 4 files, 62 tests.
+- `deno cache --config supabase/functions/deno.json supabase/functions/mcp/index.ts` passed.
+- `pnpm lint` passed.
+- `pnpm typecheck` passed.
+- `pnpm test` passed: 76 files, 343 tests.
+- `pnpm build` passed.
+- `pnpm dlx node@22.22.1 /opt/homebrew/bin/pnpm check` passed.
+
+#### Reflections
+- This completes the current concrete MCP-5 operator read tranche without exposing report artifact bodies, signed URLs, or private storage details.
+
+#### Suggested Next Steps
+- Pause before candidate MCP tools unless the next source Edge Function is ready; otherwise prepare this MCP tranche for review.
+
+---
+
+### session v151: Finalize operator reconciliation-visibility MCP tool
+- timestamp: 2026-05-06T19:21:32-0400
+- agent: **Codex (GPT-5)**
+- branch: **codex/mcp-roadmap-kickoff**
+- head: pending MCP-5.12 commit
+
+#### Objective
+Complete MCP-5.12 by making `operator.payments.reconciliation_visibility` a structured, read-only, internal-operator reconciliation health tool.
+
+#### Actions Taken
+- Added title, read-only annotations, and output-schema metadata to `operator.payments.reconciliation_visibility`.
+- Normalized reconciliation counts into a structured health response with open queue totals, warning states, and safe next-action hints.
+- Added safe protocol-visible errors for missing reader configuration and read-gateway failures without exposing raw backend exception details.
+- Added tests for metadata, operator success, non-operator authorization blocking before handler execution, empty queues, failed-submission guidance, and backend failure redaction.
+- Marked MCP-5.12 started in `agent-context/todo-mcp.md` and refreshed the MCP engineering doc.
+
+#### Tests and Validation Notes
+- `pnpm mcp:test` passed: 4 files, 58 tests.
+- `deno cache --config supabase/functions/deno.json supabase/functions/mcp/index.ts` passed.
+- `pnpm lint` passed.
+- `pnpm typecheck` passed.
+- `pnpm test` passed: 76 files, 339 tests.
+- `pnpm build` passed.
+- `pnpm dlx node@22.22.1 /opt/homebrew/bin/pnpm check` passed.
+
+#### Reflections
+- This makes reconciliation visibility useful to agents without exposing wallet internals, raw command bodies, or private operational query details.
+
+#### Suggested Next Steps
+- Continue with MCP-5.13 by finalizing `operator.reporting.coverage` as the last current operator read tool in this tranche.
+
+---
+
+### session v150: Finalize operator cycle-observability MCP tool
+- timestamp: 2026-05-06T19:16:45-0400
+- agent: **Codex (GPT-5)**
+- branch: **codex/mcp-roadmap-kickoff**
+- head: pending MCP-5.11 commit
+
+#### Objective
+Complete MCP-5.11 by making `operator.cycle.observability` a structured, read-only, internal-operator cycle-event briefing tool.
+
+#### Actions Taken
+- Added title, read-only annotations, and output-schema metadata to `operator.cycle.observability`.
+- Normalized cycle events into a bounded `{ ok, count, filters, events }` response with compact event summaries and truncated messages.
+- Added safe protocol-visible errors for missing reader configuration and read-gateway failures without exposing raw backend exception details.
+- Added tests for metadata, structured filtered output, non-operator authorization blocking before handler execution, invalid filters, empty states, message redaction, and backend failure redaction.
+- Marked MCP-5.11 started in `agent-context/todo-mcp.md` and refreshed the MCP engineering doc.
+
+#### Tests and Validation Notes
+- `pnpm mcp:test` passed: 4 files, 54 tests.
+- `deno cache --config supabase/functions/deno.json supabase/functions/mcp/index.ts` passed.
+- `pnpm lint` passed.
+- `pnpm typecheck` passed.
+- `pnpm build` passed.
+- A local Node 25 `pnpm test` run stalled inside Vitest with no assertion output and was stopped; the Node 22 parity gate completed successfully.
+- `pnpm dlx node@22.22.1 /opt/homebrew/bin/pnpm check` passed: 76 files, 335 tests, typecheck, and build.
+
+#### Reflections
+- This keeps operator observability useful for incident review while avoiding raw event payloads, private manifests, or service-role error leakage.
+
+#### Suggested Next Steps
+- Continue with MCP-5.12 by finalizing `operator.payments.reconciliation_visibility` as a safe internal reconciliation health read.
+
+---
+
+### session v149: Finalize operator cycle-list MCP tool
+- timestamp: 2026-05-06T19:12:56-0400
+- agent: **Codex (GPT-5)**
+- branch: **codex/mcp-roadmap-kickoff**
+- head: pending MCP-5.10 commit
+
+#### Objective
+Complete MCP-5.10 by making `operator.cycles.list` a structured, read-only, internal-operator monthly-cycle overview tool.
+
+#### Actions Taken
+- Added title, read-only annotations, and output-schema metadata to `operator.cycles.list`.
+- Normalized operator cycle rows into a bounded `{ ok, count, cycles }` response with lifecycle timestamps and a calm empty state.
+- Added safe protocol-visible errors for missing reader configuration and read-gateway failures without exposing raw backend exception details.
+- Added tests for metadata, structured operator output, non-operator authorization blocking before handler execution, empty states, and backend failure redaction.
+- Marked MCP-5.10 started in `agent-context/todo-mcp.md` and refreshed the MCP engineering doc.
+
+#### Tests and Validation Notes
+- `pnpm mcp:test` passed: 4 files, 49 tests.
+- `deno cache --config supabase/functions/deno.json supabase/functions/mcp/index.ts` passed.
+- `pnpm lint` passed.
+- `pnpm typecheck` passed.
+- `pnpm test` passed: 76 files, 330 tests.
+- `pnpm build` passed.
+- `pnpm dlx node@22.22.1 /opt/homebrew/bin/pnpm check` passed.
+
+#### Reflections
+- This keeps internal cycle visibility useful for agents while preserving the MCP-3 operator allowlist as the front-door gate.
+
+#### Suggested Next Steps
+- Continue with MCP-5.11 by finalizing `operator.cycle.observability` as a bounded internal read for cycle events.
+
+---
+
+### session v148: Finalize project-member reporting-status MCP tool
+- timestamp: 2026-05-06T19:07:24-0400
+- agent: **Codex (GPT-5)**
+- branch: **codex/mcp-roadmap-kickoff**
+- head: pending MCP-5.9 commit
+
+#### Objective
+Complete MCP-5.9 by making `project_member.project.reporting_status` a structured, read-only, safe project-member reporting briefing tool.
+
+#### Actions Taken
+- Added title, read-only annotations, and output-schema metadata to `project_member.project.reporting_status`.
+- Normalized project-member reporting results into structured output with reporting counts, attribution counts, cycle context, and derived next-action hints.
+- Added safe protocol-visible errors for missing reader configuration and read-gateway failures without exposing raw backend exception details.
+- Added tests for metadata, structured output, incomplete-cycle next actions, invalid input rejection, missing reader errors, and backend failure redaction.
+- Marked MCP-5.9 started in `agent-context/todo-mcp.md` and refreshed the MCP engineering doc.
+
+#### Tests and Validation Notes
+- `pnpm mcp:test` passed: 4 files, 46 tests.
+- `deno cache --config supabase/functions/deno.json supabase/functions/mcp/index.ts` passed.
+- `pnpm lint` passed.
+- `pnpm typecheck` passed.
+- `pnpm test` passed: 76 files, 327 tests.
+- `pnpm build` passed.
+- `pnpm dlx node@22.22.1 /opt/homebrew/bin/pnpm check` passed.
+
+#### Reflections
+- This gives project members a useful status briefing without leaking founder payment-route details, artifact paths, or operator-only internals.
+
+#### Suggested Next Steps
+- Continue with MCP-5.10 by finalizing `operator.cycles.list` as the first fully annotated internal-operator read tool.
+
+---
+
+### session v147: Finalize founder onchain receipt MCP tool
+- timestamp: 2026-05-06T18:50:17-0400
+- agent: **Codex (GPT-5)**
+- branch: **codex/mcp-roadmap-kickoff**
+- head: pending MCP-5.8 commit
+
+#### Objective
+Complete MCP-5.8 by making `founder.project.onchain_receipt.record` a fully annotated founder write tool backed by the typed onchain receipt Edge command.
+
+#### Actions Taken
+- Added title, write-oriented annotations, and output-schema metadata to `founder.project.onchain_receipt.record`.
+- Tightened the MCP input schema to match the canonical `project-onchain-payment-submission-record` Edge contract, including curated route references, wallet, raw/decimal amounts, period id, and receipt object.
+- Reused the shared Edge-command tool result helper so receipt-recording successes and backend failures return stable structured envelopes.
+- Added tests for receipt metadata, successful structured Edge envelope output, malformed receipt input rejection before dispatch, and stable backend failure propagation.
+- Marked MCP-5.8 started in `agent-context/todo-mcp.md` and refreshed the MCP engineering doc.
+
+#### Tests and Validation Notes
+- `pnpm mcp:test` passed: 4 files, 43 tests.
+- `deno cache --config supabase/functions/deno.json supabase/functions/mcp/index.ts` passed.
+- `pnpm lint` passed.
+- `pnpm typecheck` passed.
+- `pnpm test` passed: 76 files, 324 tests.
+- `pnpm build` passed.
+- `pnpm dlx node@22.22.1 /opt/homebrew/bin/pnpm check` passed.
+
+#### Reflections
+- The MCP surface now makes receipt recording explicit rather than letting agents infer missing wallet, amount, route, or receipt details that the reconciliation pipeline needs.
+
+#### Suggested Next Steps
+- Continue with MCP-5.9 by finalizing `project_member.project.reporting_status` as the first project-member read tool.
+
+---
+
+### session v146: Finalize founder crypto-route update MCP tool
+- timestamp: 2026-05-06T18:02:23-0400
+- agent: **Codex (GPT-5)**
+- branch: **codex/mcp-roadmap-kickoff**
+- head: pending MCP-5.7 commit
+
+#### Objective
+Complete MCP-5.7 by making `founder.project.crypto_route.update` a fully annotated founder write tool backed by the typed Edge command contract.
+
+#### Actions Taken
+- Added title, write-oriented annotations, and output-schema metadata to `founder.project.crypto_route.update`.
+- Tightened the MCP input schema to match the canonical `project-crypto-route-update` Edge contract, including curated route references and explicit default-state input.
+- Reused the shared Edge-command tool result helper so update successes and failures return stable structured envelopes.
+- Added tests for update metadata, successful structured Edge envelope output, malformed payload rejection before dispatch, and stable backend failure propagation.
+- Marked MCP-5.7 started in `agent-context/todo-mcp.md` and refreshed the MCP engineering doc.
+
+#### Tests and Validation Notes
+- `pnpm mcp:test` passed: 4 files, 41 tests.
+- `deno cache --config supabase/functions/deno.json supabase/functions/mcp/index.ts` passed.
+- `pnpm lint` passed.
+- `pnpm typecheck` passed.
+- `pnpm build` passed.
+- An initial `pnpm test` run under local Node 25 had two unrelated 5-second UI test timeouts; rerunning `pnpm test` passed: 76 files, 322 tests.
+- `pnpm dlx node@22.22.1 /opt/homebrew/bin/pnpm check` passed.
+
+#### Reflections
+- Aligning the MCP schema with the real Edge contract keeps agents from treating route updates as a partial patch API when the backend currently expects a full curated-route update.
+
+#### Suggested Next Steps
+- Continue with MCP-5.8 by applying the same write-tool pattern to `founder.project.onchain_receipt.record`.
+
+---
+
+### session v145: Finalize founder crypto-route create MCP tool
+- timestamp: 2026-05-06T17:54:46-0400
+- agent: **Codex (GPT-5)**
+- branch: **codex/mcp-roadmap-kickoff**
+- head: pending MCP-5.6 commit
+
+#### Objective
+Complete MCP-5.6 by making `founder.project.crypto_route.create` a fully annotated founder write tool backed by the typed Edge command contract.
+
+#### Actions Taken
+- Added title, write-oriented annotations, and output-schema metadata to `founder.project.crypto_route.create`.
+- Added a shared Edge-command tool result helper for founder tools so Edge command failures become protocol-visible MCP errors with stable error codes and structured failure envelopes.
+- Kept route creation constrained to curated project slug, chain id, chain asset id, intake contract id, optional label, and optional default flag inputs.
+- Added tests for create-route metadata, successful structured Edge envelope output, malformed/oversized input rejection before dispatch, and stable backend failure propagation.
+- Marked MCP-5.6 complete in `agent-context/todo-mcp.md` and refreshed the MCP engineering doc.
+
+#### Tests and Validation Notes
+- `pnpm mcp:test` passed: 4 files, 39 tests.
+- `deno cache --config supabase/functions/deno.json supabase/functions/mcp/index.ts` passed.
+- `pnpm lint` passed.
+- `pnpm test` passed: 76 files, 320 tests.
+- `pnpm typecheck` passed.
+- `pnpm build` passed.
+- An initial `pnpm check` run under local Node 25 stalled during Vitest and was stopped; the separate gates plus the Node 22 parity gate completed successfully.
+- `pnpm dlx node@22.22.1 /opt/homebrew/bin/pnpm check` passed.
+
+#### Reflections
+- This is the first founder write tool with the intended MCP pattern: strict schema at the front door, typed Edge Function as the only write boundary, and useful errors without exposing backend internals.
+
+#### Suggested Next Steps
+- Continue with MCP-5.7 by applying the same write-tool pattern to `founder.project.crypto_route.update`.
+
+---
+
+### session v144: Finalize founder project cycle-status MCP tool
+- timestamp: 2026-05-06T17:42:03-0400
+- agent: **Codex (GPT-5)**
+- branch: **codex/mcp-roadmap-kickoff**
+- head: pending MCP-5.5 commit
+
+#### Objective
+Complete MCP-5.5 by making `founder.project.cycle_status` a structured, read-only, safe project/cycle briefing tool.
+
+#### Actions Taken
+- Added title, read-only annotations, and output-schema metadata to `founder.project.cycle_status`.
+- Normalized cycle-status results into structured output with project, cycle, payments, routes, and next-action hints.
+- Added safe protocol-visible errors for missing reader configuration, invalid input, and workflow-read failures without exposing raw backend exception details.
+- Added tests for metadata, structured output, invalid slug/month input, safe reader failure, and derived next actions for missing setup state.
+- Marked MCP-5.5 complete in `agent-context/todo-mcp.md` and refreshed the MCP engineering doc.
+
+#### Tests and Validation Notes
+- `pnpm mcp:test` passed: 4 files, 37 tests.
+- `deno cache --config supabase/functions/deno.json supabase/functions/mcp/index.ts` passed.
+- `pnpm typecheck` passed.
+- `pnpm check` passed.
+- `pnpm dlx node@22.22.1 /opt/homebrew/bin/pnpm check` passed.
+
+#### Reflections
+- The tool now gives agents a useful operational summary without letting MCP become the owner of project membership or monthly-cycle business logic.
+
+#### Suggested Next Steps
+- Start MCP-5.6 by finalizing `founder.project.crypto_route.create` as the first fully annotated founder write tool.
+
+---
+
+### session v143: Finalize founder project listing MCP tool
+- timestamp: 2026-05-06T17:36:18-0400
+- agent: **Codex (GPT-5)**
+- branch: **codex/mcp-roadmap-kickoff**
+- head: pending MCP-5.4 commit
+
+#### Objective
+Complete MCP-5.4 by making `founder.projects.list` a structured, read-only, safe founder/project-member project index.
+
+#### Actions Taken
+- Added title, read-only annotations, and output-schema metadata to `founder.projects.list`.
+- Normalized founder project list results into `{ ok, count, projects, emptyState? }` structured output.
+- Preserved compact project summaries with id, slug, name, setup status when available, and next-action hints when available.
+- Added safe protocol-visible errors for missing reader configuration and workflow-read failures without exposing raw backend exception details.
+- Added tests for metadata, structured output, no-token output, empty state, safe reader failure, and malformed input rejection.
+- Marked MCP-5.4 complete in `agent-context/todo-mcp.md` and refreshed the MCP engineering doc.
+
+#### Tests and Validation Notes
+- `pnpm mcp:test` passed: 4 files, 34 tests.
+- `deno cache --config supabase/functions/deno.json supabase/functions/mcp/index.ts` passed.
+- `pnpm typecheck` passed.
+- An initial `pnpm check` run stalled during Vitest with no output and was stopped; rerunning the gates separately showed the code path was healthy.
+- `pnpm lint` passed.
+- `pnpm test` passed: 76 files, 315 tests.
+- `pnpm build` passed.
+- `pnpm dlx node@22.22.1 /opt/homebrew/bin/pnpm check` passed.
+
+#### Reflections
+- This keeps the first real workflow read useful for agents without making the MCP layer responsible for project membership logic; ownership still lives in `mcp-workflow-read`.
+
+#### Suggested Next Steps
+- Start MCP-5.5 by finalizing `founder.project.cycle_status` with structured output and safe warning/error handling.
+
+---
+
+### session v142: Constrain MCP generic Edge command bridge
+- timestamp: 2026-05-06T09:36:50-0400
+- agent: **Codex (GPT-5)**
+- branch: **codex/mcp-roadmap-kickoff**
+- head: pending MCP-5.3 commit
+
+#### Objective
+Complete MCP-5.3 by making `fundloop.edge_command.invoke` explicit, constrained, and clearly transitional instead of a broad backend bridge.
+
+#### Actions Taken
+- Added tool title, annotations, and output-schema metadata for `fundloop.edge_command.invoke`.
+- Marked the bridge as non-read-only, non-destructive by itself, and non-open-world because it only calls configured Supabase Edge Functions.
+- Added stable `not_allowlisted` and `invalid_payload` error codes for bridge-level failures.
+- Added tests for SDK registration annotations, malformed function-name rejection, and stable allowlist failure codes.
+- Marked MCP-5.3 complete in `agent-context/todo-mcp.md` and refreshed the MCP engineering doc.
+
+#### Tests and Validation Notes
+- `pnpm mcp:test` passed: 4 files, 31 tests.
+- `deno cache --config supabase/functions/deno.json supabase/functions/mcp/index.ts` passed.
+- `pnpm typecheck` passed.
+- `pnpm check` passed.
+- `pnpm dlx node@22.22.1 /opt/homebrew/bin/pnpm check` passed.
+
+#### Reflections
+- The generic bridge still has a job during integration, but the product-specific tools should remain the preferred path so agents do not learn backend implementation details as the interface.
+
+#### Suggested Next Steps
+- Start MCP-5.4 by finalizing `founder.projects.list` with structured output and read-only annotations.
+
+---
+
+### session v141: Finalize MCP health tool contract
+- timestamp: 2026-05-06T09:31:13-0400
+- agent: **Codex (GPT-5)**
+- branch: **codex/mcp-roadmap-kickoff**
+- head: pending MCP-5.2 commit
+
+#### Objective
+Complete MCP-5.2 by making `fundloop.health` a first-class read-only tool with annotations, structured output, and explicit no-secret behavior.
+
+#### Actions Taken
+- Extended MCP tool definitions and SDK registration with `title`, annotations, and output-schema metadata.
+- Extended MCP tool results with `structuredContent` and kept JSON text content for human-readable clients.
+- Updated `fundloop.health` to return service/version, authenticated state, and a minimal actor summary without bearer tokens or runtime secrets.
+- Propagated structured-content sanitization through the MCP safety layer.
+- Added tests for health annotations, output schema, structured output, authenticated actor details, and token redaction from health content.
+- Marked MCP-5.2 complete in `agent-context/todo-mcp.md` and refreshed `docs/engineering/mcp.md`.
+
+#### Tests and Validation Notes
+- `pnpm mcp:test` passed: 4 files, 29 tests.
+- `deno cache --config supabase/functions/deno.json supabase/functions/mcp/index.ts` passed.
+- `pnpm mcp:smoke` passed.
+- `FUNDLOOP_MCP_HTTP_URL=http://127.0.0.1:8000 FUNDLOOP_MCP_BEARER_TOKEN=local-smoke-token pnpm mcp:edge:smoke` passed against the Deno-served Edge handler with `FUNDLOOP_MCP_ALLOW_LOCAL_TEST_TOKEN=true`.
+- `pnpm lint` passed.
+- `pnpm test` passed: 76 files, 310 tests.
+- `pnpm typecheck` passed.
+- `pnpm build` passed.
+- `pnpm dlx node@22.22.1 /opt/homebrew/bin/pnpm check` passed.
+
+#### Reflections
+- Health is deliberately boring: it should be useful enough for smoke tests and client readiness checks, but too small to become a diagnostics leak.
+
+#### Suggested Next Steps
+- Start MCP-5.3 by hardening the transitional generic Edge command bridge and then move into the founder workflow tools.
+
+---
+
+### session v140: Expand MCP tool implementation backlog
+- timestamp: 2026-05-06T09:29:38-0400
+- agent: **Codex (GPT-5)**
+- branch: **codex/mcp-roadmap-kickoff**
+- head: pending MCP-5.1 commit
+
+#### Objective
+Complete MCP-5.1 by turning the MCP tool catalog into one implementation-ready backlog item per current or candidate tool.
+
+#### Actions Taken
+- Marked MCP-5.1 complete in `agent-context/todo-mcp.md`.
+- Added follow-up MCP todos for the current tool surface: health, generic Edge command invocation, founder project reads/writes, project-member reporting, and internal operator reads.
+- Added candidate MCP todos for contribution submission, payment draft creation, user workspace summary, payout route listing, and operator cycle lock.
+- Captured each tool's intended read/write/admin/destructive posture, source boundary, authorization expectations, validation needs, test coverage, and known deferrals.
+
+#### Tests and Validation Notes
+- Documentation/backlog-only change; no runtime tests were required.
+- `git diff --check` passed.
+
+#### Reflections
+- The roadmap is now easier for future agents to execute safely: each MCP tool has its own reviewable slice instead of living inside one large generic "implement tools" bucket.
+
+#### Suggested Next Steps
+- Start MCP-5.2 by hardening and annotating `fundloop.health`, then proceed through the tool todos in order.
+
+---
+
+### session v139: Add MCP input safety and output redaction
+- timestamp: 2026-05-06T08:29:03-0400
+- agent: **Codex (GPT-5)**
+- branch: **codex/mcp-roadmap-kickoff**
+- head: pending MCP-4 commit
+
+#### Objective
+Complete MCP-4 by adding strict input validation, payload limits, output redaction, and documentation for the current MCP tool surface, while parking the requested VentureFamily rebrand as a future isolated todo.
+
+#### Actions Taken
+- Added a future platform todo to rebrand EverFund references to `VentureFamily` from a new branch based on `dev`, without implementing the rebrand in this MCP branch.
+- Added `packages/mcp-server/src/safety.ts` with registry-level MCP input validation, size/depth limits, URL-shaped input rejection, and output sanitization.
+- Extended MCP tool schema metadata with string, number, object, enum, and format constraints.
+- Updated base, founder, project-member, and operator tool schemas with slug, cycle-key, transaction-hash, wallet-address, attempt-id, integer, range, and length constraints.
+- Changed the registry to validate inputs before handler execution, return stable `invalid_payload` and `payload_too_large` error codes, and sanitize output before returning it to MCP clients.
+- Added tests for unknown-field rejection, oversized payload rejection, SSRF-shaped URL rejection, output redaction, and stricter founder receipt validation.
+- Marked MCP-4 complete in `agent-context/todo-mcp.md` and refreshed MCP security, architecture, and runtime docs.
+
+#### Tests and Validation Notes
+- `pnpm mcp:test` passed: 4 files, 29 tests.
+- `deno cache --config supabase/functions/deno.json supabase/functions/mcp/index.ts` passed.
+- `pnpm mcp:smoke` passed.
+- `FUNDLOOP_MCP_HTTP_URL=http://127.0.0.1:8000 FUNDLOOP_MCP_BEARER_TOKEN=local-smoke-token pnpm mcp:edge:smoke` passed against the Deno-served Edge handler with `FUNDLOOP_MCP_ALLOW_LOCAL_TEST_TOKEN=true`.
+- `pnpm lint` passed.
+- `pnpm test` passed: 76 files, 310 tests.
+- `pnpm typecheck` passed.
+- `pnpm build` passed.
+- `pnpm dlx node@22.22.1 /opt/homebrew/bin/pnpm check` passed.
+
+#### Reflections
+- The shared registry is the right first safety boundary because it covers stdio, SDK, and remote Streamable HTTP without requiring each transport or handler to remember the same defensive checks.
+
+#### Suggested Next Steps
+- Continue MCP-5 by expanding tool-specific TODOs from `docs/mcp/tool-catalog.md`, while keeping rate limiting and abuse detection as an MCP-6 remote-runtime concern.
+
+---
+
+### session v138: Harden MCP remote auth and tool authorization
+- timestamp: 2026-05-06T08:00:15-0400
+- agent: **Codex (GPT-5)**
+- branch: **codex/mcp-roadmap-kickoff**
+- head: pending MCP-3 commit
+
+#### Objective
+Complete MCP-3 by validating remote MCP bearer tokens through Supabase auth, deriving a real actor context, and gating tool dispatch before handlers run.
+
+#### Actions Taken
+- Extended the MCP actor context with validated user id, email, and internal-operator capability.
+- Changed the remote MCP Edge endpoint to call Supabase `auth.getUser()` before tool registration or dispatch.
+- Added front-door tool authorization for authenticated tool calls, operator-prefixed tools, and operator/destructive generic Edge command names.
+- Added structured MCP auth, authorization, and tool-dispatch audit logs without bearer tokens or payload bodies.
+- Added an explicit local-only smoke token bypass gated by `FUNDLOOP_MCP_ALLOW_LOCAL_TEST_TOKEN=true`.
+- Added tests for missing and invalid tokens, valid user derivation, internal-operator derivation, local smoke bypass, operator tool blocking, operator command blocking, and audit redaction.
+- Marked MCP-3 complete in `agent-context/todo-mcp.md` and refreshed MCP security, architecture, and runtime docs.
+
+#### Tests and Validation Notes
+- `pnpm mcp:test` passed: 4 files, 25 tests.
+- `deno cache --config supabase/functions/deno.json supabase/functions/mcp/index.ts` passed.
+- `pnpm mcp:smoke` passed and confirmed MCP audit logs stay off stdout in stdio mode.
+- `FUNDLOOP_MCP_HTTP_URL=http://127.0.0.1:8000 FUNDLOOP_MCP_BEARER_TOKEN=local-smoke-token pnpm mcp:edge:smoke` passed against the Deno-served Edge handler with `FUNDLOOP_MCP_ALLOW_LOCAL_TEST_TOKEN=true`.
+- `pnpm lint` passed.
+- `pnpm test` passed: 76 files, 306 tests.
+- `pnpm typecheck` passed.
+- `pnpm build` passed.
+- `pnpm check` passed.
+- `pnpm dlx node@22.22.1 /opt/homebrew/bin/pnpm check` passed.
+
+#### Reflections
+- MCP-3 keeps the remote endpoint first-party and JWT-backed instead of introducing partial OAuth. That is the safer bridge for Preview/dev smoke while the OAuth and registry sessions remain deliberately deferred.
+
+#### Suggested Next Steps
+- Run MCP-4 next to tighten input validation, output safety, limits, and threat-protection controls before expanding the tool surface.
+
+---
+
+### session v137: Add remote MCP Edge Function endpoint
+- timestamp: 2026-05-06T05:09:22-0400
+- agent: **Codex (GPT-5)**
+- branch: **codex/mcp-roadmap-kickoff**
+- head: pending MCP-2 commit
+
+#### Objective
+Complete MCP-2 by adding a remote Streamable HTTP MCP endpoint on Supabase Edge Functions while preserving the existing stdio package as the local MCP harness.
+
+#### Actions Taken
+- Added `supabase/functions/mcp/index.ts` using the official MCP TypeScript SDK and `WebStandardStreamableHTTPServerTransport`.
+- Added a public non-sensitive `GET /health` route and bearer-token enforcement for remote MCP `POST`/`DELETE` traffic.
+- Added a runtime-agnostic MCP SDK adapter so the remote endpoint registers the same `McpToolRegistry` tools used by the stdio server.
+- Added remote bearer-auth helpers, a local Edge HTTP smoke script, and the `pnpm mcp:edge:smoke` command.
+- Updated the Supabase Deno import map with pinned MCP SDK import aliases.
+- Added focused tests for schema conversion, SDK registration, and remote bearer-auth rejection.
+- Marked MCP-2 complete in `agent-context/todo-mcp.md` and refreshed MCP architecture/security/runtime docs.
+
+#### Tests and Validation Notes
+- `pnpm mcp:test` passed.
+- `deno cache --config supabase/functions/deno.json supabase/functions/mcp/index.ts` passed and updated the Supabase functions lockfile for the pinned MCP SDK import.
+- `pnpm mcp:smoke` passed.
+- `pnpm lint` passed.
+- `pnpm typecheck` passed.
+- `pnpm test` passed: 76 files, 298 tests.
+- `pnpm build` passed.
+- `FUNDLOOP_MCP_HTTP_URL=http://127.0.0.1:8000 FUNDLOOP_MCP_BEARER_TOKEN=local-smoke-token pnpm mcp:edge:smoke` passed against the Deno-served Edge handler.
+- Re-ran the main gates through Node 22.22.1: `pnpm lint`, `pnpm test`, `pnpm typecheck`, and `pnpm build` all passed.
+- `supabase status` did not report a healthy local FundLoop stack because `supabase_db_fundloop` was missing, so no Supabase-stack function serve/reset was attempted.
+
+#### Reflections
+- The remote endpoint stays thin by adapting the existing registry rather than creating a second MCP tool set. This keeps the local stdio harness and remote Streamable HTTP path aligned.
+
+#### Suggested Next Steps
+- Run MCP-3 next to deepen authentication, authorization scopes, and production rollout controls before publishing or broadening remote MCP access.
+
+---
+
+### session v136: Kick off MCP roadmap
+- timestamp: 2026-05-06T04:42:09-0400
+- agent: **Codex (GPT-5)**
+- branch: **codex/mcp-roadmap-kickoff**
+- head: pending MCP roadmap kickoff commit
+
+#### Objective
+Archive the completed Sessions 1-52 roadmap and start the MCP-focused roadmap with FundLoop-specific planning artifacts instead of a generic template.
+
+#### Actions Taken
+- Renamed `agent-context/todo.md` to `agent-context/todo-1-through-52.md` so the completed app/product roadmap remains available as historical context.
+- Updated `agent-context/README.md`, `AGENTS.md`, and long-lived engineering doc cross-links so agents now treat `agent-context/todo-mcp.md` as the active roadmap.
+- Customized `agent-context/todo-mcp.md` for FundLoop and marked MCP-0 and MCP-1 complete with branch, timestamp, and session-log metadata.
+- Added `docs/mcp/tool-catalog.md`, `docs/mcp/architecture.md`, and `docs/mcp/security-model.md` to define the current tool surface, target remote MCP architecture, and MCP security rules.
+- Linked the new MCP docs from `docs/engineering/README.md` and `docs/engineering/mcp.md`.
+
+#### Tests and Validation Notes
+- Reference scan for stale `agent-context/todo.md`, generic MCP placeholders, and `npx` MCP inspector usage returned no active matches in the updated roadmap/docs set.
+- `git diff --check` passed.
+- `pnpm mcp:smoke` passed, with the existing local Node 25 warning because the repo engine expects Node 22.
+
+#### Reflections
+- FundLoop already has a local stdio MCP package and workflow-read Edge gateway, so the next roadmap should not restart from a skeleton. The useful next work is production-safe remote MCP, auth, scopes, and publication discipline.
+
+#### Suggested Next Steps
+- Start MCP-2 by promoting or adding a Supabase Edge Function remote MCP endpoint while preserving the current stdio package as the local compatibility harness.
+
+---
+
 ### session v135: Address PR 41 automated review feedback
 - timestamp: 2026-05-05T19:46:00-0400
 - agent: **Codex (GPT-5)**

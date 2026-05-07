@@ -6,8 +6,10 @@ Keep this folder small and current. It should hold the working context agents ne
 
 ## Live Agent Context
 
-- [TODO Roadmap](./todo.md)
-  Sequenced execution backlog, one agentic coding session per item.
+- [MCP TODO Roadmap](./todo-mcp.md)
+  Active MCP-focused execution backlog, one agentic coding session per item.
+- [Archived Sessions 1-52 Roadmap](./todo-1-through-52.md)
+  Completed app/product roadmap archived after Session 52.
 - [Session Log](./session-log.md)
   Commit-by-commit record of completed work, validation, and next steps.
 - [Repo Status](./repo-status.md)
@@ -26,6 +28,6 @@ Keep this folder small and current. It should hold the working context agents ne
 
 1. Start with the engineering backgrounder for product intent.
 2. Read current-state and target-state in `docs/engineering/` before choosing implementation work.
-3. Use the todo roadmap to pick the next scoped session.
+3. Use the active MCP todo roadmap to pick the next scoped session.
 4. Update the session log with completed work.
 5. Update `docs/engineering/` when architecture, routes, workflows, or operating assumptions changed.

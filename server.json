@@ -1,0 +1,33 @@
+{
+  "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
+  "name": "io.github.FundLoop/fundloop-mcp",
+  "title": "FundLoop MCP Server",
+  "description": "Authenticated agent access to FundLoop funding and monthly-cycle workflows.",
+  "version": "0.1.0",
+  "websiteUrl": "https://github.com/FundLoop/fundloop-website/tree/dev/docs/mcp",
+  "repository": {
+    "url": "https://github.com/FundLoop/fundloop-website",
+    "source": "github",
+    "subfolder": "packages/mcp-server"
+  },
+  "remotes": [
+    {
+      "type": "streamable-http",
+      "url": "https://{supabase_project_ref}.supabase.co/functions/v1/mcp",
+      "variables": {
+        "supabase_project_ref": {
+          "description": "Approved FundLoop Supabase project ref for Preview or Production.",
+          "isRequired": true
+        }
+      },
+      "headers": [
+        {
+          "name": "Authorization",
+          "description": "Bearer Supabase access token for the FundLoop actor.",
+          "isRequired": true,
+          "isSecret": true
+        }
+      ]
+    }
+  ]
+}

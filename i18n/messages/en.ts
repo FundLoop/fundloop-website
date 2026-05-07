@@ -60,6 +60,11 @@ export const enMessages = {
       description:
         "Understand what FundLoop plans to publish publicly about monthly cycles, verified contributions, and network transparency.",
     },
+    mcp: {
+      title: "MCP Server - FundLoop",
+      description:
+        "Connect authenticated agents to FundLoop workspace, founder, and operator workflows through the FundLoop MCP Server.",
+    },
     blog: {
       title: "Blog - FundLoop",
       description:
@@ -166,6 +171,10 @@ export const enMessages = {
         integrations: {
           label: "Integrations",
           description: "Review the product, protocol, and agent-facing integration direction inside the documentation hub.",
+        },
+        mcp: {
+          label: "MCP Server",
+          description: "Connect authenticated agents to FundLoop workflow tools, resources, prompts, and deployment guidance.",
         },
       },
     },
@@ -1925,6 +1934,129 @@ export const enMessages = {
           body: "Internal teams now have cycle, deploy, identity, payout, and artifact checklists when founders need support.",
         },
       ],
+    },
+  },
+  mcpPage: {
+    hero: {
+      eyebrow: "FundLoop MCP Server",
+      title: "A safer agent doorway into FundLoop workflows.",
+      body:
+        "FundLoop MCP gives authenticated agents a small, intentional tool surface for workspace summaries, founder project status, payout readiness, and operator visibility without turning the backend into an open command console.",
+      primaryCta: "Read integration docs",
+      secondaryCta: "Contact support",
+    },
+    connection: {
+      eyebrow: "Connection URL",
+      body:
+        "Use the approved Supabase project ref for Preview or Production. Tool traffic requires a bearer token for the FundLoop actor the agent is representing.",
+    },
+    status: {
+      transport: {
+        title: "Streamable HTTP",
+        body: "The remote endpoint runs as a Supabase Edge Function while the stdio package remains the local harness for development and smoke tests.",
+      },
+      auth: {
+        title: "Supabase bearer auth",
+        body: "POST tool traffic validates Supabase user tokens before dispatch. Operator tools additionally require the internal-admin allowlist.",
+      },
+      runtime: {
+        title: "Command-bound backend",
+        body: "Reads and writes reuse the same typed Edge Function and workflow-read boundaries as the web app.",
+      },
+    },
+    tools: {
+      eyebrow: "Supported tools",
+      title: "Small enough for agents to reason about.",
+      body:
+        "The tool catalog is intentionally compact. FundLoop exposes workflow intents, not arbitrary SQL, shell access, filesystem access, or generic private APIs.",
+      items: [
+        {
+          title: "User workspace and payout readiness",
+          body: "Read identity readiness, participation footprint, current results visibility, and destination-redacted payout route status for the authenticated user.",
+        },
+        {
+          title: "Founder project operations",
+          body: "List managed projects, inspect monthly-cycle status, create/update crypto contribution routes, record onchain receipts, and create payment drafts through typed Edge commands.",
+        },
+        {
+          title: "Project member reporting",
+          body: "Read attribution and reporting status for projects the actor can access without exposing private artifacts or raw backend payloads.",
+        },
+        {
+          title: "Operator visibility",
+          body: "Internal operators can inspect cycle status, observability events, reconciliation visibility, and reporting coverage through read-only tools.",
+        },
+      ],
+    },
+    instructions: {
+      eyebrow: "Connect",
+      title: "Use a real FundLoop actor token. Keep the bridge narrow.",
+      body:
+        "The server is designed for first-party and workspace-bound clients first. Public registry publication remains pending until hosted deploy and production smoke gates are complete.",
+      steps: [
+        "Choose the approved Preview or Production Supabase project ref.",
+        "Configure the Streamable HTTP endpoint with the connection URL shown above.",
+        "Provide an Authorization header using a Supabase access token for the FundLoop actor.",
+        "Run initialize, tools/list, and fundloop.health before calling workflow tools.",
+        "Keep fundloop.edge_command.invoke disabled unless a specific integration session explicitly allows it.",
+      ],
+    },
+    privacy: {
+      eyebrow: "Privacy and safety",
+      title: "Agents get summaries, not raw secrets.",
+      body:
+        "MCP outputs redact tokens and secret-like values. User resources omit raw CUBID payloads and payout destinations; operator resources stay hidden unless the actor is allowed.",
+      cta: "Review privacy policy",
+    },
+    useCases: {
+      eyebrow: "Example use cases",
+      title: "What agents can do safely today.",
+      items: [
+        {
+          title: "Prepare a founder update",
+          body: "Read a project’s cycle status and turn real contribution, route, and reporting blockers into a concise update.",
+        },
+        {
+          title: "Review user next steps",
+          body: "Summarize identity readiness, participation state, payout setup, and current results visibility for the authenticated user.",
+        },
+        {
+          title: "Operator triage",
+          body: "Help internal operators inspect cycle events, reconciliation queues, and reporting gaps without exposing mutation tools.",
+        },
+      ],
+    },
+    directories: {
+      eyebrow: "Directory status",
+      title: "Publication is staged, not rushed.",
+      items: [
+        { label: "Official MCP Registry", status: "Metadata ready, publish pending" },
+        { label: "PulseMCP", status: "Not submitted" },
+        { label: "Smithery", status: "Not submitted" },
+        { label: "mcpservers.org", status: "Not submitted" },
+        { label: "mcp.so", status: "Not submitted" },
+      ],
+    },
+    changelog: {
+      eyebrow: "Changelog",
+      title: "Current public status.",
+      items: [
+        {
+          title: "Remote endpoint implemented",
+          body: "The MCP server runs over Streamable HTTP as a Supabase Edge Function and keeps the stdio package as the local harness.",
+        },
+        {
+          title: "Auth and safety hardened",
+          body: "Supabase JWT validation, operator gating, strict schemas, output redaction, resources, prompts, smoke tests, and observability are in place.",
+        },
+        {
+          title: "Registry metadata prepared",
+          body: "server.json exists, but public registry publication waits for hosted deploy, production smoke, and directory review gates.",
+        },
+      ],
+    },
+    contact: {
+      label: "Questions or access requests:",
     },
   },
   legalPages: {

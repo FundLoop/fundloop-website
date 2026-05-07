@@ -7,6 +7,7 @@ export type ResourceLinkId =
   | "faq"
   | "support"
   | "integrations"
+  | "mcp"
 
 export const publicPrimaryLinks = [
   {
@@ -83,6 +84,12 @@ export const resourceLinks = [
     href: "/documentation#protocol-and-integrations",
     label: "Integrations",
     description: "See the product, protocol, and integration surface FundLoop is documenting for developers, partners, and agents.",
+  },
+  {
+    id: "mcp",
+    href: "/mcp",
+    label: "MCP Server",
+    description: "Connect authenticated agents to FundLoop workflow tools, resources, prompts, and deployment guidance.",
   },
 ] as const
 

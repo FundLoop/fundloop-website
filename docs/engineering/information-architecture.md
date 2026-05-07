@@ -9,7 +9,8 @@ Related planning docs:
 - [Current-State Architecture](./current-state-architecture.md)
 - [Target-State Architecture](./target-state-architecture.md)
 - [Route Inventory](./route-inventory.md)
-- [TODO Roadmap](../../agent-context/todo.md)
+- [Archived Sessions 1-52 Roadmap](../../agent-context/todo-1-through-52.md)
+- [MCP TODO Roadmap](../../agent-context/todo-mcp.md)
 
 This document locks the target route model for FundLoop. It does not move routes yet. It defines which surfaces stay public, which authenticated surfaces converge into role-based workspaces, and where transitional current routes should land.
 
