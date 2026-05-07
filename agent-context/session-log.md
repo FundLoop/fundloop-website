@@ -1,3 +1,31 @@
+### session v163: Complete MCP documentation deliverables
+- timestamp: 2026-05-06T21:03:37-0400
+- agent: **Codex (GPT-5)**
+- branch: **codex/mcp-roadmap-kickoff**
+- head: pending MCP-14 commit
+
+#### Objective
+Complete MCP-14 by making the MCP documentation set navigable and useful for engineers, security reviewers, coding agents, and operators.
+
+#### Actions Taken
+- Added `docs/mcp/README.md` as the MCP docs index and quick-start entry.
+- Added `docs/mcp/auth-and-scopes.md` covering Supabase bearer auth, actor roles, tool authorization, deferred OAuth scopes, and revocation.
+- Added `docs/mcp/testing.md` covering MCP tests, stdio smoke, Edge smoke, registry metadata validation, negative tests, and deferred stress coverage.
+- Added `docs/mcp/changelog.md` summarizing the current 0.1.0 MCP capability baseline and deferred production/publication items.
+- Updated the engineering docs index and MCP engineering doc to link the expanded MCP documentation set.
+- Marked MCP-14 complete in `agent-context/todo-mcp.md`.
+
+#### Tests and Validation Notes
+- `pnpm dlx node@22.22.1 /opt/homebrew/bin/pnpm check` passed, including lint, 78 test files / 365 tests, typecheck, and production build with `/[locale]/mcp`.
+
+#### Reflections
+- The MCP docs now have an actual entrypoint instead of requiring future agents to infer the order from the roadmap.
+
+#### Suggested Next Steps
+- Run the full Node 22-equivalent check, commit MCP-14, then use MCP-15 as the final readiness checklist before yeeting the branch.
+
+---
+
 ### session v162: Add public MCP landing page
 - timestamp: 2026-05-06T20:59:57-0400
 - agent: **Codex (GPT-5)**

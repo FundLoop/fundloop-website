@@ -1028,35 +1028,35 @@ Session MCP-13 creates the public `/mcp` landing page, adds it to public resourc
 
 ## MCP-14. Documentation deliverables
 
-- Status: Not started
-- Timestamp started: TBD
-- Head when starting: TBD
-- Timestamp completed: TBD
-- Feature branch(es): TBD
-- Session-log reference(s): TBD
+- Status: Complete
+- Timestamp started: 2026-05-06T21:01:50-0400
+- Head when starting: a581a06
+- Timestamp completed: 2026-05-06T21:03:37-0400
+- Feature branch(es): codex/mcp-roadmap-kickoff
+- Session-log reference(s): session v163
 
 Create or update:
 
-* [ ] `docs/mcp/README.md`
-* [ ] `docs/mcp/architecture.md`
-* [ ] `docs/mcp/tool-catalog.md`
-* [ ] `docs/mcp/auth-and-scopes.md`
-* [ ] `docs/mcp/security-model.md`
-* [ ] `docs/mcp/testing.md`
-* [ ] `docs/mcp/validation.md`
-* [ ] `docs/mcp/publication.md`
-* [ ] `docs/mcp/runbook.md`
-* [ ] `docs/mcp/changelog.md`
-* [ ] `server.json`
-* [ ] public page: `/mcp`
+* [x] `docs/mcp/README.md`
+* [x] `docs/mcp/architecture.md`
+* [x] `docs/mcp/tool-catalog.md`
+* [x] `docs/mcp/auth-and-scopes.md`
+* [x] `docs/mcp/security-model.md`
+* [x] `docs/mcp/testing.md`
+* [x] `docs/mcp/validation.md`
+* [x] `docs/mcp/publication.md`
+* [x] `docs/mcp/runbook.md`
+* [x] `docs/mcp/changelog.md`
+* [x] `server.json`
+* [x] public page: `/mcp`
 * [ ] optional: `.well-known/mcp/server-card.json` if useful for discovery or a target directory
 
 **Acceptance criteria**
 
-* [ ] A new engineer can connect to the MCP server from the docs alone.
-* [ ] A security reviewer can understand the auth, scope, tenant, and data model.
-* [ ] A coding agent can add a new tool by following documented patterns.
-* [ ] A support/operator can disable a bad tool or revoke client access.
+* [x] A new engineer can connect to the MCP server from the docs alone.
+* [x] A security reviewer can understand the auth, scope, tenant, and data model.
+* [x] A coding agent can add a new tool by following documented patterns.
+* [x] A support/operator can disable a bad tool or revoke client access.
 
 ---
 

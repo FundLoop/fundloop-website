@@ -7,12 +7,16 @@ The server must not become a second backend. It should use the same typed Edge F
 The MCP-specific roadmap and design artifacts now live in:
 
 - `agent-context/todo-mcp.md` for active MCP session tracking.
+- `docs/mcp/README.md` for the MCP documentation index.
 - `docs/mcp/tool-catalog.md` for current and candidate tool contracts.
 - `docs/mcp/architecture.md` for the target remote/runtime architecture.
+- `docs/mcp/auth-and-scopes.md` for actor roles, current auth, and deferred OAuth scope planning.
 - `docs/mcp/deployment.md` for Preview/Production deploy and smoke expectations.
 - `docs/mcp/publication.md` for registry metadata, publication gates, and pending publication records.
 - `docs/mcp/security-model.md` for auth, authorization, data-safety, and threat-model rules.
+- `docs/mcp/testing.md` for local tests, smoke scripts, Edge smoke, and promotion checks.
 - `docs/mcp/runbook.md` for MCP operations, disabling tools, log inspection, secret rotation, and rollback.
+- `docs/mcp/changelog.md` for MCP capability milestones.
 
 ## Package
 
