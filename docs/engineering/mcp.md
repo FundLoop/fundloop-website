@@ -170,17 +170,18 @@ Founder reads go through a `FounderWorkflowReader` boundary. The default impleme
 
 Session 40 added project-member and operator workflows so agents do not need to use the low-level invoker directly.
 
-## Project-Member And Operator Tools
+## User, Project-Member, And Operator Tools
 
-Session 40 added read-only project-member and operator tools:
+Session 40 added read-only project-member and operator tools, and MCP-5.16 added the first regular-user workspace summary:
 
+- `user.workspace.summary`: annotated read-only user workspace summary backed by `mcp-workflow-read`, returning identity/completion status, participation footprint, current results visibility, payout readiness, discovery next actions, and warning states for the authenticated user only. It intentionally omits raw CUBID payloads, CUBID user ids, payout destinations, and other users' data.
 - `project_member.project.reporting_status`: annotated read-only project-member status tool backed by `mcp-workflow-read`, returning compact reporting counts, attribution readiness, and safe next-action hints without artifact paths or operator-only internals.
 - `operator.cycles.list`: annotated internal-operator read-only overview backed by `mcp-workflow-read`, returning a bounded recent-cycle list with lifecycle timestamps and safe empty/error states.
 - `operator.cycle.observability`: annotated internal-operator read-only event view backed by `mcp-workflow-read`, returning bounded cycle-event summaries by cycle key or attempt id with sanitized messages.
 - `operator.payments.reconciliation_visibility`: annotated internal-operator read-only reconciliation health view backed by `mcp-workflow-read`, returning status counts, open-queue totals, warning states, and safe next actions.
 - `operator.reporting.coverage`: annotated internal-operator read-only publication coverage view backed by `mcp-workflow-read`, returning audience counts, missing-audience gaps, artifact coverage, and safe next actions without artifact bodies or signed URLs.
 
-These tools intentionally do not mutate state. They use `ProjectMemberWorkflowReader` and `OperatorWorkflowReader` boundaries so the implementation can move from direct authenticated Supabase REST reads to Edge Function read models in Session 41 without changing the MCP tool contract.
+These tools intentionally do not mutate state. They use `UserWorkflowReader`, `ProjectMemberWorkflowReader`, and `OperatorWorkflowReader` boundaries so tool contracts stay stable while the underlying read model evolves.
 
 ## Read Boundary
 
@@ -190,6 +191,7 @@ Current operations:
 
 - `founder.projects.list`
 - `founder.project.cycle_status`
+- `user.workspace.summary`
 - `project_member.project.reporting_status`
 - `operator.cycles.list`
 - `operator.cycle.observability`

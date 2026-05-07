@@ -1,8 +1,42 @@
+### session v154: Finalize user workspace summary MCP tool
+- timestamp: 2026-05-06T20:04:03-0400
+- agent: **Codex (GPT-5)**
+- branch: **codex/mcp-roadmap-kickoff**
+- head: pending MCP-5.16 commit
+
+#### Objective
+Complete MCP-5.16 by adding the first regular-user MCP read tool for authenticated workspace summaries.
+
+#### Actions Taken
+- Added `user.workspace.summary` with read-only annotations, strict empty input metadata, and structured output metadata.
+- Routed the tool through `mcp-workflow-read` via a `UserWorkflowReader` so regular-user MCP reads stay behind the shared Edge Function read gateway.
+- Added a redacted workspace summary operation with identity/completion status, participation footprint, results visibility, payout readiness, discovery next actions, and non-fatal warning states.
+- Avoided raw CUBID payloads, CUBID user ids, payout destinations, and other users' records in the MCP-facing output.
+- Added tests for metadata, populated workspace output, empty/partial warning states, and workflow-read contract acceptance.
+- Marked MCP-5.16 complete in `agent-context/todo-mcp.md` and refreshed the MCP engineering doc.
+
+#### Tests and Validation Notes
+- `pnpm mcp:test` passed: 4 files, 66 tests.
+- `deno cache --config supabase/functions/deno.json supabase/functions/mcp/index.ts` passed.
+- `pnpm lint` passed.
+- `pnpm typecheck` passed.
+- `pnpm test` passed: 77 files, 349 tests.
+- `pnpm build` passed.
+- `pnpm dlx node@22.22.1 /opt/homebrew/bin/pnpm check` passed.
+
+#### Reflections
+- The user workspace source boundary is now safe enough for first-party agents because it exposes the same high-level workspace concepts as the app without private identity or payout internals.
+
+#### Suggested Next Steps
+- Continue to MCP-5.17 only if payout route read summaries are ready to expose without destination secrets.
+
+---
+
 ### session v153: Finalize founder payment-draft MCP tool
 - timestamp: 2026-05-06T19:58:24-0400
 - agent: **Codex (GPT-5)**
 - branch: **codex/mcp-roadmap-kickoff**
-- head: pending MCP-5.15 commit
+- head: 664feef
 
 #### Objective
 Complete MCP-5.15 by adding a guarded `founder.project.payment_drafts.create` MCP tool backed by the existing typed payment-draft Edge command.

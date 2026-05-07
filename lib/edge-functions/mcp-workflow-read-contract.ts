@@ -3,6 +3,7 @@ import { edgeCommandFailure, edgeCommandSuccess, type EdgeCommandResult } from "
 export const MCP_WORKFLOW_READ_FUNCTION = "mcp-workflow-read"
 
 export type McpWorkflowReadOperation =
+  | "user.workspace.summary"
   | "founder.projects.list"
   | "founder.project.cycle_status"
   | "project_member.project.reporting_status"
@@ -21,6 +22,7 @@ export type McpWorkflowReadInput = {
 export type McpWorkflowReadOutput = unknown
 
 const operations: readonly McpWorkflowReadOperation[] = [
+  "user.workspace.summary",
   "founder.projects.list",
   "founder.project.cycle_status",
   "project_member.project.reporting_status",

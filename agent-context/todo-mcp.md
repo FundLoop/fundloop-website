@@ -26,7 +26,7 @@ Tool handlers should normally call the same Supabase Edge Function middleware or
 - Status: Not started
 - Timestamp started: TBD
 - Head when starting: TBD
-- Timestamp completed: TBD
+- Timestamp completed: 2026-05-06T20:10:07-0400
 - Feature branch(es): TBD
 - Session-log reference(s): TBD
 
@@ -513,12 +513,12 @@ Design and implement this candidate only if founder agents should draft monthly 
 
 ### MCP-5.16. Candidate `user.workspace.summary`
 
-- Status: Not started
-- Timestamp started: TBD
-- Head when starting: TBD
+- Status: Complete
+- Timestamp started: 2026-05-06T20:04:03-0400
+- Head when starting: 664feef
 - Timestamp completed: TBD
-- Feature branch(es): TBD
-- Session-log reference(s): TBD
+- Feature branch(es): codex/mcp-roadmap-kickoff
+- Session-log reference(s): session v154
 
 Design and implement this candidate as the first regular-user MCP read tool only after the user workspace read boundary is confirmed safe for agent access. It should return identity/completion status, participation footprint, current results visibility, payout readiness summary, and discovery next actions for the authenticated user only. Add read-only annotations, structured output, stable empty states, and tests for unauthenticated rejection, active user with no participation, user with results, partial read warnings, and no leakage of CUBID raw payloads, private payout credentials, or other users' data.
 

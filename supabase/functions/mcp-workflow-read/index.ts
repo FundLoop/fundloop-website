@@ -19,6 +19,249 @@ function normalizeProject(project) {
   }
 }
 
+function hasText(value) {
+  return typeof value === "string" && value.trim().length > 0
+}
+
+function toStringArray(value) {
+  return asArray(value).filter((item) => typeof item === "string")
+}
+
+function safeNumber(value) {
+  const number = Number(value ?? 0)
+  return Number.isFinite(number) ? number : 0
+}
+
+function warning(scope, error) {
+  return {
+    scope,
+    message: error?.message ?? "Workspace data could not be loaded.",
+  }
+}
+
+async function softRead(scope, query, warnings, fallback) {
+  try {
+    const { data, error, count } = await query
+    if (error) {
+      warnings.push(warning(scope, error))
+      return fallback
+    }
+
+    if (typeof count === "number") return count
+    return data ?? fallback
+  } catch (error) {
+    warnings.push(warning(scope, error instanceof Error ? error : null))
+    return fallback
+  }
+}
+
+function computeProfileCompletion(profile, snapshot, interestCount) {
+  let percent = 0
+  const missingItems = []
+  const localChecks = [
+    ["display_name", hasText(profile?.display_name)],
+    ["profile_headline", hasText(profile?.profile_headline)],
+    ["bio", hasText(profile?.bio)],
+    ["occupation", profile?.occupation_id !== null && profile?.occupation_id !== undefined],
+    ["location", profile?.location_id !== null && profile?.location_id !== undefined],
+    ["interests", interestCount > 0],
+  ]
+
+  for (const [key, complete] of localChecks) {
+    if (complete) percent += 10
+    else missingItems.push(key)
+  }
+
+  const status = profile?.cubid_identity_status ?? "unlinked"
+  if (status === "linked" || status === "verified") percent += 20
+  else missingItems.push("cubid_link")
+
+  const verifiedStampTypes = new Set(toStringArray(snapshot?.verified_stamp_types).map((stamp) => stamp.toLowerCase()))
+  if (hasText(snapshot?.primary_phone) || verifiedStampTypes.has("phone")) percent += 10
+  else missingItems.push("cubid_phone")
+
+  const providerStamps = ["google", "github", "linkedin", "twitter", "discord"]
+  if (providerStamps.some((stamp) => verifiedStampTypes.has(stamp))) percent += 10
+  else missingItems.push("cubid_provider")
+
+  return { percent, missingItems }
+}
+
+function summarizePayoutRoutes(routes) {
+  const rows = asArray(routes)
+  const activeRows = rows.filter((route) => route.status === "active")
+  const rails = Array.from(new Set(rows.map((route) => route.rail).filter((rail) => typeof rail === "string"))).sort()
+  const hasDefaultRoute = rows.some((route) => route.is_default === true && route.status === "active")
+  let nextAction = "Add a payout route before monthly payouts are ready."
+  if (hasDefaultRoute) nextAction = "Default payout route is configured."
+  else if (activeRows.length > 0) nextAction = "Choose a default payout route."
+
+  return {
+    routeCount: rows.length,
+    activeRouteCount: activeRows.length,
+    hasDefaultRoute,
+    rails,
+    nextAction,
+  }
+}
+
+function summarizeWorkspaceNextActions({ profileCompletion, participantRows, latestResult, payoutReadiness }) {
+  const actions = []
+  if (profileCompletion.percent < 100) actions.push("Complete profile and identity readiness in the workspace account area.")
+  if (participantRows.length === 0) actions.push("Explore active public projects and join one to build participation signal.")
+  if (!latestResult) actions.push("Check back after published monthly results are available.")
+  if (!payoutReadiness.hasDefaultRoute) actions.push(payoutReadiness.nextAction)
+  if (actions.length === 0) actions.push("Review current results and keep participation current.")
+  return actions
+}
+
+async function userWorkspaceSummary(adminClient, user) {
+  const warnings = []
+  const [
+    profile,
+    snapshot,
+    interestCount,
+    participantRows,
+    publishedResults,
+    payoutRoutes,
+    recommendedProjects,
+  ] = await Promise.all([
+    softRead(
+      "profile",
+      adminClient
+        .from("users")
+        .select("email, display_name, profile_headline, bio, occupation_id, location_id, cubid_identity_status, cubid_score")
+        .eq("user_id", user.id)
+        .maybeSingle(),
+      warnings,
+      null,
+    ),
+    softRead(
+      "cubid-snapshot",
+      adminClient
+        .from("cubid_identity_snapshots")
+        .select("primary_email, primary_phone, cubid_score, verified_stamp_types, last_synced_at, last_sync_error_code")
+        .eq("user_id", user.id)
+        .maybeSingle(),
+      warnings,
+      null,
+    ),
+    softRead(
+      "interests",
+      adminClient.from("user_interests").select("user_id", { count: "exact", head: true }).eq("user_id", user.id),
+      warnings,
+      0,
+    ),
+    softRead(
+      "participation",
+      adminClient
+        .from("participants")
+        .select("is_admin, is_favorite, joined_at, projects(slug,name)")
+        .eq("user_id", user.id)
+        .order("joined_at", { ascending: false })
+        .limit(12),
+      warnings,
+      [],
+    ),
+    softRead(
+      "results",
+      adminClient
+        .from("zkas_published_user_results")
+        .select("allocation_usd, aggregate_score, published_at, run_id, zkas_runs(month)")
+        .eq("user_id", user.id)
+        .order("published_at", { ascending: false }),
+      warnings,
+      [],
+    ),
+    softRead(
+      "payout-routes",
+      adminClient.from("user_payout_routes").select("rail, status, is_default").eq("user_id", user.id),
+      warnings,
+      [],
+    ),
+    softRead(
+      "discovery",
+      adminClient
+        .from("projects")
+        .select("slug, name")
+        .eq("status", "active")
+        .eq("is_public", true)
+        .is("deleted_at", null)
+        .order("created_at", { ascending: false })
+        .limit(3),
+      warnings,
+      [],
+    ),
+  ])
+
+  const profileCompletion = computeProfileCompletion(profile, snapshot, interestCount)
+  const participants = asArray(participantRows)
+  const results = asArray(publishedResults)
+  const latestResult = results[0] ?? null
+  const payoutReadiness = summarizePayoutRoutes(payoutRoutes)
+  const recentProjects = participants.slice(0, 3).map((participant) => {
+    const project = readProject(participant.projects)
+    return {
+      slug: typeof project?.slug === "string" ? project.slug : null,
+      name: project?.name ?? project?.slug ?? "Project",
+      joinedAt: participant.joined_at ?? null,
+      isFavorite: participant.is_favorite === true,
+      isFounderRole: participant.is_admin === true,
+    }
+  })
+  const verifiedStampTypes = toStringArray(snapshot?.verified_stamp_types)
+
+  return {
+    ok: true,
+    data: {
+      profileStatus: {
+        signedInEmail: profile?.email ?? user.email ?? null,
+        cubidIdentityStatus: profile?.cubid_identity_status ?? "unlinked",
+        cubidScore: snapshot?.cubid_score ?? profile?.cubid_score ?? null,
+        completionPercent: profileCompletion.percent,
+        missingItems: profileCompletion.missingItems,
+        identitySnapshot: snapshot
+          ? {
+              primaryEmailPresent: hasText(snapshot.primary_email),
+              primaryPhonePresent: hasText(snapshot.primary_phone),
+              verifiedStampTypes,
+              lastSyncedAt: snapshot.last_synced_at ?? null,
+              lastSyncErrorCode: snapshot.last_sync_error_code ?? null,
+            }
+          : null,
+      },
+      participation: {
+        joinedProjectCount: participants.length,
+        founderProjectCount: participants.filter((participant) => participant.is_admin === true).length,
+        favoriteProjectCount: participants.filter((participant) => participant.is_favorite === true).length,
+        recentProjects,
+      },
+      results: {
+        latest: latestResult
+          ? {
+              allocationUsd: safeNumber(latestResult.allocation_usd),
+              aggregateScore: safeNumber(latestResult.aggregate_score),
+              monthLabel: readProject(latestResult.zkas_runs)?.month ?? `Run ${latestResult.run_id}`,
+              publishedAt: latestResult.published_at,
+            }
+          : null,
+        totalAllocationUsd: Number(results.reduce((sum, result) => sum + safeNumber(result.allocation_usd), 0).toFixed(2)),
+        resultCount: results.length,
+        detailHref: "/workspace/earnings",
+      },
+      payoutReadiness,
+      discovery: {
+        recommendedProjects: asArray(recommendedProjects).map((project) => ({
+          slug: typeof project.slug === "string" ? project.slug : null,
+          name: project.name ?? project.slug ?? "Project",
+        })),
+        nextActions: summarizeWorkspaceNextActions({ profileCompletion, participantRows: participants, latestResult, payoutReadiness }),
+      },
+      warnings,
+    },
+  }
+}
+
 async function requireManagedProject(adminClient, userId, projectSlug) {
   const { data: project, error: projectError } = await adminClient
     .from("projects")
@@ -319,6 +562,7 @@ async function handleRequest(request) {
 
   const adminClient = auth.adminClient
   let result
+  if (input.operation === "user.workspace.summary") result = await userWorkspaceSummary(adminClient, auth.user)
   if (input.operation === "founder.projects.list") result = await listManagedProjects(adminClient, auth.user.id)
   if (input.operation === "founder.project.cycle_status") result = await founderCycleStatus(adminClient, auth.user.id, input)
   if (input.operation === "project_member.project.reporting_status") result = await projectMemberReportingStatus(adminClient, auth.user.id, input)

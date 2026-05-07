@@ -6,8 +6,10 @@ import { registerFounderMcpTools } from "./founder-tools.ts"
 import {
   createEdgeOperatorWorkflowReader,
   createEdgeProjectMemberWorkflowReader,
+  createEdgeUserWorkflowReader,
   type OperatorWorkflowReader,
   type ProjectMemberWorkflowReader,
+  type UserWorkflowReader,
 } from "./member-operator-readers.ts"
 import { registerProjectMemberAndOperatorMcpTools } from "./member-operator-tools.ts"
 import { createBaseMcpToolRegistry, type McpToolRegistry } from "./tools.ts"
@@ -17,6 +19,7 @@ export type McpServerContext = {
   auth: ReturnType<typeof createMcpAuthContext>
   edge: EdgeCommandClient
   founderReader?: FounderWorkflowReader
+  userReader?: UserWorkflowReader
   projectMemberReader?: ProjectMemberWorkflowReader
   operatorReader?: OperatorWorkflowReader
   registry: McpToolRegistry
@@ -66,6 +69,7 @@ export async function handleMcpRequest(
       auth: context.auth,
       edge: context.edge,
       founderReader: context.founderReader,
+      userReader: context.userReader,
       projectMemberReader: context.projectMemberReader,
       operatorReader: context.operatorReader,
     })
@@ -94,6 +98,7 @@ function createDefaultServerContext(): McpServerContext {
     auth: createMcpAuthContext(),
     edge,
     founderReader: createEdgeFounderWorkflowReader(edge),
+    userReader: createEdgeUserWorkflowReader(edge),
     projectMemberReader: createEdgeProjectMemberWorkflowReader(edge),
     operatorReader: createEdgeOperatorWorkflowReader(edge),
     registry,

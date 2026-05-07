@@ -5,6 +5,7 @@ import type {
   OperatorReconciliationVisibility,
   OperatorReportingCoverage,
   ProjectMemberReportingStatus,
+  UserWorkspaceSummary,
 } from "./member-operator-readers.ts"
 import type { McpToolRegistry } from "./tools.ts"
 
@@ -36,6 +37,25 @@ function deriveReportingStatusNextActions(status: ProjectMemberReportingStatus) 
   }
 
   return actions
+}
+
+function summarizeUserWorkspace(summary: UserWorkspaceSummary) {
+  return {
+    ok: true,
+    profileStatus: {
+      signedInEmail: summary.profileStatus.signedInEmail,
+      cubidIdentityStatus: summary.profileStatus.cubidIdentityStatus,
+      cubidScore: summary.profileStatus.cubidScore,
+      completionPercent: summary.profileStatus.completionPercent,
+      missingItems: summary.profileStatus.missingItems,
+      identitySnapshot: summary.profileStatus.identitySnapshot,
+    },
+    participation: summary.participation,
+    results: summary.results,
+    payoutReadiness: summary.payoutReadiness,
+    discovery: summary.discovery,
+    warnings: summary.warnings,
+  }
 }
 
 function summarizeOperatorCycle(cycle: OperatorCycleStatus) {
@@ -129,6 +149,52 @@ function deriveReportingCoverage(input: OperatorReportingCoverage) {
 }
 
 export function registerProjectMemberAndOperatorMcpTools(registry: McpToolRegistry) {
+  registry.register({
+    definition: {
+      name: "user.workspace.summary",
+      title: "Read User Workspace Summary",
+      description: "Read the authenticated user's workspace summary without exposing private identity payloads or payout destinations.",
+      annotations: {
+        readOnlyHint: true,
+        destructiveHint: false,
+        openWorldHint: false,
+      },
+      inputSchema: {
+        type: "object",
+        properties: {},
+        additionalProperties: false,
+      },
+      outputSchema: {
+        type: "object",
+        properties: {
+          ok: { type: "boolean" },
+          profileStatus: { type: "object" },
+          participation: { type: "object" },
+          results: { type: "object" },
+          payoutReadiness: { type: "object" },
+          discovery: { type: "object" },
+          warnings: { type: "array" },
+        },
+        required: ["ok", "profileStatus", "participation", "results", "payoutReadiness", "discovery", "warnings"],
+        additionalProperties: false,
+      },
+    },
+    async handler(_input, context) {
+      if (!context.userReader) {
+        return { ...errorResult("User workflow reader is not configured."), errorCode: "reader_not_configured" }
+      }
+
+      try {
+        return jsonTextResult(summarizeUserWorkspace(await context.userReader.getWorkspaceSummary(context.auth)))
+      } catch {
+        return {
+          ...errorResult("User workspace summary is temporarily unavailable."),
+          errorCode: "workflow_read_failed",
+        }
+      }
+    },
+  })
+
   registry.register({
     definition: {
       name: "project_member.project.reporting_status",

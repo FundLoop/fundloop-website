@@ -10,6 +10,7 @@ import { registerFounderMcpTools } from "../../../packages/mcp-server/src/founde
 import {
   createEdgeOperatorWorkflowReader,
   createEdgeProjectMemberWorkflowReader,
+  createEdgeUserWorkflowReader,
 } from "../../../packages/mcp-server/src/member-operator-readers.ts"
 import { registerProjectMemberAndOperatorMcpTools } from "../../../packages/mcp-server/src/member-operator-tools.ts"
 import { registerRegistryToolsWithSdkServer } from "../../../packages/mcp-server/src/sdk-adapter.ts"
@@ -77,6 +78,7 @@ async function buildMcpServer(request: Request) {
     auth: authResult.auth,
     edge,
     founderReader: createEdgeFounderWorkflowReader(edge),
+    userReader: createEdgeUserWorkflowReader(edge),
     projectMemberReader: createEdgeProjectMemberWorkflowReader(edge),
     operatorReader: createEdgeOperatorWorkflowReader(edge),
   }

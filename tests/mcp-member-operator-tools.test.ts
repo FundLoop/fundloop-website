@@ -3,7 +3,7 @@ import { edgeCommandSuccess, type EdgeCommandResult } from "@/lib/edge-functions
 import { registerProjectMemberAndOperatorMcpTools } from "@/packages/mcp-server/src/member-operator-tools"
 import { createBaseMcpToolRegistry } from "@/packages/mcp-server/src/tools"
 import type { EdgeCommandClient } from "@/packages/mcp-server/src/edge-client"
-import type { OperatorWorkflowReader, ProjectMemberWorkflowReader } from "@/packages/mcp-server/src/member-operator-readers"
+import type { OperatorWorkflowReader, ProjectMemberWorkflowReader, UserWorkflowReader } from "@/packages/mcp-server/src/member-operator-readers"
 
 const auth = {
   actorRole: "internal_operator" as const,
@@ -42,6 +42,64 @@ const projectMemberAuth = {
   bearerToken: "member-token",
   userId: "member-1",
   email: "member@example.com",
+}
+
+const userReader: UserWorkflowReader = {
+  async getWorkspaceSummary() {
+    return {
+      profileStatus: {
+        signedInEmail: "member@example.com",
+        cubidIdentityStatus: "linked",
+        cubidScore: 82,
+        completionPercent: 80,
+        missingItems: ["cubid_phone", "cubid_provider"],
+        identitySnapshot: {
+          primaryEmailPresent: true,
+          primaryPhonePresent: false,
+          verifiedStampTypes: ["email"],
+          lastSyncedAt: "2026-05-01T00:00:00Z",
+          lastSyncErrorCode: null,
+        },
+      },
+      participation: {
+        joinedProjectCount: 1,
+        founderProjectCount: 0,
+        favoriteProjectCount: 1,
+        recentProjects: [
+          {
+            slug: "civic-mesh",
+            name: "Civic Mesh",
+            joinedAt: "2026-04-02T00:00:00Z",
+            isFavorite: true,
+            isFounderRole: false,
+          },
+        ],
+      },
+      results: {
+        latest: {
+          allocationUsd: 42,
+          aggregateScore: 12,
+          monthLabel: "2026-04",
+          publishedAt: "2026-05-05T00:00:00Z",
+        },
+        totalAllocationUsd: 42,
+        resultCount: 1,
+        detailHref: "/workspace/earnings",
+      },
+      payoutReadiness: {
+        routeCount: 1,
+        activeRouteCount: 1,
+        hasDefaultRoute: true,
+        rails: ["evm"],
+        nextAction: "Default payout route is configured.",
+      },
+      discovery: {
+        recommendedProjects: [{ slug: "solar-commons", name: "Solar Commons" }],
+        nextActions: ["Complete profile and identity readiness in the workspace account area."],
+      },
+      warnings: [],
+    }
+  },
 }
 
 const operatorReader: OperatorWorkflowReader = {
@@ -97,6 +155,7 @@ describe("project-member and operator MCP tools", () => {
     expect(tools.map((tool) => tool.name)).toEqual(
       expect.arrayContaining([
         "project_member.project.reporting_status",
+        "user.workspace.summary",
         "operator.cycles.list",
         "operator.cycle.observability",
         "operator.payments.reconciliation_visibility",
@@ -108,6 +167,16 @@ describe("project-member and operator MCP tools", () => {
       annotations: { readOnlyHint: true, destructiveHint: false, openWorldHint: false },
       outputSchema: expect.objectContaining({
         required: expect.arrayContaining(["ok", "projectSlug", "cycleKey", "reports", "attribution", "nextActions"]),
+      }),
+    })
+    expect(tools.find((tool) => tool.name === "user.workspace.summary")).toMatchObject({
+      title: "Read User Workspace Summary",
+      annotations: { readOnlyHint: true, destructiveHint: false, openWorldHint: false },
+      inputSchema: expect.objectContaining({
+        additionalProperties: false,
+      }),
+      outputSchema: expect.objectContaining({
+        required: expect.arrayContaining(["ok", "profileStatus", "participation", "results", "payoutReadiness", "discovery", "warnings"]),
       }),
     })
     expect(tools.find((tool) => tool.name === "operator.cycles.list")).toMatchObject({
@@ -137,6 +206,91 @@ describe("project-member and operator MCP tools", () => {
       outputSchema: expect.objectContaining({
         required: expect.arrayContaining(["ok", "cycleKey", "counts", "missingAudiences", "warningStates", "nextActions"]),
       }),
+    })
+  })
+
+  it("reads the authenticated user's workspace summary without raw identity or payout payloads", async () => {
+    const result = await createRegistry().call("user.workspace.summary", {}, { auth: projectMemberAuth, edge, userReader, projectMemberReader, operatorReader })
+
+    expect(result.content[0]?.text).toContain("completionPercent")
+    expect(result.structuredContent).toMatchObject({
+      ok: true,
+      profileStatus: {
+        signedInEmail: "member@example.com",
+        cubidIdentityStatus: "linked",
+        cubidScore: 82,
+        completionPercent: 80,
+        identitySnapshot: {
+          primaryEmailPresent: true,
+          primaryPhonePresent: false,
+          verifiedStampTypes: ["email"],
+        },
+      },
+      participation: {
+        joinedProjectCount: 1,
+        favoriteProjectCount: 1,
+        recentProjects: [expect.objectContaining({ slug: "civic-mesh", name: "Civic Mesh" })],
+      },
+      results: {
+        latest: expect.objectContaining({ allocationUsd: 42, monthLabel: "2026-04" }),
+        totalAllocationUsd: 42,
+        resultCount: 1,
+      },
+      payoutReadiness: {
+        routeCount: 1,
+        activeRouteCount: 1,
+        hasDefaultRoute: true,
+        rails: ["evm"],
+      },
+      discovery: {
+        recommendedProjects: [{ slug: "solar-commons", name: "Solar Commons" }],
+      },
+    })
+    expect(JSON.stringify(result.structuredContent)).not.toContain("raw_identity")
+    expect(JSON.stringify(result.structuredContent)).not.toContain("destination")
+    expect(JSON.stringify(result.structuredContent)).not.toContain("cubid_user_id")
+  })
+
+  it("returns user workspace empty states and partial read warnings", async () => {
+    const emptyUserReader: UserWorkflowReader = {
+      async getWorkspaceSummary() {
+        return {
+          profileStatus: {
+            signedInEmail: "member@example.com",
+            cubidIdentityStatus: "unlinked",
+            cubidScore: null,
+            completionPercent: 0,
+            missingItems: ["display_name", "cubid_link"],
+            identitySnapshot: null,
+          },
+          participation: { joinedProjectCount: 0, founderProjectCount: 0, favoriteProjectCount: 0, recentProjects: [] },
+          results: { latest: null, totalAllocationUsd: 0, resultCount: 0, detailHref: "/workspace/earnings" },
+          payoutReadiness: {
+            routeCount: 0,
+            activeRouteCount: 0,
+            hasDefaultRoute: false,
+            rails: [],
+            nextAction: "Add a payout route before monthly payouts are ready.",
+          },
+          discovery: {
+            recommendedProjects: [],
+            nextActions: [
+              "Explore active public projects and join one to build participation signal.",
+              "Add a payout route before monthly payouts are ready.",
+            ],
+          },
+          warnings: [{ scope: "results", message: "partial read" }],
+        }
+      },
+    }
+
+    const result = await createRegistry().call("user.workspace.summary", {}, { auth: projectMemberAuth, edge, userReader: emptyUserReader, projectMemberReader, operatorReader })
+
+    expect(result.structuredContent).toMatchObject({
+      ok: true,
+      participation: { joinedProjectCount: 0, recentProjects: [] },
+      results: { latest: null, totalAllocationUsd: 0, resultCount: 0 },
+      warnings: [{ scope: "results", message: "partial read" }],
     })
   })
 

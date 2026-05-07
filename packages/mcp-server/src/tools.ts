@@ -1,7 +1,7 @@
 import type { McpAuthContext } from "./auth.ts"
 import type { EdgeCommandClient } from "./edge-client.ts"
 import type { FounderWorkflowReader } from "./founder-reader.ts"
-import type { OperatorWorkflowReader, ProjectMemberWorkflowReader } from "./member-operator-readers.ts"
+import type { OperatorWorkflowReader, ProjectMemberWorkflowReader, UserWorkflowReader } from "./member-operator-readers.ts"
 import { errorResult, jsonTextResult, type McpToolDefinition, type McpToolResult } from "./protocol.ts"
 import { authorizeMcpToolCall } from "./authorization.ts"
 import { sanitizeMcpToolResult, validateMcpToolInput } from "./safety.ts"
@@ -10,6 +10,7 @@ export type McpToolHandlerContext = {
   auth: McpAuthContext
   edge: EdgeCommandClient
   founderReader?: FounderWorkflowReader
+  userReader?: UserWorkflowReader
   projectMemberReader?: ProjectMemberWorkflowReader
   operatorReader?: OperatorWorkflowReader
 }
