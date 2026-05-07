@@ -46,7 +46,15 @@ export class McpPromptRegistry {
       }
     }
 
-    return prompt.handler(args)
+    try {
+      return await prompt.handler(args)
+    } catch {
+      return {
+        isError: true,
+        errorCode: "prompt_failed",
+        message: "MCP prompt generation failed.",
+      }
+    }
   }
 }
 

@@ -27,12 +27,15 @@ export function createMcpAuthContext(
     throw new Error("FUNDLOOP_MCP_BEARER_TOKEN is required for MCP Edge Function calls.")
   }
 
+  const userId = config.userId ?? env.FUNDLOOP_MCP_USER_ID ?? (env.FUNDLOOP_MCP_STDIO === "1" ? "stdio-local-user" : undefined)
+  const email = config.email ?? env.FUNDLOOP_MCP_USER_EMAIL ?? (env.FUNDLOOP_MCP_STDIO === "1" ? "stdio-local@fundloop.example.com" : undefined)
+
   return {
     actorRole: config.defaultActorRole ?? "founder",
     bearerToken: bearerToken.trim(),
-    userId: config.userId,
-    email: config.email,
-    subject: config.subject,
+    userId,
+    email,
+    subject: config.subject ?? email ?? userId,
     isInternalOperator: config.isInternalOperator,
   }
 }

@@ -33,9 +33,12 @@ function safeNumber(value) {
 }
 
 function warning(scope, error) {
+  if (error?.message) {
+    console.warn(JSON.stringify({ event: "mcp_workflow_read_warning", scope, message: error.message }))
+  }
   return {
     scope,
-    message: error?.message ?? "Workspace data could not be loaded.",
+    message: "Workspace data could not be loaded.",
   }
 }
 

@@ -1,8 +1,39 @@
+### session v166: Address Copilot MCP hardening review
+- timestamp: 2026-05-06T21:33:38-0400
+- agent: **Codex (GPT-5)**
+- branch: **codex/mcp-roadmap-kickoff**
+- head: pending Copilot review-fix commit
+
+#### Objective
+Address the Copilot PR review findings around MCP safety, prompt resilience, auth/runtime dependencies, and documentation drift.
+
+#### Actions Taken
+- Threaded MCP `maxDepth` limits through nested object and array validation.
+- Sanitized early tool error returns, including unknown tool, disabled tool, authorization failure, validation failure, and handler failure paths.
+- Wrapped prompt handlers in stable `prompt_failed` errors so prompt exceptions do not bubble through the protocol handler.
+- Replaced MCP workflow-read warning payloads with generic caller-safe warning messages while logging detailed error text server-side.
+- Removed the remote MCP Edge Function's unnecessary service-role client dependency by constructing a request-scoped auth client only.
+- Made the stdio harness create a local actor id/email by default so non-health local tools do not fail the front-door auth gate before backing Edge Functions enforce product authorization.
+- Updated MCP tool catalog docs so the generic Edge bridge uses `input?: object` and implemented tools are no longer listed as near-term candidates.
+
+#### Tests and Validation Notes
+- `pnpm --filter @fundloop/mcp-server test` passed: 5 files, 84 tests.
+- `deno cache --config supabase/functions/deno.json supabase/functions/mcp/index.ts` passed.
+- `pnpm dlx node@22.22.1 /opt/homebrew/bin/pnpm check` passed, including lint, 78 test files / 368 tests, typecheck, and production build.
+
+#### Reflections
+- This review batch tightened the boring but important edges: error paths, depth limits, local harness ergonomics, and docs truth.
+
+#### Suggested Next Steps
+- Commit and push the Copilot fixes, reply to and resolve each thread, then wait for CI to return green.
+
+---
+
 ### session v165: Address MCP coverage schema review
 - timestamp: 2026-05-06T21:24:12-0400
 - agent: **Codex (GPT-5)**
 - branch: **codex/mcp-roadmap-kickoff**
-- head: pending MCP review-fix commit
+- head: 0f4ce94
 
 #### Objective
 Address the Codex PR review finding that aggregate operator reporting coverage can return `cycleKey: null` while the MCP output schema advertised a required string.

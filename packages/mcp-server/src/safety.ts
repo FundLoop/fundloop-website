@@ -116,7 +116,8 @@ function sanitizeMcpStructuredContent(value: unknown): unknown {
 }
 
 function validateProperty(value: unknown, property: McpToolInputProperty, path: string, depth: number): McpSafetyResult {
-  if (depth > (property.maxDepth ?? DEFAULT_MAX_DEPTH)) {
+  const maxDepth = property.maxDepth ?? DEFAULT_MAX_DEPTH
+  if (depth > maxDepth) {
     return { ok: false, code: "payload_too_large", message: `${path} is nested too deeply.` }
   }
 
@@ -125,12 +126,12 @@ function validateProperty(value: unknown, property: McpToolInputProperty, path: 
   if (property.type === "boolean") {
     return typeof value === "boolean" ? { ok: true } : { ok: false, code: "invalid_payload", message: `${path} must be a boolean.` }
   }
-  if (property.type === "object") return validateObject(value, property, path, depth)
+  if (property.type === "object") return validateObject(value, property, path, depth, maxDepth)
   if (property.type === "array") {
-    return Array.isArray(value) ? validateUnknown(value, path, depth) : { ok: false, code: "invalid_payload", message: `${path} must be an array.` }
+    return Array.isArray(value) ? validateUnknown(value, path, depth, maxDepth) : { ok: false, code: "invalid_payload", message: `${path} must be an array.` }
   }
 
-  return validateUnknown(value, path, depth)
+  return validateUnknown(value, path, depth, maxDepth)
 }
 
 function validateString(value: unknown, property: McpToolInputProperty, path: string): McpSafetyResult {
@@ -206,7 +207,7 @@ function validateNumber(value: unknown, property: McpToolInputProperty, path: st
   return { ok: true }
 }
 
-function validateObject(value: unknown, property: McpToolInputProperty, path: string, depth: number): McpSafetyResult {
+function validateObject(value: unknown, property: McpToolInputProperty, path: string, depth: number, maxDepth = DEFAULT_MAX_DEPTH): McpSafetyResult {
   const record = asRecord(value)
   if (!record) return { ok: false, code: "invalid_payload", message: `${path} must be a JSON object.` }
 
@@ -221,14 +222,17 @@ function validateObject(value: unknown, property: McpToolInputProperty, path: st
 
   for (const [key, nestedValue] of Object.entries(record)) {
     const nestedPath = `${path}.${key}`
-    const result = validateUnknown(nestedValue, nestedPath, depth + 1)
+    const result = validateUnknown(nestedValue, nestedPath, depth + 1, maxDepth)
     if (!result.ok) return result
   }
 
   return { ok: true }
 }
 
-function validateUnknown(value: unknown, path: string, depth: number): McpSafetyResult {
+function validateUnknown(value: unknown, path: string, depth: number, maxDepth = DEFAULT_MAX_DEPTH): McpSafetyResult {
+  if (depth > maxDepth) {
+    return { ok: false, code: "payload_too_large", message: `${path} is nested too deeply.` }
+  }
   if (typeof value === "string") return validateString(value, { type: "string" }, path)
   if (typeof value === "number") return validateNumber(value, { type: "number" }, path)
   if (typeof value === "boolean" || value === null) return { ok: true }
@@ -237,12 +241,12 @@ function validateUnknown(value: unknown, path: string, depth: number): McpSafety
       return { ok: false, code: "payload_too_large", message: `${path} has too many values.` }
     }
     for (const [index, nested] of value.entries()) {
-      const result = validateUnknown(nested, `${path}.${index}`, depth + 1)
+      const result = validateUnknown(nested, `${path}.${index}`, depth + 1, maxDepth)
       if (!result.ok) return result
     }
     return { ok: true }
   }
-  return validateObject(value, { type: "object" }, path, depth)
+  return validateObject(value, { type: "object" }, path, depth, maxDepth)
 }
 
 function asRecord(value: unknown): Record<string, unknown> | null {

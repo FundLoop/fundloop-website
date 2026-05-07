@@ -64,7 +64,7 @@ export class McpToolRegistry {
         startedAtMs,
         code: "tool_not_found",
       })
-      return errorResult(`Unknown tool: ${name}`)
+      return sanitizeMcpToolResult(errorResult(`Unknown tool: ${name}`))
     }
 
     if (this.disabledToolNames.has(name)) {
@@ -76,10 +76,10 @@ export class McpToolRegistry {
         startedAtMs,
         code: "tool_disabled",
       })
-      return {
+      return sanitizeMcpToolResult({
         ...errorResult(`MCP tool ${name} is currently disabled.`),
         errorCode: "tool_disabled",
-      }
+      })
     }
 
     const authorization = authorizeMcpToolCall(name, context.auth, input)
@@ -92,10 +92,10 @@ export class McpToolRegistry {
         startedAtMs,
         code: authorization.code,
       })
-      return {
+      return sanitizeMcpToolResult({
         ...errorResult(authorization.message),
         errorCode: authorization.code,
-      }
+      })
     }
 
     const validation = validateMcpToolInput(tool.definition, input)
@@ -108,10 +108,10 @@ export class McpToolRegistry {
         startedAtMs,
         code: validation.code,
       })
-      return {
+      return sanitizeMcpToolResult({
         ...errorResult(validation.message),
         errorCode: validation.code,
-      }
+      })
     }
 
     try {
@@ -134,10 +134,10 @@ export class McpToolRegistry {
         startedAtMs,
         code: "handler_failed",
       })
-      return {
+      return sanitizeMcpToolResult({
         ...errorResult("MCP tool execution failed."),
         errorCode: "handler_failed",
-      }
+      })
     }
   }
 }

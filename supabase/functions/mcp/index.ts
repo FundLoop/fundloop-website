@@ -1,5 +1,6 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts"
 
+import { createClient } from "npm:@supabase/supabase-js@2"
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js"
 import { WebStandardStreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/webStandardStreamableHttp.js"
 
@@ -22,7 +23,7 @@ import {
 } from "../../../packages/mcp-server/src/sdk-adapter.ts"
 import { createMcpObservabilityContext } from "../../../packages/mcp-server/src/observability.ts"
 import { createBaseMcpToolRegistry } from "../../../packages/mcp-server/src/tools.ts"
-import { createFunctionClients, getEnv } from "../_shared/command-runtime.ts"
+import { getEnv } from "../_shared/command-runtime.ts"
 
 const mcpCorsHeaders = {
   "access-control-allow-origin": "*",
@@ -47,6 +48,19 @@ function readRequiredEnv(name: string) {
   return value
 }
 
+function createRequestAuthClient(request: Request) {
+  const supabaseUrl = readRequiredEnv("NEXT_PUBLIC_SUPABASE_URL")
+  const anonKey = readRequiredEnv("NEXT_PUBLIC_SUPABASE_ANON_KEY")
+  const authorization = request.headers.get("authorization")
+  return createClient(supabaseUrl, anonKey, {
+    global: authorization ? { headers: { Authorization: authorization } } : undefined,
+    auth: {
+      persistSession: false,
+      autoRefreshToken: false,
+    },
+  })
+}
+
 function readAllowedEdgeFunctions() {
   return (getEnv("FUNDLOOP_MCP_ALLOWED_EDGE_FUNCTIONS") ?? "")
     .split(",")
@@ -63,19 +77,9 @@ function readDisabledTools() {
 
 async function buildMcpServer(request: Request) {
   const observability = createMcpObservabilityContext(request.headers)
-  const clients = createFunctionClients(request)
-  if (!clients.ok) {
-    return {
-      ok: false as const,
-      status: 500,
-      code: "misconfigured",
-      message: clients.error,
-    }
-  }
-
   const authResult = await createValidatedRemoteMcpAuthContext({
     authorizationHeader: request.headers.get("authorization"),
-    authClient: clients.authClient,
+    authClient: createRequestAuthClient(request),
     internalAdminEmails: getEnv("FUNDLOOP_INTERNAL_ADMIN_EMAILS"),
     allowLocalTestToken: getEnv("FUNDLOOP_MCP_ALLOW_LOCAL_TEST_TOKEN") === "true",
     observability,

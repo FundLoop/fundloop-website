@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest"
 import { edgeCommandSuccess, type EdgeCommandResult } from "@/lib/edge-functions/result"
 import { createMcpAuthContext } from "@/packages/mcp-server/src/auth"
-import { createBaseMcpPromptRegistry } from "@/packages/mcp-server/src/prompts"
+import { createBaseMcpPromptRegistry, McpPromptRegistry } from "@/packages/mcp-server/src/prompts"
 import { createBaseMcpResourceRegistry } from "@/packages/mcp-server/src/resources"
 import { createBaseMcpToolRegistry } from "@/packages/mcp-server/src/tools"
 import { encodeMcpStdioMessage, handleMcpRequest, parseMcpStdioMessages } from "@/packages/mcp-server/src/server"
@@ -27,6 +27,13 @@ describe("FundLoop MCP server skeleton", () => {
     expect(createMcpAuthContext({}, { FUNDLOOP_MCP_BEARER_TOKEN: "token" })).toMatchObject({
       actorRole: "founder",
       bearerToken: "token",
+    })
+    expect(createMcpAuthContext({}, { FUNDLOOP_MCP_BEARER_TOKEN: "token", FUNDLOOP_MCP_STDIO: "1" })).toMatchObject({
+      actorRole: "founder",
+      bearerToken: "token",
+      userId: "stdio-local-user",
+      email: "stdio-local@fundloop.example.com",
+      subject: "stdio-local@fundloop.example.com",
     })
   })
 
@@ -106,6 +113,33 @@ describe("FundLoop MCP server skeleton", () => {
     )
 
     expect(result).toMatchObject({ isError: true, errorCode: "payload_too_large" })
+
+    const nestedResult = await registry.call(
+      "fundloop.edge_command.invoke",
+      { functionName: "project-crypto-route-create", input: { a: { b: { c: { d: { e: "too deep" } } } } } },
+      { auth, edge },
+    )
+    expect(nestedResult).toMatchObject({ isError: true, errorCode: "payload_too_large" })
+
+    registry.register({
+      definition: {
+        name: "test.array-depth",
+        description: "Array depth validation fixture.",
+        inputSchema: {
+          type: "object",
+          properties: {
+            values: { type: "array", maxDepth: 2 },
+          },
+          required: ["values"],
+          additionalProperties: false,
+        },
+      },
+      handler() {
+        throw new Error("handler should not run")
+      },
+    })
+    const nestedArrayResult = await registry.call("test.array-depth", { values: [[["too deep"]]] }, { auth, edge })
+    expect(nestedArrayResult).toMatchObject({ isError: true, errorCode: "payload_too_large" })
   })
 
   it("rejects URL-shaped input where tools do not accept URLs", async () => {
@@ -139,6 +173,17 @@ describe("FundLoop MCP server skeleton", () => {
     expect(text).toContain("Bearer [redacted]")
     expect(text).toContain("&lt;script")
     expect(text).not.toContain("ignore previous instructions")
+  })
+
+  it("sanitizes early tool error results before returning them", async () => {
+    const registry = createBaseMcpToolRegistry()
+    const result = await registry.call("unknown-<script>-Bearer eyJabc.def.ghi", {}, { auth, edge })
+
+    const text = result.content[0]?.text ?? ""
+    expect(text).toContain("&lt;script")
+    expect(text).toContain("Bearer [redacted]")
+    expect(text).not.toContain("<script")
+    expect(text).not.toContain("eyJabc.def.ghi")
   })
 
   it("handles initialize, tools/list, and tools/call JSON-RPC requests", async () => {
@@ -246,6 +291,38 @@ describe("FundLoop MCP server skeleton", () => {
     })
     expect(JSON.stringify(prompt)).toContain("founder.project.cycle_status")
     expect(JSON.stringify(prompt)).not.toContain("ignore previous")
+  })
+
+  it("returns stable prompt errors when a prompt handler throws", async () => {
+    const promptRegistry = new McpPromptRegistry()
+    promptRegistry.register({
+      definition: {
+        name: "broken-prompt",
+        description: "A prompt that fails for coverage.",
+      },
+      handler() {
+        throw new Error("database relation private_table does not exist")
+      },
+    })
+
+    const result = await handleMcpRequest(
+      { jsonrpc: "2.0", id: 99, method: "prompts/get", params: { name: "broken-prompt", arguments: {} } },
+      {
+        auth,
+        edge,
+        registry: createBaseMcpToolRegistry(),
+        promptRegistry,
+      },
+    )
+
+    expect(result).toMatchObject({
+      result: {
+        isError: true,
+        errorCode: "prompt_failed",
+        content: [expect.objectContaining({ text: "MCP prompt generation failed." })],
+      },
+    })
+    expect(JSON.stringify(result)).not.toContain("private_table")
   })
 
   it("parses and serializes MCP Content-Length stdio frames", () => {
