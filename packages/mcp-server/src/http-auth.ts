@@ -1,4 +1,5 @@
 import { createMcpAuthContext, type McpAuthContext } from "./auth.ts"
+import { writeMcpAuditEvent, type McpObservabilityContext } from "./observability.ts"
 
 type SupabaseAuthUser = {
   id?: string
@@ -58,10 +59,11 @@ export async function createValidatedRemoteMcpAuthContext(input: {
   authClient: SupabaseAuthClientLike
   internalAdminEmails?: string
   allowLocalTestToken?: boolean
+  observability?: McpObservabilityContext
 }): Promise<RemoteMcpAuthResult> {
   const bearerToken = parseBearerToken(input.authorizationHeader)
   if (!bearerToken) {
-    auditMcpAuthEvent("auth_failure", { code: "not_authenticated" })
+    auditMcpAuthEvent("auth_failure", { code: "not_authenticated", request: input.observability })
     return {
       ok: false,
       status: 401,
@@ -91,7 +93,7 @@ export async function createValidatedRemoteMcpAuthContext(input: {
 
   const user = data?.user
   if (error || !user?.id) {
-    auditMcpAuthEvent("auth_failure", { code: "not_authenticated", message: error?.message })
+    auditMcpAuthEvent("auth_failure", { code: "not_authenticated", message: error?.message, request: input.observability })
     return {
       ok: false,
       status: 401,
@@ -124,13 +126,12 @@ function parseInternalAdminEmails(source?: string) {
   )
 }
 
-function auditMcpAuthEvent(eventType: "auth_failure", input: { code: string; message?: string }) {
-  console.warn(
-    JSON.stringify({
-      event: eventType,
-      surface: "mcp",
-      code: input.code,
-      message: input.message ?? null,
-    }),
-  )
+function auditMcpAuthEvent(eventType: "auth_failure", input: { code: string; message?: string; request?: McpObservabilityContext }) {
+  writeMcpAuditEvent("warn", {
+    event: eventType,
+    request: input.request,
+    status: "authentication_failed",
+    errorCode: input.code,
+    message: input.message ?? null,
+  })
 }

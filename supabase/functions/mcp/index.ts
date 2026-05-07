@@ -20,6 +20,7 @@ import {
   registerRegistryResourcesWithSdkServer,
   registerRegistryToolsWithSdkServer,
 } from "../../../packages/mcp-server/src/sdk-adapter.ts"
+import { createMcpObservabilityContext } from "../../../packages/mcp-server/src/observability.ts"
 import { createBaseMcpToolRegistry } from "../../../packages/mcp-server/src/tools.ts"
 import { createFunctionClients, getEnv } from "../_shared/command-runtime.ts"
 
@@ -53,7 +54,15 @@ function readAllowedEdgeFunctions() {
     .filter(Boolean)
 }
 
+function readDisabledTools() {
+  return (getEnv("FUNDLOOP_MCP_DISABLED_TOOLS") ?? "")
+    .split(",")
+    .map((value) => value.trim())
+    .filter(Boolean)
+}
+
 async function buildMcpServer(request: Request) {
+  const observability = createMcpObservabilityContext(request.headers)
   const clients = createFunctionClients(request)
   if (!clients.ok) {
     return {
@@ -69,6 +78,7 @@ async function buildMcpServer(request: Request) {
     authClient: clients.authClient,
     internalAdminEmails: getEnv("FUNDLOOP_INTERNAL_ADMIN_EMAILS"),
     allowLocalTestToken: getEnv("FUNDLOOP_MCP_ALLOW_LOCAL_TEST_TOKEN") === "true",
+    observability,
   })
   if (!authResult.ok) return authResult
 
@@ -76,7 +86,7 @@ async function buildMcpServer(request: Request) {
     supabaseUrl: readRequiredEnv("NEXT_PUBLIC_SUPABASE_URL").replace(/\/$/, ""),
     anonKey: readRequiredEnv("NEXT_PUBLIC_SUPABASE_ANON_KEY"),
   })
-  const registry = createBaseMcpToolRegistry({ allowedFunctionNames: readAllowedEdgeFunctions() })
+  const registry = createBaseMcpToolRegistry({ allowedFunctionNames: readAllowedEdgeFunctions(), disabledToolNames: readDisabledTools() })
   registerFounderMcpTools(registry)
   registerProjectMemberAndOperatorMcpTools(registry)
 
@@ -87,6 +97,7 @@ async function buildMcpServer(request: Request) {
     userReader: createEdgeUserWorkflowReader(edge),
     projectMemberReader: createEdgeProjectMemberWorkflowReader(edge),
     operatorReader: createEdgeOperatorWorkflowReader(edge),
+    observability,
   }
 
   const server = new McpServer({

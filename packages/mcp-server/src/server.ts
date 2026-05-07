@@ -150,6 +150,10 @@ function createDefaultServerContext(): McpServerContext {
       .split(",")
       .map((value) => value.trim())
       .filter(Boolean),
+    disabledToolNames: (process.env.FUNDLOOP_MCP_DISABLED_TOOLS ?? "")
+      .split(",")
+      .map((value) => value.trim())
+      .filter(Boolean),
   })
   registerFounderMcpTools(registry)
   registerProjectMemberAndOperatorMcpTools(registry)

@@ -33,6 +33,7 @@ export {
   type UserWorkflowReader,
 } from "./member-operator-readers.ts"
 export { registerProjectMemberAndOperatorMcpTools } from "./member-operator-tools.ts"
+export { createMcpObservabilityContext, writeMcpAuditEvent, type McpObservabilityContext } from "./observability.ts"
 export { createBaseMcpToolRegistry, McpToolRegistry, type McpRegisteredTool } from "./tools.ts"
 export { createRemoteMcpAuthContext, createValidatedRemoteMcpAuthContext, type RemoteMcpAuthResult } from "./http-auth.ts"
 export {

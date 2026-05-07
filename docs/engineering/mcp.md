@@ -10,6 +10,7 @@ The MCP-specific roadmap and design artifacts now live in:
 - `docs/mcp/tool-catalog.md` for current and candidate tool contracts.
 - `docs/mcp/architecture.md` for the target remote/runtime architecture.
 - `docs/mcp/security-model.md` for auth, authorization, data-safety, and threat-model rules.
+- `docs/mcp/runbook.md` for MCP operations, disabling tools, log inspection, secret rotation, and rollback.
 
 ## Package
 
@@ -115,6 +116,14 @@ FUNDLOOP_MCP_ALLOWED_EDGE_FUNCTIONS=project-crypto-route-create,project-crypto-r
 
 The explicit workflow tools do not require the low-level allowlist. They call typed reader/writer boundaries directly. Leave `FUNDLOOP_MCP_ALLOWED_EDGE_FUNCTIONS` empty unless a session specifically needs a generic command bridge for integration work.
 
+Emergency tool disable list:
+
+```env
+FUNDLOOP_MCP_DISABLED_TOOLS=fundloop.edge_command.invoke,founder.project.onchain_receipt.record
+```
+
+Disabled tools are hidden from `tools/list`; local registry calls return `tool_disabled` if called directly, while remote SDK clients may see the disabled tool as unavailable because it is no longer registered.
+
 ## Packaging Status
 
 `packages/mcp-server` is currently a private workspace package and local stdio runtime. It is not yet published to npm, the official MCP registry, Smithery, Docker, or any hosted remote runtime.
@@ -149,6 +158,7 @@ The root `pnpm mcp:publish` command is intentionally metadata-only guidance for 
 - Operator tools are blocked before handler execution unless `FUNDLOOP_INTERNAL_ADMIN_EMAILS` includes the authenticated user's email.
 - Tool failures should return protocol-visible error content and should also be visible through the relevant app observability stream.
 - Do not log bearer tokens, Supabase keys, service role keys, raw private artifact URLs, or command payloads containing secrets.
+- Tool dispatch logs are structured and redacted. They include request id, hashed client/user/tenant identifiers, tool category, status, latency, and error code, but not bearer tokens, raw emails, payload bodies, cookies, or secret values.
 
 ## Current Skeleton
 

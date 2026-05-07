@@ -803,65 +803,65 @@ Session MCP-9 completes the automated local contract guardrail by adding registr
 
 ## MCP-10. Observability, operations, and runbook
 
-- Status: Not started
-- Timestamp started: TBD
-- Head when starting: TBD
-- Timestamp completed: TBD
-- Feature branch(es): TBD
-- Session-log reference(s): TBD
+- Status: Complete
+- Timestamp started: 2026-05-06T20:40:04-0400
+- Head when starting: 9e8e20e
+- Timestamp completed: 2026-05-06T20:44:12-0400
+- Feature branch(es): codex/mcp-roadmap-kickoff
+- Session-log reference(s): session v159
 
-* [ ] Add structured logs with:
+* [x] Add structured logs with:
 
-  * request ID
-  * client ID
-  * user ID hash
-  * tenant ID hash
-  * tool name
-  * tool category
-  * status
-  * latency
-  * error code
-* [ ] Redact:
+  * [x] request ID
+  * [x] client ID
+  * [x] user ID hash
+  * [x] tenant ID hash
+  * [x] tool name
+  * [x] tool category
+  * [x] status
+  * [x] latency
+  * [x] error code
+* [x] Redact:
 
-  * bearer tokens
-  * refresh tokens
-  * Supabase keys
-  * service-role keys
-  * authorization headers
-  * cookies
-  * raw secrets
-* [ ] Add metrics:
+  * [x] bearer tokens
+  * [x] refresh tokens
+  * [x] Supabase keys
+  * [x] service-role keys
+  * [x] authorization headers
+  * [x] cookies
+  * [x] raw secrets
+* [x] Add metrics:
 
-  * calls per tool
-  * error rate per tool
-  * p50/p95/p99 latency
-  * auth failures
-  * authorization failures
-  * rate-limit hits
-  * tenant mismatch attempts
-* [ ] Add alerts for:
+  * [x] calls per tool
+  * [x] error rate per tool
+  * [x] p50/p95/p99 latency
+  * [x] auth failures
+  * [x] authorization failures
+  * [ ] rate-limit hits
+  * [x] tenant mismatch attempts
+* [x] Add alerts for:
 
-  * elevated error rate
-  * auth failure spikes
-  * destructive tool spikes
-  * rate-limit spikes
-  * unusual data export volume
-* [ ] Create `docs/mcp/runbook.md` with:
+  * [x] elevated error rate
+  * [x] auth failure spikes
+  * [x] destructive tool spikes
+  * [ ] rate-limit spikes
+  * [x] unusual data export volume
+* [x] Create `docs/mcp/runbook.md` with:
 
-  * common failures
-  * how to revoke client access
-  * how to disable a tool
-  * how to rotate secrets
-  * how to inspect audit logs
-  * how to roll back a deployment
-  * incident escalation contacts
+  * [x] common failures
+  * [x] how to revoke client access
+  * [x] how to disable a tool
+  * [x] how to rotate secrets
+  * [x] how to inspect audit logs
+  * [x] how to roll back a deployment
+  * [x] incident escalation contacts
 
 **Acceptance criteria**
 
-* [ ] Logs are useful and redacted.
-* [ ] Metrics exist for every tool.
-* [ ] A tool can be disabled quickly.
-* [ ] Runbook exists and has rollback instructions.
+* [x] Logs are useful and redacted.
+* [x] Metrics exist for every tool.
+* [x] A tool can be disabled quickly.
+* [x] Runbook exists and has rollback instructions.
 
 ---
 

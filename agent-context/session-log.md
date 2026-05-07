@@ -1,3 +1,34 @@
+### session v159: Add MCP observability and runbook controls
+- timestamp: 2026-05-06T20:44:12-0400
+- agent: **Codex (GPT-5)**
+- branch: **codex/mcp-roadmap-kickoff**
+- head: pending MCP-10 commit
+
+#### Objective
+Complete MCP-10 by adding redacted structured observability, emergency tool-disable controls, and an operations runbook for the current MCP runtime.
+
+#### Actions Taken
+- Added a shared MCP observability helper that creates request/client context, classifies tools, hashes actor/client identifiers, redacts secret-like values, and writes structured audit/metric events.
+- Extended MCP tool dispatch logs with request id, hashed client/user/tenant identifiers, actor role, tool name, tool category, status, latency, and error code.
+- Added `FUNDLOOP_MCP_DISABLED_TOOLS` support so operators can hide and block exact tools quickly without changing code.
+- Passed request-scoped observability context into the remote Supabase Edge MCP function.
+- Updated auth-failure logging to use the same redacted event writer.
+- Added `docs/mcp/runbook.md` with common failures, log/metric guidance, tool disablement, access revocation, secret rotation, audit inspection, rollback, and escalation guidance.
+- Updated MCP docs, security-model notes, architecture notes, validation coverage, and MCP-10 roadmap metadata.
+
+#### Tests and Validation Notes
+- `pnpm mcp:test` passed: 5 files, 81 tests.
+- `deno cache --config supabase/functions/deno.json supabase/functions/mcp/index.ts` passed.
+- `pnpm dlx node@22.22.1 /opt/homebrew/bin/pnpm check` passed after a small TypeScript strictness fix, including lint, 78 test files / 365 tests, typecheck, and production build.
+
+#### Reflections
+- The implementation deliberately emits log-metric-ready events instead of pretending a metrics backend exists. Hosted log metrics and alerts can now be configured around stable MCP fields.
+
+#### Suggested Next Steps
+- Run the full Node 22-equivalent check, commit MCP-10, then continue to MCP-11 deployment readiness when this branch is ready for the next roadmap slice.
+
+---
+
 ### session v158: Harden MCP automated contract coverage
 - timestamp: 2026-05-06T20:37:38-0400
 - agent: **Codex (GPT-5)**

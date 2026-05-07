@@ -77,6 +77,8 @@ FundLoop does not yet have a complete distributed MCP-specific rate limiter. Unt
 
 Before production publication, add per-actor and per-tool throttling at the Edge runtime, gateway, or backing command layer.
 
+Session MCP-10 added structured MCP dispatch events that can be converted into hosted log metrics. Use `docs/mcp/runbook.md` for the current metric names, alert recommendations, and emergency tool-disable process.
+
 ## Audit Expectations
 
 At minimum, log or reuse existing workflow events for:
@@ -91,7 +93,7 @@ At minimum, log or reuse existing workflow events for:
 
 Logs must redact bearer tokens, service keys, private URLs, payment credentials, and CUBID API secrets.
 
-MCP-3 logs structured authentication failures, authorization failures, and successful tool dispatches without bearer tokens or payload bodies.
+MCP-3 logs structured authentication failures, authorization failures, and successful tool dispatches without bearer tokens or payload bodies. MCP-10 expanded those events with request id, hashed client/user/tenant identifiers, tool category, status, latency, and stable error code fields.
 
 ## Threat Model Summary
 

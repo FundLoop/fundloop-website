@@ -73,6 +73,8 @@ Resources follow the same model: user resources are scoped to the authenticated 
 - Local Edge smoke: `FUNDLOOP_MCP_HTTP_URL=http://127.0.0.1:54321/functions/v1/mcp pnpm mcp:edge:smoke`.
 - Preview/dev: remote Supabase project and Preview app environment; suitable for MCP integration testing with non-production actors.
 - Production/main: only after Streamable HTTP auth, rate limiting, audit expectations, and publication docs are complete.
+- Emergency disable: set `FUNDLOOP_MCP_DISABLED_TOOLS` to exact tool names; disabled tools are hidden from `tools/list`, and local registry calls return `tool_disabled` if called directly.
+- Runbook: use `docs/mcp/runbook.md` for log fields, alert recommendations, secret rotation, access revocation, and rollback.
 
 ## Publication Plan
 

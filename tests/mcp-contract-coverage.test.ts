@@ -372,15 +372,41 @@ describe("MCP automated contract coverage", () => {
     const warnSpy = vi.spyOn(console, "warn").mockImplementation(() => undefined)
     const registry = createContractRegistry()
 
-    await registry.call("fundloop.edge_command.invoke", { functionName: "../private", input: { token: "secret" } }, createContext(authenticatedAuth))
+    await registry.call(
+      "fundloop.edge_command.invoke",
+      { functionName: "../private", input: { token: "secret" } },
+      {
+        ...createContext(authenticatedAuth),
+        observability: { requestId: "request-1", clientId: "client-1", startedAtMs: Date.now() },
+      },
+    )
 
     expect(warnSpy).toHaveBeenCalledTimes(1)
     const logged = String(warnSpy.mock.calls[0]?.[0] ?? "")
     expect(logged).toContain("validation_failure")
     expect(logged).toContain("fundloop.edge_command.invoke")
+    expect(logged).toContain("request-1")
+    expect(logged).toContain("clientId")
+    expect(logged).toContain("userIdHash")
+    expect(logged).toContain("latencyMs")
     expect(logged).not.toContain("test-token")
     expect(logged).not.toContain("secret")
+    expect(logged).not.toContain("founder@example.com")
 
     warnSpy.mockRestore()
+  })
+
+  it("can disable a tool without exposing it in the tool list or executing its handler", async () => {
+    const registry = createBaseMcpToolRegistry({ disabledToolNames: ["fundloop.edge_command.invoke"] })
+
+    expect(registry.list().map((tool) => tool.name)).not.toContain("fundloop.edge_command.invoke")
+
+    const result = await registry.call(
+      "fundloop.edge_command.invoke",
+      { functionName: "project-crypto-route-create", input: { projectSlug: "civic-mesh" } },
+      createContext(authenticatedAuth),
+    )
+
+    expect(result).toMatchObject({ isError: true, errorCode: "tool_disabled" })
   })
 })

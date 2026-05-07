@@ -4,6 +4,7 @@ import type { FounderWorkflowReader } from "./founder-reader.ts"
 import type { OperatorWorkflowReader, ProjectMemberWorkflowReader, UserWorkflowReader } from "./member-operator-readers.ts"
 import { errorResult, jsonTextResult, type McpToolDefinition, type McpToolResult } from "./protocol.ts"
 import { authorizeMcpToolCall } from "./authorization.ts"
+import { classifyMcpTool, writeMcpAuditEvent, type McpObservabilityContext } from "./observability.ts"
 import { sanitizeMcpToolResult, validateMcpToolInput } from "./safety.ts"
 
 export type McpToolHandlerContext = {
@@ -13,6 +14,7 @@ export type McpToolHandlerContext = {
   userReader?: UserWorkflowReader
   projectMemberReader?: ProjectMemberWorkflowReader
   operatorReader?: OperatorWorkflowReader
+  observability?: McpObservabilityContext
 }
 
 export type McpToolHandler = (input: unknown, context: McpToolHandlerContext) => Promise<McpToolResult> | McpToolResult
@@ -24,6 +26,7 @@ export type McpRegisteredTool = {
 
 export type BaseMcpToolRegistryOptions = {
   allowedFunctionNames?: string[]
+  disabledToolNames?: string[]
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -32,6 +35,11 @@ function isRecord(value: unknown): value is Record<string, unknown> {
 
 export class McpToolRegistry {
   private readonly tools = new Map<string, McpRegisteredTool>()
+  private readonly disabledToolNames: Set<string>
+
+  constructor(options: { disabledToolNames?: Iterable<string> } = {}) {
+    this.disabledToolNames = new Set(options.disabledToolNames ?? [])
+  }
 
   register(tool: McpRegisteredTool) {
     if (this.tools.has(tool.definition.name)) {
@@ -42,18 +50,48 @@ export class McpToolRegistry {
   }
 
   list(): McpToolDefinition[] {
-    return [...this.tools.values()].map((tool) => tool.definition)
+    return [...this.tools.values()].filter((tool) => !this.disabledToolNames.has(tool.definition.name)).map((tool) => tool.definition)
   }
 
   async call(name: string, input: unknown, context: McpToolHandlerContext): Promise<McpToolResult> {
+    const startedAtMs = Date.now()
     const tool = this.tools.get(name)
     if (!tool) {
+      auditMcpToolEvent("tool_failure", {
+        toolName: name,
+        auth: context.auth,
+        request: context.observability,
+        startedAtMs,
+        code: "tool_not_found",
+      })
       return errorResult(`Unknown tool: ${name}`)
+    }
+
+    if (this.disabledToolNames.has(name)) {
+      auditMcpToolEvent("tool_disabled", {
+        toolName: name,
+        toolCategory: classifyMcpTool(tool.definition),
+        auth: context.auth,
+        request: context.observability,
+        startedAtMs,
+        code: "tool_disabled",
+      })
+      return {
+        ...errorResult(`MCP tool ${name} is currently disabled.`),
+        errorCode: "tool_disabled",
+      }
     }
 
     const authorization = authorizeMcpToolCall(name, context.auth, input)
     if (!authorization.ok) {
-      auditMcpToolEvent("authorization_failure", { toolName: name, auth: context.auth, code: authorization.code })
+      auditMcpToolEvent("authorization_failure", {
+        toolName: name,
+        toolCategory: classifyMcpTool(tool.definition),
+        auth: context.auth,
+        request: context.observability,
+        startedAtMs,
+        code: authorization.code,
+      })
       return {
         ...errorResult(authorization.message),
         errorCode: authorization.code,
@@ -62,21 +100,50 @@ export class McpToolRegistry {
 
     const validation = validateMcpToolInput(tool.definition, input)
     if (!validation.ok) {
-      auditMcpToolEvent("validation_failure", { toolName: name, auth: context.auth, code: validation.code })
+      auditMcpToolEvent("validation_failure", {
+        toolName: name,
+        toolCategory: classifyMcpTool(tool.definition),
+        auth: context.auth,
+        request: context.observability,
+        startedAtMs,
+        code: validation.code,
+      })
       return {
         ...errorResult(validation.message),
         errorCode: validation.code,
       }
     }
 
-    const result = await tool.handler(input, context)
-    auditMcpToolEvent("tool_success", { toolName: name, auth: context.auth })
-    return sanitizeMcpToolResult(result)
+    try {
+      const result = await tool.handler(input, context)
+      auditMcpToolEvent(result.isError ? "tool_failure" : "tool_success", {
+        toolName: name,
+        toolCategory: classifyMcpTool(tool.definition),
+        auth: context.auth,
+        request: context.observability,
+        startedAtMs,
+        code: result.errorCode ?? null,
+      })
+      return sanitizeMcpToolResult(result)
+    } catch {
+      auditMcpToolEvent("tool_failure", {
+        toolName: name,
+        toolCategory: classifyMcpTool(tool.definition),
+        auth: context.auth,
+        request: context.observability,
+        startedAtMs,
+        code: "handler_failed",
+      })
+      return {
+        ...errorResult("MCP tool execution failed."),
+        errorCode: "handler_failed",
+      }
+    }
   }
 }
 
 export function createBaseMcpToolRegistry(options: BaseMcpToolRegistryOptions = {}) {
-  const registry = new McpToolRegistry()
+  const registry = new McpToolRegistry({ disabledToolNames: options.disabledToolNames })
   const allowedFunctionNames = new Set(options.allowedFunctionNames ?? [])
 
   registry.register({
@@ -174,39 +241,36 @@ export function createBaseMcpToolRegistry(options: BaseMcpToolRegistryOptions = 
 }
 
 function auditMcpToolEvent(
-  eventType: "authorization_failure" | "validation_failure" | "tool_success",
-  input: { toolName: string; auth: McpAuthContext; code?: string },
+  eventType: "authorization_failure" | "validation_failure" | "tool_success" | "tool_failure" | "tool_disabled",
+  input: {
+    toolName: string
+    auth: McpAuthContext
+    request?: McpObservabilityContext
+    toolCategory?: string
+    startedAtMs: number
+    code?: string | null
+  },
 ) {
-  const event = {
+  const latencyMs = Math.max(0, Date.now() - input.startedAtMs)
+  const status =
+    eventType === "tool_success"
+      ? "success"
+      : eventType === "tool_disabled"
+        ? "disabled"
+        : eventType === "authorization_failure"
+          ? "authorization_failed"
+          : eventType === "validation_failure"
+            ? "validation_failed"
+            : "failure"
+
+  writeMcpAuditEvent(eventType === "tool_success" ? "info" : "warn", {
     event: eventType,
-    surface: "mcp",
     toolName: input.toolName,
-    userId: input.auth.userId ?? null,
-    email: input.auth.email ?? null,
-    actorRole: input.auth.actorRole,
-    isInternalOperator: Boolean(input.auth.isInternalOperator),
-    code: input.code ?? null,
-  }
-
-  if (eventType === "authorization_failure" || eventType === "validation_failure") {
-    writeMcpAudit("warn", event)
-    return
-  }
-
-  writeMcpAudit("info", event)
-}
-
-function writeMcpAudit(level: "info" | "warn", event: Record<string, unknown>) {
-  const line = JSON.stringify(event)
-  if (typeof process !== "undefined" && process.env.FUNDLOOP_MCP_STDIO === "1") {
-    process.stderr.write(`${line}\n`)
-    return
-  }
-
-  if (level === "warn") {
-    console.warn(line)
-    return
-  }
-
-  console.info(line)
+    toolCategory: input.toolCategory,
+    status,
+    latencyMs,
+    errorCode: input.code ?? null,
+    auth: input.auth,
+    request: input.request,
+  })
 }
