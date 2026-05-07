@@ -120,6 +120,10 @@ Before promoting MCP changes beyond Preview/dev, verify:
 - Non-operator actors cannot call `operator.*` tools.
 - Cross-project slugs fail through `mcp-workflow-read` or the backing Edge command.
 
+## Automated Contract Coverage
+
+`pnpm mcp:test` now includes registry-wide MCP contract tests. These fail CI when a current tool is missing strict input schema metadata, output schema metadata, annotations, closed-world `openWorldHint: false` posture, remote auth coverage, operator gating, bounded resource behavior, prompt safety, stable error formatting, or output redaction coverage.
+
 ## Session MCP-8 Notes
 
 The tracked smoke scripts now cover tools, resources, and prompts. Live local Edge smoke still depends on local Supabase being started with compatible `.env.local` values and should be rerun whenever MCP auth, SDK registration, or `supabase/functions/mcp/index.ts` changes.

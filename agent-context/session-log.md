@@ -1,3 +1,32 @@
+### session v158: Harden MCP automated contract coverage
+- timestamp: 2026-05-06T20:37:38-0400
+- agent: **Codex (GPT-5)**
+- branch: **codex/mcp-roadmap-kickoff**
+- head: pending MCP-9 commit
+
+#### Objective
+Complete MCP-9 by adding automated guardrails that keep the current MCP tool, resource, prompt, auth, and safety contracts from drifting silently.
+
+#### Actions Taken
+- Added registry-wide MCP contract coverage for all currently registered tools, including strict input/output schema metadata, annotations, closed-world posture, auth requirements, operator gating, and valid-input dispatch.
+- Added automated checks for bounded resources, operator-only resource filtering, safe prompt metadata/content, unknown resource/prompt errors, malformed JSON-RPC tool/resource calls, output redaction, and audit-log redaction.
+- Included the new contract coverage file in the `@fundloop/mcp-server` package test command.
+- Documented MCP-9 automated coverage in the engineering MCP doc and validation runbook.
+- Marked MCP-9 complete in `agent-context/todo-mcp.md` with remaining hosted/stress checks called out as promotion gates.
+
+#### Tests and Validation Notes
+- `pnpm mcp:test` passed: 5 files, 80 tests.
+- `deno cache --config supabase/functions/deno.json supabase/functions/mcp/index.ts` passed.
+- `pnpm dlx node@22.22.1 /opt/homebrew/bin/pnpm check` passed, including lint, 78 test files / 364 tests, typecheck, and production build.
+
+#### Reflections
+- The first run caught a fixture mismatch against the real payment-draft Edge contract, which is exactly the kind of drift this test layer is meant to surface early.
+
+#### Suggested Next Steps
+- Run the full MCP/repo validation set, commit MCP-9, then continue to MCP-10 observability and operations if the branch remains the active MCP roadmap branch.
+
+---
+
 ### session v157: Harden MCP local smoke coverage
 - timestamp: 2026-05-06T20:24:00-0400
 - agent: **Codex (GPT-5)**

@@ -87,6 +87,8 @@ For package tests:
 pnpm mcp:test
 ```
 
+Session MCP-9 expanded `pnpm mcp:test` beyond per-tool behavior checks. The package test suite now includes registry-level contract coverage that fails when a registered tool lacks strict input/output schemas, annotations, closed-world metadata, auth coverage, operator gating, resource safety, prompt safety, stable JSON-RPC error shapes, or output redaction checks.
+
 For interactive inspection when the MCP Inspector is available:
 
 ```bash

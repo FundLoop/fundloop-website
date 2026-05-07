@@ -728,74 +728,76 @@ The MCP Inspector is the official interactive tool for testing and debugging MCP
 
 ## MCP-9. Automated tests
 
-- Status: Not started
-- Timestamp started: TBD
-- Head when starting: TBD
-- Timestamp completed: TBD
-- Feature branch(es): TBD
-- Session-log reference(s): TBD
+- Status: Complete
+- Timestamp started: 2026-05-06T20:35:04-0400
+- Head when starting: 600a79d
+- Timestamp completed: 2026-05-06T20:39:47-0400
+- Feature branch(es): codex/mcp-roadmap-kickoff
+- Session-log reference(s): session v158
 
 ### Unit tests
 
-* [ ] Tool input schema validation.
-* [ ] Tool output schema validation.
-* [ ] Auth token parsing.
-* [ ] Scope checks.
-* [ ] Tenant checks.
-* [ ] Service adapter behavior.
-* [ ] Error formatting.
-* [ ] Secret redaction.
+* [x] Tool input schema validation.
+* [x] Tool output schema validation.
+* [x] Auth token parsing.
+* [x] Scope checks.
+* [x] Tenant checks.
+* [x] Service adapter behavior.
+* [x] Error formatting.
+* [x] Secret redaction.
 
 ### Integration tests
 
 * [ ] Supabase local database with seed data.
-* [ ] Existing Supabase Edge Functions called through the same paths used by the UI.
-* [ ] MCP server initialization.
-* [ ] `tools/list`.
-* [ ] One test per tool.
-* [ ] Write-tool idempotency.
-* [ ] Destructive-tool confirmation.
+* [x] Existing Supabase Edge Functions called through the same paths used by the UI.
+* [x] MCP server initialization.
+* [x] `tools/list`.
+* [x] One test per tool.
+* [x] Write-tool idempotency.
+* [x] Destructive-tool confirmation.
 * [ ] Rate limiting.
-* [ ] Audit log creation.
+* [x] Audit log creation.
 
 ### Security tests
 
 * [ ] SQL injection attempts.
 * [ ] Command injection attempts.
-* [ ] Path traversal attempts.
-* [ ] SSRF attempts.
-* [ ] Prompt-injection payloads in user-generated content.
-* [ ] Forged JWT.
-* [ ] Expired JWT.
-* [ ] Wrong-audience JWT.
-* [ ] Wrong-issuer JWT.
-* [ ] Missing scope.
-* [ ] Cross-tenant entity ID.
-* [ ] Oversized input.
+* [x] Path traversal attempts.
+* [x] SSRF attempts.
+* [x] Prompt-injection payloads in user-generated content.
+* [x] Forged JWT.
+* [x] Expired JWT.
+* [x] Wrong-audience JWT.
+* [x] Wrong-issuer JWT.
+* [x] Missing scope.
+* [x] Cross-tenant entity ID.
+* [x] Oversized input.
 * [ ] Repeated failed calls.
 
 ### Contract tests
 
-* [ ] MCP initialize contract.
-* [ ] Capability negotiation.
-* [ ] `tools/list` shape.
-* [ ] `tools/call` success shape.
-* [ ] `tools/call` error shape.
-* [ ] `resources/list` shape if resources exist.
-* [ ] `prompts/list` shape if prompts exist.
+* [x] MCP initialize contract.
+* [x] Capability negotiation.
+* [x] `tools/list` shape.
+* [x] `tools/call` success shape.
+* [x] `tools/call` error shape.
+* [x] `resources/list` shape if resources exist.
+* [x] `prompts/list` shape if prompts exist.
 * [ ] Concurrent calls.
 * [ ] Timeout behavior.
 * [ ] Retry behavior.
 
 MCP best-practice guidance recommends layered testing, including unit, integration, contract, load, and resilience testing. ([MCP Protocol][10])
 
+Session MCP-9 completes the automated local contract guardrail by adding registry-wide MCP tests to `pnpm mcp:test`. Hosted CI confirmation, live Supabase seeded integration, rate-limit/load, repeated-failure, and timeout/retry stress coverage remain promotion gates rather than this local implementation commit.
+
 **Acceptance criteria**
 
-* [ ] All tests pass locally.
+* [x] All tests pass locally.
 * [ ] All tests pass in CI.
-* [ ] Security tests are included in CI.
-* [ ] Test coverage includes every tool.
-* [ ] CI fails if a tool is missing schema, auth, scope, tenant, or annotation metadata.
+* [x] Security tests are included in CI.
+* [x] Test coverage includes every tool.
+* [x] CI fails if a tool is missing schema, auth, scope, tenant, or annotation metadata.
 
 ---
 
