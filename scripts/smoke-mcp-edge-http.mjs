@@ -29,7 +29,11 @@ async function request(payload) {
 }
 
 async function health() {
-  const response = await fetch(`${baseUrl}/health`)
+  const response = await fetch(`${baseUrl}/health`, {
+    headers: {
+      authorization: `Bearer ${bearerToken}`,
+    },
+  })
   const body = await response.json()
   if (!response.ok || body.ok !== true) {
     throw new Error(`MCP Edge health failed: ${JSON.stringify(body)}`)
@@ -63,6 +67,24 @@ if (!toolNames.includes("fundloop.health")) {
   throw new Error("MCP Edge tools/list did not include fundloop.health.")
 }
 
+const resourcesList = await request({ jsonrpc: "2.0", id: 4, method: "resources/list" })
+if (resourcesList.error || !resourcesList.result) {
+  throw new Error(`MCP Edge resources/list failed: ${JSON.stringify(resourcesList)}`)
+}
+const resourceUris = resourcesList.result?.resources?.map((resource) => resource.uri) ?? []
+if (!resourceUris.includes("fundloop://docs/mcp-overview")) {
+  throw new Error("MCP Edge resources/list did not include fundloop://docs/mcp-overview.")
+}
+
+const promptsList = await request({ jsonrpc: "2.0", id: 5, method: "prompts/list" })
+if (promptsList.error || !promptsList.result) {
+  throw new Error(`MCP Edge prompts/list failed: ${JSON.stringify(promptsList)}`)
+}
+const promptNames = promptsList.result?.prompts?.map((prompt) => prompt.name) ?? []
+if (!promptNames.includes("review-pending-tasks")) {
+  throw new Error("MCP Edge prompts/list did not include review-pending-tasks.")
+}
+
 const toolCall = await request({
   jsonrpc: "2.0",
   id: 3,
@@ -85,7 +107,11 @@ console.log(
       health: healthResult,
       server: initialize.result?.serverInfo,
       toolCount: toolNames.length,
+      resourceCount: resourceUris.length,
+      promptCount: promptNames.length,
       checkedTools: ["fundloop.health"],
+      checkedResources: ["fundloop://docs/mcp-overview"],
+      checkedPrompts: ["review-pending-tasks"],
     },
     null,
     2,

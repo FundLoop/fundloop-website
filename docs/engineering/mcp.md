@@ -225,6 +225,8 @@ Prompts are workflow starters, not hidden policy. They tell the client which saf
 
 Do not add large unbounded resources, raw artifact downloads, raw CUBID payloads, payout destinations, signed URLs, or service-role-derived internals as MCP resources. If future resources need private artifact access, back them with a scoped Edge Function authorization check first.
 
+For local smoke coverage, use `pnpm mcp:smoke` for the stdio harness and `pnpm mcp:edge:smoke` against a served Supabase Edge Function. The tracked smoke scripts now verify tools, resources, and prompts; keep `docs/mcp/validation.md` updated with the latest transcript and any local Edge caveats.
+
 ## Artifact References
 
 Session 43 standardized Supabase Storage artifact references in `lib/storage/artifacts.ts`. MCP tools should return artifact metadata such as bucket, path, kind, hash, visibility, and retention instead of inventing paths or streaming private storage contents directly. Any future raw artifact download tool should be backed by a scoped Edge Function authorization check.

@@ -1,8 +1,40 @@
+### session v157: Harden MCP local smoke coverage
+- timestamp: 2026-05-06T20:24:00-0400
+- agent: **Codex (GPT-5)**
+- branch: **codex/mcp-roadmap-kickoff**
+- head: pending MCP-8 commit
+
+#### Objective
+Complete MCP-8 by making local MCP smoke coverage verify tools, resources, prompts, and the remote Edge endpoint contract.
+
+#### Actions Taken
+- Extended the stdio smoke script to check `resources/list`, `resources/read`, `prompts/list`, and `prompts/get` in addition to initialize, tools/list, and `fundloop.health`.
+- Extended the Edge HTTP smoke script to check resources and prompts over Streamable HTTP.
+- Added `docs/mcp/validation.md` with the current stdio and local Edge smoke transcript, local Supabase serve guidance, curl shape, and required negative-smoke checklist.
+- Documented the local Colima/Docker socket workaround and the `host.docker.internal` function environment convention needed by local Edge runtime.
+- Marked MCP-8 complete in `agent-context/todo-mcp.md`.
+
+#### Tests and Validation Notes
+- `DOCKER_HOST=unix:///var/run/docker.sock supabase start` passed after clearing stale local FundLoop Supabase state with `supabase stop`.
+- `FUNDLOOP_MCP_HTTP_URL=http://127.0.0.1:54321/functions/v1/mcp FUNDLOOP_MCP_BEARER_TOKEN=local-smoke-token pnpm mcp:edge:smoke` passed against locally served `mcp`.
+- `pnpm mcp:smoke` passed for the stdio harness.
+- `deno cache --config supabase/functions/deno.json supabase/functions/mcp/index.ts` passed.
+- `pnpm mcp:test` passed: 4 files, 71 tests.
+- `pnpm dlx node@22.22.1 /opt/homebrew/bin/pnpm check` passed.
+
+#### Reflections
+- Local Edge smoke requires `--no-verify-jwt` for the documented `local-smoke-token`; otherwise the Supabase gateway rejects the token before FundLoop's local-test bypass can run.
+
+#### Suggested Next Steps
+- Continue to MCP-9 automated tests after this smoke hardening checkpoint is validated and committed.
+
+---
+
 ### session v156: Add MCP resources and prompts
 - timestamp: 2026-05-06T20:20:30-0400
 - agent: **Codex (GPT-5)**
 - branch: **codex/mcp-roadmap-kickoff**
-- head: pending MCP-6 commit
+- head: 718850b
 
 #### Objective
 Complete MCP-6 by adding first-class read-only MCP resources and workflow prompts to the stdio and remote Streamable HTTP MCP runtimes.

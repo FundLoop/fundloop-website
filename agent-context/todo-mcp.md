@@ -626,12 +626,12 @@ Only do this if the product should expose interactive UI widgets inside ChatGPT 
 
 ## MCP-8. Local development and smoke testing
 
-- Status: Not started
-- Timestamp started: TBD
-- Head when starting: TBD
-- Timestamp completed: TBD
-- Feature branch(es): TBD
-- Session-log reference(s): TBD
+- Status: Complete
+- Timestamp started: 2026-05-06T20:24:00-0400
+- Head when starting: 718850b
+- Timestamp completed: 2026-05-06T20:30:20-0400
+- Feature branch(es): codex/mcp-roadmap-kickoff
+- Session-log reference(s): session v157
 
 * [ ] Add seed data for MCP tests in Supabase local development.
 * [ ] Start Supabase locally:
