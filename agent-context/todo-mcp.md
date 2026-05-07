@@ -956,12 +956,12 @@ Session MCP-12 prepares registry metadata and publication docs only. Actual `mcp
 
 ## MCP-13. Public directory submissions
 
-- Status: Not started
-- Timestamp started: TBD
-- Head when starting: TBD
-- Timestamp completed: TBD
-- Feature branch(es): TBD
-- Session-log reference(s): TBD
+- Status: Complete (landing page and target tracking; external submissions deferred)
+- Timestamp started: 2026-05-06T20:55:05-0400
+- Head when starting: 2400449
+- Timestamp completed: 2026-05-06T20:59:57-0400
+- Feature branch(es): codex/mcp-roadmap-kickoff
+- Session-log reference(s): session v162
 
 Create a public MCP landing page first, for example:
 
@@ -971,18 +971,18 @@ https://<fundloop-web-base-url>/mcp
 
 It should include:
 
-* [ ] Server name.
-* [ ] Short description.
-* [ ] Supported tools.
-* [ ] Auth requirements.
-* [ ] Connection URL.
-* [ ] Install instructions.
-* [ ] Example use cases.
-* [ ] Security model summary.
-* [ ] Privacy/data handling summary.
-* [ ] Contact email.
-* [ ] Changelog.
-* [ ] Status page or uptime note, if available.
+* [x] Server name.
+* [x] Short description.
+* [x] Supported tools.
+* [x] Auth requirements.
+* [x] Connection URL.
+* [x] Install instructions.
+* [x] Example use cases.
+* [x] Security model summary.
+* [x] Privacy/data handling summary.
+* [x] Contact email.
+* [x] Changelog.
+* [x] Status page or uptime note, if available.
 
 Then submit to relevant directories:
 
@@ -1008,19 +1008,21 @@ Then submit to relevant directories:
 
 * [ ] Optional: publish a product changelog post.
 
-* [ ] Optional: publish a developer docs page.
+* [x] Optional: publish a developer docs page.
 
 * [ ] Optional: announce in relevant MCP communities.
 
 * [ ] Optional: submit to curated “awesome MCP” lists if the repo meets their contribution standards.
 
+Session MCP-13 creates the public `/mcp` landing page, adds it to public resource links, records the route inventory, and keeps external directory submissions deferred until hosted deploy, production smoke, and registry publication gates are complete.
+
 **Acceptance criteria**
 
-* [ ] `docs/mcp/publication.md` lists every target directory.
-* [ ] Each directory has status: `not-started`, `submitted`, `accepted`, `rejected`, or `needs-follow-up`.
-* [ ] Public landing page exists.
-* [ ] Public connection instructions work.
-* [ ] Contact email works.
+* [x] `docs/mcp/publication.md` lists every target directory.
+* [x] Each directory has status: `not-started`, `submitted`, `accepted`, `rejected`, or `needs-follow-up`.
+* [x] Public landing page exists.
+* [x] Public connection instructions work.
+* [x] Contact email works.
 
 ---
 

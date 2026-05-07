@@ -53,3 +53,14 @@ Do not publish from a dirty worktree, from an unreviewed feature branch, or befo
 - Timestamp: TBD
 - Production endpoint: TBD
 - Validation transcript: TBD
+
+## Directory Targets
+
+| Directory | Status | Notes |
+| --- | --- | --- |
+| Official MCP Registry | not-started | Use `server.json` and `mcp-publisher` after hosted deployment and production smoke pass. |
+| PulseMCP | not-started | Expected to ingest official registry entries; verify after registry publication. |
+| Smithery | not-started | Evaluate after deciding whether the authenticated remote server fits current Smithery expectations. |
+| mcpservers.org | not-started | Submit public landing page, connection URL, category, and support contact after Production smoke. |
+| mcp.so | not-started | Submit via their issue flow after the public landing page and registry record are stable. |
+| Docker MCP Catalog | not-started | Deferred because FundLoop MCP is not containerized yet. |

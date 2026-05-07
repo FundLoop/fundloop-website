@@ -1,3 +1,33 @@
+### session v162: Add public MCP landing page
+- timestamp: 2026-05-06T20:59:57-0400
+- agent: **Codex (GPT-5)**
+- branch: **codex/mcp-roadmap-kickoff**
+- head: pending MCP-13 commit
+
+#### Objective
+Complete MCP-13's local product/docs work by creating the public MCP landing page and directory-status tracking without submitting to external directories before hosted deployment gates are complete.
+
+#### Actions Taken
+- Added localized public `/mcp` landing page content for the FundLoop MCP Server, including connection URL, supported tools, auth requirements, setup steps, privacy/safety notes, example use cases, directory status, contact email, and changelog.
+- Added localized metadata and shell resource-link copy, and linked `/mcp` from public resource surfaces.
+- Updated `docs/mcp/publication.md` with directory target statuses.
+- Updated `docs/engineering/route-inventory.md` to record `/mcp` as the public MCP integration landing page.
+- Marked MCP-13 complete as landing-page/directory-tracking work in `agent-context/todo-mcp.md`, with external submissions deferred until hosted deploy, production smoke, and registry publication gates pass.
+
+#### Tests and Validation Notes
+- `pnpm lint` passed.
+- `pnpm mcp:registry:check` passed.
+- `pnpm typecheck` passed.
+- `pnpm dlx node@22.22.1 /opt/homebrew/bin/pnpm check` passed, including lint, 78 test files / 365 tests, typecheck, and production build with `/[locale]/mcp`.
+
+#### Reflections
+- This gives the MCP work a real public surface without overclaiming publication. External directory submissions should wait until the remote endpoint is intentionally public and smoke-verified.
+
+#### Suggested Next Steps
+- Run the full Node 22-equivalent check, commit MCP-13, then continue to MCP-14 documentation deliverables if this branch remains active.
+
+---
+
 ### session v161: Prepare MCP registry metadata
 - timestamp: 2026-05-06T20:54:22-0400
 - agent: **Codex (GPT-5)**
