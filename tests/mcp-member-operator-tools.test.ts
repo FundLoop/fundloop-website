@@ -231,6 +231,9 @@ describe("project-member and operator MCP tools", () => {
       title: "Read Operator Reporting Coverage",
       annotations: { readOnlyHint: true, destructiveHint: false, openWorldHint: false },
       outputSchema: expect.objectContaining({
+        properties: expect.objectContaining({
+          cycleKey: { type: ["string", "null"] },
+        }),
         required: expect.arrayContaining(["ok", "cycleKey", "counts", "missingAudiences", "warningStates", "nextActions"]),
       }),
     })
@@ -608,6 +611,33 @@ describe("project-member and operator MCP tools", () => {
       ],
     })
     expect(result.content[0]?.text).not.toContain("signedUrl")
+  })
+
+  it("allows aggregate reporting coverage to return a null cycle key", async () => {
+    const aggregateReader: OperatorWorkflowReader = {
+      ...operatorReader,
+      async getReportingCoverage(input) {
+        return {
+          cycleKey: input.cycleKey ?? null,
+          publicReports: 1,
+          userReports: 1,
+          founderReports: 1,
+          operatorReports: 1,
+          artifactCount: 1,
+        }
+      },
+    }
+
+    const registry = createRegistry()
+    const tool = registry.list().find((item) => item.name === "operator.reporting.coverage")
+    const result = await registry.call("operator.reporting.coverage", {}, { auth, edge, projectMemberReader, operatorReader: aggregateReader })
+
+    expect(tool?.outputSchema?.properties?.cycleKey).toEqual({ type: ["string", "null"] })
+    expect(result.structuredContent).toMatchObject({
+      ok: true,
+      cycleKey: null,
+      counts: { publicReports: 1, userReports: 1, founderReports: 1, operatorReports: 1, artifactCount: 1 },
+    })
   })
 
   it("returns safe reporting coverage errors when the read gateway fails", async () => {

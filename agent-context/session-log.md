@@ -1,8 +1,35 @@
+### session v165: Address MCP coverage schema review
+- timestamp: 2026-05-06T21:24:12-0400
+- agent: **Codex (GPT-5)**
+- branch: **codex/mcp-roadmap-kickoff**
+- head: pending MCP review-fix commit
+
+#### Objective
+Address the Codex PR review finding that aggregate operator reporting coverage can return `cycleKey: null` while the MCP output schema advertised a required string.
+
+#### Actions Taken
+- Updated the MCP protocol schema type to support JSON Schema nullable type arrays.
+- Updated the SDK adapter to convert nullable schema types into Zod unions for remote MCP registration.
+- Changed `operator.reporting.coverage` output schema so `cycleKey` accepts either a string or `null`.
+- Added member/operator MCP test coverage for aggregate reporting coverage returning `cycleKey: null`.
+
+#### Tests and Validation Notes
+- `pnpm --filter @fundloop/mcp-server test` passed: 5 files, 82 tests.
+- `pnpm dlx node@22.22.1 /opt/homebrew/bin/pnpm check` passed, including lint, 78 test files / 366 tests, typecheck, and production build.
+
+#### Reflections
+- This was a good protocol-contract catch: aggregate views should represent the absence of a selected cycle explicitly rather than forcing a fake cycle string.
+
+#### Suggested Next Steps
+- Commit and push the review fix, reply to the Codex thread, resolve it, and re-check CI.
+
+---
+
 ### session v164: Record MCP readiness state
 - timestamp: 2026-05-06T21:10:42-0400
 - agent: **Codex (GPT-5)**
 - branch: **codex/mcp-roadmap-kickoff**
-- head: pending MCP-15 commit
+- head: 0fc2002
 
 #### Objective
 Complete MCP-15 as a truthful final readiness pass that distinguishes implemented local capability from still-pending hosted production launch gates.

@@ -272,7 +272,7 @@ export function registerProjectMemberAndOperatorMcpTools(registry: McpToolRegist
         properties: {
           ok: { type: "boolean" },
           projectSlug: { type: "string" },
-          cycleKey: { type: "string" },
+          cycleKey: { type: ["string", "null"] },
           reports: { type: "object" },
           attribution: { type: "object" },
           nextActions: { type: "array" },
@@ -489,7 +489,7 @@ export function registerProjectMemberAndOperatorMcpTools(registry: McpToolRegist
         type: "object",
         properties: {
           ok: { type: "boolean" },
-          cycleKey: { type: "string" },
+          cycleKey: { type: ["string", "null"] },
           counts: { type: "object" },
           missingAudiences: { type: "array" },
           warningStates: { type: "array" },

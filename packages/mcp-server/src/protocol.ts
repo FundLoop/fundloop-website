@@ -4,7 +4,7 @@ export type McpToolContent = {
 }
 
 export type McpToolInputProperty = {
-  type?: "string" | "number" | "boolean" | "object" | "array"
+  type?: "string" | "number" | "boolean" | "object" | "array" | "null" | Array<"string" | "number" | "boolean" | "object" | "array" | "null">
   description?: string
   enum?: string[]
   format?: "slug" | "cycle_key" | "tx_hash" | "wallet_address" | "attempt_id"

@@ -43,8 +43,10 @@ type McpObjectSchema = {
   additionalProperties?: boolean
 }
 
-function zodForProperty(property: McpToolInputProperty) {
-  if (property.type === "string") {
+type McpJsonSchemaPropertyType = "string" | "number" | "boolean" | "object" | "array" | "null"
+
+function zodForPropertyType(property: McpToolInputProperty, type: McpJsonSchemaPropertyType) {
+  if (type === "string") {
     let schema = z.string()
     if (property.minLength !== undefined) schema = schema.min(property.minLength)
     if (property.maxLength !== undefined) schema = schema.max(property.maxLength)
@@ -52,17 +54,27 @@ function zodForProperty(property: McpToolInputProperty) {
     if (property.enum) schema = schema.refine((value) => property.enum?.includes(value), "Unsupported value.")
     return schema
   }
-  if (property.type === "number") {
+  if (type === "number") {
     let schema = z.number()
     if (property.integer) schema = schema.int()
     if (property.minimum !== undefined) schema = schema.min(property.minimum)
     if (property.maximum !== undefined) schema = schema.max(property.maximum)
     return schema
   }
-  if (property.type === "boolean") return z.boolean()
-  if (property.type === "object") return z.record(z.string(), z.unknown())
-  if (property.type === "array") return z.array(z.unknown())
+  if (type === "boolean") return z.boolean()
+  if (type === "object") return z.record(z.string(), z.unknown())
+  if (type === "array") return z.array(z.unknown())
+  if (type === "null") return z.null()
   return z.unknown()
+}
+
+function zodForProperty(property: McpToolInputProperty) {
+  const propertyTypes = Array.isArray(property.type) ? property.type : [property.type]
+  const schemas = propertyTypes.filter((type): type is McpJsonSchemaPropertyType => Boolean(type)).map((type) => zodForPropertyType(property, type))
+  if (schemas.length === 0) return z.unknown()
+  if (schemas.length === 1) return schemas[0] ?? z.unknown()
+  const [first, second, ...rest] = schemas
+  return z.union([first, second, ...rest])
 }
 
 export function mcpInputSchemaToZod(definition: McpToolDefinition) {
