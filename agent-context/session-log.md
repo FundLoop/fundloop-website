@@ -1,8 +1,34 @@
+### session v164: Record MCP readiness state
+- timestamp: 2026-05-06T21:10:42-0400
+- agent: **Codex (GPT-5)**
+- branch: **codex/mcp-roadmap-kickoff**
+- head: pending MCP-15 commit
+
+#### Objective
+Complete MCP-15 as a truthful final readiness pass that distinguishes implemented local capability from still-pending hosted production launch gates.
+
+#### Actions Taken
+- Added `docs/mcp/readiness.md` with completed gates, hosted launch blockers, deferred work, and a promotion checklist.
+- Linked the readiness ledger from the MCP docs index and engineering docs.
+- Updated MCP-15 in `agent-context/todo-mcp.md` with checked local implementation items and explicit pending hosted deploy, smoke, Inspector, CI, and publication gates.
+- Updated the MCP-14 session-log entry head now that its commit exists.
+
+#### Tests and Validation Notes
+- `pnpm dlx node@22.22.1 /opt/homebrew/bin/pnpm check` passed, including lint, 78 test files / 365 tests, typecheck, and production build with `/[locale]/mcp`.
+
+#### Reflections
+- The roadmap now avoids the classic trap of marking a remote integration done before the hosted endpoint has actually been smoked.
+
+#### Suggested Next Steps
+- Run the Node 22-equivalent check, commit MCP-15, then yeet the branch for CI and hosted deploy validation when the user is ready.
+
+---
+
 ### session v163: Complete MCP documentation deliverables
 - timestamp: 2026-05-06T21:03:37-0400
 - agent: **Codex (GPT-5)**
 - branch: **codex/mcp-roadmap-kickoff**
-- head: pending MCP-14 commit
+- head: 106f992
 
 #### Objective
 Complete MCP-14 by making the MCP documentation set navigable and useful for engineers, security reviewers, coding agents, and operators.

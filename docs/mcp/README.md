@@ -16,6 +16,7 @@ Current runtimes:
 - [Security Model](./security-model.md): data classification, resource/prompt safety, abuse controls, audit expectations, and threat model.
 - [Testing](./testing.md): local tests, smoke scripts, Edge smoke, registry metadata check, and promotion gates.
 - [Validation](./validation.md): latest local smoke transcript and negative-smoke checklist.
+- [Readiness Ledger](./readiness.md): implementation-ready versus production-launched gate status.
 - [Deployment](./deployment.md): Preview/Production secrets, deploy workflow, hosted smoke, and rollback.
 - [Publication](./publication.md): `server.json`, registry/directory status, and publication gates.
 - [Runbook](./runbook.md): operational triage, logs/metrics, disabling tools, secret rotation, access revocation, and escalation.

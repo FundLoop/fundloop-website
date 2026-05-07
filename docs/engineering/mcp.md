@@ -15,6 +15,7 @@ The MCP-specific roadmap and design artifacts now live in:
 - `docs/mcp/publication.md` for registry metadata, publication gates, and pending publication records.
 - `docs/mcp/security-model.md` for auth, authorization, data-safety, and threat-model rules.
 - `docs/mcp/testing.md` for local tests, smoke scripts, Edge smoke, and promotion checks.
+- `docs/mcp/readiness.md` for implementation-ready versus production-launched gate status.
 - `docs/mcp/runbook.md` for MCP operations, disabling tools, log inspection, secret rotation, and rollback.
 - `docs/mcp/changelog.md` for MCP capability milestones.
 

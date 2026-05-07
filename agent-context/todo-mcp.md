@@ -1062,39 +1062,41 @@ Create or update:
 
 ## MCP-15. Final “done” checklist
 
-- Status: Not started
-- Timestamp started: TBD
-- Head when starting: TBD
-- Timestamp completed: TBD
-- Feature branch(es): TBD
-- Session-log reference(s): TBD
+- Status: Complete (readiness ledger created; production launch gates remain pending)
+- Timestamp started: 2026-05-06T21:06:58-0400
+- Head when starting: 106f992
+- Timestamp completed: 2026-05-06T21:10:42-0400
+- Feature branch(es): codex/mcp-roadmap-kickoff
+- Session-log reference(s): session v164
 
 The MCP capability is done only when all of the following are true:
 
-* [ ] MCP server runs locally.
-* [ ] MCP server runs in production.
-* [ ] Streamable HTTP endpoint works.
-* [ ] Auth is enforced in production.
-* [ ] Tenant isolation is enforced.
-* [ ] Every tool has strict schemas.
-* [ ] Every tool has correct annotations.
-* [ ] Every tool has tests.
-* [ ] Every write tool has idempotency or retry protection.
-* [ ] Every destructive tool requires confirmation.
-* [ ] No tool bypasses existing product authorization.
-* [ ] No secrets are exposed in results, logs, metadata, or widgets.
-* [ ] Local smoke tests pass.
-* [ ] Production smoke tests pass.
-* [ ] MCP Inspector validation passes.
-* [ ] CI tests pass.
-* [ ] Security tests pass.
-* [ ] Engineering docs are complete.
-* [ ] Runbook is complete.
-* [ ] Public landing page is live.
-* [ ] Official registry submission is complete or tracked.
-* [ ] Public directory submissions are complete or tracked.
-* [ ] Product changelog/docs mention the MCP server.
-* [ ] Owner, contact, version, and support process are documented.
+* [x] MCP server runs locally.
+* [ ] MCP server runs in production. Pending hosted deploy evidence.
+* [x] Streamable HTTP endpoint works locally.
+* [ ] Auth is enforced in production. Pending hosted smoke with valid and invalid bearer tokens.
+* [ ] Tenant isolation is enforced in hosted smoke. Architecture and tests exist; hosted cross-tenant smoke remains pending.
+* [x] Every current tool has strict schemas.
+* [x] Every current tool has correct annotations.
+* [x] Every current tool has tests.
+* [x] Every exposed write-capable bridge has allowlist/idempotency guardrails; destructive/operator MCP mutations remain deferred.
+* [x] Every destructive tool requires confirmation or is not exposed.
+* [x] No tool bypasses existing product authorization by design; backing Edge/read gateways remain the authorization boundary.
+* [x] No secrets are exposed in results, logs, metadata, or widgets by covered redaction tests.
+* [x] Local smoke tests pass.
+* [ ] Production smoke tests pass. Pending deploy.
+* [ ] MCP Inspector validation passes. Pending hosted endpoint.
+* [ ] CI tests pass. Pending PR checks.
+* [x] Security tests pass locally through MCP contract coverage.
+* [x] Engineering docs are complete.
+* [x] Runbook is complete.
+* [ ] Public landing page is live. Implemented locally; pending web deploy.
+* [x] Official registry submission is tracked.
+* [x] Public directory submissions are tracked.
+* [x] Product docs mention the MCP server.
+* [x] Owner, contact, version, and support process are documented.
+
+Session MCP-15 adds `docs/mcp/readiness.md` as the truthful readiness ledger. The local implementation is PR-ready, but the public MCP capability must not be called production-done until hosted deploy, production smoke, MCP Inspector, CI, and publication gates are complete.
 
 ---
 

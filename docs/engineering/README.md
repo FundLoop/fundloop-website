@@ -29,6 +29,7 @@ Current high-signal docs:
 - [MCP Architecture](../mcp/architecture.md)
 - [MCP Security Model](../mcp/security-model.md)
 - [MCP Testing](../mcp/testing.md)
+- [MCP Readiness Ledger](../mcp/readiness.md)
 - [Navigation and Shell Architecture](./navigation-shell.md)
 - [Operations Runbook](./operations-runbook.md)
 - [Reporting Publication](./reporting.md)
