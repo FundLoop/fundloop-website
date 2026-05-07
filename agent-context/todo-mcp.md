@@ -502,12 +502,12 @@ Design and implement this candidate only after the founder attribution/contribut
 
 ### MCP-5.15. Candidate `founder.project.payment_drafts.create`
 
-- Status: Not started
-- Timestamp started: TBD
-- Head when starting: TBD
-- Timestamp completed: TBD
-- Feature branch(es): TBD
-- Session-log reference(s): TBD
+- Status: Complete
+- Timestamp started: 2026-05-06T19:58:24-0400
+- Head when starting: cf00eca
+- Timestamp completed: 2026-05-06T20:00:56-0400
+- Feature branch(es): codex/mcp-roadmap-kickoff
+- Session-log reference(s): session v153
 
 Design and implement this candidate only if founder agents should draft monthly payment obligations through MCP. It should wrap the existing `project-payment-drafts-create` command, require project-admin access, strict project/cycle/payment input validation, and idempotent attempt handling. Output should summarize created draft rows and warnings, not raw payment rows. Add write annotations, tests for validation failure, permission failure, backend failure, success, and retry behavior. Keep actual payment confirmation, reconciliation, and monthly-cycle lock flows in their existing dedicated operator/founder tools.
 

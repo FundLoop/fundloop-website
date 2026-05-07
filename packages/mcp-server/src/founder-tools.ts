@@ -3,7 +3,11 @@ import {
   PROJECT_CRYPTO_ROUTE_UPDATE_FUNCTION,
   PROJECT_ONCHAIN_PAYMENT_SUBMISSION_RECORD_FUNCTION,
 } from "../../../lib/edge-functions/project-payment-operations-contract.ts"
-import type { EdgeCommandResult } from "../../../lib/edge-functions/result.ts"
+import {
+  PROJECT_PAYMENT_DRAFTS_CREATE_FUNCTION,
+  validateProjectPaymentDraftsCreateInput,
+} from "../../../lib/edge-functions/project-payment-drafts-create-contract.ts"
+import { edgeCommandFailure, type EdgeCommandResult } from "../../../lib/edge-functions/result.ts"
 import { errorResult, jsonTextResult } from "./protocol.ts"
 import type { McpToolHandlerContext, McpToolRegistry } from "./tools.ts"
 import type { FounderWorkflowReader } from "./founder-reader.ts"
@@ -53,6 +57,47 @@ function edgeCommandFailureToolResult(result: Extract<EdgeCommandResult<unknown>
     ...errorResult(result.error.message),
     structuredContent: result,
     errorCode: result.error.code,
+  }
+}
+
+async function paymentDraftCreateToolResult(context: McpToolHandlerContext, input: unknown) {
+  if (!isRecord(input) || typeof input.attemptId !== "string" || !input.attemptId.trim()) {
+    return edgeCommandFailureToolResult(edgeCommandFailure("invalid_payload", "attemptId is required for MCP payment draft creation."))
+  }
+
+  const validation = validateProjectPaymentDraftsCreateInput(input)
+  if (!validation.ok) return edgeCommandFailureToolResult(validation)
+
+  const result = await context.edge.invoke<unknown, unknown>(PROJECT_PAYMENT_DRAFTS_CREATE_FUNCTION, validation.data, context.auth)
+  if (!result.ok) return edgeCommandFailureToolResult(result)
+
+  return jsonTextResult({
+    ok: true,
+    data: summarizePaymentDraftCreateOutput(result.data),
+  })
+}
+
+function summarizePaymentDraftCreateOutput(data: unknown) {
+  const rows = Array.isArray(data) ? data : []
+  const totalPaymentAmount = rows.reduce((sum, row) => {
+    return sum + (isRecord(row) && typeof row.payment_amount === "number" ? row.payment_amount : 0)
+  }, 0)
+  const periods = rows.map((row) => {
+    if (!isRecord(row)) return null
+
+    return {
+      id: typeof row.id === "number" ? row.id : null,
+      periodStart: typeof row.period_start === "string" ? row.period_start : null,
+      periodEnd: typeof row.period_end === "string" ? row.period_end : null,
+      status: typeof row.status_code === "string" ? row.status_code : null,
+      paymentAmount: typeof row.payment_amount === "number" ? row.payment_amount : null,
+    }
+  }).filter(Boolean)
+
+  return {
+    createdCount: rows.length,
+    totalPaymentAmount: Number(totalPaymentAmount.toFixed(2)),
+    periods,
   }
 }
 
@@ -310,6 +355,42 @@ export function registerFounderMcpTools(registry: McpToolRegistry) {
     },
     async handler(input, context) {
       return edgeCommandToolResult(context, PROJECT_ONCHAIN_PAYMENT_SUBMISSION_RECORD_FUNCTION, input)
+    },
+  })
+
+  registry.register({
+    definition: {
+      name: "founder.project.payment_drafts.create",
+      title: "Create Founder Payment Drafts",
+      description: "Create monthly project payment draft rows through the canonical Edge Function command.",
+      annotations: {
+        readOnlyHint: false,
+        destructiveHint: false,
+        openWorldHint: false,
+      },
+      inputSchema: {
+        type: "object",
+        properties: {
+          projectSlug: { type: "string", format: "slug", minLength: 1, maxLength: 80 },
+          attemptId: { type: "string", format: "attempt_id" },
+          payments: { type: "array", maxDepth: 4 },
+        },
+        required: ["projectSlug", "attemptId", "payments"],
+        additionalProperties: false,
+      },
+      outputSchema: {
+        type: "object",
+        properties: {
+          ok: { type: "boolean" },
+          data: { type: "object" },
+          error: { type: "object" },
+        },
+        required: ["ok"],
+        additionalProperties: false,
+      },
+    },
+    async handler(input, context) {
+      return paymentDraftCreateToolResult(context, input)
     },
   })
 }

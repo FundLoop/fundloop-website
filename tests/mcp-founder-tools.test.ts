@@ -5,6 +5,7 @@ import {
   PROJECT_CRYPTO_ROUTE_UPDATE_FUNCTION,
   PROJECT_ONCHAIN_PAYMENT_SUBMISSION_RECORD_FUNCTION,
 } from "@/lib/edge-functions/project-payment-operations-contract"
+import { PROJECT_PAYMENT_DRAFTS_CREATE_FUNCTION } from "@/lib/edge-functions/project-payment-drafts-create-contract"
 import { registerFounderMcpTools } from "@/packages/mcp-server/src/founder-tools"
 import { createBaseMcpToolRegistry } from "@/packages/mcp-server/src/tools"
 import type { EdgeCommandClient } from "@/packages/mcp-server/src/edge-client"
@@ -51,10 +52,36 @@ const validReceiptInput = {
   attemptId: "mcp-receipt-1",
 }
 
+const validPaymentDraftInput = {
+  projectSlug: "civic-mesh",
+  attemptId: "mcp-draft-1",
+  payments: [
+    {
+      period_start: "2026-04-01",
+      period_end: "2026-04-30",
+      revenue: 1000,
+      payment_amount: 50,
+      payment_percentage: 5,
+      payment_method_id: 10,
+    },
+  ],
+}
+
 function createEdgeClient(calls: Array<{ functionName: string; input: unknown }>): EdgeCommandClient {
   return {
     async invoke<TInput, TOutput>(functionName: string, input: TInput): Promise<EdgeCommandResult<TOutput>> {
       calls.push({ functionName, input })
+      if (functionName === PROJECT_PAYMENT_DRAFTS_CREATE_FUNCTION) {
+        return edgeCommandSuccess([
+          {
+            id: 31,
+            period_start: "2026-04-01",
+            period_end: "2026-04-30",
+            payment_amount: 50,
+            status_code: "draft",
+          },
+        ]) as EdgeCommandResult<TOutput>
+      }
       return edgeCommandSuccess({ accepted: true }) as EdgeCommandResult<TOutput>
     },
   }
@@ -85,6 +112,7 @@ describe("founder MCP tools", () => {
         "founder.project.crypto_route.create",
         "founder.project.crypto_route.update",
         "founder.project.onchain_receipt.record",
+        "founder.project.payment_drafts.create",
       ]),
     )
     expect(tools.find((tool) => tool.name === "founder.projects.list")).toMatchObject({
@@ -136,6 +164,16 @@ describe("founder MCP tools", () => {
           "periodId",
           "receipt",
         ]),
+      }),
+      outputSchema: expect.objectContaining({
+        required: expect.arrayContaining(["ok"]),
+      }),
+    })
+    expect(tools.find((tool) => tool.name === "founder.project.payment_drafts.create")).toMatchObject({
+      title: "Create Founder Payment Drafts",
+      annotations: { readOnlyHint: false, destructiveHint: false, openWorldHint: false },
+      inputSchema: expect.objectContaining({
+        required: expect.arrayContaining(["projectSlug", "attemptId", "payments"]),
       }),
       outputSchema: expect.objectContaining({
         required: expect.arrayContaining(["ok"]),
@@ -205,15 +243,29 @@ describe("founder MCP tools", () => {
       validReceiptInput,
       context,
     )
+    const paymentDraftResult = await registry.call(
+      "founder.project.payment_drafts.create",
+      validPaymentDraftInput,
+      context,
+    )
 
     expect(calls.map((call) => call.functionName)).toEqual([
       PROJECT_CRYPTO_ROUTE_CREATE_FUNCTION,
       PROJECT_CRYPTO_ROUTE_UPDATE_FUNCTION,
       PROJECT_ONCHAIN_PAYMENT_SUBMISSION_RECORD_FUNCTION,
+      PROJECT_PAYMENT_DRAFTS_CREATE_FUNCTION,
     ])
     expect(createResult.structuredContent).toMatchObject({ ok: true, data: { accepted: true } })
     expect(updateResult.structuredContent).toMatchObject({ ok: true, data: { accepted: true } })
     expect(receiptResult.structuredContent).toMatchObject({ ok: true, data: { accepted: true } })
+    expect(paymentDraftResult.structuredContent).toMatchObject({
+      ok: true,
+      data: {
+        createdCount: 1,
+        totalPaymentAmount: 50,
+        periods: [{ id: 31, periodStart: "2026-04-01", periodEnd: "2026-04-30", status: "draft", paymentAmount: 50 }],
+      },
+    })
   })
 
   it("rejects malformed crypto route create input before dispatch", async () => {
@@ -364,6 +416,52 @@ describe("founder MCP tools", () => {
       structuredContent: { ok: false, error: { code: "amount_mismatch" } },
     })
     expect(result.content[0]?.text).toContain("does not match")
+  })
+
+  it("rejects malformed payment draft input before dispatch", async () => {
+    const calls: Array<{ functionName: string; input: unknown }> = []
+    const registry = createRegistry()
+    const context = { auth, edge: createEdgeClient(calls), founderReader }
+
+    const missingAttempt = await registry.call(
+      "founder.project.payment_drafts.create",
+      { ...validPaymentDraftInput, attemptId: undefined },
+      context,
+    )
+    const invalidPayment = await registry.call(
+      "founder.project.payment_drafts.create",
+      {
+        ...validPaymentDraftInput,
+        payments: [{ ...validPaymentDraftInput.payments[0], revenue: 0 }],
+      },
+      context,
+    )
+
+    expect(missingAttempt).toMatchObject({ isError: true, errorCode: "invalid_payload" })
+    expect(invalidPayment).toMatchObject({ isError: true, errorCode: "payment_validation_failed" })
+    expect(calls).toHaveLength(0)
+  })
+
+  it("returns stable errors when payment draft creation is rejected by the Edge command", async () => {
+    const calls: Array<{ functionName: string; input: unknown }> = []
+    const registry = createRegistry()
+    const result = await registry.call(
+      "founder.project.payment_drafts.create",
+      validPaymentDraftInput,
+      {
+        auth,
+        edge: createFailingEdgeClient(calls, "forbidden", "You cannot manage payment drafts for this project."),
+        founderReader,
+      },
+    )
+
+    expect(calls).toHaveLength(1)
+    expect(result).toMatchObject({
+      isError: true,
+      errorCode: "forbidden",
+      structuredContent: { ok: false, error: { code: "forbidden" } },
+    })
+    expect(result.content[0]?.text).toContain("cannot manage")
   })
 
   it("returns a protocol-visible error when founder reads are not configured", async () => {

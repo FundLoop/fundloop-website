@@ -1,3 +1,37 @@
+### session v153: Finalize founder payment-draft MCP tool
+- timestamp: 2026-05-06T19:58:24-0400
+- agent: **Codex (GPT-5)**
+- branch: **codex/mcp-roadmap-kickoff**
+- head: pending MCP-5.15 commit
+
+#### Objective
+Complete MCP-5.15 by adding a guarded `founder.project.payment_drafts.create` MCP tool backed by the existing typed payment-draft Edge command.
+
+#### Actions Taken
+- Skipped MCP-5.14 for now because no dedicated founder contribution-submission Edge command is ready for MCP exposure.
+- Added `founder.project.payment_drafts.create` with title, write annotations, strict input/output metadata, and required MCP `attemptId`.
+- Validated payment draft payloads before Edge dispatch using the existing `project-payment-drafts-create` contract.
+- Returned compact payment-draft summaries with created count, total amount, and period summaries instead of raw payment rows.
+- Added tests for metadata, successful dispatch, validation failure before dispatch, and stable backend failure propagation.
+- Marked MCP-5.15 started in `agent-context/todo-mcp.md` and refreshed the MCP engineering doc.
+
+#### Tests and Validation Notes
+- `pnpm mcp:test` passed: 4 files, 64 tests.
+- `deno cache --config supabase/functions/deno.json supabase/functions/mcp/index.ts` passed.
+- `pnpm lint` passed.
+- `pnpm typecheck` passed.
+- `pnpm test` passed: 76 files, 345 tests.
+- `pnpm build` passed.
+- `pnpm dlx node@22.22.1 /opt/homebrew/bin/pnpm check` passed.
+
+#### Reflections
+- This candidate has a clear source Edge command and preserves the product permission model, so it is safe to promote before the broader founder contribution-submission candidate.
+
+#### Suggested Next Steps
+- Continue only with candidate tools that already have safe source boundaries, or prepare this MCP tranche for review.
+
+---
+
 ### session v152: Finalize operator reporting-coverage MCP tool
 - timestamp: 2026-05-06T19:52:17-0400
 - agent: **Codex (GPT-5)**
