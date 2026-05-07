@@ -57,6 +57,14 @@ MCP responses may include public and authorized workflow data. MCP responses mus
 - Text output is treated as untrusted data and redacted for obvious bearer tokens, JWT-shaped values, secret assignments, script tags, and common prompt-injection phrases before being returned to MCP clients.
 - Private artifacts should be represented by metadata and scoped retrieval references, not streamed through generic MCP tools.
 
+## Resource And Prompt Safety
+
+- MCP resources are read-only JSON snapshots and must reuse existing authenticated workflow readers or scoped Edge read gateways.
+- Resource lists should not expose operator-only resources to non-operator actors.
+- Resource reads must not include raw CUBID payloads, payout destinations, private artifact bodies, signed URLs, service-role-derived internals, bearer tokens, or provider secrets.
+- Prompts are workflow starters only. They may recommend safe tools to call, but must not smuggle hidden instructions, override client/user intent, or imply facts that were not returned by MCP tools or supplied by the user.
+- Any future resource that streams private artifacts must use a dedicated scoped authorization path rather than a broad generic resource URI.
+
 ## Rate Limiting And Abuse Controls
 
 FundLoop does not yet have a complete distributed MCP-specific rate limiter. Until it does:

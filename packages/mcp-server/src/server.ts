@@ -12,6 +12,8 @@ import {
   type UserWorkflowReader,
 } from "./member-operator-readers.ts"
 import { registerProjectMemberAndOperatorMcpTools } from "./member-operator-tools.ts"
+import { createBaseMcpPromptRegistry, type McpPromptRegistry } from "./prompts.ts"
+import { createBaseMcpResourceRegistry, resourceReadErrorToRpc, type McpResourceRegistry } from "./resources.ts"
 import { createBaseMcpToolRegistry, type McpToolRegistry } from "./tools.ts"
 import { isJsonRpcRequest, type JsonRpcResponse } from "./protocol.ts"
 
@@ -23,6 +25,8 @@ export type McpServerContext = {
   projectMemberReader?: ProjectMemberWorkflowReader
   operatorReader?: OperatorWorkflowReader
   registry: McpToolRegistry
+  resourceRegistry?: McpResourceRegistry
+  promptRegistry?: McpPromptRegistry
 }
 
 function response(id: string | number | null, result: unknown): JsonRpcResponse {
@@ -51,12 +55,61 @@ export async function handleMcpRequest(
       },
       capabilities: {
         tools: {},
+        resources: {},
+        prompts: {},
       },
     })
   }
 
   if (input.method === "tools/list") {
     return response(id, { tools: context.registry.list() })
+  }
+
+  if (input.method === "resources/list") {
+    return response(id, { resources: getResourceRegistry(context).list(context.auth) })
+  }
+
+  if (input.method === "resources/read") {
+    const params = input.params as { uri?: unknown } | undefined
+    if (!params || typeof params.uri !== "string") {
+      return errorResponse(id, -32602, "resources/read requires a resource uri.")
+    }
+
+    const result = await getResourceRegistry(context).read(params.uri, {
+      auth: context.auth,
+      edge: context.edge,
+      founderReader: context.founderReader,
+      userReader: context.userReader,
+      projectMemberReader: context.projectMemberReader,
+      operatorReader: context.operatorReader,
+    })
+    if ("isError" in result && result.isError) {
+      return response(id, resourceReadErrorToRpc(result))
+    }
+    return response(id, result)
+  }
+
+  if (input.method === "prompts/list") {
+    return response(id, { prompts: getPromptRegistry(context).list() })
+  }
+
+  if (input.method === "prompts/get") {
+    const params = input.params as { name?: unknown; arguments?: unknown } | undefined
+    if (!params || typeof params.name !== "string") {
+      return errorResponse(id, -32602, "prompts/get requires a prompt name.")
+    }
+
+    const args = params.arguments && typeof params.arguments === "object" && !Array.isArray(params.arguments)
+      ? (params.arguments as Record<string, unknown>)
+      : {}
+    const result = await getPromptRegistry(context).get(params.name, args)
+    if ("isError" in result && result.isError) {
+      return response(id, {
+        ...resourceReadErrorToRpc(result),
+        errorCode: result.errorCode,
+      })
+    }
+    return response(id, result)
   }
 
   if (input.method === "tools/call") {
@@ -83,6 +136,14 @@ export async function handleMcpRequest(
   return errorResponse(id, -32601, `Unsupported method: ${input.method}`)
 }
 
+function getResourceRegistry(context: McpServerContext) {
+  return context.resourceRegistry ?? createBaseMcpResourceRegistry()
+}
+
+function getPromptRegistry(context: McpServerContext) {
+  return context.promptRegistry ?? createBaseMcpPromptRegistry()
+}
+
 function createDefaultServerContext(): McpServerContext {
   const registry = createBaseMcpToolRegistry({
     allowedFunctionNames: (process.env.FUNDLOOP_MCP_ALLOWED_EDGE_FUNCTIONS ?? "")
@@ -92,6 +153,8 @@ function createDefaultServerContext(): McpServerContext {
   })
   registerFounderMcpTools(registry)
   registerProjectMemberAndOperatorMcpTools(registry)
+  const resourceRegistry = createBaseMcpResourceRegistry()
+  const promptRegistry = createBaseMcpPromptRegistry()
 
   const edge = createSupabaseEdgeCommandClient()
   return {
@@ -102,6 +165,8 @@ function createDefaultServerContext(): McpServerContext {
     projectMemberReader: createEdgeProjectMemberWorkflowReader(edge),
     operatorReader: createEdgeOperatorWorkflowReader(edge),
     registry,
+    resourceRegistry,
+    promptRegistry,
   }
 }
 

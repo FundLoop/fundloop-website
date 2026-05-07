@@ -27,6 +27,8 @@ Session MCP-2 added `supabase/functions/mcp/index.ts` as the first remote Stream
 
 Session MCP-3 hardened the remote endpoint so Streamable HTTP tool traffic must resolve to a real Supabase user through `auth.getUser()` before MCP tool registration or dispatch. The MCP registry now also performs a front-door authorization check for operator-prefixed tools and operator/destructive generic Edge command names.
 
+Session MCP-6 added first-class MCP resources and prompts to the same stdio and remote Streamable HTTP runtimes. Resources are read-only JSON snapshots backed by existing workflow readers, and prompts are workflow starters that point clients at safe read tools rather than embedding hidden instructions.
+
 ## Tool Handler Rule
 
 Tool handlers should be thin orchestration layers:
@@ -62,6 +64,8 @@ FundLoop tenancy is role and entity scoped rather than a separate tenant table.
 - Founder tools are scoped to projects the actor manages through existing project/organization membership rules.
 - Project-member tools are scoped to projects the actor belongs to.
 - Operator tools are global only after internal-operator authorization.
+
+Resources follow the same model: user resources are scoped to the authenticated user, founder resources are scoped to managed projects, and operator resources are hidden from `resources/list` and blocked on read unless the actor is an internal operator.
 
 ## Deployment Environments
 

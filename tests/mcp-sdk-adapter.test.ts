@@ -1,7 +1,14 @@
 import { describe, expect, it, vi } from "vitest"
 import { createRemoteMcpAuthContext, createValidatedRemoteMcpAuthContext } from "@/packages/mcp-server/src/http-auth"
+import { createBaseMcpPromptRegistry } from "@/packages/mcp-server/src/prompts"
+import { createBaseMcpResourceRegistry } from "@/packages/mcp-server/src/resources"
 import { createBaseMcpToolRegistry } from "@/packages/mcp-server/src/tools"
-import { mcpInputSchemaToZod, registerRegistryToolsWithSdkServer } from "@/packages/mcp-server/src/sdk-adapter"
+import {
+  mcpInputSchemaToZod,
+  registerRegistryPromptsWithSdkServer,
+  registerRegistryResourcesWithSdkServer,
+  registerRegistryToolsWithSdkServer,
+} from "@/packages/mcp-server/src/sdk-adapter"
 import { edgeCommandSuccess, type EdgeCommandResult } from "@/lib/edge-functions/result"
 import type { EdgeCommandClient } from "@/packages/mcp-server/src/edge-client"
 
@@ -85,6 +92,44 @@ describe("MCP SDK adapter", () => {
       }),
       expect.any(Function),
     )
+  })
+
+  it("registers resources and prompts on an SDK-like server", async () => {
+    const registerResource = vi.fn()
+    const registerPrompt = vi.fn()
+    const server = { registerResource, registerPrompt, registerTool: vi.fn() }
+
+    registerRegistryResourcesWithSdkServer(server, createBaseMcpResourceRegistry(), { auth: { ...auth, userId: "user-1" }, edge })
+    registerRegistryPromptsWithSdkServer(server, createBaseMcpPromptRegistry())
+
+    expect(registerResource).toHaveBeenCalledWith(
+      "FundLoop MCP Overview",
+      "fundloop://docs/mcp-overview",
+      expect.objectContaining({
+        title: "FundLoop MCP Overview",
+        mimeType: "application/json",
+      }),
+      expect.any(Function),
+    )
+    expect(registerPrompt).toHaveBeenCalledWith(
+      "create-funding-update",
+      expect.objectContaining({
+        title: "Create Funding Update",
+        argsSchema: expect.objectContaining({
+          projectSlug: expect.objectContaining({ safeParse: expect.any(Function) }),
+        }),
+      }),
+      expect.any(Function),
+    )
+
+    const resourceHandler = registerResource.mock.calls.find(([name]) => name === "FundLoop MCP Overview")?.[3]
+    await expect(resourceHandler(new URL("fundloop://docs/mcp-overview"))).resolves.toMatchObject({
+      contents: [expect.objectContaining({ uri: "fundloop://docs/mcp-overview" })],
+    })
+    const promptHandler = registerPrompt.mock.calls.find(([name]) => name === "create-funding-update")?.[2]
+    await expect(promptHandler({ projectSlug: "civic-mesh" })).resolves.toMatchObject({
+      messages: [expect.objectContaining({ role: "user" })],
+    })
   })
 
   it("requires bearer auth for remote MCP requests without changing stdio env auth", () => {

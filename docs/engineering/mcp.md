@@ -204,6 +204,27 @@ This keeps MCP read behavior behind the same auth and command envelope style as 
 
 Session 50 aligned the app-side operator payment operations and reconciliation pages around `lib/operator/payment-workspaces.ts`. That module is the web-app counterpart to the MCP operator read contract for payment and reconciliation visibility: pages should consume stable workspace shapes and warnings rather than reconstructing raw Supabase rows locally.
 
+## Resources And Prompts
+
+MCP-6 added first-class resources and prompts to both the stdio harness and remote SDK endpoint.
+
+Resources are read-only, JSON, bounded, and tenant-scoped by the same authenticated actor context used by tools:
+
+- `fundloop://docs/mcp-overview`: stable non-sensitive MCP overview and safety model.
+- `fundloop://workspace/summary`: authenticated user's redacted workspace summary.
+- `fundloop://user/payout-routes`: authenticated user's destination-redacted payout route readiness.
+- `fundloop://founder/projects`: authenticated founder/project-member managed project summary.
+- `fundloop://operator/cycles`: internal-operator-only recent monthly cycle status summary.
+
+Prompts are workflow starters, not hidden policy. They tell the client which safe read tools to call and explicitly require agents to use only MCP-visible or user-provided facts:
+
+- `create-funding-update`
+- `summarize-project-status`
+- `prepare-investor-follow-up`
+- `review-pending-tasks`
+
+Do not add large unbounded resources, raw artifact downloads, raw CUBID payloads, payout destinations, signed URLs, or service-role-derived internals as MCP resources. If future resources need private artifact access, back them with a scoped Edge Function authorization check first.
+
 ## Artifact References
 
 Session 43 standardized Supabase Storage artifact references in `lib/storage/artifacts.ts`. MCP tools should return artifact metadata such as bucket, path, kind, hash, visibility, and retention instead of inventing paths or streaming private storage contents directly. Any future raw artifact download tool should be backed by a scoped Edge Function authorization check.

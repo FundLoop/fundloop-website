@@ -516,7 +516,7 @@ Design and implement this candidate only if founder agents should draft monthly 
 - Status: Complete
 - Timestamp started: 2026-05-06T20:04:03-0400
 - Head when starting: 664feef
-- Timestamp completed: TBD
+- Timestamp completed: 2026-05-06T20:23:32-0400
 - Feature branch(es): codex/mcp-roadmap-kickoff
 - Session-log reference(s): session v154
 
@@ -557,12 +557,12 @@ Do not expose this candidate until remote MCP auth, operator authorization, conf
 
 ## MCP-6. Implement resources and prompts where useful
 
-- Status: Not started
-- Timestamp started: TBD
-- Head when starting: TBD
+- Status: Complete
+- Timestamp started: 2026-05-06T20:20:30-0400
+- Head when starting: 5912fe4
 - Timestamp completed: TBD
-- Feature branch(es): TBD
-- Session-log reference(s): TBD
+- Feature branch(es): codex/mcp-roadmap-kickoff
+- Session-log reference(s): session v156
 
 * [ ] Add MCP resources only where agents benefit from browsing stable, read-only product context.
 * [ ] Add resources for:

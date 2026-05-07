@@ -1,5 +1,7 @@
 import { z } from "zod"
-import type { McpToolDefinition, McpToolInputProperty } from "./protocol.ts"
+import type { McpPromptDefinition, McpResourceDefinition, McpToolDefinition, McpToolInputProperty } from "./protocol.ts"
+import type { McpPromptRegistry } from "./prompts.ts"
+import type { McpResourceRegistry } from "./resources.ts"
 import type { McpToolHandlerContext, McpToolRegistry } from "./tools.ts"
 
 export type SdkMcpServerLike = {
@@ -13,6 +15,25 @@ export type SdkMcpServerLike = {
       annotations?: McpToolDefinition["annotations"]
     },
     handler: (args: unknown) => Promise<unknown> | unknown,
+  ): unknown
+  registerResource?(
+    name: string,
+    uri: string,
+    config: {
+      title?: string
+      description?: string
+      mimeType?: string
+    },
+    handler: (uri: URL) => Promise<unknown> | unknown,
+  ): unknown
+  registerPrompt?(
+    name: string,
+    config: {
+      title?: string
+      description?: string
+      argsSchema?: Record<string, z.ZodType>
+    },
+    handler: (args: Record<string, unknown>) => Promise<unknown> | unknown,
   ): unknown
 }
 
@@ -48,7 +69,7 @@ export function mcpInputSchemaToZod(definition: McpToolDefinition) {
   return mcpObjectSchemaToZod(definition.inputSchema)
 }
 
-function mcpObjectSchemaToZod(schemaDefinition: McpObjectSchema) {
+export function mcpObjectSchemaToZod(schemaDefinition: McpObjectSchema) {
   const properties = schemaDefinition.properties ?? {}
   const required = new Set(schemaDefinition.required ?? [])
   const shape: Record<string, z.ZodType> = {}
@@ -60,6 +81,13 @@ function mcpObjectSchemaToZod(schemaDefinition: McpObjectSchema) {
 
   const objectSchema = z.object(shape)
   return schemaDefinition.additionalProperties === false ? objectSchema.strict() : objectSchema.passthrough()
+}
+
+function mcpPromptArgsToZodShape(definition: McpPromptDefinition) {
+  const schemaDefinition = definition.argsSchema ?? { properties: {}, required: [], additionalProperties: false }
+  const objectSchema = mcpObjectSchemaToZod(schemaDefinition)
+  const shape = "shape" in objectSchema ? objectSchema.shape : {}
+  return shape as Record<string, z.ZodType>
 }
 
 export function registerRegistryToolsWithSdkServer(
@@ -78,6 +106,43 @@ export function registerRegistryToolsWithSdkServer(
         annotations: definition.annotations,
       },
       async (args) => registry.call(definition.name, args, context),
+    )
+  }
+}
+
+export function registerRegistryResourcesWithSdkServer(
+  server: SdkMcpServerLike,
+  registry: McpResourceRegistry,
+  context: McpToolHandlerContext,
+) {
+  if (!server.registerResource) return
+
+  for (const definition of registry.list(context.auth)) {
+    server.registerResource(
+      definition.name,
+      definition.uri,
+      {
+        title: definition.title,
+        description: definition.description,
+        mimeType: definition.mimeType,
+      },
+      async (uri) => registry.read(uri.toString(), context),
+    )
+  }
+}
+
+export function registerRegistryPromptsWithSdkServer(server: SdkMcpServerLike, registry: McpPromptRegistry) {
+  if (!server.registerPrompt) return
+
+  for (const definition of registry.list()) {
+    server.registerPrompt(
+      definition.name,
+      {
+        title: definition.title,
+        description: definition.description,
+        argsSchema: mcpPromptArgsToZodShape(definition),
+      },
+      async (args) => registry.get(definition.name, args),
     )
   }
 }

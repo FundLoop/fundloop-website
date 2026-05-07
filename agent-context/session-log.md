@@ -1,8 +1,43 @@
+### session v156: Add MCP resources and prompts
+- timestamp: 2026-05-06T20:20:30-0400
+- agent: **Codex (GPT-5)**
+- branch: **codex/mcp-roadmap-kickoff**
+- head: pending MCP-6 commit
+
+#### Objective
+Complete MCP-6 by adding first-class read-only MCP resources and workflow prompts to the stdio and remote Streamable HTTP MCP runtimes.
+
+#### Actions Taken
+- Added an MCP resource registry and prompt registry alongside the existing tool registry.
+- Added `resources/list`, `resources/read`, `prompts/list`, and `prompts/get` support to the local stdio JSON-RPC handler.
+- Registered resources and prompts on the official MCP SDK server used by the Supabase Edge Function remote endpoint.
+- Added bounded read-only resources for MCP overview, user workspace summary, user payout route readiness, founder projects, and internal-operator monthly cycles.
+- Added workflow starter prompts for funding updates, project status summaries, investor/supporter follow-up, and pending task review.
+- Documented resource/prompt safety expectations in the engineering MCP doc and MCP architecture/security docs.
+- Marked MCP-6 complete in `agent-context/todo-mcp.md`.
+
+#### Tests and Validation Notes
+- `pnpm mcp:test` passed: 4 files, 71 tests.
+- `deno cache --config supabase/functions/deno.json supabase/functions/mcp/index.ts` passed.
+- `pnpm lint` passed.
+- `pnpm typecheck` passed.
+- `pnpm test` passed: 77 files, 355 tests.
+- `pnpm build` passed.
+- `pnpm dlx node@22.22.1 /opt/homebrew/bin/pnpm check` passed.
+
+#### Reflections
+- Resources and prompts are useful now because they reuse the already-hardened read boundaries instead of expanding the command surface.
+
+#### Suggested Next Steps
+- MCP-7 remains optional Apps SDK work; MCP-8 local smoke hardening may be the next practical MCP infrastructure slice.
+
+---
+
 ### session v155: Finalize user payout routes MCP tool
 - timestamp: 2026-05-06T20:10:50-0400
 - agent: **Codex (GPT-5)**
 - branch: **codex/mcp-roadmap-kickoff**
-- head: pending MCP-5.17 commit
+- head: 5912fe4
 
 #### Objective
 Complete MCP-5.17 by adding a read-only MCP tool for authenticated user payout route readiness.

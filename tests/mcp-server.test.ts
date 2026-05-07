@@ -1,6 +1,8 @@
 import { describe, expect, it } from "vitest"
 import { edgeCommandSuccess, type EdgeCommandResult } from "@/lib/edge-functions/result"
 import { createMcpAuthContext } from "@/packages/mcp-server/src/auth"
+import { createBaseMcpPromptRegistry } from "@/packages/mcp-server/src/prompts"
+import { createBaseMcpResourceRegistry } from "@/packages/mcp-server/src/resources"
 import { createBaseMcpToolRegistry } from "@/packages/mcp-server/src/tools"
 import { encodeMcpStdioMessage, handleMcpRequest, parseMcpStdioMessages } from "@/packages/mcp-server/src/server"
 import type { EdgeCommandClient } from "@/packages/mcp-server/src/edge-client"
@@ -149,6 +151,11 @@ describe("FundLoop MCP server skeleton", () => {
     await expect(handleMcpRequest({ jsonrpc: "2.0", id: 1, method: "initialize" }, context)).resolves.toMatchObject({
       result: {
         serverInfo: { name: "fundloop-mcp-server" },
+        capabilities: expect.objectContaining({
+          tools: {},
+          resources: {},
+          prompts: {},
+        }),
       },
     })
     await expect(handleMcpRequest({ jsonrpc: "2.0", id: 2, method: "tools/list" }, context)).resolves.toMatchObject({
@@ -171,6 +178,74 @@ describe("FundLoop MCP server skeleton", () => {
         content: [expect.objectContaining({ type: "text" })],
       },
     })
+  })
+
+  it("lists and reads MCP resources with tenant-aware filtering", async () => {
+    const context = {
+      auth,
+      edge,
+      registry: createBaseMcpToolRegistry(),
+      resourceRegistry: createBaseMcpResourceRegistry(),
+      promptRegistry: createBaseMcpPromptRegistry(),
+    }
+
+    const list = await handleMcpRequest({ jsonrpc: "2.0", id: 1, method: "resources/list" }, context)
+    expect(list).toMatchObject({
+      result: {
+        resources: expect.arrayContaining([
+          expect.objectContaining({ uri: "fundloop://docs/mcp-overview" }),
+          expect.objectContaining({ uri: "fundloop://workspace/summary" }),
+        ]),
+      },
+    })
+    expect(JSON.stringify(list)).not.toContain("fundloop://operator/cycles")
+
+    const read = await handleMcpRequest(
+      { jsonrpc: "2.0", id: 2, method: "resources/read", params: { uri: "fundloop://docs/mcp-overview" } },
+      context,
+    )
+    expect(read).toMatchObject({
+      result: {
+        contents: [expect.objectContaining({ uri: "fundloop://docs/mcp-overview", mimeType: "application/json" })],
+      },
+    })
+  })
+
+  it("lists and returns safe workflow prompts", async () => {
+    const context = {
+      auth,
+      edge,
+      registry: createBaseMcpToolRegistry(),
+      resourceRegistry: createBaseMcpResourceRegistry(),
+      promptRegistry: createBaseMcpPromptRegistry(),
+    }
+
+    const list = await handleMcpRequest({ jsonrpc: "2.0", id: 1, method: "prompts/list" }, context)
+    expect(list).toMatchObject({
+      result: {
+        prompts: expect.arrayContaining([
+          expect.objectContaining({ name: "create-funding-update" }),
+          expect.objectContaining({ name: "review-pending-tasks" }),
+        ]),
+      },
+    })
+
+    const prompt = await handleMcpRequest(
+      {
+        jsonrpc: "2.0",
+        id: 2,
+        method: "prompts/get",
+        params: { name: "create-funding-update", arguments: { projectSlug: "civic-mesh", cycleKey: "2026-04" } },
+      },
+      context,
+    )
+    expect(prompt).toMatchObject({
+      result: {
+        messages: [expect.objectContaining({ role: "user" })],
+      },
+    })
+    expect(JSON.stringify(prompt)).toContain("founder.project.cycle_status")
+    expect(JSON.stringify(prompt)).not.toContain("ignore previous")
   })
 
   it("parses and serializes MCP Content-Length stdio frames", () => {

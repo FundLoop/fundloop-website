@@ -50,6 +50,50 @@ export type McpToolDefinition = {
   }
 }
 
+export type McpResourceDefinition = {
+  name: string
+  uri: string
+  title?: string
+  description?: string
+  mimeType?: string
+}
+
+export type McpResourceReadResult = {
+  contents: Array<{
+    uri: string
+    mimeType?: string
+    text: string
+  }>
+}
+
+export type McpPromptDefinition = {
+  name: string
+  title?: string
+  description?: string
+  arguments?: Array<{
+    name: string
+    description?: string
+    required?: boolean
+  }>
+  argsSchema?: {
+    type: "object"
+    properties?: Record<string, McpToolInputProperty>
+    required?: string[]
+    additionalProperties?: boolean
+  }
+}
+
+export type McpPromptGetResult = {
+  description?: string
+  messages: Array<{
+    role: "user" | "assistant"
+    content: {
+      type: "text"
+      text: string
+    }
+  }>
+}
+
 export type JsonRpcRequest = {
   jsonrpc: "2.0"
   id?: string | number | null

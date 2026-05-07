@@ -13,7 +13,13 @@ import {
   createEdgeUserWorkflowReader,
 } from "../../../packages/mcp-server/src/member-operator-readers.ts"
 import { registerProjectMemberAndOperatorMcpTools } from "../../../packages/mcp-server/src/member-operator-tools.ts"
-import { registerRegistryToolsWithSdkServer } from "../../../packages/mcp-server/src/sdk-adapter.ts"
+import { createBaseMcpPromptRegistry } from "../../../packages/mcp-server/src/prompts.ts"
+import { createBaseMcpResourceRegistry } from "../../../packages/mcp-server/src/resources.ts"
+import {
+  registerRegistryPromptsWithSdkServer,
+  registerRegistryResourcesWithSdkServer,
+  registerRegistryToolsWithSdkServer,
+} from "../../../packages/mcp-server/src/sdk-adapter.ts"
 import { createBaseMcpToolRegistry } from "../../../packages/mcp-server/src/tools.ts"
 import { createFunctionClients, getEnv } from "../_shared/command-runtime.ts"
 
@@ -88,6 +94,8 @@ async function buildMcpServer(request: Request) {
     version: "0.1.0",
   })
   registerRegistryToolsWithSdkServer(server, registry, context)
+  registerRegistryResourcesWithSdkServer(server, createBaseMcpResourceRegistry(), context)
+  registerRegistryPromptsWithSdkServer(server, createBaseMcpPromptRegistry())
   return { ok: true as const, server }
 }
 
