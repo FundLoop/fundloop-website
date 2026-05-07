@@ -9,6 +9,13 @@ describe("mcp workflow read contract", () => {
     })
   })
 
+  it("accepts the authenticated user payout route list operation without extra inputs", () => {
+    expect(validateMcpWorkflowReadInput({ operation: "user.payout.routes.list" })).toMatchObject({
+      ok: true,
+      data: { operation: "user.payout.routes.list" },
+    })
+  })
+
   it("rejects unsupported user workspace operations", () => {
     expect(validateMcpWorkflowReadInput({ operation: "user.workspace.raw_profile" })).toMatchObject({
       ok: false,

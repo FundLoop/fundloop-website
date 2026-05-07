@@ -494,7 +494,7 @@ Finalize the operator reporting-coverage tool as a read-only internal overview o
 - Status: Not started
 - Timestamp started: TBD
 - Head when starting: TBD
-- Timestamp completed: TBD
+- Timestamp completed: 2026-05-06T20:14:52-0400
 - Feature branch(es): TBD
 - Session-log reference(s): TBD
 
@@ -524,12 +524,12 @@ Design and implement this candidate as the first regular-user MCP read tool only
 
 ### MCP-5.17. Candidate `user.payout.routes.list`
 
-- Status: Not started
-- Timestamp started: TBD
-- Head when starting: TBD
+- Status: Complete
+- Timestamp started: 2026-05-06T20:10:50-0400
+- Head when starting: 0ea6b1e
 - Timestamp completed: TBD
-- Feature branch(es): TBD
-- Session-log reference(s): TBD
+- Feature branch(es): codex/mcp-roadmap-kickoff
+- Session-log reference(s): session v155
 
 Design and implement this candidate only after payout route read models are stable and safe for agent exposure. It should list the authenticated user's payout readiness and route summaries without revealing secrets, private wallet credentials, or raw provider tokens. Keep it read-only unless a later session introduces explicit payout-route mutation tools with confirmation and idempotency. Add read-only annotations, structured output, and tests for no routes, configured routes, provider warning states, unauthorized access, partial read failures, and output redaction.
 

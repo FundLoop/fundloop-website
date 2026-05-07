@@ -6,6 +6,7 @@ import type {
   OperatorReportingCoverage,
   ProjectMemberReportingStatus,
   UserWorkspaceSummary,
+  UserPayoutRoutesList,
 } from "./member-operator-readers.ts"
 import type { McpToolRegistry } from "./tools.ts"
 
@@ -54,6 +55,15 @@ function summarizeUserWorkspace(summary: UserWorkspaceSummary) {
     results: summary.results,
     payoutReadiness: summary.payoutReadiness,
     discovery: summary.discovery,
+    warnings: summary.warnings,
+  }
+}
+
+function summarizeUserPayoutRoutes(summary: UserPayoutRoutesList) {
+  return {
+    ok: true,
+    summary: summary.summary,
+    routes: summary.routes,
     warnings: summary.warnings,
   }
 }
@@ -189,6 +199,49 @@ export function registerProjectMemberAndOperatorMcpTools(registry: McpToolRegist
       } catch {
         return {
           ...errorResult("User workspace summary is temporarily unavailable."),
+          errorCode: "workflow_read_failed",
+        }
+      }
+    },
+  })
+
+  registry.register({
+    definition: {
+      name: "user.payout.routes.list",
+      title: "List User Payout Routes",
+      description: "List the authenticated user's payout route readiness without exposing payout destinations or provider secrets.",
+      annotations: {
+        readOnlyHint: true,
+        destructiveHint: false,
+        openWorldHint: false,
+      },
+      inputSchema: {
+        type: "object",
+        properties: {},
+        additionalProperties: false,
+      },
+      outputSchema: {
+        type: "object",
+        properties: {
+          ok: { type: "boolean" },
+          summary: { type: "object" },
+          routes: { type: "array" },
+          warnings: { type: "array" },
+        },
+        required: ["ok", "summary", "routes", "warnings"],
+        additionalProperties: false,
+      },
+    },
+    async handler(_input, context) {
+      if (!context.userReader) {
+        return { ...errorResult("User workflow reader is not configured."), errorCode: "reader_not_configured" }
+      }
+
+      try {
+        return jsonTextResult(summarizeUserPayoutRoutes(await context.userReader.listPayoutRoutes(context.auth)))
+      } catch {
+        return {
+          ...errorResult("User payout routes are temporarily unavailable."),
           errorCode: "workflow_read_failed",
         }
       }

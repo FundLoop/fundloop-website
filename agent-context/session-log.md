@@ -1,8 +1,42 @@
+### session v155: Finalize user payout routes MCP tool
+- timestamp: 2026-05-06T20:10:50-0400
+- agent: **Codex (GPT-5)**
+- branch: **codex/mcp-roadmap-kickoff**
+- head: pending MCP-5.17 commit
+
+#### Objective
+Complete MCP-5.17 by adding a read-only MCP tool for authenticated user payout route readiness.
+
+#### Actions Taken
+- Added `user.payout.routes.list` with read-only annotations, strict empty input metadata, and structured output metadata.
+- Routed payout route reads through `mcp-workflow-read` via the existing `UserWorkflowReader` boundary.
+- Returned route label, rail, currency, status, default state, readiness counts, and warning states for the authenticated user only.
+- Deliberately omitted payout destinations, provider tokens, private wallet data, and raw route payloads from the MCP output.
+- Added tests for metadata, configured routes, empty/provider warning states, output redaction, and workflow-read contract acceptance.
+- Marked MCP-5.17 complete in `agent-context/todo-mcp.md` and refreshed the MCP engineering doc.
+
+#### Tests and Validation Notes
+- `pnpm mcp:test` passed: 4 files, 68 tests.
+- `deno cache --config supabase/functions/deno.json supabase/functions/mcp/index.ts` passed.
+- `pnpm lint` passed.
+- `pnpm typecheck` passed after completing the user reader test double.
+- `pnpm test` passed: 77 files, 352 tests.
+- `pnpm build` passed.
+- `pnpm dlx node@22.22.1 /opt/homebrew/bin/pnpm check` passed.
+
+#### Reflections
+- Payout route exposure is safe as a read summary because it mirrors workspace readiness without revealing destination credentials or mutable route payloads.
+
+#### Suggested Next Steps
+- Treat MCP-5.18 as sensitive and only expose `operator.cycle.lock` after explicit approval for destructive/operator MCP commands.
+
+---
+
 ### session v154: Finalize user workspace summary MCP tool
 - timestamp: 2026-05-06T20:04:03-0400
 - agent: **Codex (GPT-5)**
 - branch: **codex/mcp-roadmap-kickoff**
-- head: pending MCP-5.16 commit
+- head: 0ea6b1e
 
 #### Objective
 Complete MCP-5.16 by adding the first regular-user MCP read tool for authenticated workspace summaries.

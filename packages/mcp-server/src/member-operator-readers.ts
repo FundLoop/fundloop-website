@@ -67,6 +67,24 @@ export type UserWorkspaceSummary = {
   warnings: Array<{ scope: string; message: string }>
 }
 
+export type UserPayoutRoutesList = {
+  summary: {
+    routeCount: number
+    activeRouteCount: number
+    hasDefaultRoute: boolean
+    rails: string[]
+    nextAction: string
+  }
+  routes: Array<{
+    label: string
+    rail: string
+    currencyCode: string
+    status: string
+    isDefault: boolean
+  }>
+  warnings: Array<{ scope: string; message: string }>
+}
+
 export type OperatorCycleStatus = {
   cycleKey: string
   status: string
@@ -105,6 +123,7 @@ export type OperatorReportingCoverage = {
 
 export type UserWorkflowReader = {
   getWorkspaceSummary(auth: McpAuthContext): Promise<UserWorkspaceSummary>
+  listPayoutRoutes(auth: McpAuthContext): Promise<UserPayoutRoutesList>
 }
 
 export type ProjectMemberWorkflowReader = {
@@ -139,6 +158,10 @@ export class EdgeUserWorkflowReader implements UserWorkflowReader {
 
   async getWorkspaceSummary(auth: McpAuthContext): Promise<UserWorkspaceSummary> {
     return invokeRead(this.edge, { operation: "user.workspace.summary" }, auth)
+  }
+
+  async listPayoutRoutes(auth: McpAuthContext): Promise<UserPayoutRoutesList> {
+    return invokeRead(this.edge, { operation: "user.payout.routes.list" }, auth)
   }
 }
 

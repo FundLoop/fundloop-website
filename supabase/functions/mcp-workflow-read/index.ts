@@ -262,6 +262,37 @@ async function userWorkspaceSummary(adminClient, user) {
   }
 }
 
+async function userPayoutRoutesList(adminClient, user) {
+  const warnings = []
+  const payoutRoutes = await softRead(
+    "payout-routes",
+    adminClient
+      .from("user_payout_routes")
+      .select("label, rail, currency_code, status, is_default")
+      .eq("user_id", user.id)
+      .order("is_default", { ascending: false })
+      .order("created_at", { ascending: false }),
+    warnings,
+    [],
+  )
+  const rows = asArray(payoutRoutes)
+
+  return {
+    ok: true,
+    data: {
+      summary: summarizePayoutRoutes(rows),
+      routes: rows.map((route) => ({
+        label: hasText(route.label) ? route.label.trim() : route.rail,
+        rail: route.rail,
+        currencyCode: route.currency_code,
+        status: route.status,
+        isDefault: route.is_default === true,
+      })),
+      warnings,
+    },
+  }
+}
+
 async function requireManagedProject(adminClient, userId, projectSlug) {
   const { data: project, error: projectError } = await adminClient
     .from("projects")
@@ -563,6 +594,7 @@ async function handleRequest(request) {
   const adminClient = auth.adminClient
   let result
   if (input.operation === "user.workspace.summary") result = await userWorkspaceSummary(adminClient, auth.user)
+  if (input.operation === "user.payout.routes.list") result = await userPayoutRoutesList(adminClient, auth.user)
   if (input.operation === "founder.projects.list") result = await listManagedProjects(adminClient, auth.user.id)
   if (input.operation === "founder.project.cycle_status") result = await founderCycleStatus(adminClient, auth.user.id, input)
   if (input.operation === "project_member.project.reporting_status") result = await projectMemberReportingStatus(adminClient, auth.user.id, input)

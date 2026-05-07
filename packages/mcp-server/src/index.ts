@@ -28,6 +28,7 @@ export {
   type OperatorWorkflowReader,
   type ProjectMemberReportingStatus,
   type ProjectMemberWorkflowReader,
+  type UserPayoutRoutesList,
   type UserWorkspaceSummary,
   type UserWorkflowReader,
 } from "./member-operator-readers.ts"

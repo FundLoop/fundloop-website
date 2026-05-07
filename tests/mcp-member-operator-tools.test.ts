@@ -100,6 +100,22 @@ const userReader: UserWorkflowReader = {
       warnings: [],
     }
   },
+  async listPayoutRoutes() {
+    return {
+      summary: {
+        routeCount: 2,
+        activeRouteCount: 1,
+        hasDefaultRoute: true,
+        rails: ["evm", "solana"],
+        nextAction: "Default payout route is configured.",
+      },
+      routes: [
+        { label: "Main wallet", rail: "evm", currencyCode: "USD", status: "active", isDefault: true },
+        { label: "solana", rail: "solana", currencyCode: "USD", status: "paused", isDefault: false },
+      ],
+      warnings: [],
+    }
+  },
 }
 
 const operatorReader: OperatorWorkflowReader = {
@@ -156,6 +172,7 @@ describe("project-member and operator MCP tools", () => {
       expect.arrayContaining([
         "project_member.project.reporting_status",
         "user.workspace.summary",
+        "user.payout.routes.list",
         "operator.cycles.list",
         "operator.cycle.observability",
         "operator.payments.reconciliation_visibility",
@@ -177,6 +194,16 @@ describe("project-member and operator MCP tools", () => {
       }),
       outputSchema: expect.objectContaining({
         required: expect.arrayContaining(["ok", "profileStatus", "participation", "results", "payoutReadiness", "discovery", "warnings"]),
+      }),
+    })
+    expect(tools.find((tool) => tool.name === "user.payout.routes.list")).toMatchObject({
+      title: "List User Payout Routes",
+      annotations: { readOnlyHint: true, destructiveHint: false, openWorldHint: false },
+      inputSchema: expect.objectContaining({
+        additionalProperties: false,
+      }),
+      outputSchema: expect.objectContaining({
+        required: expect.arrayContaining(["ok", "summary", "routes", "warnings"]),
       }),
     })
     expect(tools.find((tool) => tool.name === "operator.cycles.list")).toMatchObject({
@@ -206,6 +233,56 @@ describe("project-member and operator MCP tools", () => {
       outputSchema: expect.objectContaining({
         required: expect.arrayContaining(["ok", "cycleKey", "counts", "missingAudiences", "warningStates", "nextActions"]),
       }),
+    })
+  })
+
+  it("lists authenticated user payout routes without payout destinations", async () => {
+    const result = await createRegistry().call("user.payout.routes.list", {}, { auth: projectMemberAuth, edge, userReader, projectMemberReader, operatorReader })
+
+    expect(result.structuredContent).toMatchObject({
+      ok: true,
+      summary: {
+        routeCount: 2,
+        activeRouteCount: 1,
+        hasDefaultRoute: true,
+        rails: ["evm", "solana"],
+      },
+      routes: [
+        { label: "Main wallet", rail: "evm", currencyCode: "USD", status: "active", isDefault: true },
+        { label: "solana", rail: "solana", currencyCode: "USD", status: "paused", isDefault: false },
+      ],
+      warnings: [],
+    })
+    expect(JSON.stringify(result.structuredContent)).not.toContain("destination")
+    expect(JSON.stringify(result.structuredContent)).not.toContain("privateKey")
+    expect(JSON.stringify(result.structuredContent)).not.toContain("providerToken")
+  })
+
+  it("returns payout route empty states and provider warnings", async () => {
+    const warningUserReader: UserWorkflowReader = {
+      ...userReader,
+      async listPayoutRoutes() {
+        return {
+          summary: {
+            routeCount: 0,
+            activeRouteCount: 0,
+            hasDefaultRoute: false,
+            rails: [],
+            nextAction: "Add a payout route before monthly payouts are ready.",
+          },
+          routes: [],
+          warnings: [{ scope: "payout-routes", message: "provider unavailable" }],
+        }
+      },
+    }
+
+    const result = await createRegistry().call("user.payout.routes.list", {}, { auth: projectMemberAuth, edge, userReader: warningUserReader, projectMemberReader, operatorReader })
+
+    expect(result.structuredContent).toMatchObject({
+      ok: true,
+      summary: { routeCount: 0, activeRouteCount: 0, hasDefaultRoute: false },
+      routes: [],
+      warnings: [{ scope: "payout-routes", message: "provider unavailable" }],
     })
   })
 
@@ -253,6 +330,7 @@ describe("project-member and operator MCP tools", () => {
 
   it("returns user workspace empty states and partial read warnings", async () => {
     const emptyUserReader: UserWorkflowReader = {
+      ...userReader,
       async getWorkspaceSummary() {
         return {
           profileStatus: {

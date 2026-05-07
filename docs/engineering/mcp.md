@@ -175,6 +175,7 @@ Session 40 added project-member and operator workflows so agents do not need to 
 Session 40 added read-only project-member and operator tools, and MCP-5.16 added the first regular-user workspace summary:
 
 - `user.workspace.summary`: annotated read-only user workspace summary backed by `mcp-workflow-read`, returning identity/completion status, participation footprint, current results visibility, payout readiness, discovery next actions, and warning states for the authenticated user only. It intentionally omits raw CUBID payloads, CUBID user ids, payout destinations, and other users' data.
+- `user.payout.routes.list`: annotated read-only user payout route summary backed by `mcp-workflow-read`, returning route labels, rails, currency, status, default state, readiness counts, and warnings without exposing route destinations or provider secrets.
 - `project_member.project.reporting_status`: annotated read-only project-member status tool backed by `mcp-workflow-read`, returning compact reporting counts, attribution readiness, and safe next-action hints without artifact paths or operator-only internals.
 - `operator.cycles.list`: annotated internal-operator read-only overview backed by `mcp-workflow-read`, returning a bounded recent-cycle list with lifecycle timestamps and safe empty/error states.
 - `operator.cycle.observability`: annotated internal-operator read-only event view backed by `mcp-workflow-read`, returning bounded cycle-event summaries by cycle key or attempt id with sanitized messages.
@@ -192,6 +193,7 @@ Current operations:
 - `founder.projects.list`
 - `founder.project.cycle_status`
 - `user.workspace.summary`
+- `user.payout.routes.list`
 - `project_member.project.reporting_status`
 - `operator.cycles.list`
 - `operator.cycle.observability`
