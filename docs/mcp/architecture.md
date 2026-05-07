@@ -76,6 +76,7 @@ Resources follow the same model: user resources are scoped to the authenticated 
 - Emergency disable: set `FUNDLOOP_MCP_DISABLED_TOOLS` to exact tool names; disabled tools are hidden from `tools/list`, and local registry calls return `tool_disabled` if called directly.
 - Deployment contract: use `docs/mcp/deployment.md` for Preview/Production secrets, HTTPS smoke, and deploy workflow expectations.
 - Runbook: use `docs/mcp/runbook.md` for log fields, alert recommendations, secret rotation, access revocation, and rollback.
+- Publication: use `docs/mcp/publication.md` and `server.json`; do not publish until hosted deploy and production smoke gates are complete.
 
 ## Publication Plan
 

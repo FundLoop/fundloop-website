@@ -39,6 +39,7 @@
     "mcp:smoke": "pnpm --filter @fundloop/mcp-server smoke",
     "mcp:edge:smoke": "node scripts/smoke-mcp-edge-http.mjs",
     "mcp:inspect": "pnpm --filter @fundloop/mcp-server inspect",
+    "mcp:registry:check": "node scripts/validate-mcp-server-json.mjs",
     "mcp:publish": "pnpm --filter @fundloop/mcp-server publish:metadata",
     "supabase:functions:serve:project-payment-drafts-create": "supabase functions serve project-payment-drafts-create --env-file .env.local",
     "typecheck": "tsc --noEmit",

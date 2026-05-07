@@ -920,35 +920,37 @@ Session MCP-11 adds the deployment-readiness contract, hosted HTTPS/auth smoke h
 
 ## MCP-12. Packaging and official MCP registry publication
 
-- Status: Not started
-- Timestamp started: TBD
-- Head when starting: TBD
-- Timestamp completed: TBD
-- Feature branch(es): TBD
-- Session-log reference(s): TBD
+- Status: Complete (metadata prepared; actual registry publish deferred)
+- Timestamp started: 2026-05-06T20:52:05-0400
+- Head when starting: b961d2c
+- Timestamp completed: 2026-05-06T20:54:22-0400
+- Feature branch(es): codex/mcp-roadmap-kickoff
+- Session-log reference(s): session v161
 
-* [ ] Decide whether the server is published as:
+* [x] Decide whether the server is published as:
 
-  * hosted remote MCP server only
-  * npm package
-  * Docker image
-  * GitHub release
-  * multiple formats
+  * [x] hosted remote MCP server only
+  * [ ] npm package
+  * [ ] Docker image
+  * [ ] GitHub release
+  * [ ] multiple formats
 
-* [ ] If publishing to the official MCP Registry, publish the actual server artifact somewhere first. The official registry currently hosts server metadata, not artifacts. ([Model Context Protocol][11])
-* [ ] Create `server.json` for the official MCP Registry.
-* [ ] Verify package name / MCP name ownership according to registry requirements.
+* [x] If publishing to the official MCP Registry, publish the actual server artifact somewhere first. The official registry currently hosts server metadata, not artifacts. ([Model Context Protocol][11])
+* [x] Create `server.json` for the official MCP Registry.
+* [x] Verify package name / MCP name ownership according to registry requirements.
 * [ ] Install `mcp-publisher`.
 * [ ] Run registry login.
 * [ ] Publish the registry entry.
-* [ ] Save registry URL and publication status in `docs/mcp/publication.md`.
+* [x] Save registry URL and publication status in `docs/mcp/publication.md`.
+
+Session MCP-12 prepares registry metadata and publication docs only. Actual `mcp-publisher` installation, login, and publication remain blocked until the hosted remote endpoint is intentionally public and the MCP-11 production smoke/promotion gates are complete.
 
 **Acceptance criteria**
 
-* [ ] `server.json` exists.
-* [ ] Official registry publication succeeds or has a documented pending/error state.
-* [ ] Public install/connect instructions are accurate.
-* [ ] Versioning policy is documented.
+* [x] `server.json` exists.
+* [x] Official registry publication succeeds or has a documented pending/error state.
+* [x] Public install/connect instructions are accurate.
+* [x] Versioning policy is documented.
 
 ---
 

@@ -1,3 +1,33 @@
+### session v161: Prepare MCP registry metadata
+- timestamp: 2026-05-06T20:54:22-0400
+- agent: **Codex (GPT-5)**
+- branch: **codex/mcp-roadmap-kickoff**
+- head: pending MCP-12 commit
+
+#### Objective
+Complete MCP-12 as a metadata/publication-readiness pass without publishing the MCP server before the hosted deployment gates are complete.
+
+#### Actions Taken
+- Added `server.json` using the current official MCP Registry remote-server shape with a Streamable HTTP remote endpoint template and required secret `Authorization` header metadata.
+- Added a local `mcp:registry:check` script that validates the repo's registry metadata basics, including schema URL, reverse-DNS name format, HTTPS Supabase MCP endpoint template, required secret auth header, and GitHub repository metadata.
+- Added `docs/mcp/publication.md` with distribution decisions, publication blockers, publish flow, pending registry record, and version/publication guidance.
+- Updated MCP engineering and architecture docs to reference publication metadata and gates.
+- Marked MCP-12 complete as metadata prepared in `agent-context/todo-mcp.md`, with actual `mcp-publisher` login/publish deferred until hosted deploy and production smoke gates pass.
+
+#### Tests and Validation Notes
+- `pnpm mcp:registry:check` passed.
+- `node --check scripts/validate-mcp-server-json.mjs` passed.
+- `pnpm mcp:test` passed: 5 files, 81 tests.
+- `pnpm dlx node@22.22.1 /opt/homebrew/bin/pnpm check` passed, including lint, 78 test files / 365 tests, typecheck, and production build.
+
+#### Reflections
+- The official registry is still preview and supports remote `server.json` entries, so the safe move is to prepare metadata now and publish only after the remote endpoint is intentionally public and smoke-verified.
+
+#### Suggested Next Steps
+- Run the full Node 22-equivalent check, commit MCP-12, then continue to MCP-13 public landing page if the branch remains active.
+
+---
+
 ### session v160: Document MCP deployment readiness
 - timestamp: 2026-05-06T20:50:25-0400
 - agent: **Codex (GPT-5)**

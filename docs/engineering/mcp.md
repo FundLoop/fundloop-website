@@ -10,6 +10,7 @@ The MCP-specific roadmap and design artifacts now live in:
 - `docs/mcp/tool-catalog.md` for current and candidate tool contracts.
 - `docs/mcp/architecture.md` for the target remote/runtime architecture.
 - `docs/mcp/deployment.md` for Preview/Production deploy and smoke expectations.
+- `docs/mcp/publication.md` for registry metadata, publication gates, and pending publication records.
 - `docs/mcp/security-model.md` for auth, authorization, data-safety, and threat-model rules.
 - `docs/mcp/runbook.md` for MCP operations, disabling tools, log inspection, secret rotation, and rollback.
 
