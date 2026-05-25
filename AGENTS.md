@@ -1,5 +1,14 @@
 # AGENTS.md
 
+## Branch-Scoped Session Logs And Todos
+
+- Use `agent-context/session-log/` for active session logs. Do not add new entries to legacy `agent-context/session-log.md` files.
+- For feature branches, update the branch log immediately before each commit. Use `YYYY-MM-DD-featurebranch.md` in single-app repos and `YYYY-MM-DD-app-featurebranch.md` in monorepos.
+- Direct work on `main` may use `agent-context/session-log/main.md`; direct work on `dev` may use `agent-context/session-log/dev.md`.
+- Each entry must include UTC timestamp, agent, branch, head, summary, validation, and follow-ups.
+- Keep `agent-context/todo.md` focused on roadmap items and active follow-ups. Completed work belongs in the current branch log.
+- See `agent-context/session-log/README.md` for naming and archival rules.
+
 This file tells coding agents how to work safely and effectively in this repository.
 
 It is not a product spec. It is an execution guide for the current FundLoop codebase.
@@ -46,11 +55,9 @@ Agents in this repo must optimize for:
   - create feature work on a non-`dev` branch, typically from the current `dev`
   - keep work on feature branches, but do not require one branch per numbered session
   - stack multiple related sessions on one feature branch when the user asks or when it keeps a coherent PR together
-  - keep commits and `agent-context/session-log.md` entries separated by session or meaningful checkpoint
   - open PRs from feature branches into `dev`
   - open PRs from `dev` into `main`
 - Do not push feature work directly to `dev` or `main` unless the user explicitly instructs you to do so.
-- `agent-context/session-log.md` is a maintained repo artifact and must be updated for every commit.
 - At the start of a new session, inventory what is next from:
   - the active roadmap in `agent-context/todo-mcp.md`, the archived `agent-context/todo-1-through-52.md` for historical context, and any relevant `todo.md` files under feature folders
   - larger planned work and implementation docs inside `docs/engineering/`
@@ -145,7 +152,6 @@ Follow existing naming and placement conventions before creating new abstraction
 
 Inside `agent-context/`:
 
-- `session-log.md` records one entry per commit or significant coded session
 - `todo.md` holds smaller follow-up tasks and parked next actions
 - keep the rest of the folder small and current for active agent context only
 
@@ -227,8 +233,6 @@ If the tracked seed is unsuitable for a local smoke test, use a disposable local
 
 ## 8. Commit and Session Log Rules
 
-Every commit must be accompanied by an update to `agent-context/session-log.md`.
-
 Each session-log entry should:
 
 - use the existing `### session vN: ...` format
@@ -241,8 +245,6 @@ Each session-log entry should:
   - suggested next steps
 
 If you split work into multiple commits, add an incremental session-log entry for each commit, not one combined entry at the end.
-
-Do not make a commit that changes code without updating `agent-context/session-log.md` in the same commit.
 
 ---
 
