@@ -25,6 +25,13 @@ describe("local public discovery seed fixtures", () => {
     expect(seedSql).toContain(`INSERT INTO "auth"."identities"`)
   })
 
+  it("includes explicit project commitment data for founder readiness smoke coverage", () => {
+    expect(seedSql).toContain(`"payment_percentage", "default_reporting_currency_code"`)
+    expect(seedSql).toContain(`'Civic Mesh'`)
+    expect(seedSql).toContain(`'1.00', 'USD', '2', NULL, '1', '11'`)
+    expect(seedSql).toContain(`'civic-mesh'`)
+  })
+
   it("includes stable public blog slugs for listing and detail smoke coverage", () => {
     expect(seedSql).toContain("'why-monthly-cadence-matters'")
     expect(seedSql).toContain("'what-contributors-actually-need-from-a-project-directory'")

@@ -18,6 +18,8 @@ Use these fixtures after `supabase db reset` when you want predictable public pa
   - Password: `FundLoopFounder123!`
   - Founder routes: `/en/founder`, `/en/founder/projects`, `/en/founder/projects/civic-mesh`
   - The account is a local-only Supabase Auth fixture matched to the deterministic public user `00000000-0000-4000-8000-000000000101`.
+  - The managed `civic-mesh` project has an explicit MVP commitment fixture: `payment_percentage=1.00` and `default_reporting_currency_code=USD`.
+  - Expected readiness: founder workspace pages should show Civic Mesh as commitment-ready for contribution rate and reporting currency, while separate payment-route or submission readiness can still reflect the current local fixture state.
 - Internal operator smoke
   - Use the same local fixture account: `maya@fundloop.example.com`
   - Required local/preview env allowlists:
@@ -34,6 +36,7 @@ Why these fixtures exist:
 
 - they make public project and user detail pages smoke-testable without depending on whichever rows happened to come from a remote-style snapshot
 - they make signed-in founder workspace smoke tests possible through the same e2e login endpoint used by Playwright tests
+- they make project commitment readiness smoke-testable without relying on migration defaults or incidental remote data
 - they make internal-operator smoke tests possible when the local or preview runtime explicitly allowlists the seeded email
 - they give Playwright and manual browser checks a stable target set
 - they keep the local seed intentionally small and human-readable for this public-discovery slice

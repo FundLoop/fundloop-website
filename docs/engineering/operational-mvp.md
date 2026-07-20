@@ -77,6 +77,12 @@ Acceptance criteria:
 - The project appears in `/founder`, `/founder/projects`, and `/founder/projects/[slug]`.
 - Missing commitment blocks MVP monthly-cycle readiness for that project.
 
+Local smoke anchor:
+
+- `maya@fundloop.example.com` / `FundLoopFounder123!` manages `civic-mesh`.
+- `civic-mesh` carries an explicit `1.00%` commitment and `USD` default reporting currency in `supabase/seed.sql`.
+- Expected founder smoke routes are `/en/founder`, `/en/founder/projects`, and `/en/founder/projects/civic-mesh`.
+
 ### 2. Project Monthly Contribution Submission
 
 A founder/project admin submits monthly contribution data for a cycle.

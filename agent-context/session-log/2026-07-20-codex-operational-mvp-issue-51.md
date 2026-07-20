@@ -15,3 +15,12 @@
 - summary: Completed issue #62 by surfacing canonical contribution commitment percentage and default reporting currency in the founder home project cards, founder project index cards, and per-project setup readiness card. Added localized labels and missing-gap copy in English, French, and Spanish.
 - validation: `pnpm test tests/founder-workspace.test.ts` passed. `pnpm typecheck` passed. `pnpm lint` passed. `pnpm test` passed. `pnpm build` passed. Browser/manual smoke was not completed because local Supabase remains unhealthy after the storage container failure recorded in the prior entry.
 - follow-ups: Repair local Supabase storage health before visual/browser smoke; continue issue #63 for seed and smoke coverage.
+
+## 2026-07-20T17:57:41.000Z - Issue 63 commitment readiness seed and smoke coverage
+
+- agent: Codex
+- branch: codex/operational-mvp-issue-51
+- head: 03f723e
+- summary: Completed issue #63 by making the curated local project seed fixtures explicit about default reporting currency, adding automated seed assertions for contribution commitment readiness, and documenting the seeded founder/project route smoke contract in local seed and operational MVP docs.
+- validation: `pnpm test tests/local-public-seed.test.ts tests/founder-workspace.test.ts` passed. `git diff --check` passed. `pnpm lint` passed. `pnpm test` passed. `pnpm typecheck` passed. `supabase start` succeeded after applying migrations and seeding data. Local DB smoke query confirmed `civic-mesh` has `payment_percentage=1.00`, `default_reporting_currency_code=USD`, and `maya@fundloop.example.com` is an admin participant.
+- follow-ups: Continue into Goal #53 contribution submission now that project commitment readiness is seeded and testable.
