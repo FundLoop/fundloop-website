@@ -1851,6 +1851,7 @@ export type Database = {
           cumulative_donated: number | null
           cumulative_revenue: number | null
           default_payment_method_id: number | null
+          default_reporting_currency_code: string
           deleted_at: string | null
           description: string
           detailed_description: string | null
@@ -1878,6 +1879,7 @@ export type Database = {
           cumulative_donated?: number | null
           cumulative_revenue?: number | null
           default_payment_method_id?: number | null
+          default_reporting_currency_code?: string
           deleted_at?: string | null
           description: string
           detailed_description?: string | null
@@ -1905,6 +1907,7 @@ export type Database = {
           cumulative_donated?: number | null
           cumulative_revenue?: number | null
           default_payment_method_id?: number | null
+          default_reporting_currency_code?: string
           deleted_at?: string | null
           description?: string
           detailed_description?: string | null
@@ -3862,6 +3865,7 @@ export type Database = {
           p_category_ids: number[]
           p_contact_email: string
           p_default_payment_method_id: number
+          p_default_reporting_currency_code?: string
           p_description: string
           p_detailed_description: string
           p_logo_url: string

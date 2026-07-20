@@ -25,6 +25,7 @@ function buildHome(overrides: Partial<Parameters<typeof buildFounderWorkspaceHom
         is_public: true,
         status: "active",
         payment_percentage: 3,
+        default_reporting_currency_code: "CAD",
         default_payment_method_id: 10,
       },
       {
@@ -36,6 +37,7 @@ function buildHome(overrides: Partial<Parameters<typeof buildFounderWorkspaceHom
         is_public: false,
         status: "draft",
         payment_percentage: null,
+        default_reporting_currency_code: "",
         default_payment_method_id: null,
       },
     ],
@@ -134,6 +136,9 @@ describe("buildFounderWorkspaceHome", () => {
     expect(project?.setup).toMatchObject({
       hasSlug: true,
       hasContributionRate: true,
+      hasDefaultReportingCurrency: true,
+      contributionPercentage: 3,
+      defaultReportingCurrencyCode: "CAD",
       hasDefaultPaymentMethod: true,
       enabledPaymentMethodCount: 1,
       isReady: true,
@@ -213,6 +218,7 @@ describe("buildFounderWorkspaceHome", () => {
     expect(draftProject?.setup.missingItems).toEqual([
       "slug",
       "contribution_rate",
+      "default_reporting_currency",
       "payment_method",
       "default_payment_method",
     ])
@@ -278,6 +284,7 @@ describe("buildFounderWorkspaceHome", () => {
           is_public: true,
           status: "active",
           payment_percentage: 1,
+          default_reporting_currency_code: "USD",
           default_payment_method_id: null,
         },
         {
@@ -289,6 +296,7 @@ describe("buildFounderWorkspaceHome", () => {
           is_public: true,
           status: "active",
           payment_percentage: 1,
+          default_reporting_currency_code: "USD",
           default_payment_method_id: null,
         },
       ],

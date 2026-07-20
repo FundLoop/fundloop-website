@@ -68,6 +68,7 @@ export type ProjectOnboardingPayload = {
   billingEmail: string
   billingFrequency: string
   paymentPercentage: string
+  defaultReportingCurrencyCode: string
   paymentPeriodicityId: string
   cryptoPaymentMethods: ProjectCryptoPaymentMethod[]
 }
@@ -164,6 +165,7 @@ export const DEFAULT_PROJECT_ONBOARDING_PAYLOAD: ProjectOnboardingPayload = {
   billingEmail: "",
   billingFrequency: "monthly",
   paymentPercentage: "1.0",
+  defaultReportingCurrencyCode: "USD",
   paymentPeriodicityId: "",
   cryptoPaymentMethods: [],
 }
@@ -253,6 +255,7 @@ export function sanitizeProjectOnboardingPayload(payload: unknown): Partial<Proj
     billingEmail: getStringValue(payload.billingEmail),
     billingFrequency: getStringValue(payload.billingFrequency),
     paymentPercentage: getStringValue(payload.paymentPercentage),
+    defaultReportingCurrencyCode: getStringValue(payload.defaultReportingCurrencyCode),
     paymentPeriodicityId: getStringValue(payload.paymentPeriodicityId),
     cryptoPaymentMethods: rawMethods
       .filter(isRecord)

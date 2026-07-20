@@ -20,6 +20,9 @@ export type FounderWorkspaceProject = {
   setup: {
     hasSlug: boolean
     hasContributionRate: boolean
+    hasDefaultReportingCurrency: boolean
+    contributionPercentage: number | null
+    defaultReportingCurrencyCode: string
     hasDefaultPaymentMethod: boolean
     enabledPaymentMethodCount: number
     isReady: boolean
@@ -118,6 +121,7 @@ type ProjectDetailRow = {
   is_public: boolean | null
   status: string | null
   payment_percentage: number | null
+  default_reporting_currency_code: string
   default_payment_method_id: number | null
 }
 
@@ -412,9 +416,11 @@ export function buildFounderWorkspaceHome({
       project?.default_payment_method_id !== undefined &&
       projectPaymentMethods.some((method) => method.id === project.default_payment_method_id && method.is_enabled === true)
     const hasContributionRate = numberValue(project?.payment_percentage) > 0
+    const hasDefaultReportingCurrency = Boolean(project?.default_reporting_currency_code)
     const missingItems = [
       managedProject.slug ? null : "slug",
       hasContributionRate ? null : "contribution_rate",
+      hasDefaultReportingCurrency ? null : "default_reporting_currency",
       enabledPaymentMethodCount > 0 ? null : "payment_method",
       hasDefaultPaymentMethod ? null : "default_payment_method",
     ].filter((item): item is string => Boolean(item))
@@ -435,6 +441,9 @@ export function buildFounderWorkspaceHome({
       setup: {
         hasSlug: Boolean(managedProject.slug),
         hasContributionRate,
+        hasDefaultReportingCurrency,
+        contributionPercentage: project?.payment_percentage ?? null,
+        defaultReportingCurrencyCode: project?.default_reporting_currency_code ?? "USD",
         hasDefaultPaymentMethod,
         enabledPaymentMethodCount,
         isReady: missingItems.length === 0,
@@ -558,7 +567,7 @@ export async function getFounderWorkspaceHome(navigationContext: NavigationConte
       "projects",
       supabase
         .from("projects")
-        .select("id, slug, name, description, logo_url, is_public, status, payment_percentage, default_payment_method_id")
+        .select("id, slug, name, description, logo_url, is_public, status, payment_percentage, default_reporting_currency_code, default_payment_method_id")
         .in("id", projectIds)
         .is("deleted_at", null)
         .returns<ProjectDetailRow[]>(),

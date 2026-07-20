@@ -89,6 +89,7 @@ describe("project onboarding commands", () => {
           billingEmail: "",
           billingFrequency: "monthly",
           paymentPercentage: "1.0",
+          defaultReportingCurrencyCode: "USD",
           paymentPeriodicityId: "1",
           cryptoPaymentMethods: [],
         },
@@ -131,6 +132,7 @@ describe("project onboarding commands", () => {
                 billingEmail: "finance@civicmesh.example.com",
                 billingFrequency: "monthly",
                 paymentPercentage: "1.5",
+                defaultReportingCurrencyCode: "CAD",
                 paymentPeriodicityId: "1",
                 cryptoPaymentMethods: [
                   {
@@ -203,6 +205,7 @@ describe("project onboarding commands", () => {
               billingEmail: "",
               billingFrequency: "monthly",
               paymentPercentage: "1.5",
+              defaultReportingCurrencyCode: "EUR",
               paymentPeriodicityId: "",
               cryptoPaymentMethods: [],
             },
@@ -233,8 +236,46 @@ describe("project onboarding commands", () => {
       "publish_project_onboarding_draft_atomic",
       expect.objectContaining({
         p_slug: "civic-mesh",
+        p_default_reporting_currency_code: "EUR",
       }),
     )
+  })
+
+  it("rejects invalid project default reporting currency", async () => {
+    const supabase = createSupabaseMock({
+      project_onboarding_drafts: [
+        {
+          data: {
+            id: 10,
+            user_id: "user-1",
+            current_screen: "review",
+            payload: {
+              name: "Civic Mesh",
+              slug: "civic-mesh",
+              description: "Short description",
+              pledgeAccepted: true,
+              paymentPercentage: "1.5",
+              defaultReportingCurrencyCode: "usd$",
+            },
+            started_at: "2026-04-15T00:00:00.000Z",
+            updated_at: "2026-04-15T00:00:00.000Z",
+            completed_at: null,
+          },
+          error: null,
+        },
+      ],
+      users: [{ data: { cubid_identity_status: "linked" }, error: null }],
+    })
+
+    await expect(
+      executeProjectOnboardingPublishCommand(supabase as never, { actorUserId: "user-1" }),
+    ).resolves.toEqual({
+      ok: false,
+      error: {
+        code: "invalid_reporting_currency",
+        message: "Project default reporting currency must be a 3-12 letter currency or asset code",
+      },
+    })
   })
 
   it("rejects incomplete project publish requirements", async () => {
