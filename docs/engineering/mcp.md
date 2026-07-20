@@ -83,7 +83,7 @@ It verifies framing, server identity, tool registration, and health response sha
 For local Edge Function smoke after serving `mcp`, use:
 
 ```bash
-FUNDLOOP_MCP_HTTP_URL=http://127.0.0.1:54321/functions/v1/mcp pnpm mcp:edge:smoke
+FUNDLOOP_MCP_HTTP_URL=http://127.0.0.1:55321/functions/v1/mcp pnpm mcp:edge:smoke
 ```
 
 The Edge smoke checks `GET /health`, `initialize`, `tools/list`, and `tools/call` for `fundloop.health`.
@@ -112,7 +112,7 @@ Minimum local stdio runtime:
 
 ```env
 FUNDLOOP_MCP_BEARER_TOKEN=non_production_supabase_access_token
-NEXT_PUBLIC_SUPABASE_URL=http://127.0.0.1:54321
+NEXT_PUBLIC_SUPABASE_URL=http://127.0.0.1:55321
 NEXT_PUBLIC_SUPABASE_ANON_KEY=local_publishable_or_anon_key
 ```
 

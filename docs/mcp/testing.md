@@ -43,7 +43,7 @@ The stdio smoke verifies:
 Local:
 
 ```bash
-FUNDLOOP_MCP_HTTP_URL=http://127.0.0.1:54321/functions/v1/mcp \
+FUNDLOOP_MCP_HTTP_URL=http://127.0.0.1:55321/functions/v1/mcp \
   FUNDLOOP_MCP_BEARER_TOKEN=local-smoke-token \
   pnpm mcp:edge:smoke
 ```

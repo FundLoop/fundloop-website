@@ -19,7 +19,7 @@ This is useful for local and controlled agent experiments, but it is not yet the
 The target production shape is a remote MCP server over Streamable HTTP, deployed as a Supabase Edge Function once auth and operational controls are ready.
 
 - Remote endpoint: `https://<project-ref>.supabase.co/functions/v1/mcp`.
-- Local endpoint for Edge development: `http://127.0.0.1:54321/functions/v1/mcp`.
+- Local endpoint for Edge development: `http://127.0.0.1:55321/functions/v1/mcp`.
 - Local stdio wrapper: optional compatibility layer that forwards to the same tool registry and Edge/read contracts.
 - SDK choice: official MCP TypeScript SDK with an Edge-compatible Streamable HTTP transport if it bundles cleanly under Supabase Deno; otherwise evaluate `mcp-lite` or `mcp-handler` as a narrow runtime adapter.
 
@@ -70,7 +70,7 @@ Resources follow the same model: user resources are scoped to the authenticated 
 ## Deployment Environments
 
 - Local: stdio package plus local Supabase; useful for smoke and tool development.
-- Local Edge smoke: `FUNDLOOP_MCP_HTTP_URL=http://127.0.0.1:54321/functions/v1/mcp pnpm mcp:edge:smoke`.
+- Local Edge smoke: `FUNDLOOP_MCP_HTTP_URL=http://127.0.0.1:55321/functions/v1/mcp pnpm mcp:edge:smoke`.
 - Preview/dev: remote Supabase project and Preview app environment; suitable for MCP integration testing with non-production actors.
 - Production/main: only after Streamable HTTP auth, rate limiting, audit expectations, and publication docs are complete.
 - Emergency disable: set `FUNDLOOP_MCP_DISABLED_TOOLS` to exact tool names; disabled tools are hidden from `tools/list`, and local registry calls return `tool_disabled` if called directly.
