@@ -56,7 +56,7 @@
 
 - agent: Codex
 - branch: codex/operational-mvp-issue-51
-- head: 3aafa32
+- head: efcad7e
 - summary: Implemented issue #67 by adding the MVP project attribution dataset and row schema, typed `project-attribution-dataset-submit` Edge Function contract/adapters, reusable server-side attribution submission command, Supabase Edge Function wrapper, generated type updates, focused contract/command/adapter tests, and engineering documentation for the raw-row MVP plus future zkActivitySum proof metadata boundary.
 - validation: `pnpm test tests/project-attribution-dataset-submit-contract.test.ts tests/project-attribution-command.test.ts tests/project-attribution-dataset-adapter.test.ts` passed with 3 files and 10 tests. `pnpm dlx node@22.22.1 /opt/homebrew/bin/pnpm typecheck` passed. `deno cache --config supabase/functions/deno.json supabase/functions/project-attribution-dataset-submit/index.ts` passed. `git diff --check` passed. `pnpm dlx node@22.22.1 /opt/homebrew/bin/pnpm lint` passed. `pnpm dlx node@22.22.1 /opt/homebrew/bin/pnpm test` passed with 85 files and 397 tests. `pnpm dlx node@22.22.1 /opt/homebrew/bin/pnpm build` passed.
 - follow-ups: After #67 validation, run `$issue-validator`; #68 should build founder UI on top of the browser adapter, and #69 should add internal-operator approval/readiness.
