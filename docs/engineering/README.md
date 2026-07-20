@@ -31,6 +31,7 @@ Current high-signal docs:
 - [MCP Testing](../mcp/testing.md)
 - [MCP Readiness Ledger](../mcp/readiness.md)
 - [Navigation and Shell Architecture](./navigation-shell.md)
+- [Operational MVP](./operational-mvp.md)
 - [Operations Runbook](./operations-runbook.md)
 - [Reporting Publication](./reporting.md)
 - [Release Candidate Path](./release-candidate.md)
