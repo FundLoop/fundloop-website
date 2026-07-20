@@ -742,6 +742,7 @@ export const enMessages = {
     body:
       "Track setup readiness, contribution obligations, attribution data, and the next operational step for every project you manage.",
     open: "Open",
+    none: "None",
     stats: {
       projects: "Managed projects",
       ready: "Ready projects",
@@ -786,6 +787,7 @@ export const enMessages = {
       title: "Projects needing your attention",
       cta: "Open all projects",
       slugPending: "Slug pending",
+      commitment: "Commitment",
       methods: "Methods",
       datasets: "Datasets",
       members: "Members",
@@ -800,6 +802,7 @@ export const enMessages = {
     title: "Project workspaces",
     body:
       "Each project now has a thin founder home with readiness, payment, attribution, growth, and team context. Deep contribution and zkAS operations stay in their existing routes for now.",
+    none: "None",
     empty: {
       title: "No projects to manage yet",
       body: "When you publish a project or receive founder/admin access, it will appear here with operational links.",
@@ -814,6 +817,7 @@ export const enMessages = {
       needsSetup: "Needs setup",
     },
     metrics: {
+      commitment: "Commitment",
       methods: "Methods",
       pending: "Pending",
       datasets: "Datasets",
@@ -824,6 +828,7 @@ export const enMessages = {
       missing: {
         slug: "slug",
         contribution_rate: "contribution rate",
+        default_reporting_currency: "default reporting currency",
         payment_method: "enabled payment method",
         default_payment_method: "default payment method",
       },
@@ -871,9 +876,10 @@ export const enMessages = {
     },
     setup: {
       title: "Setup readiness",
-      description: "The project needs a slug, contribution rate, and enabled default payment method before operations are clean.",
+      description: "The project needs a slug, contribution rate, reporting currency, and enabled default payment method before operations are clean.",
       methods: "Methods",
       rate: "Rate",
+      currency: "Reporting currency",
       defaultMethod: "Default method",
       publicProfile: "Public profile",
       needsWork: "Resolve setup gaps before treating this project as fully operational.",

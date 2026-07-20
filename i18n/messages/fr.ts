@@ -726,6 +726,7 @@ export const frMessages = {
     body:
       "Suivez la préparation, les obligations de contribution, les données d’attribution et la prochaine action opérationnelle pour chaque projet que vous gérez.",
     open: "Ouvrir",
+    none: "Aucun",
     stats: {
       projects: "Projets gérés",
       ready: "Projets prêts",
@@ -770,6 +771,7 @@ export const frMessages = {
       title: "Projets qui demandent votre attention",
       cta: "Ouvrir tous les projets",
       slugPending: "Slug en attente",
+      commitment: "Engagement",
       methods: "Méthodes",
       datasets: "Jeux",
       members: "Membres",
@@ -784,6 +786,7 @@ export const frMessages = {
     title: "Espaces projet",
     body:
       "Chaque projet dispose maintenant d’un accueil fondateur léger avec préparation, paiements, attribution, croissance et contexte d’équipe. Les opérations profondes restent sur leurs routes actuelles pour l’instant.",
+    none: "Aucun",
     empty: {
       title: "Aucun projet à gérer pour le moment",
       body: "Quand vous publiez un projet ou recevez un accès fondateur/admin, il apparaîtra ici avec ses liens opérationnels.",
@@ -798,6 +801,7 @@ export const frMessages = {
       needsSetup: "À configurer",
     },
     metrics: {
+      commitment: "Engagement",
       methods: "Méthodes",
       pending: "En attente",
       datasets: "Jeux",
@@ -808,6 +812,7 @@ export const frMessages = {
       missing: {
         slug: "slug",
         contribution_rate: "taux de contribution",
+        default_reporting_currency: "devise de reporting par défaut",
         payment_method: "méthode de paiement active",
         default_payment_method: "méthode par défaut",
       },
@@ -855,9 +860,10 @@ export const frMessages = {
     },
     setup: {
       title: "Préparation",
-      description: "Le projet a besoin d’un slug, d’un taux de contribution et d’une méthode de paiement par défaut active.",
+      description: "Le projet a besoin d’un slug, d’un taux de contribution, d’une devise de reporting et d’une méthode de paiement par défaut active.",
       methods: "Méthodes",
       rate: "Taux",
+      currency: "Devise de reporting",
       defaultMethod: "Méthode par défaut",
       publicProfile: "Profil public",
       needsWork: "Corrigez les éléments manquants avant de considérer ce projet comme pleinement opérationnel.",

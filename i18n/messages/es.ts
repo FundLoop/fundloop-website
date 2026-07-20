@@ -726,6 +726,7 @@ export const esMessages = {
     body:
       "Sigue preparación, obligaciones de contribución, datos de atribución y la siguiente acción operativa de cada proyecto que gestionas.",
     open: "Abrir",
+    none: "Ninguno",
     stats: {
       projects: "Proyectos gestionados",
       ready: "Proyectos listos",
@@ -770,6 +771,7 @@ export const esMessages = {
       title: "Proyectos que necesitan tu atención",
       cta: "Abrir todos los proyectos",
       slugPending: "Slug pendiente",
+      commitment: "Compromiso",
       methods: "Métodos",
       datasets: "Datos",
       members: "Miembros",
@@ -784,6 +786,7 @@ export const esMessages = {
     title: "Espacios de proyecto",
     body:
       "Cada proyecto ahora tiene un hogar fundador ligero con preparación, pagos, atribución, crecimiento y contexto de equipo. Las operaciones profundas siguen en sus rutas actuales por ahora.",
+    none: "Ninguno",
     empty: {
       title: "Todavía no hay proyectos que gestionar",
       body: "Cuando publiques un proyecto o recibas acceso fundador/admin, aparecerá aquí con sus enlaces operativos.",
@@ -798,6 +801,7 @@ export const esMessages = {
       needsSetup: "Falta configurar",
     },
     metrics: {
+      commitment: "Compromiso",
       methods: "Métodos",
       pending: "Pendientes",
       datasets: "Datos",
@@ -808,6 +812,7 @@ export const esMessages = {
       missing: {
         slug: "slug",
         contribution_rate: "tasa de contribución",
+        default_reporting_currency: "moneda predeterminada de reporting",
         payment_method: "método de pago activo",
         default_payment_method: "método predeterminado",
       },
@@ -855,9 +860,10 @@ export const esMessages = {
     },
     setup: {
       title: "Preparación",
-      description: "El proyecto necesita slug, tasa de contribución y método de pago predeterminado activo.",
+      description: "El proyecto necesita slug, tasa de contribución, moneda de reporting y método de pago predeterminado activo.",
       methods: "Métodos",
       rate: "Tasa",
+      currency: "Moneda de reporting",
       defaultMethod: "Método predeterminado",
       publicProfile: "Perfil público",
       needsWork: "Resuelve los faltantes antes de tratar este proyecto como plenamente operativo.",

@@ -26,6 +26,14 @@ function readinessVariant(project: FounderWorkspaceProject) {
   return "border-amber-500/30 bg-amber-500/10 text-amber-700 dark:text-amber-200"
 }
 
+function formatCommitment(project: FounderWorkspaceProject, fallback: string) {
+  if (!project.setup.hasContributionRate) {
+    return fallback
+  }
+
+  return `${project.setup.contributionPercentage}% / ${project.setup.defaultReportingCurrencyCode}`
+}
+
 export default async function FounderPage({ params }: FounderPageProps) {
   const { locale } = await params
   const navigationContext = await getNavigationContext()
@@ -172,7 +180,8 @@ export default async function FounderPage({ params }: FounderPageProps) {
                   {project.setup.isReady ? t("badges.ready") : t("badges.needsSetup")}
                 </Badge>
               </div>
-              <div className="mt-5 grid gap-3 sm:grid-cols-3">
+              <div className="mt-5 grid gap-3 sm:grid-cols-4">
+                <MiniMetric label={t("projectList.commitment")} value={formatCommitment(project, t("none"))} />
                 <MiniMetric label={t("projectList.methods")} value={String(project.setup.enabledPaymentMethodCount)} />
                 <MiniMetric label={t("projectList.datasets")} value={String(project.attribution.datasetCount)} />
                 <MiniMetric label={t("projectList.members")} value={String(project.team.memberCount)} />
