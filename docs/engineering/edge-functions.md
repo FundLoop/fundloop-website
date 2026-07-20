@@ -42,6 +42,7 @@ The first migrated domains are:
 - `project-payment-drafts-create`
 - founder payment operations:
   - `project-monthly-contribution-submit`
+  - `project-attribution-dataset-submit`
   - `project-crypto-route-create`
   - `project-crypto-route-update`
   - `project-crypto-route-move`
@@ -75,6 +76,9 @@ The canonical write path is now:
 For founder payment operations:
 
 - monthly contribution submissions now go through `project-monthly-contribution-submit`, which writes one canonical current submission per project/monthly cycle with source currency, USD equivalent, commitment percentage, and calculated contribution amount
+- MVP attribution submissions now go through `project-attribution-dataset-submit`, which writes one canonical current attribution dataset per project/monthly cycle plus normalized attribution rows
+- attribution submission requires an authenticated project member or organization admin, an open monthly cycle, scoped CUBID identity on every row, and resolved linked/verified FundLoop users before a submitted dataset can be saved
+- the attribution schema reserves optional `proof_type`, `proof_artifact_uri`, `verifier_backend`, and `verification_status` fields for the later zkActivitySum ingest path, but MVP submission remains non-zk raw-row operational data
 - the command requires an authenticated project member or organization admin, an open monthly cycle, period bounds matching the cycle, and a commitment percentage matching the project's canonical commitment
 - the payment-route manager calls browser Edge Function adapters for route create, update, move, enable, and disable commands
 - the crypto payment dialog records onchain submissions through `project-onchain-payment-submission-record`

@@ -1690,6 +1690,194 @@ export type Database = {
           },
         ]
       }
+      project_attribution_datasets: {
+        Row: {
+          approved_at: string | null
+          approved_by_user_id: string | null
+          created_at: string
+          id: number
+          monthly_cycle_id: number
+          note: string | null
+          project_id: number
+          proof_artifact_uri: string | null
+          proof_type: string | null
+          rejected_at: string | null
+          rejected_by_user_id: string | null
+          rejection_reason: string | null
+          row_count: number
+          status: string
+          submitted_at: string
+          submitted_by_user_id: string | null
+          total_attribution_points: number
+          updated_at: string
+          verification_status: string | null
+          verifier_backend: string | null
+        }
+        Insert: {
+          approved_at?: string | null
+          approved_by_user_id?: string | null
+          created_at?: string
+          id?: number
+          monthly_cycle_id: number
+          note?: string | null
+          project_id: number
+          proof_artifact_uri?: string | null
+          proof_type?: string | null
+          rejected_at?: string | null
+          rejected_by_user_id?: string | null
+          rejection_reason?: string | null
+          row_count?: number
+          status?: string
+          submitted_at?: string
+          submitted_by_user_id?: string | null
+          total_attribution_points?: number
+          updated_at?: string
+          verification_status?: string | null
+          verifier_backend?: string | null
+        }
+        Update: {
+          approved_at?: string | null
+          approved_by_user_id?: string | null
+          created_at?: string
+          id?: number
+          monthly_cycle_id?: number
+          note?: string | null
+          project_id?: number
+          proof_artifact_uri?: string | null
+          proof_type?: string | null
+          rejected_at?: string | null
+          rejected_by_user_id?: string | null
+          rejection_reason?: string | null
+          row_count?: number
+          status?: string
+          submitted_at?: string
+          submitted_by_user_id?: string | null
+          total_attribution_points?: number
+          updated_at?: string
+          verification_status?: string | null
+          verifier_backend?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "project_attribution_datasets_approved_by_user_id_fkey"
+            columns: ["approved_by_user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "project_attribution_datasets_monthly_cycle_id_fkey"
+            columns: ["monthly_cycle_id"]
+            isOneToOne: false
+            referencedRelation: "monthly_cycles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "project_attribution_datasets_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "project_attribution_datasets_rejected_by_user_id_fkey"
+            columns: ["rejected_by_user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "project_attribution_datasets_submitted_by_user_id_fkey"
+            columns: ["submitted_by_user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["user_id"]
+          },
+        ]
+      }
+      project_attribution_rows: {
+        Row: {
+          attribution_points: number
+          category: string | null
+          created_at: string
+          dataset_id: number
+          evidence_reference: string | null
+          id: number
+          monthly_cycle_id: number
+          notes: string | null
+          project_id: number
+          resolution_message: string | null
+          resolution_status: string
+          row_index: number
+          scoped_cubid_id: string
+          user_email: string | null
+          user_id: string | null
+        }
+        Insert: {
+          attribution_points: number
+          category?: string | null
+          created_at?: string
+          dataset_id: number
+          evidence_reference?: string | null
+          id?: number
+          monthly_cycle_id: number
+          notes?: string | null
+          project_id: number
+          resolution_message?: string | null
+          resolution_status?: string
+          row_index: number
+          scoped_cubid_id: string
+          user_email?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          attribution_points?: number
+          category?: string | null
+          created_at?: string
+          dataset_id?: number
+          evidence_reference?: string | null
+          id?: number
+          monthly_cycle_id?: number
+          notes?: string | null
+          project_id?: number
+          resolution_message?: string | null
+          resolution_status?: string
+          row_index?: number
+          scoped_cubid_id?: string
+          user_email?: string | null
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "project_attribution_rows_dataset_id_fkey"
+            columns: ["dataset_id"]
+            isOneToOne: false
+            referencedRelation: "project_attribution_datasets"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "project_attribution_rows_monthly_cycle_id_fkey"
+            columns: ["monthly_cycle_id"]
+            isOneToOne: false
+            referencedRelation: "monthly_cycles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "project_attribution_rows_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "project_attribution_rows_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["user_id"]
+          },
+        ]
+      }
       project_monthly_contribution_submissions: {
         Row: {
           calculated_contribution_amount: number

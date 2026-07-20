@@ -116,7 +116,9 @@ The prep workspace surfaces:
 - missing or unlinked CUBID participant snapshots
 - informational live-row drift between current linked rows and the immutable manifest
 
-Live contribution-submission readiness is also informational in this phase. Goal #56 owns adding contribution submissions to the immutable lock manifest; until then, the prep workspace intentionally keeps submission readiness visible without treating it as a calculation input. Live drift is informational because downstream calculation should use the locked manifest, not mutable current rows. Prep does not create zkAS runs, package calculation inputs, approve exceptions, or move the cycle into the next status. Those responsibilities remain later sessions.
+Live contribution-submission readiness is also informational in this phase. Goal #56 owns adding contribution submissions to the immutable lock manifest; until then, the prep workspace intentionally keeps submission readiness visible without treating it as a calculation input. Live drift is informational because downstream calculation should use the locked manifest, not mutable current rows.
+
+Issue #67 adds the backend command/schema for MVP attribution submissions. `project-attribution-dataset-submit` stores one canonical current attribution dataset per project/cycle and normalized rows requiring scoped CUBID identities. These rows remain internally inspectable for MVP operators and founders, while optional proof metadata fields reserve the future zkActivitySum ingest path. Operator approval/readiness remains #69, so submitted attribution datasets are not calculation-ready until the approval workflow marks them approved. Prep does not create zkAS runs, package calculation inputs, approve exceptions, or move the cycle into the next status. Those responsibilities remain later sessions.
 
 ## zkAS Stage Alignment
 
