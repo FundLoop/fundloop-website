@@ -4,7 +4,7 @@
 >
 > Active open MCP follow-ups were migrated to [Feature #43: MCP production launch and publication follow-ups](https://github.com/FundLoop/fundloop-website/issues/43) and its scoped Goal sub-issues [#44](https://github.com/FundLoop/fundloop-website/issues/44)-[#50](https://github.com/FundLoop/fundloop-website/issues/50). Keep this file only as historical planning context. Do not add new work here.
 >
-> The EverFund/VentureFamily rebrand follow-up in this file was intentionally not migrated into GitHub issues per product direction.
+
 
 ## Recommended default architecture
 
@@ -27,16 +27,6 @@ Tool handlers should normally call the same Supabase Edge Function middleware or
 
 # MCP server capability TODOs
 
-## Platform follow-up. Rebrand EverFund references to VentureFamily
-
-- Status: Not started
-- Timestamp started: TBD
-- Head when starting: TBD
-- Timestamp completed: 2026-05-06T20:10:07-0400
-- Feature branch(es): TBD
-- Session-log reference(s): TBD
-
-Check out a new feature branch from current `dev`, then rename this tool/platform from EverFund to VentureFamily throughout the repo. When the name is printed in user-facing UI, docs intended for users, marketing copy, navigation, or support surfaces, stylize it as `VentureFamily`. Keep code identifiers, filenames, and migration names reviewable and only rename technical symbols when doing so is safe and clearly tied to visible branding. Do not start this rebrand from the current MCP branch; it should be isolated as a future product/platform branch.
 
 ## MCP-0. Initialize this document
 

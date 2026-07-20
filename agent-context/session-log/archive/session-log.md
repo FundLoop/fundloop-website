@@ -860,10 +860,9 @@ Complete MCP-5.1 by turning the MCP tool catalog into one implementation-ready b
 - head: pending MCP-4 commit
 
 #### Objective
-Complete MCP-4 by adding strict input validation, payload limits, output redaction, and documentation for the current MCP tool surface, while parking the requested VentureFamily rebrand as a future isolated todo.
+Complete MCP-4 by adding strict input validation, payload limits, output redaction, and documentation for the current MCP tool surface.
 
 #### Actions Taken
-- Added a future platform todo to rebrand EverFund references to `VentureFamily` from a new branch based on `dev`, without implementing the rebrand in this MCP branch.
 - Added `packages/mcp-server/src/safety.ts` with registry-level MCP input validation, size/depth limits, URL-shaped input rejection, and output sanitization.
 - Extended MCP tool schema metadata with string, number, object, enum, and format constraints.
 - Updated base, founder, project-member, and operator tool schemas with slug, cycle-key, transaction-hash, wallet-address, attempt-id, integer, range, and length constraints.

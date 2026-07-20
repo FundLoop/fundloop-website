@@ -12,7 +12,7 @@
 - agent: Codex
 - branch: codex/mcp-hosted-validation-fixes
 - head: 84418e5
-- summary: Migrated remaining open MCP roadmap items from `agent-context/todo-mcp.md` into GitHub Issues under Project 1, with parent Feature #43 and scoped Goal issues #44-#50. Left the EverFund/VentureFamily rebrand follow-up unmigrated per product direction. Marked `todo-mcp.md` and `todo-1-through-52.md` as superseded and updated `agent-context/README.md` to point future planning at GitHub Project 1.
+- summary: Migrated remaining open MCP roadmap items from `agent-context/todo-mcp.md` into GitHub Issues under Project 1, with parent Feature #43 and scoped Goal issues #44-#50. Marked `todo-mcp.md` and `todo-1-through-52.md` as superseded and updated `agent-context/README.md` to point future planning at GitHub Project 1.
 - validation: Verified GitHub auth, repository, Project 1 fields/status values, issue hierarchy, and Project status `Scoped` for #43-#50. Local markdown validation pending final diff check.
 - follow-ups: Vet the new scoped GitHub issue tree before moving executable Goals to Ready.
 
@@ -24,3 +24,12 @@
 - summary: Added `docs/engineering/operational-mvp.md` as the long-lived spec for the project-signup-to-bookkeeping-earnings MVP, including contribution submissions, attribution data, user asset priorities, cycle lock, deterministic calculation, verification/approval, and credited-but-not-paid earnings. Linked the spec from the engineering docs index.
 - validation: `git diff --check` passed. Documentation-only change.
 - follow-ups: Turn this spec into GitHub Project 1 Feature/Goal issues before implementation work starts.
+
+## 2026-07-20T13:02:36.000Z - Remove parked rebrand todo references
+
+- agent: Codex
+- branch: codex/mcp-hosted-validation-fixes
+- head: e354da8
+- summary: Removed the parked EverFund/VentureFamily rebrand todo and related planning/session-log references from agent-context history after the user confirmed those should not be migrated or preserved as active issues.
+- validation: `git diff --check` passed. Documentation-only cleanup.
+- follow-ups: None.
