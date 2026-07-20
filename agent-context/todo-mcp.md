@@ -1,5 +1,11 @@
 # FundLoop MCP Roadmap
 
+> Superseded on 2026-07-20 by GitHub Issues and [FundLoop Project 1](https://github.com/orgs/FundLoop/projects/1).
+>
+> Active open MCP follow-ups were migrated to [Feature #43: MCP production launch and publication follow-ups](https://github.com/FundLoop/fundloop-website/issues/43) and its scoped Goal sub-issues [#44](https://github.com/FundLoop/fundloop-website/issues/44)-[#50](https://github.com/FundLoop/fundloop-website/issues/50). Keep this file only as historical planning context. Do not add new work here.
+>
+> The EverFund/VentureFamily rebrand follow-up in this file was intentionally not migrated into GitHub issues per product direction.
+
 ## Recommended default architecture
 
 Build a **remote MCP server over Streamable HTTP** as a Supabase Edge Function, with an optional local `stdio` wrapper only if the product needs local-client support. MCP supports `stdio` and Streamable HTTP transports, and remote servers are a natural fit for HTTP-based product APIs. Supabase’s current MCP guidance shows Edge Functions using the official MCP TypeScript SDK with `WebStandardStreamableHTTPServerTransport`, and also notes that `mcp-lite` / `mcp-handler` can work on the Edge Runtime. ([Model Context Protocol][1])
