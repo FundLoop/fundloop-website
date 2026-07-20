@@ -44,6 +44,7 @@ FundLoop intentionally uses a non-default local Supabase port block so it can ru
 | Shadow DB | `55320` |
 | Studio | `55323` |
 | Mailpit | `55324` |
+| Analytics / Logflare | `55327` |
 | Pooler, if enabled | `55329` |
 
 Point local app env at the FundLoop API port:

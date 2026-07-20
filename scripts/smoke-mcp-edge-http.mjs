@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 
-const baseUrl = (process.env.FUNDLOOP_MCP_HTTP_URL || "http://127.0.0.1:54321/functions/v1/mcp").replace(/\/$/, "")
+const baseUrl = (process.env.FUNDLOOP_MCP_HTTP_URL || "http://127.0.0.1:55321/functions/v1/mcp").replace(/\/$/, "")
 const bearerToken = process.env.FUNDLOOP_MCP_BEARER_TOKEN || "local-smoke-token"
 const requireHttps = process.env.FUNDLOOP_MCP_REQUIRE_HTTPS === "true"
 
