@@ -89,18 +89,11 @@ The [`supabase/`](supabase/) directory is the canonical database source of truth
 For local database work, the tracked migrations plus `supabase/seed.sql` should be replayable directly:
 
 ```bash
-DOCKER_HOST=unix:///var/run/docker.sock supabase start
-DOCKER_HOST=unix:///var/run/docker.sock supabase db reset
+DOCKER_CONTEXT=colima-agents supabase start -x logflare -x vector
+DOCKER_CONTEXT=colima-agents supabase db reset
 ```
 
-If the local Supabase analytics/Logflare container is unhealthy on your machine, use the documented smoke fallback:
-
-```bash
-DOCKER_HOST=unix:///var/run/docker.sock supabase start -x logflare
-DOCKER_HOST=unix:///var/run/docker.sock supabase db reset
-```
-
-That mode is valid for app smoke tests that need database, auth, storage, REST, and Edge Functions, but it does not validate analytics behavior.
+Local analytics/logging is intentionally excluded for lean agent runs. This mode is valid for app smoke tests that need database, auth, storage, REST, and Edge Functions, but it does not validate analytics behavior.
 
 For the deterministic seeded founder/operator smoke persona, use:
 
