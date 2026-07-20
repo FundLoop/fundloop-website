@@ -117,6 +117,7 @@ A founder/project admin submits attribution data that identifies which users con
 Minimum row shape:
 
 - `userId` or resolvable user email/handle
+- scoped CUBID identity for the project/protocol context
 - `projectSlug`
 - `cycleKey`
 - `attributionPoints`
@@ -125,6 +126,8 @@ Minimum row shape:
 
 Rules:
 
+- Scoped CUBID identity is required for every attribution row.
+- FundLoop user id or resolvable email/handle may be included when available for MVP operator/debug visibility.
 - Attribution rows must resolve to FundLoop users before approval.
 - Only CUBID-linked users are eligible for distribution.
 - Attribution datasets have status `draft`, `submitted`, `approved`, or `rejected`.
@@ -135,9 +138,11 @@ Rules:
 Acceptance criteria:
 
 - Project can submit attribution rows for a cycle.
+- Attribution rows include scoped CUBID identities and resolve to FundLoop users before approval.
 - Operator can see approval state.
 - Approved attribution dataset is attached to `monthly_cycle_id`.
 - Calculation rejects cycles with no approved attribution unless an operator explicitly overrides with a documented reason.
+- MVP preserves internal project-level transparency as an intentional tradeoff. zkActivitySum is the future replacement for raw attribution visibility, not a live MVP claim.
 
 ### 4. User Signup And Asset Priorities
 
@@ -185,7 +190,7 @@ Rules:
 
 - Lock uses the existing `monthly-cycle-lock` command boundary.
 - Lock reattaches month-bearing rows to the target cycle before reading.
-- Lock manifest includes cycle identity/bounds, project contribution submissions, confirmed or submitted payment/contribution records, approved attribution datasets, eligible users and CUBID snapshot summaries, user asset preference summaries, counts, and checksums.
+- Lock manifest includes cycle identity/bounds, project contribution submissions, confirmed or submitted payment/contribution records, approved attribution datasets with scoped CUBID identity references, eligible users and CUBID snapshot summaries, user asset preference summaries, counts, and checksums.
 - Lock blocks unresolved required inputs by default.
 - Operator override requires explicit reason and audit event.
 
@@ -356,6 +361,7 @@ Minimum automated coverage:
 - attribution submission user resolution, approval state, duplicate handling, and cycle linkage
 - user asset priority create/update/reorder/reject-all warning
 - lock manifest includes contribution, attribution, CUBID snapshot, and asset preference inputs
+- attribution fixtures include scoped CUBID identity references and resolved FundLoop user mappings
 - calculation fixture produces deterministic known capped equalization allocations
 - rounding residual assignment is deterministic
 - asset fulfillment partial fills and returned future-pool amounts are deterministic

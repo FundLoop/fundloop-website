@@ -42,3 +42,12 @@
 - summary: Added `docs/engineering/allocation.md` as the canonical architecture for the operational MVP allocator, including confirmed contribution pools, CUBID/attribution eligibility, USD price-snapshot normalization, baseline selection, capped equalization, preference-based asset fulfillment, returned future-pool accounting, verification checks, and user/founder/operator reporting expectations. Linked the doc from the engineering index and updated the operational MVP spec to reference the capped equalization model instead of the older proportional distribution wording.
 - validation: `git diff --check` passed. Documentation-only change.
 - follow-ups: Reference the allocation architecture from the Operational MVP GitHub issue tree so implementation agents use it as the calculation source of truth.
+
+## 2026-07-20T17:34:29.000Z - zkActivitySum reconciliation
+
+- agent: Codex
+- branch: codex/mcp-hosted-validation-fixes
+- head: 8a685ef
+- summary: Reconciled the allocation architecture with the zkActivitySum proposal by keeping MVP allocation non-ZK, requiring scoped CUBID identities in attribution submissions now, preserving internal project-level transparency as an explicit MVP tradeoff, and documenting zkActivitySum as the future replacement for raw attribution visibility with interchangeable `tee` and `zk` verifier backends.
+- validation: Documentation diff reviewed locally; `git diff --check` pending final commit validation.
+- follow-ups: Update the Operational MVP GitHub issues for attribution, lock manifest, and calculation work to reference scoped CUBID attribution and the future zkActivitySum path.

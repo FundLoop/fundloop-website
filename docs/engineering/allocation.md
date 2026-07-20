@@ -22,6 +22,7 @@ The allocator consumes only locked monthly-cycle inputs:
 - project/currency/token pool identity and source amounts
 - system price snapshot for USD normalization
 - approved attribution datasets for the cycle
+- scoped CUBID identity references on attribution rows
 - CUBID-linked user eligibility snapshot captured at lock time
 - user asset preferences captured at lock time
 - deterministic project, user, asset, and cycle identifiers
@@ -34,9 +35,32 @@ A user is eligible for a project/month allocation only when all of these are tru
 
 - the user is CUBID-linked at lock time
 - the user appears in an approved attribution dataset for the contributing project/month
+- the attribution row includes the scoped CUBID identity for that project/protocol context
 - the attribution row resolves to the FundLoop user identity included in the locked manifest
 
 For the MVP, a protocol is equivalent to a FundLoop project. If a later version supports multiple protocols under one project, that must become an explicit input dimension and should not be inferred from project metadata.
+
+## Attribution Visibility And zkActivitySum Path
+
+The MVP intentionally preserves internal project-level transparency. Operators can inspect approved attribution rows, project contribution pools, and allocation outputs directly. Founders can inspect the attribution data they submit for their own managed projects. This is an explicit operational tradeoff so the first monthly bookkeeping cycle can be debugged and verified without depending on a privacy proof system.
+
+Even before zkActivitySum is implemented, MVP attribution submissions must include a scoped CUBID identity for each attributed user. When available, attribution rows may also include the resolved FundLoop user id for operator/debug usability. The scoped CUBID identity is required because it is the forward-compatible bridge to privacy-preserving attribution.
+
+zkActivitySum is the planned replacement for raw attribution visibility. In that future mode, projects submit app/project-scoped activity scores tied to scoped CUBID identities, and users or the system produce aggregate activity proofs without exposing the user's full cross-project activity graph.
+
+Future zkActivitySum ingest should be modeled as an interchangeable attribution source, not as a separate allocator. Allowed verifier backends are:
+
+- `tee`
+- `zk`
+
+The MVP does not choose between TEE and ZK. During attribution schema work, it is acceptable to reserve proof fields only if they fit naturally:
+
+- `proof_type`
+- `proof_artifact_uri`
+- `verifier_backend`
+- `verification_status`
+
+Public product copy should not claim zkActivitySum or privacy-preserving attribution is live until that implementation exists.
 
 ## Pool Model
 
