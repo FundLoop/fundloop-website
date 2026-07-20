@@ -39,6 +39,12 @@ export type FounderWorkspaceProject = {
     latestPeriodLabel: string | null
   }
   contributionCycles: FounderContributionCycle[]
+  monthlyContribution: {
+    currentSubmission: FounderMonthlyContributionSubmission | null
+    openCycles: FounderOpenMonthlyCycle[]
+    canSubmit: boolean
+    blockedReason: "missing_commitment" | "no_open_cycle" | null
+  }
   attribution: {
     datasetCount: number
     approvedDatasetCount: number
@@ -82,6 +88,32 @@ export type FounderContributionCycle = {
   awaitingConfirmationCount: number
   confirmedCount: number
   status: FounderContributionCycleStatus
+}
+
+export type FounderOpenMonthlyCycle = {
+  id: number
+  cycleKey: string
+  periodStart: string
+  periodEnd: string
+  status: string
+}
+
+export type FounderMonthlyContributionSubmission = {
+  id: number
+  cycleId: number
+  cycleKey: string
+  periodStart: string
+  periodEnd: string
+  sourceCurrency: string
+  sourceAmount: number
+  usdEquivalentAmount: number
+  commitmentPercentage: number
+  calculatedContributionAmount: number
+  sourceReference: string | null
+  notes: string | null
+  status: string
+  submittedAt: string
+  updatedAt: string
 }
 
 export type FounderAttributionSubmission = {
@@ -181,6 +213,33 @@ type ProjectStatsMonthlyRow = {
   unique_user_count: number | null
   actual_percentage: number | null
   pledged_percentage: number | null
+}
+
+type MonthlyCycleRow = {
+  id: number
+  cycle_key: string
+  period_start: string
+  period_end: string
+  status: string
+}
+
+type ProjectMonthlyContributionSubmissionRow = {
+  id: number
+  project_id: number
+  monthly_cycle_id: number
+  period_start: string
+  period_end: string
+  source_currency_code: string
+  source_amount: number
+  usd_equivalent_amount: number
+  commitment_percentage: number
+  calculated_contribution_amount: number
+  source_reference: string | null
+  notes: string | null
+  status: string
+  submitted_at: string
+  updated_at: string
+  monthly_cycles: { cycle_key: string | null } | { cycle_key: string | null }[] | null
 }
 
 type SupabaseReadResult<T> = {
@@ -322,6 +381,33 @@ function buildContributionCycles(payments: PaymentRow[]): FounderContributionCyc
     .sort((left, right) => right.cycleKey.localeCompare(left.cycleKey))
 }
 
+function cycleKeyForSubmission(submission: ProjectMonthlyContributionSubmissionRow): string {
+  const cycle = Array.isArray(submission.monthly_cycles) ? submission.monthly_cycles[0] : submission.monthly_cycles
+  return cycle?.cycle_key ?? submission.period_end.slice(0, 7)
+}
+
+function normalizeMonthlyContributionSubmission(
+  submission: ProjectMonthlyContributionSubmissionRow,
+): FounderMonthlyContributionSubmission {
+  return {
+    id: submission.id,
+    cycleId: submission.monthly_cycle_id,
+    cycleKey: cycleKeyForSubmission(submission),
+    periodStart: submission.period_start,
+    periodEnd: submission.period_end,
+    sourceCurrency: submission.source_currency_code,
+    sourceAmount: numberValue(submission.source_amount),
+    usdEquivalentAmount: numberValue(submission.usd_equivalent_amount),
+    commitmentPercentage: numberValue(submission.commitment_percentage),
+    calculatedContributionAmount: numberValue(submission.calculated_contribution_amount),
+    sourceReference: submission.source_reference,
+    notes: submission.notes,
+    status: submission.status,
+    submittedAt: submission.submitted_at,
+    updatedAt: submission.updated_at,
+  }
+}
+
 function statMonthLabel(stat: ProjectStatsMonthlyRow | null): string | null {
   if (!stat) {
     return null
@@ -373,6 +459,8 @@ export function buildFounderWorkspaceHome({
   runSummaries,
   runs,
   stats,
+  monthlyCycles,
+  contributionSubmissions,
   warnings,
 }: {
   managedProjects: ManagedProjectSummary[]
@@ -384,6 +472,8 @@ export function buildFounderWorkspaceHome({
   runSummaries: ZkasRunSummaryRow[]
   runs: ZkasRunRow[]
   stats: ProjectStatsMonthlyRow[]
+  monthlyCycles: MonthlyCycleRow[]
+  contributionSubmissions: ProjectMonthlyContributionSubmissionRow[]
   warnings: FounderWorkspaceWarning[]
 }): FounderWorkspaceHome {
   const projectRowById = new Map(projectRows.map((project) => [project.id, project]))
@@ -394,6 +484,17 @@ export function buildFounderWorkspaceHome({
   const datasetsByProjectId = groupRowsByProjectId(datasets)
   const runSummariesByProjectId = groupRowsByProjectId(runSummaries)
   const statsByProjectId = groupRowsByProjectId(stats)
+  const contributionSubmissionsByProjectId = groupRowsByProjectId(contributionSubmissions)
+  const openCycles = monthlyCycles
+    .filter((cycle) => cycle.status === "open")
+    .map((cycle) => ({
+      id: cycle.id,
+      cycleKey: cycle.cycle_key,
+      periodStart: cycle.period_start,
+      periodEnd: cycle.period_end,
+      status: cycle.status,
+    }))
+    .sort((left, right) => right.cycleKey.localeCompare(left.cycleKey))
   const projects = managedProjects.map((managedProject) => {
     const project = projectRowById.get(managedProject.id)
     const projectPayments = paymentsByProjectId.get(managedProject.id) ?? []
@@ -409,6 +510,10 @@ export function buildFounderWorkspaceHome({
     )
     const projectStats = [...(statsByProjectId.get(managedProject.id) ?? [])].sort(
       (left, right) => right.year - left.year || right.month - left.month,
+    )
+    const projectContributionSubmissions = sortByDateDescending(
+      contributionSubmissionsByProjectId.get(managedProject.id) ?? [],
+      (submission) => submission.updated_at,
     )
     const enabledPaymentMethodCount = projectPaymentMethods.filter((method) => method.is_enabled === true).length
     const hasDefaultPaymentMethod =
@@ -429,6 +534,14 @@ export function buildFounderWorkspaceHome({
     const latestRun = latestRunSummary ? runById.get(latestRunSummary.run_id) : null
     const latestStat = projectStats[0] ?? null
     const contributionCycles = buildContributionCycles(projectPayments)
+    const currentSubmission = projectContributionSubmissions[0]
+      ? normalizeMonthlyContributionSubmission(projectContributionSubmissions[0])
+      : null
+    const blockedReason: FounderWorkspaceProject["monthlyContribution"]["blockedReason"] = !hasContributionRate
+      ? "missing_commitment"
+      : openCycles.length === 0
+        ? "no_open_cycle"
+        : null
 
     return {
       id: managedProject.id,
@@ -460,6 +573,12 @@ export function buildFounderWorkspaceHome({
         latestPeriodLabel: periodLabel(sortByDateDescending(projectPayments, (payment) => payment.period_end ?? payment.period_start)[0] ?? null),
       },
       contributionCycles,
+      monthlyContribution: {
+        currentSubmission,
+        openCycles,
+        canSubmit: blockedReason === null,
+        blockedReason,
+      },
       attribution: {
         datasetCount: projectDatasets.length,
         approvedDatasetCount: projectDatasets.filter((dataset) => ["approved", "included"].includes(dataset.status)).length,
@@ -555,6 +674,8 @@ export async function getFounderWorkspaceHome(navigationContext: NavigationConte
       runSummaries: [],
       runs: [],
       stats: [],
+      monthlyCycles: [],
+      contributionSubmissions: [],
       warnings,
     })
   }
@@ -562,7 +683,7 @@ export async function getFounderWorkspaceHome(navigationContext: NavigationConte
   const supabase = getFounderSupabaseClient() ?? (await createServerSupabaseClient())
   const projectIds = managedProjects.map((project) => project.id)
 
-  const [projectRows, payments, paymentMethods, participants, datasets, runSummaries, stats] = await Promise.all([
+  const [projectRows, payments, paymentMethods, participants, datasets, runSummaries, stats, monthlyCycles, contributionSubmissions] = await Promise.all([
     readFounderData<ProjectDetailRow[]>(
       "projects",
       supabase
@@ -632,6 +753,30 @@ export async function getFounderWorkspaceHome(navigationContext: NavigationConte
       warnings,
       [],
     ),
+    readFounderData<MonthlyCycleRow[]>(
+      "monthly-cycles",
+      supabase
+        .from("monthly_cycles")
+        .select("id, cycle_key, period_start, period_end, status")
+        .order("cycle_key", { ascending: false })
+        .limit(12)
+        .returns<MonthlyCycleRow[]>(),
+      warnings,
+      [],
+    ),
+    readFounderData<ProjectMonthlyContributionSubmissionRow[]>(
+      "project-monthly-contribution-submissions",
+      supabase
+        .from("project_monthly_contribution_submissions")
+        .select(
+          "id, project_id, monthly_cycle_id, period_start, period_end, source_currency_code, source_amount, usd_equivalent_amount, commitment_percentage, calculated_contribution_amount, source_reference, notes, status, submitted_at, updated_at, monthly_cycles(cycle_key)",
+        )
+        .in("project_id", projectIds)
+        .order("updated_at", { ascending: false })
+        .returns<ProjectMonthlyContributionSubmissionRow[]>(),
+      warnings,
+      [],
+    ),
   ])
 
   const runIds = Array.from(new Set(runSummaries.map((summary) => summary.run_id)))
@@ -655,6 +800,8 @@ export async function getFounderWorkspaceHome(navigationContext: NavigationConte
     runSummaries,
     runs,
     stats,
+    monthlyCycles,
+    contributionSubmissions,
     warnings,
   })
 }

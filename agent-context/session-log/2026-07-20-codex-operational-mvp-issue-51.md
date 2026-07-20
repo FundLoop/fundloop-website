@@ -33,3 +33,12 @@
 - summary: Completed issue #64 by adding the `project_monthly_contribution_submissions` schema, typed `project-monthly-contribution-submit` Edge Function contract/adapters, reusable server-side contribution command, Supabase Edge Function wrapper, generated type updates, and engineering documentation for the new founder monthly contribution write path.
 - validation: `pnpm test tests/project-monthly-contribution-submit-contract.test.ts tests/project-monthly-contribution-command.test.ts tests/project-monthly-contribution-adapter.test.ts` passed. `pnpm typecheck` passed. `deno cache --config supabase/functions/deno.json supabase/functions/project-monthly-contribution-submit/index.ts` passed. `git diff --check` passed. `pnpm lint` passed. `pnpm test` passed with 81 files and 380 tests. `pnpm build` passed. `supabase start` applied `20260720190000_project_monthly_contribution_submissions.sql` and seeded data, but final local stack health failed on `supabase_storage_fundloop`; the CLI stopped the containers after the health failure.
 - follow-ups: Continue #65 for the founder UI on top of the new command. Re-check local Supabase storage health before any route-level browser smoke that depends on a running local stack.
+
+## 2026-07-20T19:36:49.000Z - Issue 65 founder contribution submission UI
+
+- agent: Codex
+- branch: codex/operational-mvp-issue-51
+- head: b39e842
+- summary: Completed issue #65 by extending the founder workspace read model with open monthly cycles, latest monthly contribution submission state, and explicit submission blockers; added a localized founder monthly contribution form that calls the browser Edge Function adapter from issue #64; and wired it into the per-project contribution workflow page with current-record and readiness copy.
+- validation: `pnpm test tests/founder-workspace.test.ts tests/project-monthly-contribution-form.test.tsx` passed. `pnpm typecheck` passed. `pnpm lint` passed. `pnpm test` passed with 82 files and 384 tests. `pnpm build` passed. `git diff --check` passed. Manual route smoke was blocked because `supabase start` could not bind FundLoop DB port `54322`; the Supabase CLI reported the competing local project `smartrust_monorepo` and suggested stopping it.
+- follow-ups: Run signed-in founder browser smoke for `/en/founder/projects/<slug>/contributions` once the competing local Supabase stack is stopped or FundLoop is started on a free port; continue issue #66 to expose contribution submission state in operator cycle readiness.
