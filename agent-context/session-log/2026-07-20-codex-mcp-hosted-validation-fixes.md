@@ -33,3 +33,12 @@
 - summary: Removed the parked EverFund/VentureFamily rebrand todo and related planning/session-log references from agent-context history after the user confirmed those should not be migrated or preserved as active issues.
 - validation: `git diff --check` passed. Documentation-only cleanup.
 - follow-ups: None.
+
+## 2026-07-20T17:16:24.000Z - Allocation architecture
+
+- agent: Codex
+- branch: codex/mcp-hosted-validation-fixes
+- head: b45a007
+- summary: Added `docs/engineering/allocation.md` as the canonical architecture for the operational MVP allocator, including confirmed contribution pools, CUBID/attribution eligibility, USD price-snapshot normalization, baseline selection, capped equalization, preference-based asset fulfillment, returned future-pool accounting, verification checks, and user/founder/operator reporting expectations. Linked the doc from the engineering index and updated the operational MVP spec to reference the capped equalization model instead of the older proportional distribution wording.
+- validation: `git diff --check` passed. Documentation-only change.
+- follow-ups: Reference the allocation architecture from the Operational MVP GitHub issue tree so implementation agents use it as the calculation source of truth.

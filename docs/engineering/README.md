@@ -11,6 +11,7 @@ Use this directory for material that should outlive a single agent session, incl
 
 Current high-signal docs:
 
+- [Allocation Architecture](./allocation.md)
 - [Backgrounder for Agents](./backgrounder-for-agents.md)
 - [Beta Runtime Guardrails](./beta-guardrails.md)
 - [Current-State Architecture](./current-state-architecture.md)

@@ -7,6 +7,7 @@ Related docs:
 - [Backgrounder for Agents](./backgrounder-for-agents.md)
 - [Target-State Architecture](./target-state-architecture.md)
 - [Monthly Cycle Domain Model](./monthly-cycles.md)
+- [Allocation Architecture](./allocation.md)
 - [Outbound Payout Domain](./payouts.md)
 - [Reporting Publication](./reporting.md)
 
@@ -21,7 +22,7 @@ The MVP must support:
 - project attribution data submission
 - user signup with CUBID linkage and payout-asset priorities
 - monthly cycle lock
-- deterministic contribution-weighted distribution calculation
+- deterministic capped equalization allocation
 - operator verification and approval
 - bookkeeping earnings credited to user accounts
 - no actual payout execution
@@ -194,23 +195,25 @@ Acceptance criteria:
 - Locked manifest contains all MVP inputs.
 - Repeated lock attempts fail safely once status is no longer `open`.
 
-### 6. Deterministic Distribution Calculation
+### 6. Deterministic Allocation Calculation
 
-The MVP formula is contribution-weighted. Calculation uses only locked manifest inputs.
+The MVP allocation formula is defined in [Allocation Architecture](./allocation.md). Calculation uses only locked manifest inputs.
 
 Definitions:
 
-- Monthly pool USD = sum of approved project contribution `usdEquivalentAmount`.
-- Project pool USD = each project's approved contribution `usdEquivalentAmount`.
-- Eligible user = CUBID status `linked` or `verified` at lock time.
-- User attribution share within a project = user approved attribution points / total approved points for that project.
-- User project earning USD = project pool USD multiplied by user attribution share.
-- User total earning USD = sum of user project earning USD across projects.
-- Source-currency breakdown is retained per project contribution for reporting, but canonical credit value is USD equivalent.
+- Monthly pool USD = system-price-normalized value of confirmed available project contribution pools.
+- Project pool USD = each project's confirmed available contribution amount normalized through the cycle price snapshot.
+- Eligible user = CUBID status `linked` or `verified` at lock time with approved attribution for the contributing project/month.
+- User raw project entitlement = project pool USD multiplied by the user's approved attribution share within that project.
+- User baseline = the largest single-project raw entitlement for that user.
+- Equalization remainder = monthly pool USD minus the sum of user baselines.
+- User final allocation = baseline plus capped equalization top-up, capped at `3x` the user's baseline.
+- Asset fulfillment = selected asset credit fills based on the user's highest-priority accepted available assets.
+- Source-currency/project breakdown is retained for reporting, while canonical credit value is USD equivalent.
 
 Rounding:
 
-- Calculate in integer minor units where possible.
+- Round after USD normalization.
 - Store exact decimal calculation inputs and rounded credited amounts.
 - Assign rounding residual deterministically to users by descending unrounded remainder, then stable user id sort.
 
@@ -218,6 +221,8 @@ Outputs:
 
 - per-user result rows
 - per-project/user attribution rows
+- selected asset fill rows
+- returned future-pool rows for unfulfillable amounts
 - total pool USD
 - source-currency breakdown
 - calculation artifact hash
@@ -226,7 +231,8 @@ Outputs:
 Acceptance criteria:
 
 - Same locked manifest produces same result hash.
-- Total credited USD equals total monthly pool USD after deterministic rounding.
+- Allocated USD plus returned future-pool USD equals total monthly pool USD after deterministic rounding.
+- No user final allocation exceeds `3x` baseline.
 - Ineligible users are excluded with reason codes.
 - Calculation creates artifacts in Supabase Storage and result rows linked to `monthly_cycle_id`.
 
@@ -240,7 +246,9 @@ Verification checks:
 - all included projects have approved contribution submissions
 - all included attribution datasets are approved
 - all included users are CUBID-linked at lock time
-- total credited USD equals monthly pool USD after rounding
+- allocated USD plus returned future-pool USD equals monthly pool USD after rounding
+- no user allocation exceeds the `3x` baseline cap
+- asset fills respect accepted preference order and recorded availability
 - no negative credits
 - artifact hashes exist
 - warnings are visible and acknowledged
@@ -266,7 +274,8 @@ Rules:
 
 - No real payout execution occurs.
 - Credits are created from approved user results.
-- Credits store canonical USD equivalent amount and source-currency/project breakdown for reporting.
+- Credits store selected asset fill amount, canonical USD equivalent amount, and source-currency/project breakdown for reporting.
+- Returned future-pool amounts are recorded separately and are not user credits.
 - Credit status starts as `credited`.
 - If existing `payout_intents` are used, they must be presented as bookkeeping/not-paid-yet records unless and until a later payout execution session changes status.
 - User-facing language distinguishes `credited`, `pending payout setup`, `not paid yet`, and `future settlement preference`.
@@ -347,8 +356,9 @@ Minimum automated coverage:
 - attribution submission user resolution, approval state, duplicate handling, and cycle linkage
 - user asset priority create/update/reorder/reject-all warning
 - lock manifest includes contribution, attribution, CUBID snapshot, and asset preference inputs
-- calculation fixture produces deterministic known allocations
+- calculation fixture produces deterministic known capped equalization allocations
 - rounding residual assignment is deterministic
+- asset fulfillment partial fills and returned future-pool amounts are deterministic
 - verification catches total mismatch, missing artifact, ineligible user, and unapproved dataset
 - bookkeeping credit creation is idempotent
 - user earnings workspace renders credited/not-paid states
@@ -372,7 +382,7 @@ Operational MVP is complete only when:
 - a project can submit attribution data
 - a user can sign up, link CUBID, and set asset priorities
 - an operator can lock a cycle
-- the system calculates deterministic contribution-weighted distributions
+- the system calculates deterministic capped equalization allocations
 - an operator can verify and approve results
 - users see credited bookkeeping earnings
 - no actual payout is executed
@@ -381,10 +391,10 @@ Operational MVP is complete only when:
 ## Assumptions And Defaults
 
 - User priorities are payout-asset preferences, not allocation-weight inputs.
-- MVP distribution formula is contribution-weighted by project pool and approved attribution points.
+- MVP allocation uses raw project attribution as input, then applies capped global equalization.
 - USD equivalent is the canonical bookkeeping credit value.
 - Source-currency amounts are stored and shown for transparency.
-- Projects provide or confirm USD equivalent values in MVP; no live FX oracle is added.
+- USD normalization comes from the cycle system price snapshot.
 - CUBID linkage is required; full phone/provider verification improves readiness but does not block MVP earning credits.
 - Existing monthly-cycle, payout-intent, reporting, and zkAS structures should be reused where practical.
 - Real outbound payouts remain explicitly deferred.
