@@ -52,6 +52,8 @@ It then attaches nullable `monthly_cycle_id` references to operational rows. The
 
 `/[locale]/admin/cycles` is the operator overview. It summarizes cycle status, linked payment totals, reconciliation counts, zkAS datasets/runs, and published result totals. Partial read failures should degrade to warnings rather than crash the page.
 
+Issue #66 added contribution-submission readiness to the operator overview. For each recent cycle, operators can now see how many committed projects have submitted monthly contribution data, the submitted USD-equivalent/calculated contribution totals, and which committed projects are still missing a submission. This visibility reads from `project_monthly_contribution_submissions` and active projects with a positive contribution commitment.
+
 Open cycles expose a lock action that calls the `monthly-cycle-lock` Edge Function. The first attempt blocks if same-cycle onchain submissions are still `submitted`, `confirming`, `awaiting_confirmation`, or `pending`. If that happens, the UI opens a strongly worded override modal. A retry can only proceed when the operator supplies an explicit reason, and the reason is written into both the manifest and audit event stream.
 
 Locked cycles link to `/[locale]/admin/cycles/[cycleKey]/prep`, the Session 23 prep and exception review workspace. This route is intentionally read-only: it checks whether the locked manifest is safe to hand into calculation packaging, but it does not transition status or produce calculation artifacts yet.
@@ -107,13 +109,14 @@ The command reattaches newly-created month-bearing rows to the cycle before read
 The prep workspace surfaces:
 
 - missing or mismatched lock manifest/hash
+- live contribution-submission readiness, including committed projects that have not submitted for the cycle
 - unresolved onchain submissions, including override reasons
 - missing confirmed contribution inputs
 - missing approved zkAS datasets or identity artifacts
 - missing or unlinked CUBID participant snapshots
 - informational live-row drift between current linked rows and the immutable manifest
 
-Live drift is informational because downstream calculation should use the locked manifest, not mutable current rows. Prep does not create zkAS runs, package calculation inputs, approve exceptions, or move the cycle into the next status. Those responsibilities remain later sessions.
+Live contribution-submission readiness is also informational in this phase. Goal #56 owns adding contribution submissions to the immutable lock manifest; until then, the prep workspace intentionally keeps submission readiness visible without treating it as a calculation input. Live drift is informational because downstream calculation should use the locked manifest, not mutable current rows. Prep does not create zkAS runs, package calculation inputs, approve exceptions, or move the cycle into the next status. Those responsibilities remain later sessions.
 
 ## zkAS Stage Alignment
 

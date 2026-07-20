@@ -60,12 +60,70 @@ describe("buildMonthlyCyclePrepReview", () => {
         approvedDatasets: 1,
         identityArtifacts: 1,
       },
+      contributionReadiness: {
+        submittedCount: 1,
+        expectedProjectCount: 1,
+        missingProjectCount: 0,
+        totalUsdEquivalentAmount: 1000,
+        totalCalculatedContributionAmount: 10,
+        missingProjects: [],
+        readError: null,
+      },
     })
 
     expect(review.posture).toBe("ready")
     expect(review.issues).toEqual([])
     expect(review.liveDriftWarnings).toEqual([])
     expect(review.manifest.hashMatches).toBe(true)
+  })
+
+  it("warns when committed projects are missing contribution submissions", async () => {
+    const review = await buildMonthlyCyclePrepReview({
+      cycle: baseCycle(),
+      computedManifestHash: "hash-1",
+      contributionReadiness: {
+        submittedCount: 1,
+        expectedProjectCount: 2,
+        missingProjectCount: 1,
+        totalUsdEquivalentAmount: 1000,
+        totalCalculatedContributionAmount: 10,
+        missingProjects: [{ id: 11, slug: "mutual-aid-atlas", name: "Mutual Aid Atlas" }],
+        readError: null,
+      },
+    })
+
+    expect(review.posture).toBe("needs_review")
+    expect(review.contributionReadiness.missingProjects).toEqual([{ id: 11, slug: "mutual-aid-atlas", name: "Mutual Aid Atlas" }])
+    expect(review.issues).toContainEqual(
+      expect.objectContaining({
+        code: "missing_contribution_submissions",
+        severity: "warning",
+      }),
+    )
+  })
+
+  it("degrades contribution submission read failures to prep warnings", async () => {
+    const review = await buildMonthlyCyclePrepReview({
+      cycle: baseCycle(),
+      computedManifestHash: "hash-1",
+      contributionReadiness: {
+        submittedCount: 0,
+        expectedProjectCount: 0,
+        missingProjectCount: 0,
+        totalUsdEquivalentAmount: 0,
+        totalCalculatedContributionAmount: 0,
+        missingProjects: [],
+        readError: "relation unavailable",
+      },
+    })
+
+    expect(review.posture).toBe("needs_review")
+    expect(review.issues).toContainEqual(
+      expect.objectContaining({
+        code: "contribution_submission_read_failed",
+        severity: "warning",
+      }),
+    )
   })
 
   it("blocks prep when a cycle is not locked or has no manifest", async () => {

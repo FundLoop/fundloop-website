@@ -177,6 +177,7 @@ export default async function AdminMonthlyCyclesPage({ params }: PageProps) {
               <TableRow>
                 <TableHead>Cycle</TableHead>
                 <TableHead>Status</TableHead>
+                <TableHead>Submissions</TableHead>
                 <TableHead>Payments</TableHead>
                 <TableHead>Reconciliation</TableHead>
                 <TableHead>zkAS</TableHead>
@@ -187,7 +188,7 @@ export default async function AdminMonthlyCyclesPage({ params }: PageProps) {
             <TableBody>
               {data.cycles.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={7} className="py-10 text-center text-[var(--text-muted)]">
+                  <TableCell colSpan={8} className="py-10 text-center text-[var(--text-muted)]">
                     No monthly cycles exist yet. The migration backfill will create cycles once month-bearing payment,
                     project stats, or zkAS rows are present.
                   </TableCell>
@@ -209,6 +210,21 @@ export default async function AdminMonthlyCyclesPage({ params }: PageProps) {
                       {cycle.lock.lockedManifestHash ? (
                         <div className="mt-1 font-mono text-[0.68rem] text-[var(--text-soft)]">
                           {cycle.lock.lockedManifestHash.slice(0, 12)}...
+                        </div>
+                      ) : null}
+                    </TableCell>
+                    <TableCell>
+                      <div className="font-medium">
+                        {cycle.contributionSubmissions.submittedCount} of {cycle.contributionSubmissions.expectedProjectCount}
+                      </div>
+                      <div className="text-xs text-[var(--text-muted)]">
+                        {formatCurrency(locale, cycle.contributionSubmissions.totalCalculatedContributionAmount)} calculated ·{" "}
+                        {cycle.contributionSubmissions.missingProjectCount} missing
+                      </div>
+                      {cycle.contributionSubmissions.missingProjectCount > 0 ? (
+                        <div className="mt-1 text-xs text-amber-700 dark:text-amber-200">
+                          {cycle.contributionSubmissions.missingProjects.slice(0, 2).map((project) => project.name).join(", ")}
+                          {cycle.contributionSubmissions.missingProjectCount > 2 ? "..." : ""}
                         </div>
                       ) : null}
                     </TableCell>

@@ -47,6 +47,16 @@ export type MonthlyCyclePrepManifestSummary = {
   }
 }
 
+export type MonthlyCyclePrepContributionReadiness = {
+  submittedCount: number
+  expectedProjectCount: number
+  missingProjectCount: number
+  totalUsdEquivalentAmount: number
+  totalCalculatedContributionAmount: number
+  missingProjects: Array<{ id: number; slug: string | null; name: string }>
+  readError: string | null
+}
+
 export type MonthlyCyclePrepReview = {
   cycle: {
     id: number
@@ -59,6 +69,7 @@ export type MonthlyCyclePrepReview = {
   posture: MonthlyCyclePrepPosture
   postureLabel: string
   manifest: MonthlyCyclePrepManifestSummary
+  contributionReadiness: MonthlyCyclePrepContributionReadiness
   issues: MonthlyCyclePrepIssue[]
   liveDriftWarnings: MonthlyCyclePrepIssue[]
 }
@@ -142,6 +153,7 @@ export async function buildMonthlyCyclePrepReview(input: {
   cycle: CyclePrepRow
   computedManifestHash?: string | null
   liveCounts?: Partial<MonthlyCyclePrepManifestSummary["counts"]>
+  contributionReadiness?: MonthlyCyclePrepContributionReadiness
 }): Promise<MonthlyCyclePrepReview> {
   const manifest = asLockManifest(input.cycle.locked_manifest)
   const reconciliation = Array.isArray(manifest?.reconciliation) ? manifest.reconciliation : []
@@ -169,6 +181,15 @@ export async function buildMonthlyCyclePrepReview(input: {
       ? input.cycle.locked_manifest_hash === input.computedManifestHash
       : null
   const issues: MonthlyCyclePrepIssue[] = []
+  const contributionReadiness = input.contributionReadiness ?? {
+    submittedCount: 0,
+    expectedProjectCount: 0,
+    missingProjectCount: 0,
+    totalUsdEquivalentAmount: 0,
+    totalCalculatedContributionAmount: 0,
+    missingProjects: [],
+    readError: null,
+  }
 
   if (input.cycle.status === "open") {
     addIssue(issues, {
@@ -204,6 +225,24 @@ export async function buildMonthlyCyclePrepReview(input: {
       title: "No confirmed contribution inputs",
       description: "The locked manifest contains no confirmed project contribution payments. This may be valid for a quiet month, but should be reviewed.",
       actionHref: "/admin/payments",
+    })
+  }
+
+  if (contributionReadiness.readError) {
+    addIssue(issues, {
+      code: "contribution_submission_read_failed",
+      severity: "warning",
+      title: "Contribution submission readiness unavailable",
+      description: contributionReadiness.readError,
+      actionHref: "/admin/cycles",
+    })
+  } else if (contributionReadiness.missingProjectCount > 0) {
+    addIssue(issues, {
+      code: "missing_contribution_submissions",
+      severity: "warning",
+      title: "Missing project contribution submissions",
+      description: `${contributionReadiness.missingProjectCount} committed project(s) have not submitted monthly contribution data for this cycle yet.`,
+      actionHref: "/admin/cycles",
     })
   }
 
@@ -317,6 +356,7 @@ export async function buildMonthlyCyclePrepReview(input: {
       overrideReason,
       counts: manifestCounts,
     },
+    contributionReadiness,
     issues,
     liveDriftWarnings,
   }
@@ -346,6 +386,51 @@ async function countLiveRows(
   return count ?? 0
 }
 
+async function loadContributionReadiness(
+  supabase: ReturnType<typeof getAdminSupabaseClient>,
+  cycleId: number,
+): Promise<MonthlyCyclePrepContributionReadiness> {
+  const [projectsResult, submissionsResult] = await Promise.all([
+    supabase
+      .from("projects")
+      .select("id, slug, name, status, payment_percentage")
+      .is("deleted_at", null)
+      .gt("payment_percentage", 0),
+    supabase
+      .from("project_monthly_contribution_submissions")
+      .select("project_id, usd_equivalent_amount, calculated_contribution_amount, status")
+      .eq("monthly_cycle_id", cycleId),
+  ])
+
+  if (projectsResult.error) {
+    throw new Error(projectsResult.error.message)
+  }
+
+  if (submissionsResult.error) {
+    throw new Error(submissionsResult.error.message)
+  }
+
+  const expectedProjects = (projectsResult.data ?? []).filter((project) => project.status !== "deleted")
+  const submittedRows = (submissionsResult.data ?? []).filter((submission) => submission.status === "submitted")
+  const submittedProjectIds = new Set(submittedRows.map((submission) => submission.project_id))
+  const missingProjects = expectedProjects
+    .filter((project) => !submittedProjectIds.has(project.id))
+    .map((project) => ({ id: project.id, slug: project.slug, name: project.name }))
+
+  return {
+    submittedCount: submittedRows.length,
+    expectedProjectCount: expectedProjects.length,
+    missingProjectCount: missingProjects.length,
+    totalUsdEquivalentAmount: submittedRows.reduce((sum, submission) => sum + Number(submission.usd_equivalent_amount ?? 0), 0),
+    totalCalculatedContributionAmount: submittedRows.reduce(
+      (sum, submission) => sum + Number(submission.calculated_contribution_amount ?? 0),
+      0,
+    ),
+    missingProjects,
+    readError: null,
+  }
+}
+
 export async function loadMonthlyCyclePrepReview(cycleKey: string): Promise<MonthlyCyclePrepReview | null> {
   const parsedCycleKey = assertMonthString(cycleKey)
   const supabase = getAdminSupabaseClient()
@@ -366,21 +451,45 @@ export async function loadMonthlyCyclePrepReview(cycleKey: string): Promise<Mont
   }
 
   const computedManifestHash = cycle.locked_manifest ? await sha256Hex(cycle.locked_manifest) : null
-  const [payments, onchainSubmissions, approvedDatasets, identityArtifacts] = await Promise.all([
+  const [payments, onchainSubmissions, approvedDatasets, identityArtifacts, contributionReadinessResult] = await Promise.allSettled([
     countLiveRows(supabase, "payments", cycle.id),
     countLiveRows(supabase, "onchain_payment_submissions", cycle.id),
     countLiveRows(supabase, "zkas_datasets", cycle.id, ["approved", "included"]),
     countLiveRows(supabase, "zkas_identity_artifacts", cycle.id, ["approved"]),
+    loadContributionReadiness(supabase, cycle.id),
   ])
+  const readCount = (result: PromiseSettledResult<number>) => {
+    if (result.status === "rejected") {
+      throw result.reason
+    }
+
+    return result.value
+  }
+  const contributionReadiness =
+    contributionReadinessResult.status === "fulfilled"
+      ? contributionReadinessResult.value
+      : {
+          submittedCount: 0,
+          expectedProjectCount: 0,
+          missingProjectCount: 0,
+          totalUsdEquivalentAmount: 0,
+          totalCalculatedContributionAmount: 0,
+          missingProjects: [],
+          readError:
+            contributionReadinessResult.reason instanceof Error
+              ? contributionReadinessResult.reason.message
+              : "Contribution submission readiness could not be loaded.",
+        }
 
   return buildMonthlyCyclePrepReview({
     cycle,
     computedManifestHash,
     liveCounts: {
-      payments,
-      onchainSubmissions,
-      approvedDatasets,
-      identityArtifacts,
+      payments: readCount(payments),
+      onchainSubmissions: readCount(onchainSubmissions),
+      approvedDatasets: readCount(approvedDatasets),
+      identityArtifacts: readCount(identityArtifacts),
     },
+    contributionReadiness,
   })
 }

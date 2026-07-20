@@ -22,6 +22,14 @@ function postureVariant(posture: MonthlyCyclePrepPosture) {
   return "destructive" as const
 }
 
+function formatCurrency(locale: string, value: number) {
+  return new Intl.NumberFormat(locale, {
+    style: "currency",
+    currency: "USD",
+    maximumFractionDigits: 0,
+  }).format(value)
+}
+
 function severityIcon(severity: MonthlyCyclePrepSeverity) {
   if (severity === "blocker") return <ShieldAlert className="h-4 w-4" />
   if (severity === "warning") return <AlertTriangle className="h-4 w-4" />
@@ -53,7 +61,7 @@ function IssueCard({ issue }: { issue: MonthlyCyclePrepIssue }) {
 }
 
 export default async function AdminCyclePrepPage({ params }: PageProps) {
-  const { cycleKey } = await params
+  const { cycleKey, locale } = await params
   const review = await (async () => {
     await requireInternalAdminActor()
     return loadMonthlyCyclePrepReview(cycleKey)
@@ -97,7 +105,21 @@ export default async function AdminCyclePrepPage({ params }: PageProps) {
         </section>
       </div>
 
-      <section className="grid gap-6 md:grid-cols-2 xl:grid-cols-4">
+      <section className="grid gap-6 md:grid-cols-2 xl:grid-cols-5">
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-medium">Contribution submissions</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-3xl font-semibold">
+              {review.contributionReadiness.submittedCount}/{review.contributionReadiness.expectedProjectCount}
+            </div>
+            <p className="mt-2 text-xs uppercase tracking-[0.16em] text-[var(--text-soft)]">
+              {formatCurrency(locale, review.contributionReadiness.totalCalculatedContributionAmount)} calculated ·{" "}
+              {review.contributionReadiness.missingProjectCount} missing
+            </p>
+          </CardContent>
+        </Card>
         <Card>
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium">Payments</CardTitle>
@@ -193,6 +215,37 @@ export default async function AdminCyclePrepPage({ params }: PageProps) {
                       : "Mismatch"}
                 </p>
               </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle>Contribution readiness</CardTitle>
+              <CardDescription>These live submissions are reviewed before lock-manifest inclusion lands in Goal #56.</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-3 text-sm">
+              <div>
+                <p className="text-xs uppercase tracking-[0.16em] text-[var(--text-soft)]">Submitted projects</p>
+                <p className="text-[var(--text-strong)]">
+                  {review.contributionReadiness.submittedCount} of {review.contributionReadiness.expectedProjectCount}
+                </p>
+              </div>
+              <div>
+                <p className="text-xs uppercase tracking-[0.16em] text-[var(--text-soft)]">Calculated contribution</p>
+                <p className="text-[var(--text-strong)]">
+                  {formatCurrency(locale, review.contributionReadiness.totalCalculatedContributionAmount)}
+                </p>
+              </div>
+              {review.contributionReadiness.missingProjects.length > 0 ? (
+                <div>
+                  <p className="text-xs uppercase tracking-[0.16em] text-[var(--text-soft)]">Missing projects</p>
+                  <ul className="mt-2 space-y-1 text-[var(--text-muted)]">
+                    {review.contributionReadiness.missingProjects.slice(0, 5).map((project) => (
+                      <li key={project.id}>{project.name}</li>
+                    ))}
+                  </ul>
+                </div>
+              ) : null}
             </CardContent>
           </Card>
 

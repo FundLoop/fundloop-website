@@ -32,6 +32,13 @@ describe("local public discovery seed fixtures", () => {
     expect(seedSql).toContain(`'civic-mesh'`)
   })
 
+  it("includes a deterministic monthly contribution submission fixture for MVP cycle readiness", () => {
+    expect(seedSql).toContain(`INSERT INTO "public"."monthly_cycles"`)
+    expect(seedSql).toContain(`'2026-05'`)
+    expect(seedSql).toContain(`INSERT INTO "public"."project_monthly_contribution_submissions"`)
+    expect(seedSql).toContain(`'seed-civic-mesh-2026-05-ledger'`)
+  })
+
   it("includes stable public blog slugs for listing and detail smoke coverage", () => {
     expect(seedSql).toContain("'why-monthly-cadence-matters'")
     expect(seedSql).toContain("'what-contributors-actually-need-from-a-project-directory'")

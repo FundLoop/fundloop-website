@@ -602,6 +602,55 @@ INSERT INTO "public"."participants" ("id", "project_id", "joined_at", "updated_a
   ('107', '103', '2025-06-12 13:26:00+00', '2025-06-12 13:26:00+00', '00000000-0000-4000-8000-000000000104', 't', NULL),
   ('108', '103', '2025-06-12 13:27:00+00', '2025-06-12 13:27:00+00', '00000000-0000-4000-8000-000000000101', 'f', NULL);
 
+INSERT INTO "public"."monthly_cycles" ("cycle_key", "year", "month", "period_start", "period_end", "status", "opened_at", "created_at", "updated_at") VALUES
+  ('2026-05', '2026', '5', '2026-05-01', '2026-05-31', 'open', '2026-05-01 00:00:00+00', '2026-05-01 00:00:00+00', '2026-05-01 00:00:00+00')
+ON CONFLICT ("cycle_key") DO UPDATE SET
+  "status" = EXCLUDED."status",
+  "updated_at" = EXCLUDED."updated_at";
+
+INSERT INTO "public"."project_monthly_contribution_submissions" (
+  "project_id",
+  "monthly_cycle_id",
+  "period_start",
+  "period_end",
+  "source_currency_code",
+  "source_amount",
+  "usd_equivalent_amount",
+  "commitment_percentage",
+  "calculated_contribution_amount",
+  "source_reference",
+  "notes",
+  "status",
+  "submitted_by_user_id",
+  "submitted_at",
+  "updated_at"
+)
+SELECT
+  '101',
+  cycle."id",
+  '2026-05-01',
+  '2026-05-31',
+  'USD',
+  '125000.000000',
+  '125000.00',
+  '1.00',
+  '1250.00',
+  'seed-civic-mesh-2026-05-ledger',
+  'Deterministic MVP smoke contribution submission for Civic Mesh.',
+  'submitted',
+  '00000000-0000-4000-8000-000000000101',
+  '2026-05-20 12:00:00+00',
+  '2026-05-20 12:00:00+00'
+FROM "public"."monthly_cycles" cycle
+WHERE cycle."cycle_key" = '2026-05'
+ON CONFLICT ("project_id", "monthly_cycle_id") DO UPDATE SET
+  "source_amount" = EXCLUDED."source_amount",
+  "usd_equivalent_amount" = EXCLUDED."usd_equivalent_amount",
+  "calculated_contribution_amount" = EXCLUDED."calculated_contribution_amount",
+  "source_reference" = EXCLUDED."source_reference",
+  "notes" = EXCLUDED."notes",
+  "updated_at" = EXCLUDED."updated_at";
+
 SELECT pg_catalog.setval('"public"."blog_posts_id_seq"', 26, true);
 
 SELECT pg_catalog.setval('"public"."debug_log_id_seq"', 11, true);
