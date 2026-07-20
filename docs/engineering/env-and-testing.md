@@ -11,7 +11,7 @@ FundLoop has three practical Supabase lanes:
 - Local development
   - Purpose: schema work, destructive migration validation, local browser smoke tests, and wallet-local flows.
   - Default env file: `.env.local`.
-  - Expected Supabase URL: the local Supabase API URL from `supabase start`.
+  - Expected Supabase URL: `http://127.0.0.1:55321`.
   - Service-role key: local-only key from the local Supabase CLI output.
 
 - Remote preview/dev
@@ -34,6 +34,24 @@ FundLoop has three practical Supabase lanes:
 - Do not put production service-role keys, CUBID API keys, wallet private keys, RPC secrets, or pooler strings in tracked files.
 
 ## Local Supabase Workflow
+
+FundLoop intentionally uses a non-default local Supabase port block so it can run alongside other local repos under the same Colima/Docker instance:
+
+| Service | Port |
+| --- | --- |
+| API / Edge Functions / MCP | `55321` |
+| Postgres DB | `55322` |
+| Shadow DB | `55320` |
+| Studio | `55323` |
+| Mailpit | `55324` |
+| Analytics / Logflare | `55327` |
+| Pooler, if enabled | `55329` |
+
+Point local app env at the FundLoop API port:
+
+```bash
+NEXT_PUBLIC_SUPABASE_URL=http://127.0.0.1:55321
+```
 
 Use local Supabase for destructive or replay validation:
 

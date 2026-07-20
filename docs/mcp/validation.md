@@ -45,7 +45,7 @@ Start local Supabase and serve the MCP function with an explicit local-only test
 ```bash
 DOCKER_HOST=unix:///var/run/docker.sock supabase start
 cat > /tmp/fundloop-mcp-local.env <<'EOF'
-NEXT_PUBLIC_SUPABASE_URL=http://host.docker.internal:54321
+NEXT_PUBLIC_SUPABASE_URL=http://host.docker.internal:55321
 NEXT_PUBLIC_SUPABASE_ANON_KEY=<local-publishable-key-from-supabase-start>
 FUNDLOOP_MCP_ALLOW_LOCAL_TEST_TOKEN=true
 FUNDLOOP_MCP_ALLOWED_EDGE_FUNCTIONS=
@@ -53,7 +53,7 @@ FUNDLOOP_INTERNAL_ADMIN_EMAILS=
 EOF
 DOCKER_HOST=unix:///var/run/docker.sock SUPABASE_FUNCTIONS_WATCH_LIMIT=12000 \
   supabase functions serve --no-verify-jwt mcp --env-file /tmp/fundloop-mcp-local.env
-FUNDLOOP_MCP_HTTP_URL=http://127.0.0.1:54321/functions/v1/mcp \
+FUNDLOOP_MCP_HTTP_URL=http://127.0.0.1:55321/functions/v1/mcp \
   FUNDLOOP_MCP_BEARER_TOKEN=local-smoke-token \
   pnpm mcp:edge:smoke
 ```
@@ -79,7 +79,7 @@ Latest local Edge transcript:
 ```json
 {
   "ok": true,
-  "endpoint": "http://127.0.0.1:54321/functions/v1/mcp",
+  "endpoint": "http://127.0.0.1:55321/functions/v1/mcp",
   "health": {
     "ok": true,
     "service": "fundloop-mcp-server",
@@ -105,7 +105,7 @@ Latest local Edge transcript:
 Streamable HTTP requests must include both JSON and event-stream support:
 
 ```bash
-curl -sS http://127.0.0.1:54321/functions/v1/mcp \
+curl -sS http://127.0.0.1:55321/functions/v1/mcp \
   -H "Content-Type: application/json" \
   -H "Accept: application/json, text/event-stream" \
   -H "Authorization: Bearer $FUNDLOOP_MCP_BEARER_TOKEN" \
