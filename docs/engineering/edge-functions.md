@@ -41,6 +41,7 @@ The first migrated domains are:
 
 - `project-payment-drafts-create`
 - founder payment operations:
+  - `project-monthly-contribution-submit`
   - `project-crypto-route-create`
   - `project-crypto-route-update`
   - `project-crypto-route-move`
@@ -73,6 +74,8 @@ The canonical write path is now:
 
 For founder payment operations:
 
+- monthly contribution submissions now go through `project-monthly-contribution-submit`, which writes one canonical current submission per project/monthly cycle with source currency, USD equivalent, commitment percentage, and calculated contribution amount
+- the command requires an authenticated project member or organization admin, an open monthly cycle, period bounds matching the cycle, and a commitment percentage matching the project's canonical commitment
 - the payment-route manager calls browser Edge Function adapters for route create, update, move, enable, and disable commands
 - the crypto payment dialog records onchain submissions through `project-onchain-payment-submission-record`
 - the extracted command module owns project-admin authorization, route reference validation, default promotion, deployment availability checks, receipt validation, and receipt-recording observability
@@ -155,6 +158,7 @@ supabase functions serve user-onboarding-draft-upsert --env-file .env.local
 supabase functions serve user-onboarding-publish --env-file .env.local
 supabase functions serve project-onboarding-draft-upsert --env-file .env.local
 supabase functions serve project-onboarding-publish --env-file .env.local
+supabase functions serve project-monthly-contribution-submit --env-file .env.local
 supabase functions serve user-cubid-resolve-email --env-file .env.local
 supabase functions serve user-cubid-sync-profile --env-file .env.local
 supabase functions serve project-crypto-route-create --env-file .env.local

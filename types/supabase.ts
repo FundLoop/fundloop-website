@@ -1690,6 +1690,85 @@ export type Database = {
           },
         ]
       }
+      project_monthly_contribution_submissions: {
+        Row: {
+          calculated_contribution_amount: number
+          commitment_percentage: number
+          id: number
+          monthly_cycle_id: number
+          notes: string | null
+          period_end: string
+          period_start: string
+          project_id: number
+          source_amount: number
+          source_currency_code: string
+          source_reference: string | null
+          status: string
+          submitted_at: string
+          submitted_by_user_id: string | null
+          updated_at: string
+          usd_equivalent_amount: number
+        }
+        Insert: {
+          calculated_contribution_amount: number
+          commitment_percentage: number
+          id?: number
+          monthly_cycle_id: number
+          notes?: string | null
+          period_end: string
+          period_start: string
+          project_id: number
+          source_amount: number
+          source_currency_code: string
+          source_reference?: string | null
+          status?: string
+          submitted_at?: string
+          submitted_by_user_id?: string | null
+          updated_at?: string
+          usd_equivalent_amount: number
+        }
+        Update: {
+          calculated_contribution_amount?: number
+          commitment_percentage?: number
+          id?: number
+          monthly_cycle_id?: number
+          notes?: string | null
+          period_end?: string
+          period_start?: string
+          project_id?: number
+          source_amount?: number
+          source_currency_code?: string
+          source_reference?: string | null
+          status?: string
+          submitted_at?: string
+          submitted_by_user_id?: string | null
+          updated_at?: string
+          usd_equivalent_amount?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "project_monthly_contribution_submissions_monthly_cycle_id_fkey"
+            columns: ["monthly_cycle_id"]
+            isOneToOne: false
+            referencedRelation: "monthly_cycles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "project_monthly_contribution_submissions_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "project_monthly_contribution_submissions_submitted_by_user_id_fkey"
+            columns: ["submitted_by_user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["user_id"]
+          },
+        ]
+      }
       project_stats_monthly: {
         Row: {
           actual_percentage: number | null
