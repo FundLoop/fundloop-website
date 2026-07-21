@@ -168,3 +168,12 @@
 - summary: Implemented issue #78 by extending the monthly-cycle verification read model with calculated MVP allocator outputs and adding a read-only operator review panel to `/admin/cycles/[cycleKey]/verification`. Operators can now inspect user result rows, raw project/user entitlements, source breakdowns, selected asset fills, returned future-pool rows, and result artifact metadata with clear copy that results are calculated but not verified, credited, paid, or transferable.
 - validation: `pnpm test tests/monthly-cycle-verification.test.ts tests/monthly-cycle-calculation-package-command.test.ts tests/monthly-cycle-calculation-package-contract.test.ts` passed with 3 files and 14 tests. `pnpm typecheck` passed. `pnpm lint` passed. `pnpm dlx node@22.22.1 /opt/homebrew/bin/pnpm check` passed with 95 files and 440 tests. A direct unauthenticated route request to `/en/admin/cycles/2026-05/verification` confirmed the operator auth guard; authenticated browser smoke was blocked because the running local Next process has E2E login enabled with a secret not present in tracked env, and the secret was not inspected or scraped.
 - follow-ups: Run independent validation for #78, then validate Goal #57. The next MVP goal should cover verification/approval-to-bookkeeping credit creation without claiming actual payouts.
+
+## 2026-07-21T12:34:08.000Z - Issue 79 MVP verification integrity checks
+
+- agent: Codex
+- branch: codex/operational-mvp-issue-51
+- head: 0069d7d
+- summary: Implemented issue #79 by adding a runtime-safe monthly-cycle verification integrity checker and wiring it into both the operator verification read model and `monthly-cycle-verification-review` command. The verified path now blocks on missing lock/artifact data, invalid MVP contribution or attribution inputs, ineligible CUBID users, negative result rows, cap violations, allocated-plus-returned pool mismatches, asset-fill over-allocation, and source supply reconciliation gaps before advancing a cycle to `verification`.
+- validation: `pnpm test tests/monthly-cycle-verification.test.ts` passed with 9 tests. `pnpm typecheck` passed. `pnpm lint` passed. `deno cache --config supabase/functions/deno.json supabase/functions/monthly-cycle-verification-review/index.ts` passed. `pnpm check` passed with lint, 95 test files / 442 tests, typecheck, and Next build.
+- follow-ups: Run independent validation for #79. Issue #80 should harden approval as the bookkeeping-credit handoff without creating credits yet.

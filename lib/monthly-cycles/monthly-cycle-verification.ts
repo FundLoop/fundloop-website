@@ -3,10 +3,23 @@ import "server-only"
 import { getAdminSupabaseClient } from "@/lib/supabase-admin"
 import type { Database } from "@/types/supabase"
 import { assertMonthString } from "@/lib/zkas/month"
+import {
+  buildMonthlyCycleVerificationIntegrityIssues,
+  type MonthlyCycleVerificationIntegrityIssue,
+} from "./monthly-cycle-verification-integrity"
 
 type CycleRow = Pick<
   Database["public"]["Tables"]["monthly_cycles"]["Row"],
-  "id" | "cycle_key" | "period_start" | "period_end" | "status" | "verification_started_at" | "approval_started_at" | "status_note"
+  | "id"
+  | "cycle_key"
+  | "period_start"
+  | "period_end"
+  | "status"
+  | "locked_manifest"
+  | "locked_manifest_hash"
+  | "verification_started_at"
+  | "approval_started_at"
+  | "status_note"
 >
 
 type RunRow = Pick<
@@ -47,6 +60,18 @@ export type MonthlyCycleVerificationIssue = {
   title: string
   description: string
   actionHref?: string
+}
+
+function appendIntegrityIssues(
+  issues: MonthlyCycleVerificationIssue[],
+  integrityIssues: MonthlyCycleVerificationIntegrityIssue[],
+) {
+  const seen = new Set(issues.map((issue) => issue.code))
+  for (const integrityIssue of integrityIssues) {
+    if (seen.has(integrityIssue.code)) continue
+    issues.push(integrityIssue)
+    seen.add(integrityIssue.code)
+  }
 }
 
 export type MonthlyCycleVerificationReview = {
@@ -195,6 +220,18 @@ export function buildMonthlyCycleVerificationReview(input: {
     })
   }
 
+  appendIntegrityIssues(
+    issues,
+    buildMonthlyCycleVerificationIntegrityIssues({
+      cycle: input.cycle,
+      latestCompletedRun,
+      results: input.results,
+      projectResults: input.projectResults ?? [],
+      assetFills: input.assetFills ?? [],
+      returnedPools: input.returnedPools ?? [],
+    }),
+  )
+
   const hasBlockers = issues.some((issue) => issue.severity === "blocker")
   const assetFills = input.assetFills ?? []
   const returnedPools = input.returnedPools ?? []
@@ -294,7 +331,7 @@ export async function loadMonthlyCycleVerificationReview(cycleKey: string): Prom
   const supabase = getAdminSupabaseClient()
   const { data: cycle, error } = await supabase
     .from("monthly_cycles")
-    .select("id, cycle_key, period_start, period_end, status, verification_started_at, approval_started_at, status_note")
+    .select("id, cycle_key, period_start, period_end, status, locked_manifest, locked_manifest_hash, verification_started_at, approval_started_at, status_note")
     .eq("cycle_key", parsedCycleKey)
     .maybeSingle()
 
