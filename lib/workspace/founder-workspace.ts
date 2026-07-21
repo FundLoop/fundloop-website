@@ -52,6 +52,12 @@ export type FounderWorkspaceProject = {
     latestDatasetStatus: string | null
     latestDatasetMonth: string | null
     latestDatasetRowCount: number | null
+    mvpDatasetCount: number
+    latestMvpDatasetStatus: string | null
+    latestMvpDatasetCycleKey: string | null
+    latestMvpDatasetRowCount: number | null
+    currentDataset: FounderAttributionDatasetSubmission | null
+    recentMvpSubmissions: FounderAttributionDatasetSubmission[]
     recentSubmissions: FounderAttributionSubmission[]
   }
   reporting: {
@@ -124,6 +130,20 @@ export type FounderAttributionSubmission = {
   status: string
   issueCount: number
   createdAt: string
+}
+
+export type FounderAttributionDatasetSubmission = {
+  id: number
+  cycleId: number
+  cycleKey: string
+  status: string
+  rowCount: number
+  totalAttributionPoints: number
+  note: string | null
+  proofType: string | null
+  verificationStatus: string | null
+  submittedAt: string
+  updatedAt: string
 }
 
 export type FounderWorkspaceHome = {
@@ -237,6 +257,21 @@ type ProjectMonthlyContributionSubmissionRow = {
   source_reference: string | null
   notes: string | null
   status: string
+  submitted_at: string
+  updated_at: string
+  monthly_cycles: { cycle_key: string | null } | { cycle_key: string | null }[] | null
+}
+
+type ProjectAttributionDatasetRow = {
+  id: number
+  project_id: number
+  monthly_cycle_id: number
+  status: string
+  row_count: number
+  total_attribution_points: number
+  note: string | null
+  proof_type: string | null
+  verification_status: string | null
   submitted_at: string
   updated_at: string
   monthly_cycles: { cycle_key: string | null } | { cycle_key: string | null }[] | null
@@ -408,6 +443,27 @@ function normalizeMonthlyContributionSubmission(
   }
 }
 
+function cycleKeyForAttributionDataset(dataset: ProjectAttributionDatasetRow): string {
+  const cycle = Array.isArray(dataset.monthly_cycles) ? dataset.monthly_cycles[0] : dataset.monthly_cycles
+  return cycle?.cycle_key ?? "unknown"
+}
+
+function normalizeAttributionDataset(dataset: ProjectAttributionDatasetRow): FounderAttributionDatasetSubmission {
+  return {
+    id: dataset.id,
+    cycleId: dataset.monthly_cycle_id,
+    cycleKey: cycleKeyForAttributionDataset(dataset),
+    status: dataset.status,
+    rowCount: dataset.row_count,
+    totalAttributionPoints: numberValue(dataset.total_attribution_points),
+    note: dataset.note,
+    proofType: dataset.proof_type,
+    verificationStatus: dataset.verification_status,
+    submittedAt: dataset.submitted_at,
+    updatedAt: dataset.updated_at,
+  }
+}
+
 function statMonthLabel(stat: ProjectStatsMonthlyRow | null): string | null {
   if (!stat) {
     return null
@@ -461,6 +517,7 @@ export function buildFounderWorkspaceHome({
   stats,
   monthlyCycles,
   contributionSubmissions,
+  attributionDatasets = [],
   warnings,
 }: {
   managedProjects: ManagedProjectSummary[]
@@ -474,6 +531,7 @@ export function buildFounderWorkspaceHome({
   stats: ProjectStatsMonthlyRow[]
   monthlyCycles: MonthlyCycleRow[]
   contributionSubmissions: ProjectMonthlyContributionSubmissionRow[]
+  attributionDatasets?: ProjectAttributionDatasetRow[]
   warnings: FounderWorkspaceWarning[]
 }): FounderWorkspaceHome {
   const projectRowById = new Map(projectRows.map((project) => [project.id, project]))
@@ -485,6 +543,7 @@ export function buildFounderWorkspaceHome({
   const runSummariesByProjectId = groupRowsByProjectId(runSummaries)
   const statsByProjectId = groupRowsByProjectId(stats)
   const contributionSubmissionsByProjectId = groupRowsByProjectId(contributionSubmissions)
+  const attributionDatasetsByProjectId = groupRowsByProjectId(attributionDatasets)
   const openCycles = monthlyCycles
     .filter((cycle) => cycle.status === "open")
     .map((cycle) => ({
@@ -515,6 +574,10 @@ export function buildFounderWorkspaceHome({
       contributionSubmissionsByProjectId.get(managedProject.id) ?? [],
       (submission) => submission.updated_at,
     )
+    const projectAttributionDatasets = sortByDateDescending(
+      attributionDatasetsByProjectId.get(managedProject.id) ?? [],
+      (dataset) => dataset.updated_at,
+    )
     const enabledPaymentMethodCount = projectPaymentMethods.filter((method) => method.is_enabled === true).length
     const hasDefaultPaymentMethod =
       project?.default_payment_method_id !== null &&
@@ -537,6 +600,7 @@ export function buildFounderWorkspaceHome({
     const currentSubmission = projectContributionSubmissions[0]
       ? normalizeMonthlyContributionSubmission(projectContributionSubmissions[0])
       : null
+    const currentAttributionDataset = projectAttributionDatasets[0] ? normalizeAttributionDataset(projectAttributionDatasets[0]) : null
     const blockedReason: FounderWorkspaceProject["monthlyContribution"]["blockedReason"] = !hasContributionRate
       ? "missing_commitment"
       : openCycles.length === 0
@@ -586,6 +650,12 @@ export function buildFounderWorkspaceHome({
         latestDatasetStatus: latestDataset?.status ?? null,
         latestDatasetMonth: latestDataset?.month ?? null,
         latestDatasetRowCount: latestDataset?.row_count ?? null,
+        mvpDatasetCount: projectAttributionDatasets.length,
+        latestMvpDatasetStatus: currentAttributionDataset?.status ?? null,
+        latestMvpDatasetCycleKey: currentAttributionDataset?.cycleKey ?? null,
+        latestMvpDatasetRowCount: currentAttributionDataset?.rowCount ?? null,
+        currentDataset: currentAttributionDataset,
+        recentMvpSubmissions: projectAttributionDatasets.slice(0, 5).map(normalizeAttributionDataset),
         recentSubmissions: projectDatasets.slice(0, 5).map((dataset) => ({
           id: dataset.id,
           month: dataset.month,
@@ -676,6 +746,7 @@ export async function getFounderWorkspaceHome(navigationContext: NavigationConte
       stats: [],
       monthlyCycles: [],
       contributionSubmissions: [],
+      attributionDatasets: [],
       warnings,
     })
   }
@@ -683,7 +754,18 @@ export async function getFounderWorkspaceHome(navigationContext: NavigationConte
   const supabase = getFounderSupabaseClient() ?? (await createServerSupabaseClient())
   const projectIds = managedProjects.map((project) => project.id)
 
-  const [projectRows, payments, paymentMethods, participants, datasets, runSummaries, stats, monthlyCycles, contributionSubmissions] = await Promise.all([
+  const [
+    projectRows,
+    payments,
+    paymentMethods,
+    participants,
+    datasets,
+    runSummaries,
+    stats,
+    monthlyCycles,
+    contributionSubmissions,
+    attributionDatasets,
+  ] = await Promise.all([
     readFounderData<ProjectDetailRow[]>(
       "projects",
       supabase
@@ -777,6 +859,19 @@ export async function getFounderWorkspaceHome(navigationContext: NavigationConte
       warnings,
       [],
     ),
+    readFounderData<ProjectAttributionDatasetRow[]>(
+      "project-attribution-datasets",
+      supabase
+        .from("project_attribution_datasets")
+        .select(
+          "id, project_id, monthly_cycle_id, status, row_count, total_attribution_points, note, proof_type, verification_status, submitted_at, updated_at, monthly_cycles(cycle_key)",
+        )
+        .in("project_id", projectIds)
+        .order("updated_at", { ascending: false })
+        .returns<ProjectAttributionDatasetRow[]>(),
+      warnings,
+      [],
+    ),
   ])
 
   const runIds = Array.from(new Set(runSummaries.map((summary) => summary.run_id)))
@@ -802,6 +897,7 @@ export async function getFounderWorkspaceHome(navigationContext: NavigationConte
     stats,
     monthlyCycles,
     contributionSubmissions,
+    attributionDatasets,
     warnings,
   })
 }

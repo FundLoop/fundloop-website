@@ -120,6 +120,8 @@ Live contribution-submission readiness is also informational in this phase. Goal
 
 Issue #67 adds the backend command/schema for MVP attribution submissions. `project-attribution-dataset-submit` stores one canonical current attribution dataset per project/cycle and normalized rows requiring scoped CUBID identities. These rows remain internally inspectable for MVP operators and founders, while optional proof metadata fields reserve the future zkActivitySum ingest path. Operator approval/readiness remains #69, so submitted attribution datasets are not calculation-ready until the approval workflow marks them approved. Prep does not create zkAS runs, package calculation inputs, approve exceptions, or move the cycle into the next status. Those responsibilities remain later sessions.
 
+Issue #68 wires that command into the founder attribution workspace at `/[locale]/founder/projects/[slug]/attribution`. Founders can enter scoped CUBID identities, optional FundLoop user IDs or emails, attribution points, and row-level evidence notes for an open cycle. The page distinguishes submitted MVP attribution datasets from approved/calculation-ready datasets and continues to show legacy zkAS upload history while operator approval remains a separate workflow.
+
 ## zkAS Stage Alignment
 
 `lib/monthly-cycles/monthly-cycle-zkas.ts` owns the cycle-specific zkAS read model. It returns a posture:

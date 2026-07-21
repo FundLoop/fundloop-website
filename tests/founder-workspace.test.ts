@@ -140,6 +140,22 @@ function buildHome(overrides: Partial<Parameters<typeof buildFounderWorkspaceHom
         monthly_cycles: { cycle_key: "2026-05" },
       },
     ],
+    attributionDatasets: [
+      {
+        id: 710,
+        project_id: 1,
+        monthly_cycle_id: 501,
+        status: "submitted",
+        row_count: 3,
+        total_attribution_points: 12,
+        note: "May attribution",
+        proof_type: "raw_rows",
+        verification_status: "not_required",
+        submitted_at: "2026-05-21T00:00:00Z",
+        updated_at: "2026-05-21T00:00:00Z",
+        monthly_cycles: { cycle_key: "2026-05" },
+      },
+    ],
     warnings,
     ...overrides,
   })
@@ -233,6 +249,22 @@ describe("buildFounderWorkspaceHome", () => {
       latestDatasetMonth: "2026-04",
       latestDatasetStatus: "ready",
       latestDatasetRowCount: 42,
+      mvpDatasetCount: 1,
+      latestMvpDatasetCycleKey: "2026-05",
+      latestMvpDatasetStatus: "submitted",
+      latestMvpDatasetRowCount: 3,
+      currentDataset: expect.objectContaining({
+        id: 710,
+        cycleKey: "2026-05",
+        totalAttributionPoints: 12,
+      }),
+      recentMvpSubmissions: [
+        expect.objectContaining({
+          id: 710,
+          cycleKey: "2026-05",
+          status: "submitted",
+        }),
+      ],
       recentSubmissions: [
         expect.objectContaining({
           id: 100,
