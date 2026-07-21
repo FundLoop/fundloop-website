@@ -192,7 +192,7 @@ The package manifest intentionally excludes mutable packaging timestamps so the 
 
 The `verified` path must pass MVP integrity checks against locked and calculated data. The checker validates the lock manifest/hash, approved contribution and attribution inputs, scoped CUBID/resolved attribution rows, linked or verified eligible users, non-negative result amounts, result artifact path/hash, 3x baseline cap, user allocation totals, allocated-plus-returned pool reconciliation, and asset-fill/returned-pool supply reconciliation. If any blocker is present, the command writes a failure audit event and refuses to advance the cycle. `needs_cleanup` remains available for an operator to record why the calculated result needs repair.
 
-`monthly-cycle-approval` requires a verified completed run and moves the cycle to `approval` with `approval_started_at`. This is the explicit checkpoint before later distribution and payout sessions create outbound obligations.
+`monthly-cycle-approval` requires a verified completed run, a clean MVP verification integrity pass, an internal operator, and a required operator note. It moves the cycle to `approval` with `approval_started_at`, records audit metadata that the next step is bookkeeping credit creation, and explicitly does not create credits or execute payouts. This is the explicit checkpoint before the MVP bookkeeping-credit command can materialize user-visible credited-but-not-paid earnings.
 
 ## Payout Intent Creation
 

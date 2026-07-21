@@ -186,3 +186,12 @@
 - summary: Addressed the independent validator finding on issue #79 by extending the MVP verification integrity checker to compare persisted asset fills against locked custom asset preferences. Verification now blocks rejected-asset fills, fills without an accepted locked preference, and preference-rank mismatches while still allowing users on default preferences to be governed by supply and reconciliation checks.
 - validation: `pnpm test tests/monthly-cycle-verification.test.ts` passed with 10 tests. `pnpm typecheck` passed. `pnpm lint` passed. `deno cache --config supabase/functions/deno.json supabase/functions/monthly-cycle-verification-review/index.ts` passed. `pnpm check` passed with lint, 95 test files / 443 tests, typecheck, and Next build.
 - follow-ups: Rerun independent validation for #79. If it passes, move #79 to In Review and continue issue #80.
+
+## 2026-07-21T12:50:04.000Z - Issue 80 approval bookkeeping handoff
+
+- agent: Codex
+- branch: codex/operational-mvp-issue-51
+- head: b21b25d
+- summary: Implemented issue #80 by hardening `monthly-cycle-approval` so approval reuses the MVP verification integrity checker before advancing a cycle, audits integrity failures, and records successful approval as a bookkeeping-credit creation handoff rather than a payout/distribution execution. Updated the operator verification page and action copy to say approval unlocks bookkeeping credits and does not transfer funds or mark users as paid.
+- validation: `pnpm test tests/monthly-cycle-verification.test.ts tests/monthly-cycle-verification-actions-copy.test.ts tests/monthly-cycle-verification-contract.test.ts` passed with 15 tests. `pnpm typecheck` passed. `pnpm lint` passed. `deno cache --config supabase/functions/deno.json supabase/functions/monthly-cycle-approval/index.ts` passed. `pnpm check` passed with lint, 96 test files / 445 tests, typecheck, and Next build.
+- follow-ups: Run independent validation for #80. Issue #81 should add final verification/approval fixtures and docs for Goal #58.

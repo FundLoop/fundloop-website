@@ -114,6 +114,31 @@ async function loadIntegrityRows(supabase: SupabaseClient<Database>, cycleId: nu
   }
 }
 
+async function validateMvpVerificationIntegrity(
+  supabase: SupabaseClient<Database>,
+  cycle: Database["public"]["Tables"]["monthly_cycles"]["Row"],
+  run: NonNullable<Awaited<ReturnType<typeof getLatestCompletedRun>>["data"]>,
+) {
+  const { data: integrityRows, error: integrityRowsError } = await loadIntegrityRows(supabase, cycle.id, run.id)
+  if (integrityRowsError) return { ok: false as const, code: "query_failed", message: integrityRowsError.message, blockers: [] }
+  const integrityIssues = buildMonthlyCycleVerificationIntegrityIssues({
+    cycle,
+    latestCompletedRun: run,
+    results: integrityRows?.results ?? [],
+    projectResults: integrityRows?.projectResults ?? [],
+    assetFills: integrityRows?.assetFills ?? [],
+    returnedPools: integrityRows?.returnedPools ?? [],
+  })
+  const blockers = integrityIssues.filter((issue) => issue.severity === "blocker")
+  if (blockers.length === 0) return { ok: true as const, blockers }
+  return {
+    ok: false as const,
+    code: "verification_integrity_failed",
+    message: `MVP verification integrity checks failed: ${blockers.map((issue) => issue.code).join(", ")}.`,
+    blockers,
+  }
+}
+
 export async function executeMonthlyCycleVerificationReviewCommand(
   supabase: SupabaseClient<Database>,
   input: MonthlyCycleVerificationReviewInput,
@@ -146,30 +171,18 @@ export async function executeMonthlyCycleVerificationReviewCommand(
     if (!run) return failure("completed_run_required", "A completed zkAS run is required before cycle verification.")
     if (run.verification_status !== "verified") return failure("run_verification_required", "The completed zkAS run must be verified first.")
     if (!run.result_artifact_hash) return failure("result_artifact_required", "A result artifact hash is required before verification.")
-    const { data: integrityRows, error: integrityRowsError } = await loadIntegrityRows(supabase, cycle.id, run.id)
-    if (integrityRowsError) return failure("query_failed", integrityRowsError.message)
-    const integrityIssues = buildMonthlyCycleVerificationIntegrityIssues({
-      cycle,
-      latestCompletedRun: run,
-      results: integrityRows?.results ?? [],
-      projectResults: integrityRows?.projectResults ?? [],
-      assetFills: integrityRows?.assetFills ?? [],
-      returnedPools: integrityRows?.returnedPools ?? [],
-    })
-    const blockers = integrityIssues.filter((issue) => issue.severity === "blocker")
-    if (blockers.length > 0) {
+    const integrity = await validateMvpVerificationIntegrity(supabase, cycle, run)
+    if (!integrity.ok) {
+      if (integrity.code === "query_failed") return failure(integrity.code, integrity.message)
       await insertCycleEvent(supabase, input, {
         cycleId: cycle.id,
         eventType: "verification_review",
         outcome: "failure",
         severity: "warning",
         message: "MVP verification integrity checks failed.",
-        metadata: { blockerCodes: blockers.map((issue) => issue.code), issueCount: integrityIssues.length },
+        metadata: { blockerCodes: integrity.blockers.map((issue) => issue.code), issueCount: integrity.blockers.length },
       })
-      return failure(
-        "verification_integrity_failed",
-        `MVP verification integrity checks failed: ${blockers.map((issue) => issue.code).join(", ")}.`,
-      )
+      return failure(integrity.code, integrity.message)
     }
   }
 
@@ -270,6 +283,19 @@ export async function executeMonthlyCycleApprovalCommand(
     })
     return failure("result_artifact_required", "A result artifact hash is required before approval.")
   }
+  const integrity = await validateMvpVerificationIntegrity(supabase, cycle, run)
+  if (!integrity.ok) {
+    if (integrity.code === "query_failed") return failure(integrity.code, integrity.message)
+    await insertCycleEvent(supabase, input, {
+      cycleId: cycle.id,
+      eventType: "approval_review",
+      outcome: "failure",
+      severity: "warning",
+      message: "Approval requires clean MVP verification integrity checks.",
+      metadata: { runId: run.id, blockerCodes: integrity.blockers.map((issue) => issue.code), issueCount: integrity.blockers.length },
+    })
+    return failure(integrity.code, integrity.message)
+  }
 
   const { data: updatedCycle, error: updateError } = await supabase
     .from("monthly_cycles")
@@ -310,8 +336,15 @@ export async function executeMonthlyCycleApprovalCommand(
     cycleId: cycle.id,
     eventType: "approval_review",
     outcome: "success",
-    message: "Cycle approved for distribution.",
-    metadata: { note, runId: run.id, totalAllocatedUsd: Number(run.total_allocated_usd ?? 0), userCount: run.user_count ?? 0 },
+    message: "Cycle approved for bookkeeping credit creation.",
+    metadata: {
+      note,
+      runId: run.id,
+      totalAllocatedUsd: Number(run.total_allocated_usd ?? 0),
+      userCount: run.user_count ?? 0,
+      nextStep: "bookkeeping_credit_creation",
+      noPayoutExecuted: true,
+    },
   })
   if (eventError) return failure("query_failed", eventError.message)
 

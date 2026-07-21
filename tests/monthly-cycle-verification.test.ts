@@ -554,6 +554,54 @@ describe("monthly-cycle verification review", () => {
     ])
   })
 
+  it("blocks approval when MVP verification integrity checks fail", async () => {
+    const supabase = makeSupabase({
+      monthly_cycles: [{ ...cycle, status: "verification" }],
+      zkas_run_results: [{ monthly_cycle_id: 1, run_id: 10, zkas_user_id: "user-1", allocation_usd: 400, aggregate_score: 30, eligibility: true }],
+      monthly_cycle_allocation_project_results: [
+        {
+          monthly_cycle_id: 1,
+          run_id: 10,
+          project_id: 7,
+          user_id: "user-1",
+          scoped_cubid_id: "scope-user-1",
+          attribution_points: 30,
+          total_project_points: 80,
+          project_pool_usd: 80,
+          raw_usd: 25,
+        },
+      ],
+      monthly_cycle_allocation_asset_fills: [
+        {
+          monthly_cycle_id: 1,
+          run_id: 10,
+          user_id: "user-1",
+          project_id: 7,
+          asset_type: "stablecoin",
+          asset_code: "USDC",
+          usd_value: 90,
+          preference_rank: 1,
+        },
+      ],
+      monthly_cycle_allocation_returned_pools: [],
+    })
+
+    const result = await executeMonthlyCycleApprovalCommand(supabase as never, {
+      ...commandInput,
+      note: "Trying to approve a broken calculation.",
+    })
+
+    expect(result).toMatchObject({ ok: false, error: { code: "verification_integrity_failed" } })
+    expect(supabase.updates.monthly_cycles ?? []).toEqual([])
+    expect(supabase.inserts.monthly_cycle_events).toEqual([
+      expect.objectContaining({
+        event_type: "approval_review",
+        outcome: "failure",
+        message: "Approval requires clean MVP verification integrity checks.",
+      }),
+    ])
+  })
+
   it("blocks verification review when MVP integrity checks fail", async () => {
     const supabase = makeSupabase({
       zkas_run_results: [{ monthly_cycle_id: 1, run_id: 10, zkas_user_id: "user-1", allocation_usd: 400, aggregate_score: 30, eligibility: true }],

@@ -51,7 +51,7 @@ export default async function AdminCycleVerificationPage({ params }: PageProps) 
             </h1>
             <p className="max-w-2xl text-base leading-7 text-[var(--text-muted)]">
               Compare completed calculation outputs against stored totals, record cleanup decisions, and explicitly approve
-              the cycle before distribution work begins.
+              the cycle before bookkeeping credits are created. Approval does not execute payouts.
             </p>
           </div>
           <div className="rounded-[var(--radius-xl)] border border-[color:var(--surface-border)] bg-[var(--surface-panel-strong)] p-4">
@@ -61,7 +61,7 @@ export default async function AdminCycleVerificationPage({ params }: PageProps) 
             <p className="mt-3 text-sm text-[var(--text-muted)]">{review.cycle.periodStart} to {review.cycle.periodEnd}</p>
             {review.cycle.status === "approval" ? (
               <Button asChild variant="outline" size="sm" className="mt-4">
-                <Link href={`/admin/cycles/${review.cycle.cycleKey}/payouts`}>Open payout work</Link>
+                <Link href={`/admin/cycles/${review.cycle.cycleKey}/payouts`}>Open bookkeeping credit work</Link>
               </Button>
             ) : null}
           </div>
@@ -115,7 +115,9 @@ export default async function AdminCycleVerificationPage({ params }: PageProps) 
         <Card>
           <CardHeader>
             <CardTitle>Operator decision</CardTitle>
-            <CardDescription>Every verification and approval decision requires a note and writes an audit event.</CardDescription>
+            <CardDescription>
+              Every verification and approval decision requires a note and writes an audit event. Approval prepares bookkeeping credits; it does not mark users as paid.
+            </CardDescription>
           </CardHeader>
           <CardContent>
             <MonthlyCycleVerificationActions cycleKey={review.cycle.cycleKey} canMarkVerified={review.canMarkVerified} canApprove={review.canApprove} />
