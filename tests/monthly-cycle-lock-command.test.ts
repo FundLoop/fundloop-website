@@ -304,7 +304,7 @@ describe("executeMonthlyCycleLockCommand", () => {
     expect(supabase.inserts.monthly_cycle_events.map((event) => event.event_type)).toEqual(["lock_attempt", "lock_success"])
   })
 
-  it("keeps MVP manifest inputs deterministic and destination-free", async () => {
+  it("keeps the deterministic MVP lock fixture stable and destination-free", async () => {
     const first = makeSupabase()
     const second = makeSupabase({
       user_asset_preferences: [
@@ -344,6 +344,26 @@ describe("executeMonthlyCycleLockCommand", () => {
       secondResult.ok ? secondResult.data.lockedManifestHash : null,
     )
     const manifest = second.updates.monthly_cycles[0].locked_manifest
+    expect(manifest).toMatchObject({
+      mvp_inputs: {
+        counts: {
+          contributionSubmissions: 1,
+          attributionDatasets: 1,
+          attributionRows: 1,
+          eligibleUsers: 1,
+          assetPreferenceSummaries: 1,
+          usersRejectingProjectTokens: 1,
+        },
+        checksums: {
+          contributionSubmissions: expect.stringMatching(/^[a-f0-9]{64}$/),
+          attributionDatasets: expect.stringMatching(/^[a-f0-9]{64}$/),
+          attributionRows: expect.stringMatching(/^[a-f0-9]{64}$/),
+          eligibleUsers: expect.stringMatching(/^[a-f0-9]{64}$/),
+          identitySnapshots: expect.stringMatching(/^[a-f0-9]{64}$/),
+          assetPreferenceSummaries: expect.stringMatching(/^[a-f0-9]{64}$/),
+        },
+      },
+    })
     expect(JSON.stringify(manifest)).not.toContain("should-not-leak")
     expect(JSON.stringify(manifest)).not.toContain("wallet_address")
     expect(JSON.stringify(manifest)).not.toContain("bank_account")

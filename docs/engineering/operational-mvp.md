@@ -209,6 +209,7 @@ Acceptance criteria:
 - Lock creates deterministic `locked_manifest` and `locked_manifest_hash`.
 - Locked manifest contains all MVP inputs.
 - Repeated lock attempts fail safely once status is no longer `open`.
+- Calculation work starts from `locked_manifest.mvp_inputs`, including contribution submissions, approved attribution datasets/rows, eligible users, CUBID snapshots, and destination-free asset preference summaries, not from live mutable rows.
 
 ### 6. Deterministic Allocation Calculation
 

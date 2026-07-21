@@ -101,6 +101,19 @@ The command reattaches newly-created month-bearing rows to the cycle before read
 
 Missing asset preferences are intentionally not lock blockers. The lock manifest records destination-free asset preference summaries and prep raises informational warnings for users who are on defaults or reject all project tokens, but MVP USD bookkeeping credits can still be calculated from approved contribution and attribution inputs.
 
+### MVP Calculation Handoff
+
+Goal #57 should start from `locked_manifest.mvp_inputs`, not live mutable tables. The MVP input shape is:
+
+- `contribution_submissions`: one submitted contribution row per contributing project/cycle, including source currency, source amount, USD equivalent amount, commitment percentage, calculated contribution amount, source reference, submitter, and timestamps.
+- `attribution_datasets`: approved MVP attribution dataset headers, including proof metadata placeholders such as `proof_type`, `proof_artifact_uri`, `verifier_backend`, and `verification_status` when present.
+- `attribution_rows`: approved raw MVP attribution rows with required `scoped_cubid_id`, optional FundLoop `user_id`/email, attribution points, category, evidence reference, notes, and resolution status.
+- `eligible_users`: active users visible to the cycle through participation or attribution, with CUBID linkage state and the project IDs where they participate or receive attribution.
+- `asset_preferences`: destination-free settlement planning summaries keyed by user, with ordered asset type/code/project scope and accepted/rejected state.
+- `counts` and `checksums`: deterministic section counts and SHA-256 hashes used by calculation, verification, and later audit tooling to prove that the calculation package consumed the locked input set.
+
+The deterministic test fixture in `tests/monthly-cycle-lock-command.test.ts` covers contribution, attribution, CUBID snapshot, and asset-preference inputs and asserts stable lock hashes plus destination privacy. Future calculation fixtures should reuse that shape rather than inventing a separate input contract.
+
 ## Prep Review
 
 `lib/monthly-cycles/monthly-cycle-prep.ts` owns the prep read model. It evaluates the locked manifest and returns a posture:
