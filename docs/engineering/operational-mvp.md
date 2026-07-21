@@ -358,6 +358,8 @@ Artifacts must be hashable and linked to `monthly_cycle_id`.
 
 Local validation evidence: [Operational MVP Local Validation](./operational-mvp-local-validation.md)
 
+Preview/dev validation evidence: [Operational MVP Preview/Dev Validation](./operational-mvp-preview-validation.md)
+
 Create or reuse deterministic seed fixtures:
 
 - one internal operator
