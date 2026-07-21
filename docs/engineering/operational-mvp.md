@@ -368,6 +368,8 @@ Create or reuse deterministic seed fixtures:
 - one approved attribution dataset
 - user asset preferences covering stablecoin, fiat, project token, and token rejection warning
 
+The local seed currently provides this input set with cycle `2026-05`, founder/operator `maya@fundloop.example.com`, project `civic-mesh`, one submitted Civic Mesh contribution, verified CUBID snapshots for Maya/Eli/Safiya/Jonah, and one approved raw-row attribution dataset using scoped CUBID identities for Eli, Safiya, and Jonah. The seed intentionally does not pre-create lock, calculation, approval, or bookkeeping credit outputs; those records should be produced by the MVP smoke itself.
+
 Smoke path:
 
 1. Founder creates or verifies project and commitment.

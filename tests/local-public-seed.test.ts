@@ -39,6 +39,28 @@ describe("local public discovery seed fixtures", () => {
     expect(seedSql).toContain(`'seed-civic-mesh-2026-05-ledger'`)
   })
 
+  it("includes deterministic CUBID linkage and snapshot fixtures for MVP identity readiness", () => {
+    expect(seedSql).toContain(`'cubid-local-maya'`)
+    expect(seedSql).toContain(`'cubid-local-eli'`)
+    expect(seedSql).toContain(`"cubid_identity_status" = 'verified'`)
+    expect(seedSql).toContain(`INSERT INTO "public"."cubid_identity_snapshots"`)
+    expect(seedSql).toContain(`'scoped-cubid-local-eli'`)
+    expect(seedSql).toContain(`'scoped-cubid-local-safiya'`)
+    expect(seedSql).toContain(`'scoped-cubid-local-jonah'`)
+  })
+
+  it("includes an approved attribution dataset fixture for MVP calculation readiness", () => {
+    expect(seedSql).toContain(`INSERT INTO "public"."project_attribution_datasets"`)
+    expect(seedSql).toContain(`'Deterministic local MVP smoke attribution dataset for Civic Mesh May 2026.'`)
+    expect(seedSql).toContain(`'raw_rows'`)
+    expect(seedSql).toContain(`'not_required'`)
+    expect(seedSql).toContain(`INSERT INTO "public"."project_attribution_rows"`)
+    expect(seedSql).toContain(`'seed-civic-mesh-2026-05-attribution'`)
+    expect(seedSql).toContain(`'50.000000'::numeric`)
+    expect(seedSql).toContain(`'30.000000'::numeric`)
+    expect(seedSql).toContain(`'20.000000'::numeric`)
+  })
+
   it("includes deterministic user asset preference scenarios for MVP smoke coverage", () => {
     expect(seedSql).toContain(`INSERT INTO "public"."user_asset_preferences"`)
     expect(seedSql).toContain(`'stablecoin', 'USDC', NULL, 't'`)
@@ -58,6 +80,8 @@ describe("local public discovery seed fixtures", () => {
     expect(seedSql).toContain(`SELECT pg_catalog.setval('"public"."projects_id_seq1"', 103, true);`)
     expect(seedSql).toContain(`SELECT pg_catalog.setval('"public"."users_sequential_id_seq"', 104, true);`)
     expect(seedSql).toContain(`SELECT pg_catalog.setval('"public"."user_asset_preferences_id_seq"', 110, true);`)
+    expect(seedSql).toContain(`SELECT pg_catalog.setval('"public"."project_attribution_datasets_id_seq"', 101, true);`)
+    expect(seedSql).toContain(`SELECT pg_catalog.setval('"public"."project_attribution_rows_id_seq"', 103, true);`)
     expect(seedSql).toContain(`SELECT pg_catalog.setval('"public"."blog_posts_id_seq"', 26, true);`)
   })
 })

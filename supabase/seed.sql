@@ -582,10 +582,50 @@ INSERT INTO "public"."user_social_platforms" ("id", "user_id", "social_platform_
 -- after every `supabase db reset`, independent of whichever snapshot-style rows exist above.
 
 INSERT INTO "public"."users" ("user_id", "cubid_id", "full_name", "avatar_url", "birth_year", "gender_id", "location_id", "occupation_id", "will_contribute", "contribution_details", "created_at", "updated_at", "primary_email_identity", "id", "invited_by_code", "updated_by", "deleted_at", "status", "cubid_score", "lifetime_sweat_equity", "is_public", "display_name", "birthdate", "is_pfp_public", "is_name_public", "is_birthyear_public", "is_birthday_public", "is_gender_public", "is_occupation_public", "is_location_public", "email", "age", "bio") VALUES
-  ('00000000-0000-4000-8000-000000000101', NULL, 'Maya Torres', 'https://api.dicebear.com/9.x/adventurer/svg?seed=MayaTorres', '1992', '2', '6', '9', 't', 'Community operator who helps climate and mutual-aid teams turn everyday participation into visible, trusted signal.', '2025-06-12 12:00:00+00', '2025-06-12 12:00:00+00', NULL, '101', NULL, NULL, NULL, 'active', '0', '0', 't', 'Maya', NULL, 't', 't', 'f', 'f', 't', 't', 't', 'maya@fundloop.example.com', NULL, 'Builds calm, reliable rituals that help communities stay engaged over time.'),
-  ('00000000-0000-4000-8000-000000000102', NULL, 'Eli Walker', 'https://api.dicebear.com/9.x/adventurer/svg?seed=EliWalker', '1989', '1', '1', '1', 't', 'Prototype engineer focused on lightweight civic tooling, contributor onboarding, and transparent public operations.', '2025-06-12 12:05:00+00', '2025-06-12 12:05:00+00', NULL, '102', NULL, NULL, NULL, 'active', '0', '0', 't', 'Eli', NULL, 't', 't', 'f', 'f', 't', 't', 't', 'eli@fundloop.example.com', NULL, 'Works across product and infrastructure to keep high-trust contribution flows legible.'),
-  ('00000000-0000-4000-8000-000000000103', NULL, 'Safiya Noor', 'https://api.dicebear.com/9.x/adventurer/svg?seed=SafiyaNoor', '1994', '2', '2', '8', 't', 'Writer and researcher who documents community commitments, contributor pathways, and real-world participation outcomes.', '2025-06-12 12:10:00+00', '2025-06-12 12:10:00+00', NULL, '103', NULL, NULL, NULL, 'active', '0', '0', 't', 'Safiya', NULL, 't', 't', 'f', 'f', 't', 't', 't', 'safiya@fundloop.example.com', NULL, 'Translates messy community work into stories, process docs, and public-facing trust signals.'),
-  ('00000000-0000-4000-8000-000000000104', NULL, 'Jonah Park', 'https://api.dicebear.com/9.x/adventurer/svg?seed=JonahPark', '1991', '1', '4', '2', 't', 'Operations generalist who supports shared service teams with process mapping, reporting, and founder support.', '2025-06-12 12:15:00+00', '2025-06-12 12:15:00+00', NULL, '104', NULL, NULL, NULL, 'active', '0', '0', 't', 'Jonah', NULL, 't', 't', 'f', 'f', 't', 't', 't', 'jonah@fundloop.example.com', NULL, 'Keeps distributed projects moving by connecting finance, operations, and community context.');
+  ('00000000-0000-4000-8000-000000000101', '00000000-0000-5000-9000-000000000101', 'Maya Torres', 'https://api.dicebear.com/9.x/adventurer/svg?seed=MayaTorres', '1992', '2', '6', '9', 't', 'Community operator who helps climate and mutual-aid teams turn everyday participation into visible, trusted signal.', '2025-06-12 12:00:00+00', '2025-06-12 12:00:00+00', '00000000-0000-6000-a000-000000000101', '101', NULL, NULL, NULL, 'active', '90', '0', 't', 'Maya', NULL, 't', 't', 'f', 'f', 't', 't', 't', 'maya@fundloop.example.com', NULL, 'Builds calm, reliable rituals that help communities stay engaged over time.'),
+  ('00000000-0000-4000-8000-000000000102', '00000000-0000-5000-9000-000000000102', 'Eli Walker', 'https://api.dicebear.com/9.x/adventurer/svg?seed=EliWalker', '1989', '1', '1', '1', 't', 'Prototype engineer focused on lightweight civic tooling, contributor onboarding, and transparent public operations.', '2025-06-12 12:05:00+00', '2025-06-12 12:05:00+00', '00000000-0000-6000-a000-000000000102', '102', NULL, NULL, NULL, 'active', '82', '0', 't', 'Eli', NULL, 't', 't', 'f', 'f', 't', 't', 't', 'eli@fundloop.example.com', NULL, 'Works across product and infrastructure to keep high-trust contribution flows legible.'),
+  ('00000000-0000-4000-8000-000000000103', '00000000-0000-5000-9000-000000000103', 'Safiya Noor', 'https://api.dicebear.com/9.x/adventurer/svg?seed=SafiyaNoor', '1994', '2', '2', '8', 't', 'Writer and researcher who documents community commitments, contributor pathways, and real-world participation outcomes.', '2025-06-12 12:10:00+00', '2025-06-12 12:10:00+00', '00000000-0000-6000-a000-000000000103', '103', NULL, NULL, NULL, 'active', '78', '0', 't', 'Safiya', NULL, 't', 't', 'f', 'f', 't', 't', 't', 'safiya@fundloop.example.com', NULL, 'Translates messy community work into stories, process docs, and public-facing trust signals.'),
+  ('00000000-0000-4000-8000-000000000104', '00000000-0000-5000-9000-000000000104', 'Jonah Park', 'https://api.dicebear.com/9.x/adventurer/svg?seed=JonahPark', '1991', '1', '4', '2', 't', 'Operations generalist who supports shared service teams with process mapping, reporting, and founder support.', '2025-06-12 12:15:00+00', '2025-06-12 12:15:00+00', '00000000-0000-6000-a000-000000000104', '104', NULL, NULL, NULL, 'active', '74', '0', 't', 'Jonah', NULL, 't', 't', 'f', 'f', 't', 't', 't', 'jonah@fundloop.example.com', NULL, 'Keeps distributed projects moving by connecting finance, operations, and community context.');
+
+UPDATE "public"."users"
+SET "cubid_identity_status" = 'verified'
+WHERE "user_id" IN (
+  '00000000-0000-4000-8000-000000000101',
+  '00000000-0000-4000-8000-000000000102',
+  '00000000-0000-4000-8000-000000000103',
+  '00000000-0000-4000-8000-000000000104'
+);
+
+INSERT INTO "public"."cubid_identity_snapshots" (
+  "user_id",
+  "cubid_user_id",
+  "primary_name",
+  "primary_email",
+  "primary_phone",
+  "cubid_score",
+  "available_stamp_types",
+  "verified_stamp_types",
+  "raw_identity",
+  "raw_stamps",
+  "last_synced_at"
+) VALUES
+  ('00000000-0000-4000-8000-000000000101', 'cubid-local-maya', 'Maya Torres', 'maya@fundloop.example.com', '+15550000101', '90', ARRAY['email','phone','github']::text[], ARRAY['email','phone','github']::text[], '{"source":"local_seed","scopedIdentity":"scoped-cubid-local-maya"}', '[{"type":"email","verified":true},{"type":"phone","verified":true},{"type":"github","verified":true}]', '2026-05-01 09:00:00+00'),
+  ('00000000-0000-4000-8000-000000000102', 'cubid-local-eli', 'Eli Walker', 'eli@fundloop.example.com', '+15550000102', '82', ARRAY['email','phone','github']::text[], ARRAY['email','phone','github']::text[], '{"source":"local_seed","scopedIdentity":"scoped-cubid-local-eli"}', '[{"type":"email","verified":true},{"type":"phone","verified":true},{"type":"github","verified":true}]', '2026-05-01 09:05:00+00'),
+  ('00000000-0000-4000-8000-000000000103', 'cubid-local-safiya', 'Safiya Noor', 'safiya@fundloop.example.com', '+15550000103', '78', ARRAY['email','phone','linkedin']::text[], ARRAY['email','phone','linkedin']::text[], '{"source":"local_seed","scopedIdentity":"scoped-cubid-local-safiya"}', '[{"type":"email","verified":true},{"type":"phone","verified":true},{"type":"linkedin","verified":true}]', '2026-05-01 09:10:00+00'),
+  ('00000000-0000-4000-8000-000000000104', 'cubid-local-jonah', 'Jonah Park', 'jonah@fundloop.example.com', '+15550000104', '74', ARRAY['email','phone','discord']::text[], ARRAY['email','phone','discord']::text[], '{"source":"local_seed","scopedIdentity":"scoped-cubid-local-jonah"}', '[{"type":"email","verified":true},{"type":"phone","verified":true},{"type":"discord","verified":true}]', '2026-05-01 09:15:00+00')
+ON CONFLICT ("user_id") DO UPDATE SET
+  "cubid_user_id" = EXCLUDED."cubid_user_id",
+  "primary_name" = EXCLUDED."primary_name",
+  "primary_email" = EXCLUDED."primary_email",
+  "primary_phone" = EXCLUDED."primary_phone",
+  "cubid_score" = EXCLUDED."cubid_score",
+  "available_stamp_types" = EXCLUDED."available_stamp_types",
+  "verified_stamp_types" = EXCLUDED."verified_stamp_types",
+  "raw_identity" = EXCLUDED."raw_identity",
+  "raw_stamps" = EXCLUDED."raw_stamps",
+  "last_synced_at" = EXCLUDED."last_synced_at",
+  "last_sync_error_code" = NULL,
+  "last_sync_error_message" = NULL;
 
 INSERT INTO "public"."projects" ("id", "name", "description", "detailed_description", "logo_url", "website", "organization_id", "is_public", "created_at", "payment_percentage", "default_reporting_currency_code", "payment_periodicity_id", "payment_custom_days", "default_payment_method_id", "category_id", "updated_at", "updated_by", "deleted_at", "status", "cumulative_revenue", "cumulative_donated", "email", "billing_email", "billing_frequency", "slug") VALUES
   ('101', 'Civic Mesh', 'Neighborhood coordination software for mutual aid, public updates, and trusted local action.', 'Civic Mesh helps local organizers publish needs, coordinate volunteers, and keep recurring neighborhood work visible without relying on noisy engagement loops. It is designed to make practical participation legible, dependable, and easy to revisit month over month.', 'https://images.unsplash.com/photo-1529156069898-49953e39b3ac?q=80&w=1964&auto=format&fit=crop', 'https://civicmesh.example.com', NULL, 't', '2025-06-12 13:00:00+00', '1.00', 'USD', '2', NULL, '1', '11', '2025-06-12 13:00:00+00', NULL, NULL, 'active', '210000', '2100', 'hello@civicmesh.example.com', 'finance@civicmesh.example.com', 'monthly', 'civic-mesh'),
@@ -671,6 +711,82 @@ ON CONFLICT ("project_id", "monthly_cycle_id") DO UPDATE SET
   "notes" = EXCLUDED."notes",
   "updated_at" = EXCLUDED."updated_at";
 
+DELETE FROM "public"."project_attribution_rows"
+WHERE "project_id" = '101'
+AND "monthly_cycle_id" IN (
+  SELECT "id" FROM "public"."monthly_cycles" WHERE "cycle_key" = '2026-05'
+);
+
+DELETE FROM "public"."project_attribution_datasets"
+WHERE "project_id" = '101'
+AND "monthly_cycle_id" IN (
+  SELECT "id" FROM "public"."monthly_cycles" WHERE "cycle_key" = '2026-05'
+);
+
+WITH cycle AS (
+  SELECT "id" FROM "public"."monthly_cycles" WHERE "cycle_key" = '2026-05'
+), dataset AS (
+  INSERT INTO "public"."project_attribution_datasets" (
+    "id",
+    "project_id",
+    "monthly_cycle_id",
+    "status",
+    "row_count",
+    "total_attribution_points",
+    "note",
+    "proof_type",
+    "verification_status",
+    "submitted_by_user_id",
+    "submitted_at",
+    "approved_by_user_id",
+    "approved_at",
+    "created_at",
+    "updated_at"
+  )
+  SELECT
+    '101',
+    '101',
+    cycle."id",
+    'approved',
+    '3',
+    '100.000000',
+    'Deterministic local MVP smoke attribution dataset for Civic Mesh May 2026.',
+    'raw_rows',
+    'not_required',
+    '00000000-0000-4000-8000-000000000101',
+    '2026-05-21 12:00:00+00',
+    '00000000-0000-4000-8000-000000000101',
+    '2026-05-22 12:00:00+00',
+    '2026-05-21 12:00:00+00',
+    '2026-05-22 12:00:00+00'
+  FROM cycle
+  RETURNING "id", "monthly_cycle_id"
+)
+INSERT INTO "public"."project_attribution_rows" (
+  "id",
+  "dataset_id",
+  "project_id",
+  "monthly_cycle_id",
+  "row_index",
+  "scoped_cubid_id",
+  "user_id",
+  "user_email",
+  "attribution_points",
+  "category",
+  "evidence_reference",
+  "notes",
+  "resolution_status",
+  "resolution_message",
+  "created_at"
+)
+SELECT * FROM (
+  SELECT '101'::bigint, dataset."id", '101'::integer, dataset."monthly_cycle_id", '1'::integer, 'scoped-cubid-local-eli', '00000000-0000-4000-8000-000000000102'::uuid, 'eli@fundloop.example.com', '50.000000'::numeric, 'engineering', 'seed-civic-mesh-2026-05-attribution', 'Built core intake and routing improvements.', 'resolved', NULL::text, '2026-05-21 12:05:00+00'::timestamptz FROM dataset
+  UNION ALL
+  SELECT '102'::bigint, dataset."id", '101'::integer, dataset."monthly_cycle_id", '2'::integer, 'scoped-cubid-local-safiya', '00000000-0000-4000-8000-000000000103'::uuid, 'safiya@fundloop.example.com', '30.000000'::numeric, 'documentation', 'seed-civic-mesh-2026-05-attribution', 'Documented contributor pathways and reporting context.', 'resolved', NULL::text, '2026-05-21 12:10:00+00'::timestamptz FROM dataset
+  UNION ALL
+  SELECT '103'::bigint, dataset."id", '101'::integer, dataset."monthly_cycle_id", '3'::integer, 'scoped-cubid-local-jonah', '00000000-0000-4000-8000-000000000104'::uuid, 'jonah@fundloop.example.com', '20.000000'::numeric, 'operations', 'seed-civic-mesh-2026-05-attribution', 'Coordinated operating cadence and contributor support.', 'resolved', NULL::text, '2026-05-21 12:15:00+00'::timestamptz FROM dataset
+) rows;
+
 SELECT pg_catalog.setval('"public"."blog_posts_id_seq"', 26, true);
 
 SELECT pg_catalog.setval('"public"."debug_log_id_seq"', 11, true);
@@ -704,6 +820,10 @@ SELECT pg_catalog.setval('"public"."payments_id_seq1"', 5, true);
 SELECT pg_catalog.setval('"public"."project_stats_id_seq"', 9, true);
 
 SELECT pg_catalog.setval('"public"."project_stats_monthly_id_seq"', 36, true);
+
+SELECT pg_catalog.setval('"public"."project_attribution_datasets_id_seq"', 101, true);
+
+SELECT pg_catalog.setval('"public"."project_attribution_rows_id_seq"', 103, true);
 
 SELECT pg_catalog.setval('"public"."project_users_id_seq"', 14, true);
 
