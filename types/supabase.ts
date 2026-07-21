@@ -4218,6 +4218,22 @@ export type Database = {
           project_slug: string
         }[]
       }
+      replace_user_asset_preferences_atomic: {
+        Args: { p_preferences?: Json; p_user_id: string }
+        Returns: {
+          accepted: boolean
+          asset_code: string
+          asset_type: Database["public"]["Enums"]["user_asset_preference_type"]
+          created_at: string
+          created_by_user_id: string | null
+          id: number
+          project_id: number | null
+          rank: number
+          updated_at: string
+          updated_by_user_id: string | null
+          user_id: string
+        }[]
+      }
       soft_delete_organization_members: {
         Args: { p_id: number }
         Returns: undefined

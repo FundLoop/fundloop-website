@@ -71,3 +71,61 @@ CREATE POLICY user_asset_preferences_self_delete
 ON public.user_asset_preferences
 FOR DELETE
 USING (auth.uid() = user_id);
+
+CREATE OR REPLACE FUNCTION public.replace_user_asset_preferences_atomic(
+  p_user_id uuid,
+  p_preferences jsonb DEFAULT '[]'::jsonb
+)
+RETURNS SETOF public.user_asset_preferences
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+BEGIN
+  IF p_user_id IS NULL THEN
+    RAISE EXCEPTION 'p_user_id is required';
+  END IF;
+
+  IF jsonb_typeof(coalesce(p_preferences, '[]'::jsonb)) <> 'array' THEN
+    RAISE EXCEPTION 'p_preferences must be a JSON array';
+  END IF;
+
+  DELETE FROM public.user_asset_preferences
+  WHERE user_id = p_user_id;
+
+  INSERT INTO public.user_asset_preferences (
+    user_id,
+    rank,
+    asset_type,
+    asset_code,
+    project_id,
+    accepted,
+    created_by_user_id,
+    updated_by_user_id
+  )
+  SELECT
+    p_user_id,
+    preference.ordinality::integer,
+    (preference.value ->> 'assetType')::public.user_asset_preference_type,
+    upper(btrim(preference.value ->> 'assetCode')),
+    CASE
+      WHEN preference.value ? 'projectId' THEN (preference.value ->> 'projectId')::bigint
+      ELSE NULL
+    END,
+    coalesce((preference.value ->> 'accepted')::boolean, true),
+    p_user_id,
+    p_user_id
+  FROM jsonb_array_elements(coalesce(p_preferences, '[]'::jsonb)) WITH ORDINALITY AS preference(value, ordinality);
+
+  RETURN QUERY
+  SELECT *
+  FROM public.user_asset_preferences
+  WHERE user_id = p_user_id
+  ORDER BY rank ASC;
+END;
+$$;
+
+REVOKE ALL ON FUNCTION public.replace_user_asset_preferences_atomic(uuid, jsonb) FROM PUBLIC;
+REVOKE ALL ON FUNCTION public.replace_user_asset_preferences_atomic(uuid, jsonb) FROM anon;
+REVOKE ALL ON FUNCTION public.replace_user_asset_preferences_atomic(uuid, jsonb) FROM authenticated;
+GRANT EXECUTE ON FUNCTION public.replace_user_asset_preferences_atomic(uuid, jsonb) TO service_role;

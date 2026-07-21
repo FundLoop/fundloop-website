@@ -47,32 +47,12 @@ export async function executeUserAssetPreferencesUpdateCommand(
   supabase: SupabaseClient<Database>,
   input: UserAssetPreferencesUpdateExecutionInput,
 ): Promise<CommandResult<UserAssetPreferencesUpdateCommandOutput>> {
-  const { error: deleteError } = await supabase.from("user_asset_preferences").delete().eq("user_id", input.actorUserId)
-  if (deleteError) return failure("preference_delete_failed", deleteError.message)
+  const { data: rows, error: replaceError } = await supabase.rpc("replace_user_asset_preferences_atomic", {
+    p_user_id: input.actorUserId,
+    p_preferences: input.preferences,
+  })
 
-  if (input.preferences.length > 0) {
-    const inserts = input.preferences.map((preference, index) => ({
-      user_id: input.actorUserId,
-      rank: index + 1,
-      asset_type: preference.assetType,
-      asset_code: preference.assetCode,
-      project_id: preference.projectId ?? null,
-      accepted: preference.accepted,
-      created_by_user_id: input.actorUserId,
-      updated_by_user_id: input.actorUserId,
-    }))
-
-    const { error: insertError } = await supabase.from("user_asset_preferences").insert(inserts)
-    if (insertError) return failure("preference_insert_failed", insertError.message)
-  }
-
-  const { data: rows, error: readError } = await supabase
-    .from("user_asset_preferences")
-    .select("id, rank, asset_type, asset_code, project_id, accepted")
-    .eq("user_id", input.actorUserId)
-    .order("rank", { ascending: true })
-
-  if (readError) return failure("preference_read_failed", readError.message)
+  if (replaceError) return failure("preference_replace_failed", replaceError.message)
 
   const preferences = ((rows ?? []) as PreferenceRow[]).map(normalizeSummary)
   return success({

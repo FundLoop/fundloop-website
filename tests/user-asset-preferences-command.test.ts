@@ -32,16 +32,22 @@ function createQueryResponse(response: Response, operations: Array<{ table: stri
   }
 }
 
-function createSupabaseMock(responsesByTable: Record<string, Response[]>) {
+function createSupabaseMock(responsesByTable: Record<string, Response[]>, rpcResponses: Record<string, Response> = {}) {
   const counters = new Map<string, number>()
   const operations: Array<{ table: string; method: string; args: unknown[] }> = []
+  const rpcCalls: Array<{ name: string; args: unknown }> = []
 
   return {
     operations,
+    rpcCalls,
     from(table: string) {
       const nextIndex = counters.get(table) ?? 0
       counters.set(table, nextIndex + 1)
       return createQueryResponse(responsesByTable[table]?.[nextIndex] ?? { data: [], error: null }, operations, table)
+    },
+    rpc(name: string, args: unknown) {
+      rpcCalls.push({ name, args })
+      return Promise.resolve(rpcResponses[name] ?? { data: [], error: null })
     },
   }
 }
@@ -53,13 +59,7 @@ describe("user asset preferences update command", () => {
       { id: 2, rank: 2, asset_type: "fiat", asset_code: "USD", project_id: null, accepted: true },
       { id: 3, rank: 3, asset_type: "project_token", asset_code: "CIVIC", project_id: 7, accepted: false },
     ]
-    const supabase = createSupabaseMock({
-      user_asset_preferences: [
-        { data: null, error: null },
-        { data: null, error: null },
-        { data: rows, error: null },
-      ],
-    })
+    const supabase = createSupabaseMock({}, { replace_user_asset_preferences_atomic: { data: rows, error: null } })
 
     const result = await executeUserAssetPreferencesUpdateCommand(supabase as never, {
       actorUserId: "user-1",
@@ -83,22 +83,24 @@ describe("user asset preferences update command", () => {
         ],
       }),
     })
-    expect(supabase.operations.find((operation) => operation.method === "delete")?.table).toBe("user_asset_preferences")
-    expect(supabase.operations.find((operation) => operation.method === "eq")?.args).toEqual(["user_id", "user-1"])
-    expect(supabase.operations.find((operation) => operation.method === "insert")?.args[0]).toEqual([
-      expect.objectContaining({ user_id: "user-1", rank: 1, asset_type: "stablecoin", asset_code: "USDC" }),
-      expect.objectContaining({ user_id: "user-1", rank: 2, asset_type: "fiat", asset_code: "USD" }),
-      expect.objectContaining({ user_id: "user-1", rank: 3, asset_type: "project_token", project_id: 7, accepted: false }),
+    expect(supabase.operations).toEqual([])
+    expect(supabase.rpcCalls).toEqual([
+      {
+        name: "replace_user_asset_preferences_atomic",
+        args: {
+          p_user_id: "user-1",
+          p_preferences: [
+            { assetType: "stablecoin", assetCode: "USDC", accepted: true },
+            { assetType: "fiat", assetCode: "USD", accepted: true },
+            { assetType: "project_token", assetCode: "CIVIC", projectId: 7, accepted: false },
+          ],
+        },
+      },
     ])
   })
 
   it("clears custom rows and returns default preference guidance", async () => {
-    const supabase = createSupabaseMock({
-      user_asset_preferences: [
-        { data: null, error: null },
-        { data: [], error: null },
-      ],
-    })
+    const supabase = createSupabaseMock({}, { replace_user_asset_preferences_atomic: { data: [], error: null } })
 
     const result = await executeUserAssetPreferencesUpdateCommand(supabase as never, {
       actorUserId: "user-1",
@@ -113,32 +115,34 @@ describe("user asset preferences update command", () => {
       "project_token",
     ])
     expect(supabase.operations.some((operation) => operation.method === "insert")).toBe(false)
+    expect(supabase.rpcCalls).toEqual([
+      {
+        name: "replace_user_asset_preferences_atomic",
+        args: { p_user_id: "user-1", p_preferences: [] },
+      },
+    ])
   })
 
-  it("returns safe failures when persistence fails", async () => {
-    const deleteFailure = createSupabaseMock({
-      user_asset_preferences: [{ data: null, error: { message: "delete denied" } }],
-    })
-    await expect(
-      executeUserAssetPreferencesUpdateCommand(deleteFailure as never, { actorUserId: "user-1", preferences: [] }),
-    ).resolves.toEqual({
-      ok: false,
-      error: { code: "preference_delete_failed", message: "delete denied" },
-    })
-
-    const insertFailure = createSupabaseMock({
-      user_asset_preferences: [
-        { data: null, error: null },
-        { data: null, error: { message: "duplicate rank" } },
-      ],
-    })
+  it("returns safe failures through the atomic replacement RPC without client-side deletes", async () => {
+    const insertFailure = createSupabaseMock(
+      {},
+      { replace_user_asset_preferences_atomic: { data: null, error: { message: "project token project not found" } } },
+    )
     const result = await executeUserAssetPreferencesUpdateCommand(insertFailure as never, {
       actorUserId: "user-1",
-      preferences: [{ assetType: "fiat", assetCode: "USD", accepted: true }],
+      preferences: [{ assetType: "project_token", assetCode: "CIVIC", projectId: 999, accepted: true }],
     })
     expect(result).toEqual({
       ok: false,
-      error: { code: "preference_insert_failed", message: "duplicate rank" },
+      error: { code: "preference_replace_failed", message: "project token project not found" },
+    })
+    expect(insertFailure.operations).toEqual([])
+    expect(insertFailure.rpcCalls[0]).toEqual({
+      name: "replace_user_asset_preferences_atomic",
+      args: {
+        p_user_id: "user-1",
+        p_preferences: [{ assetType: "project_token", assetCode: "CIVIC", projectId: 999, accepted: true }],
+      },
     })
   })
 })
