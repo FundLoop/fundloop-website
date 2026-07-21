@@ -783,6 +783,8 @@ export const esMessages = {
       reports: "Reportes",
       users: "Usuarios publicados",
       payout: "Pago atribuido",
+      credited: "Crédito contable",
+      notPaid: "Aún no pagado",
     },
     reports: {
       title: "Artefactos de reporte publicados",
@@ -799,6 +801,18 @@ export const esMessages = {
       users: "Usuarios",
       contributed: "Contribuido",
       payout: "Pago",
+    },
+    bookkeeping: {
+      title: "Créditos contables y fondos devueltos",
+      description:
+        "Uso de los fondos de contribución del proyecto después de la aprobación. Las filas acreditadas son ganancias contables de usuarios, no transferencias; los valores devueltos quedan fuera de los créditos de usuario.",
+      empty: "Todavía no hay créditos contables ni filas devueltas al fondo futuro para este proyecto.",
+      credited: "Acreditado",
+      returned: "Devuelto",
+      rows: "Filas",
+      notPaid: "Acreditado, aún no pagado",
+      futurePool: "Valor de fondo futuro",
+      rowCounts: "{fills} llenados de activos · {returned} filas devueltas",
     },
   },
   adminCycleReporting: {

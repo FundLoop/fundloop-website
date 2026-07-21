@@ -84,6 +84,25 @@ describe("monthly cycle reporting read models", () => {
           contributed_amount_usd: 500,
         },
       ],
+      assetFills: [
+        {
+          monthly_cycle_id: 1,
+          project_id: 7,
+          usd_value: 175,
+        },
+        {
+          monthly_cycle_id: 1,
+          project_id: 7,
+          usd_value: 25,
+        },
+      ],
+      returnedPools: [
+        {
+          monthly_cycle_id: 1,
+          project_id: 7,
+          usd_value: 40,
+        },
+      ],
       warnings: [],
     })
 
@@ -93,6 +112,13 @@ describe("monthly cycle reporting read models", () => {
       cycleKey: "2026-04",
       publishedUserCount: 10,
       attributedPayoutUsd: 250,
+    })
+    expect(workspace.bookkeeping[0]).toMatchObject({
+      cycleKey: "2026-04",
+      creditedUsd: 200,
+      returnedFuturePoolUsd: 40,
+      assetFillCount: 2,
+      returnedPoolCount: 1,
     })
   })
 

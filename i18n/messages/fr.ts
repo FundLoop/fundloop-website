@@ -783,6 +783,8 @@ export const frMessages = {
       reports: "Rapports",
       users: "Utilisateurs publiés",
       payout: "Paiement attribué",
+      credited: "Crédit comptable",
+      notPaid: "Pas encore payé",
     },
     reports: {
       title: "Artefacts de rapport publiés",
@@ -799,6 +801,18 @@ export const frMessages = {
       users: "Utilisateurs",
       contributed: "Contribué",
       payout: "Paiement",
+    },
+    bookkeeping: {
+      title: "Crédits comptables et retours de réserve",
+      description:
+        "Utilisation des réserves de contribution du projet après approbation. Les lignes créditées sont des gains comptables utilisateur, pas des transferts; les valeurs retournées restent hors des crédits utilisateur.",
+      empty: "Aucun crédit comptable ni retour de réserve future n’est encore lié à ce projet.",
+      credited: "Crédité",
+      returned: "Retourné",
+      rows: "Lignes",
+      notPaid: "Crédité, pas encore payé",
+      futurePool: "Valeur de réserve future",
+      rowCounts: "{fills} remplissages d’actifs · {returned} lignes retournées",
     },
   },
   adminCycleReporting: {

@@ -46,6 +46,8 @@ Session 32 added fiat payout batch stubs. Fiat drafts validate placeholder desti
 
 Session 35 added the first signed-in user earnings workspace at `/[locale]/workspace/earnings`. Issue #83 updates that page to read `monthly_cycle_bookkeeping_credits` as the primary credited-but-not-paid earnings source, with older published-result and payout-intent details retained as settlement-readiness context.
 
+Issue #84 extends the same bookkeeping boundary to founder and operator summaries. Founder project reporting uses project-scoped asset-fill rows and returned-pool rows to show how that project's contribution pool was credited or returned for a cycle. Operator cycle payout work shows cycle-wide bookkeeping-credit totals, not-paid counts, asset-fill counts, and returned future-pool rows separately from payout intents. These summaries are read-only visibility surfaces; they do not create payout intents, execute transfers, or expose private user payout destinations.
+
 That page is read-only for now. It shows published monthly results, payout intents, route readiness, batch status, and reconciliation cues using the existing payout domain tables. It deliberately does not add payout-route editing or payout execution controls; those remain separate write-path sessions.
 
 Issue #71 adds the first user-facing asset-preference UI. `/workspace/account` owns the editable ordered preference set, while `/workspace/earnings` shows the same preference readiness beside earnings and payout-route status. This keeps settlement asset selection separate from payout destinations: asset preferences say what the user would prefer to receive later; payout routes say where an actual transfer could go.

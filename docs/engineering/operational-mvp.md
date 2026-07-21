@@ -310,7 +310,7 @@ Acceptance criteria:
 
 - `/workspace/earnings` shows credited earnings by cycle.
 - User can see source breakdown and USD equivalent.
-- Founder/operator views show total credited by cycle/project.
+- Founder/operator views show total credited by cycle/project, returned future-pool amounts, and not-paid status without exposing private payout destinations.
 - No UI claims that funds were transferred.
 
 Handoff contract from Goal #58 / issue #81 to Goal #59:

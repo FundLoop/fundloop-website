@@ -799,6 +799,8 @@ export const enMessages = {
       reports: "Reports",
       users: "Published users",
       payout: "Attributed payout",
+      credited: "Bookkeeping credited",
+      notPaid: "Not paid yet",
     },
     reports: {
       title: "Published report artifacts",
@@ -815,6 +817,18 @@ export const enMessages = {
       users: "Users",
       contributed: "Contributed",
       payout: "Payout",
+    },
+    bookkeeping: {
+      title: "Bookkeeping credits and returned pools",
+      description:
+        "Project-scoped contribution-pool usage after approval. Credited rows are user bookkeeping earnings, not transfers; returned values stay out of user credits.",
+      empty: "No bookkeeping credits or returned future-pool rows are linked to this project yet.",
+      credited: "Credited",
+      returned: "Returned",
+      rows: "Rows",
+      notPaid: "Credited, not paid yet",
+      futurePool: "Future-pool value",
+      rowCounts: "{fills} asset fills · {returned} returned rows",
     },
   },
   adminCycleReporting: {
