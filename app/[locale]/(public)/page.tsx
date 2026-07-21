@@ -16,6 +16,7 @@ import {
 import { Reveal } from "@/components/marketing/reveal"
 import { NetworkConstellation } from "@/components/marketing/network-constellation"
 import { JourneyConfidenceBand, type JourneyConfidenceItem } from "@/components/marketing/journey-confidence-band"
+import { RotatingHeroTitle } from "@/components/marketing/rotating-hero-title"
 import { ecosystemSites, resourceLinks } from "@/lib/public-site"
 import { useCases } from "@/lib/use-cases"
 
@@ -70,6 +71,7 @@ export default async function Home({ params }: PageProps) {
   const shellT = await getTranslations({ locale, namespace: "shell" })
   const loopSteps = t.raw("howItWorks.steps") as HomeStep[]
   const entryPaths = t.raw("entryPaths") as EntryPath[]
+  const heroPrefixes = t.raw("heroPrefixes") as string[]
   const exploreResourceLinks = resourceLinks.map((link) => ({
     ...link,
     label: shellT(`nav.resourceLinks.${link.id}.label`),
@@ -82,14 +84,15 @@ export default async function Home({ params }: PageProps) {
   return (
     <MarketingPage>
       <section className="relative min-h-[calc(100svh-5.5rem)]">
-        <div className="mx-auto grid min-h-[calc(100svh-5.5rem)] max-w-7xl items-end gap-12 px-6 pb-14 pt-10 sm:px-8 lg:grid-cols-[minmax(0,1.02fr)_minmax(22rem,0.98fr)] lg:px-12">
-          <Reveal className="max-w-3xl pb-4">
+        <div className="mx-auto grid min-h-[calc(100svh-5.5rem)] max-w-7xl grid-cols-[minmax(0,1fr)] items-end gap-12 px-6 pb-14 pt-10 sm:px-8 lg:grid-cols-[minmax(0,1.02fr)_minmax(22rem,0.98fr)] lg:px-12">
+          <Reveal className="min-w-0 max-w-3xl pb-4">
             <SectionEyebrow>{t("eyebrow")}</SectionEyebrow>
             <p className="mt-6 font-display text-[clamp(4rem,12vw,8.5rem)] leading-none tracking-[-0.07em]">FundLoop</p>
-            <h1 className="mt-6 max-w-2xl text-4xl font-semibold leading-[1.02] tracking-[-0.05em] sm:text-5xl lg:text-6xl">
-              {t("heroTitle")}
-            </h1>
-            <SectionBody className="mt-6 max-w-xl">{t("heroBody")}</SectionBody>
+            <RotatingHeroTitle prefixes={heroPrefixes} suffix={t("heroSuffix")} />
+            <SectionBody className="mt-6 max-w-xl font-medium text-[var(--marketing-ink)]">
+              {t("heroThesis")}
+            </SectionBody>
+            <SectionBody className="mt-3 max-w-xl">{t("heroBody")}</SectionBody>
             <div id="project-signup" className="mt-10 flex scroll-mt-28 flex-col gap-4 sm:flex-row">
               <Button
                 asChild
@@ -136,6 +139,38 @@ export default async function Home({ params }: PageProps) {
         secondaryHref="/founders"
         items={polishT.raw("items") as JourneyConfidenceItem[]}
       />
+
+      <MarketingSection className="border-b border-[color:var(--marketing-line)] bg-white/34 dark:bg-white/[0.02]">
+        <div className="grid gap-12 lg:grid-cols-[minmax(0,0.72fr)_minmax(0,1.28fr)] lg:gap-20">
+          <Reveal className="lg:sticky lg:top-28 lg:self-start">
+            <SectionEyebrow>{t("theoryOfChange.eyebrow")}</SectionEyebrow>
+            <SectionTitle className="mt-4 max-w-lg text-5xl sm:text-6xl">
+              {t("theoryOfChange.title")}
+            </SectionTitle>
+            <SectionBody className="mt-5">{t("theoryOfChange.body")}</SectionBody>
+          </Reveal>
+
+          <div>
+            {["capitalism", "basicIncome", "pluralism"].map((idea, index) => (
+              <Reveal key={idea} delay={index * 90}>
+                <article className="grid gap-5 border-t border-[color:var(--marketing-line)] py-8 sm:grid-cols-[4rem_minmax(0,1fr)] sm:py-10">
+                  <p className="font-display text-3xl leading-none text-[var(--marketing-accent)]">
+                    {String(index + 1).padStart(2, "0")}
+                  </p>
+                  <div>
+                    <h2 className="max-w-2xl font-display text-3xl leading-[1.02] tracking-[-0.04em] sm:text-4xl">
+                      {t(`theoryOfChange.ideas.${idea}.title`)}
+                    </h2>
+                    <p className="mt-4 max-w-2xl text-base leading-7 text-[var(--marketing-muted-strong)]">
+                      {t(`theoryOfChange.ideas.${idea}.body`)}
+                    </p>
+                  </div>
+                </article>
+              </Reveal>
+            ))}
+          </div>
+        </div>
+      </MarketingSection>
 
       <MarketingSection className="border-y border-[color:var(--marketing-line)] bg-white/34 dark:bg-white/[0.02]">
         <div className="grid gap-12 lg:grid-cols-[minmax(0,0.88fr)_minmax(0,1.12fr)]">

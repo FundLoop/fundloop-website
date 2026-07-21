@@ -1029,6 +1029,30 @@ export const esMessages = {
   home: {
     eyebrow: "Prosperidad mutua, hecha operativa",
     heroTitle: "Una economía en red donde los proyectos alimentan el loop y las personas comparten el valor generado.",
+    heroSuffix: "para la prosperidad mutua",
+    heroPrefixes: [
+      "Un estado-red",
+      "Una colección de aplicaciones",
+      "Una sociedad de personas afines",
+      "Un futuro poscapitalista",
+      "Unos bienes comunes en movimiento",
+      "Una coalición de constructores",
+      "Una cultura de contribución",
+      "Un círculo de pertenencia",
+      "Una federación de comunidades",
+      "Un mercado del cuidado",
+      "Una economía cooperativa",
+      "Una sociedad regenerativa",
+      "Unos bienes comunes pluralistas",
+      "Un movimiento de mutualistas",
+      "Una red de vecinos",
+      "Una unión de soñadores",
+      "Una capa cívica para todos",
+      "Un motor de prosperidad compartida",
+      "Una economía de lo suficiente",
+    ],
+    heroThesis:
+      "Una economía en red donde los proyectos alimentan el loop y las personas comparten el valor generado.",
     heroBody:
       "FundLoop ayuda a los equipos a recompensar contribuciones reales, crecer con mejor señal de prueba de humanidad y redirigir parte del éxito hacia las comunidades que hacen posible el sistema.",
     ctas: {
@@ -1039,6 +1063,29 @@ export const esMessages = {
       projects: "Los proyectos destinan 1 % o más al loop.",
       people: "Las personas crean señal mediante el uso.",
       value: "El valor regresa con más contexto.",
+    },
+    theoryOfChange: {
+      eyebrow: "Nuestra teoría del cambio",
+      title: "La prosperidad necesita más de un sistema.",
+      body:
+        "FundLoop parte de una idea sencilla: un sistema útil no tiene por qué convertirse en un sistema total. Podemos conservar lo que funciona, cuestionar lo que no y construir juntos complementos prácticos.",
+      ideas: {
+        capitalism: {
+          title: "El capitalismo puede crear. No puede ser toda la respuesta.",
+          body:
+            "¿Es bueno el capitalismo? Sí. ¿Es suficiente? No. El capitalismo extremo no es un futuro que valga la pena elegir, salvo que Los juegos del hambre parezca un lugar donde realmente querrías vivir. Los mercados pueden ser productivos, pero necesitan complementos creíbles que mantengan la prosperidad como algo mutuo.",
+        },
+        basicIncome: {
+          title: "La renta básica puede proteger. Tampoco es toda la respuesta.",
+          body:
+            "Una renta básica es buena. La uniformidad radical no lo es, salvo que Pluribus parezca el futuro que deseas. El objetivo no es sustituir todos los incentivos ni borrar todas las diferencias, sino añadir un suelo fiable bajo una economía que aún deje espacio para la ambición, la contribución y la pluralidad.",
+        },
+        pluralism: {
+          title: "El Estado puede ayudar. No debería tener que actuar solo.",
+          body:
+            "Una renta básica administrada por el Estado puede formar parte de la respuesta, pero depender solo de ella es frágil. Las empresas que decidan ayudar a financiarla deberían ser promovidas. La administración y la distribución son difíciles; una infraestructura compartida simplifica ambas. ¿Acudirá la gente a esas empresas? Ojalá, pero está por verse. FundLoop existe para hacer posible el experimento.",
+        },
+      },
     },
     howItWorks: {
       eyebrow: "Cómo funciona el loop",

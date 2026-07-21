@@ -1029,6 +1029,30 @@ export const frMessages = {
   home: {
     eyebrow: "Prospérité mutuelle, rendue opérationnelle",
     heroTitle: "Une économie en réseau où les projets alimentent la boucle et où les personnes partagent la valeur créée.",
+    heroSuffix: "pour une prospérité mutuelle",
+    heroPrefixes: [
+      "Un État-réseau",
+      "Une collection d’applications",
+      "Une société d’esprits proches",
+      "Un avenir post-capitaliste",
+      "Des communs en mouvement",
+      "Une coalition de bâtisseurs",
+      "Une culture de la contribution",
+      "Un cercle d’appartenance",
+      "Une fédération de communautés",
+      "Un marché du soin",
+      "Une économie coopérative",
+      "Une société régénérative",
+      "Des communs pluralistes",
+      "Un mouvement mutualiste",
+      "Un réseau de voisinage",
+      "Une union de rêveurs",
+      "Une couche civique pour tous",
+      "Un moteur de prospérité partagée",
+      "Une économie du suffisant",
+    ],
+    heroThesis:
+      "Une économie en réseau où les projets alimentent la boucle et où les personnes partagent la valeur créée.",
     heroBody:
       "FundLoop aide les équipes à récompenser de vraies contributions, à croître avec un meilleur signal de preuve d’humanité et à redistribuer une partie de leur succès aux communautés qui rendent le système possible.",
     ctas: {
@@ -1039,6 +1063,29 @@ export const frMessages = {
       projects: "Les projets consacrent 1 % ou plus à la boucle.",
       people: "Les personnes créent du signal par l’usage.",
       value: "La valeur revient avec plus de contexte.",
+    },
+    theoryOfChange: {
+      eyebrow: "Notre théorie du changement",
+      title: "La prospérité a besoin de plus d’un système.",
+      body:
+        "FundLoop part d’une conviction simple : un système utile ne doit pas devenir un système total. Nous pouvons garder ce qui fonctionne, remettre en cause le reste et construire ensemble des compléments concrets.",
+      ideas: {
+        capitalism: {
+          title: "Le capitalisme peut créer. Il ne peut pas être toute la réponse.",
+          body:
+            "Le capitalisme est-il bénéfique ? Oui. Est-il suffisant ? Non. Le capitalisme extrême n’est pas un avenir à choisir — sauf si Hunger Games ressemble au monde où vous voudriez vraiment vivre. Les marchés peuvent être productifs, mais ils ont besoin de compléments crédibles qui rendent la prospérité mutuelle.",
+        },
+        basicIncome: {
+          title: "Le revenu de base peut protéger. Il n’est pas toute la réponse non plus.",
+          body:
+            "Un revenu de base est bénéfique. Une uniformité radicale ne l’est pas — sauf si Pluribus ressemble à l’avenir que vous souhaitez. Il ne s’agit pas de remplacer toute incitation ni d’effacer toute différence, mais d’ajouter un socle fiable à une économie qui laisse place à l’ambition, à la contribution et à la pluralité.",
+        },
+        pluralism: {
+          title: "L’État peut aider. Il ne devrait pas agir seul.",
+          body:
+            "Un revenu de base administré par l’État peut faire partie de la réponse, mais en dépendre seul est fragile. Les entreprises qui choisissent de le financer devraient être encouragées. L’administration et la distribution sont difficiles ; une infrastructure partagée les simplifie. Les gens afflueront-ils vers ces entreprises ? Espérons-le — cela reste à voir. FundLoop existe pour rendre cette expérimentation possible.",
+        },
+      },
     },
     howItWorks: {
       eyebrow: "Comment fonctionne la boucle",
