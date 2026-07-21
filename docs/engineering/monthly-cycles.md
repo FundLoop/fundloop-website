@@ -194,6 +194,14 @@ The `verified` path must pass MVP integrity checks against locked and calculated
 
 `monthly-cycle-approval` requires a verified completed run, a clean MVP verification integrity pass, an internal operator, and a required operator note. It moves the cycle to `approval` with `approval_started_at`, records audit metadata that the next step is bookkeeping credit creation, and explicitly does not create credits or execute payouts. This is the explicit checkpoint before the MVP bookkeeping-credit command can materialize user-visible credited-but-not-paid earnings.
 
+For operator and user-facing copy, keep these states distinct:
+
+- `calculated`: result rows and artifacts exist but are not verified or credited
+- `verified`: operator integrity review passed
+- `approved`: verified results are approved for bookkeeping credit creation
+- `credited`: bookkeeping earnings records exist
+- `not paid`: no transfer or settlement has executed
+
 ## Payout Intent Creation
 
 `monthly-cycle-payout-intents-create` is the command boundary between approved distribution results and concrete outbound payout work. The command:

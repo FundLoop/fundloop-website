@@ -275,12 +275,21 @@ Approval rules:
 - `verified` advances to verification state.
 - `approved` advances to approval state and records an operator note.
 - Approval is internal-operator only.
+- Approval is a pre-credit checkpoint. It does not create user credits, execute payouts, publish reports, or mark users as paid.
 
 Acceptance criteria:
 
 - Operator can verify or reject results with a reason.
 - Approval emits monthly-cycle audit events.
 - Approved results become eligible for bookkeeping credit creation.
+
+Expected MVP state labels:
+
+- `calculated`: deterministic allocator outputs exist and can be reviewed, but they are not verified, credited, paid, or transferable.
+- `verified`: an internal operator has recorded that calculated outputs pass integrity checks.
+- `approved`: an internal operator has approved verified outputs for the next bookkeeping-credit creation step.
+- `credited`: a later bookkeeping command has created user-visible earnings records from approved outputs.
+- `not paid`: credited earnings have not been transferred, settled, or paid out.
 
 ### 8. Bookkeeping Earnings Credits
 
@@ -302,6 +311,15 @@ Acceptance criteria:
 - User can see source breakdown and USD equivalent.
 - Founder/operator views show total credited by cycle/project.
 - No UI claims that funds were transferred.
+
+Handoff contract from Goal #58 / issue #81 to Goal #59:
+
+- Input cycle status is `approval`.
+- The latest completed run is verified and has passed MVP integrity checks.
+- Approval audit metadata identifies `nextStep = bookkeeping_credit_creation` and `noPayoutExecuted = true`.
+- Credit creation must consume persisted calculated rows and selected asset fills; it must not rerun allocation with a different policy.
+- Credit creation must be idempotent by cycle/run/user/asset fill.
+- Credit creation must label user-visible records as `credited` and `not paid`.
 
 ## Required Interfaces
 

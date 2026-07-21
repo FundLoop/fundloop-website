@@ -195,3 +195,12 @@
 - summary: Implemented issue #80 by hardening `monthly-cycle-approval` so approval reuses the MVP verification integrity checker before advancing a cycle, audits integrity failures, and records successful approval as a bookkeeping-credit creation handoff rather than a payout/distribution execution. Updated the operator verification page and action copy to say approval unlocks bookkeeping credits and does not transfer funds or mark users as paid.
 - validation: `pnpm test tests/monthly-cycle-verification.test.ts tests/monthly-cycle-verification-actions-copy.test.ts tests/monthly-cycle-verification-contract.test.ts` passed with 15 tests. `pnpm typecheck` passed. `pnpm lint` passed. `deno cache --config supabase/functions/deno.json supabase/functions/monthly-cycle-approval/index.ts` passed. `pnpm check` passed with lint, 96 test files / 445 tests, typecheck, and Next build.
 - follow-ups: Run independent validation for #80. Issue #81 should add final verification/approval fixtures and docs for Goal #58.
+
+## 2026-07-21T12:54:48.000Z - Issue 81 verification approval fixtures and docs
+
+- agent: Codex
+- branch: codex/operational-mvp-issue-51
+- head: ea486d0
+- summary: Implemented issue #81 by making the deterministic verification fixtures explicit for clean approval and needs-cleanup outcomes, asserting approval does not create credits, payout intents, or reports, and documenting the MVP state labels from calculated through credited/not-paid. Added the Goal #59 handoff contract for bookkeeping credit creation from approved outputs.
+- validation: `pnpm test tests/monthly-cycle-verification.test.ts tests/monthly-cycle-verification-actions-copy.test.ts tests/monthly-cycle-verification-contract.test.ts` passed with 16 tests. `git diff --check` passed.
+- follow-ups: Run independent validation for #81. If it passes, validate Goal #58 and continue Goal #59 bookkeeping credit creation.

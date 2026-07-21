@@ -244,6 +244,18 @@ function makeSupabase(overrides: Partial<Record<string, Array<Record<string, unk
   })
 }
 
+function makeCleanVerificationFixture() {
+  return makeSupabase({
+    monthly_cycles: [{ ...cycle, status: "verification" }],
+  })
+}
+
+function makeNeedsCleanupVerificationFixture() {
+  return makeSupabase({
+    zkas_runs: [],
+  })
+}
+
 const commandInput = {
   cycleKey: "2026-04",
   attemptId: "attempt-1",
@@ -516,6 +528,35 @@ describe("monthly-cycle verification review", () => {
       "verification_review",
       "approval_review",
     ])
+  })
+
+  it("keeps deterministic local fixtures for clean and needs-cleanup outcomes", async () => {
+    const clean = makeCleanVerificationFixture()
+    const needsCleanup = makeNeedsCleanupVerificationFixture()
+
+    const approved = await executeMonthlyCycleApprovalCommand(clean as never, {
+      ...commandInput,
+      note: "Clean fixture is approved for bookkeeping credit creation.",
+    })
+    const cleanup = await executeMonthlyCycleVerificationReviewCommand(needsCleanup as never, {
+      ...commandInput,
+      decision: "needs_cleanup",
+      note: "Needs-cleanup fixture intentionally lacks a completed run.",
+    })
+
+    expect(approved).toMatchObject({ ok: true, data: { status: "approval", approvedRunId: 10 } })
+    expect(clean.inserts.monthly_cycle_events[0]).toMatchObject({
+      event_type: "approval_review",
+      outcome: "success",
+      metadata: expect.objectContaining({ nextStep: "bookkeeping_credit_creation", noPayoutExecuted: true }),
+    })
+    expect(clean.updates.monthly_cycles[0]).toMatchObject({ status: "approval" })
+    expect(clean.inserts.payout_intents ?? []).toEqual([])
+    expect(clean.inserts.monthly_cycle_reports ?? []).toEqual([])
+    expect(clean.inserts.user_earnings_credits ?? []).toEqual([])
+
+    expect(cleanup).toMatchObject({ ok: true, data: { status: "calculation", cleanupRequired: true } })
+    expect(needsCleanup.updates.monthly_cycles[0]).toMatchObject({ status: "calculation" })
   })
 
   it("accepts finalized verified runs as completed cycle outputs", async () => {
