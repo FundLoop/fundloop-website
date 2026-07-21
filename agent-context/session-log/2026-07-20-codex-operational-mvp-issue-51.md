@@ -141,3 +141,12 @@
 - summary: Implemented issue #75 by tightening the deterministic MVP lock fixture assertions in `tests/monthly-cycle-lock-command.test.ts` and documenting the calculation handoff shape in `docs/engineering/monthly-cycles.md` and `docs/engineering/operational-mvp.md`. The docs now state that Goal #57 must consume `locked_manifest.mvp_inputs` rather than live mutable rows and list the contribution, attribution, eligible-user, identity, asset-preference, count, and checksum sections.
 - validation: `pnpm test tests/monthly-cycle-lock-command.test.ts` passed with 1 file and 7 tests. `git diff --check` passed. `pnpm typecheck` passed. `pnpm dlx node@22.22.1 /opt/homebrew/bin/pnpm check` passed with 94 files and 434 tests. No browser smoke was required because this was a docs/test fixture handoff with no runtime UI changes.
 - follow-ups: Run independent validation for #75, then validate Goal #56 as complete enough to move to In Review. Goal #57 can begin deterministic capped equalization calculation from the documented locked manifest input shape.
+
+## 2026-07-21T07:17:26.000Z - Issue 76 pure MVP distribution calculator
+
+- agent: Codex
+- branch: codex/operational-mvp-issue-51
+- head: faa0fca
+- summary: Implemented issue #76 by adding a runtime-agnostic pure MVP distribution calculator for locked monthly-cycle inputs. The calculator derives confirmed contribution pools, gates attribution on scoped CUBID and linked/verified eligibility, computes raw project entitlements, baselines, capped global equalization, deterministic USD rounding, preference-based asset fills, returned future-pool rows, warnings, invariant checks, and a stable result hash.
+- validation: `pnpm test tests/mvp-distribution-calculator.test.ts` passed with 1 file and 6 tests. `pnpm typecheck` passed. `pnpm lint` passed. `pnpm dlx node@22.22.1 /opt/homebrew/bin/pnpm check` passed with 95 files and 440 tests. No browser smoke was required because #76 is a pure calculation module with no UI or persistence behavior.
+- follow-ups: Run independent validation for #76. Issue #77 should wire this calculator into calculation packaging, artifact storage, and persisted monthly-cycle result rows without recalculating the allocation policy differently.

@@ -171,7 +171,9 @@ The output may contain multiple asset fills for one user result when fallback pr
 
 ## Outputs
 
-The pure allocator should return a deterministic structure containing:
+Issue #76 introduced the pure allocator at `lib/monthly-cycles/mvp-distribution-calculator.ts`. It is intentionally runtime-agnostic and does not import the server-only monthly-cycle index. The calculation package command should call this module in the next persistence slice, then store the returned artifact and rows without recalculating the policy differently.
+
+The pure allocator returns a deterministic structure containing:
 
 - total monthly pool USD
 - source asset/currency pool summary
