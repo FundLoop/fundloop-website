@@ -227,6 +227,9 @@ export default async function AdminMonthlyCyclesPage({ params }: PageProps) {
                           {cycle.contributionSubmissions.missingProjectCount > 2 ? "..." : ""}
                         </div>
                       ) : null}
+                      <div className="mt-2 text-xs text-[var(--text-muted)]">
+                        MVP attribution: {cycle.attribution.approvedCount} approved · {cycle.attribution.submittedCount} awaiting
+                      </div>
                     </TableCell>
                     <TableCell>
                       <div className="font-medium">{formatCurrency(locale, cycle.payments.totalContributionAmount)}</div>

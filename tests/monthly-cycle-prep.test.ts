@@ -32,6 +32,19 @@ const baseManifest = {
   },
 }
 
+const baseAttributionReadiness = {
+  totalCount: 1,
+  draftCount: 0,
+  submittedCount: 0,
+  approvedCount: 1,
+  rejectedCount: 0,
+  reviewRequiredCount: 0,
+  totalRowCount: 2,
+  totalAttributionPoints: 5,
+  datasets: [],
+  readError: null,
+}
+
 function baseCycle(overrides: Record<string, unknown> = {}) {
   return {
     id: 1,
@@ -69,6 +82,7 @@ describe("buildMonthlyCyclePrepReview", () => {
         missingProjects: [],
         readError: null,
       },
+      attributionReadiness: baseAttributionReadiness,
     })
 
     expect(review.posture).toBe("ready")
@@ -90,6 +104,7 @@ describe("buildMonthlyCyclePrepReview", () => {
         missingProjects: [{ id: 11, slug: "mutual-aid-atlas", name: "Mutual Aid Atlas" }],
         readError: null,
       },
+      attributionReadiness: baseAttributionReadiness,
     })
 
     expect(review.posture).toBe("needs_review")
@@ -115,12 +130,81 @@ describe("buildMonthlyCyclePrepReview", () => {
         missingProjects: [],
         readError: "relation unavailable",
       },
+      attributionReadiness: baseAttributionReadiness,
     })
 
     expect(review.posture).toBe("needs_review")
     expect(review.issues).toContainEqual(
       expect.objectContaining({
         code: "contribution_submission_read_failed",
+        severity: "warning",
+      }),
+    )
+  })
+
+  it("warns when submitted attribution datasets still need operator review", async () => {
+    const review = await buildMonthlyCyclePrepReview({
+      cycle: baseCycle(),
+      computedManifestHash: "hash-1",
+      attributionReadiness: {
+        totalCount: 1,
+        draftCount: 0,
+        submittedCount: 1,
+        approvedCount: 0,
+        rejectedCount: 0,
+        reviewRequiredCount: 1,
+        totalRowCount: 2,
+        totalAttributionPoints: 5,
+        datasets: [
+          {
+            id: 21,
+            projectId: 7,
+            projectSlug: "civic-mesh",
+            projectName: "Civic Mesh",
+            status: "submitted",
+            rowCount: 2,
+            totalAttributionPoints: 5,
+            note: null,
+            submittedAt: "2026-04-30T12:00:00Z",
+            updatedAt: "2026-04-30T12:00:00Z",
+          },
+        ],
+        readError: null,
+      },
+    })
+
+    expect(review.posture).toBe("needs_review")
+    expect(review.attributionReadiness.reviewRequiredCount).toBe(1)
+    expect(review.issues).toContainEqual(
+      expect.objectContaining({
+        code: "attribution_datasets_need_review",
+        severity: "warning",
+      }),
+    )
+  })
+
+  it("degrades attribution dataset read failures to prep warnings", async () => {
+    const review = await buildMonthlyCyclePrepReview({
+      cycle: baseCycle(),
+      computedManifestHash: "hash-1",
+      attributionReadiness: {
+        totalCount: 0,
+        draftCount: 0,
+        submittedCount: 0,
+        approvedCount: 0,
+        rejectedCount: 0,
+        reviewRequiredCount: 0,
+        totalRowCount: 0,
+        totalAttributionPoints: 0,
+        datasets: [],
+        readError: "relation unavailable",
+      },
+    })
+
+    expect(review.posture).toBe("needs_review")
+    expect(review.issues).toContainEqual(
+      expect.objectContaining({
+        code: "attribution_dataset_read_failed",
         severity: "warning",
       }),
     )
@@ -158,6 +242,7 @@ describe("buildMonthlyCyclePrepReview", () => {
         },
       }),
       computedManifestHash: "hash-1",
+      attributionReadiness: baseAttributionReadiness,
     })
 
     expect(review.posture).toBe("needs_review")
@@ -188,6 +273,7 @@ describe("buildMonthlyCyclePrepReview", () => {
         },
       }),
       computedManifestHash: "hash-1",
+      attributionReadiness: baseAttributionReadiness,
     })
 
     expect(review.posture).toBe("blocked")
@@ -203,6 +289,7 @@ describe("buildMonthlyCyclePrepReview", () => {
       liveCounts: {
         payments: 2,
       },
+      attributionReadiness: baseAttributionReadiness,
     })
 
     expect(review.posture).toBe("ready")

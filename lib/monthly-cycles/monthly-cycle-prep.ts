@@ -57,6 +57,32 @@ export type MonthlyCyclePrepContributionReadiness = {
   readError: string | null
 }
 
+export type MonthlyCyclePrepAttributionDataset = {
+  id: number
+  projectId: number
+  projectSlug: string | null
+  projectName: string
+  status: string
+  rowCount: number
+  totalAttributionPoints: number
+  note: string | null
+  submittedAt: string | null
+  updatedAt: string
+}
+
+export type MonthlyCyclePrepAttributionReadiness = {
+  totalCount: number
+  draftCount: number
+  submittedCount: number
+  approvedCount: number
+  rejectedCount: number
+  reviewRequiredCount: number
+  totalRowCount: number
+  totalAttributionPoints: number
+  datasets: MonthlyCyclePrepAttributionDataset[]
+  readError: string | null
+}
+
 export type MonthlyCyclePrepReview = {
   cycle: {
     id: number
@@ -70,6 +96,7 @@ export type MonthlyCyclePrepReview = {
   postureLabel: string
   manifest: MonthlyCyclePrepManifestSummary
   contributionReadiness: MonthlyCyclePrepContributionReadiness
+  attributionReadiness: MonthlyCyclePrepAttributionReadiness
   issues: MonthlyCyclePrepIssue[]
   liveDriftWarnings: MonthlyCyclePrepIssue[]
 }
@@ -154,6 +181,7 @@ export async function buildMonthlyCyclePrepReview(input: {
   computedManifestHash?: string | null
   liveCounts?: Partial<MonthlyCyclePrepManifestSummary["counts"]>
   contributionReadiness?: MonthlyCyclePrepContributionReadiness
+  attributionReadiness?: MonthlyCyclePrepAttributionReadiness
 }): Promise<MonthlyCyclePrepReview> {
   const manifest = asLockManifest(input.cycle.locked_manifest)
   const reconciliation = Array.isArray(manifest?.reconciliation) ? manifest.reconciliation : []
@@ -188,6 +216,18 @@ export async function buildMonthlyCyclePrepReview(input: {
     totalUsdEquivalentAmount: 0,
     totalCalculatedContributionAmount: 0,
     missingProjects: [],
+    readError: null,
+  }
+  const attributionReadiness = input.attributionReadiness ?? {
+    totalCount: 0,
+    draftCount: 0,
+    submittedCount: 0,
+    approvedCount: 0,
+    rejectedCount: 0,
+    reviewRequiredCount: 0,
+    totalRowCount: 0,
+    totalAttributionPoints: 0,
+    datasets: [],
     readError: null,
   }
 
@@ -243,6 +283,32 @@ export async function buildMonthlyCyclePrepReview(input: {
       title: "Missing project contribution submissions",
       description: `${contributionReadiness.missingProjectCount} committed project(s) have not submitted monthly contribution data for this cycle yet.`,
       actionHref: "/admin/cycles",
+    })
+  }
+
+  if (attributionReadiness.readError) {
+    addIssue(issues, {
+      code: "attribution_dataset_read_failed",
+      severity: "warning",
+      title: "Attribution dataset readiness unavailable",
+      description: attributionReadiness.readError,
+      actionHref: "/admin/cycles",
+    })
+  } else if (attributionReadiness.reviewRequiredCount > 0) {
+    addIssue(issues, {
+      code: "attribution_datasets_need_review",
+      severity: "warning",
+      title: "Attribution datasets need operator review",
+      description: `${attributionReadiness.reviewRequiredCount} submitted MVP attribution dataset(s) are waiting for approval or rejection.`,
+      actionHref: `/admin/cycles/${input.cycle.cycle_key}/prep`,
+    })
+  } else if (input.cycle.status !== "open" && attributionReadiness.approvedCount === 0) {
+    addIssue(issues, {
+      code: "missing_approved_attribution_datasets",
+      severity: "warning",
+      title: "No approved MVP attribution datasets",
+      description: "No scoped-CUBID MVP attribution datasets have been approved for this cycle yet.",
+      actionHref: `/admin/cycles/${input.cycle.cycle_key}/prep`,
     })
   }
 
@@ -357,6 +423,7 @@ export async function buildMonthlyCyclePrepReview(input: {
       counts: manifestCounts,
     },
     contributionReadiness,
+    attributionReadiness,
     issues,
     liveDriftWarnings,
   }
@@ -431,6 +498,50 @@ async function loadContributionReadiness(
   }
 }
 
+async function loadAttributionReadiness(
+  supabase: ReturnType<typeof getAdminSupabaseClient>,
+  cycleId: number,
+): Promise<MonthlyCyclePrepAttributionReadiness> {
+  const { data, error } = await supabase
+    .from("project_attribution_datasets")
+    .select("id, project_id, monthly_cycle_id, status, row_count, total_attribution_points, note, submitted_at, updated_at, projects(id, slug, name)")
+    .eq("monthly_cycle_id", cycleId)
+    .order("updated_at", { ascending: false })
+
+  if (error) {
+    throw new Error(error.message)
+  }
+
+  const datasets = (data ?? []).map((dataset) => {
+    const project = Array.isArray(dataset.projects) ? dataset.projects[0] : dataset.projects
+    return {
+      id: Number(dataset.id),
+      projectId: Number(dataset.project_id),
+      projectSlug: project?.slug ?? null,
+      projectName: project?.name ?? `Project ${dataset.project_id}`,
+      status: String(dataset.status),
+      rowCount: Number(dataset.row_count ?? 0),
+      totalAttributionPoints: Number(dataset.total_attribution_points ?? 0),
+      note: dataset.note ?? null,
+      submittedAt: dataset.submitted_at ?? null,
+      updatedAt: dataset.updated_at,
+    }
+  })
+
+  return {
+    totalCount: datasets.length,
+    draftCount: datasets.filter((dataset) => dataset.status === "draft").length,
+    submittedCount: datasets.filter((dataset) => dataset.status === "submitted").length,
+    approvedCount: datasets.filter((dataset) => dataset.status === "approved").length,
+    rejectedCount: datasets.filter((dataset) => dataset.status === "rejected").length,
+    reviewRequiredCount: datasets.filter((dataset) => dataset.status === "submitted").length,
+    totalRowCount: datasets.reduce((sum, dataset) => sum + dataset.rowCount, 0),
+    totalAttributionPoints: datasets.reduce((sum, dataset) => sum + dataset.totalAttributionPoints, 0),
+    datasets,
+    readError: null,
+  }
+}
+
 export async function loadMonthlyCyclePrepReview(cycleKey: string): Promise<MonthlyCyclePrepReview | null> {
   const parsedCycleKey = assertMonthString(cycleKey)
   const supabase = getAdminSupabaseClient()
@@ -451,12 +562,13 @@ export async function loadMonthlyCyclePrepReview(cycleKey: string): Promise<Mont
   }
 
   const computedManifestHash = cycle.locked_manifest ? await sha256Hex(cycle.locked_manifest) : null
-  const [payments, onchainSubmissions, approvedDatasets, identityArtifacts, contributionReadinessResult] = await Promise.allSettled([
+  const [payments, onchainSubmissions, approvedDatasets, identityArtifacts, contributionReadinessResult, attributionReadinessResult] = await Promise.allSettled([
     countLiveRows(supabase, "payments", cycle.id),
     countLiveRows(supabase, "onchain_payment_submissions", cycle.id),
     countLiveRows(supabase, "zkas_datasets", cycle.id, ["approved", "included"]),
     countLiveRows(supabase, "zkas_identity_artifacts", cycle.id, ["approved"]),
     loadContributionReadiness(supabase, cycle.id),
+    loadAttributionReadiness(supabase, cycle.id),
   ])
   const readCount = (result: PromiseSettledResult<number>) => {
     if (result.status === "rejected") {
@@ -480,6 +592,24 @@ export async function loadMonthlyCyclePrepReview(cycleKey: string): Promise<Mont
               ? contributionReadinessResult.reason.message
               : "Contribution submission readiness could not be loaded.",
         }
+  const attributionReadiness =
+    attributionReadinessResult.status === "fulfilled"
+      ? attributionReadinessResult.value
+      : {
+          totalCount: 0,
+          draftCount: 0,
+          submittedCount: 0,
+          approvedCount: 0,
+          rejectedCount: 0,
+          reviewRequiredCount: 0,
+          totalRowCount: 0,
+          totalAttributionPoints: 0,
+          datasets: [],
+          readError:
+            attributionReadinessResult.reason instanceof Error
+              ? attributionReadinessResult.reason.message
+              : "Attribution dataset readiness could not be loaded.",
+        }
 
   return buildMonthlyCyclePrepReview({
     cycle,
@@ -491,5 +621,6 @@ export async function loadMonthlyCyclePrepReview(cycleKey: string): Promise<Mont
       identityArtifacts: readCount(identityArtifacts),
     },
     contributionReadiness,
+    attributionReadiness,
   })
 }

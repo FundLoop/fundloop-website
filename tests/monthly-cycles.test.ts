@@ -82,6 +82,11 @@ function buildOverview(overrides: Partial<Parameters<typeof buildMonthlyCycleAdm
         status: "submitted",
       },
     ],
+    attributionDatasets: [
+      { monthly_cycle_id: 1, status: "submitted" },
+      { monthly_cycle_id: 1, status: "approved" },
+      { monthly_cycle_id: 1, status: "rejected" },
+    ],
     warnings: [],
     ...overrides,
   })
@@ -118,6 +123,7 @@ describe("buildMonthlyCycleAdminOverview", () => {
       projectSummaries: [],
       contributionExpectedProjects: [],
       contributionSubmissions: [],
+      attributionDatasets: [],
       warnings: [],
     })
 
@@ -151,6 +157,12 @@ describe("buildMonthlyCycleAdminOverview", () => {
         totalCalculatedContributionAmount: 10,
         missingProjects: [{ id: 11, slug: "mutual-aid-atlas", name: "Mutual Aid Atlas" }],
       },
+      attribution: {
+        datasetCount: 3,
+        submittedCount: 1,
+        approvedCount: 1,
+        rejectedCount: 1,
+      },
       reconciliation: {
         submissionCount: 4,
         confirmedCount: 1,
@@ -176,6 +188,9 @@ describe("buildMonthlyCycleAdminOverview", () => {
       paymentCount: 2,
       contributionSubmissionCount: 1,
       missingContributionSubmissionCount: 1,
+      attributionDatasetCount: 3,
+      attributionSubmittedCount: 1,
+      attributionApprovedCount: 1,
       totalContributionAmount: 90,
       zkasRunCount: 1,
     })

@@ -119,6 +119,11 @@ type ProjectMonthlyContributionSubmissionCycleRow = {
   status: string
 }
 
+type ProjectAttributionDatasetCycleRow = {
+  monthly_cycle_id: number | null
+  status: string
+}
+
 export type MonthlyCycleAdminSummary = {
   id: number
   cycleKey: string
@@ -165,6 +170,12 @@ export type MonthlyCycleAdminSummary = {
     totalCalculatedContributionAmount: number
     missingProjects: Array<{ id: number; slug: string | null; name: string }>
   }
+  attribution: {
+    datasetCount: number
+    submittedCount: number
+    approvedCount: number
+    rejectedCount: number
+  }
   reconciliation: {
     submissionCount: number
     confirmedCount: number
@@ -193,6 +204,9 @@ export type MonthlyCycleAdminOverview = {
     paymentCount: number
     contributionSubmissionCount: number
     missingContributionSubmissionCount: number
+    attributionDatasetCount: number
+    attributionSubmittedCount: number
+    attributionApprovedCount: number
     totalContributionAmount: number
     zkasRunCount: number
   }
@@ -245,6 +259,7 @@ export function buildMonthlyCycleAdminOverview(input: {
   projectSummaries: ProjectSummaryCycleRow[]
   contributionExpectedProjects: ProjectContributionExpectationRow[]
   contributionSubmissions: ProjectMonthlyContributionSubmissionCycleRow[]
+  attributionDatasets: ProjectAttributionDatasetCycleRow[]
   warnings: MonthlyCycleWarning[]
 }): MonthlyCycleAdminOverview {
   const expectedContributionProjects = input.contributionExpectedProjects.filter(
@@ -321,6 +336,12 @@ export function buildMonthlyCycleAdminOverview(input: {
         ),
         missingProjects,
       },
+      attribution: {
+        datasetCount: countByCycle(input.attributionDatasets, cycle.id),
+        submittedCount: countByCycle(input.attributionDatasets, cycle.id, (dataset) => dataset.status === "submitted"),
+        approvedCount: countByCycle(input.attributionDatasets, cycle.id, (dataset) => dataset.status === "approved"),
+        rejectedCount: countByCycle(input.attributionDatasets, cycle.id, (dataset) => dataset.status === "rejected"),
+      },
       reconciliation: {
         submissionCount: countByCycle(input.onchainSubmissions, cycle.id),
         confirmedCount: countByCycle(input.onchainSubmissions, cycle.id, (submission) => submission.status === "confirmed"),
@@ -354,6 +375,9 @@ export function buildMonthlyCycleAdminOverview(input: {
       paymentCount: cycles.reduce((sum, cycle) => sum + cycle.payments.count, 0),
       contributionSubmissionCount: cycles.reduce((sum, cycle) => sum + cycle.contributionSubmissions.submittedCount, 0),
       missingContributionSubmissionCount: cycles.reduce((sum, cycle) => sum + cycle.contributionSubmissions.missingProjectCount, 0),
+      attributionDatasetCount: cycles.reduce((sum, cycle) => sum + cycle.attribution.datasetCount, 0),
+      attributionSubmittedCount: cycles.reduce((sum, cycle) => sum + cycle.attribution.submittedCount, 0),
+      attributionApprovedCount: cycles.reduce((sum, cycle) => sum + cycle.attribution.approvedCount, 0),
       totalContributionAmount: cycles.reduce((sum, cycle) => sum + cycle.payments.totalContributionAmount, 0),
       zkasRunCount: cycles.reduce((sum, cycle) => sum + cycle.zkas.runCount, 0),
     },
@@ -403,6 +427,7 @@ export async function loadMonthlyCycleAdminOverview(): Promise<MonthlyCycleAdmin
       projectSummaries: [],
       contributionExpectedProjects: [],
       contributionSubmissions: [],
+      attributionDatasets: [],
       warnings,
     })
   }
@@ -417,6 +442,7 @@ export async function loadMonthlyCycleAdminOverview(): Promise<MonthlyCycleAdmin
     projectSummaries,
     contributionExpectedProjects,
     contributionSubmissions,
+    attributionDatasets,
   ] = await Promise.all([
     softRead(
       "payments",
@@ -480,6 +506,11 @@ export async function loadMonthlyCycleAdminOverview(): Promise<MonthlyCycleAdmin
           .in("monthly_cycle_id", cycleIds),
       warnings,
     ),
+    softRead(
+      "project_attribution_datasets",
+      () => supabase.from("project_attribution_datasets").select("monthly_cycle_id, status").in("monthly_cycle_id", cycleIds),
+      warnings,
+    ),
   ])
 
   return buildMonthlyCycleAdminOverview({
@@ -493,6 +524,7 @@ export async function loadMonthlyCycleAdminOverview(): Promise<MonthlyCycleAdmin
     projectSummaries: projectSummaries as ProjectSummaryCycleRow[],
     contributionExpectedProjects: contributionExpectedProjects as ProjectContributionExpectationRow[],
     contributionSubmissions: contributionSubmissions as ProjectMonthlyContributionSubmissionCycleRow[],
+    attributionDatasets: attributionDatasets as ProjectAttributionDatasetCycleRow[],
     warnings,
   })
 }

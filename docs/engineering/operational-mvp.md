@@ -304,6 +304,7 @@ Use typed Supabase Edge Functions for all MVP writes:
 
 - `project-monthly-contribution-submit`
 - `project-attribution-dataset-submit`
+- `project-attribution-dataset-review`
 - `user-asset-preferences-update`
 - existing `monthly-cycle-lock`
 - existing `monthly-cycle-calculation-package`

@@ -1,5 +1,6 @@
 import { notFound } from "next/navigation"
 import { AlertTriangle, ArrowLeft, CheckCircle2, FileSearch, Info, ShieldAlert } from "lucide-react"
+import { ProjectAttributionDatasetReviewActions } from "@/components/admin/project-attribution-dataset-review-actions"
 import { Link } from "@/i18n/navigation"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -105,7 +106,7 @@ export default async function AdminCyclePrepPage({ params }: PageProps) {
         </section>
       </div>
 
-      <section className="grid gap-6 md:grid-cols-2 xl:grid-cols-5">
+      <section className="grid gap-6 md:grid-cols-2 xl:grid-cols-6">
         <Card>
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium">Contribution submissions</CardTitle>
@@ -117,6 +118,17 @@ export default async function AdminCyclePrepPage({ params }: PageProps) {
             <p className="mt-2 text-xs uppercase tracking-[0.16em] text-[var(--text-soft)]">
               {formatCurrency(locale, review.contributionReadiness.totalCalculatedContributionAmount)} calculated ·{" "}
               {review.contributionReadiness.missingProjectCount} missing
+            </p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-medium">MVP Attribution</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-3xl font-semibold">{review.attributionReadiness.approvedCount}</div>
+            <p className="mt-2 text-xs uppercase tracking-[0.16em] text-[var(--text-soft)]">
+              approved · {review.attributionReadiness.reviewRequiredCount} awaiting review
             </p>
           </CardContent>
         </Card>
@@ -215,6 +227,57 @@ export default async function AdminCyclePrepPage({ params }: PageProps) {
                       : "Mismatch"}
                 </p>
               </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle>MVP attribution approval</CardTitle>
+              <CardDescription>
+                Review scoped-CUBID attribution datasets submitted by project admins before they feed MVP calculation inputs.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4 text-sm">
+              {review.attributionReadiness.readError ? (
+                <p className="text-amber-700 dark:text-amber-200">{review.attributionReadiness.readError}</p>
+              ) : review.attributionReadiness.datasets.length === 0 ? (
+                <p className="text-[var(--text-muted)]">No MVP attribution datasets are attached to this cycle yet.</p>
+              ) : (
+                review.attributionReadiness.datasets.map((dataset) => (
+                  <div
+                    key={dataset.id}
+                    className="rounded-[var(--radius-xl)] border border-[color:var(--surface-border)] bg-[var(--surface-panel-strong)] p-4"
+                  >
+                    <div className="flex flex-wrap items-start justify-between gap-3">
+                      <div>
+                        <div className="font-semibold text-[var(--text-strong)]">{dataset.projectName}</div>
+                        <p className="mt-1 text-xs uppercase tracking-[0.16em] text-[var(--text-soft)]">
+                          {dataset.rowCount} rows · {dataset.totalAttributionPoints} points
+                        </p>
+                      </div>
+                      <Badge
+                        variant={
+                          dataset.status === "approved"
+                            ? "default"
+                            : dataset.status === "rejected"
+                              ? "destructive"
+                              : dataset.status === "submitted"
+                                ? "secondary"
+                                : "outline"
+                        }
+                      >
+                        {dataset.status}
+                      </Badge>
+                    </div>
+                    {dataset.note ? <p className="mt-3 text-[var(--text-muted)]">{dataset.note}</p> : null}
+                    {dataset.status === "submitted" ? (
+                      <div className="mt-4">
+                        <ProjectAttributionDatasetReviewActions datasetId={dataset.id} projectName={dataset.projectName} />
+                      </div>
+                    ) : null}
+                  </div>
+                ))
+              )}
             </CardContent>
           </Card>
 

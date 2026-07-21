@@ -118,9 +118,13 @@ The prep workspace surfaces:
 
 Live contribution-submission readiness is also informational in this phase. Goal #56 owns adding contribution submissions to the immutable lock manifest; until then, the prep workspace intentionally keeps submission readiness visible without treating it as a calculation input. Live drift is informational because downstream calculation should use the locked manifest, not mutable current rows.
 
-Issue #67 adds the backend command/schema for MVP attribution submissions. `project-attribution-dataset-submit` stores one canonical current attribution dataset per project/cycle and normalized rows requiring scoped CUBID identities. These rows remain internally inspectable for MVP operators and founders, while optional proof metadata fields reserve the future zkActivitySum ingest path. Operator approval/readiness remains #69, so submitted attribution datasets are not calculation-ready until the approval workflow marks them approved. Prep does not create zkAS runs, package calculation inputs, approve exceptions, or move the cycle into the next status. Those responsibilities remain later sessions.
+Issue #67 adds the backend command/schema for MVP attribution submissions. `project-attribution-dataset-submit` stores one canonical current attribution dataset per project/cycle and normalized rows requiring scoped CUBID identities. These rows remain internally inspectable for MVP operators and founders, while optional proof metadata fields reserve the future zkActivitySum ingest path.
 
 Issue #68 wires that command into the founder attribution workspace at `/[locale]/founder/projects/[slug]/attribution`. Founders can enter scoped CUBID identities, optional FundLoop user IDs or emails, attribution points, and row-level evidence notes for an open cycle. The page distinguishes submitted MVP attribution datasets from approved/calculation-ready datasets and continues to show legacy zkAS upload history while operator approval remains a separate workflow.
+
+Issue #69 adds the operator approval boundary for those MVP attribution datasets. `project-attribution-dataset-review` is the typed Edge Function command for internal operators to approve or reject submitted datasets. Rejections require a reason. Successful reviews update the dataset status, keep it attached to `monthly_cycle_id`, and emit an `attribution_dataset_review` event into `monthly_cycle_events`. The prep workspace now shows draft/submitted/approved/rejected counts and embeds review actions for submitted datasets. Only approved MVP attribution datasets are eligible for later lock/calculation inclusion.
+
+Prep still does not create zkAS runs, package calculation inputs, approve exceptions, or move the cycle into the next status. Those responsibilities remain later sessions.
 
 ## zkAS Stage Alignment
 
