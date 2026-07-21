@@ -44,4 +44,6 @@ Session 35 added the first signed-in user earnings workspace at `/[locale]/works
 
 That page is read-only for now. It shows published monthly results, payout intents, route readiness, batch status, and reconciliation cues using the existing payout domain tables. It deliberately does not add payout-route editing or payout execution controls; those remain separate write-path sessions.
 
+Issue #71 adds the first user-facing asset-preference UI. `/workspace/account` owns the editable ordered preference set, while `/workspace/earnings` shows the same preference readiness beside earnings and payout-route status. This keeps settlement asset selection separate from payout destinations: asset preferences say what the user would prefer to receive later; payout routes say where an actual transfer could go.
+
 The app still does not execute payouts or reconcile external transfers from user-facing pages. Those remain later payout execution sessions.

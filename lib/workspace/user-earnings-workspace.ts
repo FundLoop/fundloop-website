@@ -3,6 +3,7 @@ import "server-only"
 import type { NavigationContext } from "@/lib/navigation-context"
 import { createServerSupabaseClient } from "@/lib/supabase-server"
 import type { Database } from "@/types/supabase"
+import { buildUserAssetPreferenceReadiness, type UserAssetPreferenceReadiness } from "@/lib/workspace/user-asset-preferences"
 
 export type UserEarningsWarning = {
   scope: string
@@ -55,6 +56,7 @@ export type UserEarningsWorkspace = {
     defaultRoute: UserEarningsPayoutRoute | null
     all: UserEarningsPayoutRoute[]
   }
+  assetPreferences: UserAssetPreferenceReadiness
   cycles: UserEarningsCycle[]
   pendingDistributions: UserEarningsCycle[]
   payoutHistory: UserEarningsCycle[]
@@ -96,6 +98,11 @@ type BatchRow = Pick<Database["public"]["Tables"]["payout_batches"]["Row"], "id"
 type ReconciliationRow = Pick<
   Database["public"]["Tables"]["payout_reconciliation_events"]["Row"],
   "payout_intent_id" | "status" | "created_at"
+>
+
+type AssetPreferenceRow = Pick<
+  Database["public"]["Tables"]["user_asset_preferences"]["Row"],
+  "id" | "rank" | "asset_type" | "asset_code" | "project_id" | "accepted"
 >
 
 function warningFromError(scope: string, error: { message?: string } | null | undefined): UserEarningsWarning | null {
@@ -187,6 +194,7 @@ export function buildUserEarningsWorkspace({
   batchItems,
   batches,
   reconciliationEvents,
+  assetPreferences,
   warnings,
 }: {
   publishedResults: PublishedResultRow[]
@@ -197,6 +205,7 @@ export function buildUserEarningsWorkspace({
   batchItems: BatchItemRow[]
   batches: BatchRow[]
   reconciliationEvents: ReconciliationRow[]
+  assetPreferences?: AssetPreferenceRow[]
   warnings: UserEarningsWarning[]
 }): UserEarningsWorkspace {
   const cycleById = new Map(cycles.map((cycle) => [cycle.id, cycle]))
@@ -208,6 +217,7 @@ export function buildUserEarningsWorkspace({
   const latestReconciliationStatusByIntent = buildLatestReconciliationStatusByIntent(reconciliationEvents)
   const mappedRoutes = payoutRoutes.map(mapRoute)
   const defaultRoute = mappedRoutes.find((route) => route.status === "active" && route.isDefault) ?? null
+  const assetPreferenceReadiness = buildUserAssetPreferenceReadiness({ userId: null, rows: assetPreferences ?? [] })
 
   const cyclesWithResults = publishedResults
     .map((result): UserEarningsCycle => {
@@ -272,6 +282,7 @@ export function buildUserEarningsWorkspace({
       defaultRoute,
       all: mappedRoutes.sort((left, right) => Number(right.isDefault) - Number(left.isDefault) || left.label.localeCompare(right.label)),
     },
+    assetPreferences: assetPreferenceReadiness,
     cycles: cyclesWithResults,
     pendingDistributions,
     payoutHistory,
@@ -294,12 +305,13 @@ export async function getUserEarningsWorkspace(navigationContext: NavigationCont
       batchItems: [],
       batches: [],
       reconciliationEvents: [],
+      assetPreferences: [],
       warnings,
     })
   }
 
   const supabase = await createServerSupabaseClient()
-  const [publishedResults, payoutRoutes, payoutIntents] = await Promise.all([
+  const [publishedResults, payoutRoutes, payoutIntents, assetPreferences] = await Promise.all([
     readEarningsData<PublishedResultRow[]>(
       "published-results",
       supabase
@@ -328,6 +340,16 @@ export async function getUserEarningsWorkspace(navigationContext: NavigationCont
         .select("id, monthly_cycle_id, source_result_id, payout_route_id, rail, amount_usd, currency_code, status, status_reason")
         .eq("user_id", user.id)
         .order("updated_at", { ascending: false }),
+      warnings,
+      [],
+    ),
+    readEarningsData<AssetPreferenceRow[]>(
+      "asset-preferences",
+      supabase
+        .from("user_asset_preferences")
+        .select("id, rank, asset_type, asset_code, project_id, accepted")
+        .eq("user_id", user.id)
+        .order("rank", { ascending: true }),
       warnings,
       [],
     ),
@@ -396,6 +418,7 @@ export async function getUserEarningsWorkspace(navigationContext: NavigationCont
     batchItems,
     batches,
     reconciliationEvents,
+    assetPreferences,
     warnings,
   })
 }

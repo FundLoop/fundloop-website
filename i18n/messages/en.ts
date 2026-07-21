@@ -230,6 +230,7 @@ export const enMessages = {
     profile: "Profile & Visibility",
     emails: "Email Addresses",
     wallets: "Wallet Addresses",
+    assetPreferences: "Asset priorities",
     panels: {
       identity: {
         title: "CUBID is now the identity authority for FundLoop",
@@ -256,6 +257,48 @@ export const enMessages = {
           "Display name, profile headline, discovery context, and visibility preferences still belong to FundLoop. Identity facts like legal name, email, phone, and verification state no longer do.",
         ownershipNote:
           "Use this section for local profile preferences only. Identity fields that matter for proof-of-personhood and later payout eligibility are intentionally sourced from CUBID instead of being duplicated here.",
+      },
+      assetPreferences: {
+        title: "Future settlement asset priorities",
+        description:
+          "Choose the order FundLoop should consider when later settlement planning decides which asset can satisfy your credited USD-equivalent earnings.",
+        defaultsBadge: "Defaults",
+        customBadge: "Custom",
+        planningNote:
+          "These preferences do not change current credited earnings and they do not execute a payout. They only guide future settlement planning once a cycle is approved.",
+        rejectAllWarningTitle: "You are rejecting all project tokens.",
+        rejectAllWarningBody:
+          "That is allowed, but it may reduce what can be filled quickly if project-token supply is available before stablecoin or fiat settlement is ready.",
+        usingDefaultsTitle: "Using default priorities",
+        usingDefaultsBody: "If you do nothing, FundLoop plans around stablecoin first, fiat second, and project tokens third.",
+        rank: "Rank",
+        assetType: "Asset type",
+        assetCode: "Asset code",
+        projectId: "Project ID",
+        projectIdPlaceholder: "Required for project tokens",
+        accepted: "Accepted",
+        acceptedHint:
+          "Uncheck an asset to reject it while keeping the preference visible. Rejecting every project token shows a readiness warning.",
+        addStablecoin: "Add stablecoin",
+        addFiat: "Add fiat",
+        addProjectToken: "Add project token",
+        moveUp: "Move up",
+        moveDown: "Move down",
+        remove: "Remove",
+        resetDefaults: "Use defaults",
+        save: "Save priorities",
+        saving: "Saving...",
+        validationTitle: "Check asset priorities",
+        validationAssetCode: "Asset code must be 2-32 uppercase letters or numbers.",
+        validationProjectId: "Project token preferences need a positive project ID.",
+        successTitle: "Asset priorities saved",
+        successDescription: "FundLoop will use this order for future settlement planning.",
+        failureTitle: "Could not save asset priorities",
+        typeLabels: {
+          stablecoin: "Stablecoin",
+          fiat: "Fiat",
+          project_token: "Project token",
+        },
       },
     },
   },
@@ -560,6 +603,26 @@ export const enMessages = {
       default: "Default",
       emptyTitle: "No payout route yet",
       emptyBody: "Future payout intents can still be created as drafts, but they need a default active route before they become ready for distribution.",
+    },
+    assetPreferences: {
+      title: "Future settlement asset priorities",
+      description: "The asset order FundLoop should consider later when converting approved credits into a settlement plan.",
+      planningNote:
+        "Preferences do not change your credited USD-equivalent earnings and do not mean funds have been transferred. They are planning inputs for later settlement.",
+      usingDefaultsTitle: "Default priorities are active",
+      usingDefaultsBody: "Stablecoin first, fiat second, project tokens third. You can change this in account settings.",
+      rejectAllWarningTitle: "Project tokens are rejected",
+      rejectAllWarningBody:
+        "Rejecting project tokens may delay or limit future settlement if project-token supply is the first available asset for part of your allocation.",
+      manageCta: "Manage asset priorities",
+      rank: "#{rank}",
+      accepted: "Accepted",
+      rejected: "Rejected",
+      type: {
+        stablecoin: "Stablecoin",
+        fiat: "Fiat",
+        project_token: "Project token",
+      },
     },
     pending: {
       title: "Pending distributions",

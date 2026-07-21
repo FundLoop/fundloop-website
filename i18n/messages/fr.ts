@@ -220,6 +220,7 @@ export const frMessages = {
     identity: "Identité CUBID",
     emails: "Adresses e-mail",
     wallets: "Adresses de wallet",
+    assetPreferences: "Priorités d’actifs",
     panels: {
       identity: {
         title: "CUBID devient l’autorité d’identité pour FundLoop",
@@ -238,6 +239,48 @@ export const frMessages = {
             "Ce compte est lié à CUBID via l’e-mail connecté. La vérification complète peut continuer sur CUBID.me, mais FundLoop peut déjà considérer le pont d’identité comme établi.",
           verified:
             "Ce compte est lié à CUBID et la dernière réponse indique que l’identité e-mail est vérifiée. C’est l’état le plus fort actuellement visible dans FundLoop.",
+        },
+      },
+      assetPreferences: {
+        title: "Priorités d’actifs pour le règlement futur",
+        description:
+          "Choisissez l’ordre que FundLoop doit considérer plus tard quand un règlement convertira vos revenus crédités en équivalent USD.",
+        defaultsBadge: "Défauts",
+        customBadge: "Personnalisé",
+        planningNote:
+          "Ces préférences ne modifient pas les revenus crédités aujourd’hui et n’exécutent aucun paiement. Elles guident seulement la planification du règlement futur.",
+        rejectAllWarningTitle: "Vous rejetez tous les tokens projet.",
+        rejectAllWarningBody:
+          "C’est permis, mais cela peut ralentir le règlement si l’offre en tokens projet est disponible avant les stablecoins ou le fiat.",
+        usingDefaultsTitle: "Priorités par défaut actives",
+        usingDefaultsBody: "Sans action de votre part, FundLoop planifie stablecoin d’abord, fiat ensuite, puis tokens projet.",
+        rank: "Rang",
+        assetType: "Type d’actif",
+        assetCode: "Code actif",
+        projectId: "ID projet",
+        projectIdPlaceholder: "Requis pour les tokens projet",
+        accepted: "Accepté",
+        acceptedHint:
+          "Décochez un actif pour le rejeter tout en gardant la préférence visible. Rejeter tous les tokens projet affiche une alerte de préparation.",
+        addStablecoin: "Ajouter stablecoin",
+        addFiat: "Ajouter fiat",
+        addProjectToken: "Ajouter token projet",
+        moveUp: "Monter",
+        moveDown: "Descendre",
+        remove: "Retirer",
+        resetDefaults: "Utiliser les défauts",
+        save: "Enregistrer les priorités",
+        saving: "Enregistrement...",
+        validationTitle: "Vérifier les priorités",
+        validationAssetCode: "Le code actif doit contenir 2 à 32 lettres majuscules ou chiffres.",
+        validationProjectId: "Les préférences de token projet exigent un ID projet positif.",
+        successTitle: "Priorités enregistrées",
+        successDescription: "FundLoop utilisera cet ordre pour la planification du règlement futur.",
+        failureTitle: "Impossible d’enregistrer les priorités",
+        typeLabels: {
+          stablecoin: "Stablecoin",
+          fiat: "Fiat",
+          project_token: "Token projet",
         },
       },
     },
@@ -544,6 +587,26 @@ export const frMessages = {
       default: "Défaut",
       emptyTitle: "Aucune route de paiement pour le moment",
       emptyBody: "Les futures intentions de paiement peuvent être créées en brouillon, mais elles auront besoin d’une route active par défaut pour être prêtes à la distribution.",
+    },
+    assetPreferences: {
+      title: "Priorités d’actifs pour le règlement futur",
+      description: "L’ordre d’actifs que FundLoop doit considérer plus tard pour transformer des crédits approuvés en plan de règlement.",
+      planningNote:
+        "Les préférences ne changent pas vos revenus crédités en équivalent USD et ne signifient pas que des fonds ont été transférés. Ce sont des entrées de planification.",
+      usingDefaultsTitle: "Priorités par défaut actives",
+      usingDefaultsBody: "Stablecoin d’abord, fiat ensuite, tokens projet en troisième. Vous pouvez changer cela dans le compte.",
+      rejectAllWarningTitle: "Tokens projet rejetés",
+      rejectAllWarningBody:
+        "Rejeter les tokens projet peut retarder ou limiter le règlement futur si l’offre en tokens projet est le premier actif disponible pour une partie de votre allocation.",
+      manageCta: "Gérer les priorités d’actifs",
+      rank: "#{rank}",
+      accepted: "Accepté",
+      rejected: "Rejeté",
+      type: {
+        stablecoin: "Stablecoin",
+        fiat: "Fiat",
+        project_token: "Token projet",
+      },
     },
     pending: {
       title: "Distributions en attente",

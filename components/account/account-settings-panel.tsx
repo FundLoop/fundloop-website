@@ -1,13 +1,15 @@
 "use client"
 
 import { useTranslations } from "next-intl"
-import { Fingerprint, Mail, Wallet } from "lucide-react"
+import { Coins, Fingerprint, Mail, Wallet } from "lucide-react"
+import { AssetPreferencesPanel } from "@/components/account/asset-preferences-panel"
 import { CubidIdentityPanel } from "@/components/account/cubid-identity-panel"
 import { FundloopProfilePanel } from "@/components/account/fundloop-profile-panel"
 import { EmailManagement } from "@/components/account/email-management"
 import { WalletManagement } from "@/components/account/wallet-management"
 import type { CubidIdentitySnapshotSummary, CubidIdentityStatus } from "@/lib/cubid/types"
 import type { CubidIdentityOwnership, ManagedIdentityField } from "@/lib/cubid/read-model"
+import type { UserAssetPreferenceSummary } from "@/lib/edge-functions/user-asset-preferences-update-contract"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 
 type AccountSettingsPanelProps = {
@@ -47,9 +49,15 @@ type AccountSettingsPanelProps = {
       isLocationPublic: boolean
     }
   }
+  assetPreferences: {
+    preferences: UserAssetPreferenceSummary[]
+    defaultPreferences: UserAssetPreferenceSummary[]
+    hasCustomPreferences: boolean
+    rejectsAllProjectTokens: boolean
+  }
 }
 
-export function AccountSettingsPanel({ heading, description, cubid, localProfile }: AccountSettingsPanelProps) {
+export function AccountSettingsPanel({ heading, description, cubid, localProfile, assetPreferences }: AccountSettingsPanelProps) {
   const t = useTranslations("accountSettings")
 
   return (
@@ -63,7 +71,7 @@ export function AccountSettingsPanel({ heading, description, cubid, localProfile
 
       <section className="rounded-[calc(var(--radius-2xl)+0.25rem)] border border-[color:var(--surface-border)] bg-[var(--surface-panel-strong)] p-6 shadow-[var(--surface-shadow-panel)]">
         <Tabs defaultValue="identity" className="w-full">
-          <TabsList className="mb-8 grid w-full grid-cols-4">
+          <TabsList className="mb-8 grid w-full grid-cols-2 md:grid-cols-5">
             <TabsTrigger value="identity" className="flex items-center gap-2">
               <Fingerprint className="h-4 w-4" />
               {t("identity")}
@@ -79,6 +87,10 @@ export function AccountSettingsPanel({ heading, description, cubid, localProfile
             <TabsTrigger value="wallets" className="flex items-center gap-2">
               <Wallet className="h-4 w-4" />
               {t("wallets")}
+            </TabsTrigger>
+            <TabsTrigger value="assetPreferences" className="flex items-center gap-2">
+              <Coins className="h-4 w-4" />
+              {t("assetPreferences")}
             </TabsTrigger>
           </TabsList>
 
@@ -121,6 +133,54 @@ export function AccountSettingsPanel({ heading, description, cubid, localProfile
 
           <TabsContent value="wallets" className="mt-0">
             <WalletManagement />
+          </TabsContent>
+
+          <TabsContent value="assetPreferences" className="mt-0">
+            <AssetPreferencesPanel
+              preferences={assetPreferences.preferences}
+              defaultPreferences={assetPreferences.defaultPreferences}
+              hasCustomPreferences={assetPreferences.hasCustomPreferences}
+              rejectsAllProjectTokens={assetPreferences.rejectsAllProjectTokens}
+              labels={{
+                tabTitle: t("assetPreferences"),
+                title: t("panels.assetPreferences.title"),
+                description: t("panels.assetPreferences.description"),
+                defaultsBadge: t("panels.assetPreferences.defaultsBadge"),
+                customBadge: t("panels.assetPreferences.customBadge"),
+                planningNote: t("panels.assetPreferences.planningNote"),
+                rejectAllWarningTitle: t("panels.assetPreferences.rejectAllWarningTitle"),
+                rejectAllWarningBody: t("panels.assetPreferences.rejectAllWarningBody"),
+                usingDefaultsTitle: t("panels.assetPreferences.usingDefaultsTitle"),
+                usingDefaultsBody: t("panels.assetPreferences.usingDefaultsBody"),
+                rank: t("panels.assetPreferences.rank"),
+                assetType: t("panels.assetPreferences.assetType"),
+                assetCode: t("panels.assetPreferences.assetCode"),
+                projectId: t("panels.assetPreferences.projectId"),
+                projectIdPlaceholder: t("panels.assetPreferences.projectIdPlaceholder"),
+                accepted: t("panels.assetPreferences.accepted"),
+                acceptedHint: t("panels.assetPreferences.acceptedHint"),
+                addStablecoin: t("panels.assetPreferences.addStablecoin"),
+                addFiat: t("panels.assetPreferences.addFiat"),
+                addProjectToken: t("panels.assetPreferences.addProjectToken"),
+                moveUp: t("panels.assetPreferences.moveUp"),
+                moveDown: t("panels.assetPreferences.moveDown"),
+                remove: t("panels.assetPreferences.remove"),
+                resetDefaults: t("panels.assetPreferences.resetDefaults"),
+                save: t("panels.assetPreferences.save"),
+                saving: t("panels.assetPreferences.saving"),
+                validationTitle: t("panels.assetPreferences.validationTitle"),
+                validationAssetCode: t("panels.assetPreferences.validationAssetCode"),
+                validationProjectId: t("panels.assetPreferences.validationProjectId"),
+                successTitle: t("panels.assetPreferences.successTitle"),
+                successDescription: t("panels.assetPreferences.successDescription"),
+                failureTitle: t("panels.assetPreferences.failureTitle"),
+                typeLabels: {
+                  stablecoin: t("panels.assetPreferences.typeLabels.stablecoin"),
+                  fiat: t("panels.assetPreferences.typeLabels.fiat"),
+                  project_token: t("panels.assetPreferences.typeLabels.project_token"),
+                },
+              }}
+            />
           </TabsContent>
         </Tabs>
       </section>

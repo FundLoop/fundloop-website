@@ -8,6 +8,7 @@ const translations: Record<string, string> = {
   profile: "Profile & Visibility",
   emails: "Email Addresses",
   wallets: "Wallet Addresses",
+  assetPreferences: "Asset priorities",
   "panels.identity.title": "CUBID is now the identity authority for FundLoop",
   "panels.identity.manage": "Manage on CUBID Passport",
   "panels.identity.labels.unlinked": "Not linked yet",
@@ -18,6 +19,40 @@ const translations: Record<string, string> = {
   "panels.profile.title": "FundLoop-managed profile",
   "panels.profile.description": "Profile description",
   "panels.profile.ownershipNote": "Ownership note",
+  "panels.assetPreferences.title": "Future settlement asset priorities",
+  "panels.assetPreferences.description": "Choose the asset order FundLoop should consider later.",
+  "panels.assetPreferences.defaultsBadge": "Defaults",
+  "panels.assetPreferences.customBadge": "Custom",
+  "panels.assetPreferences.planningNote": "These preferences guide future settlement planning.",
+  "panels.assetPreferences.rejectAllWarningTitle": "Project tokens rejected",
+  "panels.assetPreferences.rejectAllWarningBody": "Rejecting project tokens may delay settlement.",
+  "panels.assetPreferences.usingDefaultsTitle": "Using default priorities",
+  "panels.assetPreferences.usingDefaultsBody": "Stablecoin, fiat, then project tokens.",
+  "panels.assetPreferences.rank": "Rank",
+  "panels.assetPreferences.assetType": "Asset type",
+  "panels.assetPreferences.assetCode": "Asset code",
+  "panels.assetPreferences.projectId": "Project ID",
+  "panels.assetPreferences.projectIdPlaceholder": "Project ID",
+  "panels.assetPreferences.accepted": "Accepted",
+  "panels.assetPreferences.acceptedHint": "Uncheck assets you do not want.",
+  "panels.assetPreferences.addStablecoin": "Add stablecoin",
+  "panels.assetPreferences.addFiat": "Add fiat",
+  "panels.assetPreferences.addProjectToken": "Add project token",
+  "panels.assetPreferences.moveUp": "Move up",
+  "panels.assetPreferences.moveDown": "Move down",
+  "panels.assetPreferences.remove": "Remove",
+  "panels.assetPreferences.resetDefaults": "Use defaults",
+  "panels.assetPreferences.save": "Save priorities",
+  "panels.assetPreferences.saving": "Saving...",
+  "panels.assetPreferences.validationTitle": "Check priorities",
+  "panels.assetPreferences.validationAssetCode": "Asset code is invalid.",
+  "panels.assetPreferences.validationProjectId": "Project ID is required.",
+  "panels.assetPreferences.successTitle": "Priorities saved",
+  "panels.assetPreferences.successDescription": "Future settlement priorities were updated.",
+  "panels.assetPreferences.failureTitle": "Could not save priorities",
+  "panels.assetPreferences.typeLabels.stablecoin": "Stablecoin",
+  "panels.assetPreferences.typeLabels.fiat": "Fiat",
+  "panels.assetPreferences.typeLabels.project_token": "Project token",
   "panels.identity.status.unlinked":
     "This account is still missing its CUBID link. FundLoop can keep local settings here, but publish and payout-touching flows now expect a linked identity first.",
   "panels.identity.status.linked":
@@ -30,6 +65,16 @@ vi.mock("next/navigation", () => ({
   useRouter: () => ({
     refresh: vi.fn(),
   }),
+}))
+
+vi.mock("@/i18n/navigation", () => ({
+  useRouter: () => ({
+    refresh: vi.fn(),
+  }),
+}))
+
+vi.mock("@/lib/edge-functions/user-asset-preferences-update", () => ({
+  invokeUserAssetPreferencesUpdateBrowser: vi.fn(),
 }))
 
 vi.mock("next-intl", () => ({
@@ -87,10 +132,20 @@ describe("AccountSettingsPanel", () => {
             isLocationPublic: true,
           },
         }}
+        assetPreferences={{
+          preferences: [],
+          defaultPreferences: [
+            { id: null, rank: 1, assetType: "stablecoin", assetCode: "USDC", projectId: null, accepted: true },
+            { id: null, rank: 2, assetType: "fiat", assetCode: "USD", projectId: null, accepted: true },
+          ],
+          hasCustomPreferences: false,
+          rejectsAllProjectTokens: false,
+        }}
       />,
     )
 
     expect(screen.getByRole("tab", { name: /cubid identity/i })).toBeTruthy()
+    expect(screen.getByRole("tab", { name: /asset priorities/i })).toBeTruthy()
     fireEvent.click(screen.getByRole("tab", { name: /cubid identity/i }))
 
     expect(screen.getAllByText(/linked/i).length).toBeGreaterThan(0)

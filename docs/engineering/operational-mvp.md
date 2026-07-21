@@ -183,6 +183,8 @@ Minimum data model:
 
 Issue #70 implements this as the `user_asset_preferences` table plus the typed `user-asset-preferences-update` Edge Function command. The command replaces the authenticated user's custom preference set with deterministic ranks based on submitted order. An empty custom set means downstream read models should apply the default order: stablecoin, fiat, then project tokens. These rows are asset-selection preferences only; they are not payout destinations, rails, bank details, wallet addresses, or proof of payment readiness.
 
+Issue #71 surfaces those preferences in `/workspace/account` as an editable asset-priority panel and in `/workspace/earnings` as read-only readiness context. The UI intentionally says preferences affect future settlement planning only. It also warns when a user rejects all project-token assets so users can make that tradeoff deliberately without implying that any transfer has happened.
+
 Acceptance criteria:
 
 - User can publish profile with CUBID linked.
