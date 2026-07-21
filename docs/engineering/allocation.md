@@ -165,6 +165,8 @@ Rules:
 - unfulfillable value returns to the contributing project's future pool
 - preferences affect asset fulfillment only; they do not change the user's USD-equivalent allocation
 
+Issue #70 stores these preferences in `user_asset_preferences` and updates them through the `user-asset-preferences-update` Edge Function command. The rank order is canonical and deterministic. A missing custom preference set means default fulfillment order is stablecoin, fiat, then project tokens. The table intentionally stores asset intent only, not payout destinations or transfer instructions.
+
 The output may contain multiple asset fills for one user result when fallback preferences are needed. The user-facing product may show those fills as one credited result with a breakdown.
 
 ## Outputs

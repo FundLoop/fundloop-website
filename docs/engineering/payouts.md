@@ -4,7 +4,8 @@ Session 27 introduced the first-class outbound payout domain. It is intentionall
 
 ## Domain Objects
 
-- `user_payout_routes` stores user-owned payout destinations and preferences across supported rails.
+- `user_payout_routes` stores user-owned payout destinations across supported rails.
+- `user_asset_preferences` stores user-owned asset selection preferences for future settlement planning. These preferences rank asset classes and codes, but they do not store transfer destinations.
 - `payout_intents` stores concrete outbound obligations created from approved monthly-cycle user results.
 - `payout_batches` groups ready intents for later rail-specific execution.
 - `payout_batch_items` links intents into batches without losing the original obligation row.
@@ -29,7 +30,7 @@ The command is idempotent per published result and cycle. It creates:
 - `ready` intents when a user has an active default payout route
 - `draft` intents when the user still needs to configure a route
 
-This keeps missing user preferences visible without blocking the whole cycle from entering distribution work.
+This keeps missing payout routes visible without blocking the whole cycle from entering distribution work. Asset preferences are handled separately by `user_asset_preferences`; they guide future asset fulfillment planning but do not prove a destination is ready.
 
 ## What Is Not Included Yet
 

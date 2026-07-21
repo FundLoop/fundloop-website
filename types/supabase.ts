@@ -2815,6 +2815,77 @@ export type Database = {
           },
         ]
       }
+      user_asset_preferences: {
+        Row: {
+          accepted: boolean
+          asset_code: string
+          asset_type: Database["public"]["Enums"]["user_asset_preference_type"]
+          created_at: string
+          created_by_user_id: string | null
+          id: number
+          project_id: number | null
+          rank: number
+          updated_at: string
+          updated_by_user_id: string | null
+          user_id: string
+        }
+        Insert: {
+          accepted?: boolean
+          asset_code: string
+          asset_type: Database["public"]["Enums"]["user_asset_preference_type"]
+          created_at?: string
+          created_by_user_id?: string | null
+          id?: number
+          project_id?: number | null
+          rank: number
+          updated_at?: string
+          updated_by_user_id?: string | null
+          user_id: string
+        }
+        Update: {
+          accepted?: boolean
+          asset_code?: string
+          asset_type?: Database["public"]["Enums"]["user_asset_preference_type"]
+          created_at?: string
+          created_by_user_id?: string | null
+          id?: number
+          project_id?: number | null
+          rank?: number
+          updated_at?: string
+          updated_by_user_id?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_asset_preferences_created_by_user_id_fkey"
+            columns: ["created_by_user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "user_asset_preferences_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "user_asset_preferences_updated_by_user_id_fkey"
+            columns: ["updated_by_user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "user_asset_preferences_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["user_id"]
+          },
+        ]
+      }
       user_payout_routes: {
         Row: {
           created_at: string
@@ -4205,6 +4276,7 @@ export type Database = {
         | "resolved"
       payout_route_status: "draft" | "active" | "disabled"
       projects_status: "active" | "inactive" | "deleted"
+      user_asset_preference_type: "project_token" | "stablecoin" | "fiat"
       users_status: "active" | "inactive" | "deleted"
       wallet_accounts_status: "active" | "inactive" | "deleted"
       wallet_connections_status: "active" | "inactive" | "deleted"
@@ -4400,6 +4472,7 @@ export const Constants = {
       ],
       payout_route_status: ["draft", "active", "disabled"],
       projects_status: ["active", "inactive", "deleted"],
+      user_asset_preference_type: ["project_token", "stablecoin", "fiat"],
       users_status: ["active", "inactive", "deleted"],
       wallet_accounts_status: ["active", "inactive", "deleted"],
       wallet_connections_status: ["active", "inactive", "deleted"],

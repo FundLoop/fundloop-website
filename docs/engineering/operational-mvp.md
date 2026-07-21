@@ -181,6 +181,8 @@ Minimum data model:
 - `accepted`
 - timestamps
 
+Issue #70 implements this as the `user_asset_preferences` table plus the typed `user-asset-preferences-update` Edge Function command. The command replaces the authenticated user's custom preference set with deterministic ranks based on submitted order. An empty custom set means downstream read models should apply the default order: stablecoin, fiat, then project tokens. These rows are asset-selection preferences only; they are not payout destinations, rails, bank details, wallet addresses, or proof of payment readiness.
+
 Acceptance criteria:
 
 - User can publish profile with CUBID linked.
