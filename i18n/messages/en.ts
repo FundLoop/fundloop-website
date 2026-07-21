@@ -1044,7 +1044,30 @@ export const enMessages = {
   },
   home: {
     eyebrow: "Mutual prosperity, made operational",
-    heroTitle: "A networked economy where projects feed the loop and people share in the upside.",
+    heroTitle: "A Network State for Mutual Prosperity",
+    heroSuffix: "for Mutual Prosperity",
+    heroPrefixes: [
+      "A Network State",
+      "A Collection of Apps",
+      "A Society of Likeminded",
+      "A Post-capitalistic Future",
+      "A Commons in Motion",
+      "A Coalition of Builders",
+      "A Culture of Contribution",
+      "A Circle of Belonging",
+      "A Federation of Communities",
+      "A Marketplace of Care",
+      "A Cooperative Economy",
+      "A Regenerative Society",
+      "A Pluralistic Commons",
+      "A Movement of Mutualists",
+      "A Network of Neighbours",
+      "A Union of Dreamers",
+      "A Civic Layer for Everyone",
+      "A Shared Prosperity Engine",
+      "An Economy of Enough",
+    ],
+    heroThesis: "A networked economy where projects feed the loop and people share in the upside.",
     heroBody:
       "FundLoop helps teams reward real contribution, grow with stronger proof-of-humanity signal, and route part of success back to the communities that make the whole system work.",
     ctas: {
@@ -1055,6 +1078,29 @@ export const enMessages = {
       projects: "Projects pledge 1%+ into the loop.",
       people: "People create signal through use.",
       value: "Value returns with more context.",
+    },
+    theoryOfChange: {
+      eyebrow: "Our theory of change",
+      title: "Prosperity needs more than one system.",
+      body:
+        "FundLoop starts from a simple belief: useful systems do not have to become total systems. We can keep what works, challenge what does not, and build practical complements together.",
+      ideas: {
+        capitalism: {
+          title: "Capitalism can create. It cannot be the whole answer.",
+          body:
+            "Is capitalism good? Yes. Is it enough? No. Extreme capitalism is not a future worth choosing—unless the Hunger Games looks like somewhere you would actually want to live. Markets can be productive, but they need credible complements that keep prosperity mutual.",
+        },
+        basicIncome: {
+          title: "Basic income can protect. It cannot be the whole answer either.",
+          body:
+            "A basic income is good. Radical sameness is not—unless Pluribus looks like the future you want. The goal is not to replace every incentive or flatten every difference. It is to add a dependable floor beneath an economy that still leaves room for ambition, contribution, and plurality.",
+        },
+        pluralism: {
+          title: "The state can help. It should not have to act alone.",
+          body:
+            "A state-governed basic income may be part of the answer, but relying on it alone is fragile. Companies that choose to help fund a basic income should be encouraged. Administration and distribution are hard; shared infrastructure makes both simpler. Will people flock to participating companies? Hopefully—but that remains to be seen. FundLoop exists to make the experiment possible.",
+        },
+      },
     },
     howItWorks: {
       eyebrow: "How the loop works",

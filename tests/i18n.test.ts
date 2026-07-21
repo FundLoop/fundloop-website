@@ -42,6 +42,10 @@ describe("i18n message loading", () => {
     const messages = getLocaleMessages("fr")
 
     expect(messages.home.heroTitle).toContain("économie")
+    expect(messages.home.heroPrefixes).toHaveLength(19)
+    expect(messages.home.heroPrefixes[0]).toBe("Un État-réseau")
+    expect(messages.home.heroThesis).toContain("économie en réseau")
+    expect(messages.home.theoryOfChange.ideas.pluralism.body).toContain("FundLoop")
     expect(messages.shell.nav.resources).toBe("Ressources")
     expect(messages.shell.nav.primary.founders).toBe("Fondateurs")
     expect(messages.shell.nav.resourceLinks.founders.label).toBe("Parcours fondateur")
