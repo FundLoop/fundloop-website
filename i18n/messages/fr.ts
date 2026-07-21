@@ -568,17 +568,24 @@ export const frMessages = {
     eyebrow: "Espace revenus",
     title: "Vos résultats, votre préparation payout et l’état des distributions",
     body:
-      "Suivez les résultats mensuels publiés, les intentions de paiement en attente, la préparation des routes et les distributions terminées ou échouées. C’est la vue argent côté utilisateur pendant que l’exécution détaillée reste opérée par les admins.",
+      "Suivez les revenus mensuels crédités mais non payés, les actifs sélectionnés, les sources et la préparation du règlement futur. C’est la vue argent côté utilisateur pendant que l’exécution réelle des paiements reste hors périmètre MVP.",
     rawResultsCta: "Ouvrir l’historique brut",
     stats: {
-      published: "Allocation publiée",
-      pending: "Paiement en attente",
+      published: "Revenus crédités",
+      pending: "Intention en attente",
       paid: "Payé",
+      notPaid: "Crédits non payés",
       routes: "Routes actives",
     },
     warnings: {
       title: "Certaines données de revenus sont temporairement indisponibles.",
       body: "La page affiche les parties chargées sans risque. Réessayez plus tard si l’état des paiements ou l’historique semblent incomplets.",
+    },
+    credits: {
+      title: "Crédits comptables",
+      description:
+        "Résultats mensuels approuvés qui ont été crédités sur votre compte FundLoop. Ces lignes ne sont pas encore payées et ne représentent pas un transfert.",
+      empty: "Aucun crédit comptable n’a encore été créé pour votre compte.",
     },
     nextAction: {
       title: "Prochaine étape recommandée",
@@ -656,6 +663,27 @@ export const frMessages = {
       batch: "Lot {status}",
       unbatched: "Pas en lot",
       noRoute: "Aucune route sélectionnée",
+    },
+    creditTable: {
+      cycle: "Cycle",
+      credit: "Montant crédité",
+      assetFills: "Actifs sélectionnés",
+      source: "Explication source",
+      status: "État",
+      credited: "Crédité le {date}",
+      noAssetFills: "Aucun instantané d’actif",
+      rank: "préférence #{rank}",
+      partial: "remplissage partiel",
+      projects: "{count} source(s) projet",
+      baseline: "Base {amount}",
+      topUp: "Complément d’égalisation {amount}",
+    },
+    creditStatus: {
+      credited: "Crédité",
+      voided: "Annulé",
+    },
+    paymentStatus: {
+      not_paid: "Pas encore payé",
     },
     payoutStatus: {
       not_created: "Résultat seul",

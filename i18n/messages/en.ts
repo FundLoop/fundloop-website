@@ -585,17 +585,24 @@ export const enMessages = {
     eyebrow: "Earnings workspace",
     title: "Your results, payout readiness, and distribution status",
     body:
-      "Track published monthly results, pending payout intents, route readiness, and completed or failed distributions. This is the user-facing money view while detailed execution remains operator-controlled.",
+      "Track credited-but-not-paid monthly earnings, asset fills, source breakdowns, and future settlement readiness. This is the user-facing money view while real payout execution remains explicitly out of scope for the MVP.",
     rawResultsCta: "Open raw result history",
     stats: {
-      published: "Published allocation",
-      pending: "Pending payout",
+      published: "Credited earnings",
+      pending: "Pending payout intent",
       paid: "Paid out",
+      notPaid: "Not-paid credits",
       routes: "Active routes",
     },
     warnings: {
       title: "Some earnings data is temporarily unavailable.",
       body: "The page is showing the parts that loaded safely. Try refreshing later if payout status or history looks incomplete.",
+    },
+    credits: {
+      title: "Bookkeeping credits",
+      description:
+        "Approved monthly results that have been credited to your FundLoop account. These rows are not paid yet and do not represent a transfer.",
+      empty: "No bookkeeping credits have been created for your account yet.",
     },
     nextAction: {
       title: "Recommended next step",
@@ -672,6 +679,27 @@ export const enMessages = {
       batch: "Batch {status}",
       unbatched: "Not batched",
       noRoute: "No route selected",
+    },
+    creditTable: {
+      cycle: "Cycle",
+      credit: "Credited amount",
+      assetFills: "Selected asset fills",
+      source: "Source explanation",
+      status: "Status",
+      credited: "Credited {date}",
+      noAssetFills: "No asset fill snapshot",
+      rank: "preference #{rank}",
+      partial: "partial fill",
+      projects: "{count} project source(s)",
+      baseline: "Baseline {amount}",
+      topUp: "Equalization top-up {amount}",
+    },
+    creditStatus: {
+      credited: "Credited",
+      voided: "Voided",
+    },
+    paymentStatus: {
+      not_paid: "Not paid yet",
     },
     payoutStatus: {
       not_created: "Result only",

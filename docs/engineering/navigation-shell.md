@@ -116,7 +116,7 @@ Session 13 made identity state a first-class part of the authenticated shell.
 Session 17 turned `/[locale]/workspace` into the real regular-user workspace home.
 
 - `/[locale]/workspace` now summarizes identity readiness, hybrid profile completion, participation footprint, project discovery, and current published zkAS result visibility.
-- `/[locale]/workspace/earnings` is the Session 35 user money workspace. It connects published monthly results, payout intents, payout route readiness, batch status, and reconciliation cues into one signed-in surface.
+- `/[locale]/workspace/earnings` is now the user money workspace for credited-but-not-paid MVP earnings. Issue #83 makes `monthly_cycle_bookkeeping_credits` the primary user-visible earnings source, with published results, payout intents, payout route readiness, batch status, and reconciliation cues retained as future-settlement context.
 - `/[locale]/workspace/reporting` is the Session 36 user reporting workspace for monthly explanations and stored report artifacts.
 - Session 42 redirects the legacy raw personal result history from `/[locale]/settings/zkas` to `/[locale]/workspace/reporting`; settings is no longer the mental model for result or earnings visibility.
 - Workspace data is read server-side and should degrade to safe empty/warning states rather than crashing the signed-in home when one non-critical read fails.

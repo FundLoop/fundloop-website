@@ -44,7 +44,7 @@ Session 31 added Solana-specific payout batch draft scaffolding. Solana payout d
 
 Session 32 added fiat payout batch stubs. Fiat drafts validate placeholder destination methods or account references and produce a `fundloop-fiat-payout-batch.v1` payload with `provider_not_configured` metadata. This lets the product model fiat routes without implying a live payout provider.
 
-Session 35 added the first signed-in user earnings workspace at `/[locale]/workspace/earnings`.
+Session 35 added the first signed-in user earnings workspace at `/[locale]/workspace/earnings`. Issue #83 updates that page to read `monthly_cycle_bookkeeping_credits` as the primary credited-but-not-paid earnings source, with older published-result and payout-intent details retained as settlement-readiness context.
 
 That page is read-only for now. It shows published monthly results, payout intents, route readiness, batch status, and reconciliation cues using the existing payout domain tables. It deliberately does not add payout-route editing or payout execution controls; those remain separate write-path sessions.
 

@@ -3,7 +3,7 @@ import { getTranslations } from "next-intl/server"
 import { ArrowUpRight, BadgeDollarSign, Coins, Landmark, ListChecks, Route, WalletCards } from "lucide-react"
 import { Link } from "@/i18n/navigation"
 import { getNavigationContext } from "@/lib/navigation-context"
-import { getUserEarningsWorkspace, type UserEarningsCycle } from "@/lib/workspace/user-earnings-workspace"
+import { getUserEarningsWorkspace, type UserEarningsCredit, type UserEarningsCycle } from "@/lib/workspace/user-earnings-workspace"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -44,6 +44,108 @@ function statusTone(status: UserEarningsCycle["payoutStatus"]) {
     return "border-slate-300/60 bg-slate-50 text-slate-700 dark:border-slate-500/30 dark:bg-slate-400/10 dark:text-slate-200"
   }
   return "border-cyan-300/60 bg-cyan-50 text-cyan-950 dark:border-cyan-400/30 dark:bg-cyan-400/10 dark:text-cyan-100"
+}
+
+function creditStatusTone(status: UserEarningsCredit["paymentStatus"]) {
+  if (status === "not_paid") {
+    return "border-amber-300/70 bg-amber-50 text-amber-950 dark:border-amber-400/30 dark:bg-amber-400/10 dark:text-amber-100"
+  }
+  return "border-slate-300/60 bg-slate-50 text-slate-700 dark:border-slate-500/30 dark:bg-slate-400/10 dark:text-slate-200"
+}
+
+function CreditTable({
+  rows,
+  empty,
+  locale,
+  t,
+}: {
+  rows: UserEarningsCredit[]
+  empty: string
+  locale: string
+  t: Awaited<ReturnType<typeof getTranslations>>
+}) {
+  return (
+    <Table>
+      <TableHeader>
+        <TableRow>
+          <TableHead>{t("creditTable.cycle")}</TableHead>
+          <TableHead>{t("creditTable.credit")}</TableHead>
+          <TableHead>{t("creditTable.assetFills")}</TableHead>
+          <TableHead>{t("creditTable.source")}</TableHead>
+          <TableHead>{t("creditTable.status")}</TableHead>
+        </TableRow>
+      </TableHeader>
+      <TableBody>
+        {rows.length === 0 ? (
+          <TableRow>
+            <TableCell colSpan={5} className="py-8 text-center text-[var(--text-muted)]">
+              {empty}
+            </TableCell>
+          </TableRow>
+        ) : (
+          rows.map((row) => (
+            <TableRow key={row.id}>
+              <TableCell>
+                <div className="font-semibold text-[var(--text-strong)]">{row.key}</div>
+                <div className="text-xs text-[var(--text-muted)]">{t(`cycleStatus.${row.cycleStatus}`)}</div>
+              </TableCell>
+              <TableCell>
+                <div className="font-semibold text-[var(--text-strong)]">
+                  {formatCurrency(locale, row.usdEquivalentAmount, row.currencyCode)}
+                </div>
+                <div className="text-xs text-[var(--text-muted)]">
+                  {t("creditTable.credited", { date: formatDate(locale, row.creditedAt) })}
+                </div>
+              </TableCell>
+              <TableCell>
+                <div className="space-y-1">
+                  {row.assetFills.length === 0 ? (
+                    <span className="text-sm text-[var(--text-muted)]">{t("creditTable.noAssetFills")}</span>
+                  ) : (
+                    row.assetFills.map((fill, index) => (
+                      <div key={`${row.id}-${fill.assetCode}-${index}`} className="text-sm">
+                        <span className="font-medium text-[var(--text-strong)]">
+                          {formatCurrency(locale, fill.usdValue)} {fill.assetCode}
+                        </span>
+                        <span className="text-[var(--text-muted)]">
+                          {" "}
+                          · {t("creditTable.rank", { rank: fill.preferenceRank })}
+                          {fill.partial ? ` · ${t("creditTable.partial")}` : ""}
+                        </span>
+                      </div>
+                    ))
+                  )}
+                </div>
+              </TableCell>
+              <TableCell>
+                <div className="space-y-1">
+                  <div className="text-sm text-[var(--text-muted)]">
+                    {t("creditTable.projects", { count: row.sourceBreakdown.length })}
+                  </div>
+                  <div className="text-xs text-[var(--text-muted)]">
+                    {t("creditTable.baseline", { amount: formatCurrency(locale, row.allocationBreakdown.baselineUsd) })}
+                  </div>
+                  <div className="text-xs text-[var(--text-muted)]">
+                    {t("creditTable.topUp", { amount: formatCurrency(locale, row.allocationBreakdown.equalizationTopUpUsd) })}
+                  </div>
+                </div>
+              </TableCell>
+              <TableCell>
+                <div className="flex flex-col gap-2">
+                  <Badge variant="outline" className="border-emerald-300/60 bg-emerald-50 text-emerald-950 dark:border-emerald-400/30 dark:bg-emerald-400/10 dark:text-emerald-100">
+                    {t(`creditStatus.${row.status}`)}
+                  </Badge>
+                  <Badge variant="outline" className={creditStatusTone(row.paymentStatus)}>
+                    {t(`paymentStatus.${row.paymentStatus}`)}
+                  </Badge>
+                </div>
+              </TableCell>
+            </TableRow>
+          ))
+        )}
+      </TableBody>
+    </Table>
+  )
 }
 
 function CycleTable({
@@ -157,7 +259,7 @@ export default async function WorkspaceEarningsPage({ params }: WorkspaceEarning
           <div className="rounded-3xl border border-[color:var(--surface-border)] bg-[var(--surface-panel)] p-5">
             <p className="text-sm font-medium text-[var(--text-muted)]">{t("stats.published")}</p>
             <p className="mt-2 text-3xl font-semibold text-[var(--text-strong)]">
-              {formatCurrency(locale, earnings.summary.totalPublishedAllocationUsd)}
+              {formatCurrency(locale, earnings.summary.totalCreditedUsd)}
             </p>
           </div>
           <div className="rounded-3xl border border-[color:var(--surface-border)] bg-[var(--surface-panel)] p-5">
@@ -167,8 +269,8 @@ export default async function WorkspaceEarningsPage({ params }: WorkspaceEarning
             </p>
           </div>
           <div className="rounded-3xl border border-[color:var(--surface-border)] bg-[var(--surface-panel)] p-5">
-            <p className="text-sm font-medium text-[var(--text-muted)]">{t("stats.paid")}</p>
-            <p className="mt-2 text-3xl font-semibold text-[var(--text-strong)]">{formatCurrency(locale, earnings.summary.paidPayoutUsd)}</p>
+            <p className="text-sm font-medium text-[var(--text-muted)]">{t("stats.notPaid")}</p>
+            <p className="mt-2 text-3xl font-semibold text-[var(--text-strong)]">{earnings.summary.creditCount}</p>
           </div>
           <div className="rounded-3xl border border-[color:var(--surface-border)] bg-[var(--surface-panel)] p-5">
             <p className="text-sm font-medium text-[var(--text-muted)]">{t("stats.routes")}</p>
@@ -183,6 +285,19 @@ export default async function WorkspaceEarningsPage({ params }: WorkspaceEarning
           <p>{t("warnings.body")}</p>
         </section>
       ) : null}
+
+      <Card className="bg-[var(--surface-panel-strong)] shadow-[var(--surface-shadow-panel)]">
+        <CardHeader>
+          <div className="flex items-center gap-3">
+            <BadgeDollarSign className="h-5 w-5 text-[var(--interactive-primary)]" />
+            <CardTitle>{t("credits.title")}</CardTitle>
+          </div>
+          <CardDescription>{t("credits.description")}</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <CreditTable rows={earnings.credits} empty={t("credits.empty")} locale={locale} t={t} />
+        </CardContent>
+      </Card>
 
       <section className="grid gap-5 lg:grid-cols-[0.9fr_1.1fr]">
         <Card className="bg-[var(--surface-panel-strong)] shadow-[var(--surface-shadow-panel)]">

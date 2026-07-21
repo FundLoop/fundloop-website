@@ -217,7 +217,7 @@ For operator and user-facing copy, keep these states distinct:
 
 The command does not execute payouts or reconcile outbound transfers. Session 28 added the adapter interface and deterministic batch-draft builder that later payout commands should use to create rail-specific batches from ready intents.
 
-Session 35 added `/[locale]/workspace/earnings` as the user-facing earnings and payout workspace. It reads monthly-cycle published results, payout intents, payout routes, batch status, and reconciliation cues so users can understand what they are owed and which stage each payout is in while payout execution remains operator-controlled.
+Session 35 added `/[locale]/workspace/earnings` as the user-facing earnings and payout workspace. Issue #83 makes monthly-cycle bookkeeping credits the primary user-visible source for credited-but-not-paid earnings, including selected asset fills and source/project breakdowns. Published results, payout intents, payout routes, batch status, and reconciliation cues remain visible as future-settlement context while payout execution remains operator-controlled.
 
 Session 36 added `monthly_cycle_reports` and the `monthly-cycle-reports` Supabase Storage bucket as the durable reporting publication model. Public, user, founder, and operator pages now read report metadata through `lib/reporting/monthly-cycle-reports.ts`.
 
