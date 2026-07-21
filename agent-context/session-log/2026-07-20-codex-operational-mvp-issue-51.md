@@ -177,3 +177,12 @@
 - summary: Implemented issue #79 by adding a runtime-safe monthly-cycle verification integrity checker and wiring it into both the operator verification read model and `monthly-cycle-verification-review` command. The verified path now blocks on missing lock/artifact data, invalid MVP contribution or attribution inputs, ineligible CUBID users, negative result rows, cap violations, allocated-plus-returned pool mismatches, asset-fill over-allocation, and source supply reconciliation gaps before advancing a cycle to `verification`.
 - validation: `pnpm test tests/monthly-cycle-verification.test.ts` passed with 9 tests. `pnpm typecheck` passed. `pnpm lint` passed. `deno cache --config supabase/functions/deno.json supabase/functions/monthly-cycle-verification-review/index.ts` passed. `pnpm check` passed with lint, 95 test files / 442 tests, typecheck, and Next build.
 - follow-ups: Run independent validation for #79. Issue #80 should harden approval as the bookkeeping-credit handoff without creating credits yet.
+
+## 2026-07-21T12:42:00.000Z - Issue 79 validator fix for asset preferences
+
+- agent: Codex
+- branch: codex/operational-mvp-issue-51
+- head: fddef44
+- summary: Addressed the independent validator finding on issue #79 by extending the MVP verification integrity checker to compare persisted asset fills against locked custom asset preferences. Verification now blocks rejected-asset fills, fills without an accepted locked preference, and preference-rank mismatches while still allowing users on default preferences to be governed by supply and reconciliation checks.
+- validation: `pnpm test tests/monthly-cycle-verification.test.ts` passed with 10 tests. `pnpm typecheck` passed. `pnpm lint` passed. `deno cache --config supabase/functions/deno.json supabase/functions/monthly-cycle-verification-review/index.ts` passed. `pnpm check` passed with lint, 95 test files / 443 tests, typecheck, and Next build.
+- follow-ups: Rerun independent validation for #79. If it passes, move #79 to In Review and continue issue #80.

@@ -114,6 +114,29 @@ function assetKey(row: { project_id: number; asset_type: string; asset_code: str
   return `${Number(row.project_id)}:${row.asset_type}:${row.asset_code.toUpperCase()}`
 }
 
+function preferenceMatchesFill(preference: ManifestRecord, fill: IntegrityAssetFill) {
+  if (String(preference.asset_type) !== fill.asset_type) return false
+  if (String(preference.asset_code).toUpperCase() !== fill.asset_code.toUpperCase()) return false
+  if (fill.asset_type === "project_token" && preference.project_id != null && Number(preference.project_id) !== fill.project_id) {
+    return false
+  }
+  return true
+}
+
+function assetPreferenceSummaries(mvpInputs: ManifestRecord) {
+  const summaries = new Map<string, { hasCustomPreferences: boolean; preferences: ManifestRecord[] }>()
+  for (const row of asArray(mvpInputs.asset_preferences)) {
+    const record = asRecord(row)
+    const userId = String(record.user_id ?? "")
+    if (!userId) continue
+    summaries.set(userId, {
+      hasCustomPreferences: record.has_custom_preferences === true,
+      preferences: asArray(record.preferences).map(asRecord),
+    })
+  }
+  return summaries
+}
+
 function userResultMap(results: IntegrityResult[]) {
   return new Map(results.map((row) => [row.zkas_user_id, numberValue(row.allocation_usd)]))
 }
@@ -142,6 +165,7 @@ export function buildMonthlyCycleVerificationIntegrityIssues(input: {
   const attributionDatasets = asArray(mvpInputs.attribution_datasets)
   const attributionRows = asArray(mvpInputs.attribution_rows)
   const eligibleUsers = asArray(mvpInputs.eligible_users)
+  const preferencesByUser = assetPreferenceSummaries(mvpInputs)
 
   if (!input.cycle.locked_manifest_hash || Object.keys(manifest).length === 0) {
     issues.push(
@@ -280,6 +304,46 @@ export function buildMonthlyCycleVerificationIntegrityIssues(input: {
         "Selected asset fills must be non-negative and reference a positive accepted preference rank.",
       ),
     )
+  }
+  for (const fill of input.assetFills) {
+    const summary = preferencesByUser.get(fill.user_id)
+    if (!summary?.hasCustomPreferences) continue
+    const matchingPreferences = summary.preferences.filter((preference) => preferenceMatchesFill(preference, fill))
+    const acceptedMatches = matchingPreferences.filter((preference) => preference.accepted === true)
+    const rejectedMatches = matchingPreferences.filter((preference) => preference.accepted === false)
+    if (acceptedMatches.length === 0 && rejectedMatches.length > 0) {
+      issues.push(
+        issue(
+          "asset_fill_rejected_preference",
+          "blocker",
+          "Asset fill uses rejected preference",
+          "Selected asset fills must not use an asset the user explicitly rejected in the locked preference summary.",
+        ),
+      )
+      continue
+    }
+    if (acceptedMatches.length === 0) {
+      issues.push(
+        issue(
+          "asset_fill_missing_accepted_preference",
+          "blocker",
+          "Asset fill missing accepted preference",
+          "Selected asset fills must match an accepted asset preference captured in the locked manifest.",
+        ),
+      )
+      continue
+    }
+    const expectedRank = Math.min(...acceptedMatches.map((preference) => numberValue(preference.rank)).filter((rank) => rank > 0))
+    if (expectedRank > 0 && numberValue(fill.preference_rank) !== expectedRank) {
+      issues.push(
+        issue(
+          "asset_fill_preference_rank_mismatch",
+          "blocker",
+          "Asset fill preference rank mismatch",
+          "Selected asset fills must preserve the accepted preference rank captured in the locked manifest.",
+        ),
+      )
+    }
   }
   if (input.returnedPools.some((row) => numberValue(row.usd_value) < 0)) {
     issues.push(

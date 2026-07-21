@@ -61,7 +61,18 @@ const cycle = {
         { user_id: "user-1", cubid_identity_status: "linked", is_eligible: true },
         { user_id: "user-2", cubid_identity_status: "verified", is_eligible: true },
       ],
-      asset_preferences: [],
+      asset_preferences: [
+        {
+          user_id: "user-1",
+          has_custom_preferences: true,
+          preferences: [{ rank: 1, asset_type: "project_token", asset_code: "CIVIC", project_id: 7, accepted: true }],
+        },
+        {
+          user_id: "user-2",
+          has_custom_preferences: true,
+          preferences: [{ rank: 1, asset_type: "stablecoin", asset_code: "USDC", project_id: null, accepted: true }],
+        },
+      ],
     },
   },
   locked_manifest_hash: "locked-hash",
@@ -384,6 +395,94 @@ describe("monthly-cycle verification review", () => {
 
     expect(review.issues.map((issue) => issue.code)).toEqual(
       expect.arrayContaining(["cap_multiple_exceeded", "pool_reconciliation_mismatch", "invalid_asset_fill"]),
+    )
+    expect(review.canMarkVerified).toBe(false)
+  })
+
+  it("blocks asset fills that violate locked custom preferences", () => {
+    const review = buildMonthlyCycleVerificationReview({
+      cycle: {
+        ...cycle,
+        locked_manifest: {
+          ...cycle.locked_manifest,
+          mvp_inputs: {
+            ...cycle.locked_manifest.mvp_inputs,
+            asset_preferences: [
+              {
+                user_id: "user-1",
+                has_custom_preferences: true,
+                preferences: [{ rank: 1, asset_type: "project_token", asset_code: "CIVIC", project_id: 7, accepted: false }],
+              },
+              {
+                user_id: "user-2",
+                has_custom_preferences: true,
+                preferences: [{ rank: 2, asset_type: "stablecoin", asset_code: "USDC", project_id: null, accepted: true }],
+              },
+            ],
+          },
+        },
+      },
+      runs: [completedRun],
+      results: [
+        { zkas_user_id: "user-1", allocation_usd: 25, aggregate_score: 30, eligibility: true },
+        { zkas_user_id: "user-2", allocation_usd: 50, aggregate_score: 50, eligibility: true },
+      ],
+      projectResults: [
+        {
+          project_id: 7,
+          user_id: "user-1",
+          scoped_cubid_id: "scope-user-1",
+          attribution_points: 30,
+          total_project_points: 80,
+          project_pool_usd: 80,
+          raw_usd: 25,
+        },
+        {
+          project_id: 7,
+          user_id: "user-2",
+          scoped_cubid_id: "scope-user-2",
+          attribution_points: 50,
+          total_project_points: 80,
+          project_pool_usd: 80,
+          raw_usd: 50,
+        },
+      ],
+      assetFills: [
+        {
+          user_id: "user-1",
+          project_id: 7,
+          asset_type: "project_token",
+          asset_code: "CIVIC",
+          source_amount: 25,
+          usd_value: 25,
+          preference_rank: 1,
+          partial: false,
+        },
+        {
+          user_id: "user-2",
+          project_id: 7,
+          asset_type: "stablecoin",
+          asset_code: "USDC",
+          source_amount: 50,
+          usd_value: 50,
+          preference_rank: 1,
+          partial: false,
+        },
+      ],
+      returnedPools: [
+        {
+          project_id: 7,
+          asset_type: "project_token",
+          asset_code: "CIVIC",
+          source_amount: 5,
+          usd_value: 5,
+          reason_code: "preference_unfulfillable",
+        },
+      ],
+    })
+
+    expect(review.issues.map((issue) => issue.code)).toEqual(
+      expect.arrayContaining(["asset_fill_rejected_preference", "asset_fill_preference_rank_mismatch"]),
     )
     expect(review.canMarkVerified).toBe(false)
   })
