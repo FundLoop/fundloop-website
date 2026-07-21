@@ -10,7 +10,71 @@ const cycle = {
   period_end: "2026-04-30",
   status: "locked",
   locked_at: "2026-05-01T00:00:00.000Z",
-  locked_manifest: { version: "monthly-cycle-lock.v1" },
+  locked_manifest: {
+    version: "monthly-cycle-lock.v1",
+    mvp_inputs: {
+      contribution_submissions: [
+        {
+          id: 30,
+          project_id: 7,
+          source_currency_code: "USD",
+          source_amount: 1000,
+          usd_equivalent_amount: 1000,
+          commitment_percentage: 5,
+          calculated_contribution_amount: 50,
+          status: "submitted",
+        },
+      ],
+      attribution_rows: [
+        {
+          id: 40,
+          dataset_id: 20,
+          project_id: 7,
+          row_index: 1,
+          scoped_cubid_id: "scope-user-1",
+          user_id: "00000000-0000-4000-8000-000000000001",
+          attribution_points: 3,
+          resolution_status: "resolved",
+        },
+        {
+          id: 41,
+          dataset_id: 20,
+          project_id: 7,
+          row_index: 2,
+          scoped_cubid_id: "scope-user-2",
+          user_id: "00000000-0000-4000-8000-000000000002",
+          attribution_points: 1,
+          resolution_status: "resolved",
+        },
+      ],
+      eligible_users: [
+        {
+          user_id: "00000000-0000-4000-8000-000000000001",
+          cubid_id: "cubid-1",
+          cubid_identity_status: "verified",
+          is_eligible: true,
+        },
+        {
+          user_id: "00000000-0000-4000-8000-000000000002",
+          cubid_id: "cubid-2",
+          cubid_identity_status: "linked",
+          is_eligible: true,
+        },
+      ],
+      asset_preferences: [
+        {
+          user_id: "00000000-0000-4000-8000-000000000001",
+          has_custom_preferences: true,
+          preferences: [{ rank: 1, asset_type: "fiat", asset_code: "USD", project_id: null, accepted: true }],
+        },
+        {
+          user_id: "00000000-0000-4000-8000-000000000002",
+          has_custom_preferences: true,
+          preferences: [{ rank: 1, asset_type: "fiat", asset_code: "USD", project_id: null, accepted: true }],
+        },
+      ],
+    },
+  },
   locked_manifest_hash: "cycle-lock-hash",
   calculation_started_at: null,
 }
@@ -192,6 +256,10 @@ function makeSupabase(overrides: Partial<Record<string, Array<Record<string, unk
     ],
     zkas_run_datasets: [],
     zkas_run_payments: [],
+    zkas_run_results: [],
+    monthly_cycle_allocation_project_results: [],
+    monthly_cycle_allocation_asset_fills: [],
+    monthly_cycle_allocation_returned_pools: [],
     ...overrides,
   })
 }
@@ -215,25 +283,43 @@ describe("executeMonthlyCycleCalculationPackageCommand", () => {
       data: {
         cycleKey: "2026-04",
         status: "calculation",
-        runStatus: "locked",
-        counts: { datasets: 1, payments: 1, identityArtifacts: 1 },
+        runStatus: "completed",
+        counts: { datasets: 1, payments: 1, identityArtifacts: 1, resultRows: 2, projectResults: 2, assetFills: 2, returnedPools: 0 },
       },
     })
     expect(supabase.inserts.zkas_runs[0]).toMatchObject({
       month: "2026-04",
       monthly_cycle_id: 1,
-      status: "locked",
+      status: "completed",
     })
     expect(supabase.inserts.zkas_run_datasets[0]).toMatchObject({ dataset_id: 20, run_id: 101 })
     expect(supabase.inserts.zkas_run_payments[0]).toMatchObject({ payment_id: 10, monthly_cycle_id: 1, run_id: 101 })
+    expect(supabase.inserts.zkas_run_results).toHaveLength(2)
+    expect(supabase.inserts.zkas_run_results[0]).toMatchObject({
+      run_id: 101,
+      monthly_cycle_id: 1,
+      zkas_user_id: "00000000-0000-4000-8000-000000000001",
+      eligibility: true,
+      allocation_usd: 37.5,
+    })
+    expect(supabase.inserts.monthly_cycle_allocation_project_results).toHaveLength(2)
+    expect(supabase.inserts.monthly_cycle_allocation_asset_fills).toHaveLength(2)
     expect(supabase.updates.monthly_cycles[0]).toMatchObject({
       status: "calculation",
       calculation_started_at: "2026-05-01T01:00:00.000Z",
     })
+    expect(supabase.updates.zkas_runs[0]).toMatchObject({
+      status: "completed",
+      result_artifact_path: "2026-04/run-101/run-result.v1.json",
+      total_allocated_usd: 50,
+      user_count: 2,
+    })
     expect(Object.keys(supabase.uploads)).toEqual([
       "2026-04/cycle-1/calculation-package.v1.json",
       "2026-04/run-101/run-manifest.v1.json",
+      "2026-04/run-101/run-result.v1.json",
     ])
+    expect(supabase.uploads["2026-04/run-101/run-result.v1.json"]).toContain("mvp_capped_equalization_v1")
     expect(supabase.inserts.monthly_cycle_events.map((event) => event.event_type)).toEqual([
       "calculation_package_attempt",
       "calculation_package_success",
@@ -252,6 +338,8 @@ describe("executeMonthlyCycleCalculationPackageCommand", () => {
             locked_at: "2026-05-01T01:00:00.000Z",
             locked_manifest_hash: "run-manifest-hash",
             locked_manifest: { package_artifact_hash: "package-artifact-hash" },
+            result_artifact_path: "2026-04/run-88/run-result.v1.json",
+            result_artifact_hash: "result-artifact-hash",
           },
         ],
       }) as never,
@@ -263,6 +351,7 @@ describe("executeMonthlyCycleCalculationPackageCommand", () => {
       data: {
         runId: 88,
         packageArtifactHash: "package-artifact-hash",
+        resultArtifactHash: "result-artifact-hash",
         runManifestHash: "run-manifest-hash",
       },
     })

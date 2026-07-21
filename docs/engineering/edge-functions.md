@@ -114,7 +114,7 @@ For monthly-cycle operations:
 - the command authenticates an internal admin, reattaches same-month operational rows, blocks unresolved onchain submissions by default, and stores a deterministic lock manifest plus hash on `monthly_cycles`
 - the admin cycles UI calls the browser adapter directly and only permits unresolved-onchain override after a blocked attempt plus an explicit operator reason
 - `monthly-cycle-calculation-package` is the next command in the monthly cadence domain
-- the command authenticates an internal admin, reads cycle-linked approved zkAS inputs, writes deterministic package/run manifest artifacts to Supabase Storage, creates a locked zkAS run, and advances the cycle into `calculation`
+- the command authenticates an internal admin, reads cycle-linked approved zkAS inputs, runs the pure MVP capped-equalization allocator from `locked_manifest.mvp_inputs`, writes deterministic package/run/result artifacts to Supabase Storage, creates a completed but unverified zkAS run, persists user result rows plus MVP allocation detail rows, and advances the cycle into `calculation`
 - `monthly-cycle-verification-review` records cycle-level result review decisions after calculation and either moves the cycle to `verification` or records that cleanup is needed
 - `monthly-cycle-approval` requires verified completed calculation output and advances the cycle to `approval`, creating the checkpoint future payout/distribution work must consume
 - `monthly-cycle-payout-intents-create` requires an approved cycle, converts published user results into idempotent payout intents, and advances the cycle into `distribution`

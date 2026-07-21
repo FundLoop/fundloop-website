@@ -150,3 +150,12 @@
 - summary: Implemented issue #76 by adding a runtime-agnostic pure MVP distribution calculator for locked monthly-cycle inputs. The calculator derives confirmed contribution pools, gates attribution on scoped CUBID and linked/verified eligibility, computes raw project entitlements, baselines, capped global equalization, deterministic USD rounding, preference-based asset fills, returned future-pool rows, warnings, invariant checks, and a stable result hash.
 - validation: `pnpm test tests/mvp-distribution-calculator.test.ts` passed with 1 file and 6 tests. `pnpm typecheck` passed. `pnpm lint` passed. `pnpm dlx node@22.22.1 /opt/homebrew/bin/pnpm check` passed with 95 files and 440 tests. No browser smoke was required because #76 is a pure calculation module with no UI or persistence behavior.
 - follow-ups: Run independent validation for #76. Issue #77 should wire this calculator into calculation packaging, artifact storage, and persisted monthly-cycle result rows without recalculating the allocation policy differently.
+
+## 2026-07-21T07:26:38.000Z - Issue 77 MVP calculation artifacts and persisted results
+
+- agent: Codex
+- branch: codex/operational-mvp-issue-51
+- head: a47906e
+- summary: Implemented issue #77 by wiring the pure MVP allocator into `monthly-cycle-calculation-package`. The command now consumes `locked_manifest.mvp_inputs`, uploads package, run-manifest, and run-result artifacts, creates a completed but unverified zkAS run, persists per-user `zkas_run_results`, and stores MVP project/user raw entitlements, selected asset fills, and returned future-pool rows in new cycle-linked detail tables.
+- validation: `pnpm test tests/monthly-cycle-calculation-package-command.test.ts tests/monthly-cycle-calculation-package-contract.test.ts tests/mvp-distribution-calculator.test.ts` passed with 3 files and 13 tests. `pnpm typecheck` passed. `pnpm lint` passed. `deno cache --config supabase/functions/deno.json supabase/functions/monthly-cycle-calculation-package/index.ts` passed. `supabase migration up` applied `20260721072000_mvp_allocation_results.sql` locally. `pnpm dlx node@22.22.1 /opt/homebrew/bin/pnpm check` passed with 95 files and 440 tests.
+- follow-ups: Run independent validation for #77. Issue #78 should expose these calculated outputs in the operator verification workspace and clearly label them as calculated, not verified, credited, or paid.

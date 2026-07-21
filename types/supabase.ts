@@ -300,6 +300,218 @@ export type Database = {
           },
         ]
       }
+      monthly_cycle_allocation_asset_fills: {
+        Row: {
+          asset_code: string
+          asset_type: string
+          created_at: string
+          id: number
+          monthly_cycle_id: number
+          partial: boolean
+          pool_id: string
+          preference_rank: number
+          project_id: number
+          run_id: number
+          source_amount: number
+          usd_value: number
+          user_id: string
+        }
+        Insert: {
+          asset_code: string
+          asset_type: string
+          created_at?: string
+          id?: number
+          monthly_cycle_id: number
+          partial?: boolean
+          pool_id: string
+          preference_rank: number
+          project_id: number
+          run_id: number
+          source_amount: number
+          usd_value: number
+          user_id: string
+        }
+        Update: {
+          asset_code?: string
+          asset_type?: string
+          created_at?: string
+          id?: number
+          monthly_cycle_id?: number
+          partial?: boolean
+          pool_id?: string
+          preference_rank?: number
+          project_id?: number
+          run_id?: number
+          source_amount?: number
+          usd_value?: number
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "monthly_cycle_allocation_asset_fills_monthly_cycle_id_fkey"
+            columns: ["monthly_cycle_id"]
+            isOneToOne: false
+            referencedRelation: "monthly_cycles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "monthly_cycle_allocation_asset_fills_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "monthly_cycle_allocation_asset_fills_run_id_fkey"
+            columns: ["run_id"]
+            isOneToOne: false
+            referencedRelation: "zkas_runs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "monthly_cycle_allocation_asset_fills_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["user_id"]
+          },
+        ]
+      }
+      monthly_cycle_allocation_project_results: {
+        Row: {
+          attribution_points: number
+          created_at: string
+          id: number
+          monthly_cycle_id: number
+          project_id: number
+          project_pool_usd: number
+          raw_usd: number
+          run_id: number
+          scoped_cubid_id: string
+          total_project_points: number
+          user_id: string
+        }
+        Insert: {
+          attribution_points: number
+          created_at?: string
+          id?: number
+          monthly_cycle_id: number
+          project_id: number
+          project_pool_usd: number
+          raw_usd: number
+          run_id: number
+          scoped_cubid_id: string
+          total_project_points: number
+          user_id: string
+        }
+        Update: {
+          attribution_points?: number
+          created_at?: string
+          id?: number
+          monthly_cycle_id?: number
+          project_id?: number
+          project_pool_usd?: number
+          raw_usd?: number
+          run_id?: number
+          scoped_cubid_id?: string
+          total_project_points?: number
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "monthly_cycle_allocation_project_results_monthly_cycle_id_fkey"
+            columns: ["monthly_cycle_id"]
+            isOneToOne: false
+            referencedRelation: "monthly_cycles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "monthly_cycle_allocation_project_results_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "monthly_cycle_allocation_project_results_run_id_fkey"
+            columns: ["run_id"]
+            isOneToOne: false
+            referencedRelation: "zkas_runs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "monthly_cycle_allocation_project_results_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["user_id"]
+          },
+        ]
+      }
+      monthly_cycle_allocation_returned_pools: {
+        Row: {
+          asset_code: string
+          asset_type: string
+          created_at: string
+          id: number
+          monthly_cycle_id: number
+          pool_id: string
+          project_id: number
+          reason_code: string
+          run_id: number
+          source_amount: number
+          usd_value: number
+        }
+        Insert: {
+          asset_code: string
+          asset_type: string
+          created_at?: string
+          id?: number
+          monthly_cycle_id: number
+          pool_id: string
+          project_id: number
+          reason_code: string
+          run_id: number
+          source_amount: number
+          usd_value: number
+        }
+        Update: {
+          asset_code?: string
+          asset_type?: string
+          created_at?: string
+          id?: number
+          monthly_cycle_id?: number
+          pool_id?: string
+          project_id?: number
+          reason_code?: string
+          run_id?: number
+          source_amount?: number
+          usd_value?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "monthly_cycle_allocation_returned_pools_monthly_cycle_id_fkey"
+            columns: ["monthly_cycle_id"]
+            isOneToOne: false
+            referencedRelation: "monthly_cycles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "monthly_cycle_allocation_returned_pools_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "monthly_cycle_allocation_returned_pools_run_id_fkey"
+            columns: ["run_id"]
+            isOneToOne: false
+            referencedRelation: "zkas_runs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       monthly_cycle_events: {
         Row: {
           actor_role: string

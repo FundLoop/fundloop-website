@@ -60,7 +60,7 @@ Locked cycles link to `/[locale]/admin/cycles/[cycleKey]/prep`, the Session 23 p
 
 Session 24 added `/[locale]/admin/cycles/[cycleKey]/zkas` as the cycle-anchored zkAS stage view. This route reads datasets, identity artifacts, runs, run results, published user results, and project summaries through `monthly_cycle_id` so operators can inspect zkAS as part of the monthly cadence instead of as a parallel control plane.
 
-Session 25 added the first deterministic calculation-package command, `monthly-cycle-calculation-package`. It packages a locked/prep cycle into a cycle-level calculation manifest, uploads the package and run manifest artifacts to Supabase Storage, creates a locked zkAS run, links run datasets/payments, marks approved datasets as included, and advances the cycle into `calculation`.
+Session 25 added the first deterministic calculation-package command, `monthly-cycle-calculation-package`. Issue #77 expanded that command so it now packages a locked/prep cycle into a cycle-level calculation manifest, runs the pure MVP capped-equalization allocator from `locked_manifest.mvp_inputs`, uploads package, run-manifest, and run-result artifacts to Supabase Storage, creates a completed but unverified zkAS run, links run datasets/payments, persists user result rows plus MVP project-result, asset-fill, and returned-pool detail rows, marks approved datasets as included, and advances the cycle into `calculation`.
 
 Session 26 added `/[locale]/admin/cycles/[cycleKey]/verification` as the cleanup, verification, and approval workspace for calculated results. It also added the `monthly-cycle-verification-review` and `monthly-cycle-approval` Edge Function commands so operators can record cleanup-needed decisions, mark a cycle verified, and approve verified results for distribution with audit events and required notes.
 
@@ -113,6 +113,8 @@ Goal #57 should start from `locked_manifest.mvp_inputs`, not live mutable tables
 - `counts` and `checksums`: deterministic section counts and SHA-256 hashes used by calculation, verification, and later audit tooling to prove that the calculation package consumed the locked input set.
 
 The deterministic test fixture in `tests/monthly-cycle-lock-command.test.ts` covers contribution, attribution, CUBID snapshot, and asset-preference inputs and asserts stable lock hashes plus destination privacy. Future calculation fixtures should reuse that shape rather than inventing a separate input contract.
+
+`monthly-cycle-calculation-package` now consumes this handoff directly. It stores the pure allocator output as `run-result.v1.json`, writes per-user allocations to `zkas_run_results`, writes project/user raw entitlement rows to `monthly_cycle_allocation_project_results`, writes selected asset fills to `monthly_cycle_allocation_asset_fills`, and writes unallocated or capped returned pool rows to `monthly_cycle_allocation_returned_pools`. These rows are calculation outputs only; verification, approval, bookkeeping credits, and actual payouts remain separate stages.
 
 ## Prep Review
 
