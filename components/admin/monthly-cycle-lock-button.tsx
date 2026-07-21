@@ -20,23 +20,39 @@ type MonthlyCycleLockButtonProps = {
   cycleKey: string
 }
 
+type OverrideMode = "unresolved_onchain" | "required_inputs"
+
 export function MonthlyCycleLockButton({ cycleKey }: MonthlyCycleLockButtonProps) {
   const router = useRouter()
   const [pending, startTransition] = useTransition()
   const [overrideOpen, setOverrideOpen] = useState(false)
+  const [overrideMode, setOverrideMode] = useState<OverrideMode>("unresolved_onchain")
   const [overrideReason, setOverrideReason] = useState("")
   const trimmedReason = overrideReason.trim()
 
-  function runLock(options?: { overrideUnresolvedOnchain?: boolean; overrideReason?: string }) {
+  function runLock(options?: { overrideUnresolvedOnchain?: boolean; overrideRequiredInputs?: boolean; overrideReason?: string }) {
     startTransition(async () => {
       const result = await invokeMonthlyCycleLockBrowser({
         cycleKey,
         overrideUnresolvedOnchain: options?.overrideUnresolvedOnchain,
+        overrideRequiredInputs: options?.overrideRequiredInputs,
         overrideReason: options?.overrideReason,
       })
 
       if (!result.ok) {
         if (result.error.code === "unresolved_onchain_submissions") {
+          setOverrideMode("unresolved_onchain")
+          setOverrideOpen(true)
+          toast({
+            title: "Cycle lock blocked",
+            description: result.error.message,
+            variant: "destructive",
+          })
+          return
+        }
+
+        if (result.error.code === "missing_mvp_required_inputs") {
+          setOverrideMode("required_inputs")
           setOverrideOpen(true)
           toast({
             title: "Cycle lock blocked",
@@ -76,12 +92,14 @@ export function MonthlyCycleLockButton({ cycleKey }: MonthlyCycleLockButtonProps
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2 text-red-700 dark:text-red-300">
               <AlertTriangle className="h-5 w-5" />
-              Override unresolved onchain submissions?
+              {overrideMode === "required_inputs"
+                ? "Override missing MVP monthly inputs?"
+                : "Override unresolved onchain submissions?"}
             </DialogTitle>
             <DialogDescription>
-              This locks the economic month even though one or more onchain submissions are not fully reconciled. The
-              override reason is written into the immutable lock manifest and audit log. Use this only when an operator
-              has reviewed the risk and accepts that later reconciliation may need an explicit correction path.
+              {overrideMode === "required_inputs"
+                ? "This locks the economic month even though required contribution, attribution, or identity inputs are missing or incomplete. The override reason is written into the immutable lock manifest and audit log. Use this only when an operator has reviewed the gaps and accepts that calculation may need explicit cleanup."
+                : "This locks the economic month even though one or more onchain submissions are not fully reconciled. The override reason is written into the immutable lock manifest and audit log. Use this only when an operator has reviewed the risk and accepts that later reconciliation may need an explicit correction path."}
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-2">
@@ -92,7 +110,11 @@ export function MonthlyCycleLockButton({ cycleKey }: MonthlyCycleLockButtonProps
               id={`override-reason-${cycleKey}`}
               value={overrideReason}
               onChange={(event) => setOverrideReason(event.target.value)}
-              placeholder="Explain why this month can be locked before every onchain submission is resolved."
+              placeholder={
+                overrideMode === "required_inputs"
+                  ? "Explain why this month can be locked before every MVP input is complete."
+                  : "Explain why this month can be locked before every onchain submission is resolved."
+              }
             />
           </div>
           <DialogFooter>
@@ -102,7 +124,13 @@ export function MonthlyCycleLockButton({ cycleKey }: MonthlyCycleLockButtonProps
             <Button
               variant="destructive"
               disabled={pending || trimmedReason.length === 0}
-              onClick={() => runLock({ overrideUnresolvedOnchain: true, overrideReason: trimmedReason })}
+              onClick={() =>
+                runLock({
+                  overrideUnresolvedOnchain: overrideMode === "unresolved_onchain",
+                  overrideRequiredInputs: overrideMode === "required_inputs",
+                  overrideReason: trimmedReason,
+                })
+              }
             >
               {pending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <LockKeyhole className="mr-2 h-4 w-4" />}
               Lock with override

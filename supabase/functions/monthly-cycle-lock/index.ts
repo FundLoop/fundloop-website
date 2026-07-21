@@ -47,6 +47,7 @@ async function handleRequest(request) {
     actorUserId: auth.user.id,
     actorRole,
     overrideUnresolvedOnchain: validation.data.overrideUnresolvedOnchain,
+    overrideRequiredInputs: validation.data.overrideRequiredInputs,
     overrideReason: validation.data.overrideReason,
   })
 

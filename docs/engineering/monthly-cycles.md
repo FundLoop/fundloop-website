@@ -54,7 +54,7 @@ It then attaches nullable `monthly_cycle_id` references to operational rows. The
 
 Issue #66 added contribution-submission readiness to the operator overview. For each recent cycle, operators can now see how many committed projects have submitted monthly contribution data, the submitted USD-equivalent/calculated contribution totals, and which committed projects are still missing a submission. This visibility reads from `project_monthly_contribution_submissions` and active projects with a positive contribution commitment.
 
-Open cycles expose a lock action that calls the `monthly-cycle-lock` Edge Function. The first attempt blocks if same-cycle onchain submissions are still `submitted`, `confirming`, `awaiting_confirmation`, or `pending`. If that happens, the UI opens a strongly worded override modal. A retry can only proceed when the operator supplies an explicit reason, and the reason is written into both the manifest and audit event stream.
+Open cycles expose a lock action that calls the `monthly-cycle-lock` Edge Function. The first attempt blocks if same-cycle onchain submissions are still `submitted`, `confirming`, `awaiting_confirmation`, or `pending`, or if required MVP inputs are missing. Required MVP input blockers currently cover committed projects without a submitted monthly contribution, committed projects without an approved MVP attribution dataset, unresolved approved attribution rows, attribution users without linked/verified CUBID state, and attribution users without a CUBID snapshot. If a block is overrideable, the UI opens a strongly worded override modal. A retry can only proceed when the operator supplies an explicit reason, and the reason is written into both the manifest and audit event stream.
 
 Locked cycles link to `/[locale]/admin/cycles/[cycleKey]/prep`, the Session 23 prep and exception review workspace. This route is intentionally read-only: it checks whether the locked manifest is safe to hand into calculation packaging, but it does not transition status or produce calculation artifacts yet.
 
@@ -98,6 +98,8 @@ The manifest includes:
 - deterministic MVP section checksums for contribution submissions, attribution datasets, attribution rows, eligible users, identity snapshots, and asset-preference summaries
 
 The command reattaches newly-created month-bearing rows to the cycle before reading. It updates the cycle from `open` to `locked` with an optimistic `status = open` guard so concurrent or repeated locks fail safely instead of overwriting an already-transitioned cycle.
+
+Missing asset preferences are intentionally not lock blockers. The lock manifest records destination-free asset preference summaries and prep raises informational warnings for users who are on defaults or reject all project tokens, but MVP USD bookkeeping credits can still be calculated from approved contribution and attribution inputs.
 
 ## Prep Review
 

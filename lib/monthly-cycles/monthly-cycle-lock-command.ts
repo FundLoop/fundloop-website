@@ -8,6 +8,7 @@ export type MonthlyCycleLockInput = {
   actorUserId: string | null
   actorRole: "internal_admin" | "system"
   overrideUnresolvedOnchain?: boolean
+  overrideRequiredInputs?: boolean
   overrideReason?: string
 }
 
@@ -42,6 +43,12 @@ type CommandDeps = {
 }
 
 type CycleRow = Database["public"]["Tables"]["monthly_cycles"]["Row"]
+type RequiredInputBlocker =
+  | { code: "missing_contribution_submissions"; count: number; project_ids: number[] }
+  | { code: "missing_approved_attribution_datasets"; count: number; project_ids: number[] }
+  | { code: "unresolved_attribution_rows"; count: number; row_ids: number[] }
+  | { code: "ineligible_attribution_users"; count: number; user_ids: string[] }
+  | { code: "missing_identity_snapshots"; count: number; user_ids: string[] }
 
 function success<T>(data: T): MonthlyCycleLockCommandResult<T> {
   return { ok: true, data }
@@ -200,8 +207,8 @@ export async function executeMonthlyCycleLockCommand(
   deps: CommandDeps = {},
 ): Promise<MonthlyCycleLockCommandResult<MonthlyCycleLockOutput>> {
   const overrideReason = input.overrideReason?.trim() ?? ""
-  if (input.overrideUnresolvedOnchain && !overrideReason) {
-    return failure("override_reason_required", "Provide an override reason before locking with unresolved onchain submissions.")
+  if ((input.overrideUnresolvedOnchain || input.overrideRequiredInputs) && !overrideReason) {
+    return failure("override_reason_required", "Provide an override reason before locking with unresolved or missing monthly-cycle inputs.")
   }
 
   const { data: cycle, error: cycleError } = await supabase
@@ -230,11 +237,12 @@ export async function executeMonthlyCycleLockCommand(
     cycleId: cycle.id,
     eventType: "lock_attempt",
     outcome: "attempt",
-    message: "Monthly cycle lock attempt started.",
-    metadata: {
-      overrideUnresolvedOnchain: Boolean(input.overrideUnresolvedOnchain),
-    },
-  })
+      message: "Monthly cycle lock attempt started.",
+      metadata: {
+        overrideUnresolvedOnchain: Boolean(input.overrideUnresolvedOnchain),
+        overrideRequiredInputs: Boolean(input.overrideRequiredInputs),
+      },
+    })
   if (attemptEventError) return failure("query_failed", attemptEventError.message)
 
   if (cycle.status !== "open") {
@@ -340,6 +348,15 @@ export async function executeMonthlyCycleLockCommand(
     )
       .filter((submission) => String(submission.status ?? "") === "submitted")
       .sort((a, b) => Number(a.project_id) - Number(b.project_id) || Number(a.id) - Number(b.id))
+    const committedProjectsQuery = await supabase
+      .from("projects")
+      .select("id, slug, name, status, payment_percentage")
+      .is("deleted_at", null)
+      .gt("payment_percentage", 0)
+    if (committedProjectsQuery.error) return failure("query_failed", committedProjectsQuery.error.message)
+    const committedProjects = asArray(committedProjectsQuery.data as Array<Record<string, unknown>> | null)
+      .filter((project) => String(project.status ?? "") !== "deleted")
+      .sort((a, b) => Number(a.id) - Number(b.id))
 
     const attributionDatasets = (
       await fetchRows<Record<string, unknown>>(
@@ -484,6 +501,10 @@ export async function executeMonthlyCycleLockCommand(
         }
       })
       .sort((a, b) => compareStableStrings(a.user_id, b.user_id))
+    const submittedContributionProjectIds = new Set(contributionSubmissions.map((submission) => Number(submission.project_id)))
+    const approvedAttributionProjectIds = new Set(attributionDatasets.map((dataset) => Number(dataset.project_id)))
+    const usersById = new Map(users.map((user) => [String(user.user_id), user]))
+    const identitySnapshotsByUserId = new Map(identitySnapshots.map((snapshot) => [String(snapshot.user_id), snapshot]))
     const contributionSubmissionInputs = contributionSubmissions.map((submission) => ({
       id: submission.id,
       project_id: submission.project_id,
@@ -533,6 +554,92 @@ export async function executeMonthlyCycleLockCommand(
       resolution_message: row.resolution_message,
       created_at: row.created_at,
     }))
+    const missingContributionProjects = committedProjects
+      .filter((project) => !submittedContributionProjectIds.has(Number(project.id)))
+      .map((project) => ({ id: Number(project.id), slug: normalizeString(project.slug), name: normalizeString(project.name) ?? `Project ${project.id}` }))
+    const missingAttributionProjects = committedProjects
+      .filter((project) => !approvedAttributionProjectIds.has(Number(project.id)))
+      .map((project) => ({ id: Number(project.id), slug: normalizeString(project.slug), name: normalizeString(project.name) ?? `Project ${project.id}` }))
+    const unresolvedAttributionRows = attributionRowInputs.filter((row) => row.resolution_status !== "resolved" || !row.user_id)
+    const ineligibleAttributionUsers = sortedUnique(
+      attributionRowInputs
+        .map((row) => (typeof row.user_id === "string" ? row.user_id : null))
+        .filter((userId): userId is string => {
+          if (!userId) return false
+          const user = usersById.get(userId)
+          const status = normalizeString(user?.cubid_identity_status)
+          return status !== "linked" && status !== "verified"
+        }),
+    )
+    const missingIdentitySnapshotUsers = sortedUnique(
+      attributionRowInputs
+        .map((row) => (typeof row.user_id === "string" ? row.user_id : null))
+        .filter((userId): userId is string => Boolean(userId && !identitySnapshotsByUserId.has(userId))),
+    )
+    const requiredInputBlockers: RequiredInputBlocker[] = [
+      ...(missingContributionProjects.length > 0
+        ? [
+            {
+              code: "missing_contribution_submissions" as const,
+              count: missingContributionProjects.length,
+              project_ids: missingContributionProjects.map((project) => project.id),
+            },
+          ]
+        : []),
+      ...(missingAttributionProjects.length > 0
+        ? [
+            {
+              code: "missing_approved_attribution_datasets" as const,
+              count: missingAttributionProjects.length,
+              project_ids: missingAttributionProjects.map((project) => project.id),
+            },
+          ]
+        : []),
+      ...(unresolvedAttributionRows.length > 0
+        ? [
+            {
+              code: "unresolved_attribution_rows" as const,
+              count: unresolvedAttributionRows.length,
+              row_ids: unresolvedAttributionRows.map((row) => Number(row.id)).filter((id) => Number.isInteger(id)),
+            },
+          ]
+        : []),
+      ...(ineligibleAttributionUsers.length > 0
+        ? [
+            {
+              code: "ineligible_attribution_users" as const,
+              count: ineligibleAttributionUsers.length,
+              user_ids: ineligibleAttributionUsers,
+            },
+          ]
+        : []),
+      ...(missingIdentitySnapshotUsers.length > 0
+        ? [
+            {
+              code: "missing_identity_snapshots" as const,
+              count: missingIdentitySnapshotUsers.length,
+              user_ids: missingIdentitySnapshotUsers,
+            },
+          ]
+        : []),
+    ]
+    if (requiredInputBlockers.length > 0 && !input.overrideRequiredInputs) {
+      const eventError = await insertCycleEvent(supabase, input, {
+        cycleId: cycle.id,
+        eventType: "lock_failure",
+        outcome: "failure",
+        severity: "warning",
+        message: "Required MVP monthly-cycle inputs block the lock.",
+        metadata: {
+          blockers: requiredInputBlockers,
+        },
+      })
+      if (eventError) return failure("query_failed", eventError.message)
+      return failure(
+        "missing_mvp_required_inputs",
+        "Required MVP inputs are missing or incomplete. Review contribution submissions, approved attribution, and CUBID-linked participant snapshots before locking, or provide an audited override reason.",
+      )
+    }
 
     const lockedAt = (deps.now?.() ?? new Date()).toISOString()
     const counts = {
@@ -575,7 +682,8 @@ export async function executeMonthlyCycleLockCommand(
       actor_role: input.actorRole,
       override: {
         unresolved_onchain: Boolean(input.overrideUnresolvedOnchain),
-        reason: input.overrideUnresolvedOnchain ? overrideReason : null,
+        required_inputs: Boolean(input.overrideRequiredInputs),
+        reason: input.overrideUnresolvedOnchain || input.overrideRequiredInputs ? overrideReason : null,
       },
       payments: payments.map((payment) => ({
         id: payment.id,
@@ -610,6 +718,7 @@ export async function executeMonthlyCycleLockCommand(
         asset_preferences: assetPreferenceSummaries,
         counts: mvpCounts,
         checksums: mvpChecksums,
+        required_input_blockers: requiredInputBlockers,
       },
       zkas_inputs: {
         datasets: datasets
@@ -651,9 +760,12 @@ export async function executeMonthlyCycleLockCommand(
         locked_manifest: manifest as unknown as Json,
         locked_manifest_hash: lockedManifestHash,
         lock_override_unresolved_onchain: Boolean(input.overrideUnresolvedOnchain),
-        lock_override_reason: input.overrideUnresolvedOnchain ? overrideReason : null,
+        lock_override_reason: input.overrideUnresolvedOnchain || input.overrideRequiredInputs ? overrideReason : null,
         updated_by_user_id: input.actorUserId,
-        status_note: input.overrideUnresolvedOnchain ? "Locked with unresolved onchain override." : "Locked into immutable manifest.",
+        status_note:
+          input.overrideUnresolvedOnchain || input.overrideRequiredInputs
+            ? "Locked with operator override."
+            : "Locked into immutable manifest.",
       })
       .eq("id", cycle.id)
       .eq("status", "open")
@@ -671,7 +783,8 @@ export async function executeMonthlyCycleLockCommand(
       metadata: {
         lockedManifestHash,
         counts,
-        overrideApplied: Boolean(input.overrideUnresolvedOnchain),
+        overrideApplied: Boolean(input.overrideUnresolvedOnchain || input.overrideRequiredInputs),
+        requiredInputBlockers,
       },
     })
     if (successEventError) return failure("query_failed", successEventError.message)
@@ -683,7 +796,7 @@ export async function executeMonthlyCycleLockCommand(
       lockedAt,
       lockedManifestHash,
       counts,
-      overrideApplied: Boolean(input.overrideUnresolvedOnchain),
+      overrideApplied: Boolean(input.overrideUnresolvedOnchain || input.overrideRequiredInputs),
     })
   } catch (error) {
     const message = error instanceof Error ? error.message : "Monthly-cycle lock failed."

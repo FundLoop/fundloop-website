@@ -248,6 +248,12 @@ describe("buildMonthlyCyclePrepReview", () => {
         severity: "info",
       }),
     )
+    expect(review.issues).toContainEqual(
+      expect.objectContaining({
+        code: "asset_preferences_using_defaults",
+        severity: "info",
+      }),
+    )
   })
 
   it("degrades asset preference read failures to prep warnings", async () => {

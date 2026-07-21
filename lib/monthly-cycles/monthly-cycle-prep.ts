@@ -346,7 +346,17 @@ export async function buildMonthlyCyclePrepReview(input: {
       description: assetPreferenceReadiness.readError,
       actionHref: "/admin/cycles",
     })
-  } else if (assetPreferenceReadiness.rejectAllProjectTokenUserCount > 0) {
+  } else if (assetPreferenceReadiness.defaultPreferenceUserCount > 0) {
+    addIssue(issues, {
+      code: "asset_preferences_using_defaults",
+      severity: "info",
+      title: "Some users are using default asset priorities",
+      description: `${assetPreferenceReadiness.defaultPreferenceUserCount} cycle participant(s) have not set custom asset priorities. This does not block MVP credits, but future settlement planning should treat them as stablecoin, fiat, then project-token preference users.`,
+      actionHref: "/admin/cycles",
+    })
+  }
+
+  if (!assetPreferenceReadiness.readError && assetPreferenceReadiness.rejectAllProjectTokenUserCount > 0) {
     addIssue(issues, {
       code: "project_token_preferences_rejected",
       severity: "info",

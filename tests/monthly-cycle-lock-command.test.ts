@@ -62,6 +62,10 @@ class FakeBuilder {
     return this
   }
 
+  gt() {
+    return this
+  }
+
   lte() {
     return this
   }
@@ -133,6 +137,7 @@ function makeSupabase(overrides: Partial<Record<string, Array<Record<string, unk
   return new FakeSupabase({
     monthly_cycles: [{ ...cycle }],
     ref_payment_statuses: [{ id: 4, code: "confirmed" }],
+    projects: [{ id: 7, slug: "civic-mesh", name: "Civic Mesh", status: "active", payment_percentage: 3, deleted_at: null }],
     payments: [
       {
         id: 10,
@@ -384,6 +389,67 @@ describe("executeMonthlyCycleLockCommand", () => {
         overrideApplied: true,
         counts: { unresolvedOnchainSubmissions: 1 },
       },
+    })
+  })
+
+  it("blocks missing required MVP inputs unless an override reason is supplied", async () => {
+    const blocked = await executeMonthlyCycleLockCommand(
+      makeSupabase({
+        project_monthly_contribution_submissions: [],
+        project_attribution_datasets: [],
+        project_attribution_rows: [],
+      }) as never,
+      commandInput,
+    )
+
+    expect(blocked).toMatchObject({ ok: false, error: { code: "missing_mvp_required_inputs" } })
+
+    const missingReason = await executeMonthlyCycleLockCommand(
+      makeSupabase({
+        project_monthly_contribution_submissions: [],
+        project_attribution_datasets: [],
+        project_attribution_rows: [],
+      }) as never,
+      {
+        ...commandInput,
+        overrideRequiredInputs: true,
+        overrideReason: " ",
+      },
+    )
+    expect(missingReason).toMatchObject({ ok: false, error: { code: "override_reason_required" } })
+
+    const overriddenSupabase = makeSupabase({
+      project_monthly_contribution_submissions: [],
+      project_attribution_datasets: [],
+      project_attribution_rows: [],
+    })
+    const overridden = await executeMonthlyCycleLockCommand(overriddenSupabase as never, {
+      ...commandInput,
+      overrideRequiredInputs: true,
+      overrideReason: "Operator accepted the missing MVP input risk.",
+    })
+
+    expect(overridden).toMatchObject({
+      ok: true,
+      data: {
+        overrideApplied: true,
+      },
+    })
+    expect(overriddenSupabase.updates.monthly_cycles[0].locked_manifest).toMatchObject({
+      override: {
+        required_inputs: true,
+        reason: "Operator accepted the missing MVP input risk.",
+      },
+      mvp_inputs: {
+        required_input_blockers: expect.arrayContaining([
+          expect.objectContaining({ code: "missing_contribution_submissions" }),
+          expect.objectContaining({ code: "missing_approved_attribution_datasets" }),
+        ]),
+      },
+    })
+    expect(overriddenSupabase.inserts.monthly_cycle_events.at(-1)?.metadata).toMatchObject({
+      overrideApplied: true,
+      requiredInputBlockers: expect.any(Array),
     })
   })
 
