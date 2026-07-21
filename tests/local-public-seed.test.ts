@@ -30,6 +30,7 @@ describe("local public discovery seed fixtures", () => {
     expect(seedSql).toContain(`'Civic Mesh'`)
     expect(seedSql).toContain(`'1.00', 'USD', '2', NULL, '1', '11'`)
     expect(seedSql).toContain(`'civic-mesh'`)
+    expect(seedSql).toContain(`WHERE "id" <> 101`)
   })
 
   it("includes a deterministic monthly contribution submission fixture for MVP cycle readiness", () => {
@@ -79,7 +80,7 @@ describe("local public discovery seed fixtures", () => {
   it("bumps the local project and user sequences past the curated fixtures", () => {
     expect(seedSql).toContain(`SELECT pg_catalog.setval('"public"."projects_id_seq1"', 103, true);`)
     expect(seedSql).toContain(`SELECT pg_catalog.setval('"public"."users_sequential_id_seq"', 104, true);`)
-    expect(seedSql).toContain(`SELECT pg_catalog.setval('"public"."user_asset_preferences_id_seq"', 110, true);`)
+    expect(seedSql).toContain(`SELECT pg_catalog.setval('"public"."user_asset_preferences_id_seq"', 112, true);`)
     expect(seedSql).toContain(`SELECT pg_catalog.setval('"public"."project_attribution_datasets_id_seq"', 101, true);`)
     expect(seedSql).toContain(`SELECT pg_catalog.setval('"public"."project_attribution_rows_id_seq"', 103, true);`)
     expect(seedSql).toContain(`SELECT pg_catalog.setval('"public"."blog_posts_id_seq"', 26, true);`)

@@ -19,12 +19,14 @@ Use these fixtures after `supabase db reset` when you want predictable public pa
   - Founder routes: `/en/founder`, `/en/founder/projects`, `/en/founder/projects/civic-mesh`
   - The account is a local-only Supabase Auth fixture matched to the deterministic public user `00000000-0000-4000-8000-000000000101`.
   - The managed `civic-mesh` project has an explicit MVP commitment fixture: `payment_percentage=1.00` and `default_reporting_currency_code=USD`.
+  - Other legacy/public discovery projects are normalized to `payment_percentage=0` in the local seed so they do not become required May 2026 lock inputs.
   - Expected readiness: founder workspace pages should show Civic Mesh as commitment-ready for contribution rate and reporting currency, while separate payment-route or submission readiness can still reflect the current local fixture state.
 - User asset-priority smoke
   - Maya starts with stablecoin, fiat, then Civic Mesh project token accepted.
   - Eli starts with fiat, then stablecoin accepted.
-  - Safiya starts with Civic Mesh project token, then stablecoin accepted.
-  - Jonah starts with stablecoin accepted and rejects all seeded project-token options.
+  - Safiya starts with Civic Mesh project token, then stablecoin, then fiat accepted.
+  - Jonah starts with stablecoin, then fiat accepted, and rejects all seeded project-token options.
+  - The fiat fallback rows make the USD-only Civic Mesh contribution pool fully fulfillable in the local MVP smoke while preserving non-USD preference and token-rejection scenarios.
   - Expected readiness: `/en/workspace`, `/en/workspace/account`, `/en/workspace/earnings`, and `/en/admin/cycles/2026-05/prep` can show deterministic preference summaries without exposing private payout destinations.
   - Jonah is the local reject-all-token warning fixture for MVP smoke. This is planning metadata only; it does not change credited USD-equivalent earnings.
 - Operational MVP cycle smoke

@@ -629,8 +629,16 @@ ON CONFLICT ("user_id") DO UPDATE SET
 
 INSERT INTO "public"."projects" ("id", "name", "description", "detailed_description", "logo_url", "website", "organization_id", "is_public", "created_at", "payment_percentage", "default_reporting_currency_code", "payment_periodicity_id", "payment_custom_days", "default_payment_method_id", "category_id", "updated_at", "updated_by", "deleted_at", "status", "cumulative_revenue", "cumulative_donated", "email", "billing_email", "billing_frequency", "slug") VALUES
   ('101', 'Civic Mesh', 'Neighborhood coordination software for mutual aid, public updates, and trusted local action.', 'Civic Mesh helps local organizers publish needs, coordinate volunteers, and keep recurring neighborhood work visible without relying on noisy engagement loops. It is designed to make practical participation legible, dependable, and easy to revisit month over month.', 'https://images.unsplash.com/photo-1529156069898-49953e39b3ac?q=80&w=1964&auto=format&fit=crop', 'https://civicmesh.example.com', NULL, 't', '2025-06-12 13:00:00+00', '1.00', 'USD', '2', NULL, '1', '11', '2025-06-12 13:00:00+00', NULL, NULL, 'active', '210000', '2100', 'hello@civicmesh.example.com', 'finance@civicmesh.example.com', 'monthly', 'civic-mesh'),
-  ('102', 'Mutual Aid Atlas', 'Shared infrastructure for relief networks, request routing, and volunteer response across cities.', 'Mutual Aid Atlas supports distributed care teams with intake flows, fulfillment coordination, and transparent reporting on what gets done. The project emphasizes practical identity, repeat participation, and clear trust signals for contributors and founders alike.', 'https://images.unsplash.com/photo-1488521787991-ed7bbaae773c?q=80&w=1935&auto=format&fit=crop', 'https://mutualaidatlas.example.com', NULL, 't', '2025-06-12 13:05:00+00', '1.00', 'USD', '2', NULL, '1', '10', '2025-06-12 13:05:00+00', NULL, NULL, 'active', '175000', '1750', 'hello@mutualaidatlas.example.com', 'finance@mutualaidatlas.example.com', 'monthly', 'mutual-aid-atlas'),
-  ('103', 'Open Transit Ledger', 'Community-first transit reporting and commuter coordination tools for resilient cities.', 'Open Transit Ledger gives riders and organizers a shared view of route reliability, commuter needs, and local improvement efforts. It turns public transit participation into visible operational signal that can support better funding, stronger communities, and clearer monthly reporting.', 'https://images.unsplash.com/photo-1474487548417-781cb71495f3?q=80&w=2070&auto=format&fit=crop', 'https://opentransitledger.example.com', NULL, 't', '2025-06-12 13:10:00+00', '1.00', 'USD', '2', NULL, '1', '9', '2025-06-12 13:10:00+00', NULL, NULL, 'active', '198000', '1980', 'hello@opentransitledger.example.com', 'finance@opentransitledger.example.com', 'monthly', 'open-transit-ledger');
+  ('102', 'Mutual Aid Atlas', 'Shared infrastructure for relief networks, request routing, and volunteer response across cities.', 'Mutual Aid Atlas supports distributed care teams with intake flows, fulfillment coordination, and transparent reporting on what gets done. The project emphasizes practical identity, repeat participation, and clear trust signals for contributors and founders alike.', 'https://images.unsplash.com/photo-1488521787991-ed7bbaae773c?q=80&w=1935&auto=format&fit=crop', 'https://mutualaidatlas.example.com', NULL, 't', '2025-06-12 13:05:00+00', '0.00', 'USD', '2', NULL, '1', '10', '2025-06-12 13:05:00+00', NULL, NULL, 'active', '175000', '0', 'hello@mutualaidatlas.example.com', 'finance@mutualaidatlas.example.com', 'monthly', 'mutual-aid-atlas'),
+  ('103', 'Open Transit Ledger', 'Community-first transit reporting and commuter coordination tools for resilient cities.', 'Open Transit Ledger gives riders and organizers a shared view of route reliability, commuter needs, and local improvement efforts. It turns public transit participation into visible operational signal that can support better funding, stronger communities, and clearer monthly reporting.', 'https://images.unsplash.com/photo-1474487548417-781cb71495f3?q=80&w=2070&auto=format&fit=crop', 'https://opentransitledger.example.com', NULL, 't', '2025-06-12 13:10:00+00', '0.00', 'USD', '2', NULL, '1', '9', '2025-06-12 13:10:00+00', NULL, NULL, 'active', '198000', '0', 'hello@opentransitledger.example.com', 'finance@opentransitledger.example.com', 'monthly', 'open-transit-ledger');
+
+UPDATE "public"."projects"
+SET
+  "payment_percentage" = 0,
+  "cumulative_donated" = 0,
+  "updated_at" = '2025-06-12 13:15:00+00'
+WHERE "id" <> 101
+AND "deleted_at" IS NULL;
 
 INSERT INTO "public"."participants" ("id", "project_id", "joined_at", "updated_at", "user_id", "is_admin", "is_favorite") VALUES
   ('101', '101', '2025-06-12 13:20:00+00', '2025-06-12 13:20:00+00', '00000000-0000-4000-8000-000000000101', 't', NULL),
@@ -658,9 +666,11 @@ INSERT INTO "public"."user_asset_preferences" ("id", "user_id", "rank", "asset_t
   ('105', '00000000-0000-4000-8000-000000000102', '2', 'stablecoin', 'USDC', NULL, 't', '00000000-0000-4000-8000-000000000102', '00000000-0000-4000-8000-000000000102', '2025-06-12 13:31:00+00', '2025-06-12 13:31:00+00'),
   ('106', '00000000-0000-4000-8000-000000000103', '1', 'project_token', 'CIVIC', '101', 't', '00000000-0000-4000-8000-000000000103', '00000000-0000-4000-8000-000000000103', '2025-06-12 13:32:00+00', '2025-06-12 13:32:00+00'),
   ('107', '00000000-0000-4000-8000-000000000103', '2', 'stablecoin', 'USDC', NULL, 't', '00000000-0000-4000-8000-000000000103', '00000000-0000-4000-8000-000000000103', '2025-06-12 13:32:00+00', '2025-06-12 13:32:00+00'),
+  ('111', '00000000-0000-4000-8000-000000000103', '3', 'fiat', 'USD', NULL, 't', '00000000-0000-4000-8000-000000000103', '00000000-0000-4000-8000-000000000103', '2025-06-12 13:32:00+00', '2025-06-12 13:32:00+00'),
   ('108', '00000000-0000-4000-8000-000000000104', '1', 'stablecoin', 'USDC', NULL, 't', '00000000-0000-4000-8000-000000000104', '00000000-0000-4000-8000-000000000104', '2025-06-12 13:33:00+00', '2025-06-12 13:33:00+00'),
-  ('109', '00000000-0000-4000-8000-000000000104', '2', 'project_token', 'CIVIC', '101', 'f', '00000000-0000-4000-8000-000000000104', '00000000-0000-4000-8000-000000000104', '2025-06-12 13:33:00+00', '2025-06-12 13:33:00+00'),
-  ('110', '00000000-0000-4000-8000-000000000104', '3', 'project_token', 'ATLAS', '102', 'f', '00000000-0000-4000-8000-000000000104', '00000000-0000-4000-8000-000000000104', '2025-06-12 13:33:00+00', '2025-06-12 13:33:00+00');
+  ('112', '00000000-0000-4000-8000-000000000104', '2', 'fiat', 'USD', NULL, 't', '00000000-0000-4000-8000-000000000104', '00000000-0000-4000-8000-000000000104', '2025-06-12 13:33:00+00', '2025-06-12 13:33:00+00'),
+  ('109', '00000000-0000-4000-8000-000000000104', '3', 'project_token', 'CIVIC', '101', 'f', '00000000-0000-4000-8000-000000000104', '00000000-0000-4000-8000-000000000104', '2025-06-12 13:33:00+00', '2025-06-12 13:33:00+00'),
+  ('110', '00000000-0000-4000-8000-000000000104', '4', 'project_token', 'ATLAS', '102', 'f', '00000000-0000-4000-8000-000000000104', '00000000-0000-4000-8000-000000000104', '2025-06-12 13:33:00+00', '2025-06-12 13:33:00+00');
 
 INSERT INTO "public"."monthly_cycles" ("cycle_key", "year", "month", "period_start", "period_end", "status", "opened_at", "created_at", "updated_at") VALUES
   ('2026-05', '2026', '5', '2026-05-01', '2026-05-31', 'open', '2026-05-01 00:00:00+00', '2026-05-01 00:00:00+00', '2026-05-01 00:00:00+00')
@@ -891,7 +901,7 @@ SELECT pg_catalog.setval('"public"."user_social_platforms_id_seq"', 5, true);
 
 SELECT pg_catalog.setval('"public"."users_sequential_id_seq"', 104, true);
 
-SELECT pg_catalog.setval('"public"."user_asset_preferences_id_seq"', 110, true);
+SELECT pg_catalog.setval('"public"."user_asset_preferences_id_seq"', 112, true);
 
 SELECT pg_catalog.setval('"public"."wallet_accounts_id_seq"', 180, true);
 

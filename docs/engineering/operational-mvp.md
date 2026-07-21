@@ -356,6 +356,8 @@ Artifacts must be hashable and linked to `monthly_cycle_id`.
 
 ## End-To-End MVP Smoke
 
+Local validation evidence: [Operational MVP Local Validation](./operational-mvp-local-validation.md)
+
 Create or reuse deterministic seed fixtures:
 
 - one internal operator
