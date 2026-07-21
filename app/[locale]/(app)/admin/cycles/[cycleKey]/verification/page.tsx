@@ -18,6 +18,10 @@ function formatCurrency(locale: string, value: number) {
   return new Intl.NumberFormat(locale, { style: "currency", currency: "USD", maximumFractionDigits: 2 }).format(value)
 }
 
+function formatNumber(locale: string, value: number) {
+  return new Intl.NumberFormat(locale, { maximumFractionDigits: 6 }).format(value)
+}
+
 export default async function AdminCycleVerificationPage({ params }: PageProps) {
   const { cycleKey, locale } = await params
   const review = await (async () => {
@@ -136,6 +140,131 @@ export default async function AdminCycleVerificationPage({ params }: PageProps) 
           ) : (
             <p className="text-sm text-[var(--text-muted)]">No completed run exists for this cycle yet.</p>
           )}
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
+            <div>
+              <CardTitle>Calculated MVP allocation</CardTitle>
+              <CardDescription>
+                Read-only calculation output. These values are not verified, approved, credited, paid, or transferable until
+                later monthly-cycle stages explicitly advance.
+              </CardDescription>
+            </div>
+            <Badge variant="secondary">Calculated, not credited</Badge>
+          </div>
+        </CardHeader>
+        <CardContent className="space-y-6">
+          <section className="grid gap-4 md:grid-cols-3">
+            <div className="rounded-[var(--radius-xl)] border border-[color:var(--surface-border)] p-4">
+              <div className="text-xs uppercase tracking-[0.2em] text-[var(--text-muted)]">Allocated</div>
+              <div className="mt-2 text-2xl font-semibold">{formatCurrency(locale, review.totals.totalAllocatedUsd)}</div>
+              <p className="mt-1 text-xs text-[var(--text-muted)]">Stored in `zkas_run_results` for operator review.</p>
+            </div>
+            <div className="rounded-[var(--radius-xl)] border border-[color:var(--surface-border)] p-4">
+              <div className="text-xs uppercase tracking-[0.2em] text-[var(--text-muted)]">Returned</div>
+              <div className="mt-2 text-2xl font-semibold">{formatCurrency(locale, review.calculation.returnedPoolUsd)}</div>
+              <p className="mt-1 text-xs text-[var(--text-muted)]">Future-pool value, not user earnings.</p>
+            </div>
+            <div className="rounded-[var(--radius-xl)] border border-[color:var(--surface-border)] p-4">
+              <div className="text-xs uppercase tracking-[0.2em] text-[var(--text-muted)]">Artifact</div>
+              <div className="mt-2 break-all text-sm font-medium text-[var(--text-strong)]">
+                {review.calculation.resultArtifactHash ?? "Missing"}
+              </div>
+              <p className="mt-1 break-all text-xs text-[var(--text-muted)]">{review.calculation.resultArtifactPath ?? "No result artifact path recorded."}</p>
+            </div>
+          </section>
+
+          <section className="grid gap-4 lg:grid-cols-2">
+            <div className="rounded-[var(--radius-xl)] border border-[color:var(--surface-border)] p-4">
+              <h2 className="text-base font-semibold text-[var(--text-strong)]">User results</h2>
+              <div className="mt-3 space-y-2">
+                {review.calculation.userResults.length > 0 ? (
+                  review.calculation.userResults.slice(0, 8).map((row) => (
+                    <div key={row.zkasUserId} className="flex items-center justify-between gap-3 rounded-[var(--radius-lg)] bg-[var(--surface-panel-strong)] px-3 py-2 text-sm">
+                      <span className="min-w-0 truncate">{row.zkasUserId}</span>
+                      <span className="font-semibold">{formatCurrency(locale, row.allocationUsd)}</span>
+                    </div>
+                  ))
+                ) : (
+                  <p className="text-sm text-[var(--text-muted)]">No calculated user result rows are linked to this cycle.</p>
+                )}
+              </div>
+            </div>
+
+            <div className="rounded-[var(--radius-xl)] border border-[color:var(--surface-border)] p-4">
+              <h2 className="text-base font-semibold text-[var(--text-strong)]">Source breakdown</h2>
+              <div className="mt-3 space-y-2">
+                {review.calculation.sourceBreakdown.length > 0 ? (
+                  review.calculation.sourceBreakdown.map((row) => (
+                    <div key={`${row.assetType}-${row.assetCode}`} className="rounded-[var(--radius-lg)] bg-[var(--surface-panel-strong)] px-3 py-2 text-sm">
+                      <div className="flex items-center justify-between gap-3">
+                        <span className="font-medium">{row.assetCode} <span className="text-[var(--text-muted)]">({row.assetType})</span></span>
+                        <span>{formatCurrency(locale, row.allocatedUsd)} allocated</span>
+                      </div>
+                      {row.returnedUsd > 0 ? <p className="mt-1 text-xs text-[var(--text-muted)]">{formatCurrency(locale, row.returnedUsd)} returned to future pool</p> : null}
+                    </div>
+                  ))
+                ) : (
+                  <p className="text-sm text-[var(--text-muted)]">No asset-fill or returned-pool rows are linked to this cycle.</p>
+                )}
+              </div>
+            </div>
+          </section>
+
+          <section className="grid gap-4 lg:grid-cols-3">
+            <div className="rounded-[var(--radius-xl)] border border-[color:var(--surface-border)] p-4">
+              <h2 className="text-base font-semibold text-[var(--text-strong)]">Raw project entitlements</h2>
+              <div className="mt-3 space-y-2">
+                {review.calculation.projectResults.slice(0, 6).map((row) => (
+                  <div key={`${row.projectId}-${row.userId}`} className="rounded-[var(--radius-lg)] bg-[var(--surface-panel-strong)] px-3 py-2 text-xs">
+                    <div className="flex items-center justify-between gap-3">
+                      <span>Project {row.projectId}</span>
+                      <span className="font-semibold">{formatCurrency(locale, row.rawUsd)}</span>
+                    </div>
+                    <p className="mt-1 truncate text-[var(--text-muted)]">{row.userId}</p>
+                    <p className="mt-1 text-[var(--text-muted)]">{formatNumber(locale, row.attributionPoints)} / {formatNumber(locale, row.totalProjectPoints)} points</p>
+                  </div>
+                ))}
+                {review.calculation.projectResults.length === 0 ? <p className="text-sm text-[var(--text-muted)]">No raw entitlement rows are linked.</p> : null}
+              </div>
+            </div>
+
+            <div className="rounded-[var(--radius-xl)] border border-[color:var(--surface-border)] p-4">
+              <h2 className="text-base font-semibold text-[var(--text-strong)]">Asset fills</h2>
+              <div className="mt-3 space-y-2">
+                {review.calculation.assetFills.slice(0, 6).map((row) => (
+                  <div key={`${row.userId}-${row.projectId}-${row.assetCode}-${row.preferenceRank}`} className="rounded-[var(--radius-lg)] bg-[var(--surface-panel-strong)] px-3 py-2 text-xs">
+                    <div className="flex items-center justify-between gap-3">
+                      <span>{row.assetCode}</span>
+                      <span className="font-semibold">{formatCurrency(locale, row.usdValue)}</span>
+                    </div>
+                    <p className="mt-1 truncate text-[var(--text-muted)]">{row.userId}</p>
+                    <p className="mt-1 text-[var(--text-muted)]">Rank {row.preferenceRank}{row.partial ? " · partial fill" : ""}</p>
+                  </div>
+                ))}
+                {review.calculation.assetFills.length === 0 ? <p className="text-sm text-[var(--text-muted)]">No selected asset fills are linked.</p> : null}
+              </div>
+            </div>
+
+            <div className="rounded-[var(--radius-xl)] border border-[color:var(--surface-border)] p-4">
+              <h2 className="text-base font-semibold text-[var(--text-strong)]">Returned pools</h2>
+              <div className="mt-3 space-y-2">
+                {review.calculation.returnedPools.slice(0, 6).map((row) => (
+                  <div key={`${row.projectId}-${row.assetCode}-${row.reasonCode}`} className="rounded-[var(--radius-lg)] bg-[var(--surface-panel-strong)] px-3 py-2 text-xs">
+                    <div className="flex items-center justify-between gap-3">
+                      <span>{row.assetCode}</span>
+                      <span className="font-semibold">{formatCurrency(locale, row.usdValue)}</span>
+                    </div>
+                    <p className="mt-1 text-[var(--text-muted)]">Project {row.projectId} · {row.reasonCode.replaceAll("_", " ")}</p>
+                  </div>
+                ))}
+                {review.calculation.returnedPools.length === 0 ? <p className="text-sm text-[var(--text-muted)]">No future-pool returns are linked.</p> : null}
+              </div>
+            </div>
+          </section>
         </CardContent>
       </Card>
     </div>

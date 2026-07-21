@@ -23,6 +23,7 @@ const completedRun = {
   user_count: 2,
   total_score: 10,
   total_allocated_usd: 75,
+  result_artifact_path: "2026-04/run-10/run-result.v1.json",
   result_artifact_hash: "result-hash",
   attestation_artifact_hash: null,
   created_at: "2026-05-01T00:00:00.000Z",
@@ -131,21 +132,70 @@ describe("monthly-cycle verification review", () => {
       cycle: { ...cycle, status: "verification" },
       runs: [completedRun],
       results: [
-        { allocation_usd: 25, eligibility: true },
-        { allocation_usd: 50, eligibility: true },
+        { zkas_user_id: "user-1", allocation_usd: 25, aggregate_score: 3, eligibility: true },
+        { zkas_user_id: "user-2", allocation_usd: 50, aggregate_score: 7, eligibility: true },
+      ],
+      projectResults: [
+        {
+          project_id: 7,
+          user_id: "user-1",
+          scoped_cubid_id: "scope-user-1",
+          attribution_points: 3,
+          total_project_points: 10,
+          project_pool_usd: 75,
+          raw_usd: 25,
+        },
+      ],
+      assetFills: [
+        {
+          user_id: "user-2",
+          project_id: 7,
+          asset_type: "stablecoin",
+          asset_code: "USDC",
+          source_amount: 50,
+          usd_value: 50,
+          preference_rank: 1,
+          partial: false,
+        },
+      ],
+      returnedPools: [
+        {
+          project_id: 7,
+          asset_type: "project_token",
+          asset_code: "CIVIC",
+          source_amount: 10,
+          usd_value: 5,
+          reason_code: "preference_unfulfillable",
+        },
       ],
     })
 
     expect(review.issues).toEqual([])
     expect(review.canMarkVerified).toBe(true)
     expect(review.canApprove).toBe(true)
+    expect(review.calculation).toMatchObject({
+      resultArtifactPath: "2026-04/run-10/run-result.v1.json",
+      resultArtifactHash: "result-hash",
+      returnedPoolUsd: 5,
+      userResults: [
+        expect.objectContaining({ zkasUserId: "user-2", allocationUsd: 50 }),
+        expect.objectContaining({ zkasUserId: "user-1", allocationUsd: 25 }),
+      ],
+      projectResults: [expect.objectContaining({ projectId: 7, userId: "user-1", rawUsd: 25 })],
+      assetFills: [expect.objectContaining({ userId: "user-2", assetCode: "USDC", usdValue: 50 })],
+      returnedPools: [expect.objectContaining({ assetCode: "CIVIC", reasonCode: "preference_unfulfillable" })],
+      sourceBreakdown: [
+        expect.objectContaining({ assetCode: "CIVIC", allocatedUsd: 0, returnedUsd: 5 }),
+        expect.objectContaining({ assetCode: "USDC", allocatedUsd: 50, returnedUsd: 0 }),
+      ],
+    })
   })
 
   it("blocks mismatched or unverified completed runs", () => {
     const review = buildMonthlyCycleVerificationReview({
       cycle,
       runs: [{ ...completedRun, verification_status: "pending" }],
-      results: [{ allocation_usd: 70, eligibility: true }],
+      results: [{ zkas_user_id: "user-1", allocation_usd: 70, aggregate_score: 5, eligibility: true }],
     })
 
     expect(review.issues.map((issue) => issue.code)).toEqual(
