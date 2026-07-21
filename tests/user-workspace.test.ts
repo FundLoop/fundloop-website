@@ -173,6 +173,44 @@ describe("buildUserWorkspaceHome", () => {
     expect(home.results.detailHref).toBe("/workspace/earnings")
   })
 
+  it("exposes safe asset preference readiness on the workspace home", () => {
+    const home = buildUserWorkspaceHome({
+      navigationContext: navigationContext(),
+      participantRows: [],
+      joinedProjects: [],
+      recommendedProjects: [],
+      publishedResults: [],
+      runs: [],
+      assetPreferences: [
+        {
+          id: 1,
+          rank: 1,
+          asset_type: "stablecoin",
+          asset_code: "USDC",
+          project_id: null,
+          accepted: true,
+        },
+        {
+          id: 2,
+          rank: 2,
+          asset_type: "project_token",
+          asset_code: "CIVIC",
+          project_id: 101,
+          accepted: false,
+        },
+      ],
+      warnings: [],
+    })
+
+    expect(home.assetPreferences).toMatchObject({
+      userId: "user-1",
+      hasCustomPreferences: true,
+      rejectsAllProjectTokens: true,
+      warningCodes: ["rejects_all_project_tokens"],
+    })
+    expect(home.assetPreferences.preferences.map((preference) => preference.assetCode)).toEqual(["USDC", "CIVIC"])
+  })
+
   it("excludes participant rows without hydrated non-deleted projects from counters", () => {
     const home = buildUserWorkspaceHome({
       navigationContext: navigationContext(),

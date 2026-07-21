@@ -210,6 +210,71 @@ describe("buildMonthlyCyclePrepReview", () => {
     )
   })
 
+  it("surfaces project-token rejection as informational asset preference readiness", async () => {
+    const review = await buildMonthlyCyclePrepReview({
+      cycle: baseCycle(),
+      computedManifestHash: "hash-1",
+      contributionReadiness: {
+        submittedCount: 1,
+        expectedProjectCount: 1,
+        missingProjectCount: 0,
+        totalUsdEquivalentAmount: 1000,
+        totalCalculatedContributionAmount: 10,
+        missingProjects: [],
+        readError: null,
+      },
+      attributionReadiness: baseAttributionReadiness,
+      assetPreferenceReadiness: {
+        eligibleUserCount: 3,
+        customPreferenceUserCount: 2,
+        defaultPreferenceUserCount: 1,
+        rejectAllProjectTokenUserCount: 1,
+        totalPreferenceRowCount: 5,
+        usersRejectingProjectTokens: [{ userId: "user-2", displayName: "Jonah", email: "jonah@example.com" }],
+        readError: null,
+      },
+    })
+
+    expect(review.posture).toBe("ready")
+    expect(review.assetPreferenceReadiness).toMatchObject({
+      eligibleUserCount: 3,
+      customPreferenceUserCount: 2,
+      defaultPreferenceUserCount: 1,
+      rejectAllProjectTokenUserCount: 1,
+    })
+    expect(review.issues).toContainEqual(
+      expect.objectContaining({
+        code: "project_token_preferences_rejected",
+        severity: "info",
+      }),
+    )
+  })
+
+  it("degrades asset preference read failures to prep warnings", async () => {
+    const review = await buildMonthlyCyclePrepReview({
+      cycle: baseCycle(),
+      computedManifestHash: "hash-1",
+      attributionReadiness: baseAttributionReadiness,
+      assetPreferenceReadiness: {
+        eligibleUserCount: 0,
+        customPreferenceUserCount: 0,
+        defaultPreferenceUserCount: 0,
+        rejectAllProjectTokenUserCount: 0,
+        totalPreferenceRowCount: 0,
+        usersRejectingProjectTokens: [],
+        readError: "relation unavailable",
+      },
+    })
+
+    expect(review.posture).toBe("needs_review")
+    expect(review.issues).toContainEqual(
+      expect.objectContaining({
+        code: "asset_preference_read_failed",
+        severity: "warning",
+      }),
+    )
+  })
+
   it("blocks prep when a cycle is not locked or has no manifest", async () => {
     const review = await buildMonthlyCyclePrepReview({
       cycle: baseCycle({

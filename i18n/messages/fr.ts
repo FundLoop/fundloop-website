@@ -503,6 +503,26 @@ export const frMessages = {
         "Ce score mélange le contexte de profil géré par FundLoop avec les signaux de confiance CUBID afin de montrer ce qui améliore la découvrabilité et l’éligibilité future.",
       complete: "Tous les éléments de complétude actuels sont couverts.",
     },
+    assetPreferences: {
+      title: "Priorités de règlement futur",
+      description: "L’ordre d’actifs que FundLoop pourra utiliser plus tard pour transformer des crédits comptables approuvés en plan de règlement.",
+      planningNote:
+        "Ces préférences ne changent pas vos revenus en équivalent USD et ne signifient pas que des fonds ont été transférés. Ce sont des entrées de préparation pour un futur flux payout.",
+      defaultBadge: "Défauts",
+      customBadge: "Personnalisé",
+      rejectAllWarningTitle: "Tokens projet rejetés",
+      rejectAllWarningBody:
+        "Rejeter les tokens projet peut retarder le règlement futur si l’offre en tokens projet est le premier actif disponible pour une partie d’une allocation.",
+      manageCta: "Gérer les priorités d’actifs",
+      rank: "#{rank}",
+      accepted: "Accepté",
+      rejected: "Rejeté",
+      type: {
+        stablecoin: "Stablecoin",
+        fiat: "Fiat",
+        project_token: "Token projet",
+      },
+    },
     participation: {
       title: "Empreinte de participation",
       description: "Les projets que vous rejoignez ou administrez créent le signal que les futurs cycles mensuels pourront utiliser.",

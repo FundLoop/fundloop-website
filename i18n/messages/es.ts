@@ -503,6 +503,26 @@ export const esMessages = {
         "Combina el contexto de perfil gestionado por FundLoop con señales de confianza de CUBID, para mostrar qué mejora la descubribilidad y la elegibilidad futura.",
       complete: "Todos los elementos actuales de completitud están cubiertos.",
     },
+    assetPreferences: {
+      title: "Prioridades de liquidación futura",
+      description: "El orden de activos que FundLoop podrá usar más adelante al convertir créditos contables aprobados en un plan de liquidación.",
+      planningNote:
+        "Estas preferencias no cambian tus ganancias en equivalente USD y no significan que se hayan transferido fondos. Son entradas de preparación para un flujo de pago futuro.",
+      defaultBadge: "Predeterminadas",
+      customBadge: "Personalizadas",
+      rejectAllWarningTitle: "Tokens de proyecto rechazados",
+      rejectAllWarningBody:
+        "Rechazar tokens de proyecto puede retrasar la liquidación futura si la oferta en tokens de proyecto es el primer activo disponible para parte de una asignación.",
+      manageCta: "Gestionar prioridades de activos",
+      rank: "#{rank}",
+      accepted: "Aceptado",
+      rejected: "Rechazado",
+      type: {
+        stablecoin: "Stablecoin",
+        fiat: "Fiat",
+        project_token: "Token de proyecto",
+      },
+    },
     participation: {
       title: "Huella de participación",
       description: "Los proyectos a los que te unes o ayudas a administrar crean la señal que podrán usar los futuros ciclos mensuales.",

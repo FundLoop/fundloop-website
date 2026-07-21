@@ -3,6 +3,7 @@ import "server-only"
 import { getAdminSupabaseClient } from "@/lib/supabase-admin"
 import type { Database, Json } from "@/types/supabase"
 import { assertMonthString } from "@/lib/zkas/month"
+import { buildUserAssetPreferenceReadiness } from "@/lib/workspace/user-asset-preferences"
 import { isUnresolvedOnchainSubmissionStatus } from "./monthly-cycle-statuses"
 
 type CyclePrepRow = Pick<
@@ -83,6 +84,20 @@ export type MonthlyCyclePrepAttributionReadiness = {
   readError: string | null
 }
 
+export type MonthlyCyclePrepAssetPreferenceReadiness = {
+  eligibleUserCount: number
+  customPreferenceUserCount: number
+  defaultPreferenceUserCount: number
+  rejectAllProjectTokenUserCount: number
+  totalPreferenceRowCount: number
+  usersRejectingProjectTokens: Array<{
+    userId: string
+    displayName: string | null
+    email: string | null
+  }>
+  readError: string | null
+}
+
 export type MonthlyCyclePrepReview = {
   cycle: {
     id: number
@@ -97,6 +112,7 @@ export type MonthlyCyclePrepReview = {
   manifest: MonthlyCyclePrepManifestSummary
   contributionReadiness: MonthlyCyclePrepContributionReadiness
   attributionReadiness: MonthlyCyclePrepAttributionReadiness
+  assetPreferenceReadiness: MonthlyCyclePrepAssetPreferenceReadiness
   issues: MonthlyCyclePrepIssue[]
   liveDriftWarnings: MonthlyCyclePrepIssue[]
 }
@@ -182,6 +198,7 @@ export async function buildMonthlyCyclePrepReview(input: {
   liveCounts?: Partial<MonthlyCyclePrepManifestSummary["counts"]>
   contributionReadiness?: MonthlyCyclePrepContributionReadiness
   attributionReadiness?: MonthlyCyclePrepAttributionReadiness
+  assetPreferenceReadiness?: MonthlyCyclePrepAssetPreferenceReadiness
 }): Promise<MonthlyCyclePrepReview> {
   const manifest = asLockManifest(input.cycle.locked_manifest)
   const reconciliation = Array.isArray(manifest?.reconciliation) ? manifest.reconciliation : []
@@ -228,6 +245,15 @@ export async function buildMonthlyCyclePrepReview(input: {
     totalRowCount: 0,
     totalAttributionPoints: 0,
     datasets: [],
+    readError: null,
+  }
+  const assetPreferenceReadiness = input.assetPreferenceReadiness ?? {
+    eligibleUserCount: 0,
+    customPreferenceUserCount: 0,
+    defaultPreferenceUserCount: 0,
+    rejectAllProjectTokenUserCount: 0,
+    totalPreferenceRowCount: 0,
+    usersRejectingProjectTokens: [],
     readError: null,
   }
 
@@ -309,6 +335,24 @@ export async function buildMonthlyCyclePrepReview(input: {
       title: "No approved MVP attribution datasets",
       description: "No scoped-CUBID MVP attribution datasets have been approved for this cycle yet.",
       actionHref: `/admin/cycles/${input.cycle.cycle_key}/prep`,
+    })
+  }
+
+  if (assetPreferenceReadiness.readError) {
+    addIssue(issues, {
+      code: "asset_preference_read_failed",
+      severity: "warning",
+      title: "Asset preference readiness unavailable",
+      description: assetPreferenceReadiness.readError,
+      actionHref: "/admin/cycles",
+    })
+  } else if (assetPreferenceReadiness.rejectAllProjectTokenUserCount > 0) {
+    addIssue(issues, {
+      code: "project_token_preferences_rejected",
+      severity: "info",
+      title: "Some users reject project tokens",
+      description: `${assetPreferenceReadiness.rejectAllProjectTokenUserCount} cycle participant(s) reject all project-token settlement options. This does not block MVP credits, but it should be visible before settlement planning.`,
+      actionHref: "/admin/cycles",
     })
   }
 
@@ -424,6 +468,7 @@ export async function buildMonthlyCyclePrepReview(input: {
     },
     contributionReadiness,
     attributionReadiness,
+    assetPreferenceReadiness,
     issues,
     liveDriftWarnings,
   }
@@ -542,6 +587,123 @@ async function loadAttributionReadiness(
   }
 }
 
+async function loadAssetPreferenceReadiness(
+  supabase: ReturnType<typeof getAdminSupabaseClient>,
+): Promise<MonthlyCyclePrepAssetPreferenceReadiness> {
+  const { data: projects, error: projectsError } = await supabase
+    .from("projects")
+    .select("id, status, payment_percentage")
+    .is("deleted_at", null)
+    .gt("payment_percentage", 0)
+
+  if (projectsError) {
+    throw new Error(projectsError.message)
+  }
+
+  const projectIds = (projects ?? [])
+    .filter((project) => project.status !== "deleted")
+    .map((project) => Number(project.id))
+
+  if (projectIds.length === 0) {
+    return {
+      eligibleUserCount: 0,
+      customPreferenceUserCount: 0,
+      defaultPreferenceUserCount: 0,
+      rejectAllProjectTokenUserCount: 0,
+      totalPreferenceRowCount: 0,
+      usersRejectingProjectTokens: [],
+      readError: null,
+    }
+  }
+
+  const { data: participants, error: participantsError } = await supabase
+    .from("participants")
+    .select("user_id")
+    .in("project_id", projectIds)
+
+  if (participantsError) {
+    throw new Error(participantsError.message)
+  }
+
+  const userIds = Array.from(
+    new Set((participants ?? []).map((participant) => participant.user_id).filter((userId): userId is string => Boolean(userId))),
+  )
+
+  if (userIds.length === 0) {
+    return {
+      eligibleUserCount: 0,
+      customPreferenceUserCount: 0,
+      defaultPreferenceUserCount: 0,
+      rejectAllProjectTokenUserCount: 0,
+      totalPreferenceRowCount: 0,
+      usersRejectingProjectTokens: [],
+      readError: null,
+    }
+  }
+
+  const [usersResult, preferencesResult] = await Promise.all([
+    supabase
+      .from("users")
+      .select("user_id, display_name, full_name, email, status")
+      .in("user_id", userIds)
+      .eq("status", "active"),
+    supabase
+      .from("user_asset_preferences")
+      .select("id, user_id, rank, asset_type, asset_code, project_id, accepted")
+      .in("user_id", userIds)
+      .order("rank", { ascending: true }),
+  ])
+
+  if (usersResult.error) {
+    throw new Error(usersResult.error.message)
+  }
+
+  if (preferencesResult.error) {
+    throw new Error(preferencesResult.error.message)
+  }
+
+  const activeUsers = (usersResult.data ?? []).map((user) => ({
+    userId: user.user_id,
+    displayName: user.display_name ?? user.full_name ?? null,
+    email: user.email ?? null,
+  }))
+  const preferencesByUserId = new Map<string, NonNullable<typeof preferencesResult.data>>()
+
+  for (const preference of preferencesResult.data ?? []) {
+    const existing = preferencesByUserId.get(preference.user_id) ?? []
+    existing.push(preference)
+    preferencesByUserId.set(preference.user_id, existing)
+  }
+
+  const readinessByUser = activeUsers.map((user) => ({
+    user,
+    readiness: buildUserAssetPreferenceReadiness({
+      userId: user.userId,
+      rows: (preferencesByUserId.get(user.userId) ?? []).map((preference) => ({
+        id: preference.id,
+        rank: preference.rank,
+        asset_type: preference.asset_type,
+        asset_code: preference.asset_code,
+        project_id: preference.project_id,
+        accepted: preference.accepted,
+      })),
+    }),
+  }))
+  const usersRejectingProjectTokens = readinessByUser
+    .filter((entry) => entry.readiness.rejectsAllProjectTokens)
+    .map((entry) => entry.user)
+
+  return {
+    eligibleUserCount: activeUsers.length,
+    customPreferenceUserCount: readinessByUser.filter((entry) => entry.readiness.hasCustomPreferences).length,
+    defaultPreferenceUserCount: readinessByUser.filter((entry) => !entry.readiness.hasCustomPreferences).length,
+    rejectAllProjectTokenUserCount: usersRejectingProjectTokens.length,
+    totalPreferenceRowCount: (preferencesResult.data ?? []).length,
+    usersRejectingProjectTokens,
+    readError: null,
+  }
+}
+
 export async function loadMonthlyCyclePrepReview(cycleKey: string): Promise<MonthlyCyclePrepReview | null> {
   const parsedCycleKey = assertMonthString(cycleKey)
   const supabase = getAdminSupabaseClient()
@@ -562,13 +724,22 @@ export async function loadMonthlyCyclePrepReview(cycleKey: string): Promise<Mont
   }
 
   const computedManifestHash = cycle.locked_manifest ? await sha256Hex(cycle.locked_manifest) : null
-  const [payments, onchainSubmissions, approvedDatasets, identityArtifacts, contributionReadinessResult, attributionReadinessResult] = await Promise.allSettled([
+  const [
+    payments,
+    onchainSubmissions,
+    approvedDatasets,
+    identityArtifacts,
+    contributionReadinessResult,
+    attributionReadinessResult,
+    assetPreferenceReadinessResult,
+  ] = await Promise.allSettled([
     countLiveRows(supabase, "payments", cycle.id),
     countLiveRows(supabase, "onchain_payment_submissions", cycle.id),
     countLiveRows(supabase, "zkas_datasets", cycle.id, ["approved", "included"]),
     countLiveRows(supabase, "zkas_identity_artifacts", cycle.id, ["approved"]),
     loadContributionReadiness(supabase, cycle.id),
     loadAttributionReadiness(supabase, cycle.id),
+    loadAssetPreferenceReadiness(supabase),
   ])
   const readCount = (result: PromiseSettledResult<number>) => {
     if (result.status === "rejected") {
@@ -610,6 +781,21 @@ export async function loadMonthlyCyclePrepReview(cycleKey: string): Promise<Mont
               ? attributionReadinessResult.reason.message
               : "Attribution dataset readiness could not be loaded.",
         }
+  const assetPreferenceReadiness =
+    assetPreferenceReadinessResult.status === "fulfilled"
+      ? assetPreferenceReadinessResult.value
+      : {
+          eligibleUserCount: 0,
+          customPreferenceUserCount: 0,
+          defaultPreferenceUserCount: 0,
+          rejectAllProjectTokenUserCount: 0,
+          totalPreferenceRowCount: 0,
+          usersRejectingProjectTokens: [],
+          readError:
+            assetPreferenceReadinessResult.reason instanceof Error
+              ? assetPreferenceReadinessResult.reason.message
+              : "Asset preference readiness could not be loaded.",
+        }
 
   return buildMonthlyCyclePrepReview({
     cycle,
@@ -622,5 +808,6 @@ export async function loadMonthlyCyclePrepReview(cycleKey: string): Promise<Mont
     },
     contributionReadiness,
     attributionReadiness,
+    assetPreferenceReadiness,
   })
 }

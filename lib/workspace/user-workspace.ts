@@ -2,6 +2,10 @@ import "server-only"
 
 import type { NavigationContext } from "@/lib/navigation-context"
 import { createServerSupabaseClient } from "@/lib/supabase-server"
+import {
+  buildUserAssetPreferenceReadiness,
+  type UserAssetPreferenceReadiness,
+} from "@/lib/workspace/user-asset-preferences"
 
 export type UserWorkspaceWarning = {
   scope: string
@@ -57,6 +61,7 @@ export type UserWorkspaceHome = {
     recommendedProjects: UserWorkspaceRecommendedProject[]
   }
   results: UserWorkspaceResultSummary
+  assetPreferences: UserAssetPreferenceReadiness
   warnings: UserWorkspaceWarning[]
 }
 
@@ -85,6 +90,15 @@ type PublishedResultRow = {
 type RunRow = {
   id: number
   month: string
+}
+
+type AssetPreferenceRow = {
+  id: number
+  rank: number
+  asset_type: "project_token" | "stablecoin" | "fiat"
+  asset_code: string
+  project_id: number | null
+  accepted: boolean
 }
 
 type SupabaseReadResult<T> = {
@@ -157,6 +171,7 @@ export function buildUserWorkspaceHome({
   recommendedProjects,
   publishedResults,
   runs,
+  assetPreferences,
   warnings,
 }: {
   navigationContext: NavigationContext
@@ -165,6 +180,7 @@ export function buildUserWorkspaceHome({
   recommendedProjects: ProjectRow[]
   publishedResults: PublishedResultRow[]
   runs: RunRow[]
+  assetPreferences?: AssetPreferenceRow[]
   warnings: UserWorkspaceWarning[]
 }): UserWorkspaceHome {
   const user = navigationContext.user
@@ -213,6 +229,7 @@ export function buildUserWorkspaceHome({
       resultCount: publishedResults.length,
       detailHref: "/workspace/earnings",
     },
+    assetPreferences: buildUserAssetPreferenceReadiness({ userId: user?.id ?? null, rows: assetPreferences ?? [] }),
     warnings,
   }
 }
@@ -229,12 +246,13 @@ export async function getUserWorkspaceHome(navigationContext: NavigationContext)
       recommendedProjects: [],
       publishedResults: [],
       runs: [],
+      assetPreferences: [],
       warnings,
     })
   }
 
   const supabase = await createServerSupabaseClient()
-  const [participantRows, publishedResults] = await Promise.all([
+  const [participantRows, publishedResults, assetPreferences] = await Promise.all([
     readWorkspaceData<ParticipantRow[]>(
       "participation",
       supabase
@@ -252,6 +270,16 @@ export async function getUserWorkspaceHome(navigationContext: NavigationContext)
         .select("allocation_usd, aggregate_score, published_at, run_id")
         .eq("user_id", user.id)
         .order("published_at", { ascending: false }),
+      warnings,
+      [],
+    ),
+    readWorkspaceData<AssetPreferenceRow[]>(
+      "asset-preferences",
+      supabase
+        .from("user_asset_preferences")
+        .select("id, rank, asset_type, asset_code, project_id, accepted")
+        .eq("user_id", user.id)
+        .order("rank", { ascending: true }),
       warnings,
       [],
     ),
@@ -301,6 +329,7 @@ export async function getUserWorkspaceHome(navigationContext: NavigationContext)
     recommendedProjects,
     publishedResults,
     runs,
+    assetPreferences,
     warnings,
   })
 }

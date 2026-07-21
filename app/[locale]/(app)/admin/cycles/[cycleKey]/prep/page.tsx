@@ -106,7 +106,7 @@ export default async function AdminCyclePrepPage({ params }: PageProps) {
         </section>
       </div>
 
-      <section className="grid gap-6 md:grid-cols-2 xl:grid-cols-6">
+      <section className="grid gap-6 md:grid-cols-2 xl:grid-cols-7">
         <Card>
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium">Contribution submissions</CardTitle>
@@ -170,6 +170,17 @@ export default async function AdminCyclePrepPage({ params }: PageProps) {
           <CardContent>
             <div className="text-3xl font-semibold">{review.manifest.counts.identitySnapshots}</div>
             <p className="mt-2 text-xs uppercase tracking-[0.16em] text-[var(--text-soft)]">CUBID snapshots</p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-medium">Asset priorities</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-3xl font-semibold">{review.assetPreferenceReadiness.customPreferenceUserCount}</div>
+            <p className="mt-2 text-xs uppercase tracking-[0.16em] text-[var(--text-soft)]">
+              custom · {review.assetPreferenceReadiness.rejectAllProjectTokenUserCount} reject project tokens
+            </p>
           </CardContent>
         </Card>
       </section>
@@ -309,6 +320,60 @@ export default async function AdminCyclePrepPage({ params }: PageProps) {
                   </ul>
                 </div>
               ) : null}
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle>Asset priority readiness</CardTitle>
+              <CardDescription>
+                User settlement preferences are planning inputs only. Prep surfaces them so future distribution can detect
+                token-rejection warnings without exposing private payout destinations.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-3 text-sm">
+              {review.assetPreferenceReadiness.readError ? (
+                <p className="text-amber-700 dark:text-amber-200">{review.assetPreferenceReadiness.readError}</p>
+              ) : (
+                <>
+                  <div className="grid gap-3 sm:grid-cols-2">
+                    <div className="rounded-[var(--radius-xl)] border border-[color:var(--surface-border)] bg-[var(--surface-panel-strong)] p-3">
+                      <p className="text-xs uppercase tracking-[0.16em] text-[var(--text-soft)]">Cycle participants</p>
+                      <p className="text-2xl font-semibold text-[var(--text-strong)]">
+                        {review.assetPreferenceReadiness.eligibleUserCount}
+                      </p>
+                    </div>
+                    <div className="rounded-[var(--radius-xl)] border border-[color:var(--surface-border)] bg-[var(--surface-panel-strong)] p-3">
+                      <p className="text-xs uppercase tracking-[0.16em] text-[var(--text-soft)]">Preference rows</p>
+                      <p className="text-2xl font-semibold text-[var(--text-strong)]">
+                        {review.assetPreferenceReadiness.totalPreferenceRowCount}
+                      </p>
+                    </div>
+                    <div className="rounded-[var(--radius-xl)] border border-[color:var(--surface-border)] bg-[var(--surface-panel-strong)] p-3">
+                      <p className="text-xs uppercase tracking-[0.16em] text-[var(--text-soft)]">Custom priorities</p>
+                      <p className="text-2xl font-semibold text-[var(--text-strong)]">
+                        {review.assetPreferenceReadiness.customPreferenceUserCount}
+                      </p>
+                    </div>
+                    <div className="rounded-[var(--radius-xl)] border border-[color:var(--surface-border)] bg-[var(--surface-panel-strong)] p-3">
+                      <p className="text-xs uppercase tracking-[0.16em] text-[var(--text-soft)]">Using defaults</p>
+                      <p className="text-2xl font-semibold text-[var(--text-strong)]">
+                        {review.assetPreferenceReadiness.defaultPreferenceUserCount}
+                      </p>
+                    </div>
+                  </div>
+                  {review.assetPreferenceReadiness.usersRejectingProjectTokens.length > 0 ? (
+                    <div>
+                      <p className="text-xs uppercase tracking-[0.16em] text-[var(--text-soft)]">Reject project tokens</p>
+                      <ul className="mt-2 space-y-1 text-[var(--text-muted)]">
+                        {review.assetPreferenceReadiness.usersRejectingProjectTokens.slice(0, 5).map((user) => (
+                          <li key={user.userId}>{user.displayName ?? user.email ?? user.userId}</li>
+                        ))}
+                      </ul>
+                    </div>
+                  ) : null}
+                </>
+              )}
             </CardContent>
           </Card>
 

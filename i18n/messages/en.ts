@@ -520,6 +520,26 @@ export const enMessages = {
         "This blends FundLoop-managed profile context with CUBID-backed trust signals, so you can see which parts improve discoverability and future eligibility.",
       complete: "All current completion items are covered.",
     },
+    assetPreferences: {
+      title: "Future settlement priorities",
+      description: "The asset order FundLoop can use later when turning approved bookkeeping credits into a settlement plan.",
+      planningNote:
+        "These preferences do not change your USD-equivalent earnings and do not mean funds have been transferred. They are readiness inputs for a later payout workflow.",
+      defaultBadge: "Defaults",
+      customBadge: "Custom",
+      rejectAllWarningTitle: "Project tokens are rejected",
+      rejectAllWarningBody:
+        "Rejecting project tokens may delay future settlement if project-token supply is the first available asset for part of an allocation.",
+      manageCta: "Manage asset priorities",
+      rank: "#{rank}",
+      accepted: "Accepted",
+      rejected: "Rejected",
+      type: {
+        stablecoin: "Stablecoin",
+        fiat: "Fiat",
+        project_token: "Project token",
+      },
+    },
     participation: {
       title: "Participation footprint",
       description: "Projects you have joined or help administer create the participation signal that future monthly cycles can use.",

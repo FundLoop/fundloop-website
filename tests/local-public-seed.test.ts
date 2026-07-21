@@ -39,6 +39,15 @@ describe("local public discovery seed fixtures", () => {
     expect(seedSql).toContain(`'seed-civic-mesh-2026-05-ledger'`)
   })
 
+  it("includes deterministic user asset preference scenarios for MVP smoke coverage", () => {
+    expect(seedSql).toContain(`INSERT INTO "public"."user_asset_preferences"`)
+    expect(seedSql).toContain(`'stablecoin', 'USDC', NULL, 't'`)
+    expect(seedSql).toContain(`'fiat', 'USD', NULL, 't'`)
+    expect(seedSql).toContain(`'project_token', 'CIVIC', '101', 't'`)
+    expect(seedSql).toContain(`'project_token', 'CIVIC', '101', 'f'`)
+    expect(seedSql).toContain(`'project_token', 'ATLAS', '102', 'f'`)
+  })
+
   it("includes stable public blog slugs for listing and detail smoke coverage", () => {
     expect(seedSql).toContain("'why-monthly-cadence-matters'")
     expect(seedSql).toContain("'what-contributors-actually-need-from-a-project-directory'")
@@ -48,6 +57,7 @@ describe("local public discovery seed fixtures", () => {
   it("bumps the local project and user sequences past the curated fixtures", () => {
     expect(seedSql).toContain(`SELECT pg_catalog.setval('"public"."projects_id_seq1"', 103, true);`)
     expect(seedSql).toContain(`SELECT pg_catalog.setval('"public"."users_sequential_id_seq"', 104, true);`)
+    expect(seedSql).toContain(`SELECT pg_catalog.setval('"public"."user_asset_preferences_id_seq"', 110, true);`)
     expect(seedSql).toContain(`SELECT pg_catalog.setval('"public"."blog_posts_id_seq"', 26, true);`)
   })
 })
