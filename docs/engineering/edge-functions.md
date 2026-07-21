@@ -56,6 +56,7 @@ The first migrated domains are:
   - `monthly-cycle-calculation-package`
   - `monthly-cycle-verification-review`
   - `monthly-cycle-approval`
+  - `monthly-cycle-bookkeeping-credits-create`
 - `user-cubid-resolve-email`
 - `user-cubid-sync-profile`
 - onboarding writes:

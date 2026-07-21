@@ -512,6 +512,102 @@ export type Database = {
           },
         ]
       }
+      monthly_cycle_bookkeeping_credits: {
+        Row: {
+          allocation_breakdown: Json
+          asset_fills: Json
+          created_at: string
+          credited_at: string
+          credited_by_user_id: string | null
+          currency_code: string
+          id: number
+          idempotency_key: string
+          monthly_cycle_id: number
+          payment_status: string
+          run_id: number
+          source_breakdown: Json
+          source_result_id: number
+          status: string
+          updated_at: string
+          usd_equivalent_amount: number
+          user_id: string
+        }
+        Insert: {
+          allocation_breakdown?: Json
+          asset_fills?: Json
+          created_at?: string
+          credited_at?: string
+          credited_by_user_id?: string | null
+          currency_code?: string
+          id?: number
+          idempotency_key: string
+          monthly_cycle_id: number
+          payment_status?: string
+          run_id: number
+          source_breakdown?: Json
+          source_result_id: number
+          status?: string
+          updated_at?: string
+          usd_equivalent_amount: number
+          user_id: string
+        }
+        Update: {
+          allocation_breakdown?: Json
+          asset_fills?: Json
+          created_at?: string
+          credited_at?: string
+          credited_by_user_id?: string | null
+          currency_code?: string
+          id?: number
+          idempotency_key?: string
+          monthly_cycle_id?: number
+          payment_status?: string
+          run_id?: number
+          source_breakdown?: Json
+          source_result_id?: number
+          status?: string
+          updated_at?: string
+          usd_equivalent_amount?: number
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "monthly_cycle_bookkeeping_credits_credited_by_user_id_fkey"
+            columns: ["credited_by_user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "monthly_cycle_bookkeeping_credits_monthly_cycle_id_fkey"
+            columns: ["monthly_cycle_id"]
+            isOneToOne: false
+            referencedRelation: "monthly_cycles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "monthly_cycle_bookkeeping_credits_run_id_fkey"
+            columns: ["run_id"]
+            isOneToOne: false
+            referencedRelation: "zkas_runs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "monthly_cycle_bookkeeping_credits_source_result_id_fkey"
+            columns: ["source_result_id"]
+            isOneToOne: false
+            referencedRelation: "zkas_run_results"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "monthly_cycle_bookkeeping_credits_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["user_id"]
+          },
+        ]
+      }
       monthly_cycle_events: {
         Row: {
           actor_role: string

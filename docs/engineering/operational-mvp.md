@@ -299,6 +299,7 @@ Rules:
 
 - No real payout execution occurs.
 - Credits are created from approved user results.
+- Credits are created through the typed `monthly-cycle-bookkeeping-credits-create` Edge Function command.
 - Credits store selected asset fill amount, canonical USD equivalent amount, and source-currency/project breakdown for reporting.
 - Returned future-pool amounts are recorded separately and are not user credits.
 - Credit status starts as `credited`.

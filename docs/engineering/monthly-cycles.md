@@ -194,6 +194,8 @@ The `verified` path must pass MVP integrity checks against locked and calculated
 
 `monthly-cycle-approval` requires a verified completed run, a clean MVP verification integrity pass, an internal operator, and a required operator note. It moves the cycle to `approval` with `approval_started_at`, records audit metadata that the next step is bookkeeping credit creation, and explicitly does not create credits or execute payouts. This is the explicit checkpoint before the MVP bookkeeping-credit command can materialize user-visible credited-but-not-paid earnings.
 
+`monthly-cycle-bookkeeping-credits-create` is the MVP bookkeeping boundary after approval. It requires an internal operator, an approved monthly cycle, a latest completed/finalized verified run, and a result artifact hash. The command reads positive verified `zkas_run_results`, snapshots project-level source breakdowns from `monthly_cycle_allocation_project_results`, snapshots selected asset fills from `monthly_cycle_allocation_asset_fills`, records returned pool totals separately from user credits, and creates idempotent `monthly_cycle_bookkeeping_credits` rows with `status='credited'` and `payment_status='not_paid'`. It advances the cycle into `distribution` and writes monthly-cycle audit events, but it does not create payout batches, execute transfers, reconcile external rails, or mark anything paid.
+
 For operator and user-facing copy, keep these states distinct:
 
 - `calculated`: result rows and artifacts exist but are not verified or credited

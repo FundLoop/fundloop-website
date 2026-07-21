@@ -204,3 +204,12 @@
 - summary: Implemented issue #81 by making the deterministic verification fixtures explicit for clean approval and needs-cleanup outcomes, asserting approval does not create credits, payout intents, or reports, and documenting the MVP state labels from calculated through credited/not-paid. Added the Goal #59 handoff contract for bookkeeping credit creation from approved outputs.
 - validation: `pnpm test tests/monthly-cycle-verification.test.ts tests/monthly-cycle-verification-actions-copy.test.ts tests/monthly-cycle-verification-contract.test.ts` passed with 16 tests. `git diff --check` passed.
 - follow-ups: Run independent validation for #81. If it passes, validate Goal #58 and continue Goal #59 bookkeeping credit creation.
+
+## 2026-07-21T13:18:20.000Z - Issue 82 bookkeeping earnings credit command
+
+- agent: Codex
+- branch: codex/operational-mvp-issue-51
+- head: issue #82 implementation commit
+- summary: Implemented issue #82 by adding the `monthly_cycle_bookkeeping_credits` table, the `monthly-cycle-bookkeeping-credits-create` typed Edge Function command, the server-side monthly-cycle bookkeeping command, and docs clarifying that MVP credits are `credited` and `not_paid` bookkeeping records rather than payout intents or executed transfers. The command requires an internal operator, approved cycle status, a latest completed/finalized verified run, and a result artifact hash, then snapshots result rows, source/project breakdowns, asset fills, returned future-pool totals, and allocator explanation metadata idempotently.
+- validation: `pnpm test tests/monthly-cycle-bookkeeping-credits-contract.test.ts tests/monthly-cycle-bookkeeping-credits-command.test.ts` passed with 2 files and 10 tests. `pnpm typecheck` passed. `deno cache --config supabase/functions/deno.json supabase/functions/monthly-cycle-bookkeeping-credits-create/index.ts` passed. `pnpm lint` passed. `git diff --check` passed. `pnpm test` passed with 98 files and 456 tests. `pnpm build` passed. `pnpm check` passed with lint, full tests, typecheck, and Next build. Attempts to run the Node 22 `pnpm dlx node@22.22.1 /opt/homebrew/bin/pnpm ...` commands were blocked by a local pnpm dlx cache `ENOENT`, not by repo code; local shell validation otherwise passed with the warning that the active Node is v24.15.0.
+- follow-ups: Run independent validation for #82. If it passes, move #82 to In Review and continue #83 to expose credited/not-paid earnings in the user workspace.

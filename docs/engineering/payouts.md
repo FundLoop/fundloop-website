@@ -23,6 +23,8 @@ The enum exists now so the product and operator model can be multi-rail before a
 
 ## Monthly Cycle Handoff
 
+`monthly-cycle-bookkeeping-credits-create` is the MVP handoff from approved calculation results into user-visible bookkeeping earnings. It creates rows in `monthly_cycle_bookkeeping_credits` from verified calculation output, preserving USD equivalent amount, selected asset fills, source/project breakdown, and allocator explanation metadata. These records are deliberately `credited` and `not_paid`: they prove the user's account has been credited in bookkeeping state, but they are not transfer instructions and they do not imply settlement has happened.
+
 `monthly-cycle-payout-intents-create` converts approved `zkas_published_user_results` into `payout_intents`.
 
 The command is idempotent per published result and cycle. It creates:
@@ -31,6 +33,8 @@ The command is idempotent per published result and cycle. It creates:
 - `draft` intents when the user still needs to configure a route
 
 This keeps missing payout routes visible without blocking the whole cycle from entering distribution work. Asset preferences are handled separately by `user_asset_preferences`; they guide future asset fulfillment planning but do not prove a destination is ready.
+
+For the operational MVP, bookkeeping credits are the success target. Payout intents remain the later outbound-planning model for actual transfer readiness.
 
 ## What Is Not Included Yet
 
