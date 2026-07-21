@@ -99,6 +99,24 @@ async function sha256Hex(value: unknown) {
   return [...new Uint8Array(digest)].map((byte) => byte.toString(16).padStart(2, "0")).join("")
 }
 
+function projectIdsForUser(participants: Array<{ project_id: number; user_id: string }>, userId: string) {
+  return sortedUnique(
+    participants
+      .filter((participant) => participant.user_id === userId)
+      .map((participant) => participant.project_id)
+      .filter((id): id is number => Number.isInteger(id)),
+  )
+}
+
+function attributionProjectIdsForUser(attributionRows: Array<Record<string, unknown>>, userId: string) {
+  return sortedUnique(
+    attributionRows
+      .filter((row) => row.user_id === userId)
+      .map((row) => row.project_id)
+      .filter((id): id is number => Number.isInteger(id)),
+  )
+}
+
 async function insertCycleEvent(
   supabase: SupabaseClient<Database>,
   input: MonthlyCycleLockInput,
@@ -312,10 +330,49 @@ export async function executeMonthlyCycleLockCommand(
       )
     ).filter((artifact) => String(artifact.status ?? "") === "approved")
 
+    const contributionSubmissions = (
+      await fetchRows<Record<string, unknown>>(
+        supabase,
+        "project_monthly_contribution_submissions",
+        "id, project_id, period_start, period_end, source_currency_code, source_amount, usd_equivalent_amount, commitment_percentage, calculated_contribution_amount, source_reference, status, submitted_by_user_id, submitted_at, updated_at",
+        cycle.id,
+      )
+    )
+      .filter((submission) => String(submission.status ?? "") === "submitted")
+      .sort((a, b) => Number(a.project_id) - Number(b.project_id) || Number(a.id) - Number(b.id))
+
+    const attributionDatasets = (
+      await fetchRows<Record<string, unknown>>(
+        supabase,
+        "project_attribution_datasets",
+        "id, project_id, monthly_cycle_id, status, row_count, total_attribution_points, note, proof_type, proof_artifact_uri, verifier_backend, verification_status, submitted_by_user_id, submitted_at, approved_by_user_id, approved_at, updated_at",
+        cycle.id,
+      )
+    )
+      .filter((dataset) => String(dataset.status ?? "") === "approved")
+      .sort((a, b) => Number(a.project_id) - Number(b.project_id) || Number(a.id) - Number(b.id))
+    const attributionDatasetIds = attributionDatasets.map((dataset) => dataset.id).filter((id): id is number => Number.isInteger(id))
+    const attributionRowsQuery =
+      attributionDatasetIds.length > 0
+        ? await supabase
+            .from("project_attribution_rows")
+            .select(
+              "id, dataset_id, project_id, monthly_cycle_id, row_index, scoped_cubid_id, user_id, user_email, attribution_points, category, evidence_reference, notes, resolution_status, resolution_message, created_at",
+            )
+            .in("dataset_id", attributionDatasetIds)
+            .eq("monthly_cycle_id", cycle.id)
+        : { data: [], error: null }
+    if (attributionRowsQuery.error) return failure("query_failed", attributionRowsQuery.error.message)
+    const attributionRows = asArray(attributionRowsQuery.data as Array<Record<string, unknown>> | null).sort(
+      (a, b) => Number(a.dataset_id) - Number(b.dataset_id) || Number(a.row_index) - Number(b.row_index) || compareStableStrings(String(a.id), String(b.id)),
+    )
+
     const projectIds = sortedUnique(
       [
         ...payments.map((payment) => payment.project_id).filter((id): id is number => Number.isInteger(id)),
         ...datasets.map((dataset) => dataset.project_id).filter((id): id is number => Number.isInteger(id)),
+        ...contributionSubmissions.map((submission) => submission.project_id).filter((id): id is number => Number.isInteger(id)),
+        ...attributionDatasets.map((dataset) => dataset.project_id).filter((id): id is number => Number.isInteger(id)),
       ],
     )
 
@@ -325,7 +382,10 @@ export async function executeMonthlyCycleLockCommand(
         : { data: [], error: null }
     if (participantsQuery.error) return failure("query_failed", participantsQuery.error.message)
     const participants = asArray(participantsQuery.data as Array<{ project_id: number; user_id: string }> | null)
-    const userIds = sortedUnique(participants.map((participant) => participant.user_id).filter(Boolean))
+    const userIds = sortedUnique([
+      ...participants.map((participant) => participant.user_id).filter(Boolean),
+      ...attributionRows.map((row) => row.user_id).filter((userId): userId is string => typeof userId === "string" && userId.length > 0),
+    ])
 
     const usersQuery =
       userIds.length > 0
@@ -337,19 +397,38 @@ export async function executeMonthlyCycleLockCommand(
         : { data: [], error: null }
     if (usersQuery.error) return failure("query_failed", usersQuery.error.message)
     const users = asArray(usersQuery.data as Array<Record<string, unknown>> | null)
+    const activeUserIds = sortedUnique(users.map((user) => String(user.user_id)))
 
     const snapshotsQuery =
-      userIds.length > 0
+      activeUserIds.length > 0
         ? await supabase
             .from("cubid_identity_snapshots")
             .select(
               "user_id, cubid_user_id, primary_name, primary_email, primary_phone, cubid_score, available_stamp_types, verified_stamp_types, last_synced_at",
             )
-            .in("user_id", userIds)
+            .in("user_id", activeUserIds)
         : { data: [], error: null }
     if (snapshotsQuery.error) return failure("query_failed", snapshotsQuery.error.message)
     const snapshots = asArray(snapshotsQuery.data as Array<Record<string, unknown>> | null)
     const snapshotsByUserId = new Map(snapshots.map((snapshot) => [String(snapshot.user_id), snapshot]))
+
+    const assetPreferencesQuery =
+      activeUserIds.length > 0
+        ? await supabase
+            .from("user_asset_preferences")
+            .select("id, user_id, rank, asset_type, asset_code, project_id, accepted, updated_at")
+            .in("user_id", activeUserIds)
+            .order("rank", { ascending: true })
+        : { data: [], error: null }
+    if (assetPreferencesQuery.error) return failure("query_failed", assetPreferencesQuery.error.message)
+    const assetPreferences = asArray(assetPreferencesQuery.data as Array<Record<string, unknown>> | null)
+    const assetPreferencesByUserId = new Map<string, Array<Record<string, unknown>>>()
+    for (const preference of assetPreferences) {
+      const userId = String(preference.user_id)
+      const existing = assetPreferencesByUserId.get(userId) ?? []
+      existing.push(preference)
+      assetPreferencesByUserId.set(userId, existing)
+    }
 
     const identitySnapshots = users
       .map((user) => {
@@ -368,6 +447,92 @@ export async function executeMonthlyCycleLockCommand(
         }
       })
       .sort((a, b) => compareStableStrings(String(a.user_id), String(b.user_id)))
+    const eligibleUsers = users
+      .map((user) => {
+        const userId = String(user.user_id)
+        const cubidStatus = normalizeString(user.cubid_identity_status)
+        return {
+          user_id: normalizeString(user.user_id),
+          status: normalizeString(user.status),
+          cubid_id: normalizeString(user.cubid_id),
+          cubid_identity_status: cubidStatus,
+          is_eligible: cubidStatus === "linked" || cubidStatus === "verified",
+          participant_project_ids: projectIdsForUser(participants, userId),
+          attributed_project_ids: attributionProjectIdsForUser(attributionRows, userId),
+        }
+      })
+      .sort((a, b) => compareStableStrings(String(a.user_id), String(b.user_id)))
+    const assetPreferenceSummaries = activeUserIds
+      .map((userId) => {
+        const preferences = (assetPreferencesByUserId.get(userId) ?? [])
+          .map((preference) => ({
+            id: preference.id,
+            rank: preference.rank,
+            asset_type: preference.asset_type,
+            asset_code: preference.asset_code,
+            project_id: preference.project_id,
+            accepted: preference.accepted,
+          }))
+          .sort((a, b) => Number(a.rank) - Number(b.rank) || compareStableStrings(String(a.asset_code), String(b.asset_code)))
+        const projectTokenPreferences = preferences.filter((preference) => preference.asset_type === "project_token")
+        return {
+          user_id: userId,
+          has_custom_preferences: preferences.length > 0,
+          rejects_all_project_tokens:
+            projectTokenPreferences.length > 0 && projectTokenPreferences.every((preference) => preference.accepted === false),
+          preferences,
+        }
+      })
+      .sort((a, b) => compareStableStrings(a.user_id, b.user_id))
+    const contributionSubmissionInputs = contributionSubmissions.map((submission) => ({
+      id: submission.id,
+      project_id: submission.project_id,
+      period_start: submission.period_start,
+      period_end: submission.period_end,
+      source_currency_code: submission.source_currency_code,
+      source_amount: normalizeNumber(submission.source_amount),
+      usd_equivalent_amount: normalizeNumber(submission.usd_equivalent_amount),
+      commitment_percentage: normalizeNumber(submission.commitment_percentage),
+      calculated_contribution_amount: normalizeNumber(submission.calculated_contribution_amount),
+      source_reference: submission.source_reference,
+      status: submission.status,
+      submitted_by_user_id: submission.submitted_by_user_id,
+      submitted_at: submission.submitted_at,
+      updated_at: submission.updated_at,
+    }))
+    const attributionDatasetInputs = attributionDatasets.map((dataset) => ({
+      id: dataset.id,
+      project_id: dataset.project_id,
+      status: dataset.status,
+      row_count: dataset.row_count,
+      total_attribution_points: normalizeNumber(dataset.total_attribution_points),
+      note: dataset.note,
+      proof_type: dataset.proof_type,
+      proof_artifact_uri: dataset.proof_artifact_uri,
+      verifier_backend: dataset.verifier_backend,
+      verification_status: dataset.verification_status,
+      submitted_by_user_id: dataset.submitted_by_user_id,
+      submitted_at: dataset.submitted_at,
+      approved_by_user_id: dataset.approved_by_user_id,
+      approved_at: dataset.approved_at,
+      updated_at: dataset.updated_at,
+    }))
+    const attributionRowInputs = attributionRows.map((row) => ({
+      id: row.id,
+      dataset_id: row.dataset_id,
+      project_id: row.project_id,
+      row_index: row.row_index,
+      scoped_cubid_id: row.scoped_cubid_id,
+      user_id: row.user_id,
+      user_email: row.user_email,
+      attribution_points: normalizeNumber(row.attribution_points),
+      category: row.category,
+      evidence_reference: row.evidence_reference,
+      notes: row.notes,
+      resolution_status: row.resolution_status,
+      resolution_message: row.resolution_message,
+      created_at: row.created_at,
+    }))
 
     const lockedAt = (deps.now?.() ?? new Date()).toISOString()
     const counts = {
@@ -377,6 +542,22 @@ export async function executeMonthlyCycleLockCommand(
       identitySnapshots: identitySnapshots.length,
       approvedDatasets: datasets.length,
       identityArtifacts: identityArtifacts.length,
+    }
+    const mvpCounts = {
+      contributionSubmissions: contributionSubmissionInputs.length,
+      attributionDatasets: attributionDatasetInputs.length,
+      attributionRows: attributionRowInputs.length,
+      eligibleUsers: eligibleUsers.filter((user) => user.is_eligible).length,
+      assetPreferenceSummaries: assetPreferenceSummaries.length,
+      usersRejectingProjectTokens: assetPreferenceSummaries.filter((summary) => summary.rejects_all_project_tokens).length,
+    }
+    const mvpChecksums = {
+      contributionSubmissions: await sha256Hex(contributionSubmissionInputs),
+      attributionDatasets: await sha256Hex(attributionDatasetInputs),
+      attributionRows: await sha256Hex(attributionRowInputs),
+      eligibleUsers: await sha256Hex(eligibleUsers),
+      identitySnapshots: await sha256Hex(identitySnapshots),
+      assetPreferenceSummaries: await sha256Hex(assetPreferenceSummaries),
     }
     const manifest = {
       version: "monthly-cycle-lock.v1",
@@ -421,6 +602,15 @@ export async function executeMonthlyCycleLockCommand(
         }))
         .sort((a, b) => Number(a.id) - Number(b.id)),
       identity_snapshots: identitySnapshots,
+      mvp_inputs: {
+        contribution_submissions: contributionSubmissionInputs,
+        attribution_datasets: attributionDatasetInputs,
+        attribution_rows: attributionRowInputs,
+        eligible_users: eligibleUsers,
+        asset_preferences: assetPreferenceSummaries,
+        counts: mvpCounts,
+        checksums: mvpChecksums,
+      },
       zkas_inputs: {
         datasets: datasets
           .map((dataset) => ({

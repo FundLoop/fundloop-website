@@ -93,7 +93,9 @@ The manifest includes:
 - same-cycle onchain submission state and reconciliation status
 - active participating users' CUBID linkage/snapshot summary
 - approved zkAS datasets and identity artifact references
+- MVP contribution submissions, approved MVP attribution datasets, raw attribution rows with scoped CUBID identity references, eligible users, and user asset-preference summaries
 - counts for each section
+- deterministic MVP section checksums for contribution submissions, attribution datasets, attribution rows, eligible users, identity snapshots, and asset-preference summaries
 
 The command reattaches newly-created month-bearing rows to the cycle before reading. It updates the cycle from `open` to `locked` with an optimistic `status = open` guard so concurrent or repeated locks fail safely instead of overwriting an already-transitioned cycle.
 
@@ -110,13 +112,14 @@ The prep workspace surfaces:
 
 - missing or mismatched lock manifest/hash
 - live contribution-submission readiness, including committed projects that have not submitted for the cycle
+- live asset-preference readiness, including users who reject all project-token options
 - unresolved onchain submissions, including override reasons
 - missing confirmed contribution inputs
 - missing approved zkAS datasets or identity artifacts
 - missing or unlinked CUBID participant snapshots
 - informational live-row drift between current linked rows and the immutable manifest
 
-Live contribution-submission readiness is also informational in this phase. Goal #56 owns adding contribution submissions to the immutable lock manifest; until then, the prep workspace intentionally keeps submission readiness visible without treating it as a calculation input. Live drift is informational because downstream calculation should use the locked manifest, not mutable current rows.
+Live contribution-submission and asset-preference readiness remain visible for operator diagnostics, but downstream calculation should consume the immutable `locked_manifest.mvp_inputs` section rather than mutable current rows. Preference summaries deliberately exclude private payout destinations; they only capture ordered asset types/codes, project-token scope, accepted/rejected state, counts, and warning cues.
 
 Issue #67 adds the backend command/schema for MVP attribution submissions. `project-attribution-dataset-submit` stores one canonical current attribution dataset per project/cycle and normalized rows requiring scoped CUBID identities. These rows remain internally inspectable for MVP operators and founders, while optional proof metadata fields reserve the future zkActivitySum ingest path.
 

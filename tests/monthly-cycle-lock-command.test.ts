@@ -155,6 +155,86 @@ function makeSupabase(overrides: Partial<Record<string, Array<Record<string, unk
     participants: [{ project_id: 7, user_id: "user-1" }],
     users: [{ user_id: "user-1", email: "a@example.com", cubid_id: "cubid-1", cubid_identity_status: "linked", cubid_score: 80, primary_email_identity: "a@example.com", status: "active" }],
     cubid_identity_snapshots: [{ user_id: "user-1", cubid_user_id: "cubid-1", primary_email: "a@example.com", primary_phone: "+15555550123", cubid_score: 90, available_stamp_types: ["email", "phone"], verified_stamp_types: ["email"], last_synced_at: "2026-04-28T00:00:00Z" }],
+    project_monthly_contribution_submissions: [
+      {
+        id: 40,
+        monthly_cycle_id: 1,
+        project_id: 7,
+        period_start: "2026-04-01",
+        period_end: "2026-04-30",
+        source_currency_code: "USD",
+        source_amount: 1000,
+        usd_equivalent_amount: 1000,
+        commitment_percentage: 3,
+        calculated_contribution_amount: 30,
+        source_reference: "ledger-2026-04",
+        status: "submitted",
+        submitted_by_user_id: "admin-1",
+        submitted_at: "2026-04-30T12:00:00Z",
+        updated_at: "2026-04-30T12:00:00Z",
+      },
+    ],
+    project_attribution_datasets: [
+      {
+        id: 50,
+        monthly_cycle_id: 1,
+        project_id: 7,
+        status: "approved",
+        row_count: 1,
+        total_attribution_points: 10,
+        note: "Approved MVP attribution",
+        proof_type: "raw_rows",
+        proof_artifact_uri: null,
+        verifier_backend: null,
+        verification_status: "not_required",
+        submitted_by_user_id: "admin-1",
+        submitted_at: "2026-04-29T12:00:00Z",
+        approved_by_user_id: "operator-1",
+        approved_at: "2026-04-30T12:00:00Z",
+        updated_at: "2026-04-30T12:00:00Z",
+      },
+    ],
+    project_attribution_rows: [
+      {
+        id: 60,
+        dataset_id: 50,
+        monthly_cycle_id: 1,
+        project_id: 7,
+        row_index: 0,
+        scoped_cubid_id: "scoped-cubid-1",
+        user_id: "user-1",
+        user_email: "a@example.com",
+        attribution_points: 10,
+        category: "maintainer",
+        evidence_reference: "issue-thread-1",
+        notes: "Resolved contributor",
+        resolution_status: "resolved",
+        resolution_message: null,
+        created_at: "2026-04-29T12:00:00Z",
+      },
+    ],
+    user_asset_preferences: [
+      {
+        id: 70,
+        user_id: "user-1",
+        rank: 1,
+        asset_type: "stablecoin",
+        asset_code: "USDC",
+        project_id: null,
+        accepted: true,
+        updated_at: "2026-04-28T00:00:00Z",
+      },
+      {
+        id: 71,
+        user_id: "user-1",
+        rank: 2,
+        asset_type: "project_token",
+        asset_code: "CIVIC",
+        project_id: 7,
+        accepted: false,
+        updated_at: "2026-04-28T00:00:00Z",
+      },
+    ],
     project_stats_monthly: [],
     ...overrides,
   })
@@ -195,8 +275,73 @@ describe("executeMonthlyCycleLockCommand", () => {
     expect(supabase.updates.monthly_cycles[0].locked_manifest).toMatchObject({
       version: "monthly-cycle-lock.v1",
       identity_snapshots: [expect.objectContaining({ cubid_id: "cubid-1" })],
+      mvp_inputs: {
+        contribution_submissions: [expect.objectContaining({ project_id: 7, calculated_contribution_amount: 30 })],
+        attribution_datasets: [expect.objectContaining({ id: 50, proof_type: "raw_rows" })],
+        attribution_rows: [expect.objectContaining({ scoped_cubid_id: "scoped-cubid-1", attribution_points: 10 })],
+        eligible_users: [expect.objectContaining({ user_id: "user-1", is_eligible: true, attributed_project_ids: [7] })],
+        asset_preferences: [expect.objectContaining({ user_id: "user-1", has_custom_preferences: true })],
+        counts: expect.objectContaining({
+          contributionSubmissions: 1,
+          attributionDatasets: 1,
+          attributionRows: 1,
+          eligibleUsers: 1,
+          assetPreferenceSummaries: 1,
+          usersRejectingProjectTokens: 1,
+        }),
+        checksums: expect.objectContaining({
+          contributionSubmissions: expect.any(String),
+          attributionRows: expect.any(String),
+          assetPreferenceSummaries: expect.any(String),
+        }),
+      },
     })
     expect(supabase.inserts.monthly_cycle_events.map((event) => event.event_type)).toEqual(["lock_attempt", "lock_success"])
+  })
+
+  it("keeps MVP manifest inputs deterministic and destination-free", async () => {
+    const first = makeSupabase()
+    const second = makeSupabase({
+      user_asset_preferences: [
+        {
+          id: 71,
+          user_id: "user-1",
+          rank: 2,
+          asset_type: "project_token",
+          asset_code: "CIVIC",
+          project_id: 7,
+          accepted: false,
+          updated_at: "2026-04-28T00:00:00Z",
+          wallet_address: "0xshould-not-leak",
+        },
+        {
+          id: 70,
+          user_id: "user-1",
+          rank: 1,
+          asset_type: "stablecoin",
+          asset_code: "USDC",
+          project_id: null,
+          accepted: true,
+          updated_at: "2026-04-28T00:00:00Z",
+          bank_account: "should-not-leak",
+        },
+      ],
+    })
+
+    const firstResult = await executeMonthlyCycleLockCommand(first as never, commandInput, {
+      now: () => new Date("2026-05-01T00:00:00.000Z"),
+    })
+    const secondResult = await executeMonthlyCycleLockCommand(second as never, commandInput, {
+      now: () => new Date("2026-05-01T00:00:00.000Z"),
+    })
+
+    expect(firstResult.ok && secondResult.ok ? firstResult.data.lockedManifestHash : null).toBe(
+      secondResult.ok ? secondResult.data.lockedManifestHash : null,
+    )
+    const manifest = second.updates.monthly_cycles[0].locked_manifest
+    expect(JSON.stringify(manifest)).not.toContain("should-not-leak")
+    expect(JSON.stringify(manifest)).not.toContain("wallet_address")
+    expect(JSON.stringify(manifest)).not.toContain("bank_account")
   })
 
   it("rejects missing and non-open cycles", async () => {
