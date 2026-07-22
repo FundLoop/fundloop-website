@@ -19,6 +19,11 @@ type RoleReferenceRow = {
   id: number
 }
 
+type ParticipantAccessRow = {
+  id: number
+  is_admin: boolean | null
+}
+
 type MonthlyCycleRow = {
   id: number
   cycle_key: string
@@ -183,16 +188,17 @@ async function assertProjectContributorAccess(
 ): Promise<{ ok: true } | CommandFailure> {
   const { data: participant, error: participantError } = await supabase
     .from("participants")
-    .select("id")
+    .select("id, is_admin")
     .eq("project_id", project.id)
     .eq("user_id", actorUserId)
+    .eq("is_admin", true)
     .maybeSingle()
 
   if (participantError) {
     return commandFailure("reference_data_unavailable", participantError.message, { projectId: project.id })
   }
 
-  if (participant?.id) return { ok: true }
+  if ((participant as ParticipantAccessRow | null)?.id) return { ok: true }
 
   const { data: adminRoles, error: adminRolesError } = await supabase.from("ref_roles").select("id").in("name", ["Founder", "Admin"])
   if (adminRolesError) {

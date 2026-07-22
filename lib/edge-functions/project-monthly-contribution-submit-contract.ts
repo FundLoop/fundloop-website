@@ -11,6 +11,10 @@ export type ProjectMonthlyContributionSubmitCommandInput = {
   sourceAmount: number
   usdEquivalentAmount: number
   commitmentPercentage: number
+  /**
+   * Browser-supplied preview value. The server command recomputes the
+   * authoritative contribution amount from USD equivalent and commitment.
+   */
   calculatedContributionAmount: number
   sourceReference?: string
   notes?: string

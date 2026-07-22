@@ -17,6 +17,11 @@ type RoleReferenceRow = {
   id: number
 }
 
+type ParticipantAccessRow = {
+  id: number
+  is_admin: boolean | null
+}
+
 type MonthlyCycleRow = {
   id: number
   cycle_key: string
@@ -106,6 +111,10 @@ function toDateOnly(value: string) {
   return value.slice(0, 10)
 }
 
+function roundMoney(value: number) {
+  return Math.round((value + Number.EPSILON) * 100) / 100
+}
+
 function mapSubmission(row: SubmissionRow): ProjectMonthlyContributionSubmissionSummary {
   return {
     id: row.id,
@@ -153,16 +162,17 @@ async function assertProjectContributorAccess(
 ): Promise<{ ok: true } | CommandFailure> {
   const { data: participant, error: participantError } = await supabase
     .from("participants")
-    .select("id")
+    .select("id, is_admin")
     .eq("project_id", project.id)
     .eq("user_id", actorUserId)
+    .eq("is_admin", true)
     .maybeSingle()
 
   if (participantError) {
     return commandFailure("reference_data_unavailable", participantError.message, { projectId: project.id })
   }
 
-  if (participant?.id) return { ok: true }
+  if ((participant as ParticipantAccessRow | null)?.id) return { ok: true }
 
   const { data: adminRoles, error: adminRolesError } = await supabase.from("ref_roles").select("id").in("name", ["Founder", "Admin"])
   if (adminRolesError) {
@@ -250,6 +260,7 @@ export async function executeProjectMonthlyContributionSubmitCommand(
     })
   }
 
+  const serverCalculatedContributionAmount = roundMoney(input.usdEquivalentAmount * (input.commitmentPercentage / 100))
   const { data, error } = await supabase
     .from("project_monthly_contribution_submissions")
     .upsert(
@@ -262,7 +273,7 @@ export async function executeProjectMonthlyContributionSubmitCommand(
         source_amount: input.sourceAmount,
         usd_equivalent_amount: input.usdEquivalentAmount,
         commitment_percentage: input.commitmentPercentage,
-        calculated_contribution_amount: input.calculatedContributionAmount,
+        calculated_contribution_amount: serverCalculatedContributionAmount,
         source_reference: input.sourceReference ?? null,
         notes: input.notes ?? null,
         status: "submitted",

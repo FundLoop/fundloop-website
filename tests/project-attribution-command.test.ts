@@ -142,10 +142,10 @@ const insertedRows = [
 ]
 
 describe("project attribution dataset command", () => {
-  it("creates the canonical current attribution dataset for authorized project members", async () => {
+  it("creates the canonical current attribution dataset for authorized project admins", async () => {
     const supabase = createSupabaseMock({
       projects: [{ data: project, error: null }],
-      participants: [{ data: { id: 9 }, error: null }],
+      participants: [{ data: { id: 9, is_admin: true }, error: null }],
       monthly_cycles: [{ data: openCycle, error: null }],
       users: [
         { data: userOne, error: null },
@@ -185,6 +185,22 @@ describe("project attribution dataset command", () => {
     )
   })
 
+  it("rejects non-admin project participants before writing", async () => {
+    const supabase = createSupabaseMock({
+      projects: [{ data: project, error: null }],
+      participants: [{ data: null, error: null }],
+      ref_roles: [{ data: [], error: null }],
+    })
+
+    const result = await executeProjectAttributionDatasetSubmitCommand(supabase as never, input)
+
+    expect(result.ok ? null : result.error.code).toBe("permission_denied")
+    expect(supabase.operations).toEqual(expect.arrayContaining([
+      expect.objectContaining({ table: "participants", method: "eq", args: ["is_admin", true] }),
+    ]))
+    expect(supabase.operations.some((operation) => operation.table === "project_attribution_datasets")).toBe(false)
+  })
+
   it("rejects non-project members before writing", async () => {
     const supabase = createSupabaseMock({
       projects: [{ data: project, error: null }],
@@ -209,7 +225,7 @@ describe("project attribution dataset command", () => {
   it("rejects non-open monthly cycles", async () => {
     const supabase = createSupabaseMock({
       projects: [{ data: project, error: null }],
-      participants: [{ data: { id: 9 }, error: null }],
+      participants: [{ data: { id: 9, is_admin: true }, error: null }],
       monthly_cycles: [{ data: { ...openCycle, status: "locked" }, error: null }],
     })
 
@@ -222,7 +238,7 @@ describe("project attribution dataset command", () => {
   it("rejects unresolved scoped CUBID identities", async () => {
     const supabase = createSupabaseMock({
       projects: [{ data: project, error: null }],
-      participants: [{ data: { id: 9 }, error: null }],
+      participants: [{ data: { id: 9, is_admin: true }, error: null }],
       monthly_cycles: [{ data: openCycle, error: null }],
       users: [{ data: null, error: null }],
     })
@@ -239,7 +255,7 @@ describe("project attribution dataset command", () => {
   it("rejects users without CUBID linkage", async () => {
     const supabase = createSupabaseMock({
       projects: [{ data: project, error: null }],
-      participants: [{ data: { id: 9 }, error: null }],
+      participants: [{ data: { id: 9, is_admin: true }, error: null }],
       monthly_cycles: [{ data: openCycle, error: null }],
       users: [{ data: { ...userOne, cubid_identity_status: "unlinked" }, error: null }],
     })

@@ -276,3 +276,12 @@
 - summary: Replaced the old PR version-bump helper with a fresh main-focused automation. The workflow now reacts to approved same-repo pull request reviews targeting `main` by preparing the PR branch with the next patch version from `origin/main`, and also includes a `main` push safety net that only bumps when the pushed commits did not already change `package.json` version. The script updates root `package.json` and refreshes `pnpm-lock.yaml` through `pnpm install --lockfile-only --ignore-scripts` when a real bump is applied.
 - validation: `node .github/scripts/pr-version-bump.mjs --mode approved-main-pr --base-ref origin/main --dry-run` passed. `node .github/scripts/pr-version-bump.mjs --mode main-push --previous-ref HEAD^ --dry-run` passed. `git diff --check` passed. `pnpm lint` passed with the known local Node v24.15.0 versus repo Node >=22 <23 engine warning. `actionlint` was not installed locally, so dedicated workflow linting was not run.
 - follow-ups: When this branch is opened as a PR, confirm GitHub parses `.github/workflows/pr-version-bump.yml` successfully. The automation is intentionally scoped to `main` even though the current active release flow primarily uses `dev`.
+
+## 2026-07-22T03:41:55.000Z - PR 90 Codex review fixes
+
+- agent: Codex
+- branch: codex/operational-mvp-issue-51
+- head: PR review fix commit
+- summary: Addressed Codex review feedback on PR #90 by requiring `participants.is_admin = true` for founder contribution and attribution write commands, recomputing the authoritative monthly contribution amount server-side from USD equivalent and commitment percentage, and preserving non-USD/token source units when deriving contribution pools from locked manifests.
+- validation: `pnpm test tests/project-monthly-contribution-command.test.ts tests/project-attribution-command.test.ts tests/mvp-distribution-calculator.test.ts` passed with 3 files and 19 tests. `pnpm lint` passed. `pnpm typecheck` passed. `git diff --check` passed. `pnpm test` passed with 101 files and 466 tests. The active shell emitted the known Node v24.15.0 versus repo Node >=22 <23 engine warning; validation commands completed successfully.
+- follow-ups: Push the fix commit to PR #90, reply to the four Codex review comments with the fix commit reference, and confirm CI remains green.

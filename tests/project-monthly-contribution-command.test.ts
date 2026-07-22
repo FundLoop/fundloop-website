@@ -85,10 +85,10 @@ const submission = {
 }
 
 describe("project monthly contribution command", () => {
-  it("creates or replaces the canonical current contribution submission for an authorized project member", async () => {
+  it("creates or replaces the canonical current contribution submission for an authorized project admin", async () => {
     const supabase = createSupabaseMock({
       projects: [{ data: project, error: null }],
-      participants: [{ data: { id: 9 }, error: null }],
+      participants: [{ data: { id: 9, is_admin: true }, error: null }],
       monthly_cycles: [{ data: openCycle, error: null }],
       project_monthly_contribution_submissions: [{ data: submission, error: null }],
     })
@@ -115,6 +115,41 @@ describe("project monthly contribution command", () => {
     ).toEqual({ onConflict: "project_id,monthly_cycle_id" })
   })
 
+  it("recomputes the authoritative contribution amount server-side", async () => {
+    const supabase = createSupabaseMock({
+      projects: [{ data: project, error: null }],
+      participants: [{ data: { id: 9, is_admin: true }, error: null }],
+      monthly_cycles: [{ data: openCycle, error: null }],
+      project_monthly_contribution_submissions: [{ data: { ...submission, calculated_contribution_amount: 10 }, error: null }],
+    })
+
+    await executeProjectMonthlyContributionSubmitCommand(supabase as never, {
+      ...input,
+      calculatedContributionAmount: 0,
+    })
+
+    const upsertPayload = supabase.operations.find(
+      (operation) => operation.table === "project_monthly_contribution_submissions" && operation.method === "upsert",
+    )?.args[0] as Record<string, unknown>
+    expect(upsertPayload.calculated_contribution_amount).toBe(10)
+  })
+
+  it("rejects non-admin project participants before writing", async () => {
+    const supabase = createSupabaseMock({
+      projects: [{ data: project, error: null }],
+      participants: [{ data: null, error: null }],
+      ref_roles: [{ data: [], error: null }],
+    })
+
+    const result = await executeProjectMonthlyContributionSubmitCommand(supabase as never, input)
+
+    expect(result.ok ? null : result.error.code).toBe("permission_denied")
+    expect(supabase.operations).toEqual(expect.arrayContaining([
+      expect.objectContaining({ table: "participants", method: "eq", args: ["is_admin", true] }),
+    ]))
+    expect(supabase.operations.some((operation) => operation.table === "project_monthly_contribution_submissions")).toBe(false)
+  })
+
   it("rejects non-project members before writing", async () => {
     const supabase = createSupabaseMock({
       projects: [{ data: project, error: null }],
@@ -139,7 +174,7 @@ describe("project monthly contribution command", () => {
   it("rejects non-open monthly cycles", async () => {
     const supabase = createSupabaseMock({
       projects: [{ data: project, error: null }],
-      participants: [{ data: { id: 9 }, error: null }],
+      participants: [{ data: { id: 9, is_admin: true }, error: null }],
       monthly_cycles: [{ data: { ...openCycle, status: "locked" }, error: null }],
     })
 
@@ -159,7 +194,7 @@ describe("project monthly contribution command", () => {
   it("rejects contribution periods that do not match cycle bounds", async () => {
     const supabase = createSupabaseMock({
       projects: [{ data: project, error: null }],
-      participants: [{ data: { id: 9 }, error: null }],
+      participants: [{ data: { id: 9, is_admin: true }, error: null }],
       monthly_cycles: [{ data: openCycle, error: null }],
     })
 
@@ -176,14 +211,14 @@ describe("project monthly contribution command", () => {
     const missing = await executeProjectMonthlyContributionSubmitCommand(
       createSupabaseMock({
         projects: [{ data: { ...project, payment_percentage: null }, error: null }],
-        participants: [{ data: { id: 9 }, error: null }],
+        participants: [{ data: { id: 9, is_admin: true }, error: null }],
       }) as never,
       input,
     )
     const mismatched = await executeProjectMonthlyContributionSubmitCommand(
       createSupabaseMock({
         projects: [{ data: { ...project, payment_percentage: 3 }, error: null }],
-        participants: [{ data: { id: 9 }, error: null }],
+        participants: [{ data: { id: 9, is_admin: true }, error: null }],
       }) as never,
       input,
     )

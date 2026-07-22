@@ -743,18 +743,19 @@ export function buildMvpContributionPoolsFromLockManifest(manifest: unknown): Mv
   return submissions.map((submission) => {
     const row = submission && typeof submission === "object" ? (submission as Record<string, unknown>) : {}
     const sourceCurrency = String(row.source_currency_code ?? "USD").toUpperCase()
-    const sourceAmount = Number(row.calculated_contribution_amount ?? 0)
+    const submittedSourceAmount = Number(row.source_amount ?? 0)
     const usdEquivalentAmount = Number(row.usd_equivalent_amount ?? 0)
     const commitmentPercentage = Number(row.commitment_percentage ?? 0)
-    const fallbackUsdValue = usdEquivalentAmount * (commitmentPercentage / 100)
+    const contributionSourceAmount = submittedSourceAmount * (commitmentPercentage / 100)
+    const contributionUsdValue = usdEquivalentAmount * (commitmentPercentage / 100)
     return {
       id: Number(row.id),
       projectId: Number(row.project_id),
       assetType: inferAssetType(sourceCurrency),
       assetCode: sourceCurrency,
-      sourceAmount,
-      availableSourceAmount: sourceAmount,
-      usdValue: sourceCurrency === "USD" ? sourceAmount : fallbackUsdValue,
+      sourceAmount: contributionSourceAmount,
+      availableSourceAmount: contributionSourceAmount,
+      usdValue: contributionUsdValue,
       priceSnapshotId: null,
     }
   })

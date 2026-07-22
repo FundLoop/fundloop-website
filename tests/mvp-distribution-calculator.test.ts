@@ -226,18 +226,18 @@ describe("buildMvpContributionPoolsFromLockManifest", () => {
             {
               id: 13,
               project_id: 8,
-              source_currency_code: "EUR",
+              source_currency_code: "CAD",
               source_amount: 1000,
-              usd_equivalent_amount: 1100,
-              commitment_percentage: 2,
-              calculated_contribution_amount: 20,
+              usd_equivalent_amount: 740,
+              commitment_percentage: 3,
+              calculated_contribution_amount: 22.2,
             },
           ],
         },
       }),
     ).toEqual([
       expect.objectContaining({ id: 12, projectId: 7, assetCode: "USD", sourceAmount: 30, usdValue: 30 }),
-      expect.objectContaining({ id: 13, projectId: 8, assetCode: "EUR", sourceAmount: 20, usdValue: 22 }),
+      expect.objectContaining({ id: 13, projectId: 8, assetCode: "CAD", sourceAmount: 30, usdValue: 22.2 }),
     ])
   })
 })
