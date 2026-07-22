@@ -23,6 +23,8 @@ export function AuthModal({ open, onClose }: FullPageAuthProps) {
   const [otpSent, setOtpSent] = useState(false)
   const [otpDigits, setOtpDigits] = useState(["", "", "", "", "", ""])
   const otpInputs = useRef<(HTMLInputElement | null)[]>([])
+  const verificationInFlight = useRef(false)
+  const lastAutoVerificationKey = useRef<string | null>(null)
   const router = useRouter()
 
   useEffect(() => {
@@ -36,8 +38,9 @@ export function AuthModal({ open, onClose }: FullPageAuthProps) {
     setLoading(true)
     try {
       const supabase = getSupabaseBrowserClient()
+      const normalizedEmail = email.trim()
       const { error } = await supabase.auth.signInWithOtp({
-        email,
+        email: normalizedEmail,
         options: {
           emailRedirectTo: window.location.href,
         },
@@ -55,6 +58,7 @@ export function AuthModal({ open, onClose }: FullPageAuthProps) {
         })
         setOtpSent(true)
         setOtpDigits(["", "", "", "", "", ""])
+        lastAutoVerificationKey.current = null
       }
     } catch (error) {
       console.error("Error sending OTP:", error)
@@ -69,14 +73,41 @@ export function AuthModal({ open, onClose }: FullPageAuthProps) {
     }
   }
 
-  const verifyOtp = useCallback(async () => {
+  const verifyOtp = useCallback(async (options?: { force?: boolean }) => {
     console.log("verifyOtp: Started")
+    if (verificationInFlight.current) {
+      console.log("verifyOtp: Skipped duplicate in-flight attempt")
+      return
+    }
+
     setLoading(true)
+    verificationInFlight.current = true
     try {
       const supabase = getSupabaseBrowserClient()
+      const normalizedEmail = email.trim()
       const otpCode = otpDigits.join("")
-      const { error } = await supabase.auth.verifyOtp({
-        email,
+      const verificationKey = `${normalizedEmail}:${otpCode}`
+
+      if (!options?.force && lastAutoVerificationKey.current === verificationKey) {
+        console.log("verifyOtp: Skipped duplicate code attempt")
+        return
+      }
+
+      if (!normalizedEmail || !/^\d{6}$/.test(otpCode)) {
+        toast({
+          title: "Failed to verify OTP",
+          description: "Enter the six-digit code from your email.",
+          variant: "destructive",
+        })
+        return
+      }
+
+      if (!options?.force) {
+        lastAutoVerificationKey.current = verificationKey
+      }
+
+      const { data, error } = await supabase.auth.verifyOtp({
+        email: normalizedEmail,
         token: otpCode,
         type: "email",
       })
@@ -87,6 +118,21 @@ export function AuthModal({ open, onClose }: FullPageAuthProps) {
           variant: "destructive",
         })
       } else {
+        const session = data.session ?? (await supabase.auth.getSession()).data.session
+
+        if (!session) {
+          console.warn("verifyOtp: No browser session created", {
+            hasUser: Boolean(data.user),
+            hasSession: Boolean(data.session),
+          })
+          toast({
+            title: "Failed to verify OTP",
+            description: "Verification completed but no browser session was created. Please request a new code and try again.",
+            variant: "destructive",
+          })
+          return
+        }
+
         toast({
           title: "OTP verified",
           description: "You have been signed in successfully",
@@ -102,6 +148,7 @@ export function AuthModal({ open, onClose }: FullPageAuthProps) {
         variant: "destructive",
       })
     } finally {
+      verificationInFlight.current = false
       setLoading(false)
       console.log("verifyOtp: Finished")
     }
@@ -229,7 +276,7 @@ export function AuthModal({ open, onClose }: FullPageAuthProps) {
               <ArrowLeft className="mr-2 h-4 w-4" />
               Back
             </Button>
-            <Button onClick={verifyOtp} disabled={loading}>
+            <Button onClick={() => void verifyOtp({ force: true })} disabled={loading}>
               {loading ? "Verifying..." : "Verify"}
             </Button>
           </div>
