@@ -14,6 +14,7 @@ type ProjectPublishCommandFailureCode =
   | "project_basics_incomplete"
   | "pledge_required"
   | "invalid_payment_percentage"
+  | "invalid_reporting_currency"
   | "project_slug_taken"
   | "invalid_crypto_method"
   | "reference_data_unavailable"
@@ -153,6 +154,11 @@ export async function executeProjectOnboardingPublishCommand(
     return commandFailure("invalid_payment_percentage", "Project payment percentage must be at least 1")
   }
 
+  const defaultReportingCurrencyCode = payload.defaultReportingCurrencyCode.trim().toUpperCase() || "USD"
+  if (!/^[A-Z]{3,12}$/.test(defaultReportingCurrencyCode)) {
+    return commandFailure("invalid_reporting_currency", "Project default reporting currency must be a 3-12 letter currency or asset code")
+  }
+
   const { data: existingProject } = await supabase.from("projects").select("id").eq("slug", payload.slug.trim()).maybeSingle()
   if (existingProject) {
     return commandFailure("project_slug_taken", "A project with this slug already exists")
@@ -203,6 +209,7 @@ export async function executeProjectOnboardingPublishCommand(
       p_billing_email: payload.billingEmail.trim() || null,
       p_billing_frequency: payload.billingFrequency || null,
       p_payment_percentage: parseDecimal(payload.paymentPercentage) ?? 1,
+      p_default_reporting_currency_code: defaultReportingCurrencyCode,
       p_payment_periodicity_id: parseInteger(payload.paymentPeriodicityId),
       p_default_payment_method_id: cryptoContractMethodId,
       p_category_ids: categoryIds,

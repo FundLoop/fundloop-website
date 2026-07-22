@@ -1,6 +1,15 @@
 import type { SupabaseClient } from "@supabase/supabase-js"
 import { buildZkasRunArtifactPath, STORAGE_BUCKETS } from "../storage/artifacts.ts"
 import type { Database, Json } from "../../types/supabase.ts"
+import {
+  buildMvpContributionPoolsFromLockManifest,
+  calculateMvpDistribution,
+  MVP_ALLOCATION_POLICY,
+  type MvpAssetPreferenceInput,
+  type MvpAttributionRowInput,
+  type MvpDistributionResult,
+  type MvpEligibleUserInput,
+} from "./mvp-distribution-calculator.ts"
 
 const ZKAS_RUN_BUCKET = STORAGE_BUCKETS.zkasRuns
 const ZKAS_SCHEMA_VERSION = "zkas.v1"
@@ -18,14 +27,20 @@ export type MonthlyCycleCalculationPackageOutput = {
   status: "calculation"
   calculationStartedAt: string
   runId: number
-  runStatus: "locked"
+  runStatus: "locked" | "completed"
   packageArtifactPath: string
   packageArtifactHash: string
+  resultArtifactPath: string
+  resultArtifactHash: string
   runManifestHash: string
   counts: {
     datasets: number
     payments: number
     identityArtifacts: number
+    resultRows: number
+    projectResults: number
+    assetFills: number
+    returnedPools: number
   }
 }
 
@@ -51,7 +66,14 @@ type PaymentRow = {
 }
 type ExistingRunRow = Pick<
   Database["public"]["Tables"]["zkas_runs"]["Row"],
-  "id" | "status" | "locked_at" | "locked_manifest" | "locked_manifest_hash" | "month"
+  | "id"
+  | "status"
+  | "locked_at"
+  | "locked_manifest"
+  | "locked_manifest_hash"
+  | "month"
+  | "result_artifact_path"
+  | "result_artifact_hash"
 >
 
 type CalculationPackageManifest = {
@@ -67,8 +89,16 @@ type CalculationPackageManifest = {
     locked_at: string
     lock_manifest_hash: string
   }
-  allocation_policy: "proportional_pool"
+  allocation_policy: typeof MVP_ALLOCATION_POLICY
   schema_version: string
+  mvp_allocation: {
+    policy: typeof MVP_ALLOCATION_POLICY
+    result_hash: string
+    totals: MvpDistributionResult["totals"]
+    warnings: number
+    excludedRows: number
+    returnedPools: number
+  }
   datasets: Array<{
     dataset_id: number
     project_id: number
@@ -169,6 +199,7 @@ function buildPackageManifest(input: {
   datasets: DatasetRow[]
   identityArtifact: IdentityArtifactRow
   payments: PaymentRow[]
+  mvpDistribution: MvpDistributionResult
 }): CalculationPackageManifest {
   const datasets = [...input.datasets].sort((left, right) => left.project_id - right.project_id || left.id - right.id)
   const payments = [...input.payments].sort(
@@ -191,8 +222,16 @@ function buildPackageManifest(input: {
       locked_at: input.cycle.locked_at ?? "",
       lock_manifest_hash: input.cycle.locked_manifest_hash ?? "",
     },
-    allocation_policy: "proportional_pool",
+    allocation_policy: MVP_ALLOCATION_POLICY,
     schema_version: ZKAS_SCHEMA_VERSION,
+    mvp_allocation: {
+      policy: MVP_ALLOCATION_POLICY,
+      result_hash: input.mvpDistribution.resultHash,
+      totals: input.mvpDistribution.totals,
+      warnings: input.mvpDistribution.warnings.length,
+      excludedRows: input.mvpDistribution.excludedRows.length,
+      returnedPools: input.mvpDistribution.returnedPools.length,
+    },
     datasets: datasets.map((dataset) => ({
       dataset_id: dataset.id,
       project_id: dataset.project_id,
@@ -231,8 +270,8 @@ function buildRunManifest(input: {
     version: "run-manifest.v1" as const,
     run_id: input.runId,
     month: input.packageManifest.cycle.cycle_key,
-    usd_pool: input.packageManifest.payments.reduce((sum, payment) => sum + payment.amount_usd, 0),
-    allocation_policy: "proportional_pool" as const,
+    usd_pool: input.packageManifest.mvp_allocation.totals.poolUsd,
+    allocation_policy: MVP_ALLOCATION_POLICY,
     engine_bundle: {
       git_ref: input.gitRef,
       image_ref: "zkas/local",
@@ -274,6 +313,74 @@ function readPackageArtifactHashFromRun(run: ExistingRunRow) {
   return typeof hash === "string" ? hash : ""
 }
 
+function readArrayFromManifest(manifest: unknown, key: string) {
+  const record = manifest && typeof manifest === "object" && !Array.isArray(manifest) ? (manifest as Record<string, unknown>) : {}
+  const mvpInputs =
+    record.mvp_inputs && typeof record.mvp_inputs === "object" && !Array.isArray(record.mvp_inputs)
+      ? (record.mvp_inputs as Record<string, unknown>)
+      : {}
+  const value = mvpInputs[key]
+  return Array.isArray(value) ? value : []
+}
+
+function buildMvpAttributionRowsFromLockManifest(manifest: unknown): MvpAttributionRowInput[] {
+  return readArrayFromManifest(manifest, "attribution_rows").map((item) => {
+    const row = item && typeof item === "object" ? (item as Record<string, unknown>) : {}
+    return {
+      id: typeof row.id === "string" || typeof row.id === "number" ? row.id : "",
+      datasetId: typeof row.dataset_id === "string" || typeof row.dataset_id === "number" ? row.dataset_id : "",
+      projectId: Number(row.project_id),
+      userId: typeof row.user_id === "string" ? row.user_id : null,
+      scopedCubidId: typeof row.scoped_cubid_id === "string" ? row.scoped_cubid_id : null,
+      attributionPoints: Number(row.attribution_points ?? 0),
+      resolutionStatus: typeof row.resolution_status === "string" ? row.resolution_status : null,
+    }
+  })
+}
+
+function buildMvpEligibleUsersFromLockManifest(manifest: unknown): MvpEligibleUserInput[] {
+  return readArrayFromManifest(manifest, "eligible_users").map((item) => {
+    const row = item && typeof item === "object" ? (item as Record<string, unknown>) : {}
+    return {
+      userId: String(row.user_id ?? ""),
+      cubidId: typeof row.cubid_id === "string" ? row.cubid_id : null,
+      cubidIdentityStatus: typeof row.cubid_identity_status === "string" ? row.cubid_identity_status : null,
+      isEligible: typeof row.is_eligible === "boolean" ? row.is_eligible : undefined,
+    }
+  }).filter((user) => user.userId)
+}
+
+function buildMvpAssetPreferencesFromLockManifest(manifest: unknown): MvpAssetPreferenceInput[] {
+  return readArrayFromManifest(manifest, "asset_preferences").flatMap((item) => {
+    const summary = item && typeof item === "object" ? (item as Record<string, unknown>) : {}
+    const userId = typeof summary.user_id === "string" ? summary.user_id : ""
+    const preferences = Array.isArray(summary.preferences) ? summary.preferences : []
+    return preferences.map((preference) => {
+      const row = preference && typeof preference === "object" ? (preference as Record<string, unknown>) : {}
+      return {
+        userId,
+        rank: Number(row.rank ?? 0),
+        assetType: String(row.asset_type ?? "fiat") as MvpAssetPreferenceInput["assetType"],
+        assetCode: String(row.asset_code ?? "USD"),
+        projectId: row.project_id === null || row.project_id === undefined ? null : Number(row.project_id),
+        accepted: row.accepted === true,
+      }
+    })
+  }).filter((preference) => preference.userId && preference.rank > 0)
+}
+
+function buildMvpDistributionInputFromLockManifest(cycle: CycleRow) {
+  return {
+    cycleKey: cycle.cycle_key,
+    lockedManifestHash: cycle.locked_manifest_hash,
+    priceSnapshotId: `monthly-cycle:${cycle.cycle_key}:locked-manifest`,
+    contributionPools: buildMvpContributionPoolsFromLockManifest(cycle.locked_manifest),
+    attributionRows: buildMvpAttributionRowsFromLockManifest(cycle.locked_manifest),
+    eligibleUsers: buildMvpEligibleUsersFromLockManifest(cycle.locked_manifest),
+    assetPreferences: buildMvpAssetPreferencesFromLockManifest(cycle.locked_manifest),
+  }
+}
+
 async function markRunFailedAfterPackagingError(
   supabase: SupabaseClient<Database>,
   runId: number,
@@ -286,6 +393,89 @@ async function markRunFailedAfterPackagingError(
       note: message,
     })
     .eq("id", runId)
+}
+
+async function buildResultRowPayload(input: {
+  distribution: MvpDistributionResult
+  cycleId: number
+  runId: number
+}) {
+  return Promise.all(
+    input.distribution.userAllocations.map(async (allocation) => {
+      const rawRows = input.distribution.rawEntitlements.filter((row) => row.userId === allocation.userId)
+      const aggregateScore = rawRows.reduce((sum, row) => sum + row.attributionPoints, 0)
+      const payload = {
+        run_id: input.runId,
+        monthly_cycle_id: input.cycleId,
+        zkas_user_id: allocation.userId,
+        eligibility: true,
+        aggregate_score: aggregateScore,
+        allocation_usd: allocation.roundedFinalUsd,
+        app_count: rawRows.length,
+        project_count: new Set(rawRows.map((row) => row.projectId)).size,
+      }
+      return {
+        ...payload,
+        output_row_hash: await sha256Hex(payload),
+      }
+    }),
+  )
+}
+
+function buildProjectResultPayload(input: {
+  distribution: MvpDistributionResult
+  cycleId: number
+  runId: number
+}) {
+  return input.distribution.rawEntitlements.map((row) => ({
+    monthly_cycle_id: input.cycleId,
+    run_id: input.runId,
+    project_id: row.projectId,
+    user_id: row.userId,
+    scoped_cubid_id: row.scopedCubidId,
+    attribution_points: row.attributionPoints,
+    total_project_points: row.totalProjectPoints,
+    project_pool_usd: row.projectPoolUsd,
+    raw_usd: row.rawUsd,
+  }))
+}
+
+function buildAssetFillPayload(input: {
+  distribution: MvpDistributionResult
+  cycleId: number
+  runId: number
+}) {
+  return input.distribution.assetFills.map((fill) => ({
+    monthly_cycle_id: input.cycleId,
+    run_id: input.runId,
+    user_id: fill.userId,
+    pool_id: String(fill.poolId),
+    project_id: fill.projectId,
+    asset_type: fill.assetType,
+    asset_code: fill.assetCode,
+    source_amount: fill.sourceAmount,
+    usd_value: fill.usdValue,
+    preference_rank: fill.preferenceRank,
+    partial: fill.partial,
+  }))
+}
+
+function buildReturnedPoolPayload(input: {
+  distribution: MvpDistributionResult
+  cycleId: number
+  runId: number
+}) {
+  return input.distribution.returnedPools.map((row) => ({
+    monthly_cycle_id: input.cycleId,
+    run_id: input.runId,
+    pool_id: String(row.poolId),
+    project_id: row.projectId,
+    asset_type: row.assetType,
+    asset_code: row.assetCode,
+    source_amount: row.sourceAmount,
+    usd_value: row.usdValue,
+    reason_code: row.reasonCode,
+  }))
 }
 
 export async function executeMonthlyCycleCalculationPackageCommand(
@@ -338,7 +528,7 @@ export async function executeMonthlyCycleCalculationPackageCommand(
 
   const { data: existingRuns, error: existingRunsError } = await supabase
     .from("zkas_runs")
-    .select("id, month, status, locked_at, locked_manifest, locked_manifest_hash")
+    .select("id, month, status, locked_at, locked_manifest, locked_manifest_hash, result_artifact_path, result_artifact_hash")
     .eq("monthly_cycle_id", cycle.id)
     .neq("status", "failed")
     .order("id", { ascending: true })
@@ -361,18 +551,24 @@ export async function executeMonthlyCycleCalculationPackageCommand(
       status: "calculation",
       calculationStartedAt: cycle.calculation_started_at ?? calculationStartedAt,
       runId: existingPackage.id,
-      runStatus: "locked",
+      runStatus: existingPackage.status === "completed" ? "completed" : "locked",
       packageArtifactPath: buildZkasRunArtifactPath({
         cycleKey: cycle.cycle_key,
         cycleId: cycle.id,
         artifact: "calculation-package",
       }),
       packageArtifactHash: readPackageArtifactHashFromRun(existingPackage),
+      resultArtifactPath: existingPackage.result_artifact_path ?? "",
+      resultArtifactHash: existingPackage.result_artifact_hash ?? "",
       runManifestHash: existingPackage.locked_manifest_hash ?? "",
       counts: {
         datasets: 0,
         payments: 0,
         identityArtifacts: 0,
+        resultRows: 0,
+        projectResults: 0,
+        assetFills: 0,
+        returnedPools: 0,
       },
     })
   }
@@ -425,11 +621,13 @@ export async function executeMonthlyCycleCalculationPackageCommand(
   if (paymentsError) return failure("query_failed", paymentsError.message)
 
   const paymentRows = asArray(payments as PaymentRow[] | null)
+  const mvpDistribution = await calculateMvpDistribution(buildMvpDistributionInputFromLockManifest(cycle))
   const packageManifest = buildPackageManifest({
     cycle,
     datasets: approvedDatasets,
     identityArtifact: approvedArtifacts[0],
     payments: paymentRows,
+    mvpDistribution,
   })
   const packageArtifactPath = buildZkasRunArtifactPath({
     cycleKey: cycle.cycle_key,
@@ -446,7 +644,7 @@ export async function executeMonthlyCycleCalculationPackageCommand(
       monthly_cycle_id: cycle.id,
       status: "locked",
       locked_at: calculationStartedAt,
-      usd_pool: packageManifest.payments.reduce((sum, payment) => sum + payment.amount_usd, 0),
+      usd_pool: mvpDistribution.totals.poolUsd,
       identity_artifact_id: packageManifest.identity_artifact.artifact_id,
       engine_git_ref: gitRef,
       engine_image_ref: "zkas/local",
@@ -472,6 +670,13 @@ export async function executeMonthlyCycleCalculationPackageCommand(
     runId: run.id,
     artifact: "run-manifest",
   })
+  const resultArtifactPath = buildZkasRunArtifactPath({
+    cycleKey: cycle.cycle_key,
+    runId: run.id,
+    artifact: "run-result",
+  })
+  const resultArtifactText = `${stableStringify(mvpDistribution)}\n`
+  const resultArtifactHash = await sha256Hex(resultArtifactText)
 
   const uploadPackageError = await uploadTextArtifact(supabase, packageArtifactPath, packageText)
   if (uploadPackageError) {
@@ -483,6 +688,12 @@ export async function executeMonthlyCycleCalculationPackageCommand(
   if (uploadRunManifestError) {
     await markRunFailedAfterPackagingError(supabase, run.id, uploadRunManifestError.message)
     return failure("artifact_upload_failed", uploadRunManifestError.message)
+  }
+
+  const uploadResultError = await uploadTextArtifact(supabase, resultArtifactPath, resultArtifactText)
+  if (uploadResultError) {
+    await markRunFailedAfterPackagingError(supabase, run.id, uploadResultError.message)
+    return failure("artifact_upload_failed", uploadResultError.message)
   }
 
   const runDatasetsPayload = packageManifest.datasets.map((dataset) => ({
@@ -501,6 +712,10 @@ export async function executeMonthlyCycleCalculationPackageCommand(
     amount_usd: payment.amount_usd,
     period_end: payment.period_end,
   }))
+  const resultRowsPayload = await buildResultRowPayload({ distribution: mvpDistribution, cycleId: cycle.id, runId: run.id })
+  const projectResultsPayload = buildProjectResultPayload({ distribution: mvpDistribution, cycleId: cycle.id, runId: run.id })
+  const assetFillsPayload = buildAssetFillPayload({ distribution: mvpDistribution, cycleId: cycle.id, runId: run.id })
+  const returnedPoolsPayload = buildReturnedPoolPayload({ distribution: mvpDistribution, cycleId: cycle.id, runId: run.id })
 
   if (runDatasetsPayload.length > 0) {
     const { error } = await supabase.from("zkas_run_datasets").insert(runDatasetsPayload)
@@ -518,6 +733,38 @@ export async function executeMonthlyCycleCalculationPackageCommand(
     }
   }
 
+  if (resultRowsPayload.length > 0) {
+    const { error } = await supabase.from("zkas_run_results").insert(resultRowsPayload)
+    if (error) {
+      await markRunFailedAfterPackagingError(supabase, run.id, error.message)
+      return failure("package_failed", error.message)
+    }
+  }
+
+  if (projectResultsPayload.length > 0) {
+    const { error } = await supabase.from("monthly_cycle_allocation_project_results").insert(projectResultsPayload)
+    if (error) {
+      await markRunFailedAfterPackagingError(supabase, run.id, error.message)
+      return failure("package_failed", error.message)
+    }
+  }
+
+  if (assetFillsPayload.length > 0) {
+    const { error } = await supabase.from("monthly_cycle_allocation_asset_fills").insert(assetFillsPayload)
+    if (error) {
+      await markRunFailedAfterPackagingError(supabase, run.id, error.message)
+      return failure("package_failed", error.message)
+    }
+  }
+
+  if (returnedPoolsPayload.length > 0) {
+    const { error } = await supabase.from("monthly_cycle_allocation_returned_pools").insert(returnedPoolsPayload)
+    if (error) {
+      await markRunFailedAfterPackagingError(supabase, run.id, error.message)
+      return failure("package_failed", error.message)
+    }
+  }
+
   const [{ error: datasetUpdateError }, { error: runUpdateError }, { data: updatedCycle, error: cycleUpdateError }] = await Promise.all([
     supabase.from("zkas_datasets").update({ status: "included" }).in(
       "id",
@@ -526,8 +773,15 @@ export async function executeMonthlyCycleCalculationPackageCommand(
     supabase
       .from("zkas_runs")
       .update({
+        status: "completed",
         locked_manifest: runManifest as unknown as Json,
         locked_manifest_hash: runManifestHash,
+        result_artifact_path: resultArtifactPath,
+        result_artifact_hash: resultArtifactHash,
+        total_score: mvpDistribution.rawEntitlements.reduce((sum, row) => sum + row.attributionPoints, 0),
+        total_allocated_usd: mvpDistribution.totals.allocatedUsd,
+        user_count: mvpDistribution.userAllocations.length,
+        finalized_at: calculationStartedAt,
       })
       .eq("id", run.id),
     supabase
@@ -569,8 +823,16 @@ export async function executeMonthlyCycleCalculationPackageCommand(
       runId: run.id,
       packageArtifactPath,
       packageArtifactHash,
+      resultArtifactPath,
+      resultArtifactHash,
       runManifestHash,
       counts: packageManifest.counts,
+      resultCounts: {
+        resultRows: resultRowsPayload.length,
+        projectResults: projectResultsPayload.length,
+        assetFills: assetFillsPayload.length,
+        returnedPools: returnedPoolsPayload.length,
+      },
     },
   })
   if (successEventError) return failure("query_failed", successEventError.message)
@@ -581,10 +843,18 @@ export async function executeMonthlyCycleCalculationPackageCommand(
     status: "calculation",
     calculationStartedAt,
     runId: run.id,
-    runStatus: "locked",
+    runStatus: "completed",
     packageArtifactPath,
     packageArtifactHash,
+    resultArtifactPath,
+    resultArtifactHash,
     runManifestHash,
-    counts: packageManifest.counts,
+    counts: {
+      ...packageManifest.counts,
+      resultRows: resultRowsPayload.length,
+      projectResults: projectResultsPayload.length,
+      assetFills: assetFillsPayload.length,
+      returnedPools: returnedPoolsPayload.length,
+    },
   })
 }

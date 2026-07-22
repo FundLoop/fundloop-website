@@ -63,6 +63,13 @@ export type FounderProjectReportingWorkspace = {
     attributedPayoutUsd: number
     contributedAmountUsd: number
   }>
+  bookkeeping: Array<{
+    cycleKey: string
+    creditedUsd: number
+    returnedFuturePoolUsd: number
+    assetFillCount: number
+    returnedPoolCount: number
+  }>
   warnings: ReportingWarning[]
 }
 
@@ -115,6 +122,16 @@ type ProjectSummaryRow = Pick<
 >
 
 type ProjectRow = Pick<Database["public"]["Tables"]["projects"]["Row"], "id" | "slug" | "name">
+
+type ProjectAssetFillRow = Pick<
+  Database["public"]["Tables"]["monthly_cycle_allocation_asset_fills"]["Row"],
+  "monthly_cycle_id" | "project_id" | "usd_value"
+>
+
+type ProjectReturnedPoolRow = Pick<
+  Database["public"]["Tables"]["monthly_cycle_allocation_returned_pools"]["Row"],
+  "monthly_cycle_id" | "project_id" | "usd_value"
+>
 
 type SupabaseReadResult<T> = {
   data: T | null
@@ -262,10 +279,35 @@ export function buildFounderProjectReportingWorkspace(input: {
   reports: ReportRow[]
   cycles: CycleRow[]
   summaries: ProjectSummaryRow[]
+  assetFills?: ProjectAssetFillRow[]
+  returnedPools?: ProjectReturnedPoolRow[]
   warnings: ReportingWarning[]
 }): FounderProjectReportingWorkspace {
   const cycleById = new Map(input.cycles.map((cycle) => [cycle.id, cycle]))
   const reports = input.reports.map((report) => cardFromReport(report, cycleById)).sort((left, right) => right.cycleKey.localeCompare(left.cycleKey))
+  const bookkeepingByCycle = new Map<number, { creditedUsd: number; returnedFuturePoolUsd: number; assetFillCount: number; returnedPoolCount: number }>()
+  for (const row of input.assetFills ?? []) {
+    const current = bookkeepingByCycle.get(row.monthly_cycle_id) ?? {
+      creditedUsd: 0,
+      returnedFuturePoolUsd: 0,
+      assetFillCount: 0,
+      returnedPoolCount: 0,
+    }
+    current.creditedUsd += numberValue(row.usd_value)
+    current.assetFillCount += 1
+    bookkeepingByCycle.set(row.monthly_cycle_id, current)
+  }
+  for (const row of input.returnedPools ?? []) {
+    const current = bookkeepingByCycle.get(row.monthly_cycle_id) ?? {
+      creditedUsd: 0,
+      returnedFuturePoolUsd: 0,
+      assetFillCount: 0,
+      returnedPoolCount: 0,
+    }
+    current.returnedFuturePoolUsd += numberValue(row.usd_value)
+    current.returnedPoolCount += 1
+    bookkeepingByCycle.set(row.monthly_cycle_id, current)
+  }
 
   return {
     project: {
@@ -281,6 +323,12 @@ export function buildFounderProjectReportingWorkspace(input: {
         publishedUserCount: numberValue(summary.published_user_count),
         attributedPayoutUsd: numberValue(summary.attributed_payout_usd),
         contributedAmountUsd: numberValue(summary.contributed_amount_usd),
+      }))
+      .sort((left, right) => right.cycleKey.localeCompare(left.cycleKey)),
+    bookkeeping: Array.from(bookkeepingByCycle.entries())
+      .map(([cycleId, value]) => ({
+        cycleKey: cycleById.get(cycleId)?.cycle_key ?? `Cycle ${cycleId}`,
+        ...value,
       }))
       .sort((left, right) => right.cycleKey.localeCompare(left.cycleKey)),
     warnings: input.warnings,
@@ -404,7 +452,7 @@ export async function loadFounderProjectReportingWorkspace(projectId: number, sl
   if (projectError) throw new Error(projectError.message)
   if (!project || project.slug !== slug) return null
 
-  const [reports, summaries] = await Promise.all([
+  const [reports, summaries, assetFills, returnedPools] = await Promise.all([
     readReportingData<ReportRow[]>(
       "founder-reports",
       supabase
@@ -425,11 +473,31 @@ export async function loadFounderProjectReportingWorkspace(projectId: number, sl
       warnings,
       [],
     ),
+    readReportingData<ProjectAssetFillRow[]>(
+      "project-asset-fills",
+      supabase
+        .from("monthly_cycle_allocation_asset_fills")
+        .select("monthly_cycle_id, project_id, usd_value")
+        .eq("project_id", project.id),
+      warnings,
+      [],
+    ),
+    readReportingData<ProjectReturnedPoolRow[]>(
+      "project-returned-pools",
+      supabase
+        .from("monthly_cycle_allocation_returned_pools")
+        .select("monthly_cycle_id, project_id, usd_value")
+        .eq("project_id", project.id),
+      warnings,
+      [],
+    ),
   ])
   const cycleIds = Array.from(
     new Set([
       ...reports.map((report) => report.monthly_cycle_id),
       ...summaries.map((summary) => summary.monthly_cycle_id).filter((id): id is number => typeof id === "number"),
+      ...assetFills.map((row) => row.monthly_cycle_id),
+      ...returnedPools.map((row) => row.monthly_cycle_id),
     ]),
   )
   const cycles =
@@ -442,7 +510,7 @@ export async function loadFounderProjectReportingWorkspace(projectId: number, sl
         )
       : []
 
-  return buildFounderProjectReportingWorkspace({ project, reports, cycles, summaries, warnings })
+  return buildFounderProjectReportingWorkspace({ project, reports, cycles, summaries, assetFills, returnedPools, warnings })
 }
 
 export async function loadOperatorCycleReportingWorkspace(cycleKey: string): Promise<OperatorCycleReportingWorkspace | null> {

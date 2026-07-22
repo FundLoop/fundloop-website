@@ -18,6 +18,10 @@ function formatCurrency(locale: string, value: number | null) {
   }).format(value ?? 0)
 }
 
+function formatCommitmentValue(value: number | null, fallback: string) {
+  return value === null ? fallback : `${value}%`
+}
+
 export default async function FounderProjectHomePage({ params }: FounderProjectHomePageProps) {
   const { locale, slug } = await params
   const navigationContext = await getNavigationContext()
@@ -101,7 +105,8 @@ export default async function FounderProjectHomePage({ params }: FounderProjectH
           <CardContent className="space-y-4">
             <div className="grid gap-3 sm:grid-cols-2">
               <Mini label={t("setup.methods")} value={String(project.setup.enabledPaymentMethodCount)} />
-              <Mini label={t("setup.rate")} value={project.setup.hasContributionRate ? t("yes") : t("no")} />
+              <Mini label={t("setup.rate")} value={formatCommitmentValue(project.setup.contributionPercentage, t("none"))} />
+              <Mini label={t("setup.currency")} value={project.setup.defaultReportingCurrencyCode} />
               <Mini label={t("setup.defaultMethod")} value={project.setup.hasDefaultPaymentMethod ? t("yes") : t("no")} />
               <Mini label={t("setup.publicProfile")} value={project.isPublic ? t("yes") : t("no")} />
             </div>

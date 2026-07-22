@@ -3,6 +3,7 @@ import "server-only"
 import type { NavigationContext } from "@/lib/navigation-context"
 import { createServerSupabaseClient } from "@/lib/supabase-server"
 import type { Database } from "@/types/supabase"
+import { buildUserAssetPreferenceReadiness, type UserAssetPreferenceReadiness } from "@/lib/workspace/user-asset-preferences"
 
 export type UserEarningsWarning = {
   scope: string
@@ -36,10 +37,53 @@ export type UserEarningsCycle = {
   reconciliationStatus: Database["public"]["Enums"]["payout_reconciliation_status"] | null
 }
 
+export type UserEarningsCreditAssetFill = {
+  assetType: string
+  assetCode: string
+  sourceAmount: number
+  usdValue: number
+  preferenceRank: number
+  partial: boolean
+  projectId: number | null
+}
+
+export type UserEarningsCreditSourceBreakdown = {
+  projectId: number
+  scopedCubidId: string
+  attributionPoints: number
+  totalProjectPoints: number
+  projectPoolUsd: number
+  rawEntitlementUsd: number
+}
+
+export type UserEarningsCredit = {
+  id: number
+  key: string
+  cycleStatus: Database["public"]["Enums"]["monthly_cycle_status"] | "unassigned"
+  sourceResultId: number
+  runId: number
+  usdEquivalentAmount: number
+  currencyCode: string
+  status: "credited" | "voided" | string
+  paymentStatus: "not_paid" | string
+  creditedAt: string
+  assetFills: UserEarningsCreditAssetFill[]
+  sourceBreakdown: UserEarningsCreditSourceBreakdown[]
+  allocationBreakdown: {
+    rawEntitlementUsd: number
+    baselineUsd: number
+    equalizationTopUpUsd: number
+    capMultiple: number
+    capApplied: boolean
+  }
+}
+
 export type UserEarningsWorkspace = {
   summary: {
     resultCount: number
+    creditCount: number
     payoutIntentCount: number
+    totalCreditedUsd: number
     totalPublishedAllocationUsd: number
     totalPayoutIntentUsd: number
     pendingPayoutUsd: number
@@ -55,6 +99,8 @@ export type UserEarningsWorkspace = {
     defaultRoute: UserEarningsPayoutRoute | null
     all: UserEarningsPayoutRoute[]
   }
+  assetPreferences: UserAssetPreferenceReadiness
+  credits: UserEarningsCredit[]
   cycles: UserEarningsCycle[]
   pendingDistributions: UserEarningsCycle[]
   payoutHistory: UserEarningsCycle[]
@@ -86,6 +132,22 @@ type IntentRow = Pick<
   "id" | "monthly_cycle_id" | "source_result_id" | "payout_route_id" | "rail" | "amount_usd" | "currency_code" | "status" | "status_reason"
 >
 
+type CreditRow = Pick<
+  Database["public"]["Tables"]["monthly_cycle_bookkeeping_credits"]["Row"],
+  | "id"
+  | "monthly_cycle_id"
+  | "run_id"
+  | "source_result_id"
+  | "usd_equivalent_amount"
+  | "currency_code"
+  | "status"
+  | "payment_status"
+  | "credited_at"
+  | "asset_fills"
+  | "source_breakdown"
+  | "allocation_breakdown"
+>
+
 type BatchItemRow = Pick<
   Database["public"]["Tables"]["payout_batch_items"]["Row"],
   "payout_intent_id" | "payout_batch_id" | "status"
@@ -96,6 +158,11 @@ type BatchRow = Pick<Database["public"]["Tables"]["payout_batches"]["Row"], "id"
 type ReconciliationRow = Pick<
   Database["public"]["Tables"]["payout_reconciliation_events"]["Row"],
   "payout_intent_id" | "status" | "created_at"
+>
+
+type AssetPreferenceRow = Pick<
+  Database["public"]["Tables"]["user_asset_preferences"]["Row"],
+  "id" | "rank" | "asset_type" | "asset_code" | "project_id" | "accepted"
 >
 
 function warningFromError(scope: string, error: { message?: string } | null | undefined): UserEarningsWarning | null {
@@ -134,9 +201,65 @@ function numberValue(value: number | null | undefined) {
   return Number(value ?? 0)
 }
 
+function recordValue(value: unknown): Record<string, unknown> {
+  return value && typeof value === "object" && !Array.isArray(value) ? (value as Record<string, unknown>) : {}
+}
+
+function arrayValue(value: unknown): unknown[] {
+  return Array.isArray(value) ? value : []
+}
+
+function stringValue(value: unknown, fallback = "") {
+  return typeof value === "string" ? value : fallback
+}
+
+function booleanValue(value: unknown) {
+  return value === true
+}
+
 function routeLabel(route: RouteRow | undefined | null) {
   if (!route) return null
   return route.label.trim().length > 0 ? route.label : route.rail
+}
+
+function normalizeAssetFills(value: unknown): UserEarningsCreditAssetFill[] {
+  return arrayValue(value).map((item) => {
+    const row = recordValue(item)
+    return {
+      assetType: stringValue(row.assetType, "unknown"),
+      assetCode: stringValue(row.assetCode, "USD"),
+      sourceAmount: numberValue(row.sourceAmount as number | null | undefined),
+      usdValue: numberValue(row.usdValue as number | null | undefined),
+      preferenceRank: numberValue(row.preferenceRank as number | null | undefined),
+      partial: booleanValue(row.partial),
+      projectId: typeof row.projectId === "number" ? row.projectId : null,
+    }
+  })
+}
+
+function normalizeSourceBreakdown(value: unknown): UserEarningsCreditSourceBreakdown[] {
+  return arrayValue(value).map((item) => {
+    const row = recordValue(item)
+    return {
+      projectId: numberValue(row.projectId as number | null | undefined),
+      scopedCubidId: stringValue(row.scopedCubidId),
+      attributionPoints: numberValue(row.attributionPoints as number | null | undefined),
+      totalProjectPoints: numberValue(row.totalProjectPoints as number | null | undefined),
+      projectPoolUsd: numberValue(row.projectPoolUsd as number | null | undefined),
+      rawEntitlementUsd: numberValue(row.rawEntitlementUsd as number | null | undefined),
+    }
+  })
+}
+
+function normalizeAllocationBreakdown(value: unknown): UserEarningsCredit["allocationBreakdown"] {
+  const row = recordValue(value)
+  return {
+    rawEntitlementUsd: numberValue(row.rawEntitlementUsd as number | null | undefined),
+    baselineUsd: numberValue(row.baselineUsd as number | null | undefined),
+    equalizationTopUpUsd: numberValue(row.equalizationTopUpUsd as number | null | undefined),
+    capMultiple: numberValue(row.capMultiple as number | null | undefined) || 3,
+    capApplied: booleanValue(row.capApplied),
+  }
 }
 
 function mapRoute(route: RouteRow): UserEarningsPayoutRoute {
@@ -184,9 +307,11 @@ export function buildUserEarningsWorkspace({
   runs,
   payoutRoutes,
   payoutIntents,
+  bookkeepingCredits,
   batchItems,
   batches,
   reconciliationEvents,
+  assetPreferences,
   warnings,
 }: {
   publishedResults: PublishedResultRow[]
@@ -194,9 +319,11 @@ export function buildUserEarningsWorkspace({
   runs: RunRow[]
   payoutRoutes: RouteRow[]
   payoutIntents: IntentRow[]
+  bookkeepingCredits?: CreditRow[]
   batchItems: BatchItemRow[]
   batches: BatchRow[]
   reconciliationEvents: ReconciliationRow[]
+  assetPreferences?: AssetPreferenceRow[]
   warnings: UserEarningsWarning[]
 }): UserEarningsWorkspace {
   const cycleById = new Map(cycles.map((cycle) => [cycle.id, cycle]))
@@ -208,6 +335,24 @@ export function buildUserEarningsWorkspace({
   const latestReconciliationStatusByIntent = buildLatestReconciliationStatusByIntent(reconciliationEvents)
   const mappedRoutes = payoutRoutes.map(mapRoute)
   const defaultRoute = mappedRoutes.find((route) => route.status === "active" && route.isDefault) ?? null
+  const assetPreferenceReadiness = buildUserAssetPreferenceReadiness({ userId: null, rows: assetPreferences ?? [] })
+  const credits = (bookkeepingCredits ?? [])
+    .map((credit): UserEarningsCredit => ({
+      id: credit.id,
+      key: credit.monthly_cycle_id ? (cycleById.get(credit.monthly_cycle_id)?.cycle_key ?? "Unassigned") : "Unassigned",
+      cycleStatus: credit.monthly_cycle_id ? (cycleById.get(credit.monthly_cycle_id)?.status ?? "unassigned") : "unassigned",
+      sourceResultId: credit.source_result_id,
+      runId: credit.run_id,
+      usdEquivalentAmount: numberValue(credit.usd_equivalent_amount),
+      currencyCode: credit.currency_code,
+      status: credit.status,
+      paymentStatus: credit.payment_status,
+      creditedAt: credit.credited_at,
+      assetFills: normalizeAssetFills(credit.asset_fills),
+      sourceBreakdown: normalizeSourceBreakdown(credit.source_breakdown),
+      allocationBreakdown: normalizeAllocationBreakdown(credit.allocation_breakdown),
+    }))
+    .sort((left, right) => new Date(right.creditedAt).getTime() - new Date(left.creditedAt).getTime())
 
   const cyclesWithResults = publishedResults
     .map((result): UserEarningsCycle => {
@@ -238,6 +383,7 @@ export function buildUserEarningsWorkspace({
 
   const pendingDistributions = cyclesWithResults.filter((cycle) => isPendingPayout(cycle.payoutStatus))
   const payoutHistory = cyclesWithResults.filter((cycle) => isHistoricalPayout(cycle.payoutStatus))
+  const totalCreditedUsd = credits.filter((credit) => credit.status === "credited").reduce((sum, credit) => sum + credit.usdEquivalentAmount, 0)
   const hasDefaultRoute = Boolean(defaultRoute)
   const activeRouteCount = mappedRoutes.filter((route) => route.status === "active").length
   const totalPayoutIntentUsd = payoutIntents.reduce((sum, intent) => sum + numberValue(intent.amount_usd), 0)
@@ -256,7 +402,9 @@ export function buildUserEarningsWorkspace({
   return {
     summary: {
       resultCount: publishedResults.length,
+      creditCount: credits.length,
       payoutIntentCount: payoutIntents.length,
+      totalCreditedUsd,
       totalPublishedAllocationUsd: publishedResults.reduce((sum, result) => sum + numberValue(result.allocation_usd), 0),
       totalPayoutIntentUsd,
       pendingPayoutUsd,
@@ -272,6 +420,8 @@ export function buildUserEarningsWorkspace({
       defaultRoute,
       all: mappedRoutes.sort((left, right) => Number(right.isDefault) - Number(left.isDefault) || left.label.localeCompare(right.label)),
     },
+    assetPreferences: assetPreferenceReadiness,
+    credits,
     cycles: cyclesWithResults,
     pendingDistributions,
     payoutHistory,
@@ -291,15 +441,17 @@ export async function getUserEarningsWorkspace(navigationContext: NavigationCont
       runs: [],
       payoutRoutes: [],
       payoutIntents: [],
+      bookkeepingCredits: [],
       batchItems: [],
       batches: [],
       reconciliationEvents: [],
+      assetPreferences: [],
       warnings,
     })
   }
 
   const supabase = await createServerSupabaseClient()
-  const [publishedResults, payoutRoutes, payoutIntents] = await Promise.all([
+  const [publishedResults, payoutRoutes, payoutIntents, bookkeepingCredits, assetPreferences] = await Promise.all([
     readEarningsData<PublishedResultRow[]>(
       "published-results",
       supabase
@@ -331,15 +483,36 @@ export async function getUserEarningsWorkspace(navigationContext: NavigationCont
       warnings,
       [],
     ),
+    readEarningsData<CreditRow[]>(
+      "bookkeeping-credits",
+      supabase
+        .from("monthly_cycle_bookkeeping_credits")
+        .select("id, monthly_cycle_id, run_id, source_result_id, usd_equivalent_amount, currency_code, status, payment_status, credited_at, asset_fills, source_breakdown, allocation_breakdown")
+        .eq("user_id", user.id)
+        .order("credited_at", { ascending: false }),
+      warnings,
+      [],
+    ),
+    readEarningsData<AssetPreferenceRow[]>(
+      "asset-preferences",
+      supabase
+        .from("user_asset_preferences")
+        .select("id, rank, asset_type, asset_code, project_id, accepted")
+        .eq("user_id", user.id)
+        .order("rank", { ascending: true }),
+      warnings,
+      [],
+    ),
   ])
 
   const cycleIds = Array.from(
     new Set([
       ...publishedResults.map((result) => result.monthly_cycle_id).filter((id): id is number => typeof id === "number"),
       ...payoutIntents.map((intent) => intent.monthly_cycle_id),
+      ...bookkeepingCredits.map((credit) => credit.monthly_cycle_id),
     ]),
   )
-  const runIds = Array.from(new Set(publishedResults.map((result) => result.run_id)))
+  const runIds = Array.from(new Set([...publishedResults.map((result) => result.run_id), ...bookkeepingCredits.map((credit) => credit.run_id)]))
   const intentIds = payoutIntents.map((intent) => intent.id)
 
   const [cycles, runs, batchItems, reconciliationEvents] = await Promise.all([
@@ -393,9 +566,11 @@ export async function getUserEarningsWorkspace(navigationContext: NavigationCont
     runs,
     payoutRoutes,
     payoutIntents,
+    bookkeepingCredits,
     batchItems,
     batches,
     reconciliationEvents,
+    assetPreferences,
     warnings,
   })
 }

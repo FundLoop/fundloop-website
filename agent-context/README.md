@@ -6,12 +6,14 @@ Keep this folder small and current. It should hold the working context agents ne
 
 ## Live Agent Context
 
-- [MCP TODO Roadmap](./todo-mcp.md)
-  Active MCP-focused execution backlog, one agentic coding session per item.
+- [FundLoop Project 1](https://github.com/orgs/FundLoop/projects/1)
+  Active roadmap/backlog surface for new work. Prefer GitHub Issues in this Project over repo-local todo files.
+- [Superseded MCP TODO Roadmap](./todo-mcp.md)
+  Historical MCP-focused execution backlog, superseded by Project 1 and [Feature #43](https://github.com/FundLoop/fundloop-website/issues/43).
 - [Archived Sessions 1-52 Roadmap](./todo-1-through-52.md)
-  Completed app/product roadmap archived after Session 52.
-- [Session Log](./session-log.md)
-  Commit-by-commit record of completed work, validation, and next steps.
+  Completed app/product roadmap archived after Session 52 and superseded by Project 1.
+- [Session Logs](./session-log/)
+  Branch-scoped records of completed work, validation, and next steps.
 - [Repo Status](./repo-status.md)
   Current cleanup and hygiene snapshot for short-lived agent orientation.
 
@@ -28,6 +30,6 @@ Keep this folder small and current. It should hold the working context agents ne
 
 1. Start with the engineering backgrounder for product intent.
 2. Read current-state and target-state in `docs/engineering/` before choosing implementation work.
-3. Use the active MCP todo roadmap to pick the next scoped session.
-4. Update the session log with completed work.
+3. Use GitHub Issues in Project 1 to pick the next scoped session.
+4. Update the branch-scoped session log with completed work.
 5. Update `docs/engineering/` when architecture, routes, workflows, or operating assumptions changed.

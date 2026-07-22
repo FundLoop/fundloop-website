@@ -1,5 +1,9 @@
 # FundLoop TODO
 
+> Superseded on 2026-07-20 by GitHub Issues and [FundLoop Project 1](https://github.com/orgs/FundLoop/projects/1).
+>
+> This file is archived historical context for Sessions 1-52. It had no remaining open session-level work at cutover time. Do not add new roadmap items here; create GitHub Issues and add them to Project 1 instead.
+
 This file is the current execution roadmap for bringing FundLoop from the present semi-finished app shell to the target operational architecture described in `docs/engineering/current-state-architecture.md`, `docs/engineering/target-state-architecture.md`, and `docs/engineering/backgrounder-for-agents.md`.
 
 Each item below is intentionally sized to one agentic coding session. The sequence matters. Later work should assume the earlier sessions are complete unless the backlog is deliberately re-planned.

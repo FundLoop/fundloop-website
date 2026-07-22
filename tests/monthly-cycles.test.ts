@@ -69,6 +69,24 @@ function buildOverview(overrides: Partial<Parameters<typeof buildMonthlyCycleAdm
       { monthly_cycle_id: 1, allocation_usd: 50 },
     ],
     projectSummaries: [{ monthly_cycle_id: 1, id: 10 }],
+    contributionExpectedProjects: [
+      { id: 10, slug: "solar-commons", name: "Solar Commons", status: "active", payment_percentage: 1 },
+      { id: 11, slug: "mutual-aid-atlas", name: "Mutual Aid Atlas", status: "active", payment_percentage: 1 },
+    ],
+    contributionSubmissions: [
+      {
+        monthly_cycle_id: 1,
+        project_id: 10,
+        usd_equivalent_amount: 1000,
+        calculated_contribution_amount: 10,
+        status: "submitted",
+      },
+    ],
+    attributionDatasets: [
+      { monthly_cycle_id: 1, status: "submitted" },
+      { monthly_cycle_id: 1, status: "approved" },
+      { monthly_cycle_id: 1, status: "rejected" },
+    ],
     warnings: [],
     ...overrides,
   })
@@ -103,6 +121,9 @@ describe("buildMonthlyCycleAdminOverview", () => {
       runs: [],
       publishedResults: [],
       projectSummaries: [],
+      contributionExpectedProjects: [],
+      contributionSubmissions: [],
+      attributionDatasets: [],
       warnings: [],
     })
 
@@ -128,6 +149,20 @@ describe("buildMonthlyCycleAdminOverview", () => {
         totalRevenue: 3000,
         totalContributionAmount: 90,
       },
+      contributionSubmissions: {
+        submittedCount: 1,
+        expectedProjectCount: 2,
+        missingProjectCount: 1,
+        totalUsdEquivalentAmount: 1000,
+        totalCalculatedContributionAmount: 10,
+        missingProjects: [{ id: 11, slug: "mutual-aid-atlas", name: "Mutual Aid Atlas" }],
+      },
+      attribution: {
+        datasetCount: 3,
+        submittedCount: 1,
+        approvedCount: 1,
+        rejectedCount: 1,
+      },
       reconciliation: {
         submissionCount: 4,
         confirmedCount: 1,
@@ -151,6 +186,11 @@ describe("buildMonthlyCycleAdminOverview", () => {
       openCycleCount: 1,
       lockedOrLaterCycleCount: 0,
       paymentCount: 2,
+      contributionSubmissionCount: 1,
+      missingContributionSubmissionCount: 1,
+      attributionDatasetCount: 3,
+      attributionSubmittedCount: 1,
+      attributionApprovedCount: 1,
       totalContributionAmount: 90,
       zkasRunCount: 1,
     })

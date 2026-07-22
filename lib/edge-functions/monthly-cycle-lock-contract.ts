@@ -6,6 +6,7 @@ export type MonthlyCycleLockCommandInput = {
   cycleKey: string
   attemptId?: string
   overrideUnresolvedOnchain?: boolean
+  overrideRequiredInputs?: boolean
   overrideReason?: string
 }
 
@@ -63,6 +64,10 @@ export function validateMonthlyCycleLockInput(input: unknown): EdgeCommandResult
     return edgeCommandFailure("invalid_payload", "overrideUnresolvedOnchain must be a boolean when provided.")
   }
 
+  if (input.overrideRequiredInputs !== undefined && typeof input.overrideRequiredInputs !== "boolean") {
+    return edgeCommandFailure("invalid_payload", "overrideRequiredInputs must be a boolean when provided.")
+  }
+
   if (input.overrideReason !== undefined && typeof input.overrideReason !== "string") {
     return edgeCommandFailure("invalid_payload", "overrideReason must be a string when provided.")
   }
@@ -71,6 +76,7 @@ export function validateMonthlyCycleLockInput(input: unknown): EdgeCommandResult
     cycleKey: cycleKey.data,
     attemptId: attemptId.data,
     overrideUnresolvedOnchain: input.overrideUnresolvedOnchain as boolean | undefined,
+    overrideRequiredInputs: input.overrideRequiredInputs as boolean | undefined,
     overrideReason: typeof input.overrideReason === "string" ? input.overrideReason.trim() : undefined,
   })
 }

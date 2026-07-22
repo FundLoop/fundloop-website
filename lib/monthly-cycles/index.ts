@@ -103,6 +103,27 @@ type ProjectSummaryCycleRow = {
   id: number
 }
 
+type ProjectContributionExpectationRow = {
+  id: number
+  slug: string | null
+  name: string
+  status: string | null
+  payment_percentage: number | null
+}
+
+type ProjectMonthlyContributionSubmissionCycleRow = {
+  monthly_cycle_id: number | null
+  project_id: number
+  usd_equivalent_amount: number
+  calculated_contribution_amount: number
+  status: string
+}
+
+type ProjectAttributionDatasetCycleRow = {
+  monthly_cycle_id: number | null
+  status: string
+}
+
 export type MonthlyCycleAdminSummary = {
   id: number
   cycleKey: string
@@ -141,6 +162,20 @@ export type MonthlyCycleAdminSummary = {
     totalRevenue: number
     totalContributionAmount: number
   }
+  contributionSubmissions: {
+    submittedCount: number
+    expectedProjectCount: number
+    missingProjectCount: number
+    totalUsdEquivalentAmount: number
+    totalCalculatedContributionAmount: number
+    missingProjects: Array<{ id: number; slug: string | null; name: string }>
+  }
+  attribution: {
+    datasetCount: number
+    submittedCount: number
+    approvedCount: number
+    rejectedCount: number
+  }
   reconciliation: {
     submissionCount: number
     confirmedCount: number
@@ -167,6 +202,11 @@ export type MonthlyCycleAdminOverview = {
     openCycleCount: number
     lockedOrLaterCycleCount: number
     paymentCount: number
+    contributionSubmissionCount: number
+    missingContributionSubmissionCount: number
+    attributionDatasetCount: number
+    attributionSubmittedCount: number
+    attributionApprovedCount: number
     totalContributionAmount: number
     zkasRunCount: number
   }
@@ -217,13 +257,26 @@ export function buildMonthlyCycleAdminOverview(input: {
   runs: ZkasRunCycleRow[]
   publishedResults: PublishedResultCycleRow[]
   projectSummaries: ProjectSummaryCycleRow[]
+  contributionExpectedProjects: ProjectContributionExpectationRow[]
+  contributionSubmissions: ProjectMonthlyContributionSubmissionCycleRow[]
+  attributionDatasets: ProjectAttributionDatasetCycleRow[]
   warnings: MonthlyCycleWarning[]
 }): MonthlyCycleAdminOverview {
+  const expectedContributionProjects = input.contributionExpectedProjects.filter(
+    (project) => project.status !== "deleted" && Number(project.payment_percentage ?? 0) > 0,
+  )
   const cycles = input.cycles.map((cycle) => {
     const runs = input.runs
       .filter((run) => run.monthly_cycle_id === cycle.id)
       .sort((a, b) => (b.published_at ?? b.created_at).localeCompare(a.published_at ?? a.created_at))
     const latestPublishedRun = runs.find((run) => run.published_at)
+    const cycleContributionSubmissions = input.contributionSubmissions.filter(
+      (submission) => submission.monthly_cycle_id === cycle.id && submission.status === "submitted",
+    )
+    const submittedProjectIds = new Set(cycleContributionSubmissions.map((submission) => submission.project_id))
+    const missingProjects = expectedContributionProjects
+      .filter((project) => !submittedProjectIds.has(project.id))
+      .map((project) => ({ id: project.id, slug: project.slug, name: project.name }))
 
     return {
       id: cycle.id,
@@ -269,6 +322,26 @@ export function buildMonthlyCycleAdminOverview(input: {
         totalRevenue: sumByCycle(input.payments, cycle.id, (payment) => Number(payment.revenue ?? 0)),
         totalContributionAmount: sumByCycle(input.payments, cycle.id, (payment) => Number(payment.payment_amount ?? 0)),
       },
+      contributionSubmissions: {
+        submittedCount: cycleContributionSubmissions.length,
+        expectedProjectCount: expectedContributionProjects.length,
+        missingProjectCount: missingProjects.length,
+        totalUsdEquivalentAmount: cycleContributionSubmissions.reduce(
+          (sum, submission) => sum + Number(submission.usd_equivalent_amount ?? 0),
+          0,
+        ),
+        totalCalculatedContributionAmount: cycleContributionSubmissions.reduce(
+          (sum, submission) => sum + Number(submission.calculated_contribution_amount ?? 0),
+          0,
+        ),
+        missingProjects,
+      },
+      attribution: {
+        datasetCount: countByCycle(input.attributionDatasets, cycle.id),
+        submittedCount: countByCycle(input.attributionDatasets, cycle.id, (dataset) => dataset.status === "submitted"),
+        approvedCount: countByCycle(input.attributionDatasets, cycle.id, (dataset) => dataset.status === "approved"),
+        rejectedCount: countByCycle(input.attributionDatasets, cycle.id, (dataset) => dataset.status === "rejected"),
+      },
       reconciliation: {
         submissionCount: countByCycle(input.onchainSubmissions, cycle.id),
         confirmedCount: countByCycle(input.onchainSubmissions, cycle.id, (submission) => submission.status === "confirmed"),
@@ -300,6 +373,11 @@ export function buildMonthlyCycleAdminOverview(input: {
       openCycleCount: cycles.filter((cycle) => cycle.status === "open").length,
       lockedOrLaterCycleCount: cycles.filter((cycle) => isLockedOrLater(cycle.status)).length,
       paymentCount: cycles.reduce((sum, cycle) => sum + cycle.payments.count, 0),
+      contributionSubmissionCount: cycles.reduce((sum, cycle) => sum + cycle.contributionSubmissions.submittedCount, 0),
+      missingContributionSubmissionCount: cycles.reduce((sum, cycle) => sum + cycle.contributionSubmissions.missingProjectCount, 0),
+      attributionDatasetCount: cycles.reduce((sum, cycle) => sum + cycle.attribution.datasetCount, 0),
+      attributionSubmittedCount: cycles.reduce((sum, cycle) => sum + cycle.attribution.submittedCount, 0),
+      attributionApprovedCount: cycles.reduce((sum, cycle) => sum + cycle.attribution.approvedCount, 0),
       totalContributionAmount: cycles.reduce((sum, cycle) => sum + cycle.payments.totalContributionAmount, 0),
       zkasRunCount: cycles.reduce((sum, cycle) => sum + cycle.zkas.runCount, 0),
     },
@@ -347,11 +425,25 @@ export async function loadMonthlyCycleAdminOverview(): Promise<MonthlyCycleAdmin
       runs: [],
       publishedResults: [],
       projectSummaries: [],
+      contributionExpectedProjects: [],
+      contributionSubmissions: [],
+      attributionDatasets: [],
       warnings,
     })
   }
 
-  const [payments, onchainSubmissions, datasets, identityArtifacts, runs, publishedResults, projectSummaries] = await Promise.all([
+  const [
+    payments,
+    onchainSubmissions,
+    datasets,
+    identityArtifacts,
+    runs,
+    publishedResults,
+    projectSummaries,
+    contributionExpectedProjects,
+    contributionSubmissions,
+    attributionDatasets,
+  ] = await Promise.all([
     softRead(
       "payments",
       () =>
@@ -395,6 +487,30 @@ export async function loadMonthlyCycleAdminOverview(): Promise<MonthlyCycleAdmin
       () => supabase.from("zkas_run_project_summaries").select("monthly_cycle_id, id").in("monthly_cycle_id", cycleIds),
       warnings,
     ),
+    softRead(
+      "projects",
+      () =>
+        supabase
+          .from("projects")
+          .select("id, slug, name, status, payment_percentage")
+          .is("deleted_at", null)
+          .gt("payment_percentage", 0),
+      warnings,
+    ),
+    softRead(
+      "project_monthly_contribution_submissions",
+      () =>
+        supabase
+          .from("project_monthly_contribution_submissions")
+          .select("monthly_cycle_id, project_id, usd_equivalent_amount, calculated_contribution_amount, status")
+          .in("monthly_cycle_id", cycleIds),
+      warnings,
+    ),
+    softRead(
+      "project_attribution_datasets",
+      () => supabase.from("project_attribution_datasets").select("monthly_cycle_id, status").in("monthly_cycle_id", cycleIds),
+      warnings,
+    ),
   ])
 
   return buildMonthlyCycleAdminOverview({
@@ -406,6 +522,9 @@ export async function loadMonthlyCycleAdminOverview(): Promise<MonthlyCycleAdmin
     runs: runs as ZkasRunCycleRow[],
     publishedResults: publishedResults as PublishedResultCycleRow[],
     projectSummaries: projectSummaries as ProjectSummaryCycleRow[],
+    contributionExpectedProjects: contributionExpectedProjects as ProjectContributionExpectationRow[],
+    contributionSubmissions: contributionSubmissions as ProjectMonthlyContributionSubmissionCycleRow[],
+    attributionDatasets: attributionDatasets as ProjectAttributionDatasetCycleRow[],
     warnings,
   })
 }

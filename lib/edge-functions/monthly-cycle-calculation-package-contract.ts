@@ -13,14 +13,20 @@ export type MonthlyCycleCalculationPackageCommandOutput = {
   status: "calculation"
   calculationStartedAt: string
   runId: number
-  runStatus: "locked"
+  runStatus: "locked" | "completed"
   packageArtifactPath: string
   packageArtifactHash: string
+  resultArtifactPath: string
+  resultArtifactHash: string
   runManifestHash: string
   counts: {
     datasets: number
     payments: number
     identityArtifacts: number
+    resultRows: number
+    projectResults: number
+    assetFills: number
+    returnedPools: number
   }
 }
 
@@ -70,7 +76,11 @@ function isCounts(value: unknown): value is MonthlyCycleCalculationPackageComman
     isPlainObject(value) &&
     Number.isInteger(value.datasets) &&
     Number.isInteger(value.payments) &&
-    Number.isInteger(value.identityArtifacts)
+    Number.isInteger(value.identityArtifacts) &&
+    Number.isInteger(value.resultRows) &&
+    Number.isInteger(value.projectResults) &&
+    Number.isInteger(value.assetFills) &&
+    Number.isInteger(value.returnedPools)
   )
 }
 
@@ -82,9 +92,11 @@ function isMonthlyCycleCalculationPackageOutput(value: unknown): value is Monthl
     value.status === "calculation" &&
     typeof value.calculationStartedAt === "string" &&
     Number.isInteger(value.runId) &&
-    value.runStatus === "locked" &&
+    (value.runStatus === "locked" || value.runStatus === "completed") &&
     typeof value.packageArtifactPath === "string" &&
     typeof value.packageArtifactHash === "string" &&
+    typeof value.resultArtifactPath === "string" &&
+    typeof value.resultArtifactHash === "string" &&
     typeof value.runManifestHash === "string" &&
     isCounts(value.counts)
   )

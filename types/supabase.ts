@@ -300,6 +300,314 @@ export type Database = {
           },
         ]
       }
+      monthly_cycle_allocation_asset_fills: {
+        Row: {
+          asset_code: string
+          asset_type: string
+          created_at: string
+          id: number
+          monthly_cycle_id: number
+          partial: boolean
+          pool_id: string
+          preference_rank: number
+          project_id: number
+          run_id: number
+          source_amount: number
+          usd_value: number
+          user_id: string
+        }
+        Insert: {
+          asset_code: string
+          asset_type: string
+          created_at?: string
+          id?: number
+          monthly_cycle_id: number
+          partial?: boolean
+          pool_id: string
+          preference_rank: number
+          project_id: number
+          run_id: number
+          source_amount: number
+          usd_value: number
+          user_id: string
+        }
+        Update: {
+          asset_code?: string
+          asset_type?: string
+          created_at?: string
+          id?: number
+          monthly_cycle_id?: number
+          partial?: boolean
+          pool_id?: string
+          preference_rank?: number
+          project_id?: number
+          run_id?: number
+          source_amount?: number
+          usd_value?: number
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "monthly_cycle_allocation_asset_fills_monthly_cycle_id_fkey"
+            columns: ["monthly_cycle_id"]
+            isOneToOne: false
+            referencedRelation: "monthly_cycles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "monthly_cycle_allocation_asset_fills_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "monthly_cycle_allocation_asset_fills_run_id_fkey"
+            columns: ["run_id"]
+            isOneToOne: false
+            referencedRelation: "zkas_runs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "monthly_cycle_allocation_asset_fills_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["user_id"]
+          },
+        ]
+      }
+      monthly_cycle_allocation_project_results: {
+        Row: {
+          attribution_points: number
+          created_at: string
+          id: number
+          monthly_cycle_id: number
+          project_id: number
+          project_pool_usd: number
+          raw_usd: number
+          run_id: number
+          scoped_cubid_id: string
+          total_project_points: number
+          user_id: string
+        }
+        Insert: {
+          attribution_points: number
+          created_at?: string
+          id?: number
+          monthly_cycle_id: number
+          project_id: number
+          project_pool_usd: number
+          raw_usd: number
+          run_id: number
+          scoped_cubid_id: string
+          total_project_points: number
+          user_id: string
+        }
+        Update: {
+          attribution_points?: number
+          created_at?: string
+          id?: number
+          monthly_cycle_id?: number
+          project_id?: number
+          project_pool_usd?: number
+          raw_usd?: number
+          run_id?: number
+          scoped_cubid_id?: string
+          total_project_points?: number
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "monthly_cycle_allocation_project_results_monthly_cycle_id_fkey"
+            columns: ["monthly_cycle_id"]
+            isOneToOne: false
+            referencedRelation: "monthly_cycles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "monthly_cycle_allocation_project_results_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "monthly_cycle_allocation_project_results_run_id_fkey"
+            columns: ["run_id"]
+            isOneToOne: false
+            referencedRelation: "zkas_runs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "monthly_cycle_allocation_project_results_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["user_id"]
+          },
+        ]
+      }
+      monthly_cycle_allocation_returned_pools: {
+        Row: {
+          asset_code: string
+          asset_type: string
+          created_at: string
+          id: number
+          monthly_cycle_id: number
+          pool_id: string
+          project_id: number
+          reason_code: string
+          run_id: number
+          source_amount: number
+          usd_value: number
+        }
+        Insert: {
+          asset_code: string
+          asset_type: string
+          created_at?: string
+          id?: number
+          monthly_cycle_id: number
+          pool_id: string
+          project_id: number
+          reason_code: string
+          run_id: number
+          source_amount: number
+          usd_value: number
+        }
+        Update: {
+          asset_code?: string
+          asset_type?: string
+          created_at?: string
+          id?: number
+          monthly_cycle_id?: number
+          pool_id?: string
+          project_id?: number
+          reason_code?: string
+          run_id?: number
+          source_amount?: number
+          usd_value?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "monthly_cycle_allocation_returned_pools_monthly_cycle_id_fkey"
+            columns: ["monthly_cycle_id"]
+            isOneToOne: false
+            referencedRelation: "monthly_cycles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "monthly_cycle_allocation_returned_pools_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "monthly_cycle_allocation_returned_pools_run_id_fkey"
+            columns: ["run_id"]
+            isOneToOne: false
+            referencedRelation: "zkas_runs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      monthly_cycle_bookkeeping_credits: {
+        Row: {
+          allocation_breakdown: Json
+          asset_fills: Json
+          created_at: string
+          credited_at: string
+          credited_by_user_id: string | null
+          currency_code: string
+          id: number
+          idempotency_key: string
+          monthly_cycle_id: number
+          payment_status: string
+          run_id: number
+          source_breakdown: Json
+          source_result_id: number
+          status: string
+          updated_at: string
+          usd_equivalent_amount: number
+          user_id: string
+        }
+        Insert: {
+          allocation_breakdown?: Json
+          asset_fills?: Json
+          created_at?: string
+          credited_at?: string
+          credited_by_user_id?: string | null
+          currency_code?: string
+          id?: number
+          idempotency_key: string
+          monthly_cycle_id: number
+          payment_status?: string
+          run_id: number
+          source_breakdown?: Json
+          source_result_id: number
+          status?: string
+          updated_at?: string
+          usd_equivalent_amount: number
+          user_id: string
+        }
+        Update: {
+          allocation_breakdown?: Json
+          asset_fills?: Json
+          created_at?: string
+          credited_at?: string
+          credited_by_user_id?: string | null
+          currency_code?: string
+          id?: number
+          idempotency_key?: string
+          monthly_cycle_id?: number
+          payment_status?: string
+          run_id?: number
+          source_breakdown?: Json
+          source_result_id?: number
+          status?: string
+          updated_at?: string
+          usd_equivalent_amount?: number
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "monthly_cycle_bookkeeping_credits_credited_by_user_id_fkey"
+            columns: ["credited_by_user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "monthly_cycle_bookkeeping_credits_monthly_cycle_id_fkey"
+            columns: ["monthly_cycle_id"]
+            isOneToOne: false
+            referencedRelation: "monthly_cycles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "monthly_cycle_bookkeeping_credits_run_id_fkey"
+            columns: ["run_id"]
+            isOneToOne: false
+            referencedRelation: "zkas_runs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "monthly_cycle_bookkeeping_credits_source_result_id_fkey"
+            columns: ["source_result_id"]
+            isOneToOne: false
+            referencedRelation: "zkas_run_results"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "monthly_cycle_bookkeeping_credits_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["user_id"]
+          },
+        ]
+      }
       monthly_cycle_events: {
         Row: {
           actor_role: string
@@ -1690,6 +1998,273 @@ export type Database = {
           },
         ]
       }
+      project_attribution_datasets: {
+        Row: {
+          approved_at: string | null
+          approved_by_user_id: string | null
+          created_at: string
+          id: number
+          monthly_cycle_id: number
+          note: string | null
+          project_id: number
+          proof_artifact_uri: string | null
+          proof_type: string | null
+          rejected_at: string | null
+          rejected_by_user_id: string | null
+          rejection_reason: string | null
+          row_count: number
+          status: string
+          submitted_at: string
+          submitted_by_user_id: string | null
+          total_attribution_points: number
+          updated_at: string
+          verification_status: string | null
+          verifier_backend: string | null
+        }
+        Insert: {
+          approved_at?: string | null
+          approved_by_user_id?: string | null
+          created_at?: string
+          id?: number
+          monthly_cycle_id: number
+          note?: string | null
+          project_id: number
+          proof_artifact_uri?: string | null
+          proof_type?: string | null
+          rejected_at?: string | null
+          rejected_by_user_id?: string | null
+          rejection_reason?: string | null
+          row_count?: number
+          status?: string
+          submitted_at?: string
+          submitted_by_user_id?: string | null
+          total_attribution_points?: number
+          updated_at?: string
+          verification_status?: string | null
+          verifier_backend?: string | null
+        }
+        Update: {
+          approved_at?: string | null
+          approved_by_user_id?: string | null
+          created_at?: string
+          id?: number
+          monthly_cycle_id?: number
+          note?: string | null
+          project_id?: number
+          proof_artifact_uri?: string | null
+          proof_type?: string | null
+          rejected_at?: string | null
+          rejected_by_user_id?: string | null
+          rejection_reason?: string | null
+          row_count?: number
+          status?: string
+          submitted_at?: string
+          submitted_by_user_id?: string | null
+          total_attribution_points?: number
+          updated_at?: string
+          verification_status?: string | null
+          verifier_backend?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "project_attribution_datasets_approved_by_user_id_fkey"
+            columns: ["approved_by_user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "project_attribution_datasets_monthly_cycle_id_fkey"
+            columns: ["monthly_cycle_id"]
+            isOneToOne: false
+            referencedRelation: "monthly_cycles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "project_attribution_datasets_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "project_attribution_datasets_rejected_by_user_id_fkey"
+            columns: ["rejected_by_user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "project_attribution_datasets_submitted_by_user_id_fkey"
+            columns: ["submitted_by_user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["user_id"]
+          },
+        ]
+      }
+      project_attribution_rows: {
+        Row: {
+          attribution_points: number
+          category: string | null
+          created_at: string
+          dataset_id: number
+          evidence_reference: string | null
+          id: number
+          monthly_cycle_id: number
+          notes: string | null
+          project_id: number
+          resolution_message: string | null
+          resolution_status: string
+          row_index: number
+          scoped_cubid_id: string
+          user_email: string | null
+          user_id: string | null
+        }
+        Insert: {
+          attribution_points: number
+          category?: string | null
+          created_at?: string
+          dataset_id: number
+          evidence_reference?: string | null
+          id?: number
+          monthly_cycle_id: number
+          notes?: string | null
+          project_id: number
+          resolution_message?: string | null
+          resolution_status?: string
+          row_index: number
+          scoped_cubid_id: string
+          user_email?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          attribution_points?: number
+          category?: string | null
+          created_at?: string
+          dataset_id?: number
+          evidence_reference?: string | null
+          id?: number
+          monthly_cycle_id?: number
+          notes?: string | null
+          project_id?: number
+          resolution_message?: string | null
+          resolution_status?: string
+          row_index?: number
+          scoped_cubid_id?: string
+          user_email?: string | null
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "project_attribution_rows_dataset_id_fkey"
+            columns: ["dataset_id"]
+            isOneToOne: false
+            referencedRelation: "project_attribution_datasets"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "project_attribution_rows_monthly_cycle_id_fkey"
+            columns: ["monthly_cycle_id"]
+            isOneToOne: false
+            referencedRelation: "monthly_cycles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "project_attribution_rows_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "project_attribution_rows_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["user_id"]
+          },
+        ]
+      }
+      project_monthly_contribution_submissions: {
+        Row: {
+          calculated_contribution_amount: number
+          commitment_percentage: number
+          id: number
+          monthly_cycle_id: number
+          notes: string | null
+          period_end: string
+          period_start: string
+          project_id: number
+          source_amount: number
+          source_currency_code: string
+          source_reference: string | null
+          status: string
+          submitted_at: string
+          submitted_by_user_id: string | null
+          updated_at: string
+          usd_equivalent_amount: number
+        }
+        Insert: {
+          calculated_contribution_amount: number
+          commitment_percentage: number
+          id?: number
+          monthly_cycle_id: number
+          notes?: string | null
+          period_end: string
+          period_start: string
+          project_id: number
+          source_amount: number
+          source_currency_code: string
+          source_reference?: string | null
+          status?: string
+          submitted_at?: string
+          submitted_by_user_id?: string | null
+          updated_at?: string
+          usd_equivalent_amount: number
+        }
+        Update: {
+          calculated_contribution_amount?: number
+          commitment_percentage?: number
+          id?: number
+          monthly_cycle_id?: number
+          notes?: string | null
+          period_end?: string
+          period_start?: string
+          project_id?: number
+          source_amount?: number
+          source_currency_code?: string
+          source_reference?: string | null
+          status?: string
+          submitted_at?: string
+          submitted_by_user_id?: string | null
+          updated_at?: string
+          usd_equivalent_amount?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "project_monthly_contribution_submissions_monthly_cycle_id_fkey"
+            columns: ["monthly_cycle_id"]
+            isOneToOne: false
+            referencedRelation: "monthly_cycles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "project_monthly_contribution_submissions_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "project_monthly_contribution_submissions_submitted_by_user_id_fkey"
+            columns: ["submitted_by_user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["user_id"]
+          },
+        ]
+      }
       project_stats_monthly: {
         Row: {
           actual_percentage: number | null
@@ -1851,6 +2426,7 @@ export type Database = {
           cumulative_donated: number | null
           cumulative_revenue: number | null
           default_payment_method_id: number | null
+          default_reporting_currency_code: string
           deleted_at: string | null
           description: string
           detailed_description: string | null
@@ -1878,6 +2454,7 @@ export type Database = {
           cumulative_donated?: number | null
           cumulative_revenue?: number | null
           default_payment_method_id?: number | null
+          default_reporting_currency_code?: string
           deleted_at?: string | null
           description: string
           detailed_description?: string | null
@@ -1905,6 +2482,7 @@ export type Database = {
           cumulative_donated?: number | null
           cumulative_revenue?: number | null
           default_payment_method_id?: number | null
+          default_reporting_currency_code?: string
           deleted_at?: string | null
           description?: string
           detailed_description?: string | null
@@ -2540,6 +3118,77 @@ export type Database = {
             foreignKeyName: "user_onboarding_drafts_user_id_fkey"
             columns: ["user_id"]
             isOneToOne: true
+            referencedRelation: "users"
+            referencedColumns: ["user_id"]
+          },
+        ]
+      }
+      user_asset_preferences: {
+        Row: {
+          accepted: boolean
+          asset_code: string
+          asset_type: Database["public"]["Enums"]["user_asset_preference_type"]
+          created_at: string
+          created_by_user_id: string | null
+          id: number
+          project_id: number | null
+          rank: number
+          updated_at: string
+          updated_by_user_id: string | null
+          user_id: string
+        }
+        Insert: {
+          accepted?: boolean
+          asset_code: string
+          asset_type: Database["public"]["Enums"]["user_asset_preference_type"]
+          created_at?: string
+          created_by_user_id?: string | null
+          id?: number
+          project_id?: number | null
+          rank: number
+          updated_at?: string
+          updated_by_user_id?: string | null
+          user_id: string
+        }
+        Update: {
+          accepted?: boolean
+          asset_code?: string
+          asset_type?: Database["public"]["Enums"]["user_asset_preference_type"]
+          created_at?: string
+          created_by_user_id?: string | null
+          id?: number
+          project_id?: number | null
+          rank?: number
+          updated_at?: string
+          updated_by_user_id?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_asset_preferences_created_by_user_id_fkey"
+            columns: ["created_by_user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "user_asset_preferences_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "user_asset_preferences_updated_by_user_id_fkey"
+            columns: ["updated_by_user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "user_asset_preferences_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
             referencedRelation: "users"
             referencedColumns: ["user_id"]
           },
@@ -3862,6 +4511,7 @@ export type Database = {
           p_category_ids: number[]
           p_contact_email: string
           p_default_payment_method_id: number
+          p_default_reporting_currency_code?: string
           p_description: string
           p_detailed_description: string
           p_logo_url: string
@@ -3874,6 +4524,22 @@ export type Database = {
         Returns: {
           project_id: number
           project_slug: string
+        }[]
+      }
+      replace_user_asset_preferences_atomic: {
+        Args: { p_preferences?: Json; p_user_id: string }
+        Returns: {
+          accepted: boolean
+          asset_code: string
+          asset_type: Database["public"]["Enums"]["user_asset_preference_type"]
+          created_at: string
+          created_by_user_id: string | null
+          id: number
+          project_id: number | null
+          rank: number
+          updated_at: string
+          updated_by_user_id: string | null
+          user_id: string
         }[]
       }
       soft_delete_organization_members: {
@@ -3934,6 +4600,7 @@ export type Database = {
         | "resolved"
       payout_route_status: "draft" | "active" | "disabled"
       projects_status: "active" | "inactive" | "deleted"
+      user_asset_preference_type: "project_token" | "stablecoin" | "fiat"
       users_status: "active" | "inactive" | "deleted"
       wallet_accounts_status: "active" | "inactive" | "deleted"
       wallet_connections_status: "active" | "inactive" | "deleted"
@@ -4129,6 +4796,7 @@ export const Constants = {
       ],
       payout_route_status: ["draft", "active", "disabled"],
       projects_status: ["active", "inactive", "deleted"],
+      user_asset_preference_type: ["project_token", "stablecoin", "fiat"],
       users_status: ["active", "inactive", "deleted"],
       wallet_accounts_status: ["active", "inactive", "deleted"],
       wallet_connections_status: ["active", "inactive", "deleted"],

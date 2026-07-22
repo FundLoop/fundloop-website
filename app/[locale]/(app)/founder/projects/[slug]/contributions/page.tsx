@@ -9,6 +9,7 @@ import {
   type FounderContributionCycleStatus,
 } from "@/lib/workspace/founder-workspace"
 import { cn } from "@/lib/utils"
+import { ProjectMonthlyContributionForm } from "@/components/founder/project-monthly-contribution-form"
 import { Badge } from "@/components/ui/badge"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 
@@ -58,6 +59,7 @@ export default async function FounderProjectContributionsPage({ params }: Founde
 
   const projectSlug = project.slug ?? slug
   const latestCycle = project.contributionCycles[0] ?? null
+  const latestSubmission = project.monthlyContribution.currentSubmission
   const hasActionableCycle = project.contributionCycles.some((cycle) => cycle.status !== "confirmed")
 
   return (
@@ -84,8 +86,9 @@ export default async function FounderProjectContributionsPage({ params }: Founde
           </div>
           <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-1">
             <SummaryMetric label={t("summary.latest")} value={latestCycle?.cycleKey ?? t("none")} />
-            <SummaryMetric label={t("summary.open")} value={String(project.contributionCycles.filter((cycle) => cycle.status !== "confirmed").length)} />
+            <SummaryMetric label={t("summary.open")} value={String(project.monthlyContribution.openCycles.length)} />
             <SummaryMetric label={t("summary.contribution")} value={formatCurrency(locale, project.payments.totalContributionAmount)} />
+            <SummaryMetric label={t("summary.latestSubmission")} value={latestSubmission?.cycleKey ?? t("none")} />
           </div>
         </div>
       </section>
@@ -117,6 +120,41 @@ export default async function FounderProjectContributionsPage({ params }: Founde
           ready={project.attribution.datasetCount > 0}
         />
       </section>
+
+      <ProjectMonthlyContributionForm
+        projectSlug={projectSlug}
+        contributionPercentage={project.setup.contributionPercentage}
+        defaultReportingCurrencyCode={project.setup.defaultReportingCurrencyCode}
+        canSubmit={project.monthlyContribution.canSubmit}
+        blockedReason={project.monthlyContribution.blockedReason}
+        openCycles={project.monthlyContribution.openCycles}
+        currentSubmission={project.monthlyContribution.currentSubmission}
+        labels={{
+          title: t("submission.title"),
+          description: t("submission.description"),
+          currentTitle: t("submission.currentTitle"),
+          currentDescription: t("submission.currentDescription"),
+          currentEmpty: t("submission.currentEmpty"),
+          cycle: t("submission.cycle"),
+          period: t("submission.period"),
+          sourceCurrency: t("submission.sourceCurrency"),
+          sourceAmount: t("submission.sourceAmount"),
+          usdEquivalentAmount: t("submission.usdEquivalentAmount"),
+          commitmentPercentage: t("submission.commitmentPercentage"),
+          calculatedContributionAmount: t("submission.calculatedContributionAmount"),
+          sourceReference: t("submission.sourceReference"),
+          notes: t("submission.notes"),
+          submit: t("submission.submit"),
+          submitting: t("submission.submitting"),
+          blockedMissingCommitment: t("submission.blockedMissingCommitment"),
+          blockedNoOpenCycle: t("submission.blockedNoOpenCycle"),
+          validationTitle: t("submission.validationTitle"),
+          validationAmount: t("submission.validationAmount"),
+          successTitle: t("submission.successTitle"),
+          successDescription: t("submission.successDescription"),
+          failureTitle: t("submission.failureTitle"),
+        }}
+      />
 
       <section className="grid gap-6 lg:grid-cols-[1.4fr_0.6fr]">
         <Card className="bg-[var(--surface-panel-strong)]">

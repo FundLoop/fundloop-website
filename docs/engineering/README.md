@@ -11,6 +11,7 @@ Use this directory for material that should outlive a single agent session, incl
 
 Current high-signal docs:
 
+- [Allocation Architecture](./allocation.md)
 - [Backgrounder for Agents](./backgrounder-for-agents.md)
 - [Beta Runtime Guardrails](./beta-guardrails.md)
 - [Current-State Architecture](./current-state-architecture.md)
@@ -31,6 +32,7 @@ Current high-signal docs:
 - [MCP Testing](../mcp/testing.md)
 - [MCP Readiness Ledger](../mcp/readiness.md)
 - [Navigation and Shell Architecture](./navigation-shell.md)
+- [Operational MVP](./operational-mvp.md)
 - [Operations Runbook](./operations-runbook.md)
 - [Reporting Publication](./reporting.md)
 - [Release Candidate Path](./release-candidate.md)

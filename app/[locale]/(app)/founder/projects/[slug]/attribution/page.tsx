@@ -1,6 +1,7 @@
 import { notFound, redirect } from "next/navigation"
 import { getTranslations } from "next-intl/server"
 import { Link } from "@/i18n/navigation"
+import { ProjectAttributionDatasetForm } from "@/components/founder/project-attribution-dataset-form"
 import { DatasetStatusBadge } from "@/components/zkas/dataset-status-badge"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -46,7 +47,7 @@ export default async function FounderProjectAttributionPage({ params }: FounderP
 
   const projectSlug = project.slug ?? slug
   const latestCycle = project.contributionCycles[0]?.cycleKey ?? null
-  const latestDatasetCoversLatestCycle = Boolean(latestCycle && project.attribution.latestDatasetMonth === latestCycle)
+  const latestMvpDatasetCoversLatestCycle = Boolean(latestCycle && project.attribution.latestMvpDatasetCycleKey === latestCycle)
 
   return (
     <div className="space-y-8">
@@ -72,6 +73,7 @@ export default async function FounderProjectAttributionPage({ params }: FounderP
           </div>
           <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-1">
             <SummaryMetric label={t("summary.latestCycle")} value={latestCycle ?? t("none")} />
+            <SummaryMetric label={t("summary.mvpDataset")} value={project.attribution.latestMvpDatasetCycleKey ?? t("none")} />
             <SummaryMetric label={t("summary.latestDataset")} value={project.attribution.latestDatasetMonth ?? t("none")} />
             <SummaryMetric label={t("summary.approved")} value={String(project.attribution.approvedDatasetCount)} />
           </div>
@@ -93,10 +95,10 @@ export default async function FounderProjectAttributionPage({ params }: FounderP
           ready={Boolean(latestCycle)}
         />
         <ReadinessCard
-          title={t("readiness.dataset.title")}
-          description={latestDatasetCoversLatestCycle ? t("readiness.dataset.ready") : t("readiness.dataset.needsWork")}
-          state={project.attribution.latestDatasetStatus ?? t("none")}
-          ready={latestDatasetCoversLatestCycle}
+          title={t("readiness.mvpDataset.title")}
+          description={latestMvpDatasetCoversLatestCycle ? t("readiness.mvpDataset.ready") : t("readiness.mvpDataset.needsWork")}
+          state={project.attribution.latestMvpDatasetStatus ?? t("none")}
+          ready={latestMvpDatasetCoversLatestCycle}
         />
         <ReadinessCard
           title={t("readiness.validation.title")}
@@ -105,6 +107,43 @@ export default async function FounderProjectAttributionPage({ params }: FounderP
           ready={project.attribution.issueCount === 0}
         />
       </section>
+
+      <ProjectAttributionDatasetForm
+        projectSlug={projectSlug}
+        openCycles={project.monthlyContribution.openCycles}
+        currentDataset={project.attribution.currentDataset}
+        labels={{
+          title: t("form.title"),
+          description: t("form.description"),
+          currentTitle: t("form.currentTitle"),
+          currentDescription: t.raw("form.currentDescription"),
+          currentEmpty: t("form.currentEmpty"),
+          blockedNoOpenCycle: t("form.blockedNoOpenCycle"),
+          cycle: t("form.cycle"),
+          note: t("form.note"),
+          rowsTitle: t("form.rowsTitle"),
+          scopedCubidId: t("form.scopedCubidId"),
+          userId: t("form.userId"),
+          userEmail: t("form.userEmail"),
+          resolutionHelp: t("form.resolutionHelp"),
+          attributionPoints: t("form.attributionPoints"),
+          category: t("form.category"),
+          evidenceReference: t("form.evidenceReference"),
+          rowNotes: t("form.rowNotes"),
+          addRow: t("form.addRow"),
+          removeRow: t("form.removeRow"),
+          saveDraft: t("form.saveDraft"),
+          submit: t("form.submit"),
+          submitting: t("form.submitting"),
+          validationTitle: t("form.validationTitle"),
+          validationScopedCubid: t("form.validationScopedCubid"),
+          validationPoints: t("form.validationPoints"),
+          successDraftTitle: t("form.successDraftTitle"),
+          successSubmittedTitle: t("form.successSubmittedTitle"),
+          successDescription: t.raw("form.successDescription"),
+          failureTitle: t("form.failureTitle"),
+        }}
+      />
 
       <section className="grid gap-6 lg:grid-cols-[0.9fr_1.1fr]">
         <Card className="bg-[var(--surface-panel-strong)]">
@@ -136,47 +175,92 @@ export default async function FounderProjectAttributionPage({ params }: FounderP
             <CardTitle>{t("submissions.title")}</CardTitle>
             <CardDescription>{t("submissions.description")}</CardDescription>
           </CardHeader>
-          <CardContent>
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>{t("submissions.month")}</TableHead>
-                  <TableHead>{t("submissions.file")}</TableHead>
-                  <TableHead>{t("submissions.rows")}</TableHead>
-                  <TableHead>{t("submissions.issues")}</TableHead>
-                  <TableHead>{t("submissions.status")}</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {project.attribution.recentSubmissions.length === 0 ? (
-                  <TableRow>
-                    <TableCell colSpan={5} className="text-center text-[var(--text-muted)]">
-                      {t("submissions.empty")}
-                    </TableCell>
-                  </TableRow>
-                ) : (
-                  project.attribution.recentSubmissions.map((submission) => (
-                    <TableRow key={submission.id}>
-                      <TableCell>{submission.month}</TableCell>
-                      <TableCell>
-                        <Link href={`/projects/${projectSlug}/zkas/uploads/${submission.id}`} className="text-[var(--interactive-primary)] hover:underline">
-                          {submission.fileName}
-                        </Link>
-                      </TableCell>
-                      <TableCell>{submission.rowCount}</TableCell>
-                      <TableCell>{submission.issueCount}</TableCell>
-                      <TableCell>
-                        {isZkasDatasetStatus(submission.status) ? (
-                          <DatasetStatusBadge status={submission.status} />
-                        ) : (
-                          <Badge variant="outline">{submission.status}</Badge>
-                        )}
-                      </TableCell>
+          <CardContent className="space-y-8">
+            <div>
+              <h2 className="text-sm font-semibold text-[var(--text-strong)]">{t("submissions.mvpTitle")}</h2>
+              <div className="mt-3 overflow-hidden rounded-[var(--radius-xl)] border border-[color:var(--surface-border)]">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>{t("submissions.month")}</TableHead>
+                      <TableHead>{t("submissions.rows")}</TableHead>
+                      <TableHead>{t("submissions.points")}</TableHead>
+                      <TableHead>{t("submissions.status")}</TableHead>
                     </TableRow>
-                  ))
-                )}
-              </TableBody>
-            </Table>
+                  </TableHeader>
+                  <TableBody>
+                    {project.attribution.recentMvpSubmissions.length === 0 ? (
+                      <TableRow>
+                        <TableCell colSpan={4} className="text-center text-[var(--text-muted)]">
+                          {t("submissions.mvpEmpty")}
+                        </TableCell>
+                      </TableRow>
+                    ) : (
+                      project.attribution.recentMvpSubmissions.map((submission) => (
+                        <TableRow key={submission.id}>
+                          <TableCell>{submission.cycleKey}</TableCell>
+                          <TableCell>{submission.rowCount}</TableCell>
+                          <TableCell>{submission.totalAttributionPoints}</TableCell>
+                          <TableCell>
+                            <Badge variant="outline">{submission.status}</Badge>
+                          </TableCell>
+                        </TableRow>
+                      ))
+                    )}
+                  </TableBody>
+                </Table>
+              </div>
+            </div>
+
+            <div>
+              <h2 className="text-sm font-semibold text-[var(--text-strong)]">{t("submissions.legacyTitle")}</h2>
+              <p className="mt-2 text-sm leading-6 text-[var(--text-muted)]">{t("submissions.legacyDescription")}</p>
+              <div className="mt-3 overflow-hidden rounded-[var(--radius-xl)] border border-[color:var(--surface-border)]">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>{t("submissions.month")}</TableHead>
+                      <TableHead>{t("submissions.file")}</TableHead>
+                      <TableHead>{t("submissions.rows")}</TableHead>
+                      <TableHead>{t("submissions.issues")}</TableHead>
+                      <TableHead>{t("submissions.status")}</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {project.attribution.recentSubmissions.length === 0 ? (
+                      <TableRow>
+                        <TableCell colSpan={5} className="text-center text-[var(--text-muted)]">
+                          {t("submissions.empty")}
+                        </TableCell>
+                      </TableRow>
+                    ) : (
+                      project.attribution.recentSubmissions.map((submission) => (
+                        <TableRow key={submission.id}>
+                          <TableCell>{submission.month}</TableCell>
+                          <TableCell>
+                            <Link
+                              href={`/projects/${projectSlug}/zkas/uploads/${submission.id}`}
+                              className="text-[var(--interactive-primary)] hover:underline"
+                            >
+                              {submission.fileName}
+                            </Link>
+                          </TableCell>
+                          <TableCell>{submission.rowCount}</TableCell>
+                          <TableCell>{submission.issueCount}</TableCell>
+                          <TableCell>
+                            {isZkasDatasetStatus(submission.status) ? (
+                              <DatasetStatusBadge status={submission.status} />
+                            ) : (
+                              <Badge variant="outline">{submission.status}</Badge>
+                            )}
+                          </TableCell>
+                        </TableRow>
+                      ))
+                    )}
+                  </TableBody>
+                </Table>
+              </div>
+            </div>
             <div className="mt-5 flex flex-wrap gap-3">
               <Link href={`/projects/${projectSlug}/zkas`} className="text-sm font-semibold text-[var(--interactive-primary)]">
                 {t("links.upload")}

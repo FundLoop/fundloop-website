@@ -25,6 +25,7 @@ function buildHome(overrides: Partial<Parameters<typeof buildFounderWorkspaceHom
         is_public: true,
         status: "active",
         payment_percentage: 3,
+        default_reporting_currency_code: "CAD",
         default_payment_method_id: 10,
       },
       {
@@ -36,6 +37,7 @@ function buildHome(overrides: Partial<Parameters<typeof buildFounderWorkspaceHom
         is_public: false,
         status: "draft",
         payment_percentage: null,
+        default_reporting_currency_code: "",
         default_payment_method_id: null,
       },
     ],
@@ -102,6 +104,58 @@ function buildHome(overrides: Partial<Parameters<typeof buildFounderWorkspaceHom
         pledged_percentage: 3,
       },
     ],
+    monthlyCycles: [
+      {
+        id: 501,
+        cycle_key: "2026-05",
+        period_start: "2026-05-01",
+        period_end: "2026-05-31",
+        status: "open",
+      },
+      {
+        id: 500,
+        cycle_key: "2026-04",
+        period_start: "2026-04-01",
+        period_end: "2026-04-30",
+        status: "locked",
+      },
+    ],
+    contributionSubmissions: [
+      {
+        id: 900,
+        project_id: 1,
+        monthly_cycle_id: 501,
+        period_start: "2026-05-01",
+        period_end: "2026-05-31",
+        source_currency_code: "CAD",
+        source_amount: 1000,
+        usd_equivalent_amount: 740,
+        commitment_percentage: 3,
+        calculated_contribution_amount: 22.2,
+        source_reference: "may-ledger",
+        notes: "Confirmed bookkeeping amount",
+        status: "submitted",
+        submitted_at: "2026-05-20T00:00:00Z",
+        updated_at: "2026-05-20T00:00:00Z",
+        monthly_cycles: { cycle_key: "2026-05" },
+      },
+    ],
+    attributionDatasets: [
+      {
+        id: 710,
+        project_id: 1,
+        monthly_cycle_id: 501,
+        status: "submitted",
+        row_count: 3,
+        total_attribution_points: 12,
+        note: "May attribution",
+        proof_type: "raw_rows",
+        verification_status: "not_required",
+        submitted_at: "2026-05-21T00:00:00Z",
+        updated_at: "2026-05-21T00:00:00Z",
+        monthly_cycles: { cycle_key: "2026-05" },
+      },
+    ],
     warnings,
     ...overrides,
   })
@@ -119,6 +173,8 @@ describe("buildFounderWorkspaceHome", () => {
       runSummaries: [],
       runs: [],
       stats: [],
+      monthlyCycles: [],
+      contributionSubmissions: [],
       warnings: [],
     })
 
@@ -134,6 +190,9 @@ describe("buildFounderWorkspaceHome", () => {
     expect(project?.setup).toMatchObject({
       hasSlug: true,
       hasContributionRate: true,
+      hasDefaultReportingCurrency: true,
+      contributionPercentage: 3,
+      defaultReportingCurrencyCode: "CAD",
       hasDefaultPaymentMethod: true,
       enabledPaymentMethodCount: 1,
       isReady: true,
@@ -163,6 +222,26 @@ describe("buildFounderWorkspaceHome", () => {
         confirmedCount: 1,
       }),
     ])
+    expect(project?.monthlyContribution).toMatchObject({
+      canSubmit: true,
+      blockedReason: null,
+      openCycles: [
+        {
+          cycleKey: "2026-05",
+          periodStart: "2026-05-01",
+          periodEnd: "2026-05-31",
+          status: "open",
+        },
+      ],
+      currentSubmission: {
+        id: 900,
+        cycleKey: "2026-05",
+        sourceCurrency: "CAD",
+        sourceAmount: 1000,
+        usdEquivalentAmount: 740,
+        calculatedContributionAmount: 22.2,
+      },
+    })
     expect(project?.attribution).toMatchObject({
       datasetCount: 1,
       approvedDatasetCount: 0,
@@ -170,6 +249,22 @@ describe("buildFounderWorkspaceHome", () => {
       latestDatasetMonth: "2026-04",
       latestDatasetStatus: "ready",
       latestDatasetRowCount: 42,
+      mvpDatasetCount: 1,
+      latestMvpDatasetCycleKey: "2026-05",
+      latestMvpDatasetStatus: "submitted",
+      latestMvpDatasetRowCount: 3,
+      currentDataset: expect.objectContaining({
+        id: 710,
+        cycleKey: "2026-05",
+        totalAttributionPoints: 12,
+      }),
+      recentMvpSubmissions: [
+        expect.objectContaining({
+          id: 710,
+          cycleKey: "2026-05",
+          status: "submitted",
+        }),
+      ],
       recentSubmissions: [
         expect.objectContaining({
           id: 100,
@@ -213,9 +308,22 @@ describe("buildFounderWorkspaceHome", () => {
     expect(draftProject?.setup.missingItems).toEqual([
       "slug",
       "contribution_rate",
+      "default_reporting_currency",
       "payment_method",
       "default_payment_method",
     ])
+    expect(draftProject?.monthlyContribution.canSubmit).toBe(false)
+    expect(draftProject?.monthlyContribution.blockedReason).toBe("missing_commitment")
+  })
+
+  it("blocks monthly contribution submission when no open cycle exists", () => {
+    const home = buildHome({ monthlyCycles: [] })
+
+    expect(home.projects[0]?.monthlyContribution).toMatchObject({
+      canSubmit: false,
+      blockedReason: "no_open_cycle",
+      openCycles: [],
+    })
   })
 
   it("groups monthly contribution cycles by period and exposes actionable statuses", () => {
@@ -278,6 +386,7 @@ describe("buildFounderWorkspaceHome", () => {
           is_public: true,
           status: "active",
           payment_percentage: 1,
+          default_reporting_currency_code: "USD",
           default_payment_method_id: null,
         },
         {
@@ -289,6 +398,7 @@ describe("buildFounderWorkspaceHome", () => {
           is_public: true,
           status: "active",
           payment_percentage: 1,
+          default_reporting_currency_code: "USD",
           default_payment_method_id: null,
         },
       ],
@@ -321,6 +431,8 @@ describe("buildFounderWorkspaceHome", () => {
         { id: 22, month: "2026-04", published_at: "2026-04-17T00:00:00Z" },
       ],
       stats: [],
+      monthlyCycles: [],
+      contributionSubmissions: [],
       warnings: [],
     })
 

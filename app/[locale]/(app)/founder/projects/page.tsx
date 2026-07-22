@@ -16,6 +16,14 @@ function setupBadgeClass(project: FounderWorkspaceProject) {
     : "border-amber-500/30 bg-amber-500/10 text-amber-700 dark:text-amber-200"
 }
 
+function formatCommitment(project: FounderWorkspaceProject, fallback: string) {
+  if (!project.setup.hasContributionRate) {
+    return fallback
+  }
+
+  return `${project.setup.contributionPercentage}% / ${project.setup.defaultReportingCurrencyCode}`
+}
+
 export default async function FounderProjectsPage({ params }: FounderProjectsPageProps) {
   const { locale } = await params
   const navigationContext = await getNavigationContext()
@@ -75,7 +83,8 @@ export default async function FounderProjectsPage({ params }: FounderProjectsPag
               {project.description ? <p className="text-sm leading-6 text-[var(--text-muted)]">{project.description}</p> : null}
             </CardHeader>
             <CardContent className="space-y-5">
-              <div className="grid gap-3 sm:grid-cols-4">
+              <div className="grid gap-3 sm:grid-cols-5">
+                <Metric label={t("metrics.commitment")} value={formatCommitment(project, t("none"))} />
                 <Metric label={t("metrics.methods")} value={String(project.setup.enabledPaymentMethodCount)} />
                 <Metric label={t("metrics.pending")} value={String(project.payments.pendingCount + project.payments.awaitingConfirmationCount)} />
                 <Metric label={t("metrics.datasets")} value={String(project.attribution.datasetCount)} />

@@ -12,6 +12,7 @@ describe("monthly-cycle-lock contract", () => {
       data: {
         cycleKey: "2026-04",
         attemptId: "attempt-1",
+        overrideRequiredInputs: undefined,
         overrideUnresolvedOnchain: undefined,
         overrideReason: undefined,
       },
@@ -27,22 +28,27 @@ describe("monthly-cycle-lock contract", () => {
       ok: false,
       error: { code: "invalid_payload" },
     })
+    expect(validateMonthlyCycleLockInput({ cycleKey: "2026-04", overrideRequiredInputs: "yes" })).toMatchObject({
+      ok: false,
+      error: { code: "invalid_payload" },
+    })
   })
 
   it("trims override reasons without making them mandatory at validation time", () => {
     expect(
       validateMonthlyCycleLockInput({
         cycleKey: "2026-04",
-        overrideUnresolvedOnchain: true,
-        overrideReason: "  operator reviewed pending tx  ",
+        overrideRequiredInputs: true,
+        overrideReason: "  operator reviewed missing inputs  ",
       }),
     ).toEqual({
       ok: true,
       data: {
         cycleKey: "2026-04",
         attemptId: undefined,
-        overrideUnresolvedOnchain: true,
-        overrideReason: "operator reviewed pending tx",
+        overrideRequiredInputs: true,
+        overrideUnresolvedOnchain: undefined,
+        overrideReason: "operator reviewed missing inputs",
       },
     })
   })

@@ -1,6 +1,16 @@
 import { redirect } from "next/navigation"
 import { getTranslations } from "next-intl/server"
-import { ArrowUpRight, BadgeCheck, CircleDollarSign, Compass, ShieldAlert, ShieldCheck, Sparkles, UsersRound } from "lucide-react"
+import {
+  ArrowUpRight,
+  BadgeCheck,
+  CircleDollarSign,
+  Coins,
+  Compass,
+  ShieldAlert,
+  ShieldCheck,
+  Sparkles,
+  UsersRound,
+} from "lucide-react"
 import { Link } from "@/i18n/navigation"
 import { isResolvedCubidIdentityStatus } from "@/lib/cubid/types"
 import { getNavigationContext } from "@/lib/navigation-context"
@@ -151,6 +161,60 @@ export default async function WorkspacePage({ params }: WorkspacePageProps) {
                 </a>
               </Button>
             </div>
+          </CardContent>
+        </Card>
+
+        <Card className="bg-[var(--surface-panel-strong)] shadow-[var(--surface-shadow-panel)]">
+          <CardHeader>
+            <div className="flex items-center justify-between gap-4">
+              <div className="flex items-center gap-3">
+                <Coins className="h-5 w-5 text-[var(--interactive-primary)]" />
+                <CardTitle>{t("assetPreferences.title")}</CardTitle>
+              </div>
+              <Badge variant={workspace.assetPreferences.hasCustomPreferences ? "default" : "outline"}>
+                {workspace.assetPreferences.hasCustomPreferences
+                  ? t("assetPreferences.customBadge")
+                  : t("assetPreferences.defaultBadge")}
+              </Badge>
+            </div>
+            <CardDescription>{t("assetPreferences.description")}</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <p className="rounded-2xl border border-[color:var(--surface-border)] bg-[var(--surface-panel)] px-4 py-3 text-sm leading-6 text-[var(--text-muted)]">
+              {t("assetPreferences.planningNote")}
+            </p>
+            {workspace.assetPreferences.rejectsAllProjectTokens ? (
+              <div className="rounded-2xl border border-amber-300 bg-amber-50 px-4 py-3 text-sm leading-6 text-amber-950 dark:border-amber-400/30 dark:bg-amber-400/10 dark:text-amber-100">
+                <p className="font-semibold">{t("assetPreferences.rejectAllWarningTitle")}</p>
+                <p className="mt-1">{t("assetPreferences.rejectAllWarningBody")}</p>
+              </div>
+            ) : null}
+            <div className="space-y-2">
+              {(workspace.assetPreferences.hasCustomPreferences
+                ? workspace.assetPreferences.preferences
+                : workspace.assetPreferences.defaultPreferences
+              )
+                .slice(0, 3)
+                .map((preference) => (
+                  <div
+                    key={`${preference.rank}-${preference.assetType}-${preference.assetCode}`}
+                    className="flex items-center justify-between gap-3 rounded-2xl border border-[color:var(--surface-border)] bg-[var(--surface-panel)] px-4 py-3"
+                  >
+                    <div>
+                      <p className="font-semibold text-[var(--text-strong)]">
+                        {t("assetPreferences.rank", { rank: preference.rank })}: {preference.assetCode}
+                      </p>
+                      <p className="text-sm text-[var(--text-muted)]">{t(`assetPreferences.type.${preference.assetType}`)}</p>
+                    </div>
+                    <Badge variant={preference.accepted ? "outline" : "secondary"}>
+                      {preference.accepted ? t("assetPreferences.accepted") : t("assetPreferences.rejected")}
+                    </Badge>
+                  </div>
+                ))}
+            </div>
+            <Button asChild variant="outline" className="w-full">
+              <Link href="/workspace/account">{t("assetPreferences.manageCta")}</Link>
+            </Button>
           </CardContent>
         </Card>
 

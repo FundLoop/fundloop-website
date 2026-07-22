@@ -217,6 +217,8 @@ The canonical database assets live under `supabase/`.
 When working locally:
 
 - prefer local Supabase for destructive or migration validation
+- keep local Supabase alive only for short periods when actively needed for migration, seed, smoke, or debugging work
+- stop local Supabase again when the validation or debugging task is complete, unless the user explicitly asks to keep it running
 - if Docker is needed locally on this machine, Colima is an acceptable path
 - do not push to, reset, re-link, or otherwise modify the remote Supabase project unless the user explicitly granted permission in their most recent prompt; if that permission is absent, stop and ask first
 - do not reset the remote Supabase project unless the user explicitly asks and the impact is understood

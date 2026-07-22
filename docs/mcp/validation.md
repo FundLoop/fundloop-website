@@ -40,10 +40,10 @@ Latest transcript:
 
 ## Local Edge Smoke
 
-Start local Supabase and serve the MCP function with an explicit local-only test-token override. On this workstation, use the `/var/run/docker.sock` Docker endpoint when Colima's direct socket path cannot be mounted by the Edge runtime:
+Start local Supabase and serve the MCP function with an explicit local-only test-token override. On this workstation, use the shared agent Docker context:
 
 ```bash
-DOCKER_HOST=unix:///var/run/docker.sock supabase start
+DOCKER_CONTEXT=colima-agents supabase start -x logflare -x vector
 cat > /tmp/fundloop-mcp-local.env <<'EOF'
 NEXT_PUBLIC_SUPABASE_URL=http://host.docker.internal:55321
 NEXT_PUBLIC_SUPABASE_ANON_KEY=<local-publishable-key-from-supabase-start>
@@ -51,7 +51,7 @@ FUNDLOOP_MCP_ALLOW_LOCAL_TEST_TOKEN=true
 FUNDLOOP_MCP_ALLOWED_EDGE_FUNCTIONS=
 FUNDLOOP_INTERNAL_ADMIN_EMAILS=
 EOF
-DOCKER_HOST=unix:///var/run/docker.sock SUPABASE_FUNCTIONS_WATCH_LIMIT=12000 \
+DOCKER_CONTEXT=colima-agents SUPABASE_FUNCTIONS_WATCH_LIMIT=12000 \
   supabase functions serve --no-verify-jwt mcp --env-file /tmp/fundloop-mcp-local.env
 FUNDLOOP_MCP_HTTP_URL=http://127.0.0.1:55321/functions/v1/mcp \
   FUNDLOOP_MCP_BEARER_TOKEN=local-smoke-token \
@@ -99,6 +99,62 @@ Latest local Edge transcript:
   "checkedPrompts": ["review-pending-tasks"]
 }
 ```
+
+## Hosted Preview/dev Smoke
+
+Run hosted smoke only against the Preview/dev Supabase project unless the production gate explicitly asks for a production validation pass. Use a non-production Supabase access token for a seeded smoke actor, and do not paste the token, JWT claims, cookies, Supabase keys, or raw private tool payloads into this file.
+
+Required environment shape:
+
+```bash
+export FUNDLOOP_MCP_HTTP_URL=https://<dev-project-ref>.supabase.co/functions/v1/mcp
+export FUNDLOOP_MCP_BEARER_TOKEN=<non-production-supabase-access-token>
+export FUNDLOOP_MCP_REQUIRE_HTTPS=true
+```
+
+Run:
+
+```bash
+pnpm mcp:edge:smoke
+```
+
+The hosted smoke must prove:
+
+- `GET /health` succeeds over HTTPS and returns only non-sensitive service metadata.
+- Remote `POST` without `Authorization` fails with `401`.
+- Authenticated `initialize` succeeds.
+- Authenticated `tools/list`, `resources/list`, and `prompts/list` succeed.
+- Authenticated `tools/call` for `fundloop.health` succeeds.
+
+Record evidence in this sanitized shape:
+
+```json
+{
+  "environment": "preview-dev",
+  "timestamp": "<UTC ISO timestamp>",
+  "command": "FUNDLOOP_MCP_REQUIRE_HTTPS=true pnpm mcp:edge:smoke",
+  "endpoint_host": "<dev-project-ref>.supabase.co",
+  "ok": true,
+  "health": {
+    "ok": true,
+    "service": "fundloop-mcp-server",
+    "version": "0.1.0",
+    "transport": "streamable_http"
+  },
+  "toolCount": 15,
+  "resourceCount": 4,
+  "promptCount": 4,
+  "checkedAuthFailures": ["missing_bearer"],
+  "checkedTools": ["fundloop.health"],
+  "checkedResources": ["fundloop://docs/mcp-overview"],
+  "checkedPrompts": ["review-pending-tasks"],
+  "notes": "No bearer token, Supabase key, cookie, user email, project slug, or private payload included."
+}
+```
+
+Latest hosted Preview/dev evidence:
+
+- `2026-07-20`: Hosted smoke not rerun in this pass because `FUNDLOOP_MCP_HTTP_URL`, `FUNDLOOP_MCP_BEARER_TOKEN`, and `FUNDLOOP_MCP_REQUIRE_HTTPS` were unset in the local shell. The runbook above is the required evidence format for the next operator with a non-production smoke token.
 
 ## Curl Shape
 

@@ -32,6 +32,19 @@ const baseManifest = {
   },
 }
 
+const baseAttributionReadiness = {
+  totalCount: 1,
+  draftCount: 0,
+  submittedCount: 0,
+  approvedCount: 1,
+  rejectedCount: 0,
+  reviewRequiredCount: 0,
+  totalRowCount: 2,
+  totalAttributionPoints: 5,
+  datasets: [],
+  readError: null,
+}
+
 function baseCycle(overrides: Record<string, unknown> = {}) {
   return {
     id: 1,
@@ -60,12 +73,212 @@ describe("buildMonthlyCyclePrepReview", () => {
         approvedDatasets: 1,
         identityArtifacts: 1,
       },
+      contributionReadiness: {
+        submittedCount: 1,
+        expectedProjectCount: 1,
+        missingProjectCount: 0,
+        totalUsdEquivalentAmount: 1000,
+        totalCalculatedContributionAmount: 10,
+        missingProjects: [],
+        readError: null,
+      },
+      attributionReadiness: baseAttributionReadiness,
     })
 
     expect(review.posture).toBe("ready")
     expect(review.issues).toEqual([])
     expect(review.liveDriftWarnings).toEqual([])
     expect(review.manifest.hashMatches).toBe(true)
+  })
+
+  it("warns when committed projects are missing contribution submissions", async () => {
+    const review = await buildMonthlyCyclePrepReview({
+      cycle: baseCycle(),
+      computedManifestHash: "hash-1",
+      contributionReadiness: {
+        submittedCount: 1,
+        expectedProjectCount: 2,
+        missingProjectCount: 1,
+        totalUsdEquivalentAmount: 1000,
+        totalCalculatedContributionAmount: 10,
+        missingProjects: [{ id: 11, slug: "mutual-aid-atlas", name: "Mutual Aid Atlas" }],
+        readError: null,
+      },
+      attributionReadiness: baseAttributionReadiness,
+    })
+
+    expect(review.posture).toBe("needs_review")
+    expect(review.contributionReadiness.missingProjects).toEqual([{ id: 11, slug: "mutual-aid-atlas", name: "Mutual Aid Atlas" }])
+    expect(review.issues).toContainEqual(
+      expect.objectContaining({
+        code: "missing_contribution_submissions",
+        severity: "warning",
+      }),
+    )
+  })
+
+  it("degrades contribution submission read failures to prep warnings", async () => {
+    const review = await buildMonthlyCyclePrepReview({
+      cycle: baseCycle(),
+      computedManifestHash: "hash-1",
+      contributionReadiness: {
+        submittedCount: 0,
+        expectedProjectCount: 0,
+        missingProjectCount: 0,
+        totalUsdEquivalentAmount: 0,
+        totalCalculatedContributionAmount: 0,
+        missingProjects: [],
+        readError: "relation unavailable",
+      },
+      attributionReadiness: baseAttributionReadiness,
+    })
+
+    expect(review.posture).toBe("needs_review")
+    expect(review.issues).toContainEqual(
+      expect.objectContaining({
+        code: "contribution_submission_read_failed",
+        severity: "warning",
+      }),
+    )
+  })
+
+  it("warns when submitted attribution datasets still need operator review", async () => {
+    const review = await buildMonthlyCyclePrepReview({
+      cycle: baseCycle(),
+      computedManifestHash: "hash-1",
+      attributionReadiness: {
+        totalCount: 1,
+        draftCount: 0,
+        submittedCount: 1,
+        approvedCount: 0,
+        rejectedCount: 0,
+        reviewRequiredCount: 1,
+        totalRowCount: 2,
+        totalAttributionPoints: 5,
+        datasets: [
+          {
+            id: 21,
+            projectId: 7,
+            projectSlug: "civic-mesh",
+            projectName: "Civic Mesh",
+            status: "submitted",
+            rowCount: 2,
+            totalAttributionPoints: 5,
+            note: null,
+            submittedAt: "2026-04-30T12:00:00Z",
+            updatedAt: "2026-04-30T12:00:00Z",
+          },
+        ],
+        readError: null,
+      },
+    })
+
+    expect(review.posture).toBe("needs_review")
+    expect(review.attributionReadiness.reviewRequiredCount).toBe(1)
+    expect(review.issues).toContainEqual(
+      expect.objectContaining({
+        code: "attribution_datasets_need_review",
+        severity: "warning",
+      }),
+    )
+  })
+
+  it("degrades attribution dataset read failures to prep warnings", async () => {
+    const review = await buildMonthlyCyclePrepReview({
+      cycle: baseCycle(),
+      computedManifestHash: "hash-1",
+      attributionReadiness: {
+        totalCount: 0,
+        draftCount: 0,
+        submittedCount: 0,
+        approvedCount: 0,
+        rejectedCount: 0,
+        reviewRequiredCount: 0,
+        totalRowCount: 0,
+        totalAttributionPoints: 0,
+        datasets: [],
+        readError: "relation unavailable",
+      },
+    })
+
+    expect(review.posture).toBe("needs_review")
+    expect(review.issues).toContainEqual(
+      expect.objectContaining({
+        code: "attribution_dataset_read_failed",
+        severity: "warning",
+      }),
+    )
+  })
+
+  it("surfaces project-token rejection as informational asset preference readiness", async () => {
+    const review = await buildMonthlyCyclePrepReview({
+      cycle: baseCycle(),
+      computedManifestHash: "hash-1",
+      contributionReadiness: {
+        submittedCount: 1,
+        expectedProjectCount: 1,
+        missingProjectCount: 0,
+        totalUsdEquivalentAmount: 1000,
+        totalCalculatedContributionAmount: 10,
+        missingProjects: [],
+        readError: null,
+      },
+      attributionReadiness: baseAttributionReadiness,
+      assetPreferenceReadiness: {
+        eligibleUserCount: 3,
+        customPreferenceUserCount: 2,
+        defaultPreferenceUserCount: 1,
+        rejectAllProjectTokenUserCount: 1,
+        totalPreferenceRowCount: 5,
+        usersRejectingProjectTokens: [{ userId: "user-2", displayName: "Jonah", email: "jonah@example.com" }],
+        readError: null,
+      },
+    })
+
+    expect(review.posture).toBe("ready")
+    expect(review.assetPreferenceReadiness).toMatchObject({
+      eligibleUserCount: 3,
+      customPreferenceUserCount: 2,
+      defaultPreferenceUserCount: 1,
+      rejectAllProjectTokenUserCount: 1,
+    })
+    expect(review.issues).toContainEqual(
+      expect.objectContaining({
+        code: "project_token_preferences_rejected",
+        severity: "info",
+      }),
+    )
+    expect(review.issues).toContainEqual(
+      expect.objectContaining({
+        code: "asset_preferences_using_defaults",
+        severity: "info",
+      }),
+    )
+  })
+
+  it("degrades asset preference read failures to prep warnings", async () => {
+    const review = await buildMonthlyCyclePrepReview({
+      cycle: baseCycle(),
+      computedManifestHash: "hash-1",
+      attributionReadiness: baseAttributionReadiness,
+      assetPreferenceReadiness: {
+        eligibleUserCount: 0,
+        customPreferenceUserCount: 0,
+        defaultPreferenceUserCount: 0,
+        rejectAllProjectTokenUserCount: 0,
+        totalPreferenceRowCount: 0,
+        usersRejectingProjectTokens: [],
+        readError: "relation unavailable",
+      },
+    })
+
+    expect(review.posture).toBe("needs_review")
+    expect(review.issues).toContainEqual(
+      expect.objectContaining({
+        code: "asset_preference_read_failed",
+        severity: "warning",
+      }),
+    )
   })
 
   it("blocks prep when a cycle is not locked or has no manifest", async () => {
@@ -100,6 +313,7 @@ describe("buildMonthlyCyclePrepReview", () => {
         },
       }),
       computedManifestHash: "hash-1",
+      attributionReadiness: baseAttributionReadiness,
     })
 
     expect(review.posture).toBe("needs_review")
@@ -130,6 +344,7 @@ describe("buildMonthlyCyclePrepReview", () => {
         },
       }),
       computedManifestHash: "hash-1",
+      attributionReadiness: baseAttributionReadiness,
     })
 
     expect(review.posture).toBe("blocked")
@@ -145,6 +360,7 @@ describe("buildMonthlyCyclePrepReview", () => {
       liveCounts: {
         payments: 2,
       },
+      attributionReadiness: baseAttributionReadiness,
     })
 
     expect(review.posture).toBe("ready")

@@ -52,15 +52,17 @@ It then attaches nullable `monthly_cycle_id` references to operational rows. The
 
 `/[locale]/admin/cycles` is the operator overview. It summarizes cycle status, linked payment totals, reconciliation counts, zkAS datasets/runs, and published result totals. Partial read failures should degrade to warnings rather than crash the page.
 
-Open cycles expose a lock action that calls the `monthly-cycle-lock` Edge Function. The first attempt blocks if same-cycle onchain submissions are still `submitted`, `confirming`, `awaiting_confirmation`, or `pending`. If that happens, the UI opens a strongly worded override modal. A retry can only proceed when the operator supplies an explicit reason, and the reason is written into both the manifest and audit event stream.
+Issue #66 added contribution-submission readiness to the operator overview. For each recent cycle, operators can now see how many committed projects have submitted monthly contribution data, the submitted USD-equivalent/calculated contribution totals, and which committed projects are still missing a submission. This visibility reads from `project_monthly_contribution_submissions` and active projects with a positive contribution commitment.
+
+Open cycles expose a lock action that calls the `monthly-cycle-lock` Edge Function. The first attempt blocks if same-cycle onchain submissions are still `submitted`, `confirming`, `awaiting_confirmation`, or `pending`, or if required MVP inputs are missing. Required MVP input blockers currently cover committed projects without a submitted monthly contribution, committed projects without an approved MVP attribution dataset, unresolved approved attribution rows, attribution users without linked/verified CUBID state, and attribution users without a CUBID snapshot. If a block is overrideable, the UI opens a strongly worded override modal. A retry can only proceed when the operator supplies an explicit reason, and the reason is written into both the manifest and audit event stream.
 
 Locked cycles link to `/[locale]/admin/cycles/[cycleKey]/prep`, the Session 23 prep and exception review workspace. This route is intentionally read-only: it checks whether the locked manifest is safe to hand into calculation packaging, but it does not transition status or produce calculation artifacts yet.
 
 Session 24 added `/[locale]/admin/cycles/[cycleKey]/zkas` as the cycle-anchored zkAS stage view. This route reads datasets, identity artifacts, runs, run results, published user results, and project summaries through `monthly_cycle_id` so operators can inspect zkAS as part of the monthly cadence instead of as a parallel control plane.
 
-Session 25 added the first deterministic calculation-package command, `monthly-cycle-calculation-package`. It packages a locked/prep cycle into a cycle-level calculation manifest, uploads the package and run manifest artifacts to Supabase Storage, creates a locked zkAS run, links run datasets/payments, marks approved datasets as included, and advances the cycle into `calculation`.
+Session 25 added the first deterministic calculation-package command, `monthly-cycle-calculation-package`. Issue #77 expanded that command so it now packages a locked/prep cycle into a cycle-level calculation manifest, runs the pure MVP capped-equalization allocator from `locked_manifest.mvp_inputs`, uploads package, run-manifest, and run-result artifacts to Supabase Storage, creates a completed but unverified zkAS run, links run datasets/payments, persists user result rows plus MVP project-result, asset-fill, and returned-pool detail rows, marks approved datasets as included, and advances the cycle into `calculation`.
 
-Session 26 added `/[locale]/admin/cycles/[cycleKey]/verification` as the cleanup, verification, and approval workspace for calculated results. It also added the `monthly-cycle-verification-review` and `monthly-cycle-approval` Edge Function commands so operators can record cleanup-needed decisions, mark a cycle verified, and approve verified results for distribution with audit events and required notes.
+Session 26 added `/[locale]/admin/cycles/[cycleKey]/verification` as the cleanup, verification, and approval workspace for calculated results. Issue #78 expanded this page into the operator review surface for MVP allocator outputs: it shows calculated user result rows, raw project/user entitlements, asset fills, returned future-pool rows, source breakdowns, and result artifact metadata while clearly labeling the state as calculated but not verified, credited, paid, or transferable. It also added the `monthly-cycle-verification-review` and `monthly-cycle-approval` Edge Function commands so operators can record cleanup-needed decisions, mark a cycle verified, and approve verified results for distribution with audit events and required notes. Issue #79 hardened verification so the read model and `monthly-cycle-verification-review` command share the same MVP integrity checks before a cycle can advance to `verification`.
 
 Session 51 hardened sensitive monthly-cycle mutations: verification review, approval, and payout-intent creation now reject non-internal-admin actor roles before mutation, and approval records failure audit events once the target cycle is known and cannot safely advance.
 
@@ -91,9 +93,28 @@ The manifest includes:
 - same-cycle onchain submission state and reconciliation status
 - active participating users' CUBID linkage/snapshot summary
 - approved zkAS datasets and identity artifact references
+- MVP contribution submissions, approved MVP attribution datasets, raw attribution rows with scoped CUBID identity references, eligible users, and user asset-preference summaries
 - counts for each section
+- deterministic MVP section checksums for contribution submissions, attribution datasets, attribution rows, eligible users, identity snapshots, and asset-preference summaries
 
 The command reattaches newly-created month-bearing rows to the cycle before reading. It updates the cycle from `open` to `locked` with an optimistic `status = open` guard so concurrent or repeated locks fail safely instead of overwriting an already-transitioned cycle.
+
+Missing asset preferences are intentionally not lock blockers. The lock manifest records destination-free asset preference summaries and prep raises informational warnings for users who are on defaults or reject all project tokens, but MVP USD bookkeeping credits can still be calculated from approved contribution and attribution inputs.
+
+### MVP Calculation Handoff
+
+Goal #57 should start from `locked_manifest.mvp_inputs`, not live mutable tables. The MVP input shape is:
+
+- `contribution_submissions`: one submitted contribution row per contributing project/cycle, including source currency, source amount, USD equivalent amount, commitment percentage, calculated contribution amount, source reference, submitter, and timestamps.
+- `attribution_datasets`: approved MVP attribution dataset headers, including proof metadata placeholders such as `proof_type`, `proof_artifact_uri`, `verifier_backend`, and `verification_status` when present.
+- `attribution_rows`: approved raw MVP attribution rows with required `scoped_cubid_id`, optional FundLoop `user_id`/email, attribution points, category, evidence reference, notes, and resolution status.
+- `eligible_users`: active users visible to the cycle through participation or attribution, with CUBID linkage state and the project IDs where they participate or receive attribution.
+- `asset_preferences`: destination-free settlement planning summaries keyed by user, with ordered asset type/code/project scope and accepted/rejected state.
+- `counts` and `checksums`: deterministic section counts and SHA-256 hashes used by calculation, verification, and later audit tooling to prove that the calculation package consumed the locked input set.
+
+The deterministic test fixture in `tests/monthly-cycle-lock-command.test.ts` covers contribution, attribution, CUBID snapshot, and asset-preference inputs and asserts stable lock hashes plus destination privacy. Future calculation fixtures should reuse that shape rather than inventing a separate input contract.
+
+`monthly-cycle-calculation-package` now consumes this handoff directly. It stores the pure allocator output as `run-result.v1.json`, writes per-user allocations to `zkas_run_results`, writes project/user raw entitlement rows to `monthly_cycle_allocation_project_results`, writes selected asset fills to `monthly_cycle_allocation_asset_fills`, and writes unallocated or capped returned pool rows to `monthly_cycle_allocation_returned_pools`. These rows are calculation outputs only; verification, approval, bookkeeping credits, and actual payouts remain separate stages.
 
 ## Prep Review
 
@@ -107,13 +128,23 @@ The command reattaches newly-created month-bearing rows to the cycle before read
 The prep workspace surfaces:
 
 - missing or mismatched lock manifest/hash
+- live contribution-submission readiness, including committed projects that have not submitted for the cycle
+- live asset-preference readiness, including users who reject all project-token options
 - unresolved onchain submissions, including override reasons
 - missing confirmed contribution inputs
 - missing approved zkAS datasets or identity artifacts
 - missing or unlinked CUBID participant snapshots
 - informational live-row drift between current linked rows and the immutable manifest
 
-Live drift is informational because downstream calculation should use the locked manifest, not mutable current rows. Prep does not create zkAS runs, package calculation inputs, approve exceptions, or move the cycle into the next status. Those responsibilities remain later sessions.
+Live contribution-submission and asset-preference readiness remain visible for operator diagnostics, but downstream calculation should consume the immutable `locked_manifest.mvp_inputs` section rather than mutable current rows. Preference summaries deliberately exclude private payout destinations; they only capture ordered asset types/codes, project-token scope, accepted/rejected state, counts, and warning cues.
+
+Issue #67 adds the backend command/schema for MVP attribution submissions. `project-attribution-dataset-submit` stores one canonical current attribution dataset per project/cycle and normalized rows requiring scoped CUBID identities. These rows remain internally inspectable for MVP operators and founders, while optional proof metadata fields reserve the future zkActivitySum ingest path.
+
+Issue #68 wires that command into the founder attribution workspace at `/[locale]/founder/projects/[slug]/attribution`. Founders can enter scoped CUBID identities, optional FundLoop user IDs or emails, attribution points, and row-level evidence notes for an open cycle. The page distinguishes submitted MVP attribution datasets from approved/calculation-ready datasets and continues to show legacy zkAS upload history while operator approval remains a separate workflow.
+
+Issue #69 adds the operator approval boundary for those MVP attribution datasets. `project-attribution-dataset-review` is the typed Edge Function command for internal operators to approve or reject submitted datasets. Rejections require a reason. Successful reviews update the dataset status, keep it attached to `monthly_cycle_id`, and emit an `attribution_dataset_review` event into `monthly_cycle_events`. The prep workspace now shows draft/submitted/approved/rejected counts and embeds review actions for submitted datasets. Only approved MVP attribution datasets are eligible for later lock/calculation inclusion.
+
+Prep still does not create zkAS runs, package calculation inputs, approve exceptions, or move the cycle into the next status. Those responsibilities remain later sessions.
 
 ## zkAS Stage Alignment
 
@@ -159,7 +190,19 @@ The package manifest intentionally excludes mutable packaging timestamps so the 
 - `verified`, which moves the cycle to `verification` and sets `verification_started_at`
 - `needs_cleanup`, which keeps the cycle in `calculation` and records the cleanup note
 
-`monthly-cycle-approval` requires a verified completed run and moves the cycle to `approval` with `approval_started_at`. This is the explicit checkpoint before later distribution and payout sessions create outbound obligations.
+The `verified` path must pass MVP integrity checks against locked and calculated data. The checker validates the lock manifest/hash, approved contribution and attribution inputs, scoped CUBID/resolved attribution rows, linked or verified eligible users, non-negative result amounts, result artifact path/hash, 3x baseline cap, user allocation totals, allocated-plus-returned pool reconciliation, and asset-fill/returned-pool supply reconciliation. If any blocker is present, the command writes a failure audit event and refuses to advance the cycle. `needs_cleanup` remains available for an operator to record why the calculated result needs repair.
+
+`monthly-cycle-approval` requires a verified completed run, a clean MVP verification integrity pass, an internal operator, and a required operator note. It moves the cycle to `approval` with `approval_started_at`, records audit metadata that the next step is bookkeeping credit creation, and explicitly does not create credits or execute payouts. This is the explicit checkpoint before the MVP bookkeeping-credit command can materialize user-visible credited-but-not-paid earnings.
+
+`monthly-cycle-bookkeeping-credits-create` is the MVP bookkeeping boundary after approval. It requires an internal operator, an approved monthly cycle, a latest completed/finalized verified run, and a result artifact hash. The command reads positive verified `zkas_run_results`, snapshots project-level source breakdowns from `monthly_cycle_allocation_project_results`, snapshots selected asset fills from `monthly_cycle_allocation_asset_fills`, records returned pool totals separately from user credits, and creates idempotent `monthly_cycle_bookkeeping_credits` rows with `status='credited'` and `payment_status='not_paid'`. It advances the cycle into `distribution` and writes monthly-cycle audit events, but it does not create payout batches, execute transfers, reconcile external rails, or mark anything paid.
+
+For operator and user-facing copy, keep these states distinct:
+
+- `calculated`: result rows and artifacts exist but are not verified or credited
+- `verified`: operator integrity review passed
+- `approved`: verified results are approved for bookkeeping credit creation
+- `credited`: bookkeeping earnings records exist
+- `not paid`: no transfer or settlement has executed
 
 ## Payout Intent Creation
 
@@ -174,7 +217,7 @@ The package manifest intentionally excludes mutable packaging timestamps so the 
 
 The command does not execute payouts or reconcile outbound transfers. Session 28 added the adapter interface and deterministic batch-draft builder that later payout commands should use to create rail-specific batches from ready intents.
 
-Session 35 added `/[locale]/workspace/earnings` as the user-facing earnings and payout workspace. It reads monthly-cycle published results, payout intents, payout routes, batch status, and reconciliation cues so users can understand what they are owed and which stage each payout is in while payout execution remains operator-controlled.
+Session 35 added `/[locale]/workspace/earnings` as the user-facing earnings and payout workspace. Issue #83 makes monthly-cycle bookkeeping credits the primary user-visible source for credited-but-not-paid earnings, including selected asset fills and source/project breakdowns. Published results, payout intents, payout routes, batch status, and reconciliation cues remain visible as future-settlement context while payout execution remains operator-controlled.
 
 Session 36 added `monthly_cycle_reports` and the `monthly-cycle-reports` Supabase Storage bucket as the durable reporting publication model. Public, user, founder, and operator pages now read report metadata through `lib/reporting/monthly-cycle-reports.ts`.
 

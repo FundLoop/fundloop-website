@@ -56,18 +56,11 @@ NEXT_PUBLIC_SUPABASE_URL=http://127.0.0.1:55321
 Use local Supabase for destructive or replay validation:
 
 ```bash
-DOCKER_HOST=unix:///var/run/docker.sock supabase start
-DOCKER_HOST=unix:///var/run/docker.sock supabase db reset
+DOCKER_CONTEXT=colima-agents supabase start -x logflare -x vector
+DOCKER_CONTEXT=colima-agents supabase db reset
 ```
 
-If the local analytics/Logflare container repeatedly fails health checks on a development machine, use the official smoke-mode fallback:
-
-```bash
-DOCKER_HOST=unix:///var/run/docker.sock supabase start -x logflare
-DOCKER_HOST=unix:///var/run/docker.sock supabase db reset
-```
-
-This keeps database, auth, REST, storage, and Edge Functions available for app smoke tests while excluding the local analytics container. Record that fallback in the session log when used. Do not use this fallback to validate analytics-specific behavior.
+This keeps database, auth, REST, storage, and Edge Functions available for app smoke tests while excluding local analytics/logging/vector services. Do not use this lean local mode to validate analytics-specific behavior.
 
 For the deterministic seeded operator smoke persona, set the non-production allowlists before starting Next:
 

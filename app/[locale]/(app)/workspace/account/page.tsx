@@ -2,6 +2,7 @@ import { redirect } from "next/navigation"
 import { getTranslations } from "next-intl/server"
 import { AccountSettingsPanel } from "@/components/account/account-settings-panel"
 import { getNavigationContext } from "@/lib/navigation-context"
+import { getUserAssetPreferenceReadiness } from "@/lib/workspace/user-asset-preferences"
 
 type WorkspaceAccountPageProps = {
   params: Promise<{ locale: string }>
@@ -15,6 +16,8 @@ export default async function WorkspaceAccountPage({ params }: WorkspaceAccountP
   if (!navigationContext.isAuthenticated) {
     redirect(`/${locale}/join`)
   }
+
+  const assetPreferences = await getUserAssetPreferenceReadiness(navigationContext.user?.id)
 
   return (
     <AccountSettingsPanel
@@ -59,6 +62,12 @@ export default async function WorkspaceAccountPage({ params }: WorkspaceAccountP
           },
         }
       }
+      assetPreferences={{
+        preferences: assetPreferences.preferences,
+        defaultPreferences: assetPreferences.defaultPreferences,
+        hasCustomPreferences: assetPreferences.hasCustomPreferences,
+        rejectsAllProjectTokens: assetPreferences.rejectsAllProjectTokens,
+      }}
     />
   )
 }

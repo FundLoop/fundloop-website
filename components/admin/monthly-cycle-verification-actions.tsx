@@ -36,7 +36,10 @@ export function MonthlyCycleVerificationActions({ cycleKey, canMarkVerified, can
 
     toast({
       title: action === "approval" ? "Cycle approved" : action === "verified" ? "Cycle verified" : "Cleanup requested",
-      description: action === "approval" ? "The cycle is approved for distribution." : "The cycle review state was updated.",
+      description:
+        action === "approval"
+          ? "The cycle is approved for bookkeeping credit creation. No payouts have been executed."
+          : "The cycle review state was updated.",
     })
     setNote("")
     router.refresh()
@@ -53,9 +56,12 @@ export function MonthlyCycleVerificationActions({ cycleKey, canMarkVerified, can
           Mark cleanup needed
         </Button>
         <Button type="button" variant="secondary" onClick={() => runAction("approval")} disabled={!canApprove || isBusy || !note.trim()}>
-          Approve for distribution
+          Approve for bookkeeping credits
         </Button>
       </div>
+      <p className="text-xs leading-5 text-[var(--text-muted)]">
+        Approval unlocks the next bookkeeping-credit step only. It does not transfer funds or mark users as paid.
+      </p>
     </div>
   )
 }

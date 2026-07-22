@@ -2,6 +2,89 @@ import { describe, expect, it } from "vitest"
 import { buildUserEarningsWorkspace } from "@/lib/workspace/user-earnings-workspace"
 
 describe("buildUserEarningsWorkspace", () => {
+  it("summarizes credited-not-paid bookkeeping earnings with asset fills and source breakdown", () => {
+    const workspace = buildUserEarningsWorkspace({
+      publishedResults: [],
+      cycles: [{ id: 1, cycle_key: "2026-04", status: "distribution" }],
+      runs: [{ id: 7, month: "2026-04" }],
+      payoutRoutes: [],
+      payoutIntents: [],
+      bookkeepingCredits: [
+        {
+          id: 30,
+          monthly_cycle_id: 1,
+          run_id: 7,
+          source_result_id: 10,
+          usd_equivalent_amount: 125,
+          currency_code: "USD",
+          status: "credited",
+          payment_status: "not_paid",
+          credited_at: "2026-05-01T00:00:00Z",
+          asset_fills: [
+            {
+              assetType: "stablecoin",
+              assetCode: "USDC",
+              sourceAmount: 100,
+              usdValue: 100,
+              preferenceRank: 1,
+              partial: true,
+              projectId: 7,
+            },
+            {
+              assetType: "fiat",
+              assetCode: "USD",
+              sourceAmount: 25,
+              usdValue: 25,
+              preferenceRank: 2,
+              partial: false,
+              projectId: 7,
+            },
+          ],
+          source_breakdown: [
+            {
+              projectId: 7,
+              scopedCubidId: "scoped-user-1",
+              attributionPoints: 10,
+              totalProjectPoints: 40,
+              projectPoolUsd: 500,
+              rawEntitlementUsd: 100,
+            },
+          ],
+          allocation_breakdown: {
+            rawEntitlementUsd: 100,
+            baselineUsd: 100,
+            equalizationTopUpUsd: 25,
+            capMultiple: 3,
+            capApplied: false,
+          },
+        },
+      ],
+      batchItems: [],
+      batches: [],
+      reconciliationEvents: [],
+      warnings: [],
+    })
+
+    expect(workspace.summary).toMatchObject({
+      creditCount: 1,
+      totalCreditedUsd: 125,
+      paidPayoutUsd: 0,
+      pendingPayoutUsd: 0,
+    })
+    expect(workspace.credits[0]).toMatchObject({
+      key: "2026-04",
+      status: "credited",
+      paymentStatus: "not_paid",
+      usdEquivalentAmount: 125,
+      assetFills: [
+        expect.objectContaining({ assetCode: "USDC", partial: true }),
+        expect.objectContaining({ assetCode: "USD", preferenceRank: 2 }),
+      ],
+      sourceBreakdown: [expect.objectContaining({ scopedCubidId: "scoped-user-1", rawEntitlementUsd: 100 })],
+      allocationBreakdown: expect.objectContaining({ baselineUsd: 100, equalizationTopUpUsd: 25 }),
+    })
+  })
+
   it("shows published results as route-required earnings when payout intents have not been created", () => {
     const workspace = buildUserEarningsWorkspace({
       publishedResults: [

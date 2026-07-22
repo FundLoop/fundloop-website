@@ -45,8 +45,8 @@ export default async function AdminCyclePayoutsPage({ params }: PageProps) {
               {overview.cycle.cycleKey} payout work
             </h1>
             <p className="max-w-2xl text-base leading-7 text-[var(--text-muted)]">
-              Convert approved published user results into concrete payout intents. Execution batches and reconciliation
-              stay intentionally separate so future EVM, Solana, and fiat rail adapters have a stable contract to consume.
+              Review credited-but-not-paid bookkeeping earnings before any future settlement planning. Payout intents,
+              execution batches, and reconciliation stay intentionally separate; this page does not transfer funds.
             </p>
           </div>
           <div className="space-y-3 rounded-[var(--radius-xl)] border border-[color:var(--surface-border)] bg-[var(--surface-panel-strong)] p-4">
@@ -81,9 +81,20 @@ export default async function AdminCyclePayoutsPage({ params }: PageProps) {
           <CardContent><div className="text-3xl font-semibold">{formatCurrency(locale, overview.publishedResults.totalAmountUsd)}</div><p className="text-xs text-[var(--text-muted)]">{overview.publishedResults.count} user allocations</p></CardContent>
         </Card>
         <Card>
+          <CardHeader className="pb-2"><CardTitle className="flex items-center gap-2 text-sm"><CheckCircle2 className="h-4 w-4" />Bookkeeping credits</CardTitle></CardHeader>
+          <CardContent><div className="text-3xl font-semibold">{formatCurrency(locale, overview.bookkeepingCredits.totalCreditedUsd)}</div><p className="text-xs text-[var(--text-muted)]">{overview.bookkeepingCredits.count} credited rows, not paid yet</p></CardContent>
+        </Card>
+        <Card>
+          <CardHeader className="pb-2"><CardTitle className="text-sm">Returned future pool</CardTitle></CardHeader>
+          <CardContent><div className="text-3xl font-semibold">{formatCurrency(locale, overview.returnedPools.totalAmountUsd)}</div><p className="text-xs text-[var(--text-muted)]">{overview.returnedPools.count} returned pool rows</p></CardContent>
+        </Card>
+        <Card>
           <CardHeader className="pb-2"><CardTitle className="flex items-center gap-2 text-sm"><CheckCircle2 className="h-4 w-4" />Ready intents</CardTitle></CardHeader>
           <CardContent><div className="text-3xl font-semibold">{overview.intents.readyCount}</div><p className="text-xs text-[var(--text-muted)]">{formatCurrency(locale, overview.intents.totalAmountUsd)} total intent value</p></CardContent>
         </Card>
+      </section>
+
+      <section className="grid gap-6 md:grid-cols-2">
         <Card>
           <CardHeader className="pb-2"><CardTitle className="flex items-center gap-2 text-sm"><Route className="h-4 w-4" />Missing routes</CardTitle></CardHeader>
           <CardContent><div className="text-3xl font-semibold">{overview.intents.missingRouteCount}</div><p className="text-xs text-[var(--text-muted)]">Draft intents awaiting user payout preferences</p></CardContent>
@@ -96,8 +107,89 @@ export default async function AdminCyclePayoutsPage({ params }: PageProps) {
 
       <Card>
         <CardHeader>
+          <CardTitle>Bookkeeping credits</CardTitle>
+          <CardDescription>
+            Approved monthly results credited to user accounts. These records are explicitly not paid yet and do not expose private payout destinations.
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>User</TableHead>
+                <TableHead>Status</TableHead>
+                <TableHead>Amount</TableHead>
+                <TableHead>Asset fills</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {overview.bookkeepingCredits.rows.length === 0 ? (
+                <TableRow>
+                  <TableCell colSpan={4} className="py-10 text-center text-[var(--text-muted)]">
+                    No bookkeeping credits exist yet. Create credits after approval; do not create payout intents as a substitute.
+                  </TableCell>
+                </TableRow>
+              ) : (
+                overview.bookkeepingCredits.rows.map((credit) => (
+                  <TableRow key={credit.id}>
+                    <TableCell className="font-mono text-xs">{credit.user_id}</TableCell>
+                    <TableCell>
+                      <div className="flex flex-wrap gap-2">
+                        <Badge variant={credit.status === "credited" ? "default" : "secondary"}>{credit.status}</Badge>
+                        <Badge variant="outline">{credit.payment_status.replaceAll("_", " ")}</Badge>
+                      </div>
+                    </TableCell>
+                    <TableCell>{formatCurrency(locale, Number(credit.usd_equivalent_amount ?? 0))}</TableCell>
+                    <TableCell>{Array.isArray(credit.asset_fills) ? credit.asset_fills.length : 0}</TableCell>
+                  </TableRow>
+                ))
+              )}
+            </TableBody>
+          </Table>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Returned future-pool amounts</CardTitle>
+          <CardDescription>Amounts that were not credited to users and remain separate from user earnings.</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Project</TableHead>
+                <TableHead>Asset</TableHead>
+                <TableHead>Amount</TableHead>
+                <TableHead>Reason</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {overview.returnedPools.rows.length === 0 ? (
+                <TableRow>
+                  <TableCell colSpan={4} className="py-10 text-center text-[var(--text-muted)]">
+                    No returned future-pool rows are linked to this cycle.
+                  </TableCell>
+                </TableRow>
+              ) : (
+                overview.returnedPools.rows.map((row) => (
+                  <TableRow key={row.id}>
+                    <TableCell>Project #{row.project_id}</TableCell>
+                    <TableCell>{row.asset_type} · {row.asset_code}</TableCell>
+                    <TableCell>{formatCurrency(locale, Number(row.usd_value ?? 0))}</TableCell>
+                    <TableCell>{row.reason_code.replaceAll("_", " ")}</TableCell>
+                  </TableRow>
+                ))
+              )}
+            </TableBody>
+          </Table>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
           <CardTitle>Payout intents</CardTitle>
-          <CardDescription>These are outbound obligations derived from approved monthly-cycle user results.</CardDescription>
+          <CardDescription>These are later outbound planning records. They are not required for MVP bookkeeping credits.</CardDescription>
         </CardHeader>
         <CardContent>
           <Table>

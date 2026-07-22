@@ -1,5 +1,6 @@
 import { notFound } from "next/navigation"
 import { AlertTriangle, ArrowLeft, CheckCircle2, FileSearch, Info, ShieldAlert } from "lucide-react"
+import { ProjectAttributionDatasetReviewActions } from "@/components/admin/project-attribution-dataset-review-actions"
 import { Link } from "@/i18n/navigation"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -20,6 +21,14 @@ function postureVariant(posture: MonthlyCyclePrepPosture) {
   if (posture === "ready") return "default" as const
   if (posture === "needs_review") return "secondary" as const
   return "destructive" as const
+}
+
+function formatCurrency(locale: string, value: number) {
+  return new Intl.NumberFormat(locale, {
+    style: "currency",
+    currency: "USD",
+    maximumFractionDigits: 0,
+  }).format(value)
 }
 
 function severityIcon(severity: MonthlyCyclePrepSeverity) {
@@ -53,7 +62,7 @@ function IssueCard({ issue }: { issue: MonthlyCyclePrepIssue }) {
 }
 
 export default async function AdminCyclePrepPage({ params }: PageProps) {
-  const { cycleKey } = await params
+  const { cycleKey, locale } = await params
   const review = await (async () => {
     await requireInternalAdminActor()
     return loadMonthlyCyclePrepReview(cycleKey)
@@ -97,7 +106,32 @@ export default async function AdminCyclePrepPage({ params }: PageProps) {
         </section>
       </div>
 
-      <section className="grid gap-6 md:grid-cols-2 xl:grid-cols-4">
+      <section className="grid gap-6 md:grid-cols-2 xl:grid-cols-7">
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-medium">Contribution submissions</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-3xl font-semibold">
+              {review.contributionReadiness.submittedCount}/{review.contributionReadiness.expectedProjectCount}
+            </div>
+            <p className="mt-2 text-xs uppercase tracking-[0.16em] text-[var(--text-soft)]">
+              {formatCurrency(locale, review.contributionReadiness.totalCalculatedContributionAmount)} calculated ·{" "}
+              {review.contributionReadiness.missingProjectCount} missing
+            </p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-medium">MVP Attribution</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-3xl font-semibold">{review.attributionReadiness.approvedCount}</div>
+            <p className="mt-2 text-xs uppercase tracking-[0.16em] text-[var(--text-soft)]">
+              approved · {review.attributionReadiness.reviewRequiredCount} awaiting review
+            </p>
+          </CardContent>
+        </Card>
         <Card>
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium">Payments</CardTitle>
@@ -136,6 +170,17 @@ export default async function AdminCyclePrepPage({ params }: PageProps) {
           <CardContent>
             <div className="text-3xl font-semibold">{review.manifest.counts.identitySnapshots}</div>
             <p className="mt-2 text-xs uppercase tracking-[0.16em] text-[var(--text-soft)]">CUBID snapshots</p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-medium">Asset priorities</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-3xl font-semibold">{review.assetPreferenceReadiness.customPreferenceUserCount}</div>
+            <p className="mt-2 text-xs uppercase tracking-[0.16em] text-[var(--text-soft)]">
+              custom · {review.assetPreferenceReadiness.rejectAllProjectTokenUserCount} reject project tokens
+            </p>
           </CardContent>
         </Card>
       </section>
@@ -193,6 +238,142 @@ export default async function AdminCyclePrepPage({ params }: PageProps) {
                       : "Mismatch"}
                 </p>
               </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle>MVP attribution approval</CardTitle>
+              <CardDescription>
+                Review scoped-CUBID attribution datasets submitted by project admins before they feed MVP calculation inputs.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4 text-sm">
+              {review.attributionReadiness.readError ? (
+                <p className="text-amber-700 dark:text-amber-200">{review.attributionReadiness.readError}</p>
+              ) : review.attributionReadiness.datasets.length === 0 ? (
+                <p className="text-[var(--text-muted)]">No MVP attribution datasets are attached to this cycle yet.</p>
+              ) : (
+                review.attributionReadiness.datasets.map((dataset) => (
+                  <div
+                    key={dataset.id}
+                    className="rounded-[var(--radius-xl)] border border-[color:var(--surface-border)] bg-[var(--surface-panel-strong)] p-4"
+                  >
+                    <div className="flex flex-wrap items-start justify-between gap-3">
+                      <div>
+                        <div className="font-semibold text-[var(--text-strong)]">{dataset.projectName}</div>
+                        <p className="mt-1 text-xs uppercase tracking-[0.16em] text-[var(--text-soft)]">
+                          {dataset.rowCount} rows · {dataset.totalAttributionPoints} points
+                        </p>
+                      </div>
+                      <Badge
+                        variant={
+                          dataset.status === "approved"
+                            ? "default"
+                            : dataset.status === "rejected"
+                              ? "destructive"
+                              : dataset.status === "submitted"
+                                ? "secondary"
+                                : "outline"
+                        }
+                      >
+                        {dataset.status}
+                      </Badge>
+                    </div>
+                    {dataset.note ? <p className="mt-3 text-[var(--text-muted)]">{dataset.note}</p> : null}
+                    {dataset.status === "submitted" ? (
+                      <div className="mt-4">
+                        <ProjectAttributionDatasetReviewActions datasetId={dataset.id} projectName={dataset.projectName} />
+                      </div>
+                    ) : null}
+                  </div>
+                ))
+              )}
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle>Contribution readiness</CardTitle>
+              <CardDescription>These live submissions are reviewed before lock-manifest inclusion lands in Goal #56.</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-3 text-sm">
+              <div>
+                <p className="text-xs uppercase tracking-[0.16em] text-[var(--text-soft)]">Submitted projects</p>
+                <p className="text-[var(--text-strong)]">
+                  {review.contributionReadiness.submittedCount} of {review.contributionReadiness.expectedProjectCount}
+                </p>
+              </div>
+              <div>
+                <p className="text-xs uppercase tracking-[0.16em] text-[var(--text-soft)]">Calculated contribution</p>
+                <p className="text-[var(--text-strong)]">
+                  {formatCurrency(locale, review.contributionReadiness.totalCalculatedContributionAmount)}
+                </p>
+              </div>
+              {review.contributionReadiness.missingProjects.length > 0 ? (
+                <div>
+                  <p className="text-xs uppercase tracking-[0.16em] text-[var(--text-soft)]">Missing projects</p>
+                  <ul className="mt-2 space-y-1 text-[var(--text-muted)]">
+                    {review.contributionReadiness.missingProjects.slice(0, 5).map((project) => (
+                      <li key={project.id}>{project.name}</li>
+                    ))}
+                  </ul>
+                </div>
+              ) : null}
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle>Asset priority readiness</CardTitle>
+              <CardDescription>
+                User settlement preferences are planning inputs only. Prep surfaces them so future distribution can detect
+                token-rejection warnings without exposing private payout destinations.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-3 text-sm">
+              {review.assetPreferenceReadiness.readError ? (
+                <p className="text-amber-700 dark:text-amber-200">{review.assetPreferenceReadiness.readError}</p>
+              ) : (
+                <>
+                  <div className="grid gap-3 sm:grid-cols-2">
+                    <div className="rounded-[var(--radius-xl)] border border-[color:var(--surface-border)] bg-[var(--surface-panel-strong)] p-3">
+                      <p className="text-xs uppercase tracking-[0.16em] text-[var(--text-soft)]">Cycle participants</p>
+                      <p className="text-2xl font-semibold text-[var(--text-strong)]">
+                        {review.assetPreferenceReadiness.eligibleUserCount}
+                      </p>
+                    </div>
+                    <div className="rounded-[var(--radius-xl)] border border-[color:var(--surface-border)] bg-[var(--surface-panel-strong)] p-3">
+                      <p className="text-xs uppercase tracking-[0.16em] text-[var(--text-soft)]">Preference rows</p>
+                      <p className="text-2xl font-semibold text-[var(--text-strong)]">
+                        {review.assetPreferenceReadiness.totalPreferenceRowCount}
+                      </p>
+                    </div>
+                    <div className="rounded-[var(--radius-xl)] border border-[color:var(--surface-border)] bg-[var(--surface-panel-strong)] p-3">
+                      <p className="text-xs uppercase tracking-[0.16em] text-[var(--text-soft)]">Custom priorities</p>
+                      <p className="text-2xl font-semibold text-[var(--text-strong)]">
+                        {review.assetPreferenceReadiness.customPreferenceUserCount}
+                      </p>
+                    </div>
+                    <div className="rounded-[var(--radius-xl)] border border-[color:var(--surface-border)] bg-[var(--surface-panel-strong)] p-3">
+                      <p className="text-xs uppercase tracking-[0.16em] text-[var(--text-soft)]">Using defaults</p>
+                      <p className="text-2xl font-semibold text-[var(--text-strong)]">
+                        {review.assetPreferenceReadiness.defaultPreferenceUserCount}
+                      </p>
+                    </div>
+                  </div>
+                  {review.assetPreferenceReadiness.usersRejectingProjectTokens.length > 0 ? (
+                    <div>
+                      <p className="text-xs uppercase tracking-[0.16em] text-[var(--text-soft)]">Reject project tokens</p>
+                      <ul className="mt-2 space-y-1 text-[var(--text-muted)]">
+                        {review.assetPreferenceReadiness.usersRejectingProjectTokens.slice(0, 5).map((user) => (
+                          <li key={user.userId}>{user.displayName ?? user.email ?? user.userId}</li>
+                        ))}
+                      </ul>
+                    </div>
+                  ) : null}
+                </>
+              )}
             </CardContent>
           </Card>
 

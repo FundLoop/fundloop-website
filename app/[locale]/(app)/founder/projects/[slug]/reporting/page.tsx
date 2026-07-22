@@ -1,6 +1,6 @@
 import { notFound, redirect } from "next/navigation"
 import { getTranslations } from "next-intl/server"
-import { BarChart3, FileText, UsersRound } from "lucide-react"
+import { BarChart3, FileText, PiggyBank, UsersRound } from "lucide-react"
 import { Link } from "@/i18n/navigation"
 import { getNavigationContext } from "@/lib/navigation-context"
 import { loadFounderProjectReportingWorkspace } from "@/lib/reporting/monthly-cycle-reports"
@@ -63,7 +63,7 @@ export default async function FounderProjectReportingPage({ params }: PageProps)
         </section>
       ) : null}
 
-      <section className="grid gap-5 md:grid-cols-3">
+      <section className="grid gap-5 md:grid-cols-4">
         <Card>
           <CardHeader className="pb-2"><CardTitle className="flex items-center gap-2 text-sm"><FileText className="h-4 w-4" />{t("stats.reports")}</CardTitle></CardHeader>
           <CardContent className="text-3xl font-semibold">{reporting.reports.length}</CardContent>
@@ -75,6 +75,15 @@ export default async function FounderProjectReportingPage({ params }: PageProps)
         <Card>
           <CardHeader className="pb-2"><CardTitle className="flex items-center gap-2 text-sm"><BarChart3 className="h-4 w-4" />{t("stats.payout")}</CardTitle></CardHeader>
           <CardContent className="text-3xl font-semibold">{formatCurrency(locale, latestSummary?.attributedPayoutUsd ?? 0)}</CardContent>
+        </Card>
+        <Card>
+          <CardHeader className="pb-2"><CardTitle className="flex items-center gap-2 text-sm"><PiggyBank className="h-4 w-4" />{t("stats.credited")}</CardTitle></CardHeader>
+          <CardContent>
+            <div className="text-3xl font-semibold">
+              {formatCurrency(locale, reporting.bookkeeping.reduce((sum, row) => sum + row.creditedUsd, 0))}
+            </div>
+            <p className="text-xs text-[var(--text-muted)]">{t("stats.notPaid")}</p>
+          </CardContent>
         </Card>
       </section>
 
@@ -127,6 +136,45 @@ export default async function FounderProjectReportingPage({ params }: PageProps)
                     <TableCell>{summary.publishedUserCount} / {summary.activeUserCount}</TableCell>
                     <TableCell>{formatCurrency(locale, summary.contributedAmountUsd)}</TableCell>
                     <TableCell>{formatCurrency(locale, summary.attributedPayoutUsd)}</TableCell>
+                  </TableRow>
+                ))
+              )}
+            </TableBody>
+          </Table>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>{t("bookkeeping.title")}</CardTitle>
+          <CardDescription>{t("bookkeeping.description")}</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>{t("table.cycle")}</TableHead>
+                <TableHead>{t("bookkeeping.credited")}</TableHead>
+                <TableHead>{t("bookkeeping.returned")}</TableHead>
+                <TableHead>{t("bookkeeping.rows")}</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {reporting.bookkeeping.length === 0 ? (
+                <TableRow><TableCell colSpan={4} className="py-8 text-center text-[var(--text-muted)]">{t("bookkeeping.empty")}</TableCell></TableRow>
+              ) : (
+                reporting.bookkeeping.map((summary) => (
+                  <TableRow key={summary.cycleKey}>
+                    <TableCell>{summary.cycleKey}</TableCell>
+                    <TableCell>
+                      <div className="font-semibold text-[var(--text-strong)]">{formatCurrency(locale, summary.creditedUsd)}</div>
+                      <div className="text-xs text-[var(--text-muted)]">{t("bookkeeping.notPaid")}</div>
+                    </TableCell>
+                    <TableCell>
+                      <div className="font-semibold text-[var(--text-strong)]">{formatCurrency(locale, summary.returnedFuturePoolUsd)}</div>
+                      <div className="text-xs text-[var(--text-muted)]">{t("bookkeeping.futurePool")}</div>
+                    </TableCell>
+                    <TableCell>{t("bookkeeping.rowCounts", { fills: summary.assetFillCount, returned: summary.returnedPoolCount })}</TableCell>
                   </TableRow>
                 ))
               )}

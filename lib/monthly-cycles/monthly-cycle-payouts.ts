@@ -26,6 +26,16 @@ type ReconciliationRow = Pick<
 
 type PublishedResultRow = Pick<Database["public"]["Tables"]["zkas_published_user_results"]["Row"], "id" | "allocation_usd">
 
+type BookkeepingCreditRow = Pick<
+  Database["public"]["Tables"]["monthly_cycle_bookkeeping_credits"]["Row"],
+  "id" | "user_id" | "usd_equivalent_amount" | "status" | "payment_status" | "asset_fills"
+>
+
+type ReturnedPoolRow = Pick<
+  Database["public"]["Tables"]["monthly_cycle_allocation_returned_pools"]["Row"],
+  "id" | "project_id" | "asset_type" | "asset_code" | "usd_value" | "reason_code"
+>
+
 export type MonthlyCyclePayoutOverview = {
   cycle: {
     id: number
@@ -41,6 +51,20 @@ export type MonthlyCyclePayoutOverview = {
   publishedResults: {
     count: number
     totalAmountUsd: number
+  }
+  bookkeepingCredits: {
+    count: number
+    userCount: number
+    totalCreditedUsd: number
+    notPaidCount: number
+    voidedCount: number
+    assetFillCount: number
+    rows: BookkeepingCreditRow[]
+  }
+  returnedPools: {
+    count: number
+    totalAmountUsd: number
+    rows: ReturnedPoolRow[]
   }
   intents: {
     count: number
@@ -85,11 +109,15 @@ function count<T>(rows: T[], predicate: (row: T) => boolean) {
 export function buildMonthlyCyclePayoutOverview(input: {
   cycle: CycleRow
   publishedResults: PublishedResultRow[]
+  bookkeepingCredits?: BookkeepingCreditRow[]
+  returnedPools?: ReturnedPoolRow[]
   intents: PayoutIntentRow[]
   batches: PayoutBatchRow[]
   reconciliationEvents: ReconciliationRow[]
   warnings: MonthlyCycleWarning[]
 }): MonthlyCyclePayoutOverview {
+  const bookkeepingCredits = input.bookkeepingCredits ?? []
+  const returnedPools = input.returnedPools ?? []
   return {
     cycle: {
       id: input.cycle.id,
@@ -105,6 +133,23 @@ export function buildMonthlyCyclePayoutOverview(input: {
     publishedResults: {
       count: input.publishedResults.length,
       totalAmountUsd: sum(input.publishedResults, (result) => Number(result.allocation_usd ?? 0)),
+    },
+    bookkeepingCredits: {
+      count: bookkeepingCredits.length,
+      userCount: new Set(bookkeepingCredits.map((credit) => credit.user_id)).size,
+      totalCreditedUsd: sum(
+        bookkeepingCredits.filter((credit) => credit.status === "credited"),
+        (credit) => Number(credit.usd_equivalent_amount ?? 0),
+      ),
+      notPaidCount: count(bookkeepingCredits, (credit) => credit.payment_status === "not_paid"),
+      voidedCount: count(bookkeepingCredits, (credit) => credit.status === "voided"),
+      assetFillCount: bookkeepingCredits.reduce((total, credit) => total + (Array.isArray(credit.asset_fills) ? credit.asset_fills.length : 0), 0),
+      rows: bookkeepingCredits,
+    },
+    returnedPools: {
+      count: returnedPools.length,
+      totalAmountUsd: sum(returnedPools, (row) => Number(row.usd_value ?? 0)),
+      rows: returnedPools,
     },
     intents: {
       count: input.intents.length,
@@ -161,10 +206,30 @@ export async function loadMonthlyCyclePayoutOverview(cycleKey: string): Promise<
   if (cycleError) throw new Error(cycleError.message)
   if (!cycle) return null
 
-  const [publishedResults, intents, batches] = await Promise.all([
+  const [publishedResults, bookkeepingCredits, returnedPools, intents, batches] = await Promise.all([
     softRead<PublishedResultRow>(
       "zkas_published_user_results",
       () => supabase.from("zkas_published_user_results").select("id, allocation_usd").eq("monthly_cycle_id", cycle.id),
+      warnings,
+    ),
+    softRead<BookkeepingCreditRow>(
+      "monthly_cycle_bookkeeping_credits",
+      () =>
+        supabase
+          .from("monthly_cycle_bookkeeping_credits")
+          .select("id, user_id, usd_equivalent_amount, status, payment_status, asset_fills")
+          .eq("monthly_cycle_id", cycle.id)
+          .order("usd_equivalent_amount", { ascending: false }),
+      warnings,
+    ),
+    softRead<ReturnedPoolRow>(
+      "monthly_cycle_allocation_returned_pools",
+      () =>
+        supabase
+          .from("monthly_cycle_allocation_returned_pools")
+          .select("id, project_id, asset_type, asset_code, usd_value, reason_code")
+          .eq("monthly_cycle_id", cycle.id)
+          .order("usd_value", { ascending: false }),
       warnings,
     ),
     softRead<PayoutIntentRow>(
@@ -211,6 +276,8 @@ export async function loadMonthlyCyclePayoutOverview(cycleKey: string): Promise<
   return buildMonthlyCyclePayoutOverview({
     cycle,
     publishedResults,
+    bookkeepingCredits,
+    returnedPools,
     intents,
     batches,
     reconciliationEvents,
