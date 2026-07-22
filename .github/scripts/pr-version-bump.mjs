@@ -1,97 +1,133 @@
 #!/usr/bin/env node
-import fs from "node:fs";
-import path from "node:path";
 import { execFileSync } from "node:child_process";
+import { readFileSync, writeFileSync } from "node:fs";
 
-const args = process.argv.slice(2);
-const base = args.includes("--base") ? args[args.indexOf("--base") + 1] : process.env.GITHUB_BASE_REF;
-const dryRun = args.includes("--dry-run");
+const PACKAGE_JSON_PATH = "package.json";
 
-if (!base || !["dev", "main"].includes(base)) {
-  console.error("Usage: node .github/scripts/pr-version-bump.mjs --base <dev|main> [--dry-run]");
-  process.exit(1);
-}
-
-function git(args, fallback = "") {
-  try {
-    return execFileSync("git", args, { encoding: "utf8", stdio: ["ignore", "pipe", "ignore"] }).trim();
-  } catch {
-    return fallback;
-  }
-}
-
-function readJson(file) {
-  return JSON.parse(fs.readFileSync(file, "utf8"));
-}
-
-function writeJson(file, data) {
-  fs.writeFileSync(file, JSON.stringify(data, null, 2) + "\n");
-}
-
-function bump(version) {
-  const parts = String(version || "0.0.0").split(".").map((part) => Number.parseInt(part, 10));
-  const minor = Number.isFinite(parts[1]) ? parts[1] : 0;
-  const patch = Number.isFinite(parts[2]) ? parts[2] : 0;
-  if (base === "main") return `0.${minor + 1}.0`;
-  return `0.${minor}.${patch + 1}`;
-}
-
-function baseJson(file) {
-  const fromGit = git(["show", `origin/${base}:${file}`], "");
-  if (!fromGit) return null;
-  try {
-    return JSON.parse(fromGit);
-  } catch {
-    return null;
-  }
-}
-
-function packageCandidates() {
-  const changed = git(["diff", "--name-only", `origin/${base}...HEAD`], "")
-    .split("\n")
-    .filter(Boolean);
-  const candidates = new Set();
-  for (const file of changed) {
-    const appMatch = file.match(/^apps\/([^/]+)\//);
-    if (appMatch && fs.existsSync(path.join("apps", appMatch[1], "package.json"))) {
-      candidates.add(path.join("apps", appMatch[1], "package.json"));
+function parseArgs(argv) {
+  const parsed = new Map();
+  for (let index = 0; index < argv.length; index += 1) {
+    const arg = argv[index];
+    if (!arg.startsWith("--")) continue;
+    const key = arg.slice(2);
+    const next = argv[index + 1];
+    if (!next || next.startsWith("--")) {
+      parsed.set(key, "true");
+      continue;
     }
-    if (file.startsWith("app/") && fs.existsSync(path.join("app", "package.json"))) {
-      candidates.add(path.join("app", "package.json"));
-    }
+    parsed.set(key, next);
+    index += 1;
   }
-  if (candidates.size === 0 && fs.existsSync("package.json")) candidates.add("package.json");
-  if (candidates.size === 0 && fs.existsSync(path.join("app", "package.json"))) candidates.add(path.join("app", "package.json"));
-  return [...candidates];
+  return parsed;
 }
 
-function updatePackage(file) {
-  const current = readJson(file);
-  const basePkg = baseJson(file) || current;
-  const nextVersion = bump(basePkg.version);
-  if (current.version === nextVersion) {
-    console.log(`${file} already at ${nextVersion}`);
+function run(command, args, options = {}) {
+  return execFileSync(command, args, {
+    encoding: "utf8",
+    stdio: options.stdio ?? ["ignore", "pipe", "inherit"],
+  }).trim();
+}
+
+function readPackageFromWorktree() {
+  return JSON.parse(readFileSync(PACKAGE_JSON_PATH, "utf8"));
+}
+
+function readPackageFromRef(ref) {
+  const raw = run("git", ["show", `${ref}:${PACKAGE_JSON_PATH}`], { stdio: ["ignore", "pipe", "ignore"] });
+  return JSON.parse(raw);
+}
+
+function parseSemver(version) {
+  const match = /^(\d+)\.(\d+)\.(\d+)(?:[-+].*)?$/.exec(String(version));
+  if (!match) {
+    throw new Error(`Cannot bump non-semver package version: ${version}`);
+  }
+  return {
+    major: Number(match[1]),
+    minor: Number(match[2]),
+    patch: Number(match[3]),
+  };
+}
+
+function nextPatchVersion(version) {
+  const parsed = parseSemver(version);
+  return `${parsed.major}.${parsed.minor}.${parsed.patch + 1}`;
+}
+
+function writePackageVersion(version) {
+  const pkg = readPackageFromWorktree();
+  pkg.version = version;
+  writeFileSync(PACKAGE_JSON_PATH, `${JSON.stringify(pkg, null, 2)}\n`);
+}
+
+function refreshPnpmLockfile(dryRun) {
+  if (dryRun) return;
+  run("pnpm", ["install", "--lockfile-only", "--ignore-scripts"], { stdio: "inherit" });
+}
+
+function versionAt(ref) {
+  return readPackageFromRef(ref).version;
+}
+
+function worktreeVersion() {
+  return readPackageFromWorktree().version;
+}
+
+function bumpApprovedMainPr(baseRef, dryRun) {
+  const baseVersion = versionAt(baseRef);
+  const expectedVersion = nextPatchVersion(baseVersion);
+  const currentVersion = worktreeVersion();
+
+  if (currentVersion === expectedVersion) {
+    console.log(`package.json already has expected main release candidate version ${expectedVersion}.`);
+    return false;
+  }
+
+  console.log(`Preparing main PR release candidate: ${currentVersion} -> ${expectedVersion} (base ${baseRef} is ${baseVersion}).`);
+  if (!dryRun) writePackageVersion(expectedVersion);
+  refreshPnpmLockfile(dryRun);
+  return true;
+}
+
+function bumpMainPush(previousRef, dryRun) {
+  const previousVersion = versionAt(previousRef);
+  const currentVersion = worktreeVersion();
+
+  if (previousVersion !== currentVersion) {
+    console.log(`package.json version already changed in pushed commits: ${previousVersion} -> ${currentVersion}.`);
+    return false;
+  }
+
+  const nextVersion = nextPatchVersion(currentVersion);
+  console.log(`Main push did not include a version bump; applying safety-net bump ${currentVersion} -> ${nextVersion}.`);
+  if (!dryRun) writePackageVersion(nextVersion);
+  refreshPnpmLockfile(dryRun);
+  return true;
+}
+
+function main() {
+  const args = parseArgs(process.argv.slice(2));
+  const mode = args.get("mode");
+  const dryRun = args.has("dry-run");
+
+  if (mode === "approved-main-pr") {
+    const baseRef = args.get("base-ref") ?? "origin/main";
+    bumpApprovedMainPr(baseRef, dryRun);
     return;
   }
-  console.log(`${file}: ${current.version || "(none)"} -> ${nextVersion}`);
-  if (!dryRun) {
-    current.version = nextVersion;
-    writeJson(file, current);
+
+  if (mode === "main-push") {
+    const previousRef = args.get("previous-ref") ?? "HEAD^";
+    bumpMainPush(previousRef, dryRun);
+    return;
   }
 
-  const lockFile = path.join(path.dirname(file), "package-lock.json");
-  if (fs.existsSync(lockFile)) {
-    const lock = readJson(lockFile);
-    if (lock.name === current.name || path.dirname(file) !== ".") lock.version = nextVersion;
-    if (lock.packages && lock.packages[""]) lock.packages[""].version = nextVersion;
-    if (!dryRun) writeJson(lockFile, lock);
-  }
-}
-
-const candidates = packageCandidates();
-if (candidates.length === 0) {
-  console.error("No package.json candidate found for version bump.");
+  console.error([
+    "Usage:",
+    "  node .github/scripts/pr-version-bump.mjs --mode approved-main-pr --base-ref origin/main [--dry-run]",
+    "  node .github/scripts/pr-version-bump.mjs --mode main-push --previous-ref HEAD^ [--dry-run]",
+  ].join("\n"));
   process.exit(1);
 }
 
-for (const candidate of candidates) updatePackage(candidate);
+main();
