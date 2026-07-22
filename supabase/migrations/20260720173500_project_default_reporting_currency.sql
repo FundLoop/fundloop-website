@@ -8,21 +8,7 @@ ALTER TABLE public.projects
 ADD CONSTRAINT projects_default_reporting_currency_code_check
 CHECK (default_reporting_currency_code ~ '^[A-Z]{3,12}$');
 
-DROP FUNCTION IF EXISTS public.publish_project_onboarding_draft_atomic(
-  text,
-  text,
-  text,
-  text,
-  text,
-  text,
-  text,
-  text,
-  text,
-  numeric,
-  integer,
-  integer,
-  integer[]
-);
+DROP FUNCTION IF EXISTS public.publish_project_onboarding_draft_atomic(text, text, text, text, text, text, text, text, text, numeric, integer, integer, integer[]);
 
 CREATE OR REPLACE FUNCTION public.publish_project_onboarding_draft_atomic(
   p_name text,
@@ -148,19 +134,4 @@ BEGIN
 END;
 $$;
 
-GRANT EXECUTE ON FUNCTION public.publish_project_onboarding_draft_atomic(
-  text,
-  text,
-  text,
-  text,
-  text,
-  text,
-  text,
-  text,
-  text,
-  numeric,
-  integer,
-  integer,
-  integer[],
-  text
-) TO authenticated;
+GRANT EXECUTE ON FUNCTION public.publish_project_onboarding_draft_atomic(text, text, text, text, text, text, text, text, text, numeric, integer, integer, integer[], text) TO authenticated;
