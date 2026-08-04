@@ -36,6 +36,11 @@ const pending = (capabilityId: keyof typeof CAPABILITY_REGISTRY): CheckpointObse
   reasonCode: CAPABILITY_REGISTRY[capabilityId].reasonCode,
 })
 
+function commandFailureReason(commandErrors: ReadonlyMap<string, string>, command: string, fallback: string) {
+  const code = commandErrors.get(command) ?? fallback
+  return code.toLowerCase().replace(/[^a-z0-9-]+/g, "-").replace(/^-+|-+$/g, "").slice(0, 64) || fallback
+}
+
 export function createPersonaBrowserActions(personaId: Exclude<PersonaId, "returning-operator">, page: Page) {
   const env = readLocalPersonaEnv()
   const runId = process.env.PLAYWRIGHT_PERSONA_RUN_ID ?? ""
@@ -60,8 +65,12 @@ export function createPersonaBrowserActions(personaId: Exclude<PersonaId, "retur
     const match = response.url().match(/\/functions\/v1\/([a-z0-9-]+)$/)
     if (!match || response.request().method() !== "POST") return
     try {
-      const body = await response.json() as { ok?: boolean; error?: { code?: string } }
-      if (body.ok === false && body.error?.code) commandErrors.set(match[1], body.error.code.replaceAll("_", "-"))
+      const body = await response.json() as { ok?: boolean; error?: { code?: string; message?: string } }
+      if (body.ok === false && body.error?.code) {
+        const code = body.error.code.replaceAll("_", "-")
+        const message = body.error.message?.toLowerCase().replace(/[^a-z0-9-]+/g, "-").replace(/^-+|-+$/g, "").slice(0, 40)
+        commandErrors.set(match[1], message ? `${code}-${message}` : code)
+      }
     } catch {}
   })
   const state: {
@@ -232,10 +241,23 @@ export function createPersonaBrowserActions(personaId: Exclude<PersonaId, "retur
       const draft = await arrangeReviewReadyProjectDraft(supabase, fixtures, state.actorId)
       await openReview("project", "Review and publish your project")
       await page.getByRole("button", { name: "Publish project" }).click({ timeout: 10_000 })
-      await expect.poll(async () => {
+      const publishFailure = page.getByText("Could not publish project", { exact: true })
+      const deadline = Date.now() + 20_000
+      let publishedProjectId: number | null = null
+      while (Date.now() < deadline) {
         const project = await supabase.from("projects").select("id").eq("slug", draft.slug).maybeSingle()
-        return project.error ? null : project.data?.id ?? null
-      }, { timeout: 20_000, message: "published project persistence" }).not.toBeNull()
+        if (project.error) throw new Error("persona-project-publish-persistence-query-failed")
+        publishedProjectId = project.data?.id ?? null
+        if (publishedProjectId) break
+        if (await publishFailure.isVisible().catch(() => false)) {
+          await page.waitForTimeout(100)
+          throw new Error(`persona-project-publish-${commandFailureReason(commandErrors, "project-onboarding-publish", "command-failed")}`)
+        }
+        await page.waitForTimeout(250)
+      }
+      if (!publishedProjectId) {
+        throw new Error(`persona-project-publish-${commandFailureReason(commandErrors, "project-onboarding-publish", "persistence-timeout")}`)
+      }
       const project = await resolvePublishedProject(supabase, fixtures, { slug: draft.slug, actorUserId: state.actorId })
       state.project = { ...project, name: draft.name }
       await page.goto(`${env.baseURL}/en/founder/projects`)

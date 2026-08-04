@@ -809,13 +809,29 @@ SELECT pg_catalog.setval('"public"."organization_invitations_id_seq"', 1, true);
 
 SELECT pg_catalog.setval('"public"."organization_invitations_id_seq1"', 1, false);
 
-SELECT pg_catalog.setval('"public"."organization_members_id_seq"', 1, false);
+SELECT pg_catalog.setval(
+  '"public"."organization_members_id_seq"',
+  COALESCE((SELECT MAX(id) FROM public.organization_members), 1),
+  EXISTS (SELECT 1 FROM public.organization_members)
+);
 
-SELECT pg_catalog.setval('"public"."organization_members_id_seq1"', 2, true);
+SELECT pg_catalog.setval(
+  '"public"."organization_members_id_seq1"',
+  COALESCE((SELECT MAX(id) FROM public.organization_members), 1),
+  EXISTS (SELECT 1 FROM public.organization_members)
+);
 
-SELECT pg_catalog.setval('"public"."organizations_id_seq"', 1, false);
+SELECT pg_catalog.setval(
+  '"public"."organizations_id_seq"',
+  COALESCE((SELECT MAX(id) FROM public.organizations), 1),
+  EXISTS (SELECT 1 FROM public.organizations)
+);
 
-SELECT pg_catalog.setval('"public"."organizations_id_seq1"', 1, false);
+SELECT pg_catalog.setval(
+  '"public"."organizations_id_seq1"',
+  COALESCE((SELECT MAX(id) FROM public.organizations), 1),
+  EXISTS (SELECT 1 FROM public.organizations)
+);
 
 SELECT pg_catalog.setval('"public"."participant_roles_id_seq"', 78, true);
 
@@ -837,9 +853,17 @@ SELECT pg_catalog.setval('"public"."project_attribution_rows_id_seq"', 103, true
 
 SELECT pg_catalog.setval('"public"."project_users_id_seq"', 14, true);
 
-SELECT pg_catalog.setval('"public"."projects_id_seq"', 1, false);
+SELECT pg_catalog.setval(
+  '"public"."projects_id_seq"',
+  COALESCE((SELECT MAX(id) FROM public.projects), 1),
+  EXISTS (SELECT 1 FROM public.projects)
+);
 
-SELECT pg_catalog.setval('"public"."projects_id_seq1"', 103, true);
+SELECT pg_catalog.setval(
+  '"public"."projects_id_seq1"',
+  COALESCE((SELECT MAX(id) FROM public.projects), 1),
+  EXISTS (SELECT 1 FROM public.projects)
+);
 
 SELECT pg_catalog.setval('"public"."ref_categories_id_seq"', 17, true);
 

@@ -432,7 +432,7 @@ export async function resolvePublishedProject(
   const organizationId = (project as unknown as { organization_id: number | null }).organization_id
   if (organizationId) {
     const memberships = await supabase.from("organization_members").select("id").eq("organization_id", organizationId).eq("user_id", input.actorUserId)
-    if (memberships.error) throw new Error("persona-organization-membership-resolution-failed")
+    if (memberships.error || !memberships.data?.length) throw new Error("persona-organization-membership-resolution-failed")
     for (const membership of memberships.data ?? []) await controller.recordDatabaseRow({ table: "organization_members", primaryKey: { id: membership.id }, cleanupPhase: 60 })
     await controller.recordDatabaseRow({ table: "organizations", primaryKey: { id: organizationId }, cleanupPhase: 30 })
   }
