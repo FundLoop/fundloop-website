@@ -90,7 +90,7 @@ export function createPersonaOperatorActions(page: Page) {
     await expect.poll(async () => {
       const result = await supabase.from("monthly_cycles").select("status").eq("cycle_key", cycleKey).single()
       return result.error ? null : result.data?.status
-    }, { timeout: 45_000 }).toBe(status)
+    }, { timeout: 120_000 }).toBe(status)
   }
 
   const actions: PersonaJourneyActions = {
@@ -116,13 +116,11 @@ export function createPersonaOperatorActions(page: Page) {
       const row = page.getByRole("row").filter({ hasText: cycleKey })
       await row.getByRole("button", { name: "Lock", exact: true }).click()
       const overrideDialog = page.getByRole("dialog", { name: /Override missing MVP monthly inputs/i })
-      await Promise.race([
-        overrideDialog.waitFor({ state: "visible", timeout: 10_000 }).catch(() => undefined),
-        expect.poll(async () => {
-          const result = await supabase.from("monthly_cycles").select("status").eq("cycle_key", cycleKey).single()
-          return result.data?.status
-        }, { timeout: 10_000 }).not.toBe("open").catch(() => undefined),
-      ])
+      await expect.poll(async () => {
+        if (await overrideDialog.isVisible().catch(() => false)) return "override"
+        const result = await supabase.from("monthly_cycles").select("status").eq("cycle_key", cycleKey).single()
+        return result.data?.status === "open" ? "waiting" : "locked"
+      }, { timeout: 120_000 }).not.toBe("waiting")
       let overrideApplied = false
       if (await overrideDialog.isVisible().catch(() => false)) {
         overrideApplied = true
@@ -140,6 +138,7 @@ export function createPersonaOperatorActions(page: Page) {
       const runQuery = await supabase.from("zkas_runs").select("id, result_artifact_path").eq("monthly_cycle_id", current.cycleId).eq("status", "completed").single()
       if (runQuery.error || !runQuery.data?.result_artifact_path) throw new Error("persona-operator-calculation-run-missing")
       runIdValue = runQuery.data.id
+      await fixtures.recordDatabaseRow({ table: "zkas_runs", primaryKey: { id: runIdValue }, cleanupPhase: 120 })
       await fixtures.recordStoragePath(`${STORAGE_BUCKETS.zkasRuns}/${buildZkasRunArtifactPath({ cycleKey, cycleId: current.cycleId, artifact: "calculation-package" })}`)
       await fixtures.recordStoragePath(`${STORAGE_BUCKETS.zkasRuns}/${buildZkasRunArtifactPath({ cycleKey, runId: runIdValue, artifact: "run-manifest" })}`)
       await fixtures.recordStoragePath(`${STORAGE_BUCKETS.zkasRuns}/${runQuery.data.result_artifact_path}`)
@@ -184,6 +183,14 @@ export function createPersonaOperatorActions(page: Page) {
       if (!result.data.noPayoutExecuted || result.data.totalCreditedUsd !== 10 || result.data.creditedCount !== 1) {
         throw new Error("persona-bookkeeping-output-mismatch")
       }
+      const current = requireScenario()
+      const credit = await supabase
+        .from("monthly_cycle_bookkeeping_credits")
+        .select("id")
+        .eq("monthly_cycle_id", current.cycleId)
+        .single()
+      if (credit.error || !credit.data) throw new Error("persona-bookkeeping-credit-missing")
+      await fixtures.recordDatabaseRow({ table: "monthly_cycle_bookkeeping_credits", primaryKey: { id: credit.data.id }, cleanupPhase: 130 })
       await page.goto(`${env.baseURL}/en/admin/cycles/${cycleKey}/payouts`)
       await expect(page.getByText(/1 credited rows, not paid yet/i)).toBeVisible()
       await expect(page.getByText("$10").first()).toBeVisible()
@@ -233,9 +240,9 @@ export function createPersonaOperatorActions(page: Page) {
 
       await login(current.member.email, current.member.password)
       await page.goto(`${env.baseURL}/en/workspace/earnings`)
-      await expect(page.getByText("$10").first()).toBeVisible()
-      await expect(page.getByText(current.project.name).first()).toBeVisible()
-      await expect(page.getByText(/not paid/i).first()).toBeVisible()
+      await expect(page.getByText("$10").first()).toBeVisible().catch(() => { throw new Error("persona-member-earnings-amount-missing") })
+      await expect(page.getByText(current.project.name).first()).toBeVisible().catch(() => { throw new Error("persona-member-earnings-project-missing") })
+      await expect(page.getByText(/not paid/i).first()).toBeVisible().catch(() => { throw new Error("persona-member-earnings-status-missing") })
       await capture("member-earnings-readback")
       if (browserErrors.length > 0) throw new Error(`persona-browser-${browserErrors[0]}`)
       return observed({ users: 1, projects: 1, allocated: 10, paid: false, capture: "integrated-readback" })

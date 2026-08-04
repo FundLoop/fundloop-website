@@ -218,10 +218,18 @@ async function cleanupLedger(ledgerPath, env) {
     authorization: `Bearer ${env.serviceRoleKey}`,
     "content-type": "application/json",
   }
-  const serviceFetch = async (url, options = {}) => {
+  const serviceFetch = async (url, options = {}, reason = "cleanup-request-failed") => {
     const response = await fetch(url, { ...options, headers: { ...serviceHeaders, ...options.headers } })
-    if (!response.ok) throw new Error("cleanup-request-failed")
+    if (!response.ok) throw new Error(reason)
     return response
+  }
+
+  const deleteStorageObject = async (bucket, objectPath) => {
+    const objectUrl = `${env.supabaseUrl}/storage/v1/object/${bucket}/${objectPath}`
+    const deletion = await fetch(objectUrl, { method: "DELETE", headers: serviceHeaders })
+    if (deletion.ok) return
+    const verification = await fetch(`${env.supabaseUrl}/storage/v1/object/authenticated/${bucket}/${objectPath}`, { headers: serviceHeaders })
+    if (verification.ok || ![400, 404].includes(verification.status)) throw new Error("cleanup-request-failed")
   }
 
   ledger.state = "cleaning"
@@ -232,7 +240,7 @@ async function cleanupLedger(ledgerPath, env) {
     if (separator <= 0) throw new Error("ownership-ledger-invalid")
     const bucket = encodeURIComponent(bucketAndPath.slice(0, separator))
     const objectPath = bucketAndPath.slice(separator + 1).split("/").map(encodeURIComponent).join("/")
-    await serviceFetch(`${env.supabaseUrl}/storage/v1/object/${bucket}/${objectPath}`, { method: "DELETE" })
+    await deleteStorageObject(bucket, objectPath)
     deletedCount += 1
   }
 
@@ -246,7 +254,11 @@ async function cleanupLedger(ledgerPath, env) {
       if (!/^[a-z][a-z0-9_]*$/.test(key)) throw new Error("ownership-ledger-invalid")
       query.set(key, `eq.${value}`)
     }
-    await serviceFetch(`${env.supabaseUrl}/rest/v1/${record.table}?${query}`, { method: "DELETE", headers: { prefer: "return=minimal" } })
+    await serviceFetch(
+      `${env.supabaseUrl}/rest/v1/${record.table}?${query}`,
+      { method: "DELETE", headers: { prefer: "return=minimal" } },
+      `cleanup-record-delete-failed-${record.table}`,
+    )
     deletedCount += 1
   }
   for (const record of orderedRecords.filter((record) => record.table !== "users")) {
@@ -259,7 +271,7 @@ async function cleanupLedger(ledgerPath, env) {
       select: "id,cycle_key,operator_note,created_by_user_id",
       cycle_key: `eq.${cycle.cycleKey}`,
     })
-    const response = await serviceFetch(`${env.supabaseUrl}/rest/v1/monthly_cycles?${query}`)
+    const response = await serviceFetch(`${env.supabaseUrl}/rest/v1/monthly_cycles?${query}`, {}, "cleanup-cycle-query-failed")
     const rows = await response.json()
     if (!Array.isArray(rows) || rows.length > 1) throw new Error("ownership-mismatch")
     if (rows.length === 1) {
@@ -268,8 +280,23 @@ async function cleanupLedger(ledgerPath, env) {
       if (!idMatches || row.operator_note !== cycle.operatorNoteMarker || row.created_by_user_id !== cycle.createdByUserId) {
         throw new Error("ownership-mismatch")
       }
+      const eventQuery = new URLSearchParams({ monthly_cycle_id: `eq.${row.id}`, cycle_key: `eq.${cycle.cycleKey}` })
+      await serviceFetch(
+        `${env.supabaseUrl}/rest/v1/monthly_cycle_events?${eventQuery}`,
+        { method: "DELETE", headers: { prefer: "return=minimal" } },
+        "cleanup-cycle-events-delete-failed",
+      )
+      const eventVerification = new URLSearchParams({ select: "id", monthly_cycle_id: `eq.${row.id}`, cycle_key: `eq.${cycle.cycleKey}`, limit: "1" })
+      const remainingEventsResponse = await serviceFetch(
+        `${env.supabaseUrl}/rest/v1/monthly_cycle_events?${eventVerification}`,
+        {},
+        "cleanup-cycle-events-query-failed",
+      )
+      const remainingEvents = await remainingEventsResponse.json()
+      if (!Array.isArray(remainingEvents) || remainingEvents.length > 0) throw new Error("cleanup-cycle-events-residual")
+      deletedCount += 1
       const deletion = new URLSearchParams({ id: `eq.${row.id}` })
-      await serviceFetch(`${env.supabaseUrl}/rest/v1/monthly_cycles?${deletion}`, { method: "DELETE", headers: { prefer: "return=minimal" } })
+      await serviceFetch(`${env.supabaseUrl}/rest/v1/monthly_cycles?${deletion}`, { method: "DELETE", headers: { prefer: "return=minimal" } }, "cleanup-cycle-delete-failed")
       cycle.cycleId = row.id
       deletedCount += 1
     }
@@ -283,18 +310,18 @@ async function cleanupLedger(ledgerPath, env) {
 
   const inviterIds = new Set(ledger.invitations.map((invitation) => invitation.createdByUserId))
   for (const authUserId of [...ledger.authUserIds].reverse().filter((id) => !inviterIds.has(id))) {
-    await serviceFetch(`${env.supabaseUrl}/auth/v1/admin/users/${encodeURIComponent(authUserId)}`, { method: "DELETE" })
+    await serviceFetch(`${env.supabaseUrl}/auth/v1/admin/users/${encodeURIComponent(authUserId)}`, { method: "DELETE" }, "cleanup-auth-delete-failed")
     deletedCount += 1
   }
 
   for (const invitation of [...ledger.invitations].reverse()) {
     const query = new URLSearchParams({ code: `eq.${invitation.code}`, created_by: `eq.${invitation.createdByUserId}` })
-    await serviceFetch(`${env.supabaseUrl}/rest/v1/invitation_codes?${query}`, { method: "DELETE", headers: { prefer: "return=minimal" } })
+    await serviceFetch(`${env.supabaseUrl}/rest/v1/invitation_codes?${query}`, { method: "DELETE", headers: { prefer: "return=minimal" } }, "cleanup-invitation-delete-failed")
     deletedCount += 1
   }
 
   for (const authUserId of [...ledger.authUserIds].reverse().filter((id) => inviterIds.has(id))) {
-    await serviceFetch(`${env.supabaseUrl}/auth/v1/admin/users/${encodeURIComponent(authUserId)}`, { method: "DELETE" })
+    await serviceFetch(`${env.supabaseUrl}/auth/v1/admin/users/${encodeURIComponent(authUserId)}`, { method: "DELETE" }, "cleanup-auth-delete-failed")
     deletedCount += 1
   }
 

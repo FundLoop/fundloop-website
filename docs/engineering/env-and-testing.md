@@ -58,11 +58,11 @@ Use local Supabase for destructive or replay validation:
 ```bash
 export FUNDLOOP_INTERNAL_ADMIN_EMAILS=maya@fundloop.example.com
 export FUNDLOOP_ZKAS_SUPERADMIN_EMAILS=maya@fundloop.example.com
-DOCKER_CONTEXT=colima-codex-supabase supabase start -x logflare -x vector
+DOCKER_CONTEXT=colima-codex-supabase supabase start --ignore-health-check -x studio -x imgproxy -x logflare -x vector
 DOCKER_CONTEXT=colima-codex-supabase supabase db reset
 ```
 
-This keeps database, auth, REST, storage, and Edge Functions available for app smoke tests while excluding local analytics/logging/vector services. Do not use this lean local mode to validate analytics-specific behavior.
+This keeps database, auth, REST, storage, Edge Functions, and Mailpit available for app smoke tests while excluding Studio, image transforms, and local analytics/logging/vector services. Because startup bypasses excluded-service health checks, verify Auth, REST, Storage, Edge health, and Mailpit on their documented loopback ports before running the harness. Do not use this lean local mode to validate Studio, image-transform, or analytics-specific behavior.
 
 For the deterministic seeded operator smoke persona, set the non-production allowlists before starting local Supabase and Next:
 
@@ -127,7 +127,7 @@ The persona harness is deliberately local-only. The caller starts and resets Sup
 ```bash
 export FUNDLOOP_INTERNAL_ADMIN_EMAILS=maya@fundloop.example.com
 export FUNDLOOP_ZKAS_SUPERADMIN_EMAILS=maya@fundloop.example.com
-DOCKER_CONTEXT=colima-codex-supabase supabase start -x logflare -x vector
+DOCKER_CONTEXT=colima-codex-supabase supabase start --ignore-health-check -x studio -x imgproxy -x logflare -x vector
 DOCKER_CONTEXT=colima-codex-supabase supabase db reset
 
 # All five persona specs are executable and independently selectable

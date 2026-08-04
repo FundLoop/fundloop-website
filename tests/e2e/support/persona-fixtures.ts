@@ -190,6 +190,21 @@ export function createPersonaFixtureController(input: CreateControllerInput): Mu
         )
         if (error || !ownershipMatches) { fail(); cleanCycles.unshift(cycle); continue }
         if (data) {
+          const eventDeletion = await supabase
+            .from("monthly_cycle_events")
+            .delete()
+            .eq("monthly_cycle_id", data.id)
+            .eq("cycle_key", cycle.cycleKey)
+          const remainingEvents = await supabase
+            .from("monthly_cycle_events")
+            .select("id")
+            .eq("monthly_cycle_id", data.id)
+            .eq("cycle_key", cycle.cycleKey)
+            .limit(1)
+          if (eventDeletion.error || remainingEvents.error || (remainingEvents.data?.length ?? 0) > 0) {
+            fail(); cleanCycles.unshift(cycle); continue
+          }
+          deletedCount += 1
           const deletion = await supabase.from("monthly_cycles").delete().eq("id", data.id)
           if (deletion.error) { fail(); cleanCycles.unshift(cycle); continue }
           deletedCount += 1

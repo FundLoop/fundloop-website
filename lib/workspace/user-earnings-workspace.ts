@@ -49,6 +49,7 @@ export type UserEarningsCreditAssetFill = {
 
 export type UserEarningsCreditSourceBreakdown = {
   projectId: number
+  projectName: string
   scopedCubidId: string
   attributionPoints: number
   totalProjectPoints: number
@@ -121,6 +122,8 @@ type PublishedResultRow = Pick<
 type CycleRow = Pick<Database["public"]["Tables"]["monthly_cycles"]["Row"], "id" | "cycle_key" | "status">
 
 type RunRow = Pick<Database["public"]["Tables"]["zkas_runs"]["Row"], "id" | "month">
+
+type ProjectRow = Pick<Database["public"]["Tables"]["projects"]["Row"], "id" | "name">
 
 type RouteRow = Pick<
   Database["public"]["Tables"]["user_payout_routes"]["Row"],
@@ -237,11 +240,13 @@ function normalizeAssetFills(value: unknown): UserEarningsCreditAssetFill[] {
   })
 }
 
-function normalizeSourceBreakdown(value: unknown): UserEarningsCreditSourceBreakdown[] {
+function normalizeSourceBreakdown(value: unknown, projectById: Map<number, ProjectRow>): UserEarningsCreditSourceBreakdown[] {
   return arrayValue(value).map((item) => {
     const row = recordValue(item)
+    const projectId = numberValue(row.projectId as number | null | undefined)
     return {
-      projectId: numberValue(row.projectId as number | null | undefined),
+      projectId,
+      projectName: projectById.get(projectId)?.name ?? `Project ${projectId}`,
       scopedCubidId: stringValue(row.scopedCubidId),
       attributionPoints: numberValue(row.attributionPoints as number | null | undefined),
       totalProjectPoints: numberValue(row.totalProjectPoints as number | null | undefined),
@@ -305,6 +310,7 @@ export function buildUserEarningsWorkspace({
   publishedResults,
   cycles,
   runs,
+  projects,
   payoutRoutes,
   payoutIntents,
   bookkeepingCredits,
@@ -317,6 +323,7 @@ export function buildUserEarningsWorkspace({
   publishedResults: PublishedResultRow[]
   cycles: CycleRow[]
   runs: RunRow[]
+  projects?: ProjectRow[]
   payoutRoutes: RouteRow[]
   payoutIntents: IntentRow[]
   bookkeepingCredits?: CreditRow[]
@@ -328,6 +335,7 @@ export function buildUserEarningsWorkspace({
 }): UserEarningsWorkspace {
   const cycleById = new Map(cycles.map((cycle) => [cycle.id, cycle]))
   const runById = new Map(runs.map((run) => [run.id, run]))
+  const projectById = new Map((projects ?? []).map((project) => [project.id, project]))
   const routeById = new Map(payoutRoutes.map((route) => [route.id, route]))
   const intentByResultId = new Map(payoutIntents.filter((intent) => intent.source_result_id).map((intent) => [intent.source_result_id as number, intent]))
   const batchById = new Map(batches.map((batch) => [batch.id, batch]))
@@ -349,7 +357,7 @@ export function buildUserEarningsWorkspace({
       paymentStatus: credit.payment_status,
       creditedAt: credit.credited_at,
       assetFills: normalizeAssetFills(credit.asset_fills),
-      sourceBreakdown: normalizeSourceBreakdown(credit.source_breakdown),
+      sourceBreakdown: normalizeSourceBreakdown(credit.source_breakdown, projectById),
       allocationBreakdown: normalizeAllocationBreakdown(credit.allocation_breakdown),
     }))
     .sort((left, right) => new Date(right.creditedAt).getTime() - new Date(left.creditedAt).getTime())
@@ -513,9 +521,10 @@ export async function getUserEarningsWorkspace(navigationContext: NavigationCont
     ]),
   )
   const runIds = Array.from(new Set([...publishedResults.map((result) => result.run_id), ...bookkeepingCredits.map((credit) => credit.run_id)]))
+  const projectIds = Array.from(new Set(bookkeepingCredits.flatMap((credit) => normalizeSourceBreakdown(credit.source_breakdown, new Map()).map((source) => source.projectId))))
   const intentIds = payoutIntents.map((intent) => intent.id)
 
-  const [cycles, runs, batchItems, reconciliationEvents] = await Promise.all([
+  const [cycles, runs, projects, batchItems, reconciliationEvents] = await Promise.all([
     cycleIds.length > 0
       ? readEarningsData<CycleRow[]>(
           "monthly-cycles",
@@ -526,6 +535,9 @@ export async function getUserEarningsWorkspace(navigationContext: NavigationCont
       : Promise.resolve([]),
     runIds.length > 0
       ? readEarningsData<RunRow[]>("result-runs", supabase.from("zkas_runs").select("id, month").in("id", runIds), warnings, [])
+      : Promise.resolve([]),
+    projectIds.length > 0
+      ? readEarningsData<ProjectRow[]>("source-projects", supabase.from("projects").select("id, name").in("id", projectIds), warnings, [])
       : Promise.resolve([]),
     intentIds.length > 0
       ? readEarningsData<BatchItemRow[]>(
@@ -564,6 +576,7 @@ export async function getUserEarningsWorkspace(navigationContext: NavigationCont
     publishedResults,
     cycles,
     runs,
+    projects,
     payoutRoutes,
     payoutIntents,
     bookkeepingCredits,

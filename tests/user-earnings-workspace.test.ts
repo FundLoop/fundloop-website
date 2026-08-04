@@ -7,6 +7,7 @@ describe("buildUserEarningsWorkspace", () => {
       publishedResults: [],
       cycles: [{ id: 1, cycle_key: "2026-04", status: "distribution" }],
       runs: [{ id: 7, month: "2026-04" }],
+      projects: [{ id: 7, name: "Origin Project" }],
       payoutRoutes: [],
       payoutIntents: [],
       bookkeepingCredits: [
@@ -80,7 +81,7 @@ describe("buildUserEarningsWorkspace", () => {
         expect.objectContaining({ assetCode: "USDC", partial: true }),
         expect.objectContaining({ assetCode: "USD", preferenceRank: 2 }),
       ],
-      sourceBreakdown: [expect.objectContaining({ scopedCubidId: "scoped-user-1", rawEntitlementUsd: 100 })],
+      sourceBreakdown: [expect.objectContaining({ projectName: "Origin Project", scopedCubidId: "scoped-user-1", rawEntitlementUsd: 100 })],
       allocationBreakdown: expect.objectContaining({ baselineUsd: 100, equalizationTopUpUsd: 25 }),
     })
   })

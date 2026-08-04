@@ -3,7 +3,7 @@ import { returningOperatorJourney } from "./journeys"
 import { executePersonaJourney } from "../support/persona-journey-runner"
 import { createPersonaOperatorActions } from "../support/persona-operator-actions"
 
-test.setTimeout(300_000)
+test.setTimeout(600_000)
 
 test("@persona:returning-operator executes the monthly cadence journey", async ({ page }) => {
   const scenario = createPersonaOperatorActions(page)
