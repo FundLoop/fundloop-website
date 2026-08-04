@@ -3,7 +3,7 @@
 - Timestamp: 2026-08-04T21:08:30Z
 - Agent: Codex
 - Branch: codex/fix-dev-intake-contract-guc
-- Head: 5ec571e
+- Head: 7f2d8b78c70f9d5b5457efa61e18e92a1a141d77
 
 Objective:
 - Repair dev intake-contract activation after PR #103 proved Supabase session pooler/startup parameters still did not reach deploy migration execution.
@@ -31,3 +31,28 @@ Reflections:
 
 Suggested next steps:
 - Validate, open a small repair PR, merge after green checks, confirm dev rows become active, rerun hosted smoke, then clean merged branch residue.
+
+### session v2: deploy-marker review fixes
+
+- Timestamp: 2026-08-04T21:15:24Z
+- Agent: Codex
+- Branch: codex/fix-dev-intake-contract-guc
+- Head: 7f2d8b78c70f9d5b5457efa61e18e92a1a141d77
+
+Objective:
+- Address PR #105 review comments before merging the deploy-marker repair.
+
+Actions:
+- Updated the deploy marker cleanup trap so reset failures are warning-only and the original `supabase db push` exit status is preserved.
+- Corrected the session v1 log head from the parent merge commit to the actual implementation commit.
+
+Validation:
+- `git diff --check` passed.
+- Python YAML parse for `.github/workflows/supabase-deploy.yml` passed.
+- `pnpm dlx node@22.22.1 /opt/homebrew/bin/pnpm test -- tests/e2e-env.test.ts` passed.
+
+Reflections:
+- Resetting the marker is useful hygiene, but it should not turn an otherwise successful deploy into a false failure.
+
+Suggested next steps:
+- Push the review fix, reply to and resolve review threads, then wait for PR checks.

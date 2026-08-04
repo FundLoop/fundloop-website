@@ -209,8 +209,16 @@ jobs:
           esac
 
           cleanup_target_marker() {
+            cleanup_status=$?
+            set +e
             psql "${supabase_db_url}" -v ON_ERROR_STOP=1 \
               -c "ALTER DATABASE postgres RESET app.settings.fundloop_target_environment;"
+            cleanup_result=$?
+            set -e
+            if [[ "${cleanup_result}" -ne 0 ]]; then
+              echo "::warning::Failed to reset Supabase deploy target marker after db push."
+            fi
+            return "${cleanup_status}"
           }
           trap cleanup_target_marker EXIT
 
