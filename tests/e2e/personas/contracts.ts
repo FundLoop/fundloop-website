@@ -14,7 +14,10 @@ export type CheckpointStatus = "pass" | "expected-pending" | "fail"
 export type RunStatus = "passed" | "incomplete" | "failed"
 export type EvidenceValue = string | number | boolean | null
 export type SanitizedEvidence = Readonly<Record<string, EvidenceValue>>
-export type PendingCapabilityId = "member-withdrawal" | "project-invitation-persistence"
+export type PendingCapabilityId =
+  | "member-withdrawal"
+  | "project-invitation-persistence"
+  | "founder-distribution-after-operator-cadence"
 export type ActorAlias =
   | "fixture-inviter"
   | "new-member"

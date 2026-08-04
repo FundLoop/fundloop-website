@@ -1,6 +1,6 @@
 # Persona Happy-Path Harness
 
-Status: shared local harness foundation implemented by Task [#100](https://github.com/FundLoop/fundloop-website/issues/100); persona journeys remain owned by Tasks #101 and #102. Task [#97](https://github.com/FundLoop/fundloop-website/issues/97) supplied the narrowing evidence and Task [#98](https://github.com/FundLoop/fundloop-website/issues/98) fixed the contracts and capability-gap policy below.
+Status: shared local harness foundation implemented by Task [#100](https://github.com/FundLoop/fundloop-website/issues/100), with independently selectable member/founder journeys implemented by Task [#101](https://github.com/FundLoop/fundloop-website/issues/101). The returning-operator cadence journey remains owned by Task #102. Task [#97](https://github.com/FundLoop/fundloop-website/issues/97) supplied the narrowing evidence and Task [#98](https://github.com/FundLoop/fundloop-website/issues/98) fixed the contracts and capability-gap policy below.
 
 ## Objective
 
@@ -132,7 +132,10 @@ export type CheckpointStatus = "pass" | "expected-pending" | "fail"
 export type RunStatus = "passed" | "incomplete" | "failed"
 export type EvidenceValue = string | number | boolean | null
 export type SanitizedEvidence = Readonly<Record<string, EvidenceValue>>
-export type PendingCapabilityId = "member-withdrawal" | "project-invitation-persistence"
+export type PendingCapabilityId =
+  | "member-withdrawal"
+  | "project-invitation-persistence"
+  | "founder-distribution-after-operator-cadence"
 export type ActorAlias =
   | "fixture-inviter"
   | "new-member"
@@ -354,8 +357,7 @@ The initial journeys use these ordered checkpoints. “Required” means the imp
 5. `founder.create-project-invitation` — expected-pending capability `project-invitation-persistence`; `components/invite-member-form.tsx` currently generates a client-only link and success toast without persistence or delivery, which is not a passing invite.
 6. `founder.submit-monthly-contribution` — required at `/en/founder/projects/[slug]/contributions` through `project-monthly-contribution-submit`.
 7. `founder.submit-active-user-attribution` — required at `/en/founder/projects/[slug]/attribution` through `project-attribution-dataset-submit`.
-8. `cadence.advance-through-distribution` — required controlled background transition using the same authenticated Edge Function command contracts as the app; the founder does not impersonate an operator or wait for wall-clock time.
-9. `founder.view-distribution` — required at `/en/founder/projects/[slug]/reporting`, including user count, allocation, source, and credited/not-paid language.
+8. `cadence.await-operator-distribution` — expected-pending capability `founder-distribution-after-operator-cadence`; Task #101 proves the founder inputs and reports the handoff, while Task #102 owns authenticated cadence execution and the resulting distribution assertions.
 
 #### Returning founder
 
@@ -364,8 +366,7 @@ The initial journeys use these ordered checkpoints. “Required” means the imp
 3. `founder.create-project-invitation` — expected-pending capability `project-invitation-persistence`.
 4. `founder.submit-next-month-contribution` — required through the founder contribution UI.
 5. `founder.submit-next-month-attribution` — required through the founder attribution UI.
-6. `cadence.advance-through-distribution` — required through authenticated controlled commands.
-7. `founder.view-next-month-distribution` — required through the founder reporting UI.
+6. `cadence.await-operator-distribution` — expected-pending capability `founder-distribution-after-operator-cadence`; Task #102 promotes this handoff into cadence execution plus founder reporting assertions.
 
 #### Returning operator
 
@@ -503,6 +504,8 @@ Task #100 owns the shared harness and should create or modify exactly these surf
 
 Task #101 owns `tests/e2e/personas/new-member.spec.ts`, `returning-member.spec.ts`, `new-founder.spec.ts`, and `returning-founder.spec.ts`. Task #102 owns `tests/e2e/personas/returning-operator.spec.ts` plus integrated aggregate-report assertions and the final local runbook updates in this document and `docs/engineering/env-and-testing.md`.
 
+Task #101 also adds `tests/e2e/personas/journeys.ts`, `tests/e2e/support/persona-browser-actions.ts`, and `tests/e2e/support/persona-journey-runner.ts`. The journey builders fix checkpoint order independently of selectors; the browser adapter owns real UI/auth actions and run-owned arrangements; the runner derives outcomes, stops on the first failure, cleans in `finally`, and writes one sanitized result record. Founder specs stop at a declared `founder-distribution-after-operator-cadence` checkpoint because Task #102 owns the authenticated cadence execution. This pending result is visible and non-green; it is not a substitute for contribution or attribution assertions, which remain required UI actions.
+
 Existing `tests/e2e/support/env.ts`, `e2e-login.ts`, and `supabase-fixtures.ts` may be reused or receive small extracted helpers when their contracts genuinely match. Do not broaden `remote-safe` or `local-wallet` fixture types merely to make persona names fit.
 
 ## Reuse and non-duplication boundary
@@ -517,10 +520,10 @@ Existing `tests/e2e/support/env.ts`, `e2e-login.ts`, and `supabase-fixtures.ts` 
 
 | Task #98 acceptance criterion | Closed design decision |
 | --- | --- |
-| Every persona has an ordered contract | Five ordered checkpoint lists above |
+| Every persona has an ordered contract | Five ordered checkpoint lists above; the four Task #101 builders are enforced by focused Vitest coverage |
 | New actors use real local OTP UI | Run-owned single-use invitation at `/en/join?invite=<run-token>` plus secret-safe Mailpit helper |
 | Returning/operator actors are deterministic but authorized | Run-scoped stored accounts, E2E login, protected-route/allowlist checks |
-| Withdrawal remains pending | Registry-owned `member-withdrawal` checkpoint and exit `2` semantics |
+| Withdrawal and cadence-owned handoff remain pending | Registry-owned `member-withdrawal` and `founder-distribution-after-operator-cadence` checkpoints with exit `2` semantics |
 | Exact files and commands are named | Planned surfaces and command block above |
 | Local-only, secrets, cleanup, and remote guards are explicit | Fail-closed env guard, artifact policy, fixture ledger, service ownership |
 | No additional product discovery is needed | Types, routes, boundaries, clock, filters, reporting, ownership, and sequencing are fixed |

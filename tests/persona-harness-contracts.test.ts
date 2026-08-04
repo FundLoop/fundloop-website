@@ -1,6 +1,12 @@
 import { describe, expect, it } from "vitest"
 import { CAPABILITY_REGISTRY } from "@/tests/e2e/personas/capabilities"
 import type { PersonaJourney } from "@/tests/e2e/personas/contracts"
+import {
+  newFounderJourney,
+  newMemberJourney,
+  returningFounderJourney,
+  returningMemberJourney,
+} from "@/tests/e2e/personas/journeys"
 import { establishNewActor, provisionalNewActor } from "@/tests/e2e/support/persona-fixtures"
 import { createCycleClock } from "@/tests/e2e/support/persona-monthly-cycle"
 import { parsePersonaSelection, personaGrep, validatePersonaJourneys } from "@/tests/e2e/support/persona-selection"
@@ -51,5 +57,34 @@ describe("persona harness contracts", () => {
     expect(clock.cycleKeyFor("returning-founder", 2)).toBe("2035-03")
     expect(clock.cycleKeyFor("returning-operator")).toBe("2035-04")
     expect(clock.boundsFor("2036-02")).toEqual({ periodStart: "2036-02-01", periodEnd: "2036-02-29" })
+  })
+
+  it("fixes the independently selectable member and founder checkpoint order", () => {
+    const action = async () => ({ outcome: "observed" as const, evidence: {} })
+    const actions = new Proxy({}, { get: () => action }) as Record<string, typeof action>
+    const journeys = [
+      newMemberJourney(actions),
+      returningMemberJourney(actions),
+      newFounderJourney(actions),
+      returningFounderJourney(actions),
+    ]
+
+    expect(validatePersonaJourneys(journeys)).toBe(true)
+    expect(journeys.map((journey) => journey.id)).toEqual([
+      "new-member", "returning-member", "new-founder", "returning-founder",
+    ])
+    expect(journeys[0].checkpoints.map((checkpoint) => checkpoint.id)).toEqual([
+      "auth.request-local-otp",
+      "auth.verify-local-otp",
+      "member.publish-profile",
+      "member.view-earnings-total",
+      "member.view-project-sources",
+      "member.withdraw-earnings",
+    ])
+    expect(journeys[2].checkpoints.at(-1)).toMatchObject({
+      id: "cadence.await-operator-distribution",
+      mode: "expected-pending",
+      capabilityId: "founder-distribution-after-operator-cadence",
+    })
   })
 })

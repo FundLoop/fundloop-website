@@ -39,7 +39,7 @@ describe("persona fixture lifecycle", () => {
       if (String(url).includes("/search?")) {
         return new Response(JSON.stringify({ Messages: [{ ID: "message-1", Created: "2035-01-01T00:00:01.000Z" }] }))
       }
-      return new Response("Your local login code is 123456")
+      return Response.json({ Text: "Your local login code is 123456; ignore https://local.test/654321" })
     }) as unknown as typeof fetch
     await expect(consumeLocalOtp({
       mailpitUrl: "http://127.0.0.1:55324",

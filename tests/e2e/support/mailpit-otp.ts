@@ -9,6 +9,7 @@ type MailpitSearchResponse = {
   messages?: MailpitMessageSummary[]
   Messages?: MailpitMessageSummary[]
 }
+type MailpitMessageDetail = { Text?: string }
 
 export async function consumeLocalOtp(input: {
   mailpitUrl: string
@@ -45,15 +46,15 @@ export async function consumeLocalOtp(input: {
         signal: AbortSignal.timeout(5_000),
       })
       if (!detail.ok) throw new Error("detail")
-      let body = await detail.text()
-      const tokens = [...new Set(body.match(/(?<!\d)\d{6}(?!\d)/g) ?? [])]
-      if (tokens.length !== 1) {
+      const message = (await detail.json()) as MailpitMessageDetail
+      let body = message.Text ?? ""
+      const token = body.match(/(?:enter the code|login code)(?:\s+is)?\s*:?\s*(\d{6})/i)?.[1]
+      if (!token) {
         body = ""
         throw new Error("token-count")
       }
-      const otp = tokens[0]
       body = ""
-      await input.fill(otp)
+      await input.fill(token)
       return
     } catch (error) {
       if (error instanceof Error && error.message === "token-count") throw new Error("mailpit-otp-token-invalid")
