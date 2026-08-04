@@ -80,12 +80,6 @@ jobs:
         with:
           version: 2.90.0
 
-      - name: Install PostgreSQL client
-        if: github.event_name == 'push' || (github.event_name == 'workflow_dispatch' && inputs.mode == 'deploy')
-        run: |
-          sudo apt-get update
-          sudo apt-get install --yes postgresql-client
-
       - name: Resolve Supabase target
         id: target
         shell: bash
@@ -227,23 +221,6 @@ jobs:
           NODE
           supabase_db_url="$(cat "${encoded_db_url_file}")"
           echo "::add-mask::${supabase_db_url}"
-
-          cleanup_target_marker() {
-            cleanup_status=$?
-            set +e
-            psql "${supabase_db_url}" -v ON_ERROR_STOP=1 \
-              -c "ALTER DATABASE postgres RESET app.settings.fundloop_target_environment;"
-            cleanup_result=$?
-            set -e
-            if [[ "${cleanup_result}" -ne 0 ]]; then
-              echo "::warning::Failed to reset Supabase deploy target marker during deploy step cleanup."
-            fi
-            return "${cleanup_status}"
-          }
-          trap cleanup_target_marker EXIT
-
-          psql "${supabase_db_url}" -v ON_ERROR_STOP=1 \
-            -c "ALTER DATABASE postgres SET app.settings.fundloop_target_environment = '${TARGET_ENVIRONMENT}';"
 
           export PGOPTIONS="-c app.settings.fundloop_target_environment=${TARGET_ENVIRONMENT}"
           supabase db push --yes --db-url "$supabase_db_url"
