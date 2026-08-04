@@ -80,6 +80,12 @@ jobs:
         with:
           version: 2.90.0
 
+      - name: Install PostgreSQL client
+        if: github.event_name == 'push' || (github.event_name == 'workflow_dispatch' && inputs.mode == 'deploy')
+        run: |
+          sudo apt-get update
+          sudo apt-get install --yes postgresql-client
+
       - name: Resolve Supabase target
         id: target
         shell: bash
@@ -221,6 +227,21 @@ jobs:
           NODE
           supabase_db_url="$(cat "${encoded_db_url_file}")"
           echo "::add-mask::${supabase_db_url}"
+
+          psql "${supabase_db_url}" -v ON_ERROR_STOP=1 -v target_environment="${TARGET_ENVIRONMENT}" <<'SQL'
+          CREATE TABLE IF NOT EXISTS public.supabase_deploy_context (
+            id boolean PRIMARY KEY DEFAULT true CHECK (id),
+            target_environment text NOT NULL CHECK (target_environment IN ('dev', 'main')),
+            updated_at timestamptz NOT NULL DEFAULT now()
+          );
+
+          INSERT INTO public.supabase_deploy_context (id, target_environment, updated_at)
+          VALUES (true, :'target_environment', now())
+          ON CONFLICT (id) DO UPDATE
+          SET
+            target_environment = EXCLUDED.target_environment,
+            updated_at = EXCLUDED.updated_at;
+          SQL
 
           export PGOPTIONS="-c app.settings.fundloop_target_environment=${TARGET_ENVIRONMENT}"
           supabase db push --yes --db-url "$supabase_db_url"

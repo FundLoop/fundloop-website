@@ -3,7 +3,7 @@
 - Timestamp: 2026-08-04T21:38:02Z
 - Agent: Codex
 - Branch: codex/fix-dev-intake-session-options
-- Head: 918f4b7e84849d0c36d7cca4d4ce49ac78c64696
+- Head: b56b8c500b40ff8aee32c358213f408423e9c54d
 
 #### Objective
 
@@ -12,13 +12,17 @@ Repair the dev Supabase deploy path after the post-merge PR #106 run failed beca
 #### Actions Taken
 
 - Removed the privileged `ALTER DATABASE ... SET/RESET app.settings.fundloop_target_environment` calls from the Supabase deploy workflow.
-- Kept the target marker on the actual deploy connection through the encoded database URL `options` parameter and `PGOPTIONS`, which matches the permission level available to the Supabase pooler user.
-- Removed the now-unused PostgreSQL client installation step from the workflow.
+- Kept the first repair focused on session-level connection options, then updated it after Codex review identified that Supabase CLI resets session state before applying migrations.
+- Added a non-secret persistent `public.supabase_deploy_context` marker row for deploy migrations to read after `RESET ALL`.
+- Updated the pending dev intake-contract activation migration to read the persistent marker through dynamic SQL, while preserving marker-less local replay as a no-op.
+- Updated Supabase deployment documentation to make the persistent marker the canonical target-aware migration path.
 
 #### Validation Notes
 
-- Pending: workflow YAML parse/static validation.
-- Pending: focused local tests.
+- Passed: workflow YAML parse/static validation.
+- Passed: `git diff --check`.
+- Passed: `pnpm dlx node@22.22.1 /opt/homebrew/bin/pnpm test -- tests/e2e-env.test.ts`.
+- Passed: PR #107 Supabase dry-run before the review-driven persistent marker update.
 - Pending: PR dry-run and post-merge dev Supabase deploy.
 
 #### Reflections

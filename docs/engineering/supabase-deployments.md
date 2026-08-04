@@ -45,15 +45,15 @@ Pull requests use the same target resolution but run:
 supabase db push --yes --db-url "$SUPABASE_DB_URL" --dry-run
 ```
 
-The workflow sets a Postgres target marker before deploy migrations run:
+The workflow sets a non-secret persistent Postgres target marker before deploy migrations run:
 
 ```text
-ALTER DATABASE postgres SET app.settings.fundloop_target_environment = dev|main
+public.supabase_deploy_context.target_environment = dev|main
 options=-c%20app.settings.fundloop_target_environment=dev|main
 PGOPTIONS=-c app.settings.fundloop_target_environment=dev|main
 ```
 
-The database-level setting is the reliable path for Supabase CLI deploy migrations because the session pooler may not propagate startup `options`/`PGOPTIONS` to the migration connection. The workflow resets the database-level marker after `supabase db push` completes. The startup `options` and `PGOPTIONS` values are retained as best-effort secondary paths.
+The persistent marker is the reliable path for Supabase CLI deploy migrations because CLI migration application can run `RESET ALL` before executing migration SQL, which clears session/startup settings before `current_setting(...)` reads them. The marker contains only `dev` or `main`; it is not a secret. The startup `options` and `PGOPTIONS` values are retained as best-effort secondary paths for commands that do not reset session state.
 
 Forward migrations may use this setting for target-aware reference data that must differ between Preview/dev and Production. Migrations must fail safe: missing production configuration must not overwrite existing production values with local or placeholder data. Dev-only smoke fixtures may use deterministic non-production placeholders when the target is `dev` and the migration documents that behavior.
 
