@@ -16,4 +16,3 @@ export const CAPABILITY_REGISTRY = {
     rationale: "The current invitation control does not persist or deliver an invitation.",
   },
 } as const satisfies CapabilityRegistry
-

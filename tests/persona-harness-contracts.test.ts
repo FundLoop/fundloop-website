@@ -53,4 +53,3 @@ describe("persona harness contracts", () => {
     expect(clock.boundsFor("2036-02")).toEqual({ periodStart: "2036-02-01", periodEnd: "2036-02-29" })
   })
 })
-

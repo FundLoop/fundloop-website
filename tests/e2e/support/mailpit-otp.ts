@@ -5,7 +5,6 @@ type MailpitMessageSummary = {
   Created?: string
   To?: Array<{ Address?: string }>
 }
-
 type MailpitSearchResponse = {
   messages?: MailpitMessageSummary[]
   Messages?: MailpitMessageSummary[]
@@ -65,4 +64,3 @@ export async function consumeLocalOtp(input: {
 
   throw new Error("mailpit-otp-unavailable")
 }
-

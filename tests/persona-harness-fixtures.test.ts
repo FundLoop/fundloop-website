@@ -52,4 +52,3 @@ describe("persona fixture lifecycle", () => {
     expect(fill).toHaveBeenCalledWith("123456")
   })
 })
-

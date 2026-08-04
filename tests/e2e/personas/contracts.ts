@@ -30,7 +30,6 @@ export type CapabilityRegistryEntry = {
   ownerUrl: string
   rationale: string
 }
-
 export type CapabilityRegistry = Readonly<Record<PendingCapabilityId, CapabilityRegistryEntry>>
 
 export type RunIdentity = {
@@ -189,4 +188,3 @@ export type HarnessRunSummary = {
   personas: readonly PersonaResult[]
   cleanup: CleanupResult
 }
-

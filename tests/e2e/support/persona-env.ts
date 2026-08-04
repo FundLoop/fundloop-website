@@ -6,7 +6,6 @@ export type LocalPersonaEnv = {
   mailpitUrl: string
   cycleBase: string
 }
-
 export type PersonaPreflightOptions = {
   remoteFixtures?: boolean
   remoteBaseUrl?: boolean
@@ -81,4 +80,3 @@ export async function probeLocalPersonaServices(
     }
   }
 }
-
