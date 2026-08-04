@@ -3,7 +3,8 @@ import path from "node:path"
 import { expect, test } from "@playwright/test"
 import type { PersonaId, PersonaResult } from "./contracts"
 import { parsePersonaSelection } from "../support/persona-selection"
-import { createPersonaFixtureController, createRunIdentity } from "../support/persona-fixtures"
+import { createPersonaFixtureController, createPersonaServiceClient, createRunIdentity, createStoredActorWithProfile } from "../support/persona-fixtures"
+import { readLocalPersonaEnv } from "../support/persona-env"
 import { assertSafePersonaScreenshotSurface, writePersonaResult } from "../support/persona-reporting"
 
 test("@harness:self-test local persona foundation cleans after pass or forced failure", async ({ page, context }) => {
@@ -13,13 +14,21 @@ test("@harness:self-test local persona foundation cleans after pass or forced fa
   const selected = parsePersonaSelection(process.env.PLAYWRIGHT_PERSONA_SELECTED)
   const run = { ...createRunIdentity(selected), runId }
   const startedAt = Date.now()
-  const fixtures = createPersonaFixtureController({ run, outputRoot })
+  const forceTimeout = process.env.PLAYWRIGHT_PERSONA_FORCE_TIMEOUT === "true"
+  if (forceTimeout) test.setTimeout(5_000)
+  const env = readLocalPersonaEnv()
+  const supabase = createPersonaServiceClient(env)
+  const fixtures = createPersonaFixtureController({ run, outputRoot, supabase, ledgerName: forceTimeout ? selected[0] : undefined })
   let forcedFailure = false
 
   await fixtures.checkpoint()
   await fixtures.markRunning()
 
   try {
+    if (forceTimeout) {
+      await createStoredActorWithProfile(supabase, fixtures, "returning-member")
+      await new Promise<never>(() => undefined)
+    }
     await page.goto("/")
     await expect(page.locator("body")).toBeVisible()
     forcedFailure = process.env.PLAYWRIGHT_PERSONA_FORCE_FAILURE === "true"

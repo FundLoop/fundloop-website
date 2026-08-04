@@ -50,6 +50,7 @@ type CreateControllerInput = {
   outputRoot?: string
   supabase?: SupabaseClient<Database>
   ledger?: OwnershipLedger
+  ledgerName?: string
 }
 
 function isUuid(value: string) {
@@ -91,7 +92,9 @@ export async function loadOwnershipLedger(outputRoot: string, runId: string) {
 export function createPersonaFixtureController(input: CreateControllerInput): MutableFixtureController {
   const outputRoot = input.outputRoot ?? path.join(process.cwd(), "output", "persona-harness")
   const runDirectory = path.join(outputRoot, input.run.runId)
-  const ledgerPath = path.join(runDirectory, "ownership-ledger.json")
+  const ledgerSuffix = input.ledgerName ? `-${input.ledgerName}` : ""
+  if (input.ledgerName && !/^[a-z][a-z0-9-]+$/.test(input.ledgerName)) throw new Error("ownership-ledger-name-invalid")
+  const ledgerPath = path.join(runDirectory, `ownership-ledger${ledgerSuffix}.json`)
   let ledger: OwnershipLedger = input.ledger ?? {
     schemaVersion: 1,
     run: input.run,
@@ -329,7 +332,6 @@ export async function arrangeReviewReadyProfile(
       display_name: input.relationshipChoice === "create_project" ? "New Founder" : "New Member",
       cubid_identity_status: "linked",
       cubid_id: randomUUID(),
-      invited_by_code: input.inviteCode,
       status: "active",
     }, { onConflict: "user_id" }).select("id").single(),
     "persona-new-profile-arrange-failed",

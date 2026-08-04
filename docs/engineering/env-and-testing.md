@@ -130,6 +130,7 @@ DOCKER_CONTEXT=colima-agents supabase db reset
 pnpm test:e2e:personas
 pnpm test:e2e:personas -- --persona new-member
 pnpm test:e2e:personas -- --persona returning-member,new-founder
+pnpm test:e2e:personas -- --self-test --force-timeout --persona returning-member
 
 # Foundation smoke and a deliberate failure/cleanup probe
 pnpm test:e2e:personas -- --self-test --persona returning-member
@@ -142,6 +143,8 @@ pnpm test:e2e:personas -- --cleanup-run <run-id>
 The aggregate exits `0` only when every selected checkpoint passes, `2` when the only gaps are declared expected-pending capabilities, and `1` for failures, missing persona results, preflight errors, or cleanup residue. Automatic Playwright screenshots, video, and traces are disabled for this lane because auth artifacts can contain private values; individual specs may create sanitized post-auth evidence. The forced-failure foundation probe creates only a synthetic, sanitized screenshot and trace under ignored `output/playwright/persona-harness/`.
 
 Until Task #102 lands, a member/founder run is expected to exit `2`: withdrawal, persisted invitation delivery, and founder distribution after the operator cadence are registry-declared pending capabilities. Contribution and active-user attribution are still required browser checkpoints and fail the run if their product command or user-visible confirmation regresses.
+
+The Supabase local Edge runtime exports `SUPABASE_URL` and `SUPABASE_ANON_KEY`; the shared command runtime accepts those canonical local names as fallbacks for the hosted `NEXT_PUBLIC_*` names. This keeps profile publishing, monthly contribution, and attribution commands on the real browser-to-Edge path locally.
 
 ## Required Honesty In Reports
 

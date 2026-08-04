@@ -1,6 +1,6 @@
 import { randomBytes } from "node:crypto"
 import { spawn } from "node:child_process"
-import { closeSync, existsSync, mkdirSync, openSync, readFileSync, rmSync } from "node:fs"
+import { closeSync, existsSync, mkdirSync, openSync, readFileSync, readdirSync, rmSync } from "node:fs"
 import { mkdir, open, readFile, rename } from "node:fs/promises"
 import path from "node:path"
 import process from "node:process"
@@ -17,7 +17,7 @@ function loadLocalEnv() {
 }
 
 function parseArgs(argv) {
-  const options = { persona: null, cleanupRun: null, selfTest: false, forceFailure: false }
+  const options = { persona: null, cleanupRun: null, selfTest: false, forceFailure: false, forceTimeout: false }
   for (let index = 0; index < argv.length; index += 1) {
     const arg = argv[index]
     if (arg === "--") continue
@@ -27,12 +27,15 @@ function parseArgs(argv) {
     else if (arg.startsWith("--cleanup-run=")) options.cleanupRun = arg.slice(14)
     else if (arg === "--self-test") options.selfTest = true
     else if (arg === "--force-failure") options.forceFailure = true
+    else if (arg === "--force-timeout") options.forceTimeout = true
     else throw new Error("persona-cli-option-unknown")
   }
-  if (options.cleanupRun && (options.persona !== null || options.selfTest || options.forceFailure)) {
+  if (options.cleanupRun && (options.persona !== null || options.selfTest || options.forceFailure || options.forceTimeout)) {
     throw new Error("persona-cleanup-option-conflict")
   }
   if (options.forceFailure && !options.selfTest) throw new Error("persona-force-failure-requires-self-test")
+  if (options.forceTimeout && !options.selfTest) throw new Error("persona-force-timeout-requires-self-test")
+  if (options.forceTimeout && options.forceFailure) throw new Error("persona-forced-outcome-conflict")
   return options
 }
 
@@ -163,12 +166,12 @@ async function aggregate(run, selected, startedAt, services, playwrightExitCode)
     cycleKeys: {},
     services,
     personas,
-    cleanup: personas.some((result) => result.cleanup.status === "residual")
+    cleanup: personas.length !== selected.length || personas.some((result) => result.cleanup.status === "residual")
       ? {
           status: "residual",
           deletedCount: personas.reduce((total, result) => total + result.cleanup.deletedCount, 0),
           residualCount: personas.reduce((total, result) => total + result.cleanup.residualCount, 0),
-          reasonCode: "persona-cleanup-residual",
+          reasonCode: personas.length !== selected.length ? "persona-cleanup-unproven" : "persona-cleanup-residual",
         }
       : {
           status: "clean",
@@ -188,12 +191,19 @@ async function aggregate(run, selected, startedAt, services, playwrightExitCode)
   return summary
 }
 
-async function cleanupRun(runId, env) {
-  if (!/^persona-[A-Za-z0-9-]+$/.test(runId)) throw new Error("cleanup-run-id-invalid")
-  const ledgerPath = path.join(outputRoot, runId, "ownership-ledger.json")
+function ledgerPathsForRun(runId) {
+  const directory = path.join(outputRoot, runId)
+  if (!existsSync(directory)) return []
+  return readdirSync(directory)
+    .filter((name) => /^ownership-ledger(?:-[a-z][a-z0-9-]+)?\.json$/.test(name))
+    .map((name) => path.join(directory, name))
+}
+
+async function cleanupLedger(ledgerPath, env) {
   const ledger = JSON.parse(readFileSync(ledgerPath, "utf8"))
-  if (ledger.schemaVersion !== 1 || ledger.run?.runId !== runId) throw new Error("ownership-ledger-invalid")
-  if (ledger.state === "clean") return
+  if (ledger.schemaVersion !== 1 || !/^persona-[A-Za-z0-9-]+$/.test(ledger.run?.runId ?? "")) throw new Error("ownership-ledger-invalid")
+  if (ledger.state === "clean") return { status: "clean", deletedCount: 0, residualCount: 0, reasonCode: null }
+  let deletedCount = 0
 
   const serviceHeaders = {
     apikey: env.serviceRoleKey,
@@ -215,9 +225,11 @@ async function cleanupRun(runId, env) {
     const bucket = encodeURIComponent(bucketAndPath.slice(0, separator))
     const objectPath = bucketAndPath.slice(separator + 1).split("/").map(encodeURIComponent).join("/")
     await serviceFetch(`${env.supabaseUrl}/storage/v1/object/${bucket}/${objectPath}`, { method: "DELETE" })
+    deletedCount += 1
   }
 
-  for (const record of [...ledger.records].sort((left, right) => right.cleanupPhase - left.cleanupPhase)) {
+  const orderedRecords = [...ledger.records].sort((left, right) => right.cleanupPhase - left.cleanupPhase)
+  const deleteRecord = async (record) => {
     if (!/^[a-z][a-z0-9_]*$/.test(record.table) || Object.keys(record.primaryKey).length === 0) {
       throw new Error("ownership-ledger-invalid")
     }
@@ -227,6 +239,10 @@ async function cleanupRun(runId, env) {
       query.set(key, `eq.${value}`)
     }
     await serviceFetch(`${env.supabaseUrl}/rest/v1/${record.table}?${query}`, { method: "DELETE", headers: { prefer: "return=minimal" } })
+    deletedCount += 1
+  }
+  for (const record of orderedRecords.filter((record) => record.table !== "users")) {
+    await deleteRecord(record)
   }
 
   for (const cycle of [...ledger.cycles].reverse()) {
@@ -247,23 +263,31 @@ async function cleanupRun(runId, env) {
       const deletion = new URLSearchParams({ id: `eq.${row.id}` })
       await serviceFetch(`${env.supabaseUrl}/rest/v1/monthly_cycles?${deletion}`, { method: "DELETE", headers: { prefer: "return=minimal" } })
       cycle.cycleId = row.id
+      deletedCount += 1
     }
     cycle.state = "clean"
     await writeAtomic(ledgerPath, ledger)
   }
 
+  for (const record of orderedRecords.filter((record) => record.table === "users")) {
+    await deleteRecord(record)
+  }
+
   const inviterIds = new Set(ledger.invitations.map((invitation) => invitation.createdByUserId))
   for (const authUserId of [...ledger.authUserIds].reverse().filter((id) => !inviterIds.has(id))) {
     await serviceFetch(`${env.supabaseUrl}/auth/v1/admin/users/${encodeURIComponent(authUserId)}`, { method: "DELETE" })
+    deletedCount += 1
   }
 
   for (const invitation of [...ledger.invitations].reverse()) {
     const query = new URLSearchParams({ code: `eq.${invitation.code}`, created_by: `eq.${invitation.createdByUserId}` })
     await serviceFetch(`${env.supabaseUrl}/rest/v1/invitation_codes?${query}`, { method: "DELETE", headers: { prefer: "return=minimal" } })
+    deletedCount += 1
   }
 
   for (const authUserId of [...ledger.authUserIds].reverse().filter((id) => inviterIds.has(id))) {
     await serviceFetch(`${env.supabaseUrl}/auth/v1/admin/users/${encodeURIComponent(authUserId)}`, { method: "DELETE" })
+    deletedCount += 1
   }
 
   ledger.state = "clean"
@@ -272,6 +296,74 @@ async function cleanupRun(runId, env) {
   ledger.storagePaths = []
   ledger.invitations = []
   await writeAtomic(ledgerPath, ledger)
+  return { status: "clean", deletedCount, residualCount: 0, reasonCode: null }
+}
+
+async function cleanupRun(runId, env) {
+  if (!/^persona-[A-Za-z0-9-]+$/.test(runId)) throw new Error("cleanup-run-id-invalid")
+  const ledgerPaths = ledgerPathsForRun(runId)
+  if (ledgerPaths.length === 0) throw new Error("ownership-ledger-missing")
+  for (const ledgerPath of ledgerPaths) await cleanupLedger(ledgerPath, env)
+}
+
+function residualCountForLedger(ledgerPath) {
+  if (!existsSync(ledgerPath)) return 1
+  const ledger = JSON.parse(readFileSync(ledgerPath, "utf8"))
+  return ledger.records.length + ledger.authUserIds.length + ledger.storagePaths.length + ledger.invitations.length +
+    ledger.cycles.filter((cycle) => cycle.state !== "clean").length
+}
+
+async function recoverAfterPlaywright(runId, selected, env) {
+  for (const personaId of selected) {
+    const personaPath = path.join(outputRoot, runId, "personas", `${personaId}.json`)
+    const namedLedgerPath = path.join(outputRoot, runId, `ownership-ledger-${personaId}.json`)
+    const legacyLedgerPath = path.join(outputRoot, runId, "ownership-ledger.json")
+    const ledgerPath = existsSync(namedLedgerPath) ? namedLedgerPath : selected.length === 1 && existsSync(legacyLedgerPath) ? legacyLedgerPath : null
+    let cleanup
+    if (ledgerPath) {
+      try {
+        cleanup = await cleanupLedger(ledgerPath, env)
+      } catch {
+        cleanup = { status: "residual", deletedCount: 0, residualCount: residualCountForLedger(ledgerPath), reasonCode: "cleanup-recovery-failed" }
+      }
+    } else {
+      cleanup = { status: "residual", deletedCount: 0, residualCount: 1, reasonCode: "cleanup-ledger-missing" }
+    }
+
+    if (!existsSync(personaPath)) {
+      await writeAtomic(personaPath, {
+        personaId,
+        status: "failed",
+        durationMs: 0,
+        checkpoints: [{
+          checkpointId: "harness.playwright-process",
+          capabilityId: "harness-process-lifecycle",
+          status: "fail",
+          durationMs: 0,
+          reasonCode: "playwright-result-missing",
+          evidence: {},
+        }],
+        cleanup,
+      })
+    } else if (cleanup.status === "clean") {
+      const result = JSON.parse(readFileSync(personaPath, "utf8"))
+      if (result.cleanup?.status !== "clean") {
+        result.status = "failed"
+        result.cleanup = cleanup
+        await writeAtomic(personaPath, result)
+      }
+    }
+  }
+}
+
+function removePrivateFailureArtifacts() {
+  const testResults = path.join(root, "output", "playwright", "test-results")
+  if (existsSync(testResults)) {
+    for (const name of readdirSync(testResults)) {
+      if (/^(personas-|harness-self-test)/.test(name)) rmSync(path.join(testResults, name), { recursive: true, force: true })
+    }
+  }
+  rmSync(path.join(root, "output", "playwright", "report"), { recursive: true, force: true })
 }
 
 async function main() {
@@ -317,6 +409,7 @@ async function main() {
       PLAYWRIGHT_PERSONA_RUN_ID: runId,
       PLAYWRIGHT_PERSONA_SELECTED: selected.join(","),
       PLAYWRIGHT_PERSONA_FORCE_FAILURE: options.forceFailure ? "true" : "false",
+      PLAYWRIGHT_PERSONA_FORCE_TIMEOUT: options.forceTimeout ? "true" : "false",
       FUNDLOOP_DEPLOYMENT_ENV: "local",
       FUNDLOOP_E2E_ENABLED: "true",
       FUNDLOOP_E2E_SECRET: process.env.FUNDLOOP_E2E_SECRET?.trim() || `persona-${randomBytes(24).toString("base64url")}`,
@@ -324,7 +417,10 @@ async function main() {
     app = spawnChild("pnpm", ["dev", "--port", "3002", "--hostname", "127.0.0.1"], sharedEnv)
     await waitForApp(env.baseURL, app)
     const grep = options.selfTest ? "@harness:self-test" : `@persona:(${selected.join("|")})`
-    const playwrightExitCode = await run("pnpm", ["exec", "playwright", "test", "--project=local-personas", "--grep", grep], sharedEnv)
+    removePrivateFailureArtifacts()
+    const playwrightExitCode = await run("pnpm", ["exec", "playwright", "test", "--project=local-personas", "--reporter=list", "--grep", grep], sharedEnv)
+    await recoverAfterPlaywright(runId, selected, env)
+    removePrivateFailureArtifacts()
     const summary = await aggregate(
       runId,
       selected,

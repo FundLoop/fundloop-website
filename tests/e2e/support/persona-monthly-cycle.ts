@@ -1,9 +1,11 @@
 import type { PersonaId, CycleClock, ControlledCadenceDriver } from "../personas/contracts"
 
 const DEFAULT_OFFSETS: Partial<Record<PersonaId, number>> = {
-  "new-founder": 0,
-  "returning-founder": 1,
-  "returning-operator": 3,
+  "new-member": 0,
+  "returning-member": 1,
+  "new-founder": 2,
+  "returning-founder": 3,
+  "returning-operator": 4,
 }
 
 function addMonths(cycleKey: string, offset: number) {

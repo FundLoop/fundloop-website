@@ -42,6 +42,7 @@ export default defineConfig({
       workers: 1,
       use: {
         ...devices["Desktop Chrome"],
+        viewport: { width: 1440, height: 1100 },
         baseURL: process.env.PLAYWRIGHT_PERSONA_BASE_URL ?? "http://127.0.0.1:3002",
         trace: "off",
         screenshot: "off",

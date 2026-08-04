@@ -53,9 +53,12 @@ describe("persona harness contracts", () => {
 
   it("derives stable UTC cycle keys and inclusive month bounds", () => {
     const clock = createCycleClock("2035-01")
-    expect(clock.cycleKeyFor("new-founder")).toBe("2035-01")
+    expect(clock.cycleKeyFor("new-member")).toBe("2035-01")
+    expect(clock.cycleKeyFor("returning-member")).toBe("2035-02")
+    expect(clock.cycleKeyFor("new-founder")).toBe("2035-03")
     expect(clock.cycleKeyFor("returning-founder", 2)).toBe("2035-03")
-    expect(clock.cycleKeyFor("returning-operator")).toBe("2035-04")
+    expect(clock.cycleKeyFor("returning-founder")).toBe("2035-04")
+    expect(clock.cycleKeyFor("returning-operator")).toBe("2035-05")
     expect(clock.boundsFor("2036-02")).toEqual({ periodStart: "2036-02-01", periodEnd: "2036-02-29" })
   })
 
