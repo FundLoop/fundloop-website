@@ -10,6 +10,14 @@ import { fileURLToPath } from "node:url"
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..")
 const outputRoot = path.join(root, "output", "persona-harness")
 const personaIds = ["new-member", "returning-member", "new-founder", "returning-founder", "returning-operator"]
+const cycleOffsets = { "new-member": 0, "returning-member": 1, "new-founder": 2, "returning-founder": 3, "returning-operator": 4 }
+const localOperatorEmail = "maya@fundloop.example.com"
+
+function addCycleMonths(cycleKey, offset) {
+  const [year, month] = cycleKey.split("-").map(Number)
+  const date = new Date(Date.UTC(year, month - 1 + offset, 1))
+  return `${date.getUTCFullYear()}-${String(date.getUTCMonth() + 1).padStart(2, "0")}`
+}
 
 function loadLocalEnv() {
   const envPath = path.join(root, ".env.local")
@@ -144,7 +152,7 @@ async function writeAtomic(filePath, value) {
   await rename(temp, filePath)
 }
 
-async function aggregate(run, selected, startedAt, services, playwrightExitCode) {
+async function aggregate(run, selected, startedAt, services, playwrightExitCode, cycleBase) {
   const personas = []
   for (const persona of selected) {
     const file = path.join(outputRoot, run, "personas", `${persona}.json`)
@@ -163,7 +171,7 @@ async function aggregate(run, selected, startedAt, services, playwrightExitCode)
     exitCode: status === "passed" ? 0 : status === "incomplete" ? 2 : 1,
     startedAt,
     durationMs: Date.now() - Date.parse(startedAt),
-    cycleKeys: {},
+    cycleKeys: Object.fromEntries(selected.map((persona) => [persona, addCycleMonths(cycleBase, cycleOffsets[persona])])),
     services,
     personas,
     cleanup: personas.length !== selected.length || personas.some((result) => result.cleanup.status === "residual")
@@ -400,6 +408,7 @@ async function main() {
     const selected = selectedPersonas(options.persona)
     const startedAt = new Date().toISOString()
     const runId = `persona-${startedAt.replace(/[-:.]/g, "")}-${randomBytes(4).toString("hex")}`
+    const cycleBase = process.env.FUNDLOOP_PERSONA_CYCLE_BASE?.trim() || "2035-01"
     await assertPortFree(env.baseURL)
     const sharedEnv = {
       ...process.env,
@@ -407,12 +416,15 @@ async function main() {
       PLAYWRIGHT_PERSONA_MAILPIT_URL: env.mailpitUrl,
       PLAYWRIGHT_PERSONA_OUTPUT_ROOT: outputRoot,
       PLAYWRIGHT_PERSONA_RUN_ID: runId,
+      PLAYWRIGHT_PERSONA_STARTED_AT: startedAt,
       PLAYWRIGHT_PERSONA_SELECTED: selected.join(","),
       PLAYWRIGHT_PERSONA_FORCE_FAILURE: options.forceFailure ? "true" : "false",
       PLAYWRIGHT_PERSONA_FORCE_TIMEOUT: options.forceTimeout ? "true" : "false",
       FUNDLOOP_DEPLOYMENT_ENV: "local",
       FUNDLOOP_E2E_ENABLED: "true",
       FUNDLOOP_E2E_SECRET: process.env.FUNDLOOP_E2E_SECRET?.trim() || `persona-${randomBytes(24).toString("base64url")}`,
+      FUNDLOOP_INTERNAL_ADMIN_EMAILS: localOperatorEmail,
+      FUNDLOOP_ZKAS_SUPERADMIN_EMAILS: localOperatorEmail,
     }
     app = spawnChild("pnpm", ["dev", "--port", "3002", "--hostname", "127.0.0.1"], sharedEnv)
     await waitForApp(env.baseURL, app)
@@ -427,6 +439,7 @@ async function main() {
       startedAt,
       { supabase: "caller", mailpit: "caller", next: "runner" },
       playwrightExitCode,
+      cycleBase,
     )
     process.exitCode = summary.exitCode
   } finally {

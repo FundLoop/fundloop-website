@@ -1,6 +1,6 @@
 # Persona Happy-Path Harness
 
-Status: shared local harness foundation implemented by Task [#100](https://github.com/FundLoop/fundloop-website/issues/100), with independently selectable member/founder journeys implemented by Task [#101](https://github.com/FundLoop/fundloop-website/issues/101). The returning-operator cadence journey remains owned by Task #102. Task [#97](https://github.com/FundLoop/fundloop-website/issues/97) supplied the narrowing evidence and Task [#98](https://github.com/FundLoop/fundloop-website/issues/98) fixed the contracts and capability-gap policy below.
+Status: shared local harness foundation implemented by Task [#100](https://github.com/FundLoop/fundloop-website/issues/100), member/founder journeys implemented by Task [#101](https://github.com/FundLoop/fundloop-website/issues/101), and the returning-operator cadence plus integrated member/founder read-back implemented by Task [#102](https://github.com/FundLoop/fundloop-website/issues/102). Task [#97](https://github.com/FundLoop/fundloop-website/issues/97) supplied the narrowing evidence and Task [#98](https://github.com/FundLoop/fundloop-website/issues/98) fixed the contracts and capability-gap policy below.
 
 ## Objective
 
@@ -387,8 +387,8 @@ The monthly contribution checkpoints prove submission of the current product's c
 `tests/e2e/support/persona-fixtures.ts` provisions one run namespace and actor aliases such as `new-member`, never reports raw emails, and records every created database, storage, and Auth identifier in a cleanup ledger.
 
 - New member/founder Auth users are created only by requesting and verifying OTP through the public browser UI at `/en/join?invite=<run-token>`. After verification, the Node fixture layer may resolve the actor's Auth UUID for run-owned historical arrangements; it may not replace the signup checkpoint.
-- Returning member/founder/operator users are created before the app starts with run-scoped deterministic emails/passwords through the local service-role admin API. Authentication uses `loginThroughE2EEndpoint`; the next protected page proves FundLoop session and role authorization.
-- The runner adds only its run-scoped operator email to `FUNDLOOP_INTERNAL_ADMIN_EMAILS` and `FUNDLOOP_ZKAS_SUPERADMIN_EMAILS` before starting Next. The test still exercises `requireInternalAdminActor`; it must not mock or bypass it.
+- Returning member/founder users are run-scoped local Auth fixtures. The operator uses the canonical seeded local-only Maya account so the caller-owned Edge Runtime and the runner-owned Next process can share one deterministic allowlisted identity. Authentication uses `loginThroughE2EEndpoint`; the next protected page proves FundLoop session and role authorization.
+- The runner supplies only the canonical local operator email to `FUNDLOOP_INTERNAL_ADMIN_EMAILS` and `FUNDLOOP_ZKAS_SUPERADMIN_EMAILS` before starting Next. `supabase/config.toml` maps those same caller-provided values into local Edge Runtime secrets. The test still exercises `requireInternalAdminActor` and every Edge Function's allowlist; it does not mock or bypass either boundary.
 - CUBID snapshots, reference rows, an open cycle, contribution commitments, historical credits, and other history needed to establish a precondition may be fixture-arranged. The fixture must not pre-create the result a checkpoint claims to prove.
 - Actor credentials exist only in process memory. Neither fixtures nor reports may log email, password, Auth UUID, bearer token, cookie, service-role key, private attribution payload, wallet destination, or raw Mailpit response.
 
@@ -474,8 +474,10 @@ The implementation exposes these commands:
 
 ```bash
 # caller-owned local prerequisites
-DOCKER_CONTEXT=colima-agents supabase start -x logflare -x vector
-DOCKER_CONTEXT=colima-agents supabase db reset
+export FUNDLOOP_INTERNAL_ADMIN_EMAILS=maya@fundloop.example.com
+export FUNDLOOP_ZKAS_SUPERADMIN_EMAILS=maya@fundloop.example.com
+DOCKER_CONTEXT=colima-codex-supabase supabase start -x logflare -x vector
+DOCKER_CONTEXT=colima-codex-supabase supabase db reset
 
 # all five personas
 pnpm test:e2e:personas
@@ -492,6 +494,18 @@ pnpm test -- tests/persona-harness-contracts.test.ts tests/persona-harness-env.t
 pnpm exec playwright test --project=local-personas --list
 pnpm check
 ```
+
+The complete command writes `summary.json` with one record per selected persona, deterministic cycle keys, checkpoint statuses, and aggregate exit status. Exit `2` means only declared capabilities remain expected-pending; exit `1` means a failure, undeclared gap, missing persona result, or cleanup residue. Withdrawal and persisted invitations remain expected-pending. The founder-to-operator cadence handoff stays visible until the independently filtered founder journey itself drives or consumes the integrated operator result; the operator journey already proves the cadence output on founder and member browser surfaces.
+
+To activate a pending checkpoint when its product capability lands:
+
+1. replace its `expected-pending` journey declaration with a required browser/command assertion;
+2. remove the capability from `tests/e2e/personas/capabilities.ts` in the same change;
+3. add the user-visible success assertion and sanitized evidence;
+4. update the focused journey contract test; and
+5. run the filtered persona plus the full aggregate suite. A working capability left declared pending fails as `stale-pending-declaration`.
+
+Task #102 successful evidence is written under `output/playwright/feature-96/<run-id>/` as sanitized 1440x1100 captures named `admin-cycle-prep.png`, `admin-calculation.png`, `admin-distribution.png`, `admin-observability.png`, `admin-allocation.png`, `founder-distribution-readback.png`, and `member-earnings-readback.png`. Automatic traces, screenshots, and videos remain disabled for this secret-bearing lane. A clean run permits the known initial `lock_failure` event only when the operator explicitly accepts the unrelated canonical-seed commitment override; every subsequent command must have success audit evidence.
 
 The runner validates filters against the `PersonaId` union, passes a generated Playwright grep matching `@persona:<id>`, and preserves registry order. No filter means all five. The aggregate includes only selected personas and lists unselected personas separately; it does not count them as skipped or pending.
 

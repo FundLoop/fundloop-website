@@ -122,3 +122,22 @@ export function returningFounderJourney(actions: PersonaJourneyActions): Persona
     ],
   }, actions)
 }
+
+export function returningOperatorJourney(actions: PersonaJourneyActions): PersonaJourney {
+  return buildJourney({
+    id: "returning-operator",
+    title: "Returning operator",
+    actorKind: "operator",
+    checkpoints: [
+      { id: "auth.login-returning-operator", title: "Log in as the deterministic internal operator", actorAlias: "returning-operator", surface: "browser", capabilityId: "local-e2e-login" },
+      { id: "operator.view-cycle-readiness", title: "Review cycle preparation and readiness", actorAlias: "returning-operator", surface: "browser", capabilityId: "monthly-cycle-prep" },
+      { id: "operator.lock-cycle", title: "Lock the prepared monthly cycle", actorAlias: "returning-operator", surface: "browser", capabilityId: "monthly-cycle-lock" },
+      { id: "operator.calculate-cycle", title: "Package and calculate deterministic allocations", actorAlias: "returning-operator", surface: "browser", capabilityId: "monthly-cycle-calculation" },
+      { id: "operator.verify-cycle", title: "Verify the run and cycle allocation", actorAlias: "returning-operator", surface: "browser", capabilityId: "monthly-cycle-verification" },
+      { id: "operator.approve-cycle", title: "Approve the cycle for bookkeeping credits", actorAlias: "returning-operator", surface: "browser", capabilityId: "monthly-cycle-approval" },
+      { id: "operator.create-bookkeeping-credits", title: "Create credited-not-paid bookkeeping earnings", actorAlias: "returning-operator", surface: "controlled-command", capabilityId: "monthly-cycle-bookkeeping-credits" },
+      { id: "operator.view-performance", title: "Review cycle audit and performance outcomes", actorAlias: "returning-operator", surface: "browser", capabilityId: "monthly-cycle-observability" },
+      { id: "operator.view-allocation-breakdown", title: "Review who earned what and from which project", actorAlias: "returning-operator", surface: "browser", capabilityId: "monthly-cycle-allocation-reporting" },
+    ],
+  }, actions)
+}

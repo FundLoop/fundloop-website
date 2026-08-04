@@ -6,6 +6,7 @@ import {
   newMemberJourney,
   returningFounderJourney,
   returningMemberJourney,
+  returningOperatorJourney,
 } from "@/tests/e2e/personas/journeys"
 import { establishNewActor, provisionalNewActor } from "@/tests/e2e/support/persona-fixtures"
 import { createCycleClock } from "@/tests/e2e/support/persona-monthly-cycle"
@@ -89,5 +90,25 @@ describe("persona harness contracts", () => {
       mode: "expected-pending",
       capabilityId: "founder-distribution-after-operator-cadence",
     })
+  })
+
+  it("fixes the authenticated operator cadence and reporting order", () => {
+    const action = async () => ({ outcome: "observed" as const, evidence: {} })
+    const actions = new Proxy({}, { get: () => action }) as Record<string, typeof action>
+    const journey = returningOperatorJourney(actions)
+
+    expect(validatePersonaJourneys([journey])).toBe(true)
+    expect(journey.checkpoints.map((checkpoint) => checkpoint.id)).toEqual([
+      "auth.login-returning-operator",
+      "operator.view-cycle-readiness",
+      "operator.lock-cycle",
+      "operator.calculate-cycle",
+      "operator.verify-cycle",
+      "operator.approve-cycle",
+      "operator.create-bookkeeping-credits",
+      "operator.view-performance",
+      "operator.view-allocation-breakdown",
+    ])
+    expect(journey.checkpoints.every((checkpoint) => checkpoint.mode === "required")).toBe(true)
   })
 })

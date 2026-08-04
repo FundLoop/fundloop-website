@@ -37,6 +37,13 @@ export type StoredActorCredentials = {
 export type PersonaProjectFixture = { id: number; slug: string; name: string }
 export type PersonaInvitationFixture = { code: string; email: string }
 export type PersonaAttributionUserFixture = { userId: string; scopedCubidId: string }
+export type PersonaCadenceInputFixture = {
+  project: PersonaProjectFixture
+  member: StoredActorCredentials
+  founder: StoredActorCredentials
+  cycleId: number
+  cycleKey: string
+}
 
 // Supabase's fluent builders do not preserve selected-row inference through a generic
 // PromiseLike boundary, so this local guard narrows the checked payload at call sites.
@@ -141,15 +148,30 @@ export function createPersonaFixtureController(input: CreateControllerInput): Mu
         const bucket = bucketAndPath.slice(0, separator)
         const objectPath = bucketAndPath.slice(separator + 1)
         const { error } = await supabase.storage.from(bucket).remove([objectPath])
-        if (error) fail(); else deletedCount += 1
+        if (!error) {
+          deletedCount += 1
+          continue
+        }
+        const directory = path.posix.dirname(objectPath)
+        const name = path.posix.basename(objectPath)
+        const verification = await supabase.storage.from(bucket).list(directory === "." ? "" : directory, { search: name })
+        if (verification.error || verification.data?.some((item) => item.name === name)) fail(); else deletedCount += 1
       }
 
       const orderedRecords = [...ledger.records].sort((a, b) => b.cleanupPhase - a.cleanupPhase)
+      const deleteOwnedRecord = async (record: OwnedDatabaseRecord) => {
+        const table = record.table as keyof Database["public"]["Tables"]
+        let deletion = supabase.from(table).delete()
+        for (const [key, value] of Object.entries(record.primaryKey)) deletion = deletion.eq(key, value)
+        const { error } = await deletion
+        if (error) return false
+        let verification = supabase.from(table).select(Object.keys(record.primaryKey).join(","))
+        for (const [key, value] of Object.entries(record.primaryKey)) verification = verification.eq(key, value)
+        const remaining = await verification.maybeSingle()
+        return !remaining.error && remaining.data === null
+      }
       for (const record of orderedRecords.filter((record) => record.table !== "users")) {
-        let query = supabase.from(record.table as keyof Database["public"]["Tables"]).delete()
-        for (const [key, value] of Object.entries(record.primaryKey)) query = query.eq(key, value)
-        const { error } = await query
-        if (error) fail(); else deletedCount += 1
+        if (await deleteOwnedRecord(record)) deletedCount += 1; else fail()
       }
 
       const cleanCycles: OwnedCycle[] = []
@@ -177,10 +199,7 @@ export function createPersonaFixtureController(input: CreateControllerInput): Mu
       // Keep the public user row until owned cycles are gone. Its auth UUID is the
       // cycle ownership marker, and deleting it first nulls created_by_user_id.
       for (const record of orderedRecords.filter((record) => record.table === "users")) {
-        let query = supabase.from(record.table as keyof Database["public"]["Tables"]).delete()
-        for (const [key, value] of Object.entries(record.primaryKey)) query = query.eq(key, value)
-        const { error } = await query
-        if (error) fail(); else deletedCount += 1
+        if (await deleteOwnedRecord(record)) deletedCount += 1; else fail()
       }
 
       const inviterIds = new Set(ledger.invitations.map((invitation) => invitation.createdByUserId))
@@ -584,4 +603,148 @@ export async function arrangeMemberEarnings(
     "persona-bookkeeping-credit-create-failed",
   )
   await controller.recordDatabaseRow({ table: "monthly_cycle_bookkeeping_credits", primaryKey: { id: credit.id }, cleanupPhase: 90 })
+}
+
+export async function resolveSeededOperator(supabase: SupabaseClient<Database>) {
+  const email = "maya@fundloop.example.com"
+  const authUserId = await resolveLocalAuthUserId(supabase, email)
+  return {
+    actor: { alias: "returning-operator", authUserId, kind: "operator" } as const,
+    email,
+    password: "FundLoopFounder123!",
+  }
+}
+
+export async function arrangeOperatorCadenceInputs(
+  supabase: SupabaseClient<Database>,
+  controller: MutableFixtureController,
+  input: { cycleKey: string; operatorUserId: string },
+): Promise<PersonaCadenceInputFixture> {
+  const founder = await createStoredActorWithProfile(supabase, controller, "returning-founder")
+  const member = await createStoredActorWithProfile(supabase, controller, "returning-member")
+  const project = await arrangeFounderProject(supabase, controller, founder.actor.authUserId)
+  const cycle = await arrangeOpenCycle(supabase, controller, {
+    cycleKey: input.cycleKey,
+    createdByUserId: input.operatorUserId,
+  })
+  const now = new Date().toISOString()
+  const memberProfile = await supabase.from("users").select("email, cubid_id").eq("user_id", member.actor.authUserId).single()
+  if (memberProfile.error || !memberProfile.data?.cubid_id) throw new Error("persona-cadence-member-profile-missing")
+
+  const memberParticipant = await mutation(
+    supabase.from("participants").insert({ project_id: project.id, user_id: member.actor.authUserId, is_admin: false }).select("id").single(),
+    "persona-cadence-member-participant-failed",
+  )
+  await controller.recordDatabaseRow({ table: "participants", primaryKey: { id: memberParticipant.id }, cleanupPhase: 60 })
+
+  const snapshot = await supabase.from("cubid_identity_snapshots").insert({
+    user_id: member.actor.authUserId,
+    cubid_user_id: memberProfile.data.cubid_id,
+    primary_name: "Returning Member",
+    cubid_score: 80,
+    available_stamp_types: ["email"],
+    verified_stamp_types: ["email"],
+    last_synced_at: now,
+  })
+  if (snapshot.error) throw new Error("persona-cadence-snapshot-failed")
+  await controller.recordDatabaseRow({ table: "cubid_identity_snapshots", primaryKey: { user_id: member.actor.authUserId }, cleanupPhase: 95 })
+
+  const preference = await mutation(
+    supabase.from("user_asset_preferences").insert({
+      user_id: member.actor.authUserId,
+      rank: 1,
+      asset_type: "fiat",
+      asset_code: "USD",
+      accepted: true,
+    }).select("id").single(),
+    "persona-cadence-preference-failed",
+  )
+  await controller.recordDatabaseRow({ table: "user_asset_preferences", primaryKey: { id: preference.id }, cleanupPhase: 95 })
+
+  const contribution = await mutation(
+    supabase.from("project_monthly_contribution_submissions").insert({
+      monthly_cycle_id: cycle.id,
+      project_id: project.id,
+      period_start: cycle.periodStart,
+      period_end: cycle.periodEnd,
+      source_currency_code: "USD",
+      source_amount: 1000,
+      usd_equivalent_amount: 1000,
+      commitment_percentage: 1,
+      calculated_contribution_amount: 10,
+      source_reference: `persona-${controller.ledger.run.runId.slice(-8)}`,
+      status: "submitted",
+      submitted_by_user_id: founder.actor.authUserId,
+    }).select("id").single(),
+    "persona-cadence-contribution-failed",
+  )
+  await controller.recordDatabaseRow({ table: "project_monthly_contribution_submissions", primaryKey: { id: contribution.id }, cleanupPhase: 100 })
+
+  const attributionDataset = await mutation(
+    supabase.from("project_attribution_datasets").insert({
+      monthly_cycle_id: cycle.id,
+      project_id: project.id,
+      status: "approved",
+      row_count: 1,
+      total_attribution_points: 10,
+      note: "Run-owned approved persona attribution.",
+      proof_type: "raw_rows",
+      verification_status: "not_required",
+      submitted_by_user_id: founder.actor.authUserId,
+      approved_by_user_id: input.operatorUserId,
+      approved_at: now,
+    }).select("id").single(),
+    "persona-cadence-attribution-dataset-failed",
+  )
+  await controller.recordDatabaseRow({ table: "project_attribution_datasets", primaryKey: { id: attributionDataset.id }, cleanupPhase: 100 })
+  const attributionRow = await mutation(
+    supabase.from("project_attribution_rows").insert({
+      dataset_id: attributionDataset.id,
+      monthly_cycle_id: cycle.id,
+      project_id: project.id,
+      row_index: 0,
+      scoped_cubid_id: memberProfile.data.cubid_id,
+      user_id: member.actor.authUserId,
+      attribution_points: 10,
+      resolution_status: "resolved",
+    }).select("id").single(),
+    "persona-cadence-attribution-row-failed",
+  )
+  await controller.recordDatabaseRow({ table: "project_attribution_rows", primaryKey: { id: attributionRow.id }, cleanupPhase: 110 })
+
+  const zkasDataset = await mutation(
+    supabase.from("zkas_datasets").insert({
+      monthly_cycle_id: cycle.id,
+      project_id: project.id,
+      month: input.cycleKey,
+      file_name: "persona-attribution.csv",
+      format: "csv",
+      object_path: `${input.cycleKey}/persona-attribution.csv`,
+      file_hash: randomBytes(32).toString("hex"),
+      row_count: 1,
+      schema_version: "v1",
+      status: "approved",
+      approved_by_user_id: input.operatorUserId,
+      approved_at: now,
+    }).select("id").single(),
+    "persona-cadence-zkas-dataset-failed",
+  )
+  await controller.recordDatabaseRow({ table: "zkas_datasets", primaryKey: { id: zkasDataset.id }, cleanupPhase: 100 })
+  const identityArtifact = await mutation(
+    supabase.from("zkas_identity_artifacts").insert({
+      monthly_cycle_id: cycle.id,
+      month: input.cycleKey,
+      file_name: "persona-identity.json",
+      object_path: `${input.cycleKey}/persona-identity.json`,
+      artifact_hash: randomBytes(32).toString("hex"),
+      provider: "cubid",
+      schema_version: "v1",
+      status: "approved",
+      uploaded_by_user_id: input.operatorUserId,
+    }).select("id").single(),
+    "persona-cadence-identity-artifact-failed",
+  )
+  await controller.recordDatabaseRow({ table: "zkas_identity_artifacts", primaryKey: { id: identityArtifact.id }, cleanupPhase: 100 })
+
+  return { project, member, founder, cycleId: cycle.id, cycleKey: input.cycleKey }
 }
