@@ -34,6 +34,7 @@ Current high-signal docs:
 - [Navigation and Shell Architecture](./navigation-shell.md)
 - [Operational MVP](./operational-mvp.md)
 - [Operations Runbook](./operations-runbook.md)
+- [Persona Happy-Path Harness](./persona-happy-path-harness.md)
 - [Reporting Publication](./reporting.md)
 - [Release Candidate Path](./release-candidate.md)
 - [Route Inventory](./route-inventory.md)
