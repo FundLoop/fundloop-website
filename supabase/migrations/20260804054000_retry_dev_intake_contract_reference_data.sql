@@ -1,14 +1,18 @@
 -- Retry the dev intake-contract activation after repairing deploy-time
 -- Postgres session-setting propagation. This migration is intentionally
--- target-aware and fails closed if the deploy workflow does not provide
--- app.settings.fundloop_target_environment.
+-- target-aware for remote deploys and a no-op for marker-less local replays.
 DO $$
 DECLARE
   target_environment text := COALESCE(NULLIF(current_setting('app.settings.fundloop_target_environment', true), ''), 'unknown');
 BEGIN
+  IF target_environment = 'unknown' THEN
+    RAISE NOTICE 'Skipping dev intake-contract placeholder activation for marker-less local replay.';
+    RETURN;
+  END IF;
+
   IF target_environment NOT IN ('dev', 'main') THEN
     RAISE EXCEPTION
-      'Missing or unsupported app.settings.fundloop_target_environment for intake reference-data migration: %',
+      'Unsupported app.settings.fundloop_target_environment for intake reference-data migration: %',
       target_environment;
   END IF;
 
