@@ -2,7 +2,7 @@ import { mkdtemp, readFile } from "node:fs/promises"
 import os from "node:os"
 import path from "node:path"
 import { describe, expect, it } from "vitest"
-import { aggregateStatus, buildHarnessSummary, deriveCheckpointResult, exitCodeFor, sanitizeEvidence, writeJsonAtomic } from "@/tests/e2e/support/persona-reporting"
+import { aggregateStatus, boundedPersonaFailureReason, buildHarnessSummary, deriveCheckpointResult, exitCodeFor, sanitizeEvidence, writeJsonAtomic } from "@/tests/e2e/support/persona-reporting"
 
 describe("persona capability reporting", () => {
   it("derives pass, expected-pending, and stale/undeclared failures", () => {
@@ -34,6 +34,13 @@ describe("persona capability reporting", () => {
     expect(() => sanitizeEvidence({ detail: "arbitrary private payload" })).toThrow("evidence-value-rejected")
     expect(() => sanitizeEvidence({ count: 123456 })).toThrow("evidence-value-rejected")
     expect(sanitizeEvidence({ "row-count": 2, visible: true })).toEqual({ "row-count": 2, visible: true })
+  })
+
+  it("bounds complete persona failure reasons to 80 safe characters", () => {
+    const reason = boundedPersonaFailureReason("persona-attribution", `invalid_payload_${"unsafe detail ".repeat(20)}`, "not-persisted")
+    expect(reason).toMatch(/^[a-z0-9-]+$/)
+    expect(reason.length).toBe(80)
+    expect(boundedPersonaFailureReason("persona-attribution", undefined, "not-persisted")).toBe("persona-attribution-not-persisted")
   })
 
   it("fails an aggregate with a missing selected persona and writes atomically", async () => {

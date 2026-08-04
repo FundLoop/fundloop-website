@@ -36,6 +36,7 @@ export type StoredActorCredentials = {
 
 export type PersonaProjectFixture = { id: number; slug: string; name: string }
 export type PersonaInvitationFixture = { code: string; email: string }
+export type PersonaAttributionUserFixture = { userId: string; scopedCubidId: string }
 
 // Supabase's fluent builders do not preserve selected-row inference through a generic
 // PromiseLike boundary, so this local guard narrows the checked payload at call sites.
@@ -271,6 +272,36 @@ export async function createStoredActorWithProfile(
     "persona-profile-create-failed",
   ).then((row) => controller.recordDatabaseRow({ table: "users", primaryKey: { id: row.id }, cleanupPhase: 90 }))
   return credentials
+}
+
+export async function createActiveAttributionUser(
+  supabase: SupabaseClient<Database>,
+  controller: MutableFixtureController,
+): Promise<PersonaAttributionUserFixture> {
+  const scopedCubidId = randomUUID()
+  const email = `active-user-${randomUUID().slice(0, 8)}@persona.local`
+  const created = await supabase.auth.admin.createUser({
+    email,
+    password: `${randomBytes(18).toString("base64url")}A1!`,
+    email_confirm: true,
+  })
+  if (created.error || !created.data.user) throw new Error("persona-attribution-user-create-failed")
+  await controller.recordAuthUser(created.data.user.id)
+  const profile = await mutation(
+    supabase.from("users").upsert({
+      user_id: created.data.user.id,
+      email,
+      full_name: "Persona Active User",
+      display_name: "Persona Active User",
+      cubid_identity_status: "linked",
+      cubid_id: scopedCubidId,
+      status: "active",
+      is_public: true,
+    }, { onConflict: "user_id" }).select("id").single(),
+    "persona-attribution-user-profile-failed",
+  )
+  await controller.recordDatabaseRow({ table: "users", primaryKey: { id: profile.id }, cleanupPhase: 90 })
+  return { userId: created.data.user.id, scopedCubidId }
 }
 
 export async function createRunInvitation(

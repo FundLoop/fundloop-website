@@ -10,13 +10,14 @@ import { loginThroughE2EEndpoint } from "./e2e-login"
 import { consumeLocalOtp } from "./mailpit-otp"
 import { readLocalPersonaEnv } from "./persona-env"
 import { createCycleClock } from "./persona-monthly-cycle"
-import { assertSafePersonaScreenshotSurface } from "./persona-reporting"
+import { assertSafePersonaScreenshotSurface, boundedPersonaFailureReason } from "./persona-reporting"
 import {
   arrangeFounderProject,
   arrangeMemberEarnings,
   arrangeOpenCycle,
   arrangeReviewReadyProfile,
   arrangeReviewReadyProjectDraft,
+  createActiveAttributionUser,
   createPersonaFixtureController,
   createPersonaServiceClient,
   createRunIdentity,
@@ -25,6 +26,7 @@ import {
   resolveLocalAuthUserId,
   resolvePublishedProject,
   type MutableFixtureController,
+  type PersonaAttributionUserFixture,
   type PersonaProjectFixture,
   type StoredActorCredentials,
 } from "./persona-fixtures"
@@ -80,6 +82,7 @@ export function createPersonaBrowserActions(personaId: Exclude<PersonaId, "retur
     actorId?: string
     stored?: StoredActorCredentials
     project?: PersonaProjectFixture
+    attributionUser?: PersonaAttributionUserFixture
     cycleId?: number
   } = {}
 
@@ -106,6 +109,11 @@ export function createPersonaBrowserActions(personaId: Exclude<PersonaId, "retur
     }
     if (!state.cycleId) throw new Error("persona-cycle-not-established")
     return state.cycleId
+  }
+
+  async function ensureAttributionUser() {
+    state.attributionUser ??= await createActiveAttributionUser(supabase, fixtures)
+    return state.attributionUser
   }
 
   async function assertCleanBrowser() {
@@ -279,8 +287,8 @@ export function createPersonaBrowserActions(personaId: Exclude<PersonaId, "retur
       browserErrors.length = 0
       return submitContribution(page, supabase, fixtures, env.baseURL, await ensureProject(), await ensureCycle(), commandErrors)
     },
-    "founder.submit-active-user-attribution": async () => submitAttribution(page, supabase, fixtures, env.baseURL, await ensureProject(), await ensureCycle(), captureSuccess, personaId, commandErrors),
-    "founder.submit-next-month-attribution": async () => submitAttribution(page, supabase, fixtures, env.baseURL, await ensureProject(), await ensureCycle(), captureSuccess, personaId, commandErrors),
+    "founder.submit-active-user-attribution": async () => submitAttribution(page, supabase, fixtures, env.baseURL, await ensureProject(), await ensureCycle(), await ensureAttributionUser(), captureSuccess, personaId, commandErrors),
+    "founder.submit-next-month-attribution": async () => submitAttribution(page, supabase, fixtures, env.baseURL, await ensureProject(), await ensureCycle(), await ensureAttributionUser(), captureSuccess, personaId, commandErrors),
     "cadence.await-operator-distribution": async () => pending("founder-distribution-after-operator-cadence"),
   }
 
@@ -315,9 +323,9 @@ async function submitContribution(page: Page, supabase: SupabaseClient<Database>
   return observed({ contribution: "submitted" })
 }
 
-async function submitAttribution(page: Page, supabase: SupabaseClient<Database>, fixtures: MutableFixtureController, baseURL: string, project: PersonaProjectFixture, cycleId: number, captureSuccess: () => Promise<void>, personaId: Exclude<PersonaId, "returning-operator">, commandErrors: ReadonlyMap<string, string>) {
+async function submitAttribution(page: Page, supabase: SupabaseClient<Database>, fixtures: MutableFixtureController, baseURL: string, project: PersonaProjectFixture, cycleId: number, attributionUser: PersonaAttributionUserFixture, captureSuccess: () => Promise<void>, personaId: Exclude<PersonaId, "returning-operator">, commandErrors: ReadonlyMap<string, string>) {
   await page.goto(`${baseURL}/en/founder/projects/${project.slug}/attribution`)
-  await page.getByLabel(/Scoped CUBID/i).fill("persona-scoped-active-user")
+  await page.getByLabel(/Scoped CUBID/i).fill(attributionUser.scopedCubidId)
   await page.getByLabel(/Attribution points/i).fill("10")
   await page.getByRole("button", { name: "Submit attribution data" }).click()
   const failure = page.getByText("Attribution submission failed", { exact: true })
@@ -327,17 +335,22 @@ async function submitAttribution(page: Page, supabase: SupabaseClient<Database>,
     return result.error ? null : result.data?.id ?? null
   }, { timeout: 30_000, message: "cycle-scoped attribution persistence" }).not.toBeNull().catch(() => {
     const code = commandErrors.get("project-attribution-dataset-submit")
-    throw new Error(code ? `persona-attribution-${code}` : "persona-attribution-not-persisted")
+    throw new Error(boundedPersonaFailureReason("persona-attribution", code, "not-persisted"))
   })
   const dataset = await supabase.from("project_attribution_datasets").select("id").eq("project_id", project.id).eq("monthly_cycle_id", cycleId).single()
   if (dataset.error || !dataset.data) throw new Error("persona-attribution-resolution-failed")
-  const rows = await supabase.from("project_attribution_rows").select("id").eq("dataset_id", dataset.data.id)
-  if (rows.error) throw new Error("persona-attribution-rows-resolution-failed")
-  for (const row of rows.data ?? []) await fixtures.recordDatabaseRow({ table: "project_attribution_rows", primaryKey: { id: row.id }, cleanupPhase: 110 })
+  const rows = await supabase.from("project_attribution_rows").select("id, scoped_cubid_id, user_id").eq("dataset_id", dataset.data.id)
+  if (rows.error || rows.data?.length !== 1) throw new Error("persona-attribution-rows-resolution-failed")
+  const row = rows.data[0]
+  if (row.scoped_cubid_id !== attributionUser.scopedCubidId || row.user_id !== attributionUser.userId) {
+    throw new Error("persona-attribution-row-identity-mismatch")
+  }
+  await fixtures.recordDatabaseRow({ table: "project_attribution_rows", primaryKey: { id: row.id }, cleanupPhase: 110 })
   await fixtures.recordDatabaseRow({ table: "project_attribution_datasets", primaryKey: { id: dataset.data.id }, cleanupPhase: 100 })
   const cycle = await supabase.from("monthly_cycles").select("cycle_key").eq("id", cycleId).single()
   if (cycle.error || !cycle.data) throw new Error("persona-attribution-cycle-resolution-failed")
   await expect(page.getByText(new RegExp(`^${cycle.data.cycle_key}:`)).first()).toBeVisible({ timeout: 20_000 })
+  await page.getByLabel(/Scoped CUBID/i).fill("")
   await captureSuccess()
   return observed({ attribution: "submitted", users: 1, capture: personaId })
 }

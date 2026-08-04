@@ -47,6 +47,14 @@ export function sanitizeEvidence(evidence: SanitizedEvidence): SanitizedEvidence
   return Object.freeze(output)
 }
 
+export function boundedPersonaFailureReason(prefix: string, detail: string | undefined, fallback: string) {
+  const normalized = (detail ?? fallback)
+    .toLowerCase()
+    .replace(/[^a-z0-9-]+/g, "-")
+    .replace(/^-+|-+$/g, "") || fallback
+  return `${prefix}-${normalized}`.slice(0, 80).replace(/-+$/g, "")
+}
+
 export async function assertSafePersonaScreenshotSurface(page: Page) {
   const sensitiveControls = page.locator([
     'input[type="email"]',
@@ -57,6 +65,12 @@ export async function assertSafePersonaScreenshotSurface(page: Page) {
   if (await sensitiveControls.count()) throw new Error("screenshot-sensitive-control-visible")
   const text = await page.locator("body").innerText()
   if (FORBIDDEN_VALUE.some((pattern) => pattern.test(text))) throw new Error("screenshot-sensitive-value-visible")
+  const controlValues = await page.locator("input, textarea").evaluateAll((controls) =>
+    controls.map((control) => (control as HTMLInputElement | HTMLTextAreaElement).value).filter(Boolean),
+  )
+  if (controlValues.some((value) => FORBIDDEN_VALUE.some((pattern) => pattern.test(value)))) {
+    throw new Error("screenshot-sensitive-value-visible")
+  }
 }
 
 export function deriveCheckpointResult(
