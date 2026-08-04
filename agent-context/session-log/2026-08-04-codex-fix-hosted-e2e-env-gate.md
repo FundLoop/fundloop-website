@@ -3,7 +3,7 @@
 - Timestamp: 2026-08-04T22:30:12Z
 - Agent: Codex
 - Branch: codex/fix-hosted-e2e-env-gate
-- Head: 0959bf95943c75b9fef8def9b1871eb6f9d5bf1c
+- Head: d590431bea23529d28ae8003b85141f728933910
 
 #### Objective
 
@@ -15,6 +15,8 @@ Repair the hosted remote-safe smoke after deploy and schema-cache repairs succee
 - Preserved the production safety boundary by keeping the endpoint disabled when `FUNDLOOP_DEPLOYMENT_ENV=production`.
 - Removed the remaining remote fixture dependency on ordered mutation-return rows for `payment_methods`; the fixture now uses its explicit IDs directly.
 - Added config test coverage for the hosted Preview/dev gate.
+- Updated the gate after review to fail closed for unknown deployment env values such as `main` or `prod`.
+- Reused named fixture payment method ID constants in both insert payloads and later references.
 
 #### Validation Notes
 

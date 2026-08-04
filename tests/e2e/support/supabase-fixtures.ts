@@ -470,12 +470,15 @@ export async function createProjectPaymentsFixture(
     "Could not create the e2e project participant.",
   )
 
+  const primaryPaymentMethodId = idBase + 10
+  const secondaryPaymentMethodId = idBase + 11
+
   await ensureMutation(
     supabase
       .from("payment_methods")
       .insert([
         {
-          id: idBase + 10,
+          id: primaryPaymentMethodId,
           project_id: project.id,
           method_id: refs.cryptoContractMethodId,
           collection_mode: "contract",
@@ -489,7 +492,7 @@ export async function createProjectPaymentsFixture(
           details: { source: "playwright_fixture" } satisfies Json,
         },
         {
-          id: idBase + 11,
+          id: secondaryPaymentMethodId,
           project_id: project.id,
           method_id: refs.cryptoContractMethodId,
           collection_mode: "contract",
@@ -505,7 +508,7 @@ export async function createProjectPaymentsFixture(
       ]),
     "Could not create the e2e crypto routes.",
   )
-  const paymentMethods = [{ id: idBase + 10 }, { id: idBase + 11 }]
+  const paymentMethods = [{ id: primaryPaymentMethodId }, { id: secondaryPaymentMethodId }]
 
   const payments = await createScenarioPayments(
     supabase,

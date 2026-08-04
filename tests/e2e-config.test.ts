@@ -28,6 +28,20 @@ describe("e2e config helpers", () => {
         NODE_ENV: "production",
       }),
     ).toBe(false)
+    expect(
+      isE2EAuthEnabled({
+        FUNDLOOP_DEPLOYMENT_ENV: "main",
+        FUNDLOOP_E2E_ENABLED: "true",
+        NODE_ENV: "production",
+      }),
+    ).toBe(false)
+    expect(
+      isE2EAuthEnabled({
+        FUNDLOOP_DEPLOYMENT_ENV: "prod",
+        FUNDLOOP_E2E_ENABLED: "true",
+        NODE_ENV: "production",
+      }),
+    ).toBe(false)
     expect(isE2EAuthEnabled({ FUNDLOOP_E2E_ENABLED: "true", NODE_ENV: "production" })).toBe(false)
     expect(isE2EAuthEnabled({ FUNDLOOP_E2E_ENABLED: "false", NODE_ENV: "development" })).toBe(false)
   })

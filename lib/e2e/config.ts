@@ -3,14 +3,16 @@ import "server-only"
 export const FUNDLOOP_E2E_ENABLED_ENV = "FUNDLOOP_E2E_ENABLED"
 export const FUNDLOOP_E2E_SECRET_ENV = "FUNDLOOP_E2E_SECRET"
 
+const E2E_ENABLED_DEPLOYMENT_ENVIRONMENTS = new Set(["dev", "development", "local", "preview", "staging", "test"])
+
 export function isE2EAuthEnabled(env: NodeJS.ProcessEnv = process.env) {
   const deploymentEnvironment = env.FUNDLOOP_DEPLOYMENT_ENV?.trim().toLowerCase()
-  const isProductionDeployment =
+  const isAllowedDeployment =
     deploymentEnvironment && deploymentEnvironment.length > 0
-      ? deploymentEnvironment === "production"
-      : env.NODE_ENV === "production"
+      ? E2E_ENABLED_DEPLOYMENT_ENVIRONMENTS.has(deploymentEnvironment)
+      : env.NODE_ENV !== "production"
 
-  return env[FUNDLOOP_E2E_ENABLED_ENV]?.trim() === "true" && !isProductionDeployment
+  return env[FUNDLOOP_E2E_ENABLED_ENV]?.trim() === "true" && Boolean(isAllowedDeployment)
 }
 
 export function getConfiguredE2ESecret(env: NodeJS.ProcessEnv = process.env) {
