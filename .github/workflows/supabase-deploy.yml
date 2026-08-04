@@ -159,6 +159,16 @@ jobs:
               ;;
           esac
 
+          supabase_db_url="$(
+            DB_URL="${supabase_db_url}" TARGET_ENVIRONMENT="${TARGET_ENVIRONMENT}" node <<'NODE'
+          const url = new URL(process.env.DB_URL)
+          const existingOptions = url.searchParams.get("options")
+          const targetOption = `-c app.settings.fundloop_target_environment=${process.env.TARGET_ENVIRONMENT}`
+          url.searchParams.set("options", existingOptions ? `${existingOptions} ${targetOption}` : targetOption)
+          console.log(url.toString())
+          NODE
+          )"
+
           supabase db push --yes --db-url "$supabase_db_url" --dry-run
 
       - name: Deploy database migrations
@@ -180,6 +190,16 @@ jobs:
               exit 1
               ;;
           esac
+
+          supabase_db_url="$(
+            DB_URL="${supabase_db_url}" TARGET_ENVIRONMENT="${TARGET_ENVIRONMENT}" node <<'NODE'
+          const url = new URL(process.env.DB_URL)
+          const existingOptions = url.searchParams.get("options")
+          const targetOption = `-c app.settings.fundloop_target_environment=${process.env.TARGET_ENVIRONMENT}`
+          url.searchParams.set("options", existingOptions ? `${existingOptions} ${targetOption}` : targetOption)
+          console.log(url.toString())
+          NODE
+          )"
 
           supabase db push --yes --db-url "$supabase_db_url"
 

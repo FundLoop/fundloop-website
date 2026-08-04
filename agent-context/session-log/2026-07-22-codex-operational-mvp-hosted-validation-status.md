@@ -51,3 +51,34 @@ Reflections:
 
 Suggested next steps:
 - Repair remote dev intake-contract reference data through the approved deploy/configuration path, then rerun the remote-safe lane and the full operational MVP hosted smoke.
+
+### session v3: dev intake reference-data deploy repair
+
+- Timestamp: 2026-08-04T04:35:29Z
+- Agent: Codex
+- Branch: codex/operational-mvp-hosted-validation-status
+- Head: c76e750
+
+Objective:
+- Repair the remote dev intake-contract reference-data blocker through the approved Supabase deploy path instead of manual remote mutation.
+
+Actions:
+- Updated the Supabase Deploy workflow so database migration sessions receive `app.settings.fundloop_target_environment=dev|main`.
+- Added a forward migration that activates deterministic non-production EVM intake-contract placeholders only for `dev` when explicit configured addresses are absent.
+- Kept the production/main path fail-safe by skipping missing configured addresses rather than overwriting rows with placeholders or zero values.
+- Updated deployment and hosted-validation docs with the target-aware migration contract and pending post-merge validation steps.
+
+Validation:
+- `git diff --check` passed.
+- `pnpm dlx node@22.22.1 /opt/homebrew/bin/pnpm test -- tests/e2e-env.test.ts` passed.
+- `actionlint .github/workflows/supabase-deploy.yml` was not available because `actionlint` is not installed locally.
+- Local Supabase replay was attempted, but startup was canceled before migration replay because the local stack needed to pull large updated service images and did not reach readiness in a reasonable window.
+- `supabase stop` was run afterward and stopped the local development setup.
+- PR dry-run, post-merge dev deploy, and hosted smoke rerun remain pending because the repair must land through the approved GitHub deploy path.
+
+Reflections:
+- The issue is not that the app cannot read reference data; the dev target lacks active intake-contract reference rows because earlier migrations could only activate them from unavailable DB session settings.
+- Passing target environment through the deploy workflow gives migrations a small, auditable configuration surface without broad remote mutation rights.
+
+Suggested next steps:
+- Publish the branch to `dev`, wait for Supabase dry-run, merge once approved, confirm the dev deploy applies the migration, and rerun the hosted smoke.

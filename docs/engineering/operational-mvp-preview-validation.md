@@ -128,3 +128,28 @@ Boundary notes:
 - No production/main environment was touched.
 - No payout transfer was executed.
 - No secrets, bearer tokens, cookies, Supabase keys, or private payloads are recorded here.
+
+## 2026-08-04 Dev Intake Reference-Data Repair
+
+Status: pending PR dry-run, dev deploy, and hosted smoke rerun.
+
+Repair approach:
+
+- Add a Supabase deploy workflow session setting, `app.settings.fundloop_target_environment`, so migrations can distinguish `dev` from `main` without reading secrets or hard-coding project refs.
+- Add a forward migration that upserts active EVM contract-mode intake rows only when non-zero configured addresses are available.
+- For `dev` only, the migration may use deterministic non-production placeholder intake and treasury addresses so remote-safe Playwright can create payment-route fixtures without depending on production contracts.
+- For `main`, missing configured addresses are ignored rather than written, so existing production rows are not overwritten by placeholders or zero addresses.
+
+Required validation before claiming repair complete:
+
+- Open a PR into `dev` and confirm the Supabase Deploy dry-run succeeds.
+- Merge through the approved path so the push-triggered dev Supabase Deploy applies the migration.
+- Re-run read-only remote diagnosis and confirm at least two active chain/asset/intake route candidates are available.
+- Re-run `pnpm dlx node@22.22.1 /opt/homebrew/bin/pnpm test:e2e:remote`.
+- Run or add the full founder/operator/user operational MVP hosted smoke and record credited-but-not-paid evidence.
+
+Boundary notes:
+
+- This repair is intentionally non-production.
+- The branch does not run a remote seed or reset.
+- No successful hosted operational MVP smoke is claimed until the post-merge dev deploy and smoke rerun pass.
