@@ -48,7 +48,7 @@ supabase db push --yes --db-url "$SUPABASE_DB_URL" --dry-run
 The workflow appends a Postgres session setting to the migration connection URL:
 
 ```text
-app.settings.fundloop_target_environment=dev|main
+options=-c app.settings.fundloop_target_environment=dev|main
 ```
 
 Forward migrations may use this setting for target-aware reference data that must differ between Preview/dev and Production. Migrations must fail safe: missing production configuration must not overwrite existing production values with local or placeholder data. Dev-only smoke fixtures may use deterministic non-production placeholders when the target is `dev` and the migration documents that behavior.

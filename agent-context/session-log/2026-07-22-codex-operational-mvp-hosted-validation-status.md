@@ -82,3 +82,32 @@ Reflections:
 
 Suggested next steps:
 - Publish the branch to `dev`, wait for Supabase dry-run, merge once approved, confirm the dev deploy applies the migration, and rerun the hosted smoke.
+
+### session v4: PR review safety fixes
+
+- Timestamp: 2026-08-04T04:52:09Z
+- Agent: Codex
+- Branch: codex/operational-mvp-hosted-validation-status
+- Head: bf06558
+
+Objective:
+- Address PR #95 review comments about remote-safe Playwright credential safety and deploy-setting documentation accuracy.
+
+Actions:
+- Tightened canonical Supabase env fallback so destructive remote-safe Playwright tests require `PLAYWRIGHT_REMOTE_ALLOW_CANONICAL_SUPABASE=true`.
+- Refused canonical fallback when `FUNDLOOP_DEPLOYMENT_ENV=production`.
+- Refused hosted app URLs paired with local Supabase canonical credentials.
+- Expanded focused env-loader tests for opt-in, production refusal, and hosted/local mismatch refusal.
+- Clarified docs that the Supabase deploy target setting is passed through the Postgres `options=-c ...` connection-string parameter.
+
+Validation:
+- `pnpm dlx node@22.22.1 /opt/homebrew/bin/pnpm test -- tests/e2e-env.test.ts` passed.
+- `git diff --check` passed.
+- Python YAML parse for `.github/workflows/supabase-deploy.yml` passed.
+- `PLAYWRIGHT_REMOTE_ALLOW_CANONICAL_SUPABASE=true pnpm dlx node@22.22.1 /opt/homebrew/bin/pnpm test:e2e:remote` reached remote dev Supabase and failed on the known pre-merge blocker: zero active chain/asset/intake route candidates.
+
+Reflections:
+- The review was right: a convenience fallback for a service-role-backed fixture lane needs an explicit safety latch, even when the current `.env.remote.local` is scoped correctly.
+
+Suggested next steps:
+- Push the review fix, reply to and resolve the three PR review threads, then wait for PR checks to return green.
