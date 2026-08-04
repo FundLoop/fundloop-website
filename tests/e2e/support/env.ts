@@ -23,8 +23,9 @@ function readRequiredEnv(name: string) {
 
 export function getRemoteE2EEnv(): RemoteE2EEnv | null {
   const baseURL = readRequiredEnv("PLAYWRIGHT_REMOTE_BASE_URL")
-  const supabaseUrl = readRequiredEnv("PLAYWRIGHT_REMOTE_SUPABASE_URL")
-  const serviceRoleKey = readRequiredEnv("PLAYWRIGHT_REMOTE_SUPABASE_SERVICE_ROLE_KEY")
+  const supabaseUrl = readRequiredEnv("PLAYWRIGHT_REMOTE_SUPABASE_URL") ?? readRequiredEnv("NEXT_PUBLIC_SUPABASE_URL")
+  const serviceRoleKey =
+    readRequiredEnv("PLAYWRIGHT_REMOTE_SUPABASE_SERVICE_ROLE_KEY") ?? readRequiredEnv("SUPABASE_SERVICE_ROLE_KEY")
   const e2eSecret = readRequiredEnv("FUNDLOOP_E2E_SECRET")
 
   if (!baseURL || !supabaseUrl || !serviceRoleKey || !e2eSecret) {

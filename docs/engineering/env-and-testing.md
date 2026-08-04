@@ -97,6 +97,8 @@ Use remote preview/dev for:
 - verifying deployed preview behavior
 - validating CI-managed Supabase dry-runs and deploys
 
+Remote-safe Playwright reads `PLAYWRIGHT_REMOTE_BASE_URL` plus remote Supabase credentials. It prefers the explicit aliases `PLAYWRIGHT_REMOTE_SUPABASE_URL` and `PLAYWRIGHT_REMOTE_SUPABASE_SERVICE_ROLE_KEY`, but falls back to `NEXT_PUBLIC_SUPABASE_URL` and `SUPABASE_SERVICE_ROLE_KEY` when `.env.remote.local` is already scoped to the non-production target.
+
 Do not use remote preview/dev as a substitute for local destructive migration work.
 
 ## Test Ownership
