@@ -1,10 +1,18 @@
--- Apply dev intake-contract activation after switching deploy target markers
--- from connection startup parameters to a database-level GUC set by the
--- approved Supabase Deploy workflow.
+-- Apply dev intake-contract activation through the approved Supabase Deploy
+-- workflow target marker. The workflow writes a non-secret persistent marker
+-- because Supabase CLI resets session settings before applying migrations.
 DO $$
 DECLARE
-  target_environment text := COALESCE(NULLIF(current_setting('app.settings.fundloop_target_environment', true), ''), 'unknown');
+  target_environment text := NULLIF(current_setting('app.settings.fundloop_target_environment', true), '');
 BEGIN
+  IF target_environment IS NULL
+    AND to_regclass('public.supabase_deploy_context') IS NOT NULL THEN
+    EXECUTE 'SELECT target_environment FROM public.supabase_deploy_context WHERE id = true'
+    INTO target_environment;
+  END IF;
+
+  target_environment := COALESCE(target_environment, 'unknown');
+
   IF target_environment = 'unknown' THEN
     RAISE NOTICE 'Skipping dev intake-contract activation for marker-less local replay.';
     RETURN;

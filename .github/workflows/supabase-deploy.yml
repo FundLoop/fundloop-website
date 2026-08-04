@@ -228,22 +228,20 @@ jobs:
           supabase_db_url="$(cat "${encoded_db_url_file}")"
           echo "::add-mask::${supabase_db_url}"
 
-          cleanup_target_marker() {
-            cleanup_status=$?
-            set +e
-            psql "${supabase_db_url}" -v ON_ERROR_STOP=1 \
-              -c "ALTER DATABASE postgres RESET app.settings.fundloop_target_environment;"
-            cleanup_result=$?
-            set -e
-            if [[ "${cleanup_result}" -ne 0 ]]; then
-              echo "::warning::Failed to reset Supabase deploy target marker during deploy step cleanup."
-            fi
-            return "${cleanup_status}"
-          }
-          trap cleanup_target_marker EXIT
+          psql "${supabase_db_url}" -v ON_ERROR_STOP=1 -v target_environment="${TARGET_ENVIRONMENT}" <<'SQL'
+          CREATE TABLE IF NOT EXISTS public.supabase_deploy_context (
+            id boolean PRIMARY KEY DEFAULT true CHECK (id),
+            target_environment text NOT NULL CHECK (target_environment IN ('dev', 'main')),
+            updated_at timestamptz NOT NULL DEFAULT now()
+          );
 
-          psql "${supabase_db_url}" -v ON_ERROR_STOP=1 \
-            -c "ALTER DATABASE postgres SET app.settings.fundloop_target_environment = '${TARGET_ENVIRONMENT}';"
+          INSERT INTO public.supabase_deploy_context (id, target_environment, updated_at)
+          VALUES (true, :'target_environment', now())
+          ON CONFLICT (id) DO UPDATE
+          SET
+            target_environment = EXCLUDED.target_environment,
+            updated_at = EXCLUDED.updated_at;
+          SQL
 
           export PGOPTIONS="-c app.settings.fundloop_target_environment=${TARGET_ENVIRONMENT}"
           supabase db push --yes --db-url "$supabase_db_url"
