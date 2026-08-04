@@ -12,8 +12,36 @@ function buildRequest(secret: string | null) {
 }
 
 describe("e2e config helpers", () => {
-  it("enables the e2e auth bootstrap only outside production when explicitly flagged", () => {
+  it("enables the e2e auth bootstrap only outside production deployments when explicitly flagged", () => {
     expect(isE2EAuthEnabled({ FUNDLOOP_E2E_ENABLED: "true", NODE_ENV: "development" })).toBe(true)
+    expect(
+      isE2EAuthEnabled({
+        FUNDLOOP_DEPLOYMENT_ENV: "dev",
+        FUNDLOOP_E2E_ENABLED: "true",
+        NODE_ENV: "production",
+      }),
+    ).toBe(true)
+    expect(
+      isE2EAuthEnabled({
+        FUNDLOOP_DEPLOYMENT_ENV: "production",
+        FUNDLOOP_E2E_ENABLED: "true",
+        NODE_ENV: "production",
+      }),
+    ).toBe(false)
+    expect(
+      isE2EAuthEnabled({
+        FUNDLOOP_DEPLOYMENT_ENV: "main",
+        FUNDLOOP_E2E_ENABLED: "true",
+        NODE_ENV: "production",
+      }),
+    ).toBe(false)
+    expect(
+      isE2EAuthEnabled({
+        FUNDLOOP_DEPLOYMENT_ENV: "prod",
+        FUNDLOOP_E2E_ENABLED: "true",
+        NODE_ENV: "production",
+      }),
+    ).toBe(false)
     expect(isE2EAuthEnabled({ FUNDLOOP_E2E_ENABLED: "true", NODE_ENV: "production" })).toBe(false)
     expect(isE2EAuthEnabled({ FUNDLOOP_E2E_ENABLED: "false", NODE_ENV: "development" })).toBe(false)
   })
