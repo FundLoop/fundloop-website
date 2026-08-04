@@ -135,3 +135,28 @@ Reflections:
 
 Suggested next steps:
 - Push the type fix and wait for PR #95 checks to return green.
+
+### session v6: env example follow-up
+
+- Timestamp: 2026-08-04T05:12:16Z
+- Agent: Codex
+- Branch: codex/operational-mvp-hosted-validation-status
+- Head: c60a887
+
+Objective:
+- Include the previously unstaged `.env.example` guidance updates in PR #95 safely.
+
+Actions:
+- Organized `.env.example` into local Supabase, CUBID, internal, Playwright, chain, and E2E sections.
+- Added the new `PLAYWRIGHT_REMOTE_ALLOW_CANONICAL_SUPABASE=false` example flag.
+- Kept E2E disabled by default in the example file.
+- Corrected the Playwright section heading spelling.
+
+Validation:
+- `git diff --check` passed.
+
+Reflections:
+- The example env file should document remote smoke knobs without making destructive or auth-bypass paths appear enabled by default.
+
+Suggested next steps:
+- Push the env example follow-up and let PR #95 checks return green again.
