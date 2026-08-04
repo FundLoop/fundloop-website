@@ -179,3 +179,15 @@
 - tests and validation: Focused persona journey-runner coverage passed with 1 file/3 tests; typecheck, changed-file lint, and `git diff --check` passed on Node v24.15.0. The pre-review PR head had six green hosted checks and was mergeable.
 - reflections: The journey actions already close over their arranged browser and fixture state, so a zero-argument execution contract is the smallest honest interface. If explicit dependency injection is needed later, it should be introduced end to end rather than represented by a fabricated placeholder.
 - suggested next steps: Push the review-fix commit, reply to and resolve the original Copilot thread, wait for post-fix CI, and then request Codex review exactly once without requesting a second Copilot review.
+
+### session v16: preserve crash-recovery ownership after Codex review
+
+- timestamp: 2026-08-04T17:19:00.000Z
+- agent: Codex
+- branch: codex/feature-96-persona-harness
+- head: 6512f01
+- objective: Address two Codex PR #104 findings that could leave a newly verified OTP actor unledgered or destroy a failed cycle cleanup's ownership marker.
+- actions: Record the resolved Auth UUID in the ownership ledger before the OTP verification checkpoint returns and make Auth recording idempotent so later fixture arrangement cannot duplicate it. When any owned cycle remains unclean, retain all public user and Auth rows, preserve the updated cycle ledger, and count those retained owners as residue; invitation cleanup remains safe and independent. Added focused coverage for immediate idempotent Auth ownership and for retaining cycle owners after a simulated event-deletion failure.
+- tests and validation: Focused fixture, journey-runner, and reporting coverage passed with 3 files/13 tests; typecheck, changed-file lint, and `git diff --check` passed on Node v24.15.0. The prior checkpoint-contract fix had green post-push CI, Supabase dry-run, and Vercel previews before these newly surfaced Codex threads were inspected. One extra local Vitest invocation used an unsupported `basic` reporter and failed at reporter startup without running tests; the canonical focused command was rerun successfully.
+- reflections: Crash recovery depends on preserving ownership evidence at every boundary. The ledger must be durable immediately after external resource creation, and partial cleanup must prefer recoverability over deleting identity rows that participate in ownership proofs.
+- suggested next steps: Validate and commit the two fixes, reply to and resolve both original Codex threads, push once, then require final post-fix CI and a clean unresolved-thread audit before human merge handoff.

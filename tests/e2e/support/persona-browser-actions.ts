@@ -187,6 +187,7 @@ export function createPersonaBrowserActions(personaId: Exclude<PersonaId, "retur
       })
       await expect(page.getByText(/Signed in|A better start for new FundLoop members/).first()).toBeVisible()
       state.actorId = await resolveLocalAuthUserId(supabase, state.email)
+      await fixtures.recordAuthUser(state.actorId)
       return observed({ session: "authenticated" })
     },
     "member.publish-profile": async () => {

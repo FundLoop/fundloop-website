@@ -212,16 +212,26 @@ export function createPersonaFixtureController(input: CreateControllerInput): Mu
         cleanCycles.unshift({ ...cycle, cycleId: data?.id ?? cycle.cycleId, state: "clean" })
       }
 
+      ledger = { ...ledger, cycles: cleanCycles }
+      const retainCycleOwners = cleanCycles.some((cycle) => cycle.state !== "clean")
+      const userRecords = orderedRecords.filter((record) => record.table === "users")
+
       // Keep the public user row until owned cycles are gone. Its auth UUID is the
       // cycle ownership marker, and deleting it first nulls created_by_user_id.
-      for (const record of orderedRecords.filter((record) => record.table === "users")) {
-        if (await deleteOwnedRecord(record)) deletedCount += 1; else fail()
+      if (retainCycleOwners) {
+        residualCount += userRecords.length + ledger.authUserIds.length
+      } else {
+        for (const record of userRecords) {
+          if (await deleteOwnedRecord(record)) deletedCount += 1; else fail()
+        }
       }
 
       const inviterIds = new Set(ledger.invitations.map((invitation) => invitation.createdByUserId))
-      for (const authUserId of [...ledger.authUserIds].reverse().filter((id) => !inviterIds.has(id))) {
-        const { error } = await supabase.auth.admin.deleteUser(authUserId)
-        if (error) fail(); else deletedCount += 1
+      if (!retainCycleOwners) {
+        for (const authUserId of [...ledger.authUserIds].reverse().filter((id) => !inviterIds.has(id))) {
+          const { error } = await supabase.auth.admin.deleteUser(authUserId)
+          if (error) fail(); else deletedCount += 1
+        }
       }
 
       for (const invitation of [...ledger.invitations].reverse()) {
@@ -229,12 +239,12 @@ export function createPersonaFixtureController(input: CreateControllerInput): Mu
         if (error) fail(); else deletedCount += 1
       }
 
-      for (const authUserId of [...ledger.authUserIds].reverse().filter((id) => inviterIds.has(id))) {
-        const { error } = await supabase.auth.admin.deleteUser(authUserId)
-        if (error) fail(); else deletedCount += 1
+      if (!retainCycleOwners) {
+        for (const authUserId of [...ledger.authUserIds].reverse().filter((id) => inviterIds.has(id))) {
+          const { error } = await supabase.auth.admin.deleteUser(authUserId)
+          if (error) fail(); else deletedCount += 1
+        }
       }
-
-      ledger = { ...ledger, cycles: cleanCycles }
     }
 
     if (residualCount > 0) {
@@ -260,6 +270,7 @@ export function createPersonaFixtureController(input: CreateControllerInput): Mu
     recordDatabaseRow: (record) => mutate({ ...ledger, records: [...ledger.records, record] }),
     recordAuthUser: (authUserId) => {
       if (!isUuid(authUserId)) throw new Error("persona-auth-user-id-invalid")
+      if (ledger.authUserIds.includes(authUserId)) return Promise.resolve()
       return mutate({ ...ledger, authUserIds: [...ledger.authUserIds, authUserId] })
     },
     recordStoragePath: (storagePath) => mutate({ ...ledger, storagePaths: [...ledger.storagePaths, storagePath] }),
