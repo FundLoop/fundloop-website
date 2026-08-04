@@ -3,7 +3,7 @@
 - Timestamp: 2026-08-04T21:55:33Z
 - Agent: Codex
 - Branch: codex/fix-remote-smoke-fixture-ids
-- Head: 5ca3051291248657cbb9d9ef8b7b6211459ae436
+- Head: 488ab290884c4fff6ff403a923dad85f90d641f7
 
 #### Objective
 
@@ -15,10 +15,13 @@ Repair the hosted remote-safe Playwright smoke after the dev Supabase deploy suc
 - Updated the remote-safe project payments fixture to assign explicit IDs for organizations, projects, project payment methods, payments, and onchain submissions.
 - Kept fixture cleanup scoped to the created project/user resources so repeated hosted smoke runs remain safe.
 - Added a forward, idempotent repair migration for `payment_methods.sort_order` after hosted smoke exposed Preview/dev schema drift against the app's project payment route ordering contract.
+- Updated the repair migration after review to backfill missing route order values and advance stale identity sequences for payment smoke/setup tables.
+- Removed the remaining fixture assumption that PostgREST returns inserted payment rows in the same order as the request payload.
 
 #### Validation Notes
 
-- Pending: focused local test validation.
+- Passed: `git diff --check`.
+- Passed: `pnpm dlx node@22.22.1 /opt/homebrew/bin/pnpm test -- tests/e2e-env.test.ts tests/project-crypto-routes.test.ts`.
 - Pending: PR checks.
 - Pending: dev Supabase deploy and hosted remote-safe smoke rerun after merge.
 

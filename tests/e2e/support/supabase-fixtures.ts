@@ -310,20 +310,19 @@ async function createScenarioPayments(
   paymentIdBase: number,
 ) {
   const seed = buildPaymentSeed(projectId, routeMethodId, statuses, paymentIdBase)
-  const inserted = await ensureNoError(
+  await ensureMutation(
     supabase
       .from("payments")
-      .insert(seed.map((entry) => entry.row))
-      .select("id"),
+      .insert(seed.map((entry) => entry.row)),
     "Could not insert e2e payments.",
   )
 
   return {
-    draftId: inserted[0].id,
-    pendingId: inserted[1].id,
-    awaitingConfirmingId: inserted[2].id,
-    awaitingSubmittedId: inserted[3].id,
-    failedId: inserted[4].id,
+    draftId: paymentIdBase,
+    pendingId: paymentIdBase + 1,
+    awaitingConfirmingId: paymentIdBase + 2,
+    awaitingSubmittedId: paymentIdBase + 3,
+    failedId: paymentIdBase + 4,
   }
 }
 
