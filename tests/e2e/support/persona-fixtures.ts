@@ -38,6 +38,7 @@ export type PersonaProjectFixture = { id: number; slug: string; name: string }
 export type PersonaInvitationFixture = { code: string; email: string }
 export type PersonaAttributionUserFixture = { userId: string; scopedCubidId: string }
 export type PersonaCadenceInputFixture = {
+  operatorUserId: string
   project: PersonaProjectFixture
   member: StoredActorCredentials
   founder: StoredActorCredentials
@@ -746,5 +747,5 @@ export async function arrangeOperatorCadenceInputs(
   )
   await controller.recordDatabaseRow({ table: "zkas_identity_artifacts", primaryKey: { id: identityArtifact.id }, cleanupPhase: 100 })
 
-  return { project, member, founder, cycleId: cycle.id, cycleKey: input.cycleKey }
+  return { operatorUserId: input.operatorUserId, project, member, founder, cycleId: cycle.id, cycleKey: input.cycleKey }
 }

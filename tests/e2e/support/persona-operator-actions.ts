@@ -19,6 +19,7 @@ import {
   type PersonaCadenceInputFixture,
 } from "./persona-fixtures"
 import { createCycleClock } from "./persona-monthly-cycle"
+import { assertSupportedRequiredInputOverrideFailure, PERSONA_REQUIRED_INPUT_OVERRIDE_REASON } from "./persona-operator-audit"
 import { assertSafePersonaScreenshotSurface } from "./persona-reporting"
 
 const observed = (evidence: CheckpointObservation["evidence"] = {}): CheckpointObservation => ({ outcome: "observed", evidence })
@@ -125,7 +126,7 @@ export function createPersonaOperatorActions(page: Page) {
       let overrideApplied = false
       if (await overrideDialog.isVisible().catch(() => false)) {
         overrideApplied = true
-        await overrideDialog.getByLabel("Required override reason").fill("Ignore unrelated canonical seed commitments for this run-owned local cycle.")
+        await overrideDialog.getByLabel("Required override reason").fill(PERSONA_REQUIRED_INPUT_OVERRIDE_REASON)
         await overrideDialog.getByRole("button", { name: "Lock with override" }).click()
       }
       await expectCycleStatus("locked")
@@ -191,12 +192,19 @@ export function createPersonaOperatorActions(page: Page) {
     },
     "operator.view-performance": async () => {
       const current = requireScenario()
-      const events = await supabase.from("monthly_cycle_events").select("event_type, outcome").eq("monthly_cycle_id", current.cycleId)
-      if (events.error) throw new Error("persona-operator-events-query-failed")
+      const [events, cycle] = await Promise.all([
+        supabase.from("monthly_cycle_events").select("actor_user_id, attempt_id, event_type, message, metadata, outcome").eq("monthly_cycle_id", current.cycleId),
+        supabase.from("monthly_cycles").select("locked_manifest, lock_override_reason").eq("id", current.cycleId).single(),
+      ])
+      if (events.error || cycle.error || !cycle.data) throw new Error("persona-operator-events-query-failed")
       const eventTypes = new Set((events.data ?? []).map((event) => event.event_type))
       if (REQUIRED_EVENT_TYPES.some((event) => !eventTypes.has(event))) throw new Error("persona-operator-events-incomplete")
+      assertSupportedRequiredInputOverrideFailure({
+        cycle: cycle.data,
+        events: events.data ?? [],
+        operatorUserId: current.operatorUserId,
+      })
       const failures = (events.data ?? []).filter((event) => event.outcome === "failure")
-      if (failures.some((event) => event.event_type !== "lock_failure") || failures.length > 1) throw new Error("persona-operator-event-failure")
       await page.goto(`${env.baseURL}/en/admin/cycles/observability?cycleKey=${cycleKey}`)
       await expect(page.getByRole("heading", { name: "Cycle Events" })).toBeVisible()
       await expect(page.getByText(cycleKey).first()).toBeVisible()
