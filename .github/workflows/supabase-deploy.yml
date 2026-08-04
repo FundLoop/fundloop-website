@@ -164,11 +164,20 @@ jobs:
           const url = new URL(process.env.DB_URL)
           const existingOptions = url.searchParams.get("options")
           const targetOption = `-c app.settings.fundloop_target_environment=${process.env.TARGET_ENVIRONMENT}`
-          url.searchParams.set("options", existingOptions ? `${existingOptions} ${targetOption}` : targetOption)
+          const query = []
+          url.searchParams.forEach((value, key) => {
+            if (key !== "options") {
+              query.push(`${encodeURIComponent(key)}=${encodeURIComponent(value)}`)
+            }
+          })
+          const mergedOptions = existingOptions ? `${existingOptions} ${targetOption}` : targetOption
+          query.push(`options=${encodeURIComponent(mergedOptions)}`)
+          url.search = `?${query.join("&")}`
           console.log(url.toString())
           NODE
           )"
 
+          export PGOPTIONS="-c app.settings.fundloop_target_environment=${TARGET_ENVIRONMENT}"
           supabase db push --yes --db-url "$supabase_db_url" --dry-run
 
       - name: Deploy database migrations
@@ -196,11 +205,20 @@ jobs:
           const url = new URL(process.env.DB_URL)
           const existingOptions = url.searchParams.get("options")
           const targetOption = `-c app.settings.fundloop_target_environment=${process.env.TARGET_ENVIRONMENT}`
-          url.searchParams.set("options", existingOptions ? `${existingOptions} ${targetOption}` : targetOption)
+          const query = []
+          url.searchParams.forEach((value, key) => {
+            if (key !== "options") {
+              query.push(`${encodeURIComponent(key)}=${encodeURIComponent(value)}`)
+            }
+          })
+          const mergedOptions = existingOptions ? `${existingOptions} ${targetOption}` : targetOption
+          query.push(`options=${encodeURIComponent(mergedOptions)}`)
+          url.search = `?${query.join("&")}`
           console.log(url.toString())
           NODE
           )"
 
+          export PGOPTIONS="-c app.settings.fundloop_target_environment=${TARGET_ENVIRONMENT}"
           supabase db push --yes --db-url "$supabase_db_url"
 
       - name: Install function bundle dependencies
