@@ -45,16 +45,19 @@ Pull requests use the same target resolution but run:
 supabase db push --yes --db-url "$SUPABASE_DB_URL" --dry-run
 ```
 
-The workflow appends a Postgres session setting to the migration connection URL and exports the same value through `PGOPTIONS`:
+The workflow sets a Postgres target marker before deploy migrations run:
 
 ```text
+ALTER DATABASE postgres SET app.settings.fundloop_target_environment = dev|main
 options=-c%20app.settings.fundloop_target_environment=dev|main
 PGOPTIONS=-c app.settings.fundloop_target_environment=dev|main
 ```
 
+The database-level setting is the reliable path for Supabase CLI deploy migrations because the session pooler may not propagate startup `options`/`PGOPTIONS` to the migration connection. The workflow resets the database-level marker after `supabase db push` completes. The startup `options` and `PGOPTIONS` values are retained as best-effort secondary paths.
+
 Forward migrations may use this setting for target-aware reference data that must differ between Preview/dev and Production. Migrations must fail safe: missing production configuration must not overwrite existing production values with local or placeholder data. Dev-only smoke fixtures may use deterministic non-production placeholders when the target is `dev` and the migration documents that behavior.
 
-Connection URL `options` values must be percent-encoded with `%20` for spaces. Do not rely on query-string `+` encoding for this parameter; the Supabase CLI migration connection may not propagate the setting to Postgres in that form.
+Connection URL `options` values must be percent-encoded with `%20` for spaces. Do not rely on query-string `+` encoding for this parameter. Also do not rely on connection startup parameters alone for migration-critical behavior through the session pooler.
 
 Workflow helpers must not print rewritten database URLs to logs. If a helper constructs a derived connection string, write it to a temporary file or shell variable, then mask the derived value with `::add-mask::` before passing it to `supabase db push`.
 
