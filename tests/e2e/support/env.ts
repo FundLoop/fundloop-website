@@ -16,6 +16,11 @@ export type LocalWalletE2EEnv = {
   injectedAccount: string
 }
 
+type SupabaseFixtureEnv = {
+  supabaseUrl: string
+  serviceRoleKey: string
+}
+
 function readRequiredEnv(name: string) {
   const value = process.env[name]?.trim()
   return value && value.length > 0 ? value : null
@@ -34,7 +39,7 @@ function isLocalUrl(value: string) {
   }
 }
 
-function readCanonicalRemoteSupabaseFallback(baseURL: string) {
+function readCanonicalRemoteSupabaseFallback(baseURL: string): SupabaseFixtureEnv | null {
   if (!isTruthyEnv("PLAYWRIGHT_REMOTE_ALLOW_CANONICAL_SUPABASE")) {
     return null
   }
@@ -65,14 +70,14 @@ export function getRemoteE2EEnv(): RemoteE2EEnv | null {
     return null
   }
 
-  const explicitRemoteSupabase = {
-    supabaseUrl: readRequiredEnv("PLAYWRIGHT_REMOTE_SUPABASE_URL"),
-    serviceRoleKey: readRequiredEnv("PLAYWRIGHT_REMOTE_SUPABASE_SERVICE_ROLE_KEY"),
-  }
+  const explicitSupabaseUrl = readRequiredEnv("PLAYWRIGHT_REMOTE_SUPABASE_URL")
+  const explicitServiceRoleKey = readRequiredEnv("PLAYWRIGHT_REMOTE_SUPABASE_SERVICE_ROLE_KEY")
+  const explicitRemoteSupabase: SupabaseFixtureEnv | null =
+    explicitSupabaseUrl && explicitServiceRoleKey
+      ? { supabaseUrl: explicitSupabaseUrl, serviceRoleKey: explicitServiceRoleKey }
+      : null
   const supabase =
-    explicitRemoteSupabase.supabaseUrl && explicitRemoteSupabase.serviceRoleKey
-      ? explicitRemoteSupabase
-      : readCanonicalRemoteSupabaseFallback(baseURL)
+    explicitRemoteSupabase ?? readCanonicalRemoteSupabaseFallback(baseURL)
 
   if (!supabase) {
     return null

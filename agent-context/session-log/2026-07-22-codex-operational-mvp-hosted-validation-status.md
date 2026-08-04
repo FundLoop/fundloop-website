@@ -111,3 +111,27 @@ Reflections:
 
 Suggested next steps:
 - Push the review fix, reply to and resolve the three PR review threads, then wait for PR checks to return green.
+
+### session v5: Vercel typecheck follow-up
+
+- Timestamp: 2026-08-04T04:55:50Z
+- Agent: Codex
+- Branch: codex/operational-mvp-hosted-validation-status
+- Head: 94a8578
+
+Objective:
+- Fix the Vercel build/typecheck failure introduced by the PR review safety patch.
+
+Actions:
+- Added an explicit `SupabaseFixtureEnv` type and narrowed explicit remote Supabase aliases before falling back to canonical env values.
+
+Validation:
+- `pnpm dlx node@22.22.1 /opt/homebrew/bin/pnpm test -- tests/e2e-env.test.ts` passed.
+- `pnpm dlx node@22.22.1 /opt/homebrew/bin/pnpm typecheck` passed.
+- `git diff --check` passed.
+
+Reflections:
+- Vitest coverage caught behavior, but the hosted build caught a TypeScript narrowing issue because the helper file is included in app-wide typecheck.
+
+Suggested next steps:
+- Push the type fix and wait for PR #95 checks to return green.
