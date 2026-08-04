@@ -1,6 +1,6 @@
 # Persona Happy-Path Harness
 
-Status: narrowed design input for Feature [#96](https://github.com/FundLoop/fundloop-website/issues/96). Task [#98](https://github.com/FundLoop/fundloop-website/issues/98) owns the executable contracts and capability-gap policy; this document records the options and decisions that precede that design.
+Status: implementation-ready technical design for Feature [#96](https://github.com/FundLoop/fundloop-website/issues/96). Task [#97](https://github.com/FundLoop/fundloop-website/issues/97) supplied the narrowing evidence; Task [#98](https://github.com/FundLoop/fundloop-website/issues/98) closes the harness contracts and capability-gap policy below.
 
 ## Objective
 
@@ -111,6 +111,258 @@ The selected slice is:
 
 The initial Feature does not implement invitations, withdrawal, payout execution, or other missing product capabilities. It defines their scenario checkpoints and reports unavailable ones as expected-pending until separately delivered.
 
+## Implementation Contract
+
+### Typed scenario model
+
+Task #100 should add the following public types in `tests/e2e/personas/contracts.ts`. The names and unions are part of the harness contract; implementation may add fields but should not weaken them to untyped strings or arbitrary JSON.
+
+```ts
+export type PersonaId =
+  | "new-member"
+  | "returning-member"
+  | "new-founder"
+  | "returning-founder"
+  | "returning-operator"
+
+export type CheckpointMode = "required" | "expected-pending"
+export type CheckpointStatus = "pass" | "expected-pending" | "fail"
+export type RunStatus = "passed" | "incomplete" | "failed"
+export type EvidenceValue = string | number | boolean | null
+
+export type PersonaCheckpoint = {
+  id: string
+  title: string
+  capabilityId: string
+  mode: CheckpointMode
+  actorAlias: string
+  surface: "browser" | "controlled-command" | "fixture-observation"
+  execute: (context: PersonaContext) => Promise<CheckpointObservation>
+}
+
+export type PersonaJourney = {
+  id: PersonaId
+  title: string
+  actorKind: "new" | "returning" | "operator"
+  checkpoints: readonly PersonaCheckpoint[]
+}
+
+export type CheckpointObservation = {
+  outcome: "observed" | "capability-unavailable"
+  evidence: Record<string, EvidenceValue>
+  reasonCode?: string
+}
+
+export type CheckpointResult = {
+  checkpointId: string
+  capabilityId: string
+  status: CheckpointStatus
+  durationMs: number
+  reasonCode: string | null
+  evidence: Record<string, EvidenceValue>
+}
+```
+
+`PersonaContext` owns the selected run/cycle clock, actor aliases, isolated browser context, fixture ledger, authenticated command clients, and sanitized evidence sink. It must not expose the service-role key to page code. Checkpoint IDs and capability IDs are stable kebab-case identifiers; user-facing labels and routes may evolve independently.
+
+`tests/e2e/personas/capabilities.ts` is the only expected-pending registry. Each entry contains `capabilityId`, `reasonCode`, `ownerUrl`, and a short non-sensitive rationale. A checkpoint may produce `expected-pending` only when all of these are true:
+
+1. its contract declares `mode: "expected-pending"`;
+2. the capability is present in that registry; and
+3. its observation returns `capability-unavailable` with the registry reason code.
+
+A required checkpoint that is unavailable is `fail`. An unavailable capability missing from the registry is `fail` with `undeclared-capability-gap`. A pending declaration whose probe observes the capability working is `fail` with `stale-pending-declaration`, forcing the declaration and assertion to be promoted together. Ordinary Playwright `test.skip`, `test.fixme`, conditional early return, and catch-and-continue behavior are forbidden in persona specs.
+
+### Result aggregation and exit codes
+
+Checkpoint status is derived, not chosen by a scenario:
+
+- `pass`: the expected user-visible observation completed.
+- `expected-pending`: the three registry checks above succeeded; it never means implemented.
+- `fail`: assertion failure, authorization failure, undeclared/stale gap, setup error, timeout, sanitizer rejection, or cleanup residue.
+
+Run aggregation is deterministic: any failure makes the run `failed`; otherwise any expected-pending checkpoint makes it `incomplete`; only all-pass selected checkpoints make it `passed`. The local runner exits `0` for `passed`, `2` for `incomplete`, and `1` for `failed`, including preflight, service startup, fixture, or cleanup failures. An empty/unknown persona filter is a failed preflight and exits `1`. This makes pending-only runs visibly non-green while keeping them distinguishable from regressions.
+
+Cleanup runs in `finally` after pass, pending, failure, or interrupt. A cleanup failure upgrades any result to `failed`. The runner writes the summary before exiting when enough state exists to do so.
+
+### Ordered persona contracts
+
+The initial journeys use these ordered checkpoints. “Required” means the implementation Task must assert the named browser behavior; it does not mean the capability is known to pass before that Task is implemented.
+
+#### New member
+
+1. `auth.request-local-otp` — required; use the public `/en/join` browser UI to request a local OTP.
+2. `auth.verify-local-otp` — required; retrieve the new message from Mailpit in Node, enter the six digits in the browser, and assert an authenticated session.
+3. `member.publish-profile` — required; complete the personal-profile onboarding UI and observe the published profile at `/en/my-profile`.
+4. `member.view-earnings-total` — required; after run-owned historical fixture arrangement, observe accumulated credited earnings at `/en/workspace/earnings`.
+5. `member.view-project-sources` — required; observe the project/source breakdown and credited/not-paid state on that page.
+6. `member.withdraw-earnings` — expected-pending capability `member-withdrawal`; no safe local withdrawal executor or product flow exists.
+
+#### Returning member
+
+1. `auth.login-returning-member` — required; authenticate the run-scoped stored account through `/api/internal/e2e/login` and then prove access to a protected browser route.
+2. `member.view-existing-profile` — required; observe the fixture-owned published profile at `/en/my-profile`.
+3. `member.view-earnings-total` — required; observe existing accumulated credited earnings at `/en/workspace/earnings`.
+4. `member.view-project-sources` — required; observe source projects and credited/not-paid state.
+5. `member.withdraw-earnings` — expected-pending capability `member-withdrawal`.
+
+#### New founder
+
+1. `auth.request-local-otp` — required through `/en/join`.
+2. `auth.verify-local-otp` — required through Mailpit plus the public browser UI.
+3. `founder.publish-personal-profile` — required through the onboarding UI.
+4. `founder.publish-project-profile` — required through the project onboarding UI; observe the managed project under `/en/founder/projects`.
+5. `founder.create-project-invitation` — expected-pending capability `project-invitation-persistence`; `components/invite-member-form.tsx` currently generates a client-only link and success toast without persistence or delivery, which is not a passing invite.
+6. `founder.submit-monthly-contribution` — required at `/en/founder/projects/[slug]/contributions` through `project-monthly-contribution-submit`.
+7. `founder.submit-active-user-attribution` — required at `/en/founder/projects/[slug]/attribution` through `project-attribution-dataset-submit`.
+8. `cadence.advance-through-distribution` — required controlled background transition using the same authenticated Edge Function command contracts as the app; the founder does not impersonate an operator or wait for wall-clock time.
+9. `founder.view-distribution` — required at `/en/founder/projects/[slug]/reporting`, including user count, allocation, source, and credited/not-paid language.
+
+#### Returning founder
+
+1. `auth.login-returning-founder` — required through the secret-gated local E2E login endpoint, followed by protected-route authorization.
+2. `founder.view-existing-profile-and-project` — required; observe the stored profile and managed project.
+3. `founder.create-project-invitation` — expected-pending capability `project-invitation-persistence`.
+4. `founder.submit-next-month-contribution` — required through the founder contribution UI.
+5. `founder.submit-next-month-attribution` — required through the founder attribution UI.
+6. `cadence.advance-through-distribution` — required through authenticated controlled commands.
+7. `founder.view-next-month-distribution` — required through the founder reporting UI.
+
+#### Returning operator
+
+1. `auth.login-returning-operator` — required through the stored account login endpoint, followed by the internal-admin authorization boundary.
+2. `operator.view-cycle-readiness` — required at `/en/admin/cycles`.
+3. `operator.lock-cycle` — required through the operator browser control and `monthly-cycle-lock`.
+4. `operator.calculate-cycle` — required through `/en/admin/cycles/[cycleKey]/zkas` and `monthly-cycle-calculation-package`.
+5. `operator.verify-cycle` — required through `/en/admin/cycles/[cycleKey]/verification` and `monthly-cycle-verification-review`.
+6. `operator.approve-cycle` — required through the same operator review surface and `monthly-cycle-approval`.
+7. `operator.create-bookkeeping-credits` — required through the operator payout work surface and `monthly-cycle-bookkeeping-credits-create`; assert that no payout executes.
+8. `operator.view-performance` — required at `/en/admin/cycles/observability` and `/en/admin/cycles/[cycleKey]/reporting`.
+9. `operator.view-allocation-breakdown` — required; observe per-user and per-project counts/totals plus credited/not-paid state.
+
+The monthly contribution checkpoints prove submission of the current product's contribution data, including source amount/reference and calculated contribution. They do not prove that funds settled. No journey may label a contribution submission, bookkeeping credit, or payout intent as a transfer.
+
+## Auth and actor contract
+
+`tests/e2e/support/persona-fixtures.ts` provisions one run namespace and actor aliases such as `new-member`, never reports raw emails, and records every created database, storage, and Auth identifier in a cleanup ledger.
+
+- New member/founder Auth users are created only by requesting and verifying OTP through the public browser UI. After verification, the Node fixture layer may resolve the actor's Auth UUID for run-owned historical arrangements; it may not replace the signup checkpoint.
+- Returning member/founder/operator users are created before the app starts with run-scoped deterministic emails/passwords through the local service-role admin API. Authentication uses `loginThroughE2EEndpoint`; the next protected page proves FundLoop session and role authorization.
+- The runner adds only its run-scoped operator email to `FUNDLOOP_INTERNAL_ADMIN_EMAILS` and `FUNDLOOP_ZKAS_SUPERADMIN_EMAILS` before starting Next. The test still exercises `requireInternalAdminActor`; it must not mock or bypass it.
+- CUBID snapshots, reference rows, an open cycle, contribution commitments, historical credits, and other history needed to establish a precondition may be fixture-arranged. The fixture must not pre-create the result a checkpoint claims to prove.
+- Actor credentials exist only in process memory. Neither fixtures nor reports may log email, password, Auth UUID, bearer token, cookie, service-role key, private attribution payload, wallet destination, or raw Mailpit response.
+
+`tests/e2e/support/mailpit-otp.ts` owns OTP retrieval. It polls the local Mailpit API at `http://127.0.0.1:55324/api/v1/search` with a URL-encoded recipient query, chooses only a message received after the checkpoint start time, loads that message through `/api/v1/message/{id}`, extracts exactly one six-digit token in memory, and immediately discards the response body after the browser input is filled. Poll errors use fixed error codes and must not include the query URL, recipient, message, or token. The helper never returns the token as evidence.
+
+Because Playwright traces, screenshots, and video can capture email or OTP input, the `local-persona` project disables automatic trace, screenshot, and video capture. Specs may capture a screenshot only after authentication and only after a sanitizer confirms no auth form, email address, token, private attribution row, or payout destination is visible.
+
+## UI, fixture, and command boundaries
+
+| Boundary | Allowed | Forbidden |
+| --- | --- | --- |
+| Browser persona action | Public OTP request/verification, onboarding, contribution/attribution forms, operator controls, navigation, visible assertions | Direct Supabase writes, service-role key, mocked authorization, claiming a toast proves persistence |
+| Local fixture arrangement | Reference/precondition records, run-scoped stored actors, CUBID snapshots, open cycles, historical earnings, exact cleanup | Creating the output of the checkpoint under test, broad deletion, remote fallback, lifecycle status shortcuts |
+| Controlled cadence driver | Existing typed Edge Function clients/contracts authenticated as the run operator | Writing `monthly_cycles.status`, results, credits, or reports directly; changing host clock; invoking real payout execution |
+
+Founder scenarios use `tests/e2e/support/persona-monthly-cycle.ts` to represent the monthly wait. It executes lock, calculation, verification, approval, and bookkeeping-credit commands in order with a run-scoped authenticated operator. The operator persona uses the browser controls for those same stages. Both paths assert intermediate status and audit evidence; neither calls the payout-intents command or any transfer rail.
+
+The default injected clock is `FUNDLOOP_PERSONA_CYCLE_BASE=2035-01`. Scenario offsets are stable: new founder `+0`, returning founder existing/next `+1/+2`, and operator `+3`. Date bounds are derived from those keys in UTC. The clock is data supplied to existing command contracts: it never changes `Date`, the host clock, timers, or production scheduling. A CLI override must be a valid `YYYY-MM` and is still subject to the local-only guard.
+
+## Local-only guard and service ownership
+
+`tests/e2e/support/persona-env.ts` must fail closed unless all of the following hold before any service-role call or fixture mutation:
+
+- `FUNDLOOP_DEPLOYMENT_ENV` equals `local`;
+- `NEXT_PUBLIC_SUPABASE_URL` has exact origin `http://127.0.0.1:55321` (normalize `localhost` to the same loopback origin before comparison);
+- `PLAYWRIGHT_PERSONA_BASE_URL` has loopback host and the dedicated default port `3002`;
+- Mailpit has loopback host and port `55324`;
+- local anon and service-role keys are present in memory;
+- the local Supabase health/auth endpoints and Mailpit API answer;
+- no option requests remote fixtures, remote base URLs, Supabase linking/pushing, or payout execution.
+
+The guard captures `supabase status --output json` only for local endpoint comparison and never prints its key-bearing output. A mismatch stops with a fixed, sanitized preflight error before fixture creation. There is no fallback to `PLAYWRIGHT_REMOTE_*`, `NEXT_PUBLIC_SUPABASE_URL` from a hosted project, or a linked remote project.
+
+Service ownership is explicit:
+
+- The caller owns local Supabase and Mailpit. Start/reset them with the documented commands below. The harness checks them but never starts, resets, or stops them implicitly.
+- The runner owns the Next process on `127.0.0.1:3002`. It refuses an occupied port, starts Next with local-only env, waits for HTTP readiness, and terminates only that child on completion or signal.
+- The persona lane does not start Hardhat or reuse the injected local-wallet account because this Feature does not execute a wallet transfer or withdrawal.
+- If future checkpoints need the wallet lane, orchestration must extract a shared child-process primitive from `scripts/run-playwright-local-wallet.mjs`; it must not nest `pnpm test:e2e:local` or silently start a second app/Supabase stack.
+
+## Isolation and cleanup
+
+`scripts/run-playwright-local-personas.mjs` acquires `output/persona-harness/local.lock` with exclusive creation before preflight. A concurrent destructive persona run fails before mutation. The `local-persona` project uses `fullyParallel: false` and `workers: 1`; each persona gets a fresh browser context and fixture namespace. The run ID is `persona-<UTC timestamp>-<random suffix>` and is used in fixture metadata, not in user-facing assertions. The runner removes only its own lock in `finally`.
+
+The fixture ledger records exact inserted IDs and storage paths. Cleanup runs in reverse dependency order: generated reports/artifacts and storage objects; monthly-cycle outputs and audit events; attribution/contribution/project membership/project rows; user profile and ancillary rows; then Auth users. Existing seed rows and reference data are never deleted. Deletion by email prefix, unscoped date, cycle status, or table-wide filter is forbidden.
+
+Before arranging a fixed cycle key, the harness verifies either that it is absent or that every existing row carries the current run marker. Residue from an interrupted earlier run fails preflight and prints only the old run ID plus the cleanup command. `--cleanup-run <run-id>` performs a local-only ledger-based cleanup without launching browsers; it refuses unknown/unmarked records. Cleanup re-queries exact run markers and a nonzero residual count makes the run fail.
+
+## Filters and sanitized output
+
+The implementation exposes these commands:
+
+```bash
+# caller-owned local prerequisites
+DOCKER_CONTEXT=colima-agents supabase start -x logflare -x vector
+DOCKER_CONTEXT=colima-agents supabase db reset
+
+# all five personas
+pnpm test:e2e:personas
+
+# one or more independently selectable personas
+pnpm test:e2e:personas -- --persona new-member
+pnpm test:e2e:personas -- --persona returning-member,new-founder
+
+# exact recovery of an interrupted run
+pnpm test:e2e:personas -- --cleanup-run <run-id>
+
+# implementation validation
+pnpm test -- tests/persona-harness-contracts.test.ts tests/persona-harness-env.test.ts tests/persona-harness-reporting.test.ts tests/persona-harness-fixtures.test.ts
+pnpm exec playwright test --project=local-persona --list
+pnpm check
+```
+
+The runner validates filters against the `PersonaId` union, passes a generated Playwright grep matching `@persona:<id>`, and preserves registry order. No filter means all five. The aggregate includes only selected personas and lists unselected personas separately; it does not count them as skipped or pending.
+
+`tests/e2e/support/persona-reporting.ts` writes each persona result atomically to `output/persona-harness/<run-id>/personas/<persona-id>.json`; after the single-worker Playwright child exits, the runner aggregates those records into a concise console table and `output/persona-harness/<run-id>/summary.json`. A missing selected-persona record is a failure, even when Playwright itself exits unexpectedly. The JSON contains schema version, run ID, selected persona IDs, local service aliases (never URLs containing queries or keys), deterministic cycle keys, run status/exit code, durations, checkpoint IDs/statuses/fixed reason codes, numeric/boolean observations, cleanup status, and residual counts. It excludes raw exceptions and arbitrary strings until they pass an allowlist sanitizer. The sanitizer rejects secret-like keys, JWTs, six-digit OTPs, email patterns, cookies, authorization headers, UUID/Auth IDs, service-role values, wallet destinations, and private attribution content. `output/` is already ignored; only a manually copied sanitized summary may enter an issue or session log.
+
+## Planned implementation surfaces
+
+Task #100 owns the shared harness and should create or modify exactly these surfaces:
+
+- `package.json` — add `test:e2e:personas`.
+- `playwright.config.ts` — add the isolated `local-persona` project matching `personas/*.spec.ts`, base URL port `3002`, and secret-safe artifact settings.
+- `scripts/run-playwright-local-personas.mjs` — CLI, local guard ordering, lock, Next lifecycle, Playwright child, exit mapping, and cleanup-only mode.
+- `tests/e2e/personas/contracts.ts` and `tests/e2e/personas/capabilities.ts` — contracts and pending registry.
+- `tests/e2e/support/persona-env.ts`, `persona-fixtures.ts`, `mailpit-otp.ts`, `persona-monthly-cycle.ts`, and `persona-reporting.ts` — shared support boundaries.
+- `tests/persona-harness-contracts.test.ts`, `tests/persona-harness-env.test.ts`, `tests/persona-harness-reporting.test.ts`, and `tests/persona-harness-fixtures.test.ts` — focused unit coverage.
+
+Task #101 owns `tests/e2e/personas/new-member.spec.ts`, `returning-member.spec.ts`, `new-founder.spec.ts`, and `returning-founder.spec.ts`. Task #102 owns `tests/e2e/personas/returning-operator.spec.ts` plus integrated aggregate-report assertions and the final local runbook updates in this document and `docs/engineering/env-and-testing.md`.
+
+Existing `tests/e2e/support/env.ts`, `e2e-login.ts`, and `supabase-fixtures.ts` may be reused or receive small extracted helpers when their contracts genuinely match. Do not broaden `remote-safe` or `local-wallet` fixture types merely to make persona names fit.
+
+## Reuse and non-duplication boundary
+
+- `remote-safe` stays the hosted/non-production project-payment smoke and is never selected by the persona command.
+- `local-wallet` stays the Hardhat/injected-wallet payment lane and keeps owning simulated onchain receipt behavior.
+- The persona lane reuses `loginThroughE2EEndpoint`, local Supabase client/cleanup patterns, existing Edge Function clients, and Playwright configuration conventions.
+- The Feature #51 / Goal #60 operational-MVP smoke remains the lower-level proof of lock-through-credit calculation. Persona specs assert actor navigation, authorization, inputs, and user-visible results; shared cycle-driving logic should call the same commands rather than clone allocation logic or seed final outputs.
+- Focused Vitest, Edge Function contract tests, Hardhat tests, and the two existing Playwright projects remain required owners of their narrower behavior.
+
+## Acceptance mapping and implementation stop condition
+
+| Task #98 acceptance criterion | Closed design decision |
+| --- | --- |
+| Every persona has an ordered contract | Five ordered checkpoint lists above |
+| New actors use real local OTP UI | Public `/en/join` plus secret-safe Mailpit helper |
+| Returning/operator actors are deterministic but authorized | Run-scoped stored accounts, E2E login, protected-route/allowlist checks |
+| Withdrawal remains pending | Registry-owned `member-withdrawal` checkpoint and exit `2` semantics |
+| Exact files and commands are named | Planned surfaces and command block above |
+| Local-only, secrets, cleanup, and remote guards are explicit | Fail-closed env guard, artifact policy, fixture ledger, service ownership |
+| No additional product discovery is needed | Types, routes, boundaries, clock, filters, reporting, ownership, and sequencing are fixed |
+
+Implementation Tasks stop at an `incomplete` exit when only declared product gaps remain; they do not make those gaps green. Task #98 itself stops after this design and the branch session log are committed and evidence is posted. It does not add the Playwright project, runner, fixtures, tests, persona specs, product capabilities, remote execution, or payout behavior.
+
 ## Follow-On Candidates
 
 - A safe local payout executor and withdrawal product flow, followed by promotion of withdrawal from expected-pending to a required assertion.
@@ -132,10 +384,9 @@ The initial Feature does not implement invitations, withdrawal, payout execution
 
 ## Open Questions
 
-None block the next Task. The user confirmed the persona split, auth strategy, and expected-pending treatment. Task #98 should turn these decisions into exact scenario/checkpoint types, aggregate status rules, isolation guarantees, command boundaries, and cleanup contracts before implementation begins.
+None block implementation. The user confirmed the persona split, auth strategy, and expected-pending treatment; Task #98 fixes the exact scenario/checkpoint types, aggregate status rules, isolation guarantees, command boundaries, and cleanup contracts above.
 
 ## Handoff
 
-- Task #98: define the technical persona contracts and capability-gap policy from this narrowing record.
-- Goal #99 and Tasks #100-#102: implement orchestration/reporting, member/founder journeys, and the operator cadence journey in the registered Feature #96 worktree.
+- Goal #99 and Tasks #100-#102: implement the fixed orchestration/reporting contract, member/founder journeys, and operator cadence journey in the registered Feature #96 worktree.
 - Keep withdrawal and any unavailable invitation behavior explicit and pending until their product capabilities are delivered outside this Feature.
