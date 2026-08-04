@@ -4,7 +4,13 @@ export const FUNDLOOP_E2E_ENABLED_ENV = "FUNDLOOP_E2E_ENABLED"
 export const FUNDLOOP_E2E_SECRET_ENV = "FUNDLOOP_E2E_SECRET"
 
 export function isE2EAuthEnabled(env: NodeJS.ProcessEnv = process.env) {
-  return env[FUNDLOOP_E2E_ENABLED_ENV]?.trim() === "true" && env.NODE_ENV !== "production"
+  const deploymentEnvironment = env.FUNDLOOP_DEPLOYMENT_ENV?.trim().toLowerCase()
+  const isProductionDeployment =
+    deploymentEnvironment && deploymentEnvironment.length > 0
+      ? deploymentEnvironment === "production"
+      : env.NODE_ENV === "production"
+
+  return env[FUNDLOOP_E2E_ENABLED_ENV]?.trim() === "true" && !isProductionDeployment
 }
 
 export function getConfiguredE2ESecret(env: NodeJS.ProcessEnv = process.env) {
