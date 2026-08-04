@@ -15,7 +15,7 @@ export async function executePersonaJourney(input: {
     for (const checkpoint of input.journey.checkpoints) {
       const checkpointStartedAt = Date.now()
       try {
-        const observation = await checkpoint.execute({} as never)
+        const observation = await checkpoint.execute()
         const result = deriveCheckpointResult(checkpoint, observation, Date.now() - checkpointStartedAt)
         checkpoints.push(result)
         if (result.status === "fail") {

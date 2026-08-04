@@ -167,3 +167,15 @@
 - tests and validation: The complete feature passed independent Goal #99 validation with focused 9-file/42-test coverage, documented six-spec Playwright discovery, two repeatable five-persona matrices, inspected 1440x1100 evidence, clean ledgers, and credible full `pnpm check` evidence (109 Vitest files/499 tests and 162-page build). For this publish-only version change, the manifest diff was inspected and the lockfile remained unchanged. Node v24.15.0 emitted the repository's expected Node 22 engine warning; the installed Node 22 runtime remains unavailable because of the missing `libsimdjson.31.dylib` dependency.
 - reflections: The version helper's post-refresh null handling is a separate repository tooling defect; it did not invalidate or partially apply the requested version bump. Keeping the version change in its own commit preserves the child issue commit history and makes the publish-only delta easy to review.
 - suggested next steps: Commit the package version and this session entry separately, push the feature branch, open a draft PR to `dev`, then follow CI and review gates without merging or cleaning the registered implementation worktree prematurely.
+
+### session v15: align the checkpoint execution contract after review
+
+- timestamp: 2026-08-04T17:14:30.000Z
+- agent: Codex
+- branch: codex/feature-96-persona-harness
+- head: 1fa689f
+- objective: Address Copilot's actionable PR #104 finding that the checkpoint type required a context object even though every journey action and the runner use closure-owned state.
+- actions: Removed the unused `PersonaContext` execution parameter and its Playwright type imports, changed checkpoint execution to the implemented zero-argument contract, and removed the runner's fabricated `{}`/`as never` call. Added a focused regression test proving checkpoint actions are invoked without a synthetic context while cleanup and result reporting remain intact.
+- tests and validation: Focused persona journey-runner coverage passed with 1 file/3 tests; typecheck, changed-file lint, and `git diff --check` passed on Node v24.15.0. The pre-review PR head had six green hosted checks and was mergeable.
+- reflections: The journey actions already close over their arranged browser and fixture state, so a zero-argument execution contract is the smallest honest interface. If explicit dependency injection is needed later, it should be introduced end to end rather than represented by a fabricated placeholder.
+- suggested next steps: Push the review-fix commit, reply to and resolve the original Copilot thread, wait for post-fix CI, and then request Codex review exactly once without requesting a second Copilot review.

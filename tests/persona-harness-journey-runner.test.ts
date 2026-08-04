@@ -6,6 +6,35 @@ import { newMemberJourney } from "@/tests/e2e/personas/journeys"
 import { executePersonaJourney } from "@/tests/e2e/support/persona-journey-runner"
 
 describe("persona journey execution", () => {
+  it("executes checkpoints without fabricating a persona context", async () => {
+    const outputRoot = await mkdtemp(path.join(os.tmpdir(), "persona-journey-"))
+    const execute = vi.fn(async () => ({ outcome: "observed" as const, evidence: { visible: true } }))
+    const cleanup = vi.fn(async () => ({ status: "clean" as const, deletedCount: 0, residualCount: 0, reasonCode: null }))
+
+    const result = await executePersonaJourney({
+      journey: {
+        id: "returning-member",
+        title: "Returning member",
+        actorKind: "returning",
+        checkpoints: [{
+          id: "member.view-existing-profile",
+          title: "View the existing published profile",
+          actorAlias: "returning-member",
+          surface: "browser",
+          mode: "required",
+          capabilityId: "personal-profile",
+          execute,
+        }],
+      },
+      outputRoot,
+      runId: "persona-20350101T000000Z-no-context",
+      cleanup,
+    })
+
+    expect(result.status).toBe("passed")
+    expect(execute).toHaveBeenCalledWith()
+  })
+
   it("reports declared pending checkpoints and always cleans", async () => {
     const outputRoot = await mkdtemp(path.join(os.tmpdir(), "persona-journey-"))
     const cleanup = vi.fn(async () => ({ status: "clean" as const, deletedCount: 4, residualCount: 0, reasonCode: null }))

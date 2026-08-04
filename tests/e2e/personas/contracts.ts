@@ -1,5 +1,3 @@
-import type { BrowserContext, Page } from "@playwright/test"
-
 export const PERSONA_IDS = [
   "new-member",
   "returning-member",
@@ -120,25 +118,12 @@ export type ServiceOwnership = {
   nextPid: number | null
 }
 
-export type PersonaContext = {
-  run: RunIdentity
-  personaId: PersonaId
-  actor: ActorHandle
-  browserContext: BrowserContext
-  page: Page
-  clock: CycleClock
-  fixtures: FixtureController
-  cadence: ControlledCadenceDriver
-  evidence: SanitizedEvidenceSink
-  services: ServiceOwnership
-}
-
 export type CheckpointBase = {
   id: string
   title: string
   actorAlias: ActorAlias
   surface: "browser" | "controlled-command" | "fixture-observation"
-  execute: (context: PersonaContext) => Promise<CheckpointObservation>
+  execute: () => Promise<CheckpointObservation>
 }
 
 export type PersonaCheckpoint = CheckpointBase &
