@@ -115,7 +115,31 @@ Use the smallest relevant validation first, then broaden before reporting comple
 | Supabase Edge Functions | Contract/command tests plus Deno/Supabase validation | focused contract tests, `deno info` or `deno check`, PR dry-run |
 | Onchain contract changes | Hardhat workspace | `pnpm --dir contracts test` |
 | Wallet browser flows | Local wallet E2E lane | `pnpm test:e2e:local` when prerequisites are available |
+| Persona happy paths | Local-only persona E2E lane | Start/reset caller-owned local Supabase, then `pnpm test:e2e:personas` or filter with `-- --persona <id>` |
 | Shared preview smoke | Remote-safe E2E lane | `pnpm test:e2e:remote` with non-production remote credentials |
+
+## Local Persona Harness
+
+The persona harness is deliberately local-only. The caller starts and resets Supabase/Mailpit; the runner verifies the exact `55321`/`55324` endpoints, owns only a Next process on `127.0.0.1:3002`, and refuses occupied, hosted, or production endpoints before fixture access. It writes its private recovery ledger and sanitized summaries beneath ignored `output/persona-harness/`.
+
+```bash
+DOCKER_CONTEXT=colima-agents supabase start -x logflare -x vector
+DOCKER_CONTEXT=colima-agents supabase db reset
+
+# As journey specs land in Tasks #101 and #102
+pnpm test:e2e:personas
+pnpm test:e2e:personas -- --persona new-member
+pnpm test:e2e:personas -- --persona returning-member,new-founder
+
+# Foundation smoke and a deliberate failure/cleanup probe
+pnpm test:e2e:personas -- --self-test --persona returning-member
+pnpm test:e2e:personas -- --self-test --force-failure --persona returning-member
+
+# Exact recovery for an interrupted, ledger-owned run
+pnpm test:e2e:personas -- --cleanup-run <run-id>
+```
+
+The aggregate exits `0` only when every selected checkpoint passes, `2` when the only gaps are declared expected-pending capabilities, and `1` for failures, missing persona results, preflight errors, or cleanup residue. Automatic Playwright screenshots, video, and traces are disabled for this lane because auth artifacts can contain private values; individual specs may create sanitized post-auth evidence. The forced-failure foundation probe creates only a synthetic, sanitized screenshot and trace under ignored `output/playwright/persona-harness/`.
 
 ## Required Honesty In Reports
 

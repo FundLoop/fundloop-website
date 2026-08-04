@@ -1,6 +1,6 @@
 # Persona Happy-Path Harness
 
-Status: implementation-ready technical design for Feature [#96](https://github.com/FundLoop/fundloop-website/issues/96). Task [#97](https://github.com/FundLoop/fundloop-website/issues/97) supplied the narrowing evidence; Task [#98](https://github.com/FundLoop/fundloop-website/issues/98) closes the harness contracts and capability-gap policy below.
+Status: shared local harness foundation implemented by Task [#100](https://github.com/FundLoop/fundloop-website/issues/100); persona journeys remain owned by Tasks #101 and #102. Task [#97](https://github.com/FundLoop/fundloop-website/issues/97) supplied the narrowing evidence and Task [#98](https://github.com/FundLoop/fundloop-website/issues/98) fixed the contracts and capability-gap policy below.
 
 ## Objective
 
@@ -405,7 +405,7 @@ The ignored ownership ledger may hold the token for exact cleanup, but console o
 
 `tests/e2e/support/mailpit-otp.ts` owns OTP retrieval. It polls the local Mailpit API at `http://127.0.0.1:55324/api/v1/search` with a URL-encoded recipient query, chooses only a message received after the checkpoint start time, loads that message through `/api/v1/message/{id}`, extracts exactly one six-digit token in memory, and immediately discards the response body after the browser input is filled. Poll errors use fixed error codes and must not include the query URL, recipient, message, or token. The helper never returns the token as evidence.
 
-Because Playwright traces, screenshots, and video can capture email or OTP input, the `local-persona` project disables automatic trace, screenshot, and video capture. Specs may capture a screenshot only after authentication and only after a sanitizer confirms no auth form, email address, token, private attribution row, or payout destination is visible.
+Because Playwright traces, screenshots, and video can capture email or OTP input, the `local-personas` project disables automatic trace, screenshot, and video capture. Specs may capture a screenshot only after authentication and only after a sanitizer confirms no auth form, email address, token, private attribution row, or payout destination is visible.
 
 ## UI, fixture, and command boundaries
 
@@ -444,7 +444,7 @@ Service ownership is explicit:
 
 ## Isolation and cleanup
 
-`scripts/run-playwright-local-personas.mjs` acquires `output/persona-harness/local.lock` with exclusive creation before preflight. A concurrent destructive persona run fails before mutation. The `local-persona` project uses `fullyParallel: false` and `workers: 1`; each persona gets a fresh browser context and fixture namespace. The run ID is `persona-<UTC timestamp>-<random suffix>` and is used in fixture metadata, not in user-facing assertions. The runner removes only its own lock in `finally`.
+`scripts/run-playwright-local-personas.mjs` acquires `output/persona-harness/local.lock` with exclusive creation before preflight. A concurrent destructive persona run fails before mutation. The `local-personas` project uses `fullyParallel: false` and `workers: 1`; each persona gets a fresh browser context and fixture namespace. The run ID is `persona-<UTC timestamp>-<random suffix>` and is used in fixture metadata, not in user-facing assertions. The runner removes only its own lock in `finally`.
 
 The fixture ledger lives at `output/persona-harness/<run-id>/ownership-ledger.json`, with its directory mode `0700` and file mode `0600`. It is written after every mutation by creating `ownership-ledger.json.tmp`, flushing it, and atomically renaming it over the prior ledger. It records exact inserted IDs and storage paths. Cleanup runs in reverse dependency order: generated reports/artifacts and storage objects; bookkeeping/allocation/run/event rows; attribution/contribution/project membership/project rows; cycle rows; invitation/new-user rows in the order above; then remaining Auth users. Existing seed rows and reference data are never deleted. Deletion by email prefix, unscoped date, cycle status, or table-wide filter is forbidden.
 
@@ -482,7 +482,7 @@ pnpm test:e2e:personas -- --cleanup-run <run-id>
 
 # implementation validation
 pnpm test -- tests/persona-harness-contracts.test.ts tests/persona-harness-env.test.ts tests/persona-harness-reporting.test.ts tests/persona-harness-fixtures.test.ts
-pnpm exec playwright test --project=local-persona --list
+pnpm exec playwright test --project=local-personas --list
 pnpm check
 ```
 
@@ -495,7 +495,7 @@ The runner validates filters against the `PersonaId` union, passes a generated P
 Task #100 owns the shared harness and should create or modify exactly these surfaces:
 
 - `package.json` — add `test:e2e:personas`.
-- `playwright.config.ts` — add the isolated `local-persona` project matching `personas/*.spec.ts`, base URL port `3002`, and secret-safe artifact settings.
+- `playwright.config.ts` — add the isolated `local-personas` project matching `personas/*.spec.ts`, base URL port `3002`, and secret-safe artifact settings.
 - `scripts/run-playwright-local-personas.mjs` — CLI, local guard ordering, lock, Next lifecycle, Playwright child, exit mapping, and cleanup-only mode.
 - `tests/e2e/personas/contracts.ts` and `tests/e2e/personas/capabilities.ts` — contracts and pending registry.
 - `tests/e2e/support/persona-env.ts`, `persona-fixtures.ts`, `mailpit-otp.ts`, `persona-monthly-cycle.ts`, and `persona-reporting.ts` — shared support boundaries.
