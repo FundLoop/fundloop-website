@@ -118,6 +118,8 @@ The initial Feature does not implement invitations, withdrawal, payout execution
 Task #100 should add the following public types in `tests/e2e/personas/contracts.ts`. The names and unions are part of the harness contract; implementation may add fields but should not weaken them to untyped strings or arbitrary JSON.
 
 ```ts
+import type { BrowserContext, Page } from "@playwright/test"
+
 export type PersonaId =
   | "new-member"
   | "returning-member"
@@ -129,16 +131,130 @@ export type CheckpointMode = "required" | "expected-pending"
 export type CheckpointStatus = "pass" | "expected-pending" | "fail"
 export type RunStatus = "passed" | "incomplete" | "failed"
 export type EvidenceValue = string | number | boolean | null
+export type SanitizedEvidence = Readonly<Record<string, EvidenceValue>>
+export type PendingCapabilityId = "member-withdrawal" | "project-invitation-persistence"
+export type ActorAlias =
+  | "fixture-inviter"
+  | "new-member"
+  | "returning-member"
+  | "new-founder"
+  | "returning-founder"
+  | "returning-operator"
 
-export type PersonaCheckpoint = {
+export type CapabilityRegistryEntry = {
+  capabilityId: PendingCapabilityId
+  state: "expected-pending"
+  reasonCode: string
+  ownerUrl: string
+  rationale: string
+}
+
+export type CapabilityRegistry = Readonly<Record<PendingCapabilityId, CapabilityRegistryEntry>>
+
+export type RunIdentity = {
+  runId: string
+  selectedPersonas: readonly PersonaId[]
+  startedAt: string
+}
+
+export type CycleClock = {
+  baseCycleKey: string
+  cycleKeyFor: (personaId: PersonaId, offset?: number) => string
+  boundsFor: (cycleKey: string) => { periodStart: string; periodEnd: string }
+}
+
+export type ActorHandle = {
+  alias: ActorAlias
+  authUserId: string
+  kind: "new" | "stored" | "operator" | "fixture"
+}
+
+export type OwnedDatabaseRecord = {
+  table: string
+  primaryKey: Readonly<Record<string, string | number>>
+  cleanupPhase: number
+}
+
+export type OwnedInvitation = {
+  code: string
+  createdByUserId: string
+  maxUses: 1
+}
+
+export type OwnedCycle = {
+  cycleId: number | null
+  cycleKey: string
+  operatorNoteMarker: string
+  createdByUserId: string
+  state: "planned" | "created" | "clean"
+}
+
+export type OwnershipLedger = {
+  schemaVersion: 1
+  run: RunIdentity
+  state: "arranging" | "running" | "cleaning" | "clean"
+  records: readonly OwnedDatabaseRecord[]
+  authUserIds: readonly string[]
+  storagePaths: readonly string[]
+  invitations: readonly OwnedInvitation[]
+  cycles: readonly OwnedCycle[]
+}
+
+export type CleanupResult = {
+  status: "clean" | "residual"
+  deletedCount: number
+  residualCount: number
+  reasonCode: string | null
+}
+
+export type FixtureController = {
+  ledger: OwnershipLedger
+  checkpoint: () => Promise<void>
+  cleanup: () => Promise<CleanupResult>
+}
+
+export type ControlledCadenceDriver = {
+  advanceThroughApproval: (cycleKey: string) => Promise<SanitizedEvidence>
+  createBookkeepingCredits: (cycleKey: string) => Promise<SanitizedEvidence>
+}
+
+export type SanitizedEvidenceSink = {
+  add: (checkpointId: string, evidence: SanitizedEvidence) => void
+}
+
+export type ServiceOwnership = {
+  supabase: "caller"
+  mailpit: "caller"
+  next: "runner"
+  nextPid: number | null
+}
+
+export type PersonaContext = {
+  run: RunIdentity
+  personaId: PersonaId
+  actor: ActorHandle
+  browserContext: BrowserContext
+  page: Page
+  clock: CycleClock
+  fixtures: FixtureController
+  cadence: ControlledCadenceDriver
+  evidence: SanitizedEvidenceSink
+  services: ServiceOwnership
+}
+
+export type CheckpointBase = {
   id: string
   title: string
-  capabilityId: string
-  mode: CheckpointMode
-  actorAlias: string
+  actorAlias: ActorAlias
   surface: "browser" | "controlled-command" | "fixture-observation"
   execute: (context: PersonaContext) => Promise<CheckpointObservation>
 }
+
+export type PersonaCheckpoint = CheckpointBase &
+  (
+    | { mode: "required"; capabilityId: string }
+    | { mode: "expected-pending"; capabilityId: PendingCapabilityId }
+  )
 
 export type PersonaJourney = {
   id: PersonaId
@@ -149,7 +265,7 @@ export type PersonaJourney = {
 
 export type CheckpointObservation = {
   outcome: "observed" | "capability-unavailable"
-  evidence: Record<string, EvidenceValue>
+  evidence: SanitizedEvidence
   reasonCode?: string
 }
 
@@ -159,11 +275,34 @@ export type CheckpointResult = {
   status: CheckpointStatus
   durationMs: number
   reasonCode: string | null
-  evidence: Record<string, EvidenceValue>
+  evidence: SanitizedEvidence
+}
+
+export type PersonaResult = {
+  personaId: PersonaId
+  status: RunStatus
+  durationMs: number
+  checkpoints: readonly CheckpointResult[]
+  cleanup: CleanupResult
+}
+
+export type HarnessRunSummary = {
+  schemaVersion: 1
+  runId: string
+  selectedPersonas: readonly PersonaId[]
+  unselectedPersonas: readonly PersonaId[]
+  status: RunStatus
+  exitCode: 0 | 1 | 2
+  startedAt: string
+  durationMs: number
+  cycleKeys: Readonly<Partial<Record<PersonaId, string>>>
+  services: Omit<ServiceOwnership, "nextPid">
+  personas: readonly PersonaResult[]
+  cleanup: CleanupResult
 }
 ```
 
-`PersonaContext` owns the selected run/cycle clock, actor aliases, isolated browser context, fixture ledger, authenticated command clients, and sanitized evidence sink. It must not expose the service-role key to page code. Checkpoint IDs and capability IDs are stable kebab-case identifiers; user-facing labels and routes may evolve independently.
+The ownership ledger is deliberately an internal, ignored recovery artifact and may contain exact local record/Auth IDs needed for safe deletion. `HarnessRunSummary`, `PersonaResult`, and `CheckpointResult` are the sanitized reporting boundary and must never include those IDs. `PersonaContext` must not expose the service-role key to page code. Checkpoint IDs and capability IDs are stable kebab-case identifiers; user-facing labels and routes may evolve independently.
 
 `tests/e2e/personas/capabilities.ts` is the only expected-pending registry. Each entry contains `capabilityId`, `reasonCode`, `ownerUrl`, and a short non-sensitive rationale. A checkpoint may produce `expected-pending` only when all of these are true:
 
@@ -191,7 +330,7 @@ The initial journeys use these ordered checkpoints. “Required” means the imp
 
 #### New member
 
-1. `auth.request-local-otp` — required; use the public `/en/join` browser UI to request a local OTP.
+1. `auth.request-local-otp` — required; use the public `/en/join?invite=<run-token>` browser UI to validate the run-owned invitation and request a local OTP.
 2. `auth.verify-local-otp` — required; retrieve the new message from Mailpit in Node, enter the six digits in the browser, and assert an authenticated session.
 3. `member.publish-profile` — required; complete the personal-profile onboarding UI and observe the published profile at `/en/my-profile`.
 4. `member.view-earnings-total` — required; after run-owned historical fixture arrangement, observe accumulated credited earnings at `/en/workspace/earnings`.
@@ -208,7 +347,7 @@ The initial journeys use these ordered checkpoints. “Required” means the imp
 
 #### New founder
 
-1. `auth.request-local-otp` — required through `/en/join`.
+1. `auth.request-local-otp` — required through `/en/join?invite=<run-token>`.
 2. `auth.verify-local-otp` — required through Mailpit plus the public browser UI.
 3. `founder.publish-personal-profile` — required through the onboarding UI.
 4. `founder.publish-project-profile` — required through the project onboarding UI; observe the managed project under `/en/founder/projects`.
@@ -236,7 +375,7 @@ The initial journeys use these ordered checkpoints. “Required” means the imp
 4. `operator.calculate-cycle` — required through `/en/admin/cycles/[cycleKey]/zkas` and `monthly-cycle-calculation-package`.
 5. `operator.verify-cycle` — required through `/en/admin/cycles/[cycleKey]/verification` and `monthly-cycle-verification-review`.
 6. `operator.approve-cycle` — required through the same operator review surface and `monthly-cycle-approval`.
-7. `operator.create-bookkeeping-credits` — required through the operator payout work surface and `monthly-cycle-bookkeeping-credits-create`; assert that no payout executes.
+7. `operator.create-bookkeeping-credits` — required controlled authenticated command through `monthly-cycle-bookkeeping-credits-create`, followed by browser verification at `/en/admin/cycles/[cycleKey]/payouts`; assert that no payout executes. The current page has no bookkeeping-credit creation button.
 8. `operator.view-performance` — required at `/en/admin/cycles/observability` and `/en/admin/cycles/[cycleKey]/reporting`.
 9. `operator.view-allocation-breakdown` — required; observe per-user and per-project counts/totals plus credited/not-paid state.
 
@@ -246,11 +385,23 @@ The monthly contribution checkpoints prove submission of the current product's c
 
 `tests/e2e/support/persona-fixtures.ts` provisions one run namespace and actor aliases such as `new-member`, never reports raw emails, and records every created database, storage, and Auth identifier in a cleanup ledger.
 
-- New member/founder Auth users are created only by requesting and verifying OTP through the public browser UI. After verification, the Node fixture layer may resolve the actor's Auth UUID for run-owned historical arrangements; it may not replace the signup checkpoint.
+- New member/founder Auth users are created only by requesting and verifying OTP through the public browser UI at `/en/join?invite=<run-token>`. After verification, the Node fixture layer may resolve the actor's Auth UUID for run-owned historical arrangements; it may not replace the signup checkpoint.
 - Returning member/founder/operator users are created before the app starts with run-scoped deterministic emails/passwords through the local service-role admin API. Authentication uses `loginThroughE2EEndpoint`; the next protected page proves FundLoop session and role authorization.
 - The runner adds only its run-scoped operator email to `FUNDLOOP_INTERNAL_ADMIN_EMAILS` and `FUNDLOOP_ZKAS_SUPERADMIN_EMAILS` before starting Next. The test still exercises `requireInternalAdminActor`; it must not mock or bypass it.
 - CUBID snapshots, reference rows, an open cycle, contribution commitments, historical credits, and other history needed to establish a precondition may be fixture-arranged. The fixture must not pre-create the result a checkpoint claims to prove.
 - Actor credentials exist only in process memory. Neither fixtures nor reports may log email, password, Auth UUID, bearer token, cookie, service-role key, private attribution payload, wallet destination, or raw Mailpit response.
+
+### Run-owned invitation prerequisite
+
+The current join page requires an `invitation_codes` row and redirects `/en/join` without an `invite` query back to `/`. The harness therefore does not rely on a shared seed invitation:
+
+1. Before Next starts, provision a run-owned `fixture-inviter` Auth user and matching `public.users` row through the local service-role fixture boundary.
+2. For each selected new persona, insert a distinct code such as `persona-<run-suffix>-new-member` into `public.invitation_codes` with `created_by=<fixture-inviter UUID>`, `usage_count=0`, `max_uses=1`, and `expires_at=<run start plus one hour>`. Persist the exact code and inviter UUID to the ownership ledger before browser navigation.
+3. Navigate to the exact URL `/en/join?invite=${encodeURIComponent(code)}`. Assert the invitation-accepted state before opening onboarding; then request and verify OTP through the rendered auth UI.
+4. On profile publication, assert `public.users.invited_by_code` equals the run token and `invitation_codes.usage_count >= 1`. Do not assert exactly `1`: the current schema has the `increment_invite_code_usage` insert trigger and `lib/onboarding/user-onboarding-commands.ts` also increments during first publish. `max_uses=1` still makes the token single-consumer because join validation refuses it once `usage_count >= max_uses`; every new persona gets its own token and the harness never reuses it.
+5. Cleanup deletes the new actor's drafts/dependent rows, `public.users` row, and Auth user first; then deletes that exact invitation code; then deletes the run-owned inviter profile/Auth user after every invitation is gone. Failure before Auth creation still deletes the invitation and inviter. The recovery path uses the same exact ledger order. No shared invitation is decremented or restored.
+
+The ignored ownership ledger may hold the token for exact cleanup, but console output, screenshots, persona result files, and the aggregate summary identify it only as `new-member-invite` or `new-founder-invite`.
 
 `tests/e2e/support/mailpit-otp.ts` owns OTP retrieval. It polls the local Mailpit API at `http://127.0.0.1:55324/api/v1/search` with a URL-encoded recipient query, chooses only a message received after the checkpoint start time, loads that message through `/api/v1/message/{id}`, extracts exactly one six-digit token in memory, and immediately discards the response body after the browser input is filled. Poll errors use fixed error codes and must not include the query URL, recipient, message, or token. The helper never returns the token as evidence.
 
@@ -264,7 +415,9 @@ Because Playwright traces, screenshots, and video can capture email or OTP input
 | Local fixture arrangement | Reference/precondition records, run-scoped stored actors, CUBID snapshots, open cycles, historical earnings, exact cleanup | Creating the output of the checkpoint under test, broad deletion, remote fallback, lifecycle status shortcuts |
 | Controlled cadence driver | Existing typed Edge Function clients/contracts authenticated as the run operator | Writing `monthly_cycles.status`, results, credits, or reports directly; changing host clock; invoking real payout execution |
 
-Founder scenarios use `tests/e2e/support/persona-monthly-cycle.ts` to represent the monthly wait. It executes lock, calculation, verification, approval, and bookkeeping-credit commands in order with a run-scoped authenticated operator. The operator persona uses the browser controls for those same stages. Both paths assert intermediate status and audit evidence; neither calls the payout-intents command or any transfer rail.
+Founder scenarios use `tests/e2e/support/persona-monthly-cycle.ts` to represent the monthly wait. It executes lock, calculation, verification, approval, and bookkeeping-credit commands in order with a run-scoped authenticated operator. The operator persona uses existing browser controls through approval. Because `/en/admin/cycles/[cycleKey]/payouts` currently renders credits and offers only the later payout-intent control, bookkeeping-credit creation is a controlled authenticated command in both paths, not a fabricated UI action.
+
+The exact credit boundary is `MONTHLY_CYCLE_BOOKKEEPING_CREDITS_CREATE_FUNCTION` plus `MonthlyCycleBookkeepingCreditsCreateCommandInput` and `normalizeMonthlyCycleBookkeepingCreditsCreateResult` from `lib/edge-functions/monthly-cycle-bookkeeping-credits-create-contract.ts`. The driver signs a local anon-key Supabase client into the run-owned operator account and passes that user-scoped client to `invokeEdgeCommandWithClient` from `lib/edge-functions/invoke.ts`; this invokes the same `monthly-cycle-bookkeeping-credits-create` Edge Function and internal-admin allowlist check as the app. It does not use the service role for the command. `lib/edge-functions/monthly-cycle-bookkeeping-credits-create-server.ts` remains the server-session adapter for application callers, but it is not used outside a Next request context. After the normalized result reports `status: "distribution"` and `noPayoutExecuted: true`, the browser reloads `/en/admin/cycles/[cycleKey]/payouts` and asserts the credited/not-paid rows. Both paths assert intermediate status and audit evidence; neither calls the payout-intents command or any transfer rail. Task #102 does not add a bookkeeping-credit button.
 
 The default injected clock is `FUNDLOOP_PERSONA_CYCLE_BASE=2035-01`. Scenario offsets are stable: new founder `+0`, returning founder existing/next `+1/+2`, and operator `+3`. Date bounds are derived from those keys in UTC. The clock is data supplied to existing command contracts: it never changes `Date`, the host clock, timers, or production scheduling. A CLI override must be a valid `YYYY-MM` and is still subject to the local-only guard.
 
@@ -293,9 +446,20 @@ Service ownership is explicit:
 
 `scripts/run-playwright-local-personas.mjs` acquires `output/persona-harness/local.lock` with exclusive creation before preflight. A concurrent destructive persona run fails before mutation. The `local-persona` project uses `fullyParallel: false` and `workers: 1`; each persona gets a fresh browser context and fixture namespace. The run ID is `persona-<UTC timestamp>-<random suffix>` and is used in fixture metadata, not in user-facing assertions. The runner removes only its own lock in `finally`.
 
-The fixture ledger records exact inserted IDs and storage paths. Cleanup runs in reverse dependency order: generated reports/artifacts and storage objects; monthly-cycle outputs and audit events; attribution/contribution/project membership/project rows; user profile and ancillary rows; then Auth users. Existing seed rows and reference data are never deleted. Deletion by email prefix, unscoped date, cycle status, or table-wide filter is forbidden.
+The fixture ledger lives at `output/persona-harness/<run-id>/ownership-ledger.json`, with its directory mode `0700` and file mode `0600`. It is written after every mutation by creating `ownership-ledger.json.tmp`, flushing it, and atomically renaming it over the prior ledger. It records exact inserted IDs and storage paths. Cleanup runs in reverse dependency order: generated reports/artifacts and storage objects; bookkeeping/allocation/run/event rows; attribution/contribution/project membership/project rows; cycle rows; invitation/new-user rows in the order above; then remaining Auth users. Existing seed rows and reference data are never deleted. Deletion by email prefix, unscoped date, cycle status, or table-wide filter is forbidden.
 
-Before arranging a fixed cycle key, the harness verifies either that it is absent or that every existing row carries the current run marker. Residue from an interrupted earlier run fails preflight and prints only the old run ID plus the cleanup command. `--cleanup-run <run-id>` performs a local-only ledger-based cleanup without launching browsers; it refuses unknown/unmarked records. Cleanup re-queries exact run markers and a nonzero residual count makes the run fail.
+### Fixed-cycle ownership and recovery
+
+`monthly_cycles` has no dedicated harness metadata column. The fixture uses its existing `operator_note` field as a local-only ownership marker and corroborates it with `created_by_user_id`; cadence commands currently update `status_note`, not `operator_note`.
+
+1. After acquiring the global lock and before inserting a cycle, write a planned `OwnedCycle` entry with `cycleId: null`, `operatorNoteMarker: "persona-harness:<run-id>"`, the run operator UUID, and `state: "planned"` to the atomic ledger.
+2. Query `monthly_cycles` by the fixed `cycle_key`. If any row exists, a normal run refuses the collision without mutation. If its `operator_note` starts with `persona-harness:`, report only the owning run ID and `pnpm test:e2e:personas -- --cleanup-run <owner-run-id>`; otherwise report `cycle-key-not-owned` without exposing row contents.
+3. Insert the new row with the exact cycle key/bounds, `operator_note=<marker>`, and `created_by_user_id=<run operator>`, select its numeric ID, then atomically checkpoint the ledger with that ID and `state: "created"`. If the process dies between insert and checkpoint, the planned ledger plus exact marker and creator fields are sufficient for recovery to resolve the ID.
+4. Every normal fixture/cadence step queries by the recorded cycle ID and key. A focused contract test must prove the current lock-through-credit commands preserve `operator_note`; a missing or changed marker is a harness failure.
+5. `--cleanup-run <run-id>` loads only that run's private ledger. For a planned entry with no ID, it may adopt a row only when `cycle_key`, `operator_note`, and `created_by_user_id` all exactly match the ledger. For a created entry, those same fields plus `id` must match. Any mismatch refuses deletion with `ownership-mismatch`.
+6. Recovery deletes only ledger-recorded storage/database IDs and exact dependent rows constrained by the verified owned cycle ID, in reverse dependency order, then deletes the cycle row last. It re-queries the ID/key/marker, records `state: "clean"`, and returns success only at zero residuals. Re-running cleanup for a clean ledger is idempotent.
+
+This marker is fixture setup metadata, not product output, and exists only in local Supabase. The sanitized run summary omits `operator_note`, creator UUIDs, and ledger contents.
 
 ## Filters and sanitized output
 
@@ -354,7 +518,7 @@ Existing `tests/e2e/support/env.ts`, `e2e-login.ts`, and `supabase-fixtures.ts` 
 | Task #98 acceptance criterion | Closed design decision |
 | --- | --- |
 | Every persona has an ordered contract | Five ordered checkpoint lists above |
-| New actors use real local OTP UI | Public `/en/join` plus secret-safe Mailpit helper |
+| New actors use real local OTP UI | Run-owned single-use invitation at `/en/join?invite=<run-token>` plus secret-safe Mailpit helper |
 | Returning/operator actors are deterministic but authorized | Run-scoped stored accounts, E2E login, protected-route/allowlist checks |
 | Withdrawal remains pending | Registry-owned `member-withdrawal` checkpoint and exit `2` semantics |
 | Exact files and commands are named | Planned surfaces and command block above |
