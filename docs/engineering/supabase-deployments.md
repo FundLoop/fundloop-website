@@ -45,13 +45,20 @@ Pull requests use the same target resolution but run:
 supabase db push --yes --db-url "$SUPABASE_DB_URL" --dry-run
 ```
 
-The workflow appends a Postgres session setting to the migration connection URL:
+The workflow appends a Postgres session setting to the migration connection URL and exports the same value through `PGOPTIONS`:
 
 ```text
-options=-c app.settings.fundloop_target_environment=dev|main
+options=-c%20app.settings.fundloop_target_environment=dev|main
+PGOPTIONS=-c app.settings.fundloop_target_environment=dev|main
 ```
 
 Forward migrations may use this setting for target-aware reference data that must differ between Preview/dev and Production. Migrations must fail safe: missing production configuration must not overwrite existing production values with local or placeholder data. Dev-only smoke fixtures may use deterministic non-production placeholders when the target is `dev` and the migration documents that behavior.
+
+Connection URL `options` values must be percent-encoded with `%20` for spaces. Do not rely on query-string `+` encoding for this parameter; the Supabase CLI migration connection may not propagate the setting to Postgres in that form.
+
+Workflow helpers must not print rewritten database URLs to logs. If a helper constructs a derived connection string, write it to a temporary file or shell variable, then mask the derived value with `::add-mask::` before passing it to `supabase db push`.
+
+Local `supabase db reset` and `supabase migration up` commands normally do not set `app.settings.fundloop_target_environment`. Target-aware migrations should treat a missing marker as local/no-op unless the migration is explicitly required for local schema correctness. Unsupported explicit marker values should still fail loudly.
 
 Edge Functions are deployed by enumerating each local function directory under `supabase/functions/` except `_shared` and `_vendor`, then deploying the remaining function directories one by one:
 
