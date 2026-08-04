@@ -89,6 +89,12 @@ function uniqueHexHash(seed: string) {
   return `0x${createHash("sha256").update(seed).digest("hex")}`
 }
 
+function buildFixtureIdBase(runId: string) {
+  const hash = createHash("sha256").update(runId).digest().readUInt32BE(0)
+
+  return 1_900_000_000 + (hash % 100_000_000)
+}
+
 async function ensureNoError<T>(promise: PromiseLike<{ data: T | null; error: { message: string } | null }>, message: string) {
   const { data, error } = await promise
 
@@ -216,11 +222,12 @@ async function loadReferenceData(supabase: SupabaseClient<Database>): Promise<Re
   }
 }
 
-function buildPaymentSeed(projectId: number, routeMethodId: number, statuses: PaymentStatusRefs) {
+function buildPaymentSeed(projectId: number, routeMethodId: number, statuses: PaymentStatusRefs, paymentIdBase: number) {
   return [
     {
       key: "draftId",
       row: {
+        id: paymentIdBase,
         project_id: projectId,
         period_start: "2026-01-01",
         period_end: "2026-01-31",
@@ -235,6 +242,7 @@ function buildPaymentSeed(projectId: number, routeMethodId: number, statuses: Pa
     {
       key: "pendingId",
       row: {
+        id: paymentIdBase + 1,
         project_id: projectId,
         period_start: "2026-02-01",
         period_end: "2026-02-28",
@@ -249,6 +257,7 @@ function buildPaymentSeed(projectId: number, routeMethodId: number, statuses: Pa
     {
       key: "awaitingConfirmingId",
       row: {
+        id: paymentIdBase + 2,
         project_id: projectId,
         period_start: "2026-03-01",
         period_end: "2026-03-31",
@@ -263,6 +272,7 @@ function buildPaymentSeed(projectId: number, routeMethodId: number, statuses: Pa
     {
       key: "awaitingSubmittedId",
       row: {
+        id: paymentIdBase + 3,
         project_id: projectId,
         period_start: "2026-04-01",
         period_end: "2026-04-30",
@@ -277,6 +287,7 @@ function buildPaymentSeed(projectId: number, routeMethodId: number, statuses: Pa
     {
       key: "failedId",
       row: {
+        id: paymentIdBase + 4,
         project_id: projectId,
         period_start: "2026-05-01",
         period_end: "2026-05-31",
@@ -296,8 +307,9 @@ async function createScenarioPayments(
   projectId: number,
   routeMethodId: number,
   statuses: PaymentStatusRefs,
+  paymentIdBase: number,
 ) {
-  const seed = buildPaymentSeed(projectId, routeMethodId, statuses)
+  const seed = buildPaymentSeed(projectId, routeMethodId, statuses, paymentIdBase)
   const inserted = await ensureNoError(
     supabase
       .from("payments")
@@ -316,6 +328,7 @@ async function createScenarioPayments(
 }
 
 function buildOnchainSubmissionRow(input: {
+  id: number
   route: RouteCandidate
   paymentId: number
   projectId: number
@@ -331,6 +344,7 @@ function buildOnchainSubmissionRow(input: {
   failureReason?: string
 }) {
   return {
+    id: input.id,
     payment_id: input.paymentId,
     project_id: input.projectId,
     payment_method_id: input.paymentMethodId,
@@ -366,6 +380,7 @@ export async function createProjectPaymentsFixture(
   const refs = await loadReferenceData(supabase)
   const [primaryRoute, secondaryRoute] = refs.routeCandidates
   const runId = buildRunId(input.scenario)
+  const idBase = buildFixtureIdBase(runId)
   const email = `${runId}@fundloop-e2e.test`
   const password = `FundLoop!${randomUUID().replace(/-/g, "").slice(0, 12)}`
   const user = await supabase.auth.admin.createUser({
@@ -402,6 +417,7 @@ export async function createProjectPaymentsFixture(
     supabase
       .from("organizations")
       .insert({
+        id: idBase + 1,
         name: `Playwright Org ${runId}`,
         description: "Generated for remote-safe Playwright coverage.",
         website: `https://${runId}.example.test`,
@@ -427,6 +443,7 @@ export async function createProjectPaymentsFixture(
     supabase
       .from("projects")
       .insert({
+        id: idBase + 2,
         name: `Playwright Project ${runId}`,
         slug: projectSlug,
         description: "Generated for wallet and payments Playwright coverage.",
@@ -459,6 +476,7 @@ export async function createProjectPaymentsFixture(
       .from("payment_methods")
       .insert([
         {
+          id: idBase + 10,
           project_id: project.id,
           method_id: refs.cryptoContractMethodId,
           collection_mode: "contract",
@@ -472,6 +490,7 @@ export async function createProjectPaymentsFixture(
           details: { source: "playwright_fixture" } satisfies Json,
         },
         {
+          id: idBase + 11,
           project_id: project.id,
           method_id: refs.cryptoContractMethodId,
           collection_mode: "contract",
@@ -490,12 +509,19 @@ export async function createProjectPaymentsFixture(
     "Could not create the e2e crypto routes.",
   )
 
-  const payments = await createScenarioPayments(supabase, project.id, refs.cryptoContractMethodId, refs.paymentStatuses)
+  const payments = await createScenarioPayments(
+    supabase,
+    project.id,
+    refs.cryptoContractMethodId,
+    refs.paymentStatuses,
+    idBase + 20,
+  )
   const walletAddress = uniqueHexHash(`${runId}-wallet`).slice(0, 42)
 
   await ensureMutation(
     supabase.from("onchain_payment_submissions").insert([
       buildOnchainSubmissionRow({
+        id: idBase + 30,
         route: primaryRoute,
         paymentId: payments.awaitingConfirmingId,
         projectId: project.id,
@@ -509,6 +535,7 @@ export async function createProjectPaymentsFixture(
         confirmationCount: 3,
       }),
       buildOnchainSubmissionRow({
+        id: idBase + 31,
         route: primaryRoute,
         paymentId: payments.awaitingSubmittedId,
         projectId: project.id,
@@ -522,6 +549,7 @@ export async function createProjectPaymentsFixture(
         confirmationCount: 0,
       }),
       buildOnchainSubmissionRow({
+        id: idBase + 32,
         route: secondaryRoute,
         paymentId: payments.failedId,
         projectId: project.id,
