@@ -18,10 +18,16 @@ export function ProjectInvitationPanel({ projectSlug, projectName, locale }: { p
   const [link, setLink] = useState<string | null>(null)
   const [copied, setCopied] = useState(false)
   const [invitations, setInvitations] = useState<ProjectInvitationListItem[]>([])
+  const [listState, setListState] = useState<"loading" | "ready" | "error">("loading")
 
   useEffect(() => {
     void invokeProjectInvitationList({ projectSlug }).then((result) => {
-      if (result.ok) setInvitations(result.data)
+      if (result.ok) {
+        setInvitations(result.data)
+        setListState("ready")
+      } else {
+        setListState("error")
+      }
     })
   }, [projectSlug])
 
@@ -84,7 +90,9 @@ export function ProjectInvitationPanel({ projectSlug, projectName, locale }: { p
         </form>
         <div className="mt-6 space-y-3" data-testid="project-invitation-list">
           <p className="text-sm font-semibold">Persisted invitations</p>
-          {invitations.length === 0 ? <p className="text-sm text-[var(--text-muted)]">No project invitations yet.</p> : invitations.map((invitation) => (
+          {listState === "loading" ? <p className="text-sm text-[var(--text-muted)]">Loading persisted invitations…</p> : null}
+          {listState === "error" ? <p role="alert" className="text-sm text-rose-700 dark:text-rose-200">Persisted invitations could not be loaded. Try refreshing the page.</p> : null}
+          {listState === "ready" && invitations.length === 0 ? <p className="text-sm text-[var(--text-muted)]">No project invitations yet.</p> : invitations.map((invitation) => (
             <div key={invitation.invitationId} className="flex items-center justify-between gap-4 rounded-2xl border border-[color:var(--surface-border)] p-3 text-sm">
               <div><p className="font-medium">{invitation.email}</p><p className="text-[var(--text-muted)]">{invitation.role} · expires {new Date(invitation.expiresAt).toLocaleDateString()}</p></div>
               <span className="font-semibold capitalize">{invitation.status}</span>

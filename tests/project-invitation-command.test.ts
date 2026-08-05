@@ -38,4 +38,16 @@ describe("project invitation commands", () => {
     })
     expect(result).toEqual({ ok: false, error: { code: "invitation_email_mismatch", message: "Sign in with the email address that was invited." } })
   })
+
+  it.each([
+    ["invitation_not_found", "This invitation link is invalid."],
+    ["invitation_expired", "This invitation has expired. Ask a project administrator for a new link."],
+    ["invitation_not_pending", "This invitation is no longer pending and cannot be accepted."],
+  ])("maps %s to an explicit acceptance state", async (code, message) => {
+    const rpc = vi.fn(async () => ({ data: null, error: { message: code } }))
+    const result = await executeProjectInvitationAccept({ rpc } as never, {
+      token: "c".repeat(43), actorUserId: "user-4", actorEmail: "member@example.com",
+    })
+    expect(result).toEqual({ ok: false, error: { code, message } })
+  })
 })
