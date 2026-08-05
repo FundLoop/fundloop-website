@@ -1930,74 +1930,6 @@ export type Database = {
           },
         ]
       }
-      project_categories: {
-        Row: {
-          category_id: number
-          project_id: number
-        }
-        Insert: {
-          category_id: number
-          project_id: number
-        }
-        Update: {
-          category_id?: number
-          project_id?: number
-        }
-        Relationships: [
-          {
-            foreignKeyName: "project_categories_category_id_fkey"
-            columns: ["category_id"]
-            isOneToOne: false
-            referencedRelation: "ref_categories"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "project_categories_project_id_fkey"
-            columns: ["project_id"]
-            isOneToOne: false
-            referencedRelation: "projects"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      project_onboarding_drafts: {
-        Row: {
-          completed_at: string | null
-          current_screen: string
-          id: number
-          payload: Json
-          started_at: string
-          updated_at: string
-          user_id: string
-        }
-        Insert: {
-          completed_at?: string | null
-          current_screen: string
-          id?: number
-          payload?: Json
-          started_at?: string
-          updated_at?: string
-          user_id: string
-        }
-        Update: {
-          completed_at?: string | null
-          current_screen?: string
-          id?: number
-          payload?: Json
-          started_at?: string
-          updated_at?: string
-          user_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "project_onboarding_drafts_user_id_fkey"
-            columns: ["user_id"]
-            isOneToOne: true
-            referencedRelation: "users"
-            referencedColumns: ["user_id"]
-          },
-        ]
-      }
       project_attribution_datasets: {
         Row: {
           approved_at: string | null
@@ -2186,6 +2118,116 @@ export type Database = {
           },
         ]
       }
+      project_categories: {
+        Row: {
+          category_id: number
+          project_id: number
+        }
+        Insert: {
+          category_id: number
+          project_id: number
+        }
+        Update: {
+          category_id?: number
+          project_id?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "project_categories_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "ref_categories"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "project_categories_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      project_invitations: {
+        Row: {
+          accepted_at: string | null
+          accepted_by_user_id: string | null
+          created_at: string
+          created_by_user_id: string
+          expires_at: string
+          id: string
+          idempotency_key: string
+          invited_role: string
+          invitee_email: string
+          organization_id: number
+          project_id: number
+          status: string
+          token_digest: string
+          updated_at: string
+        }
+        Insert: {
+          accepted_at?: string | null
+          accepted_by_user_id?: string | null
+          created_at?: string
+          created_by_user_id: string
+          expires_at: string
+          id?: string
+          idempotency_key: string
+          invited_role?: string
+          invitee_email: string
+          organization_id: number
+          project_id: number
+          status?: string
+          token_digest: string
+          updated_at?: string
+        }
+        Update: {
+          accepted_at?: string | null
+          accepted_by_user_id?: string | null
+          created_at?: string
+          created_by_user_id?: string
+          expires_at?: string
+          id?: string
+          idempotency_key?: string
+          invited_role?: string
+          invitee_email?: string
+          organization_id?: number
+          project_id?: number
+          status?: string
+          token_digest?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "project_invitations_accepted_by_user_id_fkey"
+            columns: ["accepted_by_user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "project_invitations_created_by_user_id_fkey"
+            columns: ["created_by_user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "project_invitations_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "project_invitations_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       project_monthly_contribution_submissions: {
         Row: {
           calculated_contribution_amount: number
@@ -2243,6 +2285,13 @@ export type Database = {
         }
         Relationships: [
           {
+            foreignKeyName: "project_monthly_contribution_submissi_submitted_by_user_id_fkey"
+            columns: ["submitted_by_user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["user_id"]
+          },
+          {
             foreignKeyName: "project_monthly_contribution_submissions_monthly_cycle_id_fkey"
             columns: ["monthly_cycle_id"]
             isOneToOne: false
@@ -2256,10 +2305,41 @@ export type Database = {
             referencedRelation: "projects"
             referencedColumns: ["id"]
           },
+        ]
+      }
+      project_onboarding_drafts: {
+        Row: {
+          completed_at: string | null
+          current_screen: string
+          id: number
+          payload: Json
+          started_at: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          completed_at?: string | null
+          current_screen: string
+          id?: number
+          payload?: Json
+          started_at?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          completed_at?: string | null
+          current_screen?: string
+          id?: number
+          payload?: Json
+          started_at?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
           {
-            foreignKeyName: "project_monthly_contribution_submissions_submitted_by_user_id_fkey"
-            columns: ["submitted_by_user_id"]
-            isOneToOne: false
+            foreignKeyName: "project_onboarding_drafts_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: true
             referencedRelation: "users"
             referencedColumns: ["user_id"]
           },
@@ -3007,6 +3087,77 @@ export type Database = {
         }
         Relationships: []
       }
+      user_asset_preferences: {
+        Row: {
+          accepted: boolean
+          asset_code: string
+          asset_type: Database["public"]["Enums"]["user_asset_preference_type"]
+          created_at: string
+          created_by_user_id: string | null
+          id: number
+          project_id: number | null
+          rank: number
+          updated_at: string
+          updated_by_user_id: string | null
+          user_id: string
+        }
+        Insert: {
+          accepted?: boolean
+          asset_code: string
+          asset_type: Database["public"]["Enums"]["user_asset_preference_type"]
+          created_at?: string
+          created_by_user_id?: string | null
+          id?: number
+          project_id?: number | null
+          rank: number
+          updated_at?: string
+          updated_by_user_id?: string | null
+          user_id: string
+        }
+        Update: {
+          accepted?: boolean
+          asset_code?: string
+          asset_type?: Database["public"]["Enums"]["user_asset_preference_type"]
+          created_at?: string
+          created_by_user_id?: string | null
+          id?: number
+          project_id?: number | null
+          rank?: number
+          updated_at?: string
+          updated_by_user_id?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_asset_preferences_created_by_user_id_fkey"
+            columns: ["created_by_user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "user_asset_preferences_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "user_asset_preferences_updated_by_user_id_fkey"
+            columns: ["updated_by_user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "user_asset_preferences_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["user_id"]
+          },
+        ]
+      }
       user_interests: {
         Row: {
           created_at: string | null
@@ -3118,77 +3269,6 @@ export type Database = {
             foreignKeyName: "user_onboarding_drafts_user_id_fkey"
             columns: ["user_id"]
             isOneToOne: true
-            referencedRelation: "users"
-            referencedColumns: ["user_id"]
-          },
-        ]
-      }
-      user_asset_preferences: {
-        Row: {
-          accepted: boolean
-          asset_code: string
-          asset_type: Database["public"]["Enums"]["user_asset_preference_type"]
-          created_at: string
-          created_by_user_id: string | null
-          id: number
-          project_id: number | null
-          rank: number
-          updated_at: string
-          updated_by_user_id: string | null
-          user_id: string
-        }
-        Insert: {
-          accepted?: boolean
-          asset_code: string
-          asset_type: Database["public"]["Enums"]["user_asset_preference_type"]
-          created_at?: string
-          created_by_user_id?: string | null
-          id?: number
-          project_id?: number | null
-          rank: number
-          updated_at?: string
-          updated_by_user_id?: string | null
-          user_id: string
-        }
-        Update: {
-          accepted?: boolean
-          asset_code?: string
-          asset_type?: Database["public"]["Enums"]["user_asset_preference_type"]
-          created_at?: string
-          created_by_user_id?: string | null
-          id?: number
-          project_id?: number | null
-          rank?: number
-          updated_at?: string
-          updated_by_user_id?: string | null
-          user_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "user_asset_preferences_created_by_user_id_fkey"
-            columns: ["created_by_user_id"]
-            isOneToOne: false
-            referencedRelation: "users"
-            referencedColumns: ["user_id"]
-          },
-          {
-            foreignKeyName: "user_asset_preferences_project_id_fkey"
-            columns: ["project_id"]
-            isOneToOne: false
-            referencedRelation: "projects"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "user_asset_preferences_updated_by_user_id_fkey"
-            columns: ["updated_by_user_id"]
-            isOneToOne: false
-            referencedRelation: "users"
-            referencedColumns: ["user_id"]
-          },
-          {
-            foreignKeyName: "user_asset_preferences_user_id_fkey"
-            columns: ["user_id"]
-            isOneToOne: false
             referencedRelation: "users"
             referencedColumns: ["user_id"]
           },
@@ -4475,6 +4555,23 @@ export type Database = {
       }
     }
     Functions: {
+      accept_project_invitation: {
+        Args: {
+          p_actor_email: string
+          p_actor_user_id: string
+          p_token_digest: string
+        }
+        Returns: {
+          accepted_at: string
+          invitation_id: string
+          invited_role: string
+          organization_id: number
+          project_id: number
+          project_name: string
+          project_slug: string
+          status: string
+        }[]
+      }
       finalize_onchain_payment_reconciliation: {
         Args: {
           p_confirmation_count: number
@@ -4541,6 +4638,12 @@ export type Database = {
           updated_by_user_id: string | null
           user_id: string
         }[]
+        SetofOptions: {
+          from: "*"
+          to: "user_asset_preferences"
+          isOneToOne: false
+          isSetofReturn: true
+        }
       }
       soft_delete_organization_members: {
         Args: { p_id: number }

@@ -495,7 +495,15 @@ pnpm exec playwright test --project=local-personas --list
 pnpm check
 ```
 
-The complete command writes `summary.json` with one record per selected persona, deterministic cycle keys, checkpoint statuses, and aggregate exit status. Exit `2` means only declared capabilities remain expected-pending; exit `1` means a failure, undeclared gap, missing persona result, or cleanup residue. Withdrawal and persisted invitations remain expected-pending. The founder-to-operator cadence handoff stays visible until the independently filtered founder journey itself drives or consumes the integrated operator result; the operator journey already proves the cadence output on founder and member browser surfaces.
+The complete command writes `summary.json` with one record per selected persona, deterministic cycle keys, checkpoint statuses, and aggregate exit status. Exit `2` means only declared capabilities remain expected-pending; exit `1` means a failure, undeclared gap, missing persona result, or cleanup residue. The founder-to-operator cadence handoff stays visible until the independently filtered founder journey itself drives or consumes the integrated operator result; the operator journey already proves the cadence output on founder and member browser surfaces.
+
+## Persisted project invitations
+
+Task #114 replaces the legacy client-only invitation mock with project-scoped persistence and authenticated acceptance. A project administrator creates a seven-day invitation through `project-invitation-create`; the command authorizes against `participants.is_admin`, stores only the SHA-256 token digest, and returns the raw token exactly once for manual sharing. No email delivery is implied.
+
+`/[locale]/invitations/[token]` is now the acceptance surface. It requires an authenticated account whose normalized email matches the invitation. `project-invitation-accept` calls the database-owned atomic acceptance function, which locks the invitation, enforces pending/unexpired/email-bound state, upserts the organization membership and project participant, and marks the invitation accepted. Repeating acceptance by the same user returns the accepted membership without duplicates. List/read responses and screenshots must never expose raw tokens or token digests.
+
+Task #116 owns promotion of the persona invitation checkpoint from expected-pending to required after withdrawal capability Task #115 also lands. Invitation fixtures must retain the raw token only in the ignored run-ownership ledger needed for exact cleanup.
 
 To activate a pending checkpoint when its product capability lands:
 
