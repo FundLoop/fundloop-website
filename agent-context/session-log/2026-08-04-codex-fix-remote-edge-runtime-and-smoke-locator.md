@@ -3,7 +3,7 @@
 - Timestamp: 2026-08-05T01:36:18Z
 - Agent: Codex
 - Branch: codex/fix-remote-edge-runtime-and-smoke-locator
-- Head: pending commit
+- Head: add5296762e6db82ca18e1dd0c81f0476ec88f5a
 
 #### Objective
 
@@ -35,3 +35,33 @@ Repair the remaining hosted remote-safe smoke failures after Vercel E2E and wall
 #### Suggested Next Steps
 
 - Yeet this repair branch to `dev` so future Supabase deploys carry the shared Edge runtime fallback permanently.
+
+### session v2: PR review fixes
+
+- Timestamp: 2026-08-05T02:39:38Z
+- Agent: Codex
+- Branch: codex/fix-remote-edge-runtime-and-smoke-locator
+- Head: add5296762e6db82ca18e1dd0c81f0476ec88f5a
+
+#### Objective
+
+Address automated PR review comments on the remote Edge runtime smoke repair before merge.
+
+#### Actions Taken
+
+- Updated the crypto route manager reconciliation path so a successful create/update still replaces persisted routes with the server response, but preserves unrelated unsaved draft rows.
+- Updated the prior session-log head from `pending commit` to the actual implementation commit SHA.
+
+#### Validation Notes
+
+- Passed: `pnpm lint`.
+- Passed: `pnpm exec vitest run tests/e2e-config.test.ts`.
+- Note: local pnpm emitted Node engine warnings because the shell uses Node 24 while the repo targets Node 22.
+
+#### Reflections
+
+- Server-returned route state should be authoritative for persisted records, but local-only drafts remain user-entered state and should not be discarded unless the specific draft was saved.
+
+#### Suggested Next Steps
+
+- Push the review-fix commit, reply to the PR review threads, resolve them, and continue the merge/deploy/smoke flow.

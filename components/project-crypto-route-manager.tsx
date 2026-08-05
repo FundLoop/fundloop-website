@@ -276,7 +276,12 @@ export function ProjectCryptoRouteManager({ projectSlug, routes, onRoutesChange 
         return
       }
 
-      setEditableRoutes(result.data.map(toLocalRoute))
+      setEditableRoutes((previous) => {
+        const unsavedDrafts = previous.filter(
+          (editableRoute) => !editableRoute.persisted && editableRoute.localId !== route.localId,
+        )
+        return [...result.data.map(toLocalRoute), ...unsavedDrafts]
+      })
       onRoutesChange(result.data)
       toast({
         title: route.persisted ? "Route updated" : "Route created",
