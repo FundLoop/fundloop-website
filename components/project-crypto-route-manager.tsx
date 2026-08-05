@@ -276,6 +276,7 @@ export function ProjectCryptoRouteManager({ projectSlug, routes, onRoutesChange 
         return
       }
 
+      setEditableRoutes(result.data.map(toLocalRoute))
       onRoutesChange(result.data)
       toast({
         title: route.persisted ? "Route updated" : "Route created",

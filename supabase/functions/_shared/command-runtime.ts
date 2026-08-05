@@ -15,6 +15,17 @@ export function getEnv(name) {
   return getDenoRuntime()?.env?.get?.(name)
 }
 
+function getFirstConfiguredEnv(names) {
+  for (const name of names) {
+    const value = getEnv(name)
+    if (value && value.trim().length > 0) {
+      return value
+    }
+  }
+
+  return undefined
+}
+
 export function json(body, init = {}) {
   return new Response(JSON.stringify(body), {
     ...init,
@@ -33,8 +44,8 @@ export function serve(handler) {
 }
 
 export function createFunctionClients(request) {
-  const supabaseUrl = getEnv("NEXT_PUBLIC_SUPABASE_URL")
-  const anonKey = getEnv("NEXT_PUBLIC_SUPABASE_ANON_KEY")
+  const supabaseUrl = getFirstConfiguredEnv(["NEXT_PUBLIC_SUPABASE_URL", "SUPABASE_URL"])
+  const anonKey = getFirstConfiguredEnv(["NEXT_PUBLIC_SUPABASE_ANON_KEY", "SUPABASE_ANON_KEY"])
   const serviceRoleKey = getEnv("SUPABASE_SERVICE_ROLE_KEY")
 
   if (!supabaseUrl || !anonKey || !serviceRoleKey) {

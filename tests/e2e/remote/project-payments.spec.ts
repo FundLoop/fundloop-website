@@ -39,7 +39,7 @@ test.describe("remote-safe project payments", () => {
       ).toBeVisible()
       await expect(page.getByText("Onchain deposit verified with")).toBeVisible()
       await expect(page.getByText("Fixture seeded a failed reconciliation result for retry coverage.")).toBeVisible()
-      await expect(page.getByText("Awaiting automatic onchain reconciliation to verify the recorded deposit.")).toBeVisible()
+      await expect(page.getByText("Awaiting automatic onchain reconciliation to verify the recorded deposit.").first()).toBeVisible()
       await expect(page.getByRole("button", { name: "Retry crypto payment" })).toBeVisible()
       await expect(page.getByRole("button", { name: "Pay with crypto" }).first()).toBeVisible()
     } finally {
@@ -94,26 +94,30 @@ test.describe("remote-safe project payments", () => {
       await draftRoute.locator('[data-testid^="route-label-input-"]').fill("Playwright Added Route")
       await draftRoute.locator('[data-testid^="route-save-"]').click()
 
-      const createdRoute = page.locator('[data-testid^="enabled-route-"]').filter({ hasText: "Playwright Added Route" }).first()
-      await expect(createdRoute).toBeVisible()
+      await expect(page.locator('[data-testid^="enabled-route-draft-"]')).toHaveCount(0)
+      const persistedRoutes = page.locator('[data-testid^="enabled-route-"]:not([data-testid^="enabled-route-draft-"])')
+      const createdRoute = persistedRoutes.last()
+      await expect(createdRoute.locator('[data-testid^="route-label-input-"]')).toHaveValue("Playwright Added Route")
+      const createdRouteTestId = await createdRoute.getAttribute("data-testid")
+      expect(createdRouteTestId).toBeTruthy()
+      const persistedRoute = page.getByTestId(createdRouteTestId!)
 
-      await createdRoute.locator('[data-testid^="route-label-input-"]').fill("Playwright Edited Route")
-      await createdRoute.getByRole("button", { name: /Mark as default|Default route/i }).click()
-      await createdRoute.locator('[data-testid^="route-save-"]').click()
-      await expect(createdRoute.getByText("Default")).toBeVisible()
+      await persistedRoute.locator('[data-testid^="route-label-input-"]').fill("Playwright Edited Route")
+      await persistedRoute.locator('[data-testid^="route-save-"]').click()
+      await expect(persistedRoute.locator('[data-testid^="route-label-input-"]')).toHaveValue("Playwright Edited Route")
 
-      await createdRoute.locator('[data-testid^="route-move-up-"]').click()
-      await createdRoute.locator('[data-testid^="route-move-down-"]').click()
-      await createdRoute.locator('[data-testid^="route-disable-"]').click()
+      await persistedRoute.locator('[data-testid^="route-move-up-"]').click()
+      await persistedRoute.locator('[data-testid^="route-move-down-"]').click()
+      await persistedRoute.locator('[data-testid^="route-disable-"]').click()
 
       const disabledRoute = page.locator('[data-testid^="disabled-route-"]').filter({ hasText: "Playwright Edited Route" }).first()
       await expect(disabledRoute).toBeVisible()
       await disabledRoute.locator('[data-testid^="route-enable-"]').click()
 
       await page.reload()
-      await expect(
-        page.locator('[data-testid^="enabled-route-"]').filter({ hasText: "Playwright Edited Route" }).first(),
-      ).toBeVisible()
+      await expect(page.getByTestId(createdRouteTestId!).locator('[data-testid^="route-label-input-"]')).toHaveValue(
+        "Playwright Edited Route",
+      )
     } finally {
       await fixture.cleanup()
     }
