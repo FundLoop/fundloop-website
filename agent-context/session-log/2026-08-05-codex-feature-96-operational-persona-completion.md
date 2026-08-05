@@ -31,3 +31,40 @@ Run the larger hosted founder/operator/user operational MVP smoke after the repa
 
 - Configure the dev app and Edge runtime with a dedicated non-production operator allowlist and matching E2E actor credential, redeploy, and rerun #87.
 - Continue locally with #112 and the invitation/withdrawal persona capability work while hosted operator configuration is resolved.
+
+### session v2: Protect multi-draft crypto route reconciliation (#112)
+
+- Timestamp: 2026-08-05T04:16:34Z
+- Agent: Codex
+- Branch: codex/feature-96-operational-persona-completion
+- Head: cfd2a3a00099b4142644a6601edd4a0b52f5d84f
+
+#### Objective
+
+Add focused component regression coverage proving that persisting one ready crypto-route draft does not discard another unrelated local draft.
+
+#### Actions Taken
+
+- Added `tests/project-crypto-route-manager.test.tsx` with mocked reference-data, wallet-runtime, toast, and Edge adapter boundaries.
+- Rendered the real `ProjectCryptoRouteManager`, created and populated two drafts, persisted the first against a server-returned route list, and asserted that the other draft retained its chain, token, intake-contract, label, and local-only state.
+- Confirmed the persisted route is reconciled once and `onRoutesChange` receives the server-owned list.
+- Left production component and Edge Function behavior unchanged because the current implementation passed the regression.
+
+#### Validation Notes
+
+- Passed: `pnpm exec vitest run tests/project-crypto-route-manager.test.tsx --pool=forks` — 1 test.
+- Passed separately: `tests/project-crypto-routes.test.ts` — 5 tests.
+- Passed separately: `tests/project-payment-drafts-create-adapter.test.ts` — 3 tests.
+- Passed: `pnpm lint`.
+- Passed: `pnpm typecheck`.
+- The first combined neighboring-suite invocation did not emit results or terminate after more than one minute; it was stopped, and both suites then passed independently.
+
+#### Reflections
+
+- Exercising the real manager state while mocking only its external boundaries protects the exact review regression without adding a parallel production abstraction.
+- No component change was necessary; the preservation logic introduced before PR #111 remains correct.
+
+#### Suggested Next Steps
+
+- Commit and post #112 evidence, then move the low-risk test-only Task to `In Review`.
+- Scope and implement the invitation and withdrawal capabilities as new executable follow-up tasks before removing their persona pending declarations.
