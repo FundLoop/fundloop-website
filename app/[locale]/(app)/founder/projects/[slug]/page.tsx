@@ -5,6 +5,7 @@ import { getNavigationContext } from "@/lib/navigation-context"
 import { findFounderWorkspaceProject, getFounderWorkspaceHome } from "@/lib/workspace/founder-workspace"
 import { Badge } from "@/components/ui/badge"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { ProjectInvitationPanel } from "@/components/founder/project-invitation-panel"
 
 type FounderProjectHomePageProps = {
   params: Promise<{ locale: string; slug: string }>
@@ -77,6 +78,7 @@ export default async function FounderProjectHomePage({ params }: FounderProjectH
       </section>
 
       <section className="grid gap-6 lg:grid-cols-2">
+        <ProjectInvitationPanel projectSlug={project.slug ?? slug} projectName={project.name} locale={locale} />
         <Card className="bg-[var(--surface-panel-strong)]">
           <CardHeader>
             <CardTitle>{t("payments.title")}</CardTitle>

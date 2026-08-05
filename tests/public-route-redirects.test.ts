@@ -44,13 +44,14 @@ describe("legacy public route redirects", () => {
     expect(permanentRedirect).toHaveBeenCalledWith("/en/reports")
   })
 
-  it("redirects invitation mock routes into join with the invite token", async () => {
-    const { default: InvitationRedirectPage } = await import("@/app/[locale]/(public)/invitations/[token]/page")
+  it("renders the persisted project invitation acceptance route", async () => {
+    const { default: ProjectInvitationPage } = await import("@/app/[locale]/(public)/invitations/[token]/page")
 
-    await InvitationRedirectPage({
+    const result = await ProjectInvitationPage({
       params: Promise.resolve({ locale: "en", token: "invite-123" }),
     })
 
-    expect(permanentRedirect).toHaveBeenCalledWith("/en/join?invite=invite-123")
+    expect(result).toBeTruthy()
+    expect(permanentRedirect).not.toHaveBeenCalled()
   })
 })

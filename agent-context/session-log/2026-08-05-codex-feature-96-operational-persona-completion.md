@@ -68,3 +68,41 @@ Add focused component regression coverage proving that persisting one ready cryp
 
 - Commit and post #112 evidence, then move the low-risk test-only Task to `In Review`.
 - Scope and implement the invitation and withdrawal capabilities as new executable follow-up tasks before removing their persona pending declarations.
+
+### session v3: Persist and accept project invitations (#114)
+
+- Timestamp: 2026-08-05T04:41:00Z
+- Agent: Codex
+- Branch: codex/feature-96-operational-persona-completion
+- Head: ac40336
+
+#### Objective
+
+Replace the legacy project invitation mock with an authorized persisted invitation and an email-bound, idempotent acceptance flow without adding an email provider.
+
+#### Actions Taken
+
+- Added a forward-only `project_invitations` migration with normalized invitee email, role/status constraints, token digests, expiry, creator idempotency, RLS, and an atomic security-definer acceptance function.
+- Added typed create/accept Edge contracts, browser adapters, authenticated function handlers, and command implementations. Raw tokens are returned only once at creation and never persisted.
+- Added a founder invitation panel and converted the legacy invitation redirect into a real authenticated acceptance surface.
+- Added focused validation for payload normalization, permission denial, atomic acceptance mapping, email mismatch behavior, and public-route ownership.
+- Updated generated Supabase types and the persona harness runbook.
+
+#### Validation Notes
+
+- Passed: local Supabase start followed by `DOCKER_CONTEXT=colima-codex-supabase supabase db reset --local`; all migrations and seed data replayed.
+- Passed: local Supabase TypeScript generation and `pnpm typecheck`.
+- Passed separately: `tests/project-invitation-contract.test.ts` — 3 tests; `tests/project-invitation-command.test.ts` — 3 tests; `tests/public-route-redirects.test.ts` — 4 tests.
+- Passed: focused ESLint over all changed TypeScript/TSX test and production surfaces.
+- The initial combined focused Vitest process stalled without emitting results; it was stopped and all suites passed independently.
+- Browser persona activation remains intentionally owned by blocked Task #116 after withdrawal Task #115 lands.
+
+#### Reflections
+
+- Digest-only token persistence prevents a database read from becoming an immediately usable invitation link.
+- Keeping membership creation inside one locked database function closes the duplicate-participant and partial-organization-membership race while Edge authentication remains the public command boundary.
+
+#### Suggested Next Steps
+
+- Commit and independently validate #114, then move it to `In Review`.
+- Implement #115 without marking credits paid or executing any payout rail.
