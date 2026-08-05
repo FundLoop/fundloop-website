@@ -153,3 +153,60 @@ Boundary notes:
 - This repair is intentionally non-production.
 - The branch does not run a remote seed or reset.
 - No successful hosted operational MVP smoke is claimed until the post-merge dev deploy and smoke rerun pass.
+
+## 2026-08-05 Remote-Safe Hosted Smoke Repair Complete
+
+Status: remote-safe hosted payment smoke passed; full operational MVP credited-earnings smoke still remains separate.
+
+Environment evidence checked:
+
+- Worktree: `/Users/botmaster/src/fundloop`
+- Branch: `dev`
+- Dev head: `a5eddff87a040fcb848f7ef6d5c69ae24027a3ec`
+- Hosted URL: `https://fundloop-website.vercel.app`
+- Remote Supabase lane: non-production Preview/dev values exported from ignored `.env.remote.local`
+- Remote mutation: remote-safe Playwright fixture setup and cleanup only
+- Production/main mutation: none
+- Real payout execution: none
+
+GitHub evidence:
+
+- PR #111 merged to `dev` at `a5eddff87a040fcb848f7ef6d5c69ae24027a3ec`.
+- Dev Supabase Deploy run `30970060012` completed successfully, including database migrations and Edge Function deployment.
+- Dev CI run `30970059994` completed successfully.
+
+Hosted smoke evidence:
+
+- Command:
+
+```bash
+PLAYWRIGHT_REMOTE_BASE_URL="https://fundloop-website.vercel.app" \
+PLAYWRIGHT_REMOTE_ALLOW_CANONICAL_SUPABASE=true \
+pnpm dlx node@22.22.1 /opt/homebrew/bin/pnpm test:e2e:remote
+```
+
+- Result: 2 remote-safe Playwright tests passed in 29.4 seconds.
+- Covered routes/flows:
+  - seeded project payment statuses and onchain progress render safely
+  - project crypto route create/update-style management works without touching irreversible onchain state
+
+Repair chain completed:
+
+- Dev intake-contract reference rows were repaired through approved forward migrations and the GitHub Supabase Deploy workflow.
+- Remote payment smoke fixtures were hardened against stale shared sequences and schema drift.
+- PostgREST schema cache reload was applied through a forward migration.
+- Hosted Preview/dev E2E login gating was fixed to use `FUNDLOOP_DEPLOYMENT_ENV=dev` while failing closed for unknown/prod-like values.
+- Supabase Edge command runtime now accepts Supabase's native `SUPABASE_URL` and `SUPABASE_ANON_KEY` function secret names.
+- The crypto route manager now reconciles persisted server state while preserving unrelated unsaved draft rows.
+
+Remaining validation gap:
+
+- This proves the remote-safe hosted payment lane, not the full operational MVP founder/operator/user cycle through credited-but-not-paid earnings.
+- A focused regression test for preserving multiple unsaved crypto-route drafts is still desirable if/when the project adds a component test harness for `ProjectCryptoRouteManager`.
+
+Boundary notes:
+
+- No production/main environment was touched.
+- No remote seed, reset, or manual schema migration was run from the local shell.
+- No secrets, bearer tokens, cookies, Supabase keys, or private payloads are recorded here.
+- No real payout transfer was executed.
