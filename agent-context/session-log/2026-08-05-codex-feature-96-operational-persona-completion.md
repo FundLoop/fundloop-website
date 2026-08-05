@@ -141,3 +141,41 @@ Address the independent #114 validator's fail result before allowing invitation 
 
 - Commit the validator fixes and rerun independent #114 validation.
 - Continue #115 only after the invitation security boundary is green.
+
+### session v5: Add safe credited-earnings withdrawal requests (#115)
+
+- Timestamp: 2026-08-05T04:57:00Z
+- Agent: Codex
+- Branch: codex/feature-96-operational-persona-completion
+- Head: 53bf1b6
+
+#### Objective
+
+Let authenticated members request withdrawal of eligible credited-not-paid earnings without executing a transfer or marking any earning paid.
+
+#### Actions Taken
+
+- Added forward-only withdrawal-request and one-credit/one-reservation tables with self-read RLS and explicit client write/RPC revocations.
+- Added a service-role-only atomic database function that verifies the user's active default route, locks eligible credits, reserves them exactly once, and returns idempotent `requested` state.
+- Added typed authenticated Edge command contracts/adapters and an earnings-workspace request panel with eligible/requested/not-paid language.
+- Extended the earnings read model with request history, reservation counts, eligible totals, and requested totals.
+- Added contract, command, migration-boundary, read-model, and real component regression tests and regenerated local Supabase types.
+
+#### Validation Notes
+
+- Passed: full local Supabase migration/seed replay with both new capability migrations.
+- Passed live ACL query: withdrawal RPC execute is false for `anon` and `authenticated`; authenticated request-table select is true while insert is false.
+- Passed transactional database smoke: two credits totaling $150 were reserved once, the same idempotency key returned the same request, and both credits remained `not_paid`; the transaction rolled back.
+- Passed separately: withdrawal contract 2 tests, command 3 tests, migration boundary 2 tests, panel 2 tests, and user earnings workspace 5 tests.
+- Passed: focused ESLint and `pnpm typecheck`.
+- Real persona browser activation remains owned by Task #116.
+
+#### Reflections
+
+- Reservation linkage is separate from payment status so request intent cannot be confused with settlement.
+- Restricting the RPC to service role keeps caller-supplied actor identity behind the authenticated Edge boundary.
+
+#### Suggested Next Steps
+
+- Commit and independently validate #115.
+- After #114 and #115 pass, unblock #116 and activate the invitation and withdrawal persona checkpoints.

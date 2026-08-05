@@ -8,6 +8,7 @@ import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
+import { WithdrawalRequestPanel } from "@/components/workspace/withdrawal-request-panel"
 
 type WorkspaceEarningsPageProps = {
   params: Promise<{ locale: string }>
@@ -303,6 +304,12 @@ export default async function WorkspaceEarningsPage({ params }: WorkspaceEarning
           <CreditTable rows={earnings.credits} empty={t("credits.empty")} locale={locale} t={t} />
         </CardContent>
       </Card>
+
+      <WithdrawalRequestPanel
+        eligibleUsd={earnings.summary.eligibleWithdrawalUsd}
+        defaultRoute={earnings.routes.defaultRoute ? { id: earnings.routes.defaultRoute.id, label: earnings.routes.defaultRoute.label } : null}
+        initialRequests={earnings.withdrawalRequests}
+      />
 
       <section className="grid gap-5 lg:grid-cols-[0.9fr_1.1fr]">
         <Card className="bg-[var(--surface-panel-strong)] shadow-[var(--surface-shadow-panel)]">
