@@ -68,7 +68,13 @@ export async function executeProjectInvitationAccept(
     const codes: Record<string, string> = { invitation_not_found: "invitation_not_found", invitation_not_pending: "invitation_not_pending",
       invitation_expired: "invitation_expired", invitation_email_mismatch: "invitation_email_mismatch" }
     const code = Object.entries(codes).find(([message]) => error.message.includes(message))?.[1] ?? "invitation_accept_failed"
-    return failure(code, code === "invitation_email_mismatch" ? "Sign in with the email address that was invited." : "This invitation cannot be accepted.")
+    const messages: Record<string, string> = {
+      invitation_email_mismatch: "Sign in with the email address that was invited.",
+      invitation_not_found: "This invitation link is invalid.",
+      invitation_expired: "This invitation has expired. Ask a project administrator for a new link.",
+      invitation_not_pending: "This invitation is no longer pending and cannot be accepted.",
+    }
+    return failure(code, messages[code] ?? "This invitation cannot be accepted.")
   }
   const row = Array.isArray(data) ? data[0] : null
   if (!row) return failure("invitation_accept_failed", "Invitation acceptance returned no result.")

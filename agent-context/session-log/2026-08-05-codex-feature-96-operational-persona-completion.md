@@ -179,3 +179,29 @@ Let authenticated members request withdrawal of eligible credited-not-paid earni
 
 - Commit and independently validate #115.
 - After #114 and #115 pass, unblock #116 and activate the invitation and withdrawal persona checkpoints.
+
+### session v6: Make invitation failure states explicit (#114)
+
+- Timestamp: 2026-08-05T04:58:00Z
+- Agent: Codex
+- Branch: codex/feature-96-operational-persona-completion
+- Head: 5fbee77
+
+#### Objective
+
+Close the remaining invitation validator UX findings before browser activation.
+
+#### Actions Taken
+
+- Added distinct invalid, expired, and no-longer-pending acceptance messages.
+- Added explicit loading and failure states for the persisted founder invitation list.
+- Extended command and real-component regressions for these states.
+
+#### Validation Notes
+
+- Passed separately: invitation command 6 tests and invitation panel 2 tests.
+- The 1440x1100 invitation create/accept browser smoke and exact fixture cleanup remain intentionally coupled to Task #116's real persona activation.
+
+#### Suggested Next Steps
+
+- Commit these explicit states, then complete the browser evidence through #116.

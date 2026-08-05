@@ -19,4 +19,11 @@ describe("ProjectInvitationPanel", () => {
     expect(screen.getByText("pending")).toBeTruthy()
     expect(listInvitations).toHaveBeenCalledWith({ projectSlug: "civic" })
   })
+
+  it("shows an explicit persisted-list failure instead of an empty state", async () => {
+    listInvitations.mockResolvedValue({ ok: false, error: { code: "failed", message: "no" } })
+    render(<ProjectInvitationPanel projectSlug="civic" projectName="Civic" locale="en" />)
+    expect((await screen.findByRole("alert")).textContent).toContain("Persisted invitations could not be loaded")
+    expect(screen.queryByText("No project invitations yet.")).toBeNull()
+  })
 })
