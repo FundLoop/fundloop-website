@@ -2,6 +2,7 @@ import { edgeCommandFailure, edgeCommandSuccess, type EdgeCommandResult } from "
 
 export const PROJECT_INVITATION_CREATE_FUNCTION = "project-invitation-create"
 export const PROJECT_INVITATION_ACCEPT_FUNCTION = "project-invitation-accept"
+export const PROJECT_INVITATION_LIST_FUNCTION = "project-invitation-list"
 
 export type ProjectInvitationCreateInput = {
   projectSlug: string
@@ -35,6 +36,16 @@ export type ProjectInvitationAcceptResult = {
   acceptedAt: string
 }
 
+export type ProjectInvitationListInput = { projectSlug: string }
+export type ProjectInvitationListItem = {
+  invitationId: string
+  email: string
+  role: "member" | "admin"
+  status: "pending" | "accepted" | "expired" | "revoked"
+  expiresAt: string
+  createdAt: string
+}
+
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 const TOKEN_PATTERN = /^[A-Za-z0-9_-]{32,256}$/
 
@@ -66,6 +77,12 @@ export function validateProjectInvitationAcceptInput(input: unknown): EdgeComman
     : edgeCommandFailure("invalid_payload", "A valid invitation token is required.")
 }
 
+export function validateProjectInvitationListInput(input: unknown): EdgeCommandResult<ProjectInvitationListInput> {
+  const value = record(input)
+  const projectSlug = value && typeof value.projectSlug === "string" ? value.projectSlug.trim() : ""
+  return projectSlug ? edgeCommandSuccess({ projectSlug }) : edgeCommandFailure("invalid_payload", "projectSlug is required.")
+}
+
 export function normalizeProjectInvitationCreateResult(result: EdgeCommandResult<unknown>): EdgeCommandResult<ProjectInvitationCreateResult> {
   if (!result.ok) return result
   const value = record(result.data)
@@ -87,4 +104,16 @@ export function normalizeProjectInvitationAcceptResult(result: EdgeCommandResult
     return edgeCommandFailure("invalid_edge_response", "Invitation acceptance returned an invalid response.")
   }
   return edgeCommandSuccess(value as ProjectInvitationAcceptResult)
+}
+
+export function normalizeProjectInvitationListResult(result: EdgeCommandResult<unknown>): EdgeCommandResult<ProjectInvitationListItem[]> {
+  if (!result.ok) return result
+  if (!Array.isArray(result.data)) return edgeCommandFailure("invalid_edge_response", "Invitation list returned an invalid response.")
+  const valid = result.data.every((item) => {
+    const value = record(item)
+    return value && typeof value.invitationId === "string" && typeof value.email === "string" &&
+      (value.role === "member" || value.role === "admin") && ["pending", "accepted", "expired", "revoked"].includes(String(value.status)) &&
+      typeof value.expiresAt === "string" && typeof value.createdAt === "string" && !("token" in value) && !("tokenDigest" in value)
+  })
+  return valid ? edgeCommandSuccess(result.data as ProjectInvitationListItem[]) : edgeCommandFailure("invalid_edge_response", "Invitation list returned unsafe or invalid rows.")
 }

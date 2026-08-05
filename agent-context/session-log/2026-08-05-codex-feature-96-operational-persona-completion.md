@@ -106,3 +106,38 @@ Replace the legacy project invitation mock with an authorized persisted invitati
 
 - Commit and independently validate #114, then move it to `In Review`.
 - Implement #115 without marking credits paid or executing any payout rail.
+
+### session v4: Close invitation validator authorization findings (#114)
+
+- Timestamp: 2026-08-05T04:54:00Z
+- Agent: Codex
+- Branch: codex/feature-96-operational-persona-completion
+- Head: 9d0bb5c
+
+#### Objective
+
+Address the independent #114 validator's fail result before allowing invitation work to advance.
+
+#### Actions Taken
+
+- Explicitly revoked the security-definer acceptance RPC and digest-bearing invitation table from `PUBLIC`, `anon`, and `authenticated`, retaining service-role-only command access.
+- Added an authenticated project-admin Edge list command that returns a token-free invitation projection and made the founder UI reload durable pending invitations.
+- Prevented project-level admin invitations from granting organization-wide Admin and preserved existing Founder/Admin roles during membership reactivation.
+- Added migration-boundary, safe-list, and persisted-list UI regression tests.
+
+#### Validation Notes
+
+- Passed: full local Supabase migration/seed replay after the ACL and role changes.
+- Passed live ACL query: acceptance execute and invitation-table select are false for both `anon` and `authenticated`.
+- Passed live transactional acceptance check: existing organization role remained Founder (`role_id=2`) while project participation was created without admin escalation for a member invite; transaction rolled back.
+- Passed separately: invitation contract 4 tests, command 3 tests, migration boundary 2 tests, and founder invitation panel 1 test.
+
+#### Reflections
+
+- Supabase default grants must be revoked explicitly from `anon` and `authenticated`; revoking only `PUBLIC` is insufficient.
+- Project role and organization role are different authorization domains and must not be coupled by invitation acceptance.
+
+#### Suggested Next Steps
+
+- Commit the validator fixes and rerun independent #114 validation.
+- Continue #115 only after the invitation security boundary is green.

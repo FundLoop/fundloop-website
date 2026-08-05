@@ -43,6 +43,9 @@ EXECUTE FUNCTION public.set_updated_at();
 
 ALTER TABLE public.project_invitations ENABLE ROW LEVEL SECURITY;
 
+REVOKE ALL ON TABLE public.project_invitations FROM PUBLIC, anon, authenticated;
+GRANT ALL ON TABLE public.project_invitations TO service_role;
+
 CREATE POLICY project_invitations_admin_select
 ON public.project_invitations
 FOR SELECT
@@ -114,9 +117,9 @@ BEGIN
     RAISE EXCEPTION USING ERRCODE = '42501', MESSAGE = 'invitation_email_mismatch';
   END IF;
 
-  SELECT * INTO project_row
-  FROM public.projects
-  WHERE id = invitation.project_id AND organization_id = invitation.organization_id;
+  SELECT project.* INTO project_row
+  FROM public.projects project
+  WHERE project.id = invitation.project_id AND project.organization_id = invitation.organization_id;
 
   IF NOT FOUND THEN
     RAISE EXCEPTION USING ERRCODE = '23503', MESSAGE = 'invitation_project_unavailable';
@@ -124,7 +127,7 @@ BEGIN
 
   SELECT id INTO member_role_id
   FROM public.ref_roles
-  WHERE name = CASE WHEN invitation.invited_role = 'admin' THEN 'Admin' ELSE 'Contributor' END
+  WHERE name = 'Contributor'
   ORDER BY id
   LIMIT 1;
 
@@ -137,15 +140,13 @@ BEGIN
   ) VALUES (
     invitation.organization_id, p_actor_user_id, member_role_id, invitation.created_by_user_id, 'active', NULL
   )
-  ON CONFLICT (organization_id, user_id) DO UPDATE
-  SET role_id = EXCLUDED.role_id,
-      role_assigned_by = EXCLUDED.role_assigned_by,
-      status = 'active',
+  ON CONFLICT ON CONSTRAINT organization_members_pkey DO UPDATE
+  SET status = 'active',
       deleted_at = NULL;
 
   INSERT INTO public.participants (project_id, user_id, is_admin)
   VALUES (invitation.project_id, p_actor_user_id, invitation.invited_role = 'admin')
-  ON CONFLICT (project_id, user_id) DO UPDATE
+  ON CONFLICT ON CONSTRAINT user_project_participation_pkey DO UPDATE
   SET is_admin = participants.is_admin OR EXCLUDED.is_admin;
 
   UPDATE public.project_invitations
@@ -158,5 +159,5 @@ BEGIN
 END;
 $$;
 
-REVOKE ALL ON FUNCTION public.accept_project_invitation(text, uuid, text) FROM PUBLIC;
+REVOKE ALL ON FUNCTION public.accept_project_invitation(text, uuid, text) FROM PUBLIC, anon, authenticated;
 GRANT EXECUTE ON FUNCTION public.accept_project_invitation(text, uuid, text) TO service_role;
