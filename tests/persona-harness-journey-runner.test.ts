@@ -2,7 +2,7 @@ import { mkdtemp, readFile } from "node:fs/promises"
 import os from "node:os"
 import path from "node:path"
 import { describe, expect, it, vi } from "vitest"
-import { newMemberJourney } from "@/tests/e2e/personas/journeys"
+import { newFounderJourney, newMemberJourney } from "@/tests/e2e/personas/journeys"
 import { executePersonaJourney } from "@/tests/e2e/support/persona-journey-runner"
 
 describe("persona journey execution", () => {
@@ -39,13 +39,13 @@ describe("persona journey execution", () => {
     const outputRoot = await mkdtemp(path.join(os.tmpdir(), "persona-journey-"))
     const cleanup = vi.fn(async () => ({ status: "clean" as const, deletedCount: 4, residualCount: 0, reasonCode: null }))
     const actions = new Proxy({}, {
-      get: (_target, checkpointId) => async () => checkpointId === "member.withdraw-earnings"
-        ? { outcome: "capability-unavailable" as const, evidence: { declared: true }, reasonCode: "withdrawal-not-implemented" }
+      get: (_target, checkpointId) => async () => checkpointId === "cadence.await-operator-distribution"
+        ? { outcome: "capability-unavailable" as const, evidence: { declared: true }, reasonCode: "operator-cadence-owned-by-task-102" }
         : { outcome: "observed" as const, evidence: { visible: true } },
     }) as never
 
     const result = await executePersonaJourney({
-      journey: newMemberJourney(actions),
+      journey: newFounderJourney(actions),
       outputRoot,
       runId: "persona-20350101T000000Z-journey",
       cleanup,
@@ -54,7 +54,7 @@ describe("persona journey execution", () => {
     expect(result.status).toBe("incomplete")
     expect(result.checkpoints.at(-1)?.status).toBe("expected-pending")
     expect(cleanup).toHaveBeenCalledOnce()
-    expect(JSON.parse(await readFile(path.join(outputRoot, "persona-20350101T000000Z-journey", "personas", "new-member.json"), "utf8"))).toEqual(result)
+    expect(JSON.parse(await readFile(path.join(outputRoot, "persona-20350101T000000Z-journey", "personas", "new-founder.json"), "utf8"))).toEqual(result)
   })
 
   it("fails closed, stops later checkpoints, and still cleans", async () => {

@@ -1,6 +1,6 @@
 # Persona Happy-Path Harness
 
-Status: shared local harness foundation implemented by Task [#100](https://github.com/FundLoop/fundloop-website/issues/100), member/founder journeys implemented by Task [#101](https://github.com/FundLoop/fundloop-website/issues/101), and the returning-operator cadence plus integrated member/founder read-back implemented by Task [#102](https://github.com/FundLoop/fundloop-website/issues/102). Task [#97](https://github.com/FundLoop/fundloop-website/issues/97) supplied the narrowing evidence and Task [#98](https://github.com/FundLoop/fundloop-website/issues/98) fixed the contracts and capability-gap policy below.
+Status: shared local harness foundation implemented by Task [#100](https://github.com/FundLoop/fundloop-website/issues/100), member/founder journeys implemented by Task [#101](https://github.com/FundLoop/fundloop-website/issues/101), and the returning-operator cadence plus integrated member/founder read-back implemented by Task [#102](https://github.com/FundLoop/fundloop-website/issues/102). Tasks [#114](https://github.com/FundLoop/fundloop-website/issues/114)-[#116](https://github.com/FundLoop/fundloop-website/issues/116) add persisted invitation acceptance, safe credited-earnings withdrawal requests, and required persona checkpoints. The only registry-declared pending capability is the independently filtered founder-to-operator cadence handoff.
 
 ## Objective
 
@@ -12,8 +12,8 @@ The initial harness is a complement to focused unit, command, contract, wallet, 
 
 | Persona | Happy-path outcome |
 | --- | --- |
-| New member | Signs up through local OTP, logs in, creates a personal profile, sees accumulated earnings and their project sources, and reaches the withdrawal checkpoint. |
-| Returning member | Logs in with a deterministic existing account, sees the existing profile and accumulated earnings/project sources, and reaches the withdrawal checkpoint. |
+| New member | Signs up through local OTP, logs in, creates a personal profile, sees accumulated earnings and their project sources, and requests withdrawal of eligible credited earnings without executing a payout. |
+| Returning member | Logs in with a deterministic existing account, sees the existing profile and accumulated earnings/project sources, and requests withdrawal of eligible credited earnings without executing a payout. |
 | New founder | Signs up through local OTP, logs in, creates a personal profile and project profile, invites collaborators, submits the month's contribution and active-user attribution, advances through the monthly cadence, and sees the resulting distribution. |
 | Returning founder | Logs in with a deterministic existing account, resumes an existing project, submits the next month's contribution and active-user attribution, advances through the cadence, and sees the resulting distribution. |
 | Returning operator | Logs in with a deterministic allowlisted account, prepares and executes the controlled monthly cadence, and sees performance plus per-user and per-project allocation outcomes. |
@@ -35,7 +35,7 @@ Repository and Project evidence was reviewed on 2026-08-04:
 - Feature [#51](https://github.com/FundLoop/fundloop-website/issues/51) and Goal [#60](https://github.com/FundLoop/fundloop-website/issues/60) own the operational contribution-to-earnings smoke foundation. They explicitly exclude real outbound payout execution.
 - Feature #96 is the coordination container for the new harness. Its required sequence is #97, #98, then implementation under Goal #99; the new work should generalize the existing evidence without duplicating it.
 
-The evidence supports extending Playwright with scenario contracts and shared local orchestration. It does not support claiming that signup, invitations, withdrawal, or every requested navigation step already works end to end.
+The initial evidence supported extending Playwright with scenario contracts and shared local orchestration. Current implementation evidence additionally covers signup, persisted invitation acceptance, and credited-earnings withdrawal requests; payout execution and the independently filtered founder cadence handoff remain outside an all-green claim.
 
 ## Brainstorm
 
@@ -44,7 +44,7 @@ The evidence supports extending Playwright with scenario contracts and shared lo
 - Describe journeys in the language a person sees: profile created, contribution accepted, cycle prepared, earnings credited, and distribution visible.
 - Keep new and returning variants separate because they prove different auth and fixture boundaries.
 - Let a developer choose one persona for a quick iteration loop or run the complete suite for an integrated view.
-- Treat withdrawal as a visible expected-pending checkpoint until FundLoop has a safe local payout executor and product flow. Credited earnings are not paid earnings.
+- Keep withdrawal requests distinct from payout execution. Reserving credited earnings must not mark them paid or imply that money moved.
 - Treat invitation creation and delivery as distinct checkpoints so a future delivery assertion can be added without changing the founder scenario's shape.
 
 ### UX, navigation, and assertions
@@ -109,7 +109,7 @@ The selected slice is:
 6. Honest `pass`, `expected-pending`, and `fail` checkpoint semantics, with pending results preventing an all-green claim.
 7. Reuse of the existing Playwright, wallet, fixture, and operational-MVP foundations.
 
-The initial Feature does not implement invitations, withdrawal, payout execution, or other missing product capabilities. It defines their scenario checkpoints and reports unavailable ones as expected-pending until separately delivered.
+The initial Feature did not implement invitations, withdrawal, payout execution, or other missing product capabilities. Goal #113 subsequently delivered invitation acceptance and withdrawal requests without adding payout execution.
 
 ## Implementation Contract
 
@@ -133,8 +133,6 @@ export type RunStatus = "passed" | "incomplete" | "failed"
 export type EvidenceValue = string | number | boolean | null
 export type SanitizedEvidence = Readonly<Record<string, EvidenceValue>>
 export type PendingCapabilityId =
-  | "member-withdrawal"
-  | "project-invitation-persistence"
   | "founder-distribution-after-operator-cadence"
 export type ActorAlias =
   | "fixture-inviter"
@@ -338,7 +336,7 @@ The initial journeys use these ordered checkpoints. “Required” means the imp
 3. `member.publish-profile` — required; complete the personal-profile onboarding UI and observe the published profile at `/en/my-profile`.
 4. `member.view-earnings-total` — required; after run-owned historical fixture arrangement, observe accumulated credited earnings at `/en/workspace/earnings`.
 5. `member.view-project-sources` — required; observe the project/source breakdown and credited/not-paid state on that page.
-6. `member.withdraw-earnings` — expected-pending capability `member-withdrawal`; no safe local withdrawal executor or product flow exists.
+6. `member.withdraw-earnings` — required; request all eligible credited/not-paid earnings through the product UI, assert `Requested · not paid` and `no payout executed`, then prove the request/reservations and unchanged credit payment status.
 
 #### Returning member
 
@@ -346,7 +344,7 @@ The initial journeys use these ordered checkpoints. “Required” means the imp
 2. `member.view-existing-profile` — required; observe the fixture-owned published profile at `/en/my-profile`.
 3. `member.view-earnings-total` — required; observe existing accumulated credited earnings at `/en/workspace/earnings`.
 4. `member.view-project-sources` — required; observe source projects and credited/not-paid state.
-5. `member.withdraw-earnings` — expected-pending capability `member-withdrawal`.
+5. `member.withdraw-earnings` — required with the same request, reservation, credited/not-paid, and no-payout assertions as the new-member journey.
 
 #### New founder
 
@@ -354,7 +352,7 @@ The initial journeys use these ordered checkpoints. “Required” means the imp
 2. `auth.verify-local-otp` — required through Mailpit plus the public browser UI.
 3. `founder.publish-personal-profile` — required through the onboarding UI.
 4. `founder.publish-project-profile` — required through the project onboarding UI; observe the managed project under `/en/founder/projects`.
-5. `founder.create-project-invitation` — expected-pending capability `project-invitation-persistence`; `components/invite-member-form.tsx` currently generates a client-only link and success toast without persistence or delivery, which is not a passing invite.
+5. `founder.create-project-invitation` — required; create a persisted invitation as the founder, accept its one-time link in a separate authenticated invitee context, and prove project participation plus organization membership.
 6. `founder.submit-monthly-contribution` — required at `/en/founder/projects/[slug]/contributions` through `project-monthly-contribution-submit`.
 7. `founder.submit-active-user-attribution` — required at `/en/founder/projects/[slug]/attribution` through `project-attribution-dataset-submit`.
 8. `cadence.await-operator-distribution` — expected-pending capability `founder-distribution-after-operator-cadence`; Task #101 proves the founder inputs and reports the handoff, while Task #102 owns authenticated cadence execution and the resulting distribution assertions.
@@ -363,7 +361,7 @@ The initial journeys use these ordered checkpoints. “Required” means the imp
 
 1. `auth.login-returning-founder` — required through the secret-gated local E2E login endpoint, followed by protected-route authorization.
 2. `founder.view-existing-profile-and-project` — required; observe the stored profile and managed project.
-3. `founder.create-project-invitation` — expected-pending capability `project-invitation-persistence`.
+3. `founder.create-project-invitation` — required with persisted creation, separate-context acceptance, and membership assertions.
 4. `founder.submit-next-month-contribution` — required through the founder contribution UI.
 5. `founder.submit-next-month-attribution` — required through the founder attribution UI.
 6. `cadence.await-operator-distribution` — expected-pending capability `founder-distribution-after-operator-cadence`; Task #102 promotes this handoff into cadence execution plus founder reporting assertions.
@@ -440,7 +438,7 @@ Service ownership is explicit:
 
 - The caller owns local Supabase and Mailpit. Start/reset them with the documented commands below. The harness checks them but never starts, resets, or stops them implicitly.
 - The runner owns the Next process on `127.0.0.1:3002`. It refuses an occupied port, starts Next with local-only env, waits for HTTP readiness, and terminates only that child on completion or signal.
-- The persona lane does not start Hardhat or reuse the injected local-wallet account because this Feature does not execute a wallet transfer or withdrawal.
+- The persona lane does not start Hardhat or reuse the injected local-wallet account because withdrawal requests do not execute wallet or payout transfers.
 - If future checkpoints need the wallet lane, orchestration must extract a shared child-process primitive from `scripts/run-playwright-local-wallet.mjs`; it must not nest `pnpm test:e2e:local` or silently start a second app/Supabase stack.
 
 ## Isolation and cleanup
@@ -503,7 +501,7 @@ Task #114 replaces the legacy client-only invitation mock with project-scoped pe
 
 `/[locale]/invitations/[token]` is now the acceptance surface. It requires an authenticated account whose normalized email matches the invitation. `project-invitation-accept` calls the database-owned atomic acceptance function, which locks the invitation, enforces pending/unexpired/email-bound state, preserves any existing organization role, upserts only active membership and project-scoped participant authority, and marks the invitation accepted. Repeating acceptance by the same user returns the accepted membership without duplicates. List/read responses and screenshots must never expose raw tokens or token digests.
 
-Task #116 owns promotion of the persona invitation checkpoint from expected-pending to required after withdrawal capability Task #115 also lands. Invitation fixtures must retain the raw token only in the ignored run-ownership ledger needed for exact cleanup.
+Task #116 promotes the persona invitation checkpoint to required. The raw token remains in browser memory only long enough to open the invitee context; persisted evidence and reports contain invitation IDs/statuses, never the raw token or digest.
 
 ## Credited-earnings withdrawal requests
 
@@ -511,7 +509,7 @@ Task #115 adds a request boundary without adding a payout executor. An authentic
 
 The earnings workspace reports eligible credited amount separately from requested amount and shows request history as `Requested · not paid` with `no payout executed` language. The command does not update `monthly_cycle_bookkeeping_credits.payment_status`, create payout intents or batches, call a provider, submit a chain transaction, reconcile a rail, or mark anything paid. `anon` and `authenticated` cannot execute the security-definer function; authenticated users receive only self-owned RLS reads of requests and reservation links.
 
-Task #116 owns changing `member-withdrawal` from expected-pending to required and proving the browser checkpoint with run-owned credits and exact cleanup.
+Task #116 promotes `member-withdrawal` to required and proves the browser checkpoint with run-owned credits, a run-owned active payout route, sanitized 1440x1100 evidence, and exact cleanup.
 
 To activate a pending checkpoint when its product capability lands:
 
@@ -559,7 +557,7 @@ Existing `tests/e2e/support/env.ts`, `e2e-login.ts`, and `supabase-fixtures.ts` 
 | Every persona has an ordered contract | Five ordered checkpoint lists above; the four Task #101 builders are enforced by focused Vitest coverage |
 | New actors use real local OTP UI | Run-owned single-use invitation at `/en/join?invite=<run-token>` plus secret-safe Mailpit helper |
 | Returning/operator actors are deterministic but authorized | Run-scoped stored accounts, E2E login, protected-route/allowlist checks |
-| Withdrawal and cadence-owned handoff remain pending | Registry-owned `member-withdrawal` and `founder-distribution-after-operator-cadence` checkpoints with exit `2` semantics |
+| Cadence-owned founder handoff remains pending | Registry-owned `founder-distribution-after-operator-cadence` checkpoint with exit `2` semantics; invitation and withdrawal checkpoints are required |
 | Exact files and commands are named | Planned surfaces and command block above |
 | Local-only, secrets, cleanup, and remote guards are explicit | Fail-closed env guard, artifact policy, fixture ledger, service ownership |
 | No additional product discovery is needed | Types, routes, boundaries, clock, filters, reporting, ownership, and sequencing are fixed |
@@ -568,7 +566,7 @@ Implementation Tasks stop at an `incomplete` exit when only declared product gap
 
 ## Follow-On Candidates
 
-- A safe local payout executor and withdrawal product flow, followed by promotion of withdrawal from expected-pending to a required assertion.
+- A separately authorized payout executor that can settle approved withdrawal requests without weakening the request-only safety boundary.
 - Invitation transport/delivery assertions beyond an in-app invitation checkpoint.
 - Preview/dev persona execution with separately guarded fixtures and credentials.
 - Scheduled CI, flake tracking, and retained sanitized run summaries.
@@ -592,4 +590,4 @@ None block implementation. The user confirmed the persona split, auth strategy, 
 ## Handoff
 
 - Goal #99 and Tasks #100-#102: implement the fixed orchestration/reporting contract, member/founder journeys, and operator cadence journey in the registered Feature #96 worktree.
-- Keep withdrawal and any unavailable invitation behavior explicit and pending until their product capabilities are delivered outside this Feature.
+- Keep payout execution and the independently filtered founder cadence handoff explicit; invitation acceptance and withdrawal requests are now required persona behavior.

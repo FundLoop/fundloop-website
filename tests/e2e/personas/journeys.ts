@@ -36,7 +36,6 @@ const memberWithdrawal = (actorAlias: "new-member" | "returning-member"): Checkp
   title: "Reach the withdrawal checkpoint",
   actorAlias,
   surface: "browser",
-  mode: "expected-pending",
   capabilityId: "member-withdrawal",
 })
 
@@ -45,7 +44,6 @@ const founderInvitation = (actorAlias: "new-founder" | "returning-founder"): Che
   title: "Reach the persisted project invitation checkpoint",
   actorAlias,
   surface: "browser",
-  mode: "expected-pending",
   capabilityId: "project-invitation-persistence",
 })
 

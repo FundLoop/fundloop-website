@@ -8,5 +8,5 @@ test.setTimeout(180_000)
 test("@persona:returning-member executes the returning member journey", async ({ page }) => {
   const scenario = createPersonaBrowserActions("returning-member", page)
   const result = await executePersonaJourney({ journey: returningMemberJourney(scenario.actions), outputRoot: scenario.outputRoot, runId: scenario.runId, cleanup: scenario.fixtures.cleanup })
-  expect(result.status).toBe("incomplete")
+  expect(result.status).toBe("passed")
 })

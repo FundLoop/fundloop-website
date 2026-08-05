@@ -205,3 +205,46 @@ Close the remaining invitation validator UX findings before browser activation.
 #### Suggested Next Steps
 
 - Commit these explicit states, then complete the browser evidence through #116.
+
+### session v7: Activate invitation and withdrawal persona checkpoints (#116)
+
+- Timestamp: 2026-08-05T05:29:00Z
+- Agent: Codex
+- Branch: codex/feature-96-operational-persona-completion
+- Head: 5390c37
+
+#### Objective
+
+Promote persisted invitation acceptance and credited-earnings withdrawal requests from declared gaps to required new/returning persona behavior, with real browser assertions, sanitized evidence, and exact cleanup.
+
+#### Actions Taken
+
+- Removed the invitation and withdrawal capability-registry entries and made all four checkpoints required while retaining the independently filtered founder cadence handoff as the only expected-pending capability.
+- Extended founder fixtures with run-owned organizations, Founder membership, and project-admin participation; extended member earnings with a run-owned active default payout route.
+- Made new and returning members request exactly $125 through the earnings UI, then asserted the request/reservation rows, unchanged `not_paid` credit, `Requested · not paid`, and `no payout executed` language.
+- Made new and returning founders create persisted invitations through the project UI, open the raw link only in memory in a separate profiled invitee browser context, accept it, and verify non-admin project participation plus organization membership.
+- Added exact ledger ownership for invitation, invitee profile/memberships, withdrawal request/reservation, payout route, and existing dependent fixtures.
+- Added sanitized 1440x1100 invitation and withdrawal success captures and made invitation command failures emit bounded, non-sensitive reason codes.
+- Made operator screenshot redaction transactional so sensitive text is restored after capture instead of mutating React state and causing later hydration failures.
+- Updated focused contracts, journey-runner/reporting tests, member spec expectations, and the local harness/runbook documentation.
+
+#### Validation Notes
+
+- Node v22.23.2 filtered member run `persona-20260805T050514153Z-4a1ba234` passed new and returning member journeys completely with clean teardown.
+- Node v22.23.2 filtered founder runs `persona-20260805T051123166Z-5131eb74` and `persona-20260805T050921661Z-58232b62` passed invitation creation/acceptance and all implemented founder checkpoints; each remained incomplete only at the declared cadence handoff and cleaned fully.
+- The first integrated run proved all newly activated checkpoints but hit the known local lock stall because Edge was served separately from an already-running excluded stack. Restarting caller-owned Supabase in the documented lean mode with its managed Edge container fixed the environment; filtered operator run `persona-20260805T052354990Z-39f4039b` then passed all nine checkpoints with clean teardown.
+- A subsequent matrix exposed permanent screenshot redaction causing a hydration mismatch. After restoring redacted text nodes in `finally`, final matrix `persona-20260805T052635035Z-db98c69d` ran all five Playwright specs successfully: both members and the operator passed, both founders passed every implemented checkpoint and were incomplete only at `founder-distribution-after-operator-cadence`, and all five ledgers were clean with zero residuals. Aggregate exit 2 is therefore the intentional expected-pending result, not a test failure.
+- Visually inspected the 1440x1100 withdrawal and invitation acceptance captures; they are legible and contain no email, OTP, raw invitation token/digest, UUID, or credential.
+- Independent validators passed #114 and #115 after reviewing the browser artifacts, product/database evidence, and exact cleanup.
+- Final `pnpm check` passed on Node v22.23.2 with repo-wide ESLint, 118 Vitest files/527 tests, typecheck, production compilation, and 162 generated routes.
+
+#### Reflections
+
+- Local Edge validation must use the caller-owned managed Edge container started with the stack; bolting `functions serve` onto a stack that excluded Edge can leave long-running commands stalled even while short commands appear healthy.
+- Privacy redaction must be reversible. Mutating a live React tree after hydration can poison later route rendering even when the screenshot itself is safe.
+- Withdrawal request state remains intentionally separate from payment state: the browser evidence shows reservation and zero remaining eligibility without claiming payout execution.
+
+#### Suggested Next Steps
+
+- Commit and independently validate #116, then run integrated Goal #113 validation.
+- Keep the founder-to-operator handoff registry entry until a separately filtered founder journey consumes the cadence result; do not add payout execution or invitation email delivery to this Goal.
