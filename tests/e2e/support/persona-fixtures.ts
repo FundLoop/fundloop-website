@@ -442,6 +442,11 @@ export async function arrangeFounderProject(
   const suffix = randomUUID().slice(0, 8)
   const name = `Persona Project ${suffix}`
   const slug = `persona-project-${suffix}`
+  const organization = await mutation(
+    supabase.from("organizations").insert({ name: `${name} Organization`, description: "Run-owned persona organization." }).select("id").single(),
+    "persona-organization-create-failed",
+  )
+  await controller.recordDatabaseRow({ table: "organizations", primaryKey: { id: organization.id }, cleanupPhase: 30 })
   const project = await mutation(
     supabase.from("projects").insert({
       name,
@@ -452,10 +457,17 @@ export async function arrangeFounderProject(
       status: "active",
       payment_percentage: 1,
       default_reporting_currency_code: "USD",
+      organization_id: organization.id,
     }).select("id").single(),
     "persona-project-create-failed",
   )
   await controller.recordDatabaseRow({ table: "projects", primaryKey: { id: project.id }, cleanupPhase: 40 })
+  const membership = await mutation(
+    supabase.from("organization_members").insert({ organization_id: organization.id, user_id: actorUserId, role_id: 2,
+      role_assigned_by: actorUserId, status: "active" }).select("id").single(),
+    "persona-founder-organization-membership-create-failed",
+  )
+  await controller.recordDatabaseRow({ table: "organization_members", primaryKey: { id: membership.id }, cleanupPhase: 60 })
   const participant = await mutation(
     supabase.from("participants").insert({ project_id: project.id, user_id: actorUserId, is_admin: true }).select("id").single(),
     "persona-founder-membership-create-failed",
@@ -630,6 +642,12 @@ export async function arrangeMemberEarnings(
     "persona-bookkeeping-credit-create-failed",
   )
   await controller.recordDatabaseRow({ table: "monthly_cycle_bookkeeping_credits", primaryKey: { id: credit.id }, cleanupPhase: 90 })
+  const route = await mutation(
+    supabase.from("user_payout_routes").insert({ user_id: input.actorUserId, rail: "fiat_stub", label: "Persona default route",
+      currency_code: "USD", destination: { test: true }, is_default: true, status: "active", created_by_user_id: input.actorUserId }).select("id").single(),
+    "persona-payout-route-create-failed",
+  )
+  await controller.recordDatabaseRow({ table: "user_payout_routes", primaryKey: { id: route.id }, cleanupPhase: 95 })
 }
 
 export async function resolveSeededOperator(supabase: SupabaseClient<Database>) {

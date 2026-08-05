@@ -25,21 +25,23 @@ describe("persona harness contracts", () => {
 
   it("validates checkpoint ids and registry-owned pending declarations", () => {
     const journey: PersonaJourney = {
-      id: "new-member",
-      title: "New member",
+      id: "new-founder",
+      title: "New founder",
       actorKind: "new",
       checkpoints: [{
-        id: "member.withdraw-earnings",
-        title: "Withdraw",
-        actorAlias: "new-member",
-        surface: "browser",
+        id: "cadence.await-operator-distribution",
+        title: "Await cadence",
+        actorAlias: "new-founder",
+        surface: "fixture-observation",
         mode: "expected-pending",
-        capabilityId: "member-withdrawal",
-        execute: async () => ({ outcome: "capability-unavailable", evidence: {}, reasonCode: "withdrawal-not-implemented" }),
+        capabilityId: "founder-distribution-after-operator-cadence",
+        execute: async () => ({ outcome: "capability-unavailable", evidence: {}, reasonCode: "operator-cadence-owned-by-task-102" }),
       }],
     }
     expect(validatePersonaJourneys([journey])).toBe(true)
-    expect(CAPABILITY_REGISTRY["member-withdrawal"].state).toBe("expected-pending")
+    expect(CAPABILITY_REGISTRY["founder-distribution-after-operator-cadence"].state).toBe("expected-pending")
+    expect("member-withdrawal" in CAPABILITY_REGISTRY).toBe(false)
+    expect("project-invitation-persistence" in CAPABILITY_REGISTRY).toBe(false)
     expect(() => validatePersonaJourneys([{ ...journey, checkpoints: [{ ...journey.checkpoints[0], id: "bad" }] }]))
       .toThrow("checkpoint-id-invalid")
   })
@@ -85,6 +87,8 @@ describe("persona harness contracts", () => {
       "member.view-project-sources",
       "member.withdraw-earnings",
     ])
+    expect(journeys[0].checkpoints.at(-1)?.mode).toBe("required")
+    expect(journeys[2].checkpoints.find((checkpoint) => checkpoint.id === "founder.create-project-invitation")?.mode).toBe("required")
     expect(journeys[2].checkpoints.at(-1)).toMatchObject({
       id: "cadence.await-operator-distribution",
       mode: "expected-pending",

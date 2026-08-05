@@ -74,16 +74,29 @@ export function createPersonaOperatorActions(page: Page) {
     await page.evaluate(() => {
       const sensitive = /(?:[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}|[^\s@]+@[^\s@]+\.[^\s@]+)/gi
       const walker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT)
+      const redactions: Array<{ node: Node; text: string }> = []
       while (walker.nextNode()) {
         const node = walker.currentNode
-        if (node.textContent && sensitive.test(node.textContent)) node.textContent = node.textContent.replace(sensitive, "sanitized-actor")
+        if (node.textContent && sensitive.test(node.textContent)) {
+          redactions.push({ node, text: node.textContent })
+          node.textContent = node.textContent.replace(sensitive, "sanitized-actor")
+        }
         sensitive.lastIndex = 0
       }
+      ;(window as unknown as { __fundloopPersonaRedactions?: typeof redactions }).__fundloopPersonaRedactions = redactions
     })
-    await assertSafePersonaScreenshotSurface(page)
-    const directory = path.join(process.cwd(), "output", "playwright", "feature-96", runId)
-    await mkdir(directory, { recursive: true })
-    await page.screenshot({ path: path.join(directory, `${name}.png`), fullPage: false })
+    try {
+      await assertSafePersonaScreenshotSurface(page)
+      const directory = path.join(process.cwd(), "output", "playwright", "feature-96", runId)
+      await mkdir(directory, { recursive: true })
+      await page.screenshot({ path: path.join(directory, `${name}.png`), fullPage: false })
+    } finally {
+      await page.evaluate(() => {
+        const target = window as unknown as { __fundloopPersonaRedactions?: Array<{ node: Node; text: string }> }
+        for (const redaction of target.__fundloopPersonaRedactions ?? []) redaction.node.textContent = redaction.text
+        delete target.__fundloopPersonaRedactions
+      })
+    }
   }
 
   async function expectCycleStatus(status: string) {

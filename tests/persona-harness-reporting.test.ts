@@ -10,9 +10,9 @@ describe("persona capability reporting", () => {
     expect(deriveCheckpointResult(required, { outcome: "observed", evidence: { "profile-visible": true } }).status).toBe("pass")
     expect(deriveCheckpointResult(required, { outcome: "capability-unavailable", evidence: {} }).status).toBe("fail")
 
-    const pending = { id: "member.withdraw-earnings", mode: "expected-pending" as const, capabilityId: "member-withdrawal" as const }
+    const pending = { id: "cadence.await-operator-distribution", mode: "expected-pending" as const, capabilityId: "founder-distribution-after-operator-cadence" as const }
     expect(deriveCheckpointResult(pending, {
-      outcome: "capability-unavailable", evidence: { "withdrawal-visible": false }, reasonCode: "withdrawal-not-implemented",
+      outcome: "capability-unavailable", evidence: { "distribution-visible": false }, reasonCode: "operator-cadence-owned-by-task-102",
     }).status).toBe("expected-pending")
     expect(deriveCheckpointResult(pending, { outcome: "observed", evidence: {} }).reasonCode).toBe("stale-pending-declaration")
 
