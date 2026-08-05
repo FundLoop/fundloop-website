@@ -210,3 +210,43 @@ Boundary notes:
 - No remote seed, reset, or manual schema migration was run from the local shell.
 - No secrets, bearer tokens, cookies, Supabase keys, or private payloads are recorded here.
 - No real payout transfer was executed.
+
+## 2026-08-05 Full Hosted Cadence Retry
+
+Status: blocked before operational-cycle fixture creation because the dev deployment has no configured internal-operator allowlist.
+
+Environment evidence checked:
+
+- Worktree: `/Users/botmaster/src/fundloop-operational-mvp-personas`
+- Branch: `codex/feature-96-operational-persona-completion`
+- Base/dev head: `426024cb5bf444b8950852f937ff08a6cfa4403b`
+- Hosted URL: `https://fundloop-website.vercel.app`
+- Runtime: Node `22.23.2`
+- Remote Supabase lane: non-production Preview/dev values exported from ignored `.env.remote.local`
+- Production/main mutation: none
+- Real payout execution: none
+
+Hosted evidence:
+
+- `pnpm test:e2e:remote` passed both remote-safe payment tests in 23.3 seconds. Its run-owned payment and route fixtures completed their cleanup.
+- A read-only `vercel env ls` for the linked dev project confirmed that the E2E gate and remote Supabase variables are configured.
+- The same Vercel inventory contains neither `FUNDLOOP_INTERNAL_ADMIN_EMAILS` nor `FUNDLOOP_ZKAS_SUPERADMIN_EMAILS`.
+- The ignored remote smoke environment contains no non-empty internal-admin or zkAS-superadmin allowlist entry that could identify an authorized non-production operator actor.
+
+Full-smoke result:
+
+- The founder/operator/user cadence cannot safely begin. Cycle lock, calculation packaging, verification, approval, and bookkeeping-credit creation all require an allowlisted internal operator in the hosted app and Edge Function boundaries.
+- No cycle, founder/member operational fixture, calculation artifact, bookkeeping credit, payout intent, or transfer was created for this blocked full-smoke attempt.
+- This remains a hosted configuration/actor-access blocker, not a passing credited-earnings smoke.
+
+Required next step:
+
+- Configure non-production `FUNDLOOP_INTERNAL_ADMIN_EMAILS` and `FUNDLOOP_ZKAS_SUPERADMIN_EMAILS` values on the linked dev Vercel deployment and the corresponding deployed Supabase Edge Function environment.
+- Provide the matching non-production operator E2E actor credential through an ignored local smoke environment or another documented secret-safe auth seam.
+- Redeploy the dev target, rerun the full founder/operator/user cadence through credited-but-not-paid earnings, and retain only sanitized route/result evidence.
+
+Boundary notes:
+
+- No operator authorization was bypassed or weakened.
+- No remote reset, seed, manual migration, production/main mutation, payout intent, or payout transfer was attempted.
+- No secret values, private emails, bearer tokens, Supabase keys, cookies, or private attribution payloads are recorded here.
