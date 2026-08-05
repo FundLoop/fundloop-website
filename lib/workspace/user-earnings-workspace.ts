@@ -79,6 +79,16 @@ export type UserEarningsCredit = {
   }
 }
 
+export type UserWithdrawalRequest = {
+  id: string
+  payoutRouteId: number
+  status: "requested"
+  requestedUsdAmount: number
+  currencyCode: "USD"
+  creditCount: number
+  requestedAt: string
+}
+
 export type UserEarningsWorkspace = {
   summary: {
     resultCount: number
@@ -94,6 +104,9 @@ export type UserEarningsWorkspace = {
     readyIntentCount: number
     activeRouteCount: number
     hasDefaultRoute: boolean
+    eligibleWithdrawalUsd: number
+    requestedWithdrawalUsd: number
+    withdrawalRequestCount: number
     nextAction: "add_payout_route" | "wait_for_distribution" | "review_history"
   }
   routes: {
@@ -102,6 +115,7 @@ export type UserEarningsWorkspace = {
   }
   assetPreferences: UserAssetPreferenceReadiness
   credits: UserEarningsCredit[]
+  withdrawalRequests: UserWithdrawalRequest[]
   cycles: UserEarningsCycle[]
   pendingDistributions: UserEarningsCycle[]
   payoutHistory: UserEarningsCycle[]
@@ -166,6 +180,16 @@ type ReconciliationRow = Pick<
 type AssetPreferenceRow = Pick<
   Database["public"]["Tables"]["user_asset_preferences"]["Row"],
   "id" | "rank" | "asset_type" | "asset_code" | "project_id" | "accepted"
+>
+
+type WithdrawalRequestRow = Pick<
+  Database["public"]["Tables"]["user_withdrawal_requests"]["Row"],
+  "id" | "payout_route_id" | "status" | "requested_usd_amount" | "currency_code" | "requested_at"
+>
+
+type WithdrawalCreditRow = Pick<
+  Database["public"]["Tables"]["user_withdrawal_request_credits"]["Row"],
+  "withdrawal_request_id" | "bookkeeping_credit_id"
 >
 
 function warningFromError(scope: string, error: { message?: string } | null | undefined): UserEarningsWarning | null {
@@ -318,6 +342,8 @@ export function buildUserEarningsWorkspace({
   batches,
   reconciliationEvents,
   assetPreferences,
+  withdrawalRequests,
+  withdrawalCredits,
   warnings,
 }: {
   publishedResults: PublishedResultRow[]
@@ -331,6 +357,8 @@ export function buildUserEarningsWorkspace({
   batches: BatchRow[]
   reconciliationEvents: ReconciliationRow[]
   assetPreferences?: AssetPreferenceRow[]
+  withdrawalRequests?: WithdrawalRequestRow[]
+  withdrawalCredits?: WithdrawalCreditRow[]
   warnings: UserEarningsWarning[]
 }): UserEarningsWorkspace {
   const cycleById = new Map(cycles.map((cycle) => [cycle.id, cycle]))
@@ -361,6 +389,24 @@ export function buildUserEarningsWorkspace({
       allocationBreakdown: normalizeAllocationBreakdown(credit.allocation_breakdown),
     }))
     .sort((left, right) => new Date(right.creditedAt).getTime() - new Date(left.creditedAt).getTime())
+  const reservedCreditIds = new Set((withdrawalCredits ?? []).map((row) => row.bookkeeping_credit_id))
+  const withdrawalCreditCounts = new Map<string, number>()
+  for (const row of withdrawalCredits ?? []) {
+    withdrawalCreditCounts.set(row.withdrawal_request_id, (withdrawalCreditCounts.get(row.withdrawal_request_id) ?? 0) + 1)
+  }
+  const mappedWithdrawalRequests: UserWithdrawalRequest[] = (withdrawalRequests ?? []).map((request) => ({
+    id: request.id,
+    payoutRouteId: request.payout_route_id,
+    status: "requested",
+    requestedUsdAmount: numberValue(request.requested_usd_amount),
+    currencyCode: "USD",
+    creditCount: withdrawalCreditCounts.get(request.id) ?? 0,
+    requestedAt: request.requested_at,
+  }))
+  const eligibleWithdrawalUsd = credits
+    .filter((credit) => credit.status === "credited" && credit.paymentStatus === "not_paid" && !reservedCreditIds.has(credit.id))
+    .reduce((sum, credit) => sum + credit.usdEquivalentAmount, 0)
+  const requestedWithdrawalUsd = mappedWithdrawalRequests.reduce((sum, request) => sum + request.requestedUsdAmount, 0)
 
   const cyclesWithResults = publishedResults
     .map((result): UserEarningsCycle => {
@@ -422,6 +468,9 @@ export function buildUserEarningsWorkspace({
       readyIntentCount,
       activeRouteCount,
       hasDefaultRoute,
+      eligibleWithdrawalUsd,
+      requestedWithdrawalUsd,
+      withdrawalRequestCount: mappedWithdrawalRequests.length,
       nextAction: !hasDefaultRoute ? "add_payout_route" : pendingDistributions.length > 0 ? "wait_for_distribution" : "review_history",
     },
     routes: {
@@ -430,6 +479,7 @@ export function buildUserEarningsWorkspace({
     },
     assetPreferences: assetPreferenceReadiness,
     credits,
+    withdrawalRequests: mappedWithdrawalRequests,
     cycles: cyclesWithResults,
     pendingDistributions,
     payoutHistory,
@@ -454,12 +504,14 @@ export async function getUserEarningsWorkspace(navigationContext: NavigationCont
       batches: [],
       reconciliationEvents: [],
       assetPreferences: [],
+      withdrawalRequests: [],
+      withdrawalCredits: [],
       warnings,
     })
   }
 
   const supabase = await createServerSupabaseClient()
-  const [publishedResults, payoutRoutes, payoutIntents, bookkeepingCredits, assetPreferences] = await Promise.all([
+  const [publishedResults, payoutRoutes, payoutIntents, bookkeepingCredits, assetPreferences, withdrawalRequests] = await Promise.all([
     readEarningsData<PublishedResultRow[]>(
       "published-results",
       supabase
@@ -511,6 +563,15 @@ export async function getUserEarningsWorkspace(navigationContext: NavigationCont
       warnings,
       [],
     ),
+    readEarningsData<WithdrawalRequestRow[]>(
+      "withdrawal-requests",
+      supabase.from("user_withdrawal_requests")
+        .select("id, payout_route_id, status, requested_usd_amount, currency_code, requested_at")
+        .eq("user_id", user.id)
+        .order("requested_at", { ascending: false }),
+      warnings,
+      [],
+    ),
   ])
 
   const cycleIds = Array.from(
@@ -523,8 +584,9 @@ export async function getUserEarningsWorkspace(navigationContext: NavigationCont
   const runIds = Array.from(new Set([...publishedResults.map((result) => result.run_id), ...bookkeepingCredits.map((credit) => credit.run_id)]))
   const projectIds = Array.from(new Set(bookkeepingCredits.flatMap((credit) => normalizeSourceBreakdown(credit.source_breakdown, new Map()).map((source) => source.projectId))))
   const intentIds = payoutIntents.map((intent) => intent.id)
+  const withdrawalRequestIds = withdrawalRequests.map((request) => request.id)
 
-  const [cycles, runs, projects, batchItems, reconciliationEvents] = await Promise.all([
+  const [cycles, runs, projects, batchItems, reconciliationEvents, withdrawalCredits] = await Promise.all([
     cycleIds.length > 0
       ? readEarningsData<CycleRow[]>(
           "monthly-cycles",
@@ -559,6 +621,16 @@ export async function getUserEarningsWorkspace(navigationContext: NavigationCont
           [],
         )
       : Promise.resolve([]),
+    withdrawalRequestIds.length > 0
+      ? readEarningsData<WithdrawalCreditRow[]>(
+          "withdrawal-request-credits",
+          supabase.from("user_withdrawal_request_credits")
+            .select("withdrawal_request_id, bookkeeping_credit_id")
+            .in("withdrawal_request_id", withdrawalRequestIds),
+          warnings,
+          [],
+        )
+      : Promise.resolve([]),
   ])
 
   const batchIds = Array.from(new Set(batchItems.map((item) => item.payout_batch_id)))
@@ -584,6 +656,8 @@ export async function getUserEarningsWorkspace(navigationContext: NavigationCont
     batches,
     reconciliationEvents,
     assetPreferences,
+    withdrawalRequests,
+    withdrawalCredits,
     warnings,
   })
 }

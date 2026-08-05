@@ -242,4 +242,20 @@ describe("buildUserEarningsWorkspace", () => {
     expect(workspace.payoutHistory).toHaveLength(1)
     expect(workspace.warnings).toEqual([{ scope: "payout-routes", message: "partial read" }])
   })
+
+  it("separates eligible credited earnings from withdrawal-request reservations", () => {
+    const credit = (id: number, amount: number) => ({ id, monthly_cycle_id: 1, run_id: 7, source_result_id: id,
+      usd_equivalent_amount: amount, currency_code: "USD", status: "credited", payment_status: "not_paid",
+      credited_at: "2026-05-01T00:00:00Z", asset_fills: [], source_breakdown: [], allocation_breakdown: {} })
+    const workspace = buildUserEarningsWorkspace({
+      publishedResults: [], cycles: [{ id: 1, cycle_key: "2026-04", status: "distribution" }], runs: [{ id: 7, month: "2026-04" }],
+      payoutRoutes: [], payoutIntents: [], bookkeepingCredits: [credit(30, 125), credit(31, 75)], batchItems: [], batches: [],
+      reconciliationEvents: [], withdrawalRequests: [{ id: "req-1", payout_route_id: 3, status: "requested",
+        requested_usd_amount: 125, currency_code: "USD", requested_at: "2026-08-05T00:00:00Z" }],
+      withdrawalCredits: [{ withdrawal_request_id: "req-1", bookkeeping_credit_id: 30 }], warnings: [],
+    })
+    expect(workspace.summary).toMatchObject({ totalCreditedUsd: 200, eligibleWithdrawalUsd: 75, requestedWithdrawalUsd: 125, withdrawalRequestCount: 1 })
+    expect(workspace.withdrawalRequests[0]).toMatchObject({ id: "req-1", creditCount: 1, status: "requested" })
+    expect(workspace.credits.every((item) => item.paymentStatus === "not_paid")).toBe(true)
+  })
 })

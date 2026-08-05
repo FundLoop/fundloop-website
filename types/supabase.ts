@@ -3425,6 +3425,96 @@ export type Database = {
           },
         ]
       }
+      user_withdrawal_request_credits: {
+        Row: {
+          bookkeeping_credit_id: number
+          created_at: string
+          reserved_usd_amount: number
+          withdrawal_request_id: string
+        }
+        Insert: {
+          bookkeeping_credit_id: number
+          created_at?: string
+          reserved_usd_amount: number
+          withdrawal_request_id: string
+        }
+        Update: {
+          bookkeeping_credit_id?: number
+          created_at?: string
+          reserved_usd_amount?: number
+          withdrawal_request_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_withdrawal_request_credits_bookkeeping_credit_id_fkey"
+            columns: ["bookkeeping_credit_id"]
+            isOneToOne: true
+            referencedRelation: "monthly_cycle_bookkeeping_credits"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "user_withdrawal_request_credits_withdrawal_request_id_fkey"
+            columns: ["withdrawal_request_id"]
+            isOneToOne: false
+            referencedRelation: "user_withdrawal_requests"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      user_withdrawal_requests: {
+        Row: {
+          created_at: string
+          currency_code: string
+          id: string
+          idempotency_key: string
+          payout_route_id: number
+          requested_at: string
+          requested_usd_amount: number
+          status: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          currency_code?: string
+          id?: string
+          idempotency_key: string
+          payout_route_id: number
+          requested_at?: string
+          requested_usd_amount: number
+          status?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          currency_code?: string
+          id?: string
+          idempotency_key?: string
+          payout_route_id?: number
+          requested_at?: string
+          requested_usd_amount?: number
+          status?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_withdrawal_requests_payout_route_id_fkey"
+            columns: ["payout_route_id"]
+            isOneToOne: false
+            referencedRelation: "user_payout_routes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "user_withdrawal_requests_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["user_id"]
+          },
+        ]
+      }
       users: {
         Row: {
           age: string | null
@@ -4569,6 +4659,23 @@ export type Database = {
           project_id: number
           project_name: string
           project_slug: string
+          status: string
+        }[]
+      }
+      create_user_withdrawal_request: {
+        Args: {
+          p_actor_user_id: string
+          p_idempotency_key: string
+          p_payout_route_id: number
+        }
+        Returns: {
+          credit_count: number
+          currency_code: string
+          no_payout_executed: boolean
+          payout_route_id: number
+          request_id: string
+          requested_at: string
+          requested_usd_amount: number
           status: string
         }[]
       }

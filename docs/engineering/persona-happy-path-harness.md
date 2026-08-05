@@ -505,6 +505,14 @@ Task #114 replaces the legacy client-only invitation mock with project-scoped pe
 
 Task #116 owns promotion of the persona invitation checkpoint from expected-pending to required after withdrawal capability Task #115 also lands. Invitation fixtures must retain the raw token only in the ignored run-ownership ledger needed for exact cleanup.
 
+## Credited-earnings withdrawal requests
+
+Task #115 adds a request boundary without adding a payout executor. An authenticated member uses `user-withdrawal-request-create` with their active default payout route. The service-role-only database command validates route ownership, locks every eligible `credited` and `not_paid` bookkeeping credit for that user, excludes credits already linked to a request, creates one `requested` record, and links each selected credit under a unique reservation constraint. The same user/idempotency key returns the original request.
+
+The earnings workspace reports eligible credited amount separately from requested amount and shows request history as `Requested · not paid` with `no payout executed` language. The command does not update `monthly_cycle_bookkeeping_credits.payment_status`, create payout intents or batches, call a provider, submit a chain transaction, reconcile a rail, or mark anything paid. `anon` and `authenticated` cannot execute the security-definer function; authenticated users receive only self-owned RLS reads of requests and reservation links.
+
+Task #116 owns changing `member-withdrawal` from expected-pending to required and proving the browser checkpoint with run-owned credits and exact cleanup.
+
 To activate a pending checkpoint when its product capability lands:
 
 1. replace its `expected-pending` journey declaration with a required browser/command assertion;
