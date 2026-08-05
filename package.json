@@ -1,6 +1,6 @@
 {
   "name": "fundloop-website",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "FundLoop website and application built with Next.js, React, TypeScript, and Supabase.",
   "license": "MIT",
   "private": true,
@@ -34,6 +34,7 @@
     "test:e2e": "playwright test --project=remote-safe",
     "test:e2e:remote": "playwright test --project=remote-safe",
     "test:e2e:local": "node scripts/run-playwright-local-wallet.mjs",
+    "test:e2e:personas": "node scripts/run-playwright-local-personas.mjs",
     "mcp:dev": "pnpm --filter @fundloop/mcp-server dev",
     "mcp:test": "pnpm --filter @fundloop/mcp-server test",
     "mcp:smoke": "pnpm --filter @fundloop/mcp-server smoke",

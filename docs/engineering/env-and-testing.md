@@ -56,20 +56,22 @@ NEXT_PUBLIC_SUPABASE_URL=http://127.0.0.1:55321
 Use local Supabase for destructive or replay validation:
 
 ```bash
-DOCKER_CONTEXT=colima-agents supabase start -x logflare -x vector
-DOCKER_CONTEXT=colima-agents supabase db reset
+export FUNDLOOP_INTERNAL_ADMIN_EMAILS=maya@fundloop.example.com
+export FUNDLOOP_ZKAS_SUPERADMIN_EMAILS=maya@fundloop.example.com
+DOCKER_CONTEXT=colima-codex-supabase supabase start --ignore-health-check -x studio -x imgproxy -x logflare -x vector
+DOCKER_CONTEXT=colima-codex-supabase supabase db reset
 ```
 
-This keeps database, auth, REST, storage, and Edge Functions available for app smoke tests while excluding local analytics/logging/vector services. Do not use this lean local mode to validate analytics-specific behavior.
+This keeps database, auth, REST, storage, Edge Functions, and Mailpit available for app smoke tests while excluding Studio, image transforms, and local analytics/logging/vector services. Because startup bypasses excluded-service health checks, verify Auth, REST, Storage, Edge health, and Mailpit on their documented loopback ports before running the harness. Do not use this lean local mode to validate Studio, image-transform, or analytics-specific behavior.
 
-For the deterministic seeded operator smoke persona, set the non-production allowlists before starting Next:
+For the deterministic seeded operator smoke persona, set the non-production allowlists before starting local Supabase and Next:
 
 ```bash
 FUNDLOOP_INTERNAL_ADMIN_EMAILS=maya@fundloop.example.com
 FUNDLOOP_ZKAS_SUPERADMIN_EMAILS=maya@fundloop.example.com
 ```
 
-These values are local/preview smoke fixtures only. Production operator allowlists must be managed separately and should never be inferred from `supabase/seed.sql`.
+These values are local/preview smoke fixtures only. `supabase/config.toml` forwards caller-provided values into the local Edge Runtime while the persona runner forwards the same identity into its Next process. Production operator allowlists must be managed separately and should never be inferred from `supabase/seed.sql`.
 
 Use local Supabase when:
 
@@ -115,7 +117,39 @@ Use the smallest relevant validation first, then broaden before reporting comple
 | Supabase Edge Functions | Contract/command tests plus Deno/Supabase validation | focused contract tests, `deno info` or `deno check`, PR dry-run |
 | Onchain contract changes | Hardhat workspace | `pnpm --dir contracts test` |
 | Wallet browser flows | Local wallet E2E lane | `pnpm test:e2e:local` when prerequisites are available |
+| Persona happy paths | Local-only persona E2E lane | Start/reset caller-owned local Supabase, then `pnpm test:e2e:personas` or filter with `-- --persona <id>` |
 | Shared preview smoke | Remote-safe E2E lane | `pnpm test:e2e:remote` with non-production remote credentials |
+
+## Local Persona Harness
+
+The persona harness is deliberately local-only. The caller starts and resets Supabase/Mailpit; the runner verifies the exact `55321`/`55324` endpoints, owns only a Next process on `127.0.0.1:3002`, and refuses occupied, hosted, or production endpoints before fixture access. It writes its private recovery ledger and sanitized summaries beneath ignored `output/persona-harness/`.
+
+```bash
+export FUNDLOOP_INTERNAL_ADMIN_EMAILS=maya@fundloop.example.com
+export FUNDLOOP_ZKAS_SUPERADMIN_EMAILS=maya@fundloop.example.com
+DOCKER_CONTEXT=colima-codex-supabase supabase start --ignore-health-check -x studio -x imgproxy -x logflare -x vector
+DOCKER_CONTEXT=colima-codex-supabase supabase db reset
+
+# All five persona specs are executable and independently selectable
+pnpm test:e2e:personas
+pnpm test:e2e:personas -- --persona new-member
+pnpm test:e2e:personas -- --persona returning-member,new-founder
+pnpm test:e2e:personas -- --persona returning-operator
+pnpm test:e2e:personas -- --self-test --force-timeout --persona returning-member
+
+# Foundation smoke and a deliberate failure/cleanup probe
+pnpm test:e2e:personas -- --self-test --persona returning-member
+pnpm test:e2e:personas -- --self-test --force-failure --persona returning-member
+
+# Exact recovery for an interrupted, ledger-owned run
+pnpm test:e2e:personas -- --cleanup-run <run-id>
+```
+
+The aggregate exits `0` only when every selected checkpoint passes, `2` when the only gaps are declared expected-pending capabilities, and `1` for failures, missing persona results, preflight errors, or cleanup residue. Automatic Playwright screenshots, video, and traces are disabled for this lane because auth artifacts can contain private values; individual specs may create sanitized post-auth evidence. The forced-failure foundation probe creates only a synthetic, sanitized screenshot and trace under ignored `output/playwright/persona-harness/`.
+
+Withdrawal and persisted invitation delivery remain registry-declared pending capabilities. The independently filtered founder journey also retains its cadence handoff checkpoint until it directly consumes the integrated operator result; the returning-operator journey already proves cycle lock, calculation, verification, approval, authenticated bookkeeping-credit creation, audit/observability reporting, and founder/member browser read-back. Contribution and active-user attribution remain required browser checkpoints and fail the run if their product command or user-visible confirmation regresses.
+
+The Supabase local Edge runtime exports `SUPABASE_URL` and `SUPABASE_ANON_KEY`; the shared command runtime accepts those canonical local names as fallbacks for the hosted `NEXT_PUBLIC_*` names. This keeps profile publishing, monthly contribution, and attribution commands on the real browser-to-Edge path locally.
 
 ## Required Honesty In Reports
 

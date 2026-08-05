@@ -122,6 +122,11 @@ function CreditTable({
                   <div className="text-sm text-[var(--text-muted)]">
                     {t("creditTable.projects", { count: row.sourceBreakdown.length })}
                   </div>
+                  {row.sourceBreakdown.map((source) => (
+                    <div key={`${row.id}-project-${source.projectId}`} className="text-xs font-medium text-[var(--text-strong)]">
+                      {source.projectName}
+                    </div>
+                  ))}
                   <div className="text-xs text-[var(--text-muted)]">
                     {t("creditTable.baseline", { amount: formatCurrency(locale, row.allocationBreakdown.baselineUsd) })}
                   </div>

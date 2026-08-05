@@ -133,7 +133,7 @@ export default async function FounderProjectContributionsPage({ params }: Founde
           title: t("submission.title"),
           description: t("submission.description"),
           currentTitle: t("submission.currentTitle"),
-          currentDescription: t("submission.currentDescription"),
+          currentDescription: t.raw("submission.currentDescription"),
           currentEmpty: t("submission.currentEmpty"),
           cycle: t("submission.cycle"),
           period: t("submission.period"),
@@ -151,7 +151,7 @@ export default async function FounderProjectContributionsPage({ params }: Founde
           validationTitle: t("submission.validationTitle"),
           validationAmount: t("submission.validationAmount"),
           successTitle: t("submission.successTitle"),
-          successDescription: t("submission.successDescription"),
+          successDescription: t.raw("submission.successDescription"),
           failureTitle: t("submission.failureTitle"),
         }}
       />

@@ -78,7 +78,7 @@ describe("local public discovery seed fixtures", () => {
   })
 
   it("bumps the local project and user sequences past the curated fixtures", () => {
-    expect(seedSql).toContain(`SELECT pg_catalog.setval('"public"."projects_id_seq1"', 103, true);`)
+    expect(seedSql).toContain(`'"public"."projects_id_seq1"',\n  COALESCE((SELECT MAX(id) FROM public.projects), 1)`)
     expect(seedSql).toContain(`SELECT pg_catalog.setval('"public"."users_sequential_id_seq"', 104, true);`)
     expect(seedSql).toContain(`SELECT pg_catalog.setval('"public"."user_asset_preferences_id_seq"', 112, true);`)
     expect(seedSql).toContain(`SELECT pg_catalog.setval('"public"."project_attribution_datasets_id_seq"', 101, true);`)

@@ -35,5 +35,19 @@ export default defineConfig({
         baseURL: process.env.PLAYWRIGHT_LOCAL_BASE_URL ?? "http://127.0.0.1:3001",
       },
     },
+    {
+      name: "local-personas",
+      testMatch: /personas\/.*\.spec\.ts/,
+      fullyParallel: false,
+      workers: 1,
+      use: {
+        ...devices["Desktop Chrome"],
+        viewport: { width: 1440, height: 1100 },
+        baseURL: process.env.PLAYWRIGHT_PERSONA_BASE_URL ?? "http://127.0.0.1:3002",
+        trace: "off",
+        screenshot: "off",
+        video: "off",
+      },
+    },
   ],
 })
