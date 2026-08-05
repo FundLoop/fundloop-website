@@ -1,8 +1,9 @@
 "use client"
 
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import { Check, Copy, UserPlus } from "lucide-react"
-import { invokeProjectInvitationCreate } from "@/lib/edge-functions/project-invitation"
+import { invokeProjectInvitationCreate, invokeProjectInvitationList } from "@/lib/edge-functions/project-invitation"
+import type { ProjectInvitationListItem } from "@/lib/edge-functions/project-invitation-contract"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
@@ -16,6 +17,13 @@ export function ProjectInvitationPanel({ projectSlug, projectName, locale }: { p
   const [error, setError] = useState<string | null>(null)
   const [link, setLink] = useState<string | null>(null)
   const [copied, setCopied] = useState(false)
+  const [invitations, setInvitations] = useState<ProjectInvitationListItem[]>([])
+
+  useEffect(() => {
+    void invokeProjectInvitationList({ projectSlug }).then((result) => {
+      if (result.ok) setInvitations(result.data)
+    })
+  }, [projectSlug])
 
   async function submit(event: React.FormEvent) {
     event.preventDefault()
@@ -34,6 +42,8 @@ export function ProjectInvitationPanel({ projectSlug, projectName, locale }: { p
       return
     }
     setLink(`${window.location.origin}/${locale}/invitations/${result.data.token}`)
+    setInvitations((current) => [{ invitationId: result.data.invitationId, email: result.data.email, role: result.data.role,
+      status: "pending", expiresAt: result.data.expiresAt, createdAt: new Date().toISOString() }, ...current])
   }
 
   async function copy() {
@@ -72,6 +82,15 @@ export function ProjectInvitationPanel({ projectSlug, projectName, locale }: { p
             </div>
           ) : null}
         </form>
+        <div className="mt-6 space-y-3" data-testid="project-invitation-list">
+          <p className="text-sm font-semibold">Persisted invitations</p>
+          {invitations.length === 0 ? <p className="text-sm text-[var(--text-muted)]">No project invitations yet.</p> : invitations.map((invitation) => (
+            <div key={invitation.invitationId} className="flex items-center justify-between gap-4 rounded-2xl border border-[color:var(--surface-border)] p-3 text-sm">
+              <div><p className="font-medium">{invitation.email}</p><p className="text-[var(--text-muted)]">{invitation.role} · expires {new Date(invitation.expiresAt).toLocaleDateString()}</p></div>
+              <span className="font-semibold capitalize">{invitation.status}</span>
+            </div>
+          ))}
+        </div>
       </CardContent>
     </Card>
   )

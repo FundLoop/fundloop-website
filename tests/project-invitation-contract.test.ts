@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest"
 import {
   normalizeProjectInvitationAcceptResult,
+  normalizeProjectInvitationListResult,
   validateProjectInvitationAcceptInput,
   validateProjectInvitationCreateInput,
 } from "@/lib/edge-functions/project-invitation-contract"
@@ -23,5 +24,11 @@ describe("project invitation contracts", () => {
       projectSlug: "civic-mesh", projectName: "Civic Mesh", organizationId: 3, role: "member", status: "accepted",
       acceptedAt: "2026-08-05T12:00:00.000Z" }))
     expect(result.ok && result.data).toEqual(expect.not.objectContaining({ token: expect.anything(), tokenDigest: expect.anything() }))
+  })
+
+  it("rejects unsafe invitation list rows containing token material", () => {
+    const result = normalizeProjectInvitationListResult(edgeCommandSuccess([{ invitationId: "inv-1", email: "a@example.com",
+      role: "member", status: "pending", expiresAt: "2026-08-12T00:00:00Z", createdAt: "2026-08-05T00:00:00Z", tokenDigest: "secret" }]))
+    expect(result.ok).toBe(false)
   })
 })

@@ -1,6 +1,7 @@
 import type { SupabaseClient } from "@supabase/supabase-js"
 import type { Database } from "../../types/supabase.ts"
 import type { ProjectInvitationCreateInput, ProjectInvitationCreateResult, ProjectInvitationAcceptResult } from "../edge-functions/project-invitation-contract.ts"
+import type { ProjectInvitationListItem } from "../edge-functions/project-invitation-contract.ts"
 
 type Failure = { ok: false; error: { code: string; message: string } }
 type Success<T> = { ok: true; data: T }
@@ -73,4 +74,22 @@ export async function executeProjectInvitationAccept(
   if (!row) return failure("invitation_accept_failed", "Invitation acceptance returned no result.")
   return { ok: true, data: { invitationId: row.invitation_id, projectId: row.project_id, projectSlug: row.project_slug,
     projectName: row.project_name, organizationId: row.organization_id, role: row.invited_role === "admin" ? "admin" : "member", status: "accepted", acceptedAt: row.accepted_at } }
+}
+
+export async function executeProjectInvitationList(
+  supabase: SupabaseClient<Database>, input: { projectSlug: string; actorUserId: string },
+): Promise<Success<ProjectInvitationListItem[]> | Failure> {
+  const { data: project, error: projectError } = await supabase.from("projects").select("id").eq("slug", input.projectSlug).maybeSingle()
+  if (projectError || !project) return failure("project_not_found", projectError?.message ?? "Project not found.")
+  const { data: participant, error: accessError } = await supabase.from("participants").select("id")
+    .eq("project_id", project.id).eq("user_id", input.actorUserId).eq("is_admin", true).maybeSingle()
+  if (accessError) return failure("reference_data_unavailable", accessError.message)
+  if (!participant) return failure("permission_denied", "Only project administrators can view invitations.")
+  const { data, error } = await supabase.from("project_invitations")
+    .select("id, invitee_email, invited_role, status, expires_at, created_at")
+    .eq("project_id", project.id).order("created_at", { ascending: false })
+  if (error) return failure("invitation_list_failed", error.message)
+  return { ok: true, data: (data ?? []).map((row) => ({ invitationId: row.id, email: row.invitee_email,
+    role: row.invited_role === "admin" ? "admin" : "member", status: row.status as ProjectInvitationListItem["status"],
+    expiresAt: row.expires_at, createdAt: row.created_at })) }
 }
