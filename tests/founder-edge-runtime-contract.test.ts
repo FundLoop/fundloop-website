@@ -21,8 +21,8 @@ describe("founder command Edge Function runtime", () => {
   it("keeps hosted and local Supabase environment names compatible", async () => {
     const source = await readFile(path.join(process.cwd(), "supabase", "functions", "_shared", "command-runtime.ts"), "utf8")
 
-    expect(source).toContain('getEnv("NEXT_PUBLIC_SUPABASE_URL") ?? getEnv("SUPABASE_URL")')
-    expect(source).toContain('getEnv("NEXT_PUBLIC_SUPABASE_ANON_KEY") ?? getEnv("SUPABASE_ANON_KEY")')
+    expect(source).toContain('getFirstConfiguredEnv(["NEXT_PUBLIC_SUPABASE_URL", "SUPABASE_URL"])')
+    expect(source).toContain('getFirstConfiguredEnv(["NEXT_PUBLIC_SUPABASE_ANON_KEY", "SUPABASE_ANON_KEY"])')
   })
 
   it("advances founder-owned identity sequences past explicit local seed rows", async () => {

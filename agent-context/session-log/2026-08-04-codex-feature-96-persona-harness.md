@@ -191,3 +191,15 @@
 - tests and validation: Focused fixture, journey-runner, and reporting coverage passed with 3 files/13 tests; typecheck, changed-file lint, and `git diff --check` passed on Node v24.15.0. The prior checkpoint-contract fix had green post-push CI, Supabase dry-run, and Vercel previews before these newly surfaced Codex threads were inspected. One extra local Vitest invocation used an unsupported `basic` reporter and failed at reporter startup without running tests; the canonical focused command was rerun successfully.
 - reflections: Crash recovery depends on preserving ownership evidence at every boundary. The ledger must be durable immediately after external resource creation, and partial cleanup must prefer recoverability over deleting identity rows that participate in ownership proofs.
 - suggested next steps: Validate and commit the two fixes, reply to and resolve both original Codex threads, push once, then require final post-fix CI and a clean unresolved-thread audit before human merge handoff.
+
+### session v17: rebase Feature #96 onto current local dev
+
+- timestamp: 2026-08-05T03:33:00.000Z
+- agent: Codex
+- branch: codex/feature-96-persona-harness
+- head: 593d71d
+- objective: Rebase the persona harness worktree onto local `dev` at `996b4c2` after the base advanced by 21 commits.
+- actions: Replayed all 16 feature commits onto local `dev`. Resolved the sole conflict in the shared Edge command runtime by retaining `dev`'s stronger `getFirstConfiguredEnv` implementation, which preserves the persona harness's hosted/local environment fallback while rejecting blank values. Updated the focused source-contract assertion from the superseded nullish-coalescing expression to the current ordered fallback helper.
+- tests and validation: The focused founder Edge runtime contract initially exposed the stale source assertion while the runtime resolution itself was correct. After updating it, the focused file passed 4/4 tests. Full `pnpm check` passed under Node v22.23.2 with lint, 109 Vitest files/502 tests, typecheck, and the 162-page production build; `git diff --check` also passed.
+- reflections: Source-shape contract tests must track the intended behavior rather than freezing a weaker implementation expression when the base branch introduces a stricter equivalent helper.
+- suggested next steps: Commit this rebase-resolution assertion update, lease-push the rewritten feature branch, and require PR #104 checks to return green without requesting another code review.
