@@ -4,6 +4,12 @@ import { describe, expect, it } from "vitest"
 const migration = readFileSync("supabase/migrations/20260805143000_project_invitations.sql", "utf8")
 
 describe("project invitation database boundary", () => {
+  it("allows active organization Founder and Admin members to read invitation state", () => {
+    expect(migration).toContain("JOIN public.ref_roles AS role ON role.id = membership.role_id")
+    expect(migration).toContain("membership.status = 'active'")
+    expect(migration).toContain("role.name IN ('Founder', 'Admin')")
+  })
+
   it("keeps the security-definer RPC and digest table behind the service role", () => {
     expect(migration).toContain("REVOKE ALL ON FUNCTION public.accept_project_invitation(text, uuid, text) FROM PUBLIC, anon, authenticated")
     expect(migration).toContain("REVOKE ALL ON TABLE public.project_invitations FROM PUBLIC, anon, authenticated")

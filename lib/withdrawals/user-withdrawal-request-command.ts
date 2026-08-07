@@ -26,6 +26,9 @@ export async function executeUserWithdrawalRequestCreate(
   }
   const row = Array.isArray(data) ? data[0] : null
   if (!row) return { ok: false, error: { code: "withdrawal_request_failed", message: "The withdrawal request returned no result." } }
+  if (row.no_payout_executed !== true) {
+    return { ok: false, error: { code: "withdrawal_request_safety_check_failed", message: "The withdrawal request safety confirmation was missing." } }
+  }
   return { ok: true, data: {
     requestId: row.request_id,
     payoutRouteId: row.payout_route_id,
@@ -34,6 +37,6 @@ export async function executeUserWithdrawalRequestCreate(
     currencyCode: "USD",
     creditCount: row.credit_count,
     requestedAt: row.requested_at,
-    noPayoutExecuted: true,
+    noPayoutExecuted: row.no_payout_executed,
   } }
 }

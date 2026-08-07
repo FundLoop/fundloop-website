@@ -57,6 +57,15 @@ USING (
       AND participant.user_id = auth.uid()
       AND participant.is_admin = true
   )
+  OR EXISTS (
+    SELECT 1
+    FROM public.organization_members AS membership
+    JOIN public.ref_roles AS role ON role.id = membership.role_id
+    WHERE membership.organization_id = project_invitations.organization_id
+      AND membership.user_id = auth.uid()
+      AND membership.status = 'active'
+      AND role.name IN ('Founder', 'Admin')
+  )
 );
 
 CREATE OR REPLACE FUNCTION public.accept_project_invitation(

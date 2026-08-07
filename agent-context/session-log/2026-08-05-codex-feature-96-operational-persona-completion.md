@@ -286,3 +286,39 @@ Unblock and execute the larger hosted founder/operator/member operational MVP sm
 #### Suggested Next Steps
 
 - Run the full Node 22 gate, commit this hosted-smoke hardening, push PR #117, and address its outstanding review threads.
+
+### session v9: Resolve invitation and withdrawal review regressions
+
+- Timestamp: 2026-08-07T15:13:19Z
+- Agent: Codex
+- Branch: codex/feature-96-operational-persona-completion
+- Head: 1eb8af2
+
+#### Objective
+
+Address all five unresolved PR #117 review threads with regression coverage before the feature is merged.
+
+#### Actions Taken
+
+- Unified invitation authorization across project administrators and active organization Founder/Admin members for both create and list operations, including the matching RLS read policy.
+- Expired stale pending invitations before replacement creation and list reads so the pending-email uniqueness rule no longer blocks a fresh invitation.
+- Removed the unused token digest from invitation idempotency reads and mapped idempotency, pending-email, and token-digest uniqueness conflicts independently.
+- Made withdrawal command results fail closed unless the database explicitly confirms that no payout was executed.
+- Serialized same-actor, same-key withdrawal retries with a transaction advisory lock before the idempotency lookup.
+- Added focused command and migration regressions for every review finding.
+
+#### Validation Notes
+
+- Focused Node 22 regression run passed: 4 files and 23 tests.
+- Full Node 22 `pnpm check` passed: zero-warning lint, 118 Vitest files and 537 tests, typecheck, and production build with 162 generated routes.
+- `git diff --check` passed.
+
+#### Reflections
+
+- Invitation authorization must share the founder workspace's organization-role model instead of assuming every founder is also a project participant.
+- Database safety attestations must be consumed as explicit truth values; reconstructing them in application code can turn an unsafe or malformed response into a false success.
+- Advisory transaction locking preserves the existing atomic reservation workflow while making concurrent idempotent retries deterministic.
+
+#### Suggested Next Steps
+
+- Push the review-fix commit, reply to and resolve all five threads, then wait for PR #117 checks before the human merge handoff.

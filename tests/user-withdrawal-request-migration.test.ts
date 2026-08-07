@@ -15,4 +15,12 @@ describe("withdrawal request database boundary", () => {
     expect(migration).toContain("REVOKE ALL ON FUNCTION public.create_user_withdrawal_request(uuid, bigint, text) FROM PUBLIC, anon, authenticated")
     expect(migration).toContain("GRANT EXECUTE ON FUNCTION public.create_user_withdrawal_request(uuid, bigint, text) TO service_role")
   })
+
+  it("serializes concurrent retries before reading the idempotent result", () => {
+    const lock = migration.indexOf("pg_advisory_xact_lock")
+    const lookup = migration.indexOf("SELECT * INTO existing")
+    expect(lock).toBeGreaterThan(-1)
+    expect(lookup).toBeGreaterThan(lock)
+    expect(migration).toContain("p_actor_user_id::text || ':' || btrim(p_idempotency_key)")
+  })
 })
