@@ -1,7 +1,7 @@
 "use client"
 
 import { useRouter } from "next/navigation"
-import { useState, useTransition } from "react"
+import { useState } from "react"
 import { AlertTriangle, Loader2, LockKeyhole } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import {
@@ -24,14 +24,15 @@ type OverrideMode = "unresolved_onchain" | "required_inputs"
 
 export function MonthlyCycleLockButton({ cycleKey }: MonthlyCycleLockButtonProps) {
   const router = useRouter()
-  const [pending, startTransition] = useTransition()
+  const [pending, setPending] = useState(false)
   const [overrideOpen, setOverrideOpen] = useState(false)
   const [overrideMode, setOverrideMode] = useState<OverrideMode>("unresolved_onchain")
   const [overrideReason, setOverrideReason] = useState("")
   const trimmedReason = overrideReason.trim()
 
-  function runLock(options?: { overrideUnresolvedOnchain?: boolean; overrideRequiredInputs?: boolean; overrideReason?: string }) {
-    startTransition(async () => {
+  async function runLock(options?: { overrideUnresolvedOnchain?: boolean; overrideRequiredInputs?: boolean; overrideReason?: string }) {
+    setPending(true)
+    try {
       const result = await invokeMonthlyCycleLockBrowser({
         cycleKey,
         overrideUnresolvedOnchain: options?.overrideUnresolvedOnchain,
@@ -77,7 +78,9 @@ export function MonthlyCycleLockButton({ cycleKey }: MonthlyCycleLockButtonProps
         description: `${result.data.cycleKey} is locked with manifest ${result.data.lockedManifestHash.slice(0, 12)}...`,
       })
       router.refresh()
-    })
+    } finally {
+      setPending(false)
+    }
   }
 
   return (

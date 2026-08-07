@@ -248,3 +248,41 @@ Promote persisted invitation acceptance and credited-earnings withdrawal request
 
 - Commit and independently validate #116, then run integrated Goal #113 validation.
 - Keep the founder-to-operator handoff registry entry until a separately filtered founder journey consumes the cadence result; do not add payout execution or invitation email delivery to this Goal.
+
+### session v8: Prove the guarded hosted operational cadence
+
+- Timestamp: 2026-08-07T14:05:00Z
+- Agent: Codex
+- Branch: codex/feature-96-operational-persona-completion
+- Head: aae48d4
+
+#### Objective
+
+Unblock and execute the larger hosted founder/operator/member operational MVP smoke after the non-production Maya actor and Edge allowlists were configured.
+
+#### Actions Taken
+
+- Re-queried Supabase dev Auth and confirmed exactly one confirmed Maya actor.
+- Refreshed the dev Vercel deployment and configured the guarded Preview E2E environment, secret, service-role server value, and existing admin/superadmin allowlists.
+- Added an opt-in `hosted-operational` Playwright project that fails closed on the FundLoop dev Vercel/Supabase targets, accepts protected-preview cookies only from the caller environment, and reuses the returning-operator cadence with founder/member browser readback.
+- Made shared-dev fixture IDs collision-resistant after diagnosing a stale `organizations` sequence collision.
+- Replaced async `startTransition` use in the monthly-cycle lock button with explicit pending state so the optimized hosted bundle renders the required-input override dialog.
+- Kept known AppKit/WalletConnect provider errors separate from the cadence by ignoring only their source domains in this hosted lane; all product/Supabase/other console errors remain fatal.
+
+#### Validation Notes
+
+- Confirmed the protected preview login probe returned HTTP 200 for the configured non-production Maya actor.
+- Passed focused monthly-cycle lock and persona-fixture tests: 2 files, 8 tests.
+- Passed `pnpm typecheck` on Node 22.
+- Passed the hosted operational smoke in 28.8 seconds: all nine operator checkpoints, integrated founder/member $10 credited-not-paid readback, eight required audit event types, no payout execution, and clean teardown of 23 owned records with zero residuals.
+- Earlier failed probes also cleaned completely; no shared-dev smoke residue remains.
+
+#### Reflections
+
+- Shared dev snapshots can leave sequences behind imported primary keys, so remote-owned fixtures should allocate explicit collision-resistant IDs rather than repair shared sequences manually.
+- Optimized hosted rendering exposed a state-transition bug that the local development server did not reproduce.
+- The dev Reown project ID is malformed and remains a separate wallet-provider configuration issue; it did not invalidate the non-wallet operational cadence.
+
+#### Suggested Next Steps
+
+- Run the full Node 22 gate, commit this hosted-smoke hardening, push PR #117, and address its outstanding review threads.

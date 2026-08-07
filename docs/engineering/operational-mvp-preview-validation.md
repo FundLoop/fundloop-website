@@ -250,3 +250,37 @@ Boundary notes:
 - No operator authorization was bypassed or weakened.
 - No remote reset, seed, manual migration, production/main mutation, payout intent, or payout transfer was attempted.
 - No secret values, private emails, bearer tokens, Supabase keys, cookies, or private attribution payloads are recorded here.
+
+## 2026-08-07 Full Hosted Cadence Passed
+
+Status: the guarded Preview/dev founder/operator/member cadence passed through credited-but-not-paid earnings.
+
+Environment evidence:
+
+- Worktree: `/Users/botmaster/src/fundloop-operational-mvp-personas`
+- Branch: `codex/feature-96-operational-persona-completion`
+- Hosted target: protected Preview deployment in the `fundloop-website-dev` Vercel project
+- Remote Supabase target: dev project `kyxtqnfnksvcaugxwzuj`
+- Runtime: Node 22
+- Real payout execution: none
+
+Hosted smoke evidence:
+
+- The confirmed non-production Maya Auth actor passed the protected E2E login and both internal-admin and superadmin allowlists.
+- The run passed all nine returning-operator checkpoints: login, cycle readiness, lock with an audited required-input override, calculation, verification, approval, bookkeeping credits, observability, and allocation reporting.
+- Integrated browser readback proved the founder project report and member earnings surface both showed the run-owned $10 allocation as credited and not paid.
+- The bookkeeping result reported one credited row, `$10` total credited, and `noPayoutExecuted=true`.
+- The sanitized audit check observed all eight required event types. One expected failure event records the initial blocked lock before the explicit override.
+- The final run passed in 28.8 seconds and removed all 23 run-owned database/Auth/storage records with zero residuals.
+
+Repairs proven by the hosted run:
+
+- Run-owned cadence fixtures now use collision-resistant explicit numeric IDs so stale shared-dev sequences cannot collide with imported rows.
+- The monthly-cycle lock control uses explicit async pending state; the optimized hosted build now renders the required-input override dialog after the expected Edge response.
+- The hosted lane ignores only known AppKit/WalletConnect provider-console errors by source domain. FundLoop, Supabase, and all other browser errors remain fatal. The dev Reown project ID remains a separate configuration issue.
+
+Boundary notes:
+
+- No remote seed, reset, manual migration, production/main mutation, payout intent, or transfer was executed.
+- Preview Deployment Protection remained enabled; the browser received only a temporary caller-supplied bypass cookie.
+- No secret values, Auth identifiers, private emails, bearer tokens, Supabase keys, cookies, or private attribution payloads are recorded here.

@@ -9,7 +9,7 @@ import type { Database } from "../../../types/supabase"
 import type { CheckpointObservation } from "../personas/contracts"
 import type { PersonaJourneyActions } from "../personas/journeys"
 import { loginThroughE2EEndpoint } from "./e2e-login"
-import { readLocalPersonaEnv } from "./persona-env"
+import { readLocalPersonaEnv, type LocalPersonaEnv } from "./persona-env"
 import {
   arrangeOperatorCadenceInputs,
   createPersonaFixtureController,
@@ -35,8 +35,15 @@ const REQUIRED_EVENT_TYPES = [
   "bookkeeping_credits_create_success",
 ] as const
 
-export function createPersonaOperatorActions(page: Page) {
-  const env = readLocalPersonaEnv()
+type PersonaOperatorActionOptions = {
+  env?: LocalPersonaEnv
+  operatorPassword?: string
+  ensureOperatorProfile?: boolean
+  ignoreWalletProviderConsoleErrors?: boolean
+}
+
+export function createPersonaOperatorActions(page: Page, options: PersonaOperatorActionOptions = {}) {
+  const env = options.env ?? readLocalPersonaEnv()
   const runId = process.env.PLAYWRIGHT_PERSONA_RUN_ID ?? ""
   if (!runId) throw new Error("persona-run-id-missing")
   const run = createRunIdentity(["returning-operator"])
@@ -51,7 +58,10 @@ export function createPersonaOperatorActions(page: Page) {
   page.setDefaultTimeout(15_000)
   page.setDefaultNavigationTimeout(20_000)
   page.on("console", (message) => {
-    if (message.type() === "error") browserErrors.push("console-error")
+    if (message.type() !== "error") return
+    const sourceUrl = message.location().url
+    if (options.ignoreWalletProviderConsoleErrors && /(?:api\.web3modal\.org|pulse\.walletconnect\.org)/.test(sourceUrl)) return
+    browserErrors.push("console-error")
   })
   page.on("pageerror", () => browserErrors.push("page-error"))
 
@@ -108,7 +118,24 @@ export function createPersonaOperatorActions(page: Page) {
 
   const actions: PersonaJourneyActions = {
     "auth.login-returning-operator": async () => {
-      const operator = await resolveSeededOperator(supabase)
+      const operator = await resolveSeededOperator(supabase, options.operatorPassword)
+      if (options.ensureOperatorProfile) {
+        const existingProfile = await supabase.from("users").select("id").eq("user_id", operator.actor.authUserId).maybeSingle()
+        if (existingProfile.error) throw new Error("persona-operator-profile-query-failed")
+        if (!existingProfile.data) {
+          const createdProfile = await supabase.from("users").insert({
+            user_id: operator.actor.authUserId,
+            email: operator.email,
+            full_name: "Maya Torres",
+            display_name: "Maya Torres",
+            status: "active",
+            cubid_identity_status: "linked",
+            is_public: false,
+          }).select("id").single()
+          if (createdProfile.error || !createdProfile.data) throw new Error("persona-operator-profile-create-failed")
+          await fixtures.recordDatabaseRow({ table: "users", primaryKey: { id: createdProfile.data.id }, cleanupPhase: 90 })
+        }
+      }
       scenario = await arrangeOperatorCadenceInputs(supabase, fixtures, { cycleKey, operatorUserId: operator.actor.authUserId })
       await login(operator.email, operator.password)
       await page.goto(`${env.baseURL}/en/admin/cycles`)
@@ -127,8 +154,25 @@ export function createPersonaOperatorActions(page: Page) {
     "operator.lock-cycle": async () => {
       await page.goto(`${env.baseURL}/en/admin/cycles`)
       const row = page.getByRole("row").filter({ hasText: cycleKey })
+      const lockResponse = page.waitForResponse((response) => response.url().includes("/functions/v1/monthly-cycle-lock"))
       await row.getByRole("button", { name: "Lock", exact: true }).click()
+      const response = await lockResponse
+      const responseBody = await response.json().catch(() => null) as { ok?: boolean; error?: { code?: string } } | null
+      if (responseBody?.ok === false && responseBody.error?.code !== "missing_mvp_required_inputs") {
+        throw new Error(`persona-lock-${responseBody.error?.code?.replaceAll("_", "-") ?? "unknown"}`)
+      }
       const overrideDialog = page.getByRole("dialog", { name: /Override missing MVP monthly inputs/i })
+      await page.waitForTimeout(1_000)
+      if (responseBody?.error?.code === "missing_mvp_required_inputs" && !(await overrideDialog.isVisible().catch(() => false))) {
+        if (await page.getByText("Monthly cycle lock failed", { exact: true }).isVisible().catch(() => false)) {
+          throw new Error("persona-lock-ui-generic-failure")
+        }
+        if (await page.getByText("Cycle lock blocked", { exact: true }).isVisible().catch(() => false)) {
+          throw new Error("persona-lock-override-dialog-missing")
+        }
+      }
+      if (responseBody?.error?.code !== "missing_mvp_required_inputs") throw new Error("persona-lock-response-unexpected")
+      await expect(overrideDialog).toBeVisible({ timeout: 10_000 })
       await expect.poll(async () => {
         if (await overrideDialog.isVisible().catch(() => false)) return "override"
         const result = await supabase.from("monthly_cycles").select("status").eq("cycle_key", cycleKey).single()
@@ -183,7 +227,7 @@ export function createPersonaOperatorActions(page: Page) {
       return observed({ status: "approval" })
     },
     "operator.create-bookkeeping-credits": async () => {
-      const operator = await resolveSeededOperator(supabase)
+      const operator = await resolveSeededOperator(supabase, options.operatorPassword)
       const actorClient = createClient<Database>(env.supabaseUrl, env.anonKey, { auth: { autoRefreshToken: false, persistSession: false } })
       const session = await actorClient.auth.signInWithPassword({ email: operator.email, password: operator.password })
       if (session.error || !session.data.session) throw new Error("persona-operator-command-auth-failed")
