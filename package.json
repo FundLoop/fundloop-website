@@ -35,6 +35,7 @@
     "test:e2e:remote": "playwright test --project=remote-safe",
     "test:e2e:local": "node scripts/run-playwright-local-wallet.mjs",
     "test:e2e:personas": "node scripts/run-playwright-local-personas.mjs",
+    "test:e2e:hosted-operational": "playwright test --project=hosted-operational",
     "mcp:dev": "pnpm --filter @fundloop/mcp-server dev",
     "mcp:test": "pnpm --filter @fundloop/mcp-server test",
     "mcp:smoke": "pnpm --filter @fundloop/mcp-server smoke",

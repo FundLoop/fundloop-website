@@ -101,6 +101,24 @@ Use remote preview/dev for:
 
 Remote-safe Playwright reads `PLAYWRIGHT_REMOTE_BASE_URL` plus remote Supabase credentials. Prefer the explicit aliases `PLAYWRIGHT_REMOTE_SUPABASE_URL` and `PLAYWRIGHT_REMOTE_SUPABASE_SERVICE_ROLE_KEY` so destructive fixture writes cannot accidentally use ordinary app env. The harness may fall back to `NEXT_PUBLIC_SUPABASE_URL` and `SUPABASE_SERVICE_ROLE_KEY` only when `PLAYWRIGHT_REMOTE_ALLOW_CANONICAL_SUPABASE=true`, `FUNDLOOP_DEPLOYMENT_ENV` is not `production`, and a hosted base URL is not paired with a local Supabase URL.
 
+The opt-in hosted operational smoke reuses the returning-operator cadence plus founder/member readback against the guarded FundLoop dev project. It requires explicit remote aliases, the non-production operator password, and current-prompt permission for shared-dev fixture mutation. Preview deployments also require a caller-supplied `_vercel_jwt` value in `VERCEL_PROTECTION_BYPASS_COOKIE`; never commit that cookie or print it. The smoke creates collision-resistant run-owned IDs, records ownership before workflow actions, executes no payout, disables automatic browser artifacts, and removes its fixtures through the same ledger contract as the local persona lane.
+
+```bash
+export FUNDLOOP_DEPLOYMENT_ENV=dev
+export PLAYWRIGHT_REMOTE_BASE_URL=https://<fundloop-dev-or-protected-preview>
+export PLAYWRIGHT_REMOTE_SUPABASE_URL=https://kyxtqnfnksvcaugxwzuj.supabase.co
+export PLAYWRIGHT_REMOTE_SUPABASE_SERVICE_ROLE_KEY=<dev-service-role-key>
+export FUNDLOOP_E2E_SECRET=<dev-e2e-secret>
+export FUNDLOOP_PERSONA_OPERATOR_PASSWORD=<non-production-operator-password>
+export PLAYWRIGHT_PERSONA_RUN_ID=persona-hosted-<unique-run-id>
+export PLAYWRIGHT_PERSONA_STARTED_AT=<UTC-ISO-timestamp>
+export PLAYWRIGHT_PERSONA_OUTPUT_ROOT=$PWD/output/persona-harness
+# Protected previews only:
+export VERCEL_PROTECTION_BYPASS_COOKIE=<temporary-preview-cookie>
+
+pnpm test:e2e:hosted-operational
+```
+
 Do not use remote preview/dev as a substitute for local destructive migration work.
 
 ## Test Ownership
@@ -119,6 +137,7 @@ Use the smallest relevant validation first, then broaden before reporting comple
 | Wallet browser flows | Local wallet E2E lane | `pnpm test:e2e:local` when prerequisites are available |
 | Persona happy paths | Local-only persona E2E lane | Start/reset caller-owned local Supabase, then `pnpm test:e2e:personas` or filter with `-- --persona <id>` |
 | Shared preview smoke | Remote-safe E2E lane | `pnpm test:e2e:remote` with non-production remote credentials |
+| Founder/operator/member hosted cadence | Guarded hosted operational lane | `pnpm test:e2e:hosted-operational` with explicit dev credentials and mutation approval |
 
 ## Local Persona Harness
 

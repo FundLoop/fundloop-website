@@ -1,5 +1,5 @@
 // This module is the Node-only service-role boundary for persona fixture setup and cleanup.
-import { randomBytes, randomUUID } from "node:crypto"
+import { createHash, randomBytes, randomUUID } from "node:crypto"
 import { chmod, mkdir, readFile } from "node:fs/promises"
 import path from "node:path"
 import { createClient, type SupabaseClient } from "@supabase/supabase-js"
@@ -64,6 +64,11 @@ type CreateControllerInput = {
 
 function isUuid(value: string) {
   return /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(value)
+}
+
+function fixtureNumericId(controller: MutableFixtureController, offset: number) {
+  const hash = createHash("sha256").update(controller.ledger.run.runId).digest().readUInt32BE(0)
+  return 1_700_000_000 + (hash % 100_000_000) + offset
 }
 
 export function createPersonaServiceClient(input: { supabaseUrl: string; serviceRoleKey: string }) {
@@ -442,13 +447,16 @@ export async function arrangeFounderProject(
   const suffix = randomUUID().slice(0, 8)
   const name = `Persona Project ${suffix}`
   const slug = `persona-project-${suffix}`
+  const organizationId = fixtureNumericId(controller, 1)
+  const projectId = fixtureNumericId(controller, 2)
   const organization = await mutation(
-    supabase.from("organizations").insert({ name: `${name} Organization`, description: "Run-owned persona organization." }).select("id").single(),
+    supabase.from("organizations").insert({ id: organizationId, name: `${name} Organization`, description: "Run-owned persona organization." }).select("id").single(),
     "persona-organization-create-failed",
   )
   await controller.recordDatabaseRow({ table: "organizations", primaryKey: { id: organization.id }, cleanupPhase: 30 })
   const project = await mutation(
     supabase.from("projects").insert({
+      id: projectId,
       name,
       slug,
       description: "Run-owned project for local persona verification.",
@@ -463,13 +471,13 @@ export async function arrangeFounderProject(
   )
   await controller.recordDatabaseRow({ table: "projects", primaryKey: { id: project.id }, cleanupPhase: 40 })
   const membership = await mutation(
-    supabase.from("organization_members").insert({ organization_id: organization.id, user_id: actorUserId, role_id: 2,
+    supabase.from("organization_members").insert({ id: fixtureNumericId(controller, 3), organization_id: organization.id, user_id: actorUserId, role_id: 2,
       role_assigned_by: actorUserId, status: "active" }).select("id").single(),
     "persona-founder-organization-membership-create-failed",
   )
   await controller.recordDatabaseRow({ table: "organization_members", primaryKey: { id: membership.id }, cleanupPhase: 60 })
   const participant = await mutation(
-    supabase.from("participants").insert({ project_id: project.id, user_id: actorUserId, is_admin: true }).select("id").single(),
+    supabase.from("participants").insert({ id: fixtureNumericId(controller, 4), project_id: project.id, user_id: actorUserId, is_admin: true }).select("id").single(),
     "persona-founder-membership-create-failed",
   )
   await controller.recordDatabaseRow({ table: "participants", primaryKey: { id: participant.id }, cleanupPhase: 60 })
@@ -549,6 +557,7 @@ export async function arrangeOpenCycle(
   if (existing.data) throw new Error(existing.data.operator_note?.startsWith("persona-harness:") ? "persona-cycle-owned-by-another-run" : "cycle-key-not-owned")
   const cycle = await mutation(
     supabase.from("monthly_cycles").insert({
+      id: fixtureNumericId(controller, 5),
       cycle_key: input.cycleKey,
       year,
       month,
@@ -650,13 +659,13 @@ export async function arrangeMemberEarnings(
   await controller.recordDatabaseRow({ table: "user_payout_routes", primaryKey: { id: route.id }, cleanupPhase: 95 })
 }
 
-export async function resolveSeededOperator(supabase: SupabaseClient<Database>) {
+export async function resolveSeededOperator(supabase: SupabaseClient<Database>, password = "FundLoopFounder123!") {
   const email = "maya@fundloop.example.com"
   const authUserId = await resolveLocalAuthUserId(supabase, email)
   return {
     actor: { alias: "returning-operator", authUserId, kind: "operator" } as const,
     email,
-    password: "FundLoopFounder123!",
+    password,
   }
 }
 
@@ -677,7 +686,7 @@ export async function arrangeOperatorCadenceInputs(
   if (memberProfile.error || !memberProfile.data?.cubid_id) throw new Error("persona-cadence-member-profile-missing")
 
   const memberParticipant = await mutation(
-    supabase.from("participants").insert({ project_id: project.id, user_id: member.actor.authUserId, is_admin: false }).select("id").single(),
+    supabase.from("participants").insert({ id: fixtureNumericId(controller, 6), project_id: project.id, user_id: member.actor.authUserId, is_admin: false }).select("id").single(),
     "persona-cadence-member-participant-failed",
   )
   await controller.recordDatabaseRow({ table: "participants", primaryKey: { id: memberParticipant.id }, cleanupPhase: 60 })
@@ -696,6 +705,7 @@ export async function arrangeOperatorCadenceInputs(
 
   const preference = await mutation(
     supabase.from("user_asset_preferences").insert({
+      id: fixtureNumericId(controller, 7),
       user_id: member.actor.authUserId,
       rank: 1,
       asset_type: "fiat",
@@ -708,6 +718,7 @@ export async function arrangeOperatorCadenceInputs(
 
   const contribution = await mutation(
     supabase.from("project_monthly_contribution_submissions").insert({
+      id: fixtureNumericId(controller, 8),
       monthly_cycle_id: cycle.id,
       project_id: project.id,
       period_start: cycle.periodStart,
@@ -727,6 +738,7 @@ export async function arrangeOperatorCadenceInputs(
 
   const attributionDataset = await mutation(
     supabase.from("project_attribution_datasets").insert({
+      id: fixtureNumericId(controller, 9),
       monthly_cycle_id: cycle.id,
       project_id: project.id,
       status: "approved",
@@ -744,6 +756,7 @@ export async function arrangeOperatorCadenceInputs(
   await controller.recordDatabaseRow({ table: "project_attribution_datasets", primaryKey: { id: attributionDataset.id }, cleanupPhase: 100 })
   const attributionRow = await mutation(
     supabase.from("project_attribution_rows").insert({
+      id: fixtureNumericId(controller, 10),
       dataset_id: attributionDataset.id,
       monthly_cycle_id: cycle.id,
       project_id: project.id,
@@ -759,6 +772,7 @@ export async function arrangeOperatorCadenceInputs(
 
   const zkasDataset = await mutation(
     supabase.from("zkas_datasets").insert({
+      id: fixtureNumericId(controller, 11),
       monthly_cycle_id: cycle.id,
       project_id: project.id,
       month: input.cycleKey,
@@ -777,6 +791,7 @@ export async function arrangeOperatorCadenceInputs(
   await controller.recordDatabaseRow({ table: "zkas_datasets", primaryKey: { id: zkasDataset.id }, cleanupPhase: 100 })
   const identityArtifact = await mutation(
     supabase.from("zkas_identity_artifacts").insert({
+      id: fixtureNumericId(controller, 12),
       monthly_cycle_id: cycle.id,
       month: input.cycleKey,
       file_name: "persona-identity.json",
