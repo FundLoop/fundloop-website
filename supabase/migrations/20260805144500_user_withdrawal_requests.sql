@@ -89,6 +89,12 @@ BEGIN
     RAISE EXCEPTION USING ERRCODE = '22023', MESSAGE = 'invalid_idempotency_key';
   END IF;
 
+  -- Serialize retries for the same actor and key so concurrent requests return
+  -- the first committed request instead of racing the unique constraint.
+  PERFORM pg_advisory_xact_lock(
+    hashtextextended(p_actor_user_id::text || ':' || btrim(p_idempotency_key), 0)
+  );
+
   SELECT * INTO existing
   FROM public.user_withdrawal_requests
   WHERE user_id = p_actor_user_id AND idempotency_key = p_idempotency_key;
