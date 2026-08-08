@@ -227,7 +227,7 @@ export const getPublicProjectDetail = cache(async (slug: string): Promise<Public
     const [{ data: participantRows, error: participantError }, { data: categoryRow, error: categoryError }] = await Promise.all([
       supabase
         .from("participants")
-        .select("user_id, is_admin, users(full_name, avatar_url, status)")
+        .select("user_id, is_admin")
         .eq("project_id", projectRow.id),
       projectRow.category_id
         ? supabase.from("ref_categories").select("name").eq("id", projectRow.category_id).maybeSingle()
@@ -242,17 +242,17 @@ export const getPublicProjectDetail = cache(async (slug: string): Promise<Public
       throw new Error(categoryError.message)
     }
 
-    const activeParticipants = (participantRows ?? []).filter((participant) => {
-      const participantUser = participant.users as { status?: string } | null
-      return participantUser?.status === "active"
-    })
-
-    const membership = authUser ? activeParticipants.find((participant) => participant.user_id === authUser.id) ?? null : null
+    const membership = authUser ? (participantRows ?? []).find((participant) => participant.user_id === authUser.id) ?? null : null
     const hasAccess = Boolean(membership)
 
     if ((projectRow.is_public !== true || projectRow.status !== "active") && !hasAccess) {
       return null
     }
+
+    const { data: sharedProfiles, error: sharedProfilesError } = hasAccess
+      ? await supabase.rpc("list_project_member_shared_profiles", { p_project_id: projectRow.id })
+      : { data: [], error: null }
+    if (sharedProfilesError) throw new Error(sharedProfilesError.message)
 
     return {
       project: {
@@ -267,18 +267,14 @@ export const getPublicProjectDetail = cache(async (slug: string): Promise<Public
         categoryId: projectRow.category_id,
         categoryName: categoryRow?.name ?? null,
         createdAt: projectRow.created_at,
-        participantCount: activeParticipants.length,
+        participantCount: (participantRows ?? []).length,
       },
-      participants: activeParticipants.map((participant) => {
-        const participantUser = participant.users as { full_name?: string | null; avatar_url?: string | null } | null
-
-        return {
-          id: participant.user_id,
-          name: participantUser?.full_name ?? "Unnamed user",
-          avatarUrl: participantUser?.avatar_url ?? null,
-          role: participant.is_admin ? "admin" : "member",
-        }
-      }),
+      participants: (sharedProfiles ?? []).map((participant) => ({
+        id: participant.user_id,
+        name: participant.display_name ?? "Project member",
+        avatarUrl: participant.avatar_url,
+        role: participant.is_admin ? "admin" : "member",
+      })),
       hasAccess,
       userRole: membership ? (membership.is_admin ? "admin" : "member") : null,
     }

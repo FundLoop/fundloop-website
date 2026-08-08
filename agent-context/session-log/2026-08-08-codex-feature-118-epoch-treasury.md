@@ -596,3 +596,63 @@ behavior and separate account publication choice.
 
 - Commit this narrow #124 fix and attach the updated implementation evidence.
 - Keep #124 In Progress for independent revalidation and leave #123/#125 unchanged.
+
+### session v13: Add consented project invitation review sharing (#125)
+
+- Timestamp: 2026-08-08T19:37:16-04:00
+- Agent: Codex
+- Branch: codex/118-canada-review-drafts
+- Head: 420d6321a5b9
+
+#### Objective
+
+Implement Task #125 as a local/dev-only invitation review workflow in which a
+pending token grants no access, exact non-effective disclosure evidence is recorded
+atomically before membership, and only founder-selected profile fields become
+visible to accepted participants.
+
+#### Actions Taken
+
+- Added a forward migration for approved sharing fields, immutable Privacy review
+  document snapshots, append-only accept/decline/revoke/expiry evidence, atomic
+  acceptance, revocation, and a participant-scoped approved-field read model.
+- Replaced the legacy accept boundary with typed inspect, acknowledged accept,
+  decline, and revoke Edge commands; direct acceptance fails closed outside the
+  enabled local/dev review runtime.
+- Updated founder and invitee surfaces with field selection, safe persisted status,
+  the prominent `DRAFT - NOT APPROVED - NOT EFFECTIVE` disclosure, an initially
+  unselected checkbox, and explicit decline/revoke actions.
+- Removed public participant-profile projection from project detail. Authenticated
+  project participants now receive only fields authorized by accepted invitation
+  evidence; unrelated and pre-acceptance viewers receive no member profiles.
+- Regenerated Supabase types and extended contract, command, migration, component,
+  SQL/RLS, and persona-browser coverage.
+
+#### Validation Notes
+
+- Passed: disposable local Supabase reset applying every migration and seed.
+- Passed: real SQL/RLS/RPC assertions for pending denial, direct evidence-write
+  denial, invalid document/hash atomic rejection, accepted membership and evidence,
+  approved-field reads, unrelated/cross-user denial, decline, expiry, and revocation.
+- Passed: focused Vitest, 5 files and 25 tests; Node 22 lint and typecheck.
+- Passed: returning-founder Playwright journey and invitation checkpoint against
+  the real local app, Auth, Edge commands, and database; cleanup was clean. Its later
+  operator-distribution checkpoint remains intentionally expected-pending.
+- Captured and visually inspected invitation review evidence at 1440x900 and 390x844
+  under `output/playwright/persona-harness/persona-20260808T233513241Z-01cfcd93/`.
+- Passed: full Node 22 `CI=1 pnpm check` with 125 files/560 tests and production build.
+- Passed: `git diff --check`.
+
+#### Reflections
+
+- Invitation possession is only a lookup capability; verified email plus exact
+  affirmative acknowledgement is the atomic membership boundary.
+- Keeping field choice on each invitation makes project sharing narrower than public
+  profile publication and leaves production activation blocked on later professional
+  approval.
+
+#### Suggested Next Steps
+
+- Commit Task #125 and attach the local migration, SQL/RLS, browser, visual, and full
+  check evidence to the issue while leaving it In Progress for independent validation.
+- Stop the disposable Edge runtime and Supabase stack; do not open the Feature PR yet.

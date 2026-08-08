@@ -2,12 +2,31 @@ import { readFileSync } from "node:fs"
 import { describe, expect, it } from "vitest"
 
 const migration = readFileSync("supabase/migrations/20260805143000_project_invitations.sql", "utf8")
+const reviewMigration = readFileSync("supabase/migrations/20260808234500_project_invitation_review_sharing.sql", "utf8")
 
 describe("project invitation database boundary", () => {
   it("allows active organization Founder and Admin members to read invitation state", () => {
     expect(migration).toContain("JOIN public.ref_roles AS role ON role.id = membership.role_id")
     expect(migration).toContain("membership.status = 'active'")
     expect(migration).toContain("role.name IN ('Founder', 'Admin')")
+  })
+
+  it("records exact versioned disclosure evidence before granting membership", () => {
+    expect(reviewMigration.indexOf("INSERT INTO public.project_invitation_acceptance_evidence")).toBeLessThan(reviewMigration.indexOf("INSERT INTO public.organization_members"))
+    expect(reviewMigration).toContain("current_invitation_disclosure_required")
+    expect(reviewMigration).toContain("shared_profile_fields <> p_shared_profile_fields")
+  })
+
+  it("keeps pending profile data private and removes project access on revocation", () => {
+    expect(reviewMigration).toContain("invitation.status = 'accepted'")
+    expect(reviewMigration).toContain("EXISTS (SELECT 1 FROM public.participants viewer")
+    expect(reviewMigration).toContain("DELETE FROM public.participants")
+    expect(reviewMigration).toContain("action IN ('acknowledge_accept', 'decline', 'revoke', 'expire')")
+  })
+
+  it("revokes the legacy acceptance function and gates new commands behind service role", () => {
+    expect(reviewMigration).toContain("REVOKE ALL ON FUNCTION public.accept_project_invitation(text, uuid, text) FROM service_role")
+    expect(reviewMigration).toContain("GRANT EXECUTE ON FUNCTION public.accept_project_invitation_review")
   })
 
   it("keeps the security-definer RPC and digest table behind the service role", () => {

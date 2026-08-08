@@ -129,6 +129,14 @@ export function createPersonaBrowserActions(personaId: Exclude<PersonaId, "retur
     await targetPage.screenshot({ path: path.join(artifactDirectory, name), fullPage: false })
   }
 
+  async function captureInvitationReview(targetPage: Page, name: string, errors = browserErrors) {
+    await assertCleanBrowser(errors)
+    await assertSafePersonaScreenshotSurface(targetPage)
+    const artifactDirectory = path.join(process.cwd(), "output", "playwright", "persona-harness", runId)
+    await mkdir(artifactDirectory, { recursive: true })
+    await targetPage.screenshot({ path: path.join(artifactDirectory, name), fullPage: false })
+  }
+
   async function captureSuccess() { await capturePageSuccess(page) }
 
   async function openReview(flow: "user" | "project", title: string) {
@@ -319,6 +327,11 @@ export function createPersonaBrowserActions(personaId: Exclude<PersonaId, "retur
         .eq("project_id", project.id).eq("invitee_email", invitee.email).single()
       if (invitation.error || !invitation.data) throw new Error("persona-project-invitation-persistence-failed")
       await fixtures.recordDatabaseRow({ table: "project_invitations", primaryKey: { id: invitation.data.id }, cleanupPhase: 130 })
+      const [pendingParticipant, pendingMembership] = await Promise.all([
+        supabase.from("participants").select("id").eq("project_id", project.id).eq("user_id", invitee.actor.authUserId).maybeSingle(),
+        supabase.from("organization_members").select("id").eq("organization_id", invitation.data.organization_id).eq("user_id", invitee.actor.authUserId).maybeSingle(),
+      ])
+      if (pendingParticipant.data || pendingMembership.data) throw new Error("persona-pending-invitation-granted-access")
 
       const browser = page.context().browser()
       if (!browser) throw new Error("persona-invitation-browser-unavailable")
@@ -331,10 +344,22 @@ export function createPersonaBrowserActions(personaId: Exclude<PersonaId, "retur
         inviteePage.on("console", (message) => { if (message.type() === "error") inviteeErrors.push("console-error") })
         inviteePage.on("pageerror", () => inviteeErrors.push("page-error"))
         await inviteePage.goto(invitationLink)
+        await expect(inviteePage.getByText("DRAFT - NOT APPROVED - NOT EFFECTIVE")).toBeVisible()
+        await expect(inviteePage.getByText("Pending access remains private.")).toBeVisible()
+        const acknowledgement = inviteePage.getByRole("checkbox")
+        const acceptButton = inviteePage.getByRole("button", { name: "Acknowledge and accept" })
+        await expect(acknowledgement).not.toBeChecked()
+        await expect(acceptButton).toBeDisabled()
+        await inviteePage.setViewportSize({ width: 1440, height: 900 })
+        await captureInvitationReview(inviteePage, `${personaId}-invitation-review-desktop.png`, inviteeErrors)
+        await inviteePage.setViewportSize({ width: 390, height: 844 })
+        await captureInvitationReview(inviteePage, `${personaId}-invitation-review-mobile.png`, inviteeErrors)
+        await inviteePage.setViewportSize({ width: 1440, height: 1100 })
+        await acknowledgement.check()
         const acceptResponsePromise = inviteePage.waitForResponse((response) =>
           response.url().endsWith("/functions/v1/project-invitation-accept") && response.request().method() === "POST",
         )
-        await inviteePage.getByRole("button", { name: "Accept project invitation" }).click()
+        await acceptButton.click()
         const acceptResponse = await acceptResponsePromise
         const acceptBody = await acceptResponse.json() as { ok?: boolean; error?: { code?: string } }
         if (acceptBody.ok !== true) {

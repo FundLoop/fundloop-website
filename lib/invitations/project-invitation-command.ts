@@ -1,13 +1,22 @@
 import type { SupabaseClient } from "@supabase/supabase-js"
 import type { Database } from "../../types/supabase.ts"
-import type { ProjectInvitationCreateInput, ProjectInvitationCreateResult, ProjectInvitationAcceptResult } from "../edge-functions/project-invitation-contract.ts"
-import type { ProjectInvitationListItem } from "../edge-functions/project-invitation-contract.ts"
+import type {
+  ProjectInvitationAcceptInput, ProjectInvitationAcceptResult, ProjectInvitationCreateInput,
+  ProjectInvitationCreateResult, ProjectInvitationDeclineResult, ProjectInvitationInspectResult,
+  ProjectInvitationListItem, ProjectInvitationRevokeResult,
+  ProjectInvitationProfileField,
+} from "../edge-functions/project-invitation-contract.ts"
+import { privacyReviewDocument } from "../policies/review-policy.ts"
 
 type Failure = { ok: false; error: { code: string; message: string } }
 type Success<T> = { ok: true; data: T }
 type ProjectAccess = { id: number; organization_id: number | null }
 
 function failure(code: string, message: string): Failure { return { ok: false, error: { code, message } } }
+
+function storedProfileFields(value: unknown) {
+  return value as ProjectInvitationProfileField[]
+}
 
 async function sha256(value: string) {
   const bytes = new TextEncoder().encode(value)
@@ -85,6 +94,12 @@ export async function executeProjectInvitationCreate(
   const rawToken = token()
   const tokenDigest = await sha256(rawToken)
   const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString()
+  const { data: document, error: documentError } = await supabase.from("legal_document_versions")
+    .select("id, document_identifier, content_hash, locale, status")
+    .eq("document_identifier", privacyReviewDocument.documentId)
+    .eq("content_hash", privacyReviewDocument.contentHash).eq("locale", privacyReviewDocument.locale)
+    .eq("status", "review").maybeSingle()
+  if (documentError || !document) return failure("review_document_unavailable", "The current sharing disclosure is unavailable.")
   const { data: invitation, error } = await supabase.from("project_invitations").insert({
     project_id: project.id,
     organization_id: project.organization_id,
@@ -94,6 +109,12 @@ export async function executeProjectInvitationCreate(
     idempotency_key: input.idempotencyKey,
     created_by_user_id: input.actorUserId,
     expires_at: expiresAt,
+    shared_profile_fields: input.sharedProfileFields,
+    policy_document_version_id: document.id,
+    policy_document_identifier: document.document_identifier,
+    policy_content_hash: document.content_hash,
+    policy_locale: document.locale,
+    policy_status: document.status,
   }).select("id, expires_at").single()
   if (error || !invitation) {
     const constraint = error?.code === "23505" ? invitationUniqueConstraint(error) : null
@@ -106,32 +127,83 @@ export async function executeProjectInvitationCreate(
     return failure("invitation_create_failed", "Invitation could not be created.")
   }
   return { ok: true, data: { invitationId: invitation.id, projectId: project.id, projectSlug: project.slug ?? input.projectSlug,
-    projectName: project.name, email: input.email, role: input.role, status: "pending", expiresAt: invitation.expires_at, token: rawToken } }
+    projectName: project.name, email: input.email, role: input.role, status: "pending", expiresAt: invitation.expires_at, token: rawToken,
+    sharedProfileFields: input.sharedProfileFields, policyStatus: "review", policyDocumentId: document.document_identifier } }
+}
+
+function invitationRpcFailure(error: { message: string }, fallback: string): Failure {
+  const known: Record<string, string> = {
+    invitation_not_found: "This invitation link is invalid.", invitation_not_pending: "This invitation is no longer pending.",
+    invitation_expired: "This invitation has expired. Ask a project administrator for a new link.",
+    invitation_email_mismatch: "Sign in with the email address that was invited.",
+    current_invitation_disclosure_required: "The invitation sharing disclosure changed. Review it again before accepting.",
+    invitation_admin_required: "Only project administrators can revoke invitations.",
+    invitation_not_revocable: "This invitation can no longer be revoked.",
+  }
+  const code = Object.keys(known).find((candidate) => error.message.includes(candidate)) ?? fallback
+  return failure(code, known[code] ?? "This invitation request could not be completed.")
+}
+
+export async function executeProjectInvitationInspect(
+  supabase: SupabaseClient<Database>, input: { token: string; actorUserId: string; actorEmail: string },
+): Promise<Success<ProjectInvitationInspectResult> | Failure> {
+  const { data, error } = await supabase.rpc("inspect_project_invitation_review", {
+    p_token_digest: await sha256(input.token), p_actor_user_id: input.actorUserId, p_actor_email: input.actorEmail,
+  })
+  if (error) return invitationRpcFailure(error, "invitation_inspect_failed")
+  const row = Array.isArray(data) ? data[0] : null
+  if (!row) return failure("invitation_inspect_failed", "Invitation inspection returned no result.")
+  return { ok: true, data: {
+    invitationId: row.invitation_id, projectId: row.project_id, projectSlug: row.project_slug, projectName: row.project_name,
+    role: row.invited_role === "admin" ? "admin" : "member", status: row.status as ProjectInvitationInspectResult["status"],
+    expiresAt: row.expires_at, sharedProfileFields: storedProfileFields(row.shared_profile_fields),
+    policyDocumentId: row.policy_document_identifier, policyContentHash: row.policy_content_hash,
+    policyLocale: row.policy_locale, policyStatus: "review",
+  } }
 }
 
 export async function executeProjectInvitationAccept(
-  supabase: SupabaseClient<Database>, input: { token: string; actorUserId: string; actorEmail: string },
+  supabase: SupabaseClient<Database>, input: ProjectInvitationAcceptInput & { actorUserId: string; actorEmail: string; reviewRuntimeEnabled: boolean },
 ): Promise<Success<ProjectInvitationAcceptResult> | Failure> {
+  if (!input.reviewRuntimeEnabled) return failure("review_preview_disabled", "Invitation acceptance is unavailable in this environment.")
   const digest = await sha256(input.token)
-  const { data, error } = await supabase.rpc("accept_project_invitation", {
+  const { data, error } = await supabase.rpc("accept_project_invitation_review", {
     p_token_digest: digest, p_actor_user_id: input.actorUserId, p_actor_email: input.actorEmail,
+    p_document_identifier: input.policyDocumentId, p_content_hash: input.policyContentHash,
+    p_locale: input.policyLocale, p_shared_profile_fields: input.sharedProfileFields,
   })
-  if (error) {
-    const codes: Record<string, string> = { invitation_not_found: "invitation_not_found", invitation_not_pending: "invitation_not_pending",
-      invitation_expired: "invitation_expired", invitation_email_mismatch: "invitation_email_mismatch" }
-    const code = Object.entries(codes).find(([message]) => error.message.includes(message))?.[1] ?? "invitation_accept_failed"
-    const messages: Record<string, string> = {
-      invitation_email_mismatch: "Sign in with the email address that was invited.",
-      invitation_not_found: "This invitation link is invalid.",
-      invitation_expired: "This invitation has expired. Ask a project administrator for a new link.",
-      invitation_not_pending: "This invitation is no longer pending and cannot be accepted.",
-    }
-    return failure(code, messages[code] ?? "This invitation cannot be accepted.")
-  }
+  if (error) return invitationRpcFailure(error, "invitation_accept_failed")
   const row = Array.isArray(data) ? data[0] : null
   if (!row) return failure("invitation_accept_failed", "Invitation acceptance returned no result.")
   return { ok: true, data: { invitationId: row.invitation_id, projectId: row.project_id, projectSlug: row.project_slug,
-    projectName: row.project_name, organizationId: row.organization_id, role: row.invited_role === "admin" ? "admin" : "member", status: "accepted", acceptedAt: row.accepted_at } }
+    projectName: row.project_name, organizationId: row.organization_id, role: row.invited_role === "admin" ? "admin" : "member", status: "accepted",
+    acceptedAt: row.accepted_at, evidenceId: row.evidence_id, policyStatus: "review", sharedProfileFields: storedProfileFields(row.shared_profile_fields) } }
+}
+
+export async function executeProjectInvitationDecline(
+  supabase: SupabaseClient<Database>, input: { token: string; actorUserId: string; actorEmail: string; reviewRuntimeEnabled: boolean },
+): Promise<Success<ProjectInvitationDeclineResult> | Failure> {
+  if (!input.reviewRuntimeEnabled) return failure("review_preview_disabled", "Invitation responses are unavailable in this environment.")
+  const { data, error } = await supabase.rpc("decline_project_invitation_review", {
+    p_token_digest: await sha256(input.token), p_actor_user_id: input.actorUserId, p_actor_email: input.actorEmail,
+  })
+  if (error) return invitationRpcFailure(error, "invitation_decline_failed")
+  const row = Array.isArray(data) ? data[0] : null
+  return row ? { ok: true, data: { invitationId: row.invitation_id, status: "declined", recordedAt: row.recorded_at } }
+    : failure("invitation_decline_failed", "Invitation decline returned no result.")
+}
+
+export async function executeProjectInvitationRevoke(
+  supabase: SupabaseClient<Database>, input: { invitationId: string; actorUserId: string; reviewRuntimeEnabled: boolean },
+): Promise<Success<ProjectInvitationRevokeResult> | Failure> {
+  if (!input.reviewRuntimeEnabled) return failure("review_preview_disabled", "Invitation revocation is unavailable in this environment.")
+  const { data, error } = await supabase.rpc("revoke_project_invitation_review", {
+    p_invitation_id: input.invitationId, p_actor_user_id: input.actorUserId,
+  })
+  if (error) return invitationRpcFailure(error, "invitation_revoke_failed")
+  const row = Array.isArray(data) ? data[0] : null
+  return row ? { ok: true, data: { invitationId: row.invitation_id, status: "revoked", recordedAt: row.recorded_at } }
+    : failure("invitation_revoke_failed", "Invitation revocation returned no result.")
 }
 
 export async function executeProjectInvitationList(
@@ -144,10 +216,11 @@ export async function executeProjectInvitationList(
   const { error: expirationError } = await expirePendingInvitations(supabase, project.id)
   if (expirationError) return failure("invitation_list_failed", "Expired invitations could not be refreshed.")
   const { data, error } = await supabase.from("project_invitations")
-    .select("id, invitee_email, invited_role, status, expires_at, created_at")
+    .select("id, invitee_email, invited_role, status, expires_at, created_at, shared_profile_fields, policy_status, policy_document_identifier")
     .eq("project_id", project.id).order("created_at", { ascending: false })
   if (error) return failure("invitation_list_failed", error.message)
   return { ok: true, data: (data ?? []).map((row) => ({ invitationId: row.id, email: row.invitee_email,
     role: row.invited_role === "admin" ? "admin" : "member", status: row.status as ProjectInvitationListItem["status"],
-    expiresAt: row.expires_at, createdAt: row.created_at })) }
+    expiresAt: row.expires_at, createdAt: row.created_at, sharedProfileFields: storedProfileFields(row.shared_profile_fields),
+    policyStatus: "review", policyDocumentId: row.policy_document_identifier })) }
 }

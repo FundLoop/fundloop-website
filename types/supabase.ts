@@ -1655,66 +1655,6 @@ export type Database = {
           },
         ]
       }
-      profile_publication_consents: {
-        Row: {
-          action: string
-          content_hash: string
-          created_at: string
-          document_identifier: string
-          document_status: string
-          document_version_id: string
-          fields: Json
-          id: string
-          locale: string
-          recorded_at: string
-          source_surface: string
-          user_id: string
-        }
-        Insert: {
-          action: string
-          content_hash: string
-          created_at?: string
-          document_identifier: string
-          document_status: string
-          document_version_id: string
-          fields?: Json
-          id?: string
-          locale: string
-          recorded_at?: string
-          source_surface: string
-          user_id: string
-        }
-        Update: {
-          action?: string
-          content_hash?: string
-          created_at?: string
-          document_identifier?: string
-          document_status?: string
-          document_version_id?: string
-          fields?: Json
-          id?: string
-          locale?: string
-          recorded_at?: string
-          source_surface?: string
-          user_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "profile_publication_consents_document_version_id_fkey"
-            columns: ["document_version_id"]
-            isOneToOne: false
-            referencedRelation: "legal_document_versions"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "profile_publication_consents_user_id_fkey"
-            columns: ["user_id"]
-            isOneToOne: false
-            referencedRelation: "users"
-            referencedColumns: ["user_id"]
-          },
-        ]
-      }
       payments: {
         Row: {
           confirmed_at: string | null
@@ -2086,6 +2026,66 @@ export type Database = {
           },
         ]
       }
+      profile_publication_consents: {
+        Row: {
+          action: string
+          content_hash: string
+          created_at: string
+          document_identifier: string
+          document_status: string
+          document_version_id: string
+          fields: Json
+          id: string
+          locale: string
+          recorded_at: string
+          source_surface: string
+          user_id: string
+        }
+        Insert: {
+          action: string
+          content_hash: string
+          created_at?: string
+          document_identifier: string
+          document_status: string
+          document_version_id: string
+          fields?: Json
+          id?: string
+          locale: string
+          recorded_at?: string
+          source_surface: string
+          user_id: string
+        }
+        Update: {
+          action?: string
+          content_hash?: string
+          created_at?: string
+          document_identifier?: string
+          document_status?: string
+          document_version_id?: string
+          fields?: Json
+          id?: string
+          locale?: string
+          recorded_at?: string
+          source_surface?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "profile_publication_consents_document_version_id_fkey"
+            columns: ["document_version_id"]
+            isOneToOne: false
+            referencedRelation: "legal_document_versions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "profile_publication_consents_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["user_id"]
+          },
+        ]
+      }
       project_attribution_datasets: {
         Row: {
           approved_at: string | null
@@ -2304,6 +2304,86 @@ export type Database = {
           },
         ]
       }
+      project_invitation_acceptance_evidence: {
+        Row: {
+          action: string
+          actor_user_id: string | null
+          created_at: string
+          id: string
+          invitation_id: string
+          policy_content_hash: string
+          policy_document_identifier: string
+          policy_document_version_id: string
+          policy_locale: string
+          policy_status: string
+          project_id: number
+          recorded_at: string
+          shared_profile_fields: Json
+          source_surface: string
+        }
+        Insert: {
+          action: string
+          actor_user_id?: string | null
+          created_at?: string
+          id?: string
+          invitation_id: string
+          policy_content_hash: string
+          policy_document_identifier: string
+          policy_document_version_id: string
+          policy_locale: string
+          policy_status: string
+          project_id: number
+          recorded_at?: string
+          shared_profile_fields: Json
+          source_surface?: string
+        }
+        Update: {
+          action?: string
+          actor_user_id?: string | null
+          created_at?: string
+          id?: string
+          invitation_id?: string
+          policy_content_hash?: string
+          policy_document_identifier?: string
+          policy_document_version_id?: string
+          policy_locale?: string
+          policy_status?: string
+          project_id?: number
+          recorded_at?: string
+          shared_profile_fields?: Json
+          source_surface?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "project_invitation_acceptance_e_policy_document_version_id_fkey"
+            columns: ["policy_document_version_id"]
+            isOneToOne: false
+            referencedRelation: "legal_document_versions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "project_invitation_acceptance_evidence_actor_user_id_fkey"
+            columns: ["actor_user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "project_invitation_acceptance_evidence_invitation_id_fkey"
+            columns: ["invitation_id"]
+            isOneToOne: false
+            referencedRelation: "project_invitations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "project_invitation_acceptance_evidence_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       project_invitations: {
         Row: {
           accepted_at: string | null
@@ -2316,7 +2396,13 @@ export type Database = {
           invited_role: string
           invitee_email: string
           organization_id: number
+          policy_content_hash: string
+          policy_document_identifier: string
+          policy_document_version_id: string
+          policy_locale: string
+          policy_status: string
           project_id: number
+          shared_profile_fields: Json
           status: string
           token_digest: string
           updated_at: string
@@ -2332,7 +2418,13 @@ export type Database = {
           invited_role?: string
           invitee_email: string
           organization_id: number
+          policy_content_hash: string
+          policy_document_identifier: string
+          policy_document_version_id: string
+          policy_locale: string
+          policy_status: string
           project_id: number
+          shared_profile_fields?: Json
           status?: string
           token_digest: string
           updated_at?: string
@@ -2348,7 +2440,13 @@ export type Database = {
           invited_role?: string
           invitee_email?: string
           organization_id?: number
+          policy_content_hash?: string
+          policy_document_identifier?: string
+          policy_document_version_id?: string
+          policy_locale?: string
+          policy_status?: string
           project_id?: number
+          shared_profile_fields?: Json
           status?: string
           token_digest?: string
           updated_at?: string
@@ -2373,6 +2471,13 @@ export type Database = {
             columns: ["organization_id"]
             isOneToOne: false
             referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "project_invitations_policy_document_version_id_fkey"
+            columns: ["policy_document_version_id"]
+            isOneToOne: false
+            referencedRelation: "legal_document_versions"
             referencedColumns: ["id"]
           },
           {
@@ -3697,7 +3802,7 @@ export type Database = {
           is_name_public: boolean
           is_occupation_public: boolean
           is_pfp_public: boolean
-          is_public: boolean | null
+          is_public: boolean
           lifetime_sweat_equity: number | null
           location_id: number | null
           occupation_id: number | null
@@ -3734,7 +3839,7 @@ export type Database = {
           is_name_public?: boolean
           is_occupation_public?: boolean
           is_pfp_public?: boolean
-          is_public?: boolean | null
+          is_public?: boolean
           lifetime_sweat_equity?: number | null
           location_id?: number | null
           occupation_id?: number | null
@@ -3771,7 +3876,7 @@ export type Database = {
           is_name_public?: boolean
           is_occupation_public?: boolean
           is_pfp_public?: boolean
-          is_public?: boolean | null
+          is_public?: boolean
           lifetime_sweat_equity?: number | null
           location_id?: number | null
           occupation_id?: number | null
@@ -4801,40 +4906,6 @@ export type Database = {
       }
     }
     Functions: {
-      list_discoverable_public_user_ids: {
-        Args: Record<PropertyKey, never>
-        Returns: { user_id: string }[]
-      }
-      record_profile_publication_choice: {
-        Args: {
-          p_action: string
-          p_actor_user_id: string
-          p_content_hash: string
-          p_document_identifier: string
-          p_fields: Json
-          p_locale: string
-          p_source_surface: string
-        }
-        Returns: {
-          consent_id: string
-          is_public: boolean
-          recorded_at: string
-        }[]
-      }
-      record_review_policy_acknowledgement: {
-        Args: {
-          p_actor_capacity: string
-          p_actor_user_id: string
-          p_content_hash: string
-          p_document_identifier: string
-          p_locale: string
-          p_source_surface: string
-        }
-        Returns: {
-          acceptance_id: string
-          recorded_at: string
-        }[]
-      }
       accept_project_invitation: {
         Args: {
           p_actor_email: string
@@ -4852,6 +4923,30 @@ export type Database = {
           status: string
         }[]
       }
+      accept_project_invitation_review: {
+        Args: {
+          p_actor_email: string
+          p_actor_user_id: string
+          p_content_hash: string
+          p_document_identifier: string
+          p_locale: string
+          p_shared_profile_fields: Json
+          p_token_digest: string
+        }
+        Returns: {
+          accepted_at: string
+          evidence_id: string
+          invitation_id: string
+          invited_role: string
+          organization_id: number
+          policy_status: string
+          project_id: number
+          project_name: string
+          project_slug: string
+          shared_profile_fields: Json
+          status: string
+        }[]
+      }
       create_user_withdrawal_request: {
         Args: {
           p_actor_user_id: string
@@ -4866,6 +4961,18 @@ export type Database = {
           request_id: string
           requested_at: string
           requested_usd_amount: number
+          status: string
+        }[]
+      }
+      decline_project_invitation_review: {
+        Args: {
+          p_actor_email: string
+          p_actor_user_id: string
+          p_token_digest: string
+        }
+        Returns: {
+          invitation_id: string
+          recorded_at: string
           status: string
         }[]
       }
@@ -4898,6 +5005,47 @@ export type Database = {
           user_id: string
         }[]
       }
+      inspect_project_invitation_review: {
+        Args: {
+          p_actor_email: string
+          p_actor_user_id: string
+          p_token_digest: string
+        }
+        Returns: {
+          expires_at: string
+          invitation_id: string
+          invited_role: string
+          policy_content_hash: string
+          policy_document_identifier: string
+          policy_locale: string
+          policy_status: string
+          project_id: number
+          project_name: string
+          project_slug: string
+          shared_profile_fields: Json
+          status: string
+        }[]
+      }
+      list_discoverable_public_user_ids: {
+        Args: never
+        Returns: {
+          user_id: string
+        }[]
+      }
+      list_project_member_shared_profiles: {
+        Args: { p_project_id: number }
+        Returns: {
+          avatar_url: string
+          bio: string
+          display_name: string
+          is_admin: boolean
+          location_name: string
+          occupation_name: string
+          profile_headline: string
+          shared_profile_fields: Json
+          user_id: string
+        }[]
+      }
       publish_project_onboarding_draft_atomic: {
         Args: {
           p_billing_email: string
@@ -4918,6 +5066,36 @@ export type Database = {
         Returns: {
           project_id: number
           project_slug: string
+        }[]
+      }
+      record_profile_publication_choice: {
+        Args: {
+          p_action: string
+          p_actor_user_id: string
+          p_content_hash: string
+          p_document_identifier: string
+          p_fields: Json
+          p_locale: string
+          p_source_surface: string
+        }
+        Returns: {
+          consent_id: string
+          is_public: boolean
+          recorded_at: string
+        }[]
+      }
+      record_review_policy_acknowledgement: {
+        Args: {
+          p_actor_capacity: string
+          p_actor_user_id: string
+          p_content_hash: string
+          p_document_identifier: string
+          p_locale: string
+          p_source_surface: string
+        }
+        Returns: {
+          acceptance_id: string
+          recorded_at: string
         }[]
       }
       replace_user_asset_preferences_atomic: {
@@ -4941,6 +5119,14 @@ export type Database = {
           isOneToOne: false
           isSetofReturn: true
         }
+      }
+      revoke_project_invitation_review: {
+        Args: { p_actor_user_id: string; p_invitation_id: string }
+        Returns: {
+          invitation_id: string
+          recorded_at: string
+          status: string
+        }[]
       }
       soft_delete_organization_members: {
         Args: { p_id: number }
