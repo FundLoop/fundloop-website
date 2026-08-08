@@ -31,6 +31,16 @@ export const privacyReviewDocument = {
 } as const satisfies ReviewPolicyDocument
 
 export function isReviewPolicyPreviewEnabled(environment: Record<string, string | undefined> = process.env) {
+  const deploymentEnvironment = (
+    environment.NEXT_PUBLIC_FUNDLOOP_DEPLOYMENT_ENV ??
+    environment.NEXT_PUBLIC_VERCEL_ENV ??
+    environment.VERCEL_ENV
+  )
+    ?.trim()
+    .toLowerCase()
+
+  if (deploymentEnvironment === "production") return false
+  if (environment.NODE_ENV === "production" && deploymentEnvironment !== "preview") return false
   return environment.NODE_ENV !== "production" || environment.NEXT_PUBLIC_POLICY_REVIEW_PREVIEW === "1"
 }
 

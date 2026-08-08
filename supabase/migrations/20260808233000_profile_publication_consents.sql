@@ -26,7 +26,7 @@ BEGIN
   IF NOT FOUND THEN RAISE EXCEPTION USING ERRCODE = '22023', MESSAGE = 'current_review_privacy_document_required'; END IF;
   IF p_action NOT IN ('grant', 'withdraw') THEN RAISE EXCEPTION USING ERRCODE = '22023', MESSAGE = 'invalid_profile_publication_action'; END IF;
   UPDATE public.users SET is_public = (p_action = 'grant'), is_name_public = (p_action = 'grant' AND p_fields ? 'display_name'), is_pfp_public = (p_action = 'grant' AND p_fields ? 'avatar'), is_occupation_public = (p_action = 'grant' AND p_fields ? 'occupation'), is_location_public = (p_action = 'grant' AND p_fields ? 'location'), is_gender_public = false, is_birthyear_public = false, is_birthday_public = false WHERE user_id = p_actor_user_id;
-  INSERT INTO public.profile_publication_consents (user_id, document_version_id, document_identifier, content_hash, document_status, locale, action, fields, source_surface) VALUES (p_actor_user_id, document_row.id, document_row.document_identifier, document_row.content_hash, 'review', document_row.locale, p_action, p_fields, p_source_surface) RETURNING * INTO consent_row;
+  INSERT INTO public.profile_publication_consents (user_id, document_version_id, document_identifier, content_hash, document_status, locale, action, fields, source_surface, recorded_at) VALUES (p_actor_user_id, document_row.id, document_row.document_identifier, document_row.content_hash, 'review', document_row.locale, p_action, p_fields, p_source_surface, clock_timestamp()) RETURNING * INTO consent_row;
   RETURN QUERY SELECT consent_row.id, consent_row.recorded_at, (p_action = 'grant');
 END; $$;
 REVOKE ALL ON FUNCTION public.record_profile_publication_choice(uuid, text, text, text, text, jsonb, text) FROM PUBLIC, anon, authenticated; GRANT EXECUTE ON FUNCTION public.record_profile_publication_choice(uuid, text, text, text, text, jsonb, text) TO service_role;
@@ -35,4 +35,3 @@ CREATE OR REPLACE FUNCTION public.list_discoverable_public_user_ids() RETURNS TA
   SELECT latest.user_id FROM (SELECT DISTINCT ON (consent.user_id) consent.user_id, consent.action FROM public.profile_publication_consents consent WHERE consent.document_status = 'review' ORDER BY consent.user_id, consent.recorded_at DESC, consent.id DESC) latest JOIN public.users profile ON profile.user_id = latest.user_id WHERE latest.action = 'grant' AND profile.is_public = true AND profile.status = 'active' AND profile.deleted_at IS NULL;
 $$;
 REVOKE ALL ON FUNCTION public.list_discoverable_public_user_ids() FROM PUBLIC; GRANT EXECUTE ON FUNCTION public.list_discoverable_public_user_ids() TO anon, authenticated, service_role;
-

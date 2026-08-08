@@ -31,4 +31,3 @@ export function normalizeProfilePublicationChoiceResult(result: EdgeCommandResul
   if (!isObject(result.data) || typeof result.data.consentId !== "string" || typeof result.data.recordedAt !== "string" || typeof result.data.isPublic !== "boolean" || typeof result.data.prospectiveWithdrawal !== "boolean" || result.data.status !== "review") return edgeCommandFailure("invalid_edge_response", "Profile publication command returned an invalid response.")
   return edgeCommandSuccess(result.data as ProfilePublicationChoiceOutput)
 }
-

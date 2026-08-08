@@ -493,3 +493,57 @@ gate, while preserving the non-effective local/dev boundary.
 
 - Commit the #123 validation fixes and update its implementation evidence.
 - Complete the #124 consent browser smoke and issue-scoped validation commit.
+
+### session v11: Fail closed and prove profile publication consent (#124)
+
+- Timestamp: 2026-08-08T19:01:00-04:00
+- Agent: Codex
+- Branch: codex/118-canada-review-drafts
+- Head: a70b232
+
+#### Objective
+
+Close the independent validation findings for Task #124 by making review-profile
+discovery unconditionally unavailable in production, preserving private onboarding,
+and proving grant/withdrawal behavior through the real local stack and browser.
+
+#### Actions Taken
+
+- Made the public preview helper reject production even when the public review flag
+  is set; only an explicitly identified preview deployment can use that flag with a
+  production-mode build.
+- Forced user onboarding publication to write every profile and field visibility
+  flag as private. Optional publication remains available only through the separate,
+  unselected account choice.
+- Changed consent ordering to use `clock_timestamp()` so rapid append-only choices
+  have an unambiguous latest action, including inside one transaction.
+- Added a reusable local SQL assertion covering Terms and Privacy RPC/RLS controls,
+  and a Playwright workflow covering no-consent privacy, grant/discovery, and
+  withdrawal/removal.
+- Normalized the remaining Task #124 files to one newline at EOF.
+
+#### Validation Notes
+
+- Passed: fresh disposable Supabase reset applied all migrations and seed, including
+  `20260808233000_profile_publication_consents.sql`.
+- Passed: SQL assertions for grant, invalid document/hash rejection, discoverability,
+  explicit latest withdrawal, removal, self-read, cross-user denial, and direct-write
+  denial. The same script also re-proved the #123 controls.
+- Passed: local Playwright consent workflow, 1 test in 3.5 seconds, through the real
+  account control, Edge command, RPC, public directory, and cleanup.
+- Passed: Node 22 lint, typecheck, focused 9-file/32-test suite, and full `CI=1 pnpm
+  check` with 124 files/554 tests plus production build.
+- Passed: `git diff --check` with all prior EOF warnings removed.
+
+#### Reflections
+
+- Onboarding and publication are now structurally separate: completing onboarding
+  cannot make a profile public, even if a caller sends public visibility values.
+- The local browser smoke required one seeded public-project participation because
+  the existing directory intentionally lists only participating users; consent alone
+  still does not bypass that product rule.
+
+#### Suggested Next Steps
+
+- Commit the #124 validation fixes and update both issue evidence comments.
+- Keep #123 and #124 In Progress for independent revalidation; do not start #125.

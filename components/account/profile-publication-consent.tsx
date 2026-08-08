@@ -28,4 +28,3 @@ export function ProfilePublicationConsent({ initiallyPublic }: { initiallyPublic
     {message ? <p role="status" className="mt-3 text-sm font-semibold">{message}</p> : null}
   </section>
 }
-

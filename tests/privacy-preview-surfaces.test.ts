@@ -15,4 +15,3 @@ describe("Privacy review surfaces", () => {
     expect(edge).toContain('FUNDLOOP_DEPLOYMENT_ENV") === "production"')
   })
 })
-

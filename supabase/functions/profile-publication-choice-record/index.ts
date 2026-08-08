@@ -19,4 +19,3 @@ async function handleRequest(request) {
 }
 serve(handleRequest)
 export { handleRequest }
-

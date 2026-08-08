@@ -10,7 +10,21 @@ describe("review policy gates", () => {
 
   it("fails closed in production unless the explicit preview flag is enabled", () => {
     expect(isReviewPolicyPreviewEnabled({ NODE_ENV: "production" })).toBe(false)
-    expect(isReviewPolicyPreviewEnabled({ NODE_ENV: "production", NEXT_PUBLIC_POLICY_REVIEW_PREVIEW: "1" })).toBe(true)
+    expect(isReviewPolicyPreviewEnabled({ NODE_ENV: "production", NEXT_PUBLIC_POLICY_REVIEW_PREVIEW: "1" })).toBe(false)
+    expect(
+      isReviewPolicyPreviewEnabled({
+        NODE_ENV: "production",
+        NEXT_PUBLIC_VERCEL_ENV: "preview",
+        NEXT_PUBLIC_POLICY_REVIEW_PREVIEW: "1",
+      }),
+    ).toBe(true)
+    expect(
+      isReviewPolicyPreviewEnabled({
+        NODE_ENV: "production",
+        NEXT_PUBLIC_VERCEL_ENV: "production",
+        NEXT_PUBLIC_POLICY_REVIEW_PREVIEW: "1",
+      }),
+    ).toBe(false)
     expect(isReviewPolicyPreviewEnabled({ NODE_ENV: "development" })).toBe(true)
   })
 
@@ -21,4 +35,3 @@ describe("review policy gates", () => {
     expect(validatePolicyAcknowledgementInput({ ...termsReviewDocument, status: "effective", sourceSurface: "project_funding_preview", actorCapacity: "project_actor" }).ok).toBe(false)
   })
 })
-

@@ -11,4 +11,3 @@ export async function executeProfilePublicationChoiceCommand(supabase: SupabaseC
   const value = row as { consent_id: string; recorded_at: string; is_public: boolean }
   return { ok: true, data: { consentId: value.consent_id, recordedAt: value.recorded_at, isPublic: value.is_public, prospectiveWithdrawal: input.action === "withdraw", status: "review" } }
 }
-

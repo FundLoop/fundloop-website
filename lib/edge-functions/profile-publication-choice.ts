@@ -3,4 +3,3 @@ import { normalizeProfilePublicationChoiceResult, PROFILE_PUBLICATION_CHOICE_FUN
 export async function invokeProfilePublicationChoice(input: ProfilePublicationChoiceInput) {
   return normalizeProfilePublicationChoiceResult(await invokeBrowserEdgeCommand<ProfilePublicationChoiceInput, unknown>(PROFILE_PUBLICATION_CHOICE_FUNCTION, input))
 }
-

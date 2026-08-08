@@ -22,4 +22,3 @@ describe("profile publication privacy boundary", () => {
     expect(migration).toContain("GRANT EXECUTE ON FUNCTION public.list_discoverable_public_user_ids() TO anon, authenticated, service_role")
   })
 })
-

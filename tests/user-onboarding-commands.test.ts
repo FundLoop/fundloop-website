@@ -184,6 +184,16 @@ describe("user onboarding commands", () => {
         relationshipChoice: "create_project",
       },
     })
+
+    expect(supabase.operations.find((operation) => operation.table === "users")?.payload).toEqual(
+      expect.objectContaining({
+        is_public: false,
+        is_name_public: false,
+        is_pfp_public: false,
+        is_occupation_public: false,
+        is_location_public: false,
+      }),
+    )
   })
 
   it("preserves existing invite attribution when a draft has no new invite code", async () => {

@@ -23,4 +23,3 @@ describe("ProfilePublicationConsent", () => {
     expect(await screen.findByText(/removed from FundLoop public discovery/)).toBeTruthy()
   })
 })
-
