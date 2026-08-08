@@ -185,3 +185,44 @@ Prepare the validated #119-#120 documentation batch for its first pull request i
 - Commit the version checkpoint, run the full Node 22 gate, and publish one Feature
   PR to `dev` with #119 and #120 linked.
 - Leave #121 and all dependent product Goals blocked pending professional approval.
+
+### session v5: Record Feature #118 publication validation
+
+- Timestamp: 2026-08-08T16:42:18Z
+- Agent: Codex
+- Branch: codex/118-epoch-treasury
+- Head: 6ad9df6
+
+#### Objective
+
+Record reproducible Node 22 validation evidence for the independently validated
+#119-#120 documentation batch before publishing its pull request to `dev`.
+
+#### Actions Taken
+
+- Ran lint, type checking, production build, and the complete Vitest suite with the
+  repository's Node 22 baseline.
+- Used an explicit single-worker fork pool for Vitest after the aggregate `pnpm
+  check` invocation stalled during its default test-runner startup.
+- Kept the validation-record update isolated from the Task implementation commits.
+
+#### Validation Notes
+
+- Passed: `PATH=/opt/homebrew/opt/node@22/bin:$PATH CI=1 pnpm lint`.
+- Passed: `PATH=/opt/homebrew/opt/node@22/bin:$PATH CI=1 pnpm typecheck`.
+- Passed: `PATH=/opt/homebrew/opt/node@22/bin:$PATH CI=1 pnpm build`.
+- Passed: `PATH=/opt/homebrew/opt/node@22/bin:$PATH CI=1 pnpm exec vitest run
+  --pool=forks --maxWorkers=1 --reporter=verbose` with 118 test files and 537 tests.
+- The default test phase inside `CI=1 pnpm check` stalled without spawning workers;
+  its component gates were therefore run separately and completed successfully.
+
+#### Reflections
+
+- Explicit worker configuration provides a deterministic local proof while the
+  existing aggregate-runner startup issue remains separate repository tooling debt.
+
+#### Suggested Next Steps
+
+- Publish the branch and open a draft Feature PR to `dev`.
+- Keep Task #121 and its dependent implementation work blocked until the required
+  counsel and accountant evidence is available.
