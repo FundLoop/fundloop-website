@@ -146,8 +146,8 @@ export const DEFAULT_USER_ONBOARDING_PAYLOAD: UserOnboardingPayload = {
   genderId: "",
   interestIds: [],
   inviteCode: "",
-  privacyPreset: "limited",
-  visibility: DEFAULT_USER_VISIBILITY.limited,
+  privacyPreset: "private",
+  visibility: DEFAULT_USER_VISIBILITY.private,
   relationshipChoice: "individual",
   selectedProjectId: null,
 }
@@ -276,10 +276,10 @@ export function mergeUserOnboardingPayload(
   return {
     ...DEFAULT_USER_ONBOARDING_PAYLOAD,
     ...payload,
-    visibility: {
-      ...DEFAULT_USER_ONBOARDING_PAYLOAD.visibility,
-      ...payload?.visibility,
-    },
+    // Legacy drafts may contain the retired public/limited onboarding controls.
+    // Onboarding is always private; publication is a separate account choice.
+    privacyPreset: "private",
+    visibility: { ...DEFAULT_USER_VISIBILITY.private },
     interestIds: payload?.interestIds ?? DEFAULT_USER_ONBOARDING_PAYLOAD.interestIds,
   }
 }

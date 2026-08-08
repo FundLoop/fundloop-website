@@ -17,9 +17,7 @@ import { invokeUserCubidSyncProfileBrowser } from "@/lib/edge-functions/user-cub
 import { isResolvedCubidIdentityStatus, type CubidIdentitySnapshotSummary } from "@/lib/cubid/types"
 import { getSupabaseBrowserClient } from "@/lib/supabase"
 import {
-  buildVisibilityFromPreset,
   DEFAULT_USER_ONBOARDING_PAYLOAD,
-  type PrivacyPreset,
   type TeamMemberProjectMatch,
   type UserOnboardingPayload,
   type UserOnboardingScreen,
@@ -30,7 +28,6 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
-import { Switch } from "@/components/ui/switch"
 import { Badge } from "@/components/ui/badge"
 import { Combobox, type ComboboxOption } from "@/components/ui/combobox"
 import { Card, CardContent } from "@/components/ui/card"
@@ -427,7 +424,7 @@ export default function UserSignupFlow({
       title: result.data.cubidIdentityStatus === "verified" ? "CUBID verified" : "CUBID linked",
       description:
         result.data.cubidIdentityStatus === "verified"
-          ? "Your email identity is verified with CUBID and ready for FundLoop publishing."
+          ? "Your email identity is verified with CUBID and ready for private FundLoop profile setup."
           : "Your email is now linked to CUBID. You can continue through onboarding.",
     })
 
@@ -491,29 +488,11 @@ export default function UserSignupFlow({
     })
   }
 
-  const setPrivacyPreset = (preset: PrivacyPreset) => {
-    updatePayload({
-      privacyPreset: preset,
-      visibility: buildVisibilityFromPreset(preset),
-    })
-  }
-
-  const setVisibilitySetting = (key: keyof UserOnboardingPayload["visibility"], value: boolean) => {
-    setPayload((previous) => ({
-      ...previous,
-      privacyPreset: previous.privacyPreset,
-      visibility: {
-        ...previous.visibility,
-        [key]: value,
-      },
-    }))
-  }
-
   const handlePublish = async () => {
     if (!isResolvedCubidIdentityStatus(cubidIdentityStatus)) {
       toast({
-        title: "Link CUBID before publishing",
-        description: "Resolve your CUBID identity from the signed-in email before publishing your profile.",
+        title: "Link CUBID before completing setup",
+        description: "Resolve your CUBID identity from the signed-in email before completing your private profile setup.",
         variant: "destructive",
       })
       return
@@ -525,7 +504,7 @@ export default function UserSignupFlow({
 
     if (!result.ok) {
       toast({
-        title: "Could not publish profile",
+        title: "Could not complete profile setup",
         description: result.error.message,
         variant: "destructive",
       })
@@ -535,11 +514,11 @@ export default function UserSignupFlow({
     router.refresh()
 
     toast({
-      title: "Profile published",
+      title: "Private profile setup complete",
       description:
         result.data.nextFlow === "project"
-          ? "Your personal profile is live. Next up: your project draft."
-          : "Your FundLoop profile is now live.",
+          ? "Your private profile is active. Next up: your project draft."
+          : "Your private FundLoop profile is active. You can separately choose review-only publication from Account > Profile.",
     })
 
     if (result.data.nextFlow === "project") {
@@ -579,14 +558,9 @@ export default function UserSignupFlow({
       <UserProfilePreview payload={payload} />
       <Card className="border-dashed">
         <CardContent className="space-y-2 p-4 text-sm text-slate-600">
-          <p className="font-medium text-slate-900">Current visibility</p>
-          <div className="flex flex-wrap gap-2">
-            <Badge variant={payload.visibility.isNamePublic ? "default" : "outline"}>Name</Badge>
-            <Badge variant={payload.visibility.isPfpPublic ? "default" : "outline"}>Photo</Badge>
-            <Badge variant={payload.visibility.isOccupationPublic ? "default" : "outline"}>Occupation</Badge>
-            <Badge variant={payload.visibility.isLocationPublic ? "default" : "outline"}>Location</Badge>
-            <Badge variant={payload.visibility.isGenderPublic ? "default" : "outline"}>Gender</Badge>
-          </div>
+          <p className="font-medium text-slate-900">Onboarding visibility</p>
+          <Badge variant="outline">Private</Badge>
+          <p>Completing onboarding does not publish this profile. Optional review-only publication is a separate, unselected choice under Account &gt; Profile.</p>
           <Separator />
           <p>Occupation: {selectedOccupation}</p>
           <p>Location: {selectedLocation}</p>
@@ -621,7 +595,7 @@ export default function UserSignupFlow({
       <OnboardingShell
         eyebrow="Welcome"
         title="A better start for new FundLoop members"
-        description="This onboarding builds your profile screen by screen, saves your draft as you go, and keeps it hidden until you publish."
+        description="This onboarding builds your private profile screen by screen and saves your draft as you go. It does not publish you to discovery."
         compact
         footer={
           <div className="flex items-center justify-between">
@@ -673,7 +647,7 @@ export default function UserSignupFlow({
         }
       >
         <div className="rounded-2xl border border-emerald-200 bg-emerald-50/70 p-4 text-sm text-emerald-900">
-          Your profile is still hidden from the rest of FundLoop until you publish it.
+          Your profile remains private through onboarding. After setup, optional review-only publication is a separate account choice.
         </div>
       </OnboardingShell>
     )
@@ -690,27 +664,27 @@ export default function UserSignupFlow({
           : currentScreen === "identity"
           ? "Set the profile details FundLoop still owns"
           : currentScreen === "visibility"
-            ? "Choose how public you want to be"
+            ? "Keep onboarding private"
             : currentScreen === "about"
               ? "Tell FundLoop about yourself"
               : currentScreen === "relationship"
                 ? "How are you joining the ecosystem?"
-                : "Review and publish your profile"
+                : "Review and complete your private profile"
       }
       description={
         currentScreen === "cubid"
-          ? "Before your profile can go live, FundLoop needs to resolve the signed-in email against CUBID and keep that identity link on file."
+          ? "Before private profile setup can complete, FundLoop needs to resolve the signed-in email against CUBID and keep that identity link on file."
           : currentScreen === "extended_identity"
             ? "This step is optional. Add a phone number or provider stamps now, or skip ahead and come back from your workspace later."
           : currentScreen === "identity"
           ? "Your legal identity now comes from CUBID. Use this step for display name, profile headline, and the FundLoop-specific context that still belongs here."
           : currentScreen === "visibility"
-            ? "Set a simple privacy preset, then fine-tune the fields that should stay public."
+            ? "Onboarding never publishes your profile. Optional review-only publication is available later as a separate, unselected choice under Account > Profile."
             : currentScreen === "about"
               ? "These details help FundLoop match you to the right projects and context."
               : currentScreen === "relationship"
                 ? "Choose whether you’re joining as an individual, looking for an existing team, or planning to create your own project."
-                : "Check your live preview, then publish your profile when it feels right."
+                : "Check your private preview, then complete setup. This does not add you to public discovery."
       }
       preview={preview}
       footer={
@@ -724,7 +698,7 @@ export default function UserSignupFlow({
             {currentScreen === "review" ? (
               <Button onClick={() => void handlePublish()} disabled={publishing} className="gap-2">
                 <CheckCircle2 className="h-4 w-4" />
-                {publishing ? "Publishing..." : "Publish profile"}
+                {publishing ? "Completing..." : "Complete private profile"}
               </Button>
             ) : (
               <Button onClick={() => moveToScreen(getNextScreen())} disabled={!canContinue()} className="gap-2">
@@ -744,8 +718,8 @@ export default function UserSignupFlow({
           cubidScore={cubidScore}
           resolving={resolvingCubid}
           onResolve={() => void handleResolveCubid()}
-          title="CUBID becomes the identity bridge for FundLoop publishing"
-          body="We use your signed-in email to resolve or create the matching CUBID user. Publishing is blocked until that link exists, because later payout and accountability flows depend on it."
+          title="CUBID becomes the identity bridge for FundLoop setup"
+          body="We use your signed-in email to resolve or create the matching CUBID user. Completing setup is blocked until that link exists, because later payout and accountability flows depend on it."
         />
       ) : null}
 
@@ -795,7 +769,7 @@ export default function UserSignupFlow({
                 id="onboarding-display-name"
                 value={payload.displayName}
                 onChange={(event) => updatePayload({ displayName: event.target.value })}
-                placeholder="What should people see on your public profile?"
+                placeholder="How would you like to describe yourself in FundLoop?"
               />
             </div>
           </div>
@@ -826,61 +800,14 @@ export default function UserSignupFlow({
 
       {currentScreen === "visibility" ? (
         <div className="space-y-6">
-          <div className="space-y-3">
-            <Label>Privacy preset</Label>
-            <RadioGroup
-              value={payload.privacyPreset}
-              onValueChange={(value) => setPrivacyPreset(value as PrivacyPreset)}
-              className="grid gap-3"
-            >
-              {[
-                {
-                  value: "public",
-                  label: "Public profile",
-                  description: "Show your profile and key details broadly across FundLoop.",
-                },
-                {
-                  value: "limited",
-                  label: "Limited profile",
-                  description: "Stay discoverable, but keep sensitive fields private by default.",
-                },
-                {
-                  value: "private",
-                  label: "Private draft",
-                  description: "Hide your profile and all fields until you decide otherwise.",
-                },
-              ].map((option) => (
-                <label key={option.value} className="flex items-start gap-3 rounded-2xl border p-4">
-                  <RadioGroupItem value={option.value} id={`privacy-${option.value}`} />
-                  <div className="space-y-1">
-                    <p className="font-medium text-slate-900">{option.label}</p>
-                    <p className="text-sm text-slate-600">{option.description}</p>
-                  </div>
-                </label>
-              ))}
-            </RadioGroup>
-          </div>
-
-          <Separator />
-
-          <div className="grid gap-3 md:grid-cols-2">
-            {[
-              ["isNamePublic", "Show my name"],
-              ["isPfpPublic", "Show my profile picture"],
-              ["isOccupationPublic", "Show my occupation"],
-              ["isLocationPublic", "Show my location"],
-              ["isGenderPublic", "Show my gender"],
-            ].map(([key, label]) => (
-              <div key={key} className="flex items-center justify-between rounded-2xl border px-4 py-3">
-                <span className="text-sm font-medium text-slate-900">{label}</span>
-                <Switch
-                  checked={payload.visibility[key as keyof UserOnboardingPayload["visibility"]]}
-                  onCheckedChange={(checked) =>
-                    setVisibilitySetting(key as keyof UserOnboardingPayload["visibility"], checked)
-                  }
-                />
-              </div>
-            ))}
+          <div className="rounded-3xl border border-emerald-200 bg-emerald-50/70 p-5 text-emerald-950">
+            <h3 className="font-semibold">Private by default</h3>
+            <p className="mt-2 text-sm leading-6">
+              Completing onboarding activates your private workspace profile only. It does not make your profile or any field discoverable.
+            </p>
+            <p className="mt-2 text-sm leading-6">
+              After onboarding, Account &gt; Profile contains a separate, unselected review-only publication choice that you can grant or withdraw.
+            </p>
           </div>
         </div>
       ) : null}
@@ -1062,9 +989,9 @@ export default function UserSignupFlow({
       {currentScreen === "review" ? (
         <div className="space-y-6">
           <div className="rounded-3xl border border-emerald-200 bg-emerald-50/70 p-5">
-            <h3 className="font-semibold text-emerald-950">Ready to publish</h3>
+            <h3 className="font-semibold text-emerald-950">Ready to complete private setup</h3>
             <p className="mt-2 text-sm text-emerald-900">
-              Your draft is still private. Publishing will make your profile active inside FundLoop with the visibility settings shown in the preview.
+              Completing setup makes your private workspace profile active. It does not add you to discovery. Optional review-only publication remains a separate account choice.
             </p>
           </div>
 
@@ -1081,13 +1008,13 @@ export default function UserSignupFlow({
             </Card>
             <Card>
               <CardContent className="space-y-2 p-4 text-sm text-slate-600">
-                <p className="font-medium text-slate-900">Next step after publish</p>
+                <p className="font-medium text-slate-900">Next step after setup</p>
                 <p>
                   {payload.relationshipChoice === "create_project"
                     ? "You’ll continue directly into the project onboarding flow."
                     : payload.relationshipChoice === "team_member"
                       ? "You’ll be able to use the project contact guidance you selected."
-                      : "Your personal profile will be live and ready to use."}
+                      : "Your private workspace profile will be active and ready to use."}
                 </p>
                 {selectedProject ? <p>Selected project: {selectedProject.name}</p> : null}
               </CardContent>

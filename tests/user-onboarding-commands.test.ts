@@ -123,7 +123,7 @@ describe("user onboarding commands", () => {
     ).resolves.toEqual({ ok: true, data: undefined })
   })
 
-  it("publishes a user onboarding draft and returns the next flow", async () => {
+  it("completes a legacy-public onboarding draft as private and returns the next flow", async () => {
     const supabase = createSupabaseMock({
       user_onboarding_drafts: [
         {

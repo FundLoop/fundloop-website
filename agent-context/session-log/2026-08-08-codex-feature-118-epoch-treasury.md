@@ -547,3 +547,52 @@ and proving grant/withdrawal behavior through the real local stack and browser.
 
 - Commit the #124 validation fixes and update both issue evidence comments.
 - Keep #123 and #124 In Progress for independent revalidation; do not start #125.
+
+### session v12: Make onboarding visibly and persistently private (#124)
+
+- Timestamp: 2026-08-08T19:12:06-04:00
+- Agent: Codex
+- Branch: codex/118-canada-review-drafts
+- Head: a09af219551c
+
+#### Objective
+
+Close the remaining Task #124 revalidation finding by aligning onboarding UI,
+defaults, legacy payload handling, and completion language with the private backend
+behavior and separate account publication choice.
+
+#### Actions Taken
+
+- Changed new onboarding defaults to the private preset and made payload merging
+  coerce retired public/limited inputs and every legacy visibility flag to private.
+- Removed public/limited presets and per-field publication switches from onboarding.
+  The visibility step now explains that completion activates only a private workspace
+  profile and points to the separate, unselected Account > Profile choice.
+- Replaced user-facing publish/live/discoverability claims in onboarding completion,
+  preview, resume, toast, and join-card copy with explicit private-setup language.
+- Extended unit, contract, command, and local Playwright coverage across a legacy
+  draft containing every visibility flag set to true.
+
+#### Validation Notes
+
+- Passed: focused Vitest run, 4 files and 21 tests.
+- Passed: Node 22 typecheck and lint.
+- Passed: fresh disposable local Supabase migration/seed replay.
+- Passed: local Playwright, 1 test in 8.3 seconds. The browser inspected the actual
+  private onboarding visibility screen, completed a legacy-public draft through the
+  real Edge command, verified every stored visibility flag remained false, verified
+  the separate account checkbox was unselected, then proved grant/discovery and
+  withdrawal/removal.
+- Passed: `git diff --check`.
+
+#### Reflections
+
+- Silently overriding public-looking inputs was fail-safe but misleading. The UI and
+  stored draft contract now express the same private invariant as the publish command.
+- Legacy payload fields remain accepted for compatibility, but they cannot restore
+  retired onboarding publication behavior.
+
+#### Suggested Next Steps
+
+- Commit this narrow #124 fix and attach the updated implementation evidence.
+- Keep #124 In Progress for independent revalidation and leave #123/#125 unchanged.

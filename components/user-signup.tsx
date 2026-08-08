@@ -21,7 +21,7 @@ export default function UserSignup() {
       <CardHeader>
         <CardTitle className="text-2xl">Join as a User</CardTitle>
         <CardDescription>
-          Build your profile with a live preview, set your visibility preferences, and resume any draft later.
+          Build a private profile with a live preview and resume any draft later. Optional publication is a separate account choice after onboarding.
         </CardDescription>
       </CardHeader>
       <CardContent>
