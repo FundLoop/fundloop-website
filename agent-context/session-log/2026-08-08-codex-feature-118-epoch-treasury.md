@@ -142,3 +142,46 @@ contracts without implementing production financial behavior.
 
 - Independently validate Task #120 and move it to `In Review` only on pass.
 - Obtain Task #121 counsel/accountant approval before any Goal 1 implementation.
+
+### session v4: Prepare the Feature #118 PR version checkpoint
+
+- Timestamp: 2026-08-08T16:35:28Z
+- Agent: Codex
+- Branch: codex/118-epoch-treasury
+- Head: e1339d8
+
+#### Objective
+
+Prepare the validated #119-#120 documentation batch for its first pull request into
+`dev` using the repository's feature-PR version convention.
+
+#### Actions Taken
+
+- Ran the repository version helper against `origin/dev` after the scoped Task
+  commits.
+- Bumped the application patch version from `0.1.1` to `0.1.2`.
+- Confirmed the lockfile remained unchanged after its lockfile-only refresh.
+- Preserved the one-Task-per-commit history and isolated this publish checkpoint in
+  its own commit.
+
+#### Validation Notes
+
+- Verified `package.json` is `0.1.2`, exactly one patch above `origin/dev`.
+- Passed: `git diff --check` for the manifest and session-log update.
+- The helper applied the correct version and refreshed the unchanged lockfile, then
+  hit its known inherited-stdio `null.trim()` error; the resulting files were
+  inspected directly rather than treating the post-write helper exception as a
+  successful command result.
+- Full Node 22 `CI=1 pnpm check` runs after this checkpoint commit and before push.
+
+#### Reflections
+
+- The helper's post-refresh exception is packaging-tool debt, not part of the
+  Feature architecture scope; the manifest outcome remains deterministic and
+  reviewable.
+
+#### Suggested Next Steps
+
+- Commit the version checkpoint, run the full Node 22 gate, and publish one Feature
+  PR to `dev` with #119 and #120 linked.
+- Leave #121 and all dependent product Goals blocked pending professional approval.
