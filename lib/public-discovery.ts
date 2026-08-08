@@ -2,6 +2,7 @@ import "server-only"
 
 import { cache } from "react"
 import { createServerSupabaseClient } from "@/lib/supabase-server"
+import { isReviewPolicyPreviewEnabled } from "@/lib/policies/review-policy"
 
 export type PublicDiscoveryProject = {
   id: number
@@ -295,9 +296,10 @@ export async function getPublicUsersDirectoryData({
   search?: string
 }): Promise<PublicUsersDirectoryData> {
   try {
+    if (!isReviewPolicyPreviewEnabled()) return { projects: [], users: [] }
     const supabase = await createServerSupabaseClient()
 
-    const [{ data: publicProjects, error: projectError }, { data: userRows, error: userError }] = await Promise.all([
+    const [{ data: publicProjects, error: projectError }, { data: userRows, error: userError }, { data: discoverableRows, error: consentError }] = await Promise.all([
       supabase
         .from("projects")
         .select("id, name, slug")
@@ -311,6 +313,7 @@ export async function getPublicUsersDirectoryData({
         .eq("status", "active")
         .eq("is_public", true)
         .is("deleted_at", null),
+      supabase.rpc("list_discoverable_public_user_ids"),
     ])
 
     if (projectError) {
@@ -320,6 +323,8 @@ export async function getPublicUsersDirectoryData({
     if (userError) {
       throw new Error(userError.message)
     }
+    if (consentError) throw new Error(consentError.message)
+    const discoverableUserIds = new Set((discoverableRows ?? []).map((row) => row.user_id))
 
     const projectIds = (publicProjects ?? []).map((project) => project.id)
     const visibleProjectIds = projectId ? [projectId] : projectIds
@@ -353,6 +358,7 @@ export async function getPublicUsersDirectoryData({
     const searchTerm = normalizeSearchTerm(search)
 
     const users = (userRows ?? [])
+      .filter((user) => discoverableUserIds.has(user.user_id))
       .map<PublicDiscoveryUser>((user) => {
         const projectIdsForUser = Array.from(participantProjectsByUser.get(user.user_id) ?? [])
 
@@ -405,7 +411,12 @@ export async function getPublicUsersDirectoryData({
 
 export const getPublicUserProfile = cache(async (userId: string): Promise<PublicUserProfile | null> => {
   try {
+    if (!isReviewPolicyPreviewEnabled()) return null
     const supabase = await createServerSupabaseClient()
+
+    const { data: discoverableRows, error: consentError } = await supabase.rpc("list_discoverable_public_user_ids")
+    if (consentError) throw new Error(consentError.message)
+    if (!(discoverableRows ?? []).some((row) => row.user_id === userId)) return null
 
     const { data: userRow, error: userError } = await supabase
       .from("users")

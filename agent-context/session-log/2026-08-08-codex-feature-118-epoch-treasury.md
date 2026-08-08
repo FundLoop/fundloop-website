@@ -384,3 +384,65 @@ Provide auditable Terms versioning and acknowledgement mechanics for local and
 - Independently validate Task #123 before moving it to `In Review`.
 - Implement Task #124's separate Privacy Notice preview and public-profile consent
   record without bundling it into Terms acknowledgement.
+
+### session v9: Add Privacy preview and explicit profile publication (#124)
+
+- Timestamp: 2026-08-08T18:31:00-04:00
+- Agent: Codex
+- Branch: codex/118-canada-review-drafts
+- Head: 57ae8b1
+
+#### Objective
+
+Provide a truthful local/dev Privacy Notice preview and make public profile
+publication a separate, affirmative, prospectively withdrawable choice while
+keeping every profile private without current evidence.
+
+#### Actions Taken
+
+- Replaced the public Privacy page with a prominently non-effective Canadian review
+  preview covering the verified data categories, recipient classes, public-chain
+  exposure, cross-border processing, safeguards, and unresolved provider, authority,
+  retention, rights, and incident-response questions.
+- Added an immutable Privacy review version and append-only profile-publication
+  choice records containing user, document/hash/status, field scope, locale,
+  timestamp, action, and source surface.
+- Added a typed, authenticated Edge command and service-role-only atomic database
+  command. Grant updates only the named public fields; withdrawal immediately turns
+  off profile and field visibility while retaining the neutral audit record.
+- Added an unselected affirmative account control that is separate from Terms and
+  membership. The same surface offers prospective withdrawal and labels both
+  actions as review-only.
+- Hardened public discovery to require the latest recorded choice to be `grant` in
+  addition to existing active/private-field checks. Production returns no review-
+  published profiles, and deployed Edge review commands require an explicit
+  non-production preview configuration.
+- Updated generated Supabase types for the new table and RPC contracts.
+
+#### Validation Notes
+
+- Passed: `PATH=/opt/homebrew/opt/node@22/bin:$PATH CI=1 pnpm lint`.
+- Passed: `PATH=/opt/homebrew/opt/node@22/bin:$PATH CI=1 pnpm typecheck`.
+- Passed: focused Vitest for opt-in/withdraw UI, contract validation, private
+  defaults, latest-choice discovery, RLS/command boundaries, preview content, and
+  production fail-closed behavior: 6 files, 15 tests.
+- Passed: `git diff --check`.
+- Playwright loaded `/en/privacy` with zero console errors and confirmed the exact
+  review banner, immutable document evidence, localized links, privacy inventory,
+  optional-choice copy, and unresolved production gates. Captured and visually
+  inspected 1440x900 and 390x844 evidence under `output/playwright/issue-124/`.
+
+#### Reflections
+
+- The legacy `users.is_public` flag is no longer sufficient for discovery: a
+  current append-only publication grant is required, so withdrawal cannot expose a
+  stale earlier choice.
+- The review choice intentionally does not settle lawful basis or retention; it
+  proves product mechanics while the professional production decision stays open.
+
+#### Suggested Next Steps
+
+- Independently validate Task #124 before moving it to `In Review` or unblocking
+  invitation Task #125.
+- Run the broadest practical local batch validation for #123 and #124 before the
+  orchestrator publishes the Feature branch.

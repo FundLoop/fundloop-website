@@ -1,6 +1,7 @@
 "use client"
 
 import { Badge } from "@/components/ui/badge"
+import { ProfilePublicationConsent } from "@/components/account/profile-publication-consent"
 
 type FundloopProfilePanelProps = {
   profile: {
@@ -100,6 +101,8 @@ export function FundloopProfilePanel({ profile, title, description, ownershipNot
           ))}
         </div>
       </div>
+
+      <ProfilePublicationConsent initiallyPublic={profile.visibility.isPublic} />
 
       <div className="rounded-2xl border border-[color:var(--surface-border)] bg-[var(--surface-panel-strong)] px-4 py-3 text-sm leading-6 text-[var(--text-muted)]">
         {ownershipNote}

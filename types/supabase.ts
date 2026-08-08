@@ -1655,6 +1655,66 @@ export type Database = {
           },
         ]
       }
+      profile_publication_consents: {
+        Row: {
+          action: string
+          content_hash: string
+          created_at: string
+          document_identifier: string
+          document_status: string
+          document_version_id: string
+          fields: Json
+          id: string
+          locale: string
+          recorded_at: string
+          source_surface: string
+          user_id: string
+        }
+        Insert: {
+          action: string
+          content_hash: string
+          created_at?: string
+          document_identifier: string
+          document_status: string
+          document_version_id: string
+          fields?: Json
+          id?: string
+          locale: string
+          recorded_at?: string
+          source_surface: string
+          user_id: string
+        }
+        Update: {
+          action?: string
+          content_hash?: string
+          created_at?: string
+          document_identifier?: string
+          document_status?: string
+          document_version_id?: string
+          fields?: Json
+          id?: string
+          locale?: string
+          recorded_at?: string
+          source_surface?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "profile_publication_consents_document_version_id_fkey"
+            columns: ["document_version_id"]
+            isOneToOne: false
+            referencedRelation: "legal_document_versions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "profile_publication_consents_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["user_id"]
+          },
+        ]
+      }
       payments: {
         Row: {
           confirmed_at: string | null
@@ -4741,6 +4801,26 @@ export type Database = {
       }
     }
     Functions: {
+      list_discoverable_public_user_ids: {
+        Args: Record<PropertyKey, never>
+        Returns: { user_id: string }[]
+      }
+      record_profile_publication_choice: {
+        Args: {
+          p_action: string
+          p_actor_user_id: string
+          p_content_hash: string
+          p_document_identifier: string
+          p_fields: Json
+          p_locale: string
+          p_source_surface: string
+        }
+        Returns: {
+          consent_id: string
+          is_public: boolean
+          recorded_at: string
+        }[]
+      }
       record_review_policy_acknowledgement: {
         Args: {
           p_actor_capacity: string

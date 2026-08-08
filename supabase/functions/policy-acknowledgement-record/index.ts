@@ -1,11 +1,17 @@
 import { validatePolicyAcknowledgementInput } from "../../../lib/edge-functions/policy-acknowledgement-contract.ts"
 import { executePolicyAcknowledgementCommand } from "../../../lib/policies/policy-acknowledgement-command.ts"
 import { edgeCommandFailure, edgeCommandSuccess } from "../../../lib/edge-functions/result.ts"
-import { authenticateRequest, corsHeaders, json, parseJsonBody, serve } from "../_shared/command-runtime.ts"
+import { authenticateRequest, corsHeaders, getEnv, json, parseJsonBody, serve } from "../_shared/command-runtime.ts"
+
+function reviewRuntimeEnabled() {
+  if (getEnv("FUNDLOOP_DEPLOYMENT_ENV") === "production") return false
+  return !getEnv("DENO_DEPLOYMENT_ID") || getEnv("FUNDLOOP_POLICY_REVIEW_PREVIEW") === "1"
+}
 
 async function handleRequest(request) {
   if (request.method === "OPTIONS") return new Response("ok", { headers: corsHeaders })
   if (request.method !== "POST") return json(edgeCommandFailure("method_not_allowed", "Only POST requests are supported."))
+  if (!reviewRuntimeEnabled()) return json(edgeCommandFailure("review_preview_disabled", "Review acknowledgement is disabled in this environment."))
   const body = await parseJsonBody(request)
   if (!body.ok) return json(edgeCommandFailure("invalid_payload", body.error))
   const auth = await authenticateRequest(request)
@@ -18,4 +24,3 @@ async function handleRequest(request) {
 
 serve(handleRequest)
 export { handleRequest }
-
