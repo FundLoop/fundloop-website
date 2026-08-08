@@ -17,4 +17,3 @@ describe("Terms preview surfaces", () => {
     expect(earnings).toContain("termsPreviewRequired")
   })
 })
-

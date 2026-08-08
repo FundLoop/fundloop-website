@@ -24,4 +24,3 @@ export async function executePolicyAcknowledgementCommand(
   const value = row as { acceptance_id: string; recorded_at: string }
   return { ok: true, data: { acceptanceId: value.acceptance_id, recordedAt: value.recorded_at, status: "review", noLegalEffect: true, noValueFlowEnabled: true } }
 }
-

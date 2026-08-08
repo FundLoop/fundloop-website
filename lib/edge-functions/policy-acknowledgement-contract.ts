@@ -57,4 +57,3 @@ export function normalizePolicyAcknowledgementResult(result: EdgeCommandResult<u
   }
   return edgeCommandSuccess(result.data as PolicyAcknowledgementOutput)
 }
-

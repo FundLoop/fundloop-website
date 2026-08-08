@@ -10,4 +10,3 @@ export async function invokePolicyAcknowledgement(input: PolicyAcknowledgementIn
     await invokeBrowserEdgeCommand<PolicyAcknowledgementInput, unknown>(POLICY_ACKNOWLEDGEMENT_FUNCTION, input),
   )
 }
-

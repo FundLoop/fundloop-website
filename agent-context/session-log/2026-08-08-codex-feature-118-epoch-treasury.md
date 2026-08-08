@@ -446,3 +446,50 @@ keeping every profile private without current evidence.
   invitation Task #125.
 - Run the broadest practical local batch validation for #123 and #124 before the
   orchestrator publishes the Feature branch.
+
+### session v10: Enforce Terms acknowledgement at protected commands (#123)
+
+- Timestamp: 2026-08-08T18:59:39-04:00
+- Agent: Codex
+- Branch: codex/118-canada-review-drafts
+- Head: 5ea6e72a90af
+
+#### Objective
+
+Close the independent validation findings for Task #123 by making the current
+review Terms acknowledgement a server-owned precondition rather than a React-only
+gate, while preserving the non-effective local/dev boundary.
+
+#### Actions Taken
+
+- Added an exact-document acknowledgement guard that checks actor, immutable
+  identifier, content hash, locale, review status, capacity, and source surface.
+- Applied that guard before both project payment-draft creation and user withdrawal
+  request creation, so direct command callers cannot bypass the UI checkbox.
+- Added founder and user command tests proving rejection before acknowledgement and
+  successful continuation after acknowledgement.
+- Normalized the Task #123 files to one newline at EOF to remove validation noise.
+
+#### Validation Notes
+
+- Passed: Node 22 lint and typecheck.
+- Passed: focused policy/workflow suite as part of 9 files and 32 tests.
+- Passed: fresh disposable local Supabase migration replay through
+  `20260808230000_review_policy_versions_and_acceptances.sql`.
+- Passed: real SQL/RLS/RPC assertions for valid recording, invalid document/hash
+  rejection, authenticated self-read, cross-user denial, and direct-write denial.
+- Passed: full Node 22 `CI=1 pnpm check` with 124 files and 554 tests plus production
+  build.
+- Passed: `git diff --check` with no EOF warnings.
+
+#### Reflections
+
+- The protected commands now own the invariant. UI state is only feedback and can
+  no longer authorize a payment draft or withdrawal request by itself.
+- The recorded acknowledgement remains `review` evidence only and activates no
+  production value flow.
+
+#### Suggested Next Steps
+
+- Commit the #123 validation fixes and update its implementation evidence.
+- Complete the #124 consent browser smoke and issue-scoped validation commit.

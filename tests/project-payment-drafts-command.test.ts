@@ -45,6 +45,7 @@ function createSupabaseMock(responsesByTable: Record<string, unknown[]>) {
 describe("project payment drafts command", () => {
   it("creates draft payments for a project admin", async () => {
     const supabase = createSupabaseMock({
+      legal_acceptance_records: [{ data: { id: "acceptance-1" }, error: null }],
       projects: [{ data: { id: 7, slug: "fundloop-studio", name: "FundLoop Studio", organization_id: null }, error: null }],
       participants: [{ data: { id: 11 }, error: null }],
       ref_roles: [{ data: [], error: null }],
@@ -113,6 +114,7 @@ describe("project payment drafts command", () => {
 
   it("rejects non-admin actors", async () => {
     const supabase = createSupabaseMock({
+      legal_acceptance_records: [{ data: { id: "acceptance-1" }, error: null }],
       projects: [{ data: { id: 7, slug: "fundloop-studio", name: "FundLoop Studio", organization_id: null }, error: null }],
       participants: [{ data: null, error: null }],
       ref_roles: [{ data: [], error: null }],
@@ -146,6 +148,7 @@ describe("project payment drafts command", () => {
 
   it("rejects unavailable payment methods with context for observability", async () => {
     const supabase = createSupabaseMock({
+      legal_acceptance_records: [{ data: { id: "acceptance-1" }, error: null }],
       projects: [{ data: { id: 7, slug: "fundloop-studio", name: "FundLoop Studio", organization_id: null }, error: null }],
       participants: [{ data: { id: 11 }, error: null }],
       ref_roles: [{ data: [], error: null }],
@@ -175,6 +178,28 @@ describe("project payment drafts command", () => {
         message: "One or more selected payment methods are no longer available.",
         projectId: 7,
         paymentMethodId: 55,
+      },
+    })
+  })
+
+  it("rejects direct command calls until the current project review acknowledgement exists", async () => {
+    const supabase = createSupabaseMock({
+      legal_acceptance_records: [{ data: null, error: null }],
+    })
+
+    const result = await executeProjectPaymentDraftsCommand(supabase as never, {
+      actorUserId: "user-1",
+      projectSlug: "fundloop-studio",
+      payments: [],
+    })
+
+    expect(result).toEqual({
+      ok: false,
+      error: {
+        code: "terms_review_acknowledgement_required",
+        message: "Record the current non-effective Terms review acknowledgement before testing this boundary.",
+        projectId: null,
+        paymentMethodId: null,
       },
     })
   })

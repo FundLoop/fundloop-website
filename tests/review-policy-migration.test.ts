@@ -22,4 +22,3 @@ describe("review policy persistence boundary", () => {
     expect(migration).toContain("TO service_role")
   })
 })
-
