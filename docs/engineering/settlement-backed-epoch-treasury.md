@@ -540,7 +540,10 @@ short transaction.
 
 ## 11.1 Legal document and consent implementation boundary
 
-Before production project submission or user payout:
+Task #121 may prepare and validate clearly labelled review drafts while neutral
+schema, shadow journals, local provider adapters, and consent controls are developed
+locally and on `dev`. Drafts are not effective policies and cannot authorize live
+value. Before production project submission, allocation, or user payout:
 
 - qualified counsel approves Terms and Privacy Notice for applicable jurisdictions;
 - an accountant reconciles the ownership/no-escrow terms with revenue, award,
@@ -644,8 +647,9 @@ The close package contains:
 
 ### Phase A: additive foundation
 
-1. Publish counsel/accountant-approved Terms, Privacy Notice, classification, and
-   consent contracts before activating production economic postings or payouts.
+1. Prepare review-only Terms, Privacy Notice, data-flow, and accounting-recognition
+   drafts. Obtain counsel/accountant approval before activating production economic
+   postings, definitive policy versions, fund receipt, allocation, or payouts.
 2. Add canonical asset, custody, account, external-event, journal, period, and epoch
    attempt/gate tables through forward-only migrations.
 3. Keep the existing `monthly_cycle_status` and operational tables as compatibility
@@ -830,8 +834,8 @@ boundary while the production value path remains disabled behind its named gate.
 
 | Decision | Locked engineering contract | Remaining owner or launch gate | Blocks |
 | --- | --- | --- | --- |
-| Pre-processing user ownership | Allocation and request create memorandum awards and reservations only; no user GL payable | Task #121 approves legal/accounting treatment and the externally reconciled `payout_processed` event | Production economic posting and all product Goals through the native blocker graph |
-| Account identity | Immutable machine key, class, normal balance, posting status, required dimensions; display code is effective-dated | Task #121 accountant approves presentation and contribution/revenue/expense classification | Production chart activation, not neutral Task #127 schema/tests |
+| Pre-processing user ownership | Allocation and request create memorandum awards and reservations only; no user GL payable | Task #121 prepares review options; qualified counsel/accountant approve treatment and the externally reconciled `payout_processed` event before production | Production economic posting and live value, not neutral local/dev implementation |
+| Account identity | Immutable machine key, class, normal balance, posting status, required dimensions; display code is effective-dated | Task #121 prepares the recognition memo; the accountant approves presentation and contribution/revenue/expense classification before production | Production chart activation, not neutral Task #127 schema/tests |
 | Stripe custody | Every external balance must map one-to-one to a custody account; platform and epoch funds require separate externally reconcilable identifiers or an SLA-bound clearing sweep to separate bank custody | Task #131 selects and proves the available Stripe/bank topology; production remains disabled if neither topology is available | Stripe intake activation |
 | Stripe payouts | Stripe-hosted Connect onboarding plus current capability/readiness checks; return URL is never proof of readiness | Task #141 selects account configuration, countries, agreements, and negative-balance policy | Stripe payout activation |
 | Base custody | Separate platform and epoch Safe accounts; new versioned intake or explicit reconciled split; old single-treasury deployment is never reinterpreted | Tasks #132 and #140 approve deployments | Base intake/payout activation |
@@ -846,8 +850,9 @@ boundary while the production value path remains disabled behind its named gate.
 
 No unresolved provider or accounting choice is required to implement Task #127's
 neutral asset, custody, ledger, period, posting, reversal, RLS, and test foundation.
-The native dependency on Task #121 nevertheless prevents Goal 1 from beginning
-until the professional approval record is present.
+Task #127 may begin after Task #121's review packet is independently validated and
+the native blocker reaches `In Review` or beyond. Production posting templates and
+live value remain blocked until the professional approval record is present.
 
 ## 20. Versioned command and event contracts
 
@@ -995,8 +1000,9 @@ production treasury approval.
 
 ## 23. Implementation readiness and test matrix
 
-Task #127 may begin only after Task #121 reaches the status required by the native
-blocker graph. Its implementation contract is nevertheless complete:
+Task #127 may begin after Task #121 reaches `In Review` or beyond with a passing
+independent validator. Its implementation contract is complete, but every economic
+classification stays provisional and production-disabled until qualified approval:
 
 - forward-only migrations for neutral asset, custody, account, period, transaction,
   posting, and reversal foundations;

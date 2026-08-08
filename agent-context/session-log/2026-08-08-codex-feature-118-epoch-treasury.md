@@ -268,3 +268,64 @@ changing the approved Feature economics or stage order.
   then wait for the post-fix hosted checks.
 - Do not request another Copilot or Codex review; the existing review records remain
   the authoritative gates.
+
+### session v7: Prepare the Canadian legal and accounting review packet
+
+- Timestamp: 2026-08-08T19:46:34Z
+- Agent: Codex
+- Branch: codex/118-canada-review-drafts
+- Head: b4bbce3
+
+#### Objective
+
+Prepare Task #121's repository-grounded Canadian review materials while treating
+qualified counsel and accountant approval as non-bypassable production gates rather
+than blockers to neutral local and `dev` implementation.
+
+#### Actions Taken
+
+- Recorded Fundloop Canada Inc., Ontario incorporation, and an initial Canada-only
+  project/user scope as review assumptions rather than approved legal conclusions.
+- Reframed Task #121 as a documentation packet, independently re-vetted it, and kept
+  all live Terms, acceptance UX, provider activation, schema, and value-flow changes
+  outside this Task.
+- Added visibly non-effective Terms and Privacy Notice drafts, a repository-grounded
+  current/planned data-flow inventory, and an accounting-recognition alternatives
+  memo with linked authoritative sources.
+- Preserved the requested ownership, refund, escrow, payout, profile, and invitation
+  product intent while flagging non-waivable law, RPAA, FINTRAC, consumer, privacy,
+  securities, tax, and accounting classifications for professional review.
+- Added one production approval checklist covering professional sign-off, provider
+  topology and data-transfer evidence, effective policy versions, runtime acceptance
+  controls, and deployment revalidation.
+- Updated the Feature architecture, engineering index, and sprint definition so the
+  review packet can unblock neutral implementation only after independent validation.
+
+#### Validation Notes
+
+- Passed: exact `DRAFT - NOT APPROVED - NOT EFFECTIVE` marker check on every core
+  review artifact.
+- Passed: all local packet links and cited repository evidence paths exist.
+- Passed: all 19 authoritative external source links returned HTTP 200 after replacing
+  moved Supabase and CRA links with their current canonical locations.
+- Passed: Mermaid render with `Render status: ok`; visually inspected the full flow
+  map and an isolated high-resolution diagram capture using Playwright.
+- Passed: `git diff --check`.
+- UI evidence: not applicable; this Task changes review documentation only and does
+  not add an effective policy surface or product behavior.
+
+#### Reflections
+
+- Contract labels such as ownership and non-escrow language do not by themselves
+  determine the platform's Canadian payments, AML, consumer, insolvency, tax, or
+  accounting classification; production approval must review actual operational
+  functions and user expectations.
+- The product's fixed monthly allocation rate can remain a reproducible management
+  subledger convention without being presented as an approved statutory FX policy.
+
+#### Suggested Next Steps
+
+- Commit Task #121, attach implementation evidence to the issue, and run the
+  independent issue-validator before moving it to `In Review`.
+- After validation, begin the neutral ledger foundation while keeping production
+  receipt, allocation, payout, and effective policies blocked on the approval packet.

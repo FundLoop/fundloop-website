@@ -40,6 +40,7 @@ Current high-signal docs:
 - [Route Inventory](./route-inventory.md)
 - [Settlement-backed Epoch Treasury and Auditable Payouts](./settlement-backed-epoch-treasury.md)
 - [Settlement-backed Treasury Threat Model](./fundloop-threat-model.md)
+- [Canadian Legal and Accounting Review Drafts](../legal/review-drafts/README.md)
 - [Supabase Storage Artifacts](./storage-artifacts.md)
 - [Supabase Remote Deployments](./supabase-deployments.md)
 - [Target-State Architecture](./target-state-architecture.md)
