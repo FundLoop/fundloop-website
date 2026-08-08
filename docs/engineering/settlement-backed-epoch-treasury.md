@@ -190,8 +190,9 @@ state guard.
 
 ### Fee order
 
-1. Assess one project fee per `project x rail x settled payment package`, using the
-   snapshotted percentage and per-epoch rail clamp.
+1. For each `project x rail x epoch`, aggregate all settled contributions, then
+   assess the project fee exactly once using the epoch's snapshotted percentage and
+   apply the per-epoch rail clamp exactly once.
 2. Transfer/sweep the project fee to the platform treasury and net assets to the
    epoch treasury.
 3. At first-of-month valuation, aggregate post-project-fee assets by rail.
@@ -781,7 +782,7 @@ Before controlled production value:
   responsibility, and payout approach are approved;
 - production platform/epoch custody accounts and Safe addresses are verified;
 - Safe module/allowance deployment and limited signer are independently reviewed;
-  the module enforces $20 per payout, $500 across a rolling 24-hour window, and
+  the module enforces $20 per payout, $500 per rolling 24-hour window, and
   $5,000 per epoch, with amounts above $20 requiring Safe threshold approval;
 - secrets, rotation, revocation, emergency pause, and incident runbooks are tested;
 - price-source hierarchy and manual fallback runbook are approved;
@@ -834,7 +835,7 @@ boundary while the production value path remains disabled behind its named gate.
 | Stripe custody | Every external balance must map one-to-one to a custody account; platform and epoch funds require separate externally reconcilable identifiers or an SLA-bound clearing sweep to separate bank custody | Task #131 selects and proves the available Stripe/bank topology; production remains disabled if neither topology is available | Stripe intake activation |
 | Stripe payouts | Stripe-hosted Connect onboarding plus current capability/readiness checks; return URL is never proof of readiness | Task #141 selects account configuration, countries, agreements, and negative-balance policy | Stripe payout activation |
 | Base custody | Separate platform and epoch Safe accounts; new versioned intake or explicit reconciled split; old single-treasury deployment is never reinterpreted | Tasks #132 and #140 approve deployments | Base intake/payout activation |
-| Limited signer | $20 per payout, $500 rolling 24 hours, $5,000 per epoch; token/recipient allowlists, nonce, expiry, pause, and independent Safe enforcement | Task #140 selects Safe owner threshold, audited module deployment, paymaster budget, and alert thresholds | Automated Base payouts |
+| Limited signer | $20 per payout, $500 per rolling 24-hour window, $5,000 per epoch; token/recipient allowlists, nonce, expiry, pause, and independent Safe enforcement | Task #140 selects Safe owner threshold, audited module deployment, paymaster budget, and alert thresholds | Automated Base payouts |
 | FX and depeg | Immutable monthly rate, primary/fallback/manual evidence, reasonability review, and ±0.3% stablecoin pause | Task #135 selects source hierarchy and recovery/reactivation runbook | Valuing and later stages |
 | Cubid evidence | Valid and whitelisted IDs only; project pseudonyms; score-proportional allocation; grey/black holds | Task #136 selects numeric cache TTL and authorized exception workflow | Allocation lock |
 | Project review deadline | Midnight Pacific at the end of the next FundLoop business day after accepted reconciliation-email delivery | Tasks #128/#133 select provider event mapping and versioned holiday rows | Project-package lock |

@@ -216,8 +216,9 @@ occurs. Later policy edits never rewrite prior events.
     than consuming unbacked new distributable value: matching new-epoch assets are
     exchanged for equal locked-USD backing assets from the older epoch.
 13. The privileged carryover batch runs after the new epoch is funded,
-    fee-processed, allocated, and reconciled, but before its manual payout window
-    opens. Queued requests are processed oldest-first.
+    reconciled, valued, and fee-processed, but before that epoch is locked and
+    allocated. The exchanged inventory is therefore removed from the distributable
+    pool before allocation. Queued requests are processed oldest-first.
 14. A valid request made before expiry reserves the conditional award balance until
     it is paid, rejected, or cancelled. Requested balances do not expire merely because the
     original epoch reaches its lifespan limit.
