@@ -226,3 +226,45 @@ Record reproducible Node 22 validation evidence for the independently validated
 - Publish the branch and open a draft Feature PR to `dev`.
 - Keep Task #121 and its dependent implementation work blocked until the required
   counsel and accountant evidence is available.
+
+### session v6: Resolve PR #145 architecture review findings
+
+- Timestamp: 2026-08-08T16:52:30Z
+- Agent: Codex
+- Branch: codex/118-epoch-treasury
+- Head: 90d0085
+
+#### Objective
+
+Remove implementation ambiguity identified by the Copilot and Codex reviews without
+changing the approved Feature economics or stage order.
+
+#### Actions Taken
+
+- Defined the project-fee basis as one aggregated `project x rail x epoch`
+  assessment with one percentage calculation and one clamp.
+- Aligned privileged carryover execution with the canonical state machine: after
+  reconciliation, valuation, and fee processing, but before locking and allocation.
+- Standardized every limited-signer velocity reference to `$500 per rolling 24-hour
+  window`.
+- Expanded the withdrawal migration evidence reference to its full repository path.
+
+#### Validation Notes
+
+- Passed: `git diff --check`.
+- Verified no `rolling-day`, `rolling day`, or bare `rolling 24 hours` wording remains
+  in the Feature artifacts.
+- Rechecked the project-fee and carryover clauses against the approved Feature
+  decision record and canonical state order.
+
+#### Reflections
+
+- Epoch-level fee aggregation and pre-allocation carryover both affect value
+  conservation; keeping those contracts singular prevents divergent implementations.
+
+#### Suggested Next Steps
+
+- Commit and push the review fixes, reply to and resolve all five review threads,
+  then wait for the post-fix hosted checks.
+- Do not request another Copilot or Codex review; the existing review records remain
+  the authoritative gates.
