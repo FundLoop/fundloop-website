@@ -38,7 +38,8 @@ SELECT invitation_id, 900001, 900001, invitee_email, 'member', token_digest, ide
 FROM public.legal_document_versions document
 CROSS JOIN (VALUES
   ('30000000-0000-4000-8000-000000000002'::uuid, 'decline@example.test', repeat('b',64), 'decline-key', now(), now() + interval '1 day'),
-  ('30000000-0000-4000-8000-000000000003'::uuid, 'expire@example.test', repeat('c',64), 'expire-key', now() - interval '2 days', now() - interval '1 day')
+  ('30000000-0000-4000-8000-000000000003'::uuid, 'expire@example.test', repeat('c',64), 'expire-key', now() - interval '2 days', now() - interval '1 day'),
+  ('30000000-0000-4000-8000-000000000004'::uuid, 'batch-expire@example.test', repeat('d',64), 'batch-expire-key', now() - interval '2 days', now() - interval '1 day')
 ) invitation(invitation_id, invitee_email, token_digest, idempotency_key, created_at, expires_at)
 WHERE document.document_kind = 'privacy' AND document.status = 'review';
 
@@ -98,14 +99,42 @@ RESET ROLE;
 SET LOCAL ROLE service_role;
 SELECT * FROM public.decline_project_invitation_review(repeat('b',64), '20000000-0000-4000-8000-000000000002', 'decline@example.test');
 SELECT * FROM public.inspect_project_invitation_review(repeat('c',64), '20000000-0000-4000-8000-000000000002', 'expire@example.test');
+SELECT public.expire_project_invitations_review(900001, 'batch-expire@example.test');
 DO $$ BEGIN
   IF NOT EXISTS (SELECT 1 FROM public.project_invitation_acceptance_evidence WHERE invitation_id='30000000-0000-4000-8000-000000000002' AND action='decline') THEN RAISE EXCEPTION 'decline evidence missing'; END IF;
   IF NOT EXISTS (SELECT 1 FROM public.project_invitation_acceptance_evidence WHERE invitation_id='30000000-0000-4000-8000-000000000003' AND action='expire') THEN RAISE EXCEPTION 'expiry evidence missing'; END IF;
+  IF NOT EXISTS (SELECT 1 FROM public.project_invitation_acceptance_evidence WHERE invitation_id='30000000-0000-4000-8000-000000000004' AND action='expire') THEN RAISE EXCEPTION 'list/create expiry evidence missing'; END IF;
 END $$;
 SELECT * FROM public.revoke_project_invitation_review('30000000-0000-4000-8000-000000000001', '20000000-0000-4000-8000-000000000001');
 DO $$ BEGIN
   IF EXISTS (SELECT 1 FROM public.participants WHERE project_id=900001 AND user_id='20000000-0000-4000-8000-000000000002') THEN RAISE EXCEPTION 'revocation left project access'; END IF;
+  IF EXISTS (SELECT 1 FROM public.organization_members WHERE organization_id=900001 AND user_id='20000000-0000-4000-8000-000000000002') THEN RAISE EXCEPTION 'revocation left invitation-created organization membership'; END IF;
+  IF EXISTS (SELECT 1 FROM public.list_project_member_shared_profiles(900001) WHERE user_id='20000000-0000-4000-8000-000000000002') THEN RAISE EXCEPTION 'revocation left sharing residue'; END IF;
   IF NOT EXISTS (SELECT 1 FROM public.project_invitation_acceptance_evidence WHERE invitation_id='30000000-0000-4000-8000-000000000001' AND action='revoke') THEN RAISE EXCEPTION 'revocation evidence missing'; END IF;
+END $$;
+
+INSERT INTO public.organization_members (organization_id, user_id, role_id, role_assigned_by, status, deleted_at)
+VALUES (900001, '20000000-0000-4000-8000-000000000003', 4, '20000000-0000-4000-8000-000000000001', 'inactive', now());
+INSERT INTO public.project_invitations (
+  id, project_id, organization_id, invitee_email, invited_role, token_digest, idempotency_key,
+  created_by_user_id, expires_at, shared_profile_fields, policy_document_version_id,
+  policy_document_identifier, policy_content_hash, policy_locale, policy_status
+)
+SELECT '30000000-0000-4000-8000-000000000005', 900001, 900001, 'invite-unrelated@example.test', 'member', repeat('e',64), 'reactivate-key',
+  '20000000-0000-4000-8000-000000000001', now() + interval '1 day', '["display_name"]', id,
+  document_identifier, content_hash, locale, status
+FROM public.legal_document_versions WHERE document_kind = 'privacy' AND status = 'review';
+SELECT * FROM public.accept_project_invitation_review(
+  repeat('e',64), '20000000-0000-4000-8000-000000000003', 'invite-unrelated@example.test',
+  'fundloop-privacy-ca-review-draft-2026-08-08', '97523eedf0c1cbf79b3cfd87eee42392815dd6458d45e1ceeaf68b2e859eb65a', 'en-CA', '["display_name"]'
+);
+SELECT * FROM public.revoke_project_invitation_review('30000000-0000-4000-8000-000000000005', '20000000-0000-4000-8000-000000000001');
+DO $$ BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM public.organization_members
+    WHERE organization_id=900001 AND user_id='20000000-0000-4000-8000-000000000003'
+      AND status='inactive' AND deleted_at IS NOT NULL AND role_id=4
+  ) THEN RAISE EXCEPTION 'revocation did not restore independently pre-existing membership'; END IF;
 END $$;
 
 ROLLBACK;

@@ -379,7 +379,24 @@ export function createPersonaBrowserActions(personaId: Exclude<PersonaId, "retur
       } finally {
         await inviteeContext.close()
       }
-      return observed({ invitation: "accepted", participant: "member", capture: `${personaId}-invitation` })
+      const revokeResponsePromise = page.waitForResponse((response) =>
+        response.url().endsWith("/functions/v1/project-invitation-revoke") && response.request().method() === "POST",
+      )
+      await page.getByRole("button", { name: "Revoke" }).click()
+      const revokeResponse = await revokeResponsePromise
+      const revokeBody = await revokeResponse.json() as { ok?: boolean; error?: { code?: string } }
+      if (revokeBody.ok !== true) throw new Error(boundedPersonaFailureReason("persona-invitation-revoke", revokeBody.error?.code, "command-failed"))
+      await expect(page.getByText("revoked")).toBeVisible()
+      const [participantResidue, membershipResidue, invitationResidue] = await Promise.all([
+        supabase.from("participants").select("id").eq("project_id", project.id).eq("user_id", invitee.actor.authUserId).maybeSingle(),
+        supabase.from("organization_members").select("id").eq("organization_id", invitation.data.organization_id).eq("user_id", invitee.actor.authUserId).maybeSingle(),
+        supabase.from("project_invitations").select("status, accepted_by_user_id").eq("id", invitation.data.id).single(),
+      ])
+      if (participantResidue.data || membershipResidue.data || invitationResidue.error ||
+        invitationResidue.data.status !== "revoked" || invitationResidue.data.accepted_by_user_id !== null) {
+        throw new Error("persona-invitation-revoke-residue")
+      }
+      return observed({ invitation: "accepted-then-revoked", participant: "removed", membership: "removed", capture: `${personaId}-invitation` })
     },
     "founder.submit-monthly-contribution": async () => {
       browserErrors.length = 0

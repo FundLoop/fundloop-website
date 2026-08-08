@@ -2,7 +2,7 @@ import "server-only"
 
 import { cache } from "react"
 import { createServerSupabaseClient } from "@/lib/supabase-server"
-import { isReviewPolicyPreviewEnabled } from "@/lib/policies/review-policy"
+import { canReadInvitationReviewSharing, isReviewPolicyPreviewEnabled } from "@/lib/policies/review-policy"
 
 export type PublicDiscoveryProject = {
   id: number
@@ -249,7 +249,7 @@ export const getPublicProjectDetail = cache(async (slug: string): Promise<Public
       return null
     }
 
-    const { data: sharedProfiles, error: sharedProfilesError } = hasAccess
+    const { data: sharedProfiles, error: sharedProfilesError } = hasAccess && canReadInvitationReviewSharing()
       ? await supabase.rpc("list_project_member_shared_profiles", { p_project_id: projectRow.id })
       : { data: [], error: null }
     if (sharedProfilesError) throw new Error(sharedProfilesError.message)

@@ -656,3 +656,59 @@ visible to accepted participants.
 - Commit Task #125 and attach the local migration, SQL/RLS, browser, visual, and full
   check evidence to the issue while leaving it In Progress for independent validation.
 - Stop the disposable Edge runtime and Supabase stack; do not open the Feature PR yet.
+
+### session v14: Close invitation lifecycle residue findings (#125)
+
+- Timestamp: 2026-08-08T19:51:15-04:00
+- Agent: Codex
+- Branch: codex/118-canada-review-drafts
+- Head: 78e69358b7d5
+
+#### Objective
+
+Close the independent validation findings for Task #125 by failing review sharing
+reads closed in production, tracking organization-membership provenance through
+accept/revoke, and making every list/create-triggered expiry append evidence.
+
+#### Actions Taken
+
+- Added a forward lifecycle migration that records whether acceptance created,
+  reactivated, or left unchanged an organization membership, including the prior
+  inactive/deleted state needed for exact restoration.
+- Updated revocation to remove invitation-created membership only when no other
+  accepted invitation still needs it, restore independently pre-existing inactive
+  membership, remove project participation, and leave append-only evidence intact.
+- Added a security-definer expiry command that locks and expires pending invitations
+  together with versioned `expire` evidence; create/list commands no longer update
+  invitation status directly.
+- Bound the project member-profile read path to the production fail-closed review
+  helper and added an explicit production-mode test.
+- Extended SQL and persona browser coverage through accept-then-revoke to prove no
+  invitation-created participant, organization membership, or shared-profile residue.
+
+#### Validation Notes
+
+- Passed: two fresh disposable Supabase resets applying all migrations and seed.
+- Passed: executable SQL/RLS/RPC assertions for atomic expiry evidence, zero revoke
+  residue, and exact restoration of independently pre-existing inactive membership.
+- Passed: focused Vitest, 6 files and 29 tests; production read test included.
+- Passed: returning-founder Playwright spec through real accept then revoke commands;
+  invitation-created residue was absent and harness cleanup was clean. The aggregate
+  remains intentionally incomplete only for the existing operator-distribution
+  expected-pending checkpoint.
+- Passed: Node 22 lint, typecheck, and full `CI=1 pnpm check` with 125 files/562 tests
+  plus production build.
+- Passed: `git diff --check`.
+
+#### Reflections
+
+- Membership provenance must capture prior state, not only ownership: reactivation
+  is reversible without erasing an independent relationship.
+- Expiry is a lifecycle event, so the status transition and evidence append belong in
+  one database transaction regardless of which surface discovers the stale row.
+
+#### Suggested Next Steps
+
+- Commit this narrow #125 validation fix and update the issue evidence while keeping
+  it In Progress for the next independent validator pass.
+- Stop the disposable Edge and Supabase services; do not open a PR.

@@ -59,10 +59,11 @@ async function expirePendingInvitations(
   projectId: number,
   inviteeEmail?: string,
 ) {
-  let expiration = supabase.from("project_invitations").update({ status: "expired" })
-    .eq("project_id", projectId).eq("status", "pending").lte("expires_at", new Date().toISOString())
-  if (inviteeEmail) expiration = expiration.eq("invitee_email", inviteeEmail)
-  return expiration
+  const { error } = await supabase.rpc("expire_project_invitations_review", {
+    p_project_id: projectId,
+    p_invitee_email: inviteeEmail ?? undefined,
+  })
+  return { error }
 }
 
 function invitationUniqueConstraint(error: { message?: string; details?: string; hint?: string } | null) {

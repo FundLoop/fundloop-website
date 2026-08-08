@@ -27,7 +27,7 @@ describe("ProjectInvitationAcceptance", () => {
   it("keeps acceptance disabled until the exact draft disclosure is acknowledged", async () => {
     render(<ProjectInvitationAcceptance token={"a".repeat(43)} locale="en" />)
     expect(await screen.findByText("DRAFT - NOT APPROVED - NOT EFFECTIVE")).toBeTruthy()
-    expect(screen.getByText("display name")).toBeTruthy()
+    expect(await screen.findByText("display name")).toBeTruthy()
     expect(screen.getByText("avatar")).toBeTruthy()
     const button = screen.getByRole("button", { name: "Acknowledge and accept" }) as HTMLButtonElement
     expect(button.disabled).toBe(true)

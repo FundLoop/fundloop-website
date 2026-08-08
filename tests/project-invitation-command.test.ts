@@ -19,7 +19,7 @@ function query(response: { data: unknown; error: unknown }) {
 }
 
 function tableQueue(responses: Record<string, ReturnType<typeof query>[]>) {
-  return { from: vi.fn((table: string) => {
+  return { rpc: vi.fn(async () => ({ data: 0, error: null })), from: vi.fn((table: string) => {
     const next = responses[table]?.shift()
     if (!next) throw new Error(`Unexpected query for ${table}`)
     return next
@@ -43,20 +43,18 @@ describe("project invitation commands", () => {
     const participants = query({ data: null, error: null })
     const roles = query({ data: [{ id: 4 }], error: null })
     const membership = query({ data: { id: 9 }, error: null })
-    const expiration = query({ data: null, error: null })
     const existing = query({ data: null, error: null })
     const document = query({ data: { id: "doc-1", document_identifier: acceptance.policyDocumentId, content_hash: acceptance.policyContentHash, locale: "en-CA", status: "review" }, error: null })
     const insertion = query({ data: { id: "inv-1", expires_at: "2026-08-12T00:00:00.000Z" }, error: null })
     const supabase = tableQueue({ projects: [projects], participants: [participants], ref_roles: [roles],
-      organization_members: [membership], legal_document_versions: [document], project_invitations: [expiration, existing, insertion] })
+      organization_members: [membership], legal_document_versions: [document], project_invitations: [existing, insertion] })
 
     const result = await executeProjectInvitationCreate(supabase as never, {
       actorUserId: "founder-1", projectSlug: "civic", email: "member@example.com", role: "member", idempotencyKey: "request-123", sharedProfileFields: [...sharedProfileFields],
     })
 
     expect(result).toEqual({ ok: true, data: expect.objectContaining({ invitationId: "inv-1", email: "member@example.com" }) })
-    expect(expiration.update).toHaveBeenCalledWith({ status: "expired" })
-    expect(expiration.eq).toHaveBeenCalledWith("invitee_email", "member@example.com")
+    expect(supabase.rpc).toHaveBeenCalledWith("expire_project_invitations_review", { p_project_id: 7, p_invitee_email: "member@example.com" })
     expect(existing.select).toHaveBeenCalledWith("id, expires_at")
   })
 
@@ -70,7 +68,7 @@ describe("project invitation commands", () => {
       projects: [query({ data: { id: 7, slug: "civic", name: "Civic", organization_id: 3 }, error: null })],
       participants: [query({ data: { id: 1 }, error: null })],
       legal_document_versions: [query({ data: { id: "doc-1", document_identifier: acceptance.policyDocumentId, content_hash: acceptance.policyContentHash, locale: "en-CA", status: "review" }, error: null })],
-      project_invitations: [query({ data: null, error: null }), query({ data: null, error: null }), query({ data: null, error })],
+      project_invitations: [query({ data: null, error: null }), query({ data: null, error })],
     })
     const result = await executeProjectInvitationCreate(supabase as never, {
       actorUserId: "admin-1", projectSlug: "civic", email: "member@example.com", role: "member", idempotencyKey: "request-123", sharedProfileFields: [...sharedProfileFields],
@@ -79,18 +77,17 @@ describe("project invitation commands", () => {
   })
 
   it("expires stale invitations before listing them", async () => {
-    const expiration = query({ data: null, error: null })
     const invitations = query({ data: [{ id: "inv-1", invitee_email: "member@example.com", invited_role: "member",
       status: "expired", expires_at: "2026-08-01T00:00:00Z", created_at: "2026-07-25T00:00:00Z",
       shared_profile_fields: sharedProfileFields, policy_status: "review", policy_document_identifier: acceptance.policyDocumentId }], error: null })
     const supabase = tableQueue({
       projects: [query({ data: { id: 7, organization_id: 3 }, error: null })],
       participants: [query({ data: { id: 1 }, error: null })],
-      project_invitations: [expiration, invitations],
+      project_invitations: [invitations],
     })
     const result = await executeProjectInvitationList(supabase as never, { actorUserId: "admin-1", projectSlug: "civic" })
     expect(result).toEqual({ ok: true, data: [expect.objectContaining({ invitationId: "inv-1", status: "expired" })] })
-    expect(expiration.update).toHaveBeenCalledWith({ status: "expired" })
+    expect(supabase.rpc).toHaveBeenCalledWith("expire_project_invitations_review", { p_project_id: 7, p_invitee_email: undefined })
   })
 
   it("returns an accepted membership from the atomic database command", async () => {

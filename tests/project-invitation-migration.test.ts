@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest"
 
 const migration = readFileSync("supabase/migrations/20260805143000_project_invitations.sql", "utf8")
 const reviewMigration = readFileSync("supabase/migrations/20260808234500_project_invitation_review_sharing.sql", "utf8")
+const lifecycleMigration = readFileSync("supabase/migrations/20260808235500_project_invitation_lifecycle_residue.sql", "utf8")
 
 describe("project invitation database boundary", () => {
   it("allows active organization Founder and Admin members to read invitation state", () => {
@@ -27,6 +28,15 @@ describe("project invitation database boundary", () => {
   it("revokes the legacy acceptance function and gates new commands behind service role", () => {
     expect(reviewMigration).toContain("REVOKE ALL ON FUNCTION public.accept_project_invitation(text, uuid, text) FROM service_role")
     expect(reviewMigration).toContain("GRANT EXECUTE ON FUNCTION public.accept_project_invitation_review")
+  })
+
+  it("records batch expiry evidence and removes only invitation-owned organization membership", () => {
+    expect(lifecycleMigration).toContain("expire_project_invitations_review")
+    expect(lifecycleMigration).toContain("'expire'")
+    expect(lifecycleMigration).toContain("organization_membership_change")
+    expect(lifecycleMigration).toContain("membership_change = 'created'")
+    expect(lifecycleMigration).toContain("membership_change = 'reactivated'")
+    expect(lifecycleMigration).toContain("organization_membership_previous_status")
   })
 
   it("keeps the security-definer RPC and digest table behind the service role", () => {

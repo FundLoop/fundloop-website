@@ -44,6 +44,10 @@ export function isReviewPolicyPreviewEnabled(environment: Record<string, string 
   return environment.NODE_ENV !== "production" || environment.NEXT_PUBLIC_POLICY_REVIEW_PREVIEW === "1"
 }
 
+export function canReadInvitationReviewSharing(environment: Record<string, string | undefined> = process.env) {
+  return isReviewPolicyPreviewEnabled(environment)
+}
+
 export function canActivatePolicyAsEffective(
   document: ReviewPolicyDocument,
   environment: Record<string, string | undefined> = process.env,

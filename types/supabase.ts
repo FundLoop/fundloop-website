@@ -2396,6 +2396,11 @@ export type Database = {
           invited_role: string
           invitee_email: string
           organization_id: number
+          organization_membership_change: string | null
+          organization_membership_previous_deleted_at: string | null
+          organization_membership_previous_status:
+            | Database["public"]["Enums"]["organization_members_status"]
+            | null
           policy_content_hash: string
           policy_document_identifier: string
           policy_document_version_id: string
@@ -2418,6 +2423,11 @@ export type Database = {
           invited_role?: string
           invitee_email: string
           organization_id: number
+          organization_membership_change?: string | null
+          organization_membership_previous_deleted_at?: string | null
+          organization_membership_previous_status?:
+            | Database["public"]["Enums"]["organization_members_status"]
+            | null
           policy_content_hash: string
           policy_document_identifier: string
           policy_document_version_id: string
@@ -2440,6 +2450,11 @@ export type Database = {
           invited_role?: string
           invitee_email?: string
           organization_id?: number
+          organization_membership_change?: string | null
+          organization_membership_previous_deleted_at?: string | null
+          organization_membership_previous_status?:
+            | Database["public"]["Enums"]["organization_members_status"]
+            | null
           policy_content_hash?: string
           policy_document_identifier?: string
           policy_document_version_id?: string
@@ -4975,6 +4990,10 @@ export type Database = {
           recorded_at: string
           status: string
         }[]
+      }
+      expire_project_invitations_review: {
+        Args: { p_invitee_email?: string; p_project_id: number }
+        Returns: number
       }
       finalize_onchain_payment_reconciliation: {
         Args: {
