@@ -38,6 +38,8 @@ Current high-signal docs:
 - [Reporting Publication](./reporting.md)
 - [Release Candidate Path](./release-candidate.md)
 - [Route Inventory](./route-inventory.md)
+- [Settlement-backed Epoch Treasury and Auditable Payouts](./settlement-backed-epoch-treasury.md)
+- [Settlement-backed Treasury Threat Model](./fundloop-threat-model.md)
 - [Supabase Storage Artifacts](./storage-artifacts.md)
 - [Supabase Remote Deployments](./supabase-deployments.md)
 - [Target-State Architecture](./target-state-architecture.md)
