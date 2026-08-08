@@ -1,6 +1,6 @@
 {
   "name": "fundloop-website",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "description": "FundLoop website and application built with Next.js, React, TypeScript, and Supabase.",
   "license": "MIT",
   "private": true,
