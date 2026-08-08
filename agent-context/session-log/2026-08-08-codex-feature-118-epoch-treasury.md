@@ -329,3 +329,58 @@ than blockers to neutral local and `dev` implementation.
   independent issue-validator before moving it to `In Review`.
 - After validation, begin the neutral ledger foundation while keeping production
   receipt, allocation, payout, and effective policies blocked on the approval packet.
+
+### session v8: Add non-effective Terms preview and acknowledgement gates (#123)
+
+- Timestamp: 2026-08-08T18:24:00-04:00
+- Agent: Codex
+- Branch: codex/118-canada-review-drafts
+- Head: 3378182cb310e5027ac350d9dc7f9022ca19e6f2
+
+#### Objective
+
+Provide auditable Terms versioning and acknowledgement mechanics for local and
+`dev` testing without publishing effective Terms or enabling production value flow.
+
+#### Actions Taken
+
+- Replaced the public Terms copy with a prominently labelled Canadian review
+  preview whose title, metadata, and body all preserve the exact
+  `DRAFT - NOT APPROVED - NOT EFFECTIVE` boundary.
+- Added immutable review-document metadata and runtime helpers that fail closed in
+  production and cannot treat a `review` document as effective, even when approval
+  environment flags are accidentally present.
+- Added forward-only legal-document and acceptance-record tables, self-select RLS,
+  service-role-only writes, an approval/effective-date constraint, and a typed Edge
+  Function acknowledgement command.
+- Added separate project-actor and user acknowledgement evidence for the simulated
+  project-funding and payout boundaries. Both existing UI actions remain disabled
+  until the current review draft is acknowledged for the page session; production
+  remains locked because review acknowledgement is disabled by default there.
+- Kept profile publication and project-membership consent outside this Task.
+
+#### Validation Notes
+
+- Passed: `PATH=/opt/homebrew/opt/node@22/bin:$PATH CI=1 pnpm lint`.
+- Passed: `PATH=/opt/homebrew/opt/node@22/bin:$PATH CI=1 pnpm typecheck`.
+- Passed: focused Vitest run for review metadata, production gates, schema/RLS,
+  route boundaries, and the existing withdrawal component: 4 files, 10 tests.
+- Passed: `git diff --check`.
+- Playwright loaded `/en/terms` with zero console errors and confirmed the exact
+  non-effective banner, immutable identifier/hash, localized links, and unresolved
+  production gates. Captured and visually inspected 1440x900 and 390x844 viewport
+  evidence under `output/playwright/issue-123/`.
+
+#### Reflections
+
+- A review acknowledgement is useful test evidence only; it is intentionally
+  recorded as `review`, explicitly carries no legal effect, and unlocks no live
+  value flow.
+- Effective publication needs a separately approved immutable version plus
+  professional approval and launch evidence; no such version is seeded here.
+
+#### Suggested Next Steps
+
+- Independently validate Task #123 before moving it to `In Review`.
+- Implement Task #124's separate Privacy Notice preview and public-profile consent
+  record without bundling it into Terms acknowledgement.

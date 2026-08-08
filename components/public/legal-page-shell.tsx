@@ -23,6 +23,8 @@ type LegalPageShellProps = {
   summary: string
   updatedLabel: string
   relatedLinks: RelatedLink[]
+  statusBanner?: string
+  statusDetail?: string
   children: ReactNode
 }
 
@@ -33,6 +35,8 @@ export default function LegalPageShell({
   summary,
   updatedLabel,
   relatedLinks,
+  statusBanner,
+  statusDetail,
   children,
 }: LegalPageShellProps) {
   return (
@@ -53,6 +57,16 @@ export default function LegalPageShell({
       </MarketingSection>
 
       <MarketingSection className="pt-0">
+        {statusBanner ? (
+          <div
+            className="mb-8 rounded-2xl border-2 border-amber-500 bg-amber-50 p-5 text-amber-950 dark:bg-amber-400/10 dark:text-amber-100"
+            role="status"
+            data-testid="legal-review-status"
+          >
+            <p className="font-bold tracking-wide">{statusBanner}</p>
+            {statusDetail ? <p className="mt-2 text-sm leading-6">{statusDetail}</p> : null}
+          </div>
+        ) : null}
         <div className="grid gap-12 lg:grid-cols-[minmax(0,1fr)_minmax(19rem,0.72fr)]">
           <Reveal>
             <SectionEyebrow>{eyebrow}</SectionEyebrow>

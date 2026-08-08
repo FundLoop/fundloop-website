@@ -306,6 +306,7 @@ export default async function WorkspaceEarningsPage({ params }: WorkspaceEarning
       </Card>
 
       <WithdrawalRequestPanel
+        termsPreviewRequired
         eligibleUsd={earnings.summary.eligibleWithdrawalUsd}
         defaultRoute={earnings.routes.defaultRoute ? { id: earnings.routes.defaultRoute.id, label: earnings.routes.defaultRoute.label } : null}
         initialRequests={earnings.withdrawalRequests}

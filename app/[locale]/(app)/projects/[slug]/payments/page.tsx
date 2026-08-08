@@ -26,6 +26,7 @@ import {
 import { buildLatestOnchainSubmissionMap, type OnchainSubmissionSummary } from "@/lib/onchain/payment-submissions"
 import { capturePaymentFlowEvent } from "@/lib/observability/payment-flow-client"
 import { ProjectCryptoRouteManager } from "@/components/project-crypto-route-manager"
+import { TermsPreviewGate } from "@/components/policies/terms-preview-gate"
 import { ArrowLeft, Plus, Calculator, Save, AlertTriangle, Trash2, Info } from "lucide-react"
 
 interface PaymentMethod {
@@ -121,6 +122,7 @@ export default function ProjectPaymentsPage() {
   const [managedCryptoPaymentMethods, setManagedCryptoPaymentMethods] = useState<ManagedCryptoPaymentMethodSummary[]>([])
   const [cryptoPaymentDialogOpen, setCryptoPaymentDialogOpen] = useState(false)
   const [paymentToPay, setPaymentToPay] = useState<Payment | null>(null)
+  const [termsPreviewAcknowledged, setTermsPreviewAcknowledged] = useState(false)
 
   const cryptoPaymentMethods = useMemo<CryptoPaymentMethodOption[]>(
     () =>
@@ -363,6 +365,10 @@ export default function ProjectPaymentsPage() {
   }
 
   const savePayments = async () => {
+    if (!termsPreviewAcknowledged) {
+      toast({ title: "Review acknowledgement required", description: "Acknowledge the current non-effective Terms preview before testing this simulated funding boundary.", variant: "destructive" })
+      return
+    }
     const attemptId = crypto.randomUUID()
 
     // Validate all rows
@@ -501,6 +507,10 @@ export default function ProjectPaymentsPage() {
   }
 
   const openCryptoPaymentDialog = (payment: Payment) => {
+    if (!termsPreviewAcknowledged) {
+      toast({ title: "Review acknowledgement required", description: "This payment boundary stays locked until the non-effective review acknowledgement is recorded.", variant: "destructive" })
+      return
+    }
     setPaymentToPay(payment)
     setCryptoPaymentDialogOpen(true)
   }
@@ -568,6 +578,7 @@ export default function ProjectPaymentsPage() {
       </div>
 
       <div className="space-y-8">
+        <TermsPreviewGate sourceSurface="project_funding_preview" actorCapacity="project_actor" onAcknowledged={setTermsPreviewAcknowledged} />
         <ProjectCryptoRouteManager
           projectSlug={slug}
           routes={managedCryptoPaymentMethods}
@@ -725,12 +736,12 @@ export default function ProjectPaymentsPage() {
               ))}
 
               <div className="flex justify-between">
-                <Button variant="outline" onClick={addNewPaymentRow}>
+                <Button variant="outline" onClick={addNewPaymentRow} disabled={!termsPreviewAcknowledged}>
                   <Plus className="h-4 w-4 mr-2" />
                   Add Another Period
                 </Button>
 
-                <Button onClick={savePayments} disabled={saving || newPaymentRows.length === 0}>
+                <Button onClick={savePayments} disabled={!termsPreviewAcknowledged || saving || newPaymentRows.length === 0}>
                   <Save className="h-4 w-4 mr-2" />
                   {saving ? "Saving..." : "Save Payments"}
                 </Button>
@@ -801,6 +812,7 @@ export default function ProjectPaymentsPage() {
                               variant="outline"
                               onClick={() => openCryptoPaymentDialog(payment)}
                               data-testid={`pay-with-crypto-${payment.id}`}
+                              disabled={!termsPreviewAcknowledged}
                             >
                               {payment.status_code === "failed" ? "Retry crypto payment" : "Pay with crypto"}
                             </Button>

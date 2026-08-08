@@ -300,6 +300,102 @@ export type Database = {
           },
         ]
       }
+      legal_acceptance_records: {
+        Row: {
+          accepted_at: string
+          actor_capacity: string
+          actor_user_id: string
+          content_hash: string
+          created_at: string
+          document_identifier: string
+          document_status: string
+          document_version_id: string
+          id: string
+          locale: string
+          source_surface: string
+        }
+        Insert: {
+          accepted_at?: string
+          actor_capacity: string
+          actor_user_id: string
+          content_hash: string
+          created_at?: string
+          document_identifier: string
+          document_status: string
+          document_version_id: string
+          id?: string
+          locale: string
+          source_surface: string
+        }
+        Update: {
+          accepted_at?: string
+          actor_capacity?: string
+          actor_user_id?: string
+          content_hash?: string
+          created_at?: string
+          document_identifier?: string
+          document_status?: string
+          document_version_id?: string
+          id?: string
+          locale?: string
+          source_surface?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "legal_acceptance_records_actor_user_id_fkey"
+            columns: ["actor_user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "legal_acceptance_records_document_version_id_fkey"
+            columns: ["document_version_id"]
+            isOneToOne: false
+            referencedRelation: "legal_document_versions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      legal_document_versions: {
+        Row: {
+          approved_at: string | null
+          content_hash: string
+          created_at: string
+          document_identifier: string
+          document_kind: string
+          effective_at: string | null
+          id: string
+          locale: string
+          status: string
+          version: string
+        }
+        Insert: {
+          approved_at?: string | null
+          content_hash: string
+          created_at?: string
+          document_identifier: string
+          document_kind: string
+          effective_at?: string | null
+          id?: string
+          locale: string
+          status: string
+          version: string
+        }
+        Update: {
+          approved_at?: string | null
+          content_hash?: string
+          created_at?: string
+          document_identifier?: string
+          document_kind?: string
+          effective_at?: string | null
+          id?: string
+          locale?: string
+          status?: string
+          version?: string
+        }
+        Relationships: []
+      }
       monthly_cycle_allocation_asset_fills: {
         Row: {
           asset_code: string
@@ -4645,6 +4741,20 @@ export type Database = {
       }
     }
     Functions: {
+      record_review_policy_acknowledgement: {
+        Args: {
+          p_actor_capacity: string
+          p_actor_user_id: string
+          p_content_hash: string
+          p_document_identifier: string
+          p_locale: string
+          p_source_surface: string
+        }
+        Returns: {
+          acceptance_id: string
+          recorded_at: string
+        }[]
+      }
       accept_project_invitation: {
         Args: {
           p_actor_email: string
