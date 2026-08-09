@@ -1,6 +1,7 @@
 import assert from "node:assert/strict"
 import { describe, it } from "node:test"
 import { network } from "hardhat"
+import { observeBaseIntakeV2Receipt } from "../lib/base-intake-v2-observer.js"
 
 async function fixture() {
   const { viem } = await network.connect()
@@ -14,17 +15,22 @@ async function fixture() {
     tokens[0].address,
     tokens[1].address,
     tokens[2].address,
+    true,
+    true,
+    true,
   ], { client: { wallet: owner } })
   return { viem, owner, sender, platformTreasury, epochTreasury, attacker, usdc: tokens[0], usdt: tokens[1], pyusd: tokens[2], evil: tokens[3], intake }
 }
 
 describe("FundLoopBaseIntakeV2", () => {
   it("splits gross receipt into exact snapshotted fee and net treasury balances", async () => {
-    const { owner, sender, platformTreasury, epochTreasury, usdc, intake } = await fixture()
+    const { viem, owner, sender, platformTreasury, epochTreasury, usdc, intake } = await fixture()
+    const publicClient = await viem.getPublicClient()
     await intake.write.setProjectFeeBps([42n, 250], { account: owner.account })
     await usdc.write.mint([sender.account.address, 10_000_000n], { account: owner.account })
     await usdc.write.approve([intake.address, 10_000_000n], { account: sender.account })
-    await intake.write.deposit([42n, 7n, usdc.address, 10_000_000n, `0x${"11".repeat(32)}`], { account: sender.account })
+    const txHash = await intake.write.deposit([42n, 7n, usdc.address, 10_000_000n, `0x${"11".repeat(32)}`], { account: sender.account })
+    const txReceipt = await publicClient.waitForTransactionReceipt({ hash: txHash })
 
     assert.equal(await usdc.read.balanceOf([platformTreasury.account.address]), 250_000n)
     assert.equal(await usdc.read.balanceOf([epochTreasury.account.address]), 9_750_000n)
@@ -35,6 +41,19 @@ describe("FundLoopBaseIntakeV2", () => {
     assert.equal(receipt.args.netEpochAmount, 9_750_000n)
     assert.equal((await intake.getEvents.PlatformFeeTransferred())[0].args.amount, 250_000n)
     assert.equal((await intake.getEvents.EpochTreasuryFunded())[0].args.amount, 9_750_000n)
+    const observation = await observeBaseIntakeV2Receipt({
+      snapshot: { id: 1, txHash, blockHash: txReceipt.blockHash, blockNumber: txReceipt.blockNumber,
+        contractAddress: intake.address, tokenAddress: usdc.address, projectId: 42n, accountingPeriodId: 7n,
+        senderAddress: sender.account.address, platformTreasuryAddress: platformTreasury.account.address,
+        epochTreasuryAddress: epochTreasury.account.address, grossAmount: 10_000_000n, feeBps: 250,
+        platformFeeAmount: 250_000n, netEpochAmount: 9_750_000n },
+      client: publicClient,
+      now: new Date("2026-08-09T12:00:00Z"),
+    })
+    assert.equal(observation.platformObservedNativeAmount, "250000")
+    assert.equal(observation.epochObservedNativeAmount, "9750000")
+    assert.equal(observation.observationSource, "trusted_viem_v1")
+    assert.equal(observation.receiptEventMatched, true)
   })
 
   it("accepts only the three constructor-bound stablecoins", async () => {
@@ -62,5 +81,14 @@ describe("FundLoopBaseIntakeV2", () => {
     await assert.rejects(intake.write.setPaused([true], { account: attacker.account }), /OwnableUnauthorizedAccount/)
     await assert.rejects(intake.write.setTokenEnabled([0, false], { account: attacker.account }), /OwnableUnauthorizedAccount/)
     await assert.rejects(intake.write.setProjectFeeBps([1n, 250], { account: attacker.account }), /OwnableUnauthorizedAccount/)
+  })
+
+  it("cannot activate an unverified provider token", async () => {
+    const { viem, owner, platformTreasury, epochTreasury, usdc } = await fixture()
+    const intake = await viem.deployContract("FundLoopBaseIntakeV2", [owner.account.address,
+      platformTreasury.account.address, epochTreasury.account.address, usdc.address,
+      "0x0000000000000000000000000000000000000000", "0x0000000000000000000000000000000000000000",
+      true, false, false], { client: { wallet: owner } })
+    await assert.rejects(intake.write.setTokenEnabled([1, true], { account: owner.account }), /TokenNotProviderApproved/)
   })
 })

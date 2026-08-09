@@ -1016,3 +1016,46 @@ USDT, and PYUSD slots with exact separated-treasury reconciliation.
 - Commit #132 and attach local-chain, migration, SQL/RLS/RPC, focused, and full-check
   evidence for independent validation.
 - Keep #131 blocked on Stripe sandbox authorization and leave #133 untouched/Ready.
+
+### session v21: Base provider and trusted observation integrity (#132)
+
+- Timestamp: 2026-08-09T01:23:42-04:00
+- Agent: Codex
+- Branch: codex/130-settlement-packages
+- Head: 07b7316
+
+#### Objective
+
+Close the #132 validation gaps in provider-address activation, Base Sepolia execution,
+deployment audit state, and independently observed reconciliation.
+
+#### Actions Taken
+
+- Required explicit local fixture mode and labelled local mock tokens accordingly; bound
+  Base Sepolia USDC to Circle evidence while leaving unverified USDT/PYUSD disabled.
+- Added contract and forward database invariants preventing an unverified token from
+  becoming active, plus paused/enabled/provider-evidence deployment audit inputs.
+- Added executable Hardhat Base Sepolia configuration with clear missing test credential
+  errors and retained unconditional production deployment refusal.
+- Reduced the Edge request to `receiptId` only. A trusted viem observer now reads the
+  transaction receipt/current block, validates the V2 event, and totals exact ERC-20
+  transfers to both treasuries before service-only reconciliation.
+- Added trusted replacement resolver configuration and append-only observation-source/
+  event-match evidence; caller-crafted hashes and amounts cannot cross the Edge contract.
+
+#### Validation Notes
+
+- Passed: Hardhat 9/9, including real local receipt to trusted viem transfer-log evidence
+  and unverified-provider activation denial.
+- Passed: guarded local fixture deploy; missing Base Sepolia credentials fail clearly;
+  production deployment remains denied.
+- Passed: fresh local replay and all four integrated SQL suites, including adversarial
+  provider evidence and authenticated crafted reconciliation denial.
+- Passed: focused Vitest 3 files/23 tests and full Node 22 check with 134 files/614 tests,
+  lint, typecheck, and production build.
+- Passed: `git diff --check`; UI unchanged, browser N/A.
+
+#### Suggested Next Steps
+
+- Commit the narrow validation follow-up, update #132 evidence, and return for independent
+  revalidation without changing #131/#133 or opening a PR.

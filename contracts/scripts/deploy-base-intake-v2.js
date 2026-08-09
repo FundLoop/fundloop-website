@@ -2,6 +2,8 @@ import { network } from "hardhat"
 
 const ADDRESS = /^0x[a-fA-F0-9]{40}$/
 const allowedEnvironments = new Set(["local", "dev", "test"])
+const BASE_SEPOLIA_USDC = "0x036cbd53842c5426634e7929541ec2318f3dcf7e"
+const ZERO = "0x0000000000000000000000000000000000000000"
 
 function required(name) {
   const value = process.env[name]?.trim()
@@ -19,16 +21,21 @@ async function main() {
   const chainId = await publicClient.getChainId()
   if (![31337, 84532].includes(chainId)) throw new Error("base_intake_v2_chain_not_allowed")
 
+  const localFixtureMode = environment === "local" && process.env.FUNDLOOP_LOCAL_BASE_FIXTURE_MODE === "true"
+  if (chainId === 31337 && !localFixtureMode) throw new Error("base_intake_v2_local_fixture_mode_required")
+  const tokenAddresses = chainId === 84532
+    ? [BASE_SEPOLIA_USDC, ZERO, ZERO]
+    : [required("BASE_USDC_ADDRESS"), required("BASE_USDT_ADDRESS"), required("BASE_PYUSD_ADDRESS")]
+  const providerApprovals = chainId === 84532 ? [true, false, false] : [true, true, true]
   const [deployer] = await viem.getWalletClients()
   const args = [
     deployer.account.address,
     required("PLATFORM_TREASURY_ADDRESS"),
     required("EPOCH_TREASURY_ADDRESS"),
-    required("BASE_USDC_ADDRESS"),
-    required("BASE_USDT_ADDRESS"),
-    required("BASE_PYUSD_ADDRESS"),
+    ...tokenAddresses,
+    ...providerApprovals,
   ]
-  if (new Set(args.slice(1).map((value) => value.toLowerCase())).size !== args.length - 1) {
+  if (new Set(args.slice(1, 6).filter((value) => value !== ZERO).map((value) => value.toLowerCase())).size !== args.slice(1, 6).filter((value) => value !== ZERO).length) {
     throw new Error("base_intake_v2_addresses_must_be_distinct")
   }
 
@@ -42,7 +49,12 @@ async function main() {
     contractAddress: intake.address,
     platformTreasuryAddress: args[1],
     epochTreasuryAddress: args[2],
-    tokens: { USDC: args[3], USDT: args[4], PYUSD: args[5] },
+    providerEvidence: localFixtureMode ? "local_fixture_only" : "reviewed_issuer",
+    tokens: {
+      USDC: { address: args[3], enabled: providerApprovals[0] },
+      USDT: { address: args[4], enabled: providerApprovals[1] },
+      PYUSD: { address: args[5], enabled: providerApprovals[2] },
+    },
   }, null, 2))
 }
 

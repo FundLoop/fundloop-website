@@ -9,13 +9,19 @@ contract has no native-token, arbitrary-token, payable, or production deployment
 
 The tracked manifest is deliberately disabled. The deployment script runs only when
 `FUNDLOOP_DEPLOYMENT_ENV` is `local`, `dev`, or `test`, and only on chain ID 31337 or Base
-Sepolia 84532. It prints a candidate manifest for review; it does not mutate tracked files,
+Sepolia 84532. Local mock tokens additionally require `FUNDLOOP_LOCAL_BASE_FIXTURE_MODE=true`
+and are labelled `local_fixture_only`. Base Sepolia binds USDC to Circle's reviewed address;
+USDT and PYUSD remain zero-address, disabled slots until issuer evidence is reviewed. The script
+prints a candidate manifest for review; it does not mutate tracked files,
 Supabase, or any production deployment.
 
-The database command boundary independently verifies deployment, token, treasury, current
+The database command boundary independently verifies deployment activation/paused state,
+provider-address evidence, token, treasury, current
 fee version, and exact gross = fee + net conservation. Reconciliation status is derived from
 confirmation depth, block/transaction identity, replacement evidence, and the two observed
-treasury amounts. Receipt and reconciliation evidence is append-only and inaccessible to
+treasury amounts. The reconciliation Edge request accepts only `receiptId`; trusted viem reads
+the chain receipt, current block, V2 event, and exact ERC-20 transfers before the service RPC can
+record `trusted_viem_v1` evidence. Receipt and reconciliation evidence is append-only and inaccessible to
 browser roles.
 
 Issuer verification remains a production gate. Circle documents Base USDC and Base Sepolia

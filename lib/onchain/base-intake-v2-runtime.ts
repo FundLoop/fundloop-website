@@ -9,10 +9,12 @@ export type BaseIntakeV2Manifest = {
   environment: string
   chainId: number
   enabled: boolean
+  paused: boolean
+  providerEvidence: "unverified" | "local_fixture_only" | "reviewed_issuer"
   contractAddress: string
   platformTreasuryAddress: string
   epochTreasuryAddress: string
-  tokens: Record<BaseIntakeV2Symbol, string>
+  tokens: Record<BaseIntakeV2Symbol, { address: string; enabled: boolean }>
 }
 
 export const trackedBaseIntakeV2Manifest = manifestJson as BaseIntakeV2Manifest
@@ -22,13 +24,15 @@ export function auditBaseIntakeV2Deployment(input: {
   chainId: number
   version: string
   enabled: boolean
+  paused: boolean
+  providerEvidence: string
   contractAddress: string
   platformTreasuryAddress: string
   epochTreasuryAddress: string
-  tokens: Record<BaseIntakeV2Symbol, string>
+  tokens: Record<BaseIntakeV2Symbol, { address: string; enabled: boolean }>
 }) {
   const manifest = trackedBaseIntakeV2Manifest
-  if (input.environment === "production" || !manifest.enabled) {
+  if (input.environment === "production" || !input.enabled || input.paused || !manifest.enabled || manifest.paused) {
     return { available: false, status: "disabled" as const, reason: "Base intake V2 has no enabled reviewed deployment manifest." }
   }
   const matches = input.environment === manifest.environment && input.chainId === manifest.chainId &&
@@ -36,7 +40,8 @@ export function auditBaseIntakeV2Deployment(input: {
     input.contractAddress.toLowerCase() === manifest.contractAddress.toLowerCase() &&
     input.platformTreasuryAddress.toLowerCase() === manifest.platformTreasuryAddress.toLowerCase() &&
     input.epochTreasuryAddress.toLowerCase() === manifest.epochTreasuryAddress.toLowerCase() &&
-    BASE_INTAKE_V2_SYMBOLS.every((symbol) => input.tokens[symbol].toLowerCase() === manifest.tokens[symbol].toLowerCase())
+    input.providerEvidence === manifest.providerEvidence &&
+    BASE_INTAKE_V2_SYMBOLS.every((symbol) => input.tokens[symbol].address.toLowerCase() === manifest.tokens[symbol].address.toLowerCase() && input.tokens[symbol].enabled === manifest.tokens[symbol].enabled)
   return matches
     ? { available: true, status: "healthy" as const, reason: null }
     : { available: false, status: "mismatch" as const, reason: "Database deployment does not match the reviewed Base intake V2 manifest." }

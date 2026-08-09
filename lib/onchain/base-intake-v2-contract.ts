@@ -42,13 +42,7 @@ export function validateBaseIntakeReconciliationCommand(value: unknown, environm
   if (!ENVIRONMENTS.has(environment)) return edgeCommandFailure("production_disabled", "Base intake V2 reconciliation is unavailable in this environment.")
   if (!isObject(value)) return edgeCommandFailure("invalid_payload", "Expected an object.")
   const v = value
-  if (
-    !Number.isInteger(v.receiptId) || Number(v.receiptId) <= 0 || !Number.isInteger(v.currentBlockNumber) || Number(v.currentBlockNumber) <= 0 ||
-    !HASH.test(String(v.observedBlockHash)) || !HASH.test(String(v.observedTxHash)) ||
-    (v.replacementTxHash !== undefined && !HASH.test(String(v.replacementTxHash))) ||
-    typeof v.platformObservedNativeAmount !== "string" || !UINT.test(v.platformObservedNativeAmount) ||
-    typeof v.epochObservedNativeAmount !== "string" || !UINT.test(v.epochObservedNativeAmount) ||
-    !EVIDENCE_HASH.test(String(v.evidenceHash)) || !validIso(v.observedAt)
-  ) return edgeCommandFailure("invalid_payload", "Base intake reconciliation fields are invalid.")
-  return edgeCommandSuccess(v)
+  if (!Number.isInteger(v.receiptId) || Number(v.receiptId) <= 0 || Object.keys(v).some((key) => key !== "receiptId"))
+    return edgeCommandFailure("invalid_payload", "Only receiptId may be supplied for trusted Base reconciliation.")
+  return edgeCommandSuccess({ receiptId: Number(v.receiptId) })
 }

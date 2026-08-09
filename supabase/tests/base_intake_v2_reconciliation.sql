@@ -8,11 +8,34 @@ WHERE deployment_id = (SELECT id FROM public.base_intake_v2_deployments WHERE de
 INSERT INTO public.base_project_fee_versions(project_id, version, fee_bps, evidence_hash, is_current)
 VALUES (101, 1, 250, repeat('1', 64), true);
 
+INSERT INTO public.base_intake_v2_deployments(deployment_environment,chain_id,contract_address,platform_treasury_address,
+  epoch_treasury_address,is_paused,is_active) VALUES('dev',84532,'0x0000000000000000000000000000000000000132',
+  '0x0000000000000000000000000000000000000201','0x0000000000000000000000000000000000000202',true,false);
+DO $$ BEGIN
+  BEGIN
+    INSERT INTO public.base_intake_v2_assets(deployment_id,symbol,token_address,is_enabled,provider_evidence_status)
+    SELECT id,'USDT','0x0000000000000000000000000000000000000302',true,'unverified'
+    FROM public.base_intake_v2_deployments WHERE deployment_environment='dev';
+    RAISE EXCEPTION 'unverified Base Sepolia USDT was activated';
+  EXCEPTION WHEN OTHERS THEN IF SQLERRM <> 'base_intake_v2_provider_evidence_required' THEN RAISE; END IF; END;
+  BEGIN
+    INSERT INTO public.base_intake_v2_assets(deployment_id,symbol,token_address,is_enabled,provider_evidence_status)
+    SELECT id,'USDC','0x0000000000000000000000000000000000000301',true,'reviewed_issuer'
+    FROM public.base_intake_v2_deployments WHERE deployment_environment='dev';
+    RAISE EXCEPTION 'wrong Base Sepolia USDC address was activated';
+  EXCEPTION WHEN OTHERS THEN IF SQLERRM <> 'base_intake_v2_provider_evidence_required' THEN RAISE; END IF; END;
+END $$;
+
 SET LOCAL ROLE authenticated;
 DO $$ BEGIN
   BEGIN
     PERFORM public.record_base_intake_v2_receipt('{}');
     RAISE EXCEPTION 'authenticated Base receipt RPC was allowed';
+  EXCEPTION WHEN insufficient_privilege THEN NULL; END;
+  BEGIN
+    PERFORM public.reconcile_base_intake_v2_receipt(jsonb_build_object('receiptId',1,'observationSource','trusted_viem_v1',
+      'platformObservedNativeAmount','250000','epochObservedNativeAmount','9750000'));
+    RAISE EXCEPTION 'authenticated crafted Base reconciliation was allowed';
   EXCEPTION WHEN insufficient_privilege THEN NULL; END;
   BEGIN
     INSERT INTO public.base_intake_v2_receipts(deployment_id, project_id, accounting_period_id, fee_version_id,
@@ -76,7 +99,8 @@ DECLARE v_receipt_id bigint := (SELECT id FROM public.base_intake_v2_receipts WH
   base_command jsonb := jsonb_build_object('deploymentEnvironment','local','receiptId',v_receipt_id,
     'currentBlockNumber',100,'observedBlockHash','0x'||repeat('b',64),'observedTxHash','0x'||repeat('a',64),
     'platformObservedNativeAmount','250000','epochObservedNativeAmount','9750000',
-    'evidenceHash',repeat('d',64),'observedAt','2026-08-09T12:01:00Z');
+    'evidenceHash',repeat('d',64),'observedAt','2026-08-09T12:01:00Z','observationSource','trusted_viem_v1',
+    'receiptEventMatched',true);
 BEGIN
   PERFORM public.reconcile_base_intake_v2_receipt(base_command);
   PERFORM public.reconcile_base_intake_v2_receipt(base_command || jsonb_build_object('currentBlockNumber',101,'observedAt','2026-08-09T12:02:00Z'));
@@ -93,7 +117,7 @@ SET LOCAL ROLE service_role;
 DO $$ BEGIN
   BEGIN
     PERFORM public.reconcile_base_intake_v2_receipt(jsonb_build_object('deploymentEnvironment','local','receiptId',
-      (SELECT id FROM public.base_intake_v2_receipts LIMIT 1)));
+      (SELECT id FROM public.base_intake_v2_receipts LIMIT 1),'observationSource','trusted_viem_v1'));
     RAISE EXCEPTION 'paused Base reconciliation was allowed';
   EXCEPTION WHEN OTHERS THEN IF SQLERRM <> 'base_intake_v2_reconciliation_disabled' THEN RAISE; END IF; END;
 END $$;

@@ -113,6 +113,7 @@ export type Database = {
           financial_asset_id: number | null
           id: number
           is_enabled: boolean
+          provider_evidence_status: string
           symbol: string
           token_address: string
         }
@@ -122,6 +123,7 @@ export type Database = {
           financial_asset_id?: number | null
           id?: never
           is_enabled?: boolean
+          provider_evidence_status?: string
           symbol: string
           token_address: string
         }
@@ -131,6 +133,7 @@ export type Database = {
           financial_asset_id?: number | null
           id?: never
           is_enabled?: boolean
+          provider_evidence_status?: string
           symbol?: string
           token_address?: string
         }
@@ -311,10 +314,12 @@ export type Database = {
           epoch_observed_native_amount: number
           evidence_hash: string
           id: number
+          observation_source: string
           observed_at: string
           observed_block_hash: string
           observed_tx_hash: string
           platform_observed_native_amount: number
+          receipt_event_matched: boolean
           receipt_id: number
           replacement_tx_hash: string | null
           status: string
@@ -326,10 +331,12 @@ export type Database = {
           epoch_observed_native_amount: number
           evidence_hash: string
           id?: never
+          observation_source?: string
           observed_at: string
           observed_block_hash: string
           observed_tx_hash: string
           platform_observed_native_amount: number
+          receipt_event_matched?: boolean
           receipt_id: number
           replacement_tx_hash?: string | null
           status: string
@@ -341,10 +348,12 @@ export type Database = {
           epoch_observed_native_amount?: number
           evidence_hash?: string
           id?: never
+          observation_source?: string
           observed_at?: string
           observed_block_hash?: string
           observed_tx_hash?: string
           platform_observed_native_amount?: number
+          receipt_event_matched?: boolean
           receipt_id?: number
           replacement_tx_hash?: string | null
           status?: string

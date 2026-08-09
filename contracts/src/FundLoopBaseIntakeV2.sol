@@ -22,6 +22,7 @@ contract FundLoopBaseIntakeV2 is Ownable, Pausable {
     error DuplicateTreasury();
     error InvalidToken();
     error TokenNotAllowed(address token);
+    error TokenNotProviderApproved(address token);
     error FeeTooHigh(uint16 feeBps);
     error ReceiptReferenceUsed(bytes32 receiptReference);
 
@@ -47,6 +48,7 @@ contract FundLoopBaseIntakeV2 is Ownable, Pausable {
     address public platformTreasury;
     address public epochTreasury;
     mapping(BaseAsset => address) public tokenForAsset;
+    mapping(BaseAsset => bool) public providerApprovedAsset;
     mapping(address => bool) public allowedTokens;
     mapping(uint256 => uint16) public projectFeeBps;
     mapping(bytes32 => bool) public usedReceiptReferences;
@@ -57,12 +59,15 @@ contract FundLoopBaseIntakeV2 is Ownable, Pausable {
         address initialEpochTreasury,
         address usdc,
         address usdt,
-        address pyusd
+        address pyusd,
+        bool usdcProviderApproved,
+        bool usdtProviderApproved,
+        bool pyusdProviderApproved
     ) Ownable(initialOwner) {
         _setTreasuries(initialPlatformTreasury, initialEpochTreasury);
-        _configureToken(BaseAsset.USDC, usdc, true);
-        _configureToken(BaseAsset.USDT, usdt, true);
-        _configureToken(BaseAsset.PYUSD, pyusd, true);
+        _configureToken(BaseAsset.USDC, usdc, usdcProviderApproved);
+        _configureToken(BaseAsset.USDT, usdt, usdtProviderApproved);
+        _configureToken(BaseAsset.PYUSD, pyusd, pyusdProviderApproved);
     }
 
     function setPaused(bool paused) external onlyOwner {
@@ -75,7 +80,11 @@ contract FundLoopBaseIntakeV2 is Ownable, Pausable {
     }
 
     function setTokenEnabled(BaseAsset asset, bool enabled) external onlyOwner {
-        _configureToken(asset, tokenForAsset[asset], enabled);
+        address token = tokenForAsset[asset];
+        if (enabled && !providerApprovedAsset[asset]) revert TokenNotProviderApproved(token);
+        if (token == address(0)) revert InvalidToken();
+        allowedTokens[token] = enabled;
+        emit BaseTokenConfigured(asset, token, enabled);
     }
 
     function setProjectFeeBps(uint256 projectId, uint16 feeBps) external onlyOwner {
@@ -131,12 +140,13 @@ contract FundLoopBaseIntakeV2 is Ownable, Pausable {
         emit BaseTreasuriesUpdated(nextPlatformTreasury, nextEpochTreasury);
     }
 
-    function _configureToken(BaseAsset asset, address token, bool enabled) private {
-        if (token == address(0)) revert InvalidToken();
+    function _configureToken(BaseAsset asset, address token, bool approved) private {
+        if (token == address(0) && approved) revert InvalidToken();
         address configured = tokenForAsset[asset];
         if (configured != address(0) && configured != token) revert InvalidToken();
         tokenForAsset[asset] = token;
-        allowedTokens[token] = enabled;
-        emit BaseTokenConfigured(asset, token, enabled);
+        providerApprovedAsset[asset] = approved;
+        if (token != address(0)) allowedTokens[token] = approved;
+        emit BaseTokenConfigured(asset, token, approved);
     }
 }

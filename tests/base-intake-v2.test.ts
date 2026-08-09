@@ -43,18 +43,21 @@ describe("Base intake V2 command and reconciliation", () => {
     expect(evaluateBaseIntakeV2Receipt({ ...base, replacementTxHash: `0x${"e".repeat(64)}` }).status).toBe("replaced")
   })
   it("keeps the tracked deployment fail closed", () => {
-    expect(auditBaseIntakeV2Deployment({
-      environment: "local", chainId: 31337, version: "fundloop-base-intake-v2", enabled: true,
+    const deployment = {
+      environment: "local", chainId: 31337, version: "fundloop-base-intake-v2", enabled: true, paused: false,
+      providerEvidence: "local_fixture_only",
       contractAddress: receipt.contractAddress, platformTreasuryAddress: receipt.platformTreasuryAddress,
       epochTreasuryAddress: receipt.epochTreasuryAddress,
-      tokens: { USDC: receipt.tokenAddress, USDT: "0x0000000000000000000000000000000000000302", PYUSD: "0x0000000000000000000000000000000000000303" },
-    })).toMatchObject({ available: false, status: "disabled" })
+      tokens: { USDC: { address: receipt.tokenAddress, enabled: true }, USDT: { address: "0x0000000000000000000000000000000000000302", enabled: true }, PYUSD: { address: "0x0000000000000000000000000000000000000303", enabled: true } },
+    }
+    expect(auditBaseIntakeV2Deployment(deployment)).toMatchObject({ available: false, status: "disabled" })
+    expect(auditBaseIntakeV2Deployment({ ...deployment, enabled: false })).toMatchObject({ available: false, status: "disabled" })
+    expect(auditBaseIntakeV2Deployment({ ...deployment, paused: true })).toMatchObject({ available: false, status: "disabled" })
   })
   it("validates reconciliation evidence shape", () => {
-    expect(validateBaseIntakeReconciliationCommand({ receiptId: 1, currentBlockNumber: 101,
-      observedBlockHash: `0x${"b".repeat(64)}`, observedTxHash: `0x${"a".repeat(64)}`,
-      platformObservedNativeAmount: "250000", epochObservedNativeAmount: "9750000",
-      evidenceHash: "d".repeat(64), observedAt: "2026-08-09T12:01:00Z" }, "local")).toMatchObject({ ok: true })
+    expect(validateBaseIntakeReconciliationCommand({ receiptId: 1 }, "local")).toEqual({ ok: true, data: { receiptId: 1 } })
+    expect(validateBaseIntakeReconciliationCommand({ receiptId: 1, platformObservedNativeAmount: "250000" }, "local"))
+      .toMatchObject({ ok: false, error: { code: "invalid_payload" } })
   })
   it("keeps both Edge commands behind an internal secret and typed RPC", () => {
     for (const path of ["supabase/functions/base-intake-v2-receipt-record/index.ts", "supabase/functions/base-intake-v2-reconcile/index.ts"]) {
