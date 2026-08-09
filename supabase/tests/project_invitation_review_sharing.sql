@@ -115,6 +115,8 @@ END $$;
 
 INSERT INTO public.organization_members (organization_id, user_id, role_id, role_assigned_by, status, deleted_at)
 VALUES (900001, '20000000-0000-4000-8000-000000000003', 4, '20000000-0000-4000-8000-000000000001', 'inactive', now());
+INSERT INTO public.participants (project_id, user_id, is_admin, is_favorite)
+VALUES (900001, '20000000-0000-4000-8000-000000000003', false, true);
 INSERT INTO public.project_invitations (
   id, project_id, organization_id, invitee_email, invited_role, token_digest, idempotency_key,
   created_by_user_id, expires_at, shared_profile_fields, policy_document_version_id,
@@ -124,10 +126,17 @@ SELECT '30000000-0000-4000-8000-000000000005', 900001, 900001, 'invite-unrelated
   '20000000-0000-4000-8000-000000000001', now() + interval '1 day', '["display_name"]', id,
   document_identifier, content_hash, locale, status
 FROM public.legal_document_versions WHERE document_kind = 'privacy' AND status = 'review';
+UPDATE public.project_invitations SET invited_role = 'admin' WHERE id = '30000000-0000-4000-8000-000000000005';
 SELECT * FROM public.accept_project_invitation_review(
   repeat('e',64), '20000000-0000-4000-8000-000000000003', 'invite-unrelated@example.test',
   'fundloop-privacy-ca-review-draft-2026-08-08', '97523eedf0c1cbf79b3cfd87eee42392815dd6458d45e1ceeaf68b2e859eb65a', 'en-CA', '["display_name"]'
 );
+DO $$ BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM public.participants
+    WHERE project_id=900001 AND user_id='20000000-0000-4000-8000-000000000003' AND is_admin=true AND is_favorite=true
+  ) THEN RAISE EXCEPTION 'acceptance did not apply admin role to pre-existing participant'; END IF;
+END $$;
 SELECT * FROM public.revoke_project_invitation_review('30000000-0000-4000-8000-000000000005', '20000000-0000-4000-8000-000000000001');
 DO $$ BEGIN
   IF NOT EXISTS (
@@ -135,6 +144,57 @@ DO $$ BEGIN
     WHERE organization_id=900001 AND user_id='20000000-0000-4000-8000-000000000003'
       AND status='inactive' AND deleted_at IS NOT NULL AND role_id=4
   ) THEN RAISE EXCEPTION 'revocation did not restore independently pre-existing membership'; END IF;
+  IF NOT EXISTS (
+    SELECT 1 FROM public.participants
+    WHERE project_id=900001 AND user_id='20000000-0000-4000-8000-000000000003' AND is_admin=false AND is_favorite=true
+  ) THEN RAISE EXCEPTION 'revocation did not preserve the independent participant exactly'; END IF;
+END $$;
+
+INSERT INTO public.project_invitations (
+  id, project_id, organization_id, invitee_email, invited_role, token_digest, idempotency_key,
+  created_by_user_id, expires_at, shared_profile_fields, policy_document_version_id,
+  policy_document_identifier, policy_content_hash, policy_locale, policy_status
+)
+SELECT '30000000-0000-4000-8000-000000000006', 900001, 900001, 'invite-member@example.test', 'admin', repeat('f',64), 'aggregate-first-key',
+  '20000000-0000-4000-8000-000000000001', now() + interval '1 day', '["display_name"]', id,
+  document_identifier, content_hash, locale, status
+FROM public.legal_document_versions WHERE document_kind = 'privacy' AND status = 'review';
+SELECT * FROM public.accept_project_invitation_review(
+  repeat('f',64), '20000000-0000-4000-8000-000000000002', 'invite-member@example.test',
+  'fundloop-privacy-ca-review-draft-2026-08-08', '97523eedf0c1cbf79b3cfd87eee42392815dd6458d45e1ceeaf68b2e859eb65a', 'en-CA', '["display_name"]'
+);
+INSERT INTO public.project_invitations (
+  id, project_id, organization_id, invitee_email, invited_role, token_digest, idempotency_key,
+  created_by_user_id, expires_at, shared_profile_fields, policy_document_version_id,
+  policy_document_identifier, policy_content_hash, policy_locale, policy_status
+)
+SELECT '30000000-0000-4000-8000-000000000007', 900001, 900001, 'invite-member@example.test', 'member', repeat('1',64), 'aggregate-second-key',
+  '20000000-0000-4000-8000-000000000001', now() + interval '1 day', '["display_name"]', id,
+  document_identifier, content_hash, locale, status
+FROM public.legal_document_versions WHERE document_kind = 'privacy' AND status = 'review';
+SELECT * FROM public.accept_project_invitation_review(
+  repeat('1',64), '20000000-0000-4000-8000-000000000002', 'invite-member@example.test',
+  'fundloop-privacy-ca-review-draft-2026-08-08', '97523eedf0c1cbf79b3cfd87eee42392815dd6458d45e1ceeaf68b2e859eb65a', 'en-CA', '["display_name"]'
+);
+DO $$ BEGIN
+  IF (SELECT organization_membership_change FROM public.project_invitations WHERE id='30000000-0000-4000-8000-000000000006') <> 'created'
+    OR (SELECT organization_membership_change FROM public.project_invitations WHERE id='30000000-0000-4000-8000-000000000007') <> 'unchanged' THEN
+    RAISE EXCEPTION 'multi-invitation local provenance fixture was not established';
+  END IF;
+END $$;
+SELECT * FROM public.revoke_project_invitation_review('30000000-0000-4000-8000-000000000006', '20000000-0000-4000-8000-000000000001');
+DO $$ BEGIN
+  IF NOT EXISTS (SELECT 1 FROM public.organization_members WHERE organization_id=900001 AND user_id='20000000-0000-4000-8000-000000000002' AND status='active') THEN RAISE EXCEPTION 'earlier revoke removed membership supported by later invitation'; END IF;
+  IF NOT EXISTS (SELECT 1 FROM public.participants WHERE project_id=900001 AND user_id='20000000-0000-4000-8000-000000000002' AND is_admin=false) THEN RAISE EXCEPTION 'earlier revoke removed or failed to recalculate participant supported by later invitation'; END IF;
+  IF NOT EXISTS (SELECT 1 FROM public.project_invitation_membership_provenance WHERE organization_id=900001 AND user_id='20000000-0000-4000-8000-000000000002' AND created_by_invitation=true) THEN RAISE EXCEPTION 'aggregate membership provenance was lost before final revoke'; END IF;
+  IF NOT EXISTS (SELECT 1 FROM public.project_invitation_participant_provenance WHERE project_id=900001 AND user_id='20000000-0000-4000-8000-000000000002' AND created_by_invitation=true) THEN RAISE EXCEPTION 'aggregate participant provenance was lost before final revoke'; END IF;
+END $$;
+SELECT * FROM public.revoke_project_invitation_review('30000000-0000-4000-8000-000000000007', '20000000-0000-4000-8000-000000000001');
+DO $$ BEGIN
+  IF EXISTS (SELECT 1 FROM public.organization_members WHERE organization_id=900001 AND user_id='20000000-0000-4000-8000-000000000002') THEN RAISE EXCEPTION 'final revoke stranded invitation-created membership'; END IF;
+  IF EXISTS (SELECT 1 FROM public.participants WHERE project_id=900001 AND user_id='20000000-0000-4000-8000-000000000002') THEN RAISE EXCEPTION 'final revoke stranded invitation-created participant'; END IF;
+  IF EXISTS (SELECT 1 FROM public.project_invitation_membership_provenance WHERE organization_id=900001 AND user_id='20000000-0000-4000-8000-000000000002') THEN RAISE EXCEPTION 'final revoke left membership provenance residue'; END IF;
+  IF EXISTS (SELECT 1 FROM public.project_invitation_participant_provenance WHERE project_id=900001 AND user_id='20000000-0000-4000-8000-000000000002') THEN RAISE EXCEPTION 'final revoke left participant provenance residue'; END IF;
 END $$;
 
 ROLLBACK;

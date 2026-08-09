@@ -2384,6 +2384,96 @@ export type Database = {
           },
         ]
       }
+      project_invitation_membership_provenance: {
+        Row: {
+          created_at: string
+          created_by_invitation: boolean
+          organization_id: number
+          previous_deleted_at: string | null
+          previous_status:
+            | Database["public"]["Enums"]["organization_members_status"]
+            | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          created_by_invitation: boolean
+          organization_id: number
+          previous_deleted_at?: string | null
+          previous_status?:
+            | Database["public"]["Enums"]["organization_members_status"]
+            | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          created_by_invitation?: boolean
+          organization_id?: number
+          previous_deleted_at?: string | null
+          previous_status?:
+            | Database["public"]["Enums"]["organization_members_status"]
+            | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "project_invitation_membership_provenance_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "project_invitation_membership_provenance_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["user_id"]
+          },
+        ]
+      }
+      project_invitation_participant_provenance: {
+        Row: {
+          created_at: string
+          created_by_invitation: boolean
+          previous_is_admin: boolean | null
+          previous_is_favorite: boolean | null
+          project_id: number
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          created_by_invitation: boolean
+          previous_is_admin?: boolean | null
+          previous_is_favorite?: boolean | null
+          project_id: number
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          created_by_invitation?: boolean
+          previous_is_admin?: boolean | null
+          previous_is_favorite?: boolean | null
+          project_id?: number
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "project_invitation_participant_provenance_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "project_invitation_participant_provenance_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["user_id"]
+          },
+        ]
+      }
       project_invitations: {
         Row: {
           accepted_at: string | null

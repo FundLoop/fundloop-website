@@ -4,6 +4,7 @@ import { describe, expect, it } from "vitest"
 const migration = readFileSync("supabase/migrations/20260805143000_project_invitations.sql", "utf8")
 const reviewMigration = readFileSync("supabase/migrations/20260808234500_project_invitation_review_sharing.sql", "utf8")
 const lifecycleMigration = readFileSync("supabase/migrations/20260808235500_project_invitation_lifecycle_residue.sql", "utf8")
+const aggregateMigration = readFileSync("supabase/migrations/20260809000500_project_invitation_aggregate_provenance.sql", "utf8")
 
 describe("project invitation database boundary", () => {
   it("allows active organization Founder and Admin members to read invitation state", () => {
@@ -37,6 +38,15 @@ describe("project invitation database boundary", () => {
     expect(lifecycleMigration).toContain("membership_change = 'created'")
     expect(lifecycleMigration).toContain("membership_change = 'reactivated'")
     expect(lifecycleMigration).toContain("organization_membership_previous_status")
+  })
+
+  it("tracks aggregate membership and participant ownership across revoke order", () => {
+    expect(aggregateMigration).toContain("project_invitation_membership_provenance")
+    expect(aggregateMigration).toContain("project_invitation_participant_provenance")
+    expect(aggregateMigration).toContain("has_other_organization_invitation")
+    expect(aggregateMigration).toContain("has_other_project_invitation")
+    expect(aggregateMigration).toContain("remaining_project_admin")
+    expect(aggregateMigration).toContain("previous_is_favorite")
   })
 
   it("keeps the security-definer RPC and digest table behind the service role", () => {

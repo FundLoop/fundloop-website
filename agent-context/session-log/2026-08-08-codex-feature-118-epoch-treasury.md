@@ -712,3 +712,61 @@ accept/revoke, and making every list/create-triggered expiry append evidence.
 - Commit this narrow #125 validation fix and update the issue evidence while keeping
   it In Progress for the next independent validator pass.
 - Stop the disposable Edge and Supabase services; do not open a PR.
+
+### session v15: Aggregate invitation access provenance (#125)
+
+- Timestamp: 2026-08-08T20:04:07-04:00
+- Agent: Codex
+- Branch: codex/118-canada-review-drafts
+- Head: 67a968ae0599
+
+#### Objective
+
+Close the remaining Task #125 validation gap by making invitation-created
+organization membership and project participation ownership aggregate across every
+accepted invitation, independent of revoke order.
+
+#### Actions Taken
+
+- Added service-owned aggregate provenance tables keyed by organization/user and
+  project/user, with the exact prior membership and participant state needed for
+  reversible cleanup.
+- Updated acceptance to lock aggregate access keys, snapshot provenance once, and
+  preserve that original ownership when later invitations encounter already-active
+  membership or participation.
+- Updated revocation to retain access while another accepted invitation supports it,
+  recalculate project-admin access from remaining invitations and the original
+  participant, and delete or restore access only after the final supporting revoke.
+- Added safe backfill behavior for any already-accepted review rows: existing access
+  is treated as independent rather than destructively claimed by the migration.
+- Extended executable SQL coverage for earlier-first/final-later revoke ordering,
+  aggregate provenance retention/removal, admin-role recalculation, final zero
+  residue, and exact preservation of an independent favorite participant.
+
+#### Validation Notes
+
+- Passed: fresh disposable Supabase reset applying every migration and seed.
+- Passed: executable SQL/RLS/RPC suite on the first run, including multi-invitation
+  revoke ordering and independent participant restoration.
+- Passed: generated Supabase types and Node 22 typecheck.
+- Passed: focused one-worker Vitest, 6 files and 30 tests.
+- Passed: returning-founder Playwright accept-then-revoke workflow and clean fixture
+  cleanup; the aggregate remains intentionally incomplete only for the existing
+  operator-distribution expected-pending checkpoint.
+- Passed: Node 22 lint and full `CI=1 pnpm check` with 125 files/563 tests plus
+  production build.
+- Passed: `git diff --check`.
+
+#### Reflections
+
+- Per-invitation provenance cannot decide final ownership because revoke order may
+  end on an invitation that observed access as unchanged. The resource-level
+  aggregate must outlive each individual accepted invitation.
+- Recalculating participant admin status on intermediate revoke avoids retaining an
+  admin grant after only member invitations remain.
+
+#### Suggested Next Steps
+
+- Commit this narrow aggregate-provenance fix and attach the replay, SQL ordering,
+  browser cleanup, and full-check evidence to #125.
+- Keep #125 In Progress for independent revalidation; do not open a PR.
