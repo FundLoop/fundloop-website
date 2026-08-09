@@ -173,3 +173,58 @@ or moving value.
   focused/full checks, and desktop/mobile smoke to the issue.
 - Leave #128 In Progress for independent validation, stop services, and do not start
   #129 or open a PR.
+
+### session v4: Shadow epoch validator fixes (#128)
+
+- Timestamp: 2026-08-08T22:05:22-04:00
+- Agent: Codex
+- Branch: codex/126-ledger-control-plane
+- Head: 254eebc24ea8
+
+#### Objective
+
+Close #128's idempotency, required-gate, override-provenance, and operational
+scheduling findings without enabling production, changing legacy outcomes, or
+introducing value flow.
+
+#### Actions Taken
+
+- Added a forward-only migration that compares every canonical transition field on
+  idempotent replay and returns an explicit conflict for changed payloads.
+- Added a required hard-gate registry for all eleven transitions and made completion
+  fail attempts with missing gates before any stage change.
+- Bound override evidence to one claimed attempt, exact state/transition/gate, an
+  override-eligible requirement, and the same internal-admin actor as the attempt.
+- Linked shadow states to regional business calendars and added explicit readiness,
+  email-delivery, payout-open, and carryover-completion scheduling inputs.
+- Operationalized cutoff, intermediate readiness, holiday-aware opt-out, payout
+  expiry, and final close enqueue decisions, plus a tracked five-minute non-production
+  scheduler manifest.
+- Extended executable SQL, fake-clock/orchestration tests, docs, and generated types.
+
+#### Validation Notes
+
+- Passed: two fresh local Supabase resets applying the forward migration and seed.
+- Passed: executable SQL proving empty collecting gates fail, changed payloads conflict,
+  unrelated overrides fail, exact overrides can satisfy only eligible gates, concurrent
+  claims remain distinct, and legacy status remains unchanged.
+- Passed: focused Vitest with 3 files and 10 tests covering all trigger derivations,
+  holiday linkage, fake clocks, production denial, and scheduled manifest behavior.
+- Passed: Node 22 lint and typecheck; full check recorded after this session entry.
+- Passed: `git diff --check`. Browser evidence is N/A because the prior validated admin
+  UI was not changed by these database/orchestration corrections.
+
+#### Reflections
+
+- An idempotency key is safe only when a replay proves equality of the command it names.
+- A gate table makes transition requirements data-visible and prevents an empty result
+  array from being treated as successful evidence.
+- Scheduler inputs now come from persisted state and linked calendar data rather than
+  optional caller-only values.
+
+#### Suggested Next Steps
+
+- Commit the narrow #128 corrections and attach fresh replay, adversarial SQL,
+  scheduler fake-clock, and full-check evidence.
+- Leave #128 In Progress for independent revalidation, stop services, and do not start
+  #129 or open a PR.

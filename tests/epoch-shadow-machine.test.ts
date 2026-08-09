@@ -29,6 +29,8 @@ describe("epoch shadow state machine", () => {
     expect(payoutExpiryAt(opened).toISOString()).toBe("2026-11-01T07:00:00.000Z")
     expect(evaluateEpochTransition({ stage: "payout_open", now: new Date("2026-11-01T07:00:00Z"), payoutOpenedAt: opened })).toBe("expired")
     expect(evaluateEpochTransition({ stage: "expired", now: new Date(), carryoverComplete: true })).toBe("closed")
+    expect(evaluateEpochTransition({ stage: "reconciling", now: new Date("2026-09-02T00:00:00Z"), stageReadyAt: new Date("2026-09-01T00:00:00Z") })).toBe("valuing")
+    expect(evaluateEpochTransition({ stage: "reviewing", now: new Date("2026-08-12T07:00:00Z"), optOutDeadline: new Date("2026-08-12T07:00:00Z") })).toBe("payout_readying")
   })
 
   it("rejects fake clock use when the trusted environment is production", () => {

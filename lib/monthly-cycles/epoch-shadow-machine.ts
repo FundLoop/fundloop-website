@@ -64,11 +64,23 @@ export function evaluateEpochTransition(input: {
   stage: EpochShadowStage
   now: Date
   periodEnd?: Date
+  stageReadyAt?: Date
+  optOutDeadline?: Date
   payoutOpenedAt?: Date
   carryoverComplete?: boolean
 }) {
   if (input.stage === "collecting" && input.periodEnd && input.now >= input.periodEnd) return "reconciling" as const
+  if (input.stage === "reviewing" && input.optOutDeadline && input.now >= input.optOutDeadline) return "payout_readying" as const
   if (input.stage === "payout_open" && input.payoutOpenedAt && input.now >= payoutExpiryAt(input.payoutOpenedAt)) return "expired" as const
   if (input.stage === "expired" && input.carryoverComplete) return "closed" as const
+  if (input.stage !== "collecting" && input.stage !== "reviewing" && input.stage !== "payout_open" && input.stage !== "expired"
+    && input.stageReadyAt && input.now >= input.stageReadyAt) return nextEpochShadowStage(input.stage)
   return null
+}
+
+export const epochTransitionGate: Record<Exclude<EpochShadowStage, "closed">, string> = {
+  collecting: "collection_cutoff_reached", reconciling: "reconciliation_complete", valuing: "valuation_complete",
+  fee_processing: "fee_review_complete", carryover_payouts: "carryover_payouts_reviewed", locking: "input_manifest_locked",
+  allocating: "allocation_complete", reviewing: "opt_out_window_closed", payout_readying: "payout_readiness_complete",
+  payout_open: "payout_window_expired", expired: "carryover_complete",
 }

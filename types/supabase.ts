@@ -307,6 +307,7 @@ export type Database = {
       epoch_business_calendar: {
         Row: {
           calendar_date: string
+          calendar_region: string
           created_at: string
           is_business_day: boolean
           production_enabled: boolean
@@ -314,6 +315,7 @@ export type Database = {
         }
         Insert: {
           calendar_date: string
+          calendar_region?: string
           created_at?: string
           is_business_day: boolean
           production_enabled?: boolean
@@ -321,10 +323,37 @@ export type Database = {
         }
         Update: {
           calendar_date?: string
+          calendar_region?: string
           created_at?: string
           is_business_day?: boolean
           production_enabled?: boolean
           reason?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "epoch_business_calendar_calendar_region_fkey"
+            columns: ["calendar_region"]
+            isOneToOne: false
+            referencedRelation: "epoch_business_calendars"
+            referencedColumns: ["region_key"]
+          },
+        ]
+      }
+      epoch_business_calendars: {
+        Row: {
+          production_enabled: boolean
+          region_key: string
+          timezone_name: string
+        }
+        Insert: {
+          production_enabled?: boolean
+          region_key: string
+          timezone_name?: string
+        }
+        Update: {
+          production_enabled?: boolean
+          region_key?: string
+          timezone_name?: string
         }
         Relationships: []
       }
@@ -349,40 +378,55 @@ export type Database = {
       epoch_shadow_states: {
         Row: {
           accounting_period_id: number
+          business_calendar_region: string
+          carryover_complete: boolean
           created_at: string
           current_stage: string
           id: number
           is_paused: boolean
           legacy_status_snapshot: string | null
           monthly_cycle_id: number | null
+          opt_out_email_delivered_at: string | null
           pause_reason: string | null
+          payout_opened_at: string | null
           production_enabled: boolean
+          stage_ready_at: string | null
           state_version: number
           updated_at: string
         }
         Insert: {
           accounting_period_id: number
+          business_calendar_region?: string
+          carryover_complete?: boolean
           created_at?: string
           current_stage?: string
           id?: never
           is_paused?: boolean
           legacy_status_snapshot?: string | null
           monthly_cycle_id?: number | null
+          opt_out_email_delivered_at?: string | null
           pause_reason?: string | null
+          payout_opened_at?: string | null
           production_enabled?: boolean
+          stage_ready_at?: string | null
           state_version?: number
           updated_at?: string
         }
         Update: {
           accounting_period_id?: number
+          business_calendar_region?: string
+          carryover_complete?: boolean
           created_at?: string
           current_stage?: string
           id?: never
           is_paused?: boolean
           legacy_status_snapshot?: string | null
           monthly_cycle_id?: number | null
+          opt_out_email_delivered_at?: string | null
           pause_reason?: string | null
+          payout_opened_at?: string | null
           production_enabled?: boolean
+          stage_ready_at?: string | null
           state_version?: number
           updated_at?: string
         }
@@ -393,6 +437,13 @@ export type Database = {
             isOneToOne: true
             referencedRelation: "accounting_periods"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "epoch_shadow_states_calendar_fk"
+            columns: ["business_calendar_region"]
+            isOneToOne: false
+            referencedRelation: "epoch_business_calendars"
+            referencedColumns: ["region_key"]
           },
           {
             foreignKeyName: "epoch_shadow_states_monthly_cycle_id_fkey"
@@ -539,6 +590,30 @@ export type Database = {
           },
         ]
       }
+      epoch_stage_gate_requirements: {
+        Row: {
+          expected_stage: string
+          gate_key: string
+          gate_type: string
+          override_allowed: boolean
+          target_stage: string
+        }
+        Insert: {
+          expected_stage: string
+          gate_key: string
+          gate_type?: string
+          override_allowed?: boolean
+          target_stage: string
+        }
+        Update: {
+          expected_stage?: string
+          gate_key?: string
+          gate_type?: string
+          override_allowed?: boolean
+          target_stage?: string
+        }
+        Relationships: []
+      }
       epoch_stage_gate_results: {
         Row: {
           attempt_id: number
@@ -600,6 +675,7 @@ export type Database = {
       epoch_stage_overrides: {
         Row: {
           actor_user_id: string
+          attempt_id: number | null
           created_at: string
           evidence_hash: string
           gate_key: string
@@ -611,6 +687,7 @@ export type Database = {
         }
         Insert: {
           actor_user_id: string
+          attempt_id?: number | null
           created_at?: string
           evidence_hash: string
           gate_key: string
@@ -622,6 +699,7 @@ export type Database = {
         }
         Update: {
           actor_user_id?: string
+          attempt_id?: number | null
           created_at?: string
           evidence_hash?: string
           gate_key?: string
@@ -638,6 +716,20 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "users"
             referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "epoch_stage_overrides_attempt_id_fkey"
+            columns: ["attempt_id"]
+            isOneToOne: false
+            referencedRelation: "epoch_shadow_observability"
+            referencedColumns: ["latest_attempt_id"]
+          },
+          {
+            foreignKeyName: "epoch_stage_overrides_attempt_id_fkey"
+            columns: ["attempt_id"]
+            isOneToOne: false
+            referencedRelation: "epoch_stage_attempts"
+            referencedColumns: ["id"]
           },
           {
             foreignKeyName: "epoch_stage_overrides_shadow_state_id_fkey"
@@ -6039,13 +6131,13 @@ export type Database = {
       }
       record_epoch_stage_override: {
         Args: {
+          p_actor_context: string
           p_actor_user_id: string
+          p_attempt_id: number
           p_deployment_environment: string
           p_evidence_hash: string
           p_gate_key: string
           p_reason: string
-          p_shadow_state_id: number
-          p_stage: string
         }
         Returns: number
       }

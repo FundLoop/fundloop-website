@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest"
 
 const migration = readFileSync("supabase/migrations/20260809030000_epoch_shadow_state_machine.sql", "utf8")
 const edge = readFileSync("supabase/functions/epoch-shadow-scheduler/index.ts", "utf8")
+const schedule = JSON.parse(readFileSync("supabase/functions/epoch-shadow-scheduler/schedule.json", "utf8"))
 
 describe("epoch shadow execution boundaries", () => {
   it("uses advisory guards, optimistic versions, and skip-locked claims", () => {
@@ -17,5 +18,10 @@ describe("epoch shadow execution boundaries", () => {
     expect(migration).toContain("production_value_flow_enabled = false")
     expect(edge).toContain('environment === "production"')
     expect(edge).toContain("authenticateRequestOrInternalSecret")
+  })
+
+  it("tracks an executable non-production five-minute schedule", () => {
+    expect(schedule).toMatchObject({ cron: "*/5 * * * *", function: "epoch-shadow-scheduler", productionEnabled: false })
+    expect(schedule.deploymentEnvironments).not.toContain("production")
   })
 })
