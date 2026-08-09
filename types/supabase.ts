@@ -1252,6 +1252,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "ledger_postings_transaction_id_fkey"
+            columns: ["transaction_id"]
+            isOneToOne: false
+            referencedRelation: "shadow_ledger_trial_balance"
+            referencedColumns: ["ledger_transaction_id"]
+          },
+          {
             foreignKeyName: "ledger_postings_user_id_fkey"
             columns: ["user_id"]
             isOneToOne: false
@@ -1347,6 +1354,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "ledger_transactions"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ledger_transactions_reversal_of_transaction_id_fkey"
+            columns: ["reversal_of_transaction_id"]
+            isOneToOne: false
+            referencedRelation: "shadow_ledger_trial_balance"
+            referencedColumns: ["ledger_transaction_id"]
           },
         ]
       }
@@ -4495,6 +4509,7 @@ export type Database = {
           functional_debits: number
           id: number
           journal_type: string
+          ledger_transaction_id: number | null
           native_credits: number
           native_debits: number
           production_enabled: boolean
@@ -4509,6 +4524,7 @@ export type Database = {
           functional_debits: number
           id?: never
           journal_type: string
+          ledger_transaction_id?: number | null
           native_credits: number
           native_debits: number
           production_enabled?: boolean
@@ -4523,6 +4539,7 @@ export type Database = {
           functional_debits?: number
           id?: never
           journal_type?: string
+          ledger_transaction_id?: number | null
           native_credits?: number
           native_debits?: number
           production_enabled?: boolean
@@ -4541,6 +4558,20 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "shadow_financial_reconciliation_observability"
             referencedColumns: ["event_id"]
+          },
+          {
+            foreignKeyName: "shadow_financial_journals_ledger_transaction_id_fkey"
+            columns: ["ledger_transaction_id"]
+            isOneToOne: true
+            referencedRelation: "ledger_transactions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "shadow_financial_journals_ledger_transaction_id_fkey"
+            columns: ["ledger_transaction_id"]
+            isOneToOne: true
+            referencedRelation: "shadow_ledger_trial_balance"
+            referencedColumns: ["ledger_transaction_id"]
           },
         ]
       }
@@ -6194,6 +6225,47 @@ export type Database = {
         }
         Relationships: []
       }
+      shadow_ledger_trial_balance: {
+        Row: {
+          account_id: number | null
+          accounting_period_id: number | null
+          asset_id: number | null
+          custody_account_id: number | null
+          functional_usd_balance: number | null
+          ledger_transaction_id: number | null
+          native_atomic_balance: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ledger_postings_account_id_fkey"
+            columns: ["account_id"]
+            isOneToOne: false
+            referencedRelation: "ledger_accounts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ledger_postings_asset_id_fkey"
+            columns: ["asset_id"]
+            isOneToOne: false
+            referencedRelation: "financial_assets"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ledger_postings_custody_account_id_fkey"
+            columns: ["custody_account_id"]
+            isOneToOne: false
+            referencedRelation: "financial_custody_accounts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ledger_transactions_accounting_period_id_fkey"
+            columns: ["accounting_period_id"]
+            isOneToOne: false
+            referencedRelation: "accounting_periods"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       user_identities: {
         Row: {
           created_at: string | null
@@ -6454,9 +6526,8 @@ export type Database = {
           p_detail: Json
           p_event_id: number
           p_evidence_hash: string
-          p_functional_amount: number
           p_journal_type: string
-          p_native_amount: number
+          p_ledger_transaction_id: number
         }
         Returns: number
       }
@@ -6490,7 +6561,6 @@ export type Database = {
           p_evidence_hash: string
           p_observed_at: string
           p_provider_native: number
-          p_shadow_native: number
           p_tolerance: number
         }
         Returns: number

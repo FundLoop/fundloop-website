@@ -323,6 +323,36 @@ retaining service reads and typed security-definer commands.
 
 - Commit and attach privilege evidence; leave #129 In Progress for revalidation.
 
+### session v9: Neutral-ledger reconciliation linkage (#129)
+
+- Timestamp: 2026-08-08T23:05:00-04:00
+- Agent: Codex
+- Branch: codex/126-ledger-control-plane
+- Head: 135a22d
+
+#### Objective
+
+Replace parallel journal aggregates with verifiable neutral-ledger linkage and derive
+custody reconciliation exclusively from the trusted trial balance.
+
+#### Actions Taken
+
+- Linked typed shadow journals one-to-one to immutable ledger transactions.
+- Added native/functional trial balance by period, transaction, account, asset, custody.
+- Removed caller shadow totals; reconciliation derives debit-normal custody balance.
+- Converted all five local journal fixtures to neutral ledger transactions and proved
+  a reversal changes derived reconciliation from exact to outside tolerance.
+- Updated Edge contract, docs, generated types, and integrated SQL evidence.
+
+#### Validation Notes
+
+- Fresh replay passed; neutral ledger, epoch, and shadow reconciliation SQL suites pass.
+- Full Node 22 validation follows; UI unchanged, browser N/A.
+
+#### Suggested Next Steps
+
+- Commit and attach integrated evidence; leave Goal #126 unchanged.
+
 ### session v5: Recurring scheduler idempotency (#128)
 
 - Timestamp: 2026-08-08T22:17:19-04:00

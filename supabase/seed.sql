@@ -970,6 +970,10 @@ INSERT INTO public.ledger_accounts (
   ('neutral_offset_control', 'credit', 'unclassified_control', '["project","user"]'::jsonb)
 ON CONFLICT (account_key) DO NOTHING;
 
+INSERT INTO public.ledger_accounts(account_key,normal_balance,provisional_classification_key,required_dimensions)VALUES
+('shadow_source_control','debit','unclassified_shadow_control','[]'),('shadow_offset_control','credit','unclassified_shadow_control','[]')
+ON CONFLICT(account_key)DO NOTHING;
+
 INSERT INTO public.accounting_periods (
   period_key, starts_at, ends_at, timezone_name
 ) VALUES (
@@ -986,11 +990,16 @@ LEFT JOIN public.monthly_cycles cycle ON cycle.period_start = period.starts_at::
 WHERE period.period_key = 'local_review_2026_08'
 ON CONFLICT (accounting_period_id) DO NOTHING;
 
-WITH fixture AS(SELECT c.id custody_id,c.asset_id FROM public.financial_custody_accounts c WHERE custody_key='local_review_custody'),event AS(
+WITH fixture AS(SELECT c.id custody_id,c.asset_id FROM public.financial_custody_accounts c WHERE custody_key='local_review_custody')
  INSERT INTO public.external_financial_events(provider_key,provider_event_id,custody_account_id,asset_id,event_type,provider_sequence,settled_native_amount,occurred_at,ordering_status,evidence_hash,legacy_timestamp_evidence)
- SELECT'local_fixture','receipt-1',custody_id,asset_id,'settlement',1,1000000,'2026-08-05T12:00:00Z','in_order',repeat('a',64),'{"legacyCreatedAt":"non_settlement_evidence"}' FROM fixture ON CONFLICT(provider_key,provider_event_id)DO UPDATE SET provider_key=excluded.provider_key RETURNING id)
-INSERT INTO public.shadow_financial_journals(event_id,journal_type,native_debits,native_credits,functional_debits,functional_credits,comparison_status,comparison_detail,evidence_hash)
-SELECT id,journal_type,amount,amount,usd,usd,status,'{"fixture":true}',repeat(hash_char,64) FROM event CROSS JOIN(VALUES('receipt',1000000::numeric,1::numeric,'matched','a'),('fee',25000,0.025,'matched','b'),('allocation',975000,0.975,'matched','c'),('payout',900000,0.9,'explained_variance','d'),('suspense',75000,0.075,'suspense','e'))v(journal_type,amount,usd,status,hash_char);
+ SELECT'local_fixture','receipt-1',custody_id,asset_id,'settlement',1,1000000,'2026-08-05T12:00:00Z','in_order',repeat('a',64),'{"legacyCreatedAt":"non_settlement_evidence"}' FROM fixture ON CONFLICT(provider_key,provider_event_id)DO NOTHING;
+
+DO $$ DECLARE v record;tx bigint;event_id bigint;project_id bigint;v_user_id uuid;
+BEGIN SELECT id INTO event_id FROM public.external_financial_events WHERE provider_key='local_fixture';SELECT id INTO project_id FROM public.projects LIMIT 1;SELECT users.user_id INTO v_user_id FROM public.users LIMIT 1;
+ FOR v IN SELECT * FROM(VALUES('receipt',1000000::numeric,1::numeric,'matched','a'),('fee',25000,0.025,'matched','b'),('allocation',975000,0.975,'matched','c'),('payout',900000,0.9,'explained_variance','d'),('suspense',75000,0.075,'suspense','e'))x(journal_type,amount,usd,status,hash_char) LOOP
+  tx:=public.post_neutral_ledger_transaction(jsonb_build_object('contractVersion','ledger_post.v1','deploymentEnvironment','local','idempotencyKey','shadow:fixture:'||v.journal_type,'periodKey','local_review_2026_08','transactionType','shadow_'||v.journal_type,'evidenceHash',repeat(v.hash_char,64),'actorType','system','effectiveAt','2026-08-05T12:00:00Z','postings',jsonb_build_array(jsonb_build_object('accountKey','shadow_source_control','side','debit','assetKey','local_review_usd','custodyKey','local_review_custody','nativeAtomicAmount',v.amount::text,'functionalUsdAmount',v.usd::text,'fxUsdPerUnit','0.000001'),jsonb_build_object('accountKey','shadow_offset_control','side','credit','assetKey','local_review_usd','custodyKey','local_review_custody','nativeAtomicAmount',v.amount::text,'functionalUsdAmount',v.usd::text,'fxUsdPerUnit','0.000001'))));
+  PERFORM public.post_shadow_financial_journal(event_id,tx,v.journal_type,v.status,'{"fixture":true}',repeat(v.hash_char,64),'local');
+ END LOOP;END $$;
 
 RESET ALL;
 
