@@ -933,6 +933,50 @@ SELECT pg_catalog.setval('"public"."wallet_accounts_id_seq1"', 1, false);
 
 SELECT pg_catalog.setval('"public"."wallet_connections_id_seq"', 1, false);
 
+-- Local-only neutral ledger fixtures. These rows are provisional, production-disabled,
+-- and do not represent settlement, custody, ownership, or approved bookkeeping policy.
+INSERT INTO public.financial_assets (
+  asset_key, rail_key, symbol, atomic_scale, classification_metadata
+) VALUES (
+  'local_review_usd', 'local_fixture', 'USD', 6,
+  '{"purpose":"neutral_local_validation","approved":false}'::jsonb
+) ON CONFLICT (asset_key) DO NOTHING;
+
+INSERT INTO public.financial_custody_accounts (
+  custody_key, asset_id, provider_key, external_reference_hash, classification_metadata
+)
+SELECT 'local_review_custody', asset.id, 'local_fixture',
+  '6c5648f186d72dae56256049e97bef490e159646f57a4e17e2f82d52b34d08cd',
+  '{"purpose":"neutral_local_validation","custody_claim":false}'::jsonb
+FROM public.financial_assets asset WHERE asset.asset_key = 'local_review_usd'
+ON CONFLICT (custody_key) DO NOTHING;
+
+INSERT INTO public.financial_references (
+  reference_key, reference_type, asset_id, custody_account_id,
+  native_atomic_limit, evidence_hash
+)
+SELECT 'local_review_reference', 'local_test_fixture', asset.id, custody.id,
+  1000000::numeric(78, 0),
+  '676d71d1686e37dc1d4a5594a62480286ff376499f15e84fcdb059c157e142c1'
+FROM public.financial_assets asset
+JOIN public.financial_custody_accounts custody ON custody.asset_id = asset.id
+WHERE asset.asset_key = 'local_review_usd' AND custody.custody_key = 'local_review_custody'
+ON CONFLICT (reference_key) DO NOTHING;
+
+INSERT INTO public.ledger_accounts (
+  account_key, normal_balance, provisional_classification_key, required_dimensions
+) VALUES
+  ('neutral_source_control', 'debit', 'unclassified_control', '["project","user"]'::jsonb),
+  ('neutral_offset_control', 'credit', 'unclassified_control', '["project","user"]'::jsonb)
+ON CONFLICT (account_key) DO NOTHING;
+
+INSERT INTO public.accounting_periods (
+  period_key, starts_at, ends_at, timezone_name
+) VALUES (
+  'local_review_2026_08', '2026-08-01T07:00:00Z', '2026-09-01T07:00:00Z',
+  'America/Los_Angeles'
+) ON CONFLICT (period_key) DO NOTHING;
+
 RESET ALL;
 
 SET session_replication_role = origin;
