@@ -918,3 +918,48 @@ the review-only policy scope or enabling any production policy or value flow.
 
 - Commit and push the review fixes, reply to and resolve each addressed review thread,
   then wait for the remaining requested review and post-push CI without rerequesting.
+
+### session v19: Copilot invitation boundary follow-up
+
+- Timestamp: 2026-08-09T00:56:00-04:00
+- Agent: Codex
+- Branch: codex/118-canada-review-drafts
+- Head: a294136
+
+#### Objective
+
+Address the remaining actionable Copilot review threads on PR #146 while keeping all
+review-only invitation and sharing behavior unavailable in production.
+
+#### Actions Taken
+
+- Added the same unconditional production fail-closed runtime gate to invitation
+  inspection before payload parsing, authentication, or service-role RPC execution.
+- Tightened the forward member-sharing read model so inactive or soft-deleted subjects
+  are excluded and inactive or soft-deleted viewers cannot retrieve shared profiles.
+- Prevented zero-field invitation submission in the founder UI, deduplicated checkbox
+  updates, and added an explicit field-selection message.
+- Added focused UI/source-contract tests and executable SQL assertions for inactive
+  shared-profile subjects and viewers.
+
+#### Validation Notes
+
+- Passed: fresh local Supabase reset applying all migrations and canonical seed.
+- Passed: executable review-policy and invitation SQL suites, including inactive
+  subject/viewer denial.
+- Passed: focused one-worker Vitest, 4 files and 20 tests.
+- Passed: Node 22 `CI=1 pnpm check` with 127 files/573 tests, lint, typecheck, and
+  production build generating 162 pages.
+- Passed: `git diff --check`; local Supabase stopped afterward.
+
+#### Reflections
+
+- Read-only review endpoints require the same deployment boundary as writes because
+  policy metadata and selected profile fields are still protected review data.
+- Enforcing a non-empty field set at both the UI and command contract gives founders
+  immediate feedback without weakening the backend invariant.
+
+#### Suggested Next Steps
+
+- Commit and push this narrow follow-up, reply to and resolve all four Copilot threads,
+  then wait for post-push CI and merge under the normal non-squash policy if green.

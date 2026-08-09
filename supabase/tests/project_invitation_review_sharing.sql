@@ -109,6 +109,12 @@ DO $$ BEGIN
   IF (SELECT count(*) FROM public.list_project_member_shared_profiles(900001, '20000000-0000-4000-8000-000000000002') WHERE user_id='20000000-0000-4000-8000-000000000002' AND display_name='Member Display' AND avatar_url='member.png' AND profile_headline IS NULL) <> 1 THEN RAISE EXCEPTION 'approved-field service read model failed'; END IF;
   IF EXISTS (SELECT 1 FROM public.list_project_member_shared_profiles(900001, '20000000-0000-4000-8000-000000000003')) THEN RAISE EXCEPTION 'unrelated service read was allowed'; END IF;
 END $$;
+UPDATE public.users SET status = 'inactive' WHERE user_id = '20000000-0000-4000-8000-000000000002';
+DO $$ BEGIN
+  IF EXISTS (SELECT 1 FROM public.list_project_member_shared_profiles(900001, '20000000-0000-4000-8000-000000000001') WHERE user_id='20000000-0000-4000-8000-000000000002') THEN RAISE EXCEPTION 'inactive accepted profile remained shared'; END IF;
+  IF EXISTS (SELECT 1 FROM public.list_project_member_shared_profiles(900001, '20000000-0000-4000-8000-000000000002')) THEN RAISE EXCEPTION 'inactive viewer retained member sharing access'; END IF;
+END $$;
+UPDATE public.users SET status = 'active' WHERE user_id = '20000000-0000-4000-8000-000000000002';
 SELECT * FROM public.decline_project_invitation_review(repeat('b',64), '20000000-0000-4000-8000-000000000002', 'decline@example.test');
 SELECT * FROM public.decline_project_invitation_review(repeat('c',64), '20000000-0000-4000-8000-000000000002', 'expire@example.test');
 SELECT public.expire_project_invitations_review(900001, 'batch-expire@example.test');

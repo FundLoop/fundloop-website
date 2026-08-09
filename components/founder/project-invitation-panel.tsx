@@ -34,6 +34,10 @@ export function ProjectInvitationPanel({ projectSlug, projectName, locale }: { p
 
   async function submit(event: React.FormEvent) {
     event.preventDefault()
+    if (sharedProfileFields.length === 0) {
+      setError("Select at least one profile field to create an invitation.")
+      return
+    }
     setBusy(true)
     setError(null)
     setLink(null)
@@ -81,7 +85,8 @@ export function ProjectInvitationPanel({ projectSlug, projectName, locale }: { p
             <Input id="project-invite-email" type="email" value={email} onChange={(event) => setEmail(event.target.value)} required />
           </div>
           <fieldset className="space-y-2"><legend className="text-sm font-medium">Project-scoped profile fields shared only after acceptance</legend>
-            <div className="grid gap-2 sm:grid-cols-2">{PROJECT_INVITATION_APPROVED_PROFILE_FIELDS.map((field) => <label key={field} className="flex gap-2 text-sm"><input type="checkbox" checked={sharedProfileFields.includes(field)} onChange={(event) => setSharedProfileFields((current) => event.target.checked ? [...current, field] : current.filter((item) => item !== field))} />{field.replaceAll("_", " ")}</label>)}</div>
+            <div className="grid gap-2 sm:grid-cols-2">{PROJECT_INVITATION_APPROVED_PROFILE_FIELDS.map((field) => <label key={field} className="flex gap-2 text-sm"><input type="checkbox" checked={sharedProfileFields.includes(field)} onChange={(event) => setSharedProfileFields((current) => event.target.checked ? Array.from(new Set([...current, field])) : current.filter((item) => item !== field))} />{field.replaceAll("_", " ")}</label>)}</div>
+            {sharedProfileFields.length === 0 ? <p className="text-sm text-rose-700 dark:text-rose-200">Select at least one profile field.</p> : null}
           </fieldset>
           <div className="space-y-2">
             <Label htmlFor="project-invite-role">Project role</Label>
@@ -90,7 +95,7 @@ export function ProjectInvitationPanel({ projectSlug, projectName, locale }: { p
               <SelectContent><SelectItem value="member">Member</SelectItem><SelectItem value="admin">Admin</SelectItem></SelectContent>
             </Select>
           </div>
-          <Button type="submit" disabled={busy}>{busy ? "Creating invitation…" : "Create invitation"}</Button>
+          <Button type="submit" disabled={busy || sharedProfileFields.length === 0}>{busy ? "Creating invitation…" : "Create invitation"}</Button>
           {error ? <p role="alert" className="text-sm text-rose-700 dark:text-rose-200">{error}</p> : null}
           {link ? (
             <div className="space-y-2 rounded-2xl border border-emerald-500/30 bg-emerald-500/10 p-4" data-testid="pending-project-invitation">

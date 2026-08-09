@@ -6,6 +6,8 @@ const reviewMigration = readFileSync("supabase/migrations/20260808234500_project
 const lifecycleMigration = readFileSync("supabase/migrations/20260808235500_project_invitation_lifecycle_residue.sql", "utf8")
 const aggregateMigration = readFileSync("supabase/migrations/20260809000500_project_invitation_aggregate_provenance.sql", "utf8")
 const readBoundaryMigration = readFileSync("supabase/migrations/20260809003000_project_member_shared_profiles_edge_boundary.sql", "utf8")
+const reviewBoundaryFixMigration = readFileSync("supabase/migrations/20260809010000_review_consent_boundary_fixes.sql", "utf8")
+const inspectEdge = readFileSync("supabase/functions/project-invitation-inspect/index.ts", "utf8")
 
 describe("project invitation database boundary", () => {
   it("allows active organization Founder and Admin members to read invitation state", () => {
@@ -58,6 +60,14 @@ describe("project invitation database boundary", () => {
     expect(readBoundaryMigration).toContain("GRANT EXECUTE ON FUNCTION public.list_project_member_shared_profiles(bigint, uuid) TO service_role")
     expect(readBoundaryMigration).toContain("JOIN LATERAL")
     expect(readBoundaryMigration).toContain("LIMIT 1")
+  })
+
+  it("fails inspection closed in production and excludes inactive shared profiles", () => {
+    expect(inspectEdge).toContain('getEnv("FUNDLOOP_DEPLOYMENT_ENV") === "production"')
+    expect(inspectEdge.indexOf("if (!reviewRuntimeEnabled())")).toBeLessThan(inspectEdge.indexOf("parseJsonBody(request)"))
+    expect(reviewBoundaryFixMigration).toContain("profile.status = 'active'")
+    expect(reviewBoundaryFixMigration).toContain("profile.deleted_at IS NULL")
+    expect(reviewBoundaryFixMigration).toContain("viewer_profile.status = 'active'")
   })
 
   it("keeps the security-definer RPC and digest table behind the service role", () => {
