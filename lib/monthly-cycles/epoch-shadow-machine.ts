@@ -78,6 +78,27 @@ export function evaluateEpochTransition(input: {
   return null
 }
 
+export function deriveEpochTransitionPlan(input: {
+  stage: EpochShadowStage
+  now: Date
+  stateUpdatedAt: Date
+  periodEnd?: Date
+  stageReadyAt?: Date
+  optOutDeadline?: Date
+  payoutOpenedAt?: Date
+  carryoverComplete?: boolean
+}) {
+  const target = evaluateEpochTransition(input)
+  if (!target) return null
+  const scheduledFor = input.stage === "collecting" ? input.periodEnd
+    : input.stage === "reviewing" ? input.optOutDeadline
+      : input.stage === "payout_open" && input.payoutOpenedAt ? payoutExpiryAt(input.payoutOpenedAt)
+        : input.stage === "expired" ? input.stageReadyAt ?? input.stateUpdatedAt
+          : input.stageReadyAt
+  if (!scheduledFor) return null
+  return { target, scheduledFor }
+}
+
 export const epochTransitionGate: Record<Exclude<EpochShadowStage, "closed">, string> = {
   collecting: "collection_cutoff_reached", reconciling: "reconciliation_complete", valuing: "valuation_complete",
   fee_processing: "fee_review_complete", carryover_payouts: "carryover_payouts_reviewed", locking: "input_manifest_locked",

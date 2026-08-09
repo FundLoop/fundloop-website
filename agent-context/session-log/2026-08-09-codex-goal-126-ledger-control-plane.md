@@ -228,3 +228,43 @@ introducing value flow.
   scheduler fake-clock, and full-check evidence.
 - Leave #128 In Progress for independent revalidation, stop services, and do not start
   #129 or open a PR.
+
+### session v5: Recurring scheduler idempotency (#128)
+
+- Timestamp: 2026-08-08T22:17:19-04:00
+- Agent: Codex
+- Branch: codex/126-ledger-control-plane
+- Head: e5321295bf81
+
+#### Objective
+
+Make recurring scheduler polls reuse the same canonical attempt for an unchanged
+eligible state while retaining conflicts for genuinely changed commands.
+
+#### Actions Taken
+
+- Separated eligibility poll time from canonical transition trigger time.
+- Derived `scheduled_for` from the persisted period cutoff, stage readiness instant,
+  holiday-aware opt-out deadline, payout expiry, or carryover/state evidence time.
+- Kept the deterministic key bound to state/version/target/gate so recurring ticks
+  submit the exact same payload to the database idempotency boundary.
+- Added a real scheduler probe that executes ticks at 08:00 and 08:05 and compares the
+  complete RPC payload, key, and stable 07:00 cutoff schedule.
+
+#### Validation Notes
+
+- Passed: fresh local Supabase reset and the full executable epoch SQL suite.
+- Passed: focused Vitest with 3 files and 11 tests, including repeated-tick reuse.
+- Passed: Node 22 typecheck, lint, and full check recorded after this entry.
+- Passed: `git diff --check`. Browser evidence is N/A because this is orchestration-only.
+
+#### Reflections
+
+- Poll time answers whether a trigger is due; it must never become part of the command
+  identity once the underlying trigger instant is known.
+
+#### Suggested Next Steps
+
+- Commit and attach recurring-tick, fresh replay, SQL, and full-check evidence to #128.
+- Leave #128 In Progress for independent revalidation, stop services, and do not start
+  #129 or open a PR.

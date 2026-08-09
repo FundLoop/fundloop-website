@@ -1,6 +1,6 @@
 import type { SupabaseClient } from "@supabase/supabase-js"
 import type { Database } from "../../types/supabase.ts"
-import { emailRelativeOptOutDeadline, epochTransitionGate, evaluateEpochTransition, type EpochShadowStage } from "./epoch-shadow-machine.ts"
+import { deriveEpochTransitionPlan, emailRelativeOptOutDeadline, epochTransitionGate, type EpochShadowStage } from "./epoch-shadow-machine.ts"
 
 export async function runEpochShadowScheduler(
   client: SupabaseClient<Database>,
@@ -8,7 +8,7 @@ export async function runEpochShadowScheduler(
 ) {
   if (input.environment === "production") return { ok: false as const, error: "epoch_shadow_runtime_disabled" }
   const [{ data: states, error }, { data: calendar, error: calendarError }] = await Promise.all([
-    client.from("epoch_shadow_states").select("id,current_stage,state_version,stage_ready_at,opt_out_email_delivered_at,payout_opened_at,carryover_complete,business_calendar_region,accounting_periods(ends_at)").eq("is_paused", false),
+    client.from("epoch_shadow_states").select("id,current_stage,state_version,stage_ready_at,opt_out_email_delivered_at,payout_opened_at,carryover_complete,business_calendar_region,updated_at,accounting_periods(ends_at)").eq("is_paused", false),
     client.from("epoch_business_calendar").select("calendar_date,is_business_day,calendar_region").eq("production_enabled", false),
   ])
   if (error) return { ok: false as const, error: error.message }
@@ -18,15 +18,17 @@ export async function runEpochShadowScheduler(
     const period = Array.isArray(state.accounting_periods) ? state.accounting_periods[0] : state.accounting_periods
     const stage = state.current_stage as EpochShadowStage
     const holidays = new Set((calendar ?? []).filter((day) => day.calendar_region === state.business_calendar_region && !day.is_business_day).map((day) => day.calendar_date))
-    const target = evaluateEpochTransition({
+    const plan = deriveEpochTransitionPlan({
       stage, now: input.now,
+      stateUpdatedAt: new Date(state.updated_at),
       periodEnd: period?.ends_at ? new Date(period.ends_at) : undefined,
       stageReadyAt: state.stage_ready_at ? new Date(state.stage_ready_at) : undefined,
       optOutDeadline: state.opt_out_email_delivered_at ? emailRelativeOptOutDeadline(new Date(state.opt_out_email_delivered_at), holidays) : undefined,
       payoutOpenedAt: state.payout_opened_at ? new Date(state.payout_opened_at) : undefined,
       carryoverComplete: state.carryover_complete,
     })
-    if (!target) continue
+    if (!plan) continue
+    const { target, scheduledFor } = plan
     const gate = epochTransitionGate[stage as Exclude<EpochShadowStage, "closed">]
     const key = `epoch:${state.id}:${state.state_version}:${target}:${gate}`
     const manifest = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(key))
@@ -34,7 +36,7 @@ export async function runEpochShadowScheduler(
     const { data, error: enqueueError } = await client.rpc("enqueue_epoch_shadow_attempt", {
       p_actor_user_id: null as never, p_deployment_environment: input.environment, p_expected_stage: state.current_stage,
       p_expected_state_version: state.state_version, p_idempotency_key: key, p_input_manifest_hash: hash,
-      p_scheduled_for: input.now.toISOString(), p_shadow_state_id: state.id, p_target_stage: target, p_trigger_type: "scheduled",
+      p_scheduled_for: scheduledFor.toISOString(), p_shadow_state_id: state.id, p_target_stage: target, p_trigger_type: "scheduled",
     })
     if (enqueueError) return { ok: false as const, error: enqueueError.message }
     enqueued.push(data)
