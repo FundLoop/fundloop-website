@@ -1,5 +1,6 @@
 # Settlement-backed epoch treasury and auditable payouts
 
+Last updated: 2026-08-09
 Status: implementation architecture for Feature #118; production accounting and
 legal activation remain gated by Task #121
 Decision source: `agent-context/2026-08-08-epoch-treasury-accounting/sprint-definition.md`
@@ -467,14 +468,34 @@ short transaction.
 ### Identity and allocation
 
 - Extend attribution/user-input snapshots with project-scoped pseudonymous Cubid
-  identity, whitelist state, uniqueness score, evidence timestamp, expiry, and
-  greylist/blacklist state.
+  identity, whitelist state, locked uniqueness score, versioned locked maximum
+  score, evidence timestamp, expiry, and greylist/blacklist state.
 - The lock manifest includes only settled funding applications, approved project
   packages, fixed FX, fee assessments, carryover results, eligible identities, and
   source-preserving asset inventory.
+- Each funded project's theoretical share is equal across its eligible users. The
+  initial project claim is that share multiplied by `locked score / locked maximum
+  score`; it is not weighted by the sum of cohort scores or mutable activity points.
+- Every theoretical-share shortfall enters one global epoch redistribution pool.
+  Aggregate initial claims are raised lowest-current-total first through
+  deterministic water-filling, with stable ties and a final cap of three times the
+  user's largest single-project score-adjusted initial claim.
+- Pool source lots and top-up fills preserve project, rail, asset, native quantity,
+  FX snapshot, and functional-USD provenance. Cap-exhausted residue returns or
+  carries forward through those originating lots.
+- Canonical evidence uses Project A `$300` with scores `5/10/15` of `20`, producing
+  `$25/$50/$75` initial claims and `$150` of pool, plus Project B `$1,000` with 100
+  users at average `10/20`, producing `$500` initial claims and `$500` of pool. The
+  three A users also use B, so the combined `$650` goes first to the 97 B-only users
+  with the lowest aggregate initial claims.
+- Redistribution principal and residue are funded epoch value, never platform fee,
+  revenue, a treasury sweep, a user payable, or newly created value.
 - Allocation results remain versioned artifacts and projections. The immutable
   conditional-award memorandum is the canonical pre-processing award record; it is
   not a user-owned asset or general-ledger obligation.
+- Project/public read models must not expose user-level cross-project membership;
+  production calculation and posting remain fail-closed until the named privacy,
+  accounting, custody, and launch gates pass.
 
 ### Withdrawal and payout
 
@@ -841,7 +862,7 @@ boundary while the production value path remains disabled behind its named gate.
 | Base custody | Separate platform and epoch Safe accounts; new versioned intake or explicit reconciled split; old single-treasury deployment is never reinterpreted | Tasks #132 and #140 approve deployments | Base intake/payout activation |
 | Limited signer | $20 per payout, $500 per rolling 24-hour window, $5,000 per epoch; token/recipient allowlists, nonce, expiry, pause, and independent Safe enforcement | Task #140 selects Safe owner threshold, audited module deployment, paymaster budget, and alert thresholds | Automated Base payouts |
 | FX and depeg | Immutable monthly rate, primary/fallback/manual evidence, reasonability review, and ±0.3% stablecoin pause | Task #135 selects source hierarchy and recovery/reactivation runbook | Valuing and later stages |
-| Cubid evidence | Valid and whitelisted IDs only; project pseudonyms; score-proportional allocation; grey/black holds | Task #136 selects numeric cache TTL and authorized exception workflow | Allocation lock |
+| Cubid evidence | Valid and whitelisted IDs only; project pseudonyms; equal theoretical project share discounted by locked score/max, then capped lowest-earner-first global redistribution; grey/black holds | Task #136 selects numeric cache TTL and authorized exception workflow | Allocation lock |
 | Project review deadline | Midnight Pacific at the end of the next FundLoop business day after accepted reconciliation-email delivery | Tasks #128/#133 select provider event mapping and versioned holiday rows | Project-package lock |
 | Risk reserve | Reversals never silently reduce unrelated awards; losses and receivables are explicit | Tasks #121/#135 set reserve target, chargeback recovery, and bad-debt policy | Controlled production value |
 | Rounding and queues | Exact atomic native quantities, exact numeric USD, deterministic sequence, explicit dust, and no negative inventory | Task #139 sets per-asset dust and queued-request terminal policy | Payout opening |
@@ -917,9 +938,10 @@ partial indexes cover unresolved events and open work queues.
 
 ### `conditional_award.v1`
 
-- source allocation/epoch, user, locked USD amount, project attribution, eligible
-  rail/asset inventory, expiry, Cubid evidence, hold state, and immutable result
-  hash;
+- source allocation/epoch, user, theoretical project shares, locked score/max,
+  initial claims, aggregate initial claim, largest-single-project baseline, cap,
+  redistribution top-up, final locked USD amount, project/source fills, eligible
+  rail/asset inventory, expiry, Cubid evidence, hold state, and immutable result hash;
 - available, reserved, queued, processed, expired, and reversed memorandum amounts
   whose conservation equals the approved award; and
 - no ownership-transfer or general-ledger-payable semantics before the approved

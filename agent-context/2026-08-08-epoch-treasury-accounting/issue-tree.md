@@ -1,6 +1,7 @@
 # Preliminary issue tree: settlement-backed epoch treasury and auditable payouts
 
 Status: published and vetted; implementation proceeds through native blockers
+Last updated: 2026-08-09
 Repository: `FundLoop/fundloop-website`
 Project: [FundLoop Project](https://github.com/orgs/FundLoop/projects/1)
 Proposed priority: High
@@ -638,14 +639,31 @@ Depends on: Goal 2
 
 ### Objective
 
-Execute monthly valuation, fees, carryover, locking, deterministic allocation, and
-user-liability posting entirely from reconciled custody-backed inputs.
+Execute monthly valuation, fees, carryover, locking, deterministic Cubid-score
+discounting, global low-earner redistribution, and provisional award posting
+entirely from reconciled custody-backed inputs.
+
+Goal invariants:
+
+- equal theoretical funded project share per eligible user;
+- initial project claim equals theoretical share multiplied by locked Cubid score
+  divided by the versioned locked maximum score;
+- every shortfall enters one global epoch redistribution pool;
+- aggregate initial claims are raised lowest-current-total first through stable
+  deterministic water-filling;
+- baseline is the largest single-project score-adjusted initial claim and final
+  allocation is capped at `3 ×` baseline;
+- top-ups and returned/carryover residue retain project, rail, asset, native, FX,
+  and functional-USD provenance; and
+- redistribution is funded principal, not fee, revenue, treasury sweep, payable,
+  or production value flow.
 
 ### Task 3.1: Implement monthly FX, fee, expiry, and carryover accounting
 
 Expected surfaces:
 
-- FX observation/snapshot, fee assessment, expiry, and carryover migrations;
+- FX observation/snapshot, fee assessment, expiry, carryover, and
+  redistribution-source migrations;
 - `lib/monthly-cycles/`, `lib/accounting/`, scheduled Edge Functions, and operator
   review UI;
 - monthly valuation, fee journal, expiry, carryover, and variance tests.
@@ -658,7 +676,11 @@ Scope:
 - 1% default project fees with rail clamps, 2.5% base fee per rail, and treasury
   sweeps;
 - three-month expiry, reserved-claim protection, old-epoch harvest, and inventory
-  exchange for queued payouts.
+  exchange for queued payouts;
+- preserve every post-fee distributable source by project, rail, asset, native
+  quantity, FX snapshot, and functional USD; and
+- keep redistribution-pool principal and cap-exhausted residue source-linked and
+  outside fee, revenue, and payable classifications.
 
 Validation:
 
@@ -667,8 +689,8 @@ Validation:
 - depeg, missing-source, manual-rate, FX gain/loss, expiry, and conservation tests;
 - prior epoch closes only after successful harvest.
 
-Stop condition: fee-processed and carryover-complete assets are provably backed and
-ready to lock.
+Stop condition: fee-processed and carryover-complete assets are provably backed,
+provenance-complete, and ready to lock without calculating claims or moving value.
 
 ### Task 3.2: Lock settled pools and allocate by verified uniqueness
 
@@ -686,17 +708,30 @@ Scope:
 - lock only funding applications and journal-backed available epoch balances;
 - eliminate declared contribution amount as canonical pool input;
 - include approved project packages, fixed FX, fees, carryover, Cubid whitelist, and
-  uniqueness scores in the manifest;
-- proportional uniqueness weighting within existing project/source rules;
-- preserve rail/asset/project provenance and payout eligibility;
+  locked score/max evidence in the manifest;
+- divide each funded project pool equally across eligible users;
+- calculate `initial claim = theoretical share × locked score / locked max score`
+  and send the shortfall into one global epoch pool;
+- aggregate user initial claims, define baseline as the largest single-project
+  initial claim, and water-fill lowest current totals first under the `3 ×` cap;
+- use aggregate initial claim, baseline, then stable user ID for ties and assign
+  minor-unit rounding deterministically;
+- preserve project/rail/asset/native/FX/USD provenance for initial claims, top-ups,
+  returned residue, and payout eligibility;
 - deterministic rerun and material-change comparison.
 
 Validation:
 
 - no-receipt/no-allocation invariant;
-- asset/native/USD conservation and source attribution;
+- invalid score/max, cap, asset/native/USD conservation, privacy, and source
+  attribution;
 - repeat run equivalence;
-- old and new fixture comparison with intentional differences documented.
+- canonical A+B fixture: A `$300`, `5/10/15` of `20` gives `$25/$50/$75`
+  initial and `$150` pool; B `$1,000`, 100 users averaging `10/20` gives `$500`
+  initial and `$500` pool; because the three A users also use B, the combined
+  `$650` goes first to the 97 B-only lowest earners; and
+- old point-proportional results are explicitly superseded and intentional
+  differences documented.
 
 Stop condition: reviewed allocation is reproducible but payouts remain closed.
 
@@ -714,23 +749,33 @@ Expected surfaces:
 Scope:
 
 - one admin approves exact lock/result hashes;
-- post approved user award records and asset eligibility from approved results,
+- post approved provisional award-control records and asset eligibility from
+  approved results,
   without recognizing user ownership before payout is processed;
-- publish exact approved project totals/counts without user identifiers;
-- generate trial balance, custody, project funds, user payable, fee, FX, carryover,
-  allocation, provisional award, and exception artifacts under one root hash;
+- publish exact approved project totals/counts without user identifiers or
+  cross-project membership inference;
+- persist theoretical shares, score/max, initial claims, pool contributions,
+  top-ups, caps, final allocations, and source-linked residue;
+- generate trial balance, custody, project funds, fee, FX, carryover, initial claim,
+  redistribution pool, top-up, returned-residue, provisional award, and exception
+  artifacts under one root hash, without payable classification;
 - align payout thresholds and verify inventory/routes/paymaster before opening.
 
 Validation:
 
 - award-control balances equal approved allocations without creating user-owned
   liabilities before payout processing;
+- initial claims plus top-ups plus returned residue reconcile to funded sources and
+  pool contributions equal top-ups plus residue;
 - report totals reconcile to journal and artifacts reproduce;
 - role-scoped privacy tests;
 - payout window cannot open before every hard gate passes.
 
 Stop condition: the epoch is `payout_readying` or `payout_open` with a valid close
 package and no external payout yet required.
+
+Production allocation, award posting, provider calls, and real value flow remain
+fail-closed throughout Goal 3.
 
 ## Goal 4: Execute auditable multi-rail payouts
 
