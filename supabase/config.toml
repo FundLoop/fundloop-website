@@ -16,6 +16,12 @@ verify_jwt = false
 entrypoint = "./functions/shadow-financial-event-ingest/index.ts"
 import_map = "./functions/deno.json"
 
+[functions.shadow-financial-journal-post]
+enabled = true
+verify_jwt = false
+entrypoint = "./functions/shadow-financial-journal-post/index.ts"
+import_map = "./functions/deno.json"
+
 [api]
 enabled = true
 # Port to use for the API URL.

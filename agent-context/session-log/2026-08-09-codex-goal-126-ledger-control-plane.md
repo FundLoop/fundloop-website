@@ -263,6 +263,37 @@ calls, canonical cutover, payables, transfers, or production value flow.
 - Commit and attach evidence to #129; leave it In Progress for independent validation.
 - Stop services, do not change Goal #126, and do not open a PR.
 
+### session v7: Shadow reconciliation integrity fixes (#129)
+
+- Timestamp: 2026-08-08T22:35:00-04:00
+- Agent: Codex
+- Branch: codex/126-ledger-control-plane
+- Head: 738bac3
+
+#### Objective
+
+Close #129 validator findings for immutability, evidence equivalence, runtime scope,
+reference alignment, derived variance, fixtures, posting commands, and observability.
+
+#### Actions Taken
+
+- Added append-only mutation triggers and full retained-evidence dedupe comparison.
+- Restricted ingestion/application/reconciliation/posting to local, dev, and test;
+  verified funding event/reference custody and asset alignment.
+- Added database-derived tolerance classification, conserved service-only shadow
+  posting RPC/Edge command, persistent five-journal fixtures, and expanded read model.
+- Extended adversarial SQL, focused tests, generated types, config, and contracts.
+
+#### Validation Notes
+
+- Passed fresh local replay and executable SQL for update/delete denial, evidence
+  conflicts, runtime denial, application bounds, derived variance, conservation, RLS.
+- Focused/full Node 22 validation follows this entry. UI unchanged; browser N/A.
+
+#### Suggested Next Steps
+
+- Commit and attach evidence; leave #129 In Progress for independent revalidation.
+
 ### session v5: Recurring scheduler idempotency (#128)
 
 - Timestamp: 2026-08-08T22:17:19-04:00

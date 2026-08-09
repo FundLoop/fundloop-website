@@ -986,6 +986,12 @@ LEFT JOIN public.monthly_cycles cycle ON cycle.period_start = period.starts_at::
 WHERE period.period_key = 'local_review_2026_08'
 ON CONFLICT (accounting_period_id) DO NOTHING;
 
+WITH fixture AS(SELECT c.id custody_id,c.asset_id FROM public.financial_custody_accounts c WHERE custody_key='local_review_custody'),event AS(
+ INSERT INTO public.external_financial_events(provider_key,provider_event_id,custody_account_id,asset_id,event_type,provider_sequence,settled_native_amount,occurred_at,ordering_status,evidence_hash,legacy_timestamp_evidence)
+ SELECT'local_fixture','receipt-1',custody_id,asset_id,'settlement',1,1000000,'2026-08-05T12:00:00Z','in_order',repeat('a',64),'{"legacyCreatedAt":"non_settlement_evidence"}' FROM fixture ON CONFLICT(provider_key,provider_event_id)DO UPDATE SET provider_key=excluded.provider_key RETURNING id)
+INSERT INTO public.shadow_financial_journals(event_id,journal_type,native_debits,native_credits,functional_debits,functional_credits,comparison_status,comparison_detail,evidence_hash)
+SELECT id,journal_type,amount,amount,usd,usd,status,'{"fixture":true}',repeat(hash_char,64) FROM event CROSS JOIN(VALUES('receipt',1000000::numeric,1::numeric,'matched','a'),('fee',25000,0.025,'matched','b'),('allocation',975000,0.975,'matched','c'),('payout',900000,0.9,'explained_variance','d'),('suspense',75000,0.075,'suspense','e'))v(journal_type,amount,usd,status,hash_char);
+
 RESET ALL;
 
 SET session_replication_role = origin;

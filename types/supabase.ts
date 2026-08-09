@@ -6176,8 +6176,10 @@ export type Database = {
       shadow_financial_reconciliation_observability: {
         Row: {
           applied_native_amount: number | null
+          close_package_status: string | null
           event_id: number | null
           event_type: string | null
+          journal_count: number | null
           legacy_timestamp_evidence: Json | null
           observed_at: string | null
           occurred_at: string | null
@@ -6185,7 +6187,10 @@ export type Database = {
           provider_event_id: string | null
           provider_key: string | null
           settled_native_amount: number | null
+          suspense_count: number | null
           unmatched_native_amount: number | null
+          variance_classification: string | null
+          variance_native_amount: number | null
         }
         Relationships: []
       }
@@ -6442,6 +6447,19 @@ export type Database = {
         Args: { p_command: Json }
         Returns: number
       }
+      post_shadow_financial_journal: {
+        Args: {
+          p_comparison_status: string
+          p_deployment_environment: string
+          p_detail: Json
+          p_event_id: number
+          p_evidence_hash: string
+          p_functional_amount: number
+          p_journal_type: string
+          p_native_amount: number
+        }
+        Returns: number
+      }
       publish_project_onboarding_draft_atomic: {
         Args: {
           p_billing_email: string
@@ -6463,6 +6481,19 @@ export type Database = {
           project_id: number
           project_slug: string
         }[]
+      }
+      record_custody_reconciliation: {
+        Args: {
+          p_asset_id: number
+          p_custody_account_id: number
+          p_deployment_environment: string
+          p_evidence_hash: string
+          p_observed_at: string
+          p_provider_native: number
+          p_shadow_native: number
+          p_tolerance: number
+        }
+        Returns: number
       }
       record_epoch_stage_override: {
         Args: {
