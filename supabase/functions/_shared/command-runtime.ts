@@ -11,11 +11,11 @@ function getDenoRuntime() {
   return typeof globalThis === "object" && globalThis && "Deno" in globalThis ? globalThis.Deno : undefined
 }
 
-export function getEnv(name) {
+export function getEnv(name: string): string | undefined {
   return getDenoRuntime()?.env?.get?.(name)
 }
 
-function getFirstConfiguredEnv(names) {
+function getFirstConfiguredEnv(names: string[]) {
   for (const name of names) {
     const value = getEnv(name)
     if (value && value.trim().length > 0) {
@@ -26,7 +26,7 @@ function getFirstConfiguredEnv(names) {
   return undefined
 }
 
-export function json(body, init = {}) {
+export function json(body: unknown, init: ResponseInit = {}) {
   return new Response(JSON.stringify(body), {
     ...init,
     headers: {
@@ -36,14 +36,14 @@ export function json(body, init = {}) {
   })
 }
 
-export function serve(handler) {
+export function serve(handler: (request: Request) => Response | Promise<Response>) {
   const denoRuntime = getDenoRuntime()
   if (denoRuntime?.serve) {
     denoRuntime.serve(handler)
   }
 }
 
-export function createFunctionClients(request) {
+export function createFunctionClients(request: Request): any {
   const supabaseUrl = getFirstConfiguredEnv(["NEXT_PUBLIC_SUPABASE_URL", "SUPABASE_URL"])
   const anonKey = getFirstConfiguredEnv(["NEXT_PUBLIC_SUPABASE_ANON_KEY", "SUPABASE_ANON_KEY"])
   const serviceRoleKey = getEnv("SUPABASE_SERVICE_ROLE_KEY")
@@ -79,7 +79,7 @@ export function createFunctionClients(request) {
   }
 }
 
-export async function authenticateRequest(request) {
+export async function authenticateRequest(request: Request): Promise<any> {
   const clients = createFunctionClients(request)
   if (!clients.ok) {
     return clients
@@ -110,9 +110,9 @@ export async function authenticateRequest(request) {
 }
 
 export async function authenticateRequestOrInternalSecret(
-  request,
+  request: Request,
   options = { secretEnvName: "FUNDLOOP_PAYMENTS_CRON_SECRET", secretHeaderName: "x-fundloop-cron-secret" },
-) {
+): Promise<any> {
   const clients = createFunctionClients(request)
   if (!clients.ok) {
     return clients
@@ -170,7 +170,7 @@ export async function authenticateRequestOrInternalSecret(
   }
 }
 
-export async function parseJsonBody(request) {
+export async function parseJsonBody(request: Request): Promise<{ok:boolean;body?:unknown;error?:string}> {
   try {
     return {
       ok: true,

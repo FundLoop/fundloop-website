@@ -258,6 +258,30 @@ The system records realized and unrealized FX separately with asset, rail, epoch
 and cause dimensions. User native payout quantity remains based on the originating
 epoch's locked rate even if current market value differs.
 
+### Task #135 review implementation
+
+The review-only implementation records append-only ranked FX observations and one
+posted snapshot per cycle/asset. Primary observations require rank 1; fallback
+observations require a lower rank; a manual rate is accepted only when no fresh,
+eligible configured observation remains. USD and supported stablecoins outside
+`0.997–1.003` are recorded as `paused_depeg`, never as posted valuation inputs.
+Pacific cycle-boundary helpers preserve the actual `America/Los_Angeles` DST
+offset. Production is denied independently by Edge runtime and database controls.
+
+Fee processing is source-by-source and exact. A default 1% project fee is bounded
+by the selected versioned policy, is set to zero when the source proves it was
+already assessed, and precedes the 2.5% base fee. The invariant is stored on every
+lot: `gross = project fee + base fee + distributable`. No provider sweep or custody
+mutation occurs in this task; the retained asset/custody dimensions are the
+reconciliation evidence for later approved posting and transfer work.
+
+Three-cycle expiry is represented by a linked source-lot event. Harvest is rejected
+while any exact amount is reserved and succeeds only into a later cycle than the
+configured expiry cycle. The successor remains linked to the original package,
+source, rail, asset, custody, native amount, FX snapshot, and evidence. Neither
+carryover nor returned redistribution residue changes the provisional funded epoch
+principal classification or creates a payable/revenue record.
+
 ## 8. Multi-currency chart of accounts
 
 The chart is stable and relatively coarse by economic purpose. Asset accounts are

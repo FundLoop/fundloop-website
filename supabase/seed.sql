@@ -977,6 +977,14 @@ JOIN public.financial_custody_accounts custody ON custody.asset_id=asset.id
 WHERE asset.asset_key='stripe_sandbox_usd' AND custody.custody_key='stripe_sandbox_usd_clearing'
 ON CONFLICT(currency_code)DO NOTHING;
 
+INSERT INTO public.epoch_asset_custody_routes(
+  source_kind,asset_code,financial_asset_id,custody_account_id,evidence_hash
+)
+SELECT 'stripe_bank_transfer',route.currency_code,route.asset_id,route.custody_account_id,route.evidence_hash
+FROM public.stripe_bank_transfer_custody_routes route
+WHERE route.sandbox_enabled AND NOT route.production_enabled
+ON CONFLICT(source_kind,asset_code)DO NOTHING;
+
 INSERT INTO public.financial_references (
   reference_key, reference_type, asset_id, custody_account_id,
   native_atomic_limit, evidence_hash

@@ -46,6 +46,18 @@ verify_jwt = false
 entrypoint = "./functions/epoch-project-package-workflow/index.ts"
 import_map = "./functions/deno.json"
 
+[functions.epoch-financial-prep]
+enabled = true
+verify_jwt = false
+entrypoint = "./functions/epoch-financial-prep/index.ts"
+import_map = "./functions/deno.json"
+
+[functions.epoch-financial-prep-scheduler]
+enabled = true
+verify_jwt = false
+entrypoint = "./functions/epoch-financial-prep-scheduler/index.ts"
+import_map = "./functions/deno.json"
+
 [api]
 enabled = true
 # Port to use for the API URL.

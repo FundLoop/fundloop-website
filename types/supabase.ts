@@ -690,6 +690,61 @@ export type Database = {
         }
         Relationships: []
       }
+      epoch_asset_custody_routes: {
+        Row: {
+          asset_code: string
+          created_at: string
+          custody_account_id: number
+          evidence_hash: string
+          financial_asset_id: number
+          id: number
+          production_enabled: boolean
+          source_kind: string
+        }
+        Insert: {
+          asset_code: string
+          created_at?: string
+          custody_account_id: number
+          evidence_hash: string
+          financial_asset_id: number
+          id?: never
+          production_enabled?: boolean
+          source_kind: string
+        }
+        Update: {
+          asset_code?: string
+          created_at?: string
+          custody_account_id?: number
+          evidence_hash?: string
+          financial_asset_id?: number
+          id?: never
+          production_enabled?: boolean
+          source_kind?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "epoch_asset_custody_pair"
+            columns: ["financial_asset_id", "custody_account_id"]
+            isOneToOne: false
+            referencedRelation: "financial_custody_accounts"
+            referencedColumns: ["asset_id", "id"]
+          },
+          {
+            foreignKeyName: "epoch_asset_custody_routes_custody_account_id_fkey"
+            columns: ["custody_account_id"]
+            isOneToOne: false
+            referencedRelation: "financial_custody_accounts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "epoch_asset_custody_routes_financial_asset_id_fkey"
+            columns: ["financial_asset_id"]
+            isOneToOne: false
+            referencedRelation: "financial_assets"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       epoch_business_calendar: {
         Row: {
           calendar_date: string
@@ -742,6 +797,253 @@ export type Database = {
           timezone_name?: string
         }
         Relationships: []
+      }
+      epoch_fee_policies: {
+        Row: {
+          base_fee_bps: number
+          effective_from: string
+          effective_until: string | null
+          evidence_hash: string
+          id: number
+          policy_key: string
+          production_enabled: boolean
+          project_fee_default_bps: number
+          project_fee_max_bps: number
+          project_fee_min_bps: number
+          rail_key: string | null
+          version: number
+        }
+        Insert: {
+          base_fee_bps?: number
+          effective_from: string
+          effective_until?: string | null
+          evidence_hash: string
+          id?: never
+          policy_key: string
+          production_enabled?: boolean
+          project_fee_default_bps?: number
+          project_fee_max_bps?: number
+          project_fee_min_bps?: number
+          rail_key?: string | null
+          version: number
+        }
+        Update: {
+          base_fee_bps?: number
+          effective_from?: string
+          effective_until?: string | null
+          evidence_hash?: string
+          id?: never
+          policy_key?: string
+          production_enabled?: boolean
+          project_fee_default_bps?: number
+          project_fee_max_bps?: number
+          project_fee_min_bps?: number
+          rail_key?: string | null
+          version?: number
+        }
+        Relationships: []
+      }
+      epoch_financial_prep_runtime_controls: {
+        Row: {
+          deployment_environment: string
+          prep_enabled: boolean
+          production_value_flow_enabled: boolean
+          updated_at: string
+        }
+        Insert: {
+          deployment_environment: string
+          prep_enabled?: boolean
+          production_value_flow_enabled?: boolean
+          updated_at?: string
+        }
+        Update: {
+          deployment_environment?: string
+          prep_enabled?: boolean
+          production_value_flow_enabled?: boolean
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "epoch_financial_prep_runtime_contro_deployment_environment_fkey"
+            columns: ["deployment_environment"]
+            isOneToOne: true
+            referencedRelation: "financial_runtime_controls"
+            referencedColumns: ["deployment_environment"]
+          },
+        ]
+      }
+      epoch_fx_observations: {
+        Row: {
+          actor_user_id: string | null
+          created_at: string
+          deployment_environment: string
+          evidence_hash: string
+          financial_asset_id: number
+          freshness_expires_at: string
+          id: number
+          monthly_cycle_id: number
+          observed_at: string
+          production_enabled: boolean
+          rate_usd_per_unit: number
+          reasonability_status: string
+          source_key: string
+          source_rank: number
+        }
+        Insert: {
+          actor_user_id?: string | null
+          created_at?: string
+          deployment_environment: string
+          evidence_hash: string
+          financial_asset_id: number
+          freshness_expires_at: string
+          id?: never
+          monthly_cycle_id: number
+          observed_at: string
+          production_enabled?: boolean
+          rate_usd_per_unit: number
+          reasonability_status: string
+          source_key: string
+          source_rank: number
+        }
+        Update: {
+          actor_user_id?: string | null
+          created_at?: string
+          deployment_environment?: string
+          evidence_hash?: string
+          financial_asset_id?: number
+          freshness_expires_at?: string
+          id?: never
+          monthly_cycle_id?: number
+          observed_at?: string
+          production_enabled?: boolean
+          rate_usd_per_unit?: number
+          reasonability_status?: string
+          source_key?: string
+          source_rank?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "epoch_fx_observations_actor_user_id_fkey"
+            columns: ["actor_user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "epoch_fx_observations_deployment_environment_fkey"
+            columns: ["deployment_environment"]
+            isOneToOne: false
+            referencedRelation: "epoch_financial_prep_runtime_controls"
+            referencedColumns: ["deployment_environment"]
+          },
+          {
+            foreignKeyName: "epoch_fx_observations_financial_asset_id_fkey"
+            columns: ["financial_asset_id"]
+            isOneToOne: false
+            referencedRelation: "financial_assets"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "epoch_fx_observations_monthly_cycle_id_fkey"
+            columns: ["monthly_cycle_id"]
+            isOneToOne: false
+            referencedRelation: "monthly_cycles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      epoch_fx_snapshots: {
+        Row: {
+          created_at: string
+          deployment_environment: string
+          evidence_hash: string
+          financial_asset_id: number
+          id: number
+          method: string
+          monthly_cycle_id: number
+          posted_at: string | null
+          preanalysis: Json
+          production_enabled: boolean
+          rate_usd_per_unit: number
+          reviewed_by_user_id: string
+          selected_observation_id: number | null
+          stablecoin_peg_status: string
+          status: string
+          version: number
+        }
+        Insert: {
+          created_at?: string
+          deployment_environment: string
+          evidence_hash: string
+          financial_asset_id: number
+          id?: never
+          method: string
+          monthly_cycle_id: number
+          posted_at?: string | null
+          preanalysis: Json
+          production_enabled?: boolean
+          rate_usd_per_unit: number
+          reviewed_by_user_id: string
+          selected_observation_id?: number | null
+          stablecoin_peg_status: string
+          status: string
+          version: number
+        }
+        Update: {
+          created_at?: string
+          deployment_environment?: string
+          evidence_hash?: string
+          financial_asset_id?: number
+          id?: never
+          method?: string
+          monthly_cycle_id?: number
+          posted_at?: string | null
+          preanalysis?: Json
+          production_enabled?: boolean
+          rate_usd_per_unit?: number
+          reviewed_by_user_id?: string
+          selected_observation_id?: number | null
+          stablecoin_peg_status?: string
+          status?: string
+          version?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "epoch_fx_snapshots_deployment_environment_fkey"
+            columns: ["deployment_environment"]
+            isOneToOne: false
+            referencedRelation: "epoch_financial_prep_runtime_controls"
+            referencedColumns: ["deployment_environment"]
+          },
+          {
+            foreignKeyName: "epoch_fx_snapshots_financial_asset_id_fkey"
+            columns: ["financial_asset_id"]
+            isOneToOne: false
+            referencedRelation: "financial_assets"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "epoch_fx_snapshots_monthly_cycle_id_fkey"
+            columns: ["monthly_cycle_id"]
+            isOneToOne: false
+            referencedRelation: "monthly_cycles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "epoch_fx_snapshots_reviewed_by_user_id_fkey"
+            columns: ["reviewed_by_user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "epoch_fx_snapshots_selected_observation_id_fkey"
+            columns: ["selected_observation_id"]
+            isOneToOne: false
+            referencedRelation: "epoch_fx_observations"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       epoch_project_package_cohort: {
         Row: {
@@ -1471,6 +1773,78 @@ export type Database = {
           },
         ]
       }
+      epoch_source_lot_events: {
+        Row: {
+          actor_user_id: string | null
+          created_at: string
+          event_type: string
+          evidence_hash: string
+          exact_usd_amount: number
+          id: number
+          production_enabled: boolean
+          source_lot_id: number
+          successor_source_lot_id: number | null
+        }
+        Insert: {
+          actor_user_id?: string | null
+          created_at?: string
+          event_type: string
+          evidence_hash: string
+          exact_usd_amount: number
+          id?: never
+          production_enabled?: boolean
+          source_lot_id: number
+          successor_source_lot_id?: number | null
+        }
+        Update: {
+          actor_user_id?: string | null
+          created_at?: string
+          event_type?: string
+          evidence_hash?: string
+          exact_usd_amount?: number
+          id?: never
+          production_enabled?: boolean
+          source_lot_id?: number
+          successor_source_lot_id?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "epoch_source_lot_events_actor_user_id_fkey"
+            columns: ["actor_user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "epoch_source_lot_events_source_lot_id_fkey"
+            columns: ["source_lot_id"]
+            isOneToOne: false
+            referencedRelation: "epoch_funded_allocation_lock_candidates"
+            referencedColumns: ["source_lot_id"]
+          },
+          {
+            foreignKeyName: "epoch_source_lot_events_source_lot_id_fkey"
+            columns: ["source_lot_id"]
+            isOneToOne: false
+            referencedRelation: "epoch_valuation_source_lots"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "epoch_source_lot_events_successor_source_lot_id_fkey"
+            columns: ["successor_source_lot_id"]
+            isOneToOne: false
+            referencedRelation: "epoch_funded_allocation_lock_candidates"
+            referencedColumns: ["source_lot_id"]
+          },
+          {
+            foreignKeyName: "epoch_source_lot_events_successor_source_lot_id_fkey"
+            columns: ["successor_source_lot_id"]
+            isOneToOne: false
+            referencedRelation: "epoch_valuation_source_lots"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       epoch_stage_artifacts: {
         Row: {
           artifact_hash: string
@@ -1760,6 +2134,240 @@ export type Database = {
             columns: ["shadow_state_id"]
             isOneToOne: false
             referencedRelation: "epoch_shadow_states"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      epoch_valuation_source_lots: {
+        Row: {
+          base_fee_bps: number
+          base_fee_exact_usd: number
+          canonical_minor_unit_scale: number
+          classification_status: string
+          created_at: string
+          custody_account_id: number
+          deployment_environment: string
+          deterministic_source_order: number
+          distributable_exact_usd: number
+          evidence_hash: string
+          expires_after_cycle_id: number | null
+          fee_ledger_transaction_id: number
+          fee_policy_id: number
+          financial_asset_id: number
+          fx_difference_exact_usd: number
+          fx_snapshot_id: number
+          gross_exact_usd: number
+          id: number
+          monthly_cycle_id: number
+          native_atomic_amount: number
+          origin_source_lot_id: number | null
+          package_id: number
+          package_source_id: number | null
+          production_enabled: boolean
+          project_fee_assessed_once: boolean
+          project_fee_bps: number
+          project_fee_exact_usd: number
+          project_id: number
+          rail_key: string
+          reserved_exact_usd: number
+          source_kind: string
+          source_lot_key: string
+          source_position: number
+          source_preliminary_exact_usd: number
+          state: string
+        }
+        Insert: {
+          base_fee_bps: number
+          base_fee_exact_usd: number
+          canonical_minor_unit_scale?: number
+          classification_status?: string
+          created_at?: string
+          custody_account_id: number
+          deployment_environment: string
+          deterministic_source_order: number
+          distributable_exact_usd: number
+          evidence_hash: string
+          expires_after_cycle_id?: number | null
+          fee_ledger_transaction_id: number
+          fee_policy_id: number
+          financial_asset_id: number
+          fx_difference_exact_usd: number
+          fx_snapshot_id: number
+          gross_exact_usd: number
+          id?: never
+          monthly_cycle_id: number
+          native_atomic_amount: number
+          origin_source_lot_id?: number | null
+          package_id: number
+          package_source_id?: number | null
+          production_enabled?: boolean
+          project_fee_assessed_once: boolean
+          project_fee_bps: number
+          project_fee_exact_usd: number
+          project_id: number
+          rail_key: string
+          reserved_exact_usd?: number
+          source_kind: string
+          source_lot_key: string
+          source_position: number
+          source_preliminary_exact_usd: number
+          state?: string
+        }
+        Update: {
+          base_fee_bps?: number
+          base_fee_exact_usd?: number
+          canonical_minor_unit_scale?: number
+          classification_status?: string
+          created_at?: string
+          custody_account_id?: number
+          deployment_environment?: string
+          deterministic_source_order?: number
+          distributable_exact_usd?: number
+          evidence_hash?: string
+          expires_after_cycle_id?: number | null
+          fee_ledger_transaction_id?: number
+          fee_policy_id?: number
+          financial_asset_id?: number
+          fx_difference_exact_usd?: number
+          fx_snapshot_id?: number
+          gross_exact_usd?: number
+          id?: never
+          monthly_cycle_id?: number
+          native_atomic_amount?: number
+          origin_source_lot_id?: number | null
+          package_id?: number
+          package_source_id?: number | null
+          production_enabled?: boolean
+          project_fee_assessed_once?: boolean
+          project_fee_bps?: number
+          project_fee_exact_usd?: number
+          project_id?: number
+          rail_key?: string
+          reserved_exact_usd?: number
+          source_kind?: string
+          source_lot_key?: string
+          source_position?: number
+          source_preliminary_exact_usd?: number
+          state?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "epoch_source_lot_pair"
+            columns: ["financial_asset_id", "custody_account_id"]
+            isOneToOne: false
+            referencedRelation: "financial_custody_accounts"
+            referencedColumns: ["asset_id", "id"]
+          },
+          {
+            foreignKeyName: "epoch_valuation_source_lots_custody_account_id_fkey"
+            columns: ["custody_account_id"]
+            isOneToOne: false
+            referencedRelation: "financial_custody_accounts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "epoch_valuation_source_lots_deployment_environment_fkey"
+            columns: ["deployment_environment"]
+            isOneToOne: false
+            referencedRelation: "epoch_financial_prep_runtime_controls"
+            referencedColumns: ["deployment_environment"]
+          },
+          {
+            foreignKeyName: "epoch_valuation_source_lots_expires_after_cycle_id_fkey"
+            columns: ["expires_after_cycle_id"]
+            isOneToOne: false
+            referencedRelation: "monthly_cycles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "epoch_valuation_source_lots_fee_ledger_transaction_id_fkey"
+            columns: ["fee_ledger_transaction_id"]
+            isOneToOne: false
+            referencedRelation: "ledger_transactions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "epoch_valuation_source_lots_fee_ledger_transaction_id_fkey"
+            columns: ["fee_ledger_transaction_id"]
+            isOneToOne: false
+            referencedRelation: "shadow_ledger_trial_balance"
+            referencedColumns: ["ledger_transaction_id"]
+          },
+          {
+            foreignKeyName: "epoch_valuation_source_lots_fee_policy_id_fkey"
+            columns: ["fee_policy_id"]
+            isOneToOne: false
+            referencedRelation: "epoch_fee_policies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "epoch_valuation_source_lots_financial_asset_id_fkey"
+            columns: ["financial_asset_id"]
+            isOneToOne: false
+            referencedRelation: "financial_assets"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "epoch_valuation_source_lots_fx_snapshot_id_fkey"
+            columns: ["fx_snapshot_id"]
+            isOneToOne: false
+            referencedRelation: "epoch_fx_snapshots"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "epoch_valuation_source_lots_monthly_cycle_id_fkey"
+            columns: ["monthly_cycle_id"]
+            isOneToOne: false
+            referencedRelation: "monthly_cycles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "epoch_valuation_source_lots_origin_source_lot_id_fkey"
+            columns: ["origin_source_lot_id"]
+            isOneToOne: false
+            referencedRelation: "epoch_funded_allocation_lock_candidates"
+            referencedColumns: ["source_lot_id"]
+          },
+          {
+            foreignKeyName: "epoch_valuation_source_lots_origin_source_lot_id_fkey"
+            columns: ["origin_source_lot_id"]
+            isOneToOne: false
+            referencedRelation: "epoch_valuation_source_lots"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "epoch_valuation_source_lots_package_id_fkey"
+            columns: ["package_id"]
+            isOneToOne: false
+            referencedRelation: "epoch_project_package_lock_candidates"
+            referencedColumns: ["package_id"]
+          },
+          {
+            foreignKeyName: "epoch_valuation_source_lots_package_id_fkey"
+            columns: ["package_id"]
+            isOneToOne: false
+            referencedRelation: "epoch_project_package_operator_view"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "epoch_valuation_source_lots_package_id_fkey"
+            columns: ["package_id"]
+            isOneToOne: false
+            referencedRelation: "epoch_project_packages"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "epoch_valuation_source_lots_package_source_id_fkey"
+            columns: ["package_source_id"]
+            isOneToOne: false
+            referencedRelation: "epoch_project_package_funding_sources"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "epoch_valuation_source_lots_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
             referencedColumns: ["id"]
           },
         ]
@@ -7670,6 +8278,149 @@ export type Database = {
           },
         ]
       }
+      epoch_financial_prep_cycle_summary: {
+        Row: {
+          base_fee_exact_usd: number | null
+          cycle_key: string | null
+          distributable_exact_usd: number | null
+          gross_exact_usd: number | null
+          monthly_cycle_id: number | null
+          native_atomic_total: number | null
+          neutral_provisional_only: boolean | null
+          project_count: number | null
+          project_fee_exact_usd: number | null
+          ready_source_count: number | null
+          reserved_exact_usd: number | null
+          source_count: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "epoch_valuation_source_lots_monthly_cycle_id_fkey"
+            columns: ["monthly_cycle_id"]
+            isOneToOne: false
+            referencedRelation: "monthly_cycles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      epoch_financial_prep_operator_view: {
+        Row: {
+          asset_key: string | null
+          base_fee_exact_usd: number | null
+          classification_status: string | null
+          created_at: string | null
+          custody_key: string | null
+          cycle_key: string | null
+          deterministic_source_order: number | null
+          distributable_exact_usd: number | null
+          fx_difference_exact_usd: number | null
+          gross_exact_usd: number | null
+          monthly_cycle_id: number | null
+          native_atomic_amount: number | null
+          project_fee_exact_usd: number | null
+          project_id: number | null
+          project_slug: string | null
+          rail_key: string | null
+          rate_usd_per_unit: number | null
+          reserved_exact_usd: number | null
+          source_kind: string | null
+          source_lot_key: string | null
+          source_preliminary_exact_usd: number | null
+          state: string | null
+          symbol: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "epoch_valuation_source_lots_monthly_cycle_id_fkey"
+            columns: ["monthly_cycle_id"]
+            isOneToOne: false
+            referencedRelation: "monthly_cycles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "epoch_valuation_source_lots_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      epoch_funded_allocation_lock_candidates: {
+        Row: {
+          asset_key: string | null
+          atomic_scale: number | null
+          base_fee_exact_usd: number | null
+          canonical_minor_unit_scale: number | null
+          cubid_evidence_hash: string | null
+          custody_key: string | null
+          deterministic_source_order: number | null
+          distributable_exact_usd: number | null
+          eligible_user_count: number | null
+          fx_difference_exact_usd: number | null
+          gross_exact_usd: number | null
+          locked_cubid_score: number | null
+          locked_max_cubid_score: number | null
+          monthly_cycle_id: number | null
+          native_atomic_amount: number | null
+          package_id: number | null
+          project_fee_exact_usd: number | null
+          project_id: number | null
+          rail_key: string | null
+          rate_usd_per_unit: number | null
+          source_evidence_hash: string | null
+          source_kind: string | null
+          source_lot_id: number | null
+          source_lot_key: string | null
+          source_position: number | null
+          source_preliminary_exact_usd: number | null
+          user_id: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "epoch_project_package_cohort_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "epoch_valuation_source_lots_monthly_cycle_id_fkey"
+            columns: ["monthly_cycle_id"]
+            isOneToOne: false
+            referencedRelation: "monthly_cycles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "epoch_valuation_source_lots_package_id_fkey"
+            columns: ["package_id"]
+            isOneToOne: false
+            referencedRelation: "epoch_project_package_lock_candidates"
+            referencedColumns: ["package_id"]
+          },
+          {
+            foreignKeyName: "epoch_valuation_source_lots_package_id_fkey"
+            columns: ["package_id"]
+            isOneToOne: false
+            referencedRelation: "epoch_project_package_operator_view"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "epoch_valuation_source_lots_package_id_fkey"
+            columns: ["package_id"]
+            isOneToOne: false
+            referencedRelation: "epoch_project_packages"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "epoch_valuation_source_lots_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       epoch_project_package_lock_candidates: {
         Row: {
           attribution_dataset_id: number | null
@@ -8057,6 +8808,10 @@ export type Database = {
           target_stage: string
         }[]
       }
+      clamp_epoch_fee_bps: {
+        Args: { p_max: number; p_min: number; p_requested: number }
+        Returns: number
+      }
       complete_epoch_shadow_attempt: {
         Args: {
           p_artifacts: Json
@@ -8117,6 +8872,10 @@ export type Database = {
           p_trigger_type: string
         }
         Returns: number
+      }
+      epoch_financial_prep_runtime_enabled: {
+        Args: { p_environment: string }
+        Returns: boolean
       }
       epoch_project_package_business_deadline: {
         Args: { p_delivered_at: string }
@@ -8189,6 +8948,15 @@ export type Database = {
           isOneToOne: false
           isSetofReturn: true
         }
+      }
+      harvest_epoch_source_lot: { Args: { p_command: Json }; Returns: number }
+      harvest_expired_epoch_source_lots: {
+        Args: {
+          p_environment: string
+          p_limit?: number
+          p_target_cycle_key: string
+        }
+        Returns: number
       }
       ingest_external_financial_event: {
         Args: {
@@ -8321,6 +9089,7 @@ export type Database = {
           isSetofReturn: true
         }
       }
+      post_epoch_fx_snapshot: { Args: { p_command: Json }; Returns: number }
       post_neutral_ledger_transaction: {
         Args: { p_command: Json }
         Returns: number
@@ -8335,6 +9104,10 @@ export type Database = {
           p_journal_type: string
           p_ledger_transaction_id: number
         }
+        Returns: number
+      }
+      prepare_epoch_financial_sources: {
+        Args: { p_command: Json }
         Returns: number
       }
       prepare_epoch_project_package_email: {
@@ -8397,6 +9170,10 @@ export type Database = {
           p_provider_native: number
           p_tolerance: number
         }
+        Returns: number
+      }
+      record_epoch_fx_observation: {
+        Args: { p_command: Json }
         Returns: number
       }
       record_epoch_project_package_email_delivery: {

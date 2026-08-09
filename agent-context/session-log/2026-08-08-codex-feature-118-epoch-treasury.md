@@ -1342,3 +1342,67 @@ Close the independent #133 validator findings without broadening the production-
 
 - Commit this narrow correction, rerun full Node 22 validation, and request independent #133
   revalidation at the new exact commit.
+
+### session v28: monthly financial preparation and source provenance (#135)
+
+- Timestamp: 2026-08-09T18:13:48-04:00
+- Agent: Codex
+- Branch: codex/134-funded-redistribution
+- Head: 4c246ca
+
+#### Objective
+
+Implement production-disabled monthly FX, fee, expiry, carryover, and funded-source inputs for
+#135 without calculating allocations, creating payables, calling providers, or moving value.
+
+#### Actions Taken
+
+- Added ranked immutable FX observations, reviewed primary/fallback/manual-after-exhaustion
+  snapshots, exact stablecoin peg checks, Pacific DST helpers, and independent Edge/database
+  production gates.
+- Added versioned fee policies, executable min/max clamps, default 1% project fee, assessed-once
+  protection, 2.5% base fee, exact FX differences, and the invariant that gross equals project
+  fee plus base fee plus distributable principal.
+- Added source-by-source valuation lots retaining package, project, rail, asset, custody, native
+  atomic, exact USD, FX, minor-unit, deterministic-order, Cubid score/max, and eligible-cohort
+  provenance. Each prepared lot is bound to a balanced neutral-ledger transaction using only
+  provisional control classifications.
+- Added three-cycle expiry, reserved-value protection, linked carryover successors, append-only
+  source events, a secret-authenticated non-production harvest scheduler, service-only RPCs,
+  least-privilege table grants, RLS, indexed foreign keys, advisory locks, and `SKIP LOCKED` batch
+  processing.
+- Extended the monthly prep operator page with an exact source/custody review table and explicit
+  non-payable/non-revenue/no-value-flow copy. Updated allocation and treasury architecture,
+  generated Supabase types, local seed routing, strict shared Edge runtime types, and focused
+  contracts/UI tests.
+
+#### Validation Notes
+
+- Passed: repeated fresh local Supabase migration/seed replays and executable #135 SQL with
+  production/authenticated denial, manual-source exhaustion, primary FX, `1.004` depeg pause,
+  fee min/max, no double project fee, balanced neutral journals, native/functional conservation,
+  score-bearing lock candidates, reserved harvest denial, scheduled harvest, linked carryover,
+  and four independent exact `$0.335` sources.
+- Passed: strict Deno checks for both financial-prep Edge functions; focused Vitest 6 files/34
+  tests; lint, typecheck, and diff check.
+- Passed: full Node 22 `CI=1 pnpm check` with 142 files/645 tests and the 165-route production
+  build.
+- Passed: authenticated operator browser smoke with zero console errors. Exact 1440x900 and
+  390x844 artifacts under `output/playwright/issue-135/` were visually inspected; the detailed
+  desktop view shows six source lots, exact totals, linked carryover states, and all four `$0.335`
+  inputs.
+
+#### Reflections
+
+- JavaScript `Number` initially collapsed `1.003000000000000001` onto the allowed boundary. The
+  peg helper now compares the fixed 18-decimal representation exactly and the database remains
+  the authoritative numeric boundary.
+- Fee preparation needed a neutral-ledger link, not only stored arithmetic columns. The final
+  design records balanced provisional controls but deliberately makes no production accounting
+  classification or treasury movement claim.
+
+#### Suggested Next Steps
+
+- Commit #135 separately, post implementation evidence, and request independent validation.
+- If validation passes, move #135 to In Review and continue to #136 allocation calculation while
+  keeping #131 Stripe provider activation parked for the later sandbox-evidence return.

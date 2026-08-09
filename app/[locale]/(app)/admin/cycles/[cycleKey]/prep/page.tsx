@@ -8,6 +8,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { requireInternalAdminActor } from "@/lib/zkas/auth"
 import {
   loadMonthlyCyclePrepReview,
+  loadEpochFinancialPrepReview,
   type MonthlyCyclePrepIssue,
   type MonthlyCyclePrepPosture,
   type MonthlyCyclePrepSeverity,
@@ -63,9 +64,9 @@ function IssueCard({ issue }: { issue: MonthlyCyclePrepIssue }) {
 
 export default async function AdminCyclePrepPage({ params }: PageProps) {
   const { cycleKey, locale } = await params
-  const review = await (async () => {
+  const [review,financialPrep] = await (async () => {
     await requireInternalAdminActor()
-    return loadMonthlyCyclePrepReview(cycleKey)
+    return Promise.all([loadMonthlyCyclePrepReview(cycleKey),loadEpochFinancialPrepReview(cycleKey)])
   })()
 
   if (!review) {
@@ -183,6 +184,49 @@ export default async function AdminCyclePrepPage({ params }: PageProps) {
             </p>
           </CardContent>
         </Card>
+      </section>
+
+      <section className="space-y-5 rounded-[calc(var(--radius-2xl)+0.25rem)] border border-[color:var(--surface-border)] bg-[var(--surface-panel)] p-6 shadow-[var(--surface-shadow-panel)]">
+        <div className="flex flex-wrap items-start justify-between gap-4">
+          <div>
+            <p className="text-[0.72rem] font-semibold uppercase tracking-[0.28em] text-[var(--interactive-primary)]">Funded allocation inputs</p>
+            <h2 className="mt-2 text-2xl font-semibold text-[var(--text-strong)]">Valuation, fees, and carryover</h2>
+            <p className="mt-2 max-w-3xl text-sm leading-6 text-[var(--text-muted)]">
+              Provisional review-only inputs preserve exact source provenance. They are not claims, payables, revenue, provider instructions, or value movement.
+            </p>
+          </div>
+          <Badge variant="outline">Production disabled</Badge>
+        </div>
+        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
+          {[
+            ["Sources",String(financialPrep.summary?.source_count ?? 0)],
+            ["Gross USD",financialPrep.summary?.gross_exact_usd ?? "0"],
+            ["Project fees",financialPrep.summary?.project_fee_exact_usd ?? "0"],
+            ["Base fees",financialPrep.summary?.base_fee_exact_usd ?? "0"],
+            ["Distributable",financialPrep.summary?.distributable_exact_usd ?? "0"],
+          ].map(([label,value])=>(
+            <div key={label} className="rounded-[var(--radius-xl)] border border-[color:var(--surface-border)] bg-[var(--surface-panel-strong)] p-4">
+              <p className="text-xs uppercase tracking-[0.16em] text-[var(--text-soft)]">{label}</p>
+              <p className="mt-2 break-all font-mono text-lg font-semibold text-[var(--text-strong)]">{value}</p>
+            </div>
+          ))}
+        </div>
+        {financialPrep.sources.length===0 ? (
+          <p className="rounded-[var(--radius-xl)] border border-dashed border-[color:var(--surface-border)] p-4 text-sm text-[var(--text-muted)]">No fee-processed sources are ready. Posted FX and approved packages are required.</p>
+        ) : (
+          <div className="overflow-x-auto rounded-[var(--radius-xl)] border border-[color:var(--surface-border)]">
+            <table className="w-full min-w-[56rem] text-left text-sm">
+              <thead className="bg-[var(--surface-panel-strong)] text-xs uppercase tracking-[0.12em] text-[var(--text-soft)]"><tr>
+                <th className="p-3">Source</th><th className="p-3">Project</th><th className="p-3">Asset / custody</th><th className="p-3">Native</th><th className="p-3">FX</th><th className="p-3">Distributable USD</th><th className="p-3">State</th>
+              </tr></thead>
+              <tbody>{financialPrep.sources.map((source)=><tr key={source.source_lot_key} className="border-t border-[color:var(--surface-border)]">
+                <td className="p-3 font-mono text-xs">{source.source_lot_key}</td><td className="p-3">{source.project_slug}</td><td className="p-3">{source.asset_key} / {source.custody_key}</td>
+                <td className="p-3 font-mono">{source.native_atomic_amount}</td><td className="p-3 font-mono">{source.rate_usd_per_unit}</td>
+                <td className="p-3 font-mono">{source.distributable_exact_usd}</td><td className="p-3"><Badge variant="secondary">{source.state}</Badge></td>
+              </tr>)}</tbody>
+            </table>
+          </div>
+        )}
       </section>
 
       <section className="grid gap-6 lg:grid-cols-[minmax(0,1.3fr)_minmax(20rem,0.7fr)]">

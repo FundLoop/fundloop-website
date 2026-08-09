@@ -96,6 +96,23 @@ platform fee, platform revenue, treasury sweep, user payable, or newly created
 value. Fee recognition and treasury sweeps occur before the distributable project
 pool is measured.
 
+### Implemented funded-input boundary (Task #135)
+
+The local/dev review path now materializes `epoch_valuation_source_lots` before
+allocation. Each lot retains its approved project package and funding-source ID,
+project, rail, financial asset, custody account, native atomic quantity, posted FX
+snapshot, exact 18-decimal gross/project-fee/base-fee/distributable USD values,
+canonical minor-unit scale, and deterministic source order. The lock-candidate
+view joins those lots to the package's eligible cohort and exposes the locked Cubid
+score, versioned maximum score, and eligible-user count without computing a claim.
+
+The four `$0.335` precision fixture is stored as four independent exact source lots;
+it is not pre-aggregated or rounded to cents. Carryover creates a successor lot with
+an explicit predecessor reference and the same funded-principal classification.
+Reserved value cannot be harvested. These are provisional funded epoch inputs—not
+fees, recognized revenue, user payables, provider instructions, or production value
+flow—and all Task #135 commands deny production.
+
 ## Allocation Algorithm
 
 All equations use exact decimal functional USD until the rounding stage.
