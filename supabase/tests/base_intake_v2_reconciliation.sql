@@ -26,6 +26,31 @@ DO $$ BEGIN
   EXCEPTION WHEN OTHERS THEN IF SQLERRM <> 'base_intake_v2_provider_evidence_required' THEN RAISE; END IF; END;
 END $$;
 
+INSERT INTO public.base_intake_v2_deployments(deployment_environment,chain_id,contract_address,platform_treasury_address,
+  epoch_treasury_address,is_paused,is_active) VALUES
+  ('local',84532,'0x0000000000000000000000000000000000001132','0x0000000000000000000000000000000000001201','0x0000000000000000000000000000000000001202',true,false),
+  ('local',8453,'0x0000000000000000000000000000000000002132','0x0000000000000000000000000000000000002201','0x0000000000000000000000000000000000002202',true,false);
+DO $$
+DECLARE chain bigint;
+BEGIN
+  FOREACH chain IN ARRAY ARRAY[84532::bigint,8453::bigint] LOOP
+    BEGIN
+      INSERT INTO public.base_intake_v2_assets(deployment_id,symbol,token_address,is_enabled,provider_evidence_status)
+      SELECT id,'USDT',CASE chain WHEN 84532 THEN '0x0000000000000000000000000000000000001302' ELSE '0x0000000000000000000000000000000000002302' END,
+        true,'local_fixture_only' FROM public.base_intake_v2_deployments
+      WHERE deployment_environment='local' AND chain_id=chain;
+      RAISE EXCEPTION 'local fixture provider asset was allowed on chain %',chain;
+    EXCEPTION WHEN OTHERS THEN IF SQLERRM <> 'base_intake_v2_provider_evidence_required' THEN RAISE; END IF; END;
+    BEGIN
+      UPDATE public.base_intake_v2_deployments SET is_paused=false,is_active=true
+      WHERE deployment_environment='local' AND chain_id=chain;
+      SET CONSTRAINTS base_intake_v2_deployment_activation IMMEDIATE;
+      RAISE EXCEPTION 'fixture-less local deployment activated on chain %',chain;
+    EXCEPTION WHEN OTHERS THEN IF SQLERRM <> 'base_intake_v2_activation_evidence_missing' THEN RAISE; END IF; END;
+    SET CONSTRAINTS base_intake_v2_deployment_activation DEFERRED;
+  END LOOP;
+END $$;
+
 SET LOCAL ROLE authenticated;
 DO $$ BEGIN
   BEGIN

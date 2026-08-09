@@ -1059,3 +1059,34 @@ deployment audit state, and independently observed reconciliation.
 
 - Commit the narrow validation follow-up, update #132 evidence, and return for independent
   revalidation without changing #131/#133 or opening a PR.
+
+### session v22: Local fixture chain binding (#132)
+
+- Timestamp: 2026-08-09T01:32:13-04:00
+- Agent: Codex
+- Branch: codex/130-settlement-packages
+- Head: 2df1cfa
+
+#### Objective
+
+Ensure local mock-provider evidence can activate assets only on the disposable Hardhat
+chain and never on Base Sepolia or Base mainnet chain IDs.
+
+#### Actions Taken
+
+- Added a forward replacement of the asset-activation trigger requiring the exact
+  `(deployment_environment='local', chain_id=31337)` tuple for `local_fixture_only`.
+- Added adversarial local+84532 and local+8453 asset activation probes.
+- Added deferred deployment activation/unpause probes proving a fixture-less deployment
+  on either Base chain ID cannot bypass the asset invariant.
+
+#### Validation Notes
+
+- Passed: fresh local Supabase reset with the forward migration.
+- Passed: all four integrated SQL suites, including both new Base chain adversarial cases.
+- Passed: focused Base Vitest (1 file/12 tests), typecheck, lint, and `git diff --check`.
+- Passed: full Node 22 `CI=1 pnpm check` with 134 files/614 tests and production build.
+
+#### Suggested Next Steps
+
+- Commit the narrow forward-only fix and return #132 for independent revalidation.
