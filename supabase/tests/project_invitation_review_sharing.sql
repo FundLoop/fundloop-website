@@ -110,11 +110,12 @@ DO $$ BEGIN
   IF EXISTS (SELECT 1 FROM public.list_project_member_shared_profiles(900001, '20000000-0000-4000-8000-000000000003')) THEN RAISE EXCEPTION 'unrelated service read was allowed'; END IF;
 END $$;
 SELECT * FROM public.decline_project_invitation_review(repeat('b',64), '20000000-0000-4000-8000-000000000002', 'decline@example.test');
-SELECT * FROM public.inspect_project_invitation_review(repeat('c',64), '20000000-0000-4000-8000-000000000002', 'expire@example.test');
+SELECT * FROM public.decline_project_invitation_review(repeat('c',64), '20000000-0000-4000-8000-000000000002', 'expire@example.test');
 SELECT public.expire_project_invitations_review(900001, 'batch-expire@example.test');
 DO $$ BEGIN
   IF NOT EXISTS (SELECT 1 FROM public.project_invitation_acceptance_evidence WHERE invitation_id='30000000-0000-4000-8000-000000000002' AND action='decline') THEN RAISE EXCEPTION 'decline evidence missing'; END IF;
   IF NOT EXISTS (SELECT 1 FROM public.project_invitation_acceptance_evidence WHERE invitation_id='30000000-0000-4000-8000-000000000003' AND action='expire') THEN RAISE EXCEPTION 'expiry evidence missing'; END IF;
+  IF EXISTS (SELECT 1 FROM public.project_invitation_acceptance_evidence WHERE invitation_id='30000000-0000-4000-8000-000000000003' AND action='decline') THEN RAISE EXCEPTION 'stale direct decline overwrote expiry evidence'; END IF;
   IF NOT EXISTS (SELECT 1 FROM public.project_invitation_acceptance_evidence WHERE invitation_id='30000000-0000-4000-8000-000000000004' AND action='expire') THEN RAISE EXCEPTION 'list/create expiry evidence missing'; END IF;
 END $$;
 SELECT * FROM public.revoke_project_invitation_review('30000000-0000-4000-8000-000000000001', '20000000-0000-4000-8000-000000000001');

@@ -5138,6 +5138,7 @@ export type Database = {
       list_discoverable_public_user_ids: {
         Args: never
         Returns: {
+          fields: Json
           user_id: string
         }[]
       }

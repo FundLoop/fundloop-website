@@ -113,8 +113,9 @@ BEGIN
     SELECT 1
     FROM public.list_discoverable_public_user_ids()
     WHERE user_id = '10000000-0000-4000-8000-000000000001'
+      AND fields = '["display_name"]'::jsonb
   ) THEN
-    RAISE EXCEPTION 'granted profile was not discoverable';
+    RAISE EXCEPTION 'granted profile or exact consent fields were not discoverable';
   END IF;
 
   BEGIN

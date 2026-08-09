@@ -4,6 +4,7 @@ import { privacyReviewDocument } from "@/lib/policies/review-policy"
 import { publicProfileFields, validateProfilePublicationChoiceInput } from "@/lib/edge-functions/profile-publication-choice-contract"
 
 const migration = readFileSync("supabase/migrations/20260808233000_profile_publication_consents.sql", "utf8")
+const boundaryFixMigration = readFileSync("supabase/migrations/20260809010000_review_consent_boundary_fixes.sql", "utf8")
 describe("profile publication privacy boundary", () => {
   it("requires explicit fields for grant but permits withdrawal", () => {
     expect(validateProfilePublicationChoiceInput({ ...privacyReviewDocument, action: "grant", fields: [], sourceSurface: "account_profile_visibility" }).ok).toBe(false)
@@ -20,5 +21,9 @@ describe("profile publication privacy boundary", () => {
     expect(migration).toContain("profile_publication_consents_self_select")
     expect(migration).toContain("GRANT EXECUTE ON FUNCTION public.record_profile_publication_choice")
     expect(migration).toContain("GRANT EXECUTE ON FUNCTION public.list_discoverable_public_user_ids() TO anon, authenticated, service_role")
+  })
+  it("returns exact consented fields for public read shaping", () => {
+    expect(boundaryFixMigration).toContain("RETURNS TABLE (user_id uuid, fields jsonb)")
+    expect(boundaryFixMigration).toContain("consent.fields")
   })
 })

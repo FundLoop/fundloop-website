@@ -870,3 +870,51 @@ preview gate is closed.
 - Commit this narrow Goal #122 route fix and attach focused, full-check, and production
   HTTP evidence to the Goal.
 - Leave Goal #122 Ready for independent integrated revalidation; do not open a PR.
+
+### session v18: PR review privacy and invitation boundary fixes
+
+- Timestamp: 2026-08-09T00:47:00-04:00
+- Agent: Codex
+- Branch: codex/118-canada-review-drafts
+- Head: 4181d8860222
+
+#### Objective
+
+Address the three actionable automated review findings on PR #146 without widening
+the review-only policy scope or enabling any production policy or value flow.
+
+#### Actions Taken
+
+- Restored the active-user join/filter before a participant can receive private or
+  inactive project access and trigger member-sharing reads.
+- Added a forward migration that returns the latest granted publication field set
+  with each discoverable user and shaped directory/profile output to those exact
+  fields. Full names, contribution details, creation timestamps, and Cubid status or
+  score remain unavailable because they are outside the consent contract.
+- Replaced stale-invitation decline behavior with an atomic locked decision that
+  records expiry status and evidence when the deadline has already passed.
+- Updated generated Supabase function types plus focused contract and executable SQL
+  assertions for the corrected boundaries.
+
+#### Validation Notes
+
+- Passed: fresh local Supabase reset with all migrations and canonical seed.
+- Passed: executable review-policy SQL, including exact consent-field propagation.
+- Passed: executable invitation SQL, including direct stale decline producing expiry
+  status/evidence and no decline evidence.
+- Passed: focused Vitest, 3 files and 10 tests.
+- Passed: Node 22 `CI=1 pnpm check` with 127 files/571 tests, lint, typecheck, and
+  production build generating 162 pages.
+- Passed: `git diff --check`.
+
+#### Reflections
+
+- A consent record must constrain every downstream read field, not merely authorize
+  discovery of the row.
+- Lifecycle commands must derive expiry under the same row lock as the requested
+  transition so direct callers cannot change the audit result through call ordering.
+
+#### Suggested Next Steps
+
+- Commit and push the review fixes, reply to and resolve each addressed review thread,
+  then wait for the remaining requested review and post-push CI without rerequesting.

@@ -228,8 +228,9 @@ export const getPublicProjectDetail = cache(async (slug: string): Promise<Public
     const [{ data: participantRows, error: participantError }, { data: categoryRow, error: categoryError }] = await Promise.all([
       supabase
         .from("participants")
-        .select("user_id, is_admin")
-        .eq("project_id", projectRow.id),
+        .select("user_id, is_admin, users!inner(status)")
+        .eq("project_id", projectRow.id)
+        .eq("users.status", "active"),
       projectRow.category_id
         ? supabase.from("ref_categories").select("name").eq("id", projectRow.category_id).maybeSingle()
         : Promise.resolve({ data: null, error: null }),
@@ -321,7 +322,9 @@ export async function getPublicUsersDirectoryData({
       throw new Error(userError.message)
     }
     if (consentError) throw new Error(consentError.message)
-    const discoverableUserIds = new Set((discoverableRows ?? []).map((row) => row.user_id))
+    const consentedFieldsByUser = new Map(
+      (discoverableRows ?? []).map((row) => [row.user_id, new Set(Array.isArray(row.fields) ? row.fields.filter((field): field is string => typeof field === "string") : [])]),
+    )
 
     const projectIds = (publicProjects ?? []).map((project) => project.id)
     const visibleProjectIds = projectId ? [projectId] : projectIds
@@ -355,23 +358,24 @@ export async function getPublicUsersDirectoryData({
     const searchTerm = normalizeSearchTerm(search)
 
     const users = (userRows ?? [])
-      .filter((user) => discoverableUserIds.has(user.user_id))
+      .filter((user) => consentedFieldsByUser.has(user.user_id))
       .map<PublicDiscoveryUser>((user) => {
         const projectIdsForUser = Array.from(participantProjectsByUser.get(user.user_id) ?? [])
+        const consentedFields = consentedFieldsByUser.get(user.user_id) ?? new Set<string>()
 
         return {
           userId: user.user_id,
-          displayName: user.display_name,
-          fullName: user.full_name,
-          profileHeadline: user.profile_headline,
-          avatarUrl: user.avatar_url,
-          contributionDetails: user.contribution_details,
-          createdAt: user.created_at,
-          location: user.location_id ? locationMap.get(user.location_id) ?? null : null,
+          displayName: consentedFields.has("display_name") ? user.display_name : null,
+          fullName: null,
+          profileHeadline: consentedFields.has("headline") ? user.profile_headline : null,
+          avatarUrl: consentedFields.has("avatar") ? user.avatar_url : null,
+          contributionDetails: null,
+          createdAt: null,
+          location: consentedFields.has("location") && user.location_id ? locationMap.get(user.location_id) ?? null : null,
           projectCount: projectIdsForUser.length,
           projectSlugs: projectIdsForUser.map((userProjectId) => projectSlugById.get(userProjectId)).filter((slug): slug is string => Boolean(slug)),
-          cubidIdentityStatus: user.cubid_identity_status ?? "unlinked",
-          cubidScore: user.cubid_score ?? null,
+          cubidIdentityStatus: "unlinked",
+          cubidScore: null,
         }
       })
       .filter((user) => {
@@ -413,7 +417,13 @@ export const getPublicUserProfile = cache(async (userId: string): Promise<Public
 
     const { data: discoverableRows, error: consentError } = await supabase.rpc("list_discoverable_public_user_ids")
     if (consentError) throw new Error(consentError.message)
-    if (!(discoverableRows ?? []).some((row) => row.user_id === userId)) return null
+    const discoverableConsent = (discoverableRows ?? []).find((row) => row.user_id === userId)
+    if (!discoverableConsent) return null
+    const consentedFields = new Set(
+      Array.isArray(discoverableConsent.fields)
+        ? discoverableConsent.fields.filter((field): field is string => typeof field === "string")
+        : [],
+    )
 
     const { data: userRow, error: userError } = await supabase
       .from("users")
@@ -465,17 +475,17 @@ export const getPublicUserProfile = cache(async (userId: string): Promise<Public
     return {
       user: {
         userId: userRow.user_id,
-        displayName: userRow.display_name,
-        fullName: userRow.full_name,
-        profileHeadline: userRow.profile_headline,
-        avatarUrl: userRow.avatar_url,
-        contributionDetails: userRow.contribution_details,
-        createdAt: userRow.created_at,
-        location: locationRow?.name ?? null,
+        displayName: consentedFields.has("display_name") ? userRow.display_name : null,
+        fullName: null,
+        profileHeadline: consentedFields.has("headline") ? userRow.profile_headline : null,
+        avatarUrl: consentedFields.has("avatar") ? userRow.avatar_url : null,
+        contributionDetails: null,
+        createdAt: null,
+        location: consentedFields.has("location") ? locationRow?.name ?? null : null,
         projectCount: (projectRows ?? []).length,
         projectSlugs: (projectRows ?? []).map((project) => project.slug ?? String(project.id)),
-        cubidIdentityStatus: userRow.cubid_identity_status ?? "unlinked",
-        cubidScore: userRow.cubid_score ?? null,
+        cubidIdentityStatus: "unlinked",
+        cubidScore: null,
       },
       projects: (projectRows ?? []).map((project) => ({
         id: project.id,
