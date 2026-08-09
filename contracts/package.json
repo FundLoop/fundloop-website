@@ -6,6 +6,7 @@
   "scripts": {
     "build": "hardhat compile",
     "clean": "hardhat clean",
+    "deploy:base-v2": "hardhat run scripts/deploy-base-intake-v2.js",
     "test": "hardhat test"
   },
   "devDependencies": {

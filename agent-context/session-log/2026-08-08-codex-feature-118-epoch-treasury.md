@@ -963,3 +963,212 @@ review-only invitation and sharing behavior unavailable in production.
 
 - Commit and push this narrow follow-up, reply to and resolve all four Copilot threads,
   then wait for post-push CI and merge under the normal non-squash policy if green.
+
+### session v20: Base stablecoin intake V2 (#132)
+
+- Timestamp: 2026-08-09T01:02:03-04:00
+- Agent: Codex
+- Branch: codex/130-settlement-packages
+- Head: f5b7e0a
+
+#### Objective
+
+Implement a versioned, non-production Base receipt boundary for the curated USDC,
+USDT, and PYUSD slots with exact separated-treasury reconciliation.
+
+#### Actions Taken
+
+- Added `FundLoopBaseIntakeV2` with constructor-bound token slots, project fee
+  snapshots, gross/fee/net conservation, separated platform and epoch transfers and
+  events, owner-only configuration, pause control, and duplicate receipt protection.
+- Added a guarded local/Base Sepolia deployment script and disabled tracked manifest;
+  mainnet and every non-local/dev/test environment remain unavailable.
+- Added forward Base deployment, asset, fee-version, receipt, and append-only
+  reconciliation schema with service-only typed RPCs and Edge commands.
+- Derived confirmation, exact, mismatch, reorg, and replacement states from trusted
+  receipt/block/treasury evidence rather than caller status.
+- Added local Hardhat, contract, RLS/RPC, deployment, and integrated ledger evidence,
+  regenerated Supabase types, and documented the issuer-verification production gate.
+
+#### Validation Notes
+
+- Passed: guarded local chain deployment on 31337 and explicit production deployment
+  refusal; Base Sepolia was skipped because no authorized RPC/private key is present.
+- Passed: Hardhat 8/8 tests, including four V2 local wallet/adversarial cases.
+- Passed: fresh local Supabase reset plus neutral ledger, epoch shadow, external shadow
+  reconciliation, and Base V2 SQL suites.
+- Passed: focused Vitest with 3 files/23 tests and full Node 22 `CI=1 pnpm check`
+  with 134 files/614 tests, lint, typecheck, and production build.
+- Passed: `git diff --check`; no browser surface changed, so browser evidence is N/A.
+- Attempted standalone Deno type-checking; it remains unavailable because the existing
+  shared command runtime is untyped under strict Deno checking. The new functions follow
+  the established runtime pattern and are covered by source-contract and app type tests.
+
+#### Reflections
+
+- A symbol allowlist is insufficient without constructor-bound addresses, deployment
+  matching, and a disabled tracked manifest.
+- Reorg and replacement evidence must remain append-only while the latest read model
+  is derived, and exact treasury amounts must be independently observed.
+
+#### Suggested Next Steps
+
+- Commit #132 and attach local-chain, migration, SQL/RLS/RPC, focused, and full-check
+  evidence for independent validation.
+- Keep #131 blocked on Stripe sandbox authorization and leave #133 untouched/Ready.
+
+### session v21: Base provider and trusted observation integrity (#132)
+
+- Timestamp: 2026-08-09T01:23:42-04:00
+- Agent: Codex
+- Branch: codex/130-settlement-packages
+- Head: 07b7316
+
+#### Objective
+
+Close the #132 validation gaps in provider-address activation, Base Sepolia execution,
+deployment audit state, and independently observed reconciliation.
+
+#### Actions Taken
+
+- Required explicit local fixture mode and labelled local mock tokens accordingly; bound
+  Base Sepolia USDC to Circle evidence while leaving unverified USDT/PYUSD disabled.
+- Added contract and forward database invariants preventing an unverified token from
+  becoming active, plus paused/enabled/provider-evidence deployment audit inputs.
+- Added executable Hardhat Base Sepolia configuration with clear missing test credential
+  errors and retained unconditional production deployment refusal.
+- Reduced the Edge request to `receiptId` only. A trusted viem observer now reads the
+  transaction receipt/current block, validates the V2 event, and totals exact ERC-20
+  transfers to both treasuries before service-only reconciliation.
+- Added trusted replacement resolver configuration and append-only observation-source/
+  event-match evidence; caller-crafted hashes and amounts cannot cross the Edge contract.
+
+#### Validation Notes
+
+- Passed: Hardhat 9/9, including real local receipt to trusted viem transfer-log evidence
+  and unverified-provider activation denial.
+- Passed: guarded local fixture deploy; missing Base Sepolia credentials fail clearly;
+  production deployment remains denied.
+- Passed: fresh local replay and all four integrated SQL suites, including adversarial
+  provider evidence and authenticated crafted reconciliation denial.
+- Passed: focused Vitest 3 files/23 tests and full Node 22 check with 134 files/614 tests,
+  lint, typecheck, and production build.
+- Passed: `git diff --check`; UI unchanged, browser N/A.
+
+#### Suggested Next Steps
+
+- Commit the narrow validation follow-up, update #132 evidence, and return for independent
+  revalidation without changing #131/#133 or opening a PR.
+
+### session v22: Local fixture chain binding (#132)
+
+- Timestamp: 2026-08-09T01:32:13-04:00
+- Agent: Codex
+- Branch: codex/130-settlement-packages
+- Head: 2df1cfa
+
+#### Objective
+
+Ensure local mock-provider evidence can activate assets only on the disposable Hardhat
+chain and never on Base Sepolia or Base mainnet chain IDs.
+
+#### Actions Taken
+
+- Added a forward replacement of the asset-activation trigger requiring the exact
+  `(deployment_environment='local', chain_id=31337)` tuple for `local_fixture_only`.
+- Added adversarial local+84532 and local+8453 asset activation probes.
+- Added deferred deployment activation/unpause probes proving a fixture-less deployment
+  on either Base chain ID cannot bypass the asset invariant.
+
+#### Validation Notes
+
+- Passed: fresh local Supabase reset with the forward migration.
+- Passed: all four integrated SQL suites, including both new Base chain adversarial cases.
+- Passed: focused Base Vitest (1 file/12 tests), typecheck, lint, and `git diff --check`.
+- Passed: full Node 22 `CI=1 pnpm check` with 134 files/614 tests and production build.
+
+#### Suggested Next Steps
+
+- Commit the narrow forward-only fix and return #132 for independent revalidation.
+
+### session v23: Base intake review input integrity (#132)
+
+- Timestamp: 2026-08-09T01:53:11-04:00
+- Agent: Codex
+- Branch: codex/130-settlement-packages
+- Head: 7e680ab
+
+#### Objective
+
+Address the actionable PR #148 review findings without changing the approved Base intake
+scope or weakening its trusted-observation boundary.
+
+#### Actions Taken
+
+- Accepted checksum-style uppercase hexadecimal characters in EVM addresses and hashes;
+  the database command continues to persist canonical lowercase values.
+- Compared platform and epoch treasury addresses case-insensitively so capitalization
+  cannot alias the same treasury.
+- Added a forward-only reconciliation wrapper whose `IS DISTINCT FROM` guard rejects
+  missing, null, and incorrect observation sources before invoking the prior trusted
+  implementation.
+- Added focused TypeScript and executable SQL adversarial coverage for the review cases.
+
+#### Validation Notes
+
+- Passed: fresh local Supabase replay through the new forward migration.
+- Passed: all four integrated SQL suites, including missing/null/wrong source denial and
+  the existing `trusted_viem_v1` reconciliation lifecycle.
+- Passed: focused Base intake Vitest (1 file/13 tests).
+- Passed: lint, typecheck, and `git diff --check`.
+- Passed: full Node 22 `CI=1 pnpm check` with 134 files/615 tests and the 162-route
+  production build.
+
+#### Suggested Next Steps
+
+- Commit and push this single review-fix checkpoint, then let the coordinating agent
+  reply to and resolve the already-inspected PR threads without requesting rereview.
+
+### session v24: Base receipt identity and fee history review fixes (#132)
+
+- Timestamp: 2026-08-09T02:08:47-04:00
+- Agent: Codex
+- Branch: codex/130-settlement-packages
+- Head: 45f5e7e
+
+#### Objective
+
+Close the four unprompted Codex review findings on PR #148 while preserving the local-only,
+fail-closed settlement-package boundary.
+
+#### Actions Taken
+
+- Locked deployment environment, chain, contract, and treasury identity coordinates while
+  any asset remains enabled; pause and activation state remain independently operable.
+- Added monotonic onchain project-fee versions to configuration and receipt events, then
+  resolved the exact historical project/version/rate tuple in the receipt command.
+- Persisted bytes32 receipt references and added per-deployment uniqueness alongside the
+  existing transaction/log uniqueness boundary.
+- Bound the trusted observer to the exact BaseReceipt contract log index and indexed receipt
+  reference, returning explicit observed identity evidence rather than scanning any matching
+  receipt event in the transaction.
+- Persisted the authoritative transaction-receipt block number and derived confirmations from
+  it; stored/observed block disagreement and wrong log/reference evidence now remain mismatch.
+- Preserved provisional legacy rows as nullable, append-only records while the Edge command
+  fails closed when their new identity evidence is absent.
+- Regenerated Supabase types and documented the identity, fee-history, and coordinate-lock rules.
+
+#### Validation Notes
+
+- Passed: fresh local Supabase reset through the forward migration and all four integrated SQL
+  suites, including coordinate mutation, duplicate log/reference, historical fee, and low-block
+  adversarial probes.
+- Passed: Hardhat 10/10, including a real local receipt observed at the exact log/reference and
+  after a subsequent fee-version change.
+- Passed: focused Base Vitest (1 file/13 tests), lint, typecheck, and `git diff --check`.
+- Passed: full Node 22 `CI=1 pnpm check` with 134 files/615 tests and the 162-route production build.
+
+#### Suggested Next Steps
+
+- Commit and push the complete four-thread review batch, then let the coordinating agent reply
+  to and resolve the threads without requesting another review.
