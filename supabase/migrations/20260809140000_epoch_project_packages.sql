@@ -303,8 +303,10 @@ DECLARE
   v_dataset public.project_attribution_datasets%ROWTYPE;
   v_compliance_id bigint;
   v_package_id bigint;
+  v_rollover_id bigint;
   v_previous_id bigint;
   v_version integer;
+  v_rollover_version integer;
   v_compliance_version integer;
   v_cutoff timestamptz;
   v_now timestamptz := coalesce(nullif(p_command->>'observedAt','')::timestamptz, clock_timestamp());
@@ -522,6 +524,39 @@ BEGIN
     preliminary_usd = v_preliminary_usd, manifest = v_manifest, manifest_hash = v_manifest_hash,
     project_fee_assessed_once = EXISTS(SELECT 1 FROM public.epoch_project_package_funding_sources WHERE package_id = v_package_id AND project_fee_assessed_once)
   WHERE id = v_package_id;
+  IF v_status = 'rolled_forward' AND v_next_cycle.id IS NOT NULL THEN
+    v_rollover_version := coalesce((SELECT max(version) + 1 FROM public.epoch_project_packages
+      WHERE project_id=v_project.id AND intended_cycle_id=v_next_cycle.id),1);
+    INSERT INTO public.epoch_project_packages(
+      project_id,intended_cycle_id,canonical_cycle_id,version,rolled_from_package_id,attribution_dataset_id,
+      compliance_snapshot_id,status,list_status,funding_status,compliance_status,cubid_status,cutoff_at,
+      project_fee_assessed_once,base_fee_deferred,payment_count,funding_source_count,cohort_count,
+      eligible_user_count,held_user_count,preliminary_usd,manifest,manifest_hash,created_by_user_id,created_at
+    ) SELECT package.project_id,v_next_cycle.id,v_next_cycle.id,v_rollover_version,package.id,package.attribution_dataset_id,
+      package.compliance_snapshot_id,'rolled_forward',package.list_status,package.funding_status,package.compliance_status,
+      package.cubid_status,((v_next_cycle.period_end+1)::timestamp AT TIME ZONE 'America/Los_Angeles'),
+      package.project_fee_assessed_once,package.base_fee_deferred,package.payment_count,package.funding_source_count,
+      package.cohort_count,package.eligible_user_count,package.held_user_count,package.preliminary_usd,
+      package.manifest || jsonb_build_object('rolledFromPackageId',package.id,'intendedCycleKey',v_next_cycle.cycle_key,'canonicalCycleKey',v_next_cycle.cycle_key),
+      encode(extensions.digest(convert_to((package.manifest || jsonb_build_object('rolledFromPackageId',package.id,'intendedCycleKey',v_next_cycle.cycle_key,'canonicalCycleKey',v_next_cycle.cycle_key))::text,'UTF8'),'sha256'),'hex'),
+      (p_command->>'actorUserId')::uuid,v_now
+    FROM public.epoch_project_packages package WHERE package.id=v_package_id RETURNING id INTO v_rollover_id;
+    INSERT INTO public.epoch_project_package_payments(package_id,payment_id,source_position)
+      SELECT v_rollover_id,payment_id,source_position FROM public.epoch_project_package_payments WHERE package_id=v_package_id;
+    INSERT INTO public.epoch_project_package_funding_sources(
+      package_id,source_position,source_kind,stripe_intent_id,base_receipt_id,asset_code,native_atomic_amount,
+      preliminary_usd,source_evidence_hash,project_fee_assessed_once,base_fee_deferred
+    ) SELECT v_rollover_id,source_position,source_kind,stripe_intent_id,base_receipt_id,asset_code,native_atomic_amount,
+      preliminary_usd,source_evidence_hash,project_fee_assessed_once,base_fee_deferred
+      FROM public.epoch_project_package_funding_sources WHERE package_id=v_package_id;
+    INSERT INTO public.epoch_project_package_cohort(
+      package_id,source_row_id,user_id,project_pseudonym,cubid_decision,eligibility_status,locked_cubid_score,
+      locked_max_cubid_score,cubid_evidence_at,cubid_evidence_expires_at,evidence_hash,notification_required
+    ) SELECT v_rollover_id,source_row_id,user_id,project_pseudonym,cubid_decision,eligibility_status,locked_cubid_score,
+      locked_max_cubid_score,cubid_evidence_at,cubid_evidence_expires_at,evidence_hash,notification_required
+      FROM public.epoch_project_package_cohort WHERE package_id=v_package_id;
+    UPDATE public.epoch_project_packages SET rolled_to_package_id=v_rollover_id WHERE id=v_package_id;
+  END IF;
   RETURN v_package_id;
 END
 $$;

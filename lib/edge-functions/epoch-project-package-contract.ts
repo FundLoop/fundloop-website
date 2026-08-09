@@ -46,12 +46,11 @@ export type EpochProjectPackageWorkflowInput =
       complianceValidUntil: string
       maximumCubidScore: string
       cubidTtlHours?: number
-      observedAt?: string
     }
   | { action: "send_reconciliation_email"; packageId: number; attemptId?: string }
-  | { action: "approve"; packageId: number; evidenceHash: string; decidedAt?: string }
-  | { action: "opt_out"; packageId: number; evidenceHash: string; reason: string; decidedAt?: string }
-  | { action: "finalize_silent"; observedAt?: string }
+  | { action: "approve"; packageId: number; evidenceHash: string }
+  | { action: "opt_out"; packageId: number; evidenceHash: string; reason: string }
+  | { action: "finalize_silent" }
 
 export type EpochProjectPackageWorkflowOutput =
   | { action: "read"; packages: EpochProjectPackageSummary[] }
@@ -76,10 +75,6 @@ function positiveInteger(value: unknown) {
   return Number.isInteger(value) && Number(value) > 0
 }
 
-function optionalIso(value: unknown) {
-  return value === undefined || (typeof value === "string" && Number.isFinite(Date.parse(value)))
-}
-
 function status(value: unknown): value is "passed" | "pending" | "failed" {
   return value === "passed" || value === "pending" || value === "failed"
 }
@@ -95,15 +90,14 @@ export function validateEpochProjectPackageWorkflowInput(input: unknown): EdgeCo
     return edgeCommandSuccess({ action: "read", projectSlug: input.projectSlug as string | undefined })
   }
   if (input.action === "validate") {
-    const allowed = ["action","projectSlug","cycleKey","kybStatus","kycStatus","sanctionsStatus","complianceEvidenceHash","complianceValidUntil","maximumCubidScore","cubidTtlHours","observedAt"]
+    const allowed = ["action","projectSlug","cycleKey","kybStatus","kycStatus","sanctionsStatus","complianceEvidenceHash","complianceValidUntil","maximumCubidScore","cubidTtlHours"]
     const maximum = typeof input.maximumCubidScore === "string" ? Number(input.maximumCubidScore) : NaN
     if (!exactKeys(input, allowed) || typeof input.projectSlug !== "string" || !slugPattern.test(input.projectSlug)
       || typeof input.cycleKey !== "string" || !cyclePattern.test(input.cycleKey) || !status(input.kybStatus)
       || !status(input.kycStatus) || !status(input.sanctionsStatus) || typeof input.complianceEvidenceHash !== "string"
       || !hashPattern.test(input.complianceEvidenceHash) || typeof input.complianceValidUntil !== "string"
       || !Number.isFinite(Date.parse(input.complianceValidUntil)) || !Number.isFinite(maximum) || maximum <= 0
-      || (input.cubidTtlHours !== undefined && (!Number.isInteger(input.cubidTtlHours) || Number(input.cubidTtlHours) < 1 || Number(input.cubidTtlHours) > 168))
-      || !optionalIso(input.observedAt)) {
+      || (input.cubidTtlHours !== undefined && (!Number.isInteger(input.cubidTtlHours) || Number(input.cubidTtlHours) < 1 || Number(input.cubidTtlHours) > 168))) {
       return edgeCommandFailure("invalid_payload", "Package validation input is invalid.")
     }
     return edgeCommandSuccess(input as EpochProjectPackageWorkflowInput)
@@ -116,16 +110,16 @@ export function validateEpochProjectPackageWorkflowInput(input: unknown): EdgeCo
     return edgeCommandSuccess(input as EpochProjectPackageWorkflowInput)
   }
   if (input.action === "approve" || input.action === "opt_out") {
-    const allowed = input.action === "opt_out" ? ["action","packageId","evidenceHash","reason","decidedAt"] : ["action","packageId","evidenceHash","decidedAt"]
+    const allowed = input.action === "opt_out" ? ["action","packageId","evidenceHash","reason"] : ["action","packageId","evidenceHash"]
     if (!exactKeys(input, allowed) || !positiveInteger(input.packageId) || typeof input.evidenceHash !== "string"
-      || !hashPattern.test(input.evidenceHash) || !optionalIso(input.decidedAt)
+      || !hashPattern.test(input.evidenceHash)
       || (input.action === "opt_out" && (typeof input.reason !== "string" || input.reason.trim().length === 0))) {
       return edgeCommandFailure("invalid_payload", "Package decision input is invalid.")
     }
     return edgeCommandSuccess(input as EpochProjectPackageWorkflowInput)
   }
   if (input.action === "finalize_silent") {
-    if (!exactKeys(input, ["action","observedAt"]) || !optionalIso(input.observedAt)) {
+    if (!exactKeys(input, ["action"])) {
       return edgeCommandFailure("invalid_payload", "Silent approval input is invalid.")
     }
     return edgeCommandSuccess(input as EpochProjectPackageWorkflowInput)

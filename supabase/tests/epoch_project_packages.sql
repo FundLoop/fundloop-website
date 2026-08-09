@@ -141,9 +141,13 @@ BEGIN
   SELECT * INTO p FROM public.epoch_project_packages WHERE project_id=1
     AND intended_cycle_id=(SELECT id FROM public.monthly_cycles WHERE cycle_key='2026-08') ORDER BY version DESC LIMIT 1;
   IF p.status <> 'rolled_forward' OR p.list_status <> 'missing' OR p.funding_status <> 'missing'
-    OR p.canonical_cycle_id <> (SELECT id FROM public.monthly_cycles WHERE cycle_key='2026-09') THEN
+    OR p.canonical_cycle_id <> (SELECT id FROM public.monthly_cycles WHERE cycle_key='2026-09') OR p.rolled_to_package_id IS NULL THEN
     RAISE EXCEPTION 'missing_pair_did_not_roll_forward';
   END IF;
+  IF NOT EXISTS(SELECT 1 FROM public.epoch_project_packages retry
+    WHERE retry.id=p.rolled_to_package_id AND retry.rolled_from_package_id=p.id
+      AND retry.intended_cycle_id=(SELECT id FROM public.monthly_cycles WHERE cycle_key='2026-09')
+  ) THEN RAISE EXCEPTION 'missing_pair_rollover_lineage_missing'; END IF;
   IF EXISTS(SELECT 1 FROM public.epoch_project_package_lock_candidates WHERE package_id=p.id) THEN
     RAISE EXCEPTION 'missing_pair_reached_lock_candidates';
   END IF;

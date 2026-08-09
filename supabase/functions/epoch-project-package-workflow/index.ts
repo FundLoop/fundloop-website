@@ -63,6 +63,7 @@ async function handleRequest(request: Request) {
   if (input.action === "validate") {
     const { data, error } = await auth.adminClient.rpc("validate_epoch_project_package", { p_command: {
       ...input, deploymentEnvironment: runtimeEnvironment, actorRole: "internal_admin", actorUserId: auth.user.id,
+      observedAt: new Date().toISOString(),
     } })
     if (error) return json(edgeCommandFailure(failureCode(error.message), error.message))
     return json(edgeCommandSuccess({ action: "validate", packageId: Number(data) }))
@@ -106,14 +107,14 @@ async function handleRequest(request: Request) {
       contractVersion: "epoch_project_package_decision.v1", deploymentEnvironment: runtimeEnvironment,
       packageId: input.packageId, decision: input.action === "approve" ? "approve" : "opt_out",
       actorUserId: auth.user.id, evidenceHash: input.evidenceHash,
-      ...(input.action === "opt_out" ? { reason: input.reason.trim() } : {}), ...(input.decidedAt ? { decidedAt: input.decidedAt } : {}),
+      decidedAt: new Date().toISOString(), ...(input.action === "opt_out" ? { reason: input.reason.trim() } : {}),
     } })
     if (error) return json(edgeCommandFailure(failureCode(error.message), error.message))
     return json(edgeCommandSuccess({ action: input.action, packageId: input.packageId, decisionEventId: Number(data) }))
   }
 
   const { data, error } = await auth.adminClient.rpc("finalize_silent_epoch_project_packages", {
-    p_environment: runtimeEnvironment, p_now: input.observedAt ?? new Date().toISOString(),
+    p_environment: runtimeEnvironment, p_now: new Date().toISOString(),
   })
   if (error) return json(edgeCommandFailure(failureCode(error.message), error.message))
   return json(edgeCommandSuccess({ action: "finalize_silent", finalizedCount: Number(data) }))

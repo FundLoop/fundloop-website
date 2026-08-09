@@ -27,6 +27,9 @@ describe("epoch project package contract", () => {
   })
   it("keeps runtime environment and actor identity server-owned", () => {
     expect(validateEpochProjectPackageWorkflowInput({ action: "finalize_silent", actorUserId: "crafted" })).toMatchObject({ ok: false })
+    expect(validateEpochProjectPackageWorkflowInput({ action: "finalize_silent", observedAt: "2030-01-01T00:00:00Z" })).toMatchObject({ ok: false })
+    expect(validateEpochProjectPackageWorkflowInput({ ...valid, observedAt: "2030-01-01T00:00:00Z" })).toMatchObject({ ok: false })
+    expect(validateEpochProjectPackageWorkflowInput({ action: "approve", packageId: 4, evidenceHash: "b".repeat(64), decidedAt: "2030-01-01T00:00:00Z" })).toMatchObject({ ok: false })
     expect(validateEpochProjectPackageWorkflowInput({ action: "send_reconciliation_email", packageId: 4, providerKey: "resend" })).toMatchObject({ ok: false })
   })
 })

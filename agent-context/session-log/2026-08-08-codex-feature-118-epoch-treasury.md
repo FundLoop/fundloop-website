@@ -1301,3 +1301,44 @@ activation proof is deferred, preserving a fail-closed production and no-value-f
 - Independently validate #133 and move it to In Review only after a passing report.
 - Return to the real #131 Stripe bank-transfer provider lifecycle when the newly approved Stripe
   access can produce the required sandbox evidence; keep production activation deferred.
+
+### session v27: project-package validator fixes (#133)
+
+- Timestamp: 2026-08-09T17:38:00-04:00
+- Agent: Codex
+- Branch: codex/130-settlement-packages
+- Head: c821ce2
+
+#### Objective
+
+Close the independent #133 validator findings without broadening the production-disabled scope.
+
+#### Actions Taken
+
+- Removed `observedAt` and `decidedAt` from every browser-owned command shape and exact-key
+  allowlist. Edge now derives validation, decision, and silent-finalization timestamps from its
+  server clock; deterministic clock inputs remain reachable only through service-only SQL seams.
+- Added explicit missing-evidence rollover children with reciprocal `rolled_from_package_id` and
+  `rolled_to_package_id` provenance, copied source evidence, and a next-cycle manifest link.
+- Added adversarial contract and executable SQL assertions for forged timestamps and linked
+  missing-list/payment rollover lineage.
+- Repeated the real local founder/email/public flow and retained exact viewport evidence at
+  1440x900 and 390x844 plus a 1440x900 Mailpit delivery capture.
+
+#### Validation Notes
+
+- Passed: fresh local migration/seed replay and executable #133 SQL suite with linked rollover.
+- Passed: focused package Vitest (3 files/11 tests), typecheck, lint, and diff check before the
+  final broad gate.
+- Passed: real Mailpit delivery to `finance@civicmesh.example.com`, server-owned accepted time,
+  founder approval, one approved lock candidate, and privacy-safe public report; browser console
+  errors remained zero.
+- Visually inspected exact viewport artifacts:
+  `founder-desktop-1440x900.png`, `founder-mobile-390x844.png`,
+  `mailpit-delivery-1440x900.png`, `public-desktop-1440x900.png`, and
+  `public-mobile-390x844.png` under ignored `output/playwright/issue-133/`.
+
+#### Suggested Next Steps
+
+- Commit this narrow correction, rerun full Node 22 validation, and request independent #133
+  revalidation at the new exact commit.

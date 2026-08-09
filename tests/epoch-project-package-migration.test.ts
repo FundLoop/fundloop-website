@@ -25,6 +25,8 @@ describe("epoch project package control plane",()=>{
     expect(edge).toContain("actorUserId: auth.user.id")
     expect(edge).toContain('runtimeEnvironment !== "local" && runtimeEnvironment !== "test"')
     expect(edge).toContain('p_actor_role: "internal_admin"')
+    expect(edge).toContain("observedAt: new Date().toISOString()")
+    expect(edge).toContain("decidedAt: new Date().toISOString()")
     expect(sql).toContain("p_actor_role <> 'internal_admin'")
     expect(sql).toContain("local_email_delivery_enabled=true")
     expect(edge).toContain("/api/v1/send")
