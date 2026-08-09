@@ -1,6 +1,6 @@
 # FundLoop Operational MVP
 
-Last drafted: 2026-07-20
+Last updated: 2026-08-09
 
 Related docs:
 - [Engineering Docs Index](./README.md)
@@ -22,7 +22,7 @@ The MVP must support:
 - project attribution data submission
 - user signup with CUBID linkage and payout-asset priorities
 - monthly cycle lock
-- deterministic capped equalization allocation
+- deterministic Cubid-discount and capped low-earner redistribution
 - operator verification and approval
 - bookkeeping earnings credited to user accounts
 - no actual payout execution
@@ -200,16 +200,16 @@ Rules:
 
 - Lock uses the existing `monthly-cycle-lock` command boundary.
 - Lock reattaches month-bearing rows to the target cycle before reading.
-- Lock manifest includes cycle identity/bounds, project contribution submissions, confirmed or submitted payment/contribution records, approved attribution datasets with scoped CUBID identity references, eligible users and CUBID snapshot summaries, user asset preference summaries, counts, and checksums.
+- Lock manifest includes cycle identity/bounds, approved project packages, applied and reconciled funding sources, project/rail/asset/native/FX/USD provenance, approved project cohorts with scoped CUBID identity references, eligible users, locked score/max evidence, user asset preference summaries, counts, and checksums.
 - Lock blocks unresolved required inputs by default.
 - Operator override requires explicit reason and audit event.
 
 Acceptance criteria:
 
 - Lock creates deterministic `locked_manifest` and `locked_manifest_hash`.
-- Locked manifest contains all MVP inputs.
+- Locked manifest contains every funded source, eligible project-user count, and score/max input required to reproduce the approved model.
 - Repeated lock attempts fail safely once status is no longer `open`.
-- Calculation work starts from `locked_manifest.mvp_inputs`, including contribution submissions, approved attribution datasets/rows, eligible users, CUBID snapshots, and destination-free asset preference summaries, not from live mutable rows.
+- Calculation work starts from `locked_manifest.mvp_inputs`, including funded source lots, approved project cohorts, eligible users, CUBID score/max snapshots, and destination-free asset preference summaries, not from live mutable rows.
 
 ### 6. Deterministic Allocation Calculation
 
@@ -219,26 +219,52 @@ Definitions:
 
 - Monthly pool USD = system-price-normalized value of confirmed available project contribution pools.
 - Project pool USD = each project's confirmed available contribution amount normalized through the cycle price snapshot.
-- Eligible user = CUBID status `linked` or `verified` at lock time with approved attribution for the contributing project/month.
-- User raw project entitlement = project pool USD multiplied by the user's approved attribution share within that project.
-- User baseline = the largest single-project raw entitlement for that user.
-- Equalization remainder = monthly pool USD minus the sum of user baselines.
-- User final allocation = baseline plus capped equalization top-up, capped at `3x` the user's baseline.
+- Eligible user = CUBID status `linked` or `verified` at lock time and membership in the approved locked project package/cohort for that month. Historical attribution rows may support cohort evidence, but attribution points do not weight eligibility or allocation.
+- Theoretical project share = the funded project pool divided equally across that project's eligible users.
+- Initial project claim = theoretical project share multiplied by locked Cubid score divided by the versioned locked maximum score.
+- Project pool contribution = theoretical project share minus the initial project claim; all contributions enter one global epoch redistribution pool.
+- Aggregate initial claim = the sum of one user's score-adjusted initial project claims.
+- User baseline = the largest single-project score-adjusted initial claim for that user.
+- Exact user cap = `3 ×` baseline; canonical minor-unit cap = floor of that exact cap to the allocation minor unit. Before redistribution, aggregate initial claim is clamped, and neither retained-lot nor final-award rounding may cross the canonical cap.
+- Raw proportional retained source lot = exact initial project/source lot multiplied by `min(1, exact cap / aggregate initial claim)`; its non-negative exact difference is exact overflow. Canonical initial/retained/overflow units are derived independently, while the source-provenanced sub-minor residual bridges exact and canonical totals.
+- Global epoch redistribution pool = score-discount project pool contributions plus overlap-cap overflow.
+- Pre-redistribution current = the canonical retained target: floor `min(aggregate initial claim, exact cap)` to the allocation minor unit and bound it by the floored minor-unit cap. A user already at cap, including a zero-baseline user at cap zero, receives no top-up.
+- User final allocation = pre-redistribution current plus the deterministic lowest-current-total-first water-filling top-up, never above the cap.
 - Asset fulfillment = selected asset credit fills based on the user's highest-priority accepted available assets.
-- Source-currency/project breakdown is retained for reporting, while canonical credit value is USD equivalent.
+- Every initial claim, pool contribution, top-up, and returned/carryover residue retains project, rail, asset, native, FX, and USD provenance.
+
+This replaces the prior point-proportional share and overlap-derived remainder model.
+Scores are individual discounts against equal project shares, not weights divided by
+the sum of cohort scores. Redistribution principal is not a fee, revenue, treasury
+sweep, or payable.
+
+Until Goal #134's accounting, privacy, custody, and production gates are satisfied,
+this calculation is review-only in local/dev. Production allocation and award
+posting must remain fail-closed, and project/public outputs must not expose user-level
+cross-project overlap.
 
 Rounding:
 
+- Maintain separate exact-decimal and canonical integer-minor-unit source ledgers. Every exact source satisfies non-negative `exact initial = exact retained + exact overflow`.
+- Derive canonical initial source units first against the funded canonical total using descending fractional remainder then stable project/rail/asset/source-lot ID.
+- Calculate exact-decimal cap scaling before rounding.
+- Floor the retained-total target to the allocation minor unit and bound it by the canonical floored cap. Assign canonical retained units by constrained largest remainder, requiring `0 <= retained minor lot <= initial minor lot` and skipping saturated or zero-capacity lots.
+- Define canonical overflow units only as `initial minor lot - retained minor lot`; they are never negative.
+- Move an exact fraction or candidate minor unit rejected by the cap into the global overflow pool as cap-floor overflow with its original project/rail/asset/native/FX/USD provenance; together with proportional overlap overflow it may fund another uncapped user and otherwise becomes source-linked returned/carryover residue.
+- Track sub-minor exact residual and deterministic cross-source residual transfers separately with source provenance; never calculate exact overflow from a rounded retained lot.
+- Apply the same stable largest-remainder rule within each rail/asset/custody group for native atomic units.
 - Round after USD normalization.
 - Store exact decimal calculation inputs and rounded credited amounts.
-- Assign rounding residual deterministically to users by descending unrounded remainder, then stable user id sort.
+- Exact equal-current users water-fill equally; aggregate initial and baseline do not break their tie. Assign an indivisible award unit only by descending fractional remainder of exact target then stable user ID, skipping capped users and continuing to another eligible user or source-linked residue.
 
 Outputs:
 
 - per-user result rows
-- per-project/user attribution rows
+- per-project/user theoretical-share, score-factor, and initial-claim rows
+- source-linked retained-initial, score-discount contribution, overlap-cap overflow,
+  and redistribution-top-up rows
 - selected asset fill rows
-- returned future-pool rows for unfulfillable amounts
+- returned/carryover residue rows with originating source provenance
 - total pool USD
 - source-currency breakdown
 - calculation artifact hash
@@ -247,8 +273,18 @@ Outputs:
 Acceptance criteria:
 
 - Same locked manifest produces same result hash.
-- Allocated USD plus returned future-pool USD equals total monthly pool USD after deterministic rounding.
-- No user final allocation exceeds `3x` baseline.
+- Every non-negative exact initial source lot equals exact retained plus exact overflow; independently, every canonical initial source unit equals bounded canonical retained plus non-negative canonical overflow.
+- Retained initial lots plus score-discount contributions plus overlap-cap overflow equal the funded pool.
+- Top-ups plus returned/carryover residue equal score-discount contributions plus overlap-cap overflow.
+- Final allocations plus returned/carryover residue equal total funded pool USD after deterministic rounding.
+- No retained-lot target or final allocation exceeds the floored minor-unit `3 ×` baseline cap.
+- The canonical A+B fixture uses 100 B users each exactly `10/20`, produces `$150 + $500 = $650` of redistribution, and sends it first to the 97 B-only lowest earners.
+- The four-project overlap fixture `[100,100,100,100]` clamps `$400` to a `$300` cap, retains `$75` per source, and contributes four `$25` overflow lots before water-filling.
+- The fractional fixture with four `$0.335` lots has aggregate `$1.34`, baseline `$0.335`, exact cap `$1.005`, canonical cent cap `$1.00`, four `$0.25` retained lots, `$0.335` exact overflow, 34 canonical overflow cents, and a separately source-linked `$0.005` exact-to-canonical residual; it never awards `$1.01`.
+- The two-`$0.006` retained-lot/one-cent-target counterexample assigns canonical initial capacity first, retains the cent only on that source, produces no negative source overflow, and separately reconciles exact `$0.012` to one canonical cent.
+- The one-cent equal-current-user fixture gives two users exact `$0.005` top-up targets; fractional remainders tie, so stable user ID alone selects the cent and input permutation leaves the result hash unchanged.
+- Arbitrary overlap count and project/source input permutation properties conserve exact decimals, USD minor units, and native atomic units.
+- Cap-aware residual properties prove exact-decimal conservation separately from integer minor-unit conservation, with no lost or double-assigned fractions or units.
 - Ineligible users are excluded with reason codes.
 - Calculation creates artifacts in Supabase Storage and result rows linked to `monthly_cycle_id`.
 
@@ -259,11 +295,12 @@ Operators review calculated results before credits become visible as approved ea
 Verification checks:
 
 - manifest hash matches calculation package input
-- all included projects have approved contribution submissions
-- all included attribution datasets are approved
+- all included projects have approved packages and reconciled, journal-backed funded sources
+- all included project cohorts and score/max snapshots are approved and locked
 - all included users are CUBID-linked at lock time
-- allocated USD plus returned future-pool USD equals monthly pool USD after rounding
-- no user allocation exceeds the `3x` baseline cap
+- retained initial lots, both pool-contribution classes, top-ups, and source-linked returned/carryover residue conserve the monthly pool after rounding
+- no user allocation exceeds the floored canonical minor-unit `3 ×` baseline cap
+- users already at cap and zero-baseline users receive no top-up
 - asset fills respect accepted preference order and recorded availability
 - no negative credits
 - artifact hashes exist
@@ -301,7 +338,7 @@ Rules:
 - Credits are created from approved user results.
 - Credits are created through the typed `monthly-cycle-bookkeeping-credits-create` Edge Function command.
 - Credits store selected asset fill amount, canonical USD equivalent amount, and source-currency/project breakdown for reporting.
-- Returned future-pool amounts are recorded separately and are not user credits.
+- Returned/carryover residue is recorded by originating funded source and is not a user credit, fee, revenue, or payable.
 - Credit status starts as `credited`.
 - If existing `payout_intents` are used, they must be presented as bookkeeping/not-paid-yet records unless and until a later payout execution session changes status.
 - User-facing language distinguishes `credited`, `pending payout setup`, `not paid yet`, and `future settlement preference`.
@@ -310,7 +347,7 @@ Acceptance criteria:
 
 - `/workspace/earnings` shows credited earnings by cycle.
 - User can see source breakdown and USD equivalent.
-- Founder/operator views show total credited by cycle/project, returned future-pool amounts, and not-paid status without exposing private payout destinations.
+- Founder/operator views show permitted cycle/project totals, source-linked returned/carryover residue, and not-paid status without exposing private payout destinations or cross-project membership.
 - No UI claims that funds were transferred.
 
 Handoff contract from Goal #58 / issue #81 to Goal #59:
@@ -397,11 +434,13 @@ Minimum automated coverage:
 - contribution submission authorization, period validation, amount validation, and cycle status rejection
 - attribution submission user resolution, approval state, duplicate handling, and cycle linkage
 - user asset priority create/update/reorder/reject-all warning
-- lock manifest includes contribution, attribution, CUBID snapshot, and asset preference inputs
+- lock manifest includes funded source provenance, approved project cohorts, locked CUBID score/max, and asset preference inputs
 - attribution fixtures include scoped CUBID identity references and resolved FundLoop user mappings
-- calculation fixture produces deterministic known capped equalization allocations
+- canonical A+B fixture produces deterministic score-adjusted claims and `$650` lowest-earner-first redistribution
+- four-project `[100,100,100,100]` fixture retains four `$75` lots, contributes four `$25` overflow lots, and excludes the capped user from top-ups
+- arbitrary overlap count, source-order permutation, zero-baseline, and exact-decimal/minor-unit/native conservation properties
 - rounding residual assignment is deterministic
-- asset fulfillment partial fills and returned future-pool amounts are deterministic
+- asset fulfillment partial fills and source-linked returned/carryover residue are deterministic
 - verification catches total mismatch, missing artifact, ineligible user, and unapproved dataset
 - bookkeeping credit creation is idempotent
 - user earnings workspace renders credited/not-paid states
@@ -425,7 +464,7 @@ Operational MVP is complete only when:
 - a project can submit attribution data
 - a user can sign up, link CUBID, and set asset priorities
 - an operator can lock a cycle
-- the system calculates deterministic capped equalization allocations
+- the system calculates deterministic score-adjusted claims and capped low-earner redistribution
 - an operator can verify and approve results
 - users see credited bookkeeping earnings
 - no actual payout is executed
@@ -434,7 +473,7 @@ Operational MVP is complete only when:
 ## Assumptions And Defaults
 
 - User priorities are payout-asset preferences, not allocation-weight inputs.
-- MVP allocation uses raw project attribution as input, then applies capped global equalization.
+- MVP allocation uses approved project membership plus locked Cubid score/max evidence; mutable activity points and point-proportional cohort weights are superseded.
 - USD equivalent is the canonical bookkeeping credit value.
 - Source-currency amounts are stored and shown for transparency.
 - USD normalization comes from the cycle system price snapshot.

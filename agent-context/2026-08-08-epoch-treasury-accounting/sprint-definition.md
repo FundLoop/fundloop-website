@@ -1,7 +1,7 @@
 # Feature definition: settlement-backed epoch treasury and auditable payouts
 
 Status: brainstorm complete; published and vetted for implementation
-Last updated: 2026-08-08
+Last updated: 2026-08-09
 Issue kind: Feature
 Repository: `FundLoop/fundloop-website`
 Project: `FundLoop Project`
@@ -200,7 +200,9 @@ occurs. Later policy edits never rewrite prior events.
 3. Inventory is pooled by `epoch x rail x asset` across projects. Project
    participation establishes asset eligibility; individual project balances are
    not reserved for particular users.
-4. Every withdrawal preserves proportional project-source attribution.
+4. Every withdrawal preserves proportional project-source-lot attribution for the
+   already approved award. This payout provenance rule is unrelated to Cubid
+   allocation weighting.
 5. Availability shown in the UI is informational. Inventory is atomically reserved
    only when a valid payout request commits.
 6. Simultaneous requests are ordered by database commit order with a durable,
@@ -259,8 +261,10 @@ occurs. Later policy edits never rewrite prior events.
 3. Post-cutoff project actions are limited to approval or withdrawal from the
    current epoch.
 4. A user enters allocation only with a valid and whitelisted Cubid ID.
-5. A valid, whitelisted user receives an allocation proportional to the user's
-   Cubid uniqueness score under the versioned allocation algorithm.
+5. A valid, whitelisted user receives an equal theoretical share of each eligible
+   funded project pool, discounted by the user's locked Cubid score divided by the
+   versioned locked maximum score. The score is not divided by the sum of cohort
+   scores.
 6. Invalid Cubid IDs and whitelisting failures are excluded. Project admins see
    the affected project's validation and whitelisting failures without gaining
    cross-project identity visibility.
@@ -306,15 +310,58 @@ occurs. Later policy edits never rewrite prior events.
 21. Before lock, a blacklisted user is excluded. After lock, unpaid execution stops
     and the conditional award enters compliance hold pending an authorized resolution. It
     is not silently redistributed and completed payouts are not clawed back.
-22. Within the applicable allocation cohort, the locked Cubid uniqueness score is
-    used directly as a proportional weight: user score divided by the sum of
-    eligible scores, subject to the versioned project/source allocation rules.
+22. Each difference between theoretical share and score-adjusted initial claim
+    enters one global epoch redistribution pool. The allocator aggregates each
+    user's initial project claims, defines baseline as the largest single-project
+    initial claim, defines exact cap as three times baseline, and floors it to the
+    allocation minor unit for the canonical executable cap. If aggregate initial
+    exceeds cap, every project/source initial lot is proportionally retained by
+    `exact cap / aggregate`; each exact difference enters the global pool as source-linked
+    overlap-cap overflow. Water-filling starts from the canonical floored and
+    cap-bounded retained current total and
+    raises equal-current uncapped users together until the next level, cap, or
+    exhaustion. Aggregate initial and baseline do not break equal-current ties. A capped or zero-baseline user receives
+    no top-up. Retained-lot and final-award rounding may never cross the floored cap;
+    descending-fraction residual assignment skips capped candidates and sends the
+    rejected fraction or unit, with source provenance, into pool/residue.
 23. Cubid is queried during reconciliation and again at lock. A prior validated
     snapshot may be used during an outage only within a configured short TTL;
     otherwise the user remains unresolved and cannot lock.
 24. Projects see only a project-scoped pseudonymous identifier, failure category,
     remediation state, and inclusion outcome for failed users. Raw Cubid evidence,
     another project's identifier, and cross-project membership remain private.
+
+Canonical allocation fixture: Project A contributes `$300`; scores `5/10/15` of a
+locked maximum `20` yield `$25/$50/$75` initial claims and `$150` of pool. Project B
+contributes `$1,000`; 100 users each exactly `10/20` yield `$500` of initial claims and
+`$500` of pool. The three A users also use B, so the combined `$650` is water-filled
+first to the 97 B-only users with the lowest aggregate initial claims. Equal-current
+continuous treatment and the sole fractional-remainder/stable-user-ID minor-unit rule,
+rounding, caps, and complete funded-source provenance must reproduce exactly.
+
+Adversarial overlap fixture: score-adjusted initial lots `[100,100,100,100]` produce
+aggregate `$400`, baseline `$100`, cap `$300`, retention factor `0.75`, four retained
+`$75` lots, and four source-linked `$25` overflow lots. The user begins water-filling
+at cap and receives no top-up. These conservation and input-order properties apply
+to arbitrary overlap counts and to exact-decimal, minor-unit, and native-unit rows.
+
+Fractional cap fixture: four `$0.335` lots produce aggregate `$1.34`, baseline
+`$0.335`, exact cap `$1.005`, and canonical cent cap `$1.00`. Cap-aware retained-lot
+rounding emits four `$0.25` lots totaling `$1.00`, never `$1.01`; the rejected exact
+`$0.005` exact-to-canonical residual is source-linked but separate from `$0.335`
+exact overflow and 34 canonical overflow cents. Exact-decimal and
+integer-cent conservation are proved independently without lost or duplicate units.
+
+Non-negative source fixture: two exact `$0.006` retained lots with a one-cent
+canonical target first receive canonical initial capacities by stable largest
+remainder. Constrained retained rounding assigns the cent only to the source with
+capacity, so canonical overflow is never negative; exact `$0.012` conservation and
+sub-minor source provenance remain separate.
+
+Equal-current tie fixture: two uncapped users each have an exact `$0.005` top-up
+target and one canonical cent remains. Continuous water-filling treats them equally;
+equal fractional remainder then stable user ID selects the cent. Aggregate initial
+and baseline do not participate, and input permutation preserves the result hash.
 
 ### 10. Legal ownership, payout, privacy, and consent intent
 
@@ -552,7 +599,8 @@ Process:
 10. Vet candidate users for valid, whitelisted Cubid IDs. Exclude invalid IDs and
     whitelisting failures, expose the relevant failure state to the submitting
     project and affected user, notify users who identify as or become greylisted or
-    blacklisted, and retain uniqueness scores for proportional allocation.
+    blacklisted, and retain the locked score and versioned maximum-score evidence
+    required for score discounting and redistribution.
     Recheck during reconciliation and at lock; use cached passing evidence only
     within the configured short outage TTL.
 11. Vet candidate amounts for clean provenance, final settlement, and preliminary
@@ -662,8 +710,9 @@ Process:
 
 1. Confirm the opt-out deadline has passed.
 2. Freeze included projects, settled/applied receipts, accepted user lists, Cubid
-   evidence, eligibility checks, native balances, fee results, fixed FX rates,
-   carryover results, and project-source dimensions.
+   score/max evidence, eligibility checks, native balances, fee results, fixed FX
+   rates, carryover results, eligible project-user counts, and project/rail/asset/
+   native/FX/USD source dimensions.
 3. Prove that the distributable pool is based only on reconciled epoch treasury
    assets after fees and carryover activity.
 4. Produce a deterministic lock manifest and input hash.
@@ -681,24 +730,51 @@ allocation results.
 
 Process:
 
-1. Run the versioned allocation algorithm against the locked manifest.
-2. Preserve per-user project-source attribution and eligible `rail x asset` union.
-3. Calculate user USD entitlements using the epoch's fixed monthly rates.
-4. Calculate native payout guides using the same originating-epoch rates.
-5. Prove conservation by project, rail, asset, and total functional USD.
-6. Produce immutable calculation inputs, outputs, version, and reproducibility hash.
-7. Do not open payouts or post final user award/accounting records until review
+1. Divide each funded project pool equally across that project's eligible users.
+2. Calculate each initial project claim as theoretical share multiplied by locked
+   score divided by locked maximum score; send every shortfall into one global
+   epoch redistribution pool.
+3. Aggregate each user's initial claims, set baseline to the largest single-project
+   initial claim, set exact cap to three times baseline, and floor that value to the
+   allocation minor unit for the canonical retained/final cap.
+4. Before redistribution, clamp aggregate initial to cap. Scale every project/source
+   initial lot by `min(1, exact cap / aggregate)`, retain the scaled lot, and move its exact
+   difference into the pool as source-linked overlap-cap overflow.
+5. Define the global pool as score-discount contributions plus overlap-cap overflow,
+   then redistribute lowest-current-total first through deterministic water-filling;
+   exact equal-current users remain equal until a level/cap/exhaustion boundary.
+   For indivisible canonical units, use only descending exact-target fractional
+   remainder then stable user ID, with cap-aware skipping.
+   A user already at cap, including a zero-baseline user at cap zero, receives no top-up.
+6. Preserve project, rail, asset, native, FX, and functional-USD source lots for
+   every initial claim, top-up, and cap-exhausted returned/carryover residue.
+7. Apply exact-decimal cap scaling first. Allocate retained functional-USD and native
+   values in a separate exact ledger where each non-negative initial source equals
+   exact retained plus exact overflow. Derive canonical initial units first against
+   the funded canonical total by descending fractional remainder then stable source
+   ID. Assign retained units to the floored target with the same ordering constrained
+   by `0 <= retained <= initial`, skipping saturated/zero-capacity lots and any cap
+   breach; canonical overflow is `initial - retained`. Track sub-minor residual and
+   cross-source transfers separately with provenance, never as exact overflow.
+8. Prove conservation by project, rail, asset, native quantity, redistribution pool,
+   and functional USD for arbitrary overlap count and input order, separately for
+   exact decimals and integer minor-unit outputs, with no lost/double-assigned units.
+9. Produce immutable calculation inputs, outputs, version, and reproducibility hash.
+10. Do not classify redistribution as fee/revenue/payable, and do not open payouts or
+   post final user award/accounting records until review
    completes.
+11. Keep production allocation fail-closed until the named accounting, privacy,
+   custody, legal, and launch approvals are effective.
 
 Exit gate:
 
-- The allocation run is deterministic, balanced, reproducible, and free of hard
-  eligibility or funding failures.
+- The allocation run is deterministic, balanced, reproducible, privacy-safe, below
+  every `3 ×` cap, and free of hard eligibility or funding failures.
 
 ### Stage 8: `reviewing`
 
 Purpose: independently validate allocation integrity and reasonableness before
-creating spendable user claims.
+creating provisional award-control records.
 
 Process:
 
@@ -713,6 +789,9 @@ Process:
    - value harvested and transferred from previous epochs;
    - deduplicated net user count; and
    - minimum, mean, median, and maximum available payouts.
+   Operator-only evidence additionally shows theoretical shares, score factors,
+   initial claims, redistribution order, source-linked top-ups, caps, and residue;
+   project/public evidence cannot reveal cross-project membership.
 5. Review privacy thresholds before any public release.
 6. Require one authorized admin to approve the reviewed allocation package. The
    approval is bound to the exact locked manifest and allocation-result hashes.
@@ -725,13 +804,13 @@ Exit gates:
 
 ### Stage 9: `payout_readying`
 
-Purpose: convert approved allocation results into funded, externally executable
-user claims and prepare public/operator evidence.
+Purpose: post approved allocation results as funded provisional award-control
+records and prepare public/operator and later payout-readiness evidence.
 
 Process:
 
-1. Post the accountant-approved conditional-award or payout-accounting entries from
-   the approved allocation artifact.
+1. Post the approved conditional-award memorandum entries from the exact allocation
+   artifact without classifying redistribution or awards as a user payable.
 2. Publish the privacy-safe detailed outcome listing, including:
    - withdrawn projects;
    - included value and user count per project;
@@ -753,7 +832,8 @@ Process:
 
 Exit gates:
 
-- User liabilities reconcile to restricted assets.
+- Provisional award-control totals reconcile to funded sources; no user liability
+  or payable exists before the separately approved processed-payout event.
 - Payout thresholds, signer/paymaster controls, routes, and inventory are ready.
 - Close package exists and all hard gates pass.
 
