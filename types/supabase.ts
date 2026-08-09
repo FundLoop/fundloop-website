@@ -286,6 +286,70 @@ export type Database = {
           },
         ]
       }
+      custody_reconciliation_snapshots: {
+        Row: {
+          asset_id: number
+          custody_account_id: number
+          evidence_hash: string
+          id: number
+          observed_at: string
+          production_enabled: boolean
+          provider_native_balance: number
+          shadow_native_balance: number
+          tolerance_native_amount: number
+          variance_classification: string
+          variance_native_amount: number
+        }
+        Insert: {
+          asset_id: number
+          custody_account_id: number
+          evidence_hash: string
+          id?: never
+          observed_at: string
+          production_enabled?: boolean
+          provider_native_balance: number
+          shadow_native_balance: number
+          tolerance_native_amount: number
+          variance_classification: string
+          variance_native_amount: number
+        }
+        Update: {
+          asset_id?: number
+          custody_account_id?: number
+          evidence_hash?: string
+          id?: never
+          observed_at?: string
+          production_enabled?: boolean
+          provider_native_balance?: number
+          shadow_native_balance?: number
+          tolerance_native_amount?: number
+          variance_classification?: string
+          variance_native_amount?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "custody_recon_asset_fk"
+            columns: ["asset_id", "custody_account_id"]
+            isOneToOne: false
+            referencedRelation: "financial_custody_accounts"
+            referencedColumns: ["asset_id", "id"]
+          },
+          {
+            foreignKeyName: "custody_reconciliation_snapshots_asset_id_fkey"
+            columns: ["asset_id"]
+            isOneToOne: false
+            referencedRelation: "financial_assets"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "custody_reconciliation_snapshots_custody_account_id_fkey"
+            columns: ["custody_account_id"]
+            isOneToOne: false
+            referencedRelation: "financial_custody_accounts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       debug_log: {
         Row: {
           created_at: string | null
@@ -743,6 +807,131 @@ export type Database = {
             columns: ["shadow_state_id"]
             isOneToOne: false
             referencedRelation: "epoch_shadow_states"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      external_financial_events: {
+        Row: {
+          asset_id: number
+          custody_account_id: number
+          event_type: string
+          evidence_hash: string
+          id: number
+          legacy_timestamp_evidence: Json
+          observed_at: string
+          occurred_at: string
+          ordering_status: string
+          production_enabled: boolean
+          provider_event_id: string
+          provider_key: string
+          provider_sequence: number | null
+          settled_native_amount: number
+        }
+        Insert: {
+          asset_id: number
+          custody_account_id: number
+          event_type: string
+          evidence_hash: string
+          id?: never
+          legacy_timestamp_evidence?: Json
+          observed_at?: string
+          occurred_at: string
+          ordering_status: string
+          production_enabled?: boolean
+          provider_event_id: string
+          provider_key: string
+          provider_sequence?: number | null
+          settled_native_amount: number
+        }
+        Update: {
+          asset_id?: number
+          custody_account_id?: number
+          event_type?: string
+          evidence_hash?: string
+          id?: never
+          legacy_timestamp_evidence?: Json
+          observed_at?: string
+          occurred_at?: string
+          ordering_status?: string
+          production_enabled?: boolean
+          provider_event_id?: string
+          provider_key?: string
+          provider_sequence?: number | null
+          settled_native_amount?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "external_event_asset_custody_fk"
+            columns: ["asset_id", "custody_account_id"]
+            isOneToOne: false
+            referencedRelation: "financial_custody_accounts"
+            referencedColumns: ["asset_id", "id"]
+          },
+          {
+            foreignKeyName: "external_financial_events_asset_id_fkey"
+            columns: ["asset_id"]
+            isOneToOne: false
+            referencedRelation: "financial_assets"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "external_financial_events_custody_account_id_fkey"
+            columns: ["custody_account_id"]
+            isOneToOne: false
+            referencedRelation: "financial_custody_accounts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      external_funding_applications: {
+        Row: {
+          applied_native_amount: number
+          created_at: string
+          event_id: number
+          evidence_hash: string
+          financial_reference_id: number
+          id: number
+          production_enabled: boolean
+        }
+        Insert: {
+          applied_native_amount: number
+          created_at?: string
+          event_id: number
+          evidence_hash: string
+          financial_reference_id: number
+          id?: never
+          production_enabled?: boolean
+        }
+        Update: {
+          applied_native_amount?: number
+          created_at?: string
+          event_id?: number
+          evidence_hash?: string
+          financial_reference_id?: number
+          id?: never
+          production_enabled?: boolean
+        }
+        Relationships: [
+          {
+            foreignKeyName: "external_funding_applications_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "external_financial_events"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "external_funding_applications_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "shadow_financial_reconciliation_observability"
+            referencedColumns: ["event_id"]
+          },
+          {
+            foreignKeyName: "external_funding_applications_financial_reference_id_fkey"
+            columns: ["financial_reference_id"]
+            isOneToOne: false
+            referencedRelation: "financial_references"
             referencedColumns: ["id"]
           },
         ]
@@ -4251,6 +4440,110 @@ export type Database = {
         }
         Relationships: []
       }
+      shadow_close_packages: {
+        Row: {
+          accounting_period_id: number
+          created_at: string
+          id: number
+          outside_tolerance_count: number
+          production_enabled: boolean
+          reconciliation_hash: string | null
+          status: string
+          trial_balance_hash: string | null
+          unmatched_count: number
+        }
+        Insert: {
+          accounting_period_id: number
+          created_at?: string
+          id?: never
+          outside_tolerance_count?: number
+          production_enabled?: boolean
+          reconciliation_hash?: string | null
+          status?: string
+          trial_balance_hash?: string | null
+          unmatched_count?: number
+        }
+        Update: {
+          accounting_period_id?: number
+          created_at?: string
+          id?: never
+          outside_tolerance_count?: number
+          production_enabled?: boolean
+          reconciliation_hash?: string | null
+          status?: string
+          trial_balance_hash?: string | null
+          unmatched_count?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "shadow_close_packages_accounting_period_id_fkey"
+            columns: ["accounting_period_id"]
+            isOneToOne: false
+            referencedRelation: "accounting_periods"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      shadow_financial_journals: {
+        Row: {
+          comparison_detail: Json
+          comparison_status: string
+          created_at: string
+          event_id: number | null
+          evidence_hash: string
+          functional_credits: number
+          functional_debits: number
+          id: number
+          journal_type: string
+          native_credits: number
+          native_debits: number
+          production_enabled: boolean
+        }
+        Insert: {
+          comparison_detail?: Json
+          comparison_status: string
+          created_at?: string
+          event_id?: number | null
+          evidence_hash: string
+          functional_credits: number
+          functional_debits: number
+          id?: never
+          journal_type: string
+          native_credits: number
+          native_debits: number
+          production_enabled?: boolean
+        }
+        Update: {
+          comparison_detail?: Json
+          comparison_status?: string
+          created_at?: string
+          event_id?: number | null
+          evidence_hash?: string
+          functional_credits?: number
+          functional_debits?: number
+          id?: never
+          journal_type?: string
+          native_credits?: number
+          native_debits?: number
+          production_enabled?: boolean
+        }
+        Relationships: [
+          {
+            foreignKeyName: "shadow_financial_journals_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "external_financial_events"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "shadow_financial_journals_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "shadow_financial_reconciliation_observability"
+            referencedColumns: ["event_id"]
+          },
+        ]
+      }
       support_requests: {
         Row: {
           category: string
@@ -5880,6 +6173,22 @@ export type Database = {
           },
         ]
       }
+      shadow_financial_reconciliation_observability: {
+        Row: {
+          applied_native_amount: number | null
+          event_id: number | null
+          event_type: string | null
+          legacy_timestamp_evidence: Json | null
+          observed_at: string | null
+          occurred_at: string | null
+          ordering_status: string | null
+          provider_event_id: string | null
+          provider_key: string | null
+          settled_native_amount: number | null
+          unmatched_native_amount: number | null
+        }
+        Relationships: []
+      }
       user_identities: {
         Row: {
           created_at: string | null
@@ -5949,6 +6258,16 @@ export type Database = {
           shared_profile_fields: Json
           status: string
         }[]
+      }
+      apply_external_funding: {
+        Args: {
+          p_deployment_environment: string
+          p_event_id: number
+          p_evidence_hash: string
+          p_financial_reference_id: number
+          p_native_amount: number
+        }
+        Returns: number
       }
       can_read_ledger_transaction: {
         Args: { p_transaction_id: number }
@@ -6060,6 +6379,22 @@ export type Database = {
           role_id: number
           user_id: string
         }[]
+      }
+      ingest_external_financial_event: {
+        Args: {
+          p_asset_id: number
+          p_custody_account_id: number
+          p_deployment_environment: string
+          p_event_type: string
+          p_evidence_hash: string
+          p_legacy_timestamp_evidence: Json
+          p_occurred_at: string
+          p_provider_event_id: string
+          p_provider_key: string
+          p_provider_sequence: number
+          p_settled_native_amount: number
+        }
+        Returns: number
       }
       inspect_project_invitation_review: {
         Args: {

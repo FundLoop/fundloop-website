@@ -229,6 +229,40 @@ introducing value flow.
 - Leave #128 In Progress for independent revalidation, stop services, and do not start
   #129 or open a PR.
 
+### session v6: Shadow external financial reconciliation (#129)
+
+- Timestamp: 2026-08-08T22:26:30-04:00
+- Agent: Codex
+- Branch: codex/126-ledger-control-plane
+- Head: 704afad1c0b4
+
+#### Objective
+
+Add immutable external-event and shadow reconciliation foundations without provider
+calls, canonical cutover, payables, transfers, or production value flow.
+
+#### Actions Taken
+
+- Added deduplicated immutable provider/chain events with out-of-order classification,
+  custody/asset integrity, and labelled legacy non-settlement timestamp evidence.
+- Added bounded funding applications, account/asset tolerance snapshots, exactly
+  conserved receipt/fee/allocation/payout/suspense journals, and close-package scaffolding.
+- Added an internal-secret Edge ingestion command, typed contract, service-only operator
+  read model, generated types, executable SQL, focused tests, and documentation.
+
+#### Validation Notes
+
+- Passed: fresh local Supabase replay and executable SQL covering replay/conflict,
+  out-of-order classification, over-application denial, variance, exact conservation,
+  production denial, and authenticated read denial.
+- Passed: focused tests, typecheck, lint, and diff-check; full Node 22 check follows.
+- Browser N/A: no operator UI route changed; this task supplies the read model only.
+
+#### Suggested Next Steps
+
+- Commit and attach evidence to #129; leave it In Progress for independent validation.
+- Stop services, do not change Goal #126, and do not open a PR.
+
 ### session v5: Recurring scheduler idempotency (#128)
 
 - Timestamp: 2026-08-08T22:17:19-04:00
