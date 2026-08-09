@@ -18,7 +18,6 @@ type LedgerPostRequest = {
   periodKey: string
   effectiveAt: string
   evidenceHash: string
-  actorType: NeutralLedgerActorType
   financialReferenceKey?: string
   postings: NeutralLedgerPostingInput[]
 }
@@ -30,10 +29,10 @@ type LedgerReversalRequest = {
   periodKey: string
   effectiveAt: string
   evidenceHash: string
-  actorType: NeutralLedgerActorType
 }
 
-type TrustedCommand<T> = T & { actorUserId?: string; deploymentEnvironment: string }
+export type TrustedNeutralLedgerActor = { actorType: NeutralLedgerActorType; actorUserId?: string }
+type TrustedCommand<T> = T & TrustedNeutralLedgerActor & { deploymentEnvironment: string }
 const identifierPattern = /^[a-z][a-z0-9:_-]*$/
 const idempotencyPattern = /^[a-zA-Z0-9:_-]{8,160}$/
 const hashPattern = /^[0-9a-f]{64}$/
@@ -50,8 +49,7 @@ function commonValid(value: Record<string, unknown>) {
   return typeof value.idempotencyKey === "string" && idempotencyPattern.test(value.idempotencyKey) &&
     typeof value.periodKey === "string" && identifierPattern.test(value.periodKey) &&
     typeof value.effectiveAt === "string" && Number.isFinite(Date.parse(value.effectiveAt)) &&
-    typeof value.evidenceHash === "string" && hashPattern.test(value.evidenceHash) &&
-    (value.actorType === "operator" || value.actorType === "service" || value.actorType === "system")
+    typeof value.evidenceHash === "string" && hashPattern.test(value.evidenceHash)
 }
 
 function disabled(): ContractFailure {
@@ -61,7 +59,7 @@ function disabled(): ContractFailure {
 export function validateLedgerPostRequest(
   input: unknown,
   environment: Record<string, string | undefined>,
-  authenticatedActorUserId?: string,
+  trustedActor: TrustedNeutralLedgerActor,
 ): ContractResult<TrustedCommand<LedgerPostRequest>> {
   if (!isNeutralLedgerRuntimeEnabled(environment)) return disabled()
   const value = record(input)
@@ -79,10 +77,10 @@ export function validateLedgerPostRequest(
     periodKey: value.periodKey as string,
     effectiveAt: value.effectiveAt as string,
     evidenceHash: value.evidenceHash as string,
-    actorType: value.actorType as NeutralLedgerActorType,
+    actorType: trustedActor.actorType,
     ...(typeof value.financialReferenceKey === "string" ? { financialReferenceKey: value.financialReferenceKey } : {}),
     postings: value.postings,
-    ...(authenticatedActorUserId ? { actorUserId: authenticatedActorUserId } : {}),
+    ...(trustedActor.actorUserId ? { actorUserId: trustedActor.actorUserId } : {}),
     deploymentEnvironment,
   } }
 }
@@ -90,7 +88,7 @@ export function validateLedgerPostRequest(
 export function validateLedgerReversalRequest(
   input: unknown,
   environment: Record<string, string | undefined>,
-  authenticatedActorUserId?: string,
+  trustedActor: TrustedNeutralLedgerActor,
 ): ContractResult<TrustedCommand<LedgerReversalRequest>> {
   if (!isNeutralLedgerRuntimeEnabled(environment)) return disabled()
   const value = record(input)
@@ -106,8 +104,8 @@ export function validateLedgerReversalRequest(
     periodKey: value.periodKey as string,
     effectiveAt: value.effectiveAt as string,
     evidenceHash: value.evidenceHash as string,
-    actorType: value.actorType as NeutralLedgerActorType,
-    ...(authenticatedActorUserId ? { actorUserId: authenticatedActorUserId } : {}),
+    actorType: trustedActor.actorType,
+    ...(trustedActor.actorUserId ? { actorUserId: trustedActor.actorUserId } : {}),
     deploymentEnvironment,
   } }
 }

@@ -423,6 +423,13 @@ export type Database = {
         }
         Relationships: [
           {
+            foreignKeyName: "financial_references_asset_custody_fkey"
+            columns: ["asset_id", "custody_account_id"]
+            isOneToOne: false
+            referencedRelation: "financial_custody_accounts"
+            referencedColumns: ["asset_id", "id"]
+          },
+          {
             foreignKeyName: "financial_references_asset_id_fkey"
             columns: ["asset_id"]
             isOneToOne: false

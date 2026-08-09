@@ -26,16 +26,19 @@ caller using ordinary DML.
 
 Future Edge commands must validate requests through
 `supabase/functions/_shared/ledger-posting-contract.ts`, derive the actor and runtime
-environment at the trusted boundary, and then call one of the service-role-only RPCs:
+environment at the trusted boundary, bind actor type from the authenticated command
+mode instead of request JSON, and then call one of the service-role-only RPCs:
 
 - `post_neutral_ledger_transaction(jsonb)`
 - `reverse_neutral_ledger_transaction(jsonb)`
 
 The database serializes each idempotency key with a transaction-scoped advisory lock,
 locks periods/references/accounts in a stable order, rejects closed periods, requires
+the effective timestamp to fall within the selected period's half-open range, requires
 functional and per-asset/custody native balance, and prevents active applications from
-exceeding a retained reference's exact native limit. Reversal creates a new transaction
-with inverted postings; it never mutates the original.
+exceeding a retained reference's exact native limit. A composite foreign key prevents
+an asset from referencing custody configured for another asset. Reversal creates a new
+transaction with inverted postings; it never mutates the original.
 
 ## Production gate
 

@@ -21,6 +21,26 @@ DO $$ BEGIN
 END $$;
 
 RESET ROLE;
+INSERT INTO public.financial_assets (
+  asset_key, rail_key, symbol, atomic_scale, classification_metadata
+) VALUES (
+  'local_review_eur', 'local_fixture', 'EUR', 6,
+  '{"purpose":"asset_custody_mismatch_test","approved":false}'::jsonb
+);
+DO $$ BEGIN
+  BEGIN
+    INSERT INTO public.financial_references (
+      reference_key, reference_type, asset_id, custody_account_id,
+      native_atomic_limit, evidence_hash
+    ) SELECT 'mismatched_eur_usd_reference', 'local_test_fixture', eur.id, usd_custody.id,
+      1, repeat('e', 64)
+    FROM public.financial_assets eur
+    CROSS JOIN public.financial_custody_accounts usd_custody
+    WHERE eur.asset_key = 'local_review_eur' AND usd_custody.custody_key = 'local_review_custody';
+    RAISE EXCEPTION 'mismatched EUR asset and USD custody reference was allowed';
+  EXCEPTION WHEN foreign_key_violation THEN NULL; END;
+END $$;
+
 SET LOCAL ROLE service_role;
 
 DO $$ BEGIN
@@ -52,6 +72,24 @@ DO $$ BEGIN
     RAISE EXCEPTION 'unbalanced neutral transaction was allowed';
   EXCEPTION WHEN OTHERS THEN
     IF SQLERRM <> 'ledger_transaction_unbalanced' THEN RAISE; END IF;
+  END;
+END $$;
+
+DO $$ BEGIN
+  BEGIN
+    PERFORM public.post_neutral_ledger_transaction(jsonb_build_object(
+      'contractVersion', 'ledger_post.v1', 'deploymentEnvironment', 'local',
+      'idempotencyKey', 'outside-period-post-001', 'transactionType', 'neutral_review',
+      'periodKey', 'local_review_2026_08', 'effectiveAt', '2026-09-01T07:00:00Z',
+      'evidenceHash', repeat('f', 64), 'actorType', 'service',
+      'postings', jsonb_build_array(
+        jsonb_build_object('accountKey', 'neutral_source_control', 'side', 'debit', 'assetKey', 'local_review_usd', 'custodyKey', 'local_review_custody', 'nativeAtomicAmount', '1', 'functionalUsdAmount', '0.000001', 'fxUsdPerUnit', '1', 'projectId', 101, 'userId', '00000000-0000-4000-8000-000000000101'),
+        jsonb_build_object('accountKey', 'neutral_offset_control', 'side', 'credit', 'assetKey', 'local_review_usd', 'custodyKey', 'local_review_custody', 'nativeAtomicAmount', '1', 'functionalUsdAmount', '0.000001', 'fxUsdPerUnit', '1', 'projectId', 101, 'userId', '00000000-0000-4000-8000-000000000101')
+      )
+    ));
+    RAISE EXCEPTION 'out-of-period posting was allowed';
+  EXCEPTION WHEN OTHERS THEN
+    IF SQLERRM <> 'ledger_effective_at_outside_period' THEN RAISE; END IF;
   END;
 END $$;
 
@@ -117,6 +155,21 @@ DO $$ BEGIN
     RAISE EXCEPTION 'financial reference over-application was allowed';
   EXCEPTION WHEN OTHERS THEN
     IF SQLERRM <> 'financial_reference_over_applied' THEN RAISE; END IF;
+  END;
+END $$;
+
+DO $$ BEGIN
+  BEGIN
+    PERFORM public.reverse_neutral_ledger_transaction(jsonb_build_object(
+      'contractVersion', 'ledger_reversal.v1', 'deploymentEnvironment', 'local',
+      'idempotencyKey', 'outside-period-reversal-001',
+      'originalTransactionId', (SELECT id FROM public.ledger_transactions WHERE idempotency_key = 'balanced-neutral-001'),
+      'periodKey', 'local_review_2026_08', 'effectiveAt', '2026-07-31T06:59:59Z',
+      'evidenceHash', repeat('d', 64), 'actorType', 'service'
+    ));
+    RAISE EXCEPTION 'out-of-period reversal was allowed';
+  EXCEPTION WHEN OTHERS THEN
+    IF SQLERRM <> 'ledger_effective_at_outside_period' THEN RAISE; END IF;
   END;
 END $$;
 

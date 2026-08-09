@@ -62,3 +62,53 @@ switching legacy paths, or enabling production value flow.
   contract, and full-check evidence to the issue.
 - Leave #127 In Progress for independent validation; stop local Supabase and do not
   open a PR or change Goal #126 status.
+
+### session v2: Ledger integrity validator fixes (#127)
+
+- Timestamp: 2026-08-09T01:32:00-04:00
+- Agent: Codex
+- Branch: codex/126-ledger-control-plane
+- Head: 0ff6320c706b
+
+#### Objective
+
+Close the three #127 validator findings without changing the provisional accounting
+boundary or introducing a production/value-flow path.
+
+#### Actions Taken
+
+- Added a forward-only composite foreign key from financial reference asset/custody
+  to the custody account's own asset, preventing cross-asset reference combinations.
+- Added an insert-time database trigger requiring every posting or reversal effective
+  timestamp to fall within the selected period's half-open range.
+- Removed actor type from untrusted request contracts and bound actor type, actor ID,
+  and deployment environment exclusively from trusted Edge runtime context.
+- Extended SQL, contract, static migration, documentation, and generated-type evidence
+  for crafted actor values, EUR/USD custody mismatch, and out-of-period service calls.
+
+#### Validation Notes
+
+- Passed: fresh disposable local Supabase reset with the forward integrity migration
+  and seed.
+- Passed: executable SQL rejection of a EUR asset reference to USD custody, a post at
+  the exact period end, and a reversal before the period start; all prior ledger/RLS,
+  exact-amount, idempotency, reversal, retention, and query-plan assertions stayed green.
+- Passed: focused Vitest, 2 files and 17 tests, including crafted request actor type,
+  actor ID, and environment replacement with trusted values.
+- Passed: Node 22 lint/typecheck and full `CI=1 pnpm check` with 128 files/580 tests
+  plus production build.
+- Passed: regenerated Supabase type review and `git diff --check`.
+
+#### Reflections
+
+- The composite foreign key encodes custody/asset agreement as relational identity,
+  avoiding a trigger-only invariant that could drift from foreign-key behavior.
+- A transaction trigger protects every insertion path, so both current RPCs and future
+  privileged writers share the same half-open accounting-period boundary.
+- Trusted actor mode is command-boundary context, not a request-body field.
+
+#### Suggested Next Steps
+
+- Commit and attach the fresh replay and adversarial evidence to #127.
+- Leave #127 In Progress for independent revalidation; stop Supabase and do not open a
+  PR or change Goal #126 status.

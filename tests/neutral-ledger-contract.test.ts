@@ -13,7 +13,6 @@ const validPost = {
   periodKey: "local_review_2026_08",
   effectiveAt: "2026-08-15T12:00:00Z",
   evidenceHash: "a".repeat(64),
-  actorType: "operator",
   financialReferenceKey: "local_review_reference",
   postings: [
     { accountKey: "neutral_source_control", side: "debit", assetKey: "local_review_usd", custodyKey: "local_review_custody", nativeAtomicAmount: "1000000", functionalUsdAmount: "1.000000000000000001", fxUsdPerUnit: "1", projectId: 101, userId: actorUserId },
@@ -22,14 +21,15 @@ const validPost = {
 }
 
 describe("neutral ledger Edge contract", () => {
-  it("binds the actor and deployment environment to trusted local runtime context", () => {
+  it("binds actor identity, actor type, and deployment environment to trusted local runtime context", () => {
     const result = validateLedgerPostRequest(
-      { ...validPost, actorUserId: "99999999-9999-4999-8999-999999999999", deploymentEnvironment: "production" },
+      { ...validPost, actorType: "system", actorUserId: "99999999-9999-4999-8999-999999999999", deploymentEnvironment: "production" },
       { FUNDLOOP_DEPLOYMENT_ENV: "local" },
-      actorUserId,
+      { actorType: "operator", actorUserId },
     )
     expect(result).toEqual({ ok: true, data: expect.objectContaining({
       actorUserId,
+      actorType: "operator",
       deploymentEnvironment: "local",
       postings: validPost.postings,
     }) })
@@ -39,28 +39,28 @@ describe("neutral ledger Edge contract", () => {
     expect(validateLedgerPostRequest(
       { ...validPost, deploymentEnvironment: "local" },
       { FUNDLOOP_DEPLOYMENT_ENV: "production" },
-      actorUserId,
+      { actorType: "operator", actorUserId },
     )).toEqual({ ok: false, error: {
       code: "neutral_ledger_runtime_disabled",
       message: "Neutral ledger review posting is unavailable in this environment.",
     } })
-    expect(validateLedgerPostRequest(validPost, {}, actorUserId).ok).toBe(false)
+    expect(validateLedgerPostRequest(validPost, {}, { actorType: "operator", actorUserId }).ok).toBe(false)
   })
 
   it("rejects partial native dimensions, invalid exact amounts, and oversized batches", () => {
     expect(validateLedgerPostRequest({
       ...validPost,
       postings: [{ ...validPost.postings[0], custodyKey: undefined }, validPost.postings[1]],
-    }, { FUNDLOOP_DEPLOYMENT_ENV: "dev" }, actorUserId).ok).toBe(false)
+    }, { FUNDLOOP_DEPLOYMENT_ENV: "dev" }, { actorType: "operator", actorUserId }).ok).toBe(false)
     expect(validateLedgerPostRequest({
       ...validPost,
       postings: [{ ...validPost.postings[0], nativeAtomicAmount: "1.5" }, validPost.postings[1]],
-    }, { FUNDLOOP_DEPLOYMENT_ENV: "dev" }, actorUserId).ok).toBe(false)
+    }, { FUNDLOOP_DEPLOYMENT_ENV: "dev" }, { actorType: "operator", actorUserId }).ok).toBe(false)
     expect(validateLedgerPostRequest({ ...validPost, postings: Array(101).fill(validPost.postings[0]) },
-      { FUNDLOOP_DEPLOYMENT_ENV: "dev" }, actorUserId).ok).toBe(false)
+      { FUNDLOOP_DEPLOYMENT_ENV: "dev" }, { actorType: "operator", actorUserId }).ok).toBe(false)
   })
 
-  it("validates typed reversals without accepting caller-owned runtime or actor identity", () => {
+  it("validates typed reversals without accepting caller-owned runtime, actor identity, or actor type", () => {
     const result = validateLedgerReversalRequest({
       contractVersion: "ledger_reversal.v1",
       idempotencyKey: "neutral-reversal-001",
@@ -68,12 +68,13 @@ describe("neutral ledger Edge contract", () => {
       periodKey: "local_review_2026_08",
       effectiveAt: "2026-08-16T12:00:00Z",
       evidenceHash: "b".repeat(64),
-      actorType: "operator",
+      actorType: "system",
       actorUserId: "99999999-9999-4999-8999-999999999999",
       deploymentEnvironment: "production",
-    }, { FUNDLOOP_DEPLOYMENT_ENV: "preview" }, actorUserId)
+    }, { FUNDLOOP_DEPLOYMENT_ENV: "preview" }, { actorType: "operator", actorUserId })
     expect(result).toEqual({ ok: true, data: expect.objectContaining({
       actorUserId,
+      actorType: "operator",
       deploymentEnvironment: "preview",
       originalTransactionId: 42,
     }) })
@@ -82,6 +83,7 @@ describe("neutral ledger Edge contract", () => {
 
 describe("neutral ledger migration boundary", () => {
   const migration = readFileSync("supabase/migrations/20260809020000_neutral_ledger_foundations.sql", "utf8")
+  const integrityMigration = readFileSync("supabase/migrations/20260809023000_neutral_ledger_integrity_fixes.sql", "utf8")
   const seed = readFileSync("supabase/seed.sql", "utf8")
   const documentation = readFileSync("docs/engineering/neutral-ledger-foundations.md", "utf8")
 
@@ -93,6 +95,8 @@ describe("neutral ledger migration boundary", () => {
     expect(migration).toContain("ledger_postings_user_idx")
     expect(migration).toContain("classification_status = 'provisional'")
     expect(migration).toContain("production_enabled = false")
+    expect(integrityMigration).toContain("FOREIGN KEY (asset_id, custody_account_id)")
+    expect(integrityMigration).toContain("REFERENCES public.financial_custody_accounts (asset_id, id)")
   })
 
   it("keeps posting service-owned, append-only, balanced, idempotent, and production-disabled", () => {
@@ -106,6 +110,9 @@ describe("neutral ledger migration boundary", () => {
     expect(migration).toContain("v_environment = 'production'")
     expect(migration).toContain("GRANT EXECUTE ON FUNCTION public.post_neutral_ledger_transaction(jsonb)")
     expect(migration).not.toContain("TO anon, authenticated")
+    expect(integrityMigration).toContain("NEW.effective_at >= period.starts_at")
+    expect(integrityMigration).toContain("NEW.effective_at < period.ends_at")
+    expect(integrityMigration).toContain("ledger_effective_at_outside_period")
   })
 
   it("labels local fixtures and documentation as provisional without value-flow claims", () => {
