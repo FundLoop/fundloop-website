@@ -48,7 +48,10 @@ SELECT set_config('request.jwt.claim.sub', '20000000-0000-4000-8000-000000000002
 DO $$ BEGIN
   IF EXISTS (SELECT 1 FROM public.participants WHERE project_id = 900001 AND user_id = auth.uid()) THEN RAISE EXCEPTION 'pending invitation granted participant access'; END IF;
   IF EXISTS (SELECT 1 FROM public.organization_members WHERE organization_id = 900001 AND user_id = auth.uid()) THEN RAISE EXCEPTION 'pending invitation granted organization membership'; END IF;
-  IF EXISTS (SELECT 1 FROM public.list_project_member_shared_profiles(900001)) THEN RAISE EXCEPTION 'pre-acceptance profile read was allowed'; END IF;
+  BEGIN
+    PERFORM public.list_project_member_shared_profiles(900001, auth.uid());
+    RAISE EXCEPTION 'authenticated browser RPC read was allowed';
+  EXCEPTION WHEN insufficient_privilege THEN NULL; END;
   BEGIN
     INSERT INTO public.project_invitation_acceptance_evidence (
       invitation_id, project_id, actor_user_id, action, policy_document_version_id, policy_document_identifier,
@@ -61,6 +64,9 @@ END $$;
 
 RESET ROLE;
 SET LOCAL ROLE service_role;
+DO $$ BEGIN
+  IF EXISTS (SELECT 1 FROM public.list_project_member_shared_profiles(900001, '20000000-0000-4000-8000-000000000002')) THEN RAISE EXCEPTION 'pre-acceptance service read was allowed'; END IF;
+END $$;
 DO $$ BEGIN
   BEGIN
     PERFORM public.accept_project_invitation_review(repeat('a',64), '20000000-0000-4000-8000-000000000002', 'invite-member@example.test',
@@ -86,17 +92,23 @@ RESET ROLE;
 SET LOCAL ROLE authenticated;
 SELECT set_config('request.jwt.claim.sub', '20000000-0000-4000-8000-000000000002', true);
 DO $$ BEGIN
-  IF (SELECT count(*) FROM public.list_project_member_shared_profiles(900001) WHERE user_id='20000000-0000-4000-8000-000000000002' AND display_name='Member Display' AND avatar_url='member.png' AND profile_headline IS NULL) <> 1 THEN RAISE EXCEPTION 'approved-field read model failed'; END IF;
   IF (SELECT count(*) FROM public.project_invitation_acceptance_evidence) <> 1 THEN RAISE EXCEPTION 'self evidence read failed'; END IF;
+  BEGIN
+    PERFORM public.list_project_member_shared_profiles(900001, auth.uid());
+    RAISE EXCEPTION 'authenticated browser RPC retrieved accepted review sharing';
+  EXCEPTION WHEN insufficient_privilege THEN NULL; END;
 END $$;
 SELECT set_config('request.jwt.claim.sub', '20000000-0000-4000-8000-000000000003', true);
 DO $$ BEGIN
-  IF EXISTS (SELECT 1 FROM public.list_project_member_shared_profiles(900001)) THEN RAISE EXCEPTION 'unrelated profile read was allowed'; END IF;
   IF EXISTS (SELECT 1 FROM public.project_invitation_acceptance_evidence) THEN RAISE EXCEPTION 'cross-user evidence read was allowed'; END IF;
 END $$;
 
 RESET ROLE;
 SET LOCAL ROLE service_role;
+DO $$ BEGIN
+  IF (SELECT count(*) FROM public.list_project_member_shared_profiles(900001, '20000000-0000-4000-8000-000000000002') WHERE user_id='20000000-0000-4000-8000-000000000002' AND display_name='Member Display' AND avatar_url='member.png' AND profile_headline IS NULL) <> 1 THEN RAISE EXCEPTION 'approved-field service read model failed'; END IF;
+  IF EXISTS (SELECT 1 FROM public.list_project_member_shared_profiles(900001, '20000000-0000-4000-8000-000000000003')) THEN RAISE EXCEPTION 'unrelated service read was allowed'; END IF;
+END $$;
 SELECT * FROM public.decline_project_invitation_review(repeat('b',64), '20000000-0000-4000-8000-000000000002', 'decline@example.test');
 SELECT * FROM public.inspect_project_invitation_review(repeat('c',64), '20000000-0000-4000-8000-000000000002', 'expire@example.test');
 SELECT public.expire_project_invitations_review(900001, 'batch-expire@example.test');
@@ -109,7 +121,7 @@ SELECT * FROM public.revoke_project_invitation_review('30000000-0000-4000-8000-0
 DO $$ BEGIN
   IF EXISTS (SELECT 1 FROM public.participants WHERE project_id=900001 AND user_id='20000000-0000-4000-8000-000000000002') THEN RAISE EXCEPTION 'revocation left project access'; END IF;
   IF EXISTS (SELECT 1 FROM public.organization_members WHERE organization_id=900001 AND user_id='20000000-0000-4000-8000-000000000002') THEN RAISE EXCEPTION 'revocation left invitation-created organization membership'; END IF;
-  IF EXISTS (SELECT 1 FROM public.list_project_member_shared_profiles(900001) WHERE user_id='20000000-0000-4000-8000-000000000002') THEN RAISE EXCEPTION 'revocation left sharing residue'; END IF;
+  IF EXISTS (SELECT 1 FROM public.list_project_member_shared_profiles(900001, '20000000-0000-4000-8000-000000000001') WHERE user_id='20000000-0000-4000-8000-000000000002') THEN RAISE EXCEPTION 'revocation left sharing residue'; END IF;
   IF NOT EXISTS (SELECT 1 FROM public.project_invitation_acceptance_evidence WHERE invitation_id='30000000-0000-4000-8000-000000000001' AND action='revoke') THEN RAISE EXCEPTION 'revocation evidence missing'; END IF;
 END $$;
 

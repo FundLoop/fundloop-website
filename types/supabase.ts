@@ -5142,7 +5142,7 @@ export type Database = {
         }[]
       }
       list_project_member_shared_profiles: {
-        Args: { p_project_id: number }
+        Args: { p_actor_user_id: string; p_project_id: number }
         Returns: {
           avatar_url: string
           bio: string

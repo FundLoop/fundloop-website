@@ -376,6 +376,9 @@ export function createPersonaBrowserActions(personaId: Exclude<PersonaId, "retur
         if (membership.error || !membership.data) throw new Error("persona-organization-membership-acceptance-failed")
         await fixtures.recordDatabaseRow({ table: "organization_members", primaryKey: { id: membership.data.id }, cleanupPhase: 110 })
         await capturePageSuccess(inviteePage, `${personaId}-invitation-success.png`, inviteeErrors)
+        await inviteePage.getByRole("button", { name: "View project" }).click()
+        await expect(inviteePage).toHaveURL(new RegExp(`/en/projects/${project.slug}$`))
+        await expect(inviteePage.getByRole("heading", { name: "Returning Member" })).toBeVisible()
       } finally {
         await inviteeContext.close()
       }

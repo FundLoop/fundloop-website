@@ -3,6 +3,7 @@ import "server-only"
 import { cache } from "react"
 import { createServerSupabaseClient } from "@/lib/supabase-server"
 import { canReadInvitationReviewSharing, isReviewPolicyPreviewEnabled } from "@/lib/policies/review-policy"
+import { invokeProjectMemberSharedProfilesReadServer } from "@/lib/edge-functions/project-member-shared-profiles-read-server"
 
 export type PublicDiscoveryProject = {
   id: number
@@ -249,10 +250,10 @@ export const getPublicProjectDetail = cache(async (slug: string): Promise<Public
       return null
     }
 
-    const { data: sharedProfiles, error: sharedProfilesError } = hasAccess && canReadInvitationReviewSharing()
-      ? await supabase.rpc("list_project_member_shared_profiles", { p_project_id: projectRow.id })
-      : { data: [], error: null }
-    if (sharedProfilesError) throw new Error(sharedProfilesError.message)
+    const sharedProfilesResult = hasAccess && canReadInvitationReviewSharing()
+      ? await invokeProjectMemberSharedProfilesReadServer({ projectId: projectRow.id })
+      : { ok: true as const, data: [] }
+    if (!sharedProfilesResult.ok) throw new Error(sharedProfilesResult.error.message)
 
     return {
       project: {
@@ -269,11 +270,11 @@ export const getPublicProjectDetail = cache(async (slug: string): Promise<Public
         createdAt: projectRow.created_at,
         participantCount: (participantRows ?? []).length,
       },
-      participants: (sharedProfiles ?? []).map((participant) => ({
-        id: participant.user_id,
-        name: participant.display_name ?? "Project member",
-        avatarUrl: participant.avatar_url,
-        role: participant.is_admin ? "admin" : "member",
+      participants: sharedProfilesResult.data.map((participant) => ({
+        id: participant.userId,
+        name: participant.displayName ?? "Project member",
+        avatarUrl: participant.avatarUrl,
+        role: participant.isAdmin ? "admin" : "member",
       })),
       hasAccess,
       userRole: membership ? (membership.is_admin ? "admin" : "member") : null,

@@ -770,3 +770,58 @@ accepted invitation, independent of revoke order.
 - Commit this narrow aggregate-provenance fix and attach the replay, SQL ordering,
   browser cleanup, and full-check evidence to #125.
 - Keep #125 In Progress for independent revalidation; do not open a PR.
+
+### session v16: Service-owned review-sharing reads (#125)
+
+- Timestamp: 2026-08-09T00:16:00-04:00
+- Agent: Codex
+- Branch: codex/118-canada-review-drafts
+- Head: 01947eae999f
+
+#### Objective
+
+Close the remaining Task #125 validation gap by denying browser-authenticated access
+to the shared-profile RPC and routing local review reads through a production-gated,
+service-owned Edge command.
+
+#### Actions Taken
+
+- Replaced the browser-callable shared-profile RPC with a service-role-only,
+  actor-scoped function that independently verifies project membership.
+- Added the typed `project-member-shared-profiles-read` Edge contract, command, and
+  server invoker with an unconditional production fail-closed gate.
+- Routed the project read model through the Edge command while retaining the app's
+  existing preview gate and approved-field normalization.
+- Deduplicated overlapping accepted invitations into one project-member row by
+  selecting the latest accepted invitation per member.
+- Extended migration, production-gate, command, executable SQL, and returning-founder
+  browser coverage for direct-RPC denial and the allowed local Edge read path.
+
+#### Validation Notes
+
+- Passed: fresh disposable Supabase reset applying all migrations and seed.
+- Passed: executable SQL/RLS/RPC suite, including authenticated direct-RPC denial,
+  service-role actor scoping, pre-acceptance denial, accepted reads, and revoke cleanup.
+- Passed: focused one-worker Vitest, 7 files and 34 tests; production and crafted-input
+  command denial included.
+- Passed: returning-founder Playwright workflow through accepted invitation, Edge-backed
+  project discovery, visible member data, revoke cleanup, and clean fixture cleanup.
+  The aggregate remains intentionally incomplete only for the existing
+  operator-distribution expected-pending checkpoint.
+- Passed: Node 22 lint, typecheck, and full `CI=1 pnpm check` with 126 files/567 tests
+  plus production build.
+- Passed: `git diff --check`.
+
+#### Reflections
+
+- RLS alone is insufficient for review sharing when a browser may call an executable
+  RPC directly; the database permission boundary and Edge deployment gate must agree.
+- Binding the actor identifier to the authenticated Edge user prevents crafted input
+  from turning service-role execution into a cross-project read primitive.
+
+#### Suggested Next Steps
+
+- Commit this narrow read-boundary fix and attach replay, permission, Edge-command,
+  browser, and full-check evidence to #125.
+- Keep #125 In Progress for independent revalidation; stop local services and do not
+  open a PR.
