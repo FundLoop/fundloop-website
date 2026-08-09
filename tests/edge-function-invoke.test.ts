@@ -46,6 +46,22 @@ describe("edge function invoker", () => {
     })
   })
 
+  it("preserves a typed failure envelope returned with a non-2xx function response", async () => {
+    const client = createFunctionsClient({
+      data: null,
+      error: {
+        name: "FunctionsHttpError",
+        message: "Edge Function returned a non-2xx status code",
+        context: { json: vi.fn().mockResolvedValue({ ok: false, error: { code: "provider_unavailable", message: "Enable Bank Transfers in Stripe." } }) },
+      },
+    })
+
+    await expect(invokeEdgeCommandWithClient(client as never, "demo-command", { demo: true })).resolves.toEqual({
+      ok: false,
+      error: { code: "provider_unavailable", message: "Enable Bank Transfers in Stripe." },
+    })
+  })
+
   it("rejects invalid response envelopes", async () => {
     const client = createFunctionsClient({
       data: { hello: "world" },

@@ -37,6 +37,17 @@ export async function invokeEdgeCommandWithClient<TInput, TOutput>(
   })
 
   if (error) {
+    const context = error && typeof error === "object" && "context" in error
+      ? (error as { context?: unknown }).context
+      : null
+    if (context && typeof context === "object" && "json" in context && typeof (context as { json?: unknown }).json === "function") {
+      try {
+        const responseBody = await (context as { json: () => Promise<unknown> }).json()
+        if (isEdgeCommandResult<TOutput>(responseBody)) return responseBody
+      } catch {
+        // Fall through to the normalized transport error when the response body is not readable JSON.
+      }
+    }
     return normalizeEdgeCommandInvokeError(error)
   }
 

@@ -133,6 +133,7 @@ Use the smallest relevant validation first, then broaden before reporting comple
 | App-wide behavior | Full app gates | `pnpm lint`, `pnpm test`, `pnpm typecheck`, `pnpm build` |
 | Supabase schema migrations | Local Supabase replay plus generated types | `supabase db reset`, regenerate `types/supabase.ts`, focused tests |
 | Supabase Edge Functions | Contract/command tests plus Deno/Supabase validation | focused contract tests, `deno info` or `deno check`, PR dry-run |
+| Stripe bank-transfer intake | FundLoop sandbox CLI plus local signed webhook/SQL/browser evidence | `stripe whoami --project-name fundloop`, `stripe listen`, fresh local reset, `supabase/tests/stripe_bank_transfer_intake.sql`; never `--live` |
 | Onchain contract changes | Hardhat workspace | `pnpm --dir contracts test` |
 | Wallet browser flows | Local wallet E2E lane | `pnpm test:e2e:local` when prerequisites are available |
 | Persona happy paths | Local-only persona E2E lane | Start/reset caller-owned local Supabase, then `pnpm test:e2e:personas` or filter with `-- --persona <id>` |
@@ -186,3 +187,16 @@ The provisional Base V2 intake uses exact `local`, `dev`, and `test` command all
 Its tracked deployment manifest is disabled, and production deployment/value flow remains
 unavailable. See `docs/engineering/base-intake-v2.md` for the local Hardhat and Supabase
 evidence workflow.
+
+# Stripe sandbox intake boundary
+
+The provisional Stripe intake uses a dedicated CLI profile (`--project-name fundloop`) and
+accepts only test/sandbox API keys. Keep `STRIPE_SECRET_KEY`, `STRIPE_ACCOUNT_ID`, and the
+temporary `STRIPE_WEBHOOK_SECRET` from `stripe listen` in the process environment or an ignored
+ephemeral env file. Do not print them, commit them, or copy them into `.env.example` values.
+
+Bank Transfers must be enabled in the FundLoop sandbox before provider success evidence is
+claimed. USD is the only enabled currency in the current adapter; CAD is rejected because
+Stripe's bank-transfer presentment support does not currently include CAD. See
+`docs/engineering/stripe-bank-transfer-intake.md` for the signed webhook and reconciliation
+contract.

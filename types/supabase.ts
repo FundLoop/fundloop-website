@@ -4897,6 +4897,456 @@ export type Database = {
           },
         ]
       }
+      stripe_balance_snapshots: {
+        Row: {
+          available_amount_minor: number
+          currency_code: string
+          evidence_hash: string
+          id: number
+          observed_at: string
+          pending_amount_minor: number
+          production_enabled: boolean
+          webhook_event_id: number
+        }
+        Insert: {
+          available_amount_minor: number
+          currency_code: string
+          evidence_hash: string
+          id?: never
+          observed_at: string
+          pending_amount_minor: number
+          production_enabled?: boolean
+          webhook_event_id: number
+        }
+        Update: {
+          available_amount_minor?: number
+          currency_code?: string
+          evidence_hash?: string
+          id?: never
+          observed_at?: string
+          pending_amount_minor?: number
+          production_enabled?: boolean
+          webhook_event_id?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "stripe_balance_snapshots_webhook_event_id_fkey"
+            columns: ["webhook_event_id"]
+            isOneToOne: false
+            referencedRelation: "stripe_webhook_events"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      stripe_bank_transfer_custody_routes: {
+        Row: {
+          asset_id: number
+          created_at: string
+          currency_code: string
+          custody_account_id: number
+          evidence_hash: string
+          id: number
+          production_enabled: boolean
+          sandbox_enabled: boolean
+          topology_status: string
+        }
+        Insert: {
+          asset_id: number
+          created_at?: string
+          currency_code: string
+          custody_account_id: number
+          evidence_hash: string
+          id?: never
+          production_enabled?: boolean
+          sandbox_enabled?: boolean
+          topology_status?: string
+        }
+        Update: {
+          asset_id?: number
+          created_at?: string
+          currency_code?: string
+          custody_account_id?: number
+          evidence_hash?: string
+          id?: never
+          production_enabled?: boolean
+          sandbox_enabled?: boolean
+          topology_status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "stripe_bank_transfer_custody_routes_asset_id_fkey"
+            columns: ["asset_id"]
+            isOneToOne: false
+            referencedRelation: "financial_assets"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "stripe_bank_transfer_custody_routes_custody_account_id_fkey"
+            columns: ["custody_account_id"]
+            isOneToOne: false
+            referencedRelation: "financial_custody_accounts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "stripe_custody_asset_fk"
+            columns: ["asset_id", "custody_account_id"]
+            isOneToOne: false
+            referencedRelation: "financial_custody_accounts"
+            referencedColumns: ["asset_id", "id"]
+          },
+        ]
+      }
+      stripe_bank_transfer_evidence: {
+        Row: {
+          created_at: string
+          currency_code: string | null
+          evidence_hash: string
+          evidence_type: string
+          external_financial_event_id: number | null
+          fee_amount_minor: number | null
+          gross_amount_minor: number | null
+          id: number
+          intent_id: number | null
+          ledger_transaction_id: number | null
+          net_amount_minor: number | null
+          ordering_status: string
+          production_enabled: boolean
+          provider_balance_currency_code: string | null
+          provider_balance_fee_amount_minor: number | null
+          provider_balance_gross_amount_minor: number | null
+          provider_balance_net_amount_minor: number | null
+          provider_balance_transaction_id: string | null
+          reversal_ledger_transaction_id: number | null
+          webhook_event_id: number
+        }
+        Insert: {
+          created_at?: string
+          currency_code?: string | null
+          evidence_hash: string
+          evidence_type: string
+          external_financial_event_id?: number | null
+          fee_amount_minor?: number | null
+          gross_amount_minor?: number | null
+          id?: never
+          intent_id?: number | null
+          ledger_transaction_id?: number | null
+          net_amount_minor?: number | null
+          ordering_status: string
+          production_enabled?: boolean
+          provider_balance_currency_code?: string | null
+          provider_balance_fee_amount_minor?: number | null
+          provider_balance_gross_amount_minor?: number | null
+          provider_balance_net_amount_minor?: number | null
+          provider_balance_transaction_id?: string | null
+          reversal_ledger_transaction_id?: number | null
+          webhook_event_id: number
+        }
+        Update: {
+          created_at?: string
+          currency_code?: string | null
+          evidence_hash?: string
+          evidence_type?: string
+          external_financial_event_id?: number | null
+          fee_amount_minor?: number | null
+          gross_amount_minor?: number | null
+          id?: never
+          intent_id?: number | null
+          ledger_transaction_id?: number | null
+          net_amount_minor?: number | null
+          ordering_status?: string
+          production_enabled?: boolean
+          provider_balance_currency_code?: string | null
+          provider_balance_fee_amount_minor?: number | null
+          provider_balance_gross_amount_minor?: number | null
+          provider_balance_net_amount_minor?: number | null
+          provider_balance_transaction_id?: string | null
+          reversal_ledger_transaction_id?: number | null
+          webhook_event_id?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "stripe_bank_transfer_evidence_external_financial_event_id_fkey"
+            columns: ["external_financial_event_id"]
+            isOneToOne: false
+            referencedRelation: "external_financial_events"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "stripe_bank_transfer_evidence_external_financial_event_id_fkey"
+            columns: ["external_financial_event_id"]
+            isOneToOne: false
+            referencedRelation: "shadow_financial_reconciliation_observability"
+            referencedColumns: ["event_id"]
+          },
+          {
+            foreignKeyName: "stripe_bank_transfer_evidence_intent_id_fkey"
+            columns: ["intent_id"]
+            isOneToOne: false
+            referencedRelation: "stripe_bank_transfer_intents"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "stripe_bank_transfer_evidence_intent_id_fkey"
+            columns: ["intent_id"]
+            isOneToOne: false
+            referencedRelation: "stripe_bank_transfer_status"
+            referencedColumns: ["intent_id"]
+          },
+          {
+            foreignKeyName: "stripe_bank_transfer_evidence_ledger_transaction_id_fkey"
+            columns: ["ledger_transaction_id"]
+            isOneToOne: false
+            referencedRelation: "ledger_transactions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "stripe_bank_transfer_evidence_ledger_transaction_id_fkey"
+            columns: ["ledger_transaction_id"]
+            isOneToOne: false
+            referencedRelation: "shadow_ledger_trial_balance"
+            referencedColumns: ["ledger_transaction_id"]
+          },
+          {
+            foreignKeyName: "stripe_bank_transfer_evidence_reversal_ledger_transaction__fkey"
+            columns: ["reversal_ledger_transaction_id"]
+            isOneToOne: false
+            referencedRelation: "ledger_transactions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "stripe_bank_transfer_evidence_reversal_ledger_transaction__fkey"
+            columns: ["reversal_ledger_transaction_id"]
+            isOneToOne: false
+            referencedRelation: "shadow_ledger_trial_balance"
+            referencedColumns: ["ledger_transaction_id"]
+          },
+          {
+            foreignKeyName: "stripe_bank_transfer_evidence_webhook_event_id_fkey"
+            columns: ["webhook_event_id"]
+            isOneToOne: true
+            referencedRelation: "stripe_webhook_events"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      stripe_bank_transfer_intents: {
+        Row: {
+          accounting_period_id: number
+          actor_user_id: string
+          created_at: string
+          currency_code: string
+          deployment_environment: string
+          expected_amount_minor: number
+          id: number
+          instruction_evidence_hash: string
+          instruction_status: string
+          payment_id: number
+          production_enabled: boolean
+          project_id: number
+          provider_account_id: string
+          provider_customer_id: string
+          provider_payment_intent_id: string
+        }
+        Insert: {
+          accounting_period_id: number
+          actor_user_id: string
+          created_at?: string
+          currency_code: string
+          deployment_environment: string
+          expected_amount_minor: number
+          id?: never
+          instruction_evidence_hash: string
+          instruction_status?: string
+          payment_id: number
+          production_enabled?: boolean
+          project_id: number
+          provider_account_id: string
+          provider_customer_id: string
+          provider_payment_intent_id: string
+        }
+        Update: {
+          accounting_period_id?: number
+          actor_user_id?: string
+          created_at?: string
+          currency_code?: string
+          deployment_environment?: string
+          expected_amount_minor?: number
+          id?: never
+          instruction_evidence_hash?: string
+          instruction_status?: string
+          payment_id?: number
+          production_enabled?: boolean
+          project_id?: number
+          provider_account_id?: string
+          provider_customer_id?: string
+          provider_payment_intent_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "stripe_bank_transfer_intents_accounting_period_id_fkey"
+            columns: ["accounting_period_id"]
+            isOneToOne: false
+            referencedRelation: "accounting_periods"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "stripe_bank_transfer_intents_actor_user_id_fkey"
+            columns: ["actor_user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "stripe_bank_transfer_intents_deployment_environment_fkey"
+            columns: ["deployment_environment"]
+            isOneToOne: false
+            referencedRelation: "stripe_bank_transfer_runtime_controls"
+            referencedColumns: ["deployment_environment"]
+          },
+          {
+            foreignKeyName: "stripe_bank_transfer_intents_payment_id_fkey"
+            columns: ["payment_id"]
+            isOneToOne: false
+            referencedRelation: "payments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "stripe_bank_transfer_intents_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      stripe_bank_transfer_runtime_controls: {
+        Row: {
+          cad_bank_transfer_enabled: boolean
+          deployment_environment: string
+          production_value_flow_enabled: boolean
+          provider_evidence_status: string
+          sandbox_enabled: boolean
+          updated_at: string
+          usd_bank_transfer_enabled: boolean
+        }
+        Insert: {
+          cad_bank_transfer_enabled?: boolean
+          deployment_environment: string
+          production_value_flow_enabled?: boolean
+          provider_evidence_status?: string
+          sandbox_enabled?: boolean
+          updated_at?: string
+          usd_bank_transfer_enabled?: boolean
+        }
+        Update: {
+          cad_bank_transfer_enabled?: boolean
+          deployment_environment?: string
+          production_value_flow_enabled?: boolean
+          provider_evidence_status?: string
+          sandbox_enabled?: boolean
+          updated_at?: string
+          usd_bank_transfer_enabled?: boolean
+        }
+        Relationships: [
+          {
+            foreignKeyName: "stripe_bank_transfer_runtime_contro_deployment_environment_fkey"
+            columns: ["deployment_environment"]
+            isOneToOne: true
+            referencedRelation: "financial_runtime_controls"
+            referencedColumns: ["deployment_environment"]
+          },
+        ]
+      }
+      stripe_clearing_sweep_evidence: {
+        Row: {
+          amount_minor: number
+          created_at: string
+          currency_code: string
+          evidence_hash: string
+          from_reference_hash: string
+          id: number
+          production_enabled: boolean
+          provider_transfer_id: string
+          swept_at: string
+          to_reference_hash: string
+        }
+        Insert: {
+          amount_minor: number
+          created_at?: string
+          currency_code: string
+          evidence_hash: string
+          from_reference_hash: string
+          id?: never
+          production_enabled?: boolean
+          provider_transfer_id: string
+          swept_at: string
+          to_reference_hash: string
+        }
+        Update: {
+          amount_minor?: number
+          created_at?: string
+          currency_code?: string
+          evidence_hash?: string
+          from_reference_hash?: string
+          id?: never
+          production_enabled?: boolean
+          provider_transfer_id?: string
+          swept_at?: string
+          to_reference_hash?: string
+        }
+        Relationships: []
+      }
+      stripe_webhook_events: {
+        Row: {
+          api_version: string | null
+          command_sha256: string
+          event_type: string
+          id: number
+          livemode: boolean
+          observation_source: string
+          observed_at: string
+          payload_sha256: string
+          production_enabled: boolean
+          provider_account_id: string
+          provider_created_at: string
+          provider_event_id: string
+          provider_object_id: string
+          signature_timestamp: number
+        }
+        Insert: {
+          api_version?: string | null
+          command_sha256: string
+          event_type: string
+          id?: never
+          livemode?: boolean
+          observation_source: string
+          observed_at?: string
+          payload_sha256: string
+          production_enabled?: boolean
+          provider_account_id: string
+          provider_created_at: string
+          provider_event_id: string
+          provider_object_id: string
+          signature_timestamp: number
+        }
+        Update: {
+          api_version?: string | null
+          command_sha256?: string
+          event_type?: string
+          id?: never
+          livemode?: boolean
+          observation_source?: string
+          observed_at?: string
+          payload_sha256?: string
+          production_enabled?: boolean
+          provider_account_id?: string
+          provider_created_at?: string
+          provider_event_id?: string
+          provider_object_id?: string
+          signature_timestamp?: number
+        }
+        Relationships: []
+      }
       support_requests: {
         Row: {
           category: string
@@ -6656,6 +7106,41 @@ export type Database = {
           },
         ]
       }
+      stripe_bank_transfer_status: {
+        Row: {
+          available_for_shadow_close: boolean | null
+          created_at: string | null
+          currency_code: string | null
+          expected_amount_minor: number | null
+          fee_amount_minor: number | null
+          gross_amount_minor: number | null
+          intent_id: number | null
+          net_amount_minor: number | null
+          ordering_status: string | null
+          payment_id: number | null
+          project_id: number | null
+          status: string | null
+          status_at: string | null
+          sweep_evidence_pending: boolean | null
+          topology_status: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "stripe_bank_transfer_intents_payment_id_fkey"
+            columns: ["payment_id"]
+            isOneToOne: false
+            referencedRelation: "payments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "stripe_bank_transfer_intents_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       user_identities: {
         Row: {
           created_at: string | null
@@ -6863,6 +7348,14 @@ export type Database = {
         }
         Returns: number
       }
+      ingest_stripe_bank_transfer_webhook: {
+        Args: { p_command: Json }
+        Returns: {
+          evidence_id: number
+          ledger_transaction_id: number
+          webhook_event_id: number
+        }[]
+      }
       inspect_project_invitation_review: {
         Args: {
           p_actor_email: string
@@ -6884,6 +7377,10 @@ export type Database = {
           status: string
         }[]
       }
+      is_project_financial_admin: {
+        Args: { p_actor_user_id: string; p_project_id: number }
+        Returns: boolean
+      }
       list_discoverable_public_user_ids: {
         Args: never
         Returns: {
@@ -6904,6 +7401,32 @@ export type Database = {
           shared_profile_fields: Json
           user_id: string
         }[]
+      }
+      list_project_stripe_bank_transfer_status: {
+        Args: { p_actor_user_id: string; p_project_slug: string }
+        Returns: {
+          available_for_shadow_close: boolean | null
+          created_at: string | null
+          currency_code: string | null
+          expected_amount_minor: number | null
+          fee_amount_minor: number | null
+          gross_amount_minor: number | null
+          intent_id: number | null
+          net_amount_minor: number | null
+          ordering_status: string | null
+          payment_id: number | null
+          project_id: number | null
+          status: string | null
+          status_at: string | null
+          sweep_evidence_pending: boolean | null
+          topology_status: string | null
+        }[]
+        SetofOptions: {
+          from: "*"
+          to: "stripe_bank_transfer_status"
+          isOneToOne: false
+          isSetofReturn: true
+        }
       }
       post_neutral_ledger_transaction: {
         Args: { p_command: Json }
@@ -7008,6 +7531,10 @@ export type Database = {
           acceptance_id: string
           recorded_at: string
         }[]
+      }
+      record_stripe_bank_transfer_intent: {
+        Args: { p_command: Json }
+        Returns: number
       }
       replace_user_asset_preferences_atomic: {
         Args: { p_preferences?: Json; p_user_id: string }

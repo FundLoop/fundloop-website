@@ -627,6 +627,12 @@ event-ID deduplication, idempotency keys, and out-of-order event handling. A rec
 becomes eligible only from independently observed availability evidence, not merely
 a successful payment intent.
 
+The current Stripe Customer Balance bank-transfer product supports USD but does not
+offer CAD presentment. Task #131 therefore keeps CAD fail-closed and records the provider
+gap explicitly; Canadian PAD is not substituted because it is a pull-based debit. The
+durable asset/custody model remains currency-aware so an authoritative future CAD push-
+transfer provider can be added without weakening the signed-event or reconciliation gates.
+
 Task #131 must prove an exact Stripe/bank arrangement with either separate externally
 reconcilable platform and epoch custody identifiers or a clearing account that
 sweeps to separate custody within a defined SLA. Production Stripe intake remains
@@ -635,6 +641,11 @@ Stripe-hosted onboarding; returning from onboarding is not proof of readiness, s
 the application checks current account requirements/capabilities or processes
 `account.updated` events. Payout completion and failure are reconciled from provider
 events and reports.
+
+The sandbox implementation uses a clearing route labelled `clearing_sweep_required`.
+Signed availability can create a provisional neutral-ledger receipt and shadow journal,
+but absent evidence of the clearing-to-separated-custody sweep remains a visible hard gate
+for production activation.
 
 ### Base intake
 

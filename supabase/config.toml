@@ -22,6 +22,24 @@ verify_jwt = false
 entrypoint = "./functions/shadow-financial-journal-post/index.ts"
 import_map = "./functions/deno.json"
 
+[functions.stripe-bank-transfer-intent-create]
+enabled = true
+verify_jwt = false
+entrypoint = "./functions/stripe-bank-transfer-intent-create/index.ts"
+import_map = "./functions/deno.json"
+
+[functions.stripe-bank-transfer-webhook]
+enabled = true
+verify_jwt = false
+entrypoint = "./functions/stripe-bank-transfer-webhook/index.ts"
+import_map = "./functions/deno.json"
+
+[functions.stripe-bank-transfer-status-read]
+enabled = true
+verify_jwt = false
+entrypoint = "./functions/stripe-bank-transfer-status-read/index.ts"
+import_map = "./functions/deno.json"
+
 [api]
 enabled = true
 # Port to use for the API URL.

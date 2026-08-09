@@ -1172,3 +1172,70 @@ fail-closed settlement-package boundary.
 
 - Commit and push the complete four-thread review batch, then let the coordinating agent reply
   to and resolve the threads without requesting another review.
+
+### session v25: Stripe bank-transfer sandbox intake (#131)
+
+- Timestamp: 2026-08-09T09:32:00-04:00
+- Agent: Codex
+- Branch: codex/130-settlement-packages
+- Head: fe211a6
+
+#### Objective
+
+Implement the local/dev Stripe USD bank-transfer command, webhook, reconciliation, and founder
+review surfaces for #131 while preserving production fail-closed behavior and documenting the
+provider-blocked USD success path and unsupported CAD presentment truthfully.
+
+#### Actions Taken
+
+- Added the current Stripe SDK, a typed Customer Balance push-transfer adapter, authenticated
+  intent/status Edge commands, and raw-body signed webhook verification with authoritative
+  PaymentIntent, charge/dispute, and Stripe balance reads.
+- Added forward-only intent, immutable webhook/evidence, balance snapshot, custody-route, and
+  clearing-sweep schema; service-only commands enforce environment, Terms, project-admin,
+  amount, account, ordering, replay, RLS, append-only, and production-denial boundaries.
+- Bound exact USD availability to neutral-ledger posting, external funding application, and
+  conserved shadow journal evidence; full refund or lost-dispute evidence reverses the linked
+  transaction without mutating legacy payment state.
+- Separated presentment and provider-balance settlement currencies. Cross-currency USD-to-CAD
+  settlement evidence is retained but cannot unlock USD custody or shadow posting.
+- Added founder UI for USD sandbox instructions, pending evidence, sweep state, and explicit CAD
+  unavailability. Non-2xx typed Edge failures now preserve safe provider guidance for the UI.
+- Documented Stripe's USD-only bank-transfer presentment support for this path, the Fundloop
+  sandbox Bank Transfers activation blocker, credential handling, and validation workflow.
+
+#### Validation Notes
+
+- Passed: three fresh local Supabase migration/seed replays during development and the final
+  executable Stripe SQL suite, including production/CAD/direct-write denial, availability,
+  replay/conflict, ordering, mismatch, refund reversal, legacy non-mutation, and sweep pending.
+- Passed: all five integrated neutral-ledger, epoch, external reconciliation, Base V2, and Stripe
+  SQL suites.
+- Passed: real Stripe CLI signed event delivery through the local Edge runtime with authoritative
+  SDK re-fetch, normalized immutable evidence, and balance snapshot; invalid signature returned
+  400. The real USD instruction call correctly remained blocked because Bank Transfers are not
+  enabled in the Fundloop Stripe sandbox.
+- Passed: focused Vitest (3 files/13 tests), lint, typecheck, and `git diff --check` after the final
+  hardening. The final full Node 22 `CI=1 pnpm check` passed 136 files/624 tests plus the 162-route
+  production build.
+- Passed: final Supabase best-practices audit with least-privilege service access, transaction-level
+  advisory locks, short database-only command transactions, and zero unindexed foreign-key columns
+  across the new Stripe tables.
+- Passed: authenticated founder browser smoke at 1440x900 and 390x844 with zero pre-action console
+  errors, exact review-only/CAD disclosure, a pending $1,280 USD payment, and the Terms gate. Both
+  captures were visually inspected under `output/playwright/issue-131/`.
+
+#### Reflections
+
+- Stripe bank-transfer presentment does not support CAD, and the Fundloop sandbox currently
+  rejects USD funding instructions until Bank Transfers are enabled in Dashboard. Neither gap
+  may be represented as a green provider success fixture.
+- The Canadian sandbox converted a test USD card event into a CAD balance transaction. Treating
+  provider settlement amounts as if they shared the presentment currency would violate monetary
+  conservation; the model now fails closed on that boundary.
+
+#### Suggested Next Steps
+
+- Enable Bank Transfers for the Fundloop Stripe sandbox, rerun the real USD instruction and
+  delayed-availability/reversal/mismatch lifecycle, then independently validate #131. Keep CAD
+  bank transfer and every live/production path disabled pending an approved provider capability.

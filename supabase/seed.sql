@@ -942,6 +942,13 @@ INSERT INTO public.financial_assets (
   '{"purpose":"neutral_local_validation","approved":false}'::jsonb
 ) ON CONFLICT (asset_key) DO NOTHING;
 
+INSERT INTO public.financial_assets (
+  asset_key, rail_key, symbol, atomic_scale, classification_metadata
+) VALUES (
+  'stripe_sandbox_usd', 'stripe_sandbox', 'USD', 2,
+  '{"purpose":"stripe_bank_transfer_sandbox_review","approved":false,"production":false}'::jsonb
+) ON CONFLICT (asset_key) DO NOTHING;
+
 INSERT INTO public.financial_custody_accounts (
   custody_key, asset_id, provider_key, external_reference_hash, classification_metadata
 )
@@ -950,6 +957,25 @@ SELECT 'local_review_custody', asset.id, 'local_fixture',
   '{"purpose":"neutral_local_validation","custody_claim":false}'::jsonb
 FROM public.financial_assets asset WHERE asset.asset_key = 'local_review_usd'
 ON CONFLICT (custody_key) DO NOTHING;
+
+INSERT INTO public.financial_custody_accounts (
+  custody_key, asset_id, provider_key, external_reference_hash, classification_metadata
+)
+SELECT 'stripe_sandbox_usd_clearing', asset.id, 'stripe_sandbox',
+  '8f6104998759f71cc8bfc3b4bc5da6e739df72345a72a7ebfd8f574b4c48d1fa',
+  '{"purpose":"stripe_sandbox_clearing_review","separated_custody_verified":false}'::jsonb
+FROM public.financial_assets asset WHERE asset.asset_key='stripe_sandbox_usd'
+ON CONFLICT (custody_key) DO NOTHING;
+
+INSERT INTO public.stripe_bank_transfer_custody_routes (
+  currency_code,asset_id,custody_account_id,topology_status,sandbox_enabled,evidence_hash
+)
+SELECT 'USD',asset.id,custody.id,'clearing_sweep_required',true,
+  '3dbc12b2ebf85bb97662d2d38f5056f31f7308e99a078e0bf07a70cb4f92f91b'
+FROM public.financial_assets asset
+JOIN public.financial_custody_accounts custody ON custody.asset_id=asset.id
+WHERE asset.asset_key='stripe_sandbox_usd' AND custody.custody_key='stripe_sandbox_usd_clearing'
+ON CONFLICT(currency_code)DO NOTHING;
 
 INSERT INTO public.financial_references (
   reference_key, reference_type, asset_id, custody_account_id,
