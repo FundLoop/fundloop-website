@@ -37,8 +37,15 @@ export default async function AdminMonthlyCyclesPage({ params }: PageProps) {
   const { locale } = await params
   const data = await (async () => {
     await requireInternalAdminActor()
-    const [overview, shadowEpochs] = await Promise.all([loadMonthlyCycleAdminOverview(), loadEpochShadowObservability()])
-    return { ...overview, shadowEpochs }
+    const overview = await loadMonthlyCycleAdminOverview()
+    const shadowResult = await loadEpochShadowObservability()
+      .then((shadowEpochs) => ({ shadowEpochs, warning: null }))
+      .catch((error: unknown) => ({
+        shadowEpochs: [],
+        warning:
+          error instanceof Error ? error.message : "Shadow epoch observability is temporarily unavailable.",
+      }))
+    return { ...overview, ...shadowResult }
   })().catch((error: unknown) => ({
     error: error instanceof Error ? error.message : "You cannot access monthly cycle operations.",
   }))
@@ -106,6 +113,7 @@ export default async function AdminMonthlyCyclesPage({ params }: PageProps) {
           </CardContent>
         </Card>
       ) : null}
+      {data.warning ? <p className="text-sm text-amber-700">Shadow epoch warning: {data.warning}</p> : null}
 
       <Card>
         <CardHeader>

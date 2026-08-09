@@ -1,2 +1,32 @@
-import{validateShadowJournal}from"../../../lib/edge-functions/shadow-financial-journal-contract.ts";import{edgeCommandFailure,edgeCommandSuccess}from"../../../lib/edge-functions/result.ts";import{authenticateRequestOrInternalSecret,getEnv,json,parseJsonBody,serve}from"../_shared/command-runtime.ts"
-async function handleRequest(request){if(request.method!=="POST")return json(edgeCommandFailure("method_not_allowed","POST required."));const environment=(getEnv("FUNDLOOP_DEPLOYMENT_ENV")??"").toLowerCase();const body=await parseJsonBody(request);if(!body.ok)return json(edgeCommandFailure("invalid_payload",body.error));const auth=await authenticateRequestOrInternalSecret(request,{secretEnvName:"FUNDLOOP_FINANCIAL_EVENT_SECRET",secretHeaderName:"x-fundloop-cron-secret"});if(!auth.ok||auth.mode!=="internal_secret")return json(edgeCommandFailure("forbidden","Internal authorization required."));const input=validateShadowJournal(body.body,environment);if(!input.ok)return json(input);const v=input.data;const{data,error}=await auth.adminClient.rpc("post_shadow_financial_journal",{p_event_id:v.eventId,p_ledger_transaction_id:v.ledgerTransactionId,p_journal_type:v.journalType,p_comparison_status:v.comparisonStatus??"unmatched",p_detail:v.detail??{},p_evidence_hash:v.evidenceHash,p_deployment_environment:environment});return json(error?edgeCommandFailure("post_failed",error.message):edgeCommandSuccess({journalId:data}))}serve(handleRequest);export{handleRequest}
+import { validateShadowJournal } from "../../../lib/edge-functions/shadow-financial-journal-contract.ts"
+import { edgeCommandFailure, edgeCommandSuccess } from "../../../lib/edge-functions/result.ts"
+import { authenticateRequestOrInternalSecret, getEnv, json, parseJsonBody, serve } from "../_shared/command-runtime.ts"
+
+async function handleRequest(request) {
+  if (request.method !== "POST") return json(edgeCommandFailure("method_not_allowed", "POST required."))
+  const environment = (getEnv("FUNDLOOP_DEPLOYMENT_ENV") ?? "").toLowerCase()
+  const body = await parseJsonBody(request)
+  if (!body.ok) return json(edgeCommandFailure("invalid_payload", body.error))
+  const auth = await authenticateRequestOrInternalSecret(request, {
+    secretEnvName: "FUNDLOOP_FINANCIAL_EVENT_SECRET",
+    secretHeaderName: "x-fundloop-cron-secret",
+  })
+  if (!auth.ok || auth.mode !== "internal_secret") {
+    return json(edgeCommandFailure("forbidden", "Internal authorization required."))
+  }
+  const input = validateShadowJournal(body.body, environment)
+  if (!input.ok) return json(input)
+  const v = input.data
+  const { data, error } = await auth.adminClient.rpc("post_shadow_financial_journal", {
+    p_event_id: v.eventId,
+    p_ledger_transaction_id: v.ledgerTransactionId,
+    p_journal_type: v.journalType,
+    p_comparison_status: v.comparisonStatus,
+    p_detail: v.detail ?? {},
+    p_evidence_hash: v.evidenceHash,
+    p_deployment_environment: environment,
+  })
+  return json(error ? edgeCommandFailure("post_failed", error.message) : edgeCommandSuccess({ journalId: data }))
+}
+serve(handleRequest)
+export { handleRequest }

@@ -8,7 +8,7 @@ END $$;
 
 DO $$
 DECLARE state_id bigint; missing_attempt bigint; attempt_one bigint; attempt_same bigint; attempt_two bigint; failed_attempt bigint; retry_attempt bigint; override_id bigint;
-  missing_claim record; claim_one record; claim_two record; failed_claim record; retry_claim record; result text; before_status text; after_status text;
+  missing_claim record; claim_one record; recovered_claim record; claim_two record; failed_claim record; retry_claim record; result text; before_status text; after_status text;
   scheduled_at timestamptz := clock_timestamp();
 BEGIN
   SELECT id INTO state_id FROM public.epoch_shadow_states LIMIT 1;
@@ -44,6 +44,9 @@ BEGIN
     'epoch:test:concurrent', repeat('b',64), 'manual', null, scheduled_at, 'local');
 
   SELECT * INTO claim_one FROM public.claim_epoch_shadow_attempt('worker-one', scheduled_at + interval '1 second', 'local');
+  SELECT * INTO recovered_claim FROM public.claim_epoch_shadow_attempt('recovery-worker', scheduled_at + interval '10 minutes', 'local');
+  IF recovered_claim.attempt_id<>claim_one.attempt_id OR recovered_claim.claim_token=claim_one.claim_token THEN RAISE EXCEPTION 'expired claim was not recovered';END IF;
+  claim_one:=recovered_claim;
   SELECT * INTO claim_two FROM public.claim_epoch_shadow_attempt('worker-two', scheduled_at + interval '1 second', 'local');
   IF claim_one.attempt_id = claim_two.attempt_id THEN RAISE EXCEPTION 'skip locked claim reused a row'; END IF;
 

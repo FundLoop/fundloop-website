@@ -420,3 +420,50 @@ eligible state while retaining conflicts for genuinely changed commands.
 - Commit and attach recurring-tick, fresh replay, SQL, and full-check evidence to #128.
 - Leave #128 In Progress for independent revalidation, stop services, and do not start
   #129 or open a PR.
+
+### session v11: PR #147 review integrity fixes
+
+- Timestamp: 2026-08-08T23:39:56-04:00
+- Agent: Codex
+- Branch: codex/126-ledger-control-plane
+- Head: 8a45189
+
+#### Objective
+
+Address every unresolved PR #147 review thread without weakening the provisional,
+local-only financial control-plane boundary.
+
+#### Actions Taken
+
+- Isolated the optional shadow observability read so an error produces an empty panel
+  and visible warning while the established admin cycle overview stays available.
+- Aligned event and journal Edge contracts with the exact local/dev/test allowlist,
+  database-shaped field validation, stable errors, and readable Edge implementation.
+- Added deferred database enforcement that a transaction carrying a financial reference
+  has native postings and that every posting uses the reference asset and custody pair.
+- Added a five-minute lease recovery path for abandoned claimed epoch attempts.
+- Serialized provider-event ingestion with a transaction advisory lock so concurrent
+  duplicates return the canonical event and provider ordering is computed consistently.
+- Added focused contract tests and executable no-native, unrelated-pair, fake-clock
+  lease-recovery, and concurrent duplicate evidence.
+
+#### Validation Notes
+
+- Passed a fresh local migration replay and all three integrated SQL suites.
+- Passed a two-session concurrent ingestion probe: both calls returned event id 4 and
+  exactly one canonical row remained.
+- Passed focused Vitest (2 files, 11 tests), lint, typecheck, and the full Node 22 check
+  (133 files, 602 tests, production build).
+- Browser smoke loaded `/en/admin/cycles` successfully and passed the operator cycle
+  readiness checkpoint; the broader persona later failed at its unrelated lock command
+  with `persona-lock-response-unexpected`, and cleanup completed with zero residue.
+
+#### Reflections
+
+- Optional observability must degrade locally, while attribution, leases, and dedupe need
+  database-enforced invariants because callers and workers can fail or race.
+
+#### Suggested Next Steps
+
+- Commit and push the review fixes, reply to and resolve all eight addressed threads,
+  then stop local services without requesting another review.

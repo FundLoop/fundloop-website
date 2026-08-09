@@ -27,6 +27,11 @@ INSERT INTO public.financial_assets (
   'local_review_eur', 'local_fixture', 'EUR', 6,
   '{"purpose":"asset_custody_mismatch_test","approved":false}'::jsonb
 );
+INSERT INTO public.financial_custody_accounts (
+  custody_key, asset_id, provider_key, external_reference_hash, classification_metadata
+) SELECT 'local_review_eur_custody', id, 'local_fixture', repeat('d', 64),
+  '{"purpose":"posting_reference_mismatch_test","approved":false}'::jsonb
+FROM public.financial_assets WHERE asset_key = 'local_review_eur';
 DO $$ BEGIN
   BEGIN
     INSERT INTO public.financial_references (
@@ -42,6 +47,46 @@ DO $$ BEGIN
 END $$;
 
 SET LOCAL ROLE service_role;
+
+DO $$ BEGIN
+  BEGIN
+    PERFORM public.post_neutral_ledger_transaction(jsonb_build_object(
+      'contractVersion', 'ledger_post.v1', 'deploymentEnvironment', 'local',
+      'idempotencyKey', 'reference-no-native-denied-001', 'transactionType', 'neutral_review',
+      'periodKey', 'local_review_2026_08', 'effectiveAt', '2026-08-15T12:00:00Z',
+      'evidenceHash', repeat('7', 64), 'actorType', 'service', 'financialReferenceKey', 'local_review_reference',
+      'postings', jsonb_build_array(
+        jsonb_build_object('accountKey', 'neutral_source_control', 'side', 'debit', 'functionalUsdAmount', '1', 'projectId', 101, 'userId', '00000000-0000-4000-8000-000000000101'),
+        jsonb_build_object('accountKey', 'neutral_offset_control', 'side', 'credit', 'functionalUsdAmount', '1', 'projectId', 101, 'userId', '00000000-0000-4000-8000-000000000101')
+      )
+    ));
+    SET CONSTRAINTS ledger_reference_posting_context IMMEDIATE;
+    RAISE EXCEPTION 'financial reference without native postings was allowed';
+  EXCEPTION WHEN OTHERS THEN
+    IF SQLERRM <> 'ledger_reference_posting_context_mismatch' THEN RAISE; END IF;
+  END;
+  SET CONSTRAINTS ledger_reference_posting_context DEFERRED;
+END $$;
+
+DO $$ BEGIN
+  BEGIN
+    PERFORM public.post_neutral_ledger_transaction(jsonb_build_object(
+      'contractVersion', 'ledger_post.v1', 'deploymentEnvironment', 'local',
+      'idempotencyKey', 'reference-unrelated-pair-denied-001', 'transactionType', 'neutral_review',
+      'periodKey', 'local_review_2026_08', 'effectiveAt', '2026-08-15T12:00:00Z',
+      'evidenceHash', repeat('8', 64), 'actorType', 'service', 'financialReferenceKey', 'local_review_reference',
+      'postings', jsonb_build_array(
+        jsonb_build_object('accountKey', 'neutral_source_control', 'side', 'debit', 'assetKey', 'local_review_eur', 'custodyKey', 'local_review_eur_custody', 'nativeAtomicAmount', '1000000', 'functionalUsdAmount', '1', 'fxUsdPerUnit', '1', 'projectId', 101, 'userId', '00000000-0000-4000-8000-000000000101'),
+        jsonb_build_object('accountKey', 'neutral_offset_control', 'side', 'credit', 'assetKey', 'local_review_eur', 'custodyKey', 'local_review_eur_custody', 'nativeAtomicAmount', '1000000', 'functionalUsdAmount', '1', 'fxUsdPerUnit', '1', 'projectId', 101, 'userId', '00000000-0000-4000-8000-000000000101')
+      )
+    ));
+    SET CONSTRAINTS ledger_reference_posting_context IMMEDIATE;
+    RAISE EXCEPTION 'financial reference with unrelated asset and custody was allowed';
+  EXCEPTION WHEN OTHERS THEN
+    IF SQLERRM <> 'ledger_reference_posting_context_mismatch' THEN RAISE; END IF;
+  END;
+  SET CONSTRAINTS ledger_reference_posting_context DEFERRED;
+END $$;
 
 DO $$ BEGIN
   BEGIN
