@@ -313,8 +313,12 @@ occurs. Later policy edits never rewrite prior events.
 22. Each difference between theoretical share and score-adjusted initial claim
     enters one global epoch redistribution pool. The allocator aggregates each
     user's initial project claims, defines baseline as the largest single-project
-    initial claim, and raises the lowest current totals first through deterministic
-    water-filling. Final allocation cannot exceed three times baseline.
+    initial claim, and defines cap as three times baseline. If aggregate initial
+    exceeds cap, every project/source initial lot is proportionally retained by
+    `cap / aggregate`; each exact difference enters the global pool as source-linked
+    overlap-cap overflow. Water-filling starts from the clamped current total and
+    raises the lowest uncapped totals first. A capped or zero-baseline user receives
+    no top-up.
 23. Cubid is queried during reconciliation and again at lock. A prior validated
     snapshot may be used during an outage only within a configured short TTL;
     otherwise the user remains unresolved and cannot lock.
@@ -324,10 +328,16 @@ occurs. Later policy edits never rewrite prior events.
 
 Canonical allocation fixture: Project A contributes `$300`; scores `5/10/15` of a
 locked maximum `20` yield `$25/$50/$75` initial claims and `$150` of pool. Project B
-contributes `$1,000`; 100 users averaging `10/20` yield `$500` of initial claims and
+contributes `$1,000`; 100 users each exactly `10/20` yield `$500` of initial claims and
 `$500` of pool. The three A users also use B, so the combined `$650` is water-filled
 first to the 97 B-only users with the lowest aggregate initial claims. Stable ties,
 rounding, caps, and complete funded-source provenance must reproduce exactly.
+
+Adversarial overlap fixture: score-adjusted initial lots `[100,100,100,100]` produce
+aggregate `$400`, baseline `$100`, cap `$300`, retention factor `0.75`, four retained
+`$75` lots, and four source-linked `$25` overflow lots. The user begins water-filling
+at cap and receives no top-up. These conservation and input-order properties apply
+to arbitrary overlap counts and to exact-decimal, minor-unit, and native-unit rows.
 
 ### 10. Legal ownership, payout, privacy, and consent intent
 
@@ -702,17 +712,25 @@ Process:
    epoch redistribution pool.
 3. Aggregate each user's initial claims, set baseline to the largest single-project
    initial claim, and set the final cap to three times baseline.
-4. Redistribute lowest-current-total first through deterministic water-filling;
+4. Before redistribution, clamp aggregate initial to cap. Scale every project/source
+   initial lot by `min(1, cap / aggregate)`, retain the scaled lot, and move its exact
+   difference into the pool as source-linked overlap-cap overflow.
+5. Define the global pool as score-discount contributions plus overlap-cap overflow,
+   then redistribute lowest-current-total first through deterministic water-filling;
    ties use aggregate initial claim, baseline, then stable user ID.
-5. Preserve project, rail, asset, native, FX, and functional-USD source lots for
+   A user already at cap, including a zero-baseline user at cap zero, receives no top-up.
+6. Preserve project, rail, asset, native, FX, and functional-USD source lots for
    every initial claim, top-up, and cap-exhausted returned/carryover residue.
-6. Apply stable exact-decimal and minor-unit rounding, then prove conservation by
-   project, rail, asset, native quantity, redistribution pool, and functional USD.
-7. Produce immutable calculation inputs, outputs, version, and reproducibility hash.
-8. Do not classify redistribution as fee/revenue/payable, and do not open payouts or
+7. Apply exact-decimal cap scaling first. Allocate retained functional-USD and native
+   residual units by descending fractional remainder then stable project/rail/asset/
+   source-lot key; derive overflow as original minus retained before user rounding.
+8. Prove conservation by project, rail, asset, native quantity, redistribution pool,
+   and functional USD for arbitrary overlap count and input order.
+9. Produce immutable calculation inputs, outputs, version, and reproducibility hash.
+10. Do not classify redistribution as fee/revenue/payable, and do not open payouts or
    post final user award/accounting records until review
    completes.
-9. Keep production allocation fail-closed until the named accounting, privacy,
+11. Keep production allocation fail-closed until the named accounting, privacy,
    custody, legal, and launch approvals are effective.
 
 Exit gate:

@@ -44,3 +44,47 @@ without changing product code, schema, issue state, or production behavior.
 - Use these architecture contracts while vetting and implementing Tasks #135-#137.
 - Keep production allocation, award posting, and real value flow fail-closed until
   the named professional, privacy, custody, and launch gates are satisfied.
+
+### session v2: Pre-redistribution overlap cap correction (#134/#136)
+
+- Timestamp: 2026-08-09T02:43:42-04:00
+- Agent: Codex
+- Branch: codex/134-cubid-redistribution-architecture
+- Head: a8e7f71
+
+#### Objective
+
+Close the architecture validation gap for users whose aggregate score-adjusted
+initial claims already exceed the `3 ×` largest-project baseline before
+redistribution begins.
+
+#### Actions Taken
+
+- Defined `pre_redistribution_current = min(aggregate_initial, cap)` and excluded
+  users already at cap, including zero-baseline users, from top-ups.
+- Required an exact `cap / aggregate` factor across every project/source initial lot
+  when aggregate exceeds cap; retained lots keep the factor and each exact difference
+  enters the global pool as source-linked overlap-cap overflow.
+- Defined the global pool as score-discount shortfalls plus overlap-cap overflow and
+  extended returned/carryover provenance to both contribution classes.
+- Added exact-decimal, USD minor-unit, and native atomic-unit residual rules using
+  fractional remainder plus stable project/rail/asset/source-lot identity.
+- Added the four-project `[100,100,100,100]` fixture and arbitrary-overlap,
+  source-order permutation, zero-baseline, and conservation requirements.
+- Replaced every canonical B-fixture average with 100 users each exactly `10/20`.
+
+#### Validation Notes
+
+- Passed exact A+B fixture: ten B-only users receive `$6.71`, 87 receive `$6.70`,
+  the `$650` pool is exhausted, and `$1,300` is conserved.
+- Passed four-project fixture: four `$75` retained lots plus four `$25` overflow lots
+  conserve the `$400` aggregate under the `$300` cap.
+- Passed 1,000 deterministic randomized overlap cases with retained/overflow
+  minor-unit conservation and source-order permutation equivalence.
+- Passed scoped Markdown local-link and cap/fixture contradiction audits.
+- Passed `pnpm lint` and `git diff --check`.
+
+#### Suggested Next Steps
+
+- Commit this docs-only validation correction and retain the production fail-closed
+  boundary for later Task #136 implementation.

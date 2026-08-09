@@ -20,10 +20,13 @@ USD-normalized Cubid-score discount followed by one global epoch redistribution:
 2. discount each theoretical share by the user's locked Cubid score divided by the
    locked maximum score;
 3. aggregate score-adjusted initial claims across projects;
-4. combine every project shortfall into one epoch redistribution pool;
-5. raise the lowest current user totals first through deterministic water-filling;
-6. stop each user at three times that user's largest single-project initial claim;
-7. return or carry forward any cap-exhausted residue to its originating funded
+4. clamp any aggregate initial claim above three times its largest single-project
+   claim and contribute the proportionally sourced overflow to the pool;
+5. combine every score-discount shortfall and overlap-cap overflow into one epoch
+   redistribution pool;
+6. raise the lowest current user totals first through deterministic water-filling;
+7. exclude users already at cap from top-ups; and
+8. return or carry forward any cap-exhausted residue to its originating funded
    sources.
 
 This model explicitly supersedes allocation based on a user's share of total
@@ -83,10 +86,10 @@ Each post-fee distributable source remains an immutable provenance lot containin
 - manifest position and stable source-lot key.
 
 The global redistribution pool is a calculated total over these lots, not an
-untracked fungible balance. Project shortfalls create source-linked pool lots.
-Top-ups consume those lots in a versioned stable order and record partial-lot
-splits. Unconsumed lots retain their original project, rail, asset, native, FX, and
-USD dimensions when returned or carried forward.
+untracked fungible balance. Score-discount shortfalls and overlap-cap overflow each
+create source-linked pool lots. Top-ups consume those lots in a versioned stable
+order and record partial-lot splits. Unconsumed lots retain their original project,
+rail, asset, native, FX, and USD dimensions when returned or carried forward.
 
 Redistribution principal is funded epoch value. It is never classified as a
 platform fee, platform revenue, treasury sweep, user payable, or newly created
@@ -142,20 +145,52 @@ final_cap(u) = 3 * baseline(u)
 
 The baseline is the largest single-project score-adjusted initial claim. It is not
 the aggregate initial claim, a raw point-proportional entitlement, or a value
-derived from project overlap.
+derived from project overlap. A user with a zero baseline has a zero cap.
 
-### 4. Global Epoch Redistribution Pool
+### 4. Pre-redistribution Cap Clamp
+
+The cap applies before redistribution as well as after it. For every user:
 
 ```text
-epoch_redistribution_pool = sum(project_pool_contribution(u,p))
+retention_factor(u) =
+  1                                      when aggregate_initial_claim(u) <= final_cap(u)
+  final_cap(u) / aggregate_initial_claim(u)  otherwise
+
+retained_initial_lot(u,p,source) =
+  initial_project_source_lot(u,p,source) * retention_factor(u)
+
+overlap_cap_overflow_lot(u,p,source) =
+  initial_project_source_lot(u,p,source) - retained_initial_lot(u,p,source)
+
+pre_redistribution_current(u) = sum(retained_initial_lot(u,p,source))
 ```
 
-All included project shortfalls enter this one pool. They do not remain restricted
-to users of the originating project, but their source provenance remains intact.
+Therefore `pre_redistribution_current = min(aggregate_initial_claim, final_cap)`.
+When aggregate initial value exceeds the cap, each project/source initial lot is
+scaled by the same exact factor. Each lot's exact difference becomes
+source-preserving overlap-cap overflow in the global pool. The clamp may not choose
+one project to absorb another project's overflow or erase rail, asset, native, FX,
+or USD provenance.
 
-### 5. Lowest-current-total-first Water-filling
+A user whose pre-redistribution current equals the cap is not a water-filling
+candidate. With non-negative initial lots, a zero baseline means every initial lot
+is zero; the user has cap zero, retains zero, and receives no redistribution top-up.
 
-Initialize each user's current total to `aggregate_initial_claim(u)`. Repeatedly:
+### 5. Global Epoch Redistribution Pool
+
+```text
+epoch_redistribution_pool =
+  sum(score_discount_pool_contribution(u,p,source))
+  + sum(overlap_cap_overflow_lot(u,p,source))
+```
+
+All included score-discount shortfalls and overlap-cap overflow enter this one pool.
+They do not remain restricted to users of the originating project, but their source
+provenance remains intact.
+
+### 6. Lowest-current-total-first Water-filling
+
+Initialize each user's current total to `pre_redistribution_current(u)`. Repeatedly:
 
 1. select uncapped users with the lowest current total;
 2. raise the tied lowest group together toward the next-lowest current total or a
@@ -173,9 +208,10 @@ Deterministic ordering is:
 
 Exact-decimal water-filling treats a tied group equally. Stable user ID is used
 only where indivisible minor units or an otherwise exact tie require assignment.
-No final allocation may exceed `3 * baseline`.
+No final allocation may exceed `3 * baseline`, and a user that begins at cap receives
+no top-up.
 
-### 6. Returned Or Carried-forward Residue
+### 7. Returned Or Carried-forward Residue
 
 If every eligible user reaches the cap before the pool is exhausted:
 
@@ -188,10 +224,19 @@ Residue is emitted as deterministic source-linked rows and returns or carries
 forward under the originating lot's project, rail, asset, native, FX, and USD
 provenance. It is not a user credit, fee, revenue, or payable.
 
-### 7. Rounding
+### 8. Rounding
 
-- preserve exact decimal theoretical shares, claims, pool lots, and water levels in
-  the artifact;
+- preserve exact decimal theoretical shares, initial lots, retention factors,
+  retained lots, overflow lots, pool lots, and water levels in the artifact;
+- calculate cap scaling before any minor-unit rounding;
+- for retained functional-USD source lots, floor each exact minor-unit amount and
+  assign the residual needed to reach the rounded retained-total target by
+  descending fractional remainder, then stable project/rail/asset/source-lot key;
+- derive each rounded overflow lot as original rounded source amount minus its
+  rounded retained amount, so retained plus overflow always equals the source;
+- apply the same largest-remainder and stable-key rule within each
+  rail/asset/custody group when an exact factor crosses atomic native units, and set
+  overflow native units to original minus retained units;
 - round canonical user awards in integer minor USD units only after water-filling;
 - assign user residual minor units by descending fractional remainder, then stable
   user ID;
@@ -199,6 +244,26 @@ provenance. It is not a user credit, fee, revenue, or payable.
 - assign source residuals through the versioned stable lot order; and
 - prove rounded user awards plus rounded returned residue equal the rounded funded
   pool, while native source quantities conserve exactly.
+
+### 9. Arbitrary-overlap Invariants
+
+For any number of overlapping project initial lots, including zero and one:
+
+```text
+sum(retained_initial_lot + overlap_cap_overflow_lot) =
+  aggregate_initial_claim
+
+pre_redistribution_current = min(aggregate_initial_claim, 3 * baseline)
+
+funded_epoch_pool =
+  sum(retained_initial_lot)
+  + sum(score_discount_pool_contribution)
+  + sum(overlap_cap_overflow_lot)
+```
+
+These identities must hold in exact decimals, rounded functional-USD minor units,
+and exact native atomic units. Permuting project/source input order cannot change
+retained totals, overflow totals, final allocations, or the result hash.
 
 ## Canonical A+B Fixture
 
@@ -213,7 +278,7 @@ A redistribution total       = $150
 ```
 
 Project B has `$1,000` and 100 eligible users. In the canonical deterministic
-fixture each B user is locked at `10/20`, so the `$10` theoretical share becomes a
+fixture the 100 B users are each exactly `10/20`, so the `$10` theoretical share becomes a
 `$5` initial claim.
 
 ```text
@@ -229,6 +294,25 @@ water-filling therefore sends the entire `$650` to the 97 B-only users before an
 A+B user. Exact top-up is `$650 / 97`; after cent rounding, 10 stable user IDs
 receive `$6.71` and 87 receive `$6.70`. No user reaches the `$15` cap, no A+B user
 receives a top-up, and no residue remains.
+
+## Four-project Overlap Cap Fixture
+
+One user has four score-adjusted project/source initial lots of `$100` each:
+
+```text
+aggregate initial claim      = $400
+baseline                     = $100
+cap                          = 3 * $100 = $300
+retention factor             = $300 / $400 = 0.75
+retained source lots         = $75, $75, $75, $75
+overlap-cap overflow lots    = $25, $25, $25, $25
+pre-redistribution current   = $300
+```
+
+The `$100` overflow joins the global pool with all four project/source identities
+intact. The user begins at cap and receives no top-up; water-filling proceeds only
+to other uncapped users. If no uncapped capacity remains, the four `$25` lots return
+or carry forward through their originating funded sources.
 
 ## Asset Fulfillment
 
@@ -246,7 +330,8 @@ The calculation artifact contains at least:
 - eligible project-user counts and theoretical shares;
 - locked score, locked maximum score, and score factor;
 - initial project claims and project pool contributions;
-- aggregate initial claims, baselines, and caps;
+- aggregate initial claims, baselines, caps, retention factors, retained initial
+  lots, and overlap-cap overflow lots;
 - ordered water-filling steps and redistribution top-ups;
 - final provisional allocations and cap status;
 - stable rounding decisions and asset/source fills;
@@ -267,12 +352,18 @@ Verification must prove:
 - every project dollar is settled, applied, journal-backed, fee-processed, and
   linked to immutable source provenance;
 - every user and score/max pair was eligible and locked;
-- equal theoretical shares, score-adjusted claims, and pool contributions recompute;
+- equal theoretical shares, score-adjusted claims, pre-redistribution cap clamps,
+  retained lots, and both pool-contribution classes recompute;
 - water-filling order, ties, caps, and rounding reproduce deterministically;
 - `final_allocation <= 3 * baseline` for every user;
-- funded pool equals initial claims plus pool contributions;
-- pool contributions equal top-ups plus returned/carryover residue;
-- final allocations equal initial claims plus top-ups;
+- every original initial lot equals its retained lot plus overlap-cap overflow;
+- funded pool equals retained initial lots plus score-discount contributions plus
+  overlap-cap overflow;
+- score-discount contributions plus overlap-cap overflow equal top-ups plus
+  returned/carryover residue;
+- final allocations equal pre-redistribution current plus top-ups;
+- capped and zero-baseline users receive no top-up;
+- arbitrary overlap count and input permutation properties hold;
 - native, FX, and functional-USD source conservation all hold;
 - project/public outputs cannot reveal cross-project membership; and
 - production allocation, payable posting, provider calls, and real value flow are

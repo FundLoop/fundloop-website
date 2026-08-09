@@ -225,7 +225,11 @@ Definitions:
 - Project pool contribution = theoretical project share minus the initial project claim; all contributions enter one global epoch redistribution pool.
 - Aggregate initial claim = the sum of one user's score-adjusted initial project claims.
 - User baseline = the largest single-project score-adjusted initial claim for that user.
-- User final allocation = aggregate initial claim plus the deterministic lowest-current-total-first water-filling top-up, capped at `3 ×` baseline.
+- User cap = `3 ×` baseline. Before redistribution, aggregate initial claim is clamped to the cap.
+- Retained initial source lot = initial project/source lot multiplied by `min(1, cap / aggregate initial claim)`; its exact difference is source-linked overlap-cap overflow.
+- Global epoch redistribution pool = score-discount project pool contributions plus overlap-cap overflow.
+- Pre-redistribution current = `min(aggregate initial claim, cap)`; a user already at cap, including a zero-baseline user at cap zero, receives no top-up.
+- User final allocation = pre-redistribution current plus the deterministic lowest-current-total-first water-filling top-up, never above the cap.
 - Asset fulfillment = selected asset credit fills based on the user's highest-priority accepted available assets.
 - Every initial claim, pool contribution, top-up, and returned/carryover residue retains project, rail, asset, native, FX, and USD provenance.
 
@@ -241,6 +245,9 @@ cross-project overlap.
 
 Rounding:
 
+- Calculate exact-decimal cap scaling before rounding.
+- Round retained source lots by descending fractional remainder then stable project/rail/asset/source-lot key; derive overflow as original minus retained so each source conserves.
+- Apply the same stable largest-remainder rule within each rail/asset/custody group for native atomic units.
 - Round after USD normalization.
 - Store exact decimal calculation inputs and rounded credited amounts.
 - Assign rounding residual deterministically to users by descending unrounded remainder, then stable user id sort.
@@ -249,7 +256,8 @@ Outputs:
 
 - per-user result rows
 - per-project/user theoretical-share, score-factor, and initial-claim rows
-- source-linked pool-contribution and redistribution-top-up rows
+- source-linked retained-initial, score-discount contribution, overlap-cap overflow,
+  and redistribution-top-up rows
 - selected asset fill rows
 - returned/carryover residue rows with originating source provenance
 - total pool USD
@@ -260,10 +268,14 @@ Outputs:
 Acceptance criteria:
 
 - Same locked manifest produces same result hash.
-- Initial claims plus pool contributions equal the funded pool; top-ups plus returned/carryover residue equal pool contributions.
+- Every initial source lot equals retained initial plus overlap-cap overflow.
+- Retained initial lots plus score-discount contributions plus overlap-cap overflow equal the funded pool.
+- Top-ups plus returned/carryover residue equal score-discount contributions plus overlap-cap overflow.
 - Final allocations plus returned/carryover residue equal total funded pool USD after deterministic rounding.
 - No user final allocation exceeds `3 ×` baseline.
-- The canonical A+B fixture produces `$150 + $500 = $650` of redistribution and sends it first to the 97 B-only lowest earners.
+- The canonical A+B fixture uses 100 B users each exactly `10/20`, produces `$150 + $500 = $650` of redistribution, and sends it first to the 97 B-only lowest earners.
+- The four-project overlap fixture `[100,100,100,100]` clamps `$400` to a `$300` cap, retains `$75` per source, and contributes four `$25` overflow lots before water-filling.
+- Arbitrary overlap count and project/source input permutation properties conserve exact decimals, USD minor units, and native atomic units.
 - Ineligible users are excluded with reason codes.
 - Calculation creates artifacts in Supabase Storage and result rows linked to `monthly_cycle_id`.
 
@@ -277,8 +289,9 @@ Verification checks:
 - all included projects have approved packages and reconciled, journal-backed funded sources
 - all included project cohorts and score/max snapshots are approved and locked
 - all included users are CUBID-linked at lock time
-- initial claims, pool contributions, top-ups, and source-linked returned/carryover residue conserve the monthly pool after rounding
+- retained initial lots, both pool-contribution classes, top-ups, and source-linked returned/carryover residue conserve the monthly pool after rounding
 - no user allocation exceeds the `3 ×` baseline cap
+- users already at cap and zero-baseline users receive no top-up
 - asset fills respect accepted preference order and recorded availability
 - no negative credits
 - artifact hashes exist
@@ -415,6 +428,8 @@ Minimum automated coverage:
 - lock manifest includes funded source provenance, approved project cohorts, locked CUBID score/max, and asset preference inputs
 - attribution fixtures include scoped CUBID identity references and resolved FundLoop user mappings
 - canonical A+B fixture produces deterministic score-adjusted claims and `$650` lowest-earner-first redistribution
+- four-project `[100,100,100,100]` fixture retains four `$75` lots, contributes four `$25` overflow lots, and excludes the capped user from top-ups
+- arbitrary overlap count, source-order permutation, zero-baseline, and exact-decimal/minor-unit/native conservation properties
 - rounding residual assignment is deterministic
 - asset fulfillment partial fills and source-linked returned/carryover residue are deterministic
 - verification catches total mismatch, missing artifact, ineligible user, and unapproved dataset

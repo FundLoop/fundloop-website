@@ -648,11 +648,15 @@ Goal invariants:
 - equal theoretical funded project share per eligible user;
 - initial project claim equals theoretical share multiplied by locked Cubid score
   divided by the versioned locked maximum score;
-- every shortfall enters one global epoch redistribution pool;
-- aggregate initial claims are raised lowest-current-total first through stable
-  deterministic water-filling;
 - baseline is the largest single-project score-adjusted initial claim and final
   allocation is capped at `3 ×` baseline;
+- before redistribution, aggregate initial is clamped to cap; if aggregate exceeds
+  cap, every project/source initial lot is scaled by `cap / aggregate`, retained
+  proportionally, and its exact difference becomes source-linked overlap overflow;
+- one global pool equals score-discount shortfalls plus overlap-cap overflow, and
+  clamped current totals are raised lowest-first through stable deterministic
+  water-filling;
+- capped users and zero-baseline users receive no top-up;
 - top-ups and returned/carryover residue retain project, rail, asset, native, FX,
   and functional-USD provenance; and
 - redistribution is funded principal, not fee, revenue, treasury sweep, payable,
@@ -711,11 +715,20 @@ Scope:
   locked score/max evidence in the manifest;
 - divide each funded project pool equally across eligible users;
 - calculate `initial claim = theoretical share × locked score / locked max score`
-  and send the shortfall into one global epoch pool;
+  and create source-linked score-discount shortfall lots;
 - aggregate user initial claims, define baseline as the largest single-project
-  initial claim, and water-fill lowest current totals first under the `3 ×` cap;
+  initial claim, set cap to `3 ×` baseline, and clamp aggregate initial before
+  redistribution;
+- when aggregate exceeds cap, apply one exact `cap / aggregate` factor to every
+  project/source initial lot and move each difference into the pool as overlap-cap
+  overflow; start water-filling from `min(aggregate, cap)`;
+- define the global pool as score-discount shortfalls plus overlap-cap overflow;
+  capped and zero-baseline users receive no top-up;
 - use aggregate initial claim, baseline, then stable user ID for ties and assign
   minor-unit rounding deterministically;
+- apply cap scaling in exact decimals, allocate retained source residuals by
+  fractional remainder then stable project/rail/asset/source-lot key, and derive
+  each overflow lot as original minus retained so native and USD units conserve;
 - preserve project/rail/asset/native/FX/USD provenance for initial claims, top-ups,
   returned residue, and payout eligibility;
 - deterministic rerun and material-change comparison.
@@ -723,13 +736,17 @@ Scope:
 Validation:
 
 - no-receipt/no-allocation invariant;
-- invalid score/max, cap, asset/native/USD conservation, privacy, and source
+- invalid score/max, pre-redistribution cap, zero-baseline, arbitrary-overlap,
+  input-permutation, asset/native/USD conservation, privacy, and source
   attribution;
 - repeat run equivalence;
 - canonical A+B fixture: A `$300`, `5/10/15` of `20` gives `$25/$50/$75`
-  initial and `$150` pool; B `$1,000`, 100 users averaging `10/20` gives `$500`
+  initial and `$150` pool; B `$1,000`, 100 users each exactly `10/20` gives `$500`
   initial and `$500` pool; because the three A users also use B, the combined
-  `$650` goes first to the 97 B-only lowest earners; and
+  `$650` goes first to the 97 B-only lowest earners;
+- four-project overlap fixture `[100,100,100,100]`: aggregate `$400`, baseline
+  `$100`, cap `$300`, four retained `$75` source lots, four `$25` overflow lots,
+  then water-fill only uncapped users; and
 - old point-proportional results are explicitly superseded and intentional
   differences documented.
 
@@ -754,8 +771,10 @@ Scope:
   without recognizing user ownership before payout is processed;
 - publish exact approved project totals/counts without user identifiers or
   cross-project membership inference;
-- persist theoretical shares, score/max, initial claims, pool contributions,
-  top-ups, caps, final allocations, and source-linked residue;
+- persist theoretical shares, score/max, initial claims, aggregate/baseline/cap,
+  retention factors, retained source lots, score-discount contributions,
+  overlap-cap overflow, pre-redistribution current, top-ups, final allocations, and
+  source-linked residue;
 - generate trial balance, custody, project funds, fee, FX, carryover, initial claim,
   redistribution pool, top-up, returned-residue, provisional award, and exception
   artifacts under one root hash, without payable classification;
@@ -765,8 +784,9 @@ Validation:
 
 - award-control balances equal approved allocations without creating user-owned
   liabilities before payout processing;
-- initial claims plus top-ups plus returned residue reconcile to funded sources and
-  pool contributions equal top-ups plus residue;
+- original initial lots equal retained lots plus overlap-cap overflow; retained
+  initials plus both pool-contribution classes reconcile to funded sources; both
+  pool-contribution classes equal top-ups plus residue;
 - report totals reconcile to journal and artifacts reproduce;
 - role-scoped privacy tests;
 - payout window cannot open before every hard gate passes.
