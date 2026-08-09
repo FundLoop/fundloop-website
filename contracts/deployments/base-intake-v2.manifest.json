@@ -1,0 +1,15 @@
+{
+  "version": "fundloop-base-intake-v2",
+  "environment": "local",
+  "chainId": 31337,
+  "enabled": false,
+  "contractAddress": "0x0000000000000000000000000000000000000000",
+  "platformTreasuryAddress": "0x0000000000000000000000000000000000000000",
+  "epochTreasuryAddress": "0x0000000000000000000000000000000000000000",
+  "tokens": {
+    "USDC": "0x0000000000000000000000000000000000000000",
+    "USDT": "0x0000000000000000000000000000000000000000",
+    "PYUSD": "0x0000000000000000000000000000000000000000"
+  },
+  "note": "Fail-closed tracked template. Replace only through reviewed non-production deployment evidence."
+}

@@ -963,3 +963,56 @@ review-only invitation and sharing behavior unavailable in production.
 
 - Commit and push this narrow follow-up, reply to and resolve all four Copilot threads,
   then wait for post-push CI and merge under the normal non-squash policy if green.
+
+### session v20: Base stablecoin intake V2 (#132)
+
+- Timestamp: 2026-08-09T01:02:03-04:00
+- Agent: Codex
+- Branch: codex/130-settlement-packages
+- Head: f5b7e0a
+
+#### Objective
+
+Implement a versioned, non-production Base receipt boundary for the curated USDC,
+USDT, and PYUSD slots with exact separated-treasury reconciliation.
+
+#### Actions Taken
+
+- Added `FundLoopBaseIntakeV2` with constructor-bound token slots, project fee
+  snapshots, gross/fee/net conservation, separated platform and epoch transfers and
+  events, owner-only configuration, pause control, and duplicate receipt protection.
+- Added a guarded local/Base Sepolia deployment script and disabled tracked manifest;
+  mainnet and every non-local/dev/test environment remain unavailable.
+- Added forward Base deployment, asset, fee-version, receipt, and append-only
+  reconciliation schema with service-only typed RPCs and Edge commands.
+- Derived confirmation, exact, mismatch, reorg, and replacement states from trusted
+  receipt/block/treasury evidence rather than caller status.
+- Added local Hardhat, contract, RLS/RPC, deployment, and integrated ledger evidence,
+  regenerated Supabase types, and documented the issuer-verification production gate.
+
+#### Validation Notes
+
+- Passed: guarded local chain deployment on 31337 and explicit production deployment
+  refusal; Base Sepolia was skipped because no authorized RPC/private key is present.
+- Passed: Hardhat 8/8 tests, including four V2 local wallet/adversarial cases.
+- Passed: fresh local Supabase reset plus neutral ledger, epoch shadow, external shadow
+  reconciliation, and Base V2 SQL suites.
+- Passed: focused Vitest with 3 files/23 tests and full Node 22 `CI=1 pnpm check`
+  with 134 files/614 tests, lint, typecheck, and production build.
+- Passed: `git diff --check`; no browser surface changed, so browser evidence is N/A.
+- Attempted standalone Deno type-checking; it remains unavailable because the existing
+  shared command runtime is untyped under strict Deno checking. The new functions follow
+  the established runtime pattern and are covered by source-contract and app type tests.
+
+#### Reflections
+
+- A symbol allowlist is insufficient without constructor-bound addresses, deployment
+  matching, and a disabled tracked manifest.
+- Reorg and replacement evidence must remain append-only while the latest read model
+  is derived, and exact treasury amounts must be independently observed.
+
+#### Suggested Next Steps
+
+- Commit #132 and attach local-chain, migration, SQL/RLS/RPC, focused, and full-check
+  evidence for independent validation.
+- Keep #131 blocked on Stripe sandbox authorization and leave #133 untouched/Ready.

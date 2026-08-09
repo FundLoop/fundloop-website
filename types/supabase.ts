@@ -106,6 +106,304 @@ export type Database = {
         }
         Relationships: []
       }
+      base_intake_v2_assets: {
+        Row: {
+          address_evidence: Json
+          deployment_id: number
+          financial_asset_id: number | null
+          id: number
+          is_enabled: boolean
+          symbol: string
+          token_address: string
+        }
+        Insert: {
+          address_evidence?: Json
+          deployment_id: number
+          financial_asset_id?: number | null
+          id?: never
+          is_enabled?: boolean
+          symbol: string
+          token_address: string
+        }
+        Update: {
+          address_evidence?: Json
+          deployment_id?: number
+          financial_asset_id?: number | null
+          id?: never
+          is_enabled?: boolean
+          symbol?: string
+          token_address?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "base_intake_v2_assets_deployment_id_fkey"
+            columns: ["deployment_id"]
+            isOneToOne: false
+            referencedRelation: "base_intake_v2_deployments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "base_intake_v2_assets_financial_asset_id_fkey"
+            columns: ["financial_asset_id"]
+            isOneToOne: false
+            referencedRelation: "financial_assets"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      base_intake_v2_deployments: {
+        Row: {
+          chain_id: number
+          contract_address: string
+          contract_version: string
+          created_at: string
+          deployment_environment: string
+          epoch_treasury_address: string
+          id: number
+          is_active: boolean
+          is_paused: boolean
+          minimum_confirmation_depth: number
+          platform_treasury_address: string
+          production_value_flow_enabled: boolean
+        }
+        Insert: {
+          chain_id: number
+          contract_address: string
+          contract_version?: string
+          created_at?: string
+          deployment_environment: string
+          epoch_treasury_address: string
+          id?: never
+          is_active?: boolean
+          is_paused?: boolean
+          minimum_confirmation_depth?: number
+          platform_treasury_address: string
+          production_value_flow_enabled?: boolean
+        }
+        Update: {
+          chain_id?: number
+          contract_address?: string
+          contract_version?: string
+          created_at?: string
+          deployment_environment?: string
+          epoch_treasury_address?: string
+          id?: never
+          is_active?: boolean
+          is_paused?: boolean
+          minimum_confirmation_depth?: number
+          platform_treasury_address?: string
+          production_value_flow_enabled?: boolean
+        }
+        Relationships: []
+      }
+      base_intake_v2_receipts: {
+        Row: {
+          accounting_period_id: number
+          block_hash: string
+          block_number: number
+          created_at: string
+          deployment_id: number
+          epoch_treasury_address: string
+          evidence_hash: string
+          fee_version_id: number
+          gross_native_amount: number
+          id: number
+          log_index: number
+          net_epoch_native_amount: number
+          observed_at: string
+          platform_fee_native_amount: number
+          platform_treasury_address: string
+          production_enabled: boolean
+          project_fee_bps: number
+          project_id: number
+          provider_event_id: string
+          sender_address: string
+          token_address: string
+          token_symbol: string
+          tx_hash: string
+        }
+        Insert: {
+          accounting_period_id: number
+          block_hash: string
+          block_number: number
+          created_at?: string
+          deployment_id: number
+          epoch_treasury_address: string
+          evidence_hash: string
+          fee_version_id: number
+          gross_native_amount: number
+          id?: never
+          log_index: number
+          net_epoch_native_amount: number
+          observed_at: string
+          platform_fee_native_amount: number
+          platform_treasury_address: string
+          production_enabled?: boolean
+          project_fee_bps: number
+          project_id: number
+          provider_event_id: string
+          sender_address: string
+          token_address: string
+          token_symbol: string
+          tx_hash: string
+        }
+        Update: {
+          accounting_period_id?: number
+          block_hash?: string
+          block_number?: number
+          created_at?: string
+          deployment_id?: number
+          epoch_treasury_address?: string
+          evidence_hash?: string
+          fee_version_id?: number
+          gross_native_amount?: number
+          id?: never
+          log_index?: number
+          net_epoch_native_amount?: number
+          observed_at?: string
+          platform_fee_native_amount?: number
+          platform_treasury_address?: string
+          production_enabled?: boolean
+          project_fee_bps?: number
+          project_id?: number
+          provider_event_id?: string
+          sender_address?: string
+          token_address?: string
+          token_symbol?: string
+          tx_hash?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "base_intake_v2_receipts_accounting_period_id_fkey"
+            columns: ["accounting_period_id"]
+            isOneToOne: false
+            referencedRelation: "accounting_periods"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "base_intake_v2_receipts_deployment_id_fkey"
+            columns: ["deployment_id"]
+            isOneToOne: false
+            referencedRelation: "base_intake_v2_deployments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "base_intake_v2_receipts_fee_version_id_fkey"
+            columns: ["fee_version_id"]
+            isOneToOne: false
+            referencedRelation: "base_project_fee_versions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "base_intake_v2_receipts_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      base_intake_v2_reconciliation_events: {
+        Row: {
+          confirmation_count: number
+          created_at: string
+          current_block_number: number
+          epoch_observed_native_amount: number
+          evidence_hash: string
+          id: number
+          observed_at: string
+          observed_block_hash: string
+          observed_tx_hash: string
+          platform_observed_native_amount: number
+          receipt_id: number
+          replacement_tx_hash: string | null
+          status: string
+        }
+        Insert: {
+          confirmation_count: number
+          created_at?: string
+          current_block_number: number
+          epoch_observed_native_amount: number
+          evidence_hash: string
+          id?: never
+          observed_at: string
+          observed_block_hash: string
+          observed_tx_hash: string
+          platform_observed_native_amount: number
+          receipt_id: number
+          replacement_tx_hash?: string | null
+          status: string
+        }
+        Update: {
+          confirmation_count?: number
+          created_at?: string
+          current_block_number?: number
+          epoch_observed_native_amount?: number
+          evidence_hash?: string
+          id?: never
+          observed_at?: string
+          observed_block_hash?: string
+          observed_tx_hash?: string
+          platform_observed_native_amount?: number
+          receipt_id?: number
+          replacement_tx_hash?: string | null
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "base_intake_v2_reconciliation_events_receipt_id_fkey"
+            columns: ["receipt_id"]
+            isOneToOne: false
+            referencedRelation: "base_intake_v2_receipt_observability"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "base_intake_v2_reconciliation_events_receipt_id_fkey"
+            columns: ["receipt_id"]
+            isOneToOne: false
+            referencedRelation: "base_intake_v2_receipts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      base_project_fee_versions: {
+        Row: {
+          created_at: string
+          evidence_hash: string
+          fee_bps: number
+          id: number
+          is_current: boolean
+          project_id: number
+          version: number
+        }
+        Insert: {
+          created_at?: string
+          evidence_hash: string
+          fee_bps: number
+          id?: never
+          is_current?: boolean
+          project_id: number
+          version: number
+        }
+        Update: {
+          created_at?: string
+          evidence_hash?: string
+          fee_bps?: number
+          id?: never
+          is_current?: boolean
+          project_id?: number
+          version?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "base_project_fee_versions_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       blog_posts: {
         Row: {
           author_id: number
@@ -6132,6 +6430,69 @@ export type Database = {
       }
     }
     Views: {
+      base_intake_v2_receipt_observability: {
+        Row: {
+          accounting_period_id: number | null
+          block_hash: string | null
+          block_number: number | null
+          confirmation_count: number | null
+          created_at: string | null
+          deployment_id: number | null
+          epoch_observed_native_amount: number | null
+          epoch_treasury_address: string | null
+          evidence_hash: string | null
+          fee_version_id: number | null
+          gross_native_amount: number | null
+          id: number | null
+          log_index: number | null
+          net_epoch_native_amount: number | null
+          observed_at: string | null
+          platform_fee_native_amount: number | null
+          platform_observed_native_amount: number | null
+          platform_treasury_address: string | null
+          production_enabled: boolean | null
+          project_fee_bps: number | null
+          project_id: number | null
+          provider_event_id: string | null
+          reconciled_observed_at: string | null
+          reconciliation_status: string | null
+          replacement_tx_hash: string | null
+          sender_address: string | null
+          token_address: string | null
+          token_symbol: string | null
+          tx_hash: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "base_intake_v2_receipts_accounting_period_id_fkey"
+            columns: ["accounting_period_id"]
+            isOneToOne: false
+            referencedRelation: "accounting_periods"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "base_intake_v2_receipts_deployment_id_fkey"
+            columns: ["deployment_id"]
+            isOneToOne: false
+            referencedRelation: "base_intake_v2_deployments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "base_intake_v2_receipts_fee_version_id_fkey"
+            columns: ["fee_version_id"]
+            isOneToOne: false
+            referencedRelation: "base_project_fee_versions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "base_intake_v2_receipts_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       epoch_shadow_observability: {
         Row: {
           accounting_period_id: number | null
@@ -6552,6 +6913,14 @@ export type Database = {
           project_id: number
           project_slug: string
         }[]
+      }
+      reconcile_base_intake_v2_receipt: {
+        Args: { p_command: Json }
+        Returns: number
+      }
+      record_base_intake_v2_receipt: {
+        Args: { p_command: Json }
+        Returns: number
       }
       record_custody_reconciliation: {
         Args: {

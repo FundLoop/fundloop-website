@@ -180,3 +180,9 @@ When finishing a task, state:
 - whether the run used local Supabase, remote preview/dev Supabase, or no database
 
 Do not describe a flow as working unless the relevant validation or smoke test actually ran.
+# Base intake V2 local boundary
+
+The provisional Base V2 intake uses exact `local`, `dev`, and `test` command allowlists.
+Its tracked deployment manifest is disabled, and production deployment/value flow remains
+unavailable. See `docs/engineering/base-intake-v2.md` for the local Hardhat and Supabase
+evidence workflow.

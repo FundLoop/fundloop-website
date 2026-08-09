@@ -1,0 +1,35 @@
+# Base stablecoin intake V2 (local review)
+
+Status: provisional, non-production, and fail-closed.
+
+`FundLoopBaseIntakeV2` accepts only the three constructor-bound token contracts labelled
+USDC, USDT, and PYUSD. It snapshots the configured project fee in each receipt event and
+transfers the fee and net amount directly to distinct platform and epoch treasuries. The
+contract has no native-token, arbitrary-token, payable, or production deployment path.
+
+The tracked manifest is deliberately disabled. The deployment script runs only when
+`FUNDLOOP_DEPLOYMENT_ENV` is `local`, `dev`, or `test`, and only on chain ID 31337 or Base
+Sepolia 84532. It prints a candidate manifest for review; it does not mutate tracked files,
+Supabase, or any production deployment.
+
+The database command boundary independently verifies deployment, token, treasury, current
+fee version, and exact gross = fee + net conservation. Reconciliation status is derived from
+confirmation depth, block/transaction identity, replacement evidence, and the two observed
+treasury amounts. Receipt and reconciliation evidence is append-only and inaccessible to
+browser roles.
+
+Issuer verification remains a production gate. Circle documents Base USDC and Base Sepolia
+USDC addresses at <https://developers.circle.com/stablecoins/usdc-contract-addresses>.
+Official issuer documentation inspected during implementation did not establish Base
+addresses for USDT or PYUSD, so no mainnet addresses are activated or claimed. Local Hardhat
+mocks exercise all three allowlist slots; production and the tracked manifest remain disabled.
+
+## Local validation
+
+1. Run `pnpm --dir contracts test` for exact treasury and adversarial contract behavior.
+2. Start local Supabase, run a fresh reset, then execute
+   `supabase/tests/base_intake_v2_reconciliation.sql`.
+3. Run `CI=1 pnpm check` with Node 22.
+
+Base Sepolia is optional and may be used only when an authorized test wallet, issuer test
+tokens, and RPC credentials are already available. Never substitute mainnet assets.
