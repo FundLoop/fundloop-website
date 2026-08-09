@@ -23,6 +23,11 @@ describe("epoch financial prep migration",()=>{
     expect(sql).toContain("origin_source_lot_id")
     expect(sql).toContain("epoch_source_harvest_reserved")
   })
+  it("requires every higher-priority FX source to be exhausted before fallback",()=>{
+    expect(sql).toContain("epoch_fx_higher_priority_source_available")
+    expect(sql).toContain("better.source_rank<v_obs.source_rank")
+    expect(sql).toContain("better.freshness_expires_at>=v_now")
+  })
   it("exposes score-versioned funded lock candidates without calculating allocation",()=>{
     expect(sql).toContain("locked_cubid_score")
     expect(sql).toContain("locked_max_cubid_score")

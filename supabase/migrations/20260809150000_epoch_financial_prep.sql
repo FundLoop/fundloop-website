@@ -276,6 +276,12 @@ BEGIN
       AND o.monthly_cycle_id=v_cycle.id AND o.financial_asset_id=v_asset.id AND o.reasonability_status='eligible' AND o.freshness_expires_at>=v_now;
     IF v_obs.id IS NULL THEN RAISE EXCEPTION 'epoch_fx_observation_unavailable'; END IF;
     IF (v_method='primary' AND v_obs.source_rank<>1) OR (v_method='fallback' AND v_obs.source_rank=1) THEN RAISE EXCEPTION 'epoch_fx_source_rank_mismatch'; END IF;
+    IF v_method='fallback' AND EXISTS(
+      SELECT 1 FROM public.epoch_fx_observations better
+      WHERE better.monthly_cycle_id=v_cycle.id AND better.financial_asset_id=v_asset.id
+        AND better.reasonability_status='eligible' AND better.freshness_expires_at>=v_now
+        AND better.source_rank<v_obs.source_rank
+    ) THEN RAISE EXCEPTION 'epoch_fx_higher_priority_source_available'; END IF;
     v_rate:=v_obs.rate_usd_per_unit;
   END IF;
   v_peg:=CASE WHEN v_asset.symbol IN ('USD','USDC','USDT','PYUSD') THEN CASE WHEN v_rate BETWEEN .997 AND 1.003 THEN 'within_band' ELSE 'outside_band' END ELSE 'not_applicable' END;

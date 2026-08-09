@@ -2,7 +2,7 @@ BEGIN;
 SET LOCAL search_path=public,extensions,pg_catalog;
 
 DO $$ DECLARE v_actor uuid:='11c1a713-b14b-49c0-bcc4-0246fbc78410'; v_project bigint:=1; v_cycle bigint; v_expiry bigint; v_target bigint;
-  v_package bigint; v_bad_package bigint; v_payment1 bigint; v_payment2 bigint; v_intent1 bigint; v_intent2 bigint; v_obs bigint; v_fx bigint; v_count integer;
+  v_package bigint; v_bad_package bigint; v_payment1 bigint; v_payment2 bigint; v_intent1 bigint; v_intent2 bigint; v_obs bigint; v_fallback bigint; v_fx bigint; v_count integer;
   v_lot bigint; v_successor bigint; v_failed boolean; v_fraction_total numeric; v_native_total numeric; v_distributable numeric;
 BEGIN
   IF public.clamp_epoch_fee_bps(0,50,150)<>50 OR public.clamp_epoch_fee_bps(2000,50,150)<>150 THEN
@@ -50,6 +50,14 @@ BEGIN
     'cycleKey','2026-08','assetKey','stripe_sandbox_usd','sourceKey','primary_fixture','sourceRank',1,'rateUsdPerUnit','1',
     'observedAt',clock_timestamp(),'freshnessExpiresAt',clock_timestamp()+interval '1 hour','reasonabilityStatus','eligible',
     'evidenceHash',repeat('8',64),'actorUserId',v_actor));
+  v_fallback:=public.record_epoch_fx_observation(jsonb_build_object('contractVersion','epoch_fx_observation.v1','deploymentEnvironment','local',
+    'cycleKey','2026-08','assetKey','stripe_sandbox_usd','sourceKey','fallback_fixture','sourceRank',2,'rateUsdPerUnit','1',
+    'observedAt',clock_timestamp(),'freshnessExpiresAt',clock_timestamp()+interval '1 hour','reasonabilityStatus','eligible',
+    'evidenceHash',repeat('d',64),'actorUserId',v_actor));
+  v_failed:=false; BEGIN PERFORM public.post_epoch_fx_snapshot(jsonb_build_object('contractVersion','epoch_fx_snapshot.v1','deploymentEnvironment','local',
+    'cycleKey','2026-08','assetKey','stripe_sandbox_usd','method','fallback','observationId',v_fallback,'preanalysis','{}'::jsonb,
+    'evidenceHash',repeat('e',64),'actorUserId',v_actor)); EXCEPTION WHEN OTHERS THEN v_failed:=SQLERRM LIKE '%higher_priority_source_available%'; END;
+  IF NOT v_failed THEN RAISE EXCEPTION 'fallback FX bypassed a fresh eligible primary'; END IF;
   v_failed:=false; BEGIN PERFORM public.post_epoch_fx_snapshot(jsonb_build_object('contractVersion','epoch_fx_snapshot.v1','deploymentEnvironment','local',
     'cycleKey','2026-08','assetKey','stripe_sandbox_usd','method','manual_after_exhaustion','manualRateUsdPerUnit','1','preanalysis','{}'::jsonb,
     'evidenceHash',repeat('9',64),'actorUserId',v_actor)); EXCEPTION WHEN OTHERS THEN v_failed:=SQLERRM LIKE '%manual_source_not_exhausted%'; END;

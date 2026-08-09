@@ -1406,3 +1406,37 @@ Implement production-disabled monthly FX, fee, expiry, carryover, and funded-sou
 - Commit #135 separately, post implementation evidence, and request independent validation.
 - If validation passes, move #135 to In Review and continue to #136 allocation calculation while
   keeping #131 Stripe provider activation parked for the later sandbox-evidence return.
+
+### session v29: enforce FX fallback priority (#135)
+
+- Timestamp: 2026-08-09T18:26:41-04:00
+- Agent: Codex
+- Branch: codex/134-funded-redistribution
+- Head: 0e5135b
+
+#### Objective
+
+Close the independent #135 validator finding that allowed a lower-priority fallback FX source
+to post while a fresh eligible primary source remained available.
+
+#### Actions Taken
+
+- Made fallback selection reject whenever any fresh eligible observation for the same cycle and
+  asset has a better source rank. This enforces the complete ranked hierarchy, including the
+  required rank-1 primary-before-rank-2 fallback rule.
+- Added an executable adversarial fixture with simultaneous fresh rank-1 and rank-2 observations;
+  the fallback must raise `epoch_fx_higher_priority_source_available` before the primary posts.
+- Added focused migration-contract assertions for rank, freshness, and the stable error code.
+
+#### Validation Notes
+
+- Passed: fresh local Supabase migration/seed replay and the complete executable #135 SQL suite,
+  including the new primary/fallback bypass denial and all prior fee, precision, carryover,
+  privilege, and production-boundary cases.
+- The correction changes no UI, generated table/view types, provider integration, allocation,
+  payable, custody, transfer, or production behavior.
+
+#### Suggested Next Steps
+
+- Run the focused and broad Node 22 gates, commit the correction separately, post evidence, and
+  return exact HEAD to independent #135 revalidation.
