@@ -27,4 +27,20 @@ END $$;
 SET LOCAL ROLE authenticated;
 DO $$ BEGIN BEGIN PERFORM * FROM public.shadow_financial_reconciliation_observability; RAISE EXCEPTION 'browser read accepted'; EXCEPTION WHEN insufficient_privilege THEN NULL; END; END $$;
 RESET ROLE;
+
+SET LOCAL ROLE service_role;
+DO $$
+DECLARE table_name text; v_event_id bigint;
+BEGIN
+  FOREACH table_name IN ARRAY ARRAY['external_financial_events','external_funding_applications','custody_reconciliation_snapshots','shadow_financial_journals','shadow_close_packages'] LOOP
+    BEGIN EXECUTE format('INSERT INTO public.%I DEFAULT VALUES',table_name);RAISE EXCEPTION 'service insert accepted for %',table_name;EXCEPTION WHEN insufficient_privilege THEN NULL;END;
+    BEGIN EXECUTE format('UPDATE public.%I SET production_enabled=false WHERE false',table_name);RAISE EXCEPTION 'service update accepted for %',table_name;EXCEPTION WHEN insufficient_privilege THEN NULL;END;
+    BEGIN EXECUTE format('DELETE FROM public.%I WHERE false',table_name);RAISE EXCEPTION 'service delete accepted for %',table_name;EXCEPTION WHEN insufficient_privilege THEN NULL;END;
+    BEGIN EXECUTE format('TRUNCATE public.%I',table_name);RAISE EXCEPTION 'service truncate accepted for %',table_name;EXCEPTION WHEN insufficient_privilege THEN NULL;END;
+  END LOOP;
+  SELECT id INTO v_event_id FROM public.external_financial_events WHERE provider_key='local_fixture' LIMIT 1;
+  PERFORM public.post_shadow_financial_journal(v_event_id,'suspense',1,0.000001,'suspense','{"service_rpc":true}',repeat('a',64),'local');
+  IF NOT EXISTS(SELECT 1 FROM public.shadow_financial_journals WHERE event_id=v_event_id AND comparison_detail->>'service_rpc'='true')THEN RAISE EXCEPTION 'typed service RPC failed';END IF;
+END $$;
+RESET ROLE;
 ROLLBACK;

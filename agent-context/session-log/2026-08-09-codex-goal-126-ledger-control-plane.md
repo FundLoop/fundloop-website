@@ -294,6 +294,35 @@ reference alignment, derived variance, fixtures, posting commands, and observabi
 
 - Commit and attach evidence; leave #129 In Progress for independent revalidation.
 
+### session v8: Service-role table privilege closure (#129)
+
+- Timestamp: 2026-08-08T22:43:00-04:00
+- Agent: Codex
+- Branch: codex/126-ledger-control-plane
+- Head: 8444be5
+
+#### Objective
+
+Remove every direct service-role mutation privilege from reconciliation tables while
+retaining service reads and typed security-definer commands.
+
+#### Actions Taken
+
+- Added a forward-only explicit `REVOKE ALL` plus INSERT/UPDATE/DELETE/TRUNCATE denial
+  across events, applications, snapshots, journals, and close packages.
+- Re-granted only SELECT on tables/view and preserved EXECUTE on typed RPCs.
+- Added executable `SET ROLE service_role` probes for all four mutation classes on all
+  five tables and a positive typed journal RPC/read assertion.
+
+#### Validation Notes
+
+- Passed fresh local reset and adversarial owner/service-role SQL suite.
+- Focused/full Node 22 validation follows; UI unchanged, browser N/A.
+
+#### Suggested Next Steps
+
+- Commit and attach privilege evidence; leave #129 In Progress for revalidation.
+
 ### session v5: Recurring scheduler idempotency (#128)
 
 - Timestamp: 2026-08-08T22:17:19-04:00
