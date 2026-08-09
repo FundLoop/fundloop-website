@@ -1,6 +1,7 @@
 import type { SupabaseClient } from "@supabase/supabase-js"
 import type { Database } from "../../types/supabase.ts"
 import type { UserWithdrawalRequestCreateInput, UserWithdrawalRequestCreateResult } from "../edge-functions/user-withdrawal-request-contract.ts"
+import { requireCurrentTermsAcknowledgement } from "../policies/terms-acknowledgement-guard.ts"
 
 type Result = { ok: true; data: UserWithdrawalRequestCreateResult } | { ok: false; error: { code: string; message: string } }
 
@@ -8,6 +9,15 @@ export async function executeUserWithdrawalRequestCreate(
   supabase: SupabaseClient<Database>,
   input: UserWithdrawalRequestCreateInput & { actorUserId: string },
 ): Promise<Result> {
+  const acknowledgement = await requireCurrentTermsAcknowledgement(supabase, {
+    actorUserId: input.actorUserId,
+    actorCapacity: "user",
+    sourceSurface: "payout_preview",
+  })
+  if (!acknowledgement.ok) {
+    return { ok: false, error: { code: acknowledgement.code, message: acknowledgement.message } }
+  }
+
   const { data, error } = await supabase.rpc("create_user_withdrawal_request", {
     p_actor_user_id: input.actorUserId,
     p_payout_route_id: input.payoutRouteId,

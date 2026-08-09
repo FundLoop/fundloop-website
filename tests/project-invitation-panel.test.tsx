@@ -1,4 +1,4 @@
-import { render, screen } from "@testing-library/react"
+import { fireEvent, render, screen } from "@testing-library/react"
 import { beforeEach, describe, expect, it, vi } from "vitest"
 import { ProjectInvitationPanel } from "@/components/founder/project-invitation-panel"
 
@@ -25,5 +25,16 @@ describe("ProjectInvitationPanel", () => {
     render(<ProjectInvitationPanel projectSlug="civic" projectName="Civic" locale="en" />)
     expect((await screen.findByRole("alert")).textContent).toContain("Persisted invitations could not be loaded")
     expect(screen.queryByText("No project invitations yet.")).toBeNull()
+  })
+
+  it("requires at least one deduplicated shared field before submission", async () => {
+    listInvitations.mockResolvedValue({ ok: true, data: [] })
+    render(<ProjectInvitationPanel projectSlug="civic" projectName="Civic" locale="en" />)
+    await screen.findByText("No project invitations yet.")
+    for (const checkbox of screen.getAllByRole("checkbox")) {
+      if ((checkbox as HTMLInputElement).checked) fireEvent.click(checkbox)
+    }
+    expect(screen.getByText("Select at least one profile field.")).toBeTruthy()
+    expect(screen.getByRole("button", { name: "Create invitation" }).getAttribute("disabled")).not.toBeNull()
   })
 })

@@ -49,6 +49,14 @@ describe("onboarding edge function contracts", () => {
           relationshipChoice: "create_project",
           interestIds: ["4"],
           selectedProjectId: 12,
+          privacyPreset: "private",
+          visibility: expect.objectContaining({
+            isPublic: false,
+            isNamePublic: false,
+            isPfpPublic: false,
+            isOccupationPublic: false,
+            isLocationPublic: false,
+          }),
         }),
       }),
     })

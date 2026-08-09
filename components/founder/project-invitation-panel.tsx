@@ -2,8 +2,8 @@
 
 import { useEffect, useState } from "react"
 import { Check, Copy, UserPlus } from "lucide-react"
-import { invokeProjectInvitationCreate, invokeProjectInvitationList } from "@/lib/edge-functions/project-invitation"
-import type { ProjectInvitationListItem } from "@/lib/edge-functions/project-invitation-contract"
+import { invokeProjectInvitationCreate, invokeProjectInvitationList, invokeProjectInvitationRevoke } from "@/lib/edge-functions/project-invitation"
+import { PROJECT_INVITATION_APPROVED_PROFILE_FIELDS, type ProjectInvitationListItem, type ProjectInvitationProfileField } from "@/lib/edge-functions/project-invitation-contract"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
@@ -13,6 +13,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 export function ProjectInvitationPanel({ projectSlug, projectName, locale }: { projectSlug: string; projectName: string; locale: string }) {
   const [email, setEmail] = useState("")
   const [role, setRole] = useState<"member" | "admin">("member")
+  const [sharedProfileFields, setSharedProfileFields] = useState<ProjectInvitationProfileField[]>(["display_name", "avatar", "profile_headline"])
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [link, setLink] = useState<string | null>(null)
@@ -33,6 +34,10 @@ export function ProjectInvitationPanel({ projectSlug, projectName, locale }: { p
 
   async function submit(event: React.FormEvent) {
     event.preventDefault()
+    if (sharedProfileFields.length === 0) {
+      setError("Select at least one profile field to create an invitation.")
+      return
+    }
     setBusy(true)
     setError(null)
     setLink(null)
@@ -41,6 +46,7 @@ export function ProjectInvitationPanel({ projectSlug, projectName, locale }: { p
       email,
       role,
       idempotencyKey: crypto.randomUUID(),
+      sharedProfileFields,
     })
     setBusy(false)
     if (!result.ok) {
@@ -49,7 +55,14 @@ export function ProjectInvitationPanel({ projectSlug, projectName, locale }: { p
     }
     setLink(`${window.location.origin}/${locale}/invitations/${result.data.token}`)
     setInvitations((current) => [{ invitationId: result.data.invitationId, email: result.data.email, role: result.data.role,
-      status: "pending", expiresAt: result.data.expiresAt, createdAt: new Date().toISOString() }, ...current])
+      status: "pending", expiresAt: result.data.expiresAt, createdAt: new Date().toISOString(),
+      sharedProfileFields: result.data.sharedProfileFields, policyStatus: "review", policyDocumentId: result.data.policyDocumentId }, ...current])
+  }
+
+  async function revoke(invitationId: string) {
+    const result = await invokeProjectInvitationRevoke({ projectSlug, invitationId })
+    if (!result.ok) return setError(result.error.message)
+    setInvitations((current) => current.map((item) => item.invitationId === invitationId ? { ...item, status: "revoked" } : item))
   }
 
   async function copy() {
@@ -71,6 +84,10 @@ export function ProjectInvitationPanel({ projectSlug, projectName, locale }: { p
             <Label htmlFor="project-invite-email">Invitee email</Label>
             <Input id="project-invite-email" type="email" value={email} onChange={(event) => setEmail(event.target.value)} required />
           </div>
+          <fieldset className="space-y-2"><legend className="text-sm font-medium">Project-scoped profile fields shared only after acceptance</legend>
+            <div className="grid gap-2 sm:grid-cols-2">{PROJECT_INVITATION_APPROVED_PROFILE_FIELDS.map((field) => <label key={field} className="flex gap-2 text-sm"><input type="checkbox" checked={sharedProfileFields.includes(field)} onChange={(event) => setSharedProfileFields((current) => event.target.checked ? Array.from(new Set([...current, field])) : current.filter((item) => item !== field))} />{field.replaceAll("_", " ")}</label>)}</div>
+            {sharedProfileFields.length === 0 ? <p className="text-sm text-rose-700 dark:text-rose-200">Select at least one profile field.</p> : null}
+          </fieldset>
           <div className="space-y-2">
             <Label htmlFor="project-invite-role">Project role</Label>
             <Select value={role} onValueChange={(value) => setRole(value as "member" | "admin")}>
@@ -78,7 +95,7 @@ export function ProjectInvitationPanel({ projectSlug, projectName, locale }: { p
               <SelectContent><SelectItem value="member">Member</SelectItem><SelectItem value="admin">Admin</SelectItem></SelectContent>
             </Select>
           </div>
-          <Button type="submit" disabled={busy}>{busy ? "Creating invitation…" : "Create invitation"}</Button>
+          <Button type="submit" disabled={busy || sharedProfileFields.length === 0}>{busy ? "Creating invitation…" : "Create invitation"}</Button>
           {error ? <p role="alert" className="text-sm text-rose-700 dark:text-rose-200">{error}</p> : null}
           {link ? (
             <div className="space-y-2 rounded-2xl border border-emerald-500/30 bg-emerald-500/10 p-4" data-testid="pending-project-invitation">
@@ -94,8 +111,8 @@ export function ProjectInvitationPanel({ projectSlug, projectName, locale }: { p
           {listState === "error" ? <p role="alert" className="text-sm text-rose-700 dark:text-rose-200">Persisted invitations could not be loaded. Try refreshing the page.</p> : null}
           {listState === "ready" && invitations.length === 0 ? <p className="text-sm text-[var(--text-muted)]">No project invitations yet.</p> : invitations.map((invitation) => (
             <div key={invitation.invitationId} className="flex items-center justify-between gap-4 rounded-2xl border border-[color:var(--surface-border)] p-3 text-sm">
-              <div><p className="font-medium">{invitation.email}</p><p className="text-[var(--text-muted)]">{invitation.role} · expires {new Date(invitation.expiresAt).toLocaleDateString()}</p></div>
-              <span className="font-semibold capitalize">{invitation.status}</span>
+              <div><p className="font-medium">{invitation.email}</p><p className="text-[var(--text-muted)]">{invitation.role} · expires {new Date(invitation.expiresAt).toLocaleDateString()}</p><p className="text-xs text-[var(--text-muted)]">Shares after acceptance: {invitation.sharedProfileFields?.join(", ") ?? "legacy invitation fields unavailable"}</p></div>
+              <div className="flex items-center gap-2"><span className="font-semibold capitalize">{invitation.status}</span>{["pending", "accepted"].includes(invitation.status) ? <Button type="button" size="sm" variant="outline" onClick={() => revoke(invitation.invitationId)}>Revoke</Button> : null}</div>
             </div>
           ))}
         </div>

@@ -423,10 +423,11 @@ account, rail, and asset identifiers.
    liabilities. The later confirmed legal intent says FundLoop owns submitted funds
    and users acquire no ownership merely through allocation or request. These
    positions cannot be treated as simultaneously resolved.
-2. The architecture Task must obtain accountant and counsel approval for whether
-   project receipts are revenue, deferred revenue, designated funds, conditional
-   award commitments, or another classification, and when any payout expense or
-   payable is recognized.
+2. Task #121 prepares the accountant/counsel review packet for whether project
+   receipts are revenue, deferred revenue, designated funds, conditional award
+   commitments, or another classification, and when any payout expense or payable
+   is recognized. Qualified approval is required before production, not before
+   neutral local/dev schema and shadow implementation.
 3. Until that decision, `user earnings payable` and similar account names in the
    draft design are illustrative only. Implementation must not create a legal or
    accounting promise that contradicts the approved Terms.
@@ -947,9 +948,11 @@ produces a durable engineering design covering:
 - threat model and operational controls; and
 - test strategy, including extensions to the existing local persona harness.
 
-No implementation Goal should begin until Task #120 is reviewed, Task #121 records
-qualified legal and accounting approval, and the first executable Goal or Task is
-unblocked under the vetted dependency graph.
+No implementation Goal should begin until Task #120 is reviewed, Task #121's
+clearly labelled review packet is independently validated and reaches `In Review`
+or beyond, and the first executable Goal or Task is unblocked under the vetted
+dependency graph. Production fund receipt, allocation, definitive policy activation,
+and payout remain blocked until qualified legal and accounting approval is recorded.
 
 ## Interview continuation protocol
 

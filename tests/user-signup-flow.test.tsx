@@ -292,10 +292,10 @@ describe("UserSignupFlow", () => {
     await act(async () => {
       fireEvent.click(screen.getByRole("button", { name: /continue draft/i }))
     })
-    await screen.findByRole("heading", { name: /review and publish your profile/i })
-    await screen.findByRole("button", { name: /publish profile/i })
+    await screen.findByRole("heading", { name: /review and complete your private profile/i })
+    await screen.findByRole("button", { name: /complete private profile/i })
 
-    fireEvent.click(screen.getByRole("button", { name: /publish profile/i }))
+    fireEvent.click(screen.getByRole("button", { name: /complete private profile/i }))
 
     await waitFor(() => {
       expect(invokeUserOnboardingPublishBrowser).toHaveBeenCalled()
@@ -353,7 +353,67 @@ describe("UserSignupFlow", () => {
     await act(async () => {
       fireEvent.click(screen.getByRole("button", { name: /continue draft/i }))
     })
-    await screen.findByRole("heading", { name: /review and publish your profile/i })
+    await screen.findByRole("heading", { name: /review and complete your private profile/i })
+  })
+
+  it("shows legacy public visibility drafts as private and routes publication to Account", async () => {
+    getOnboardingState.mockResolvedValue({
+      authUserId: "user-1",
+      authEmail: "maya@example.com",
+      profile: {
+        user_id: "user-1",
+        status: "inactive",
+        full_name: "Maya Torres",
+        display_name: "Maya",
+        avatar_url: null,
+        cubid_identity_status: "linked",
+        cubid_id: "cubid-user-1",
+        primary_email_identity: "auth-identity-1",
+        cubid_score: 77,
+      },
+      cubidSnapshot: null,
+      profileCompletionPercent: 70,
+      profileCompletionMissingItems: [],
+      cubidPassportOrigin: "https://passport.cubid.me",
+      cubidStampPageId: "123",
+      userDraft: {
+        id: 4,
+        user_id: "user-1",
+        current_screen: "visibility",
+        payload: {
+          displayName: "Maya",
+          profileHeadline: "Builder",
+          privacyPreset: "public",
+          visibility: {
+            isPublic: true,
+            isNamePublic: true,
+            isPfpPublic: true,
+            isGenderPublic: true,
+            isOccupationPublic: true,
+            isLocationPublic: true,
+            isBirthyearPublic: true,
+            isBirthdayPublic: true,
+          },
+          relationshipChoice: "individual",
+        },
+        started_at: "2026-04-15T00:00:00.000Z",
+        updated_at: "2026-04-15T00:00:00.000Z",
+        completed_at: null,
+      },
+      projectDraft: null,
+    })
+
+    const { default: UserSignupFlow } = await import("@/components/user-signup-flow")
+    render(<UserSignupFlow onClose={vi.fn()} />)
+
+    await screen.findByRole("heading", { name: /you already have a draft profile/i })
+    fireEvent.click(screen.getByRole("button", { name: /continue draft/i }))
+
+    await screen.findByRole("heading", { name: /keep onboarding private/i })
+    expect(screen.getAllByText(/onboarding never publishes|does not make your profile or any field discoverable/i).length).toBeGreaterThan(0)
+    expect(screen.getAllByText(/account > profile|account.*profile/i).length).toBeGreaterThan(0)
+    expect(screen.queryByRole("radio", { name: /public profile/i })).toBeNull()
+    expect(screen.queryByText(/stay discoverable/i)).toBeNull()
   })
 
   it("lets the user resolve CUBID from onboarding before continuing", async () => {

@@ -2,6 +2,7 @@ import type { SupabaseClient } from "@supabase/supabase-js"
 import type { Database } from "../../types/supabase.ts"
 import type { NormalizedProjectPaymentDraft } from "../payments.ts"
 import { mapPaymentRecordSummary, type PaymentRecordSummary, type PaymentRecordSummaryRow } from "./payment-record-summary.ts"
+import { requireCurrentTermsAcknowledgement } from "../policies/terms-acknowledgement-guard.ts"
 
 type ProjectAdminProjectRow = {
   id: number
@@ -31,6 +32,7 @@ export type ProjectPaymentDraftsCommandSuccess = {
 }
 
 export type ProjectPaymentDraftsCommandFailureCode =
+  | "terms_review_acknowledgement_required"
   | "project_not_found"
   | "permission_denied"
   | "reference_data_unavailable"
@@ -147,6 +149,15 @@ export async function executeProjectPaymentDraftsCommand(
   supabase: SupabaseClient<Database>,
   input: ProjectPaymentDraftsCommandInput,
 ): Promise<ProjectPaymentDraftsCommandResult> {
+  const acknowledgement = await requireCurrentTermsAcknowledgement(supabase, {
+    actorUserId: input.actorUserId,
+    actorCapacity: "project_actor",
+    sourceSurface: "project_funding_preview",
+  })
+  if (!acknowledgement.ok) {
+    return commandFailure(acknowledgement.code, acknowledgement.message)
+  }
+
   const projectContext = await resolveProjectAdminContext(supabase, input.actorUserId, input.projectSlug)
   if (!projectContext.ok) {
     return projectContext

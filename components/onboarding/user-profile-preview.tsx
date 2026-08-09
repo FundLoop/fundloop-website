@@ -34,9 +34,7 @@ export function UserProfilePreview({ payload }: UserProfilePreviewProps) {
               </p>
             ) : null}
             <p className="text-sm text-slate-600">{payload.profileHeadline || "Your role and mission will appear here."}</p>
-            <Badge variant={payload.visibility.isPublic ? "default" : "secondary"}>
-              {payload.visibility.isPublic ? "Visible on FundLoop" : "Private draft"}
-            </Badge>
+            <Badge variant="secondary">Private during onboarding</Badge>
           </div>
         </div>
 

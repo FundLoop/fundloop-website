@@ -11,7 +11,8 @@ describe("project invitation contracts", () => {
   it("normalizes the invited email and accepts explicit project roles", () => {
     expect(validateProjectInvitationCreateInput({
       projectSlug: " civic-mesh ", email: " Invitee@Example.COM ", role: "member", idempotencyKey: "request-123",
-    })).toEqual({ ok: true, data: { projectSlug: "civic-mesh", email: "invitee@example.com", role: "member", idempotencyKey: "request-123" } })
+    })).toEqual({ ok: true, data: { projectSlug: "civic-mesh", email: "invitee@example.com", role: "member", idempotencyKey: "request-123",
+      sharedProfileFields: ["display_name", "avatar", "profile_headline", "bio", "occupation", "location"] } })
   })
 
   it("rejects malformed email, role, idempotency key, and token inputs", () => {
@@ -22,7 +23,8 @@ describe("project invitation contracts", () => {
   it("normalizes an accepted invitation without exposing its token digest", () => {
     const result = normalizeProjectInvitationAcceptResult(edgeCommandSuccess({ invitationId: "inv-1", projectId: 7,
       projectSlug: "civic-mesh", projectName: "Civic Mesh", organizationId: 3, role: "member", status: "accepted",
-      acceptedAt: "2026-08-05T12:00:00.000Z" }))
+      acceptedAt: "2026-08-05T12:00:00.000Z", evidenceId: "evidence-1", policyStatus: "review",
+      sharedProfileFields: ["display_name"] }))
     expect(result.ok && result.data).toEqual(expect.not.objectContaining({ token: expect.anything(), tokenDigest: expect.anything() }))
   })
 
