@@ -225,10 +225,10 @@ Definitions:
 - Project pool contribution = theoretical project share minus the initial project claim; all contributions enter one global epoch redistribution pool.
 - Aggregate initial claim = the sum of one user's score-adjusted initial project claims.
 - User baseline = the largest single-project score-adjusted initial claim for that user.
-- User cap = `3 ×` baseline. Before redistribution, aggregate initial claim is clamped to the cap.
-- Retained initial source lot = initial project/source lot multiplied by `min(1, cap / aggregate initial claim)`; its exact difference is source-linked overlap-cap overflow.
+- Exact user cap = `3 ×` baseline; canonical minor-unit cap = floor of that exact cap to the allocation minor unit. Before redistribution, aggregate initial claim is clamped, and neither retained-lot nor final-award rounding may cross the canonical cap.
+- Raw proportional retained source lot = initial project/source lot multiplied by `min(1, exact cap / aggregate initial claim)`. Canonical retained lots sum to the floored minor-unit target; proportional source differences plus cap-floor differences form source-linked overlap-cap overflow.
 - Global epoch redistribution pool = score-discount project pool contributions plus overlap-cap overflow.
-- Pre-redistribution current = `min(aggregate initial claim, cap)`; a user already at cap, including a zero-baseline user at cap zero, receives no top-up.
+- Pre-redistribution current = the canonical retained target: floor `min(aggregate initial claim, exact cap)` to the allocation minor unit and bound it by the floored minor-unit cap. A user already at cap, including a zero-baseline user at cap zero, receives no top-up.
 - User final allocation = pre-redistribution current plus the deterministic lowest-current-total-first water-filling top-up, never above the cap.
 - Asset fulfillment = selected asset credit fills based on the user's highest-priority accepted available assets.
 - Every initial claim, pool contribution, top-up, and returned/carryover residue retains project, rail, asset, native, FX, and USD provenance.
@@ -246,11 +246,13 @@ cross-project overlap.
 Rounding:
 
 - Calculate exact-decimal cap scaling before rounding.
-- Round retained source lots by descending fractional remainder then stable project/rail/asset/source-lot key; derive overflow as original minus retained so each source conserves.
+- Floor the retained-total target to the allocation minor unit and bound it by the canonical floored cap. Round retained source lots by descending fractional remainder then stable project/rail/asset/source-lot key; skip any next-unit assignment that would cross the user's cap.
+- Move an exact fraction or candidate minor unit rejected by the cap into the global overflow pool as cap-floor overflow with its original project/rail/asset/native/FX/USD provenance; together with proportional overlap overflow it may fund another uncapped user and otherwise becomes source-linked returned/carryover residue.
+- Derive overflow as original minus retained so each source conserves.
 - Apply the same stable largest-remainder rule within each rail/asset/custody group for native atomic units.
 - Round after USD normalization.
 - Store exact decimal calculation inputs and rounded credited amounts.
-- Assign rounding residual deterministically to users by descending unrounded remainder, then stable user id sort.
+- Assign award residual deterministically by descending unrounded remainder then stable user id, skipping capped users rather than producing a one-unit cap breach.
 
 Outputs:
 
@@ -272,10 +274,12 @@ Acceptance criteria:
 - Retained initial lots plus score-discount contributions plus overlap-cap overflow equal the funded pool.
 - Top-ups plus returned/carryover residue equal score-discount contributions plus overlap-cap overflow.
 - Final allocations plus returned/carryover residue equal total funded pool USD after deterministic rounding.
-- No user final allocation exceeds `3 ×` baseline.
+- No retained-lot target or final allocation exceeds the floored minor-unit `3 ×` baseline cap.
 - The canonical A+B fixture uses 100 B users each exactly `10/20`, produces `$150 + $500 = $650` of redistribution, and sends it first to the 97 B-only lowest earners.
 - The four-project overlap fixture `[100,100,100,100]` clamps `$400` to a `$300` cap, retains `$75` per source, and contributes four `$25` overflow lots before water-filling.
+- The fractional fixture with four `$0.335` lots has aggregate `$1.34`, baseline `$0.335`, exact cap `$1.005`, canonical cent cap `$1.00`, four `$0.25` retained lots, `$0.335 + $0.005 = $0.34` of source-linked overflow/pool value, and never a `$1.01` award.
 - Arbitrary overlap count and project/source input permutation properties conserve exact decimals, USD minor units, and native atomic units.
+- Cap-aware residual properties prove exact-decimal conservation separately from integer minor-unit conservation, with no lost or double-assigned fractions or units.
 - Ineligible users are excluded with reason codes.
 - Calculation creates artifacts in Supabase Storage and result rows linked to `monthly_cycle_id`.
 

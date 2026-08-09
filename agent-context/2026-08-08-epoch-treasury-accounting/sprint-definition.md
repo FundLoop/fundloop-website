@@ -313,12 +313,16 @@ occurs. Later policy edits never rewrite prior events.
 22. Each difference between theoretical share and score-adjusted initial claim
     enters one global epoch redistribution pool. The allocator aggregates each
     user's initial project claims, defines baseline as the largest single-project
-    initial claim, and defines cap as three times baseline. If aggregate initial
+    initial claim, defines exact cap as three times baseline, and floors it to the
+    allocation minor unit for the canonical executable cap. If aggregate initial
     exceeds cap, every project/source initial lot is proportionally retained by
     `cap / aggregate`; each exact difference enters the global pool as source-linked
-    overlap-cap overflow. Water-filling starts from the clamped current total and
+    overlap-cap overflow. Water-filling starts from the canonical floored and
+    cap-bounded retained current total and
     raises the lowest uncapped totals first. A capped or zero-baseline user receives
-    no top-up.
+    no top-up. Retained-lot and final-award rounding may never cross the floored cap;
+    descending-fraction residual assignment skips capped candidates and sends the
+    rejected fraction or unit, with source provenance, into pool/residue.
 23. Cubid is queried during reconciliation and again at lock. A prior validated
     snapshot may be used during an outage only within a configured short TTL;
     otherwise the user remains unresolved and cannot lock.
@@ -338,6 +342,13 @@ aggregate `$400`, baseline `$100`, cap `$300`, retention factor `0.75`, four ret
 `$75` lots, and four source-linked `$25` overflow lots. The user begins water-filling
 at cap and receives no top-up. These conservation and input-order properties apply
 to arbitrary overlap counts and to exact-decimal, minor-unit, and native-unit rows.
+
+Fractional cap fixture: four `$0.335` lots produce aggregate `$1.34`, baseline
+`$0.335`, exact cap `$1.005`, and canonical cent cap `$1.00`. Cap-aware retained-lot
+rounding emits four `$0.25` lots totaling `$1.00`, never `$1.01`; the rejected exact
+`$0.005` remainder joins `$0.335` of proportional differences as source-linked
+`$0.34` pool/residue. Exact-decimal and
+integer-cent conservation are proved independently without lost or duplicate units.
 
 ### 10. Legal ownership, payout, privacy, and consent intent
 
@@ -711,7 +722,8 @@ Process:
    score divided by locked maximum score; send every shortfall into one global
    epoch redistribution pool.
 3. Aggregate each user's initial claims, set baseline to the largest single-project
-   initial claim, and set the final cap to three times baseline.
+   initial claim, set exact cap to three times baseline, and floor that value to the
+   allocation minor unit for the canonical retained/final cap.
 4. Before redistribution, clamp aggregate initial to cap. Scale every project/source
    initial lot by `min(1, cap / aggregate)`, retain the scaled lot, and move its exact
    difference into the pool as source-linked overlap-cap overflow.
@@ -723,9 +735,13 @@ Process:
    every initial claim, top-up, and cap-exhausted returned/carryover residue.
 7. Apply exact-decimal cap scaling first. Allocate retained functional-USD and native
    residual units by descending fractional remainder then stable project/rail/asset/
-   source-lot key; derive overflow as original minus retained before user rounding.
+   source-lot key, skipping any assignment that would cross the canonical cap;
+   derive overflow as original minus retained before user rounding. A rejected exact
+   fraction or minor unit remains source-linked in pool/residue and may fund another
+   uncapped user.
 8. Prove conservation by project, rail, asset, native quantity, redistribution pool,
-   and functional USD for arbitrary overlap count and input order.
+   and functional USD for arbitrary overlap count and input order, separately for
+   exact decimals and integer minor-unit outputs, with no lost/double-assigned units.
 9. Produce immutable calculation inputs, outputs, version, and reproducibility hash.
 10. Do not classify redistribution as fee/revenue/payable, and do not open payouts or
    post final user award/accounting records until review

@@ -648,8 +648,9 @@ Goal invariants:
 - equal theoretical funded project share per eligible user;
 - initial project claim equals theoretical share multiplied by locked Cubid score
   divided by the versioned locked maximum score;
-- baseline is the largest single-project score-adjusted initial claim and final
-  allocation is capped at `3 ×` baseline;
+- baseline is the largest single-project score-adjusted initial claim; exact cap is
+  `3 ×` baseline and the canonical retained/final cap is that value floored to the
+  allocation minor unit;
 - before redistribution, aggregate initial is clamped to cap; if aggregate exceeds
   cap, every project/source initial lot is scaled by `cap / aggregate`, retained
   proportionally, and its exact difference becomes source-linked overlap overflow;
@@ -657,6 +658,9 @@ Goal invariants:
   clamped current totals are raised lowest-first through stable deterministic
   water-filling;
 - capped users and zero-baseline users receive no top-up;
+- cap-aware residual assignment skips any user/source whose next unit would cross
+  cap and keeps rejected exact fractions or minor units source-linked in the global
+  pool or returned/carryover residue;
 - top-ups and returned/carryover residue retain project, rail, asset, native, FX,
   and functional-USD provenance; and
 - redistribution is funded principal, not fee, revenue, treasury sweep, payable,
@@ -717,11 +721,12 @@ Scope:
 - calculate `initial claim = theoretical share × locked score / locked max score`
   and create source-linked score-discount shortfall lots;
 - aggregate user initial claims, define baseline as the largest single-project
-  initial claim, set cap to `3 ×` baseline, and clamp aggregate initial before
-  redistribution;
+  initial claim, set exact cap to `3 ×` baseline, floor it to the allocation minor
+  unit as the canonical cap, and clamp aggregate initial before redistribution;
 - when aggregate exceeds cap, apply one exact `cap / aggregate` factor to every
   project/source initial lot and move each difference into the pool as overlap-cap
-  overflow; start water-filling from `min(aggregate, cap)`;
+  overflow; start water-filling from the canonical retained target, namely floored
+  `min(aggregate, exact cap)` bounded by the floored minor-unit cap;
 - define the global pool as score-discount shortfalls plus overlap-cap overflow;
   capped and zero-baseline users receive no top-up;
 - use aggregate initial claim, baseline, then stable user ID for ties and assign
@@ -729,6 +734,9 @@ Scope:
 - apply cap scaling in exact decimals, allocate retained source residuals by
   fractional remainder then stable project/rail/asset/source-lot key, and derive
   each overflow lot as original minus retained so native and USD units conserve;
+  never let retained-lot or final-award rounding cross the floored cap, skip capped
+  residual candidates, and keep rejected fractions/units source-linked in the
+  pool or returned/carryover residue;
 - preserve project/rail/asset/native/FX/USD provenance for initial claims, top-ups,
   returned residue, and payout eligibility;
 - deterministic rerun and material-change comparison.
@@ -747,6 +755,13 @@ Validation:
 - four-project overlap fixture `[100,100,100,100]`: aggregate `$400`, baseline
   `$100`, cap `$300`, four retained `$75` source lots, four `$25` overflow lots,
   then water-fill only uncapped users; and
+- fractional cap fixture: four `$0.335` lots yield aggregate `$1.34`, baseline
+  `$0.335`, exact cap `$1.005`, canonical cent cap `$1.00`, and four `$0.25`
+  retained lots; `$0.335` proportional overflow plus the cap-rejected `$0.005`
+  exact remainder stays source-linked as `$0.34` pool/residue and the user never
+  receives `$1.01`; and
+- arbitrary-overlap cap-aware randomized properties conserve exact decimals and
+  integer minor units independently, with no lost/double-assigned unit; and
 - old point-proportional results are explicitly superseded and intentional
   differences documented.
 

@@ -88,3 +88,44 @@ redistribution begins.
 
 - Commit this docs-only validation correction and retain the production fail-closed
   boundary for later Task #136 implementation.
+
+### session v3: Cap-aware minor-unit precision (#134/#136)
+
+- Timestamp: 2026-08-09T02:54:51-04:00
+- Agent: Codex
+- Branch: codex/134-cubid-redistribution-architecture
+- Head: 521f3f2
+
+#### Objective
+
+Close the final architecture precision gap where nearest rounding of an exact
+`3 × baseline` cap could award one minor unit above the allowed cap.
+
+#### Actions Taken
+
+- Defined the canonical executable cap as the exact cap floored to the allocation
+  minor unit and bounded both retained-lot and final-award targets by it.
+- Distinguished raw proportional retention from canonical retained lots and moved
+  cap-floor differences into source-linked global overflow.
+- Made descending-fraction residual assignment cap-aware for source lots and users;
+  capped candidates are skipped rather than receiving another unit.
+- Required rejected exact fractions and minor units to retain project, rail, asset,
+  native, FX, and USD provenance through pool use or returned/carryover residue.
+- Added the four-`$0.335` fixture and exact-decimal versus integer-minor-unit
+  conservation requirements throughout the Goal #134 and Task #136 architecture.
+
+#### Validation Notes
+
+- Passed the fractional fixture: 100 retained cents plus 34 source-linked overflow
+  cents conserve 134 cents under a 100-cent cap; the award never becomes 101 cents.
+- Passed the four-project overlap regression under its 30,000-cent cap.
+- Passed 2,000 deterministic randomized cap-aware overlap cases with minor-unit
+  conservation and source-order permutation equivalence.
+- Passed the canonical A+B `$650` redistribution regression.
+- Passed scoped Markdown local-link and precision-contradiction audits.
+- Passed `pnpm lint` under Node 22 and `git diff --check`.
+
+#### Suggested Next Steps
+
+- Use the cap-aware integer contract as the executable acceptance rule for Task
+  #136 while keeping production allocation and value flow fail-closed.

@@ -477,11 +477,16 @@ short transaction.
   initial project claim is that share multiplied by `locked score / locked maximum
   score`; it is not weighted by the sum of cohort scores or mutable activity points.
 - Baseline is the largest single-project score-adjusted initial claim and cap is
-  `3 ×` baseline. Before redistribution, aggregate initial claim is clamped to that
-  cap. If aggregate exceeds cap, every project/source initial lot is scaled by
+  exact `3 ×` baseline. The canonical minor-unit cap is that exact value floored to
+  the allocation minor unit. Before redistribution, aggregate initial claim is clamped to that
+  cap, and retained-lot and final-award rounding may never exceed it. If aggregate exceeds cap, every project/source initial lot is scaled by
   `cap / aggregate`; each lot's exact difference enters the pool as overlap-cap
   overflow. A zero-baseline user has cap zero, and any user already at cap receives
   no top-up.
+- Descending-fraction residual assignment is cap-aware and skips any user/source
+  whose next unit would cross the canonical cap. Rejected exact fractions or minor
+  units retain original source provenance in the global overflow pool, may fund
+  another uncapped user, and otherwise become source-linked returned/carryover residue.
 - Every theoretical-share score discount and overlap-cap overflow enters one global
   epoch redistribution pool. Pre-redistribution current totals are raised
   lowest-first through deterministic water-filling with stable ties.
@@ -497,6 +502,13 @@ short transaction.
   `$400`, baseline `$100`, cap `$300`, four retained `$75` lots, and four source-linked
   `$25` overflow lots before water-filling. Arbitrary overlap counts must preserve
   the same exact-decimal, minor-unit, native-unit, and input-order invariants.
+- Fractional-cap evidence uses four `$0.335` lots: aggregate `$1.34`, baseline
+  `$0.335`, exact cap `$1.005`, and canonical cent cap `$1.00`. Four `$0.25`
+  retained lots total `$1.00`; `$0.335` proportional overflow plus the cap-rejected
+  `$0.005` exact remainder travels with source provenance as `$0.34` pool/residue,
+  and the award never becomes `$1.01`.
+  Exact decimals and integer minor-unit outputs conserve independently with no lost
+  or double-assigned value.
 - Redistribution principal and residue are funded epoch value, never platform fee,
   revenue, a treasury sweep, a user payable, or newly created value.
 - Allocation results remain versioned artifacts and projections. The immutable

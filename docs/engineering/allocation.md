@@ -140,10 +140,13 @@ For each user:
 ```text
 aggregate_initial_claim(u) = sum(initial_project_claim(u,p))
 baseline(u) = max(initial_project_claim(u,p))
-final_cap(u) = 3 * baseline(u)
+exact_final_cap(u) = 3 * baseline(u)
+minor_unit_cap(u) = floor_to_allocation_minor_unit(exact_final_cap(u))
 ```
 
-The baseline is the largest single-project score-adjusted initial claim. It is not
+The baseline is the largest single-project score-adjusted initial claim. The
+canonical executable cap is `minor_unit_cap`, never a nearest-rounded or ceiling
+version of the exact cap. It is not
 the aggregate initial claim, a raw point-proportional entitlement, or a value
 derived from project overlap. A user with a zero baseline has a zero cap.
 
@@ -153,26 +156,36 @@ The cap applies before redistribution as well as after it. For every user:
 
 ```text
 retention_factor(u) =
-  1                                      when aggregate_initial_claim(u) <= final_cap(u)
-  final_cap(u) / aggregate_initial_claim(u)  otherwise
+  1                                        when aggregate_initial_claim(u) <= exact_final_cap(u)
+  exact_final_cap(u) / aggregate_initial_claim(u)  otherwise
 
-retained_initial_lot(u,p,source) =
+proportional_retained_initial_lot(u,p,source) =
   initial_project_source_lot(u,p,source) * retention_factor(u)
 
-overlap_cap_overflow_lot(u,p,source) =
-  initial_project_source_lot(u,p,source) - retained_initial_lot(u,p,source)
+proportional_overlap_overflow_lot(u,p,source) =
+  initial_project_source_lot(u,p,source)
+  - proportional_retained_initial_lot(u,p,source)
 
-pre_redistribution_current(u) = sum(retained_initial_lot(u,p,source))
+raw_retained_target(u) = sum(proportional_retained_initial_lot(u,p,source))
+canonical_retained_target(u) =
+  min(floor_to_allocation_minor_unit(raw_retained_target(u)), minor_unit_cap(u))
 ```
 
-Therefore `pre_redistribution_current = min(aggregate_initial_claim, final_cap)`.
+The raw proportional target is `min(aggregate_initial_claim, exact_final_cap)`.
+The canonical retained target is the lesser of its floored minor-unit value and
+`minor_unit_cap`; retained-lot rounding may never produce a total above that target
+or cap. Allocate canonical retained source lots up to that target. The difference
+between every proportional retained lot and its canonical retained lot is
+`cap_floor_overflow`; total source-linked overlap overflow is proportional overlap
+overflow plus cap-floor overflow. Canonical pre-redistribution current is
+`sum(canonical_retained_initial_lot)`, never the higher raw target.
 When aggregate initial value exceeds the cap, each project/source initial lot is
 scaled by the same exact factor. Each lot's exact difference becomes
 source-preserving overlap-cap overflow in the global pool. The clamp may not choose
 one project to absorb another project's overflow or erase rail, asset, native, FX,
 or USD provenance.
 
-A user whose pre-redistribution current equals the cap is not a water-filling
+A user whose canonical pre-redistribution current equals the minor-unit cap is not a water-filling
 candidate. With non-negative initial lots, a zero baseline means every initial lot
 is zero; the user has cap zero, retains zero, and receives no redistribution top-up.
 
@@ -181,7 +194,7 @@ is zero; the user has cap zero, retains zero, and receives no redistribution top
 ```text
 epoch_redistribution_pool =
   sum(score_discount_pool_contribution(u,p,source))
-  + sum(overlap_cap_overflow_lot(u,p,source))
+  + sum(total_overlap_cap_overflow_lot(u,p,source))
 ```
 
 All included score-discount shortfalls and overlap-cap overflow enter this one pool.
@@ -208,7 +221,7 @@ Deterministic ordering is:
 
 Exact-decimal water-filling treats a tied group equally. Stable user ID is used
 only where indivisible minor units or an otherwise exact tie require assignment.
-No final allocation may exceed `3 * baseline`, and a user that begins at cap receives
+No final allocation may exceed `minor_unit_cap`, and a user that begins at cap receives
 no top-up.
 
 ### 7. Returned Or Carried-forward Residue
@@ -232,6 +245,15 @@ provenance. It is not a user credit, fee, revenue, or payable.
 - for retained functional-USD source lots, floor each exact minor-unit amount and
   assign the residual needed to reach the rounded retained-total target by
   descending fractional remainder, then stable project/rail/asset/source-lot key;
+  the target is floored and bounded by `minor_unit_cap`;
+- make every retained-lot and final-award residual assignment cap-aware: skip a
+  user/source assignment whenever its next unit would make the user's retained or
+  final total exceed `minor_unit_cap`;
+- move every exact fractional remainder or candidate minor unit rejected by that
+  cap, with its original project/rail/asset/native/FX/USD provenance, into
+  cap-floor overflow; together with proportional overlap overflow it may fund
+  another eligible uncapped user and, if still
+  unassignable, becomes source-linked returned/carryover residue;
 - derive each rounded overflow lot as original rounded source amount minus its
   rounded retained amount, so retained plus overflow always equals the source;
 - apply the same largest-remainder and stable-key rule within each
@@ -239,31 +261,49 @@ provenance. It is not a user credit, fee, revenue, or payable.
   overflow native units to original minus retained units;
 - round canonical user awards in integer minor USD units only after water-filling;
 - assign user residual minor units by descending fractional remainder, then stable
-  user ID;
+  user ID, skipping capped candidates rather than crossing their cap;
 - split source-lot native quantities under the asset's exact atomic-unit rules;
 - assign source residuals through the versioned stable lot order; and
-- prove rounded user awards plus rounded returned residue equal the rounded funded
-  pool, while native source quantities conserve exactly.
+- prove exact source decimals conserve and, independently, integer minor-unit user
+  awards plus integer minor-unit pool/residue equal the integer minor-unit funded
+  pool. No fractional or integer unit may be lost or assigned twice.
 
 ### 9. Arbitrary-overlap Invariants
 
 For any number of overlapping project initial lots, including zero and one:
 
 ```text
-sum(retained_initial_lot + overlap_cap_overflow_lot) =
+sum(canonical_retained_initial_lot + total_overlap_cap_overflow_lot) =
   aggregate_initial_claim
 
-pre_redistribution_current = min(aggregate_initial_claim, 3 * baseline)
+raw_proportional_retained_target = min(aggregate_initial_claim, 3 * baseline)
+
+canonical_pre_redistribution_current =
+  min(floor_to_allocation_minor_unit(raw_proportional_retained_target),
+      floor_to_allocation_minor_unit(3 * baseline))
 
 funded_epoch_pool =
-  sum(retained_initial_lot)
+  sum(canonical_retained_initial_lot)
   + sum(score_discount_pool_contribution)
-  + sum(overlap_cap_overflow_lot)
+  + sum(total_overlap_cap_overflow_lot)
 ```
 
-These identities must hold in exact decimals, rounded functional-USD minor units,
+These identities must hold separately in exact decimals and integer functional-USD minor units,
 and exact native atomic units. Permuting project/source input order cannot change
 retained totals, overflow totals, final allocations, or the result hash.
+
+### Fractional Cap Fixture
+
+Four source lots of `$0.335` produce aggregate initial `$1.34`, baseline `$0.335`,
+exact cap `$1.005`, and canonical cent cap `$1.00`. Raw proportional retention is
+`$0.25125` per source, totaling `$1.005`; cap-aware canonical retained-lot rounding emits four
+`$0.25` retained lots totaling `$1.00`, never `$1.01`. The exact `$0.005` retained
+target remainder that cannot cross the cent cap becomes source-linked cap-floor
+overflow alongside `$0.335` of proportional source-lot differences. Thus exact and
+integer-cent overflow are both `$0.34`; if it cannot fund another uncapped user, it
+becomes source-linked residue. Exact-decimal conservation is `$1.00 + $0.34 = $1.34`,
+and the integer-cent ledger independently conserves 100 + 34 = 134 cents without losing or
+double-assigning a fraction or cent.
 
 ## Canonical A+B Fixture
 
