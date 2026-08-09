@@ -468,7 +468,7 @@ short transaction.
 ### Identity and allocation
 
 - Extend attribution/user-input snapshots with project-scoped pseudonymous Cubid
-  identity, whitelist state, locked uniqueness score, versioned locked maximum
+  identity, whitelist state, locked Cubid score, versioned locked maximum Cubid
   score, evidence timestamp, expiry, and greylist/blacklist state.
 - The lock manifest includes only settled funding applications, approved project
   packages, fixed FX, fee assessments, carryover results, eligible identities, and
@@ -479,20 +479,28 @@ short transaction.
 - Baseline is the largest single-project score-adjusted initial claim and cap is
   exact `3 ×` baseline. The canonical minor-unit cap is that exact value floored to
   the allocation minor unit. Before redistribution, aggregate initial claim is clamped to that
-  cap, and retained-lot and final-award rounding may never exceed it. If aggregate exceeds cap, every project/source initial lot is scaled by
-  `cap / aggregate`; each lot's exact difference enters the pool as overlap-cap
+  canonical rounding bound, and retained-lot and final-award rounding may never exceed it. If aggregate exceeds the exact cap, every project/source initial lot is scaled by
+  `exact cap / aggregate`; each lot's exact difference enters the pool as overlap-cap
   overflow. A zero-baseline user has cap zero, and any user already at cap receives
   no top-up.
 - Descending-fraction residual assignment is cap-aware and skips any user/source
-  whose next unit would cross the canonical cap. Rejected exact fractions or minor
-  units retain original source provenance in the global overflow pool, may fund
-  another uncapped user, and otherwise become source-linked returned/carryover residue.
+  whose next unit would cross the canonical cap. Sub-minor exact residuals and
+  rejected candidate canonical units retain original source provenance, may combine
+  in the global pool or fund another uncapped user, and otherwise become
+  source-linked returned/carryover residue.
 - Every theoretical-share score discount and overlap-cap overflow enters one global
-  epoch redistribution pool. Pre-redistribution current totals are raised
-  lowest-first through deterministic water-filling with stable ties.
+  epoch redistribution pool. Exact equal-current users are raised together until
+  the next level/cap/exhaustion. Aggregate initial and baseline do not break ties;
+  indivisible units use only exact-target fractional remainder then stable user ID.
 - Pool source lots and top-up fills preserve project, rail, asset, native quantity,
   FX snapshot, and functional-USD provenance. Cap-exhausted residue returns or
   carries forward through those originating lots.
+- Exact and canonical ledgers remain separate. Exact source lots always satisfy
+  non-negative `exact initial = exact retained + exact overflow`. Canonical initial
+  units are assigned first to the funded canonical total by stable largest
+  remainder; constrained retained assignment cannot exceed initial source capacity,
+  and canonical overflow is `initial - retained`. Sub-minor residual is tracked
+  separately with source provenance, never as negative exact overflow.
 - Canonical evidence uses Project A `$300` with scores `5/10/15` of `20`, producing
   `$25/$50/$75` initial claims and `$150` of pool, plus Project B `$1,000` with 100
   users each exactly `10/20`, producing `$500` initial claims and `$500` of pool. The
@@ -504,11 +512,18 @@ short transaction.
   the same exact-decimal, minor-unit, native-unit, and input-order invariants.
 - Fractional-cap evidence uses four `$0.335` lots: aggregate `$1.34`, baseline
   `$0.335`, exact cap `$1.005`, and canonical cent cap `$1.00`. Four `$0.25`
-  retained lots total `$1.00`; `$0.335` proportional overflow plus the cap-rejected
-  `$0.005` exact remainder travels with source provenance as `$0.34` pool/residue,
-  and the award never becomes `$1.01`.
+  retained lots total `$1.00`; exact overflow remains `$0.335`, canonical overflow
+  is 34 cents, and the `$0.005` exact-to-canonical residual is tracked separately
+  with source provenance. The award never becomes `$1.01`.
   Exact decimals and integer minor-unit outputs conserve independently with no lost
   or double-assigned value.
+- Non-negative-lot evidence uses two exact `$0.006` retained lots with a one-cent
+  canonical target: assign canonical initial capacity first, retain the cent only
+  there, keep both canonical overflow lots non-negative, and reconcile the exact
+  `$0.012` ledger separately.
+- Equal-current tie evidence uses two exact `$0.005` top-up targets and one cent:
+  stable user ID alone selects after equal fractional remainder; aggregate initial
+  and baseline never break the tie, and input permutation preserves the result hash.
 - Redistribution principal and residue are funded epoch value, never platform fee,
   revenue, a treasury sweep, a user payable, or newly created value.
 - Allocation results remain versioned artifacts and projections. The immutable

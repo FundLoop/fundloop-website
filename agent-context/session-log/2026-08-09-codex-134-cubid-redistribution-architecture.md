@@ -129,3 +129,47 @@ Close the final architecture precision gap where nearest rounding of an exact
 
 - Use the cap-aware integer contract as the executable acceptance rule for Task
   #136 while keeping production allocation and value flow fail-closed.
+
+### session v4: Exact/canonical source and tie-rule review fixes (#149)
+
+- Timestamp: 2026-08-09T03:15:23-04:00
+- Agent: Codex
+- Branch: codex/134-cubid-redistribution-architecture
+- Head: cea9392
+
+#### Objective
+
+Address all five actionable PR #149 review threads without mutating thread state or
+weakening the allocation, privacy, accounting, or production gates.
+
+#### Actions Taken
+
+- Replaced allocation eligibility wording with approved locked package/cohort
+  membership and clarified that historical attribution points do not weight it.
+- Standardized treasury inputs on locked Cubid score plus versioned locked maximum,
+  and distinguished exact-cap scaling from the floored canonical rounding bound.
+- Split source accounting into an immutable non-negative exact ledger and a
+  canonical integer-minor-unit ledger with initial capacity assigned first.
+- Defined constrained retained largest-remainder assignment, non-negative canonical
+  overflow, and separately provenance-tracked sub-minor/cross-source residuals.
+- Removed aggregate/baseline tie breakers: continuous equal-current users remain
+  equal, while indivisible units use only fractional remainder then stable user ID.
+- Added two-`$0.006` non-negative-source and one-cent equal-current tie fixtures to
+  every canonical architecture mirror.
+
+#### Validation Notes
+
+- Passed the two-`$0.006` counterexample with canonical initial/retained `[1,0]`
+  cents and overflow `[0,0]`, while preserving the separate exact `$0.012` ledger.
+- Passed the `$0.005/$0.005` equal-current tie under reversed input order; stable
+  user ID alone receives the one cent.
+- Passed fractional-cap, four-project overlap, and canonical A+B regressions.
+- Passed 5,000 deterministic randomized constrained-rounding cases for per-source
+  non-negativity, capacity, conservation, cap safety, and permutation equivalence.
+- Passed scoped terminology/ledger/tie contradiction and Markdown local-link audits.
+- Passed `pnpm lint` under Node 22 and `git diff --check`.
+
+#### Suggested Next Steps
+
+- Use these exact/canonical contracts and the sole tie rule when Task #136 becomes
+  executable; keep production allocation and value flow fail-closed.

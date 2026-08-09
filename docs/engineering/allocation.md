@@ -172,13 +172,18 @@ canonical_retained_target(u) =
 ```
 
 The raw proportional target is `min(aggregate_initial_claim, exact_final_cap)`.
-The canonical retained target is the lesser of its floored minor-unit value and
-`minor_unit_cap`; retained-lot rounding may never produce a total above that target
-or cap. Allocate canonical retained source lots up to that target. The difference
-between every proportional retained lot and its canonical retained lot is
-`cap_floor_overflow`; total source-linked overlap overflow is proportional overlap
-overflow plus cap-floor overflow. Canonical pre-redistribution current is
-`sum(canonical_retained_initial_lot)`, never the higher raw target.
+The exact ledger is immutable: for every source,
+`exact_initial = exact_retained + exact_overflow`, every term is non-negative, and
+`exact_retained = exact_initial × retention_factor`. Canonical rounding never
+rewrites these exact terms.
+
+The canonical retained target is the lesser of the raw target floored to the
+allocation minor unit and `minor_unit_cap`. Canonical retained-lot assignment may
+never exceed that target or cap. Canonical pre-redistribution current is
+`sum(canonical_retained_minor_lot)`, never the higher raw target. The exact amount
+between raw and canonical targets is a separately recorded, source-provenance
+`sub_minor_residual`; it is not computed as exact retained minus a rounded lot and
+is not an exact overflow source lot.
 When aggregate initial value exceeds the cap, each project/source initial lot is
 scaled by the same exact factor. Each lot's exact difference becomes
 source-preserving overlap-cap overflow in the global pool. The clamp may not choose
@@ -212,15 +217,12 @@ Initialize each user's current total to `pre_redistribution_current(u)`. Repeate
 4. remove capped users and continue until the pool is exhausted or no user has cap
    capacity.
 
-Deterministic ordering is:
-
-1. lowest current total;
-2. lowest aggregate initial claim;
-3. lowest baseline; and
-4. stable user ID.
-
-Exact-decimal water-filling treats a tied group equally. Stable user ID is used
-only where indivisible minor units or an otherwise exact tie require assignment.
+Exact continuous water-filling treats every equal-current user equally until the
+next level, a cap, or pool exhaustion. Aggregate initial claim and baseline do not
+break an equal-current tie. Only after exact targets are fixed are indivisible
+canonical minor units assigned: descending fractional remainder of the exact user
+target, then stable user ID, with cap-aware skipping. An unassignable next unit
+continues to the next eligible user or remains source-linked residue.
 No final allocation may exceed `minor_unit_cap`, and a user that begins at cap receives
 no top-up.
 
@@ -241,21 +243,27 @@ provenance. It is not a user credit, fee, revenue, or payable.
 
 - preserve exact decimal theoretical shares, initial lots, retention factors,
   retained lots, overflow lots, pool lots, and water levels in the artifact;
+- maintain separate exact-decimal and canonical integer-minor-unit ledgers; never
+  substitute a rounded lot into an exact source identity;
+- derive canonical initial source units first: round the exact funded canonical
+  total under the versioned currency rule, floor each exact initial source lot, then
+  assign residual units by descending fractional remainder and stable
+  project/rail/asset/source-lot ID;
 - calculate cap scaling before any minor-unit rounding;
-- for retained functional-USD source lots, floor each exact minor-unit amount and
-  assign the residual needed to reach the rounded retained-total target by
-  descending fractional remainder, then stable project/rail/asset/source-lot key;
-  the target is floored and bounded by `minor_unit_cap`;
+- assign canonical retained units to the floored, cap-bounded retained target by
+  constrained largest remainder over exact retained lots: require
+  `0 <= retained_minor_lot <= initial_minor_lot`, skip saturated/zero-capacity lots,
+  and use stable project/rail/asset/source-lot ID after fractional remainder;
+- define `overflow_minor_lot = initial_minor_lot - retained_minor_lot`; it is always
+  non-negative, and canonical initial equals canonical retained plus canonical
+  overflow for every source;
 - make every retained-lot and final-award residual assignment cap-aware: skip a
   user/source assignment whenever its next unit would make the user's retained or
   final total exceed `minor_unit_cap`;
-- move every exact fractional remainder or candidate minor unit rejected by that
-  cap, with its original project/rail/asset/native/FX/USD provenance, into
-  cap-floor overflow; together with proportional overlap overflow it may fund
-  another eligible uncapped user and, if still
-  unassignable, becomes source-linked returned/carryover residue;
-- derive each rounded overflow lot as original rounded source amount minus its
-  rounded retained amount, so retained plus overflow always equals the source;
+- track sub-minor exact residual and deterministic cross-source residual transfers
+  separately with original project/rail/asset/native/FX/USD provenance. Residual
+  may combine into a canonical pool unit, fund another uncapped user, or become
+  returned/carryover residue; it never creates a negative exact or canonical lot;
 - apply the same largest-remainder and stable-key rule within each
   rail/asset/custody group when an exact factor crosses atomic native units, and set
   overflow native units to original minus retained units;
@@ -273,8 +281,14 @@ provenance. It is not a user credit, fee, revenue, or payable.
 For any number of overlapping project initial lots, including zero and one:
 
 ```text
-sum(canonical_retained_initial_lot + total_overlap_cap_overflow_lot) =
-  aggregate_initial_claim
+sum(canonical_retained_minor_lot + canonical_overflow_minor_lot) =
+  sum(canonical_initial_minor_lot)
+
+exact_initial_source_lot =
+  exact_retained_source_lot + exact_overflow_source_lot
+
+canonical_initial_minor_lot =
+  canonical_retained_minor_lot + canonical_overflow_minor_lot
 
 raw_proportional_retained_target = min(aggregate_initial_claim, 3 * baseline)
 
@@ -282,10 +296,15 @@ canonical_pre_redistribution_current =
   min(floor_to_allocation_minor_unit(raw_proportional_retained_target),
       floor_to_allocation_minor_unit(3 * baseline))
 
-funded_epoch_pool =
-  sum(canonical_retained_initial_lot)
-  + sum(score_discount_pool_contribution)
-  + sum(total_overlap_cap_overflow_lot)
+exact_funded_epoch_pool =
+  sum(exact_retained_source_lot)
+  + sum(exact_score_discount_pool_lot)
+  + sum(exact_overflow_source_lot)
+
+canonical_funded_epoch_minor_units =
+  sum(canonical_retained_minor_lot)
+  + sum(canonical_score_discount_minor_lot)
+  + sum(canonical_overflow_minor_lot)
 ```
 
 These identities must hold separately in exact decimals and integer functional-USD minor units,
@@ -296,14 +315,34 @@ retained totals, overflow totals, final allocations, or the result hash.
 
 Four source lots of `$0.335` produce aggregate initial `$1.34`, baseline `$0.335`,
 exact cap `$1.005`, and canonical cent cap `$1.00`. Raw proportional retention is
-`$0.25125` per source, totaling `$1.005`; cap-aware canonical retained-lot rounding emits four
+`$0.25125` per source, totaling `$1.005`, with `$0.08375` exact overflow per
+source and `$0.335` exact overflow total. Cap-aware canonical retained-lot rounding emits four
 `$0.25` retained lots totaling `$1.00`, never `$1.01`. The exact `$0.005` retained
-target remainder that cannot cross the cent cap becomes source-linked cap-floor
-overflow alongside `$0.335` of proportional source-lot differences. Thus exact and
-integer-cent overflow are both `$0.34`; if it cannot fund another uncapped user, it
-becomes source-linked residue. Exact-decimal conservation is `$1.00 + $0.34 = $1.34`,
-and the integer-cent ledger independently conserves 100 + 34 = 134 cents without losing or
-double-assigning a fraction or cent.
+target remainder is recorded separately with source provenance and joins the
+canonical pool/residue bridge. The exact ledger conserves
+`$1.005 + $0.335 = $1.34`; the canonical ledger independently conserves
+100 retained + 34 overflow = 134 cents. No source has negative overflow, and no
+fraction or cent is lost or assigned twice.
+
+### Non-negative Source-lot Counterexample
+
+Two exact retained source lots of `$0.006` have a one-cent canonical retained
+target. First derive canonical initial capacity from the exact funded total: stable
+largest remainder assigns one initial cent to the lower stable source ID and zero
+to the other. Constrained retained rounding assigns that one cent only to the
+one-cent-capacity source; canonical overflow is zero for both, never `-$0.004`.
+The exact ledger independently records `$0.006 = $0.006 + $0` for each source.
+The cross-source rounding transfer and remaining `$0.002` sub-minor residual stay
+source-provenanced outside exact overflow and reconcile the exact `$0.012` total to
+the canonical one-cent total.
+
+### One-cent Equal-current Tie Fixture
+
+Two uncapped users have the same exact current total, equal capacity, and exact
+top-up targets of `$0.005` each when one canonical cent remains. Continuous
+water-filling treats them equally. Their fractional remainders tie, so the lower
+stable user ID receives the cent; aggregate initial claim and baseline are ignored.
+Reversing user or source input order produces the same recipient and result hash.
 
 ## Canonical A+B Fixture
 
@@ -370,11 +409,12 @@ The calculation artifact contains at least:
 - eligible project-user counts and theoretical shares;
 - locked score, locked maximum score, and score factor;
 - initial project claims and project pool contributions;
-- aggregate initial claims, baselines, caps, retention factors, retained initial
-  lots, and overlap-cap overflow lots;
+- aggregate initial claims, exact and canonical caps, retention factors, separate
+  exact/canonical initial-retained-overflow source lots, and sub-minor residuals;
 - ordered water-filling steps and redistribution top-ups;
 - final provisional allocations and cap status;
-- stable rounding decisions and asset/source fills;
+- stable exact/canonical rounding decisions, constrained source capacities,
+  sub-minor residual transfers, and asset/source fills;
 - returned or carryover residue with complete provenance;
 - excluded users and typed reason codes;
 - conservation, privacy, and production-gate results; and
@@ -394,9 +434,12 @@ Verification must prove:
 - every user and score/max pair was eligible and locked;
 - equal theoretical shares, score-adjusted claims, pre-redistribution cap clamps,
   retained lots, and both pool-contribution classes recompute;
-- water-filling order, ties, caps, and rounding reproduce deterministically;
-- `final_allocation <= 3 * baseline` for every user;
-- every original initial lot equals its retained lot plus overlap-cap overflow;
+- continuous equal-current water-filling and the sole minor-unit tie rule reproduce
+  deterministically under user/source input permutation;
+- `final_allocation_minor <= floor_to_minor_unit(3 * baseline)` for every user;
+- every exact initial lot equals non-negative exact retained plus exact overflow;
+- every canonical initial lot equals bounded canonical retained plus non-negative
+  canonical overflow;
 - funded pool equals retained initial lots plus score-discount contributions plus
   overlap-cap overflow;
 - score-discount contributions plus overlap-cap overflow equal top-ups plus

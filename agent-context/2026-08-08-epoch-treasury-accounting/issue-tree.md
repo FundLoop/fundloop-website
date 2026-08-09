@@ -618,7 +618,8 @@ Scope:
 - frozen post-cutoff package and only approve/opt-out actions;
 - accepted-delivery-relative deadline and silence-as-approval;
 - project KYB/KYC/sanctions gates;
-- valid/whitelisted Cubid, uniqueness score, remediation, holds, pseudonyms, and
+- valid/whitelisted Cubid, locked Cubid score, versioned locked maximum score,
+  remediation, holds, pseudonyms, and
   greylist/blacklist email events;
 - exact preliminary project totals/counts without user identifiers.
 
@@ -652,11 +653,14 @@ Goal invariants:
   `3 ×` baseline and the canonical retained/final cap is that value floored to the
   allocation minor unit;
 - before redistribution, aggregate initial is clamped to cap; if aggregate exceeds
-  cap, every project/source initial lot is scaled by `cap / aggregate`, retained
+  cap, every project/source initial lot is scaled by `exact cap / aggregate`, retained
   proportionally, and its exact difference becomes source-linked overlap overflow;
 - one global pool equals score-discount shortfalls plus overlap-cap overflow, and
   clamped current totals are raised lowest-first through stable deterministic
   water-filling;
+- exact equal-current users rise together; aggregate initial and baseline do not
+  break ties, while indivisible minor units use only exact-target fractional
+  remainder then stable user ID with cap-aware skipping;
 - capped users and zero-baseline users receive no top-up;
 - cap-aware residual assignment skips any user/source whose next unit would cross
   cap and keeps rejected exact fractions or minor units source-linked in the global
@@ -723,17 +727,22 @@ Scope:
 - aggregate user initial claims, define baseline as the largest single-project
   initial claim, set exact cap to `3 ×` baseline, floor it to the allocation minor
   unit as the canonical cap, and clamp aggregate initial before redistribution;
-- when aggregate exceeds cap, apply one exact `cap / aggregate` factor to every
+- when aggregate exceeds exact cap, apply one `exact cap / aggregate` factor to every
   project/source initial lot and move each difference into the pool as overlap-cap
   overflow; start water-filling from the canonical retained target, namely floored
   `min(aggregate, exact cap)` bounded by the floored minor-unit cap;
 - define the global pool as score-discount shortfalls plus overlap-cap overflow;
   capped and zero-baseline users receive no top-up;
-- use aggregate initial claim, baseline, then stable user ID for ties and assign
-  minor-unit rounding deterministically;
-- apply cap scaling in exact decimals, allocate retained source residuals by
-  fractional remainder then stable project/rail/asset/source-lot key, and derive
-  each overflow lot as original minus retained so native and USD units conserve;
+- treat exact equal-current users equally until the next level/cap/exhaustion; for
+  indivisible minor units use only descending exact-target fractional remainder then
+  stable user ID with cap-aware skipping;
+- keep exact and canonical ledgers separate: every non-negative exact initial source
+  equals exact retained plus exact overflow; derive canonical initial source units
+  first by stable largest remainder to the funded canonical total; then assign
+  retained units to the floored target with `0 <= retained <= initial`, skipping
+  saturated/zero-capacity lots, and define canonical overflow as `initial - retained`;
+- track sub-minor residual and cross-source transfers separately with provenance,
+  never by subtracting rounded retained from exact retained;
   never let retained-lot or final-award rounding cross the floored cap, skip capped
   residual candidates, and keep rejected fractions/units source-linked in the
   pool or returned/carryover residue;
@@ -757,9 +766,15 @@ Validation:
   then water-fill only uncapped users; and
 - fractional cap fixture: four `$0.335` lots yield aggregate `$1.34`, baseline
   `$0.335`, exact cap `$1.005`, canonical cent cap `$1.00`, and four `$0.25`
-  retained lots; `$0.335` proportional overflow plus the cap-rejected `$0.005`
-  exact remainder stays source-linked as `$0.34` pool/residue and the user never
+  retained lots; exact overflow is `$0.335`, canonical overflow is 34 cents, and
+  the `$0.005` exact-to-canonical residual stays separately source-linked; the user never
   receives `$1.01`; and
+- non-negative source fixture: two exact `$0.006` retained lots with a one-cent
+  target first receive canonical initial capacities; constrained retained rounding
+  yields no negative overflow and exact `$0.012` conservation remains separate; and
+- equal-current tie fixture: two exact `$0.005` top-up targets compete for one cent;
+  equal fractional remainder then stable user ID selects it, aggregate/baseline do
+  not participate, and permutation preserves the result hash; and
 - arbitrary-overlap cap-aware randomized properties conserve exact decimals and
   integer minor units independently, with no lost/double-assigned unit; and
 - old point-proportional results are explicitly superseded and intentional
@@ -786,8 +801,8 @@ Scope:
   without recognizing user ownership before payout is processed;
 - publish exact approved project totals/counts without user identifiers or
   cross-project membership inference;
-- persist theoretical shares, score/max, initial claims, aggregate/baseline/cap,
-  retention factors, retained source lots, score-discount contributions,
+- persist theoretical shares, score/max, initial claims, aggregate/exact/floored caps,
+  separate exact/canonical source ledgers, retention factors, retained source lots, score-discount contributions,
   overlap-cap overflow, pre-redistribution current, top-ups, final allocations, and
   source-linked residue;
 - generate trial balance, custody, project funds, fee, FX, carryover, initial claim,
@@ -799,9 +814,10 @@ Validation:
 
 - award-control balances equal approved allocations without creating user-owned
   liabilities before payout processing;
-- original initial lots equal retained lots plus overlap-cap overflow; retained
-  initials plus both pool-contribution classes reconcile to funded sources; both
-  pool-contribution classes equal top-ups plus residue;
+- non-negative exact initial lots equal exact retained plus exact overflow;
+  canonical initial units equal bounded canonical retained plus non-negative
+  canonical overflow; each ledger plus its pool-contribution classes reconciles
+  independently to funded sources, top-ups, and residue;
 - report totals reconcile to journal and artifacts reproduce;
 - role-scoped privacy tests;
 - payout window cannot open before every hard gate passes.

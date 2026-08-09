@@ -316,10 +316,11 @@ occurs. Later policy edits never rewrite prior events.
     initial claim, defines exact cap as three times baseline, and floors it to the
     allocation minor unit for the canonical executable cap. If aggregate initial
     exceeds cap, every project/source initial lot is proportionally retained by
-    `cap / aggregate`; each exact difference enters the global pool as source-linked
+    `exact cap / aggregate`; each exact difference enters the global pool as source-linked
     overlap-cap overflow. Water-filling starts from the canonical floored and
     cap-bounded retained current total and
-    raises the lowest uncapped totals first. A capped or zero-baseline user receives
+    raises equal-current uncapped users together until the next level, cap, or
+    exhaustion. Aggregate initial and baseline do not break equal-current ties. A capped or zero-baseline user receives
     no top-up. Retained-lot and final-award rounding may never cross the floored cap;
     descending-fraction residual assignment skips capped candidates and sends the
     rejected fraction or unit, with source provenance, into pool/residue.
@@ -334,7 +335,8 @@ Canonical allocation fixture: Project A contributes `$300`; scores `5/10/15` of 
 locked maximum `20` yield `$25/$50/$75` initial claims and `$150` of pool. Project B
 contributes `$1,000`; 100 users each exactly `10/20` yield `$500` of initial claims and
 `$500` of pool. The three A users also use B, so the combined `$650` is water-filled
-first to the 97 B-only users with the lowest aggregate initial claims. Stable ties,
+first to the 97 B-only users with the lowest aggregate initial claims. Equal-current
+continuous treatment and the sole fractional-remainder/stable-user-ID minor-unit rule,
 rounding, caps, and complete funded-source provenance must reproduce exactly.
 
 Adversarial overlap fixture: score-adjusted initial lots `[100,100,100,100]` produce
@@ -346,9 +348,20 @@ to arbitrary overlap counts and to exact-decimal, minor-unit, and native-unit ro
 Fractional cap fixture: four `$0.335` lots produce aggregate `$1.34`, baseline
 `$0.335`, exact cap `$1.005`, and canonical cent cap `$1.00`. Cap-aware retained-lot
 rounding emits four `$0.25` lots totaling `$1.00`, never `$1.01`; the rejected exact
-`$0.005` remainder joins `$0.335` of proportional differences as source-linked
-`$0.34` pool/residue. Exact-decimal and
+`$0.005` exact-to-canonical residual is source-linked but separate from `$0.335`
+exact overflow and 34 canonical overflow cents. Exact-decimal and
 integer-cent conservation are proved independently without lost or duplicate units.
+
+Non-negative source fixture: two exact `$0.006` retained lots with a one-cent
+canonical target first receive canonical initial capacities by stable largest
+remainder. Constrained retained rounding assigns the cent only to the source with
+capacity, so canonical overflow is never negative; exact `$0.012` conservation and
+sub-minor source provenance remain separate.
+
+Equal-current tie fixture: two uncapped users each have an exact `$0.005` top-up
+target and one canonical cent remains. Continuous water-filling treats them equally;
+equal fractional remainder then stable user ID selects the cent. Aggregate initial
+and baseline do not participate, and input permutation preserves the result hash.
 
 ### 10. Legal ownership, payout, privacy, and consent intent
 
@@ -725,20 +738,24 @@ Process:
    initial claim, set exact cap to three times baseline, and floor that value to the
    allocation minor unit for the canonical retained/final cap.
 4. Before redistribution, clamp aggregate initial to cap. Scale every project/source
-   initial lot by `min(1, cap / aggregate)`, retain the scaled lot, and move its exact
+   initial lot by `min(1, exact cap / aggregate)`, retain the scaled lot, and move its exact
    difference into the pool as source-linked overlap-cap overflow.
 5. Define the global pool as score-discount contributions plus overlap-cap overflow,
    then redistribute lowest-current-total first through deterministic water-filling;
-   ties use aggregate initial claim, baseline, then stable user ID.
+   exact equal-current users remain equal until a level/cap/exhaustion boundary.
+   For indivisible canonical units, use only descending exact-target fractional
+   remainder then stable user ID, with cap-aware skipping.
    A user already at cap, including a zero-baseline user at cap zero, receives no top-up.
 6. Preserve project, rail, asset, native, FX, and functional-USD source lots for
    every initial claim, top-up, and cap-exhausted returned/carryover residue.
 7. Apply exact-decimal cap scaling first. Allocate retained functional-USD and native
-   residual units by descending fractional remainder then stable project/rail/asset/
-   source-lot key, skipping any assignment that would cross the canonical cap;
-   derive overflow as original minus retained before user rounding. A rejected exact
-   fraction or minor unit remains source-linked in pool/residue and may fund another
-   uncapped user.
+   values in a separate exact ledger where each non-negative initial source equals
+   exact retained plus exact overflow. Derive canonical initial units first against
+   the funded canonical total by descending fractional remainder then stable source
+   ID. Assign retained units to the floored target with the same ordering constrained
+   by `0 <= retained <= initial`, skipping saturated/zero-capacity lots and any cap
+   breach; canonical overflow is `initial - retained`. Track sub-minor residual and
+   cross-source transfers separately with provenance, never as exact overflow.
 8. Prove conservation by project, rail, asset, native quantity, redistribution pool,
    and functional USD for arbitrary overlap count and input order, separately for
    exact decimals and integer minor-unit outputs, with no lost/double-assigned units.

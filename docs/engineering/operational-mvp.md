@@ -219,14 +219,14 @@ Definitions:
 
 - Monthly pool USD = system-price-normalized value of confirmed available project contribution pools.
 - Project pool USD = each project's confirmed available contribution amount normalized through the cycle price snapshot.
-- Eligible user = CUBID status `linked` or `verified` at lock time with approved attribution for the contributing project/month.
+- Eligible user = CUBID status `linked` or `verified` at lock time and membership in the approved locked project package/cohort for that month. Historical attribution rows may support cohort evidence, but attribution points do not weight eligibility or allocation.
 - Theoretical project share = the funded project pool divided equally across that project's eligible users.
 - Initial project claim = theoretical project share multiplied by locked Cubid score divided by the versioned locked maximum score.
 - Project pool contribution = theoretical project share minus the initial project claim; all contributions enter one global epoch redistribution pool.
 - Aggregate initial claim = the sum of one user's score-adjusted initial project claims.
 - User baseline = the largest single-project score-adjusted initial claim for that user.
 - Exact user cap = `3 ×` baseline; canonical minor-unit cap = floor of that exact cap to the allocation minor unit. Before redistribution, aggregate initial claim is clamped, and neither retained-lot nor final-award rounding may cross the canonical cap.
-- Raw proportional retained source lot = initial project/source lot multiplied by `min(1, exact cap / aggregate initial claim)`. Canonical retained lots sum to the floored minor-unit target; proportional source differences plus cap-floor differences form source-linked overlap-cap overflow.
+- Raw proportional retained source lot = exact initial project/source lot multiplied by `min(1, exact cap / aggregate initial claim)`; its non-negative exact difference is exact overflow. Canonical initial/retained/overflow units are derived independently, while the source-provenanced sub-minor residual bridges exact and canonical totals.
 - Global epoch redistribution pool = score-discount project pool contributions plus overlap-cap overflow.
 - Pre-redistribution current = the canonical retained target: floor `min(aggregate initial claim, exact cap)` to the allocation minor unit and bound it by the floored minor-unit cap. A user already at cap, including a zero-baseline user at cap zero, receives no top-up.
 - User final allocation = pre-redistribution current plus the deterministic lowest-current-total-first water-filling top-up, never above the cap.
@@ -245,14 +245,17 @@ cross-project overlap.
 
 Rounding:
 
+- Maintain separate exact-decimal and canonical integer-minor-unit source ledgers. Every exact source satisfies non-negative `exact initial = exact retained + exact overflow`.
+- Derive canonical initial source units first against the funded canonical total using descending fractional remainder then stable project/rail/asset/source-lot ID.
 - Calculate exact-decimal cap scaling before rounding.
-- Floor the retained-total target to the allocation minor unit and bound it by the canonical floored cap. Round retained source lots by descending fractional remainder then stable project/rail/asset/source-lot key; skip any next-unit assignment that would cross the user's cap.
+- Floor the retained-total target to the allocation minor unit and bound it by the canonical floored cap. Assign canonical retained units by constrained largest remainder, requiring `0 <= retained minor lot <= initial minor lot` and skipping saturated or zero-capacity lots.
+- Define canonical overflow units only as `initial minor lot - retained minor lot`; they are never negative.
 - Move an exact fraction or candidate minor unit rejected by the cap into the global overflow pool as cap-floor overflow with its original project/rail/asset/native/FX/USD provenance; together with proportional overlap overflow it may fund another uncapped user and otherwise becomes source-linked returned/carryover residue.
-- Derive overflow as original minus retained so each source conserves.
+- Track sub-minor exact residual and deterministic cross-source residual transfers separately with source provenance; never calculate exact overflow from a rounded retained lot.
 - Apply the same stable largest-remainder rule within each rail/asset/custody group for native atomic units.
 - Round after USD normalization.
 - Store exact decimal calculation inputs and rounded credited amounts.
-- Assign award residual deterministically by descending unrounded remainder then stable user id, skipping capped users rather than producing a one-unit cap breach.
+- Exact equal-current users water-fill equally; aggregate initial and baseline do not break their tie. Assign an indivisible award unit only by descending fractional remainder of exact target then stable user ID, skipping capped users and continuing to another eligible user or source-linked residue.
 
 Outputs:
 
@@ -270,14 +273,16 @@ Outputs:
 Acceptance criteria:
 
 - Same locked manifest produces same result hash.
-- Every initial source lot equals retained initial plus overlap-cap overflow.
+- Every non-negative exact initial source lot equals exact retained plus exact overflow; independently, every canonical initial source unit equals bounded canonical retained plus non-negative canonical overflow.
 - Retained initial lots plus score-discount contributions plus overlap-cap overflow equal the funded pool.
 - Top-ups plus returned/carryover residue equal score-discount contributions plus overlap-cap overflow.
 - Final allocations plus returned/carryover residue equal total funded pool USD after deterministic rounding.
 - No retained-lot target or final allocation exceeds the floored minor-unit `3 ×` baseline cap.
 - The canonical A+B fixture uses 100 B users each exactly `10/20`, produces `$150 + $500 = $650` of redistribution, and sends it first to the 97 B-only lowest earners.
 - The four-project overlap fixture `[100,100,100,100]` clamps `$400` to a `$300` cap, retains `$75` per source, and contributes four `$25` overflow lots before water-filling.
-- The fractional fixture with four `$0.335` lots has aggregate `$1.34`, baseline `$0.335`, exact cap `$1.005`, canonical cent cap `$1.00`, four `$0.25` retained lots, `$0.335 + $0.005 = $0.34` of source-linked overflow/pool value, and never a `$1.01` award.
+- The fractional fixture with four `$0.335` lots has aggregate `$1.34`, baseline `$0.335`, exact cap `$1.005`, canonical cent cap `$1.00`, four `$0.25` retained lots, `$0.335` exact overflow, 34 canonical overflow cents, and a separately source-linked `$0.005` exact-to-canonical residual; it never awards `$1.01`.
+- The two-`$0.006` retained-lot/one-cent-target counterexample assigns canonical initial capacity first, retains the cent only on that source, produces no negative source overflow, and separately reconciles exact `$0.012` to one canonical cent.
+- The one-cent equal-current-user fixture gives two users exact `$0.005` top-up targets; fractional remainders tie, so stable user ID alone selects the cent and input permutation leaves the result hash unchanged.
 - Arbitrary overlap count and project/source input permutation properties conserve exact decimals, USD minor units, and native atomic units.
 - Cap-aware residual properties prove exact-decimal conservation separately from integer minor-unit conservation, with no lost or double-assigned fractions or units.
 - Ineligible users are excluded with reason codes.
@@ -294,7 +299,7 @@ Verification checks:
 - all included project cohorts and score/max snapshots are approved and locked
 - all included users are CUBID-linked at lock time
 - retained initial lots, both pool-contribution classes, top-ups, and source-linked returned/carryover residue conserve the monthly pool after rounding
-- no user allocation exceeds the `3 ×` baseline cap
+- no user allocation exceeds the floored canonical minor-unit `3 ×` baseline cap
 - users already at cap and zero-baseline users receive no top-up
 - asset fills respect accepted preference order and recorded availability
 - no negative credits
