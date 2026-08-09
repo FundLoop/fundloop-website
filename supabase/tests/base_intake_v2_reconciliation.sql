@@ -7,6 +7,47 @@ UPDATE public.base_intake_v2_assets SET is_enabled = true
 WHERE deployment_id = (SELECT id FROM public.base_intake_v2_deployments WHERE deployment_environment = 'local' AND chain_id = 31337);
 INSERT INTO public.base_project_fee_versions(project_id, version, fee_bps, evidence_hash, is_current)
 VALUES (101, 1, 250, repeat('1', 64), true);
+UPDATE public.base_project_fee_versions SET is_current=false WHERE project_id=101 AND version=1;
+INSERT INTO public.base_project_fee_versions(project_id,version,fee_bps,evidence_hash,is_current)
+VALUES(101,2,300,repeat('2',64),true);
+
+DO $$
+DECLARE next_environment text; next_chain bigint;
+BEGIN
+  FOREACH next_chain IN ARRAY ARRAY[84532::bigint, 8453::bigint] LOOP
+    BEGIN
+      UPDATE public.base_intake_v2_deployments SET chain_id = next_chain
+      WHERE deployment_environment = 'local' AND chain_id = 31337;
+      RAISE EXCEPTION 'enabled local fixture deployment moved to chain %', next_chain;
+    EXCEPTION WHEN OTHERS THEN
+      IF SQLERRM <> 'base_intake_v2_enabled_asset_coordinates_locked' THEN RAISE; END IF;
+    END;
+  END LOOP;
+  FOREACH next_environment IN ARRAY ARRAY['dev', 'test'] LOOP
+    BEGIN
+      UPDATE public.base_intake_v2_deployments SET deployment_environment = next_environment
+      WHERE deployment_environment = 'local' AND chain_id = 31337;
+      RAISE EXCEPTION 'enabled local fixture deployment moved to environment %', next_environment;
+    EXCEPTION WHEN OTHERS THEN
+      IF SQLERRM <> 'base_intake_v2_enabled_asset_coordinates_locked' THEN RAISE; END IF;
+    END;
+  END LOOP;
+  BEGIN
+    UPDATE public.base_intake_v2_deployments SET contract_address='0x0000000000000000000000000000000000009991'
+    WHERE deployment_environment='local' AND chain_id=31337;
+    RAISE EXCEPTION 'enabled deployment contract address changed';
+  EXCEPTION WHEN OTHERS THEN IF SQLERRM <> 'base_intake_v2_enabled_asset_coordinates_locked' THEN RAISE; END IF; END;
+  BEGIN
+    UPDATE public.base_intake_v2_deployments SET platform_treasury_address='0x0000000000000000000000000000000000009992'
+    WHERE deployment_environment='local' AND chain_id=31337;
+    RAISE EXCEPTION 'enabled deployment treasury changed';
+  EXCEPTION WHEN OTHERS THEN IF SQLERRM <> 'base_intake_v2_enabled_asset_coordinates_locked' THEN RAISE; END IF; END;
+
+  UPDATE public.base_intake_v2_deployments SET is_active=false, is_paused=true
+  WHERE deployment_environment='local' AND chain_id=31337;
+  UPDATE public.base_intake_v2_deployments SET is_active=true, is_paused=false
+  WHERE deployment_environment='local' AND chain_id=31337;
+END $$;
 
 INSERT INTO public.base_intake_v2_deployments(deployment_environment,chain_id,contract_address,platform_treasury_address,
   epoch_treasury_address,is_paused,is_active) VALUES('dev',84532,'0x0000000000000000000000000000000000000132',
@@ -112,10 +153,11 @@ DECLARE command jsonb := jsonb_build_object(
   'platformTreasuryAddress','0x0000000000000000000000000000000000000201',
   'epochTreasuryAddress','0x0000000000000000000000000000000000000202',
   'projectId',101,'accountingPeriodId',(SELECT id FROM public.accounting_periods WHERE period_key='local_review_2026_08'),
-  'providerEventId','base:local:receipt:1','txHash','0x'||repeat('a',64),'logIndex',0,'blockNumber',100,
+  'providerEventId','base:local:receipt:1','txHash','0x'||repeat('a',64),'logIndex',0,
+  'receiptReference','0x'||repeat('1',64),'blockNumber',100,
   'blockHash','0x'||repeat('b',64),'senderAddress','0x0000000000000000000000000000000000000401',
   'tokenSymbol','USDC','tokenAddress','0x0000000000000000000000000000000000000301',
-  'grossNativeAmount','10000000','projectFeeBps',250,'platformFeeNativeAmount','250000',
+  'grossNativeAmount','10000000','projectFeeBps',250,'projectFeeVersion',1,'platformFeeNativeAmount','250000',
   'netEpochNativeAmount','9750000','evidenceHash',repeat('c',64),'observedAt','2026-08-09T12:00:00Z'
 ); first_id bigint; replay_id bigint;
 BEGIN
@@ -131,26 +173,63 @@ BEGIN
     RAISE EXCEPTION 'wrong Base fee snapshot was allowed';
   EXCEPTION WHEN OTHERS THEN IF SQLERRM <> 'base_intake_v2_fee_snapshot_mismatch' THEN RAISE; END IF; END;
   BEGIN
+    PERFORM public.record_base_intake_v2_receipt(command || jsonb_build_object('projectFeeVersion',2,'providerEventId','wrong-fee-version'));
+    RAISE EXCEPTION 'wrong Base fee version was allowed';
+  EXCEPTION WHEN OTHERS THEN IF SQLERRM <> 'base_intake_v2_fee_snapshot_mismatch' THEN RAISE; END IF; END;
+  BEGIN
     PERFORM public.record_base_intake_v2_receipt(command || jsonb_build_object('epochTreasuryAddress','0x0000000000000000000000000000000000000999','providerEventId','wrong-treasury'));
     RAISE EXCEPTION 'wrong Base treasury was allowed';
   EXCEPTION WHEN OTHERS THEN IF SQLERRM <> 'base_intake_v2_deployment_mismatch' THEN RAISE; END IF; END;
+  BEGIN
+    PERFORM public.record_base_intake_v2_receipt(command || jsonb_build_object(
+      'providerEventId','duplicate-log','receiptReference','0x'||repeat('2',64)));
+    RAISE EXCEPTION 'duplicate transaction log was recorded';
+  EXCEPTION WHEN unique_violation THEN NULL; END;
+
+  PERFORM public.record_base_intake_v2_receipt(command || jsonb_build_object(
+    'providerEventId','base:local:receipt:2','logIndex',1,'receiptReference','0x'||repeat('2',64)));
 END $$;
 
 DO $$
 DECLARE v_receipt_id bigint := (SELECT id FROM public.base_intake_v2_receipts WHERE provider_event_id='base:local:receipt:1');
   base_command jsonb := jsonb_build_object('deploymentEnvironment','local','receiptId',v_receipt_id,
-    'currentBlockNumber',100,'observedBlockHash','0x'||repeat('b',64),'observedTxHash','0x'||repeat('a',64),
+    'currentBlockNumber',100,'observedReceiptBlockNumber',100,
+    'observedBlockHash','0x'||repeat('b',64),'observedTxHash','0x'||repeat('a',64),
     'platformObservedNativeAmount','250000','epochObservedNativeAmount','9750000',
     'evidenceHash',repeat('d',64),'observedAt','2026-08-09T12:01:00Z','observationSource','trusted_viem_v1',
-    'receiptEventMatched',true);
+    'receiptEventMatched',true,'observedLogIndex',0,'observedReceiptReference','0x'||repeat('1',64));
 BEGIN
   PERFORM public.reconcile_base_intake_v2_receipt(base_command);
   PERFORM public.reconcile_base_intake_v2_receipt(base_command || jsonb_build_object('currentBlockNumber',101,'observedAt','2026-08-09T12:02:00Z'));
   PERFORM public.reconcile_base_intake_v2_receipt(base_command || jsonb_build_object('currentBlockNumber',102,'epochObservedNativeAmount','9749999','observedAt','2026-08-09T12:03:00Z'));
   PERFORM public.reconcile_base_intake_v2_receipt(base_command || jsonb_build_object('currentBlockNumber',102,'observedBlockHash','0x'||repeat('e',64),'observedAt','2026-08-09T12:04:00Z'));
   PERFORM public.reconcile_base_intake_v2_receipt(base_command || jsonb_build_object('currentBlockNumber',102,'replacementTxHash','0x'||repeat('f',64),'observedAt','2026-08-09T12:05:00Z'));
+  PERFORM public.reconcile_base_intake_v2_receipt(base_command || jsonb_build_object('currentBlockNumber',101,
+    'observedReceiptBlockNumber',101,'observedAt','2026-08-09T12:06:00Z'));
+  PERFORM public.reconcile_base_intake_v2_receipt(base_command || jsonb_build_object('currentBlockNumber',101,
+    'observedLogIndex',1,'observedReceiptReference','0x'||repeat('2',64),'receiptEventMatched',true,
+    'observedAt','2026-08-09T12:07:00Z'));
   IF (SELECT array_agg(e.status ORDER BY e.id) FROM public.base_intake_v2_reconciliation_events e WHERE e.receipt_id=v_receipt_id)
-    <> ARRAY['confirming','exact','mismatch','reorged','replaced'] THEN RAISE EXCEPTION 'Base reconciliation lifecycle mismatch'; END IF;
+    <> ARRAY['confirming','exact','mismatch','reorged','replaced','mismatch','mismatch'] THEN RAISE EXCEPTION 'Base reconciliation lifecycle mismatch'; END IF;
+  IF EXISTS (SELECT 1 FROM public.base_intake_v2_reconciliation_events
+    WHERE receipt_id=v_receipt_id AND observed_receipt_block_number=101 AND status='exact') THEN
+    RAISE EXCEPTION 'stored low block number became exact';
+  END IF;
+END $$;
+
+DO $$
+DECLARE v_receipt_id bigint := (SELECT id FROM public.base_intake_v2_receipts WHERE provider_event_id='base:local:receipt:2');
+  reconciliation_id bigint;
+BEGIN
+  reconciliation_id := public.reconcile_base_intake_v2_receipt(jsonb_build_object(
+    'deploymentEnvironment','local','receiptId',v_receipt_id,'currentBlockNumber',101,
+    'observedReceiptBlockNumber',100,'observedBlockHash','0x'||repeat('b',64),'observedTxHash','0x'||repeat('a',64),
+    'platformObservedNativeAmount','250000','epochObservedNativeAmount','9750000','evidenceHash',repeat('e',64),
+    'observedAt','2026-08-09T12:08:00Z','observationSource','trusted_viem_v1','receiptEventMatched',true,
+    'observedLogIndex',0,'observedReceiptReference','0x'||repeat('1',64)));
+  IF (SELECT status FROM public.base_intake_v2_reconciliation_events WHERE id=reconciliation_id) <> 'mismatch' THEN
+    RAISE EXCEPTION 'wrong log/reference receipt reconciled';
+  END IF;
 END $$;
 
 RESET ROLE;
@@ -166,7 +245,7 @@ END $$;
 RESET ROLE;
 
 DO $$ BEGIN
-  IF (SELECT count(*) FROM public.base_intake_v2_receipts) <> 1 THEN RAISE EXCEPTION 'Base receipt dedupe residue'; END IF;
+  IF (SELECT count(*) FROM public.base_intake_v2_receipts) <> 2 THEN RAISE EXCEPTION 'Base receipt identity residue'; END IF;
   IF EXISTS(SELECT 1 FROM public.base_intake_v2_receipts WHERE gross_native_amount <> platform_fee_native_amount + net_epoch_native_amount) THEN
     RAISE EXCEPTION 'Base treasury conservation failed';
   END IF;

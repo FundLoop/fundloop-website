@@ -9,10 +9,11 @@ const receipt = {
   platformTreasuryAddress: "0x0000000000000000000000000000000000000201",
   epochTreasuryAddress: "0x0000000000000000000000000000000000000202",
   projectId: 101, accountingPeriodId: 1, providerEventId: "base:local:1",
-  txHash: `0x${"a".repeat(64)}`, logIndex: 0, blockNumber: 100, blockHash: `0x${"b".repeat(64)}`,
+  txHash: `0x${"a".repeat(64)}`, logIndex: 0, receiptReference: `0x${"d".repeat(64)}`,
+  blockNumber: 100, blockHash: `0x${"b".repeat(64)}`,
   senderAddress: "0x0000000000000000000000000000000000000401", tokenSymbol: "USDC",
   tokenAddress: "0x0000000000000000000000000000000000000301", grossNativeAmount: "10000000",
-  projectFeeBps: 250, platformFeeNativeAmount: "250000", netEpochNativeAmount: "9750000",
+  projectFeeBps: 250, projectFeeVersion: 1, platformFeeNativeAmount: "250000", netEpochNativeAmount: "9750000",
   evidenceHash: "c".repeat(64), observedAt: "2026-08-09T12:00:00Z",
 }
 
@@ -27,6 +28,7 @@ describe("Base intake V2 command and reconciliation", () => {
     for (const invalid of [
       { ...receipt, tokenSymbol: "DAI" }, { ...receipt, platformFeeNativeAmount: "249999" },
       { ...receipt, epochTreasuryAddress: receipt.platformTreasuryAddress }, { ...receipt, evidenceHash: "bad" },
+      { ...receipt, receiptReference: "bad" }, { ...receipt, projectFeeVersion: 0 },
     ]) expect(validateBaseIntakeReceiptCommand(invalid, "local")).toMatchObject({ ok: false, error: { code: "invalid_payload" } })
   })
   it("accepts mixed-case EVM hex and rejects treasury aliases that differ only by case", () => {
@@ -53,6 +55,7 @@ describe("Base intake V2 command and reconciliation", () => {
     expect(evaluateBaseIntakeV2Receipt({ ...base, currentBlockNumber: BigInt(101), observedEpochAmount: BigInt(9749) }).status).toBe("mismatch")
     expect(evaluateBaseIntakeV2Receipt({ ...base, observedBlockHash: `0x${"d".repeat(64)}` }).status).toBe("reorged")
     expect(evaluateBaseIntakeV2Receipt({ ...base, replacementTxHash: `0x${"e".repeat(64)}` }).status).toBe("replaced")
+    expect(evaluateBaseIntakeV2Receipt({ ...base, observedReceiptBlockNumber: BigInt(101), currentBlockNumber: BigInt(101) }).status).toBe("mismatch")
   })
   it("keeps the tracked deployment fail closed", () => {
     const deployment = {
@@ -79,5 +82,7 @@ describe("Base intake V2 command and reconciliation", () => {
       expect(source).toContain('auth.mode !== "internal_secret"')
       expect(source).not.toContain("console.log")
     }
+    expect(readFileSync("supabase/functions/base-intake-v2-reconcile/index.ts", "utf8"))
+      .toContain("Provisional receipt identity evidence is incomplete.")
   })
 })

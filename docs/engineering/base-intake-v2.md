@@ -3,7 +3,8 @@
 Status: provisional, non-production, and fail-closed.
 
 `FundLoopBaseIntakeV2` accepts only the three constructor-bound token contracts labelled
-USDC, USDT, and PYUSD. It snapshots the configured project fee in each receipt event and
+USDC, USDT, and PYUSD. It snapshots the configured project's monotonic fee version and rate
+in each receipt event and
 transfers the fee and net amount directly to distinct platform and epoch treasuries. The
 contract has no native-token, arbitrary-token, payable, or production deployment path.
 
@@ -16,11 +17,13 @@ prints a candidate manifest for review; it does not mutate tracked files,
 Supabase, or any production deployment.
 
 The database command boundary independently verifies deployment activation/paused state,
-provider-address evidence, token, treasury, current
-fee version, and exact gross = fee + net conservation. Reconciliation status is derived from
-confirmation depth, block/transaction identity, replacement evidence, and the two observed
+provider-address evidence, token, treasury, the exact historical fee version captured by the
+receipt, and exact gross = fee + net conservation. Enabled deployment identity coordinates
+cannot be mutated until their assets are disabled; pause and activation controls remain
+available. Reconciliation status is derived from authoritative receipt-block confirmation
+depth, exact transaction/log/receipt-reference identity, replacement evidence, and the two observed
 treasury amounts. The reconciliation Edge request accepts only `receiptId`; trusted viem reads
-the chain receipt, current block, V2 event, and exact ERC-20 transfers before the service RPC can
+the chain receipt, current block, exact indexed V2 event, and ERC-20 transfers before the service RPC can
 record `trusted_viem_v1` evidence. Receipt and reconciliation evidence is append-only and inaccessible to
 browser roles.
 

@@ -49,6 +49,7 @@ export function auditBaseIntakeV2Deployment(input: {
 
 export function evaluateBaseIntakeV2Receipt(input: {
   receiptBlockNumber: bigint
+  observedReceiptBlockNumber?: bigint
   currentBlockNumber: bigint
   minimumConfirmationDepth: number
   receiptBlockHash: string
@@ -62,6 +63,9 @@ export function evaluateBaseIntakeV2Receipt(input: {
   observedEpochAmount: bigint
 }) {
   const confirmations = Number(input.currentBlockNumber - input.receiptBlockNumber + BigInt(1))
+  if (input.observedReceiptBlockNumber !== undefined && input.observedReceiptBlockNumber !== input.receiptBlockNumber) {
+    return { status: "mismatch" as const, confirmations: Math.max(0, Number(input.currentBlockNumber - input.observedReceiptBlockNumber + BigInt(1))) }
+  }
   if (input.observedBlockHash.toLowerCase() !== input.receiptBlockHash.toLowerCase()) return { status: "reorged" as const, confirmations: Math.max(0, confirmations) }
   if (input.replacementTxHash && input.replacementTxHash.toLowerCase() !== input.receiptTxHash.toLowerCase()) return { status: "replaced" as const, confirmations: Math.max(0, confirmations) }
   if (input.observedTxHash.toLowerCase() !== input.receiptTxHash.toLowerCase()) return { status: "mismatch" as const, confirmations: Math.max(0, confirmations) }

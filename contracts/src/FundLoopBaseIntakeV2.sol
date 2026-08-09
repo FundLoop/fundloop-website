@@ -24,6 +24,7 @@ contract FundLoopBaseIntakeV2 is Ownable, Pausable {
     error TokenNotAllowed(address token);
     error TokenNotProviderApproved(address token);
     error FeeTooHigh(uint16 feeBps);
+    error FeeNotConfigured(uint256 projectId);
     error ReceiptReferenceUsed(bytes32 receiptReference);
 
     event BaseReceipt(
@@ -34,6 +35,7 @@ contract FundLoopBaseIntakeV2 is Ownable, Pausable {
         address sender,
         uint256 grossAmount,
         uint16 projectFeeBps,
+        uint32 projectFeeVersion,
         uint256 feeAmount,
         uint256 netEpochAmount,
         address platformTreasury,
@@ -41,7 +43,7 @@ contract FundLoopBaseIntakeV2 is Ownable, Pausable {
     );
     event BaseTreasuriesUpdated(address indexed platformTreasury, address indexed epochTreasury);
     event BaseTokenConfigured(BaseAsset indexed asset, address indexed token, bool enabled);
-    event ProjectFeeConfigured(uint256 indexed projectId, uint16 feeBps);
+    event ProjectFeeConfigured(uint256 indexed projectId, uint32 indexed version, uint16 feeBps);
     event PlatformFeeTransferred(bytes32 indexed receiptReference, address indexed token, address indexed treasury, uint256 amount);
     event EpochTreasuryFunded(bytes32 indexed receiptReference, address indexed token, address indexed treasury, uint256 amount);
 
@@ -51,6 +53,7 @@ contract FundLoopBaseIntakeV2 is Ownable, Pausable {
     mapping(BaseAsset => bool) public providerApprovedAsset;
     mapping(address => bool) public allowedTokens;
     mapping(uint256 => uint16) public projectFeeBps;
+    mapping(uint256 => uint32) public projectFeeVersion;
     mapping(bytes32 => bool) public usedReceiptReferences;
 
     constructor(
@@ -90,8 +93,10 @@ contract FundLoopBaseIntakeV2 is Ownable, Pausable {
     function setProjectFeeBps(uint256 projectId, uint16 feeBps) external onlyOwner {
         if (projectId == 0) revert InvalidProjectId();
         if (feeBps > MAX_PROJECT_FEE_BPS) revert FeeTooHigh(feeBps);
+        uint32 nextVersion = projectFeeVersion[projectId] + 1;
+        projectFeeVersion[projectId] = nextVersion;
         projectFeeBps[projectId] = feeBps;
-        emit ProjectFeeConfigured(projectId, feeBps);
+        emit ProjectFeeConfigured(projectId, nextVersion, feeBps);
     }
 
     function deposit(
@@ -108,6 +113,8 @@ contract FundLoopBaseIntakeV2 is Ownable, Pausable {
         if (usedReceiptReferences[receiptReference]) revert ReceiptReferenceUsed(receiptReference);
 
         usedReceiptReferences[receiptReference] = true;
+        uint32 feeVersion = projectFeeVersion[projectId];
+        if (feeVersion == 0) revert FeeNotConfigured(projectId);
         uint16 feeBps = projectFeeBps[projectId];
         uint256 feeAmount = (grossAmount * feeBps) / 10_000;
         uint256 netEpochAmount = grossAmount - feeAmount;
@@ -125,6 +132,7 @@ contract FundLoopBaseIntakeV2 is Ownable, Pausable {
             msg.sender,
             grossAmount,
             feeBps,
+            feeVersion,
             feeAmount,
             netEpochAmount,
             platformTreasury,

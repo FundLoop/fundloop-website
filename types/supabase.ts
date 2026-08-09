@@ -218,8 +218,10 @@ export type Database = {
           platform_treasury_address: string
           production_enabled: boolean
           project_fee_bps: number
+          project_fee_version: number | null
           project_id: number
           provider_event_id: string
+          receipt_reference: string | null
           sender_address: string
           token_address: string
           token_symbol: string
@@ -243,8 +245,10 @@ export type Database = {
           platform_treasury_address: string
           production_enabled?: boolean
           project_fee_bps: number
+          project_fee_version?: number | null
           project_id: number
           provider_event_id: string
+          receipt_reference?: string | null
           sender_address: string
           token_address: string
           token_symbol: string
@@ -268,8 +272,10 @@ export type Database = {
           platform_treasury_address?: string
           production_enabled?: boolean
           project_fee_bps?: number
+          project_fee_version?: number | null
           project_id?: number
           provider_event_id?: string
+          receipt_reference?: string | null
           sender_address?: string
           token_address?: string
           token_symbol?: string
@@ -317,6 +323,9 @@ export type Database = {
           observation_source: string
           observed_at: string
           observed_block_hash: string
+          observed_log_index: number | null
+          observed_receipt_block_number: number | null
+          observed_receipt_reference: string | null
           observed_tx_hash: string
           platform_observed_native_amount: number
           receipt_event_matched: boolean
@@ -334,6 +343,9 @@ export type Database = {
           observation_source?: string
           observed_at: string
           observed_block_hash: string
+          observed_log_index?: number | null
+          observed_receipt_block_number?: number | null
+          observed_receipt_reference?: string | null
           observed_tx_hash: string
           platform_observed_native_amount: number
           receipt_event_matched?: boolean
@@ -351,6 +363,9 @@ export type Database = {
           observation_source?: string
           observed_at?: string
           observed_block_hash?: string
+          observed_log_index?: number | null
+          observed_receipt_block_number?: number | null
+          observed_receipt_reference?: string | null
           observed_tx_hash?: string
           platform_observed_native_amount?: number
           receipt_event_matched?: boolean
@@ -6456,13 +6471,18 @@ export type Database = {
           log_index: number | null
           net_epoch_native_amount: number | null
           observed_at: string | null
+          observed_log_index: number | null
+          observed_receipt_block_number: number | null
+          observed_receipt_reference: string | null
           platform_fee_native_amount: number | null
           platform_observed_native_amount: number | null
           platform_treasury_address: string | null
           production_enabled: boolean | null
           project_fee_bps: number | null
+          project_fee_version: number | null
           project_id: number | null
           provider_event_id: string | null
+          receipt_reference: string | null
           reconciled_observed_at: string | null
           reconciliation_status: string | null
           replacement_tx_hash: string | null
@@ -6924,6 +6944,10 @@ export type Database = {
         }[]
       }
       reconcile_base_intake_v2_receipt: {
+        Args: { p_command: Json }
+        Returns: number
+      }
+      reconcile_base_intake_v2_receipt_trusted_internal: {
         Args: { p_command: Json }
         Returns: number
       }

@@ -1128,3 +1128,47 @@ scope or weakening its trusted-observation boundary.
 
 - Commit and push this single review-fix checkpoint, then let the coordinating agent
   reply to and resolve the already-inspected PR threads without requesting rereview.
+
+### session v24: Base receipt identity and fee history review fixes (#132)
+
+- Timestamp: 2026-08-09T02:08:47-04:00
+- Agent: Codex
+- Branch: codex/130-settlement-packages
+- Head: 45f5e7e
+
+#### Objective
+
+Close the four unprompted Codex review findings on PR #148 while preserving the local-only,
+fail-closed settlement-package boundary.
+
+#### Actions Taken
+
+- Locked deployment environment, chain, contract, and treasury identity coordinates while
+  any asset remains enabled; pause and activation state remain independently operable.
+- Added monotonic onchain project-fee versions to configuration and receipt events, then
+  resolved the exact historical project/version/rate tuple in the receipt command.
+- Persisted bytes32 receipt references and added per-deployment uniqueness alongside the
+  existing transaction/log uniqueness boundary.
+- Bound the trusted observer to the exact BaseReceipt contract log index and indexed receipt
+  reference, returning explicit observed identity evidence rather than scanning any matching
+  receipt event in the transaction.
+- Persisted the authoritative transaction-receipt block number and derived confirmations from
+  it; stored/observed block disagreement and wrong log/reference evidence now remain mismatch.
+- Preserved provisional legacy rows as nullable, append-only records while the Edge command
+  fails closed when their new identity evidence is absent.
+- Regenerated Supabase types and documented the identity, fee-history, and coordinate-lock rules.
+
+#### Validation Notes
+
+- Passed: fresh local Supabase reset through the forward migration and all four integrated SQL
+  suites, including coordinate mutation, duplicate log/reference, historical fee, and low-block
+  adversarial probes.
+- Passed: Hardhat 10/10, including a real local receipt observed at the exact log/reference and
+  after a subsequent fee-version change.
+- Passed: focused Base Vitest (1 file/13 tests), lint, typecheck, and `git diff --check`.
+- Passed: full Node 22 `CI=1 pnpm check` with 134 files/615 tests and the 162-route production build.
+
+#### Suggested Next Steps
+
+- Commit and push the complete four-thread review batch, then let the coordinating agent reply
+  to and resolve the threads without requesting another review.

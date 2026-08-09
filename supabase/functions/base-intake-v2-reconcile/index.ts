@@ -30,14 +30,18 @@ async function handleRequest(request: Request) {
   if (!rpcUrl) return json(edgeCommandFailure("reconciliation_unavailable", "Trusted Base RPC is not configured."))
   const { data: receipt, error: receiptError } = await auth.adminClient.from("base_intake_v2_receipts").select("*, base_intake_v2_deployments(*)").eq("id", input.data.receiptId).single()
   if (receiptError || !receipt) return json(edgeCommandFailure("receipt_not_found", "Base intake receipt was not found."))
+  if (!receipt.receipt_reference || !receipt.project_fee_version) {
+    return json(edgeCommandFailure("reconciliation_unavailable", "Provisional receipt identity evidence is incomplete."))
+  }
   const deployment = receipt.base_intake_v2_deployments
   const observation = await observeBaseIntakeV2Receipt({
     snapshot: {
       id: receipt.id, txHash: receipt.tx_hash, blockHash: receipt.block_hash, blockNumber: BigInt(receipt.block_number),
+      logIndex: receipt.log_index, receiptReference: receipt.receipt_reference,
       contractAddress: deployment.contract_address, tokenAddress: receipt.token_address, projectId: BigInt(receipt.project_id),
       accountingPeriodId: BigInt(receipt.accounting_period_id), senderAddress: receipt.sender_address,
       platformTreasuryAddress: receipt.platform_treasury_address, epochTreasuryAddress: receipt.epoch_treasury_address,
-      grossAmount: BigInt(receipt.gross_native_amount), feeBps: receipt.project_fee_bps,
+      grossAmount: BigInt(receipt.gross_native_amount), feeBps: receipt.project_fee_bps, feeVersion: receipt.project_fee_version,
       platformFeeAmount: BigInt(receipt.platform_fee_native_amount), netEpochAmount: BigInt(receipt.net_epoch_native_amount),
     },
     client: createPublicClient({ transport: http(rpcUrl) }),

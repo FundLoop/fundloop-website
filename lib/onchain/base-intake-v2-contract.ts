@@ -29,6 +29,7 @@ export function validateBaseIntakeReceiptCommand(value: unknown, environment: st
     !ADDRESS.test(String(v.epochTreasuryAddress)) || String(v.platformTreasuryAddress).toLowerCase() === String(v.epochTreasuryAddress).toLowerCase() ||
     !Number.isInteger(v.projectId) || Number(v.projectId) <= 0 || !Number.isInteger(v.accountingPeriodId) || Number(v.accountingPeriodId) <= 0 ||
     typeof v.providerEventId !== "string" || v.providerEventId.length === 0 || !HASH.test(String(v.txHash)) ||
+    !HASH.test(String(v.receiptReference)) || !Number.isInteger(v.projectFeeVersion) || Number(v.projectFeeVersion) <= 0 ||
     !Number.isInteger(v.logIndex) || Number(v.logIndex) < 0 || !Number.isInteger(v.blockNumber) || Number(v.blockNumber) <= 0 ||
     !HASH.test(String(v.blockHash)) || !ADDRESS.test(String(v.senderAddress)) || !SYMBOLS.has(String(v.tokenSymbol)) ||
     !ADDRESS.test(String(v.tokenAddress)) || !Number.isInteger(feeBps) || feeBps < 0 || feeBps > 1000 ||
