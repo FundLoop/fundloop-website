@@ -3,6 +3,7 @@ import { describe,expect,it } from "vitest"
 const sql=readFileSync("supabase/migrations/20260809040000_shadow_external_financial_reconciliation.sql","utf8")
 const integrity=readFileSync("supabase/migrations/20260809041000_shadow_financial_reconciliation_integrity.sql","utf8")
 const privileges=readFileSync("supabase/migrations/20260809042000_shadow_reconciliation_service_privileges.sql","utf8")
+const linkage=readFileSync("supabase/migrations/20260809044000_shadow_journal_event_context.sql","utf8")
 const edge=readFileSync("supabase/functions/shadow-financial-event-ingest/index.ts","utf8")
 describe("shadow financial reconciliation",()=>{
  it("is immutable, deduplicated, balanced and production disabled",()=>{
@@ -16,6 +17,8 @@ describe("shadow financial reconciliation",()=>{
   expect(integrity).toContain("abs(v_variance)<=p_tolerance")
   expect(privileges).toContain("REVOKE INSERT, UPDATE, DELETE, TRUNCATE")
   expect(privileges).toContain("GRANT SELECT")
+  expect(linkage).toContain("shadow_journal_event_ledger_context_mismatch")
+  expect(linkage).toContain("count(DISTINCT custody_account_id)")
   expect(sql).not.toMatch(/UPDATE public\.(payments|monthly_cycles|mvp_allocation_results)/i)
   expect(edge).toContain("authenticateRequestOrInternalSecret")
   expect(edge).toContain("FUNDLOOP_DEPLOYMENT_ENV")

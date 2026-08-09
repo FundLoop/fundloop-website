@@ -353,6 +353,34 @@ custody reconciliation exclusively from the trusted trial balance.
 
 - Commit and attach integrated evidence; leave Goal #126 unchanged.
 
+### session v10: Event-to-ledger context integrity (#129)
+
+- Timestamp: 2026-08-08T23:18:00-04:00
+- Agent: Codex
+- Branch: codex/126-ledger-control-plane
+- Head: d4de855
+
+#### Objective
+
+Prevent journals from linking an event to any ledger transaction with a different or
+mixed asset/custody context.
+
+#### Actions Taken
+
+- Added a forward DB command invariant requiring every linked posting to match the
+  event asset and custody, with exactly one asset and custody per transaction.
+- Added executable USD-event/EUR-ledger and multi-custody adversarial probes.
+- Regenerated types and retained conservation, trial-balance, and reversal coverage.
+
+#### Validation Notes
+
+- Fresh reset and all three integrated SQL suites passed.
+- Focused/full Node 22 validation follows; UI unchanged, browser N/A.
+
+#### Suggested Next Steps
+
+- Commit and attach evidence for integrated revalidation; Goal status unchanged.
+
 ### session v5: Recurring scheduler idempotency (#128)
 
 - Timestamp: 2026-08-08T22:17:19-04:00

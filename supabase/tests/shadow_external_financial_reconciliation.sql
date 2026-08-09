@@ -33,6 +33,20 @@ BEGIN
  BEGIN PERFORM public.apply_external_funding(event1,ref,1,repeat('a',64),'preview');RAISE EXCEPTION 'preview apply accepted';EXCEPTION WHEN OTHERS THEN IF SQLERRM NOT LIKE '%disabled%' THEN RAISE;END IF;END;
  BEGIN PERFORM public.apply_external_funding(event1,ref,1,repeat('a',64),NULL);RAISE EXCEPTION 'unset apply accepted';EXCEPTION WHEN OTHERS THEN IF SQLERRM NOT LIKE '%disabled%' THEN RAISE;END IF;END;
 END $$;
+
+DO $$ DECLARE event_id bigint;period_id bigint;v_asset_id bigint;custody_id bigint;other_custody bigint;eur_asset bigint;eur_custody bigint;debit_account bigint;credit_account bigint;tx bigint;eur_tx bigint;
+BEGIN
+ SELECT e.id,e.asset_id,e.custody_account_id INTO event_id,v_asset_id,custody_id FROM public.external_financial_events e WHERE provider_key='local_fixture' LIMIT 1;
+ SELECT id INTO period_id FROM public.accounting_periods WHERE period_key='local_review_2026_08';SELECT id INTO debit_account FROM public.ledger_accounts WHERE account_key='shadow_source_control';SELECT id INTO credit_account FROM public.ledger_accounts WHERE account_key='shadow_offset_control';
+ INSERT INTO public.financial_custody_accounts(custody_key,asset_id,provider_key,external_reference_hash)VALUES('local_other_custody',v_asset_id,'local_fixture',repeat('9',64))RETURNING id INTO other_custody;
+ INSERT INTO public.ledger_transactions(accounting_period_id,transaction_type,idempotency_key,command_hash,evidence_hash,actor_type,deployment_environment,effective_at)VALUES(period_id,'multi_custody_probe','shadow:test:multi-custody',repeat('1',64),repeat('2',64),'service','local','2026-08-04Z')RETURNING id INTO tx;
+ INSERT INTO public.ledger_postings(transaction_id,sequence_no,account_id,asset_id,custody_account_id,side,native_atomic_amount,functional_usd_amount,fx_usd_per_unit)VALUES(tx,1,debit_account,v_asset_id,custody_id,'debit',10,0.01,0.001),(tx,2,credit_account,v_asset_id,other_custody,'credit',10,0.01,0.001);
+ BEGIN PERFORM public.post_shadow_financial_journal(event_id,tx,'receipt','unmatched','{}',repeat('3',64),'local');RAISE EXCEPTION'multi custody linkage accepted';EXCEPTION WHEN OTHERS THEN IF SQLERRM NOT LIKE'%context_mismatch%'THEN RAISE;END IF;END;
+ INSERT INTO public.financial_assets(asset_key,rail_key,symbol,atomic_scale)VALUES('local_review_eur','local_fixture','EUR',6)RETURNING id INTO eur_asset;INSERT INTO public.financial_custody_accounts(custody_key,asset_id,provider_key,external_reference_hash)VALUES('local_eur_custody',eur_asset,'local_fixture',repeat('8',64))RETURNING id INTO eur_custody;
+ INSERT INTO public.ledger_transactions(accounting_period_id,transaction_type,idempotency_key,command_hash,evidence_hash,actor_type,deployment_environment,effective_at)VALUES(period_id,'cross_asset_probe','shadow:test:eur',repeat('4',64),repeat('5',64),'service','local','2026-08-04Z')RETURNING id INTO eur_tx;
+ INSERT INTO public.ledger_postings(transaction_id,sequence_no,account_id,asset_id,custody_account_id,side,native_atomic_amount,functional_usd_amount,fx_usd_per_unit)VALUES(eur_tx,1,debit_account,eur_asset,eur_custody,'debit',10,0.01,0.001),(eur_tx,2,credit_account,eur_asset,eur_custody,'credit',10,0.01,0.001);
+ BEGIN PERFORM public.post_shadow_financial_journal(event_id,eur_tx,'receipt','unmatched','{}',repeat('6',64),'local');RAISE EXCEPTION'USD event to EUR ledger accepted';EXCEPTION WHEN OTHERS THEN IF SQLERRM NOT LIKE'%context_mismatch%'THEN RAISE;END IF;END;
+END $$;
 SET LOCAL ROLE authenticated;
 DO $$ BEGIN BEGIN PERFORM * FROM public.shadow_financial_reconciliation_observability; RAISE EXCEPTION 'browser read accepted'; EXCEPTION WHEN insufficient_privilege THEN NULL; END; END $$;
 RESET ROLE;
