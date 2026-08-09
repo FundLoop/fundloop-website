@@ -238,6 +238,13 @@ Scores are individual discounts against equal project shares, not weights divide
 the sum of cohort scores. Redistribution principal is not a fee, revenue, treasury
 sweep, or payable.
 
+Task #136 implements this as a separate `settled_cubid_redistribution_v1`
+local/dev path. It reserves only approved, reconciled, neutral-ledger-backed source
+lots; records immutable manifest and result hashes; and proves canonical source,
+pool, cap, award, and returned-residue conservation. The operator prep workspace
+shows review totals and provenance without exposing cross-project membership. The
+legacy `mvp_capped_equalization_v1` path remains compatibility-only.
+
 Until Goal #134's accounting, privacy, custody, and production gates are satisfied,
 this calculation is review-only in local/dev. Production allocation and award
 posting must remain fail-closed, and project/public outputs must not expose user-level

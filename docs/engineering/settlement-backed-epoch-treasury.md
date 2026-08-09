@@ -363,6 +363,13 @@ provenance, but their income-statement account classification remains a Task #12
 approval gate. Allocation itself is memorandum-only because users do not own funds
 before payout processing.
 
+The implemented Task #136 local/dev bridge locks only approved project packages
+whose fee-processed source lots match a neutral-ledger distributable posting. Its
+`settled_cubid_redistribution_v1` artifacts conserve retained initial claims,
+score-discount and overlap pool components, source-linked top-ups, and returned
+residue. Locking reserves source lots but does not post a user liability, create a
+payable, call a provider, transfer value, or enable production allocation.
+
 All examples omit native-unit columns for readability; production postings include
 both native atomic units and USD functional value.
 

@@ -690,6 +690,503 @@ export type Database = {
         }
         Relationships: []
       }
+      epoch_allocation_manifest_cohort: {
+        Row: {
+          cubid_evidence_hash: string
+          id: number
+          locked_cubid_score: number
+          locked_max_cubid_score: number
+          manifest_id: number
+          project_id: number
+          project_pseudonym: string
+          user_id: string
+        }
+        Insert: {
+          cubid_evidence_hash: string
+          id?: never
+          locked_cubid_score: number
+          locked_max_cubid_score: number
+          manifest_id: number
+          project_id: number
+          project_pseudonym: string
+          user_id: string
+        }
+        Update: {
+          cubid_evidence_hash?: string
+          id?: never
+          locked_cubid_score?: number
+          locked_max_cubid_score?: number
+          manifest_id?: number
+          project_id?: number
+          project_pseudonym?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "epoch_allocation_manifest_cohort_manifest_id_fkey"
+            columns: ["manifest_id"]
+            isOneToOne: false
+            referencedRelation: "epoch_allocation_manifests"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "epoch_allocation_manifest_cohort_manifest_id_fkey"
+            columns: ["manifest_id"]
+            isOneToOne: false
+            referencedRelation: "epoch_allocation_operator_view"
+            referencedColumns: ["manifest_id"]
+          },
+          {
+            foreignKeyName: "epoch_allocation_manifest_cohort_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "epoch_allocation_manifest_cohort_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["user_id"]
+          },
+        ]
+      }
+      epoch_allocation_manifest_sources: {
+        Row: {
+          canonical_minor_capacity: number
+          custody_account_id: number
+          evidence_hash: string
+          exact_usd: number
+          financial_asset_id: number
+          fx_snapshot_id: number
+          id: number
+          manifest_id: number
+          native_atomic_amount: number
+          project_id: number
+          rail_key: string
+          source_lot_id: number
+          source_lot_key: string
+          source_order: number
+          source_position: number
+        }
+        Insert: {
+          canonical_minor_capacity: number
+          custody_account_id: number
+          evidence_hash: string
+          exact_usd: number
+          financial_asset_id: number
+          fx_snapshot_id: number
+          id?: never
+          manifest_id: number
+          native_atomic_amount: number
+          project_id: number
+          rail_key: string
+          source_lot_id: number
+          source_lot_key: string
+          source_order: number
+          source_position: number
+        }
+        Update: {
+          canonical_minor_capacity?: number
+          custody_account_id?: number
+          evidence_hash?: string
+          exact_usd?: number
+          financial_asset_id?: number
+          fx_snapshot_id?: number
+          id?: never
+          manifest_id?: number
+          native_atomic_amount?: number
+          project_id?: number
+          rail_key?: string
+          source_lot_id?: number
+          source_lot_key?: string
+          source_order?: number
+          source_position?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "epoch_allocation_manifest_sources_custody_account_id_fkey"
+            columns: ["custody_account_id"]
+            isOneToOne: false
+            referencedRelation: "financial_custody_accounts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "epoch_allocation_manifest_sources_financial_asset_id_fkey"
+            columns: ["financial_asset_id"]
+            isOneToOne: false
+            referencedRelation: "financial_assets"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "epoch_allocation_manifest_sources_fx_snapshot_id_fkey"
+            columns: ["fx_snapshot_id"]
+            isOneToOne: false
+            referencedRelation: "epoch_fx_snapshots"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "epoch_allocation_manifest_sources_manifest_id_fkey"
+            columns: ["manifest_id"]
+            isOneToOne: false
+            referencedRelation: "epoch_allocation_manifests"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "epoch_allocation_manifest_sources_manifest_id_fkey"
+            columns: ["manifest_id"]
+            isOneToOne: false
+            referencedRelation: "epoch_allocation_operator_view"
+            referencedColumns: ["manifest_id"]
+          },
+          {
+            foreignKeyName: "epoch_allocation_manifest_sources_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "epoch_allocation_manifest_sources_source_lot_id_fkey"
+            columns: ["source_lot_id"]
+            isOneToOne: true
+            referencedRelation: "epoch_funded_allocation_lock_candidates"
+            referencedColumns: ["source_lot_id"]
+          },
+          {
+            foreignKeyName: "epoch_allocation_manifest_sources_source_lot_id_fkey"
+            columns: ["source_lot_id"]
+            isOneToOne: true
+            referencedRelation: "epoch_valuation_source_lots"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "epoch_allocation_source_pair"
+            columns: ["financial_asset_id", "custody_account_id"]
+            isOneToOne: false
+            referencedRelation: "financial_custody_accounts"
+            referencedColumns: ["asset_id", "id"]
+          },
+        ]
+      }
+      epoch_allocation_manifests: {
+        Row: {
+          actor_user_id: string
+          calculated_at: string | null
+          deployment_environment: string
+          funded_exact_usd: number
+          funded_minor: number
+          id: number
+          locked_at: string
+          manifest: Json
+          manifest_hash: string
+          minor_unit_scale: number
+          monthly_cycle_id: number
+          policy_key: string
+          production_enabled: boolean
+          status: string
+          version: number
+        }
+        Insert: {
+          actor_user_id: string
+          calculated_at?: string | null
+          deployment_environment: string
+          funded_exact_usd: number
+          funded_minor: number
+          id?: never
+          locked_at?: string
+          manifest: Json
+          manifest_hash: string
+          minor_unit_scale?: number
+          monthly_cycle_id: number
+          policy_key?: string
+          production_enabled?: boolean
+          status?: string
+          version: number
+        }
+        Update: {
+          actor_user_id?: string
+          calculated_at?: string | null
+          deployment_environment?: string
+          funded_exact_usd?: number
+          funded_minor?: number
+          id?: never
+          locked_at?: string
+          manifest?: Json
+          manifest_hash?: string
+          minor_unit_scale?: number
+          monthly_cycle_id?: number
+          policy_key?: string
+          production_enabled?: boolean
+          status?: string
+          version?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "epoch_allocation_manifests_actor_user_id_fkey"
+            columns: ["actor_user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "epoch_allocation_manifests_deployment_environment_fkey"
+            columns: ["deployment_environment"]
+            isOneToOne: false
+            referencedRelation: "epoch_allocation_runtime_controls"
+            referencedColumns: ["deployment_environment"]
+          },
+          {
+            foreignKeyName: "epoch_allocation_manifests_monthly_cycle_id_fkey"
+            columns: ["monthly_cycle_id"]
+            isOneToOne: false
+            referencedRelation: "monthly_cycles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      epoch_allocation_runs: {
+        Row: {
+          actor_user_id: string
+          artifact: Json
+          created_at: string
+          deployment_environment: string
+          final_allocation_minor: number
+          funded_minor: number
+          id: number
+          manifest_id: number
+          overlap_pool_minor: number
+          policy_key: string
+          production_enabled: boolean
+          result_hash: string
+          retained_initial_minor: number
+          returned_residue_minor: number
+          score_pool_minor: number
+          top_up_minor: number
+        }
+        Insert: {
+          actor_user_id: string
+          artifact: Json
+          created_at?: string
+          deployment_environment: string
+          final_allocation_minor: number
+          funded_minor: number
+          id?: never
+          manifest_id: number
+          overlap_pool_minor: number
+          policy_key: string
+          production_enabled?: boolean
+          result_hash: string
+          retained_initial_minor: number
+          returned_residue_minor: number
+          score_pool_minor: number
+          top_up_minor: number
+        }
+        Update: {
+          actor_user_id?: string
+          artifact?: Json
+          created_at?: string
+          deployment_environment?: string
+          final_allocation_minor?: number
+          funded_minor?: number
+          id?: never
+          manifest_id?: number
+          overlap_pool_minor?: number
+          policy_key?: string
+          production_enabled?: boolean
+          result_hash?: string
+          retained_initial_minor?: number
+          returned_residue_minor?: number
+          score_pool_minor?: number
+          top_up_minor?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "epoch_allocation_runs_actor_user_id_fkey"
+            columns: ["actor_user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "epoch_allocation_runs_deployment_environment_fkey"
+            columns: ["deployment_environment"]
+            isOneToOne: false
+            referencedRelation: "epoch_allocation_runtime_controls"
+            referencedColumns: ["deployment_environment"]
+          },
+          {
+            foreignKeyName: "epoch_allocation_runs_manifest_id_fkey"
+            columns: ["manifest_id"]
+            isOneToOne: true
+            referencedRelation: "epoch_allocation_manifests"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "epoch_allocation_runs_manifest_id_fkey"
+            columns: ["manifest_id"]
+            isOneToOne: true
+            referencedRelation: "epoch_allocation_operator_view"
+            referencedColumns: ["manifest_id"]
+          },
+        ]
+      }
+      epoch_allocation_runtime_controls: {
+        Row: {
+          allocation_enabled: boolean
+          deployment_environment: string
+          production_value_flow_enabled: boolean
+          updated_at: string
+        }
+        Insert: {
+          allocation_enabled?: boolean
+          deployment_environment: string
+          production_value_flow_enabled?: boolean
+          updated_at?: string
+        }
+        Update: {
+          allocation_enabled?: boolean
+          deployment_environment?: string
+          production_value_flow_enabled?: boolean
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "epoch_allocation_runtime_controls_deployment_environment_fkey"
+            columns: ["deployment_environment"]
+            isOneToOne: true
+            referencedRelation: "financial_runtime_controls"
+            referencedColumns: ["deployment_environment"]
+          },
+        ]
+      }
+      epoch_allocation_source_dispositions: {
+        Row: {
+          canonical_minor: number
+          disposition_kind: string
+          exact_usd: number
+          id: number
+          manifest_source_id: number
+          run_id: number
+          stable_position: number
+          user_id: string | null
+        }
+        Insert: {
+          canonical_minor: number
+          disposition_kind: string
+          exact_usd: number
+          id?: never
+          manifest_source_id: number
+          run_id: number
+          stable_position: number
+          user_id?: string | null
+        }
+        Update: {
+          canonical_minor?: number
+          disposition_kind?: string
+          exact_usd?: number
+          id?: never
+          manifest_source_id?: number
+          run_id?: number
+          stable_position?: number
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "epoch_allocation_source_dispositions_manifest_source_id_fkey"
+            columns: ["manifest_source_id"]
+            isOneToOne: false
+            referencedRelation: "epoch_allocation_manifest_sources"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "epoch_allocation_source_dispositions_run_id_fkey"
+            columns: ["run_id"]
+            isOneToOne: false
+            referencedRelation: "epoch_allocation_operator_view"
+            referencedColumns: ["run_id"]
+          },
+          {
+            foreignKeyName: "epoch_allocation_source_dispositions_run_id_fkey"
+            columns: ["run_id"]
+            isOneToOne: false
+            referencedRelation: "epoch_allocation_runs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "epoch_allocation_source_dispositions_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["user_id"]
+          },
+        ]
+      }
+      epoch_allocation_user_awards: {
+        Row: {
+          aggregate_initial_exact_usd: number
+          baseline_exact_usd: number
+          exact_cap_usd: number
+          final_minor: number
+          id: number
+          minor_unit_cap: number
+          project_claims: Json
+          retained_initial_minor: number
+          run_id: number
+          top_up_minor: number
+          user_id: string
+        }
+        Insert: {
+          aggregate_initial_exact_usd: number
+          baseline_exact_usd: number
+          exact_cap_usd: number
+          final_minor: number
+          id?: never
+          minor_unit_cap: number
+          project_claims: Json
+          retained_initial_minor: number
+          run_id: number
+          top_up_minor: number
+          user_id: string
+        }
+        Update: {
+          aggregate_initial_exact_usd?: number
+          baseline_exact_usd?: number
+          exact_cap_usd?: number
+          final_minor?: number
+          id?: never
+          minor_unit_cap?: number
+          project_claims?: Json
+          retained_initial_minor?: number
+          run_id?: number
+          top_up_minor?: number
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "epoch_allocation_user_awards_run_id_fkey"
+            columns: ["run_id"]
+            isOneToOne: false
+            referencedRelation: "epoch_allocation_operator_view"
+            referencedColumns: ["run_id"]
+          },
+          {
+            foreignKeyName: "epoch_allocation_user_awards_run_id_fkey"
+            columns: ["run_id"]
+            isOneToOne: false
+            referencedRelation: "epoch_allocation_runs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "epoch_allocation_user_awards_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["user_id"]
+          },
+        ]
+      }
       epoch_asset_custody_routes: {
         Row: {
           asset_code: string
@@ -8278,6 +8775,30 @@ export type Database = {
           },
         ]
       }
+      epoch_allocation_operator_view: {
+        Row: {
+          calculated_at: string | null
+          cycle_key: string | null
+          final_allocation_minor: number | null
+          funded_exact_usd: number | null
+          funded_minor: number | null
+          locked_at: string | null
+          manifest_hash: string | null
+          manifest_id: number | null
+          overlap_pool_minor: number | null
+          provisional_only: boolean | null
+          result_hash: string | null
+          retained_initial_minor: number | null
+          returned_residue_minor: number | null
+          run_id: number | null
+          score_pool_minor: number | null
+          status: string | null
+          top_up_minor: number | null
+          user_count: number | null
+          version: number | null
+        }
+        Relationships: []
+      }
       epoch_financial_prep_cycle_summary: {
         Row: {
           base_fee_exact_usd: number | null
@@ -8873,6 +9394,10 @@ export type Database = {
         }
         Returns: number
       }
+      epoch_allocation_runtime_enabled: {
+        Args: { p_environment: string }
+        Returns: boolean
+      }
       epoch_financial_prep_runtime_enabled: {
         Args: { p_environment: string }
         Returns: boolean
@@ -9089,6 +9614,7 @@ export type Database = {
           isSetofReturn: true
         }
       }
+      lock_funded_epoch_allocation: { Args: { p_command: Json }; Returns: Json }
       post_epoch_fx_snapshot: { Args: { p_command: Json }; Returns: number }
       post_neutral_ledger_transaction: {
         Args: { p_command: Json }
@@ -9190,6 +9716,10 @@ export type Database = {
           p_gate_key: string
           p_reason: string
         }
+        Returns: number
+      }
+      record_funded_epoch_allocation: {
+        Args: { p_command: Json }
         Returns: number
       }
       record_profile_publication_choice: {

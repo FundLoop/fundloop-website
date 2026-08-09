@@ -522,6 +522,19 @@ export async function executeMonthlyCycleCalculationPackageCommand(
     return failure("cycle_not_ready", "Only locked, prep, or calculation cycles can be packaged.")
   }
 
+  const fundedSources = await supabase
+    .from("epoch_valuation_source_lots")
+    .select("id")
+    .eq("monthly_cycle_id", cycle.id)
+    .in("state", ["ready_for_lock", "reserved"])
+  if (fundedSources.error) return failure("query_failed", fundedSources.error.message)
+  if (asArray(fundedSources.data).length > 0) {
+    return failure(
+      "settled_allocation_required",
+      "Journal-backed epoch sources must use the settled Cubid redistribution command; the legacy point-based calculator is compatibility-only.",
+    )
+  }
+
   if (!cycle.locked_at || !cycle.locked_manifest || !cycle.locked_manifest_hash) {
     return failure("cycle_not_locked", "Cycle must have a locked manifest before calculation packaging.")
   }

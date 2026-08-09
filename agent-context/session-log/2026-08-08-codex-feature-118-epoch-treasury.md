@@ -1440,3 +1440,62 @@ to post while a fresh eligible primary source remained available.
 
 - Run the focused and broad Node 22 gates, commit the correction separately, post evidence, and
   return exact HEAD to independent #135 revalidation.
+
+### session v30: settled Cubid redistribution calculation (#136)
+
+- Timestamp: 2026-08-09T19:00:02-04:00
+- Agent: Codex
+- Branch: codex/134-funded-redistribution
+- Head: b6e3e7f
+
+#### Objective
+
+Lock only approved, reconciled, journal-backed epoch source lots and deterministically calculate
+the score-discount/global-redistribution model under the preserved 3x cap, without creating a
+payable, payout, provider call, production path, or value flow.
+
+#### Actions Taken
+
+- Added the exact-rational `settled_cubid_redistribution_v1` calculator. It derives equal funded
+  project shares, locked score/max initial claims, score-pool contributions, proportional overlap
+  clamps, floored cap-aware retained lots, lowest-current-total-first top-ups, deterministic minor
+  units, source-linked residue, repeatable hashes, and separate exact/canonical evidence.
+- Added an immutable allocation manifest/result schema with source, project, rail, asset, custody,
+  native atomic, FX, ledger, project pseudonym, locked Cubid score/max, and evidence provenance.
+  Locking atomically reserves each source; result recording independently enforces source, pool,
+  award, funded-total, and user-cap conservation.
+- Added authenticated internal-operator Edge lock/calculate/read actions with trusted actor/runtime,
+  exact browser contracts, production denial, RLS, revoked direct writes, service-only RPCs, and an
+  operator prep review with explicit provisional/non-payable/no-provider/no-value-flow copy.
+- Kept `mvp_capped_equalization_v1` compatibility-only and made its calculation command reject
+  cycles that contain journal-backed epoch source lots, preventing the old activity-point path from
+  becoming canonical for funded allocation.
+- Updated allocation, operational MVP, and settlement treasury architecture plus generated
+  Supabase types. Added canonical A+B, four-$100, four-$0.335, material-score-change, deterministic
+  overlap/permutation properties, executable SQL, Edge/contract/UI tests, and exact browser smoke.
+
+#### Validation Notes
+
+- Passed repeated fresh local migration/seed replay and executable allocation SQL: production and
+  empty-cycle denial; approved/journal-backed lock; source reservation; idempotency/conflict;
+  source/award/cap/pool conservation; authenticated RPC denial; and service direct-write denial.
+- Passed a real authenticated Edge calculation from prepared Stripe review evidence through the
+  immutable database result: 9,652 funded minor units, 4,826 retained, 4,826 redistributed, zero
+  residue, and identical replay.
+- Passed focused calculator/contract/migration/UI tests, strict Deno check, lint, and typecheck.
+  Exact 1440x900 and 390x844 production-server browser captures under
+  `output/playwright/issue-136/` were visually inspected; the browser re-ran the calculation through
+  Edge with zero console errors.
+
+#### Reflections
+
+- Canonical retained targets must be bounded by the already-derived canonical initial source
+  capacity. A randomized overlap fixture exposed the otherwise possible attempt to retain a minor
+  unit that canonical source rounding had already assigned to the score pool.
+- Keeping source-pool component rows separate from terminal retained/top-up/residue dispositions
+  makes audit visibility possible without double-counting terminal conservation.
+
+#### Suggested Next Steps
+
+- Run the final fresh replay, all integrated SQL and full Node 22 gate, commit #136 separately, post
+  evidence, stop local services, and request independent issue validation before starting #137.

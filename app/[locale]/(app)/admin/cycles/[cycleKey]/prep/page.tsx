@@ -1,6 +1,7 @@
 import { notFound } from "next/navigation"
 import { AlertTriangle, ArrowLeft, CheckCircle2, FileSearch, Info, ShieldAlert } from "lucide-react"
 import { ProjectAttributionDatasetReviewActions } from "@/components/admin/project-attribution-dataset-review-actions"
+import { EpochFundedAllocationActions } from "@/components/admin/epoch-funded-allocation-actions"
 import { Link } from "@/i18n/navigation"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -9,6 +10,7 @@ import { requireInternalAdminActor } from "@/lib/zkas/auth"
 import {
   loadMonthlyCyclePrepReview,
   loadEpochFinancialPrepReview,
+  loadEpochFundedAllocationReview,
   type MonthlyCyclePrepIssue,
   type MonthlyCyclePrepPosture,
   type MonthlyCyclePrepSeverity,
@@ -30,6 +32,10 @@ function formatCurrency(locale: string, value: number) {
     currency: "USD",
     maximumFractionDigits: 0,
   }).format(value)
+}
+
+function sumIntegerValues(left: string | number | null, right: string | number | null) {
+  return (BigInt(String(left ?? 0)) + BigInt(String(right ?? 0))).toString()
 }
 
 function severityIcon(severity: MonthlyCyclePrepSeverity) {
@@ -64,9 +70,9 @@ function IssueCard({ issue }: { issue: MonthlyCyclePrepIssue }) {
 
 export default async function AdminCyclePrepPage({ params }: PageProps) {
   const { cycleKey, locale } = await params
-  const [review,financialPrep] = await (async () => {
+  const [review,financialPrep,fundedAllocation] = await (async () => {
     await requireInternalAdminActor()
-    return Promise.all([loadMonthlyCyclePrepReview(cycleKey),loadEpochFinancialPrepReview(cycleKey)])
+    return Promise.all([loadMonthlyCyclePrepReview(cycleKey),loadEpochFinancialPrepReview(cycleKey),loadEpochFundedAllocationReview(cycleKey)])
   })()
 
   if (!review) {
@@ -226,6 +232,43 @@ export default async function AdminCyclePrepPage({ params }: PageProps) {
               </tr>)}</tbody>
             </table>
           </div>
+        )}
+      </section>
+
+      <section className="space-y-5 rounded-[calc(var(--radius-2xl)+0.25rem)] border border-[color:var(--surface-border)] bg-[var(--surface-panel)] p-6 shadow-[var(--surface-shadow-panel)]">
+        <div className="flex flex-wrap items-start justify-between gap-4">
+          <div>
+            <p className="text-[0.72rem] font-semibold uppercase tracking-[0.28em] text-[var(--interactive-primary)]">Settled Cubid redistribution</p>
+            <h2 className="mt-2 text-2xl font-semibold text-[var(--text-strong)]">Immutable allocation review</h2>
+            <p className="mt-2 max-w-3xl text-sm leading-6 text-[var(--text-muted)]">
+              Equal project shares are discounted by locked Cubid scores. Score shortfalls and overlap-cap overflow fund lowest-current-total-first top-ups under the preserved 3× cap. Results remain provisional: no payable, payout, provider call, or value movement is created here.
+            </p>
+          </div>
+          <Badge variant="outline">Production disabled</Badge>
+        </div>
+        {fundedAllocation.runtimeAvailable ? <EpochFundedAllocationActions cycleKey={cycleKey} /> : null}
+        {fundedAllocation.allocation ? (
+          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+            {[
+              ["State",fundedAllocation.allocation.status ?? "locked"],
+              ["Funded minor",fundedAllocation.allocation.funded_minor ?? "0"],
+              ["Redistribution pool",sumIntegerValues(fundedAllocation.allocation.score_pool_minor,fundedAllocation.allocation.overlap_pool_minor)],
+              ["Top-up / residue",`${fundedAllocation.allocation.top_up_minor ?? "0"} / ${fundedAllocation.allocation.returned_residue_minor ?? "0"}`],
+              ["Final allocation",fundedAllocation.allocation.final_allocation_minor ?? "0"],
+              ["Users",String(fundedAllocation.allocation.user_count ?? 0)],
+              ["Manifest",fundedAllocation.allocation.manifest_hash?.slice(0,12) ?? "pending"],
+              ["Result",fundedAllocation.allocation.result_hash?.slice(0,12) ?? "pending"],
+            ].map(([label,value])=>(
+              <div key={label} className="rounded-[var(--radius-xl)] border border-[color:var(--surface-border)] bg-[var(--surface-panel-strong)] p-4">
+                <p className="text-xs uppercase tracking-[0.16em] text-[var(--text-soft)]">{label}</p>
+                <p className="mt-2 break-all font-mono text-base font-semibold text-[var(--text-strong)]">{value}</p>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <p className="rounded-[var(--radius-xl)] border border-dashed border-[color:var(--surface-border)] p-4 text-sm text-[var(--text-muted)]">
+            No settled allocation manifest is locked yet. Only approved packages with reconciled, journal-backed source lots can enter this review.
+          </p>
         )}
       </section>
 

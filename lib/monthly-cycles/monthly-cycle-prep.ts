@@ -123,6 +123,23 @@ export type EpochFinancialPrepReview = {
   productionDisabled: boolean
 }
 
+export type EpochFundedAllocationReview = {
+  allocation: Database["public"]["Views"]["epoch_allocation_operator_view"]["Row"] | null
+  productionDisabled: boolean
+  runtimeAvailable: boolean
+}
+
+export async function loadEpochFundedAllocationReview(cycleKey: string): Promise<EpochFundedAllocationReview> {
+  const parsedCycleKey=assertMonthString(cycleKey)
+  if ((process.env.FUNDLOOP_DEPLOYMENT_ENV ?? "production").trim().toLowerCase()==="production") {
+    return {allocation:null,productionDisabled:true,runtimeAvailable:false}
+  }
+  const supabase=getAdminSupabaseClient()
+  const result=await supabase.from("epoch_allocation_operator_view").select("*").eq("cycle_key",parsedCycleKey).maybeSingle()
+  if (result.error) throw new Error(result.error.message)
+  return {allocation:result.data,productionDisabled:true,runtimeAvailable:true}
+}
+
 export async function loadEpochFinancialPrepReview(cycleKey: string): Promise<EpochFinancialPrepReview> {
   const parsedCycleKey=assertMonthString(cycleKey)
   if ((process.env.FUNDLOOP_DEPLOYMENT_ENV ?? "production").trim().toLowerCase()==="production") {

@@ -113,6 +113,30 @@ Reserved value cannot be harvested. These are provisional funded epoch inputs—
 fees, recognized revenue, user payables, provider instructions, or production value
 flow—and all Task #135 commands deny production.
 
+### Implemented settled-allocation boundary (Task #136)
+
+The local/dev review path now locks those approved, journal-backed source lots into
+an immutable `settled_cubid_redistribution_v1` manifest. The manifest copies source,
+project, rail, asset, custody, native atomic, FX, exact USD, stable-order,
+project-pseudonym, locked-score, versioned-maximum, and evidence dimensions. Source
+lots are reserved atomically, so the same funded principal cannot enter two
+manifests.
+
+The pure allocator uses exact rational arithmetic until canonical minor-unit
+assignment. It records equal theoretical shares, score-adjusted initial claims,
+score-discount contributions, proportional overlap overflow, cap-aware retained
+lots, lowest-current-total-first top-ups, and returned residue. Each terminal minor
+unit remains linked to one source lot. The database independently enforces source
+capacity, user-cap, pool, award, and funded-total conservation when it records the
+immutable result artifact.
+
+The operator prep workspace exposes manifest/result hashes and funded, retained,
+redistribution, top-up, residue, and final totals. The Edge boundary owns the
+authenticated operator and runtime, and both Edge and database layers deny
+production. These are provisional calculation artifacts only: no liability,
+payable, payout intent, provider call, or value movement is created. The legacy
+`mvp_capped_equalization_v1` calculator remains compatibility-only.
+
 ## Allocation Algorithm
 
 All equations use exact decimal functional USD until the rounding stage.
