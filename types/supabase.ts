@@ -304,6 +304,357 @@ export type Database = {
         }
         Relationships: []
       }
+      epoch_business_calendar: {
+        Row: {
+          calendar_date: string
+          created_at: string
+          is_business_day: boolean
+          production_enabled: boolean
+          reason: string | null
+        }
+        Insert: {
+          calendar_date: string
+          created_at?: string
+          is_business_day: boolean
+          production_enabled?: boolean
+          reason?: string | null
+        }
+        Update: {
+          calendar_date?: string
+          created_at?: string
+          is_business_day?: boolean
+          production_enabled?: boolean
+          reason?: string | null
+        }
+        Relationships: []
+      }
+      epoch_shadow_runtime_controls: {
+        Row: {
+          deployment_environment: string
+          production_value_flow_enabled: boolean
+          scheduler_enabled: boolean
+        }
+        Insert: {
+          deployment_environment: string
+          production_value_flow_enabled?: boolean
+          scheduler_enabled?: boolean
+        }
+        Update: {
+          deployment_environment?: string
+          production_value_flow_enabled?: boolean
+          scheduler_enabled?: boolean
+        }
+        Relationships: []
+      }
+      epoch_shadow_states: {
+        Row: {
+          accounting_period_id: number
+          created_at: string
+          current_stage: string
+          id: number
+          is_paused: boolean
+          legacy_status_snapshot: string | null
+          monthly_cycle_id: number | null
+          pause_reason: string | null
+          production_enabled: boolean
+          state_version: number
+          updated_at: string
+        }
+        Insert: {
+          accounting_period_id: number
+          created_at?: string
+          current_stage?: string
+          id?: never
+          is_paused?: boolean
+          legacy_status_snapshot?: string | null
+          monthly_cycle_id?: number | null
+          pause_reason?: string | null
+          production_enabled?: boolean
+          state_version?: number
+          updated_at?: string
+        }
+        Update: {
+          accounting_period_id?: number
+          created_at?: string
+          current_stage?: string
+          id?: never
+          is_paused?: boolean
+          legacy_status_snapshot?: string | null
+          monthly_cycle_id?: number | null
+          pause_reason?: string | null
+          production_enabled?: boolean
+          state_version?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "epoch_shadow_states_accounting_period_id_fkey"
+            columns: ["accounting_period_id"]
+            isOneToOne: true
+            referencedRelation: "accounting_periods"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "epoch_shadow_states_monthly_cycle_id_fkey"
+            columns: ["monthly_cycle_id"]
+            isOneToOne: true
+            referencedRelation: "monthly_cycles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      epoch_stage_artifacts: {
+        Row: {
+          artifact_hash: string
+          artifact_key: string
+          artifact_uri: string
+          attempt_id: number
+          created_at: string
+          id: number
+        }
+        Insert: {
+          artifact_hash: string
+          artifact_key: string
+          artifact_uri: string
+          attempt_id: number
+          created_at?: string
+          id?: never
+        }
+        Update: {
+          artifact_hash?: string
+          artifact_key?: string
+          artifact_uri?: string
+          attempt_id?: number
+          created_at?: string
+          id?: never
+        }
+        Relationships: [
+          {
+            foreignKeyName: "epoch_stage_artifacts_attempt_id_fkey"
+            columns: ["attempt_id"]
+            isOneToOne: false
+            referencedRelation: "epoch_shadow_observability"
+            referencedColumns: ["latest_attempt_id"]
+          },
+          {
+            foreignKeyName: "epoch_stage_artifacts_attempt_id_fkey"
+            columns: ["attempt_id"]
+            isOneToOne: false
+            referencedRelation: "epoch_stage_attempts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      epoch_stage_attempts: {
+        Row: {
+          actor_user_id: string | null
+          attempt_sequence: number
+          claim_token: string | null
+          completed_at: string | null
+          created_at: string
+          expected_stage: string
+          expected_state_version: number
+          failure_code: string | null
+          id: number
+          idempotency_key: string
+          input_manifest_hash: string
+          no_external_call_under_lock: boolean
+          production_enabled: boolean
+          sanitized_metadata: Json
+          scheduled_for: string
+          shadow_state_id: number
+          started_at: string | null
+          status: string
+          target_stage: string
+          trigger_type: string
+          worker_id: string | null
+        }
+        Insert: {
+          actor_user_id?: string | null
+          attempt_sequence: number
+          claim_token?: string | null
+          completed_at?: string | null
+          created_at?: string
+          expected_stage: string
+          expected_state_version: number
+          failure_code?: string | null
+          id?: never
+          idempotency_key: string
+          input_manifest_hash: string
+          no_external_call_under_lock?: boolean
+          production_enabled?: boolean
+          sanitized_metadata?: Json
+          scheduled_for: string
+          shadow_state_id: number
+          started_at?: string | null
+          status?: string
+          target_stage: string
+          trigger_type: string
+          worker_id?: string | null
+        }
+        Update: {
+          actor_user_id?: string | null
+          attempt_sequence?: number
+          claim_token?: string | null
+          completed_at?: string | null
+          created_at?: string
+          expected_stage?: string
+          expected_state_version?: number
+          failure_code?: string | null
+          id?: never
+          idempotency_key?: string
+          input_manifest_hash?: string
+          no_external_call_under_lock?: boolean
+          production_enabled?: boolean
+          sanitized_metadata?: Json
+          scheduled_for?: string
+          shadow_state_id?: number
+          started_at?: string | null
+          status?: string
+          target_stage?: string
+          trigger_type?: string
+          worker_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "epoch_stage_attempts_actor_user_id_fkey"
+            columns: ["actor_user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "epoch_stage_attempts_shadow_state_id_fkey"
+            columns: ["shadow_state_id"]
+            isOneToOne: false
+            referencedRelation: "epoch_shadow_observability"
+            referencedColumns: ["shadow_state_id"]
+          },
+          {
+            foreignKeyName: "epoch_stage_attempts_shadow_state_id_fkey"
+            columns: ["shadow_state_id"]
+            isOneToOne: false
+            referencedRelation: "epoch_shadow_states"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      epoch_stage_gate_results: {
+        Row: {
+          attempt_id: number
+          created_at: string
+          evidence_hash: string
+          gate_key: string
+          gate_type: string
+          id: number
+          override_id: number | null
+          passed: boolean
+          reason_code: string | null
+        }
+        Insert: {
+          attempt_id: number
+          created_at?: string
+          evidence_hash: string
+          gate_key: string
+          gate_type: string
+          id?: never
+          override_id?: number | null
+          passed: boolean
+          reason_code?: string | null
+        }
+        Update: {
+          attempt_id?: number
+          created_at?: string
+          evidence_hash?: string
+          gate_key?: string
+          gate_type?: string
+          id?: never
+          override_id?: number | null
+          passed?: boolean
+          reason_code?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "epoch_stage_gate_results_attempt_id_fkey"
+            columns: ["attempt_id"]
+            isOneToOne: false
+            referencedRelation: "epoch_shadow_observability"
+            referencedColumns: ["latest_attempt_id"]
+          },
+          {
+            foreignKeyName: "epoch_stage_gate_results_attempt_id_fkey"
+            columns: ["attempt_id"]
+            isOneToOne: false
+            referencedRelation: "epoch_stage_attempts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "epoch_stage_gate_results_override_id_fkey"
+            columns: ["override_id"]
+            isOneToOne: false
+            referencedRelation: "epoch_stage_overrides"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      epoch_stage_overrides: {
+        Row: {
+          actor_user_id: string
+          created_at: string
+          evidence_hash: string
+          gate_key: string
+          id: number
+          production_enabled: boolean
+          reason: string
+          shadow_state_id: number
+          stage: string
+        }
+        Insert: {
+          actor_user_id: string
+          created_at?: string
+          evidence_hash: string
+          gate_key: string
+          id?: never
+          production_enabled?: boolean
+          reason: string
+          shadow_state_id: number
+          stage: string
+        }
+        Update: {
+          actor_user_id?: string
+          created_at?: string
+          evidence_hash?: string
+          gate_key?: string
+          id?: never
+          production_enabled?: boolean
+          reason?: string
+          shadow_state_id?: number
+          stage?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "epoch_stage_overrides_actor_user_id_fkey"
+            columns: ["actor_user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "epoch_stage_overrides_shadow_state_id_fkey"
+            columns: ["shadow_state_id"]
+            isOneToOne: false
+            referencedRelation: "epoch_shadow_observability"
+            referencedColumns: ["shadow_state_id"]
+          },
+          {
+            foreignKeyName: "epoch_stage_overrides_shadow_state_id_fkey"
+            columns: ["shadow_state_id"]
+            isOneToOne: false
+            referencedRelation: "epoch_shadow_states"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       financial_assets: {
         Row: {
           asset_key: string
@@ -5365,6 +5716,43 @@ export type Database = {
       }
     }
     Views: {
+      epoch_shadow_observability: {
+        Row: {
+          accounting_period_id: number | null
+          completed_at: string | null
+          current_stage: string | null
+          is_paused: boolean | null
+          latest_attempt_id: number | null
+          latest_attempt_status: string | null
+          latest_failure_code: string | null
+          latest_target_stage: string | null
+          latest_trigger_type: string | null
+          legacy_compatibility_status: string | null
+          legacy_status_snapshot: string | null
+          monthly_cycle_id: number | null
+          pause_reason: string | null
+          shadow_state_id: number | null
+          started_at: string | null
+          state_version: number | null
+          updated_at: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "epoch_shadow_states_accounting_period_id_fkey"
+            columns: ["accounting_period_id"]
+            isOneToOne: true
+            referencedRelation: "accounting_periods"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "epoch_shadow_states_monthly_cycle_id_fkey"
+            columns: ["monthly_cycle_id"]
+            isOneToOne: true
+            referencedRelation: "monthly_cycles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       project_category_count: {
         Row: {
           category_id: number | null
@@ -5474,6 +5862,35 @@ export type Database = {
         Args: { p_transaction_id: number }
         Returns: boolean
       }
+      claim_epoch_shadow_attempt: {
+        Args: {
+          p_deployment_environment: string
+          p_now: string
+          p_worker_id: string
+        }
+        Returns: {
+          attempt_id: number
+          claim_token: string
+          expected_stage: string
+          expected_state_version: number
+          input_manifest_hash: string
+          shadow_state_id: number
+          target_stage: string
+        }[]
+      }
+      complete_epoch_shadow_attempt: {
+        Args: {
+          p_artifacts: Json
+          p_attempt_id: number
+          p_claim_token: string
+          p_completed_at: string
+          p_deployment_environment: string
+          p_failure_code: string
+          p_gate_results: Json
+          p_succeeded: boolean
+        }
+        Returns: string
+      }
       create_user_withdrawal_request: {
         Args: {
           p_actor_user_id: string
@@ -5503,6 +5920,22 @@ export type Database = {
           status: string
         }[]
       }
+      enqueue_epoch_shadow_attempt: {
+        Args: {
+          p_actor_user_id: string
+          p_deployment_environment: string
+          p_expected_stage: string
+          p_expected_state_version: number
+          p_idempotency_key: string
+          p_input_manifest_hash: string
+          p_scheduled_for: string
+          p_shadow_state_id: number
+          p_target_stage: string
+          p_trigger_type: string
+        }
+        Returns: number
+      }
+      epoch_shadow_next_stage: { Args: { p_stage: string }; Returns: string }
       expire_project_invitations_review: {
         Args: { p_invitee_email?: string; p_project_id: number }
         Returns: number
@@ -5604,6 +6037,18 @@ export type Database = {
           project_slug: string
         }[]
       }
+      record_epoch_stage_override: {
+        Args: {
+          p_actor_user_id: string
+          p_deployment_environment: string
+          p_evidence_hash: string
+          p_gate_key: string
+          p_reason: string
+          p_shadow_state_id: number
+          p_stage: string
+        }
+        Returns: number
+      }
       record_profile_publication_choice: {
         Args: {
           p_action: string
@@ -5667,6 +6112,17 @@ export type Database = {
           recorded_at: string
           status: string
         }[]
+      }
+      set_epoch_shadow_pause: {
+        Args: {
+          p_actor_user_id: string
+          p_deployment_environment: string
+          p_expected_state_version: number
+          p_paused: boolean
+          p_reason: string
+          p_shadow_state_id: number
+        }
+        Returns: number
       }
       soft_delete_organization_members: {
         Args: { p_id: number }

@@ -977,6 +977,15 @@ INSERT INTO public.accounting_periods (
   'America/Los_Angeles'
 ) ON CONFLICT (period_key) DO NOTHING;
 
+INSERT INTO public.epoch_shadow_states (
+  accounting_period_id, monthly_cycle_id, legacy_status_snapshot
+)
+SELECT period.id, cycle.id, cycle.status
+FROM public.accounting_periods period
+LEFT JOIN public.monthly_cycles cycle ON cycle.period_start = period.starts_at::date
+WHERE period.period_key = 'local_review_2026_08'
+ON CONFLICT (accounting_period_id) DO NOTHING;
+
 RESET ALL;
 
 SET session_replication_role = origin;

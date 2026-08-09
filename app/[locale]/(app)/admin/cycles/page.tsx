@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { loadMonthlyCycleAdminOverview, monthlyCycleStatusLabels, type MonthlyCycleStatus } from "@/lib/monthly-cycles"
+import { loadEpochShadowObservability } from "@/lib/monthly-cycles/epoch-shadow-observability"
 import { requireInternalAdminActor } from "@/lib/zkas/auth"
 
 type PageProps = {
@@ -36,7 +37,8 @@ export default async function AdminMonthlyCyclesPage({ params }: PageProps) {
   const { locale } = await params
   const data = await (async () => {
     await requireInternalAdminActor()
-    return loadMonthlyCycleAdminOverview()
+    const [overview, shadowEpochs] = await Promise.all([loadMonthlyCycleAdminOverview(), loadEpochShadowObservability()])
+    return { ...overview, shadowEpochs }
   })().catch((error: unknown) => ({
     error: error instanceof Error ? error.message : "You cannot access monthly cycle operations.",
   }))
@@ -104,6 +106,31 @@ export default async function AdminMonthlyCyclesPage({ params }: PageProps) {
           </CardContent>
         </Card>
       ) : null}
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Shadow epoch state machine</CardTitle>
+          <CardDescription>
+            Provisional, non-effective control-plane visibility. These stages never change legacy cycle outcomes or move value.
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <Table>
+            <TableHeader><TableRow><TableHead>Period</TableHead><TableHead>Shadow stage</TableHead><TableHead>Legacy mapping</TableHead><TableHead>Latest attempt</TableHead><TableHead>Control</TableHead></TableRow></TableHeader>
+            <TableBody>
+              {data.shadowEpochs.length === 0 ? <TableRow><TableCell colSpan={5}>Shadow scheduling is unavailable or has no local review rows.</TableCell></TableRow> : data.shadowEpochs.map((epoch) => (
+                <TableRow key={epoch.shadow_state_id}>
+                  <TableCell>{epoch.accounting_period_id}</TableCell>
+                  <TableCell><Badge variant="outline">{epoch.current_stage}</Badge></TableCell>
+                  <TableCell>{epoch.legacy_compatibility_status}</TableCell>
+                  <TableCell>{epoch.latest_attempt_status ?? "Not attempted"}</TableCell>
+                  <TableCell>{epoch.is_paused ? `Paused: ${epoch.pause_reason}` : "Shadow only"}</TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </CardContent>
+      </Card>
 
       <section className="grid gap-6 md:grid-cols-2 xl:grid-cols-4">
         <Card>

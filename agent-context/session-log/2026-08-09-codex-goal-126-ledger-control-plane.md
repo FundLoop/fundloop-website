@@ -112,3 +112,64 @@ boundary or introducing a production/value-flow path.
 - Commit and attach the fresh replay and adversarial evidence to #127.
 - Leave #127 In Progress for independent revalidation; stop Supabase and do not open a
   PR or change Goal #126 status.
+
+### session v3: Shadow epoch state machine (#128)
+
+- Timestamp: 2026-08-08T21:50:34-04:00
+- Agent: Codex
+- Branch: codex/126-ledger-control-plane
+- Head: a4edbccd59a8
+
+#### Objective
+
+Implement the approved 12-stage epoch workflow as a local/development shadow control
+plane without changing legacy monthly-cycle outcomes, enabling production execution,
+or moving value.
+
+#### Actions Taken
+
+- Added forward schema for shadow states, queued attempts, hard/soft gate evidence,
+  audited single-admin overrides, business-calendar rows, and artifact references.
+- Added service-only enqueue, skip-locked claim, completion, override, and pause/resume
+  RPCs with production controls, advisory transaction locks, idempotency keys, and
+  optimistic state versions.
+- Added Pacific fake-clock helpers for month cutoffs, email-relative business-day
+  deadlines, DST/month transitions, payout expiry, the 12-stage ordering, and a
+  conservative read-only legacy mapping.
+- Added a typed internal-secret Edge scheduler boundary, local scheduler orchestration,
+  generated types/config, and a service-role admin observability read model.
+- Added an explicitly provisional admin panel and engineering documentation stating
+  that the shadow machine cannot change legacy outcomes or enable value flow.
+
+#### Validation Notes
+
+- Passed: fresh local Supabase reset applying all migrations and local fixtures.
+- Passed: executable SQL for production and authenticated-browser denial, idempotent
+  cron/manual enqueue, distinct `SKIP LOCKED` claims, optimistic supersession,
+  pause/resume, hard-gate blocking, audited override retry, artifact evidence, and
+  unchanged legacy monthly-cycle status.
+- Passed: focused Vitest with 2 files and 7 tests covering 12 stages, compatibility,
+  DST/month/holiday fake clocks, expiry/close, trusted production denial, locks, and
+  non-mutation boundaries.
+- Passed: Node 22 lint, typecheck, and full `CI=1 pnpm check` with 130 files/587 tests
+  plus production build; passed `git diff --check`.
+- Passed: authenticated local Playwright desktop 1440x900 and mobile 390x844 smoke of
+  the shadow observability row with zero browser console errors. Screenshots are kept
+  as ignored local evidence under `output/playwright/`.
+
+#### Reflections
+
+- Claim and completion are separate database transactions, so external evaluation can
+  occur only after the row lock is released; the schema also constrains the recorded
+  no-external-call invariant to true.
+- Production denial is layered at the Edge boundary, scheduler, database runtime row,
+  service RPCs, and schema production flags.
+- Compatibility mapping is observability-only and contains no write to the legacy
+  `monthly_cycles` workflow.
+
+#### Suggested Next Steps
+
+- Commit Task #128 and attach migration replay, executable concurrency/gate evidence,
+  focused/full checks, and desktop/mobile smoke to the issue.
+- Leave #128 In Progress for independent validation, stop services, and do not start
+  #129 or open a PR.
