@@ -9,6 +9,9 @@ type PageProps = { params: Promise<{ locale: string }> }
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
   const { locale } = await params
   const t = await getTranslations({ locale, namespace: "metadata.terms" })
+  if (!isReviewPolicyPreviewEnabled()) {
+    return { title: `Policy unavailable | ${t("title")}`, description: "No approved effective policy document is currently published." }
+  }
   return { title: `${REVIEW_POLICY_BANNER} | ${t("title")}`, description: `Non-effective review preview. ${t("description")}` }
 }
 
@@ -16,6 +19,20 @@ export default async function TermsPage({ params }: PageProps) {
   await params
   const t = await getTranslations("legalPages")
   const previewEnabled = isReviewPolicyPreviewEnabled()
+  if (!previewEnabled) {
+    return (
+      <LegalPageShell
+        backToHomeLabel={t("backToHome")}
+        eyebrow="Policy unavailable"
+        title="Terms are not currently published"
+        summary="No approved effective Terms document is configured for this environment."
+        updatedLabel="Unavailable"
+        relatedLinks={[{ href: "/privacy", label: t("relatedLinks.privacy") }, { href: "/support", label: t("relatedLinks.support") }]}
+      >
+        <p>This page will remain unavailable until the required production approvals and effective publication controls are complete.</p>
+      </LegalPageShell>
+    )
+  }
   return (
     <LegalPageShell
       backToHomeLabel={t("backToHome")}
@@ -24,7 +41,7 @@ export default async function TermsPage({ params }: PageProps) {
       summary="A non-effective product-intent draft for exercising version and acknowledgement controls on local and dev environments."
       updatedLabel={`Version ${termsReviewDocument.version}`}
       statusBanner={REVIEW_POLICY_BANNER}
-      statusDetail={previewEnabled ? "This review copy is visible for local/dev testing. Acknowledgement is not legal acceptance and cannot enable live value flow." : "Production review preview is disabled. No effective Terms version is configured."}
+      statusDetail="This review copy is visible for local/dev testing. Acknowledgement is not legal acceptance and cannot enable live value flow."
       relatedLinks={[{ href: "/privacy", label: t("relatedLinks.privacy") }, { href: "/cookies", label: t("relatedLinks.cookies") }, { href: "/documentation", label: t("relatedLinks.documentation") }]}
     >
       <p><strong>Document:</strong> <code>{termsReviewDocument.documentId}</code></p>

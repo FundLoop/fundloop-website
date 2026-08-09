@@ -6,11 +6,19 @@ import { isReviewPolicyPreviewEnabled, privacyReviewDocument, REVIEW_POLICY_BANN
 type PageProps = { params: Promise<{ locale: string }> }
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
   const { locale } = await params; const t = await getTranslations({ locale, namespace: "metadata.privacy" })
+  if (!isReviewPolicyPreviewEnabled()) {
+    return { title: `Policy unavailable | ${t("title")}`, description: "No approved effective policy document is currently published." }
+  }
   return { title: `${REVIEW_POLICY_BANNER} | ${t("title")}`, description: `Non-effective review preview. ${t("description")}` }
 }
 export default async function PrivacyPage({ params }: PageProps) {
   await params; const t = await getTranslations("legalPages"); const enabled = isReviewPolicyPreviewEnabled()
-  return <LegalPageShell backToHomeLabel={t("backToHome")} eyebrow="Privacy review preview" title="Canadian Privacy Notice review preview" summary="A truthful, non-effective inventory of current and planned data handling for local/dev consent testing." updatedLabel={`Version ${privacyReviewDocument.version}`} statusBanner={REVIEW_POLICY_BANNER} statusDetail={enabled ? "This review copy is visible for local/dev testing. Optional profile publication remains separate and withdrawable." : "Production review preview and review publication choices are disabled."} relatedLinks={[{ href: "/terms", label: t("relatedLinks.terms") }, { href: "/cookies", label: t("relatedLinks.cookies") }, { href: "/support", label: t("relatedLinks.support") }]}>
+  if (!enabled) {
+    return <LegalPageShell backToHomeLabel={t("backToHome")} eyebrow="Policy unavailable" title="Privacy policy is not currently published" summary="No approved effective Privacy document is configured for this environment." updatedLabel="Unavailable" relatedLinks={[{ href: "/terms", label: t("relatedLinks.terms") }, { href: "/support", label: t("relatedLinks.support") }]}>
+      <p>This page will remain unavailable until the required production approvals and effective publication controls are complete.</p>
+    </LegalPageShell>
+  }
+  return <LegalPageShell backToHomeLabel={t("backToHome")} eyebrow="Privacy review preview" title="Canadian Privacy Notice review preview" summary="A truthful, non-effective inventory of current and planned data handling for local/dev consent testing." updatedLabel={`Version ${privacyReviewDocument.version}`} statusBanner={REVIEW_POLICY_BANNER} statusDetail="This review copy is visible for local/dev testing. Optional profile publication remains separate and withdrawable." relatedLinks={[{ href: "/terms", label: t("relatedLinks.terms") }, { href: "/cookies", label: t("relatedLinks.cookies") }, { href: "/support", label: t("relatedLinks.support") }]}>
     <p><strong>Document:</strong> <code>{privacyReviewDocument.documentId}</code></p><p><strong>Immutable review hash:</strong> <code className="break-all">{privacyReviewDocument.contentHash}</code></p>
     <h2>1. Review boundary</h2><p>This preview is not an approved or effective Privacy Notice and does not decide legal authority, retention periods, provider roles, or cross-border terms. It describes product intent and unresolved controls for review.</p>
     <h2>2. Information in scope</h2><p>FundLoop may handle account and profile fields, authentication and security evidence, project participation, Cubid status and scores, contribution and allocation records, payout route metadata, wallet and public-chain information, support messages, and technical request diagnostics.</p>

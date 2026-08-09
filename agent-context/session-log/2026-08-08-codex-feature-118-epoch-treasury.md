@@ -825,3 +825,48 @@ service-owned Edge command.
   browser, and full-check evidence to #125.
 - Keep #125 In Progress for independent revalidation; stop local services and do not
   open a PR.
+
+### session v17: Production-safe policy routes (#122)
+
+- Timestamp: 2026-08-09T00:28:00-04:00
+- Agent: Codex
+- Branch: codex/118-canada-review-drafts
+- Head: 73887f5458b8
+
+#### Objective
+
+Close the integrated Goal #122 route-level production leak by ensuring the public
+Terms and Privacy routes expose no review draft content or metadata when the review
+preview gate is closed.
+
+#### Actions Taken
+
+- Added early production-safe unavailable branches to the Terms and Privacy pages,
+  before any draft document identifiers, hashes, versions, banners, or body render.
+- Added production-safe route metadata while preserving the exact local/dev review
+  banner, immutable document metadata, and non-effective draft content.
+- Added executable route tests for production response and metadata absence, local/dev
+  draft rendering, and unavailable Terms acknowledgement controls in production.
+
+#### Validation Notes
+
+- Passed: focused policy route and gate Vitest, 4 files and 11 tests.
+- Passed: Node 22 lint and typecheck.
+- Passed: Node 22 full `CI=1 pnpm check` with 127 files/570 tests plus production build.
+- Passed: production HTTP smoke for `/en/terms` and `/en/privacy` with a hostile preview
+  override; both returned the unavailable placeholder and none of the banner, document
+  IDs, hashes, or representative draft body text.
+- Passed: `git diff --check`.
+
+#### Reflections
+
+- Disabling acknowledgement commands is not enough when a public route can still leak
+  the draft itself; content rendering and metadata generation need the same early gate.
+- A neutral unavailable page keeps navigation intact without suggesting that review
+  text is approved, effective, or published.
+
+#### Suggested Next Steps
+
+- Commit this narrow Goal #122 route fix and attach focused, full-check, and production
+  HTTP evidence to the Goal.
+- Leave Goal #122 Ready for independent integrated revalidation; do not open a PR.
