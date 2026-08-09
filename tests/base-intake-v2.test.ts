@@ -29,6 +29,18 @@ describe("Base intake V2 command and reconciliation", () => {
       { ...receipt, epochTreasuryAddress: receipt.platformTreasuryAddress }, { ...receipt, evidenceHash: "bad" },
     ]) expect(validateBaseIntakeReceiptCommand(invalid, "local")).toMatchObject({ ok: false, error: { code: "invalid_payload" } })
   })
+  it("accepts mixed-case EVM hex and rejects treasury aliases that differ only by case", () => {
+    const mixedCase = { ...receipt,
+      contractAddress: receipt.contractAddress.replace("132", "A32"),
+      txHash: `0x${"aA".repeat(32)}`,
+      blockHash: `0x${"bB".repeat(32)}`,
+      senderAddress: "0x0000000000000000000000000000000000000Aa1" }
+    expect(validateBaseIntakeReceiptCommand(mixedCase, "local")).toMatchObject({ ok: true })
+    expect(validateBaseIntakeReceiptCommand({ ...receipt,
+      platformTreasuryAddress: "0xabcdefabcdefabcdefabcdefabcdefabcdefabcd",
+      epochTreasuryAddress: "0xABCDEFABCDEFABCDEFABCDEFABCDEFABCDEFABCD" }, "local"))
+      .toMatchObject({ ok: false, error: { code: "invalid_payload" } })
+  })
   it("derives confirming, exact, mismatch, reorg and replacement without trusting a caller status", () => {
     const base = {
       receiptBlockNumber: BigInt(100), currentBlockNumber: BigInt(100), minimumConfirmationDepth: 2,

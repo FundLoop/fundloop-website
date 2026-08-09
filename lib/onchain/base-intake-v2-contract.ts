@@ -1,7 +1,7 @@
 import { edgeCommandFailure, edgeCommandSuccess } from "../edge-functions/result.ts"
 
-const ADDRESS = /^0x[0-9a-f]{40}$/
-const HASH = /^0x[0-9a-f]{64}$/
+const ADDRESS = /^0x[0-9a-f]{40}$/i
+const HASH = /^0x[0-9a-f]{64}$/i
 const EVIDENCE_HASH = /^[0-9a-f]{64}$/
 const UINT = /^\d+$/
 const ENVIRONMENTS = new Set(["local", "dev", "test"])
@@ -26,7 +26,7 @@ export function validateBaseIntakeReceiptCommand(value: unknown, environment: st
   if (
     v.contractVersion !== "fundloop-base-intake-v2" || !Number.isInteger(v.chainId) ||
     !ADDRESS.test(String(v.contractAddress)) || !ADDRESS.test(String(v.platformTreasuryAddress)) ||
-    !ADDRESS.test(String(v.epochTreasuryAddress)) || v.platformTreasuryAddress === v.epochTreasuryAddress ||
+    !ADDRESS.test(String(v.epochTreasuryAddress)) || String(v.platformTreasuryAddress).toLowerCase() === String(v.epochTreasuryAddress).toLowerCase() ||
     !Number.isInteger(v.projectId) || Number(v.projectId) <= 0 || !Number.isInteger(v.accountingPeriodId) || Number(v.accountingPeriodId) <= 0 ||
     typeof v.providerEventId !== "string" || v.providerEventId.length === 0 || !HASH.test(String(v.txHash)) ||
     !Number.isInteger(v.logIndex) || Number(v.logIndex) < 0 || !Number.isInteger(v.blockNumber) || Number(v.blockNumber) <= 0 ||

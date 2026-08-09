@@ -1090,3 +1090,41 @@ chain and never on Base Sepolia or Base mainnet chain IDs.
 #### Suggested Next Steps
 
 - Commit the narrow forward-only fix and return #132 for independent revalidation.
+
+### session v23: Base intake review input integrity (#132)
+
+- Timestamp: 2026-08-09T01:53:11-04:00
+- Agent: Codex
+- Branch: codex/130-settlement-packages
+- Head: 7e680ab
+
+#### Objective
+
+Address the actionable PR #148 review findings without changing the approved Base intake
+scope or weakening its trusted-observation boundary.
+
+#### Actions Taken
+
+- Accepted checksum-style uppercase hexadecimal characters in EVM addresses and hashes;
+  the database command continues to persist canonical lowercase values.
+- Compared platform and epoch treasury addresses case-insensitively so capitalization
+  cannot alias the same treasury.
+- Added a forward-only reconciliation wrapper whose `IS DISTINCT FROM` guard rejects
+  missing, null, and incorrect observation sources before invoking the prior trusted
+  implementation.
+- Added focused TypeScript and executable SQL adversarial coverage for the review cases.
+
+#### Validation Notes
+
+- Passed: fresh local Supabase replay through the new forward migration.
+- Passed: all four integrated SQL suites, including missing/null/wrong source denial and
+  the existing `trusted_viem_v1` reconciliation lifecycle.
+- Passed: focused Base intake Vitest (1 file/13 tests).
+- Passed: lint, typecheck, and `git diff --check`.
+- Passed: full Node 22 `CI=1 pnpm check` with 134 files/615 tests and the 162-route
+  production build.
+
+#### Suggested Next Steps
+
+- Commit and push this single review-fix checkpoint, then let the coordinating agent
+  reply to and resolve the already-inspected PR threads without requesting rereview.

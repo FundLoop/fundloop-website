@@ -89,6 +89,23 @@ DO $$ BEGIN
 END $$;
 
 DO $$
+DECLARE source_value jsonb;
+BEGIN
+  FOREACH source_value IN ARRAY ARRAY[
+    '{}'::jsonb,
+    '{"observationSource":null}'::jsonb,
+    '{"observationSource":"caller_asserted"}'::jsonb
+  ] LOOP
+    BEGIN
+      PERFORM public.reconcile_base_intake_v2_receipt(source_value || jsonb_build_object('receiptId',1,'deploymentEnvironment','local'));
+      RAISE EXCEPTION 'untrusted observation source was allowed: %',source_value;
+    EXCEPTION WHEN OTHERS THEN
+      IF SQLERRM <> 'base_intake_v2_trusted_observation_required' THEN RAISE; END IF;
+    END;
+  END LOOP;
+END $$;
+
+DO $$
 DECLARE command jsonb := jsonb_build_object(
   'contractVersion','fundloop-base-intake-v2','deploymentEnvironment','local','chainId',31337,
   'contractAddress','0x0000000000000000000000000000000000000132',
