@@ -40,6 +40,12 @@ verify_jwt = false
 entrypoint = "./functions/stripe-bank-transfer-status-read/index.ts"
 import_map = "./functions/deno.json"
 
+[functions.epoch-project-package-workflow]
+enabled = true
+verify_jwt = false
+entrypoint = "./functions/epoch-project-package-workflow/index.ts"
+import_map = "./functions/deno.json"
+
 [api]
 enabled = true
 # Port to use for the API URL.

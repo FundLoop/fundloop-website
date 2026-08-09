@@ -1239,3 +1239,65 @@ provider-blocked USD success path and unsupported CAD presentment truthfully.
 - Enable Bank Transfers for the Fundloop Stripe sandbox, rerun the real USD instruction and
   delayed-availability/reversal/mismatch lifecycle, then independently validate #131. Keep CAD
   bank transfer and every live/production path disabled pending an approved provider capability.
+
+### session v26: versioned project settlement packages (#133)
+
+- Timestamp: 2026-08-09T17:24:17-04:00
+- Agent: Codex
+- Branch: codex/130-settlement-packages
+- Head: 7b4953a
+
+#### Objective
+
+Implement the local/dev project-package workflow for #133 while the remaining Stripe provider
+activation proof is deferred, preserving a fail-closed production and no-value-flow boundary.
+
+#### Actions Taken
+
+- Added forward-only, append-only package, payment-pairing, funding-source, compliance, CUBID
+  cohort, email-evidence, and founder-decision schema with service-only command boundaries.
+- Added rerunnable pre-cutoff validation, immutable post-cutoff freeze, missing-pair rollover,
+  delivery-relative business deadlines, approve/opt-out/silent-approval decisions, and source-
+  preserving rollover that assesses the project fee once while deferring the base fee.
+- Bound settled Stripe/Base sources, approved attribution datasets, explicit KYB/KYC/sanctions
+  evidence, and the complete valid/whitelisted/greylisted/blacklisted/invalid/outage TTL matrix.
+- Added project-scoped pseudonyms, a privacy-safe approved public report, and a shadow lock-
+  candidate view that admits only fully approved packages while production remains disabled.
+- Added typed browser/server/Edge commands, founder review, operator reconciliation controls,
+  local Mailpit delivery, a public preliminary-report route, and project navigation.
+- Kept compliance inputs pending by default; operators must explicitly record all three passed
+  gates plus a SHA-256 evidence hash and validity time before validation can run.
+- Updated the settlement architecture status and regenerated the canonical Supabase types.
+
+#### Validation Notes
+
+- Passed: multiple fresh local Supabase migration/seed replays and the executable #133 SQL suite,
+  including production/authenticated/direct-write denial, missing-pair rollover, frozen mutation
+  denial, complete CUBID decisions, pseudonym separation, email gating, opt-out provenance,
+  silent approval, public privacy, and lock-candidate admission.
+- Passed: all six integrated neutral-ledger, epoch-shadow, external-reconciliation, Base V2,
+  Stripe intake, and project-package SQL suites.
+- Passed: focused Vitest (3 files/11 tests), lint, typecheck, `git diff --check`, and final
+  Supabase schema lint with no new warning (one pre-existing invitation parameter warning).
+- Passed: full Node 22 `CI=1 pnpm check` with 139 files/635 tests and the 165-route production
+  build.
+- Passed: real local browser flow with Maya OTP auth, frozen founder package at $990, one payment,
+  one settled source, three eligible and three held users; Mailpit accepted the finance recipient
+  email, the accepted timestamp created the deadline, founder approval created one lock candidate,
+  and the public report exposed only seven/three/three/one totals. Desktop 1440x900 and mobile
+  390x844 captures were visually inspected with zero console errors.
+
+#### Reflections
+
+- The Supabase local Edge launcher requires an explicit ignored env file; ordinary parent-shell
+  variables were not forwarded, and the first browser delivery correctly failed closed as
+  production until the explicit local runtime was provided.
+- Stripe provider activation remains separate from the package state machine. No sandbox fixture,
+  production credential, canonical lock, allocation, payable, provider payout, or value flow was
+  enabled by this session.
+
+#### Suggested Next Steps
+
+- Independently validate #133 and move it to In Review only after a passing report.
+- Return to the real #131 Stripe bank-transfer provider lifecycle when the newly approved Stripe
+  access can produce the required sandbox evidence; keep production activation deferred.

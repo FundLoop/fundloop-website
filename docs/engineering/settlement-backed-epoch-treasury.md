@@ -734,6 +734,17 @@ The close package contains:
 4. Implement paired project package validation, reconciliation email, approval or
    opt-out, and rollover.
 
+The #133 local/dev foundation implements step 4 as a production-disabled preview:
+versioned packages bind the approved attribution dataset, payment set, independently
+settled funding sources, compliance evidence, and locked CUBID decisions. Missing
+list or funding evidence rolls forward; post-cutoff packages freeze before an
+accepted local Mailpit delivery can anchor the approve/opt-out/silent-approval
+deadline. Project-scoped pseudonyms remain private, while an approved public report
+contains only exact project totals and counts. Only approved or silent-approved
+packages satisfying every gate enter the shadow lock-candidate view. This does not
+enable canonical locking, allocation, payables, provider calls, payouts, or any
+production value flow.
+
 ### Phase C: epoch cutover
 
 1. Implement monthly FX, fee, reconciliation, carryover, stage, and gate commands.
