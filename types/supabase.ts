@@ -34,6 +34,45 @@ export type Database = {
   }
   public: {
     Tables: {
+      accounting_periods: {
+        Row: {
+          close_evidence_hash: string | null
+          closed_at: string | null
+          created_at: string
+          ends_at: string
+          id: number
+          period_key: string
+          production_enabled: boolean
+          starts_at: string
+          status: string
+          timezone_name: string
+        }
+        Insert: {
+          close_evidence_hash?: string | null
+          closed_at?: string | null
+          created_at?: string
+          ends_at: string
+          id?: never
+          period_key: string
+          production_enabled?: boolean
+          starts_at: string
+          status?: string
+          timezone_name?: string
+        }
+        Update: {
+          close_evidence_hash?: string | null
+          closed_at?: string | null
+          created_at?: string
+          ends_at?: string
+          id?: never
+          period_key?: string
+          production_enabled?: boolean
+          starts_at?: string
+          status?: string
+          timezone_name?: string
+        }
+        Relationships: []
+      }
       audit_log: {
         Row: {
           action: string
@@ -247,6 +286,70 @@ export type Database = {
           },
         ]
       }
+      custody_reconciliation_snapshots: {
+        Row: {
+          asset_id: number
+          custody_account_id: number
+          evidence_hash: string
+          id: number
+          observed_at: string
+          production_enabled: boolean
+          provider_native_balance: number
+          shadow_native_balance: number
+          tolerance_native_amount: number
+          variance_classification: string
+          variance_native_amount: number
+        }
+        Insert: {
+          asset_id: number
+          custody_account_id: number
+          evidence_hash: string
+          id?: never
+          observed_at: string
+          production_enabled?: boolean
+          provider_native_balance: number
+          shadow_native_balance: number
+          tolerance_native_amount: number
+          variance_classification: string
+          variance_native_amount: number
+        }
+        Update: {
+          asset_id?: number
+          custody_account_id?: number
+          evidence_hash?: string
+          id?: never
+          observed_at?: string
+          production_enabled?: boolean
+          provider_native_balance?: number
+          shadow_native_balance?: number
+          tolerance_native_amount?: number
+          variance_classification?: string
+          variance_native_amount?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "custody_recon_asset_fk"
+            columns: ["asset_id", "custody_account_id"]
+            isOneToOne: false
+            referencedRelation: "financial_custody_accounts"
+            referencedColumns: ["asset_id", "id"]
+          },
+          {
+            foreignKeyName: "custody_reconciliation_snapshots_asset_id_fkey"
+            columns: ["asset_id"]
+            isOneToOne: false
+            referencedRelation: "financial_assets"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "custody_reconciliation_snapshots_custody_account_id_fkey"
+            columns: ["custody_account_id"]
+            isOneToOne: false
+            referencedRelation: "financial_custody_accounts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       debug_log: {
         Row: {
           created_at: string | null
@@ -262,6 +365,739 @@ export type Database = {
           created_at?: string | null
           id?: number
           message?: string | null
+        }
+        Relationships: []
+      }
+      epoch_business_calendar: {
+        Row: {
+          calendar_date: string
+          calendar_region: string
+          created_at: string
+          is_business_day: boolean
+          production_enabled: boolean
+          reason: string | null
+        }
+        Insert: {
+          calendar_date: string
+          calendar_region?: string
+          created_at?: string
+          is_business_day: boolean
+          production_enabled?: boolean
+          reason?: string | null
+        }
+        Update: {
+          calendar_date?: string
+          calendar_region?: string
+          created_at?: string
+          is_business_day?: boolean
+          production_enabled?: boolean
+          reason?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "epoch_business_calendar_calendar_region_fkey"
+            columns: ["calendar_region"]
+            isOneToOne: false
+            referencedRelation: "epoch_business_calendars"
+            referencedColumns: ["region_key"]
+          },
+        ]
+      }
+      epoch_business_calendars: {
+        Row: {
+          production_enabled: boolean
+          region_key: string
+          timezone_name: string
+        }
+        Insert: {
+          production_enabled?: boolean
+          region_key: string
+          timezone_name?: string
+        }
+        Update: {
+          production_enabled?: boolean
+          region_key?: string
+          timezone_name?: string
+        }
+        Relationships: []
+      }
+      epoch_shadow_runtime_controls: {
+        Row: {
+          deployment_environment: string
+          production_value_flow_enabled: boolean
+          scheduler_enabled: boolean
+        }
+        Insert: {
+          deployment_environment: string
+          production_value_flow_enabled?: boolean
+          scheduler_enabled?: boolean
+        }
+        Update: {
+          deployment_environment?: string
+          production_value_flow_enabled?: boolean
+          scheduler_enabled?: boolean
+        }
+        Relationships: []
+      }
+      epoch_shadow_states: {
+        Row: {
+          accounting_period_id: number
+          business_calendar_region: string
+          carryover_complete: boolean
+          created_at: string
+          current_stage: string
+          id: number
+          is_paused: boolean
+          legacy_status_snapshot: string | null
+          monthly_cycle_id: number | null
+          opt_out_email_delivered_at: string | null
+          pause_reason: string | null
+          payout_opened_at: string | null
+          production_enabled: boolean
+          stage_ready_at: string | null
+          state_version: number
+          updated_at: string
+        }
+        Insert: {
+          accounting_period_id: number
+          business_calendar_region?: string
+          carryover_complete?: boolean
+          created_at?: string
+          current_stage?: string
+          id?: never
+          is_paused?: boolean
+          legacy_status_snapshot?: string | null
+          monthly_cycle_id?: number | null
+          opt_out_email_delivered_at?: string | null
+          pause_reason?: string | null
+          payout_opened_at?: string | null
+          production_enabled?: boolean
+          stage_ready_at?: string | null
+          state_version?: number
+          updated_at?: string
+        }
+        Update: {
+          accounting_period_id?: number
+          business_calendar_region?: string
+          carryover_complete?: boolean
+          created_at?: string
+          current_stage?: string
+          id?: never
+          is_paused?: boolean
+          legacy_status_snapshot?: string | null
+          monthly_cycle_id?: number | null
+          opt_out_email_delivered_at?: string | null
+          pause_reason?: string | null
+          payout_opened_at?: string | null
+          production_enabled?: boolean
+          stage_ready_at?: string | null
+          state_version?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "epoch_shadow_states_accounting_period_id_fkey"
+            columns: ["accounting_period_id"]
+            isOneToOne: true
+            referencedRelation: "accounting_periods"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "epoch_shadow_states_calendar_fk"
+            columns: ["business_calendar_region"]
+            isOneToOne: false
+            referencedRelation: "epoch_business_calendars"
+            referencedColumns: ["region_key"]
+          },
+          {
+            foreignKeyName: "epoch_shadow_states_monthly_cycle_id_fkey"
+            columns: ["monthly_cycle_id"]
+            isOneToOne: true
+            referencedRelation: "monthly_cycles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      epoch_stage_artifacts: {
+        Row: {
+          artifact_hash: string
+          artifact_key: string
+          artifact_uri: string
+          attempt_id: number
+          created_at: string
+          id: number
+        }
+        Insert: {
+          artifact_hash: string
+          artifact_key: string
+          artifact_uri: string
+          attempt_id: number
+          created_at?: string
+          id?: never
+        }
+        Update: {
+          artifact_hash?: string
+          artifact_key?: string
+          artifact_uri?: string
+          attempt_id?: number
+          created_at?: string
+          id?: never
+        }
+        Relationships: [
+          {
+            foreignKeyName: "epoch_stage_artifacts_attempt_id_fkey"
+            columns: ["attempt_id"]
+            isOneToOne: false
+            referencedRelation: "epoch_shadow_observability"
+            referencedColumns: ["latest_attempt_id"]
+          },
+          {
+            foreignKeyName: "epoch_stage_artifacts_attempt_id_fkey"
+            columns: ["attempt_id"]
+            isOneToOne: false
+            referencedRelation: "epoch_stage_attempts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      epoch_stage_attempts: {
+        Row: {
+          actor_user_id: string | null
+          attempt_sequence: number
+          claim_token: string | null
+          completed_at: string | null
+          created_at: string
+          expected_stage: string
+          expected_state_version: number
+          failure_code: string | null
+          id: number
+          idempotency_key: string
+          input_manifest_hash: string
+          no_external_call_under_lock: boolean
+          production_enabled: boolean
+          sanitized_metadata: Json
+          scheduled_for: string
+          shadow_state_id: number
+          started_at: string | null
+          status: string
+          target_stage: string
+          trigger_type: string
+          worker_id: string | null
+        }
+        Insert: {
+          actor_user_id?: string | null
+          attempt_sequence: number
+          claim_token?: string | null
+          completed_at?: string | null
+          created_at?: string
+          expected_stage: string
+          expected_state_version: number
+          failure_code?: string | null
+          id?: never
+          idempotency_key: string
+          input_manifest_hash: string
+          no_external_call_under_lock?: boolean
+          production_enabled?: boolean
+          sanitized_metadata?: Json
+          scheduled_for: string
+          shadow_state_id: number
+          started_at?: string | null
+          status?: string
+          target_stage: string
+          trigger_type: string
+          worker_id?: string | null
+        }
+        Update: {
+          actor_user_id?: string | null
+          attempt_sequence?: number
+          claim_token?: string | null
+          completed_at?: string | null
+          created_at?: string
+          expected_stage?: string
+          expected_state_version?: number
+          failure_code?: string | null
+          id?: never
+          idempotency_key?: string
+          input_manifest_hash?: string
+          no_external_call_under_lock?: boolean
+          production_enabled?: boolean
+          sanitized_metadata?: Json
+          scheduled_for?: string
+          shadow_state_id?: number
+          started_at?: string | null
+          status?: string
+          target_stage?: string
+          trigger_type?: string
+          worker_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "epoch_stage_attempts_actor_user_id_fkey"
+            columns: ["actor_user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "epoch_stage_attempts_shadow_state_id_fkey"
+            columns: ["shadow_state_id"]
+            isOneToOne: false
+            referencedRelation: "epoch_shadow_observability"
+            referencedColumns: ["shadow_state_id"]
+          },
+          {
+            foreignKeyName: "epoch_stage_attempts_shadow_state_id_fkey"
+            columns: ["shadow_state_id"]
+            isOneToOne: false
+            referencedRelation: "epoch_shadow_states"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      epoch_stage_gate_requirements: {
+        Row: {
+          expected_stage: string
+          gate_key: string
+          gate_type: string
+          override_allowed: boolean
+          target_stage: string
+        }
+        Insert: {
+          expected_stage: string
+          gate_key: string
+          gate_type?: string
+          override_allowed?: boolean
+          target_stage: string
+        }
+        Update: {
+          expected_stage?: string
+          gate_key?: string
+          gate_type?: string
+          override_allowed?: boolean
+          target_stage?: string
+        }
+        Relationships: []
+      }
+      epoch_stage_gate_results: {
+        Row: {
+          attempt_id: number
+          created_at: string
+          evidence_hash: string
+          gate_key: string
+          gate_type: string
+          id: number
+          override_id: number | null
+          passed: boolean
+          reason_code: string | null
+        }
+        Insert: {
+          attempt_id: number
+          created_at?: string
+          evidence_hash: string
+          gate_key: string
+          gate_type: string
+          id?: never
+          override_id?: number | null
+          passed: boolean
+          reason_code?: string | null
+        }
+        Update: {
+          attempt_id?: number
+          created_at?: string
+          evidence_hash?: string
+          gate_key?: string
+          gate_type?: string
+          id?: never
+          override_id?: number | null
+          passed?: boolean
+          reason_code?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "epoch_stage_gate_results_attempt_id_fkey"
+            columns: ["attempt_id"]
+            isOneToOne: false
+            referencedRelation: "epoch_shadow_observability"
+            referencedColumns: ["latest_attempt_id"]
+          },
+          {
+            foreignKeyName: "epoch_stage_gate_results_attempt_id_fkey"
+            columns: ["attempt_id"]
+            isOneToOne: false
+            referencedRelation: "epoch_stage_attempts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "epoch_stage_gate_results_override_id_fkey"
+            columns: ["override_id"]
+            isOneToOne: false
+            referencedRelation: "epoch_stage_overrides"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      epoch_stage_overrides: {
+        Row: {
+          actor_user_id: string
+          attempt_id: number | null
+          created_at: string
+          evidence_hash: string
+          gate_key: string
+          id: number
+          production_enabled: boolean
+          reason: string
+          shadow_state_id: number
+          stage: string
+        }
+        Insert: {
+          actor_user_id: string
+          attempt_id?: number | null
+          created_at?: string
+          evidence_hash: string
+          gate_key: string
+          id?: never
+          production_enabled?: boolean
+          reason: string
+          shadow_state_id: number
+          stage: string
+        }
+        Update: {
+          actor_user_id?: string
+          attempt_id?: number | null
+          created_at?: string
+          evidence_hash?: string
+          gate_key?: string
+          id?: never
+          production_enabled?: boolean
+          reason?: string
+          shadow_state_id?: number
+          stage?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "epoch_stage_overrides_actor_user_id_fkey"
+            columns: ["actor_user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "epoch_stage_overrides_attempt_id_fkey"
+            columns: ["attempt_id"]
+            isOneToOne: false
+            referencedRelation: "epoch_shadow_observability"
+            referencedColumns: ["latest_attempt_id"]
+          },
+          {
+            foreignKeyName: "epoch_stage_overrides_attempt_id_fkey"
+            columns: ["attempt_id"]
+            isOneToOne: false
+            referencedRelation: "epoch_stage_attempts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "epoch_stage_overrides_shadow_state_id_fkey"
+            columns: ["shadow_state_id"]
+            isOneToOne: false
+            referencedRelation: "epoch_shadow_observability"
+            referencedColumns: ["shadow_state_id"]
+          },
+          {
+            foreignKeyName: "epoch_stage_overrides_shadow_state_id_fkey"
+            columns: ["shadow_state_id"]
+            isOneToOne: false
+            referencedRelation: "epoch_shadow_states"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      external_financial_events: {
+        Row: {
+          asset_id: number
+          custody_account_id: number
+          event_type: string
+          evidence_hash: string
+          id: number
+          legacy_timestamp_evidence: Json
+          observed_at: string
+          occurred_at: string
+          ordering_status: string
+          production_enabled: boolean
+          provider_event_id: string
+          provider_key: string
+          provider_sequence: number | null
+          settled_native_amount: number
+        }
+        Insert: {
+          asset_id: number
+          custody_account_id: number
+          event_type: string
+          evidence_hash: string
+          id?: never
+          legacy_timestamp_evidence?: Json
+          observed_at?: string
+          occurred_at: string
+          ordering_status: string
+          production_enabled?: boolean
+          provider_event_id: string
+          provider_key: string
+          provider_sequence?: number | null
+          settled_native_amount: number
+        }
+        Update: {
+          asset_id?: number
+          custody_account_id?: number
+          event_type?: string
+          evidence_hash?: string
+          id?: never
+          legacy_timestamp_evidence?: Json
+          observed_at?: string
+          occurred_at?: string
+          ordering_status?: string
+          production_enabled?: boolean
+          provider_event_id?: string
+          provider_key?: string
+          provider_sequence?: number | null
+          settled_native_amount?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "external_event_asset_custody_fk"
+            columns: ["asset_id", "custody_account_id"]
+            isOneToOne: false
+            referencedRelation: "financial_custody_accounts"
+            referencedColumns: ["asset_id", "id"]
+          },
+          {
+            foreignKeyName: "external_financial_events_asset_id_fkey"
+            columns: ["asset_id"]
+            isOneToOne: false
+            referencedRelation: "financial_assets"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "external_financial_events_custody_account_id_fkey"
+            columns: ["custody_account_id"]
+            isOneToOne: false
+            referencedRelation: "financial_custody_accounts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      external_funding_applications: {
+        Row: {
+          applied_native_amount: number
+          created_at: string
+          event_id: number
+          evidence_hash: string
+          financial_reference_id: number
+          id: number
+          production_enabled: boolean
+        }
+        Insert: {
+          applied_native_amount: number
+          created_at?: string
+          event_id: number
+          evidence_hash: string
+          financial_reference_id: number
+          id?: never
+          production_enabled?: boolean
+        }
+        Update: {
+          applied_native_amount?: number
+          created_at?: string
+          event_id?: number
+          evidence_hash?: string
+          financial_reference_id?: number
+          id?: never
+          production_enabled?: boolean
+        }
+        Relationships: [
+          {
+            foreignKeyName: "external_funding_applications_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "external_financial_events"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "external_funding_applications_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "shadow_financial_reconciliation_observability"
+            referencedColumns: ["event_id"]
+          },
+          {
+            foreignKeyName: "external_funding_applications_financial_reference_id_fkey"
+            columns: ["financial_reference_id"]
+            isOneToOne: false
+            referencedRelation: "financial_references"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      financial_assets: {
+        Row: {
+          asset_key: string
+          atomic_scale: number
+          classification_metadata: Json
+          classification_status: string
+          created_at: string
+          id: number
+          production_enabled: boolean
+          rail_key: string
+          symbol: string
+        }
+        Insert: {
+          asset_key: string
+          atomic_scale: number
+          classification_metadata?: Json
+          classification_status?: string
+          created_at?: string
+          id?: never
+          production_enabled?: boolean
+          rail_key: string
+          symbol: string
+        }
+        Update: {
+          asset_key?: string
+          atomic_scale?: number
+          classification_metadata?: Json
+          classification_status?: string
+          created_at?: string
+          id?: never
+          production_enabled?: boolean
+          rail_key?: string
+          symbol?: string
+        }
+        Relationships: []
+      }
+      financial_custody_accounts: {
+        Row: {
+          asset_id: number
+          classification_metadata: Json
+          classification_status: string
+          created_at: string
+          custody_key: string
+          external_reference_hash: string
+          id: number
+          production_enabled: boolean
+          provider_key: string
+        }
+        Insert: {
+          asset_id: number
+          classification_metadata?: Json
+          classification_status?: string
+          created_at?: string
+          custody_key: string
+          external_reference_hash: string
+          id?: never
+          production_enabled?: boolean
+          provider_key: string
+        }
+        Update: {
+          asset_id?: number
+          classification_metadata?: Json
+          classification_status?: string
+          created_at?: string
+          custody_key?: string
+          external_reference_hash?: string
+          id?: never
+          production_enabled?: boolean
+          provider_key?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "financial_custody_accounts_asset_id_fkey"
+            columns: ["asset_id"]
+            isOneToOne: false
+            referencedRelation: "financial_assets"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      financial_references: {
+        Row: {
+          asset_id: number
+          classification_status: string
+          created_at: string
+          custody_account_id: number
+          evidence_hash: string
+          id: number
+          native_atomic_limit: number
+          production_enabled: boolean
+          reference_key: string
+          reference_type: string
+        }
+        Insert: {
+          asset_id: number
+          classification_status?: string
+          created_at?: string
+          custody_account_id: number
+          evidence_hash: string
+          id?: never
+          native_atomic_limit: number
+          production_enabled?: boolean
+          reference_key: string
+          reference_type: string
+        }
+        Update: {
+          asset_id?: number
+          classification_status?: string
+          created_at?: string
+          custody_account_id?: number
+          evidence_hash?: string
+          id?: never
+          native_atomic_limit?: number
+          production_enabled?: boolean
+          reference_key?: string
+          reference_type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "financial_references_asset_custody_fkey"
+            columns: ["asset_id", "custody_account_id"]
+            isOneToOne: false
+            referencedRelation: "financial_custody_accounts"
+            referencedColumns: ["asset_id", "id"]
+          },
+          {
+            foreignKeyName: "financial_references_asset_id_fkey"
+            columns: ["asset_id"]
+            isOneToOne: false
+            referencedRelation: "financial_assets"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "financial_references_custody_account_id_fkey"
+            columns: ["custody_account_id"]
+            isOneToOne: false
+            referencedRelation: "financial_custody_accounts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      financial_runtime_controls: {
+        Row: {
+          deployment_environment: string
+          neutral_posting_enabled: boolean
+          production_value_flow_enabled: boolean
+          professional_approval_reference: string | null
+          updated_at: string
+        }
+        Insert: {
+          deployment_environment: string
+          neutral_posting_enabled?: boolean
+          production_value_flow_enabled?: boolean
+          professional_approval_reference?: string | null
+          updated_at?: string
+        }
+        Update: {
+          deployment_environment?: string
+          neutral_posting_enabled?: boolean
+          production_value_flow_enabled?: boolean
+          professional_approval_reference?: string | null
+          updated_at?: string
         }
         Relationships: []
       }
@@ -297,6 +1133,234 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "users"
             referencedColumns: ["user_id"]
+          },
+        ]
+      }
+      ledger_accounts: {
+        Row: {
+          account_key: string
+          created_at: string
+          id: number
+          normal_balance: string
+          production_enabled: boolean
+          provisional_classification_key: string
+          required_dimensions: Json
+          review_posting_enabled: boolean
+        }
+        Insert: {
+          account_key: string
+          created_at?: string
+          id?: never
+          normal_balance: string
+          production_enabled?: boolean
+          provisional_classification_key: string
+          required_dimensions?: Json
+          review_posting_enabled?: boolean
+        }
+        Update: {
+          account_key?: string
+          created_at?: string
+          id?: never
+          normal_balance?: string
+          production_enabled?: boolean
+          provisional_classification_key?: string
+          required_dimensions?: Json
+          review_posting_enabled?: boolean
+        }
+        Relationships: []
+      }
+      ledger_postings: {
+        Row: {
+          account_id: number
+          asset_id: number | null
+          created_at: string
+          custody_account_id: number | null
+          functional_usd_amount: number
+          fx_usd_per_unit: number | null
+          id: number
+          native_atomic_amount: number | null
+          project_id: number | null
+          sequence_no: number
+          side: string
+          transaction_id: number
+          user_id: string | null
+        }
+        Insert: {
+          account_id: number
+          asset_id?: number | null
+          created_at?: string
+          custody_account_id?: number | null
+          functional_usd_amount: number
+          fx_usd_per_unit?: number | null
+          id?: never
+          native_atomic_amount?: number | null
+          project_id?: number | null
+          sequence_no: number
+          side: string
+          transaction_id: number
+          user_id?: string | null
+        }
+        Update: {
+          account_id?: number
+          asset_id?: number | null
+          created_at?: string
+          custody_account_id?: number | null
+          functional_usd_amount?: number
+          fx_usd_per_unit?: number | null
+          id?: never
+          native_atomic_amount?: number | null
+          project_id?: number | null
+          sequence_no?: number
+          side?: string
+          transaction_id?: number
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ledger_postings_account_id_fkey"
+            columns: ["account_id"]
+            isOneToOne: false
+            referencedRelation: "ledger_accounts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ledger_postings_asset_id_fkey"
+            columns: ["asset_id"]
+            isOneToOne: false
+            referencedRelation: "financial_assets"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ledger_postings_custody_account_id_fkey"
+            columns: ["custody_account_id"]
+            isOneToOne: false
+            referencedRelation: "financial_custody_accounts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ledger_postings_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ledger_postings_transaction_id_fkey"
+            columns: ["transaction_id"]
+            isOneToOne: false
+            referencedRelation: "ledger_transactions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ledger_postings_transaction_id_fkey"
+            columns: ["transaction_id"]
+            isOneToOne: false
+            referencedRelation: "shadow_ledger_trial_balance"
+            referencedColumns: ["ledger_transaction_id"]
+          },
+          {
+            foreignKeyName: "ledger_postings_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["user_id"]
+          },
+        ]
+      }
+      ledger_transactions: {
+        Row: {
+          accounting_period_id: number
+          actor_type: string
+          actor_user_id: string | null
+          classification_status: string
+          command_hash: string
+          contract_version: string
+          deployment_environment: string
+          effective_at: string
+          evidence_hash: string
+          financial_reference_id: number | null
+          id: number
+          idempotency_key: string
+          recorded_at: string
+          reversal_of_transaction_id: number | null
+          transaction_type: string
+        }
+        Insert: {
+          accounting_period_id: number
+          actor_type: string
+          actor_user_id?: string | null
+          classification_status?: string
+          command_hash: string
+          contract_version?: string
+          deployment_environment: string
+          effective_at: string
+          evidence_hash: string
+          financial_reference_id?: number | null
+          id?: never
+          idempotency_key: string
+          recorded_at?: string
+          reversal_of_transaction_id?: number | null
+          transaction_type: string
+        }
+        Update: {
+          accounting_period_id?: number
+          actor_type?: string
+          actor_user_id?: string | null
+          classification_status?: string
+          command_hash?: string
+          contract_version?: string
+          deployment_environment?: string
+          effective_at?: string
+          evidence_hash?: string
+          financial_reference_id?: number | null
+          id?: never
+          idempotency_key?: string
+          recorded_at?: string
+          reversal_of_transaction_id?: number | null
+          transaction_type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ledger_transactions_accounting_period_id_fkey"
+            columns: ["accounting_period_id"]
+            isOneToOne: false
+            referencedRelation: "accounting_periods"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ledger_transactions_actor_user_id_fkey"
+            columns: ["actor_user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "ledger_transactions_deployment_environment_fkey"
+            columns: ["deployment_environment"]
+            isOneToOne: false
+            referencedRelation: "financial_runtime_controls"
+            referencedColumns: ["deployment_environment"]
+          },
+          {
+            foreignKeyName: "ledger_transactions_financial_reference_id_fkey"
+            columns: ["financial_reference_id"]
+            isOneToOne: false
+            referencedRelation: "financial_references"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ledger_transactions_reversal_of_transaction_id_fkey"
+            columns: ["reversal_of_transaction_id"]
+            isOneToOne: false
+            referencedRelation: "ledger_transactions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ledger_transactions_reversal_of_transaction_id_fkey"
+            columns: ["reversal_of_transaction_id"]
+            isOneToOne: false
+            referencedRelation: "shadow_ledger_trial_balance"
+            referencedColumns: ["ledger_transaction_id"]
           },
         ]
       }
@@ -3390,6 +4454,127 @@ export type Database = {
         }
         Relationships: []
       }
+      shadow_close_packages: {
+        Row: {
+          accounting_period_id: number
+          created_at: string
+          id: number
+          outside_tolerance_count: number
+          production_enabled: boolean
+          reconciliation_hash: string | null
+          status: string
+          trial_balance_hash: string | null
+          unmatched_count: number
+        }
+        Insert: {
+          accounting_period_id: number
+          created_at?: string
+          id?: never
+          outside_tolerance_count?: number
+          production_enabled?: boolean
+          reconciliation_hash?: string | null
+          status?: string
+          trial_balance_hash?: string | null
+          unmatched_count?: number
+        }
+        Update: {
+          accounting_period_id?: number
+          created_at?: string
+          id?: never
+          outside_tolerance_count?: number
+          production_enabled?: boolean
+          reconciliation_hash?: string | null
+          status?: string
+          trial_balance_hash?: string | null
+          unmatched_count?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "shadow_close_packages_accounting_period_id_fkey"
+            columns: ["accounting_period_id"]
+            isOneToOne: false
+            referencedRelation: "accounting_periods"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      shadow_financial_journals: {
+        Row: {
+          comparison_detail: Json
+          comparison_status: string
+          created_at: string
+          event_id: number | null
+          evidence_hash: string
+          functional_credits: number
+          functional_debits: number
+          id: number
+          journal_type: string
+          ledger_transaction_id: number | null
+          native_credits: number
+          native_debits: number
+          production_enabled: boolean
+        }
+        Insert: {
+          comparison_detail?: Json
+          comparison_status: string
+          created_at?: string
+          event_id?: number | null
+          evidence_hash: string
+          functional_credits: number
+          functional_debits: number
+          id?: never
+          journal_type: string
+          ledger_transaction_id?: number | null
+          native_credits: number
+          native_debits: number
+          production_enabled?: boolean
+        }
+        Update: {
+          comparison_detail?: Json
+          comparison_status?: string
+          created_at?: string
+          event_id?: number | null
+          evidence_hash?: string
+          functional_credits?: number
+          functional_debits?: number
+          id?: never
+          journal_type?: string
+          ledger_transaction_id?: number | null
+          native_credits?: number
+          native_debits?: number
+          production_enabled?: boolean
+        }
+        Relationships: [
+          {
+            foreignKeyName: "shadow_financial_journals_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "external_financial_events"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "shadow_financial_journals_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "shadow_financial_reconciliation_observability"
+            referencedColumns: ["event_id"]
+          },
+          {
+            foreignKeyName: "shadow_financial_journals_ledger_transaction_id_fkey"
+            columns: ["ledger_transaction_id"]
+            isOneToOne: true
+            referencedRelation: "ledger_transactions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "shadow_financial_journals_ledger_transaction_id_fkey"
+            columns: ["ledger_transaction_id"]
+            isOneToOne: true
+            referencedRelation: "shadow_ledger_trial_balance"
+            referencedColumns: ["ledger_transaction_id"]
+          },
+        ]
+      }
       support_requests: {
         Row: {
           category: string
@@ -4947,6 +6132,43 @@ export type Database = {
       }
     }
     Views: {
+      epoch_shadow_observability: {
+        Row: {
+          accounting_period_id: number | null
+          completed_at: string | null
+          current_stage: string | null
+          is_paused: boolean | null
+          latest_attempt_id: number | null
+          latest_attempt_status: string | null
+          latest_failure_code: string | null
+          latest_target_stage: string | null
+          latest_trigger_type: string | null
+          legacy_compatibility_status: string | null
+          legacy_status_snapshot: string | null
+          monthly_cycle_id: number | null
+          pause_reason: string | null
+          shadow_state_id: number | null
+          started_at: string | null
+          state_version: number | null
+          updated_at: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "epoch_shadow_states_accounting_period_id_fkey"
+            columns: ["accounting_period_id"]
+            isOneToOne: true
+            referencedRelation: "accounting_periods"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "epoch_shadow_states_monthly_cycle_id_fkey"
+            columns: ["monthly_cycle_id"]
+            isOneToOne: true
+            referencedRelation: "monthly_cycles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       project_category_count: {
         Row: {
           category_id: number | null
@@ -4978,6 +6200,68 @@ export type Database = {
             columns: ["project_id"]
             isOneToOne: false
             referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      shadow_financial_reconciliation_observability: {
+        Row: {
+          applied_native_amount: number | null
+          close_package_status: string | null
+          event_id: number | null
+          event_type: string | null
+          journal_count: number | null
+          legacy_timestamp_evidence: Json | null
+          observed_at: string | null
+          occurred_at: string | null
+          ordering_status: string | null
+          provider_event_id: string | null
+          provider_key: string | null
+          settled_native_amount: number | null
+          suspense_count: number | null
+          unmatched_native_amount: number | null
+          variance_classification: string | null
+          variance_native_amount: number | null
+        }
+        Relationships: []
+      }
+      shadow_ledger_trial_balance: {
+        Row: {
+          account_id: number | null
+          accounting_period_id: number | null
+          asset_id: number | null
+          custody_account_id: number | null
+          functional_usd_balance: number | null
+          ledger_transaction_id: number | null
+          native_atomic_balance: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ledger_postings_account_id_fkey"
+            columns: ["account_id"]
+            isOneToOne: false
+            referencedRelation: "ledger_accounts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ledger_postings_asset_id_fkey"
+            columns: ["asset_id"]
+            isOneToOne: false
+            referencedRelation: "financial_assets"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ledger_postings_custody_account_id_fkey"
+            columns: ["custody_account_id"]
+            isOneToOne: false
+            referencedRelation: "financial_custody_accounts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ledger_transactions_accounting_period_id_fkey"
+            columns: ["accounting_period_id"]
+            isOneToOne: false
+            referencedRelation: "accounting_periods"
             referencedColumns: ["id"]
           },
         ]
@@ -5052,6 +6336,49 @@ export type Database = {
           status: string
         }[]
       }
+      apply_external_funding: {
+        Args: {
+          p_deployment_environment: string
+          p_event_id: number
+          p_evidence_hash: string
+          p_financial_reference_id: number
+          p_native_amount: number
+        }
+        Returns: number
+      }
+      can_read_ledger_transaction: {
+        Args: { p_transaction_id: number }
+        Returns: boolean
+      }
+      claim_epoch_shadow_attempt: {
+        Args: {
+          p_deployment_environment: string
+          p_now: string
+          p_worker_id: string
+        }
+        Returns: {
+          attempt_id: number
+          claim_token: string
+          expected_stage: string
+          expected_state_version: number
+          input_manifest_hash: string
+          shadow_state_id: number
+          target_stage: string
+        }[]
+      }
+      complete_epoch_shadow_attempt: {
+        Args: {
+          p_artifacts: Json
+          p_attempt_id: number
+          p_claim_token: string
+          p_completed_at: string
+          p_deployment_environment: string
+          p_failure_code: string
+          p_gate_results: Json
+          p_succeeded: boolean
+        }
+        Returns: string
+      }
       create_user_withdrawal_request: {
         Args: {
           p_actor_user_id: string
@@ -5081,6 +6408,22 @@ export type Database = {
           status: string
         }[]
       }
+      enqueue_epoch_shadow_attempt: {
+        Args: {
+          p_actor_user_id: string
+          p_deployment_environment: string
+          p_expected_stage: string
+          p_expected_state_version: number
+          p_idempotency_key: string
+          p_input_manifest_hash: string
+          p_scheduled_for: string
+          p_shadow_state_id: number
+          p_target_stage: string
+          p_trigger_type: string
+        }
+        Returns: number
+      }
+      epoch_shadow_next_stage: { Args: { p_stage: string }; Returns: string }
       expire_project_invitations_review: {
         Args: { p_invitee_email?: string; p_project_id: number }
         Returns: number
@@ -5113,6 +6456,22 @@ export type Database = {
           role_id: number
           user_id: string
         }[]
+      }
+      ingest_external_financial_event: {
+        Args: {
+          p_asset_id: number
+          p_custody_account_id: number
+          p_deployment_environment: string
+          p_event_type: string
+          p_evidence_hash: string
+          p_legacy_timestamp_evidence: Json
+          p_occurred_at: string
+          p_provider_event_id: string
+          p_provider_key: string
+          p_provider_sequence: number
+          p_settled_native_amount: number
+        }
+        Returns: number
       }
       inspect_project_invitation_review: {
         Args: {
@@ -5156,6 +6515,22 @@ export type Database = {
           user_id: string
         }[]
       }
+      post_neutral_ledger_transaction: {
+        Args: { p_command: Json }
+        Returns: number
+      }
+      post_shadow_financial_journal: {
+        Args: {
+          p_comparison_status: string
+          p_deployment_environment: string
+          p_detail: Json
+          p_event_id: number
+          p_evidence_hash: string
+          p_journal_type: string
+          p_ledger_transaction_id: number
+        }
+        Returns: number
+      }
       publish_project_onboarding_draft_atomic: {
         Args: {
           p_billing_email: string
@@ -5177,6 +6552,30 @@ export type Database = {
           project_id: number
           project_slug: string
         }[]
+      }
+      record_custody_reconciliation: {
+        Args: {
+          p_asset_id: number
+          p_custody_account_id: number
+          p_deployment_environment: string
+          p_evidence_hash: string
+          p_observed_at: string
+          p_provider_native: number
+          p_tolerance: number
+        }
+        Returns: number
+      }
+      record_epoch_stage_override: {
+        Args: {
+          p_actor_context: string
+          p_actor_user_id: string
+          p_attempt_id: number
+          p_deployment_environment: string
+          p_evidence_hash: string
+          p_gate_key: string
+          p_reason: string
+        }
+        Returns: number
       }
       record_profile_publication_choice: {
         Args: {
@@ -5230,6 +6629,10 @@ export type Database = {
           isSetofReturn: true
         }
       }
+      reverse_neutral_ledger_transaction: {
+        Args: { p_command: Json }
+        Returns: number
+      }
       revoke_project_invitation_review: {
         Args: { p_actor_user_id: string; p_invitation_id: string }
         Returns: {
@@ -5237,6 +6640,17 @@ export type Database = {
           recorded_at: string
           status: string
         }[]
+      }
+      set_epoch_shadow_pause: {
+        Args: {
+          p_actor_user_id: string
+          p_deployment_environment: string
+          p_expected_state_version: number
+          p_paused: boolean
+          p_reason: string
+          p_shadow_state_id: number
+        }
+        Returns: number
       }
       soft_delete_organization_members: {
         Args: { p_id: number }
