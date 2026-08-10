@@ -2189,3 +2189,46 @@ cross-environment singleton inconsistency before promoting the financial cutover
 
 - Commit this forward fix, post evidence, and request exact-commit revalidation before starting
   #144. Keep local Supabase only long enough for that validator's executable probes.
+
+### session v44: retain same-environment supersession evidence (#143)
+
+- Timestamp: 2026-08-10T10:52:37-04:00
+- Agent: Codex
+- Branch: codex/118-operational-readiness
+- Head: f180d32
+
+#### Objective
+
+Close the final #143 audit gap by retaining an immutable supersession event when one local cutover
+run replaces another run in the same deployment environment.
+
+#### Actions Taken
+
+- Added a narrow forward wrapper that snapshots all prior active run IDs under the singleton advisory
+  lock before delegating to the already validated activation boundary.
+- After activation, the wrapper appends any missing actor/evidence-bound supersession event exactly
+  once. This covers same-environment replacement while deduplicating events already written for
+  cross-environment replacement.
+- Extended executable SQL with local run A → local run B → dev run C, proving each displaced run is
+  superseded once and the singleton retains exactly one active run. Updated static migration coverage
+  and regenerated Supabase types.
+
+#### Validation Notes
+
+- Fresh local replay through `20260810162000` passed. The complete executable cutover suite passed,
+  including canonical-evidence drift, cycle write retirement, same-environment event retention,
+  cross-environment replacement, conservation, replay, rollback, and privilege checks.
+- Focused Vitest passed 2 files / 7 tests; typecheck, type generation, and diff-check passed. The full
+  Node 22 gate is rerun before this commit is finalized.
+
+#### Reflections
+
+- Capturing prior active IDs before delegation is necessary because the inner transition may validly
+  change their status before an outer audit layer can query them.
+- Supersession evidence should be idempotent by transition kind and run, independent of whether the
+  replacement crosses an environment label.
+
+#### Suggested Next Steps
+
+- Commit and request one final exact-commit revalidation. Promote #143 only after that audit passes,
+  then begin #144 on the same retained branch.

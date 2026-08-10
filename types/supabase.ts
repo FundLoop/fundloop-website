@@ -12271,6 +12271,10 @@ export type Database = {
         Args: { p_actor_user_id: string; p_command: Json }
         Returns: Json
       }
+      activate_financial_cutover_without_complete_supersession_events: {
+        Args: { p_actor_user_id: string; p_command: Json }
+        Returns: Json
+      }
       apply_external_funding: {
         Args: {
           p_deployment_environment: string

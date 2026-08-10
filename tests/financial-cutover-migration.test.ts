@@ -4,6 +4,7 @@ import { describe, expect, it } from "vitest"
 
 const migration = fs.readFileSync(path.join(process.cwd(), "supabase/migrations/20260810160000_financial_cutover_control_plane.sql"), "utf8")
 const activationFix = fs.readFileSync(path.join(process.cwd(), "supabase/migrations/20260810161000_financial_cutover_activation_revalidation.sql"), "utf8")
+const supersessionFix = fs.readFileSync(path.join(process.cwd(), "supabase/migrations/20260810162000_financial_cutover_supersession_events.sql"), "utf8")
 
 describe("financial cutover migration", () => {
   it("classifies every required legacy surface and records explicit differences", () => {
@@ -43,5 +44,8 @@ describe("financial cutover migration", () => {
     expect(activationFix).toContain("WHERE status='active' AND id<>v_run.id")
     expect(activationFix).toContain("singletonActiveRun")
     expect(activationFix).toContain("FROM PUBLIC,anon,authenticated,service_role")
+    expect(supersessionFix).toContain("v_prior_active_ids")
+    expect(supersessionFix).toContain("event.event_type='superseded'")
+    expect(supersessionFix).toContain("activate_financial_cutover_without_complete_supersession_events")
   })
 })

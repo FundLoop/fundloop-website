@@ -16,6 +16,8 @@ DECLARE
   v_activated jsonb;
   v_replayed jsonb;
   v_rolled_back jsonb;
+  v_local_replacement jsonb;
+  v_local_replacement_active jsonb;
   v_dev_prepared jsonb;
   v_dev_activated jsonb;
   v_manifest text;
@@ -125,6 +127,22 @@ BEGIN
     OR (SELECT count(*) FROM public.ledger_transactions WHERE idempotency_key='cutover-opening-credit:'||v_credit::text)<>1
   THEN RAISE EXCEPTION 'cutover replay duplicated canonical obligations'; END IF;
 
+  v_local_replacement:=public.prepare_financial_cutover(v_actor,jsonb_build_object(
+    'contractVersion','financial_cutover_prepare.v1','deploymentEnvironment','local',
+    'idempotencyKey','cutover-local-replacement','evidenceHash',repeat('7',64),'approvedOpeningBalances','[]'::jsonb));
+  IF (v_local_replacement->>'blockerCount')::integer<>0 THEN
+    RAISE EXCEPTION 'same-environment replacement retained blockers: %',v_local_replacement;
+  END IF;
+  v_local_replacement_active:=public.activate_financial_cutover(v_actor,jsonb_build_object(
+    'contractVersion','financial_cutover_activate.v1','deploymentEnvironment','local',
+    'runId',(v_local_replacement->>'runId')::bigint,'manifestHash',v_local_replacement->>'manifestHash',
+    'evidenceHash',repeat('8',64)));
+  IF v_local_replacement_active->>'status'<>'active'
+    OR (SELECT status FROM public.financial_cutover_runs WHERE id=(v_prepared->>'runId')::bigint)<>'superseded'
+    OR (SELECT count(*) FROM public.financial_cutover_state_events
+      WHERE run_id=(v_prepared->>'runId')::bigint AND event_type='superseded')<>1
+  THEN RAISE EXCEPTION 'same-environment replacement lost supersession evidence'; END IF;
+
   v_failed:=false;
   BEGIN UPDATE public.monthly_cycle_bookkeeping_credits SET usd_equivalent_amount=99 WHERE id=v_credit;
   EXCEPTION WHEN OTHERS THEN v_failed:=SQLERRM LIKE '%legacy_financial_writes_retired%'; END;
@@ -155,7 +173,9 @@ BEGIN
     'manifestHash',v_dev_manifest,'evidenceHash',repeat('6',64)));
   IF v_dev_activated->>'status'<>'active'
     OR (SELECT count(*) FROM public.financial_cutover_runs WHERE status='active')<>1
-    OR (SELECT status FROM public.financial_cutover_runs WHERE id=(v_prepared->>'runId')::bigint)<>'superseded'
+    OR (SELECT status FROM public.financial_cutover_runs WHERE id=(v_local_replacement->>'runId')::bigint)<>'superseded'
+    OR (SELECT count(*) FROM public.financial_cutover_state_events
+      WHERE run_id=(v_local_replacement->>'runId')::bigint AND event_type='superseded')<>1
     OR (SELECT active_run_id FROM public.financial_cutover_instance_state WHERE singleton)<>(v_dev_prepared->>'runId')::bigint
   THEN RAISE EXCEPTION 'cross-environment singleton activation left multiple active runs'; END IF;
 
