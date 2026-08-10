@@ -2090,3 +2090,55 @@ review-only, non-production payout boundary.
 - Commit and push this review batch, reply to and resolve all eight PR threads, wait for post-push
   CI, and merge only after the published integration validator is green. Keep #131 and #141
   In Progress until their real Stripe provider checkpoints can execute.
+
+### session v42: add reversible financial cutover controls (#143)
+
+- Timestamp: 2026-08-10T10:31:04-04:00
+- Agent: Codex
+- Branch: codex/118-operational-readiness
+- Head: 66d599d
+
+#### Objective
+
+Provide a reversible, non-production cutover from legacy monetary projections to canonical funded
+obligations and neutral-ledger liabilities without deleting history, duplicating claims, or enabling
+production value flow.
+
+#### Actions Taken
+
+- Added a forward-only financial cutover control plane that snapshots and hashes legacy payments,
+  monthly cycles, bookkeeping credits, withdrawal requests, and payout intents; records explicit
+  classifications, differences, canonical links, state changes, and the singleton compatibility
+  switch.
+- Added service-only prepare, activate, rollback, and read commands. Activation re-locks all source
+  tables, revalidates source hashes, posts reviewed opening liabilities exactly once, blocks
+  unresolved active credits/requests/intents, switches canonical reads, and makes legacy monetary
+  writes read-only. Rollback preserves all source and canonical evidence.
+- Added the typed Edge boundary, exact runtime and actor derivation, generated schema types, a
+  non-production runbook, architecture links, executable RLS/RPC/conservation tests, and a retained
+  pre-feature migration harness that proves a real representative legacy row upgrades safely.
+
+#### Validation Notes
+
+- Fresh local Supabase replay and the executable financial cutover suite passed. The suite proves
+  blocker classification, exact $12.34 opening-liability conservation, source-drift rejection,
+  idempotent replay, no duplicate obligation, write freeze, rollback retention, production denial,
+  and authenticated/service-role privilege boundaries.
+- The pre-feature harness reset to migration `20260810150000`, inserted a representative $42 legacy
+  bookkeeping credit, applied the cutover migration, and proved it was preserved as an explicit
+  `legacy_unverified` blocker before restoring the current schema.
+- Focused Vitest passed 2 files / 6 tests; strict Deno, TypeScript, lint, and diff-check passed.
+  Schema lint reported only two pre-existing unused-parameter warnings. Full Node 22
+  `CI=1 pnpm check` passed lint, 160 files / 708 tests, typecheck, and the 165-page build.
+
+#### Reflections
+
+- A cutover is safe only if its approval set and source hashes are revalidated while the source
+  tables are locked; a prepared report alone cannot authorize later state after source drift.
+- Reversibility means restoring routing and write policy while retaining both legacy and canonical
+  evidence. Deleting the new liabilities on rollback would make audit recovery less reliable.
+
+#### Suggested Next Steps
+
+- Commit #143 and request independent validation. Keep production activation disabled. After #143
+  passes, implement #144 operational monitoring, alerts, and recovery evidence on this branch.
