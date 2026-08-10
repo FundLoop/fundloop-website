@@ -22,6 +22,9 @@ CREATE TABLE public.base_safe_payout_deployments (
   module_address text NOT NULL,
   paymaster_policy_address text NOT NULL,
   limited_signer_address text NOT NULL,
+  module_owner_address text NOT NULL,
+  paymaster_owner_address text NOT NULL,
+  paymaster_controller_address text NOT NULL,
   max_per_transaction_native numeric(78,0) NOT NULL,
   max_rolling_24h_native numeric(78,0) NOT NULL,
   max_per_epoch_native numeric(78,0) NOT NULL,
@@ -38,6 +41,9 @@ CREATE TABLE public.base_safe_payout_deployments (
   CHECK(safe_role IN('epoch','platform')),
   CHECK(safe_address ~* '^0x[0-9a-f]{40}$' AND module_address ~* '^0x[0-9a-f]{40}$'
     AND paymaster_policy_address ~* '^0x[0-9a-f]{40}$' AND limited_signer_address ~* '^0x[0-9a-f]{40}$'),
+  CHECK(module_owner_address ~* '^0x[0-9a-f]{40}$' AND paymaster_owner_address ~* '^0x[0-9a-f]{40}$' AND paymaster_controller_address ~* '^0x[0-9a-f]{40}$'),
+  CHECK(lower(module_owner_address)=lower(safe_address) AND lower(paymaster_owner_address)=lower(safe_address)
+    AND lower(paymaster_controller_address)=lower(module_address)),
   CHECK(max_per_transaction_native>0 AND max_rolling_24h_native>=max_per_transaction_native AND max_per_epoch_native>=max_per_transaction_native),
   CHECK(evidence_hash ~ '^[0-9a-f]{64}$'),
   CHECK(production_enabled=false),
@@ -132,6 +138,7 @@ CREATE TABLE public.base_payout_execution_observations (
   observed_native_atomic_amount numeric(78,0) NOT NULL,
   observed_fee_recipient_address text NOT NULL,
   observed_user_fee_native_amount numeric(78,0) NOT NULL,
+  observed_gas_budget_native numeric(78,0) NOT NULL,
   observed_request_hash text NOT NULL,
   observation_source text NOT NULL,
   ledger_transaction_id bigint REFERENCES public.ledger_transactions(id) ON UPDATE RESTRICT ON DELETE RESTRICT,
@@ -144,7 +151,8 @@ CREATE TABLE public.base_payout_execution_observations (
     AND block_hash ~ '^0x[0-9a-f]{64}$' AND observed_request_hash ~ '^0x[0-9a-f]{64}$'),
   CHECK(observed_token_address ~* '^0x[0-9a-f]{40}$' AND observed_recipient_address ~* '^0x[0-9a-f]{40}$'
     AND observed_fee_recipient_address ~* '^0x[0-9a-f]{40}$'),
-  CHECK(block_number>=0 AND current_block_number>=block_number AND confirmation_count>=0 AND observed_native_atomic_amount>=0 AND observed_user_fee_native_amount>=0),
+  CHECK(block_number>=0 AND current_block_number>=block_number AND confirmation_count>=0 AND observed_native_atomic_amount>=0
+    AND observed_user_fee_native_amount>=0 AND observed_gas_budget_native>=0),
   CHECK(observation_source='trusted_viem_v1' AND evidence_hash ~ '^[0-9a-f]{64}$')
 );
 CREATE INDEX base_payout_observations_latest_idx ON public.base_payout_execution_observations(command_id,observed_at DESC,id DESC);
@@ -294,18 +302,19 @@ BEGIN
     OR lower(p_command->>'observedFeeRecipientAddress')<>lower(v_command.fee_recipient_address)
     OR (p_command->>'observedNativeAtomicAmount')::numeric<>v_command.native_atomic_amount
     OR (p_command->>'observedUserFeeNativeAmount')::numeric<>v_command.user_fee_native_amount
+    OR (p_command->>'observedGasBudgetNative')::numeric<>v_command.gas_budget_native
     OR p_command->>'observedRequestHash'<>v_command.request_hash THEN RAISE EXCEPTION 'base_payout_observation_mismatch'; END IF;
   IF v_status='finalized' AND (NOT (p_command->>'receiptSuccess')::boolean OR NOT (p_command->>'l1BatchFinalized')::boolean)
   THEN RAISE EXCEPTION 'base_payout_finality_required'; END IF;
   INSERT INTO public.base_payout_execution_observations(command_id,status,tx_hash,replacement_tx_hash,block_number,block_hash,current_block_number,
     confirmation_count,l1_batch_finalized,receipt_success,observed_token_address,observed_recipient_address,observed_native_atomic_amount,
-    observed_fee_recipient_address,observed_user_fee_native_amount,
+    observed_fee_recipient_address,observed_user_fee_native_amount,observed_gas_budget_native,
     observed_request_hash,observation_source,evidence_hash,observed_at)
   VALUES(v_command.id,v_status,lower(p_command->>'txHash'),nullif(lower(p_command->>'replacementTxHash'),''),(p_command->>'blockNumber')::bigint,
     lower(p_command->>'blockHash'),(p_command->>'currentBlockNumber')::bigint,(p_command->>'confirmationCount')::integer,
     (p_command->>'l1BatchFinalized')::boolean,(p_command->>'receiptSuccess')::boolean,lower(p_command->>'observedTokenAddress'),
     lower(p_command->>'observedRecipientAddress'),(p_command->>'observedNativeAtomicAmount')::numeric,
-    lower(p_command->>'observedFeeRecipientAddress'),(p_command->>'observedUserFeeNativeAmount')::numeric,p_command->>'observedRequestHash',
+    lower(p_command->>'observedFeeRecipientAddress'),(p_command->>'observedUserFeeNativeAmount')::numeric,(p_command->>'observedGasBudgetNative')::numeric,p_command->>'observedRequestHash',
     'trusted_viem_v1',p_command->>'evidenceHash',(p_command->>'observedAt')::timestamptz);
   UPDATE public.base_payout_execution_commands SET status=v_status WHERE id=v_command.id;
   UPDATE public.payout_execution_attempts SET status=CASE v_status WHEN 'finalized' THEN 'confirmed' WHEN 'failed' THEN 'failed'

@@ -1,6 +1,7 @@
 import { mkdir, writeFile } from "node:fs/promises"
 import path from "node:path"
 import { network } from "hardhat"
+import { encodeFunctionData } from "viem"
 
 const environment=(process.env.FUNDLOOP_DEPLOYMENT_ENV??"production").trim().toLowerCase()
 if(!["local","dev","test"].includes(environment))throw new Error("base payout deployment is non-production only")
@@ -35,19 +36,21 @@ if(chainId===31337){
   if(!limitedSignerAddress?.match(/^0x[0-9a-f]{40}$/))throw new Error("BASE_PAYOUT_LIMITED_SIGNER_ADDRESS is required")
 }
 
-const moduleContract=await viem.deployContract("FundLoopSafePayoutModule",[deployer.account.address,safeAddress,limitedSignerAddress,
+const paymaster=await viem.deployContract("FundLoopPaymasterBudget",[safeAddress,safeAddress,100_000n],{client:{wallet:deployer}})
+const moduleContract=await viem.deployContract("FundLoopSafePayoutModule",[safeAddress,limitedSignerAddress,paymaster.address,
   perTransaction,rolling24Hours,perEpoch],{client:{wallet:deployer}})
-const paymaster=await viem.deployContract("FundLoopPaymasterBudget",[deployer.account.address,limitedSignerAddress,100_000n],{client:{wallet:deployer}})
-await moduleContract.write.setTokenAllowed([tokenAddress,true],{account:deployer.account})
 if(chainId===31337){
   const safe=await viem.getContractAt("MockSafe",safeAddress)
   await safe.write.enableModule([moduleContract.address],{account:deployer.account})
-  await paymaster.write.fund([1_000_000n],{account:deployer.account})
+  await safe.write.execOwnerTransaction([moduleContract.address,0n,encodeFunctionData({abi:moduleContract.abi,functionName:"setTokenAllowed",args:[tokenAddress,true]})],{account:deployer.account})
+  await safe.write.execOwnerTransaction([paymaster.address,0n,encodeFunctionData({abi:paymaster.abi,functionName:"setController",args:[moduleContract.address]})],{account:deployer.account})
+  await paymaster.write.fund([],{account:deployer.account,value:1_000_000n})
 }
 const manifest={contractVersion:"fundloop-base-safe-payout-review-v1",environment,chainId,safeRole:"epoch",safeAddress,platformSafeAddress,moduleAddress:moduleContract.address,
   paymasterPolicyAddress:paymaster.address,limitedSignerAddress,tokenSymbol:"USDC",tokenAddress,
   limits:{perTransaction:perTransaction.toString(),rolling24Hours:rolling24Hours.toString(),perEpoch:perEpoch.toString()},
-  localFixtureOnly,safeEnablementRequired:chainId!==31337,isActive:chainId===31337,isPaused:false,productionValueFlowEnabled:false}
+  localFixtureOnly,moduleOwner:safeAddress,paymasterOwner:safeAddress,paymasterController:chainId===31337?moduleContract.address:safeAddress,
+  safeEnablementRequired:chainId!==31337,isActive:chainId===31337,isPaused:false,productionValueFlowEnabled:false}
 const outputDir=path.resolve("../output/deployments")
 await mkdir(outputDir,{recursive:true})
 await writeFile(path.join(outputDir,"base-payout-review.manifest.json"),`${JSON.stringify(manifest,null,2)}\n`)

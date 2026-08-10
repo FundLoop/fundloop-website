@@ -22,15 +22,31 @@ BEGIN
   SELECT id INTO v_intent FROM public.payout_intents WHERE withdrawal_request_id=(v_request->>'requestId')::uuid;
 
   INSERT INTO public.base_safe_payout_deployments(deployment_environment,chain_id,safe_role,safe_address,module_address,paymaster_policy_address,
-    limited_signer_address,max_per_transaction_native,max_rolling_24h_native,max_per_epoch_native,is_paused,is_active,evidence_hash)
+    limited_signer_address,module_owner_address,paymaster_owner_address,paymaster_controller_address,
+    max_per_transaction_native,max_rolling_24h_native,max_per_epoch_native,is_paused,is_active,evidence_hash)
   VALUES('local',31337,'epoch','0x0000000000000000000000000000000000000010','0x0000000000000000000000000000000000000020',
-    '0x0000000000000000000000000000000000000030','0x0000000000000000000000000000000000000040',20000000,500000000,5000000000,false,true,repeat('1',64))
+    '0x0000000000000000000000000000000000000030','0x0000000000000000000000000000000000000040',
+    '0x0000000000000000000000000000000000000010','0x0000000000000000000000000000000000000010','0x0000000000000000000000000000000000000020',
+    20000000,500000000,5000000000,false,true,repeat('1',64))
   RETURNING id INTO v_deployment;
   INSERT INTO public.base_safe_payout_deployments(deployment_environment,chain_id,safe_role,safe_address,module_address,paymaster_policy_address,
-    limited_signer_address,max_per_transaction_native,max_rolling_24h_native,max_per_epoch_native,is_paused,is_active,evidence_hash)
+    limited_signer_address,module_owner_address,paymaster_owner_address,paymaster_controller_address,
+    max_per_transaction_native,max_rolling_24h_native,max_per_epoch_native,is_paused,is_active,evidence_hash)
   VALUES('local',31337,'platform','0x0000000000000000000000000000000000000011','0x0000000000000000000000000000000000000021',
-    '0x0000000000000000000000000000000000000031','0x0000000000000000000000000000000000000041',20000000,500000000,5000000000,false,true,repeat('5',64))
+    '0x0000000000000000000000000000000000000031','0x0000000000000000000000000000000000000041',
+    '0x0000000000000000000000000000000000000011','0x0000000000000000000000000000000000000011','0x0000000000000000000000000000000000000021',
+    20000000,500000000,5000000000,false,true,repeat('5',64))
   RETURNING id INTO v_platform;
+  v_failed:=false; BEGIN
+    INSERT INTO public.base_safe_payout_deployments(deployment_environment,chain_id,safe_role,safe_address,module_address,paymaster_policy_address,
+      limited_signer_address,module_owner_address,paymaster_owner_address,paymaster_controller_address,
+      max_per_transaction_native,max_rolling_24h_native,max_per_epoch_native,is_paused,is_active,evidence_hash)
+    VALUES('dev',31337,'epoch','0x0000000000000000000000000000000000000050','0x0000000000000000000000000000000000000051',
+      '0x0000000000000000000000000000000000000052','0x0000000000000000000000000000000000000053',
+      '0x0000000000000000000000000000000000000099','0x0000000000000000000000000000000000000050','0x0000000000000000000000000000000000000051',
+      20000000,500000000,5000000000,false,true,repeat('9',64));
+  EXCEPTION WHEN check_violation THEN v_failed:=true; END;
+  IF NOT v_failed THEN RAISE EXCEPTION 'non-Safe module owner was accepted'; END IF;
   INSERT INTO public.base_safe_payout_assets VALUES(v_deployment,v_asset,v_token,true,repeat('2',64));
   INSERT INTO public.base_paymaster_budgets VALUES(v_deployment,1000000,100000,false,1,repeat('3',64),clock_timestamp());
 
@@ -112,7 +128,7 @@ BEGIN
     'deploymentEnvironment','local','commandId',v_command_id,'status','finalized','txHash',v_tx,'replacementTxHash','',
     'blockNumber',10,'blockHash',v_block,'currentBlockNumber',20,'confirmationCount',10,'l1BatchFinalized',true,'receiptSuccess',true,
     'observedTokenAddress',v_token,'observedRecipientAddress','0x0000000000000000000000000000000000000099','observedNativeAtomicAmount',9000000,
-    'observedFeeRecipientAddress','0x0000000000000000000000000000000000000011','observedUserFeeNativeAmount',1000000,
+    'observedFeeRecipientAddress','0x0000000000000000000000000000000000000011','observedUserFeeNativeAmount',1000000,'observedGasBudgetNative',1000,
     'observedRequestHash',v_request_hash,'observationSource','trusted_viem_v1','evidenceHash',repeat('4',64),'observedAt',v_period_start+interval '1 hour'));
   EXCEPTION WHEN OTHERS THEN v_failed:=SQLERRM LIKE '%base_payout_observation_mismatch%'; END;
   IF NOT v_failed THEN RAISE EXCEPTION 'wrong observed recipient was accepted'; END IF;
@@ -121,7 +137,7 @@ BEGIN
     'deploymentEnvironment','local','commandId',v_command_id,'status','finalized','txHash',v_tx,'replacementTxHash','',
     'blockNumber',10,'blockHash',v_block,'currentBlockNumber',20,'confirmationCount',10,'l1BatchFinalized',false,'receiptSuccess',true,
     'observedTokenAddress',v_token,'observedRecipientAddress',v_recipient,'observedNativeAtomicAmount',9000000,
-    'observedFeeRecipientAddress','0x0000000000000000000000000000000000000011','observedUserFeeNativeAmount',1000000,
+    'observedFeeRecipientAddress','0x0000000000000000000000000000000000000011','observedUserFeeNativeAmount',1000000,'observedGasBudgetNative',1000,
     'observedRequestHash',v_request_hash,'observationSource','trusted_viem_v1','evidenceHash',repeat('4',64),'observedAt',v_period_start+interval '1 hour'));
   EXCEPTION WHEN OTHERS THEN v_failed:=SQLERRM LIKE '%base_payout_finality_required%'; END;
   IF NOT v_failed OR (SELECT status FROM public.user_withdrawal_requests WHERE id=(v_request->>'requestId')::uuid)='paid'
@@ -131,29 +147,31 @@ BEGIN
     'deploymentEnvironment','local','commandId',v_command_id,'status','failed','txHash','0x'||repeat('e',64),'replacementTxHash','',
     'blockNumber',11,'blockHash','0x'||repeat('1',64),'currentBlockNumber',11,'confirmationCount',0,'l1BatchFinalized',false,'receiptSuccess',false,
     'observedTokenAddress',v_token,'observedRecipientAddress',v_recipient,'observedNativeAtomicAmount',9000000,
-    'observedFeeRecipientAddress','0x0000000000000000000000000000000000000011','observedUserFeeNativeAmount',1000000,
+    'observedFeeRecipientAddress','0x0000000000000000000000000000000000000011','observedUserFeeNativeAmount',1000000,'observedGasBudgetNative',1000,
     'observedRequestHash',v_request_hash,'observationSource','trusted_viem_v1','evidenceHash',repeat('6',64),'observedAt',v_period_start+interval '2 hours'));
   PERFORM public.reconcile_base_safe_payout(jsonb_build_object('contractVersion','base_safe_payout_observation.v1',
     'deploymentEnvironment','local','commandId',v_command_id,'status','replaced','txHash','0x'||repeat('f',64),'replacementTxHash','0x'||repeat('2',64),
     'blockNumber',12,'blockHash','0x'||repeat('2',64),'currentBlockNumber',12,'confirmationCount',0,'l1BatchFinalized',false,'receiptSuccess',true,
     'observedTokenAddress',v_token,'observedRecipientAddress',v_recipient,'observedNativeAtomicAmount',9000000,
-    'observedFeeRecipientAddress','0x0000000000000000000000000000000000000011','observedUserFeeNativeAmount',1000000,
+    'observedFeeRecipientAddress','0x0000000000000000000000000000000000000011','observedUserFeeNativeAmount',1000000,'observedGasBudgetNative',1000,
     'observedRequestHash',v_request_hash,'observationSource','trusted_viem_v1','evidenceHash',repeat('7',64),'observedAt',v_period_start+interval '3 hours'));
   PERFORM public.reconcile_base_safe_payout(jsonb_build_object('contractVersion','base_safe_payout_observation.v1',
     'deploymentEnvironment','local','commandId',v_command_id,'status','reorged','txHash','0x'||repeat('3',64),'replacementTxHash','',
     'blockNumber',13,'blockHash','0x'||repeat('3',64),'currentBlockNumber',13,'confirmationCount',0,'l1BatchFinalized',false,'receiptSuccess',true,
     'observedTokenAddress',v_token,'observedRecipientAddress',v_recipient,'observedNativeAtomicAmount',9000000,
-    'observedFeeRecipientAddress','0x0000000000000000000000000000000000000011','observedUserFeeNativeAmount',1000000,
+    'observedFeeRecipientAddress','0x0000000000000000000000000000000000000011','observedUserFeeNativeAmount',1000000,'observedGasBudgetNative',1000,
     'observedRequestHash',v_request_hash,'observationSource','trusted_viem_v1','evidenceHash',repeat('8',64),'observedAt',v_period_start+interval '4 hours'));
   IF (SELECT status FROM public.user_withdrawal_requests WHERE id=(v_request->>'requestId')::uuid)='paid'
     OR (SELECT count(*) FROM public.base_payout_execution_observations WHERE command_id=v_command_id AND status IN('failed','replaced','reorged'))<>3
+    OR NOT EXISTS(SELECT 1 FROM public.base_payout_execution_observations WHERE command_id=v_command_id AND status='replaced'
+      AND tx_hash='0x'||repeat('f',64) AND replacement_tx_hash='0x'||repeat('2',64))
   THEN RAISE EXCEPTION 'failed replacement or reorg evidence implied paid'; END IF;
 
   PERFORM public.reconcile_base_safe_payout(jsonb_build_object('contractVersion','base_safe_payout_observation.v1',
     'deploymentEnvironment','local','commandId',v_command_id,'status','finalized','txHash',v_tx,'replacementTxHash','',
     'blockNumber',10,'blockHash',v_block,'currentBlockNumber',20,'confirmationCount',10,'l1BatchFinalized',true,'receiptSuccess',true,
     'observedTokenAddress',v_token,'observedRecipientAddress',v_recipient,'observedNativeAtomicAmount',9000000,
-    'observedFeeRecipientAddress','0x0000000000000000000000000000000000000011','observedUserFeeNativeAmount',1000000,
+    'observedFeeRecipientAddress','0x0000000000000000000000000000000000000011','observedUserFeeNativeAmount',1000000,'observedGasBudgetNative',1000,
     'observedRequestHash',v_request_hash,'observationSource','trusted_viem_v1','evidenceHash',repeat('4',64),'observedAt',v_period_start+interval '1 hour'));
   SELECT ledger_transaction_id INTO v_ledger FROM public.base_payout_reconciliation_links WHERE command_id=v_command_id;
   IF (SELECT status FROM public.user_withdrawal_requests WHERE id=(v_request->>'requestId')::uuid)<>'paid'

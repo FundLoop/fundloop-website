@@ -720,11 +720,13 @@ allowlist, per-user/epoch limits, depletion alert, and pause switch are operatio
 controls, not substitutes for the epoch treasury ledger.
 
 Task #140 implements this boundary as `FundLoopSafePayoutModule`, separate epoch/platform
-deployments, and the review-only `FundLoopPaymasterBudget`. Safe owners authorize exact payout
+deployments, and the review-only `FundLoopPaymasterBudget`. The epoch Safe is the immutable module
+and reimbursement-vault owner, so authorization and policy changes require its threshold. Safe owners authorize exact payout
 hashes; a limited signer can execute only those hashes under token, recipient, amount, rolling,
 epoch, expiry, nonce, pause, rotation, and revocation checks. Database counters are defense in depth.
-Each hash binds the user net transfer and the separately reserved user-fee transfer to the configured
-platform Safe; limits apply to their gross sum and the neutral ledger conserves both legs.
+Each hash binds the user net transfer, the separately reserved user-fee transfer to the configured
+platform Safe, and a bounded native-gas reimbursement; token limits apply to the gross token sum and
+the neutral ledger conserves both token legs. Vault depletion reverts the payout atomically.
 The typed `base-safe-payout-operator` Edge command owns authorization, optional non-production
 signing, viem receipt observation, finality, and the balanced neutral-ledger paid transition.
 

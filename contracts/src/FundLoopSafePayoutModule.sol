@@ -10,6 +10,10 @@ interface ISafeModuleExecutor {
         external returns (bool success);
 }
 
+interface IPayoutGasSponsor {
+    function sponsor(bytes32 requestHash, address payable recipient, uint256 amount) external;
+}
+
 /// @notice Review-only Safe module enforcing independently bounded FundLoop payouts.
 /// @dev Deployment still requires Safe owner-threshold approval; this contract never owns treasury assets.
 contract FundLoopSafePayoutModule is Ownable, Pausable {
@@ -30,6 +34,7 @@ contract FundLoopSafePayoutModule is Ownable, Pausable {
     }
 
     ISafeModuleExecutor public immutable safe;
+    IPayoutGasSponsor public immutable gasSponsor;
     address public limitedSigner;
     uint256 public maxPerTransaction;
     uint256 public maxRolling24Hours;
@@ -51,16 +56,18 @@ contract FundLoopSafePayoutModule is Ownable, Pausable {
         address recipient,
         uint256 recipientAmount,
         address feeRecipient,
-        uint256 feeAmount
+        uint256 feeAmount,
+        uint256 gasBudget
     );
 
-    constructor(address initialOwner, address safeAddress, address signer, uint256 perTransaction, uint256 rolling24Hours, uint256 perEpoch)
-        Ownable(initialOwner)
+    constructor(address safeAddress, address signer, address gasSponsorAddress, uint256 perTransaction, uint256 rolling24Hours, uint256 perEpoch)
+        Ownable(safeAddress)
     {
-        if (safeAddress == address(0) || signer == address(0) || perTransaction == 0 || rolling24Hours < perTransaction || perEpoch < perTransaction) {
+        if (safeAddress == address(0) || signer == address(0) || gasSponsorAddress == address(0) || perTransaction == 0 || rolling24Hours < perTransaction || perEpoch < perTransaction) {
             revert InvalidRequest();
         }
         safe = ISafeModuleExecutor(safeAddress);
+        gasSponsor = IPayoutGasSponsor(gasSponsorAddress);
         limitedSigner = signer;
         maxPerTransaction = perTransaction;
         maxRolling24Hours = rolling24Hours;
@@ -73,13 +80,14 @@ contract FundLoopSafePayoutModule is Ownable, Pausable {
         uint256 recipientAmount,
         address feeRecipient,
         uint256 feeAmount,
+        uint256 gasBudget,
         bytes32 epochKey,
         uint64 expiresAt,
         uint256 nonce
     )
         public view returns (bytes32)
     {
-        return keccak256(abi.encode(address(this), block.chainid, address(safe), token, recipient, recipientAmount, feeRecipient, feeAmount, epochKey, expiresAt, nonce));
+        return keccak256(abi.encode(address(this), block.chainid, address(safe), address(gasSponsor), token, recipient, recipientAmount, feeRecipient, feeAmount, gasBudget, epochKey, expiresAt, nonce));
     }
 
     function authorizeRequest(bytes32 hash) external onlyOwner {
@@ -94,6 +102,7 @@ contract FundLoopSafePayoutModule is Ownable, Pausable {
         uint256 recipientAmount,
         address feeRecipient,
         uint256 feeAmount,
+        uint256 gasBudget,
         bytes32 epochKey,
         uint64 expiresAt,
         uint256 nonce
@@ -105,11 +114,20 @@ contract FundLoopSafePayoutModule is Ownable, Pausable {
         if (recipient == address(0) || recipientAmount == 0 || epochKey == bytes32(0) || (feeAmount > 0 && feeRecipient == address(0))) revert InvalidRequest();
         if (block.timestamp > expiresAt) revert RequestExpired();
         uint256 totalAmount = recipientAmount + feeAmount;
-        bytes32 hash = requestHash(token, recipient, recipientAmount, feeRecipient, feeAmount, epochKey, expiresAt, nonce);
+        bytes32 hash = requestHash(token, recipient, recipientAmount, feeRecipient, feeAmount, gasBudget, epochKey, expiresAt, nonce);
         if (usedRequests[hash]) revert RequestAlreadyUsed();
         if (!authorizedRequests[hash]) revert RequestNotAuthorized();
         if (totalAmount > maxPerTransaction) revert TransactionLimitExceeded();
 
+        usedRequests[hash] = true;
+        authorizedRequests[hash] = false;
+        _recordUsage(epochKey, totalAmount);
+        _executeTransfers(token, recipient, recipientAmount, feeRecipient, feeAmount);
+        gasSponsor.sponsor(hash, payable(limitedSigner), gasBudget);
+        emit PayoutExecuted(hash, epochKey, token, recipient, recipientAmount, feeRecipient, feeAmount, gasBudget);
+    }
+
+    function _recordUsage(bytes32 epochKey, uint256 totalAmount) private {
         uint256 rollingUsage;
         uint256 cutoff = block.timestamp > 1 days ? block.timestamp - 1 days : 0;
         for (uint256 index = executions.length; index > 0; index--) {
@@ -119,18 +137,17 @@ contract FundLoopSafePayoutModule is Ownable, Pausable {
         }
         if (rollingUsage + totalAmount > maxRolling24Hours) revert RollingLimitExceeded();
         if (epochUsage[epochKey] + totalAmount > maxPerEpoch) revert EpochLimitExceeded();
-
-        usedRequests[hash] = true;
-        authorizedRequests[hash] = false;
         epochUsage[epochKey] += totalAmount;
         executions.push(Execution(uint64(block.timestamp), uint192(totalAmount)));
+    }
+
+    function _executeTransfers(address token, address recipient, uint256 recipientAmount, address feeRecipient, uint256 feeAmount) private {
         bool success = safe.execTransactionFromModule(token, 0, abi.encodeCall(IERC20.transfer, (recipient, recipientAmount)), 0);
         if (!success) revert SafeExecutionFailed();
         if (feeAmount > 0) {
             success = safe.execTransactionFromModule(token, 0, abi.encodeCall(IERC20.transfer, (feeRecipient, feeAmount)), 0);
             if (!success) revert SafeExecutionFailed();
         }
-        emit PayoutExecuted(hash, epochKey, token, recipient, recipientAmount, feeRecipient, feeAmount);
     }
 
     function setTokenAllowed(address token, bool enabled) external onlyOwner {

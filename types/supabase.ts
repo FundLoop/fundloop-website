@@ -575,6 +575,7 @@ export type Database = {
           observation_source: string
           observed_at: string
           observed_fee_recipient_address: string
+          observed_gas_budget_native: number
           observed_native_atomic_amount: number
           observed_recipient_address: string
           observed_request_hash: string
@@ -599,6 +600,7 @@ export type Database = {
           observation_source: string
           observed_at: string
           observed_fee_recipient_address: string
+          observed_gas_budget_native: number
           observed_native_atomic_amount: number
           observed_recipient_address: string
           observed_request_hash: string
@@ -623,6 +625,7 @@ export type Database = {
           observation_source?: string
           observed_at?: string
           observed_fee_recipient_address?: string
+          observed_gas_budget_native?: number
           observed_native_atomic_amount?: number
           observed_recipient_address?: string
           observed_request_hash?: string
@@ -863,6 +866,9 @@ export type Database = {
           max_per_transaction_native: number
           max_rolling_24h_native: number
           module_address: string
+          module_owner_address: string
+          paymaster_controller_address: string
+          paymaster_owner_address: string
           paymaster_policy_address: string
           production_enabled: boolean
           safe_address: string
@@ -881,6 +887,9 @@ export type Database = {
           max_per_transaction_native: number
           max_rolling_24h_native: number
           module_address: string
+          module_owner_address: string
+          paymaster_controller_address: string
+          paymaster_owner_address: string
           paymaster_policy_address: string
           production_enabled?: boolean
           safe_address: string
@@ -899,6 +908,9 @@ export type Database = {
           max_per_transaction_native?: number
           max_rolling_24h_native?: number
           module_address?: string
+          module_owner_address?: string
+          paymaster_controller_address?: string
+          paymaster_owner_address?: string
           paymaster_policy_address?: string
           production_enabled?: boolean
           safe_address?: string

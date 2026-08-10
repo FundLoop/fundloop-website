@@ -34,9 +34,10 @@ For the operational MVP, bookkeeping credits are the success target. Payout inte
 Task #140 adds a review-only Base execution boundary for withdrawal-backed intents. Separate epoch
 and platform Safes use separate module deployments. The limited signer cannot choose an arbitrary
 token, recipient, amount, epoch, expiry, or nonce: Safe owners authorize the exact request hash and
-the module independently enforces token permission, replay protection, pause/revocation, $20 per
+the epoch Safe is the module owner. The module independently enforces token permission, replay protection, pause/revocation, $20 per
 transaction, $500 rolling 24 hours, and $5,000 per epoch. A separate paymaster budget helper enforces
-per-request sponsorship, depletion, replay, pause, and controller rotation.
+per-request native-gas reimbursement, depletion, replay, pause, and controller rotation. The module
+is the sole reimbursement controller, so token movement and reimbursement succeed or revert atomically.
 
 The exact request binds two conserved token legs: the withdrawal net goes to the user's persisted
 recipient and the selected user fee goes to the separately configured platform Safe. The fee leg
@@ -49,6 +50,8 @@ can sign only in explicit non-production environments, and observes receipts thr
 becomes paid only after the exact module event is successful, the receipt block is finalized under
 the configured chain finality view, and the database atomically creates a balanced neutral-ledger
 journal. Failed, replaced, and reorged observations remain immutable evidence and never imply paid.
+Replacement evidence retains original and replacement hashes separately; a missing or changed prior
+receipt becomes an executable `reorged` observation through the same typed Edge path.
 
 ## What Is Not Included Yet
 

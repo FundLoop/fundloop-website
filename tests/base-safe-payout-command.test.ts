@@ -13,7 +13,7 @@ const epochKey=`0x${"d".repeat(64)}` as const
 function chainFactory(){return {requestHash:vi.fn(async()=>requestHash),execute:vi.fn(async()=>txHash),observe:vi.fn(async()=>({status:"finalized" as const,
   txHash,blockNumber:BigInt(10),blockHash,currentBlockNumber:BigInt(20),confirmationCount:10,l1BatchFinalized:true,receiptSuccess:true,
   observedTokenAddress:tokenAddress,observedRecipientAddress:recipientAddress,observedNativeAtomicAmount:"10000000",observedRequestHash:requestHash,
-  observedFeeRecipientAddress:feeRecipientAddress,observedUserFeeNativeAmount:"1000000",
+  observedFeeRecipientAddress:feeRecipientAddress,observedUserFeeNativeAmount:"1000000",observedGasBudgetNative:"1000",
   observedAt:"2026-08-10T01:00:00.000Z"}))}}
 
 describe("base safe payout command",()=>{
@@ -28,7 +28,7 @@ describe("base safe payout command",()=>{
   })
 
   it("executes only the persisted command with the limited signer boundary",async()=>{
-    const maybeSingle=vi.fn(async()=>({data:{id:9,token_address:tokenAddress,recipient_address:recipientAddress,fee_recipient_address:feeRecipientAddress,native_atomic_amount:"10000000",user_fee_native_amount:"1000000",
+    const maybeSingle=vi.fn(async()=>({data:{id:9,token_address:tokenAddress,recipient_address:recipientAddress,fee_recipient_address:feeRecipientAddress,native_atomic_amount:"10000000",user_fee_native_amount:"1000000",gas_budget_native:"1000",
       epoch_key:epochKey,module_nonce:"1",expires_at:"2026-08-10T00:15:00Z",base_safe_payout_deployments:{chain_id:31337,module_address:moduleAddress}},error:null}))
     const client={from:vi.fn(()=>({select(){return this},eq(){return this},maybeSingle}))}
     expect(await executeBaseSafePayoutOperator(client as never,"actor-1",{action:"execute",commandId:9},
@@ -36,15 +36,47 @@ describe("base safe payout command",()=>{
   })
 
   it("records only trusted receipt observation and finalized evidence",async()=>{
-    const maybeSingle=vi.fn(async()=>({data:{id:9,token_address:tokenAddress,recipient_address:recipientAddress,fee_recipient_address:feeRecipientAddress,native_atomic_amount:"10000000",user_fee_native_amount:"1000000",
+    const maybeSingle=vi.fn(async()=>({data:{id:9,token_address:tokenAddress,recipient_address:recipientAddress,fee_recipient_address:feeRecipientAddress,native_atomic_amount:"10000000",user_fee_native_amount:"1000000",gas_budget_native:"1000",
       epoch_key:epochKey,module_nonce:"1",expires_at:"2026-08-10T00:15:00Z",base_safe_payout_deployments:{chain_id:31337,module_address:moduleAddress}},error:null}))
     const rpc=vi.fn(async()=>({data:{commandId:9,status:"reconciled",paid:true,noUnmatchedPaidState:true},error:null}))
-    const client={from:vi.fn(()=>({select(){return this},eq(){return this},maybeSingle})),rpc}
+    const client={from:vi.fn((table:string)=>table==="base_payout_execution_commands"?({select(){return this},eq(){return this},maybeSingle}):
+      ({select(){return this},eq(){return this},order(){return this},limit(){return this},maybeSingle:vi.fn(async()=>({data:null,error:null}))})),rpc}
     const result=await executeBaseSafePayoutOperator(client as never,"actor-1",{action:"observe",commandId:9,txHash},
       {deploymentEnvironment:"local",rpcUrl:"local",chainFactory})
     expect(result).toMatchObject({ok:true,data:{status:"reconciled",paid:true}})
     expect(rpc).toHaveBeenCalledWith("reconcile_base_safe_payout",expect.objectContaining({p_command:expect.objectContaining({observationSource:"trusted_viem_v1",
       l1BatchFinalized:true,receiptSuccess:true,observedRequestHash:requestHash})}))
+  })
+
+  it("preserves the original transaction hash when recording a replacement",async()=>{
+    const original=`0x${"1".repeat(64)}` as const;const replacement=`0x${"2".repeat(64)}` as const
+    const command={id:9,token_address:tokenAddress,recipient_address:recipientAddress,fee_recipient_address:feeRecipientAddress,
+      native_atomic_amount:"10000000",user_fee_native_amount:"1000000",gas_budget_native:"1000",epoch_key:epochKey,module_nonce:"1",
+      expires_at:"2026-08-10T00:15:00Z",base_safe_payout_deployments:{chain_id:31337,module_address:moduleAddress}}
+    const rpc=vi.fn(async()=>({data:{commandId:9,status:"replaced",paid:false},error:null}))
+    const client={from:vi.fn((table:string)=>table==="base_payout_execution_commands"?({select(){return this},eq(){return this},maybeSingle:vi.fn(async()=>({data:command,error:null}))}):
+      ({select(){return this},eq(){return this},order(){return this},limit(){return this},maybeSingle:vi.fn(async()=>({data:null,error:null}))})),rpc}
+    const replacementFactory=()=>({...chainFactory(),observe:vi.fn(async()=>({...await chainFactory().observe(),txHash:replacement}))})
+    expect(await executeBaseSafePayoutOperator(client as never,"actor-1",{action:"observe",commandId:9,txHash:original,replacementTxHash:replacement},
+      {deploymentEnvironment:"local",rpcUrl:"local",chainFactory:replacementFactory})).toMatchObject({ok:true,data:{status:"replaced"}})
+    expect(rpc).toHaveBeenCalledWith("reconcile_base_safe_payout",expect.objectContaining({p_command:expect.objectContaining({status:"replaced",txHash:original,replacementTxHash:replacement})}))
+  })
+
+  it("persists a typed reorg observation from prior receipt evidence",async()=>{
+    const command={id:9,token_address:tokenAddress,recipient_address:recipientAddress,fee_recipient_address:feeRecipientAddress,
+      native_atomic_amount:"10000000",user_fee_native_amount:"1000000",gas_budget_native:"1000",epoch_key:epochKey,module_nonce:"1",
+      expires_at:"2026-08-10T00:15:00Z",base_safe_payout_deployments:{chain_id:31337,module_address:moduleAddress}}
+    const prior={status:"confirming",tx_hash:txHash,block_number:10,block_hash:blockHash,current_block_number:11,confirmation_count:1,
+      l1_batch_finalized:false,receipt_success:true,observed_token_address:tokenAddress,observed_recipient_address:recipientAddress,
+      observed_native_atomic_amount:"10000000",observed_fee_recipient_address:feeRecipientAddress,observed_user_fee_native_amount:"1000000",
+      observed_request_hash:requestHash,observed_at:"2026-08-10T01:00:00Z"}
+    const rpc=vi.fn(async()=>({data:{commandId:9,status:"reorged",paid:false},error:null}))
+    const client={from:vi.fn((table:string)=>table==="base_payout_execution_commands"?({select(){return this},eq(){return this},maybeSingle:vi.fn(async()=>({data:command,error:null}))}):
+      ({select(){return this},eq(){return this},order(){return this},limit(){return this},maybeSingle:vi.fn(async()=>({data:prior,error:null}))})),rpc}
+    const reorgFactory=()=>({...chainFactory(),observe:vi.fn(async(_request,_hash,previous)=>({...previous!,status:"reorged" as const,receiptSuccess:false,l1BatchFinalized:false}))})
+    expect(await executeBaseSafePayoutOperator(client as never,"actor-1",{action:"observe",commandId:9,txHash},
+      {deploymentEnvironment:"local",rpcUrl:"local",chainFactory:reorgFactory})).toMatchObject({ok:true,data:{status:"reorged",paid:false}})
+    expect(rpc).toHaveBeenCalledWith("reconcile_base_safe_payout",expect.objectContaining({p_command:expect.objectContaining({status:"reorged",txHash,replacementTxHash:""})}))
   })
 
   it("fails production closed before chain or database access",async()=>{

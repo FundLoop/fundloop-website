@@ -1819,3 +1819,55 @@ exact finalized evidence and a balanced neutral-ledger journal.
 
 - Commit #140 separately, post implementation evidence, stop local Supabase, and request
   independent validation before moving #140 to In Review or beginning #141.
+
+### session v37: close Base Safe validation gaps (#140)
+
+- Timestamp: 2026-08-10T02:00:12-04:00
+- Agent: Codex
+- Branch: codex/134-funded-redistribution
+- Head: fdccda8
+
+#### Objective
+
+Close independent-validation failures in Safe threshold ownership, replacement/reorg provenance,
+and executable gas sponsorship without broadening the non-production boundary.
+
+#### Actions Taken
+
+- Made the epoch Safe the immutable owner of the payout module and sponsorship vault. Deployment
+  configuration now occurs through Safe owner execution; neither the deployer nor limited signer
+  can authorize requests, change tokens/limits, rotate the signer, pause, or change the sponsor.
+  Database deployment evidence enforces the same Safe-owner/module-controller topology.
+- Converted the review paymaster counter into a funded native reimbursement vault. The module is
+  its sole controller; gas budget is part of the exact request hash and event, and recipient token,
+  platform-fee token, and limited-signer reimbursement all succeed or revert atomically. A depleted
+  vault now reverts the payout and leaves token balances unchanged.
+- Preserved original and replacement hashes separately through the typed observer command. The
+  observer now compares prior receipt evidence and records `reorged` when a receipt disappears or
+  changes block, instead of dropping that evidence as an exception.
+- Extended SQL, Hardhat, Vitest, generated types, deployment manifests, and architecture docs for
+  the corrected threshold, sponsorship, replacement, and reorg contracts.
+
+#### Validation Notes
+
+- Fresh local migration/seed replay and executable Base SQL passed, including rejection of a
+  deployer-owned module topology, exact original/replacement hash persistence, reorg evidence,
+  gas-budget observation, all prior lifecycle denials, finality, paid state, and journal balance.
+- Hardhat passed 17/17: Safe-threshold-only policy mutation, real recipient/platform transfers,
+  actual native reimbursement, atomic depleted-vault rollback, and missing-receipt reorg evidence.
+- Focused Node 22 Vitest passed 4 files / 10 tests, including typed original/replacement and reorg
+  propagation. Strict Deno, typecheck, lint, and diff-check passed.
+- Full Node 22 `CI=1 pnpm check` passed 152 files / 680 tests and the 165-page production build.
+  UI layout did not change; the previously inspected exact desktop/mobile evidence remains current.
+
+#### Reflections
+
+- A Safe module is only a threshold control if the Safe owns every policy-changing method; module
+  enablement alone does not protect a deployer-owned authorization surface.
+- A gas budget is operationally meaningful only when the payout transaction consumes it. Keeping
+  the database counter and onchain vault independent provides defense in depth.
+
+#### Suggested Next Steps
+
+- Commit the narrow #140 validation fix, post evidence, stop local Supabase, and request exact-HEAD
+  revalidation before changing status or beginning #141.
