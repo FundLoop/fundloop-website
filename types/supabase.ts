@@ -4218,6 +4218,13 @@ export type Database = {
             foreignKeyName: "financial_cutover_canonical_links_withdrawal_obligation_id_fkey"
             columns: ["withdrawal_obligation_id"]
             isOneToOne: false
+            referencedRelation: "financial_cutover_canonical_credit_reads"
+            referencedColumns: ["canonical_obligation_id"]
+          },
+          {
+            foreignKeyName: "financial_cutover_canonical_links_withdrawal_obligation_id_fkey"
+            columns: ["withdrawal_obligation_id"]
+            isOneToOne: false
             referencedRelation: "financial_cutover_compatibility_positions"
             referencedColumns: ["canonical_obligation_id"]
           },
@@ -6804,6 +6811,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "monthly_cycles"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "payout_inventory_lots_obligation_id_fkey"
+            columns: ["obligation_id"]
+            isOneToOne: false
+            referencedRelation: "financial_cutover_canonical_credit_reads"
+            referencedColumns: ["canonical_obligation_id"]
           },
           {
             foreignKeyName: "payout_inventory_lots_obligation_id_fkey"
@@ -9893,6 +9907,13 @@ export type Database = {
             foreignKeyName: "user_withdrawal_obligation_claims_obligation_id_fkey"
             columns: ["obligation_id"]
             isOneToOne: false
+            referencedRelation: "financial_cutover_canonical_credit_reads"
+            referencedColumns: ["canonical_obligation_id"]
+          },
+          {
+            foreignKeyName: "user_withdrawal_obligation_claims_obligation_id_fkey"
+            columns: ["obligation_id"]
+            isOneToOne: false
             referencedRelation: "financial_cutover_compatibility_positions"
             referencedColumns: ["canonical_obligation_id"]
           },
@@ -9981,6 +10002,13 @@ export type Database = {
             foreignKeyName: "user_withdrawal_obligations_source_bookkeeping_credit_id_fkey"
             columns: ["source_bookkeeping_credit_id"]
             isOneToOne: true
+            referencedRelation: "financial_cutover_canonical_credit_reads"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "user_withdrawal_obligations_source_bookkeeping_credit_id_fkey"
+            columns: ["source_bookkeeping_credit_id"]
+            isOneToOne: true
             referencedRelation: "financial_cutover_compatibility_positions"
             referencedColumns: ["legacy_credit_id"]
           },
@@ -10027,6 +10055,13 @@ export type Database = {
           withdrawal_request_id?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "user_withdrawal_request_credits_bookkeeping_credit_id_fkey"
+            columns: ["bookkeeping_credit_id"]
+            isOneToOne: true
+            referencedRelation: "financial_cutover_canonical_credit_reads"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "user_withdrawal_request_credits_bookkeeping_credit_id_fkey"
             columns: ["bookkeeping_credit_id"]
@@ -11812,6 +11847,56 @@ export type Database = {
           },
         ]
       }
+      financial_cutover_canonical_credit_reads: {
+        Row: {
+          allocation_breakdown: Json | null
+          asset_fills: Json | null
+          canonical_obligation_id: number | null
+          canonical_state: string | null
+          credited_at: string | null
+          currency_code: string | null
+          id: number | null
+          monthly_cycle_id: number | null
+          payment_status: string | null
+          read_source: string | null
+          run_id: number | null
+          source_breakdown: Json | null
+          source_result_id: number | null
+          status: string | null
+          usd_equivalent_amount: number | null
+          user_id: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "monthly_cycle_bookkeeping_credits_monthly_cycle_id_fkey"
+            columns: ["monthly_cycle_id"]
+            isOneToOne: false
+            referencedRelation: "monthly_cycles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "monthly_cycle_bookkeeping_credits_run_id_fkey"
+            columns: ["run_id"]
+            isOneToOne: false
+            referencedRelation: "zkas_runs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "monthly_cycle_bookkeeping_credits_source_result_id_fkey"
+            columns: ["source_result_id"]
+            isOneToOne: false
+            referencedRelation: "zkas_run_results"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "monthly_cycle_bookkeeping_credits_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["user_id"]
+          },
+        ]
+      }
       financial_cutover_compatibility_positions: {
         Row: {
           canonical_minor: number | null
@@ -11904,6 +11989,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "shadow_ledger_trial_balance"
             referencedColumns: ["ledger_transaction_id"]
+          },
+          {
+            foreignKeyName: "financial_cutover_canonical_links_withdrawal_obligation_id_fkey"
+            columns: ["withdrawal_obligation_id"]
+            isOneToOne: false
+            referencedRelation: "financial_cutover_canonical_credit_reads"
+            referencedColumns: ["canonical_obligation_id"]
           },
           {
             foreignKeyName: "financial_cutover_canonical_links_withdrawal_obligation_id_fkey"

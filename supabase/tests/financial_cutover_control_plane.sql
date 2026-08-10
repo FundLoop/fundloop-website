@@ -119,6 +119,9 @@ BEGIN
   THEN RAISE EXCEPTION 'cutover reconciliation did not reach equality'; END IF;
   IF (SELECT read_source FROM public.financial_cutover_compatibility_positions WHERE legacy_credit_id=v_credit)<>'canonical_liability'
   THEN RAISE EXCEPTION 'compatibility read did not switch to canonical liability'; END IF;
+  IF (SELECT usd_equivalent_amount FROM public.financial_cutover_canonical_credit_reads WHERE id=v_credit)<>12.34
+    OR (SELECT canonical_obligation_id FROM public.financial_cutover_canonical_credit_reads WHERE id=v_credit)<>v_obligation
+  THEN RAISE EXCEPTION 'server-owned canonical credit read did not use the obligation'; END IF;
 
   v_replayed:=public.activate_financial_cutover(v_actor,jsonb_build_object(
     'contractVersion','financial_cutover_activate.v1','deploymentEnvironment','local','runId',(v_prepared->>'runId')::bigint,
@@ -151,10 +154,8 @@ BEGIN
   BEGIN UPDATE public.payments SET notes='forbidden after cutover' WHERE id=(SELECT min(id) FROM public.payments);
   EXCEPTION WHEN OTHERS THEN v_failed:=SQLERRM LIKE '%legacy_financial_writes_retired%'; END;
   IF NOT v_failed THEN RAISE EXCEPTION 'legacy payment write remained enabled'; END IF;
-  v_failed:=false;
-  BEGIN UPDATE public.monthly_cycles SET status=status WHERE id=v_cycle;
-  EXCEPTION WHEN OTHERS THEN v_failed:=SQLERRM LIKE '%legacy_financial_writes_retired%'; END;
-  IF NOT v_failed THEN RAISE EXCEPTION 'legacy monthly-cycle write remained enabled'; END IF;
+  UPDATE public.monthly_cycles SET status=status WHERE id=v_cycle;
+  IF NOT FOUND THEN RAISE EXCEPTION 'monthly-cycle lifecycle input was frozen by cutover'; END IF;
 
   v_failed:=false;
   BEGIN PERFORM public.prepare_financial_cutover(v_actor,jsonb_build_object(

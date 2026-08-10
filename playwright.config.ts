@@ -29,7 +29,17 @@ export default defineConfig({
     },
     {
       name: "local-wallet",
-      testMatch: /(?:local\/review-policy-consent|operational\/.*)\.spec\.ts/,
+      testMatch: /local\/.*\.spec\.ts/,
+      fullyParallel: false,
+      workers: 1,
+      use: {
+        ...devices["Desktop Chrome"],
+        baseURL: process.env.PLAYWRIGHT_LOCAL_BASE_URL ?? "http://127.0.0.1:3001",
+      },
+    },
+    {
+      name: "operational-local",
+      testMatch: /operational\/.*\.spec\.ts/,
       fullyParallel: false,
       workers: 1,
       use: {

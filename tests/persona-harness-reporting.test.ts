@@ -1,8 +1,11 @@
+import { readFileSync } from "node:fs"
 import { mkdtemp, readFile } from "node:fs/promises"
 import os from "node:os"
 import path from "node:path"
 import { describe, expect, it } from "vitest"
 import { aggregateStatus, boundedPersonaFailureReason, buildHarnessSummary, deriveCheckpointResult, exitCodeFor, sanitizeEvidence, writeJsonAtomic } from "@/tests/e2e/support/persona-reporting"
+
+const reportingSource = readFileSync(path.join(process.cwd(), "tests/e2e/support/persona-reporting.ts"), "utf8")
 
 describe("persona capability reporting", () => {
   it("derives pass, expected-pending, and stale/undeclared failures", () => {
@@ -34,6 +37,11 @@ describe("persona capability reporting", () => {
     expect(() => sanitizeEvidence({ detail: "arbitrary private payload" })).toThrow("evidence-value-rejected")
     expect(() => sanitizeEvidence({ count: 123456 })).toThrow("evidence-value-rejected")
     expect(sanitizeEvidence({ "row-count": 2, visible: true })).toEqual({ "row-count": 2, visible: true })
+  })
+
+  it("keeps screenshot-sensitive patterns and diagnostic reasons paired", () => {
+    expect(reportingSource).toContain("FORBIDDEN_VALUE.length !== FORBIDDEN_VALUE_REASON.length")
+    expect(reportingSource).toContain("persona-screenshot-sensitive-pattern-reason-mismatch")
   })
 
   it("bounds complete persona failure reasons to 80 safe characters", () => {

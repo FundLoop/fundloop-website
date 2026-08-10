@@ -129,9 +129,12 @@ export function createPersonaBrowserActions(personaId: Exclude<PersonaId, "retur
     const stem = name.replace(/\.png$/, "")
     await targetPage.screenshot({ path: path.join(artifactDirectory, `${stem}-desktop-1440x900.png`), fullPage: false })
     await targetPage.setViewportSize({ width: 390, height: 844 })
-    await assertSafePersonaScreenshotSurface(targetPage)
-    await targetPage.screenshot({ path: path.join(artifactDirectory, `${stem}-mobile-390x844.png`), fullPage: false })
-    await targetPage.setViewportSize({ width: 1440, height: 900 })
+    try {
+      await assertSafePersonaScreenshotSurface(targetPage)
+      await targetPage.screenshot({ path: path.join(artifactDirectory, `${stem}-mobile-390x844.png`), fullPage: false })
+    } finally {
+      await targetPage.setViewportSize({ width: 1440, height: 900 })
+    }
   }
 
   async function captureInvitationReview(targetPage: Page, name: string, errors = browserErrors) {

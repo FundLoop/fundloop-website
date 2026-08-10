@@ -1,6 +1,6 @@
 import { randomUUID } from "node:crypto"
 import { spawn } from "node:child_process"
-import { mkdir, open, rm } from "node:fs/promises"
+import { mkdir, open, readFile, rm } from "node:fs/promises"
 import path from "node:path"
 import { setTimeout as delay } from "node:timers/promises"
 import { fileURLToPath } from "node:url"
@@ -9,6 +9,7 @@ import { createClient } from "@supabase/supabase-js"
 const rootCwd = new URL("..", import.meta.url)
 const rootPath = fileURLToPath(rootCwd)
 const localOperatorEmail = "maya@fundloop.example.com"
+const activeCommandProcesses = new Set()
 
 function loadLocalEnv() {
   const envPath = path.join(rootPath, ".env.local")
@@ -46,6 +47,10 @@ function spawnProcess(command, args, options = {}) {
 function stopProcessGroup(child) {
   if (!child?.pid || child.exitCode !== null) return
   try { process.kill(-child.pid, "SIGTERM") } catch { child.kill("SIGTERM") }
+}
+
+function stopActiveCommands() {
+  for (const child of activeCommandProcesses) stopProcessGroup(child)
 }
 
 async function waitForHttp(url, attempts = 60) {
@@ -95,7 +100,9 @@ async function runCommand(command, args, env = process.env) {
       cwd: new URL(".", rootCwd),
       env,
       stdio: ["ignore", "pipe", "pipe"],
+      detached: true,
     })
+    activeCommandProcesses.add(child)
 
     let stdout = ""
     let stderr = ""
@@ -110,8 +117,12 @@ async function runCommand(command, args, env = process.env) {
       process.stderr.write(chunk)
     })
 
-    child.on("error", reject)
+    child.on("error", (error) => {
+      activeCommandProcesses.delete(child)
+      reject(error)
+    })
     child.on("exit", (code) => {
+      activeCommandProcesses.delete(child)
       if (code === 0) {
         resolve(stdout.trim())
         return
@@ -120,6 +131,57 @@ async function runCommand(command, args, env = process.env) {
       reject(new Error(stderr.trim() || stdout.trim() || `${command} ${args.join(" ")} failed with code ${code}`))
     })
   })
+}
+
+async function runCommandWithInput(command, args, input, env = process.env) {
+  return new Promise((resolve, reject) => {
+    const child = spawn(command, args, {
+      cwd: new URL(".", rootCwd),
+      env,
+      stdio: ["pipe", "pipe", "pipe"],
+      detached: true,
+    })
+    activeCommandProcesses.add(child)
+    let stdout = ""
+    let stderr = ""
+    child.stdout?.on("data", (chunk) => { stdout += chunk.toString(); process.stdout.write(chunk) })
+    child.stderr?.on("data", (chunk) => { stderr += chunk.toString(); process.stderr.write(chunk) })
+    child.on("error", (error) => {
+      activeCommandProcesses.delete(child)
+      reject(error)
+    })
+    child.on("exit", (code) => {
+      activeCommandProcesses.delete(child)
+      if (code === 0) resolve(stdout.trim())
+      else reject(new Error(stderr.trim() || stdout.trim() || `${command} ${args.join(" ")} failed with code ${code}`))
+    })
+    child.stdin?.end(input)
+  })
+}
+
+async function applyCommittedSqlFixture(relativePath, dbUrl, env) {
+  const source = await readFile(path.join(rootPath, relativePath), "utf8")
+  if (!source.startsWith("BEGIN;\n") || !/\nROLLBACK;\s*$/.test(source)) {
+    throw new Error(`local-wallet-fixture-contract-invalid-${path.basename(relativePath)}`)
+  }
+  const fixture = source.replace(/^BEGIN;\n/, "").replace(/\nROLLBACK;\s*$/, "\n")
+  await runCommandWithInput("psql", [dbUrl, "-X", "-v", "ON_ERROR_STOP=1", "--single-transaction"], fixture, env)
+}
+
+async function resetLocalDatabase(env = process.env) {
+  let lastError = null
+  for (let attempt = 1; attempt <= 2; attempt += 1) {
+    try {
+      await runCommand("supabase", ["db", "reset", "--local"], env)
+      return
+    } catch (error) {
+      lastError = error
+      if (attempt < 2) {
+        await delay(1_500)
+      }
+    }
+  }
+  throw lastError
 }
 
 async function startLocalEdgeRuntime(env) {
@@ -131,7 +193,11 @@ async function startLocalEdgeRuntime(env) {
     FUNDLOOP_INTERNAL_ADMIN_EMAILS: localOperatorEmail,
     FUNDLOOP_ZKAS_SUPERADMIN_EMAILS: localOperatorEmail,
     FUNDLOOP_MAILPIT_API_URL: "http://host.docker.internal:55324",
+    FUNDLOOP_PAYMENTS_CRON_SECRET: env.FUNDLOOP_PAYMENTS_CRON_SECRET,
     NEXT_PUBLIC_POLICY_REVIEW_PREVIEW: "1",
+    NEXT_PUBLIC_REOWN_PROJECT_ID: env.NEXT_PUBLIC_REOWN_PROJECT_ID,
+    NEXT_PUBLIC_BASE_RPC_URL: "http://host.docker.internal:8545",
+    NEXT_PUBLIC_FUNDLOOP_LOCAL_WALLET_MANIFEST_JSON: env.NEXT_PUBLIC_FUNDLOOP_LOCAL_WALLET_MANIFEST_JSON,
     STRIPE_SECRET_KEY: env.STRIPE_SECRET_KEY,
     STRIPE_WEBHOOK_SECRET: env.STRIPE_WEBHOOK_SECRET,
     STRIPE_CONNECT_WEBHOOK_SECRET: env.STRIPE_CONNECT_WEBHOOK_SECRET,
@@ -143,25 +209,33 @@ async function startLocalEdgeRuntime(env) {
   const handle = await open(envPath, "w", 0o600)
   try { await handle.writeFile(`${lines.join("\n")}\n`); await handle.sync() } finally { await handle.close() }
   const child = spawnProcess("supabase", ["functions", "serve", "--env-file", envPath], { env })
-  for (let attempt = 0; attempt < 40; attempt += 1) {
+  for (let attempt = 0; attempt < 120; attempt += 1) {
     if (child.exitCode !== null) throw new Error("local-wallet-edge-runtime-exited")
     try {
       const response = await fetch("http://127.0.0.1:55321/functions/v1/monthly-cycle-lock", { method: "OPTIONS", signal: AbortSignal.timeout(1_000) })
       if (response.ok) return { child, envPath }
     } catch {}
-    await delay(250)
+    await delay(500)
   }
-  child.kill("SIGTERM")
+  stopProcessGroup(child)
   throw new Error("local-wallet-edge-runtime-readiness-timeout")
 }
 
 async function main() {
   loadLocalEnv()
+  const phaseOrder = ["wallet", "allocation", "withdrawal", "base", "stripe-connect", "operational"]
+  const startPhase = process.env.PLAYWRIGHT_LOCAL_START_PHASE?.trim() || "wallet"
+  const startPhaseIndex = phaseOrder.indexOf(startPhase)
+  if (startPhaseIndex < 0) {
+    throw new Error(`PLAYWRIGHT_LOCAL_START_PHASE must be one of: ${phaseOrder.join(", ")}`)
+  }
+  const shouldRunPhase = (phase) => phaseOrder.indexOf(phase) >= startPhaseIndex
   const baseURL = process.env.PLAYWRIGHT_LOCAL_BASE_URL?.trim() || "http://127.0.0.1:3001"
   const rpcUrl = process.env.PLAYWRIGHT_LOCAL_RPC_URL?.trim() || "http://127.0.0.1:8545"
   const chainId = Number.parseInt(process.env.PLAYWRIGHT_LOCAL_CHAIN_ID ?? "8453", 10)
   const e2eSecret = process.env.FUNDLOOP_E2E_SECRET?.trim() || `playwright-${randomUUID()}`
   const cronSecret = process.env.FUNDLOOP_PAYMENTS_CRON_SECRET?.trim() || `payments-${randomUUID()}`
+  const dbUrl = process.env.PLAYWRIGHT_LOCAL_DB_URL?.trim() || "postgresql://postgres:postgres@127.0.0.1:55322/postgres"
 
   requireEnv("NEXT_PUBLIC_SUPABASE_URL")
   requireEnv("SUPABASE_SERVICE_ROLE_KEY")
@@ -182,6 +256,7 @@ async function main() {
   ])
 
   const stopChildren = () => {
+    stopActiveCommands()
     stopProcessGroup(nodeProcess)
     stopProcessGroup(appProcess)
     stopProcessGroup(edgeProcess)
@@ -190,11 +265,17 @@ async function main() {
   let appProcess = null
   let edgeProcess = null
   let edgeEnvPath = null
+  let interrupted = false
 
-  process.on("SIGINT", stopChildren)
-  process.on("SIGTERM", stopChildren)
+  const interrupt = () => {
+    interrupted = true
+    stopChildren()
+  }
+  process.on("SIGINT", interrupt)
+  process.on("SIGTERM", interrupt)
 
   try {
+    await resetLocalDatabase()
     await waitForRpc(rpcUrl)
 
     await runCommand("pnpm", ["--dir", "contracts", "build"])
@@ -250,7 +331,7 @@ async function main() {
       PLAYWRIGHT_LOCAL_BASE_URL: baseURL,
       PLAYWRIGHT_LOCAL_RPC_URL: rpcUrl,
       PLAYWRIGHT_LOCAL_CHAIN_ID: String(chainId),
-      PLAYWRIGHT_LOCAL_DB_URL: process.env.PLAYWRIGHT_LOCAL_DB_URL?.trim() || "postgresql://postgres:postgres@127.0.0.1:55322/postgres",
+      PLAYWRIGHT_LOCAL_DB_URL: dbUrl,
       PLAYWRIGHT_LOCAL_WALLET_ADDRESS: deployment.payerAddress,
       PLAYWRIGHT_LOCAL_TREASURY_ADDRESS: deployment.treasuryAddress,
       PLAYWRIGHT_LOCAL_TOKEN_ADDRESS: deployment.tokenAddress,
@@ -259,6 +340,8 @@ async function main() {
       FUNDLOOP_INTERNAL_ADMIN_EMAILS: localOperatorEmail,
       FUNDLOOP_ZKAS_SUPERADMIN_EMAILS: localOperatorEmail,
       NEXT_PUBLIC_POLICY_REVIEW_PREVIEW: "1",
+      NEXT_PUBLIC_BASE_PAYOUT_REVIEW_ENABLED: "true",
+      NEXT_PUBLIC_STRIPE_CONNECT_REVIEW_ENABLED: "true",
       FUNDLOOP_E2E_ENABLED: "true",
       FUNDLOOP_E2E_SECRET: e2eSecret,
       FUNDLOOP_PAYMENTS_CRON_SECRET: cronSecret,
@@ -314,10 +397,51 @@ async function main() {
 
     await waitForHttp(baseURL)
 
-    await runCommand("pnpm", ["exec", "playwright", "test", "--project=local-wallet"], sharedEnv)
+    const runBrowserFiles = (...files) => runCommand("pnpm", ["exec", "playwright", "test", "--project=local-wallet", ...files], sharedEnv)
+    const resetDatabase = async () => {
+      await resetLocalDatabase(sharedEnv)
+      await waitForHttp(`${sharedEnv.NEXT_PUBLIC_SUPABASE_URL}/rest/v1/`)
+    }
+
+    if (shouldRunPhase("wallet")) {
+      await runBrowserFiles("tests/e2e/local/wallet-payments.spec.ts", "tests/e2e/local/review-policy-consent.spec.ts")
+    }
+
+    if (shouldRunPhase("allocation")) {
+      await resetDatabase()
+      await applyCommittedSqlFixture("supabase/tests/fixtures/epoch_funded_allocation_browser.sql", dbUrl, sharedEnv)
+      await runBrowserFiles("tests/e2e/local/epoch-funded-allocation.spec.ts")
+    }
+
+    if (shouldRunPhase("withdrawal")) {
+      await resetDatabase()
+      await applyCommittedSqlFixture("supabase/tests/withdrawal_obligation_control_plane.sql", dbUrl, sharedEnv)
+      await runBrowserFiles("tests/e2e/local/withdrawal-obligation-control-plane.spec.ts")
+    }
+
+    if (shouldRunPhase("base")) {
+      await resetDatabase()
+      await applyCommittedSqlFixture("supabase/tests/withdrawal_obligation_control_plane.sql", dbUrl, sharedEnv)
+      await applyCommittedSqlFixture("supabase/tests/base_safe_payout_control_plane.sql", dbUrl, sharedEnv)
+      await runBrowserFiles("tests/e2e/local/base-safe-payout-control-plane.spec.ts")
+    }
+
+    if (shouldRunPhase("stripe-connect")) {
+      await resetDatabase()
+      await applyCommittedSqlFixture("supabase/tests/withdrawal_obligation_control_plane.sql", dbUrl, sharedEnv)
+      await applyCommittedSqlFixture("supabase/tests/stripe_connect_payout_control_plane.sql", dbUrl, sharedEnv)
+      await applyCommittedSqlFixture("supabase/tests/fixtures/stripe_connect_browser_ready.sql", dbUrl, sharedEnv)
+      await runBrowserFiles("tests/e2e/local/stripe-connect-payout-control-plane.spec.ts")
+    }
+
+    if (shouldRunPhase("operational")) {
+      await resetDatabase()
+      await runCommand("pnpm", ["exec", "playwright", "test", "--project=operational-local"], sharedEnv)
+    }
   } finally {
     stopChildren()
     if (edgeEnvPath) await rm(edgeEnvPath, { force: true })
+    if (!interrupted) await resetLocalDatabase().catch(() => {})
   }
 }
 

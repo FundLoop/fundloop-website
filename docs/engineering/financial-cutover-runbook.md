@@ -10,7 +10,10 @@ The cutover replaces ambiguous legacy financial projections with one classified 
 - approved close-package award controls are the normal source of withdrawal obligations;
 - an explicitly approved legacy bookkeeping credit can become a provisional opening liability exactly once;
 - a user withdrawal request and payout intent are canonical only when they use the project/asset-scoped obligation path;
-- legacy payments, cycles, credits, requests, and intents remain available through compatibility reports, but legacy monetary writes are disabled after activation.
+- legacy records remain available through compatibility reports, while payment, bookkeeping-credit,
+  withdrawal-request, and payout-intent monetary writes are disabled after activation;
+- `monthly_cycles` remains the lifecycle input to the canonical epoch engine, so lock, calculation,
+  approval, distribution, and reporting transitions remain writable through their typed commands.
 
 Production is structurally excluded. `financial_cutover_runtime_controls` disables prepare and activation for `production`, `financial_cutover_instance_state` cannot become canonical in production, and the feature creates no provider call or value flow.
 
@@ -46,7 +49,12 @@ Invoke `financial-cutover` with `action=activate`, the prepared run ID, exact ma
 3. debits `legacy_opening_balance_control` and credits the user-dimensioned `user_withdrawal_liability_control` by the same functional-USD amount;
 4. creates or reuses the unique `source_bookkeeping_credit_id` withdrawal obligation;
 5. links existing canonical package, close, request, and payout records without recreating them;
-6. switches the singleton read state to canonical and the legacy write state to read-only.
+6. switches the singleton read state to canonical and the legacy monetary write state to read-only.
+
+The earnings workspace and monthly-cycle payout overview resolve that singleton through a
+server-owned, fail-closed read model. An exact active state reads amount and payment state from the
+canonical withdrawal obligation compatibility view; an exact inactive state reads the legacy
+credit table; missing or contradictory state returns no monetary rows and an operator warning.
 
 Replay is safe: ledger idempotency keys and unique source obligation/link constraints return the original canonical records. Direct result-based payout intents remain retired independently of this switch.
 
@@ -59,7 +67,8 @@ Before accepting the local/non-production cutover, verify:
 - each opening transaction has equal functional debits and credits;
 - every canonical withdrawal request retains project, financial asset, obligation claims, and request hash;
 - every canonical payout intent points to a withdrawal request and not a published result;
-- legacy payment and bookkeeping writes fail after activation;
+- legacy payment and bookkeeping writes fail after activation while monthly-cycle lifecycle commands
+  remain available;
 - authenticated clients cannot execute cutover RPCs or write audit tables directly;
 - production preparation and activation fail before any mutation.
 

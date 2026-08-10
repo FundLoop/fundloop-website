@@ -2,6 +2,8 @@ import "server-only"
 
 import type { NavigationContext } from "@/lib/navigation-context"
 import { createServerSupabaseClient } from "@/lib/supabase-server"
+import { getAdminSupabaseClient } from "@/lib/supabase-admin"
+import { readFinancialCutoverMode } from "@/lib/financial-cutover/read-model"
 import type { Database } from "@/types/supabase"
 import { buildUserAssetPreferenceReadiness, type UserAssetPreferenceReadiness } from "@/lib/workspace/user-asset-preferences"
 
@@ -548,6 +550,30 @@ export async function getUserEarningsWorkspace(navigationContext: NavigationCont
   }
 
   const supabase = await createServerSupabaseClient()
+  const admin = getAdminSupabaseClient()
+  const cutoverReadMode = await readFinancialCutoverMode(admin)
+  if (cutoverReadMode === "unavailable") {
+    warnings.push({ scope: "financial-cutover", message: "Canonical earnings read state could not be verified." })
+  }
+  const readCanonicalBookkeepingCredits = async (): Promise<SupabaseReadResult<CreditRow[]>> => {
+    const { data, error } = await admin
+      .from("financial_cutover_canonical_credit_reads")
+      .select("id, monthly_cycle_id, run_id, source_result_id, usd_equivalent_amount, currency_code, status, payment_status, credited_at, asset_fills, source_breakdown, allocation_breakdown")
+      .eq("user_id", user.id)
+      .order("credited_at", { ascending: false })
+    // The view is an inner join over non-null credit and obligation columns;
+    // generated view types remain nullable because Postgres does not expose that proof.
+    return { data: data as unknown as CreditRow[] | null, error }
+  }
+  const bookkeepingCreditRead = cutoverReadMode === "canonical"
+    ? readCanonicalBookkeepingCredits()
+    : cutoverReadMode === "legacy"
+      ? supabase
+          .from("monthly_cycle_bookkeeping_credits")
+          .select("id, monthly_cycle_id, run_id, source_result_id, usd_equivalent_amount, currency_code, status, payment_status, credited_at, asset_fills, source_breakdown, allocation_breakdown")
+          .eq("user_id", user.id)
+          .order("credited_at", { ascending: false })
+      : Promise.resolve({ data: [] as CreditRow[], error: null })
   const [publishedResults, payoutRoutes, payoutIntents, bookkeepingCredits, assetPreferences, withdrawalRequests, withdrawalAssetInventory, withdrawalObligationBalances, financialAssets] = await Promise.all([
     readEarningsData<PublishedResultRow[]>(
       "published-results",
@@ -581,12 +607,8 @@ export async function getUserEarningsWorkspace(navigationContext: NavigationCont
       [],
     ),
     readEarningsData<CreditRow[]>(
-      "bookkeeping-credits",
-      supabase
-        .from("monthly_cycle_bookkeeping_credits")
-        .select("id, monthly_cycle_id, run_id, source_result_id, usd_equivalent_amount, currency_code, status, payment_status, credited_at, asset_fills, source_breakdown, allocation_breakdown")
-        .eq("user_id", user.id)
-        .order("credited_at", { ascending: false }),
+      cutoverReadMode === "canonical" ? "canonical-bookkeeping-positions" : "bookkeeping-credits",
+      bookkeepingCreditRead,
       warnings,
       [],
     ),

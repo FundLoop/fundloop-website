@@ -175,7 +175,7 @@ Use the smallest relevant validation first, then broaden before reporting comple
 | Supabase Edge Functions | Contract/command tests plus Deno/Supabase validation | focused contract tests, `deno info` or `deno check`, PR dry-run |
 | Stripe bank-transfer intake | FundLoop sandbox CLI plus local signed webhook/SQL/browser evidence | `stripe whoami --project-name fundloop`, `stripe listen`, fresh local reset, `supabase/tests/stripe_bank_transfer_intake.sql`; never `--live` |
 | Onchain contract changes | Hardhat workspace | `pnpm --dir contracts test` |
-| Wallet browser flows | Local wallet E2E lane | `pnpm test:e2e:local` when prerequisites are available |
+| Local wallet and control-plane browser flows | Serialized local E2E lane with per-workflow replay/fixtures | `pnpm test:e2e:local` when prerequisites are available |
 | Persona happy paths | Local-only persona E2E lane | Start/reset caller-owned local Supabase, then `pnpm test:e2e:personas` or filter with `-- --persona <id>` |
 | Shared preview smoke | Remote-safe E2E lane | `pnpm test:e2e:remote` with non-production remote credentials |
 | Founder/operator/member hosted cadence | Guarded hosted operational lane | `pnpm test:e2e:hosted-operational` with explicit dev credentials and mutation approval |

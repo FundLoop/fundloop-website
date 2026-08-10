@@ -338,11 +338,17 @@ async function cleanupLedger(ledgerPath, env) {
       if (!/^[a-z][a-z0-9_]*$/.test(key)) throw new Error("ownership-ledger-invalid")
       query.set(key, `eq.${value}`)
     }
-    const deletion = await fetch(
-      `${env.supabaseUrl}/rest/v1/${record.table}?${query}`,
-      { method: "DELETE", headers: { ...serviceHeaders, prefer: "return=minimal" } },
-    )
-    if (!deletion.ok && !deleteLocalOwnerRecord(record, env.dbUrl)) {
+    let deletionOk = false
+    try {
+      const deletion = await fetch(
+        `${env.supabaseUrl}/rest/v1/${record.table}?${query}`,
+        { method: "DELETE", headers: { ...serviceHeaders, prefer: "return=minimal" } },
+      )
+      deletionOk = deletion.ok
+    } catch {
+      deletionOk = false
+    }
+    if (!deletionOk && !deleteLocalOwnerRecord(record, env.dbUrl)) {
       throw new Error(`cleanup-record-delete-failed-${record.table}`)
     }
     deletedCount += 1

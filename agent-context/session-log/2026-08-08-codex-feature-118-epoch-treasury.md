@@ -2337,3 +2337,71 @@ accounting conclusions as effective Terms.
 #### Suggested Next Steps
 
 - Commit this narrow validator fix and request exact-commit revalidation of #144.
+
+### session v47: close PR #151 review gaps (#143, #144)
+
+- Timestamp: 2026-08-10T17:13:28-04:00
+- Agent: Codex
+- Branch: codex/118-operational-readiness
+- Head: 2ba5668
+
+#### Objective
+
+Address every actionable PR #151 review thread while preserving the reversible, non-production
+cutover and complete local operational evidence boundary.
+
+#### Actions Taken
+
+- Added a forward canonical-credit compatibility view and a server-owned cutover read-mode helper.
+  The earnings workspace and monthly-cycle payout overview now read canonical obligation amounts and
+  payment state only for an exact active singleton, retain legacy reads only for the exact inactive
+  state, and fail closed with no monetary rows for missing or contradictory state.
+- Removed the broad `monthly_cycles` write guard so typed lifecycle transitions remain inputs to the
+  canonical epoch engine while legacy payment, bookkeeping-credit, withdrawal-request, and payout-
+  intent writes remain retired. Extended executable SQL and architecture documentation accordingly.
+- Restored every local Playwright spec under the `local-wallet` project and separated the operational
+  Mailpit lane. The runner now replays a clean schema and commits each authored SQL fixture before
+  its workflow, waits through Edge cold starts, and stops active child commands without performing a
+  heavy final reset after interruption.
+- Guaranteed desktop viewport restoration after mobile evidence failures, preserved direct local-
+  owner cleanup after REST transport errors, and added a screenshot-pattern/reason invariant.
+- Routed local wagmi reads through the configured Hardhat RPC without unsupported multicall and made
+  token approval wait for receipt finality plus a refreshed allowance before enabling submission.
+- Bound deposit recording to the exact submitted transaction hash so an earlier approval receipt
+  cannot be mistaken for the deposit, and made recording idempotent across receipt-state rerenders.
+- Split allocation and Stripe Connect browser setup into dedicated deterministic fixtures. Added a
+  narrow local-console filter for the known fake Reown endpoints while retaining failures for all
+  product-owned console errors, plus phase-selectable retries for the serialized runner.
+
+#### Validation Notes
+
+- A fresh local Supabase reset applied every migration through
+  `20260810163000_financial_cutover_read_integration.sql`; the executable
+  `financial_cutover_control_plane.sql` suite and both dedicated rollback fixtures passed.
+- Focused Vitest passed 6 files / 26 tests, including the cutover read-mode matrix, migration
+  contract, deposit-receipt race regression, operational matrix, cleanup, viewport, and reporting
+  invariants.
+- The complete `local-wallet` project passed 8/8 browser tests: policy/profile acknowledgement,
+  token approval/deposit/reconciliation and mismatch retry, allocation/root reload and privacy
+  views, withdrawal, Base payout, and Stripe Connect reconciliation. The separate operational lane
+  passed 1/1 with real authenticated Edge-to-Mailpit delivery. Required desktop/mobile captures
+  were retained at 1440x900 and 390x844.
+- Full Node 22 `CI=1 pnpm check` passed: lint, 162 Vitest files / 722 tests, typecheck, and the
+  165-route production build. Runner syntax, documentation links, secret/artifact scans, and
+  `git diff --check` also passed.
+- Local services and child process groups were stopped after the evidence run; production, provider,
+  legal/accounting, canonical cutover, and real-value-flow gates remain fail closed.
+
+#### Reflections
+
+- A cutover is not active merely because writes are blocked; the application read paths must resolve
+  the canonical state through a fail-closed server boundary.
+- Lifecycle state and monetary projections are different write classes. Freezing the former would
+  prevent the canonical epoch engine from receiving its own inputs.
+- Test orchestration must be interruptible: cleanup that starts a new database reset after SIGTERM
+  defeats an operator's attempt to relieve an overloaded workstation.
+
+#### Suggested Next Steps
+
+- Commit and push this review-fix batch, reply to and resolve all six PR threads without requesting
+  rereview, wait for green CI/Vercel/Supabase checks, then merge and run approved cleanup.

@@ -20,6 +20,12 @@ contracts, Hardhat, the full Node 22 check, and a final zero-residue reset. It w
 machine-readable summary under `output/feature-118-operational/`. The component commands remain
 available for focused diagnosis:
 
+`pnpm test:e2e:local` owns every spec under `tests/e2e/local/` plus the separate operational browser
+project. Its runner serializes each workflow behind a fresh replay and its authored SQL fixture so
+wallet, allocation, withdrawal, Base Safe, Stripe Connect, policy, privacy, and Mailpit evidence do
+not pass against stale state. Interrupting the runner stops active child commands and skips the
+otherwise useful final database reset, allowing an overloaded workstation to pause promptly.
+
 ```bash
 PATH=/opt/homebrew/opt/node@22/bin:$PATH pnpm test:e2e:personas
 PATH=/opt/homebrew/opt/node@22/bin:$PATH ./node_modules/.bin/vitest run \

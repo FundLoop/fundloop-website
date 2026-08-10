@@ -5,6 +5,7 @@ import { describe, expect, it } from "vitest"
 const migration = fs.readFileSync(path.join(process.cwd(), "supabase/migrations/20260810160000_financial_cutover_control_plane.sql"), "utf8")
 const activationFix = fs.readFileSync(path.join(process.cwd(), "supabase/migrations/20260810161000_financial_cutover_activation_revalidation.sql"), "utf8")
 const supersessionFix = fs.readFileSync(path.join(process.cwd(), "supabase/migrations/20260810162000_financial_cutover_supersession_events.sql"), "utf8")
+const readIntegration = fs.readFileSync(path.join(process.cwd(), "supabase/migrations/20260810163000_financial_cutover_read_integration.sql"), "utf8")
 
 describe("financial cutover migration", () => {
   it("classifies every required legacy surface and records explicit differences", () => {
@@ -47,5 +48,12 @@ describe("financial cutover migration", () => {
     expect(supersessionFix).toContain("v_prior_active_ids")
     expect(supersessionFix).toContain("event.event_type='superseded'")
     expect(supersessionFix).toContain("activate_financial_cutover_without_complete_supersession_events")
+  })
+
+  it("routes server reads to canonical obligations without freezing cycle lifecycle inputs", () => {
+    expect(readIntegration).toContain("DROP TRIGGER IF EXISTS financial_cutover_monthly_cycles_write_guard")
+    expect(readIntegration).toContain("financial_cutover_canonical_credit_reads")
+    expect(readIntegration).toContain("obligation.total_minor / 100.0")
+    expect(readIntegration).toContain("GRANT SELECT ON TABLE public.financial_cutover_canonical_credit_reads TO service_role")
   })
 })

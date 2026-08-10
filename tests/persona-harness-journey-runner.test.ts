@@ -1,3 +1,4 @@
+import { readFileSync } from "node:fs"
 import { mkdtemp, readFile } from "node:fs/promises"
 import os from "node:os"
 import path from "node:path"
@@ -5,7 +6,14 @@ import { describe, expect, it, vi } from "vitest"
 import { newMemberJourney } from "@/tests/e2e/personas/journeys"
 import { executePersonaJourney } from "@/tests/e2e/support/persona-journey-runner"
 
+const browserActionsSource = readFileSync(path.join(process.cwd(), "tests/e2e/support/persona-browser-actions.ts"), "utf8")
+
 describe("persona journey execution", () => {
+  it("restores the desktop viewport after mobile evidence even when capture fails", () => {
+    expect(browserActionsSource).toContain("finally {")
+    expect(browserActionsSource).toContain("setViewportSize({ width: 1440, height: 900 })")
+  })
+
   it("executes checkpoints without fabricating a persona context", async () => {
     const outputRoot = await mkdtemp(path.join(os.tmpdir(), "persona-journey-"))
     const execute = vi.fn(async () => ({ outcome: "observed" as const, evidence: { visible: true } }))

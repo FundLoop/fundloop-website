@@ -2,11 +2,12 @@ import { mkdir } from "node:fs/promises"
 import path from "node:path"
 import { expect,test } from "@playwright/test"
 import { loginThroughE2EEndpoint } from "../support/e2e-login"
+import { collectUnexpectedLocalConsoleErrors } from "../support/local-console-errors"
 
 const outputDir=path.resolve("output/playwright/issue-140")
 test("operator reviews Base Safe limits, exact command, and reconciliation state",async({page,context,baseURL})=>{
   if(!baseURL)throw new Error("base-payout-browser-base-url-required")
-  const errors:string[]=[];page.on("console",(message)=>{if(message.type()==="error")errors.push(message.text())})
+  const errors:string[]=[];collectUnexpectedLocalConsoleErrors(page,errors)
   await loginThroughE2EEndpoint(context,{baseURL,email:"maya@fundloop.example.com",password:"FundLoopFounder123!",secret:process.env.FUNDLOOP_E2E_SECRET ?? ""})
   await page.setViewportSize({width:1440,height:900});await page.goto(`${baseURL}/en/admin/cycles/2026-10/payouts`)
   const controls=page.getByTestId("base-payout-operator-controls");await controls.scrollIntoViewIfNeeded()

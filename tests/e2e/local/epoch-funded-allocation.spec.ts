@@ -2,13 +2,14 @@ import { mkdir } from "node:fs/promises"
 import path from "node:path"
 import { expect, test } from "@playwright/test"
 import { loginThroughE2EEndpoint } from "../support/e2e-login"
+import { collectUnexpectedLocalConsoleErrors } from "../support/local-console-errors"
 
 const outputDir=path.resolve("output/playwright/issue-136")
 
 test("operator reviews and idempotently recalculates the settled redistribution", async ({page,context,baseURL}) => {
   if(!baseURL) throw new Error("allocation-browser-base-url-required")
   const consoleErrors:string[]=[]
-  page.on("console",message=>{if(message.type()==="error")consoleErrors.push(message.text())})
+  collectUnexpectedLocalConsoleErrors(page,consoleErrors)
   await loginThroughE2EEndpoint(context,{baseURL,email:"maya@fundloop.example.com",password:"FundLoopFounder123!",secret:process.env.FUNDLOOP_E2E_SECRET ?? ""})
   await page.setViewportSize({width:1440,height:900})
   await page.goto(`${baseURL}/en/admin/cycles/2026-08/prep`)
@@ -36,7 +37,7 @@ test("operator reviews and idempotently recalculates the settled redistribution"
 test("operator approves the exact result and role surfaces preserve privacy", async ({page,context,browser,baseURL}) => {
   if(!baseURL) throw new Error("allocation-close-browser-base-url-required")
   const consoleErrors:string[]=[]
-  page.on("console",message=>{if(message.type()==="error")consoleErrors.push(message.text())})
+  collectUnexpectedLocalConsoleErrors(page,consoleErrors)
   await loginThroughE2EEndpoint(context,{baseURL,email:"maya@fundloop.example.com",password:"FundLoopFounder123!",secret:process.env.FUNDLOOP_E2E_SECRET ?? ""})
   await page.setViewportSize({width:1440,height:900})
   await page.goto(`${baseURL}/en/admin/cycles/2026-08/prep`)

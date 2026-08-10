@@ -27,6 +27,10 @@ const FORBIDDEN_VALUE = [
 ]
 const FORBIDDEN_VALUE_REASON = ["jwt", "six-digit-code", "email", "uuid", "wallet-address"] as const
 
+if (FORBIDDEN_VALUE.length !== FORBIDDEN_VALUE_REASON.length) {
+  throw new Error("persona-screenshot-sensitive-pattern-reason-mismatch")
+}
+
 export function sanitizeEvidence(evidence: SanitizedEvidence): SanitizedEvidence {
   const output: Record<string, string | number | boolean | null> = {}
 

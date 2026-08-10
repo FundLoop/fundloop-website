@@ -1,6 +1,6 @@
 "use client"
 
-import { useCallback, useEffect, useMemo, useState, useTransition } from "react"
+import { useCallback, useEffect, useMemo, useRef, useState, useTransition } from "react"
 import { useAccount, usePublicClient, useSwitchChain, useWaitForTransactionReceipt, useWriteContract } from "wagmi"
 import { formatUnits, parseUnits } from "viem"
 import { Loader2, Wallet } from "lucide-react"
@@ -117,6 +117,8 @@ export function ProjectCryptoPaymentDialog({
   const [lastAction, setLastAction] = useState<"approve" | "deposit" | null>(null)
   const [walletAttemptId, setWalletAttemptId] = useState<string | null>(null)
   const [receiptAttemptId, setReceiptAttemptId] = useState<string | null>(null)
+  const expectedDepositHashRef = useRef<`0x${string}` | null>(null)
+  const recordingReceiptHashRef = useRef<`0x${string}` | null>(null)
   const [recording, startRecording] = useTransition()
   const { openWalletModal, runtimeConfig, walletEnabled } = useWalletRuntime()
   const { address, chainId, isConnected } = useAccount()
@@ -139,6 +141,8 @@ export function ProjectCryptoPaymentDialog({
 
   useEffect(() => {
     if (!open) {
+      expectedDepositHashRef.current = null
+      recordingReceiptHashRef.current = null
       reset()
       setLastAction(null)
       setApprovalRequired(false)
@@ -327,9 +331,14 @@ export function ProjectCryptoPaymentDialog({
       return
     }
 
-    if (lastAction !== "deposit" || !address) {
+    if (lastAction !== "deposit" || !address || expectedDepositHashRef.current !== hash) {
       return
     }
+
+    if (recordingReceiptHashRef.current === hash) {
+      return
+    }
+    recordingReceiptHashRef.current = hash
 
     const activeAttemptId = receiptAttemptId ?? crypto.randomUUID()
     if (!receiptAttemptId) {
@@ -374,6 +383,8 @@ export function ProjectCryptoPaymentDialog({
       })
 
       if (!result.ok) {
+        expectedDepositHashRef.current = null
+        recordingReceiptHashRef.current = null
         await emitReceiptEvent({
           stage: "submission_record",
           outcome: "failure",
@@ -562,7 +573,7 @@ export function ProjectCryptoPaymentDialog({
   }
 
   const handleApprove = async () => {
-    if (!selectedMethod || !selectedRouteAvailable || !selectedMethod.asset.token_address || !supportsDirectUsdSettlement) {
+    if (!selectedMethod || !selectedRouteAvailable || !selectedMethod.asset.token_address || !supportsDirectUsdSettlement || !address || !publicClient) {
       await emitReceiptEvent({
         stage: "runtime_blocked",
         outcome: "failure",
@@ -585,14 +596,23 @@ export function ProjectCryptoPaymentDialog({
     })
 
     try {
-      await writeContractAsync({
+      const approvalHash = await writeContractAsync({
         address: selectedMethod.asset.token_address as `0x${string}`,
         abi: erc20Abi,
         functionName: "approve",
         args: [selectedMethod.intakeContract.contract_address as `0x${string}`, amountRaw],
       })
+
+      await publicClient.waitForTransactionReceipt({ hash: approvalHash })
+      const allowance = await publicClient.readContract({
+        address: selectedMethod.asset.token_address as `0x${string}`,
+        abi: erc20Abi,
+        functionName: "allowance",
+        args: [address, selectedMethod.intakeContract.contract_address as `0x${string}`],
+      })
+      setApprovalRequired(allowance < amountRaw)
     } catch {
-      // The wagmi hook will surface the failure via writeError; keep the UX consistent and avoid double toasts.
+      // The wagmi hook reports write failures; receipt or allowance-read failures keep approval required for retry.
     }
   }
 
@@ -610,7 +630,6 @@ export function ProjectCryptoPaymentDialog({
       return
     }
 
-    setLastAction("deposit")
     await emitReceiptEvent({
       stage: "deposit",
       outcome: "attempt",
@@ -622,22 +641,26 @@ export function ProjectCryptoPaymentDialog({
 
     try {
       if (selectedMethod.asset.is_native) {
-        await writeContractAsync({
+        const depositHash = await writeContractAsync({
           address: selectedMethod.intakeContract.contract_address as `0x${string}`,
           abi: fundLoopIntakeAbi,
           functionName: "depositNative",
           args: [BigInt(projectId), periodId],
           value: amountRaw,
         })
+        expectedDepositHashRef.current = depositHash
+        setLastAction("deposit")
         return
       }
 
-      await writeContractAsync({
+      const depositHash = await writeContractAsync({
         address: selectedMethod.intakeContract.contract_address as `0x${string}`,
         abi: fundLoopIntakeAbi,
         functionName: "depositToken",
         args: [BigInt(projectId), periodId, selectedMethod.asset.token_address as `0x${string}`, amountRaw],
       })
+      expectedDepositHashRef.current = depositHash
+      setLastAction("deposit")
     } catch {
       // The wagmi hook will surface the failure via writeError; keep the UX consistent and avoid double toasts.
     }
