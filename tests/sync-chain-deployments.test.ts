@@ -70,4 +70,27 @@ describe("chain deployment sync plan", () => {
 
     expect(plan.rows[0]?.action).toBe("disable")
   })
+
+  it("treats a disabled chain missing from local reference data as a no-op", () => {
+    const plan = buildChainIntakeContractSyncPlan({
+      manifest: {
+        version: "fundloop-wallet-deployments.playwright-local.v1",
+        environment: "local",
+        chains: [{
+          networkKey: "ethereum",
+          evmChainId: 1,
+          enabled: false,
+          abiVersion: "fundloop-intake-v1",
+          contractAddress: "0x0000000000000000000000000000000000000000",
+          treasuryAddress: "0x0000000000000000000000000000000000000000",
+        }],
+      },
+      refChains: [],
+      existingContracts: [],
+    })
+
+    expect(plan.hasErrors).toBe(false)
+    expect(plan.hasChanges).toBe(false)
+    expect(plan.rows[0]?.action).toBe("noop")
+  })
 })

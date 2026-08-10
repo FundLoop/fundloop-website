@@ -7,7 +7,7 @@ const outputDir=path.resolve("output/playwright/issue-140")
 test("operator reviews Base Safe limits, exact command, and reconciliation state",async({page,context,baseURL})=>{
   if(!baseURL)throw new Error("base-payout-browser-base-url-required")
   const errors:string[]=[];page.on("console",(message)=>{if(message.type()==="error")errors.push(message.text())})
-  await loginThroughE2EEndpoint(context,{baseURL,email:"maya@fundloop.example.com",password:"FundLoopFounder123!",secret:"allocation-local-secret"})
+  await loginThroughE2EEndpoint(context,{baseURL,email:"maya@fundloop.example.com",password:"FundLoopFounder123!",secret:process.env.FUNDLOOP_E2E_SECRET ?? ""})
   await page.setViewportSize({width:1440,height:900});await page.goto(`${baseURL}/en/admin/cycles/2026-10/payouts`)
   const controls=page.getByTestId("base-payout-operator-controls");await controls.scrollIntoViewIfNeeded()
   await expect(controls.getByText("Base Safe payout checkpoints")).toBeVisible()

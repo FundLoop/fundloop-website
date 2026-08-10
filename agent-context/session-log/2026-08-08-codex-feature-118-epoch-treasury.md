@@ -2232,3 +2232,58 @@ run replaces another run in the same deployment environment.
 
 - Commit and request one final exact-commit revalidation. Promote #143 only after that audit passes,
   then begin #144 on the same retained branch.
+
+### session v45: operationalize the Feature #118 evidence matrix (#144)
+
+- Timestamp: 2026-08-10T12:41:56-04:00
+- Agent: Codex
+- Branch: codex/118-operational-readiness
+- Head: 5cb308a
+
+#### Objective
+
+Turn the Feature #118 operator and five-persona acceptance surface into one repeatable, fail-closed
+local gate with truthful provider classifications, exact visual evidence, and zero owned residue.
+
+#### Actions Taken
+
+- Added a machine-readable 18-capability matrix that distinguishes local-real, sandbox-real,
+  stubbed, and pending behavior and binds every claim to its evidence owner and high-risk cases.
+- Added the `test:e2e:feature-118` orchestrator. It refuses non-loopback Supabase targets, replays the
+  schema, runs all five personas, the privacy and real Edge-to-Mailpit browser lane, ten SQL suites,
+  focused contracts, Hardhat, the full Node 22 gate, and a final reset with a digest-bound summary.
+- Hardened the persona and local-browser runners with process-group cleanup, bounded diagnostics,
+  runtime-only secrets, exact 1440x900 and 390x844 captures, and stable cold-start navigation.
+- Extended the operator journey through lock, calculation, verification, approval, bookkeeping,
+  observability, and founder/member readback. Removed raw participant UUIDs from the reviewed admin
+  result and payout surfaces.
+- Recorded a deterministic local FX seed, safe disabled-chain synchronization, capability/privacy
+  requirements, operational instructions, and the external Stripe inbound and production gates.
+
+#### Validation Notes
+
+- Canonical run `feature-118-20260810T163447180Z-43f7b007` passed all 18 recorded phases: fresh
+  replay, five personas, two browser checks, ten SQL suites, 18 focused tests, 17 Hardhat tests,
+  full Node 22 check, and the final zero-residue reset.
+- The full gate passed lint, 161 Vitest files / 714 tests, typecheck, and the 165-page production
+  build. Persona and Mailpit screenshots were inspected at exactly 1440x900 and 390x844.
+- Every persona cleanup report was clean with zero owned residue. No production value flow, hosted
+  mutation, remote Supabase write, provider mutation, payable, transfer, or payout was enabled.
+- Stripe Connect USD/CAD payout remains truthfully classified from retained sandbox evidence; Stripe
+  customer-balance USD/CAD intake remains pending, Base USDT/PYUSD remain stubbed, and policy and
+  accounting approvals remain deferred to production.
+
+#### Reflections
+
+- A green operational matrix is trustworthy only when unavailable capabilities remain visibly
+  pending and the summary is bound to the reviewed classification file.
+- Immutable consent and withdrawal evidence must have separate transactional owners; deleting it in
+  persona cleanup would make a clean report misleading.
+- Process-group cleanup is part of test correctness because orphaned Edge or Next processes can make
+  a later run pass against stale runtime state.
+
+#### Suggested Next Steps
+
+- Commit #144 and request independent exact-commit validation before moving it to In Review.
+- Validate integrated Goal #142 after #144 passes. Feature #118 remains externally blocked only by
+  #131 until Stripe enables the required customer-balance bank-transfer capability.

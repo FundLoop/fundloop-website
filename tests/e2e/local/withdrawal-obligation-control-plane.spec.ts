@@ -9,7 +9,7 @@ test("user reviews partial withdrawal inventory and obligation states", async ({
   if (!baseURL) throw new Error("withdrawal-browser-base-url-required")
   const consoleErrors: string[] = []
   page.on("console", (message) => { if (message.type() === "error") consoleErrors.push(message.text()) })
-  await loginThroughE2EEndpoint(context, { baseURL, email: "maya@fundloop.example.com", password: "FundLoopFounder123!", secret: "allocation-local-secret" })
+  await loginThroughE2EEndpoint(context, { baseURL, email: "maya@fundloop.example.com", password: "FundLoopFounder123!", secret: process.env.FUNDLOOP_E2E_SECRET ?? "" })
   await page.setViewportSize({ width: 1440, height: 900 })
   await page.goto(`${baseURL}/en/workspace/earnings`)
   const panel = page.getByTestId("withdrawal-request-panel")

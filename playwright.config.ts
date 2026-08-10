@@ -29,7 +29,9 @@ export default defineConfig({
     },
     {
       name: "local-wallet",
-      testMatch: /local\/.*\.spec\.ts/,
+      testMatch: /(?:local\/review-policy-consent|operational\/.*)\.spec\.ts/,
+      fullyParallel: false,
+      workers: 1,
       use: {
         ...devices["Desktop Chrome"],
         baseURL: process.env.PLAYWRIGHT_LOCAL_BASE_URL ?? "http://127.0.0.1:3001",
@@ -42,7 +44,7 @@ export default defineConfig({
       workers: 1,
       use: {
         ...devices["Desktop Chrome"],
-        viewport: { width: 1440, height: 1100 },
+        viewport: { width: 1440, height: 900 },
         baseURL: process.env.PLAYWRIGHT_PERSONA_BASE_URL ?? "http://127.0.0.1:3002",
         trace: "off",
         screenshot: "off",

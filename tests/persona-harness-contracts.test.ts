@@ -83,17 +83,16 @@ describe("persona harness contracts", () => {
       "auth.request-local-otp",
       "auth.verify-local-otp",
       "member.publish-profile",
+      "profile.review-publication-choice",
       "member.view-earnings-total",
       "member.view-project-sources",
       "member.withdraw-earnings",
     ])
     expect(journeys[0].checkpoints.at(-1)?.mode).toBe("required")
     expect(journeys[2].checkpoints.find((checkpoint) => checkpoint.id === "founder.create-project-invitation")?.mode).toBe("required")
-    expect(journeys[2].checkpoints.at(-1)).toMatchObject({
-      id: "cadence.await-operator-distribution",
-      mode: "expected-pending",
-      capabilityId: "founder-distribution-after-operator-cadence",
-    })
+    expect(journeys[2].checkpoints.find((checkpoint) => checkpoint.id === "profile.review-publication-choice")?.mode).toBe("required")
+    expect(journeys[2].checkpoints.at(-1)).toMatchObject({ id: "founder.submit-active-user-attribution", mode: "required" })
+    expect(journeys[3].checkpoints.at(-1)).toMatchObject({ id: "founder.submit-next-month-attribution", mode: "required" })
   })
 
   it("fixes the authenticated operator cadence and reporting order", () => {

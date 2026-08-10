@@ -134,9 +134,9 @@ export default async function AdminCyclePayoutsPage({ params }: PageProps) {
                   </TableCell>
                 </TableRow>
               ) : (
-                overview.bookkeepingCredits.rows.map((credit) => (
+                overview.bookkeepingCredits.rows.map((credit, index) => (
                   <TableRow key={credit.id}>
-                    <TableCell className="font-mono text-xs">{credit.user_id}</TableCell>
+                    <TableCell className="text-xs">Participant {index + 1}</TableCell>
                     <TableCell>
                       <div className="flex flex-wrap gap-2">
                         <Badge variant={credit.status === "credited" ? "default" : "secondary"}>{credit.status}</Badge>
@@ -214,9 +214,9 @@ export default async function AdminCyclePayoutsPage({ params }: PageProps) {
                   </TableCell>
                 </TableRow>
               ) : (
-                overview.intents.rows.map((intent) => (
+                overview.intents.rows.map((intent, index) => (
                   <TableRow key={intent.id}>
-                    <TableCell className="font-mono text-xs">{intent.user_id}</TableCell>
+                    <TableCell className="text-xs">Participant {index + 1}</TableCell>
                     <TableCell><Badge variant={intent.status === "ready" ? "default" : "secondary"}>{intent.status}</Badge></TableCell>
                     <TableCell>{intent.rail ?? "Pending route"}</TableCell>
                     <TableCell>{formatCurrency(locale, Number(intent.amount_usd ?? 0))}</TableCell>

@@ -39,6 +39,15 @@ export function buildChainIntakeContractSyncPlan({ manifest, refChains, existing
     const current = existingByNetworkKey.get(chain.networkKey) ?? null
 
     if (!refChain) {
+      if (!chain.enabled && !current) {
+        return {
+          networkKey: chain.networkKey,
+          action: "noop",
+          reason: `Manifest disables ${chain.networkKey}, and no local reference row or contract exists.`,
+          desired: chain,
+          current,
+        }
+      }
       return {
         networkKey: chain.networkKey,
         action: "error",

@@ -9,7 +9,7 @@ test("operator reviews and idempotently recalculates the settled redistribution"
   if(!baseURL) throw new Error("allocation-browser-base-url-required")
   const consoleErrors:string[]=[]
   page.on("console",message=>{if(message.type()==="error")consoleErrors.push(message.text())})
-  await loginThroughE2EEndpoint(context,{baseURL,email:"maya@fundloop.example.com",password:"FundLoopFounder123!",secret:"allocation-local-secret"})
+  await loginThroughE2EEndpoint(context,{baseURL,email:"maya@fundloop.example.com",password:"FundLoopFounder123!",secret:process.env.FUNDLOOP_E2E_SECRET ?? ""})
   await page.setViewportSize({width:1440,height:900})
   await page.goto(`${baseURL}/en/admin/cycles/2026-08/prep`)
   await expect(page.getByRole("heading",{name:"Immutable allocation review"})).toBeVisible()
@@ -37,7 +37,7 @@ test("operator approves the exact result and role surfaces preserve privacy", as
   if(!baseURL) throw new Error("allocation-close-browser-base-url-required")
   const consoleErrors:string[]=[]
   page.on("console",message=>{if(message.type()==="error")consoleErrors.push(message.text())})
-  await loginThroughE2EEndpoint(context,{baseURL,email:"maya@fundloop.example.com",password:"FundLoopFounder123!",secret:"allocation-local-secret"})
+  await loginThroughE2EEndpoint(context,{baseURL,email:"maya@fundloop.example.com",password:"FundLoopFounder123!",secret:process.env.FUNDLOOP_E2E_SECRET ?? ""})
   await page.setViewportSize({width:1440,height:900})
   await page.goto(`${baseURL}/en/admin/cycles/2026-08/prep`)
   if(await page.getByRole("button",{name:"Calculate provisional redistribution"}).isVisible()) {

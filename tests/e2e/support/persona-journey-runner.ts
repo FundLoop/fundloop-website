@@ -24,6 +24,9 @@ export async function executePersonaJourney(input: {
         }
       } catch (error) {
         const candidate = error instanceof Error ? error.message : ""
+        if (process.env.PLAYWRIGHT_PERSONA_DIAGNOSTICS === "1") {
+          console.error(`[persona-checkpoint:${checkpoint.id}] ${candidate.split("\n", 1)[0] || "unknown-error"}`)
+        }
         const reasonCode = /^[a-z][a-z0-9-]{2,80}$/.test(candidate) ? candidate : "checkpoint-execution-failed"
         checkpoints.push({
           checkpointId: checkpoint.id,

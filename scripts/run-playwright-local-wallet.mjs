@@ -1,9 +1,23 @@
 import { randomUUID } from "node:crypto"
 import { spawn } from "node:child_process"
+import { mkdir, open, rm } from "node:fs/promises"
+import path from "node:path"
 import { setTimeout as delay } from "node:timers/promises"
+import { fileURLToPath } from "node:url"
 import { createClient } from "@supabase/supabase-js"
 
 const rootCwd = new URL("..", import.meta.url)
+const rootPath = fileURLToPath(rootCwd)
+const localOperatorEmail = "maya@fundloop.example.com"
+
+function loadLocalEnv() {
+  const envPath = path.join(rootPath, ".env.local")
+  if (typeof process.loadEnvFile === "function") {
+    try { process.loadEnvFile(envPath) } catch (error) {
+      if (!error || typeof error !== "object" || error.code !== "ENOENT") throw error
+    }
+  }
+}
 
 function requireEnv(name, fallback = null) {
   const value = process.env[name]?.trim() ?? fallback
@@ -19,6 +33,7 @@ function spawnProcess(command, args, options = {}) {
     stdio: "pipe",
     cwd: new URL(".", rootCwd),
     env: process.env,
+    detached: true,
     ...options,
   })
 
@@ -26,6 +41,11 @@ function spawnProcess(command, args, options = {}) {
   child.stderr?.pipe(process.stderr)
 
   return child
+}
+
+function stopProcessGroup(child) {
+  if (!child?.pid || child.exitCode !== null) return
+  try { process.kill(-child.pid, "SIGTERM") } catch { child.kill("SIGTERM") }
 }
 
 async function waitForHttp(url, attempts = 60) {
@@ -102,7 +122,41 @@ async function runCommand(command, args, env = process.env) {
   })
 }
 
+async function startLocalEdgeRuntime(env) {
+  const directory = path.join(rootPath, "output", "playwright", "local-wallet")
+  const envPath = path.join(directory, "edge-runtime.env")
+  await mkdir(directory, { recursive: true, mode: 0o700 })
+  const values = {
+    FUNDLOOP_DEPLOYMENT_ENV: "local",
+    FUNDLOOP_INTERNAL_ADMIN_EMAILS: localOperatorEmail,
+    FUNDLOOP_ZKAS_SUPERADMIN_EMAILS: localOperatorEmail,
+    FUNDLOOP_MAILPIT_API_URL: "http://host.docker.internal:55324",
+    NEXT_PUBLIC_POLICY_REVIEW_PREVIEW: "1",
+    STRIPE_SECRET_KEY: env.STRIPE_SECRET_KEY,
+    STRIPE_WEBHOOK_SECRET: env.STRIPE_WEBHOOK_SECRET,
+    STRIPE_CONNECT_WEBHOOK_SECRET: env.STRIPE_CONNECT_WEBHOOK_SECRET,
+  }
+  const lines = Object.entries(values).filter(([, value]) => value).map(([key, value]) => {
+    if (String(value).includes("\n")) throw new Error("local-wallet-edge-env-invalid")
+    return `${key}=${value}`
+  })
+  const handle = await open(envPath, "w", 0o600)
+  try { await handle.writeFile(`${lines.join("\n")}\n`); await handle.sync() } finally { await handle.close() }
+  const child = spawnProcess("supabase", ["functions", "serve", "--env-file", envPath], { env })
+  for (let attempt = 0; attempt < 40; attempt += 1) {
+    if (child.exitCode !== null) throw new Error("local-wallet-edge-runtime-exited")
+    try {
+      const response = await fetch("http://127.0.0.1:55321/functions/v1/monthly-cycle-lock", { method: "OPTIONS", signal: AbortSignal.timeout(1_000) })
+      if (response.ok) return { child, envPath }
+    } catch {}
+    await delay(250)
+  }
+  child.kill("SIGTERM")
+  throw new Error("local-wallet-edge-runtime-readiness-timeout")
+}
+
 async function main() {
+  loadLocalEnv()
   const baseURL = process.env.PLAYWRIGHT_LOCAL_BASE_URL?.trim() || "http://127.0.0.1:3001"
   const rpcUrl = process.env.PLAYWRIGHT_LOCAL_RPC_URL?.trim() || "http://127.0.0.1:8545"
   const chainId = Number.parseInt(process.env.PLAYWRIGHT_LOCAL_CHAIN_ID ?? "8453", 10)
@@ -128,11 +182,14 @@ async function main() {
   ])
 
   const stopChildren = () => {
-    nodeProcess.kill("SIGTERM")
-    appProcess?.kill("SIGTERM")
+    stopProcessGroup(nodeProcess)
+    stopProcessGroup(appProcess)
+    stopProcessGroup(edgeProcess)
   }
 
   let appProcess = null
+  let edgeProcess = null
+  let edgeEnvPath = null
 
   process.on("SIGINT", stopChildren)
   process.on("SIGTERM", stopChildren)
@@ -193,11 +250,15 @@ async function main() {
       PLAYWRIGHT_LOCAL_BASE_URL: baseURL,
       PLAYWRIGHT_LOCAL_RPC_URL: rpcUrl,
       PLAYWRIGHT_LOCAL_CHAIN_ID: String(chainId),
+      PLAYWRIGHT_LOCAL_DB_URL: process.env.PLAYWRIGHT_LOCAL_DB_URL?.trim() || "postgresql://postgres:postgres@127.0.0.1:55322/postgres",
       PLAYWRIGHT_LOCAL_WALLET_ADDRESS: deployment.payerAddress,
       PLAYWRIGHT_LOCAL_TREASURY_ADDRESS: deployment.treasuryAddress,
       PLAYWRIGHT_LOCAL_TOKEN_ADDRESS: deployment.tokenAddress,
       PLAYWRIGHT_LOCAL_INTAKE_ADDRESS: deployment.intakeAddress,
       FUNDLOOP_DEPLOYMENT_ENV: "local",
+      FUNDLOOP_INTERNAL_ADMIN_EMAILS: localOperatorEmail,
+      FUNDLOOP_ZKAS_SUPERADMIN_EMAILS: localOperatorEmail,
+      NEXT_PUBLIC_POLICY_REVIEW_PREVIEW: "1",
       FUNDLOOP_E2E_ENABLED: "true",
       FUNDLOOP_E2E_SECRET: e2eSecret,
       FUNDLOOP_PAYMENTS_CRON_SECRET: cronSecret,
@@ -241,6 +302,10 @@ async function main() {
       throw new Error(assetUpdateError.message)
     }
 
+    const edgeRuntime = await startLocalEdgeRuntime(sharedEnv)
+    edgeProcess = edgeRuntime.child
+    edgeEnvPath = edgeRuntime.envPath
+
     appProcess = spawnProcess(
       "pnpm",
       ["dev", "--port", new URL(baseURL).port || "3001", "--hostname", "127.0.0.1"],
@@ -252,6 +317,7 @@ async function main() {
     await runCommand("pnpm", ["exec", "playwright", "test", "--project=local-wallet"], sharedEnv)
   } finally {
     stopChildren()
+    if (edgeEnvPath) await rm(edgeEnvPath, { force: true })
   }
 }
 

@@ -591,3 +591,24 @@ None block implementation. The user confirmed the persona split, auth strategy, 
 
 - Goal #99 and Tasks #100-#102: implement the fixed orchestration/reporting contract, member/founder journeys, and operator cadence journey in the registered Feature #96 worktree.
 - Keep payout execution and the independently filtered founder cadence handoff explicit; invitation acceptance and withdrawal requests are now required persona behavior.
+
+## Feature #118 operational extension (Task #144)
+
+Task #144 supersedes the older 1440x1100 capture and request-only withdrawal notes above for the settlement-backed branch. The local persona project now captures successful evidence at exactly 1440x900 and 390x844. Automatic Playwright failure artifacts remain disabled and the sanitizer still refuses sensitive controls, email addresses, Auth IDs, OTPs, wallet destinations, tokens, and arbitrary private text.
+
+Task #144 also retires the founder `founder-distribution-after-operator-cadence` checkpoint from the active journeys. Founder contribution/attribution, package settlement/reporting, and the operator twelve-stage cadence now have separate required evidence owners in the capability matrix; a founder persona no longer reports an unrelated historical Task #102 handoff as pending.
+
+The runner owns a temporary local Edge runtime in addition to Next. It writes a mode-0600 env file under the ignored run directory, passes only the local operator allowlists and review-preview switches needed by the persona commands, and removes that file during shutdown. Supabase and Mailpit remain caller-owned. The runner derives the loopback Postgres URL from `supabase status`; protected fixture cleanup may use that owner connection only for an explicit table allowlist and exact ledger-owned primary keys. It refuses any database host or port other than `127.0.0.1:55322`.
+
+New user onboarding is private by default. The all-five-persona lane proves the separate Account > Profile publication control is visible and unselected without creating append-only consent evidence. The dedicated review-policy browser smoke owns grant, discovery, withdrawal, and cleanup evidence. Likewise, member personas prove $125 of project-linked USD inventory is eligible while the Terms preview gate remains unselected; the transactional withdrawal suite and dedicated browser smoke own partial reservation, queueing, immutable fee snapshots, holds, cancellation, settlement, and concurrency evidence. This split prevents the persona cleanup contract from deleting immutable lifecycle evidence.
+
+`tests/e2e/operational/feature-118-capability-matrix.json` is the canonical machine-readable coverage map. Every entry is classified as `local-real`, `sandbox-real`, `stubbed`, or `pending`, names its evidence owners and high-risk cases, and is embedded with a SHA-256 digest into each persona `summary.json`. A stubbed or pending capability is never converted into a passing persona checkpoint. In particular:
+
+- Stripe Connect USD/CAD payout is `sandbox-real` based on retained provider and local reconciliation evidence;
+- Stripe bank-transfer USD/CAD intake remains `pending` because the FundLoop Stripe sandbox exposes no `customer_balance` bank-transfer currencies;
+- Base USDC intake/Safe payout is `local-real` with Hardhat receipt and execution evidence;
+- Base USDT/PYUSD remain `stubbed` until reviewed issuer-address evidence exists;
+- hosted smoke remains `pending` until an explicitly selected Preview/dev target and credentials are supplied; and
+- effective policy, definitive accounting, and production value flow remain `pending` until the production approval gates are satisfied.
+
+The stable local seed includes one immutable, production-disabled USD FX snapshot for disposable persona inventory. Individual persona runs create only obligations and inventory lots against that shared snapshot, then delete their exact owned rows before actor/project/cycle cleanup. They do not create or erase immutable FX or withdrawal lifecycle evidence.

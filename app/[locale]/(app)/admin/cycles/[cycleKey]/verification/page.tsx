@@ -184,9 +184,9 @@ export default async function AdminCycleVerificationPage({ params }: PageProps) 
               <h2 className="text-base font-semibold text-[var(--text-strong)]">User results</h2>
               <div className="mt-3 space-y-2">
                 {review.calculation.userResults.length > 0 ? (
-                  review.calculation.userResults.slice(0, 8).map((row) => (
+                  review.calculation.userResults.slice(0, 8).map((row, index) => (
                     <div key={row.zkasUserId} className="flex items-center justify-between gap-3 rounded-[var(--radius-lg)] bg-[var(--surface-panel-strong)] px-3 py-2 text-sm">
-                      <span className="min-w-0 truncate">{row.zkasUserId}</span>
+                      <span className="min-w-0 truncate">Participant {index + 1}</span>
                       <span className="font-semibold">{formatCurrency(locale, row.allocationUsd)}</span>
                     </div>
                   ))
@@ -220,13 +220,13 @@ export default async function AdminCycleVerificationPage({ params }: PageProps) 
             <div className="rounded-[var(--radius-xl)] border border-[color:var(--surface-border)] p-4">
               <h2 className="text-base font-semibold text-[var(--text-strong)]">Raw project entitlements</h2>
               <div className="mt-3 space-y-2">
-                {review.calculation.projectResults.slice(0, 6).map((row) => (
+                {review.calculation.projectResults.slice(0, 6).map((row, index) => (
                   <div key={`${row.projectId}-${row.userId}`} className="rounded-[var(--radius-lg)] bg-[var(--surface-panel-strong)] px-3 py-2 text-xs">
                     <div className="flex items-center justify-between gap-3">
                       <span>Project {row.projectId}</span>
                       <span className="font-semibold">{formatCurrency(locale, row.rawUsd)}</span>
                     </div>
-                    <p className="mt-1 truncate text-[var(--text-muted)]">{row.userId}</p>
+                    <p className="mt-1 truncate text-[var(--text-muted)]">Participant {index + 1}</p>
                     <p className="mt-1 text-[var(--text-muted)]">{formatNumber(locale, row.attributionPoints)} / {formatNumber(locale, row.totalProjectPoints)} points</p>
                   </div>
                 ))}
@@ -237,13 +237,13 @@ export default async function AdminCycleVerificationPage({ params }: PageProps) 
             <div className="rounded-[var(--radius-xl)] border border-[color:var(--surface-border)] p-4">
               <h2 className="text-base font-semibold text-[var(--text-strong)]">Asset fills</h2>
               <div className="mt-3 space-y-2">
-                {review.calculation.assetFills.slice(0, 6).map((row) => (
+                {review.calculation.assetFills.slice(0, 6).map((row, index) => (
                   <div key={`${row.userId}-${row.projectId}-${row.assetCode}-${row.preferenceRank}`} className="rounded-[var(--radius-lg)] bg-[var(--surface-panel-strong)] px-3 py-2 text-xs">
                     <div className="flex items-center justify-between gap-3">
                       <span>{row.assetCode}</span>
                       <span className="font-semibold">{formatCurrency(locale, row.usdValue)}</span>
                     </div>
-                    <p className="mt-1 truncate text-[var(--text-muted)]">{row.userId}</p>
+                    <p className="mt-1 truncate text-[var(--text-muted)]">Participant {index + 1}</p>
                     <p className="mt-1 text-[var(--text-muted)]">Rank {row.preferenceRank}{row.partial ? " · partial fill" : ""}</p>
                   </div>
                 ))}

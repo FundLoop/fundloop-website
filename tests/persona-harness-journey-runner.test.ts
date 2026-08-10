@@ -2,7 +2,7 @@ import { mkdtemp, readFile } from "node:fs/promises"
 import os from "node:os"
 import path from "node:path"
 import { describe, expect, it, vi } from "vitest"
-import { newFounderJourney, newMemberJourney } from "@/tests/e2e/personas/journeys"
+import { newMemberJourney } from "@/tests/e2e/personas/journeys"
 import { executePersonaJourney } from "@/tests/e2e/support/persona-journey-runner"
 
 describe("persona journey execution", () => {
@@ -38,14 +38,21 @@ describe("persona journey execution", () => {
   it("reports declared pending checkpoints and always cleans", async () => {
     const outputRoot = await mkdtemp(path.join(os.tmpdir(), "persona-journey-"))
     const cleanup = vi.fn(async () => ({ status: "clean" as const, deletedCount: 4, residualCount: 0, reasonCode: null }))
-    const actions = new Proxy({}, {
-      get: (_target, checkpointId) => async () => checkpointId === "cadence.await-operator-distribution"
-        ? { outcome: "capability-unavailable" as const, evidence: { declared: true }, reasonCode: "operator-cadence-owned-by-task-102" }
-        : { outcome: "observed" as const, evidence: { visible: true } },
-    }) as never
-
     const result = await executePersonaJourney({
-      journey: newFounderJourney(actions),
+      journey: {
+        id: "new-founder",
+        title: "Pending mechanism fixture",
+        actorKind: "new",
+        checkpoints: [{
+          id: "cadence.await-operator-distribution",
+          title: "Historical pending mechanism",
+          actorAlias: "new-founder",
+          surface: "fixture-observation",
+          mode: "expected-pending",
+          capabilityId: "founder-distribution-after-operator-cadence",
+          execute: async () => ({ outcome: "capability-unavailable", evidence: { declared: true }, reasonCode: "operator-cadence-owned-by-task-102" }),
+        }],
+      },
       outputRoot,
       runId: "persona-20350101T000000Z-journey",
       cleanup,

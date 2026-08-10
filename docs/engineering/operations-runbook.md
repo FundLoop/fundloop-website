@@ -109,3 +109,24 @@ Use local Supabase for destructive migration replay and smoke tests. Use remote 
 Agents must not manually push, reset, re-link, seed, or otherwise mutate remote Supabase unless the user explicitly grants that permission in the current prompt.
 
 See `docs/engineering/env-and-testing.md` and `docs/engineering/supabase-deployments.md` for detailed environment rules.
+
+## Feature #118 operational matrix
+
+Use `tests/e2e/operational/feature-118-capability-matrix.json` as the capability source of truth for a Feature #118 review. Do not infer provider readiness from green local SQL, Hardhat, or browser tests.
+
+1. Reset and seed only the local FundLoop stack.
+2. Run the all-five-persona harness and require zero owned residue for every persona.
+3. Run the focused review-policy, invitation, package, FX, allocation, withdrawal, Stripe, and Base suites named by the capability matrix.
+4. Run the neutral-ledger, epoch-shadow, reconciliation, close-package, withdrawal, Base, Stripe Connect, and financial-cutover SQL suites against the disposable local database.
+5. Run Hardhat and the full Node 22 check.
+6. Inspect exact 1440x900 and 390x844 sanitized captures. Never retain automatic traces or failure screenshots from OTP, invitation-token, payout-destination, or private-profile surfaces.
+7. Run hosted smoke only against an explicitly selected Preview/dev URL and Supabase project. A missing target remains `pending`; it is not a local failure and must not be labeled green.
+
+Current hard stops:
+
+- Stripe inbound bank-transfer intake stays disabled while the sandbox reports no supported `customer_balance` currencies.
+- Base USDT/PYUSD cannot leave local mock status without reviewed provider-address evidence.
+- production runtime controls, policy effectiveness, definitive accounting classifications, payables, provider calls, transfers, and value flow remain disabled.
+- counsel and accountant/bookkeeper approval are production-promotion gates, as previously directed; they do not block neutral local/dev evidence.
+
+On any mismatch between provider state and the machine matrix, downgrade the capability to `pending`, preserve the evidence, and stop the affected command. On cleanup residue, stop the aggregate as failed and use the exact run ledger recovery command; never broaden a delete target or erase append-only evidence.
