@@ -238,6 +238,13 @@ Scores are individual discounts against equal project shares, not weights divide
 the sum of cohort scores. Redistribution principal is not a fee, revenue, treasury
 sweep, or payable.
 
+Task #136 implements this as a separate `settled_cubid_redistribution_v1`
+local/dev path. It reserves only approved, reconciled, neutral-ledger-backed source
+lots; records immutable manifest and result hashes; and proves canonical source,
+pool, cap, award, and returned-residue conservation. The operator prep workspace
+shows review totals and provenance without exposing cross-project membership. The
+legacy `mvp_capped_equalization_v1` path remains compatibility-only.
+
 Until Goal #134's accounting, privacy, custody, and production gates are satisfied,
 this calculation is review-only in local/dev. Production allocation and award
 posting must remain fail-closed, and project/public outputs must not expose user-level
@@ -480,3 +487,27 @@ Operational MVP is complete only when:
 - CUBID linkage is required; full phone/provider verification improves readiness but does not block MVP earning credits.
 - Existing monthly-cycle, payout-intent, reporting, and zkAS structures should be reused where practical.
 - Real outbound payouts remain explicitly deferred.
+
+## Settlement-backed provisional close
+
+The newer settlement-backed path has a production-disabled close boundary separate
+from legacy MVP bookkeeping credits. An operator approves only after an independent
+deterministic rerun reproduces the persisted manifest/result hashes. The command
+posts source-linked provisional controls, publishes one reproducible root hash,
+and advances the shadow epoch from `reviewing` to `payout_readying` only.
+Preparation leaves the epoch in `reviewing` and exposes the exact root to the
+authorized operator; a separate actor-bound confirmation of that exact root is the
+only action that records the hard gates and advances to `payout_readying`.
+
+These rows are conditional award controls, not the legacy credited earnings table,
+not user-owned balances, and not payables. User, founder, public, and operator
+surfaces use separate read models: users see only self; founders see only their
+project aggregate; public roots, amounts, source counts, and cohort counts are all
+withheld until at least three users satisfy the relevant privacy threshold; operators
+retain the private artifact inventory. `payout_open`, payout intents, provider
+calls, asset transfers, and production value flow remain outside this Goal.
+
+Exact terminal source fills include a separately source-linked returned-residue
+fraction whenever exact funded USD cannot be represented by canonical minor units.
+The neutral ledger posts those exact amounts even when the residue has zero minor
+units, so exact and canonical conservation remain independently reproducible.

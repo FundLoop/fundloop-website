@@ -218,6 +218,7 @@ function makeSupabase(overrides: Partial<Record<string, Array<Record<string, unk
   return new FakeSupabase({
     monthly_cycles: [{ ...cycle }],
     monthly_cycle_events: [],
+    epoch_valuation_source_lots: [],
     zkas_runs: [],
     zkas_datasets: [
       {
@@ -377,6 +378,11 @@ describe("executeMonthlyCycleCalculationPackageCommand", () => {
     )
 
     expect(result).toMatchObject({ ok: false, error: { code: "cycle_not_ready" } })
+  })
+
+  it("routes journal-backed sources away from the legacy point calculator", async () => {
+    const result=await executeMonthlyCycleCalculationPackageCommand(makeSupabase({epoch_valuation_source_lots:[{id:99,monthly_cycle_id:1,state:"ready_for_lock"}]}) as never,commandInput)
+    expect(result).toMatchObject({ok:false,error:{code:"settled_allocation_required"}})
   })
 
   it("rejects missing or ambiguous inputs", async () => {

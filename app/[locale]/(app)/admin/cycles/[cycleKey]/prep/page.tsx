@@ -1,6 +1,8 @@
 import { notFound } from "next/navigation"
 import { AlertTriangle, ArrowLeft, CheckCircle2, FileSearch, Info, ShieldAlert } from "lucide-react"
 import { ProjectAttributionDatasetReviewActions } from "@/components/admin/project-attribution-dataset-review-actions"
+import { EpochFundedAllocationActions } from "@/components/admin/epoch-funded-allocation-actions"
+import { EpochAllocationCloseActions } from "@/components/admin/epoch-allocation-close-actions"
 import { Link } from "@/i18n/navigation"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -8,10 +10,13 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { requireInternalAdminActor } from "@/lib/zkas/auth"
 import {
   loadMonthlyCyclePrepReview,
+  loadEpochFinancialPrepReview,
+  loadEpochFundedAllocationReview,
   type MonthlyCyclePrepIssue,
   type MonthlyCyclePrepPosture,
   type MonthlyCyclePrepSeverity,
 } from "@/lib/monthly-cycles/monthly-cycle-prep"
+import { loadEpochCloseOperator } from "@/lib/monthly-cycles/epoch-close-review"
 
 type PageProps = {
   params: Promise<{ cycleKey: string; locale: string }>
@@ -29,6 +34,10 @@ function formatCurrency(locale: string, value: number) {
     currency: "USD",
     maximumFractionDigits: 0,
   }).format(value)
+}
+
+function sumIntegerValues(left: string | number | null, right: string | number | null) {
+  return (BigInt(String(left ?? 0)) + BigInt(String(right ?? 0))).toString()
 }
 
 function severityIcon(severity: MonthlyCyclePrepSeverity) {
@@ -63,14 +72,17 @@ function IssueCard({ issue }: { issue: MonthlyCyclePrepIssue }) {
 
 export default async function AdminCyclePrepPage({ params }: PageProps) {
   const { cycleKey, locale } = await params
-  const review = await (async () => {
+  const [review,financialPrep,fundedAllocation,epochClose] = await (async () => {
     await requireInternalAdminActor()
-    return loadMonthlyCyclePrepReview(cycleKey)
+    return Promise.all([loadMonthlyCyclePrepReview(cycleKey),loadEpochFinancialPrepReview(cycleKey),loadEpochFundedAllocationReview(cycleKey),loadEpochCloseOperator(cycleKey)])
   })()
 
   if (!review) {
     notFound()
   }
+  const persistedRootReview = epochClose?.status === "root_review_required" && epochClose.close_package_id && epochClose.root_hash
+    ? { closePackageId: epochClose.close_package_id, rootHash: epochClose.root_hash }
+    : null
 
   return (
     <div className="container mx-auto space-y-8 px-4 py-12">
@@ -183,6 +195,111 @@ export default async function AdminCyclePrepPage({ params }: PageProps) {
             </p>
           </CardContent>
         </Card>
+      </section>
+
+      <section className="space-y-5 rounded-[calc(var(--radius-2xl)+0.25rem)] border border-[color:var(--surface-border)] bg-[var(--surface-panel)] p-6 shadow-[var(--surface-shadow-panel)]">
+        <div className="flex flex-wrap items-start justify-between gap-4">
+          <div>
+            <p className="text-[0.72rem] font-semibold uppercase tracking-[0.28em] text-[var(--interactive-primary)]">Funded allocation inputs</p>
+            <h2 className="mt-2 text-2xl font-semibold text-[var(--text-strong)]">Valuation, fees, and carryover</h2>
+            <p className="mt-2 max-w-3xl text-sm leading-6 text-[var(--text-muted)]">
+              Provisional review-only inputs preserve exact source provenance. They are not claims, payables, revenue, provider instructions, or value movement.
+            </p>
+          </div>
+          <Badge variant="outline">Production disabled</Badge>
+        </div>
+        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
+          {[
+            ["Sources",String(financialPrep.summary?.source_count ?? 0)],
+            ["Gross USD",financialPrep.summary?.gross_exact_usd ?? "0"],
+            ["Project fees",financialPrep.summary?.project_fee_exact_usd ?? "0"],
+            ["Base fees",financialPrep.summary?.base_fee_exact_usd ?? "0"],
+            ["Distributable",financialPrep.summary?.distributable_exact_usd ?? "0"],
+          ].map(([label,value])=>(
+            <div key={label} className="rounded-[var(--radius-xl)] border border-[color:var(--surface-border)] bg-[var(--surface-panel-strong)] p-4">
+              <p className="text-xs uppercase tracking-[0.16em] text-[var(--text-soft)]">{label}</p>
+              <p className="mt-2 break-all font-mono text-lg font-semibold text-[var(--text-strong)]">{value}</p>
+            </div>
+          ))}
+        </div>
+        {financialPrep.sources.length===0 ? (
+          <p className="rounded-[var(--radius-xl)] border border-dashed border-[color:var(--surface-border)] p-4 text-sm text-[var(--text-muted)]">No fee-processed sources are ready. Posted FX and approved packages are required.</p>
+        ) : (
+          <div className="overflow-x-auto rounded-[var(--radius-xl)] border border-[color:var(--surface-border)]">
+            <table className="w-full min-w-[56rem] text-left text-sm">
+              <thead className="bg-[var(--surface-panel-strong)] text-xs uppercase tracking-[0.12em] text-[var(--text-soft)]"><tr>
+                <th className="p-3">Source</th><th className="p-3">Project</th><th className="p-3">Asset / custody</th><th className="p-3">Native</th><th className="p-3">FX</th><th className="p-3">Distributable USD</th><th className="p-3">State</th>
+              </tr></thead>
+              <tbody>{financialPrep.sources.map((source)=><tr key={source.source_lot_key} className="border-t border-[color:var(--surface-border)]">
+                <td className="p-3 font-mono text-xs">{source.source_lot_key}</td><td className="p-3">{source.project_slug}</td><td className="p-3">{source.asset_key} / {source.custody_key}</td>
+                <td className="p-3 font-mono">{source.native_atomic_amount}</td><td className="p-3 font-mono">{source.rate_usd_per_unit}</td>
+                <td className="p-3 font-mono">{source.distributable_exact_usd}</td><td className="p-3"><Badge variant="secondary">{source.state}</Badge></td>
+              </tr>)}</tbody>
+            </table>
+          </div>
+        )}
+      </section>
+
+      <section className="space-y-5 rounded-[calc(var(--radius-2xl)+0.25rem)] border border-[color:var(--surface-border)] bg-[var(--surface-panel)] p-6 shadow-[var(--surface-shadow-panel)]">
+        <div className="flex flex-wrap items-start justify-between gap-4">
+          <div>
+            <p className="text-[0.72rem] font-semibold uppercase tracking-[0.28em] text-[var(--interactive-primary)]">Settled Cubid redistribution</p>
+            <h2 className="mt-2 text-2xl font-semibold text-[var(--text-strong)]">Immutable allocation review</h2>
+            <p className="mt-2 max-w-3xl text-sm leading-6 text-[var(--text-muted)]">
+              Equal project shares are discounted by locked Cubid scores. Score shortfalls and overlap-cap overflow fund lowest-current-total-first top-ups under the preserved 3× cap. Results remain provisional: no payable, payout, provider call, or value movement is created here.
+            </p>
+          </div>
+          <Badge variant="outline">Production disabled</Badge>
+        </div>
+        {fundedAllocation.runtimeAvailable ? <EpochFundedAllocationActions cycleKey={cycleKey} /> : null}
+        {fundedAllocation.allocation ? (
+          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+            {[
+              ["State",fundedAllocation.allocation.status ?? "locked"],
+              ["Funded minor",fundedAllocation.allocation.funded_minor ?? "0"],
+              ["Redistribution pool",sumIntegerValues(fundedAllocation.allocation.score_pool_minor,fundedAllocation.allocation.overlap_pool_minor)],
+              ["Top-up / residue",`${fundedAllocation.allocation.top_up_minor ?? "0"} / ${fundedAllocation.allocation.returned_residue_minor ?? "0"}`],
+              ["Final allocation",fundedAllocation.allocation.final_allocation_minor ?? "0"],
+              ["Users",String(fundedAllocation.allocation.user_count ?? 0)],
+              ["Manifest",fundedAllocation.allocation.manifest_hash?.slice(0,12) ?? "pending"],
+              ["Result",fundedAllocation.allocation.result_hash?.slice(0,12) ?? "pending"],
+            ].map(([label,value])=>(
+              <div key={label} className="rounded-[var(--radius-xl)] border border-[color:var(--surface-border)] bg-[var(--surface-panel-strong)] p-4">
+                <p className="text-xs uppercase tracking-[0.16em] text-[var(--text-soft)]">{label}</p>
+                <p className="mt-2 break-all font-mono text-base font-semibold text-[var(--text-strong)]">{value}</p>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <p className="rounded-[var(--radius-xl)] border border-dashed border-[color:var(--surface-border)] p-4 text-sm text-[var(--text-muted)]">
+            No settled allocation manifest is locked yet. Only approved packages with reconciled, journal-backed source lots can enter this review.
+          </p>
+        )}
+      </section>
+
+      <section className="space-y-5 rounded-[calc(var(--radius-2xl)+0.25rem)] border border-cyan-300/60 bg-[var(--surface-panel)] p-6 shadow-[var(--surface-shadow-panel)] dark:border-cyan-500/30">
+        <div className="flex flex-wrap items-start justify-between gap-4">
+          <div>
+            <p className="text-[0.72rem] font-semibold uppercase tracking-[0.28em] text-[var(--interactive-primary)]">Approved epoch close</p>
+            <h2 className="mt-2 text-2xl font-semibold text-[var(--text-strong)]">Conditional awards and reproducible close package</h2>
+            <p className="mt-2 max-w-3xl text-sm leading-6 text-[var(--text-muted)]">
+              Approval independently reruns the exact persisted allocation, posts source-linked provisional controls, and stops at payout readying. Awards remain non-payable and not user-owned; no provider or value flow is opened.
+            </p>
+          </div>
+          <Badge variant="outline">Production disabled</Badge>
+        </div>
+        {fundedAllocation.allocation?.result_hash && (!epochClose || persistedRootReview)
+          ? <EpochAllocationCloseActions cycleKey={cycleKey} initialRootReview={persistedRootReview} />
+          : null}
+        {epochClose ? <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+          {[
+            ["Stage",epochClose.status ?? "payout_readying"],["Funded minor",String(epochClose.funded_minor ?? 0)],
+            ["Final / residue",`${epochClose.final_allocation_minor ?? 0} / ${epochClose.returned_residue_minor ?? 0}`],
+            ["Pool / top-up",`${epochClose.redistribution_pool_minor ?? 0} / ${epochClose.top_up_minor ?? 0}`],
+            ["Conditional users",String(epochClose.user_count ?? 0)],["Artifacts",String(epochClose.artifact_count ?? 0)],
+            ["Result",epochClose.result_hash?.slice(0,12) ?? "pending"],["Root",epochClose.root_hash?.slice(0,12) ?? "pending"],
+          ].map(([label,value])=><div key={label} className="rounded-xl border border-[color:var(--surface-border)] p-3"><p className="text-xs uppercase tracking-[0.14em] text-[var(--text-soft)]">{label}</p><p className="mt-1 break-all font-mono font-semibold">{value}</p></div>)}
+        </div> : <p className="rounded-xl border border-dashed border-[color:var(--surface-border)] p-4 text-sm text-[var(--text-muted)]">A calculated persisted result is required before approval. Payout opening remains a separate blocked Goal.</p>}
       </section>
 
       <section className="grid gap-6 lg:grid-cols-[minmax(0,1.3fr)_minmax(20rem,0.7fr)]">

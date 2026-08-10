@@ -66,7 +66,7 @@ Session 26 added `/[locale]/admin/cycles/[cycleKey]/verification` as the cleanup
 
 Session 51 hardened sensitive monthly-cycle mutations: verification review, approval, and payout-intent creation now reject non-internal-admin actor roles before mutation, and approval records failure audit events once the target cycle is known and cannot safely advance.
 
-Session 27 added `/[locale]/admin/cycles/[cycleKey]/payouts` as the first operator view over outbound payout work. It converts approved published user results into payout intents through the `monthly-cycle-payout-intents-create` Edge Function command, then moves the cycle into `distribution`. Payout execution, rail batching, and reconciliation remain later sessions.
+Session 27 added `/[locale]/admin/cycles/[cycleKey]/payouts` as the first operator view over outbound payout work. The original direct published-result-to-intent action is now retired: approved close packages create obligations, and project-scoped user withdrawal reservations are the only path to a new payout intent. Payout execution and reconciliation remain later sessions.
 
 ## Pipeline Observability
 
@@ -206,14 +206,14 @@ For operator and user-facing copy, keep these states distinct:
 
 ## Payout Intent Creation
 
-`monthly-cycle-payout-intents-create` is the command boundary between approved distribution results and concrete outbound payout work. The command:
+The former `monthly-cycle-payout-intents-create` command is retained only in historical session records and is not an active app or Edge surface. `user-withdrawal-request-create` is the command boundary between approved obligations and concrete outbound payout work. The command:
 
-- requires the cycle to be in `approval` or `distribution`
-- reads positive `zkas_published_user_results` attached through `monthly_cycle_id`
-- creates one idempotent `payout_intents` row per published user result
-- marks intents `ready` when the user has an active default payout route
-- marks intents `draft` with `missing_default_payout_route` when a route is not configured yet
-- advances the cycle to `distribution` and records audit events for attempt and success/failure outcomes
+- requires current review-policy acknowledgement and an active payout route
+- snapshots one project, one eligible rail asset, gross amount, user fee, net amount, and destination hash
+- claims the user's oldest available obligations atomically
+- creates one idempotent withdrawal-backed draft intent only when exact project inventory is reserved
+- otherwise records no intent and queues the timely request for the next active processing epoch
+- remains unavailable in production and never calls a provider or transfers value
 
 The command does not execute payouts or reconcile outbound transfers. Session 28 added the adapter interface and deterministic batch-draft builder that later payout commands should use to create rail-specific batches from ready intents.
 
@@ -227,7 +227,7 @@ Session 43 standardized Supabase Storage artifact buckets and path construction 
 
 New monthly cadence work should attach to `monthly_cycles` instead of independently interpreting month strings. Existing zkAS `month` fields and payment period fields remain in place for compatibility, but `monthly_cycle_id` is the canonical join point for lock, prep, zkAS calculation, verification, payout, and reporting sessions.
 
-All monthly-cycle mutations should follow the Edge Function command boundary. Session 22 added locking, Session 23 added read-only prep checks, Session 24 aligned zkAS reads/writes to cycle ownership, Session 25 added deterministic calculation packaging, Session 26 added verification/approval checkpoints, and Session 27 added payout-intent creation. Session 35 made those outputs visible to users, and Session 36 added reporting publication read models and artifact metadata. Payout execution and report generation commands remain later sessions.
+All monthly-cycle mutations should follow the Edge Function command boundary. Session 22 added locking, Session 23 added read-only prep checks, Session 24 aligned zkAS reads/writes to cycle ownership, Session 25 added deterministic calculation packaging, and Session 26 added verification/approval checkpoints. The earlier Session 27 direct-intent action is retired; project-scoped withdrawals now own new intent creation. Session 35 made earnings visible to users, and Session 36 added reporting publication read models and artifact metadata. Payout execution and report generation commands remain later sessions.
 
 ## Local Supabase Note
 

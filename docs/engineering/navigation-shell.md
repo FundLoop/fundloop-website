@@ -148,7 +148,7 @@ Session 21 added the first-class monthly cycle operator surface.
 - `/[locale]/admin/cycles/[cycleKey]/reporting` is the operator reporting publication view for role-specific report coverage and storage artifact metadata.
 - Monthly cycles are the canonical anchor for payment totals, onchain reconciliation, zkAS datasets/runs, and later payout/reporting stages.
 - The app-shell admin subnav now includes Monthly Cycles beside Payments and zkAS.
-- Session 22 added `monthly-cycle-lock`; Session 23 added read-only prep review; Session 25 added `monthly-cycle-calculation-package`; Session 26 added verification and approval commands; Session 27 added `monthly-cycle-payout-intents-create`. Later transition commands should extend the same operator workspace instead of creating separate admin roots.
+- Session 22 added `monthly-cycle-lock`; Session 23 added read-only prep review; Session 25 added `monthly-cycle-calculation-package`; Session 26 added verification and approval commands. Session 27's direct result-to-intent action is retired in favor of project-scoped user withdrawal reservations. Later transition commands should extend the same operator workspace instead of creating separate admin roots.
 - Session 28 added the backend execution interface. Route work should keep operator pages FundLoop-centric and leave rail-specific EVM/Solana/fiat behavior behind `lib/execution/` adapters.
 - Session 29 moved EVM inbound receipt recording behind that execution interface without changing the founder payment route.
 - Session 33 added the founder monthly contribution workflow under `/founder/projects/[slug]/contributions` while keeping actual payment writes on the existing Edge Function-backed operations page.

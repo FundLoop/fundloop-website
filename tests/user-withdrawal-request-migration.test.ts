@@ -1,26 +1,33 @@
 import { readFileSync } from "node:fs"
 import { describe, expect, it } from "vitest"
 
-const migration = readFileSync("supabase/migrations/20260805144500_user_withdrawal_requests.sql", "utf8")
+const migration = readFileSync("supabase/migrations/20260809180000_withdrawal_obligation_control_plane.sql", "utf8")
 
-describe("withdrawal request database boundary", () => {
-  it("reserves each credit once and never changes paid state", () => {
-    expect(migration).toContain("CONSTRAINT user_withdrawal_request_credits_one_reservation UNIQUE (bookkeeping_credit_id)")
-    expect(migration).toContain("credit.payment_status = 'not_paid'")
-    expect(migration).not.toMatch(/UPDATE public\.monthly_cycle_bookkeeping_credits/)
-    expect(migration).not.toMatch(/INSERT INTO public\.payout_/)
+describe("withdrawal obligation control plane", () => {
+  it("uses one partial obligation path and oldest-first exact inventory", () => {
+    expect(migration).toContain("user_withdrawal_obligation_claims")
+    expect(migration).toContain("ORDER BY obligation.available_at,obligation.id FOR UPDATE")
+    expect(migration).toContain("payout_inventory_reservations")
+    expect(migration).toContain("originating_fx_snapshot_id")
+    expect(migration).toContain("ORDER BY lot.monthly_cycle_id,lot.deterministic_sequence,lot.id FOR UPDATE")
   })
 
-  it("keeps the security-definer command behind the service role", () => {
-    expect(migration).toContain("REVOKE ALL ON FUNCTION public.create_user_withdrawal_request(uuid, bigint, text) FROM PUBLIC, anon, authenticated")
-    expect(migration).toContain("GRANT EXECUTE ON FUNCTION public.create_user_withdrawal_request(uuid, bigint, text) TO service_role")
+  it("queues depleted inventory and preserves timely requests after expiry", () => {
+    expect(migration).toContain("status_reason='eligible_inventory_depleted'")
+    expect(migration).toContain("reservation_expired_requeued")
+    expect(migration).toContain("'timelyRequestPreserved',true")
   })
 
-  it("serializes concurrent retries before reading the idempotent result", () => {
-    const lock = migration.indexOf("pg_advisory_xact_lock")
-    const lookup = migration.indexOf("SELECT * INTO existing")
-    expect(lock).toBeGreaterThan(-1)
-    expect(lookup).toBeGreaterThan(lock)
-    expect(migration).toContain("p_actor_user_id::text || ':' || btrim(p_idempotency_key)")
+  it("retires direct-result intents and permits only one live withdrawal intent", () => {
+    expect(migration).toContain("direct_result_payout_intents_retired")
+    expect(migration).toContain("payout_intents_one_live_withdrawal_idx")
+    expect(migration).toContain("withdrawal_request_id")
+  })
+
+  it("fails production closed and removes direct service-role DML", () => {
+    expect(migration).toContain("withdrawal_runtime_production_closed")
+    expect(migration).toContain("withdrawal_runtime_no_value_flow")
+    expect(migration).toContain("FROM PUBLIC,anon,authenticated,service_role")
+    expect(migration).toContain("GRANT EXECUTE ON FUNCTION public.prepare_epoch_withdrawal_obligations")
   })
 })

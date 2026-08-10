@@ -1,4 +1,5 @@
 export const MVP_ALLOCATION_POLICY = "mvp_capped_equalization_v1" as const
+export const MVP_ALLOCATION_CANONICAL_STATUS = "legacy_compatibility_only" as const
 export const MVP_ALLOCATION_CAP_MULTIPLE = 3
 
 export type MvpAllocationAssetType = "project_token" | "stablecoin" | "fiat"

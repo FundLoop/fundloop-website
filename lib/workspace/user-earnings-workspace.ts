@@ -82,11 +82,24 @@ export type UserEarningsCredit = {
 export type UserWithdrawalRequest = {
   id: string
   payoutRouteId: number
-  status: "requested"
+  status: "requested" | "reserved" | "queued" | "held" | "paid" | "cancelled" | "closed"
   requestedUsdAmount: number
-  currencyCode: "USD"
+  currencyCode: "USD" | "CAD"
   creditCount: number
   requestedAt: string
+  assetKey: string | null
+  feeUsd: number
+  netUsd: number
+  statusReason: string | null
+}
+
+export type UserWithdrawalAssetOption = {
+  assetKey: string
+  symbol: string
+  railKey: "stripe_bank_transfer" | "base_stablecoin"
+  projectId: number
+  availableUsd: number
+  lotCount: number
 }
 
 export type UserEarningsWorkspace = {
@@ -116,6 +129,7 @@ export type UserEarningsWorkspace = {
   assetPreferences: UserAssetPreferenceReadiness
   credits: UserEarningsCredit[]
   withdrawalRequests: UserWithdrawalRequest[]
+  withdrawalAssetOptions: UserWithdrawalAssetOption[]
   cycles: UserEarningsCycle[]
   pendingDistributions: UserEarningsCycle[]
   payoutHistory: UserEarningsCycle[]
@@ -182,10 +196,13 @@ type AssetPreferenceRow = Pick<
   "id" | "rank" | "asset_type" | "asset_code" | "project_id" | "accepted"
 >
 
-type WithdrawalRequestRow = Pick<
-  Database["public"]["Tables"]["user_withdrawal_requests"]["Row"],
-  "id" | "payout_route_id" | "status" | "requested_usd_amount" | "currency_code" | "requested_at"
->
+type WithdrawalRequestRow = Pick<Database["public"]["Tables"]["user_withdrawal_requests"]["Row"],
+  "id" | "payout_route_id" | "status" | "requested_usd_amount" | "currency_code" | "requested_at"> &
+  Partial<Pick<Database["public"]["Tables"]["user_withdrawal_requests"]["Row"], "fee_minor" | "net_minor" | "financial_asset_id" | "status_reason">>
+
+type WithdrawalAssetRow = Pick<Database["public"]["Views"]["user_withdrawal_asset_inventory"]["Row"],
+  "asset_key" | "symbol" | "rail_key" | "project_id" | "available_minor" | "lot_count" | "oldest_cycle_id">
+type WithdrawalBalanceRow = Pick<Database["public"]["Views"]["user_withdrawal_obligation_balances"]["Row"], "available_minor">
 
 type WithdrawalCreditRow = Pick<
   Database["public"]["Tables"]["user_withdrawal_request_credits"]["Row"],
@@ -344,6 +361,9 @@ export function buildUserEarningsWorkspace({
   assetPreferences,
   withdrawalRequests,
   withdrawalCredits,
+  withdrawalAssetInventory,
+  withdrawalObligationBalances,
+  financialAssets,
   warnings,
 }: {
   publishedResults: PublishedResultRow[]
@@ -359,6 +379,9 @@ export function buildUserEarningsWorkspace({
   assetPreferences?: AssetPreferenceRow[]
   withdrawalRequests?: WithdrawalRequestRow[]
   withdrawalCredits?: WithdrawalCreditRow[]
+  withdrawalAssetInventory?: WithdrawalAssetRow[]
+  withdrawalObligationBalances?: WithdrawalBalanceRow[]
+  financialAssets?: Pick<Database["public"]["Tables"]["financial_assets"]["Row"], "id" | "asset_key">[]
   warnings: UserEarningsWarning[]
 }): UserEarningsWorkspace {
   const cycleById = new Map(cycles.map((cycle) => [cycle.id, cycle]))
@@ -397,15 +420,25 @@ export function buildUserEarningsWorkspace({
   const mappedWithdrawalRequests: UserWithdrawalRequest[] = (withdrawalRequests ?? []).map((request) => ({
     id: request.id,
     payoutRouteId: request.payout_route_id,
-    status: "requested",
+    status: request.status as UserWithdrawalRequest["status"],
     requestedUsdAmount: numberValue(request.requested_usd_amount),
     currencyCode: "USD",
     creditCount: withdrawalCreditCounts.get(request.id) ?? 0,
     requestedAt: request.requested_at,
+    assetKey: (financialAssets ?? []).find((asset) => asset.id === request.financial_asset_id)?.asset_key ?? null,
+    feeUsd: numberValue(request.fee_minor) / 100,
+    netUsd: numberValue(request.net_minor) / 100,
+    statusReason: request.status_reason ?? null,
   }))
-  const eligibleWithdrawalUsd = credits
-    .filter((credit) => credit.status === "credited" && credit.paymentStatus === "not_paid" && !reservedCreditIds.has(credit.id))
+  const withdrawalAssetOptions: UserWithdrawalAssetOption[] = (withdrawalAssetInventory ?? []).flatMap((row) =>
+    row.asset_key && row.symbol && row.rail_key && row.project_id && row.available_minor !== null
+      ? [{ assetKey: row.asset_key, symbol: row.symbol, railKey: row.rail_key as UserWithdrawalAssetOption["railKey"],
+          projectId: row.project_id, availableUsd: numberValue(row.available_minor) / 100, lotCount: row.lot_count ?? 0 }]
+      : [])
+  const legacyEligibleWithdrawalUsd = credits.filter((credit) => credit.status === "credited" && credit.paymentStatus === "not_paid" && !reservedCreditIds.has(credit.id))
     .reduce((sum, credit) => sum + credit.usdEquivalentAmount, 0)
+  const obligationEligibleWithdrawalUsd = (withdrawalObligationBalances ?? []).reduce((sum, row) => sum + numberValue(row.available_minor) / 100, 0)
+  const eligibleWithdrawalUsd = withdrawalObligationBalances === undefined ? legacyEligibleWithdrawalUsd : obligationEligibleWithdrawalUsd
   const requestedWithdrawalUsd = mappedWithdrawalRequests.reduce((sum, request) => sum + request.requestedUsdAmount, 0)
 
   const cyclesWithResults = publishedResults
@@ -480,6 +513,7 @@ export function buildUserEarningsWorkspace({
     assetPreferences: assetPreferenceReadiness,
     credits,
     withdrawalRequests: mappedWithdrawalRequests,
+    withdrawalAssetOptions,
     cycles: cyclesWithResults,
     pendingDistributions,
     payoutHistory,
@@ -506,12 +540,15 @@ export async function getUserEarningsWorkspace(navigationContext: NavigationCont
       assetPreferences: [],
       withdrawalRequests: [],
       withdrawalCredits: [],
+      withdrawalAssetInventory: [],
+      withdrawalObligationBalances: [],
+      financialAssets: [],
       warnings,
     })
   }
 
   const supabase = await createServerSupabaseClient()
-  const [publishedResults, payoutRoutes, payoutIntents, bookkeepingCredits, assetPreferences, withdrawalRequests] = await Promise.all([
+  const [publishedResults, payoutRoutes, payoutIntents, bookkeepingCredits, assetPreferences, withdrawalRequests, withdrawalAssetInventory, withdrawalObligationBalances, financialAssets] = await Promise.all([
     readEarningsData<PublishedResultRow[]>(
       "published-results",
       supabase
@@ -566,12 +603,18 @@ export async function getUserEarningsWorkspace(navigationContext: NavigationCont
     readEarningsData<WithdrawalRequestRow[]>(
       "withdrawal-requests",
       supabase.from("user_withdrawal_requests")
-        .select("id, payout_route_id, status, requested_usd_amount, currency_code, requested_at")
+        .select("id, payout_route_id, status, requested_usd_amount, currency_code, requested_at, fee_minor, net_minor, financial_asset_id, status_reason")
         .eq("user_id", user.id)
         .order("requested_at", { ascending: false }),
       warnings,
       [],
     ),
+    readEarningsData<WithdrawalAssetRow[]>("withdrawal-asset-inventory",
+      supabase.from("user_withdrawal_asset_inventory").select("asset_key,symbol,rail_key,project_id,available_minor,lot_count,oldest_cycle_id").eq("user_id", user.id), warnings, []),
+    readEarningsData<WithdrawalBalanceRow[]>("withdrawal-obligation-balances",
+      supabase.from("user_withdrawal_obligation_balances").select("available_minor").eq("user_id", user.id), warnings, []),
+    readEarningsData<Pick<Database["public"]["Tables"]["financial_assets"]["Row"], "id" | "asset_key">[]>(
+      "withdrawal-financial-assets", supabase.from("financial_assets").select("id,asset_key"), warnings, []),
   ])
 
   const cycleIds = Array.from(
@@ -658,6 +701,9 @@ export async function getUserEarningsWorkspace(navigationContext: NavigationCont
     assetPreferences,
     withdrawalRequests,
     withdrawalCredits,
+    withdrawalAssetInventory,
+    withdrawalObligationBalances,
+    financialAssets,
     warnings,
   })
 }

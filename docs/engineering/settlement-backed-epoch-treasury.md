@@ -258,6 +258,30 @@ The system records realized and unrealized FX separately with asset, rail, epoch
 and cause dimensions. User native payout quantity remains based on the originating
 epoch's locked rate even if current market value differs.
 
+### Task #135 review implementation
+
+The review-only implementation records append-only ranked FX observations and one
+posted snapshot per cycle/asset. Primary observations require rank 1; fallback
+observations require a lower rank; a manual rate is accepted only when no fresh,
+eligible configured observation remains. USD and supported stablecoins outside
+`0.997–1.003` are recorded as `paused_depeg`, never as posted valuation inputs.
+Pacific cycle-boundary helpers preserve the actual `America/Los_Angeles` DST
+offset. Production is denied independently by Edge runtime and database controls.
+
+Fee processing is source-by-source and exact. A default 1% project fee is bounded
+by the selected versioned policy, is set to zero when the source proves it was
+already assessed, and precedes the 2.5% base fee. The invariant is stored on every
+lot: `gross = project fee + base fee + distributable`. No provider sweep or custody
+mutation occurs in this task; the retained asset/custody dimensions are the
+reconciliation evidence for later approved posting and transfer work.
+
+Three-cycle expiry is represented by a linked source-lot event. Harvest is rejected
+while any exact amount is reserved and succeeds only into a later cycle than the
+configured expiry cycle. The successor remains linked to the original package,
+source, rail, asset, custody, native amount, FX snapshot, and evidence. Neither
+carryover nor returned redistribution residue changes the provisional funded epoch
+principal classification or creates a payable/revenue record.
+
 ## 8. Multi-currency chart of accounts
 
 The chart is stable and relatively coarse by economic purpose. Asset accounts are
@@ -338,6 +362,13 @@ The receipt, fee, and custody-transfer examples define required balancing and
 provenance, but their income-statement account classification remains a Task #121
 approval gate. Allocation itself is memorandum-only because users do not own funds
 before payout processing.
+
+The implemented Task #136 local/dev bridge locks only approved project packages
+whose fee-processed source lots match a neutral-ledger distributable posting. Its
+`settled_cubid_redistribution_v1` artifacts conserve retained initial claims,
+score-discount and overlap pool components, source-linked top-ups, and returned
+residue. Locking reserves source lots but does not post a user liability, create a
+payable, call a provider, transfer value, or enable production allocation.
 
 All examples omit native-unit columns for readability; production postings include
 both native atomic units and USD functional value.
@@ -535,19 +566,31 @@ short transaction.
 
 ### Withdrawal and payout
 
-- Extend `user_withdrawal_requests` beyond `requested` into reviewed, reserved,
-  queued, rejected, cancelled, and fulfilled states.
-- Link exactly one live `payout_intent` path to a withdrawal request; retire direct
-  intent creation from published results after migration.
+- The non-production review control plane now extends `user_withdrawal_requests`
+  through requested, reserved, queued, held, paid, cancelled, and closed states.
+  `user_withdrawal_obligations` plus partial claim rows make each minor unit either
+  available or assigned to exactly one active terminal path. Claims consume the
+  oldest available obligation first and survive inventory expiry when requeued.
+- Each request snapshots exactly one active route/destination hash, rail, eligible
+  project-linked asset, gross minor amount, 0%-100% user fee, and net amount. The
+  review minimum is $10 for Stripe bank transfer and $5 for Base.
+- Link exactly one live `payout_intent` path to a fully inventory-backed withdrawal
+  request. The database rejects new direct published-result intents; legacy rows
+  remain evidence for explicit migration rather than an executable second path.
 - `payout_inventory_reservations`: exact atomic units reserved from one or more
-  eligible epoch/rail/asset lots, deterministic sequence, expiry/cancellation, and
-  request link.
+  eligible epoch/rail/asset lots at their originating locked FX, deterministic
+  cycle/source sequence, expiry/cancellation, and request link. Insufficient
+  selected-asset inventory creates a next-epoch queue without a payout intent.
 - `payout_execution_attempts`: adapter, batch, signer/provider request, idempotency,
   submitted reference, status, timestamps, and sanitized failure code.
 - Extend payout reconciliation with observed native amount, asset, custody account,
   finality/provider status, fee, mismatch classification, and journal link.
 - `compliance_holds`: conditional award, Cubid state, reason, notification,
   resolution, and linked release/reversal without exposing raw identity evidence.
+- The `withdrawal-operator` and `user-withdrawal-request-create` Edge contracts bind
+  authenticated actor and deployment environment server-side. Production runtime,
+  provider submission, payables, and value flow remain disabled; current intents
+  are review-only drafts and every command returns `noPayoutExecuted=true`.
 
 ### Numeric and key rules
 
@@ -627,6 +670,12 @@ event-ID deduplication, idempotency keys, and out-of-order event handling. A rec
 becomes eligible only from independently observed availability evidence, not merely
 a successful payment intent.
 
+The current Stripe Customer Balance bank-transfer product supports USD but does not
+offer CAD presentment. Task #131 therefore keeps CAD fail-closed and records the provider
+gap explicitly; Canadian PAD is not substituted because it is a pull-based debit. The
+durable asset/custody model remains currency-aware so an authoritative future CAD push-
+transfer provider can be added without weakening the signed-event or reconciliation gates.
+
 Task #131 must prove an exact Stripe/bank arrangement with either separate externally
 reconcilable platform and epoch custody identifiers or a clearing account that
 sweeps to separate custody within a defined SLA. Production Stripe intake remains
@@ -635,6 +684,11 @@ Stripe-hosted onboarding; returning from onboarding is not proof of readiness, s
 the application checks current account requirements/capabilities or processes
 `account.updated` events. Payout completion and failure are reconciled from provider
 events and reports.
+
+The sandbox implementation uses a clearing route labelled `clearing_sweep_required`.
+Signed availability can create a provisional neutral-ledger receipt and shadow journal,
+but absent evidence of the clearing-to-separated-custody sweep remains a visible hard gate
+for production activation.
 
 ### Base intake
 
@@ -664,6 +718,17 @@ treasury configuration require the configured Safe threshold.
 A funded paymaster may sponsor approved user payout transactions. Its own deposit,
 allowlist, per-user/epoch limits, depletion alert, and pause switch are operational
 controls, not substitutes for the epoch treasury ledger.
+
+Task #140 implements this boundary as `FundLoopSafePayoutModule`, separate epoch/platform
+deployments, and the review-only `FundLoopPaymasterBudget`. The epoch Safe is the immutable module
+and reimbursement-vault owner, so authorization and policy changes require its threshold. Safe owners authorize exact payout
+hashes; a limited signer can execute only those hashes under token, recipient, amount, rolling,
+epoch, expiry, nonce, pause, rotation, and revocation checks. Database counters are defense in depth.
+Each hash binds the user net transfer, the separately reserved user-fee transfer to the configured
+platform Safe, and a bounded native-gas reimbursement; token limits apply to the gross token sum and
+the neutral ledger conserves both token legs. Vault depletion reverts the payout atomically.
+The typed `base-safe-payout-operator` Edge command owns authorization, optional non-production
+signing, viem receipt observation, finality, and the balanced neutral-ledger paid transition.
 
 ## 13. Reconciliation and close
 
@@ -722,6 +787,17 @@ The close package contains:
 3. Ingest both rails into `external_financial_events` and `funding_applications`.
 4. Implement paired project package validation, reconciliation email, approval or
    opt-out, and rollover.
+
+The #133 local/dev foundation implements step 4 as a production-disabled preview:
+versioned packages bind the approved attribution dataset, payment set, independently
+settled funding sources, compliance evidence, and locked CUBID decisions. Missing
+list or funding evidence rolls forward; post-cutoff packages freeze before an
+accepted local Mailpit delivery can anchor the approve/opt-out/silent-approval
+deadline. Project-scoped pseudonyms remain private, while an approved public report
+contains only exact project totals and counts. Only approved or silent-approved
+packages satisfying every gate enter the shadow lock-candidate view. This does not
+enable canonical locking, allocation, payables, provider calls, payouts, or any
+production value flow.
 
 ### Phase C: epoch cutover
 
@@ -1091,3 +1167,38 @@ classification stays provisional and production-disabled until qualified approva
 
 This Task changes documentation only. Product schema, rail, signer, Safe, payout, and
 remote-provider implementation remains owned by the blocked Goal Tasks.
+
+## 24. Provisional award posting and close package
+
+Task #137 adds the local/dev/test-only handoff from an approved funded allocation
+to `payout_readying`. The Edge command owns the authenticated actor and runtime,
+recalculates the immutable manifest, and refuses approval unless the rerun hash,
+persisted result hash, and manifest hash match exactly.
+
+The database creates append-only non-payable award controls and one balanced
+provisional neutral-ledger transaction for each positive retained/top-up/source
+fill or returned-residue fill. Every posting retains its source project and exact
+allocation disposition; the close artifacts retain native asset/custody, FX, fee,
+exact USD, canonical minor-unit, and returned-residue evidence.
+
+The root package includes twelve versioned artifact classes: trial balance,
+custody, project funds, fees, FX, carryover, initial claims, redistribution pool,
+top-ups, returned residue, provisional awards, and exceptions. The immutable
+allocation result remains separately bound by its result hash; it cannot replace
+the returned-residue class. Public/project
+artifacts are aggregate-only; private user evidence is never exposed through those
+views, and all public roots, totals, and source/count fields are withheld below the
+privacy threshold. Preparation calculates the root but leaves the epoch in
+`reviewing`; the same authorized operator must confirm that exact root before the
+package records both opt-out-window and approved-close-package hard gates and
+advances to `payout_readying`. The existing `payout_readiness_complete` gate remains
+between this Goal and any later `payout_open`.
+
+Terminal exact source fills independently conserve each funded source. Any exact
+fraction not represented by retained or top-up minor units is recorded as a
+source-linked returned-residue fill with zero canonical minor units and a positive
+exact-USD ledger amount.
+
+Production close controls are immutable false. No user payable, ownership
+recognition, payout intent, provider instruction, custody movement, external call,
+or real-value transfer is created.

@@ -25,16 +25,33 @@ The enum exists now so the product and operator model can be multi-rail before a
 
 `monthly-cycle-bookkeeping-credits-create` is the MVP handoff from approved calculation results into user-visible bookkeeping earnings. It creates rows in `monthly_cycle_bookkeeping_credits` from verified calculation output, preserving USD equivalent amount, selected asset fills, source/project breakdown, and allocator explanation metadata. These records are deliberately `credited` and `not_paid`: they prove the user's account has been credited in bookkeeping state, but they are not transfer instructions and they do not imply settlement has happened.
 
-`monthly-cycle-payout-intents-create` converts approved `zkas_published_user_results` into `payout_intents`.
+The legacy `monthly-cycle-payout-intents-create` result-to-intent command is retired. Approved close packages create withdrawal obligations; users then create one project-scoped asset reservation through `user-withdrawal-request-create`.
 
-The command is idempotent per published result and cycle. It creates:
-
-- `ready` intents when a user has an active default payout route
-- `draft` intents when the user still needs to configure a route
-
-This keeps missing payout routes visible without blocking the whole cycle from entering distribution work. Asset preferences are handled separately by `user_asset_preferences`; they guide future asset fulfillment planning but do not prove a destination is ready.
+The withdrawal command is idempotent per user-supplied request key and immutable project/asset/route/amount snapshot. It creates a `draft` intent only after exact inventory is reserved; otherwise the request is queued without manufacturing an unbacked liability. Missing payout routes remain visible in the earnings workspace before request creation. Asset preferences are handled separately by `user_asset_preferences`; they guide future asset fulfillment planning but do not prove a destination is ready.
 
 For the operational MVP, bookkeeping credits are the success target. Payout intents remain the later outbound-planning model for actual transfer readiness.
+
+Task #140 adds a review-only Base execution boundary for withdrawal-backed intents. Separate epoch
+and platform Safes use separate module deployments. The limited signer cannot choose an arbitrary
+token, recipient, amount, epoch, expiry, or nonce: Safe owners authorize the exact request hash and
+the epoch Safe is the module owner. The module independently enforces token permission, replay protection, pause/revocation, $20 per
+transaction, $500 rolling 24 hours, and $5,000 per epoch. A separate paymaster budget helper enforces
+per-request native-gas reimbursement, depletion, replay, pause, and controller rotation. The module
+is the sole reimbursement controller, so token movement and reimbursement succeed or revert atomically.
+
+The exact request binds two conserved token legs: the withdrawal net goes to the user's persisted
+recipient and the selected user fee goes to the separately configured platform Safe. The fee leg
+receives its own project inventory reservation, participates in every gross module/database limit,
+and is consumed only with the finalized recipient leg. Reconciliation debits recipient and platform
+fee controls and credits epoch custody for the same gross native and functional totals.
+
+The Edge adapter derives the module request hash from database-owned intent/request/deployment state,
+can sign only in explicit non-production environments, and observes receipts through viem. A request
+becomes paid only after the exact module event is successful, the receipt block is finalized under
+the configured chain finality view, and the database atomically creates a balanced neutral-ledger
+journal. Failed, replaced, and reorged observations remain immutable evidence and never imply paid.
+Replacement evidence retains original and replacement hashes separately; a missing or changed prior
+receipt becomes an executable `reorged` observation through the same typed Edge path.
 
 ## What Is Not Included Yet
 

@@ -96,6 +96,47 @@ platform fee, platform revenue, treasury sweep, user payable, or newly created
 value. Fee recognition and treasury sweeps occur before the distributable project
 pool is measured.
 
+### Implemented funded-input boundary (Task #135)
+
+The local/dev review path now materializes `epoch_valuation_source_lots` before
+allocation. Each lot retains its approved project package and funding-source ID,
+project, rail, financial asset, custody account, native atomic quantity, posted FX
+snapshot, exact 18-decimal gross/project-fee/base-fee/distributable USD values,
+canonical minor-unit scale, and deterministic source order. The lock-candidate
+view joins those lots to the package's eligible cohort and exposes the locked Cubid
+score, versioned maximum score, and eligible-user count without computing a claim.
+
+The four `$0.335` precision fixture is stored as four independent exact source lots;
+it is not pre-aggregated or rounded to cents. Carryover creates a successor lot with
+an explicit predecessor reference and the same funded-principal classification.
+Reserved value cannot be harvested. These are provisional funded epoch inputs—not
+fees, recognized revenue, user payables, provider instructions, or production value
+flow—and all Task #135 commands deny production.
+
+### Implemented settled-allocation boundary (Task #136)
+
+The local/dev review path now locks those approved, journal-backed source lots into
+an immutable `settled_cubid_redistribution_v1` manifest. The manifest copies source,
+project, rail, asset, custody, native atomic, FX, exact USD, stable-order,
+project-pseudonym, locked-score, versioned-maximum, and evidence dimensions. Source
+lots are reserved atomically, so the same funded principal cannot enter two
+manifests.
+
+The pure allocator uses exact rational arithmetic until canonical minor-unit
+assignment. It records equal theoretical shares, score-adjusted initial claims,
+score-discount contributions, proportional overlap overflow, cap-aware retained
+lots, lowest-current-total-first top-ups, and returned residue. Each terminal minor
+unit remains linked to one source lot. The database independently enforces source
+capacity, user-cap, pool, award, and funded-total conservation when it records the
+immutable result artifact.
+
+The operator prep workspace exposes manifest/result hashes and funded, retained,
+redistribution, top-up, residue, and final totals. The Edge boundary owns the
+authenticated operator and runtime, and both Edge and database layers deny
+production. These are provisional calculation artifacts only: no liability,
+payable, payout intent, provider call, or value movement is created. The legacy
+`mvp_capped_equalization_v1` calculator remains compatibility-only.
+
 ## Allocation Algorithm
 
 All equations use exact decimal functional USD until the rounding stage.
@@ -464,3 +505,36 @@ Allocation and approval are conditional internal records. They do not create use
 ownership, a general-ledger payable, an external transfer, or a production value
 flow. Production activation remains blocked on the named accounting, legal,
 privacy, custody, and payout gates.
+
+## Approved close package boundary
+
+Task #137 consumes only the persisted `settled_cubid_redistribution_v1` result.
+The authenticated operator command independently reruns the immutable manifest and
+must reproduce the exact result hash before Postgres can approve it. Postgres never
+reruns allocation under a different policy during posting.
+
+Approval creates append-only conditional award controls and source-linked neutral
+ledger postings for retained lots, redistribution top-ups, and returned residue.
+The controls are explicitly `not_payable`, `not_user_owned`, and asset-review
+pending. Intermediate score and overlap pool rows remain provenance evidence, not
+additional postings or claims.
+
+One root hash covers trial-balance, custody, project-funds, fee, FX, carryover,
+initial-claim, redistribution-pool, top-up, returned-residue, provisional-award,
+and exception artifacts. The immutable allocation result remains separately bound
+by its result hash and is not substituted for the required returned-residue class.
+Operator artifacts may contain private evidence. User reads
+return only the authenticated user's award; founder reads return only a managed
+project aggregate; public project and epoch reads suppress cohort counts below the
+privacy threshold and never contain user IDs, scores, or overlap membership.
+
+The close command first prepares the deterministic artifacts and root while the
+epoch remains `reviewing`. The same authorized operator must explicitly approve
+that exact root before both required `reviewing -> payout_readying` hard gates are
+recorded. It cannot create a payable, open `payout_open`, call a provider, submit a
+transfer, or enable production value flow.
+
+Every source's terminal exact dispositions must equal its funded exact USD. Any
+fraction remaining after retained and top-up dispositions becomes a zero-minor,
+positive-exact, source-linked returned-residue fill and exact ledger control; it is
+never left only in an aggregate `subMinorExactUsd` field.

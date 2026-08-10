@@ -27,6 +27,7 @@ import { buildLatestOnchainSubmissionMap, type OnchainSubmissionSummary } from "
 import { capturePaymentFlowEvent } from "@/lib/observability/payment-flow-client"
 import { ProjectCryptoRouteManager } from "@/components/project-crypto-route-manager"
 import { TermsPreviewGate } from "@/components/policies/terms-preview-gate"
+import { StripeBankTransferPanel } from "@/components/stripe-bank-transfer-panel"
 import { ArrowLeft, Plus, Calculator, Save, AlertTriangle, Trash2, Info } from "lucide-react"
 
 interface PaymentMethod {
@@ -583,6 +584,17 @@ export default function ProjectPaymentsPage() {
           projectSlug={slug}
           routes={managedCryptoPaymentMethods}
           onRoutesChange={setManagedCryptoPaymentMethods}
+        />
+        <StripeBankTransferPanel
+          projectSlug={slug}
+          termsAcknowledged={termsPreviewAcknowledged}
+          payments={payments.map((payment) => ({
+            id: payment.id,
+            paymentAmount: payment.payment_amount,
+            statusCode: payment.status_code,
+            periodStart: payment.period_start,
+            periodEnd: payment.period_end,
+          }))}
         />
 
         {/* Add New Payments Section */}

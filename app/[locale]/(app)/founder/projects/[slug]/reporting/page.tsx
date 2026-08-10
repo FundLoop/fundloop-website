@@ -8,6 +8,8 @@ import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
+import { EpochCloseSummaryCard } from "@/components/epoch-close-summary-card"
+import { loadLatestProjectEpochClose } from "@/lib/monthly-cycles/epoch-close-review"
 
 type PageProps = {
   params: Promise<{ locale: string; slug: string }>
@@ -31,7 +33,10 @@ export default async function FounderProjectReportingPage({ params }: PageProps)
     notFound()
   }
 
-  const reporting = await loadFounderProjectReportingWorkspace(managedProject.id, slug)
+  const [reporting, epochClose] = await Promise.all([
+    loadFounderProjectReportingWorkspace(managedProject.id, slug),
+    loadLatestProjectEpochClose(managedProject.id),
+  ])
   if (!reporting) {
     notFound()
   }
@@ -55,6 +60,18 @@ export default async function FounderProjectReportingPage({ params }: PageProps)
           </div>
         </div>
       </section>
+
+      {epochClose ? <EpochCloseSummaryCard
+        eyebrow="Privacy-safe project close"
+        title="Approved funded project totals"
+        description="This project-only aggregate contains no user identifiers, Cubid scores, or cross-project membership. The close remains provisional, non-payable, and production-disabled."
+        cycleKey={epochClose.cycleKey}
+        rootHash={epochClose.rootHash}
+        values={[
+          {label:"Funded minor",value:epochClose.fundedMinor},{label:"Eligible cohort",value:String(epochClose.cohortCount)},
+          {label:"Initial claim USD",value:epochClose.initialClaimExactUsd},{label:"Score-pool contribution USD",value:epochClose.scorePoolContributionExactUsd},
+        ]}
+      /> : null}
 
       {reporting.warnings.length > 0 ? (
         <section className="rounded-3xl border border-amber-300/70 bg-amber-50/80 p-5 text-sm leading-6 text-amber-950 dark:border-amber-400/30 dark:bg-amber-400/10 dark:text-amber-100">

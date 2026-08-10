@@ -81,6 +81,46 @@ Use local Supabase when:
 - exercising browser flows that create or mutate rows
 - running local wallet E2E flows
 
+### Base payout review variables
+
+Task #140 keeps Safe payout execution non-production and fail-closed. Local/dev/test review requires:
+
+```bash
+FUNDLOOP_DEPLOYMENT_ENV=local
+NEXT_PUBLIC_BASE_PAYOUT_REVIEW_ENABLED=true
+BASE_PAYOUT_RPC_URL=http://127.0.0.1:8545
+# BASE_PAYOUT_LIMITED_SIGNER_PRIVATE_KEY is untracked and local/test only.
+```
+
+Never store the limited signer key, Safe owner keys, paymaster keys, or RPC credentials in tracked
+files. The limited key can call only the reviewed module and is independently restricted to the
+allowlisted token/recipient/request hash, $20 per transaction, $500 rolling 24 hours, and $5,000 per
+epoch. Safe owner-threshold enablement remains a human-controlled external action. Base Sepolia
+deployment additionally requires `BASE_SEPOLIA_RPC_URL`, `BASE_SEPOLIA_PRIVATE_KEY`,
+`BASE_SEPOLIA_EPOCH_SAFE_ADDRESS`, `BASE_SEPOLIA_PLATFORM_SAFE_ADDRESS`, and
+`BASE_PAYOUT_LIMITED_SIGNER_ADDRESS`; absent values stop before
+deployment. Production is denied by the Edge runtime, database controls, deployment constraints,
+and tracked manifests.
+
+### Stripe Connect payout review variables
+
+Task #141 uses only a Stripe sandbox/test-mode platform and remains production-disabled:
+
+```bash
+FUNDLOOP_DEPLOYMENT_ENV=local
+FUNDLOOP_SITE_URL=http://127.0.0.1:3000
+NEXT_PUBLIC_STRIPE_CONNECT_REVIEW_ENABLED=true
+STRIPE_SECRET_KEY=sk_test_...
+STRIPE_ACCOUNT_ID=acct_...
+STRIPE_CONNECT_WEBHOOK_SECRET=whsec_...
+```
+
+The webhook secret is temporary output from `stripe listen --forward-connect-to`; keep it untracked.
+The Edge functions verify that the test key resolves to `STRIPE_ACCOUNT_ID`, reject live events, and
+accept only local/development/dev/preview/test runtimes. See
+[`stripe-connect-sandbox-payouts.md`](./stripe-connect-sandbox-payouts.md) for the hosted onboarding,
+USD/CAD amount, retry, and settlement-journal boundaries.
+
 If local Supabase is unavailable, do not silently switch to a shared remote database for destructive validation. Either use static tests only or call out the missing validation.
 
 ## Remote Supabase Workflow
@@ -133,6 +173,7 @@ Use the smallest relevant validation first, then broaden before reporting comple
 | App-wide behavior | Full app gates | `pnpm lint`, `pnpm test`, `pnpm typecheck`, `pnpm build` |
 | Supabase schema migrations | Local Supabase replay plus generated types | `supabase db reset`, regenerate `types/supabase.ts`, focused tests |
 | Supabase Edge Functions | Contract/command tests plus Deno/Supabase validation | focused contract tests, `deno info` or `deno check`, PR dry-run |
+| Stripe bank-transfer intake | FundLoop sandbox CLI plus local signed webhook/SQL/browser evidence | `stripe whoami --project-name fundloop`, `stripe listen`, fresh local reset, `supabase/tests/stripe_bank_transfer_intake.sql`; never `--live` |
 | Onchain contract changes | Hardhat workspace | `pnpm --dir contracts test` |
 | Wallet browser flows | Local wallet E2E lane | `pnpm test:e2e:local` when prerequisites are available |
 | Persona happy paths | Local-only persona E2E lane | Start/reset caller-owned local Supabase, then `pnpm test:e2e:personas` or filter with `-- --persona <id>` |
@@ -186,3 +227,16 @@ The provisional Base V2 intake uses exact `local`, `dev`, and `test` command all
 Its tracked deployment manifest is disabled, and production deployment/value flow remains
 unavailable. See `docs/engineering/base-intake-v2.md` for the local Hardhat and Supabase
 evidence workflow.
+
+# Stripe sandbox intake boundary
+
+The provisional Stripe intake uses a dedicated CLI profile (`--project-name fundloop`) and
+accepts only test/sandbox API keys. Keep `STRIPE_SECRET_KEY`, `STRIPE_ACCOUNT_ID`, and the
+temporary `STRIPE_WEBHOOK_SECRET` from `stripe listen` in the process environment or an ignored
+ephemeral env file. Do not print them, commit them, or copy them into `.env.example` values.
+
+Bank Transfers must be enabled in the FundLoop sandbox before provider success evidence is
+claimed. USD is the only enabled currency in the current adapter; CAD is rejected because
+Stripe's bank-transfer presentment support does not currently include CAD. See
+`docs/engineering/stripe-bank-transfer-intake.md` for the signed webhook and reconciliation
+contract.

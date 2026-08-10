@@ -17,6 +17,8 @@ import {
   SectionTitle,
 } from "@/components/marketing/page-chrome"
 import { Reveal } from "@/components/marketing/reveal"
+import { EpochCloseSummaryCard } from "@/components/epoch-close-summary-card"
+import { loadPublicProjectEpochClose } from "@/lib/monthly-cycles/epoch-close-review"
 
 type PageProps = {
   params: Promise<{ locale: string; slug: string }>
@@ -61,7 +63,7 @@ export default async function ProjectPage({ params }: PageProps) {
   const t = await getTranslations({ locale, namespace: "projectProfile" })
   const navigationContext = await getNavigationContext()
   const ctaState = getPublicUserCtaState(navigationContext)
-  const detail = await getPublicProjectDetail(slug)
+  const [detail, epochClose] = await Promise.all([getPublicProjectDetail(slug), loadPublicProjectEpochClose(slug)])
 
   if (!detail) {
     notFound()
@@ -152,6 +154,21 @@ export default async function ProjectPage({ params }: PageProps) {
           </Reveal>
         </div>
       </MarketingSection>
+
+      {epochClose ? <MarketingSection className="pt-0">
+        <Reveal><EpochCloseSummaryCard
+          eyebrow="Published epoch aggregate"
+          title="Approved project funding summary"
+          description="Public reporting exposes project totals only. User identities, Cubid scores, individual awards, and cross-project membership remain private. No payout or transfer has occurred."
+          cycleKey={epochClose.cycle_key ?? ""}
+          rootHash={epochClose.root_hash ?? "Withheld below privacy threshold"}
+          values={[
+            {label:"Funded minor",value:epochClose.funded_minor == null ? "Privacy threshold not met" : String(epochClose.funded_minor)},
+            {label:"Published cohort",value:epochClose.published_cohort_count == null ? "Privacy threshold not met" : String(epochClose.published_cohort_count)},
+            {label:"Sources",value:epochClose.source_count == null ? "Privacy threshold not met" : String(epochClose.source_count)},{label:"Stage",value:epochClose.status ?? "payout_readying"},
+          ]}
+        /></Reveal>
+      </MarketingSection> : null}
 
       <MarketingSection className="border-y border-[color:var(--marketing-line)] bg-white/34 dark:bg-white/[0.02]">
         <div className="grid gap-12 lg:grid-cols-[minmax(0,0.8fr)_minmax(0,1.2fr)]">

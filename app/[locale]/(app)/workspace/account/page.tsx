@@ -3,6 +3,8 @@ import { getTranslations } from "next-intl/server"
 import { AccountSettingsPanel } from "@/components/account/account-settings-panel"
 import { getNavigationContext } from "@/lib/navigation-context"
 import { getUserAssetPreferenceReadiness } from "@/lib/workspace/user-asset-preferences"
+import { StripeConnectPanel } from "@/components/account/stripe-connect-panel"
+import { getStripeConnectOverview } from "@/lib/stripe/stripe-connect-overview"
 
 type WorkspaceAccountPageProps = {
   params: Promise<{ locale: string }>
@@ -17,10 +19,13 @@ export default async function WorkspaceAccountPage({ params }: WorkspaceAccountP
     redirect(`/${locale}/join`)
   }
 
-  const assetPreferences = await getUserAssetPreferenceReadiness(navigationContext.user?.id)
+  const [assetPreferences, stripeConnect] = await Promise.all([
+    getUserAssetPreferenceReadiness(navigationContext.user?.id),
+    getStripeConnectOverview(navigationContext.user?.id),
+  ])
 
   return (
-    <AccountSettingsPanel
+    <div className="space-y-8"><AccountSettingsPanel
       heading={t("heading")}
       description={t("description")}
       cubid={{
@@ -68,6 +73,6 @@ export default async function WorkspaceAccountPage({ params }: WorkspaceAccountP
         hasCustomPreferences: assetPreferences.hasCustomPreferences,
         rejectsAllProjectTokens: assetPreferences.rejectsAllProjectTokens,
       }}
-    />
+    /><StripeConnectPanel initial={stripeConnect} /></div>
   )
 }

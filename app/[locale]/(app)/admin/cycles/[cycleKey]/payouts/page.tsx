@@ -1,12 +1,15 @@
 import { notFound } from "next/navigation"
 import { ArrowLeft, Banknote, CheckCircle2, FileWarning, Route } from "lucide-react"
-import { MonthlyCyclePayoutIntentsButton } from "@/components/admin/monthly-cycle-payout-intents-button"
 import { Badge } from "@/components/ui/badge"
+import { BasePayoutOperatorControls } from "@/components/admin/base-payout-operator-controls"
+import { StripeConnectPayoutControls } from "@/components/admin/stripe-connect-payout-controls"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Link } from "@/i18n/navigation"
 import { loadMonthlyCyclePayoutOverview } from "@/lib/monthly-cycles/monthly-cycle-payouts"
+import { loadBasePayoutOperatorOverview } from "@/lib/base-payout/base-payout-operator-overview"
+import { loadStripeConnectOperatorOverview } from "@/lib/stripe/stripe-connect-operator-overview"
 import { requireInternalAdminActor } from "@/lib/zkas/auth"
 
 type PageProps = {
@@ -25,6 +28,7 @@ export default async function AdminCyclePayoutsPage({ params }: PageProps) {
   })()
 
   if (!overview) notFound()
+  const [basePayout, stripeConnect] = await Promise.all([loadBasePayoutOperatorOverview(overview.cycle.id), loadStripeConnectOperatorOverview(overview.cycle.id)])
 
   return (
     <div className="container mx-auto space-y-8 px-4 py-12">
@@ -52,7 +56,7 @@ export default async function AdminCyclePayoutsPage({ params }: PageProps) {
           <div className="space-y-3 rounded-[var(--radius-xl)] border border-[color:var(--surface-border)] bg-[var(--surface-panel-strong)] p-4">
             <Badge variant={overview.cycle.status === "distribution" ? "default" : "secondary"}>{overview.cycle.statusLabel}</Badge>
             <div className="text-sm text-[var(--text-muted)]">{overview.cycle.periodStart} to {overview.cycle.periodEnd}</div>
-            <MonthlyCyclePayoutIntentsButton cycleKey={overview.cycle.cycleKey} disabled={!overview.canCreateIntents} />
+            <p className="max-w-xs text-sm text-[var(--text-muted)]">Direct result-based intent creation is retired. Users create project-scoped withdrawal reservations from their earnings workspace.</p>
           </div>
         </div>
       </section>
@@ -224,6 +228,11 @@ export default async function AdminCyclePayoutsPage({ params }: PageProps) {
           </Table>
         </CardContent>
       </Card>
+
+      <BasePayoutOperatorControls enabled={basePayout.enabled} deployments={basePayout.deployments} commands={basePayout.commands}
+        intents={overview.intents.rows.map((intent)=>({id:intent.id,rail:intent.rail,status:intent.status,amount_usd:Number(intent.amount_usd),payout_route_id:intent.payout_route_id}))}/>
+      <StripeConnectPayoutControls enabled={stripeConnect.enabled} accounts={stripeConnect.accounts} commands={stripeConnect.commands}
+        intents={overview.intents.rows.map((intent)=>({id:intent.id,user_id:intent.user_id,rail:intent.rail,status:intent.status,amount_usd:Number(intent.amount_usd),payout_route_id:intent.payout_route_id}))}/>
     </div>
   )
 }

@@ -1,18 +1,26 @@
 import { describe, expect, it } from "vitest"
 import { edgeCommandSuccess } from "@/lib/edge-functions/result"
-import { normalizeUserWithdrawalRequestCreateResult, validateUserWithdrawalRequestCreateInput } from "@/lib/edge-functions/user-withdrawal-request-contract"
+import { normalizeUserWithdrawalRequestResult, validateUserWithdrawalRequestInput } from "@/lib/edge-functions/user-withdrawal-request-contract"
 
-describe("user withdrawal request contract", () => {
-  it("accepts only a positive route id and bounded idempotency key", () => {
-    expect(validateUserWithdrawalRequestCreateInput({ payoutRouteId: 3, idempotencyKey: "request-123" }))
-      .toEqual({ ok: true, data: { payoutRouteId: 3, idempotencyKey: "request-123" } })
-    expect(validateUserWithdrawalRequestCreateInput({ payoutRouteId: 0, idempotencyKey: "short" }).ok).toBe(false)
+describe("user withdrawal request v2 contract", () => {
+  it("accepts exact create fields and 0%-100% fee snapshots", () => {
+    const base = { action: "create", payoutRouteId: 3, requestedMinor: 1000, projectId: 7, assetKey: "stripe_sandbox_usd", idempotencyKey: "request-123" }
+    expect(validateUserWithdrawalRequestInput({ ...base, userFeeBps: 0 }).ok).toBe(true)
+    expect(validateUserWithdrawalRequestInput({ ...base, userFeeBps: 10000 }).ok).toBe(true)
+    expect(validateUserWithdrawalRequestInput({ ...base, userFeeBps: 10001 }).ok).toBe(false)
+    expect(validateUserWithdrawalRequestInput({ ...base, projectId: 0, userFeeBps: 0 }).ok).toBe(false)
+    expect(validateUserWithdrawalRequestInput({ ...base, userFeeBps: 0, actorUserId: "forged" }).ok).toBe(false)
+  })
+
+  it("accepts bounded cancel and retry actions", () => {
+    const requestId = "00000000-0000-4000-8000-000000000001"
+    expect(validateUserWithdrawalRequestInput({ action: "cancel", requestId }).ok).toBe(true)
+    expect(validateUserWithdrawalRequestInput({ action: "retry", requestId, reason: "inventory_replenished" }).ok).toBe(true)
   })
 
   it("requires explicit proof that no payout executed", () => {
-    const base = { requestId: "req-1", payoutRouteId: 3, status: "requested", requestedUsdAmount: 125,
-      currencyCode: "USD", creditCount: 2, requestedAt: "2026-08-05T00:00:00Z" }
-    expect(normalizeUserWithdrawalRequestCreateResult(edgeCommandSuccess(base)).ok).toBe(false)
-    expect(normalizeUserWithdrawalRequestCreateResult(edgeCommandSuccess({ ...base, noPayoutExecuted: true })).ok).toBe(true)
+    const base = { requestId: "req-1", status: "reserved" }
+    expect(normalizeUserWithdrawalRequestResult(edgeCommandSuccess(base)).ok).toBe(false)
+    expect(normalizeUserWithdrawalRequestResult(edgeCommandSuccess({ ...base, noPayoutExecuted: true })).ok).toBe(true)
   })
 })

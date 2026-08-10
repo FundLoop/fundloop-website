@@ -22,6 +22,60 @@ verify_jwt = false
 entrypoint = "./functions/shadow-financial-journal-post/index.ts"
 import_map = "./functions/deno.json"
 
+[functions.stripe-bank-transfer-intent-create]
+enabled = true
+verify_jwt = false
+entrypoint = "./functions/stripe-bank-transfer-intent-create/index.ts"
+import_map = "./functions/deno.json"
+
+[functions.stripe-bank-transfer-webhook]
+enabled = true
+verify_jwt = false
+entrypoint = "./functions/stripe-bank-transfer-webhook/index.ts"
+import_map = "./functions/deno.json"
+
+[functions.stripe-bank-transfer-status-read]
+enabled = true
+verify_jwt = false
+entrypoint = "./functions/stripe-bank-transfer-status-read/index.ts"
+import_map = "./functions/deno.json"
+
+[functions.stripe-connect-account]
+enabled = true
+verify_jwt = false
+entrypoint = "./functions/stripe-connect-account/index.ts"
+import_map = "./functions/deno.json"
+
+[functions.stripe-connect-payout-operator]
+enabled = true
+verify_jwt = false
+entrypoint = "./functions/stripe-connect-payout-operator/index.ts"
+import_map = "./functions/deno.json"
+
+[functions.stripe-connect-webhook]
+enabled = true
+verify_jwt = false
+entrypoint = "./functions/stripe-connect-webhook/index.ts"
+import_map = "./functions/deno.json"
+
+[functions.epoch-project-package-workflow]
+enabled = true
+verify_jwt = false
+entrypoint = "./functions/epoch-project-package-workflow/index.ts"
+import_map = "./functions/deno.json"
+
+[functions.epoch-financial-prep]
+enabled = true
+verify_jwt = false
+entrypoint = "./functions/epoch-financial-prep/index.ts"
+import_map = "./functions/deno.json"
+
+[functions.epoch-financial-prep-scheduler]
+enabled = true
+verify_jwt = false
+entrypoint = "./functions/epoch-financial-prep-scheduler/index.ts"
+import_map = "./functions/deno.json"
+
 [api]
 enabled = true
 # Port to use for the API URL.
@@ -382,6 +436,7 @@ deno_version = 2
 [edge_runtime.secrets]
 FUNDLOOP_INTERNAL_ADMIN_EMAILS = "env(FUNDLOOP_INTERNAL_ADMIN_EMAILS)"
 FUNDLOOP_ZKAS_SUPERADMIN_EMAILS = "env(FUNDLOOP_ZKAS_SUPERADMIN_EMAILS)"
+FUNDLOOP_DEPLOYMENT_ENV = "env(FUNDLOOP_DEPLOYMENT_ENV)"
 
 [analytics]
 enabled = true
@@ -401,3 +456,20 @@ s3_region = "env(S3_REGION)"
 s3_access_key = "env(S3_ACCESS_KEY)"
 # Configures AWS_SECRET_ACCESS_KEY for S3 bucket
 s3_secret_key = "env(S3_SECRET_KEY)"
+[functions.epoch-funded-allocation]
+enabled = true
+verify_jwt = false
+entrypoint = "./functions/epoch-funded-allocation/index.ts"
+import_map = "./functions/deno.json"
+
+[functions.epoch-allocation-close]
+enabled = true
+verify_jwt = false
+entrypoint = "./functions/epoch-allocation-close/index.ts"
+import_map = "./functions/deno.json"
+
+[functions.withdrawal-operator]
+enabled = true
+verify_jwt = false
+entrypoint = "./functions/withdrawal-operator/index.ts"
+import_map = "./functions/deno.json"

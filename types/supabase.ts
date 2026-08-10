@@ -390,6 +390,400 @@ export type Database = {
           },
         ]
       }
+      base_paymaster_budgets: {
+        Row: {
+          deployment_id: number
+          evidence_hash: string
+          is_paused: boolean
+          max_per_request_native: number
+          remaining_native: number
+          updated_at: string
+          version: number
+        }
+        Insert: {
+          deployment_id: number
+          evidence_hash: string
+          is_paused?: boolean
+          max_per_request_native: number
+          remaining_native: number
+          updated_at?: string
+          version?: number
+        }
+        Update: {
+          deployment_id?: number
+          evidence_hash?: string
+          is_paused?: boolean
+          max_per_request_native?: number
+          remaining_native?: number
+          updated_at?: string
+          version?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "base_paymaster_budgets_deployment_id_fkey"
+            columns: ["deployment_id"]
+            isOneToOne: true
+            referencedRelation: "base_safe_payout_deployments"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      base_payout_execution_commands: {
+        Row: {
+          authorized_at: string
+          authorized_by_user_id: string
+          chain_authorization_block_number: number | null
+          chain_authorization_evidence_hash: string | null
+          chain_authorized_at: string | null
+          deployment_id: number
+          epoch_key: string
+          expires_at: string
+          fee_recipient_address: string
+          financial_asset_id: number
+          gas_budget_native: number
+          id: number
+          module_nonce: number
+          monthly_cycle_id: number
+          native_atomic_amount: number
+          payout_execution_attempt_id: number
+          payout_intent_id: number
+          production_enabled: boolean
+          project_id: number
+          recipient_address: string
+          request_hash: string
+          status: string
+          token_address: string
+          user_fee_native_amount: number
+          withdrawal_request_id: string
+        }
+        Insert: {
+          authorized_at?: string
+          authorized_by_user_id: string
+          chain_authorization_block_number?: number | null
+          chain_authorization_evidence_hash?: string | null
+          chain_authorized_at?: string | null
+          deployment_id: number
+          epoch_key: string
+          expires_at: string
+          fee_recipient_address: string
+          financial_asset_id: number
+          gas_budget_native: number
+          id?: never
+          module_nonce: number
+          monthly_cycle_id: number
+          native_atomic_amount: number
+          payout_execution_attempt_id: number
+          payout_intent_id: number
+          production_enabled?: boolean
+          project_id: number
+          recipient_address: string
+          request_hash: string
+          status?: string
+          token_address: string
+          user_fee_native_amount?: number
+          withdrawal_request_id: string
+        }
+        Update: {
+          authorized_at?: string
+          authorized_by_user_id?: string
+          chain_authorization_block_number?: number | null
+          chain_authorization_evidence_hash?: string | null
+          chain_authorized_at?: string | null
+          deployment_id?: number
+          epoch_key?: string
+          expires_at?: string
+          fee_recipient_address?: string
+          financial_asset_id?: number
+          gas_budget_native?: number
+          id?: never
+          module_nonce?: number
+          monthly_cycle_id?: number
+          native_atomic_amount?: number
+          payout_execution_attempt_id?: number
+          payout_intent_id?: number
+          production_enabled?: boolean
+          project_id?: number
+          recipient_address?: string
+          request_hash?: string
+          status?: string
+          token_address?: string
+          user_fee_native_amount?: number
+          withdrawal_request_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "base_payout_execution_commands_authorized_by_user_id_fkey"
+            columns: ["authorized_by_user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "base_payout_execution_commands_deployment_id_fkey"
+            columns: ["deployment_id"]
+            isOneToOne: false
+            referencedRelation: "base_safe_payout_deployments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "base_payout_execution_commands_financial_asset_id_fkey"
+            columns: ["financial_asset_id"]
+            isOneToOne: false
+            referencedRelation: "financial_assets"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "base_payout_execution_commands_monthly_cycle_id_fkey"
+            columns: ["monthly_cycle_id"]
+            isOneToOne: false
+            referencedRelation: "monthly_cycles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "base_payout_execution_commands_payout_execution_attempt_id_fkey"
+            columns: ["payout_execution_attempt_id"]
+            isOneToOne: true
+            referencedRelation: "payout_execution_attempts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "base_payout_execution_commands_payout_intent_id_fkey"
+            columns: ["payout_intent_id"]
+            isOneToOne: true
+            referencedRelation: "payout_intents"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "base_payout_execution_commands_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "base_payout_execution_commands_withdrawal_request_id_fkey"
+            columns: ["withdrawal_request_id"]
+            isOneToOne: true
+            referencedRelation: "user_withdrawal_requests"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      base_payout_execution_observations: {
+        Row: {
+          block_hash: string
+          block_number: number
+          command_id: number
+          confirmation_count: number
+          created_at: string
+          current_block_number: number
+          evidence_hash: string
+          id: number
+          l1_batch_finalized: boolean
+          ledger_transaction_id: number | null
+          observation_source: string
+          observed_at: string
+          observed_fee_recipient_address: string
+          observed_gas_budget_native: number
+          observed_native_atomic_amount: number
+          observed_recipient_address: string
+          observed_request_hash: string
+          observed_token_address: string
+          observed_user_fee_native_amount: number
+          receipt_success: boolean
+          replacement_tx_hash: string | null
+          status: string
+          tx_hash: string
+        }
+        Insert: {
+          block_hash: string
+          block_number: number
+          command_id: number
+          confirmation_count: number
+          created_at?: string
+          current_block_number: number
+          evidence_hash: string
+          id?: never
+          l1_batch_finalized?: boolean
+          ledger_transaction_id?: number | null
+          observation_source: string
+          observed_at: string
+          observed_fee_recipient_address: string
+          observed_gas_budget_native: number
+          observed_native_atomic_amount: number
+          observed_recipient_address: string
+          observed_request_hash: string
+          observed_token_address: string
+          observed_user_fee_native_amount: number
+          receipt_success: boolean
+          replacement_tx_hash?: string | null
+          status: string
+          tx_hash: string
+        }
+        Update: {
+          block_hash?: string
+          block_number?: number
+          command_id?: number
+          confirmation_count?: number
+          created_at?: string
+          current_block_number?: number
+          evidence_hash?: string
+          id?: never
+          l1_batch_finalized?: boolean
+          ledger_transaction_id?: number | null
+          observation_source?: string
+          observed_at?: string
+          observed_fee_recipient_address?: string
+          observed_gas_budget_native?: number
+          observed_native_atomic_amount?: number
+          observed_recipient_address?: string
+          observed_request_hash?: string
+          observed_token_address?: string
+          observed_user_fee_native_amount?: number
+          receipt_success?: boolean
+          replacement_tx_hash?: string | null
+          status?: string
+          tx_hash?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "base_payout_execution_observations_command_id_fkey"
+            columns: ["command_id"]
+            isOneToOne: false
+            referencedRelation: "base_payout_execution_commands"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "base_payout_execution_observations_ledger_transaction_id_fkey"
+            columns: ["ledger_transaction_id"]
+            isOneToOne: false
+            referencedRelation: "ledger_transactions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "base_payout_execution_observations_ledger_transaction_id_fkey"
+            columns: ["ledger_transaction_id"]
+            isOneToOne: false
+            referencedRelation: "shadow_ledger_trial_balance"
+            referencedColumns: ["ledger_transaction_id"]
+          },
+        ]
+      }
+      base_payout_fee_inventory_reservations: {
+        Row: {
+          command_id: number
+          inventory_lot_id: number
+          native_atomic_amount: number
+          status: string
+        }
+        Insert: {
+          command_id: number
+          inventory_lot_id: number
+          native_atomic_amount: number
+          status?: string
+        }
+        Update: {
+          command_id?: number
+          inventory_lot_id?: number
+          native_atomic_amount?: number
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "base_payout_fee_inventory_reservations_command_id_fkey"
+            columns: ["command_id"]
+            isOneToOne: false
+            referencedRelation: "base_payout_execution_commands"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "base_payout_fee_inventory_reservations_inventory_lot_id_fkey"
+            columns: ["inventory_lot_id"]
+            isOneToOne: false
+            referencedRelation: "payout_inventory_lots"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      base_payout_reconciliation_links: {
+        Row: {
+          command_id: number
+          created_at: string
+          ledger_transaction_id: number
+          observation_id: number
+        }
+        Insert: {
+          command_id: number
+          created_at?: string
+          ledger_transaction_id: number
+          observation_id: number
+        }
+        Update: {
+          command_id?: number
+          created_at?: string
+          ledger_transaction_id?: number
+          observation_id?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "base_payout_reconciliation_links_command_id_fkey"
+            columns: ["command_id"]
+            isOneToOne: true
+            referencedRelation: "base_payout_execution_commands"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "base_payout_reconciliation_links_ledger_transaction_id_fkey"
+            columns: ["ledger_transaction_id"]
+            isOneToOne: true
+            referencedRelation: "ledger_transactions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "base_payout_reconciliation_links_ledger_transaction_id_fkey"
+            columns: ["ledger_transaction_id"]
+            isOneToOne: true
+            referencedRelation: "shadow_ledger_trial_balance"
+            referencedColumns: ["ledger_transaction_id"]
+          },
+          {
+            foreignKeyName: "base_payout_reconciliation_links_observation_id_fkey"
+            columns: ["observation_id"]
+            isOneToOne: true
+            referencedRelation: "base_payout_execution_observations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      base_payout_runtime_controls: {
+        Row: {
+          authorization_enabled: boolean
+          deployment_environment: string
+          observation_enabled: boolean
+          production_value_flow_enabled: boolean
+        }
+        Insert: {
+          authorization_enabled?: boolean
+          deployment_environment: string
+          observation_enabled?: boolean
+          production_value_flow_enabled?: boolean
+        }
+        Update: {
+          authorization_enabled?: boolean
+          deployment_environment?: string
+          observation_enabled?: boolean
+          production_value_flow_enabled?: boolean
+        }
+        Relationships: [
+          {
+            foreignKeyName: "base_payout_runtime_controls_deployment_environment_fkey"
+            columns: ["deployment_environment"]
+            isOneToOne: true
+            referencedRelation: "financial_runtime_controls"
+            referencedColumns: ["deployment_environment"]
+          },
+        ]
+      }
       base_project_fee_versions: {
         Row: {
           created_at: string
@@ -425,6 +819,119 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "projects"
             referencedColumns: ["id"]
+          },
+        ]
+      }
+      base_safe_payout_assets: {
+        Row: {
+          deployment_id: number
+          evidence_hash: string
+          financial_asset_id: number
+          is_enabled: boolean
+          token_address: string
+        }
+        Insert: {
+          deployment_id: number
+          evidence_hash: string
+          financial_asset_id: number
+          is_enabled?: boolean
+          token_address: string
+        }
+        Update: {
+          deployment_id?: number
+          evidence_hash?: string
+          financial_asset_id?: number
+          is_enabled?: boolean
+          token_address?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "base_safe_payout_assets_deployment_id_fkey"
+            columns: ["deployment_id"]
+            isOneToOne: false
+            referencedRelation: "base_safe_payout_deployments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "base_safe_payout_assets_financial_asset_id_fkey"
+            columns: ["financial_asset_id"]
+            isOneToOne: false
+            referencedRelation: "financial_assets"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      base_safe_payout_deployments: {
+        Row: {
+          chain_id: number
+          created_at: string
+          deployment_environment: string
+          evidence_hash: string
+          id: number
+          is_active: boolean
+          is_paused: boolean
+          limited_signer_address: string
+          max_per_epoch_native: number
+          max_per_transaction_native: number
+          max_rolling_24h_native: number
+          module_address: string
+          module_owner_address: string
+          paymaster_controller_address: string
+          paymaster_owner_address: string
+          paymaster_policy_address: string
+          production_enabled: boolean
+          safe_address: string
+          safe_role: string
+        }
+        Insert: {
+          chain_id: number
+          created_at?: string
+          deployment_environment: string
+          evidence_hash: string
+          id?: never
+          is_active?: boolean
+          is_paused?: boolean
+          limited_signer_address: string
+          max_per_epoch_native: number
+          max_per_transaction_native: number
+          max_rolling_24h_native: number
+          module_address: string
+          module_owner_address: string
+          paymaster_controller_address: string
+          paymaster_owner_address: string
+          paymaster_policy_address: string
+          production_enabled?: boolean
+          safe_address: string
+          safe_role: string
+        }
+        Update: {
+          chain_id?: number
+          created_at?: string
+          deployment_environment?: string
+          evidence_hash?: string
+          id?: never
+          is_active?: boolean
+          is_paused?: boolean
+          limited_signer_address?: string
+          max_per_epoch_native?: number
+          max_per_transaction_native?: number
+          max_rolling_24h_native?: number
+          module_address?: string
+          module_owner_address?: string
+          paymaster_controller_address?: string
+          paymaster_owner_address?: string
+          paymaster_policy_address?: string
+          production_enabled?: boolean
+          safe_address?: string
+          safe_role?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "base_safe_payout_deployments_deployment_environment_fkey"
+            columns: ["deployment_environment"]
+            isOneToOne: false
+            referencedRelation: "base_payout_runtime_controls"
+            referencedColumns: ["deployment_environment"]
           },
         ]
       }
@@ -690,6 +1197,623 @@ export type Database = {
         }
         Relationships: []
       }
+      epoch_allocation_approvals: {
+        Row: {
+          actor_user_id: string
+          approved_at: string
+          deployment_environment: string
+          id: number
+          manifest_hash: string
+          production_enabled: boolean
+          rerun_result_hash: string
+          result_hash: string
+          run_id: number
+        }
+        Insert: {
+          actor_user_id: string
+          approved_at?: string
+          deployment_environment: string
+          id?: never
+          manifest_hash: string
+          production_enabled?: boolean
+          rerun_result_hash: string
+          result_hash: string
+          run_id: number
+        }
+        Update: {
+          actor_user_id?: string
+          approved_at?: string
+          deployment_environment?: string
+          id?: never
+          manifest_hash?: string
+          production_enabled?: boolean
+          rerun_result_hash?: string
+          result_hash?: string
+          run_id?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "epoch_allocation_approvals_actor_user_id_fkey"
+            columns: ["actor_user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "epoch_allocation_approvals_deployment_environment_fkey"
+            columns: ["deployment_environment"]
+            isOneToOne: false
+            referencedRelation: "epoch_close_runtime_controls"
+            referencedColumns: ["deployment_environment"]
+          },
+          {
+            foreignKeyName: "epoch_allocation_approvals_run_id_fkey"
+            columns: ["run_id"]
+            isOneToOne: true
+            referencedRelation: "epoch_allocation_operator_view"
+            referencedColumns: ["run_id"]
+          },
+          {
+            foreignKeyName: "epoch_allocation_approvals_run_id_fkey"
+            columns: ["run_id"]
+            isOneToOne: true
+            referencedRelation: "epoch_allocation_runs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      epoch_allocation_manifest_cohort: {
+        Row: {
+          cubid_evidence_hash: string
+          id: number
+          locked_cubid_score: number
+          locked_max_cubid_score: number
+          manifest_id: number
+          project_id: number
+          project_pseudonym: string
+          user_id: string
+        }
+        Insert: {
+          cubid_evidence_hash: string
+          id?: never
+          locked_cubid_score: number
+          locked_max_cubid_score: number
+          manifest_id: number
+          project_id: number
+          project_pseudonym: string
+          user_id: string
+        }
+        Update: {
+          cubid_evidence_hash?: string
+          id?: never
+          locked_cubid_score?: number
+          locked_max_cubid_score?: number
+          manifest_id?: number
+          project_id?: number
+          project_pseudonym?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "epoch_allocation_manifest_cohort_manifest_id_fkey"
+            columns: ["manifest_id"]
+            isOneToOne: false
+            referencedRelation: "epoch_allocation_manifests"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "epoch_allocation_manifest_cohort_manifest_id_fkey"
+            columns: ["manifest_id"]
+            isOneToOne: false
+            referencedRelation: "epoch_allocation_operator_view"
+            referencedColumns: ["manifest_id"]
+          },
+          {
+            foreignKeyName: "epoch_allocation_manifest_cohort_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "epoch_allocation_manifest_cohort_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["user_id"]
+          },
+        ]
+      }
+      epoch_allocation_manifest_sources: {
+        Row: {
+          canonical_minor_capacity: number
+          custody_account_id: number
+          evidence_hash: string
+          exact_usd: number
+          financial_asset_id: number
+          fx_snapshot_id: number
+          id: number
+          manifest_id: number
+          native_atomic_amount: number
+          project_id: number
+          rail_key: string
+          source_lot_id: number
+          source_lot_key: string
+          source_order: number
+          source_position: number
+        }
+        Insert: {
+          canonical_minor_capacity: number
+          custody_account_id: number
+          evidence_hash: string
+          exact_usd: number
+          financial_asset_id: number
+          fx_snapshot_id: number
+          id?: never
+          manifest_id: number
+          native_atomic_amount: number
+          project_id: number
+          rail_key: string
+          source_lot_id: number
+          source_lot_key: string
+          source_order: number
+          source_position: number
+        }
+        Update: {
+          canonical_minor_capacity?: number
+          custody_account_id?: number
+          evidence_hash?: string
+          exact_usd?: number
+          financial_asset_id?: number
+          fx_snapshot_id?: number
+          id?: never
+          manifest_id?: number
+          native_atomic_amount?: number
+          project_id?: number
+          rail_key?: string
+          source_lot_id?: number
+          source_lot_key?: string
+          source_order?: number
+          source_position?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "epoch_allocation_manifest_sources_custody_account_id_fkey"
+            columns: ["custody_account_id"]
+            isOneToOne: false
+            referencedRelation: "financial_custody_accounts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "epoch_allocation_manifest_sources_financial_asset_id_fkey"
+            columns: ["financial_asset_id"]
+            isOneToOne: false
+            referencedRelation: "financial_assets"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "epoch_allocation_manifest_sources_fx_snapshot_id_fkey"
+            columns: ["fx_snapshot_id"]
+            isOneToOne: false
+            referencedRelation: "epoch_fx_snapshots"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "epoch_allocation_manifest_sources_manifest_id_fkey"
+            columns: ["manifest_id"]
+            isOneToOne: false
+            referencedRelation: "epoch_allocation_manifests"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "epoch_allocation_manifest_sources_manifest_id_fkey"
+            columns: ["manifest_id"]
+            isOneToOne: false
+            referencedRelation: "epoch_allocation_operator_view"
+            referencedColumns: ["manifest_id"]
+          },
+          {
+            foreignKeyName: "epoch_allocation_manifest_sources_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "epoch_allocation_manifest_sources_source_lot_id_fkey"
+            columns: ["source_lot_id"]
+            isOneToOne: true
+            referencedRelation: "epoch_funded_allocation_lock_candidates"
+            referencedColumns: ["source_lot_id"]
+          },
+          {
+            foreignKeyName: "epoch_allocation_manifest_sources_source_lot_id_fkey"
+            columns: ["source_lot_id"]
+            isOneToOne: true
+            referencedRelation: "epoch_valuation_source_lots"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "epoch_allocation_source_pair"
+            columns: ["financial_asset_id", "custody_account_id"]
+            isOneToOne: false
+            referencedRelation: "financial_custody_accounts"
+            referencedColumns: ["asset_id", "id"]
+          },
+        ]
+      }
+      epoch_allocation_manifests: {
+        Row: {
+          actor_user_id: string
+          calculated_at: string | null
+          deployment_environment: string
+          funded_exact_usd: number
+          funded_minor: number
+          id: number
+          locked_at: string
+          manifest: Json
+          manifest_hash: string
+          minor_unit_scale: number
+          monthly_cycle_id: number
+          policy_key: string
+          production_enabled: boolean
+          status: string
+          version: number
+        }
+        Insert: {
+          actor_user_id: string
+          calculated_at?: string | null
+          deployment_environment: string
+          funded_exact_usd: number
+          funded_minor: number
+          id?: never
+          locked_at?: string
+          manifest: Json
+          manifest_hash: string
+          minor_unit_scale?: number
+          monthly_cycle_id: number
+          policy_key?: string
+          production_enabled?: boolean
+          status?: string
+          version: number
+        }
+        Update: {
+          actor_user_id?: string
+          calculated_at?: string | null
+          deployment_environment?: string
+          funded_exact_usd?: number
+          funded_minor?: number
+          id?: never
+          locked_at?: string
+          manifest?: Json
+          manifest_hash?: string
+          minor_unit_scale?: number
+          monthly_cycle_id?: number
+          policy_key?: string
+          production_enabled?: boolean
+          status?: string
+          version?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "epoch_allocation_manifests_actor_user_id_fkey"
+            columns: ["actor_user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "epoch_allocation_manifests_deployment_environment_fkey"
+            columns: ["deployment_environment"]
+            isOneToOne: false
+            referencedRelation: "epoch_allocation_runtime_controls"
+            referencedColumns: ["deployment_environment"]
+          },
+          {
+            foreignKeyName: "epoch_allocation_manifests_monthly_cycle_id_fkey"
+            columns: ["monthly_cycle_id"]
+            isOneToOne: false
+            referencedRelation: "monthly_cycles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      epoch_allocation_runs: {
+        Row: {
+          actor_user_id: string
+          artifact: Json
+          created_at: string
+          deployment_environment: string
+          final_allocation_minor: number
+          funded_minor: number
+          id: number
+          manifest_id: number
+          overlap_pool_minor: number
+          policy_key: string
+          production_enabled: boolean
+          result_hash: string
+          retained_initial_minor: number
+          returned_residue_minor: number
+          score_pool_minor: number
+          top_up_minor: number
+        }
+        Insert: {
+          actor_user_id: string
+          artifact: Json
+          created_at?: string
+          deployment_environment: string
+          final_allocation_minor: number
+          funded_minor: number
+          id?: never
+          manifest_id: number
+          overlap_pool_minor: number
+          policy_key: string
+          production_enabled?: boolean
+          result_hash: string
+          retained_initial_minor: number
+          returned_residue_minor: number
+          score_pool_minor: number
+          top_up_minor: number
+        }
+        Update: {
+          actor_user_id?: string
+          artifact?: Json
+          created_at?: string
+          deployment_environment?: string
+          final_allocation_minor?: number
+          funded_minor?: number
+          id?: never
+          manifest_id?: number
+          overlap_pool_minor?: number
+          policy_key?: string
+          production_enabled?: boolean
+          result_hash?: string
+          retained_initial_minor?: number
+          returned_residue_minor?: number
+          score_pool_minor?: number
+          top_up_minor?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "epoch_allocation_runs_actor_user_id_fkey"
+            columns: ["actor_user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "epoch_allocation_runs_deployment_environment_fkey"
+            columns: ["deployment_environment"]
+            isOneToOne: false
+            referencedRelation: "epoch_allocation_runtime_controls"
+            referencedColumns: ["deployment_environment"]
+          },
+          {
+            foreignKeyName: "epoch_allocation_runs_manifest_id_fkey"
+            columns: ["manifest_id"]
+            isOneToOne: true
+            referencedRelation: "epoch_allocation_manifests"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "epoch_allocation_runs_manifest_id_fkey"
+            columns: ["manifest_id"]
+            isOneToOne: true
+            referencedRelation: "epoch_allocation_operator_view"
+            referencedColumns: ["manifest_id"]
+          },
+        ]
+      }
+      epoch_allocation_runtime_controls: {
+        Row: {
+          allocation_enabled: boolean
+          deployment_environment: string
+          production_value_flow_enabled: boolean
+          updated_at: string
+        }
+        Insert: {
+          allocation_enabled?: boolean
+          deployment_environment: string
+          production_value_flow_enabled?: boolean
+          updated_at?: string
+        }
+        Update: {
+          allocation_enabled?: boolean
+          deployment_environment?: string
+          production_value_flow_enabled?: boolean
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "epoch_allocation_runtime_controls_deployment_environment_fkey"
+            columns: ["deployment_environment"]
+            isOneToOne: true
+            referencedRelation: "financial_runtime_controls"
+            referencedColumns: ["deployment_environment"]
+          },
+        ]
+      }
+      epoch_allocation_source_dispositions: {
+        Row: {
+          canonical_minor: number
+          disposition_kind: string
+          exact_usd: number
+          id: number
+          manifest_source_id: number
+          run_id: number
+          stable_position: number
+          user_id: string | null
+        }
+        Insert: {
+          canonical_minor: number
+          disposition_kind: string
+          exact_usd: number
+          id?: never
+          manifest_source_id: number
+          run_id: number
+          stable_position: number
+          user_id?: string | null
+        }
+        Update: {
+          canonical_minor?: number
+          disposition_kind?: string
+          exact_usd?: number
+          id?: never
+          manifest_source_id?: number
+          run_id?: number
+          stable_position?: number
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "epoch_allocation_source_dispositions_manifest_source_id_fkey"
+            columns: ["manifest_source_id"]
+            isOneToOne: false
+            referencedRelation: "epoch_allocation_manifest_sources"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "epoch_allocation_source_dispositions_run_id_fkey"
+            columns: ["run_id"]
+            isOneToOne: false
+            referencedRelation: "epoch_allocation_operator_view"
+            referencedColumns: ["run_id"]
+          },
+          {
+            foreignKeyName: "epoch_allocation_source_dispositions_run_id_fkey"
+            columns: ["run_id"]
+            isOneToOne: false
+            referencedRelation: "epoch_allocation_runs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "epoch_allocation_source_dispositions_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["user_id"]
+          },
+        ]
+      }
+      epoch_allocation_user_awards: {
+        Row: {
+          aggregate_initial_exact_usd: number
+          baseline_exact_usd: number
+          exact_cap_usd: number
+          final_minor: number
+          id: number
+          minor_unit_cap: number
+          project_claims: Json
+          retained_initial_minor: number
+          run_id: number
+          top_up_minor: number
+          user_id: string
+        }
+        Insert: {
+          aggregate_initial_exact_usd: number
+          baseline_exact_usd: number
+          exact_cap_usd: number
+          final_minor: number
+          id?: never
+          minor_unit_cap: number
+          project_claims: Json
+          retained_initial_minor: number
+          run_id: number
+          top_up_minor: number
+          user_id: string
+        }
+        Update: {
+          aggregate_initial_exact_usd?: number
+          baseline_exact_usd?: number
+          exact_cap_usd?: number
+          final_minor?: number
+          id?: never
+          minor_unit_cap?: number
+          project_claims?: Json
+          retained_initial_minor?: number
+          run_id?: number
+          top_up_minor?: number
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "epoch_allocation_user_awards_run_id_fkey"
+            columns: ["run_id"]
+            isOneToOne: false
+            referencedRelation: "epoch_allocation_operator_view"
+            referencedColumns: ["run_id"]
+          },
+          {
+            foreignKeyName: "epoch_allocation_user_awards_run_id_fkey"
+            columns: ["run_id"]
+            isOneToOne: false
+            referencedRelation: "epoch_allocation_runs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "epoch_allocation_user_awards_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["user_id"]
+          },
+        ]
+      }
+      epoch_asset_custody_routes: {
+        Row: {
+          asset_code: string
+          created_at: string
+          custody_account_id: number
+          evidence_hash: string
+          financial_asset_id: number
+          id: number
+          production_enabled: boolean
+          source_kind: string
+        }
+        Insert: {
+          asset_code: string
+          created_at?: string
+          custody_account_id: number
+          evidence_hash: string
+          financial_asset_id: number
+          id?: never
+          production_enabled?: boolean
+          source_kind: string
+        }
+        Update: {
+          asset_code?: string
+          created_at?: string
+          custody_account_id?: number
+          evidence_hash?: string
+          financial_asset_id?: number
+          id?: never
+          production_enabled?: boolean
+          source_kind?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "epoch_asset_custody_pair"
+            columns: ["financial_asset_id", "custody_account_id"]
+            isOneToOne: false
+            referencedRelation: "financial_custody_accounts"
+            referencedColumns: ["asset_id", "id"]
+          },
+          {
+            foreignKeyName: "epoch_asset_custody_routes_custody_account_id_fkey"
+            columns: ["custody_account_id"]
+            isOneToOne: false
+            referencedRelation: "financial_custody_accounts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "epoch_asset_custody_routes_financial_asset_id_fkey"
+            columns: ["financial_asset_id"]
+            isOneToOne: false
+            referencedRelation: "financial_assets"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       epoch_business_calendar: {
         Row: {
           calendar_date: string
@@ -742,6 +1866,1382 @@ export type Database = {
           timezone_name?: string
         }
         Relationships: []
+      }
+      epoch_close_artifacts: {
+        Row: {
+          artifact: Json
+          artifact_hash: string
+          artifact_key: string
+          audience: string
+          close_package_id: number
+          created_at: string
+          id: number
+        }
+        Insert: {
+          artifact: Json
+          artifact_hash: string
+          artifact_key: string
+          audience: string
+          close_package_id: number
+          created_at?: string
+          id?: never
+        }
+        Update: {
+          artifact?: Json
+          artifact_hash?: string
+          artifact_key?: string
+          audience?: string
+          close_package_id?: number
+          created_at?: string
+          id?: never
+        }
+        Relationships: [
+          {
+            foreignKeyName: "epoch_close_artifacts_close_package_id_fkey"
+            columns: ["close_package_id"]
+            isOneToOne: false
+            referencedRelation: "epoch_close_operator_view"
+            referencedColumns: ["close_package_id"]
+          },
+          {
+            foreignKeyName: "epoch_close_artifacts_close_package_id_fkey"
+            columns: ["close_package_id"]
+            isOneToOne: false
+            referencedRelation: "epoch_close_packages"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      epoch_close_packages: {
+        Row: {
+          approval_id: number
+          created_at: string
+          final_allocation_minor: number
+          funded_minor: number
+          id: number
+          manifest_hash: string
+          monthly_cycle_id: number
+          package_version: number
+          production_enabled: boolean
+          redistribution_pool_minor: number
+          result_hash: string
+          returned_residue_minor: number
+          root_hash: string
+          shadow_state_id: number
+          stage_attempt_id: number | null
+          status: string
+          top_up_minor: number
+          user_count: number
+        }
+        Insert: {
+          approval_id: number
+          created_at?: string
+          final_allocation_minor: number
+          funded_minor: number
+          id?: never
+          manifest_hash: string
+          monthly_cycle_id: number
+          package_version?: number
+          production_enabled?: boolean
+          redistribution_pool_minor: number
+          result_hash: string
+          returned_residue_minor: number
+          root_hash: string
+          shadow_state_id: number
+          stage_attempt_id?: number | null
+          status?: string
+          top_up_minor: number
+          user_count: number
+        }
+        Update: {
+          approval_id?: number
+          created_at?: string
+          final_allocation_minor?: number
+          funded_minor?: number
+          id?: never
+          manifest_hash?: string
+          monthly_cycle_id?: number
+          package_version?: number
+          production_enabled?: boolean
+          redistribution_pool_minor?: number
+          result_hash?: string
+          returned_residue_minor?: number
+          root_hash?: string
+          shadow_state_id?: number
+          stage_attempt_id?: number | null
+          status?: string
+          top_up_minor?: number
+          user_count?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "epoch_close_packages_approval_id_fkey"
+            columns: ["approval_id"]
+            isOneToOne: true
+            referencedRelation: "epoch_allocation_approvals"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "epoch_close_packages_monthly_cycle_id_fkey"
+            columns: ["monthly_cycle_id"]
+            isOneToOne: true
+            referencedRelation: "monthly_cycles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "epoch_close_packages_shadow_state_id_fkey"
+            columns: ["shadow_state_id"]
+            isOneToOne: false
+            referencedRelation: "epoch_shadow_observability"
+            referencedColumns: ["shadow_state_id"]
+          },
+          {
+            foreignKeyName: "epoch_close_packages_shadow_state_id_fkey"
+            columns: ["shadow_state_id"]
+            isOneToOne: false
+            referencedRelation: "epoch_shadow_states"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "epoch_close_packages_stage_attempt_id_fkey"
+            columns: ["stage_attempt_id"]
+            isOneToOne: false
+            referencedRelation: "epoch_shadow_observability"
+            referencedColumns: ["latest_attempt_id"]
+          },
+          {
+            foreignKeyName: "epoch_close_packages_stage_attempt_id_fkey"
+            columns: ["stage_attempt_id"]
+            isOneToOne: false
+            referencedRelation: "epoch_stage_attempts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      epoch_close_project_summaries: {
+        Row: {
+          approval_id: number
+          cohort_count: number
+          created_at: string
+          funded_minor: number
+          id: number
+          initial_claim_exact_usd: number
+          monthly_cycle_id: number
+          project_id: number
+          score_pool_contribution_exact_usd: number
+          source_count: number
+          theoretical_share_exact_usd: number
+        }
+        Insert: {
+          approval_id: number
+          cohort_count: number
+          created_at?: string
+          funded_minor: number
+          id?: never
+          initial_claim_exact_usd: number
+          monthly_cycle_id: number
+          project_id: number
+          score_pool_contribution_exact_usd: number
+          source_count: number
+          theoretical_share_exact_usd: number
+        }
+        Update: {
+          approval_id?: number
+          cohort_count?: number
+          created_at?: string
+          funded_minor?: number
+          id?: never
+          initial_claim_exact_usd?: number
+          monthly_cycle_id?: number
+          project_id?: number
+          score_pool_contribution_exact_usd?: number
+          source_count?: number
+          theoretical_share_exact_usd?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "epoch_close_project_summaries_approval_id_fkey"
+            columns: ["approval_id"]
+            isOneToOne: false
+            referencedRelation: "epoch_allocation_approvals"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "epoch_close_project_summaries_monthly_cycle_id_fkey"
+            columns: ["monthly_cycle_id"]
+            isOneToOne: false
+            referencedRelation: "monthly_cycles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "epoch_close_project_summaries_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      epoch_close_root_approvals: {
+        Row: {
+          actor_user_id: string
+          approval_id: number
+          approved_at: string
+          close_package_id: number
+          deployment_environment: string
+          id: number
+          production_enabled: boolean
+          root_hash: string
+        }
+        Insert: {
+          actor_user_id: string
+          approval_id: number
+          approved_at?: string
+          close_package_id: number
+          deployment_environment: string
+          id?: never
+          production_enabled?: boolean
+          root_hash: string
+        }
+        Update: {
+          actor_user_id?: string
+          approval_id?: number
+          approved_at?: string
+          close_package_id?: number
+          deployment_environment?: string
+          id?: never
+          production_enabled?: boolean
+          root_hash?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "epoch_close_root_approvals_actor_user_id_fkey"
+            columns: ["actor_user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "epoch_close_root_approvals_approval_id_fkey"
+            columns: ["approval_id"]
+            isOneToOne: true
+            referencedRelation: "epoch_allocation_approvals"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "epoch_close_root_approvals_close_package_id_fkey"
+            columns: ["close_package_id"]
+            isOneToOne: true
+            referencedRelation: "epoch_close_operator_view"
+            referencedColumns: ["close_package_id"]
+          },
+          {
+            foreignKeyName: "epoch_close_root_approvals_close_package_id_fkey"
+            columns: ["close_package_id"]
+            isOneToOne: true
+            referencedRelation: "epoch_close_packages"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "epoch_close_root_approvals_deployment_environment_fkey"
+            columns: ["deployment_environment"]
+            isOneToOne: false
+            referencedRelation: "epoch_close_runtime_controls"
+            referencedColumns: ["deployment_environment"]
+          },
+        ]
+      }
+      epoch_close_runtime_controls: {
+        Row: {
+          close_posting_enabled: boolean
+          deployment_environment: string
+          production_value_flow_enabled: boolean
+          updated_at: string
+        }
+        Insert: {
+          close_posting_enabled?: boolean
+          deployment_environment: string
+          production_value_flow_enabled?: boolean
+          updated_at?: string
+        }
+        Update: {
+          close_posting_enabled?: boolean
+          deployment_environment?: string
+          production_value_flow_enabled?: boolean
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "epoch_close_runtime_controls_deployment_environment_fkey"
+            columns: ["deployment_environment"]
+            isOneToOne: true
+            referencedRelation: "financial_runtime_controls"
+            referencedColumns: ["deployment_environment"]
+          },
+        ]
+      }
+      epoch_fee_policies: {
+        Row: {
+          base_fee_bps: number
+          effective_from: string
+          effective_until: string | null
+          evidence_hash: string
+          id: number
+          policy_key: string
+          production_enabled: boolean
+          project_fee_default_bps: number
+          project_fee_max_bps: number
+          project_fee_min_bps: number
+          rail_key: string | null
+          version: number
+        }
+        Insert: {
+          base_fee_bps?: number
+          effective_from: string
+          effective_until?: string | null
+          evidence_hash: string
+          id?: never
+          policy_key: string
+          production_enabled?: boolean
+          project_fee_default_bps?: number
+          project_fee_max_bps?: number
+          project_fee_min_bps?: number
+          rail_key?: string | null
+          version: number
+        }
+        Update: {
+          base_fee_bps?: number
+          effective_from?: string
+          effective_until?: string | null
+          evidence_hash?: string
+          id?: never
+          policy_key?: string
+          production_enabled?: boolean
+          project_fee_default_bps?: number
+          project_fee_max_bps?: number
+          project_fee_min_bps?: number
+          rail_key?: string | null
+          version?: number
+        }
+        Relationships: []
+      }
+      epoch_financial_prep_runtime_controls: {
+        Row: {
+          deployment_environment: string
+          prep_enabled: boolean
+          production_value_flow_enabled: boolean
+          updated_at: string
+        }
+        Insert: {
+          deployment_environment: string
+          prep_enabled?: boolean
+          production_value_flow_enabled?: boolean
+          updated_at?: string
+        }
+        Update: {
+          deployment_environment?: string
+          prep_enabled?: boolean
+          production_value_flow_enabled?: boolean
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "epoch_financial_prep_runtime_contro_deployment_environment_fkey"
+            columns: ["deployment_environment"]
+            isOneToOne: true
+            referencedRelation: "financial_runtime_controls"
+            referencedColumns: ["deployment_environment"]
+          },
+        ]
+      }
+      epoch_fx_observations: {
+        Row: {
+          actor_user_id: string | null
+          created_at: string
+          deployment_environment: string
+          evidence_hash: string
+          financial_asset_id: number
+          freshness_expires_at: string
+          id: number
+          monthly_cycle_id: number
+          observed_at: string
+          production_enabled: boolean
+          rate_usd_per_unit: number
+          reasonability_status: string
+          source_key: string
+          source_rank: number
+        }
+        Insert: {
+          actor_user_id?: string | null
+          created_at?: string
+          deployment_environment: string
+          evidence_hash: string
+          financial_asset_id: number
+          freshness_expires_at: string
+          id?: never
+          monthly_cycle_id: number
+          observed_at: string
+          production_enabled?: boolean
+          rate_usd_per_unit: number
+          reasonability_status: string
+          source_key: string
+          source_rank: number
+        }
+        Update: {
+          actor_user_id?: string | null
+          created_at?: string
+          deployment_environment?: string
+          evidence_hash?: string
+          financial_asset_id?: number
+          freshness_expires_at?: string
+          id?: never
+          monthly_cycle_id?: number
+          observed_at?: string
+          production_enabled?: boolean
+          rate_usd_per_unit?: number
+          reasonability_status?: string
+          source_key?: string
+          source_rank?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "epoch_fx_observations_actor_user_id_fkey"
+            columns: ["actor_user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "epoch_fx_observations_deployment_environment_fkey"
+            columns: ["deployment_environment"]
+            isOneToOne: false
+            referencedRelation: "epoch_financial_prep_runtime_controls"
+            referencedColumns: ["deployment_environment"]
+          },
+          {
+            foreignKeyName: "epoch_fx_observations_financial_asset_id_fkey"
+            columns: ["financial_asset_id"]
+            isOneToOne: false
+            referencedRelation: "financial_assets"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "epoch_fx_observations_monthly_cycle_id_fkey"
+            columns: ["monthly_cycle_id"]
+            isOneToOne: false
+            referencedRelation: "monthly_cycles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      epoch_fx_snapshots: {
+        Row: {
+          created_at: string
+          deployment_environment: string
+          evidence_hash: string
+          financial_asset_id: number
+          id: number
+          method: string
+          monthly_cycle_id: number
+          posted_at: string | null
+          preanalysis: Json
+          production_enabled: boolean
+          rate_usd_per_unit: number
+          reviewed_by_user_id: string
+          selected_observation_id: number | null
+          stablecoin_peg_status: string
+          status: string
+          version: number
+        }
+        Insert: {
+          created_at?: string
+          deployment_environment: string
+          evidence_hash: string
+          financial_asset_id: number
+          id?: never
+          method: string
+          monthly_cycle_id: number
+          posted_at?: string | null
+          preanalysis: Json
+          production_enabled?: boolean
+          rate_usd_per_unit: number
+          reviewed_by_user_id: string
+          selected_observation_id?: number | null
+          stablecoin_peg_status: string
+          status: string
+          version: number
+        }
+        Update: {
+          created_at?: string
+          deployment_environment?: string
+          evidence_hash?: string
+          financial_asset_id?: number
+          id?: never
+          method?: string
+          monthly_cycle_id?: number
+          posted_at?: string | null
+          preanalysis?: Json
+          production_enabled?: boolean
+          rate_usd_per_unit?: number
+          reviewed_by_user_id?: string
+          selected_observation_id?: number | null
+          stablecoin_peg_status?: string
+          status?: string
+          version?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "epoch_fx_snapshots_deployment_environment_fkey"
+            columns: ["deployment_environment"]
+            isOneToOne: false
+            referencedRelation: "epoch_financial_prep_runtime_controls"
+            referencedColumns: ["deployment_environment"]
+          },
+          {
+            foreignKeyName: "epoch_fx_snapshots_financial_asset_id_fkey"
+            columns: ["financial_asset_id"]
+            isOneToOne: false
+            referencedRelation: "financial_assets"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "epoch_fx_snapshots_monthly_cycle_id_fkey"
+            columns: ["monthly_cycle_id"]
+            isOneToOne: false
+            referencedRelation: "monthly_cycles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "epoch_fx_snapshots_reviewed_by_user_id_fkey"
+            columns: ["reviewed_by_user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "epoch_fx_snapshots_selected_observation_id_fkey"
+            columns: ["selected_observation_id"]
+            isOneToOne: false
+            referencedRelation: "epoch_fx_observations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      epoch_project_package_cohort: {
+        Row: {
+          cubid_decision: string
+          cubid_evidence_at: string | null
+          cubid_evidence_expires_at: string | null
+          eligibility_status: string
+          evidence_hash: string
+          id: number
+          locked_cubid_score: number | null
+          locked_max_cubid_score: number
+          notification_required: boolean
+          package_id: number
+          project_pseudonym: string
+          source_row_id: number
+          user_id: string
+        }
+        Insert: {
+          cubid_decision: string
+          cubid_evidence_at?: string | null
+          cubid_evidence_expires_at?: string | null
+          eligibility_status: string
+          evidence_hash: string
+          id?: never
+          locked_cubid_score?: number | null
+          locked_max_cubid_score: number
+          notification_required?: boolean
+          package_id: number
+          project_pseudonym: string
+          source_row_id: number
+          user_id: string
+        }
+        Update: {
+          cubid_decision?: string
+          cubid_evidence_at?: string | null
+          cubid_evidence_expires_at?: string | null
+          eligibility_status?: string
+          evidence_hash?: string
+          id?: never
+          locked_cubid_score?: number | null
+          locked_max_cubid_score?: number
+          notification_required?: boolean
+          package_id?: number
+          project_pseudonym?: string
+          source_row_id?: number
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "epoch_project_package_cohort_package_id_fkey"
+            columns: ["package_id"]
+            isOneToOne: false
+            referencedRelation: "epoch_project_package_lock_candidates"
+            referencedColumns: ["package_id"]
+          },
+          {
+            foreignKeyName: "epoch_project_package_cohort_package_id_fkey"
+            columns: ["package_id"]
+            isOneToOne: false
+            referencedRelation: "epoch_project_package_operator_view"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "epoch_project_package_cohort_package_id_fkey"
+            columns: ["package_id"]
+            isOneToOne: false
+            referencedRelation: "epoch_project_packages"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "epoch_project_package_cohort_source_row_id_fkey"
+            columns: ["source_row_id"]
+            isOneToOne: false
+            referencedRelation: "project_attribution_rows"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "epoch_project_package_cohort_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["user_id"]
+          },
+        ]
+      }
+      epoch_project_package_decision_events: {
+        Row: {
+          actor_user_id: string | null
+          decided_at: string
+          decision: string
+          evidence_hash: string
+          id: number
+          package_id: number
+          production_enabled: boolean
+          reason: string | null
+        }
+        Insert: {
+          actor_user_id?: string | null
+          decided_at?: string
+          decision: string
+          evidence_hash: string
+          id?: never
+          package_id: number
+          production_enabled?: boolean
+          reason?: string | null
+        }
+        Update: {
+          actor_user_id?: string | null
+          decided_at?: string
+          decision?: string
+          evidence_hash?: string
+          id?: never
+          package_id?: number
+          production_enabled?: boolean
+          reason?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "epoch_project_package_decision_events_actor_user_id_fkey"
+            columns: ["actor_user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "epoch_project_package_decision_events_package_id_fkey"
+            columns: ["package_id"]
+            isOneToOne: false
+            referencedRelation: "epoch_project_package_lock_candidates"
+            referencedColumns: ["package_id"]
+          },
+          {
+            foreignKeyName: "epoch_project_package_decision_events_package_id_fkey"
+            columns: ["package_id"]
+            isOneToOne: false
+            referencedRelation: "epoch_project_package_operator_view"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "epoch_project_package_decision_events_package_id_fkey"
+            columns: ["package_id"]
+            isOneToOne: false
+            referencedRelation: "epoch_project_packages"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      epoch_project_package_email_events: {
+        Row: {
+          accepted_at: string | null
+          attempt_id: string
+          created_at: string
+          created_by_user_id: string
+          event_type: string
+          evidence_hash: string
+          id: number
+          package_id: number
+          production_enabled: boolean
+          provider_key: string
+          provider_message_id: string | null
+          recipient_hash: string
+        }
+        Insert: {
+          accepted_at?: string | null
+          attempt_id: string
+          created_at?: string
+          created_by_user_id: string
+          event_type: string
+          evidence_hash: string
+          id?: never
+          package_id: number
+          production_enabled?: boolean
+          provider_key: string
+          provider_message_id?: string | null
+          recipient_hash: string
+        }
+        Update: {
+          accepted_at?: string | null
+          attempt_id?: string
+          created_at?: string
+          created_by_user_id?: string
+          event_type?: string
+          evidence_hash?: string
+          id?: never
+          package_id?: number
+          production_enabled?: boolean
+          provider_key?: string
+          provider_message_id?: string | null
+          recipient_hash?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "epoch_project_package_email_events_created_by_user_id_fkey"
+            columns: ["created_by_user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "epoch_project_package_email_events_package_id_fkey"
+            columns: ["package_id"]
+            isOneToOne: false
+            referencedRelation: "epoch_project_package_lock_candidates"
+            referencedColumns: ["package_id"]
+          },
+          {
+            foreignKeyName: "epoch_project_package_email_events_package_id_fkey"
+            columns: ["package_id"]
+            isOneToOne: false
+            referencedRelation: "epoch_project_package_operator_view"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "epoch_project_package_email_events_package_id_fkey"
+            columns: ["package_id"]
+            isOneToOne: false
+            referencedRelation: "epoch_project_packages"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      epoch_project_package_funding_sources: {
+        Row: {
+          asset_code: string
+          base_fee_deferred: boolean
+          base_receipt_id: number | null
+          id: number
+          native_atomic_amount: number
+          package_id: number
+          preliminary_usd: number
+          project_fee_assessed_once: boolean
+          source_evidence_hash: string
+          source_kind: string
+          source_position: number
+          stripe_intent_id: number | null
+        }
+        Insert: {
+          asset_code: string
+          base_fee_deferred?: boolean
+          base_receipt_id?: number | null
+          id?: never
+          native_atomic_amount: number
+          package_id: number
+          preliminary_usd: number
+          project_fee_assessed_once?: boolean
+          source_evidence_hash: string
+          source_kind: string
+          source_position: number
+          stripe_intent_id?: number | null
+        }
+        Update: {
+          asset_code?: string
+          base_fee_deferred?: boolean
+          base_receipt_id?: number | null
+          id?: never
+          native_atomic_amount?: number
+          package_id?: number
+          preliminary_usd?: number
+          project_fee_assessed_once?: boolean
+          source_evidence_hash?: string
+          source_kind?: string
+          source_position?: number
+          stripe_intent_id?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "epoch_project_package_funding_sources_base_receipt_id_fkey"
+            columns: ["base_receipt_id"]
+            isOneToOne: false
+            referencedRelation: "base_intake_v2_receipt_observability"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "epoch_project_package_funding_sources_base_receipt_id_fkey"
+            columns: ["base_receipt_id"]
+            isOneToOne: false
+            referencedRelation: "base_intake_v2_receipts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "epoch_project_package_funding_sources_package_id_fkey"
+            columns: ["package_id"]
+            isOneToOne: false
+            referencedRelation: "epoch_project_package_lock_candidates"
+            referencedColumns: ["package_id"]
+          },
+          {
+            foreignKeyName: "epoch_project_package_funding_sources_package_id_fkey"
+            columns: ["package_id"]
+            isOneToOne: false
+            referencedRelation: "epoch_project_package_operator_view"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "epoch_project_package_funding_sources_package_id_fkey"
+            columns: ["package_id"]
+            isOneToOne: false
+            referencedRelation: "epoch_project_packages"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "epoch_project_package_funding_sources_stripe_intent_id_fkey"
+            columns: ["stripe_intent_id"]
+            isOneToOne: false
+            referencedRelation: "stripe_bank_transfer_intents"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "epoch_project_package_funding_sources_stripe_intent_id_fkey"
+            columns: ["stripe_intent_id"]
+            isOneToOne: false
+            referencedRelation: "stripe_bank_transfer_status"
+            referencedColumns: ["intent_id"]
+          },
+        ]
+      }
+      epoch_project_package_payments: {
+        Row: {
+          package_id: number
+          payment_id: number
+          source_position: number
+        }
+        Insert: {
+          package_id: number
+          payment_id: number
+          source_position: number
+        }
+        Update: {
+          package_id?: number
+          payment_id?: number
+          source_position?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "epoch_project_package_payments_package_id_fkey"
+            columns: ["package_id"]
+            isOneToOne: false
+            referencedRelation: "epoch_project_package_lock_candidates"
+            referencedColumns: ["package_id"]
+          },
+          {
+            foreignKeyName: "epoch_project_package_payments_package_id_fkey"
+            columns: ["package_id"]
+            isOneToOne: false
+            referencedRelation: "epoch_project_package_operator_view"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "epoch_project_package_payments_package_id_fkey"
+            columns: ["package_id"]
+            isOneToOne: false
+            referencedRelation: "epoch_project_packages"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "epoch_project_package_payments_payment_id_fkey"
+            columns: ["payment_id"]
+            isOneToOne: false
+            referencedRelation: "payments"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      epoch_project_package_runtime_controls: {
+        Row: {
+          deployment_environment: string
+          local_email_delivery_enabled: boolean
+          package_preview_enabled: boolean
+          production_enabled: boolean
+          updated_at: string
+        }
+        Insert: {
+          deployment_environment: string
+          local_email_delivery_enabled?: boolean
+          package_preview_enabled?: boolean
+          production_enabled?: boolean
+          updated_at?: string
+        }
+        Update: {
+          deployment_environment?: string
+          local_email_delivery_enabled?: boolean
+          package_preview_enabled?: boolean
+          production_enabled?: boolean
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "epoch_project_package_runtime_contr_deployment_environment_fkey"
+            columns: ["deployment_environment"]
+            isOneToOne: true
+            referencedRelation: "financial_runtime_controls"
+            referencedColumns: ["deployment_environment"]
+          },
+        ]
+      }
+      epoch_project_packages: {
+        Row: {
+          approved_at: string | null
+          approved_by_user_id: string | null
+          attribution_dataset_id: number | null
+          base_fee_deferred: boolean
+          canonical_cycle_id: number | null
+          cohort_count: number
+          compliance_snapshot_id: number | null
+          compliance_status: string
+          created_at: string
+          created_by_user_id: string
+          cubid_status: string
+          cutoff_at: string
+          eligible_user_count: number
+          frozen_at: string | null
+          funding_source_count: number
+          funding_status: string
+          held_user_count: number
+          id: number
+          intended_cycle_id: number
+          list_status: string
+          manifest: Json
+          manifest_hash: string
+          opted_out_at: string | null
+          opted_out_by_user_id: string | null
+          payment_count: number
+          preliminary_usd: number
+          production_enabled: boolean
+          project_fee_assessed_once: boolean
+          project_id: number
+          reconciliation_deadline_at: string | null
+          reconciliation_email_delivered_at: string | null
+          rolled_from_package_id: number | null
+          rolled_to_package_id: number | null
+          status: string
+          supersedes_package_id: number | null
+          version: number
+        }
+        Insert: {
+          approved_at?: string | null
+          approved_by_user_id?: string | null
+          attribution_dataset_id?: number | null
+          base_fee_deferred?: boolean
+          canonical_cycle_id?: number | null
+          cohort_count?: number
+          compliance_snapshot_id?: number | null
+          compliance_status: string
+          created_at?: string
+          created_by_user_id: string
+          cubid_status: string
+          cutoff_at: string
+          eligible_user_count?: number
+          frozen_at?: string | null
+          funding_source_count?: number
+          funding_status: string
+          held_user_count?: number
+          id?: never
+          intended_cycle_id: number
+          list_status: string
+          manifest?: Json
+          manifest_hash: string
+          opted_out_at?: string | null
+          opted_out_by_user_id?: string | null
+          payment_count?: number
+          preliminary_usd?: number
+          production_enabled?: boolean
+          project_fee_assessed_once?: boolean
+          project_id: number
+          reconciliation_deadline_at?: string | null
+          reconciliation_email_delivered_at?: string | null
+          rolled_from_package_id?: number | null
+          rolled_to_package_id?: number | null
+          status: string
+          supersedes_package_id?: number | null
+          version: number
+        }
+        Update: {
+          approved_at?: string | null
+          approved_by_user_id?: string | null
+          attribution_dataset_id?: number | null
+          base_fee_deferred?: boolean
+          canonical_cycle_id?: number | null
+          cohort_count?: number
+          compliance_snapshot_id?: number | null
+          compliance_status?: string
+          created_at?: string
+          created_by_user_id?: string
+          cubid_status?: string
+          cutoff_at?: string
+          eligible_user_count?: number
+          frozen_at?: string | null
+          funding_source_count?: number
+          funding_status?: string
+          held_user_count?: number
+          id?: never
+          intended_cycle_id?: number
+          list_status?: string
+          manifest?: Json
+          manifest_hash?: string
+          opted_out_at?: string | null
+          opted_out_by_user_id?: string | null
+          payment_count?: number
+          preliminary_usd?: number
+          production_enabled?: boolean
+          project_fee_assessed_once?: boolean
+          project_id?: number
+          reconciliation_deadline_at?: string | null
+          reconciliation_email_delivered_at?: string | null
+          rolled_from_package_id?: number | null
+          rolled_to_package_id?: number | null
+          status?: string
+          supersedes_package_id?: number | null
+          version?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "epoch_project_packages_approved_by_user_id_fkey"
+            columns: ["approved_by_user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "epoch_project_packages_attribution_dataset_id_fkey"
+            columns: ["attribution_dataset_id"]
+            isOneToOne: false
+            referencedRelation: "project_attribution_datasets"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "epoch_project_packages_canonical_cycle_id_fkey"
+            columns: ["canonical_cycle_id"]
+            isOneToOne: false
+            referencedRelation: "monthly_cycles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "epoch_project_packages_compliance_snapshot_id_fkey"
+            columns: ["compliance_snapshot_id"]
+            isOneToOne: false
+            referencedRelation: "project_compliance_snapshots"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "epoch_project_packages_created_by_user_id_fkey"
+            columns: ["created_by_user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "epoch_project_packages_intended_cycle_id_fkey"
+            columns: ["intended_cycle_id"]
+            isOneToOne: false
+            referencedRelation: "monthly_cycles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "epoch_project_packages_opted_out_by_user_id_fkey"
+            columns: ["opted_out_by_user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "epoch_project_packages_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "epoch_project_packages_rolled_from_package_id_fkey"
+            columns: ["rolled_from_package_id"]
+            isOneToOne: false
+            referencedRelation: "epoch_project_package_lock_candidates"
+            referencedColumns: ["package_id"]
+          },
+          {
+            foreignKeyName: "epoch_project_packages_rolled_from_package_id_fkey"
+            columns: ["rolled_from_package_id"]
+            isOneToOne: false
+            referencedRelation: "epoch_project_package_operator_view"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "epoch_project_packages_rolled_from_package_id_fkey"
+            columns: ["rolled_from_package_id"]
+            isOneToOne: false
+            referencedRelation: "epoch_project_packages"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "epoch_project_packages_rolled_to_package_id_fkey"
+            columns: ["rolled_to_package_id"]
+            isOneToOne: false
+            referencedRelation: "epoch_project_package_lock_candidates"
+            referencedColumns: ["package_id"]
+          },
+          {
+            foreignKeyName: "epoch_project_packages_rolled_to_package_id_fkey"
+            columns: ["rolled_to_package_id"]
+            isOneToOne: false
+            referencedRelation: "epoch_project_package_operator_view"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "epoch_project_packages_rolled_to_package_id_fkey"
+            columns: ["rolled_to_package_id"]
+            isOneToOne: false
+            referencedRelation: "epoch_project_packages"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "epoch_project_packages_supersedes_package_id_fkey"
+            columns: ["supersedes_package_id"]
+            isOneToOne: false
+            referencedRelation: "epoch_project_package_lock_candidates"
+            referencedColumns: ["package_id"]
+          },
+          {
+            foreignKeyName: "epoch_project_packages_supersedes_package_id_fkey"
+            columns: ["supersedes_package_id"]
+            isOneToOne: false
+            referencedRelation: "epoch_project_package_operator_view"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "epoch_project_packages_supersedes_package_id_fkey"
+            columns: ["supersedes_package_id"]
+            isOneToOne: false
+            referencedRelation: "epoch_project_packages"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      epoch_provisional_award_controls: {
+        Row: {
+          approval_id: number
+          approved_result_hash: string
+          asset_eligibility_status: string
+          created_at: string
+          final_award_minor: number
+          id: number
+          minor_unit_cap: number
+          monthly_cycle_id: number
+          ownership_status: string
+          payable_status: string
+          redistribution_top_up_minor: number
+          retained_initial_minor: number
+          run_award_id: number
+          status: string
+          user_id: string
+        }
+        Insert: {
+          approval_id: number
+          approved_result_hash: string
+          asset_eligibility_status?: string
+          created_at?: string
+          final_award_minor: number
+          id?: never
+          minor_unit_cap: number
+          monthly_cycle_id: number
+          ownership_status?: string
+          payable_status?: string
+          redistribution_top_up_minor: number
+          retained_initial_minor: number
+          run_award_id: number
+          status?: string
+          user_id: string
+        }
+        Update: {
+          approval_id?: number
+          approved_result_hash?: string
+          asset_eligibility_status?: string
+          created_at?: string
+          final_award_minor?: number
+          id?: never
+          minor_unit_cap?: number
+          monthly_cycle_id?: number
+          ownership_status?: string
+          payable_status?: string
+          redistribution_top_up_minor?: number
+          retained_initial_minor?: number
+          run_award_id?: number
+          status?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "epoch_provisional_award_controls_approval_id_fkey"
+            columns: ["approval_id"]
+            isOneToOne: false
+            referencedRelation: "epoch_allocation_approvals"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "epoch_provisional_award_controls_monthly_cycle_id_fkey"
+            columns: ["monthly_cycle_id"]
+            isOneToOne: false
+            referencedRelation: "monthly_cycles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "epoch_provisional_award_controls_run_award_id_fkey"
+            columns: ["run_award_id"]
+            isOneToOne: true
+            referencedRelation: "epoch_allocation_user_awards"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "epoch_provisional_award_controls_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["user_id"]
+          },
+        ]
+      }
+      epoch_provisional_award_source_fills: {
+        Row: {
+          approval_id: number
+          award_control_id: number | null
+          canonical_minor: number
+          created_at: string
+          disposition_id: number
+          exact_usd: number
+          fill_kind: string
+          id: number
+          ledger_transaction_id: number
+          manifest_source_id: number
+          project_id: number
+          user_id: string | null
+        }
+        Insert: {
+          approval_id: number
+          award_control_id?: number | null
+          canonical_minor: number
+          created_at?: string
+          disposition_id: number
+          exact_usd: number
+          fill_kind: string
+          id?: never
+          ledger_transaction_id: number
+          manifest_source_id: number
+          project_id: number
+          user_id?: string | null
+        }
+        Update: {
+          approval_id?: number
+          award_control_id?: number | null
+          canonical_minor?: number
+          created_at?: string
+          disposition_id?: number
+          exact_usd?: number
+          fill_kind?: string
+          id?: never
+          ledger_transaction_id?: number
+          manifest_source_id?: number
+          project_id?: number
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "epoch_provisional_award_source_fills_approval_id_fkey"
+            columns: ["approval_id"]
+            isOneToOne: false
+            referencedRelation: "epoch_allocation_approvals"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "epoch_provisional_award_source_fills_award_control_id_fkey"
+            columns: ["award_control_id"]
+            isOneToOne: false
+            referencedRelation: "epoch_provisional_award_controls"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "epoch_provisional_award_source_fills_disposition_id_fkey"
+            columns: ["disposition_id"]
+            isOneToOne: true
+            referencedRelation: "epoch_allocation_source_dispositions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "epoch_provisional_award_source_fills_ledger_transaction_id_fkey"
+            columns: ["ledger_transaction_id"]
+            isOneToOne: true
+            referencedRelation: "ledger_transactions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "epoch_provisional_award_source_fills_ledger_transaction_id_fkey"
+            columns: ["ledger_transaction_id"]
+            isOneToOne: true
+            referencedRelation: "shadow_ledger_trial_balance"
+            referencedColumns: ["ledger_transaction_id"]
+          },
+          {
+            foreignKeyName: "epoch_provisional_award_source_fills_manifest_source_id_fkey"
+            columns: ["manifest_source_id"]
+            isOneToOne: false
+            referencedRelation: "epoch_allocation_manifest_sources"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "epoch_provisional_award_source_fills_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "epoch_provisional_award_source_fills_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["user_id"]
+          },
+        ]
       }
       epoch_shadow_runtime_controls: {
         Row: {
@@ -836,6 +3336,78 @@ export type Database = {
             columns: ["monthly_cycle_id"]
             isOneToOne: true
             referencedRelation: "monthly_cycles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      epoch_source_lot_events: {
+        Row: {
+          actor_user_id: string | null
+          created_at: string
+          event_type: string
+          evidence_hash: string
+          exact_usd_amount: number
+          id: number
+          production_enabled: boolean
+          source_lot_id: number
+          successor_source_lot_id: number | null
+        }
+        Insert: {
+          actor_user_id?: string | null
+          created_at?: string
+          event_type: string
+          evidence_hash: string
+          exact_usd_amount: number
+          id?: never
+          production_enabled?: boolean
+          source_lot_id: number
+          successor_source_lot_id?: number | null
+        }
+        Update: {
+          actor_user_id?: string | null
+          created_at?: string
+          event_type?: string
+          evidence_hash?: string
+          exact_usd_amount?: number
+          id?: never
+          production_enabled?: boolean
+          source_lot_id?: number
+          successor_source_lot_id?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "epoch_source_lot_events_actor_user_id_fkey"
+            columns: ["actor_user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "epoch_source_lot_events_source_lot_id_fkey"
+            columns: ["source_lot_id"]
+            isOneToOne: false
+            referencedRelation: "epoch_funded_allocation_lock_candidates"
+            referencedColumns: ["source_lot_id"]
+          },
+          {
+            foreignKeyName: "epoch_source_lot_events_source_lot_id_fkey"
+            columns: ["source_lot_id"]
+            isOneToOne: false
+            referencedRelation: "epoch_valuation_source_lots"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "epoch_source_lot_events_successor_source_lot_id_fkey"
+            columns: ["successor_source_lot_id"]
+            isOneToOne: false
+            referencedRelation: "epoch_funded_allocation_lock_candidates"
+            referencedColumns: ["source_lot_id"]
+          },
+          {
+            foreignKeyName: "epoch_source_lot_events_successor_source_lot_id_fkey"
+            columns: ["successor_source_lot_id"]
+            isOneToOne: false
+            referencedRelation: "epoch_valuation_source_lots"
             referencedColumns: ["id"]
           },
         ]
@@ -1129,6 +3701,240 @@ export type Database = {
             columns: ["shadow_state_id"]
             isOneToOne: false
             referencedRelation: "epoch_shadow_states"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      epoch_valuation_source_lots: {
+        Row: {
+          base_fee_bps: number
+          base_fee_exact_usd: number
+          canonical_minor_unit_scale: number
+          classification_status: string
+          created_at: string
+          custody_account_id: number
+          deployment_environment: string
+          deterministic_source_order: number
+          distributable_exact_usd: number
+          evidence_hash: string
+          expires_after_cycle_id: number | null
+          fee_ledger_transaction_id: number
+          fee_policy_id: number
+          financial_asset_id: number
+          fx_difference_exact_usd: number
+          fx_snapshot_id: number
+          gross_exact_usd: number
+          id: number
+          monthly_cycle_id: number
+          native_atomic_amount: number
+          origin_source_lot_id: number | null
+          package_id: number
+          package_source_id: number | null
+          production_enabled: boolean
+          project_fee_assessed_once: boolean
+          project_fee_bps: number
+          project_fee_exact_usd: number
+          project_id: number
+          rail_key: string
+          reserved_exact_usd: number
+          source_kind: string
+          source_lot_key: string
+          source_position: number
+          source_preliminary_exact_usd: number
+          state: string
+        }
+        Insert: {
+          base_fee_bps: number
+          base_fee_exact_usd: number
+          canonical_minor_unit_scale?: number
+          classification_status?: string
+          created_at?: string
+          custody_account_id: number
+          deployment_environment: string
+          deterministic_source_order: number
+          distributable_exact_usd: number
+          evidence_hash: string
+          expires_after_cycle_id?: number | null
+          fee_ledger_transaction_id: number
+          fee_policy_id: number
+          financial_asset_id: number
+          fx_difference_exact_usd: number
+          fx_snapshot_id: number
+          gross_exact_usd: number
+          id?: never
+          monthly_cycle_id: number
+          native_atomic_amount: number
+          origin_source_lot_id?: number | null
+          package_id: number
+          package_source_id?: number | null
+          production_enabled?: boolean
+          project_fee_assessed_once: boolean
+          project_fee_bps: number
+          project_fee_exact_usd: number
+          project_id: number
+          rail_key: string
+          reserved_exact_usd?: number
+          source_kind: string
+          source_lot_key: string
+          source_position: number
+          source_preliminary_exact_usd: number
+          state?: string
+        }
+        Update: {
+          base_fee_bps?: number
+          base_fee_exact_usd?: number
+          canonical_minor_unit_scale?: number
+          classification_status?: string
+          created_at?: string
+          custody_account_id?: number
+          deployment_environment?: string
+          deterministic_source_order?: number
+          distributable_exact_usd?: number
+          evidence_hash?: string
+          expires_after_cycle_id?: number | null
+          fee_ledger_transaction_id?: number
+          fee_policy_id?: number
+          financial_asset_id?: number
+          fx_difference_exact_usd?: number
+          fx_snapshot_id?: number
+          gross_exact_usd?: number
+          id?: never
+          monthly_cycle_id?: number
+          native_atomic_amount?: number
+          origin_source_lot_id?: number | null
+          package_id?: number
+          package_source_id?: number | null
+          production_enabled?: boolean
+          project_fee_assessed_once?: boolean
+          project_fee_bps?: number
+          project_fee_exact_usd?: number
+          project_id?: number
+          rail_key?: string
+          reserved_exact_usd?: number
+          source_kind?: string
+          source_lot_key?: string
+          source_position?: number
+          source_preliminary_exact_usd?: number
+          state?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "epoch_source_lot_pair"
+            columns: ["financial_asset_id", "custody_account_id"]
+            isOneToOne: false
+            referencedRelation: "financial_custody_accounts"
+            referencedColumns: ["asset_id", "id"]
+          },
+          {
+            foreignKeyName: "epoch_valuation_source_lots_custody_account_id_fkey"
+            columns: ["custody_account_id"]
+            isOneToOne: false
+            referencedRelation: "financial_custody_accounts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "epoch_valuation_source_lots_deployment_environment_fkey"
+            columns: ["deployment_environment"]
+            isOneToOne: false
+            referencedRelation: "epoch_financial_prep_runtime_controls"
+            referencedColumns: ["deployment_environment"]
+          },
+          {
+            foreignKeyName: "epoch_valuation_source_lots_expires_after_cycle_id_fkey"
+            columns: ["expires_after_cycle_id"]
+            isOneToOne: false
+            referencedRelation: "monthly_cycles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "epoch_valuation_source_lots_fee_ledger_transaction_id_fkey"
+            columns: ["fee_ledger_transaction_id"]
+            isOneToOne: false
+            referencedRelation: "ledger_transactions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "epoch_valuation_source_lots_fee_ledger_transaction_id_fkey"
+            columns: ["fee_ledger_transaction_id"]
+            isOneToOne: false
+            referencedRelation: "shadow_ledger_trial_balance"
+            referencedColumns: ["ledger_transaction_id"]
+          },
+          {
+            foreignKeyName: "epoch_valuation_source_lots_fee_policy_id_fkey"
+            columns: ["fee_policy_id"]
+            isOneToOne: false
+            referencedRelation: "epoch_fee_policies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "epoch_valuation_source_lots_financial_asset_id_fkey"
+            columns: ["financial_asset_id"]
+            isOneToOne: false
+            referencedRelation: "financial_assets"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "epoch_valuation_source_lots_fx_snapshot_id_fkey"
+            columns: ["fx_snapshot_id"]
+            isOneToOne: false
+            referencedRelation: "epoch_fx_snapshots"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "epoch_valuation_source_lots_monthly_cycle_id_fkey"
+            columns: ["monthly_cycle_id"]
+            isOneToOne: false
+            referencedRelation: "monthly_cycles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "epoch_valuation_source_lots_origin_source_lot_id_fkey"
+            columns: ["origin_source_lot_id"]
+            isOneToOne: false
+            referencedRelation: "epoch_funded_allocation_lock_candidates"
+            referencedColumns: ["source_lot_id"]
+          },
+          {
+            foreignKeyName: "epoch_valuation_source_lots_origin_source_lot_id_fkey"
+            columns: ["origin_source_lot_id"]
+            isOneToOne: false
+            referencedRelation: "epoch_valuation_source_lots"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "epoch_valuation_source_lots_package_id_fkey"
+            columns: ["package_id"]
+            isOneToOne: false
+            referencedRelation: "epoch_project_package_lock_candidates"
+            referencedColumns: ["package_id"]
+          },
+          {
+            foreignKeyName: "epoch_valuation_source_lots_package_id_fkey"
+            columns: ["package_id"]
+            isOneToOne: false
+            referencedRelation: "epoch_project_package_operator_view"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "epoch_valuation_source_lots_package_id_fkey"
+            columns: ["package_id"]
+            isOneToOne: false
+            referencedRelation: "epoch_project_packages"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "epoch_valuation_source_lots_package_source_id_fkey"
+            columns: ["package_source_id"]
+            isOneToOne: false
+            referencedRelation: "epoch_project_package_funding_sources"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "epoch_valuation_source_lots_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
             referencedColumns: ["id"]
           },
         ]
@@ -3248,15 +6054,85 @@ export type Database = {
           },
         ]
       }
+      payout_execution_attempts: {
+        Row: {
+          attempt_no: number
+          created_at: string
+          destination_hash: string
+          financial_asset_id: number
+          id: number
+          payout_intent_id: number
+          production_enabled: boolean
+          provider_reference: string | null
+          rail_key: string
+          request_hash: string
+          status: string
+          withdrawal_request_id: string
+        }
+        Insert: {
+          attempt_no: number
+          created_at?: string
+          destination_hash: string
+          financial_asset_id: number
+          id?: never
+          payout_intent_id: number
+          production_enabled?: boolean
+          provider_reference?: string | null
+          rail_key: string
+          request_hash: string
+          status?: string
+          withdrawal_request_id: string
+        }
+        Update: {
+          attempt_no?: number
+          created_at?: string
+          destination_hash?: string
+          financial_asset_id?: number
+          id?: never
+          payout_intent_id?: number
+          production_enabled?: boolean
+          provider_reference?: string | null
+          rail_key?: string
+          request_hash?: string
+          status?: string
+          withdrawal_request_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "payout_execution_attempts_financial_asset_id_fkey"
+            columns: ["financial_asset_id"]
+            isOneToOne: false
+            referencedRelation: "financial_assets"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "payout_execution_attempts_payout_intent_id_fkey"
+            columns: ["payout_intent_id"]
+            isOneToOne: false
+            referencedRelation: "payout_intents"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "payout_execution_attempts_withdrawal_request_id_fkey"
+            columns: ["withdrawal_request_id"]
+            isOneToOne: false
+            referencedRelation: "user_withdrawal_requests"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       payout_intents: {
         Row: {
           amount_usd: number
           created_at: string
           created_by_user_id: string | null
           currency_code: string
+          fee_amount_usd: number | null
+          financial_asset_id: number | null
           id: number
           idempotency_key: string
           monthly_cycle_id: number
+          native_atomic_amount: number | null
           payout_route_id: number | null
           rail: Database["public"]["Enums"]["payout_rail"] | null
           source_result_id: number | null
@@ -3264,16 +6140,21 @@ export type Database = {
           status_reason: string | null
           updated_at: string
           updated_by_user_id: string | null
+          user_fee_bps: number | null
           user_id: string
+          withdrawal_request_id: string | null
         }
         Insert: {
           amount_usd: number
           created_at?: string
           created_by_user_id?: string | null
           currency_code?: string
+          fee_amount_usd?: number | null
+          financial_asset_id?: number | null
           id?: number
           idempotency_key: string
           monthly_cycle_id: number
+          native_atomic_amount?: number | null
           payout_route_id?: number | null
           rail?: Database["public"]["Enums"]["payout_rail"] | null
           source_result_id?: number | null
@@ -3281,16 +6162,21 @@ export type Database = {
           status_reason?: string | null
           updated_at?: string
           updated_by_user_id?: string | null
+          user_fee_bps?: number | null
           user_id: string
+          withdrawal_request_id?: string | null
         }
         Update: {
           amount_usd?: number
           created_at?: string
           created_by_user_id?: string | null
           currency_code?: string
+          fee_amount_usd?: number | null
+          financial_asset_id?: number | null
           id?: number
           idempotency_key?: string
           monthly_cycle_id?: number
+          native_atomic_amount?: number | null
           payout_route_id?: number | null
           rail?: Database["public"]["Enums"]["payout_rail"] | null
           source_result_id?: number | null
@@ -3298,7 +6184,9 @@ export type Database = {
           status_reason?: string | null
           updated_at?: string
           updated_by_user_id?: string | null
+          user_fee_bps?: number | null
           user_id?: string
+          withdrawal_request_id?: string | null
         }
         Relationships: [
           {
@@ -3307,6 +6195,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "users"
             referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "payout_intents_financial_asset_id_fkey"
+            columns: ["financial_asset_id"]
+            isOneToOne: false
+            referencedRelation: "financial_assets"
+            referencedColumns: ["id"]
           },
           {
             foreignKeyName: "payout_intents_monthly_cycle_id_fkey"
@@ -3342,6 +6237,221 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "users"
             referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "payout_intents_withdrawal_request_id_fkey"
+            columns: ["withdrawal_request_id"]
+            isOneToOne: false
+            referencedRelation: "user_withdrawal_requests"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      payout_inventory_lots: {
+        Row: {
+          canonical_minor_total: number
+          created_at: string
+          custody_account_id: number
+          deterministic_sequence: number
+          evidence_hash: string
+          expires_after_cycle_id: number | null
+          financial_asset_id: number
+          fx_snapshot_id: number
+          id: number
+          legacy_inventory_key: string | null
+          monthly_cycle_id: number
+          native_atomic_total: number
+          obligation_id: number
+          production_enabled: boolean
+          project_id: number
+          rail_key: string
+          source_fill_id: number | null
+          status: string
+          user_id: string
+        }
+        Insert: {
+          canonical_minor_total: number
+          created_at?: string
+          custody_account_id: number
+          deterministic_sequence: number
+          evidence_hash: string
+          expires_after_cycle_id?: number | null
+          financial_asset_id: number
+          fx_snapshot_id: number
+          id?: never
+          legacy_inventory_key?: string | null
+          monthly_cycle_id: number
+          native_atomic_total: number
+          obligation_id: number
+          production_enabled?: boolean
+          project_id: number
+          rail_key: string
+          source_fill_id?: number | null
+          status?: string
+          user_id: string
+        }
+        Update: {
+          canonical_minor_total?: number
+          created_at?: string
+          custody_account_id?: number
+          deterministic_sequence?: number
+          evidence_hash?: string
+          expires_after_cycle_id?: number | null
+          financial_asset_id?: number
+          fx_snapshot_id?: number
+          id?: never
+          legacy_inventory_key?: string | null
+          monthly_cycle_id?: number
+          native_atomic_total?: number
+          obligation_id?: number
+          production_enabled?: boolean
+          project_id?: number
+          rail_key?: string
+          source_fill_id?: number | null
+          status?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "payout_inventory_lots_custody_account_id_fkey"
+            columns: ["custody_account_id"]
+            isOneToOne: false
+            referencedRelation: "financial_custody_accounts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "payout_inventory_lots_expires_after_cycle_id_fkey"
+            columns: ["expires_after_cycle_id"]
+            isOneToOne: false
+            referencedRelation: "monthly_cycles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "payout_inventory_lots_financial_asset_id_fkey"
+            columns: ["financial_asset_id"]
+            isOneToOne: false
+            referencedRelation: "financial_assets"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "payout_inventory_lots_fx_snapshot_id_fkey"
+            columns: ["fx_snapshot_id"]
+            isOneToOne: false
+            referencedRelation: "epoch_fx_snapshots"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "payout_inventory_lots_monthly_cycle_id_fkey"
+            columns: ["monthly_cycle_id"]
+            isOneToOne: false
+            referencedRelation: "monthly_cycles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "payout_inventory_lots_obligation_id_fkey"
+            columns: ["obligation_id"]
+            isOneToOne: false
+            referencedRelation: "user_withdrawal_obligation_balances"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "payout_inventory_lots_obligation_id_fkey"
+            columns: ["obligation_id"]
+            isOneToOne: false
+            referencedRelation: "user_withdrawal_obligations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "payout_inventory_lots_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "payout_inventory_lots_source_fill_id_fkey"
+            columns: ["source_fill_id"]
+            isOneToOne: true
+            referencedRelation: "epoch_provisional_award_source_fills"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "payout_inventory_lots_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "payout_inventory_pair"
+            columns: ["financial_asset_id", "custody_account_id"]
+            isOneToOne: false
+            referencedRelation: "financial_custody_accounts"
+            referencedColumns: ["asset_id", "id"]
+          },
+        ]
+      }
+      payout_inventory_reservations: {
+        Row: {
+          expires_at: string
+          id: number
+          inventory_lot_id: number
+          native_atomic_amount: number
+          originating_fx_snapshot_id: number
+          released_at: string | null
+          reserved_at: string
+          reserved_minor: number
+          sequence_no: number
+          status: string
+          withdrawal_request_id: string
+        }
+        Insert: {
+          expires_at: string
+          id?: never
+          inventory_lot_id: number
+          native_atomic_amount: number
+          originating_fx_snapshot_id: number
+          released_at?: string | null
+          reserved_at?: string
+          reserved_minor: number
+          sequence_no: number
+          status?: string
+          withdrawal_request_id: string
+        }
+        Update: {
+          expires_at?: string
+          id?: never
+          inventory_lot_id?: number
+          native_atomic_amount?: number
+          originating_fx_snapshot_id?: number
+          released_at?: string | null
+          reserved_at?: string
+          reserved_minor?: number
+          sequence_no?: number
+          status?: string
+          withdrawal_request_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "payout_inventory_reservations_inventory_lot_id_fkey"
+            columns: ["inventory_lot_id"]
+            isOneToOne: false
+            referencedRelation: "payout_inventory_lots"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "payout_inventory_reservations_originating_fx_snapshot_id_fkey"
+            columns: ["originating_fx_snapshot_id"]
+            isOneToOne: false
+            referencedRelation: "epoch_fx_snapshots"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "payout_inventory_reservations_withdrawal_request_id_fkey"
+            columns: ["withdrawal_request_id"]
+            isOneToOne: false
+            referencedRelation: "user_withdrawal_requests"
+            referencedColumns: ["id"]
           },
         ]
       }
@@ -3687,6 +6797,73 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "projects"
             referencedColumns: ["id"]
+          },
+        ]
+      }
+      project_compliance_snapshots: {
+        Row: {
+          evidence_hash: string
+          id: number
+          kyb_status: string
+          kyc_status: string
+          monthly_cycle_id: number
+          production_enabled: boolean
+          project_id: number
+          recorded_at: string
+          recorded_by_user_id: string
+          sanctions_status: string
+          valid_until: string
+          version: number
+        }
+        Insert: {
+          evidence_hash: string
+          id?: never
+          kyb_status: string
+          kyc_status: string
+          monthly_cycle_id: number
+          production_enabled?: boolean
+          project_id: number
+          recorded_at?: string
+          recorded_by_user_id: string
+          sanctions_status: string
+          valid_until: string
+          version: number
+        }
+        Update: {
+          evidence_hash?: string
+          id?: never
+          kyb_status?: string
+          kyc_status?: string
+          monthly_cycle_id?: number
+          production_enabled?: boolean
+          project_id?: number
+          recorded_at?: string
+          recorded_by_user_id?: string
+          sanctions_status?: string
+          valid_until?: string
+          version?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "project_compliance_snapshots_monthly_cycle_id_fkey"
+            columns: ["monthly_cycle_id"]
+            isOneToOne: false
+            referencedRelation: "monthly_cycles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "project_compliance_snapshots_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "project_compliance_snapshots_recorded_by_user_id_fkey"
+            columns: ["recorded_by_user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["user_id"]
           },
         ]
       }
@@ -4897,6 +8074,923 @@ export type Database = {
           },
         ]
       }
+      stripe_balance_snapshots: {
+        Row: {
+          available_amount_minor: number
+          currency_code: string
+          evidence_hash: string
+          id: number
+          observed_at: string
+          pending_amount_minor: number
+          production_enabled: boolean
+          webhook_event_id: number
+        }
+        Insert: {
+          available_amount_minor: number
+          currency_code: string
+          evidence_hash: string
+          id?: never
+          observed_at: string
+          pending_amount_minor: number
+          production_enabled?: boolean
+          webhook_event_id: number
+        }
+        Update: {
+          available_amount_minor?: number
+          currency_code?: string
+          evidence_hash?: string
+          id?: never
+          observed_at?: string
+          pending_amount_minor?: number
+          production_enabled?: boolean
+          webhook_event_id?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "stripe_balance_snapshots_webhook_event_id_fkey"
+            columns: ["webhook_event_id"]
+            isOneToOne: false
+            referencedRelation: "stripe_webhook_events"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      stripe_bank_transfer_custody_routes: {
+        Row: {
+          asset_id: number
+          created_at: string
+          currency_code: string
+          custody_account_id: number
+          evidence_hash: string
+          id: number
+          production_enabled: boolean
+          sandbox_enabled: boolean
+          topology_status: string
+        }
+        Insert: {
+          asset_id: number
+          created_at?: string
+          currency_code: string
+          custody_account_id: number
+          evidence_hash: string
+          id?: never
+          production_enabled?: boolean
+          sandbox_enabled?: boolean
+          topology_status?: string
+        }
+        Update: {
+          asset_id?: number
+          created_at?: string
+          currency_code?: string
+          custody_account_id?: number
+          evidence_hash?: string
+          id?: never
+          production_enabled?: boolean
+          sandbox_enabled?: boolean
+          topology_status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "stripe_bank_transfer_custody_routes_asset_id_fkey"
+            columns: ["asset_id"]
+            isOneToOne: false
+            referencedRelation: "financial_assets"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "stripe_bank_transfer_custody_routes_custody_account_id_fkey"
+            columns: ["custody_account_id"]
+            isOneToOne: false
+            referencedRelation: "financial_custody_accounts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "stripe_custody_asset_fk"
+            columns: ["asset_id", "custody_account_id"]
+            isOneToOne: false
+            referencedRelation: "financial_custody_accounts"
+            referencedColumns: ["asset_id", "id"]
+          },
+        ]
+      }
+      stripe_bank_transfer_evidence: {
+        Row: {
+          created_at: string
+          currency_code: string | null
+          evidence_hash: string
+          evidence_type: string
+          external_financial_event_id: number | null
+          fee_amount_minor: number | null
+          gross_amount_minor: number | null
+          id: number
+          intent_id: number | null
+          ledger_transaction_id: number | null
+          net_amount_minor: number | null
+          ordering_status: string
+          production_enabled: boolean
+          provider_balance_currency_code: string | null
+          provider_balance_fee_amount_minor: number | null
+          provider_balance_gross_amount_minor: number | null
+          provider_balance_net_amount_minor: number | null
+          provider_balance_transaction_id: string | null
+          reversal_ledger_transaction_id: number | null
+          webhook_event_id: number
+        }
+        Insert: {
+          created_at?: string
+          currency_code?: string | null
+          evidence_hash: string
+          evidence_type: string
+          external_financial_event_id?: number | null
+          fee_amount_minor?: number | null
+          gross_amount_minor?: number | null
+          id?: never
+          intent_id?: number | null
+          ledger_transaction_id?: number | null
+          net_amount_minor?: number | null
+          ordering_status: string
+          production_enabled?: boolean
+          provider_balance_currency_code?: string | null
+          provider_balance_fee_amount_minor?: number | null
+          provider_balance_gross_amount_minor?: number | null
+          provider_balance_net_amount_minor?: number | null
+          provider_balance_transaction_id?: string | null
+          reversal_ledger_transaction_id?: number | null
+          webhook_event_id: number
+        }
+        Update: {
+          created_at?: string
+          currency_code?: string | null
+          evidence_hash?: string
+          evidence_type?: string
+          external_financial_event_id?: number | null
+          fee_amount_minor?: number | null
+          gross_amount_minor?: number | null
+          id?: never
+          intent_id?: number | null
+          ledger_transaction_id?: number | null
+          net_amount_minor?: number | null
+          ordering_status?: string
+          production_enabled?: boolean
+          provider_balance_currency_code?: string | null
+          provider_balance_fee_amount_minor?: number | null
+          provider_balance_gross_amount_minor?: number | null
+          provider_balance_net_amount_minor?: number | null
+          provider_balance_transaction_id?: string | null
+          reversal_ledger_transaction_id?: number | null
+          webhook_event_id?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "stripe_bank_transfer_evidence_external_financial_event_id_fkey"
+            columns: ["external_financial_event_id"]
+            isOneToOne: false
+            referencedRelation: "external_financial_events"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "stripe_bank_transfer_evidence_external_financial_event_id_fkey"
+            columns: ["external_financial_event_id"]
+            isOneToOne: false
+            referencedRelation: "shadow_financial_reconciliation_observability"
+            referencedColumns: ["event_id"]
+          },
+          {
+            foreignKeyName: "stripe_bank_transfer_evidence_intent_id_fkey"
+            columns: ["intent_id"]
+            isOneToOne: false
+            referencedRelation: "stripe_bank_transfer_intents"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "stripe_bank_transfer_evidence_intent_id_fkey"
+            columns: ["intent_id"]
+            isOneToOne: false
+            referencedRelation: "stripe_bank_transfer_status"
+            referencedColumns: ["intent_id"]
+          },
+          {
+            foreignKeyName: "stripe_bank_transfer_evidence_ledger_transaction_id_fkey"
+            columns: ["ledger_transaction_id"]
+            isOneToOne: false
+            referencedRelation: "ledger_transactions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "stripe_bank_transfer_evidence_ledger_transaction_id_fkey"
+            columns: ["ledger_transaction_id"]
+            isOneToOne: false
+            referencedRelation: "shadow_ledger_trial_balance"
+            referencedColumns: ["ledger_transaction_id"]
+          },
+          {
+            foreignKeyName: "stripe_bank_transfer_evidence_reversal_ledger_transaction__fkey"
+            columns: ["reversal_ledger_transaction_id"]
+            isOneToOne: false
+            referencedRelation: "ledger_transactions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "stripe_bank_transfer_evidence_reversal_ledger_transaction__fkey"
+            columns: ["reversal_ledger_transaction_id"]
+            isOneToOne: false
+            referencedRelation: "shadow_ledger_trial_balance"
+            referencedColumns: ["ledger_transaction_id"]
+          },
+          {
+            foreignKeyName: "stripe_bank_transfer_evidence_webhook_event_id_fkey"
+            columns: ["webhook_event_id"]
+            isOneToOne: true
+            referencedRelation: "stripe_webhook_events"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      stripe_bank_transfer_intents: {
+        Row: {
+          accounting_period_id: number
+          actor_user_id: string
+          created_at: string
+          currency_code: string
+          deployment_environment: string
+          expected_amount_minor: number
+          id: number
+          instruction_evidence_hash: string
+          instruction_status: string
+          payment_id: number
+          production_enabled: boolean
+          project_id: number
+          provider_account_id: string
+          provider_customer_id: string
+          provider_payment_intent_id: string
+        }
+        Insert: {
+          accounting_period_id: number
+          actor_user_id: string
+          created_at?: string
+          currency_code: string
+          deployment_environment: string
+          expected_amount_minor: number
+          id?: never
+          instruction_evidence_hash: string
+          instruction_status?: string
+          payment_id: number
+          production_enabled?: boolean
+          project_id: number
+          provider_account_id: string
+          provider_customer_id: string
+          provider_payment_intent_id: string
+        }
+        Update: {
+          accounting_period_id?: number
+          actor_user_id?: string
+          created_at?: string
+          currency_code?: string
+          deployment_environment?: string
+          expected_amount_minor?: number
+          id?: never
+          instruction_evidence_hash?: string
+          instruction_status?: string
+          payment_id?: number
+          production_enabled?: boolean
+          project_id?: number
+          provider_account_id?: string
+          provider_customer_id?: string
+          provider_payment_intent_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "stripe_bank_transfer_intents_accounting_period_id_fkey"
+            columns: ["accounting_period_id"]
+            isOneToOne: false
+            referencedRelation: "accounting_periods"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "stripe_bank_transfer_intents_actor_user_id_fkey"
+            columns: ["actor_user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "stripe_bank_transfer_intents_deployment_environment_fkey"
+            columns: ["deployment_environment"]
+            isOneToOne: false
+            referencedRelation: "stripe_bank_transfer_runtime_controls"
+            referencedColumns: ["deployment_environment"]
+          },
+          {
+            foreignKeyName: "stripe_bank_transfer_intents_payment_id_fkey"
+            columns: ["payment_id"]
+            isOneToOne: false
+            referencedRelation: "payments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "stripe_bank_transfer_intents_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      stripe_bank_transfer_runtime_controls: {
+        Row: {
+          cad_bank_transfer_enabled: boolean
+          deployment_environment: string
+          production_value_flow_enabled: boolean
+          provider_evidence_status: string
+          sandbox_enabled: boolean
+          updated_at: string
+          usd_bank_transfer_enabled: boolean
+        }
+        Insert: {
+          cad_bank_transfer_enabled?: boolean
+          deployment_environment: string
+          production_value_flow_enabled?: boolean
+          provider_evidence_status?: string
+          sandbox_enabled?: boolean
+          updated_at?: string
+          usd_bank_transfer_enabled?: boolean
+        }
+        Update: {
+          cad_bank_transfer_enabled?: boolean
+          deployment_environment?: string
+          production_value_flow_enabled?: boolean
+          provider_evidence_status?: string
+          sandbox_enabled?: boolean
+          updated_at?: string
+          usd_bank_transfer_enabled?: boolean
+        }
+        Relationships: [
+          {
+            foreignKeyName: "stripe_bank_transfer_runtime_contro_deployment_environment_fkey"
+            columns: ["deployment_environment"]
+            isOneToOne: true
+            referencedRelation: "financial_runtime_controls"
+            referencedColumns: ["deployment_environment"]
+          },
+        ]
+      }
+      stripe_clearing_sweep_evidence: {
+        Row: {
+          amount_minor: number
+          created_at: string
+          currency_code: string
+          evidence_hash: string
+          from_reference_hash: string
+          id: number
+          production_enabled: boolean
+          provider_transfer_id: string
+          swept_at: string
+          to_reference_hash: string
+        }
+        Insert: {
+          amount_minor: number
+          created_at?: string
+          currency_code: string
+          evidence_hash: string
+          from_reference_hash: string
+          id?: never
+          production_enabled?: boolean
+          provider_transfer_id: string
+          swept_at: string
+          to_reference_hash: string
+        }
+        Update: {
+          amount_minor?: number
+          created_at?: string
+          currency_code?: string
+          evidence_hash?: string
+          from_reference_hash?: string
+          id?: never
+          production_enabled?: boolean
+          provider_transfer_id?: string
+          swept_at?: string
+          to_reference_hash?: string
+        }
+        Relationships: []
+      }
+      stripe_connect_account_events: {
+        Row: {
+          created_at: string
+          currently_due_count: number
+          disabled_reason: string | null
+          event_type: string
+          evidence_hash: string
+          external_account_enabled: boolean
+          id: number
+          onboarding_status: string
+          payouts_enabled: boolean
+          provider_created_at: string
+          provider_event_id: string | null
+          stripe_connect_account_id: number
+        }
+        Insert: {
+          created_at?: string
+          currently_due_count: number
+          disabled_reason?: string | null
+          event_type: string
+          evidence_hash: string
+          external_account_enabled: boolean
+          id?: never
+          onboarding_status: string
+          payouts_enabled: boolean
+          provider_created_at: string
+          provider_event_id?: string | null
+          stripe_connect_account_id: number
+        }
+        Update: {
+          created_at?: string
+          currently_due_count?: number
+          disabled_reason?: string | null
+          event_type?: string
+          evidence_hash?: string
+          external_account_enabled?: boolean
+          id?: never
+          onboarding_status?: string
+          payouts_enabled?: boolean
+          provider_created_at?: string
+          provider_event_id?: string | null
+          stripe_connect_account_id?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "stripe_connect_account_events_stripe_connect_account_id_fkey"
+            columns: ["stripe_connect_account_id"]
+            isOneToOne: false
+            referencedRelation: "stripe_connect_accounts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      stripe_connect_accounts: {
+        Row: {
+          country_code: string
+          created_at: string
+          currently_due_count: number
+          default_currency: string
+          details_submitted: boolean
+          disabled_reason: string | null
+          eventually_due_count: number
+          evidence_hash: string
+          external_account_enabled: boolean
+          external_account_last4: string | null
+          id: number
+          onboarding_status: string
+          payout_route_id: number | null
+          payouts_enabled: boolean
+          production_enabled: boolean
+          provider_account_id: string
+          provider_updated_at: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          country_code: string
+          created_at?: string
+          currently_due_count?: number
+          default_currency: string
+          details_submitted?: boolean
+          disabled_reason?: string | null
+          eventually_due_count?: number
+          evidence_hash: string
+          external_account_enabled?: boolean
+          external_account_last4?: string | null
+          id?: never
+          onboarding_status: string
+          payout_route_id?: number | null
+          payouts_enabled?: boolean
+          production_enabled?: boolean
+          provider_account_id: string
+          provider_updated_at: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          country_code?: string
+          created_at?: string
+          currently_due_count?: number
+          default_currency?: string
+          details_submitted?: boolean
+          disabled_reason?: string | null
+          eventually_due_count?: number
+          evidence_hash?: string
+          external_account_enabled?: boolean
+          external_account_last4?: string | null
+          id?: never
+          onboarding_status?: string
+          payout_route_id?: number | null
+          payouts_enabled?: boolean
+          production_enabled?: boolean
+          provider_account_id?: string
+          provider_updated_at?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "stripe_connect_accounts_payout_route_id_fkey"
+            columns: ["payout_route_id"]
+            isOneToOne: true
+            referencedRelation: "user_payout_routes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "stripe_connect_accounts_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: true
+            referencedRelation: "users"
+            referencedColumns: ["user_id"]
+          },
+        ]
+      }
+      stripe_connect_fee_inventory_reservations: {
+        Row: {
+          command_id: number | null
+          created_at: string
+          inventory_lot_id: number
+          native_atomic_amount: number
+          reserved_minor: number
+          status: string
+          withdrawal_request_id: string
+        }
+        Insert: {
+          command_id?: number | null
+          created_at?: string
+          inventory_lot_id: number
+          native_atomic_amount: number
+          reserved_minor: number
+          status?: string
+          withdrawal_request_id: string
+        }
+        Update: {
+          command_id?: number | null
+          created_at?: string
+          inventory_lot_id?: number
+          native_atomic_amount?: number
+          reserved_minor?: number
+          status?: string
+          withdrawal_request_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "stripe_connect_fee_inventory_reserva_withdrawal_request_id_fkey"
+            columns: ["withdrawal_request_id"]
+            isOneToOne: false
+            referencedRelation: "user_withdrawal_requests"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "stripe_connect_fee_inventory_reservations_command_id_fkey"
+            columns: ["command_id"]
+            isOneToOne: false
+            referencedRelation: "stripe_connect_payout_commands"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "stripe_connect_fee_inventory_reservations_command_id_fkey"
+            columns: ["command_id"]
+            isOneToOne: false
+            referencedRelation: "user_stripe_connect_payouts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "stripe_connect_fee_inventory_reservations_inventory_lot_id_fkey"
+            columns: ["inventory_lot_id"]
+            isOneToOne: false
+            referencedRelation: "payout_inventory_lots"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      stripe_connect_payout_commands: {
+        Row: {
+          attempt_no: number
+          command_hash: string
+          created_at: string
+          currency_code: string
+          failure_code: string | null
+          gross_minor: number
+          id: number
+          idempotency_key: string
+          ledger_transaction_id: number | null
+          net_minor: number
+          payout_execution_attempt_id: number
+          payout_intent_id: number
+          production_enabled: boolean
+          provider_payout_id: string | null
+          provider_payout_minor: number
+          provider_request_id: string | null
+          provider_transfer_id: string | null
+          settled_at: string | null
+          status: string
+          stripe_connect_account_id: number
+          submitted_at: string | null
+          updated_at: string
+          user_fee_minor: number
+          user_fee_provider_minor: number
+          withdrawal_request_id: string
+        }
+        Insert: {
+          attempt_no: number
+          command_hash: string
+          created_at?: string
+          currency_code: string
+          failure_code?: string | null
+          gross_minor: number
+          id?: never
+          idempotency_key: string
+          ledger_transaction_id?: number | null
+          net_minor: number
+          payout_execution_attempt_id: number
+          payout_intent_id: number
+          production_enabled?: boolean
+          provider_payout_id?: string | null
+          provider_payout_minor: number
+          provider_request_id?: string | null
+          provider_transfer_id?: string | null
+          settled_at?: string | null
+          status?: string
+          stripe_connect_account_id: number
+          submitted_at?: string | null
+          updated_at?: string
+          user_fee_minor: number
+          user_fee_provider_minor?: number
+          withdrawal_request_id: string
+        }
+        Update: {
+          attempt_no?: number
+          command_hash?: string
+          created_at?: string
+          currency_code?: string
+          failure_code?: string | null
+          gross_minor?: number
+          id?: never
+          idempotency_key?: string
+          ledger_transaction_id?: number | null
+          net_minor?: number
+          payout_execution_attempt_id?: number
+          payout_intent_id?: number
+          production_enabled?: boolean
+          provider_payout_id?: string | null
+          provider_payout_minor?: number
+          provider_request_id?: string | null
+          provider_transfer_id?: string | null
+          settled_at?: string | null
+          status?: string
+          stripe_connect_account_id?: number
+          submitted_at?: string | null
+          updated_at?: string
+          user_fee_minor?: number
+          user_fee_provider_minor?: number
+          withdrawal_request_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "stripe_connect_payout_commands_ledger_transaction_id_fkey"
+            columns: ["ledger_transaction_id"]
+            isOneToOne: true
+            referencedRelation: "ledger_transactions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "stripe_connect_payout_commands_ledger_transaction_id_fkey"
+            columns: ["ledger_transaction_id"]
+            isOneToOne: true
+            referencedRelation: "shadow_ledger_trial_balance"
+            referencedColumns: ["ledger_transaction_id"]
+          },
+          {
+            foreignKeyName: "stripe_connect_payout_commands_payout_execution_attempt_id_fkey"
+            columns: ["payout_execution_attempt_id"]
+            isOneToOne: true
+            referencedRelation: "payout_execution_attempts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "stripe_connect_payout_commands_payout_intent_id_fkey"
+            columns: ["payout_intent_id"]
+            isOneToOne: false
+            referencedRelation: "payout_intents"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "stripe_connect_payout_commands_stripe_connect_account_id_fkey"
+            columns: ["stripe_connect_account_id"]
+            isOneToOne: false
+            referencedRelation: "stripe_connect_accounts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "stripe_connect_payout_commands_withdrawal_request_id_fkey"
+            columns: ["withdrawal_request_id"]
+            isOneToOne: false
+            referencedRelation: "user_withdrawal_requests"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      stripe_connect_payout_observations: {
+        Row: {
+          amount_minor: number
+          arrival_at: string | null
+          created_at: string
+          currency_code: string
+          destination_last4: string | null
+          evidence_hash: string
+          failure_code: string | null
+          id: number
+          provider_status: string
+          stripe_connect_payout_command_id: number
+          webhook_event_id: number
+        }
+        Insert: {
+          amount_minor: number
+          arrival_at?: string | null
+          created_at?: string
+          currency_code: string
+          destination_last4?: string | null
+          evidence_hash: string
+          failure_code?: string | null
+          id?: never
+          provider_status: string
+          stripe_connect_payout_command_id: number
+          webhook_event_id: number
+        }
+        Update: {
+          amount_minor?: number
+          arrival_at?: string | null
+          created_at?: string
+          currency_code?: string
+          destination_last4?: string | null
+          evidence_hash?: string
+          failure_code?: string | null
+          id?: never
+          provider_status?: string
+          stripe_connect_payout_command_id?: number
+          webhook_event_id?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "stripe_connect_payout_observa_stripe_connect_payout_comman_fkey"
+            columns: ["stripe_connect_payout_command_id"]
+            isOneToOne: false
+            referencedRelation: "stripe_connect_payout_commands"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "stripe_connect_payout_observa_stripe_connect_payout_comman_fkey"
+            columns: ["stripe_connect_payout_command_id"]
+            isOneToOne: false
+            referencedRelation: "user_stripe_connect_payouts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "stripe_connect_payout_observations_webhook_event_id_fkey"
+            columns: ["webhook_event_id"]
+            isOneToOne: true
+            referencedRelation: "stripe_connect_webhook_events"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      stripe_connect_runtime_controls: {
+        Row: {
+          deployment_environment: string
+          onboarding_enabled: boolean
+          payout_enabled: boolean
+          production_value_flow_enabled: boolean
+          updated_at: string
+          webhook_enabled: boolean
+        }
+        Insert: {
+          deployment_environment: string
+          onboarding_enabled?: boolean
+          payout_enabled?: boolean
+          production_value_flow_enabled?: boolean
+          updated_at?: string
+          webhook_enabled?: boolean
+        }
+        Update: {
+          deployment_environment?: string
+          onboarding_enabled?: boolean
+          payout_enabled?: boolean
+          production_value_flow_enabled?: boolean
+          updated_at?: string
+          webhook_enabled?: boolean
+        }
+        Relationships: [
+          {
+            foreignKeyName: "stripe_connect_runtime_controls_deployment_environment_fkey"
+            columns: ["deployment_environment"]
+            isOneToOne: true
+            referencedRelation: "financial_runtime_controls"
+            referencedColumns: ["deployment_environment"]
+          },
+        ]
+      }
+      stripe_connect_webhook_events: {
+        Row: {
+          command_sha256: string
+          created_at: string
+          event_type: string
+          id: number
+          livemode: boolean
+          observation_source: string
+          ordering_status: string
+          payload_sha256: string
+          provider_account_id: string
+          provider_created_at: string
+          provider_event_id: string
+          provider_object_id: string
+          signature_timestamp: number
+        }
+        Insert: {
+          command_sha256: string
+          created_at?: string
+          event_type: string
+          id?: never
+          livemode: boolean
+          observation_source: string
+          ordering_status: string
+          payload_sha256: string
+          provider_account_id: string
+          provider_created_at: string
+          provider_event_id: string
+          provider_object_id: string
+          signature_timestamp: number
+        }
+        Update: {
+          command_sha256?: string
+          created_at?: string
+          event_type?: string
+          id?: never
+          livemode?: boolean
+          observation_source?: string
+          ordering_status?: string
+          payload_sha256?: string
+          provider_account_id?: string
+          provider_created_at?: string
+          provider_event_id?: string
+          provider_object_id?: string
+          signature_timestamp?: number
+        }
+        Relationships: []
+      }
+      stripe_webhook_events: {
+        Row: {
+          api_version: string | null
+          command_sha256: string
+          event_type: string
+          id: number
+          livemode: boolean
+          observation_source: string
+          observed_at: string
+          payload_sha256: string
+          production_enabled: boolean
+          provider_account_id: string
+          provider_created_at: string
+          provider_event_id: string
+          provider_object_id: string
+          signature_timestamp: number
+        }
+        Insert: {
+          api_version?: string | null
+          command_sha256: string
+          event_type: string
+          id?: never
+          livemode?: boolean
+          observation_source: string
+          observed_at?: string
+          payload_sha256: string
+          production_enabled?: boolean
+          provider_account_id: string
+          provider_created_at: string
+          provider_event_id: string
+          provider_object_id: string
+          signature_timestamp: number
+        }
+        Update: {
+          api_version?: string | null
+          command_sha256?: string
+          event_type?: string
+          id?: never
+          livemode?: boolean
+          observation_source?: string
+          observed_at?: string
+          payload_sha256?: string
+          production_enabled?: boolean
+          provider_account_id?: string
+          provider_created_at?: string
+          provider_event_id?: string
+          provider_object_id?: string
+          signature_timestamp?: number
+        }
+        Relationships: []
+      }
       support_requests: {
         Row: {
           category: string
@@ -5298,6 +9392,142 @@ export type Database = {
           },
         ]
       }
+      user_withdrawal_obligation_claims: {
+        Row: {
+          claimed_minor: number
+          created_at: string
+          id: number
+          obligation_id: number
+          sequence_no: number
+          status: string
+          updated_at: string
+          withdrawal_request_id: string
+        }
+        Insert: {
+          claimed_minor: number
+          created_at?: string
+          id?: never
+          obligation_id: number
+          sequence_no: number
+          status: string
+          updated_at?: string
+          withdrawal_request_id: string
+        }
+        Update: {
+          claimed_minor?: number
+          created_at?: string
+          id?: never
+          obligation_id?: number
+          sequence_no?: number
+          status?: string
+          updated_at?: string
+          withdrawal_request_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_withdrawal_obligation_claims_obligation_id_fkey"
+            columns: ["obligation_id"]
+            isOneToOne: false
+            referencedRelation: "user_withdrawal_obligation_balances"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "user_withdrawal_obligation_claims_obligation_id_fkey"
+            columns: ["obligation_id"]
+            isOneToOne: false
+            referencedRelation: "user_withdrawal_obligations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "user_withdrawal_obligation_claims_withdrawal_request_id_fkey"
+            columns: ["withdrawal_request_id"]
+            isOneToOne: false
+            referencedRelation: "user_withdrawal_requests"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      user_withdrawal_obligations: {
+        Row: {
+          available_at: string
+          created_at: string
+          evidence_hash: string
+          id: number
+          monthly_cycle_id: number
+          production_enabled: boolean
+          source_award_control_id: number | null
+          source_bookkeeping_credit_id: number | null
+          source_expires_after_cycle_id: number | null
+          state: string
+          total_minor: number
+          user_id: string
+        }
+        Insert: {
+          available_at?: string
+          created_at?: string
+          evidence_hash: string
+          id?: never
+          monthly_cycle_id: number
+          production_enabled?: boolean
+          source_award_control_id?: number | null
+          source_bookkeeping_credit_id?: number | null
+          source_expires_after_cycle_id?: number | null
+          state?: string
+          total_minor: number
+          user_id: string
+        }
+        Update: {
+          available_at?: string
+          created_at?: string
+          evidence_hash?: string
+          id?: never
+          monthly_cycle_id?: number
+          production_enabled?: boolean
+          source_award_control_id?: number | null
+          source_bookkeeping_credit_id?: number | null
+          source_expires_after_cycle_id?: number | null
+          state?: string
+          total_minor?: number
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_withdrawal_obligations_monthly_cycle_id_fkey"
+            columns: ["monthly_cycle_id"]
+            isOneToOne: false
+            referencedRelation: "monthly_cycles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "user_withdrawal_obligations_source_award_control_id_fkey"
+            columns: ["source_award_control_id"]
+            isOneToOne: true
+            referencedRelation: "epoch_provisional_award_controls"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "user_withdrawal_obligations_source_bookkeeping_credit_id_fkey"
+            columns: ["source_bookkeeping_credit_id"]
+            isOneToOne: true
+            referencedRelation: "monthly_cycle_bookkeeping_credits"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "user_withdrawal_obligations_source_expires_after_cycle_id_fkey"
+            columns: ["source_expires_after_cycle_id"]
+            isOneToOne: false
+            referencedRelation: "monthly_cycles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "user_withdrawal_obligations_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["user_id"]
+          },
+        ]
+      }
       user_withdrawal_request_credits: {
         Row: {
           bookkeeping_credit_id: number
@@ -5336,47 +9566,110 @@ export type Database = {
       }
       user_withdrawal_requests: {
         Row: {
+          closed_at: string | null
           created_at: string
           currency_code: string
+          destination_hash: string | null
+          fee_minor: number | null
+          financial_asset_id: number | null
           id: string
           idempotency_key: string
+          net_minor: number | null
           payout_route_id: number
+          production_enabled: boolean
+          project_id: number | null
+          queue_for_cycle_id: number | null
+          queue_for_cycle_key: string | null
+          rail_key: string | null
+          request_hash: string | null
           requested_at: string
+          requested_minor: number | null
           requested_usd_amount: number
           status: string
+          status_reason: string | null
           updated_at: string
+          user_fee_bps: number | null
           user_id: string
         }
         Insert: {
+          closed_at?: string | null
           created_at?: string
           currency_code?: string
+          destination_hash?: string | null
+          fee_minor?: number | null
+          financial_asset_id?: number | null
           id?: string
           idempotency_key: string
+          net_minor?: number | null
           payout_route_id: number
+          production_enabled?: boolean
+          project_id?: number | null
+          queue_for_cycle_id?: number | null
+          queue_for_cycle_key?: string | null
+          rail_key?: string | null
+          request_hash?: string | null
           requested_at?: string
+          requested_minor?: number | null
           requested_usd_amount: number
           status?: string
+          status_reason?: string | null
           updated_at?: string
+          user_fee_bps?: number | null
           user_id: string
         }
         Update: {
+          closed_at?: string | null
           created_at?: string
           currency_code?: string
+          destination_hash?: string | null
+          fee_minor?: number | null
+          financial_asset_id?: number | null
           id?: string
           idempotency_key?: string
+          net_minor?: number | null
           payout_route_id?: number
+          production_enabled?: boolean
+          project_id?: number | null
+          queue_for_cycle_id?: number | null
+          queue_for_cycle_key?: string | null
+          rail_key?: string | null
+          request_hash?: string | null
           requested_at?: string
+          requested_minor?: number | null
           requested_usd_amount?: number
           status?: string
+          status_reason?: string | null
           updated_at?: string
+          user_fee_bps?: number | null
           user_id?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "user_withdrawal_requests_financial_asset_id_fkey"
+            columns: ["financial_asset_id"]
+            isOneToOne: false
+            referencedRelation: "financial_assets"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "user_withdrawal_requests_payout_route_id_fkey"
             columns: ["payout_route_id"]
             isOneToOne: false
             referencedRelation: "user_payout_routes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "user_withdrawal_requests_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "user_withdrawal_requests_queue_for_cycle_id_fkey"
+            columns: ["queue_for_cycle_id"]
+            isOneToOne: false
+            referencedRelation: "monthly_cycles"
             referencedColumns: ["id"]
           },
           {
@@ -5671,6 +9964,137 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "wallet_accounts"
             referencedColumns: ["id"]
+          },
+        ]
+      }
+      withdrawal_compliance_holds: {
+        Row: {
+          actor_user_id: string
+          evidence_hash: string
+          hold_sequence: number
+          id: number
+          placed_at: string
+          reason_code: string
+          resolution: string | null
+          resolved_at: string | null
+          status: string
+          withdrawal_request_id: string
+        }
+        Insert: {
+          actor_user_id: string
+          evidence_hash: string
+          hold_sequence: number
+          id?: never
+          placed_at?: string
+          reason_code: string
+          resolution?: string | null
+          resolved_at?: string | null
+          status?: string
+          withdrawal_request_id: string
+        }
+        Update: {
+          actor_user_id?: string
+          evidence_hash?: string
+          hold_sequence?: number
+          id?: never
+          placed_at?: string
+          reason_code?: string
+          resolution?: string | null
+          resolved_at?: string | null
+          status?: string
+          withdrawal_request_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "withdrawal_compliance_holds_actor_user_id_fkey"
+            columns: ["actor_user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "withdrawal_compliance_holds_withdrawal_request_id_fkey"
+            columns: ["withdrawal_request_id"]
+            isOneToOne: false
+            referencedRelation: "user_withdrawal_requests"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      withdrawal_lifecycle_events: {
+        Row: {
+          actor_user_id: string | null
+          created_at: string
+          event_type: string
+          evidence: Json
+          from_status: string | null
+          id: number
+          to_status: string
+          withdrawal_request_id: string
+        }
+        Insert: {
+          actor_user_id?: string | null
+          created_at?: string
+          event_type: string
+          evidence?: Json
+          from_status?: string | null
+          id?: never
+          to_status: string
+          withdrawal_request_id: string
+        }
+        Update: {
+          actor_user_id?: string | null
+          created_at?: string
+          event_type?: string
+          evidence?: Json
+          from_status?: string | null
+          id?: never
+          to_status?: string
+          withdrawal_request_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "withdrawal_lifecycle_events_actor_user_id_fkey"
+            columns: ["actor_user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "withdrawal_lifecycle_events_withdrawal_request_id_fkey"
+            columns: ["withdrawal_request_id"]
+            isOneToOne: false
+            referencedRelation: "user_withdrawal_requests"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      withdrawal_runtime_controls: {
+        Row: {
+          deployment_environment: string
+          production_value_flow_enabled: boolean
+          reservation_enabled: boolean
+          updated_at: string
+        }
+        Insert: {
+          deployment_environment: string
+          production_value_flow_enabled?: boolean
+          reservation_enabled?: boolean
+          updated_at?: string
+        }
+        Update: {
+          deployment_environment?: string
+          production_value_flow_enabled?: boolean
+          reservation_enabled?: boolean
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "withdrawal_runtime_controls_deployment_environment_fkey"
+            columns: ["deployment_environment"]
+            isOneToOne: true
+            referencedRelation: "financial_runtime_controls"
+            referencedColumns: ["deployment_environment"]
           },
         ]
       }
@@ -6522,6 +10946,349 @@ export type Database = {
           },
         ]
       }
+      epoch_allocation_operator_view: {
+        Row: {
+          calculated_at: string | null
+          cycle_key: string | null
+          final_allocation_minor: number | null
+          funded_exact_usd: number | null
+          funded_minor: number | null
+          locked_at: string | null
+          manifest_hash: string | null
+          manifest_id: number | null
+          overlap_pool_minor: number | null
+          provisional_only: boolean | null
+          result_hash: string | null
+          retained_initial_minor: number | null
+          returned_residue_minor: number | null
+          run_id: number | null
+          score_pool_minor: number | null
+          status: string | null
+          top_up_minor: number | null
+          user_count: number | null
+          version: number | null
+        }
+        Relationships: []
+      }
+      epoch_close_operator_view: {
+        Row: {
+          actor_user_id: string | null
+          approved_at: string | null
+          artifact_count: number | null
+          close_package_id: number | null
+          cycle_key: string | null
+          final_allocation_minor: number | null
+          funded_minor: number | null
+          manifest_hash: string | null
+          provisional_only: boolean | null
+          redistribution_pool_minor: number | null
+          result_hash: string | null
+          returned_residue_minor: number | null
+          root_approved_at: string | null
+          root_hash: string | null
+          status: string | null
+          top_up_minor: number | null
+          user_count: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "epoch_allocation_approvals_actor_user_id_fkey"
+            columns: ["actor_user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["user_id"]
+          },
+        ]
+      }
+      epoch_close_public_project_view: {
+        Row: {
+          created_at: string | null
+          cycle_key: string | null
+          funded_minor: number | null
+          project_slug: string | null
+          published_cohort_count: number | null
+          root_hash: string | null
+          source_count: number | null
+          status: string | null
+        }
+        Relationships: []
+      }
+      epoch_close_public_view: {
+        Row: {
+          created_at: string | null
+          cycle_key: string | null
+          final_allocation_minor: number | null
+          funded_minor: number | null
+          published_user_count: number | null
+          redistribution_pool_minor: number | null
+          returned_residue_minor: number | null
+          root_hash: string | null
+          status: string | null
+          top_up_minor: number | null
+        }
+        Relationships: []
+      }
+      epoch_financial_prep_cycle_summary: {
+        Row: {
+          base_fee_exact_usd: number | null
+          cycle_key: string | null
+          distributable_exact_usd: number | null
+          gross_exact_usd: number | null
+          monthly_cycle_id: number | null
+          native_atomic_total: number | null
+          neutral_provisional_only: boolean | null
+          project_count: number | null
+          project_fee_exact_usd: number | null
+          ready_source_count: number | null
+          reserved_exact_usd: number | null
+          source_count: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "epoch_valuation_source_lots_monthly_cycle_id_fkey"
+            columns: ["monthly_cycle_id"]
+            isOneToOne: false
+            referencedRelation: "monthly_cycles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      epoch_financial_prep_operator_view: {
+        Row: {
+          asset_key: string | null
+          base_fee_exact_usd: number | null
+          classification_status: string | null
+          created_at: string | null
+          custody_key: string | null
+          cycle_key: string | null
+          deterministic_source_order: number | null
+          distributable_exact_usd: number | null
+          fx_difference_exact_usd: number | null
+          gross_exact_usd: number | null
+          monthly_cycle_id: number | null
+          native_atomic_amount: number | null
+          project_fee_exact_usd: number | null
+          project_id: number | null
+          project_slug: string | null
+          rail_key: string | null
+          rate_usd_per_unit: number | null
+          reserved_exact_usd: number | null
+          source_kind: string | null
+          source_lot_key: string | null
+          source_preliminary_exact_usd: number | null
+          state: string | null
+          symbol: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "epoch_valuation_source_lots_monthly_cycle_id_fkey"
+            columns: ["monthly_cycle_id"]
+            isOneToOne: false
+            referencedRelation: "monthly_cycles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "epoch_valuation_source_lots_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      epoch_funded_allocation_lock_candidates: {
+        Row: {
+          asset_key: string | null
+          atomic_scale: number | null
+          base_fee_exact_usd: number | null
+          canonical_minor_unit_scale: number | null
+          cubid_evidence_hash: string | null
+          custody_key: string | null
+          deterministic_source_order: number | null
+          distributable_exact_usd: number | null
+          eligible_user_count: number | null
+          fx_difference_exact_usd: number | null
+          gross_exact_usd: number | null
+          locked_cubid_score: number | null
+          locked_max_cubid_score: number | null
+          monthly_cycle_id: number | null
+          native_atomic_amount: number | null
+          package_id: number | null
+          project_fee_exact_usd: number | null
+          project_id: number | null
+          rail_key: string | null
+          rate_usd_per_unit: number | null
+          source_evidence_hash: string | null
+          source_kind: string | null
+          source_lot_id: number | null
+          source_lot_key: string | null
+          source_position: number | null
+          source_preliminary_exact_usd: number | null
+          user_id: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "epoch_project_package_cohort_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "epoch_valuation_source_lots_monthly_cycle_id_fkey"
+            columns: ["monthly_cycle_id"]
+            isOneToOne: false
+            referencedRelation: "monthly_cycles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "epoch_valuation_source_lots_package_id_fkey"
+            columns: ["package_id"]
+            isOneToOne: false
+            referencedRelation: "epoch_project_package_lock_candidates"
+            referencedColumns: ["package_id"]
+          },
+          {
+            foreignKeyName: "epoch_valuation_source_lots_package_id_fkey"
+            columns: ["package_id"]
+            isOneToOne: false
+            referencedRelation: "epoch_project_package_operator_view"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "epoch_valuation_source_lots_package_id_fkey"
+            columns: ["package_id"]
+            isOneToOne: false
+            referencedRelation: "epoch_project_packages"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "epoch_valuation_source_lots_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      epoch_project_package_lock_candidates: {
+        Row: {
+          attribution_dataset_id: number | null
+          canonical_cycle_id: number | null
+          compliance_snapshot_id: number | null
+          eligible_user_count: number | null
+          manifest_hash: string | null
+          package_id: number | null
+          preliminary_usd: number | null
+          project_id: number | null
+          version: number | null
+        }
+        Insert: {
+          attribution_dataset_id?: number | null
+          canonical_cycle_id?: number | null
+          compliance_snapshot_id?: number | null
+          eligible_user_count?: number | null
+          manifest_hash?: string | null
+          package_id?: number | null
+          preliminary_usd?: number | null
+          project_id?: number | null
+          version?: number | null
+        }
+        Update: {
+          attribution_dataset_id?: number | null
+          canonical_cycle_id?: number | null
+          compliance_snapshot_id?: number | null
+          eligible_user_count?: number | null
+          manifest_hash?: string | null
+          package_id?: number | null
+          preliminary_usd?: number | null
+          project_id?: number | null
+          version?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "epoch_project_packages_attribution_dataset_id_fkey"
+            columns: ["attribution_dataset_id"]
+            isOneToOne: false
+            referencedRelation: "project_attribution_datasets"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "epoch_project_packages_canonical_cycle_id_fkey"
+            columns: ["canonical_cycle_id"]
+            isOneToOne: false
+            referencedRelation: "monthly_cycles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "epoch_project_packages_compliance_snapshot_id_fkey"
+            columns: ["compliance_snapshot_id"]
+            isOneToOne: false
+            referencedRelation: "project_compliance_snapshots"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "epoch_project_packages_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      epoch_project_package_operator_view: {
+        Row: {
+          base_fee_deferred: boolean | null
+          canonical_cycle_key: string | null
+          cohort_count: number | null
+          compliance_status: string | null
+          cubid_status: string | null
+          cutoff_at: string | null
+          eligible_user_count: number | null
+          funding_source_count: number | null
+          funding_status: string | null
+          held_user_count: number | null
+          id: number | null
+          intended_cycle_key: string | null
+          list_status: string | null
+          manifest_hash: string | null
+          payment_count: number | null
+          preliminary_usd: number | null
+          project_fee_assessed_once: boolean | null
+          project_id: number | null
+          project_name: string | null
+          project_slug: string | null
+          reconciliation_deadline_at: string | null
+          reconciliation_email_delivered_at: string | null
+          status: string | null
+          version: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "epoch_project_packages_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      epoch_project_package_public_preliminary: {
+        Row: {
+          cohort_count: number | null
+          cycle_key: string | null
+          eligible_user_count: number | null
+          funding_source_count: number | null
+          held_user_count: number | null
+          manifest_hash: string | null
+          preliminary_usd: number | null
+          project_name: string | null
+          project_slug: string | null
+          status: string | null
+          version: number | null
+        }
+        Relationships: []
+      }
       epoch_shadow_observability: {
         Row: {
           accounting_period_id: number | null
@@ -6656,6 +11423,41 @@ export type Database = {
           },
         ]
       }
+      stripe_bank_transfer_status: {
+        Row: {
+          available_for_shadow_close: boolean | null
+          created_at: string | null
+          currency_code: string | null
+          expected_amount_minor: number | null
+          fee_amount_minor: number | null
+          gross_amount_minor: number | null
+          intent_id: number | null
+          net_amount_minor: number | null
+          ordering_status: string | null
+          payment_id: number | null
+          project_id: number | null
+          status: string | null
+          status_at: string | null
+          sweep_evidence_pending: boolean | null
+          topology_status: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "stripe_bank_transfer_intents_payment_id_fkey"
+            columns: ["payment_id"]
+            isOneToOne: false
+            referencedRelation: "payments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "stripe_bank_transfer_intents_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       user_identities: {
         Row: {
           created_at: string | null
@@ -6682,6 +11484,104 @@ export type Database = {
           user_id?: string | null
         }
         Relationships: []
+      }
+      user_stripe_connect_payouts: {
+        Row: {
+          created_at: string | null
+          currency_code: string | null
+          failure_code: string | null
+          gross_minor: number | null
+          id: number | null
+          ledger_transaction_id: number | null
+          net_minor: number | null
+          settled_at: string | null
+          status: string | null
+          submitted_at: string | null
+          user_fee_minor: number | null
+          user_id: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "stripe_connect_accounts_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: true
+            referencedRelation: "users"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "stripe_connect_payout_commands_ledger_transaction_id_fkey"
+            columns: ["ledger_transaction_id"]
+            isOneToOne: true
+            referencedRelation: "ledger_transactions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "stripe_connect_payout_commands_ledger_transaction_id_fkey"
+            columns: ["ledger_transaction_id"]
+            isOneToOne: true
+            referencedRelation: "shadow_ledger_trial_balance"
+            referencedColumns: ["ledger_transaction_id"]
+          },
+        ]
+      }
+      user_withdrawal_asset_inventory: {
+        Row: {
+          asset_key: string | null
+          available_minor: number | null
+          lot_count: number | null
+          oldest_cycle_id: number | null
+          project_id: number | null
+          rail_key: string | null
+          symbol: string | null
+          user_id: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "payout_inventory_lots_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "payout_inventory_lots_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["user_id"]
+          },
+        ]
+      }
+      user_withdrawal_obligation_balances: {
+        Row: {
+          available_minor: number | null
+          closed_minor: number | null
+          held_minor: number | null
+          id: number | null
+          monthly_cycle_id: number | null
+          paid_minor: number | null
+          queued_minor: number | null
+          reserved_minor: number | null
+          state: string | null
+          total_minor: number | null
+          user_id: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_withdrawal_obligations_monthly_cycle_id_fkey"
+            columns: ["monthly_cycle_id"]
+            isOneToOne: false
+            referencedRelation: "monthly_cycles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "user_withdrawal_obligations_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["user_id"]
+          },
+        ]
       }
     }
     Functions: {
@@ -6736,6 +11636,14 @@ export type Database = {
         }
         Returns: number
       }
+      approve_epoch_allocation_close: {
+        Args: { p_command: Json }
+        Returns: Json
+      }
+      authorize_base_safe_payout: {
+        Args: { p_actor_user_id: string; p_command: Json }
+        Returns: Json
+      }
       can_read_ledger_transaction: {
         Args: { p_transaction_id: number }
         Returns: boolean
@@ -6756,6 +11664,10 @@ export type Database = {
           target_stage: string
         }[]
       }
+      clamp_epoch_fee_bps: {
+        Args: { p_max: number; p_min: number; p_requested: number }
+        Returns: number
+      }
       complete_epoch_shadow_attempt: {
         Args: {
           p_artifacts: Json
@@ -6768,6 +11680,14 @@ export type Database = {
           p_succeeded: boolean
         }
         Returns: string
+      }
+      confirm_base_safe_payout_authorization: {
+        Args: { p_actor_user_id: string; p_command: Json }
+        Returns: Json
+      }
+      confirm_epoch_allocation_close_root: {
+        Args: { p_command: Json }
+        Returns: Json
       }
       create_user_withdrawal_request: {
         Args: {
@@ -6785,6 +11705,18 @@ export type Database = {
           requested_usd_amount: number
           status: string
         }[]
+      }
+      create_user_withdrawal_request_v2: {
+        Args: { p_actor_user_id: string; p_command: Json }
+        Returns: Json
+      }
+      create_user_withdrawal_request_v3: {
+        Args: { p_actor_user_id: string; p_command: Json }
+        Returns: Json
+      }
+      decide_epoch_project_package: {
+        Args: { p_command: Json }
+        Returns: number
       }
       decline_project_invitation_review: {
         Args: {
@@ -6813,9 +11745,37 @@ export type Database = {
         }
         Returns: number
       }
+      epoch_allocation_runtime_enabled: {
+        Args: { p_environment: string }
+        Returns: boolean
+      }
+      epoch_close_runtime_enabled: {
+        Args: { p_environment: string }
+        Returns: boolean
+      }
+      epoch_financial_prep_runtime_enabled: {
+        Args: { p_environment: string }
+        Returns: boolean
+      }
+      epoch_project_package_business_deadline: {
+        Args: { p_delivered_at: string }
+        Returns: string
+      }
+      epoch_project_package_pseudonym: {
+        Args: { p_project_id: number; p_user_id: string }
+        Returns: string
+      }
+      epoch_project_package_runtime_enabled: {
+        Args: { p_environment: string }
+        Returns: boolean
+      }
       epoch_shadow_next_stage: { Args: { p_stage: string }; Returns: string }
       expire_project_invitations_review: {
         Args: { p_invitee_email?: string; p_project_id: number }
+        Returns: number
+      }
+      expire_withdrawal_inventory_reservations: {
+        Args: { p_environment: string; p_now: string }
         Returns: number
       }
       finalize_onchain_payment_reconciliation: {
@@ -6837,6 +11797,10 @@ export type Database = {
         }
         Returns: undefined
       }
+      finalize_silent_epoch_project_packages: {
+        Args: { p_environment: string; p_now?: string }
+        Returns: number
+      }
       get_active_org_members: {
         Args: { org_id: number }
         Returns: {
@@ -6846,6 +11810,41 @@ export type Database = {
           role_id: number
           user_id: string
         }[]
+      }
+      get_base_safe_payout_authorization_input: {
+        Args: { p_deployment_id: number; p_payout_intent_id: number }
+        Returns: Json
+      }
+      get_public_epoch_project_package: {
+        Args: { p_cycle_key: string; p_project_slug: string }
+        Returns: {
+          cohort_count: number | null
+          cycle_key: string | null
+          eligible_user_count: number | null
+          funding_source_count: number | null
+          held_user_count: number | null
+          manifest_hash: string | null
+          preliminary_usd: number | null
+          project_name: string | null
+          project_slug: string | null
+          status: string | null
+          version: number | null
+        }[]
+        SetofOptions: {
+          from: "*"
+          to: "epoch_project_package_public_preliminary"
+          isOneToOne: false
+          isSetofReturn: true
+        }
+      }
+      harvest_epoch_source_lot: { Args: { p_command: Json }; Returns: number }
+      harvest_expired_epoch_source_lots: {
+        Args: {
+          p_environment: string
+          p_limit?: number
+          p_target_cycle_key: string
+        }
+        Returns: number
       }
       ingest_external_financial_event: {
         Args: {
@@ -6862,6 +11861,22 @@ export type Database = {
           p_settled_native_amount: number
         }
         Returns: number
+      }
+      ingest_stripe_bank_transfer_webhook: {
+        Args: { p_command: Json }
+        Returns: {
+          evidence_id: number
+          ledger_transaction_id: number
+          webhook_event_id: number
+        }[]
+      }
+      ingest_stripe_connect_webhook: {
+        Args: { p_command: Json }
+        Returns: Json
+      }
+      ingest_stripe_connect_webhook_once: {
+        Args: { p_command: Json }
+        Returns: Json
       }
       inspect_project_invitation_review: {
         Args: {
@@ -6884,12 +11899,51 @@ export type Database = {
           status: string
         }[]
       }
+      is_project_financial_admin: {
+        Args: { p_actor_user_id: string; p_project_id: number }
+        Returns: boolean
+      }
       list_discoverable_public_user_ids: {
         Args: never
         Returns: {
           fields: Json
           user_id: string
         }[]
+      }
+      list_epoch_project_packages: {
+        Args: { p_actor_user_id: string; p_project_slug?: string }
+        Returns: {
+          base_fee_deferred: boolean | null
+          canonical_cycle_key: string | null
+          cohort_count: number | null
+          compliance_status: string | null
+          cubid_status: string | null
+          cutoff_at: string | null
+          eligible_user_count: number | null
+          funding_source_count: number | null
+          funding_status: string | null
+          held_user_count: number | null
+          id: number | null
+          intended_cycle_key: string | null
+          list_status: string | null
+          manifest_hash: string | null
+          payment_count: number | null
+          preliminary_usd: number | null
+          project_fee_assessed_once: boolean | null
+          project_id: number | null
+          project_name: string | null
+          project_slug: string | null
+          reconciliation_deadline_at: string | null
+          reconciliation_email_delivered_at: string | null
+          status: string | null
+          version: number | null
+        }[]
+        SetofOptions: {
+          from: "*"
+          to: "epoch_project_package_operator_view"
+          isOneToOne: false
+          isSetofReturn: true
+        }
       }
       list_project_member_shared_profiles: {
         Args: { p_actor_user_id: string; p_project_id: number }
@@ -6905,6 +11959,54 @@ export type Database = {
           user_id: string
         }[]
       }
+      list_project_stripe_bank_transfer_status: {
+        Args: { p_actor_user_id: string; p_project_slug: string }
+        Returns: {
+          available_for_shadow_close: boolean | null
+          created_at: string | null
+          currency_code: string | null
+          expected_amount_minor: number | null
+          fee_amount_minor: number | null
+          gross_amount_minor: number | null
+          intent_id: number | null
+          net_amount_minor: number | null
+          ordering_status: string | null
+          payment_id: number | null
+          project_id: number | null
+          status: string | null
+          status_at: string | null
+          sweep_evidence_pending: boolean | null
+          topology_status: string | null
+        }[]
+        SetofOptions: {
+          from: "*"
+          to: "stripe_bank_transfer_status"
+          isOneToOne: false
+          isSetofReturn: true
+        }
+      }
+      lock_funded_epoch_allocation: { Args: { p_command: Json }; Returns: Json }
+      manage_user_withdrawal_request: {
+        Args: {
+          p_action: string
+          p_actor_user_id: string
+          p_environment: string
+          p_reason: string
+          p_request_id: string
+        }
+        Returns: Json
+      }
+      place_withdrawal_compliance_hold: {
+        Args: {
+          p_actor_user_id: string
+          p_environment: string
+          p_evidence_hash: string
+          p_reason_code: string
+          p_request_id: string
+        }
+        Returns: Json
+      }
+      post_epoch_fx_snapshot: { Args: { p_command: Json }; Returns: number }
       post_neutral_ledger_transaction: {
         Args: { p_command: Json }
         Returns: number
@@ -6920,6 +12022,50 @@ export type Database = {
           p_ledger_transaction_id: number
         }
         Returns: number
+      }
+      prepare_epoch_financial_sources: {
+        Args: { p_command: Json }
+        Returns: number
+      }
+      prepare_epoch_project_package_email: {
+        Args: {
+          p_actor_role: string
+          p_actor_user_id: string
+          p_environment: string
+          p_package_id: number
+        }
+        Returns: {
+          evidence_hash: string
+          package_id: number
+          recipient_email: string
+          recipient_hash: string
+          subject: string
+          text_body: string
+        }[]
+      }
+      prepare_epoch_withdrawal_obligations: {
+        Args: {
+          p_actor_user_id: string
+          p_close_package_id: number
+          p_environment: string
+        }
+        Returns: Json
+      }
+      prepare_stripe_connect_payout: {
+        Args: {
+          p_actor_user_id: string
+          p_environment: string
+          p_payout_intent_id: number
+        }
+        Returns: Json
+      }
+      prepare_stripe_connect_payout_once: {
+        Args: {
+          p_actor_user_id: string
+          p_environment: string
+          p_payout_intent_id: number
+        }
+        Returns: Json
       }
       publish_project_onboarding_draft_atomic: {
         Args: {
@@ -6943,6 +12089,15 @@ export type Database = {
           project_slug: string
         }[]
       }
+      read_epoch_close_scope: {
+        Args: {
+          p_actor_user_id: string
+          p_cycle_key: string
+          p_project_id?: number
+          p_scope: string
+        }
+        Returns: Json
+      }
       reconcile_base_intake_v2_receipt: {
         Args: { p_command: Json }
         Returns: number
@@ -6951,6 +12106,7 @@ export type Database = {
         Args: { p_command: Json }
         Returns: number
       }
+      reconcile_base_safe_payout: { Args: { p_command: Json }; Returns: Json }
       record_base_intake_v2_receipt: {
         Args: { p_command: Json }
         Returns: number
@@ -6967,6 +12123,14 @@ export type Database = {
         }
         Returns: number
       }
+      record_epoch_fx_observation: {
+        Args: { p_command: Json }
+        Returns: number
+      }
+      record_epoch_project_package_email_delivery: {
+        Args: { p_command: Json }
+        Returns: number
+      }
       record_epoch_stage_override: {
         Args: {
           p_actor_context: string
@@ -6977,6 +12141,10 @@ export type Database = {
           p_gate_key: string
           p_reason: string
         }
+        Returns: number
+      }
+      record_funded_epoch_allocation: {
+        Args: { p_command: Json }
         Returns: number
       }
       record_profile_publication_choice: {
@@ -7009,6 +12177,27 @@ export type Database = {
           recorded_at: string
         }[]
       }
+      record_stripe_bank_transfer_intent: {
+        Args: { p_command: Json }
+        Returns: number
+      }
+      record_stripe_connect_payout_failure: {
+        Args: {
+          p_command_id: number
+          p_failure_code: string
+          p_transfer_id: string
+        }
+        Returns: Json
+      }
+      record_stripe_connect_payout_submission: {
+        Args: {
+          p_command_id: number
+          p_payout_id: string
+          p_provider_request_id: string
+          p_transfer_id: string
+        }
+        Returns: Json
+      }
       replace_user_asset_preferences_atomic: {
         Args: { p_preferences?: Json; p_user_id: string }
         Returns: {
@@ -7030,6 +12219,10 @@ export type Database = {
           isOneToOne: false
           isSetofReturn: true
         }
+      }
+      reserve_withdrawal_inventory: {
+        Args: { p_now?: string; p_request_id: string }
+        Returns: boolean
       }
       reverse_neutral_ledger_transaction: {
         Args: { p_command: Json }
@@ -7069,6 +12262,22 @@ export type Database = {
       soft_delete_wallet_connections: {
         Args: { p_id: number }
         Returns: undefined
+      }
+      stripe_connect_runtime_enabled: {
+        Args: { p_capability: string; p_environment: string }
+        Returns: boolean
+      }
+      sync_stripe_connect_account: {
+        Args: { p_actor_user_id: string; p_command: Json }
+        Returns: Json
+      }
+      validate_epoch_project_package: {
+        Args: { p_command: Json }
+        Returns: number
+      }
+      withdrawal_runtime_enabled: {
+        Args: { p_environment: string }
+        Returns: boolean
       }
     }
     Enums: {

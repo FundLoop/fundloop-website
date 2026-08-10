@@ -117,6 +117,44 @@ export type MonthlyCyclePrepReview = {
   liveDriftWarnings: MonthlyCyclePrepIssue[]
 }
 
+export type EpochFinancialPrepReview = {
+  summary: Database["public"]["Views"]["epoch_financial_prep_cycle_summary"]["Row"] | null
+  sources: Database["public"]["Views"]["epoch_financial_prep_operator_view"]["Row"][]
+  productionDisabled: boolean
+}
+
+export type EpochFundedAllocationReview = {
+  allocation: Database["public"]["Views"]["epoch_allocation_operator_view"]["Row"] | null
+  productionDisabled: boolean
+  runtimeAvailable: boolean
+}
+
+export async function loadEpochFundedAllocationReview(cycleKey: string): Promise<EpochFundedAllocationReview> {
+  const parsedCycleKey=assertMonthString(cycleKey)
+  if ((process.env.FUNDLOOP_DEPLOYMENT_ENV ?? "production").trim().toLowerCase()==="production") {
+    return {allocation:null,productionDisabled:true,runtimeAvailable:false}
+  }
+  const supabase=getAdminSupabaseClient()
+  const result=await supabase.from("epoch_allocation_operator_view").select("*").eq("cycle_key",parsedCycleKey).maybeSingle()
+  if (result.error) throw new Error(result.error.message)
+  return {allocation:result.data,productionDisabled:true,runtimeAvailable:true}
+}
+
+export async function loadEpochFinancialPrepReview(cycleKey: string): Promise<EpochFinancialPrepReview> {
+  const parsedCycleKey=assertMonthString(cycleKey)
+  if ((process.env.FUNDLOOP_DEPLOYMENT_ENV ?? "production").trim().toLowerCase()==="production") {
+    return {summary:null,sources:[],productionDisabled:true}
+  }
+  const supabase=getAdminSupabaseClient()
+  const [summaryResult,sourcesResult]=await Promise.all([
+    supabase.from("epoch_financial_prep_cycle_summary").select("*").eq("cycle_key",parsedCycleKey).maybeSingle(),
+    supabase.from("epoch_financial_prep_operator_view").select("*").eq("cycle_key",parsedCycleKey).order("deterministic_source_order"),
+  ])
+  if (summaryResult.error) throw new Error(summaryResult.error.message)
+  if (sourcesResult.error) throw new Error(sourcesResult.error.message)
+  return {summary:summaryResult.data,sources:sourcesResult.data ?? [],productionDisabled:true}
+}
+
 type LockManifest = {
   locked_at?: unknown
   override?: {
