@@ -5547,15 +5547,85 @@ export type Database = {
           },
         ]
       }
+      payout_execution_attempts: {
+        Row: {
+          attempt_no: number
+          created_at: string
+          destination_hash: string
+          financial_asset_id: number
+          id: number
+          payout_intent_id: number
+          production_enabled: boolean
+          provider_reference: string | null
+          rail_key: string
+          request_hash: string
+          status: string
+          withdrawal_request_id: string
+        }
+        Insert: {
+          attempt_no: number
+          created_at?: string
+          destination_hash: string
+          financial_asset_id: number
+          id?: never
+          payout_intent_id: number
+          production_enabled?: boolean
+          provider_reference?: string | null
+          rail_key: string
+          request_hash: string
+          status?: string
+          withdrawal_request_id: string
+        }
+        Update: {
+          attempt_no?: number
+          created_at?: string
+          destination_hash?: string
+          financial_asset_id?: number
+          id?: never
+          payout_intent_id?: number
+          production_enabled?: boolean
+          provider_reference?: string | null
+          rail_key?: string
+          request_hash?: string
+          status?: string
+          withdrawal_request_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "payout_execution_attempts_financial_asset_id_fkey"
+            columns: ["financial_asset_id"]
+            isOneToOne: false
+            referencedRelation: "financial_assets"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "payout_execution_attempts_payout_intent_id_fkey"
+            columns: ["payout_intent_id"]
+            isOneToOne: false
+            referencedRelation: "payout_intents"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "payout_execution_attempts_withdrawal_request_id_fkey"
+            columns: ["withdrawal_request_id"]
+            isOneToOne: false
+            referencedRelation: "user_withdrawal_requests"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       payout_intents: {
         Row: {
           amount_usd: number
           created_at: string
           created_by_user_id: string | null
           currency_code: string
+          fee_amount_usd: number | null
+          financial_asset_id: number | null
           id: number
           idempotency_key: string
           monthly_cycle_id: number
+          native_atomic_amount: number | null
           payout_route_id: number | null
           rail: Database["public"]["Enums"]["payout_rail"] | null
           source_result_id: number | null
@@ -5563,16 +5633,21 @@ export type Database = {
           status_reason: string | null
           updated_at: string
           updated_by_user_id: string | null
+          user_fee_bps: number | null
           user_id: string
+          withdrawal_request_id: string | null
         }
         Insert: {
           amount_usd: number
           created_at?: string
           created_by_user_id?: string | null
           currency_code?: string
+          fee_amount_usd?: number | null
+          financial_asset_id?: number | null
           id?: number
           idempotency_key: string
           monthly_cycle_id: number
+          native_atomic_amount?: number | null
           payout_route_id?: number | null
           rail?: Database["public"]["Enums"]["payout_rail"] | null
           source_result_id?: number | null
@@ -5580,16 +5655,21 @@ export type Database = {
           status_reason?: string | null
           updated_at?: string
           updated_by_user_id?: string | null
+          user_fee_bps?: number | null
           user_id: string
+          withdrawal_request_id?: string | null
         }
         Update: {
           amount_usd?: number
           created_at?: string
           created_by_user_id?: string | null
           currency_code?: string
+          fee_amount_usd?: number | null
+          financial_asset_id?: number | null
           id?: number
           idempotency_key?: string
           monthly_cycle_id?: number
+          native_atomic_amount?: number | null
           payout_route_id?: number | null
           rail?: Database["public"]["Enums"]["payout_rail"] | null
           source_result_id?: number | null
@@ -5597,7 +5677,9 @@ export type Database = {
           status_reason?: string | null
           updated_at?: string
           updated_by_user_id?: string | null
+          user_fee_bps?: number | null
           user_id?: string
+          withdrawal_request_id?: string | null
         }
         Relationships: [
           {
@@ -5606,6 +5688,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "users"
             referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "payout_intents_financial_asset_id_fkey"
+            columns: ["financial_asset_id"]
+            isOneToOne: false
+            referencedRelation: "financial_assets"
+            referencedColumns: ["id"]
           },
           {
             foreignKeyName: "payout_intents_monthly_cycle_id_fkey"
@@ -5641,6 +5730,221 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "users"
             referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "payout_intents_withdrawal_request_id_fkey"
+            columns: ["withdrawal_request_id"]
+            isOneToOne: false
+            referencedRelation: "user_withdrawal_requests"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      payout_inventory_lots: {
+        Row: {
+          canonical_minor_total: number
+          created_at: string
+          custody_account_id: number
+          deterministic_sequence: number
+          evidence_hash: string
+          expires_after_cycle_id: number | null
+          financial_asset_id: number
+          fx_snapshot_id: number
+          id: number
+          legacy_inventory_key: string | null
+          monthly_cycle_id: number
+          native_atomic_total: number
+          obligation_id: number
+          production_enabled: boolean
+          project_id: number
+          rail_key: string
+          source_fill_id: number | null
+          status: string
+          user_id: string
+        }
+        Insert: {
+          canonical_minor_total: number
+          created_at?: string
+          custody_account_id: number
+          deterministic_sequence: number
+          evidence_hash: string
+          expires_after_cycle_id?: number | null
+          financial_asset_id: number
+          fx_snapshot_id: number
+          id?: never
+          legacy_inventory_key?: string | null
+          monthly_cycle_id: number
+          native_atomic_total: number
+          obligation_id: number
+          production_enabled?: boolean
+          project_id: number
+          rail_key: string
+          source_fill_id?: number | null
+          status?: string
+          user_id: string
+        }
+        Update: {
+          canonical_minor_total?: number
+          created_at?: string
+          custody_account_id?: number
+          deterministic_sequence?: number
+          evidence_hash?: string
+          expires_after_cycle_id?: number | null
+          financial_asset_id?: number
+          fx_snapshot_id?: number
+          id?: never
+          legacy_inventory_key?: string | null
+          monthly_cycle_id?: number
+          native_atomic_total?: number
+          obligation_id?: number
+          production_enabled?: boolean
+          project_id?: number
+          rail_key?: string
+          source_fill_id?: number | null
+          status?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "payout_inventory_lots_custody_account_id_fkey"
+            columns: ["custody_account_id"]
+            isOneToOne: false
+            referencedRelation: "financial_custody_accounts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "payout_inventory_lots_expires_after_cycle_id_fkey"
+            columns: ["expires_after_cycle_id"]
+            isOneToOne: false
+            referencedRelation: "monthly_cycles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "payout_inventory_lots_financial_asset_id_fkey"
+            columns: ["financial_asset_id"]
+            isOneToOne: false
+            referencedRelation: "financial_assets"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "payout_inventory_lots_fx_snapshot_id_fkey"
+            columns: ["fx_snapshot_id"]
+            isOneToOne: false
+            referencedRelation: "epoch_fx_snapshots"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "payout_inventory_lots_monthly_cycle_id_fkey"
+            columns: ["monthly_cycle_id"]
+            isOneToOne: false
+            referencedRelation: "monthly_cycles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "payout_inventory_lots_obligation_id_fkey"
+            columns: ["obligation_id"]
+            isOneToOne: false
+            referencedRelation: "user_withdrawal_obligation_balances"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "payout_inventory_lots_obligation_id_fkey"
+            columns: ["obligation_id"]
+            isOneToOne: false
+            referencedRelation: "user_withdrawal_obligations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "payout_inventory_lots_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "payout_inventory_lots_source_fill_id_fkey"
+            columns: ["source_fill_id"]
+            isOneToOne: true
+            referencedRelation: "epoch_provisional_award_source_fills"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "payout_inventory_lots_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "payout_inventory_pair"
+            columns: ["financial_asset_id", "custody_account_id"]
+            isOneToOne: false
+            referencedRelation: "financial_custody_accounts"
+            referencedColumns: ["asset_id", "id"]
+          },
+        ]
+      }
+      payout_inventory_reservations: {
+        Row: {
+          expires_at: string
+          id: number
+          inventory_lot_id: number
+          native_atomic_amount: number
+          originating_fx_snapshot_id: number
+          released_at: string | null
+          reserved_at: string
+          reserved_minor: number
+          sequence_no: number
+          status: string
+          withdrawal_request_id: string
+        }
+        Insert: {
+          expires_at: string
+          id?: never
+          inventory_lot_id: number
+          native_atomic_amount: number
+          originating_fx_snapshot_id: number
+          released_at?: string | null
+          reserved_at?: string
+          reserved_minor: number
+          sequence_no: number
+          status?: string
+          withdrawal_request_id: string
+        }
+        Update: {
+          expires_at?: string
+          id?: never
+          inventory_lot_id?: number
+          native_atomic_amount?: number
+          originating_fx_snapshot_id?: number
+          released_at?: string | null
+          reserved_at?: string
+          reserved_minor?: number
+          sequence_no?: number
+          status?: string
+          withdrawal_request_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "payout_inventory_reservations_inventory_lot_id_fkey"
+            columns: ["inventory_lot_id"]
+            isOneToOne: false
+            referencedRelation: "payout_inventory_lots"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "payout_inventory_reservations_originating_fx_snapshot_id_fkey"
+            columns: ["originating_fx_snapshot_id"]
+            isOneToOne: false
+            referencedRelation: "epoch_fx_snapshots"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "payout_inventory_reservations_withdrawal_request_id_fkey"
+            columns: ["withdrawal_request_id"]
+            isOneToOne: false
+            referencedRelation: "user_withdrawal_requests"
+            referencedColumns: ["id"]
           },
         ]
       }
@@ -8114,6 +8418,142 @@ export type Database = {
           },
         ]
       }
+      user_withdrawal_obligation_claims: {
+        Row: {
+          claimed_minor: number
+          created_at: string
+          id: number
+          obligation_id: number
+          sequence_no: number
+          status: string
+          updated_at: string
+          withdrawal_request_id: string
+        }
+        Insert: {
+          claimed_minor: number
+          created_at?: string
+          id?: never
+          obligation_id: number
+          sequence_no: number
+          status: string
+          updated_at?: string
+          withdrawal_request_id: string
+        }
+        Update: {
+          claimed_minor?: number
+          created_at?: string
+          id?: never
+          obligation_id?: number
+          sequence_no?: number
+          status?: string
+          updated_at?: string
+          withdrawal_request_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_withdrawal_obligation_claims_obligation_id_fkey"
+            columns: ["obligation_id"]
+            isOneToOne: false
+            referencedRelation: "user_withdrawal_obligation_balances"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "user_withdrawal_obligation_claims_obligation_id_fkey"
+            columns: ["obligation_id"]
+            isOneToOne: false
+            referencedRelation: "user_withdrawal_obligations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "user_withdrawal_obligation_claims_withdrawal_request_id_fkey"
+            columns: ["withdrawal_request_id"]
+            isOneToOne: false
+            referencedRelation: "user_withdrawal_requests"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      user_withdrawal_obligations: {
+        Row: {
+          available_at: string
+          created_at: string
+          evidence_hash: string
+          id: number
+          monthly_cycle_id: number
+          production_enabled: boolean
+          source_award_control_id: number | null
+          source_bookkeeping_credit_id: number | null
+          source_expires_after_cycle_id: number | null
+          state: string
+          total_minor: number
+          user_id: string
+        }
+        Insert: {
+          available_at?: string
+          created_at?: string
+          evidence_hash: string
+          id?: never
+          monthly_cycle_id: number
+          production_enabled?: boolean
+          source_award_control_id?: number | null
+          source_bookkeeping_credit_id?: number | null
+          source_expires_after_cycle_id?: number | null
+          state?: string
+          total_minor: number
+          user_id: string
+        }
+        Update: {
+          available_at?: string
+          created_at?: string
+          evidence_hash?: string
+          id?: never
+          monthly_cycle_id?: number
+          production_enabled?: boolean
+          source_award_control_id?: number | null
+          source_bookkeeping_credit_id?: number | null
+          source_expires_after_cycle_id?: number | null
+          state?: string
+          total_minor?: number
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_withdrawal_obligations_monthly_cycle_id_fkey"
+            columns: ["monthly_cycle_id"]
+            isOneToOne: false
+            referencedRelation: "monthly_cycles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "user_withdrawal_obligations_source_award_control_id_fkey"
+            columns: ["source_award_control_id"]
+            isOneToOne: true
+            referencedRelation: "epoch_provisional_award_controls"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "user_withdrawal_obligations_source_bookkeeping_credit_id_fkey"
+            columns: ["source_bookkeeping_credit_id"]
+            isOneToOne: true
+            referencedRelation: "monthly_cycle_bookkeeping_credits"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "user_withdrawal_obligations_source_expires_after_cycle_id_fkey"
+            columns: ["source_expires_after_cycle_id"]
+            isOneToOne: false
+            referencedRelation: "monthly_cycles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "user_withdrawal_obligations_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["user_id"]
+          },
+        ]
+      }
       user_withdrawal_request_credits: {
         Row: {
           bookkeeping_credit_id: number
@@ -8152,47 +8592,100 @@ export type Database = {
       }
       user_withdrawal_requests: {
         Row: {
+          closed_at: string | null
           created_at: string
           currency_code: string
+          destination_hash: string | null
+          fee_minor: number | null
+          financial_asset_id: number | null
           id: string
           idempotency_key: string
+          net_minor: number | null
           payout_route_id: number
+          production_enabled: boolean
+          queue_for_cycle_id: number | null
+          queue_for_cycle_key: string | null
+          rail_key: string | null
+          request_hash: string | null
           requested_at: string
+          requested_minor: number | null
           requested_usd_amount: number
           status: string
+          status_reason: string | null
           updated_at: string
+          user_fee_bps: number | null
           user_id: string
         }
         Insert: {
+          closed_at?: string | null
           created_at?: string
           currency_code?: string
+          destination_hash?: string | null
+          fee_minor?: number | null
+          financial_asset_id?: number | null
           id?: string
           idempotency_key: string
+          net_minor?: number | null
           payout_route_id: number
+          production_enabled?: boolean
+          queue_for_cycle_id?: number | null
+          queue_for_cycle_key?: string | null
+          rail_key?: string | null
+          request_hash?: string | null
           requested_at?: string
+          requested_minor?: number | null
           requested_usd_amount: number
           status?: string
+          status_reason?: string | null
           updated_at?: string
+          user_fee_bps?: number | null
           user_id: string
         }
         Update: {
+          closed_at?: string | null
           created_at?: string
           currency_code?: string
+          destination_hash?: string | null
+          fee_minor?: number | null
+          financial_asset_id?: number | null
           id?: string
           idempotency_key?: string
+          net_minor?: number | null
           payout_route_id?: number
+          production_enabled?: boolean
+          queue_for_cycle_id?: number | null
+          queue_for_cycle_key?: string | null
+          rail_key?: string | null
+          request_hash?: string | null
           requested_at?: string
+          requested_minor?: number | null
           requested_usd_amount?: number
           status?: string
+          status_reason?: string | null
           updated_at?: string
+          user_fee_bps?: number | null
           user_id?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "user_withdrawal_requests_financial_asset_id_fkey"
+            columns: ["financial_asset_id"]
+            isOneToOne: false
+            referencedRelation: "financial_assets"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "user_withdrawal_requests_payout_route_id_fkey"
             columns: ["payout_route_id"]
             isOneToOne: false
             referencedRelation: "user_payout_routes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "user_withdrawal_requests_queue_for_cycle_id_fkey"
+            columns: ["queue_for_cycle_id"]
+            isOneToOne: false
+            referencedRelation: "monthly_cycles"
             referencedColumns: ["id"]
           },
           {
@@ -8487,6 +8980,137 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "wallet_accounts"
             referencedColumns: ["id"]
+          },
+        ]
+      }
+      withdrawal_compliance_holds: {
+        Row: {
+          actor_user_id: string
+          evidence_hash: string
+          hold_sequence: number
+          id: number
+          placed_at: string
+          reason_code: string
+          resolution: string | null
+          resolved_at: string | null
+          status: string
+          withdrawal_request_id: string
+        }
+        Insert: {
+          actor_user_id: string
+          evidence_hash: string
+          hold_sequence: number
+          id?: never
+          placed_at?: string
+          reason_code: string
+          resolution?: string | null
+          resolved_at?: string | null
+          status?: string
+          withdrawal_request_id: string
+        }
+        Update: {
+          actor_user_id?: string
+          evidence_hash?: string
+          hold_sequence?: number
+          id?: never
+          placed_at?: string
+          reason_code?: string
+          resolution?: string | null
+          resolved_at?: string | null
+          status?: string
+          withdrawal_request_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "withdrawal_compliance_holds_actor_user_id_fkey"
+            columns: ["actor_user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "withdrawal_compliance_holds_withdrawal_request_id_fkey"
+            columns: ["withdrawal_request_id"]
+            isOneToOne: false
+            referencedRelation: "user_withdrawal_requests"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      withdrawal_lifecycle_events: {
+        Row: {
+          actor_user_id: string | null
+          created_at: string
+          event_type: string
+          evidence: Json
+          from_status: string | null
+          id: number
+          to_status: string
+          withdrawal_request_id: string
+        }
+        Insert: {
+          actor_user_id?: string | null
+          created_at?: string
+          event_type: string
+          evidence?: Json
+          from_status?: string | null
+          id?: never
+          to_status: string
+          withdrawal_request_id: string
+        }
+        Update: {
+          actor_user_id?: string | null
+          created_at?: string
+          event_type?: string
+          evidence?: Json
+          from_status?: string | null
+          id?: never
+          to_status?: string
+          withdrawal_request_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "withdrawal_lifecycle_events_actor_user_id_fkey"
+            columns: ["actor_user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "withdrawal_lifecycle_events_withdrawal_request_id_fkey"
+            columns: ["withdrawal_request_id"]
+            isOneToOne: false
+            referencedRelation: "user_withdrawal_requests"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      withdrawal_runtime_controls: {
+        Row: {
+          deployment_environment: string
+          production_value_flow_enabled: boolean
+          reservation_enabled: boolean
+          updated_at: string
+        }
+        Insert: {
+          deployment_environment: string
+          production_value_flow_enabled?: boolean
+          reservation_enabled?: boolean
+          updated_at?: string
+        }
+        Update: {
+          deployment_environment?: string
+          production_value_flow_enabled?: boolean
+          reservation_enabled?: boolean
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "withdrawal_runtime_controls_deployment_environment_fkey"
+            columns: ["deployment_environment"]
+            isOneToOne: true
+            referencedRelation: "financial_runtime_controls"
+            referencedColumns: ["deployment_environment"]
           },
         ]
       }
@@ -9877,6 +10501,65 @@ export type Database = {
         }
         Relationships: []
       }
+      user_withdrawal_asset_inventory: {
+        Row: {
+          asset_key: string | null
+          available_minor: number | null
+          lot_count: number | null
+          oldest_cycle_id: number | null
+          project_id: number | null
+          rail_key: string | null
+          symbol: string | null
+          user_id: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "payout_inventory_lots_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "payout_inventory_lots_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["user_id"]
+          },
+        ]
+      }
+      user_withdrawal_obligation_balances: {
+        Row: {
+          available_minor: number | null
+          closed_minor: number | null
+          held_minor: number | null
+          id: number | null
+          monthly_cycle_id: number | null
+          paid_minor: number | null
+          queued_minor: number | null
+          reserved_minor: number | null
+          state: string | null
+          total_minor: number | null
+          user_id: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_withdrawal_obligations_monthly_cycle_id_fkey"
+            columns: ["monthly_cycle_id"]
+            isOneToOne: false
+            referencedRelation: "monthly_cycles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "user_withdrawal_obligations_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["user_id"]
+          },
+        ]
+      }
     }
     Functions: {
       accept_project_invitation: {
@@ -9992,6 +10675,10 @@ export type Database = {
           status: string
         }[]
       }
+      create_user_withdrawal_request_v2: {
+        Args: { p_actor_user_id: string; p_command: Json }
+        Returns: Json
+      }
       decide_epoch_project_package: {
         Args: { p_command: Json }
         Returns: number
@@ -10050,6 +10737,10 @@ export type Database = {
       epoch_shadow_next_stage: { Args: { p_stage: string }; Returns: string }
       expire_project_invitations_review: {
         Args: { p_invitee_email?: string; p_project_id: number }
+        Returns: number
+      }
+      expire_withdrawal_inventory_reservations: {
+        Args: { p_environment: string; p_now: string }
         Returns: number
       }
       finalize_onchain_payment_reconciliation: {
@@ -10248,6 +10939,26 @@ export type Database = {
         }
       }
       lock_funded_epoch_allocation: { Args: { p_command: Json }; Returns: Json }
+      manage_user_withdrawal_request: {
+        Args: {
+          p_action: string
+          p_actor_user_id: string
+          p_environment: string
+          p_reason: string
+          p_request_id: string
+        }
+        Returns: Json
+      }
+      place_withdrawal_compliance_hold: {
+        Args: {
+          p_actor_user_id: string
+          p_environment: string
+          p_evidence_hash: string
+          p_reason_code: string
+          p_request_id: string
+        }
+        Returns: Json
+      }
       post_epoch_fx_snapshot: { Args: { p_command: Json }; Returns: number }
       post_neutral_ledger_transaction: {
         Args: { p_command: Json }
@@ -10284,6 +10995,14 @@ export type Database = {
           subject: string
           text_body: string
         }[]
+      }
+      prepare_epoch_withdrawal_obligations: {
+        Args: {
+          p_actor_user_id: string
+          p_close_package_id: number
+          p_environment: string
+        }
+        Returns: Json
       }
       publish_project_onboarding_draft_atomic: {
         Args: {
@@ -10420,6 +11139,10 @@ export type Database = {
           isSetofReturn: true
         }
       }
+      reserve_withdrawal_inventory: {
+        Args: { p_now?: string; p_request_id: string }
+        Returns: boolean
+      }
       reverse_neutral_ledger_transaction: {
         Args: { p_command: Json }
         Returns: number
@@ -10462,6 +11185,10 @@ export type Database = {
       validate_epoch_project_package: {
         Args: { p_command: Json }
         Returns: number
+      }
+      withdrawal_runtime_enabled: {
+        Args: { p_environment: string }
+        Returns: boolean
       }
     }
     Enums: {

@@ -1648,3 +1648,62 @@ ephemeral browser component state.
 
 - Commit this narrow resumability fix, post evidence, and return exact HEAD for final independent
   #137 validation before moving the issue or beginning #139.
+
+### session v34: unify withdrawal obligations and inventory reservations (#139)
+
+- Timestamp: 2026-08-10T00:27:30-04:00
+- Agent: Codex
+- Branch: codex/134-funded-redistribution
+- Head: efa192b
+
+#### Objective
+
+Replace all-or-nothing legacy withdrawal requests and direct result-derived payout intents with one
+partial, oldest-first, inventory-backed obligation path that queues safely when selected inventory
+is unavailable and remains production fail-closed.
+
+#### Actions Taken
+
+- Added the forward-only withdrawal control-plane migration: obligation and partial-claim balances,
+  project-linked rail/asset inventory, exact native reservations at originating epoch FX, immutable
+  lifecycle evidence, compliance holds, execution-attempt scaffolding, and self-scoped read models.
+- Extended withdrawal requests with one route/destination hash, rail, asset, gross/fee/net minor
+  snapshots, queue target, and reserved/queued/held/paid/cancelled/closed states. Stripe review
+  requests enforce $10, Base review requests $5, and user fees accept exact 0%-100% snapshots.
+- Added atomic oldest-first claims and deterministic inventory locking. Fully backed requests create
+  exactly one draft withdrawal-backed payout intent; depleted selected-asset inventory creates no
+  intent and queues for the next epoch. Reservation expiry keeps the original claim queued.
+- Retired new direct published-result payout intent creation. Added typed user and internal-operator
+  Edge contracts for create/cancel/retry, close-package preparation, holds, and server-timed expiry;
+  client actor, environment, and time inputs cannot cross those boundaries.
+- Reworked the earnings workspace and withdrawal panel for partial amount entry, project-linked
+  inventory visibility, fee snapshots, explicit statuses, cancellation, and no-payout copy. Updated
+  the canonical treasury architecture and generated Supabase types.
+
+#### Validation Notes
+
+- Passed repeated fresh local Supabase migration/seed replays and the executable withdrawal SQL:
+  production/auth/direct-DML denial, oldest-first partial claims, exact Stripe/Base native amounts,
+  $10/$5 thresholds, 0%/100% fees, idempotency conflict, holds, cancellation cleanup, expiry queue,
+  depleted-inventory queue without intent, direct-intent retirement, cross-user RLS, and exact
+  obligation-state conservation.
+- Passed the independent two-session reservation race: one $300 request won, one failed safely,
+  total active claims remained 35,000 of 40,000 minor units, and no credit/inventory was doubled.
+- Passed strict Deno for both Edge functions, focused Node 22 Vitest (6 files / 22 tests), typecheck,
+  lint, and `git diff --check`. Full Node 22 `CI=1 pnpm check` passed 150 files / 677 tests plus the
+  165-page production build. Schema lint has no new warning (one pre-existing invitation parameter).
+- Passed authenticated local Playwright 1/1 with zero console errors. Exact 1440x900 and 390x844
+  captures under `output/playwright/issue-139/` were visually inspected and show partial input,
+  route, project-linked inventory, 0%-100% fee snapshot, and reserved/queued/closed states.
+
+#### Reflections
+
+- Availability and custody inventory are independent constraints: the UI deliberately shows both,
+  and the database may queue an otherwise timely request without manufacturing an unbacked intent.
+- Exact obligation state belongs at the minor-unit claim layer. A partially claimed source can retain
+  an available remainder while its claimed portion is reserved, queued, held, paid, or closed.
+
+#### Suggested Next Steps
+
+- Commit #139 separately, post implementation evidence, stop local services, and send exact HEAD to
+  the independent validator before moving #139 to In Review or beginning its dependent task.

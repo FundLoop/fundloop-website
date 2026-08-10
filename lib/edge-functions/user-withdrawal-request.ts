@@ -1,12 +1,12 @@
 import { invokeBrowserEdgeCommand } from "./invoke"
 import {
-  normalizeUserWithdrawalRequestCreateResult,
+  normalizeUserWithdrawalRequestResult,
   USER_WITHDRAWAL_REQUEST_CREATE_FUNCTION,
-  type UserWithdrawalRequestCreateInput,
+  type UserWithdrawalRequestInput,
 } from "./user-withdrawal-request-contract"
 
-export async function invokeUserWithdrawalRequestCreate(input: UserWithdrawalRequestCreateInput) {
-  return normalizeUserWithdrawalRequestCreateResult(
-    await invokeBrowserEdgeCommand<UserWithdrawalRequestCreateInput, unknown>(USER_WITHDRAWAL_REQUEST_CREATE_FUNCTION, input),
+export async function invokeUserWithdrawalRequestCreate(input: UserWithdrawalRequestInput) {
+  return normalizeUserWithdrawalRequestResult(
+    await invokeBrowserEdgeCommand<UserWithdrawalRequestInput, unknown>(USER_WITHDRAWAL_REQUEST_CREATE_FUNCTION, input),
   )
 }

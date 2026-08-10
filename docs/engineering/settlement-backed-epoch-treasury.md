@@ -566,19 +566,31 @@ short transaction.
 
 ### Withdrawal and payout
 
-- Extend `user_withdrawal_requests` beyond `requested` into reviewed, reserved,
-  queued, rejected, cancelled, and fulfilled states.
-- Link exactly one live `payout_intent` path to a withdrawal request; retire direct
-  intent creation from published results after migration.
+- The non-production review control plane now extends `user_withdrawal_requests`
+  through requested, reserved, queued, held, paid, cancelled, and closed states.
+  `user_withdrawal_obligations` plus partial claim rows make each minor unit either
+  available or assigned to exactly one active terminal path. Claims consume the
+  oldest available obligation first and survive inventory expiry when requeued.
+- Each request snapshots exactly one active route/destination hash, rail, eligible
+  project-linked asset, gross minor amount, 0%-100% user fee, and net amount. The
+  review minimum is $10 for Stripe bank transfer and $5 for Base.
+- Link exactly one live `payout_intent` path to a fully inventory-backed withdrawal
+  request. The database rejects new direct published-result intents; legacy rows
+  remain evidence for explicit migration rather than an executable second path.
 - `payout_inventory_reservations`: exact atomic units reserved from one or more
-  eligible epoch/rail/asset lots, deterministic sequence, expiry/cancellation, and
-  request link.
+  eligible epoch/rail/asset lots at their originating locked FX, deterministic
+  cycle/source sequence, expiry/cancellation, and request link. Insufficient
+  selected-asset inventory creates a next-epoch queue without a payout intent.
 - `payout_execution_attempts`: adapter, batch, signer/provider request, idempotency,
   submitted reference, status, timestamps, and sanitized failure code.
 - Extend payout reconciliation with observed native amount, asset, custody account,
   finality/provider status, fee, mismatch classification, and journal link.
 - `compliance_holds`: conditional award, Cubid state, reason, notification,
   resolution, and linked release/reversal without exposing raw identity evidence.
+- The `withdrawal-operator` and `user-withdrawal-request-create` Edge contracts bind
+  authenticated actor and deployment environment server-side. Production runtime,
+  provider submission, payables, and value flow remain disabled; current intents
+  are review-only drafts and every command returns `noPayoutExecuted=true`.
 
 ### Numeric and key rules
 
