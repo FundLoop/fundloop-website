@@ -3,6 +3,7 @@ import path from "node:path"
 import { describe, expect, it } from "vitest"
 
 const migration = fs.readFileSync(path.join(process.cwd(), "supabase/migrations/20260810160000_financial_cutover_control_plane.sql"), "utf8")
+const activationFix = fs.readFileSync(path.join(process.cwd(), "supabase/migrations/20260810161000_financial_cutover_activation_revalidation.sql"), "utf8")
 
 describe("financial cutover migration", () => {
   it("classifies every required legacy surface and records explicit differences", () => {
@@ -31,5 +32,16 @@ describe("financial cutover migration", () => {
     expect(migration).toContain("financial_cutover_instance_state")
     expect(migration).toContain("legacy_financial_writes_retired")
     expect(migration).toContain("canonicalRecordsRetained")
+  })
+
+  it("revalidates canonical dependencies under lock and preserves one active singleton", () => {
+    for (const table of ["epoch_project_packages", "epoch_project_package_payments", "epoch_close_packages",
+      "user_withdrawal_obligations", "user_withdrawal_obligation_claims"]) {
+      expect(activationFix).toContain(`public.${table}`)
+    }
+    expect(activationFix).toContain("financial_cutover_canonical_evidence_drift")
+    expect(activationFix).toContain("WHERE status='active' AND id<>v_run.id")
+    expect(activationFix).toContain("singletonActiveRun")
+    expect(activationFix).toContain("FROM PUBLIC,anon,authenticated,service_role")
   })
 })

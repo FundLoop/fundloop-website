@@ -12267,6 +12267,10 @@ export type Database = {
         Args: { p_actor_user_id: string; p_command: Json }
         Returns: Json
       }
+      activate_financial_cutover_unchecked: {
+        Args: { p_actor_user_id: string; p_command: Json }
+        Returns: Json
+      }
       apply_external_funding: {
         Args: {
           p_deployment_environment: string
@@ -12280,6 +12284,10 @@ export type Database = {
       approve_epoch_allocation_close: {
         Args: { p_command: Json }
         Returns: Json
+      }
+      assert_financial_cutover_activation_current: {
+        Args: { p_run_id: number }
+        Returns: undefined
       }
       authorize_base_safe_payout: {
         Args: { p_actor_user_id: string; p_command: Json }

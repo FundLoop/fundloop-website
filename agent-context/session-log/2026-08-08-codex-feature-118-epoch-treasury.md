@@ -2142,3 +2142,50 @@ production value flow.
 
 - Commit #143 and request independent validation. Keep production activation disabled. After #143
   passes, implement #144 operational monitoring, alerts, and recovery evidence on this branch.
+
+### session v43: close cutover activation races (#143)
+
+- Timestamp: 2026-08-10T10:45:40-04:00
+- Agent: Codex
+- Branch: codex/118-operational-readiness
+- Head: f071047
+
+#### Objective
+
+Resolve the independent validator's canonical-evidence race, monthly-cycle write-boundary gap, and
+cross-environment singleton inconsistency before promoting the financial cutover task.
+
+#### Actions Taken
+
+- Added a forward migration that locks every legacy and canonical classification dependency before
+  activation, then recomputes package, close, obligation, claim, request, and payout evidence. Any
+  gained, lost, changed, or amount-mismatched verification now rejects the prepared manifest.
+- Wrapped the original activation RPC behind the new revalidation boundary and removed all direct
+  execution privileges from the unchecked implementation. Cross-environment activation now
+  supersedes every other active run and appends actor/evidence-bound supersession events so the
+  singleton and run statuses cannot disagree.
+- Extended the legacy write boundary to `monthly_cycles`, added executable post-prepare package
+  mutation and local-to-dev singleton probes, and expanded static migration coverage.
+
+#### Validation Notes
+
+- Fresh local migration replay passed through `20260810161000`. Executable cutover SQL passed the
+  validator's post-prepare package-link mutation denial, legacy cycle-write denial, and exactly-one
+  active cross-environment transition, alongside all prior conservation/RLS/replay/rollback checks.
+- The representative pre-feature migration harness passed again with both cutover migrations and
+  restored the current schema. Focused Vitest passed 2 files / 7 tests; strict Deno, typecheck, lint,
+  type generation, and diff-check passed.
+- Full Node 22 `CI=1 pnpm check` passed lint, 160 files / 709 tests, typecheck, and the 165-page
+  production build. Production and provider value flow remain disabled.
+
+#### Reflections
+
+- Source-row immutability is insufficient when classification depends on external canonical tables;
+  the decision graph must be locked and re-evaluated as one activation transaction.
+- A singleton pointer is not enough if per-run status can contradict it. Superseding globally and
+  recording immutable events makes the operator and audit views agree.
+
+#### Suggested Next Steps
+
+- Commit this forward fix, post evidence, and request exact-commit revalidation before starting
+  #144. Keep local Supabase only long enough for that validator's executable probes.

@@ -16,9 +16,14 @@ DECLARE
   v_activated jsonb;
   v_replayed jsonb;
   v_rolled_back jsonb;
+  v_dev_prepared jsonb;
+  v_dev_activated jsonb;
   v_manifest text;
+  v_dev_manifest text;
   v_obligation bigint;
   v_ledger bigint;
+  v_payment bigint;
+  v_package bigint;
   v_failed boolean;
 BEGIN
   SELECT id INTO v_cycle FROM public.monthly_cycles WHERE cycle_key='2026-05';
@@ -76,6 +81,24 @@ BEGIN
   IF NOT v_failed THEN RAISE EXCEPTION 'changed source activated against stale manifest'; END IF;
   UPDATE public.monthly_cycle_bookkeeping_credits SET usd_equivalent_amount=12.34 WHERE id=v_credit;
 
+  SELECT min(id) INTO v_payment FROM public.payments;
+  v_failed:=false;
+  BEGIN
+    INSERT INTO public.epoch_project_packages(project_id,intended_cycle_id,canonical_cycle_id,version,status,
+      list_status,funding_status,compliance_status,cubid_status,cutoff_at,frozen_at,approved_at,
+      approved_by_user_id,payment_count,manifest,manifest_hash,created_by_user_id)
+    SELECT payment.project_id,v_cycle,v_cycle,999,'approved',
+      'valid','settled','passed','eligible',clock_timestamp()-interval '2 days',clock_timestamp()-interval '1 day',
+      clock_timestamp(),v_actor,1,jsonb_build_object('fixture','post-prepare-package'),repeat('4',64),v_actor
+    FROM public.payments payment WHERE payment.id=v_payment RETURNING id INTO v_package;
+    INSERT INTO public.epoch_project_package_payments(package_id,payment_id,source_position)
+    VALUES(v_package,v_payment,0);
+    PERFORM public.activate_financial_cutover(v_actor,jsonb_build_object(
+      'contractVersion','financial_cutover_activate.v1','deploymentEnvironment','local','runId',(v_prepared->>'runId')::bigint,
+      'manifestHash',v_manifest,'evidenceHash',repeat('1',64)));
+  EXCEPTION WHEN OTHERS THEN v_failed:=SQLERRM LIKE '%financial_cutover_canonical_evidence_drift%'; END;
+  IF NOT v_failed THEN RAISE EXCEPTION 'changed canonical package evidence activated against stale manifest'; END IF;
+
   v_activated:=public.activate_financial_cutover(v_actor,jsonb_build_object(
     'contractVersion','financial_cutover_activate.v1','deploymentEnvironment','local','runId',(v_prepared->>'runId')::bigint,
     'manifestHash',v_manifest,'evidenceHash',repeat('1',64)));
@@ -110,6 +133,10 @@ BEGIN
   BEGIN UPDATE public.payments SET notes='forbidden after cutover' WHERE id=(SELECT min(id) FROM public.payments);
   EXCEPTION WHEN OTHERS THEN v_failed:=SQLERRM LIKE '%legacy_financial_writes_retired%'; END;
   IF NOT v_failed THEN RAISE EXCEPTION 'legacy payment write remained enabled'; END IF;
+  v_failed:=false;
+  BEGIN UPDATE public.monthly_cycles SET status=status WHERE id=v_cycle;
+  EXCEPTION WHEN OTHERS THEN v_failed:=SQLERRM LIKE '%legacy_financial_writes_retired%'; END;
+  IF NOT v_failed THEN RAISE EXCEPTION 'legacy monthly-cycle write remained enabled'; END IF;
 
   v_failed:=false;
   BEGIN PERFORM public.prepare_financial_cutover(v_actor,jsonb_build_object(
@@ -118,9 +145,23 @@ BEGIN
   EXCEPTION WHEN OTHERS THEN v_failed:=SQLERRM LIKE '%financial_cutover_contract_invalid%'; END;
   IF NOT v_failed THEN RAISE EXCEPTION 'production cutover was enabled'; END IF;
 
+  v_dev_prepared:=public.prepare_financial_cutover(v_actor,jsonb_build_object(
+    'contractVersion','financial_cutover_prepare.v1','deploymentEnvironment','dev',
+    'idempotencyKey','cutover-dev-singleton-fixture','evidenceHash',repeat('5',64),'approvedOpeningBalances','[]'::jsonb));
+  IF (v_dev_prepared->>'blockerCount')::integer<>0 THEN RAISE EXCEPTION 'dev singleton cutover retained blockers: %',v_dev_prepared; END IF;
+  v_dev_manifest:=v_dev_prepared->>'manifestHash';
+  v_dev_activated:=public.activate_financial_cutover(v_actor,jsonb_build_object(
+    'contractVersion','financial_cutover_activate.v1','deploymentEnvironment','dev','runId',(v_dev_prepared->>'runId')::bigint,
+    'manifestHash',v_dev_manifest,'evidenceHash',repeat('6',64)));
+  IF v_dev_activated->>'status'<>'active'
+    OR (SELECT count(*) FROM public.financial_cutover_runs WHERE status='active')<>1
+    OR (SELECT status FROM public.financial_cutover_runs WHERE id=(v_prepared->>'runId')::bigint)<>'superseded'
+    OR (SELECT active_run_id FROM public.financial_cutover_instance_state WHERE singleton)<>(v_dev_prepared->>'runId')::bigint
+  THEN RAISE EXCEPTION 'cross-environment singleton activation left multiple active runs'; END IF;
+
   v_rolled_back:=public.rollback_financial_cutover(v_actor,jsonb_build_object(
-    'contractVersion','financial_cutover_rollback.v1','deploymentEnvironment','local','runId',(v_prepared->>'runId')::bigint,
-    'manifestHash',v_manifest,'evidenceHash',repeat('3',64)));
+    'contractVersion','financial_cutover_rollback.v1','deploymentEnvironment','dev','runId',(v_dev_prepared->>'runId')::bigint,
+    'manifestHash',v_dev_manifest,'evidenceHash',repeat('3',64)));
   IF v_rolled_back->>'status'<>'rolled_back' OR (v_rolled_back->>'canonicalRecordsRetained')::boolean IS NOT TRUE
   THEN RAISE EXCEPTION 'rollback result invalid: %',v_rolled_back; END IF;
   UPDATE public.monthly_cycle_bookkeeping_credits SET updated_at=updated_at WHERE id=v_credit;
