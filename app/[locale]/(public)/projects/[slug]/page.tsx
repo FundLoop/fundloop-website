@@ -161,11 +161,11 @@ export default async function ProjectPage({ params }: PageProps) {
           title="Approved project funding summary"
           description="Public reporting exposes project totals only. User identities, Cubid scores, individual awards, and cross-project membership remain private. No payout or transfer has occurred."
           cycleKey={epochClose.cycle_key ?? ""}
-          rootHash={epochClose.root_hash ?? ""}
+          rootHash={epochClose.root_hash ?? "Withheld below privacy threshold"}
           values={[
-            {label:"Funded minor",value:String(epochClose.funded_minor ?? 0)},
+            {label:"Funded minor",value:epochClose.funded_minor == null ? "Privacy threshold not met" : String(epochClose.funded_minor)},
             {label:"Published cohort",value:epochClose.published_cohort_count == null ? "Privacy threshold not met" : String(epochClose.published_cohort_count)},
-            {label:"Sources",value:String(epochClose.source_count ?? 0)},{label:"Stage",value:epochClose.status ?? "payout_readying"},
+            {label:"Sources",value:epochClose.source_count == null ? "Privacy threshold not met" : String(epochClose.source_count)},{label:"Stage",value:epochClose.status ?? "payout_readying"},
           ]}
         /></Reveal>
       </MarketingSection> : null}

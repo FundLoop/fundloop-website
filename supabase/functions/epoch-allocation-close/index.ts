@@ -39,6 +39,14 @@ async function handleRequest(request: Request) {
     return json(edgeCommandSuccess({ action: "read", scope: input.scope, rows: Array.isArray(result.data) ? result.data : [] }))
   }
   if (!internalAdmin) return json(edgeCommandFailure("forbidden", "Internal operator access is required."))
+  if (input.action === "confirm_root") {
+    const confirmed = await auth.adminClient.rpc("confirm_epoch_allocation_close_root", { p_command: {
+      contractVersion: "epoch_allocation_close_root.v1", deploymentEnvironment, actorUserId: auth.user.id,
+      closePackageId: input.closePackageId, rootHash: input.rootHash,
+    } })
+    if (confirmed.error) return json(edgeCommandFailure(errorCode(confirmed.error.message), confirmed.error.message))
+    return json(edgeCommandSuccess({ action: "confirm_root", ...(confirmed.data as Record<string, unknown>) }))
+  }
   const locked = await auth.adminClient.rpc("lock_funded_epoch_allocation", {
     p_command: { contractVersion: "epoch_funded_allocation_lock.v1", deploymentEnvironment, actorUserId: auth.user.id, cycleKey: input.cycleKey },
   })

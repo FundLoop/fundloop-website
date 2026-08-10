@@ -19,6 +19,8 @@ DECLARE
   v_initial_minor numeric(78,0);
   v_score_minor numeric(78,0);
   v_initial_exact numeric(38,18);
+  v_topup_exact numeric(38,18);
+  v_exact_residue numeric(38,18);
   v_cap_exact numeric(38,18);
   v_artifact jsonb;
   v_run bigint;
@@ -93,12 +95,15 @@ BEGIN
   v_initial_minor:=floor((v_funded_minor+1)/2);
   v_score_minor:=v_funded_minor-v_initial_minor;
   v_initial_exact:=v_exact/2;
+  v_topup_exact:=v_score_minor/100;
+  v_exact_residue:=v_exact-v_initial_exact-v_topup_exact;
   v_cap_exact:=v_initial_exact*3;
   v_artifact:=jsonb_build_object(
     'policy','settled_cubid_redistribution_v1','cycleKey','2026-08','manifestHash',v_manifest_hash,'minorUnitScale',2,
     'totals',jsonb_build_object('fundedExactUsd',v_exact::text,'fundedMinor',v_funded_minor::text,
       'retainedInitialMinor',v_initial_minor::text,'scorePoolMinor',v_score_minor::text,'overlapPoolMinor','0',
-      'topUpMinor',v_score_minor::text,'returnedResidueMinor','0','finalAllocationMinor',v_funded_minor::text,'subMinorExactUsd','0'),
+      'topUpMinor',v_score_minor::text,'returnedResidueMinor','0','finalAllocationMinor',v_funded_minor::text,
+      'subMinorExactUsd',(v_exact-v_funded_minor/100)::text),
     'users',jsonb_build_array(jsonb_build_object('userId',v_actor::text,'aggregateInitialExactUsd',v_initial_exact::text,
       'baselineExactUsd',v_initial_exact::text,'exactCapUsd',v_cap_exact::text,'minorUnitCap',floor(v_cap_exact*100)::text,
       'retainedInitialMinor',v_initial_minor::text,'topUpMinor',v_score_minor::text,'finalMinor',v_funded_minor::text,
@@ -109,9 +114,12 @@ BEGIN
       jsonb_build_object('sourceLotId',v_source_lot_id::text,'sourceLotKey',(SELECT source_lot_key FROM public.epoch_allocation_manifest_sources WHERE manifest_id=v_manifest_id),
         'userId',NULL,'projectId',v_project,'kind','score_pool','canonicalMinor',v_score_minor::text,'exactUsd',v_initial_exact::text),
       jsonb_build_object('sourceLotId',v_source_lot_id::text,'sourceLotKey',(SELECT source_lot_key FROM public.epoch_allocation_manifest_sources WHERE manifest_id=v_manifest_id),
-        'userId',v_actor::text,'projectId',v_project,'kind','top_up','canonicalMinor',v_score_minor::text,'exactUsd',v_initial_exact::text)),
+        'userId',v_actor::text,'projectId',v_project,'kind','top_up','canonicalMinor',v_score_minor::text,'exactUsd',v_topup_exact::text),
+      jsonb_build_object('sourceLotId',v_source_lot_id::text,'sourceLotKey',(SELECT source_lot_key FROM public.epoch_allocation_manifest_sources WHERE manifest_id=v_manifest_id),
+        'userId',NULL,'projectId',v_project,'kind','returned_residue','canonicalMinor','0','exactUsd',v_exact_residue::text)),
     'invariantChecks',jsonb_build_array(jsonb_build_object('code','canonical_minor_conservation','ok',true),
       jsonb_build_object('code','user_caps_respected','ok',true),jsonb_build_object('code','source_provenance_conserved','ok',true),
+      jsonb_build_object('code','exact_source_provenance_conserved','ok',true),
       jsonb_build_object('code','pool_consumption_conserved','ok',true)),
     'resultHash',repeat('8',64));
   v_run:=public.record_funded_epoch_allocation(jsonb_build_object('contractVersion','epoch_funded_allocation_result.v1',
@@ -156,22 +164,50 @@ BEGIN
     'deploymentEnvironment','local','actorUserId',v_actor,'runId',v_run,'manifestHash',v_manifest_hash,
     'resultHash',repeat('8',64),'rerunResultHash',repeat('8',64)));
   v_root_hash:=v_close->>'rootHash';
-  IF v_close->>'status'<>'payout_readying' OR v_root_hash !~ '^[0-9a-f]{64}$'
-    OR v_root_hash=repeat('0',64) THEN RAISE EXCEPTION 'close package did not finalize'; END IF;
+  IF v_close->>'status'<>'root_review_required' OR v_root_hash !~ '^[0-9a-f]{64}$'
+    OR v_root_hash=repeat('0',64) OR (SELECT current_stage FROM public.epoch_shadow_states WHERE monthly_cycle_id=v_cycle)<>'reviewing'
+  THEN RAISE EXCEPTION 'close package did not stop for exact root review'; END IF;
   v_close_replay:=public.approve_epoch_allocation_close(jsonb_build_object('contractVersion','epoch_allocation_close.v1',
     'deploymentEnvironment','local','actorUserId',v_actor,'runId',v_run,'manifestHash',v_manifest_hash,
     'resultHash',repeat('8',64),'rerunResultHash',repeat('8',64)));
   IF v_close_replay->>'rootHash'<>v_root_hash THEN RAISE EXCEPTION 'close package replay was not idempotent'; END IF;
+  v_failed:=false;
+  BEGIN
+    PERFORM public.confirm_epoch_allocation_close_root(jsonb_build_object('contractVersion','epoch_allocation_close_root.v1',
+      'deploymentEnvironment','local','actorUserId',v_actor,'closePackageId',(v_close->>'closePackageId')::bigint,'rootHash',repeat('f',64)));
+  EXCEPTION WHEN OTHERS THEN v_failed:=SQLERRM LIKE '%epoch_close_root_mismatch%'; END;
+  IF NOT v_failed OR (SELECT current_stage FROM public.epoch_shadow_states WHERE monthly_cycle_id=v_cycle)<>'reviewing'
+  THEN RAISE EXCEPTION 'wrong close root was accepted'; END IF;
+  v_close:=public.confirm_epoch_allocation_close_root(jsonb_build_object('contractVersion','epoch_allocation_close_root.v1',
+    'deploymentEnvironment','local','actorUserId',v_actor,'closePackageId',(v_close->>'closePackageId')::bigint,'rootHash',v_root_hash));
+  IF v_close->>'status'<>'payout_readying' OR NOT EXISTS(
+    SELECT 1 FROM public.epoch_close_root_approvals root_approval
+    WHERE root_approval.close_package_id=(v_close->>'closePackageId')::bigint AND root_approval.root_hash=v_root_hash
+      AND root_approval.actor_user_id=v_actor
+  ) THEN RAISE EXCEPTION 'exact close root was not actor approved'; END IF;
   IF (SELECT current_stage FROM public.epoch_shadow_states WHERE monthly_cycle_id=v_cycle)<>'payout_readying'
     OR (SELECT count(*) FROM public.epoch_close_artifacts WHERE close_package_id=(v_close->>'closePackageId')::bigint)<>12
+    OR NOT EXISTS(SELECT 1 FROM public.epoch_close_artifacts WHERE close_package_id=(v_close->>'closePackageId')::bigint AND artifact_key='carryover')
+    OR NOT EXISTS(SELECT 1 FROM public.epoch_close_artifacts WHERE close_package_id=(v_close->>'closePackageId')::bigint AND artifact_key='returned_residue')
+    OR EXISTS(SELECT 1 FROM public.epoch_close_artifacts WHERE close_package_id=(v_close->>'closePackageId')::bigint AND artifact_key='allocation_result')
     OR EXISTS(SELECT 1 FROM public.epoch_provisional_award_controls WHERE monthly_cycle_id=v_cycle
       AND (payable_status<>'not_payable' OR ownership_status<>'not_user_owned' OR status<>'conditional'))
     OR (SELECT coalesce(sum(final_award_minor),0) FROM public.epoch_provisional_award_controls WHERE monthly_cycle_id=v_cycle)<>v_funded_minor
     OR (SELECT coalesce(sum(functional_usd_amount) FILTER(WHERE side='debit'),0)-coalesce(sum(functional_usd_amount) FILTER(WHERE side='credit'),0)
       FROM public.ledger_postings posting JOIN public.ledger_transactions transaction ON transaction.id=posting.transaction_id
       WHERE transaction.idempotency_key LIKE 'epoch-close:'||v_run::text||':%')<>0
+    OR (SELECT coalesce(sum(functional_usd_amount) FILTER(WHERE side='credit'),0)
+      FROM public.ledger_postings posting JOIN public.ledger_transactions transaction ON transaction.id=posting.transaction_id
+      WHERE transaction.idempotency_key LIKE 'epoch-close:'||v_run::text||':%')<>v_exact
+    OR (SELECT coalesce(sum(exact_usd),0) FROM public.epoch_provisional_award_source_fills
+      WHERE approval_id=(SELECT id FROM public.epoch_allocation_approvals WHERE run_id=v_run) AND fill_kind='returned_residue')<>v_exact_residue
   THEN RAISE EXCEPTION 'close package award or ledger conservation failed'; END IF;
   IF (SELECT published_user_count FROM public.epoch_close_public_view WHERE cycle_key='2026-08') IS NOT NULL
+    OR (SELECT funded_minor FROM public.epoch_close_public_view WHERE cycle_key='2026-08') IS NOT NULL
+    OR (SELECT final_allocation_minor FROM public.epoch_close_public_view WHERE cycle_key='2026-08') IS NOT NULL
+    OR (SELECT top_up_minor FROM public.epoch_close_public_view WHERE cycle_key='2026-08') IS NOT NULL
+    OR (SELECT funded_minor FROM public.epoch_close_public_project_view WHERE project_slug=(SELECT slug FROM public.projects WHERE id=v_project)) IS NOT NULL
+    OR (SELECT source_count FROM public.epoch_close_public_project_view WHERE project_slug=(SELECT slug FROM public.projects WHERE id=v_project)) IS NOT NULL
     OR (SELECT row_to_json(public_row)::text FROM public.epoch_close_public_view public_row WHERE cycle_key='2026-08') LIKE '%'||v_actor::text||'%'
   THEN RAISE EXCEPTION 'public close view leaked private cohort data'; END IF;
   IF jsonb_array_length(public.read_epoch_close_scope(v_actor,'user','2026-08',NULL))<>1

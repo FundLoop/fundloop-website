@@ -105,6 +105,22 @@ describe("settled Cubid redistribution", () => {
     expect(result.users[0].finalMinor).not.toBe("101")
   })
 
+  it("source-links the exact fraction that remains after canonical allocation", async () => {
+    const result = await calculateFundedRedistribution({
+      cycleKey: "2026-08",
+      manifestHash,
+      minorUnitScale: 2,
+      sources: [source(1, "96.525")],
+      cohort: [member(1, "fractional-source-user", "10")],
+    })
+    const terminal = result.sourceDispositions.filter((row) => !["score_pool", "overlap_pool"].includes(row.kind))
+    expect(terminal).toEqual(expect.arrayContaining([
+      expect.objectContaining({ kind: "returned_residue", canonicalMinor: "0", exactUsd: "0.0025" }),
+    ]))
+    expect(terminal.reduce((sum, row) => sum + Number(row.exactUsd), 0)).toBeCloseTo(96.525, 12)
+    expect(result.invariantChecks).toContainEqual({ code: "exact_source_provenance_conserved", ok: true })
+  })
+
   it("is invariant to source and cohort input order", async () => {
     const sources = [source(1, "12.34", "b"), source(1, "5.67", "a"), source(2, "9.99")]
     const cohort = [member(1, "user-b", "10"), member(1, "user-a", "5"), member(2, "user-a", "20")]

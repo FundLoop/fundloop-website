@@ -62,10 +62,11 @@ export async function loadLatestUserEpochClose(userId: string): Promise<EpochClo
   if (!control.data) return null
   const [cycle, approval] = await Promise.all([
     admin.from("monthly_cycles").select("cycle_key").eq("id", control.data.monthly_cycle_id).single(),
-    admin.from("epoch_close_packages").select("root_hash,status").eq("approval_id", control.data.approval_id).single(),
+    admin.from("epoch_close_packages").select("root_hash,status").eq("approval_id", control.data.approval_id).eq("status", "payout_readying").maybeSingle(),
   ])
   if (cycle.error) throw new Error(cycle.error.message)
   if (approval.error) throw new Error(approval.error.message)
+  if (!approval.data) return null
   return {
     cycleKey: cycle.data.cycle_key, rootHash: approval.data.root_hash, status: approval.data.status,
     retainedInitialMinor: String(control.data.retained_initial_minor), topUpMinor: String(control.data.redistribution_top_up_minor),
@@ -83,10 +84,11 @@ export async function loadLatestProjectEpochClose(projectId: number): Promise<Ep
   if (!summary.data) return null
   const [cycle, close] = await Promise.all([
     admin.from("monthly_cycles").select("cycle_key").eq("id", summary.data.monthly_cycle_id).single(),
-    admin.from("epoch_close_packages").select("root_hash,status").eq("approval_id", summary.data.approval_id).single(),
+    admin.from("epoch_close_packages").select("root_hash,status").eq("approval_id", summary.data.approval_id).eq("status", "payout_readying").maybeSingle(),
   ])
   if (cycle.error) throw new Error(cycle.error.message)
   if (close.error) throw new Error(close.error.message)
+  if (!close.data) return null
   return {
     cycleKey: cycle.data.cycle_key, rootHash: close.data.root_hash, status: close.data.status,
     fundedMinor: String(summary.data.funded_minor), cohortCount: summary.data.cohort_count,

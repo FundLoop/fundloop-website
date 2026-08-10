@@ -2,11 +2,13 @@ import { edgeCommandFailure, edgeCommandSuccess, type EdgeCommandResult } from "
 
 export type EpochAllocationCloseInput =
   | { action: "approve"; cycleKey: string }
+  | { action: "confirm_root"; cycleKey: string; closePackageId: number; rootHash: string }
   | { action: "read"; cycleKey: string; scope: "operator" | "user" }
   | { action: "read"; cycleKey: string; scope: "project"; projectSlug: string }
 
 const cycleKeyPattern = /^\d{4}-(?:0[1-9]|1[0-2])$/
 const slugPattern = /^[a-z0-9]+(?:-[a-z0-9]+)*$/
+const hashPattern = /^[0-9a-f]{64}$/
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return Boolean(value && typeof value === "object" && !Array.isArray(value))
@@ -24,6 +26,11 @@ export function validateEpochAllocationCloseInput(value: unknown): EdgeCommandRe
   }
   if (value.action === "approve" && exactKeys(value, ["action", "cycleKey"])) {
     return edgeCommandSuccess({ action: "approve", cycleKey: value.cycleKey })
+  }
+  if (value.action === "confirm_root" && exactKeys(value, ["action", "cycleKey", "closePackageId", "rootHash"]) &&
+    typeof value.closePackageId === "number" && Number.isSafeInteger(value.closePackageId) && value.closePackageId > 0 &&
+    typeof value.rootHash === "string" && hashPattern.test(value.rootHash)) {
+    return edgeCommandSuccess({ action: "confirm_root", cycleKey: value.cycleKey, closePackageId: value.closePackageId, rootHash: value.rootHash })
   }
   if (value.action !== "read" || typeof value.scope !== "string") {
     return edgeCommandFailure("invalid_payload", "The close command is invalid.")

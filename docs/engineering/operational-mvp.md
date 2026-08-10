@@ -495,10 +495,19 @@ from legacy MVP bookkeeping credits. An operator approves only after an independ
 deterministic rerun reproduces the persisted manifest/result hashes. The command
 posts source-linked provisional controls, publishes one reproducible root hash,
 and advances the shadow epoch from `reviewing` to `payout_readying` only.
+Preparation leaves the epoch in `reviewing` and exposes the exact root to the
+authorized operator; a separate actor-bound confirmation of that exact root is the
+only action that records the hard gates and advances to `payout_readying`.
 
 These rows are conditional award controls, not the legacy credited earnings table,
 not user-owned balances, and not payables. User, founder, public, and operator
 surfaces use separate read models: users see only self; founders see only their
-project aggregate; public cohort counts require at least three users; operators
+project aggregate; public roots, amounts, source counts, and cohort counts are all
+withheld until at least three users satisfy the relevant privacy threshold; operators
 retain the private artifact inventory. `payout_open`, payout intents, provider
 calls, asset transfers, and production value flow remain outside this Goal.
+
+Exact terminal source fills include a separately source-linked returned-residue
+fraction whenever exact funded USD cannot be represented by canonical minor units.
+The neutral ledger posts those exact amounts even when the residue has zero minor
+units, so exact and canonical conservation remain independently reproducible.

@@ -1158,13 +1158,23 @@ fill or returned-residue fill. Every posting retains its source project and exac
 allocation disposition; the close artifacts retain native asset/custody, FX, fee,
 exact USD, canonical minor-unit, and returned-residue evidence.
 
-The root package includes twelve versioned artifact classes: allocation result,
-trial balance, custody, project funds, fees, FX, carryover, initial claims,
-redistribution pool, top-ups, provisional awards, and exceptions. Public/project
+The root package includes twelve versioned artifact classes: trial balance,
+custody, project funds, fees, FX, carryover, initial claims, redistribution pool,
+top-ups, returned residue, provisional awards, and exceptions. The immutable
+allocation result remains separately bound by its result hash; it cannot replace
+the returned-residue class. Public/project
 artifacts are aggregate-only; private user evidence is never exposed through those
-views. The package records both opt-out-window and approved-close-package hard
-gates, advances only to `payout_readying`, and keeps the existing
-`payout_readiness_complete` gate between this Goal and any later `payout_open`.
+views, and all public roots, totals, and source/count fields are withheld below the
+privacy threshold. Preparation calculates the root but leaves the epoch in
+`reviewing`; the same authorized operator must confirm that exact root before the
+package records both opt-out-window and approved-close-package hard gates and
+advances to `payout_readying`. The existing `payout_readiness_complete` gate remains
+between this Goal and any later `payout_open`.
+
+Terminal exact source fills independently conserve each funded source. Any exact
+fraction not represented by retained or top-up minor units is recorded as a
+source-linked returned-residue fill with zero canonical minor units and a positive
+exact-USD ledger amount.
 
 Production close controls are immutable false. No user payable, ownership
 recognition, payout intent, provider instruction, custody movement, external call,

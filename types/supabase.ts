@@ -7,6 +7,31 @@ export type Json =
   | Json[]
 
 export type Database = {
+  graphql_public: {
+    Tables: {
+      [_ in never]: never
+    }
+    Views: {
+      [_ in never]: never
+    }
+    Functions: {
+      graphql: {
+        Args: {
+          extensions?: Json
+          operationName?: string
+          query?: string
+          variables?: Json
+        }
+        Returns: Json
+      }
+    }
+    Enums: {
+      [_ in never]: never
+    }
+    CompositeTypes: {
+      [_ in never]: never
+    }
+  }
   public: {
     Tables: {
       accounting_periods: {
@@ -1547,6 +1572,75 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "projects"
             referencedColumns: ["id"]
+          },
+        ]
+      }
+      epoch_close_root_approvals: {
+        Row: {
+          actor_user_id: string
+          approval_id: number
+          approved_at: string
+          close_package_id: number
+          deployment_environment: string
+          id: number
+          production_enabled: boolean
+          root_hash: string
+        }
+        Insert: {
+          actor_user_id: string
+          approval_id: number
+          approved_at?: string
+          close_package_id: number
+          deployment_environment: string
+          id?: never
+          production_enabled?: boolean
+          root_hash: string
+        }
+        Update: {
+          actor_user_id?: string
+          approval_id?: number
+          approved_at?: string
+          close_package_id?: number
+          deployment_environment?: string
+          id?: never
+          production_enabled?: boolean
+          root_hash?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "epoch_close_root_approvals_actor_user_id_fkey"
+            columns: ["actor_user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "epoch_close_root_approvals_approval_id_fkey"
+            columns: ["approval_id"]
+            isOneToOne: true
+            referencedRelation: "epoch_allocation_approvals"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "epoch_close_root_approvals_close_package_id_fkey"
+            columns: ["close_package_id"]
+            isOneToOne: true
+            referencedRelation: "epoch_close_operator_view"
+            referencedColumns: ["close_package_id"]
+          },
+          {
+            foreignKeyName: "epoch_close_root_approvals_close_package_id_fkey"
+            columns: ["close_package_id"]
+            isOneToOne: true
+            referencedRelation: "epoch_close_packages"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "epoch_close_root_approvals_deployment_environment_fkey"
+            columns: ["deployment_environment"]
+            isOneToOne: false
+            referencedRelation: "epoch_close_runtime_controls"
+            referencedColumns: ["deployment_environment"]
           },
         ]
       }
@@ -9282,6 +9376,7 @@ export type Database = {
           redistribution_pool_minor: number | null
           result_hash: string | null
           returned_residue_minor: number | null
+          root_approved_at: string | null
           root_hash: string | null
           status: string | null
           top_up_minor: number | null
@@ -9875,6 +9970,10 @@ export type Database = {
           p_succeeded: boolean
         }
         Returns: string
+      }
+      confirm_epoch_allocation_close_root: {
+        Args: { p_command: Json }
+        Returns: Json
       }
       create_user_withdrawal_request: {
         Args: {
@@ -10553,6 +10652,9 @@ export type CompositeTypes<
     : never
 
 export const Constants = {
+  graphql_public: {
+    Enums: {},
+  },
   public: {
     Enums: {
       cubid_identity_status: ["unlinked", "linked", "verified"],

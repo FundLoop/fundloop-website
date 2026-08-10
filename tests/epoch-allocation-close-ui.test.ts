@@ -9,9 +9,11 @@ const publicPage = readFileSync("app/[locale]/(public)/projects/[slug]/page.tsx"
 const readModel = readFileSync("lib/monthly-cycles/epoch-close-review.ts", "utf8")
 
 describe("epoch close role surfaces", () => {
-  it("shows the exact operator approval and payout-readying boundary", () => {
+  it("shows separate exact root review and payout-readying approval", () => {
     expect(operatorPage).toContain("Approved epoch close")
-    expect(operatorAction).toContain("Approve exact result and publish close package")
+    expect(operatorAction).toContain("Reproduce result and prepare close root")
+    expect(operatorAction).toContain("Approve exact root and enter payout readying")
+    expect(operatorAction).toContain("epoch-close-root-review")
     expect(operatorPage).toContain("Awards remain non-payable and not user-owned")
     expect(operatorAction).toContain("invokeEpochAllocationCloseBrowser")
     expect(operatorAction).not.toContain(".from(")

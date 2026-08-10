@@ -444,6 +444,7 @@ export async function calculateFundedRedistribution(input: FundedRedistributionI
     }
   }
   const availablePoolBySource = new Map<string, bigint>()
+  const availableExactPoolBySource = new Map<string, Fraction>()
   for (const source of sources) {
     const score = canonicalScorePoolBySource.get(source.sourceLotKey) ?? BIGINT_ZERO
     const overlap = overlapPoolBySource.get(source.sourceLotKey) ?? BIGINT_ZERO
@@ -451,6 +452,7 @@ export async function calculateFundedRedistribution(input: FundedRedistributionI
     const exactScore=sourceClaims.reduce((sum,claim)=>add(sum,claim.scoreContribution),ZERO)
     const exactOverlap=sourceClaims.reduce((sum,claim)=>subtract(add(sum,claim.initial),exactRetainedByClaim.get(claim.key) ?? ZERO),ZERO)
     availablePoolBySource.set(source.sourceLotKey, score + overlap)
+    availableExactPoolBySource.set(source.sourceLotKey, add(exactScore, exactOverlap))
     if (score > BIGINT_ZERO) sourceDispositions.push({ sourceLotId: source.sourceLotId, sourceLotKey: source.sourceLotKey, userId: null, projectId: source.projectId, kind: "score_pool", canonicalMinor: score.toString(), exactUsd: decimalString(exactScore) })
     if (overlap > BIGINT_ZERO) sourceDispositions.push({ sourceLotId: source.sourceLotId, sourceLotKey: source.sourceLotKey, userId: null, projectId: source.projectId, kind: "overlap_pool", canonicalMinor: overlap.toString(), exactUsd: decimalString(exactOverlap) })
   }
@@ -461,15 +463,27 @@ export async function calculateFundedRedistribution(input: FundedRedistributionI
       const available = availablePoolBySource.get(source.sourceLotKey) ?? BIGINT_ZERO
       const consumed = needed < available ? needed : available
       if (consumed === BIGINT_ZERO) continue
-      sourceDispositions.push({ sourceLotId: source.sourceLotId, sourceLotKey: source.sourceLotKey, userId: user.userId, projectId: source.projectId, kind: "top_up", canonicalMinor: consumed.toString(), exactUsd: decimalString(fraction(consumed,power10(scale))) })
+      const availableExact = availableExactPoolBySource.get(source.sourceLotKey) ?? ZERO
+      const canonicalExact = fraction(consumed,power10(scale))
+      const consumedExact = compare(canonicalExact, availableExact) < 0 ? canonicalExact : availableExact
+      sourceDispositions.push({ sourceLotId: source.sourceLotId, sourceLotKey: source.sourceLotKey, userId: user.userId, projectId: source.projectId, kind: "top_up", canonicalMinor: consumed.toString(), exactUsd: decimalString(consumedExact) })
       availablePoolBySource.set(source.sourceLotKey, available - consumed)
+      availableExactPoolBySource.set(source.sourceLotKey, subtract(availableExact, consumedExact))
       needed -= consumed
     }
     if (needed !== BIGINT_ZERO) throw new Error("funded_allocation_pool_provenance_exhausted")
   }
   for (const source of sources) {
     const residue = availablePoolBySource.get(source.sourceLotKey) ?? BIGINT_ZERO
-    if (residue > BIGINT_ZERO) sourceDispositions.push({ sourceLotId: source.sourceLotId, sourceLotKey: source.sourceLotKey, userId: null, projectId: source.projectId, kind: "returned_residue", canonicalMinor: residue.toString(), exactUsd: decimalString(fraction(residue,power10(scale))) })
+    const terminalBeforeResidue = sourceDispositions
+      .filter((row) => row.sourceLotKey === source.sourceLotKey && (row.kind === "initial_retained" || row.kind === "top_up"))
+      .reduce((sum, row) => add(sum, parseDecimal(row.exactUsd)), ZERO)
+    const exactResidue = subtract(parseDecimal(source.exactUsd), terminalBeforeResidue)
+    if (compare(exactResidue, ZERO) < 0) throw new Error("funded_allocation_exact_source_overapplied")
+    if (residue > BIGINT_ZERO || compare(exactResidue, ZERO) > 0) sourceDispositions.push({
+      sourceLotId: source.sourceLotId, sourceLotKey: source.sourceLotKey, userId: null, projectId: source.projectId,
+      kind: "returned_residue", canonicalMinor: residue.toString(), exactUsd: decimalString(exactResidue),
+    })
   }
 
   const users: FundedUserAllocation[] = userState.map((user) => {
@@ -515,7 +529,13 @@ export async function calculateFundedRedistribution(input: FundedRedistributionI
       .filter((row) => row.sourceLotKey === source.sourceLotKey && row.kind !== "score_pool" && row.kind !== "overlap_pool")
       .reduce((sum, row) => sum + BigInt(row.canonicalMinor), BIGINT_ZERO) === (sourceCapacity.get(source.sourceLotKey) ?? BIGINT_ZERO),
   )
-  if (!canonicalConserved || !capRespected || !sourceConserved) throw new Error("funded_allocation_invariant_failed")
+  const exactSourceConserved = sources.every((source) => compare(
+    sourceDispositions
+      .filter((row) => row.sourceLotKey === source.sourceLotKey && row.kind !== "score_pool" && row.kind !== "overlap_pool")
+      .reduce((sum, row) => add(sum, parseDecimal(row.exactUsd)), ZERO),
+    parseDecimal(source.exactUsd),
+  ) === 0)
+  if (!canonicalConserved || !capRespected || !sourceConserved || !exactSourceConserved) throw new Error("funded_allocation_invariant_failed")
 
   const totals = {
     fundedExactUsd: decimalString(fundedExact),
@@ -532,6 +552,7 @@ export async function calculateFundedRedistribution(input: FundedRedistributionI
     { code: "canonical_minor_conservation", ok: canonicalConserved },
     { code: "user_caps_respected", ok: capRespected },
     { code: "source_provenance_conserved", ok: sourceConserved },
+    { code: "exact_source_provenance_conserved", ok: exactSourceConserved },
     { code: "pool_consumption_conserved", ok: topUpMinor + returnedResidueMinor === scorePoolMinor + overlapPoolMinor },
   ]
   const hashInput = {

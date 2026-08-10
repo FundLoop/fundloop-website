@@ -519,13 +519,22 @@ The controls are explicitly `not_payable`, `not_user_owned`, and asset-review
 pending. Intermediate score and overlap pool rows remain provenance evidence, not
 additional postings or claims.
 
-One root hash covers allocation, trial-balance, custody, project-funds, fee, FX,
-carryover, initial-claim, redistribution-pool, top-up, provisional-award, and
-exception artifacts. Operator artifacts may contain private evidence. User reads
+One root hash covers trial-balance, custody, project-funds, fee, FX, carryover,
+initial-claim, redistribution-pool, top-up, returned-residue, provisional-award,
+and exception artifacts. The immutable allocation result remains separately bound
+by its result hash and is not substituted for the required returned-residue class.
+Operator artifacts may contain private evidence. User reads
 return only the authenticated user's award; founder reads return only a managed
 project aggregate; public project and epoch reads suppress cohort counts below the
 privacy threshold and never contain user IDs, scores, or overlap membership.
 
-The close command records both required `reviewing -> payout_readying` hard gates
-and stops there. It cannot create a payable, open `payout_open`, call a provider,
-submit a transfer, or enable production value flow.
+The close command first prepares the deterministic artifacts and root while the
+epoch remains `reviewing`. The same authorized operator must explicitly approve
+that exact root before both required `reviewing -> payout_readying` hard gates are
+recorded. It cannot create a payable, open `payout_open`, call a provider, submit a
+transfer, or enable production value flow.
+
+Every source's terminal exact dispositions must equal its funded exact USD. Any
+fraction remaining after retained and top-up dispositions becomes a zero-minor,
+positive-exact, source-linked returned-residue fill and exact ledger control; it is
+never left only in an aggregate `subMinorExactUsd` field.

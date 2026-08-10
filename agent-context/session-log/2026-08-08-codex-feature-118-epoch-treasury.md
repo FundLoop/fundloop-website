@@ -1557,3 +1557,60 @@ transfers, production activation, or value flow.
 
 - Commit #137 as a distinct reviewable checkpoint, post implementation evidence, and request an
   independent validator before promoting it to In Review or starting the dependent integrated Goal.
+
+### session v32: close exact-residue, root-approval, artifact, and privacy gaps (#137)
+
+- Timestamp: 2026-08-09T23:43:21-04:00
+- Agent: Codex
+- Branch: codex/134-funded-redistribution
+- Head: 10883ee
+
+#### Objective
+
+Resolve every independent #137 validation blocker without expanding into payout execution:
+separate the required carryover and returned-residue artifacts, actor-bind the exact root,
+source-link all exact fractions, and withhold all public totals below privacy thresholds.
+
+#### Actions Taken
+
+- Extended the pure allocator so each source's terminal retained, top-up, and returned-residue
+  dispositions conserve its exact funded USD independently of canonical minor units. The real
+  `$96.525` fixture now records `$48.2625` retained, `$48.26` top-up, and a source-linked `$0.0025`
+  exact returned residue with zero canonical minor units.
+- Added a forward migration that validates exact terminal source conservation and posts exact USD
+  into the neutral ledger. Zero-minor exact residue remains a real source fill and balanced control,
+  rather than disappearing into aggregate `subMinorExactUsd` evidence.
+- Replaced the artifact inventory with the live twelve classes, keeping separate `carryover` and
+  `returned_residue` artifacts and removing `allocation_result` from the root package. The immutable
+  allocation result remains independently bound by its result hash.
+- Split close into prepare and confirm phases. Preparation leaves the epoch in `reviewing` and
+  displays the exact root; the same authorized actor must confirm that hash into an immutable root
+  approval before hard gates, stage attempt, and `payout_readying` are written.
+- Withheld public epoch/project roots, funded/final/pool/top-up/residue totals, cohort counts, and
+  source counts below the threshold. The public UI now shows only explicit withheld labels.
+
+#### Validation Notes
+
+- Passed fresh forward migration/seed replay and executable #135 plus #136/#137 SQL, including wrong
+  root denial before state change, actor-bound root approval, exact source/ledger conservation,
+  separate artifact inventory, and null public totals/source counts below threshold.
+- Passed the real authenticated Edge and Playwright flow 2/2: calculate, prepare root, visibly review
+  the exact hash, confirm it, then inspect operator/user/founder/public views with zero console errors.
+  Exact desktop/mobile artifacts were visually inspected; the public capture contains no `9652`,
+  root, or source count below threshold.
+- Passed focused Node 22 Vitest: 7 files / 27 tests; strict Deno; lint; typecheck; `git diff --check`.
+- Passed full Node 22 `CI=1 pnpm check`: 149 files / 674 tests and production build / 165 pages.
+  Local Next, Edge, and Supabase were stopped after validation.
+
+#### Reflections
+
+- Canonical source capacity and exact source value are separate ledgers. Exact top-up consumption
+  must be bounded by exact pool provenance, then the serialized terminal remainder must reconcile
+  back to the source to avoid rational-to-decimal truncation loss.
+- A privacy threshold must suppress the values that create the inference, not merely replace the
+  cohort count while leaving exact totals visible.
+
+#### Suggested Next Steps
+
+- Commit this validator-fix batch separately, post corrective evidence, and return exact HEAD to the
+  same independent validator before promoting #137 or beginning #139.
