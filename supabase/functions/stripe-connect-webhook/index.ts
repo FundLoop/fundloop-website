@@ -18,7 +18,7 @@ async function handleRequest(request: Request) {
   const signature = request.headers.get("stripe-signature") ?? ""; const timestamp = signatureTimestamp(signature); const payload = await request.text()
   if (timestamp === null) return json(edgeCommandFailure("invalid_signature", "Stripe signature timestamp is missing."), { status: 400 })
   const stripe = new Stripe(secretKey, { httpClient: Stripe.createFetchHttpClient() })
-  const platform = await stripe.accounts.retrieve(null)
+  const platform = await stripe.accounts.retrieveCurrent()
   if ("deleted" in platform || platform.id !== platformAccount) return json(edgeCommandFailure("stripe_connect_platform_mismatch", "Stripe sandbox account binding does not match."))
   let event: Stripe.Event
   try { event = await stripe.webhooks.constructEventAsync(payload, signature, webhookSecret, 300, Stripe.createSubtleCryptoProvider()) }

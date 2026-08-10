@@ -1,6 +1,6 @@
 import { edgeCommandFailure, edgeCommandSuccess } from "../edge-functions/result.ts"
 
-export const STRIPE_BANK_TRANSFER_ENVIRONMENTS = ["local", "dev", "test"] as const
+export const STRIPE_BANK_TRANSFER_ENVIRONMENTS = ["local", "development", "dev", "preview", "test"] as const
 export const STRIPE_BANK_TRANSFER_CURRENCIES = ["USD", "CAD"] as const
 export type StripeBankTransferCurrency = (typeof STRIPE_BANK_TRANSFER_CURRENCIES)[number]
 

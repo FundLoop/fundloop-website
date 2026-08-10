@@ -2,6 +2,7 @@ import { decodeEventLog, parseAbi } from "viem"
 
 export const fundLoopSafePayoutModuleAbi = parseAbi([
   "function requestHash(address token,address recipient,uint256 recipientAmount,address feeRecipient,uint256 feeAmount,uint256 gasBudget,bytes32 epochKey,uint64 expiresAt,uint256 nonce) view returns (bytes32)",
+  "function authorizedRequests(bytes32 requestHash) view returns (bool)",
   "function executePayout(address token,address recipient,uint256 recipientAmount,address feeRecipient,uint256 feeAmount,uint256 gasBudget,bytes32 epochKey,uint64 expiresAt,uint256 nonce)",
   "event PayoutExecuted(bytes32 indexed requestHash,bytes32 indexed epochKey,address indexed token,address recipient,uint256 recipientAmount,address feeRecipient,uint256 feeAmount,uint256 gasBudget)",
 ])

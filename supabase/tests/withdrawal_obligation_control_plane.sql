@@ -4,7 +4,7 @@ SET LOCAL search_path=public,extensions,pg_catalog;
 DO $$
 DECLARE
   v_actor uuid; v_other uuid; v_cycle bigint; v_next_cycle bigint; v_project bigint; v_other_project bigint; v_run bigint; v_result bigint;
-  v_credit bigint; v_obligation bigint; v_stripe_asset bigint; v_stripe_custody bigint; v_base_asset bigint; v_base_custody bigint;
+  v_credit bigint; v_obligation bigint; v_cross_obligation bigint; v_stripe_asset bigint; v_stripe_custody bigint; v_base_asset bigint; v_base_custody bigint;
   v_stripe_fx bigint; v_base_fx bigint; v_stripe_route bigint; v_base_route bigint; v_request jsonb; v_request_id uuid; v_replay jsonb;
   v_failed boolean; v_index integer; v_claims numeric; v_intents integer;
 BEGIN
@@ -62,6 +62,18 @@ BEGIN
       encode(extensions.digest(convert_to('base-inventory-'||v_index,'UTF8'),'sha256'),'hex'));
   END LOOP;
 
+  -- An older obligation from another project must never be claimed for the selected project.
+  INSERT INTO public.zkas_run_results(run_id,zkas_user_id,eligibility,aggregate_score,allocation_usd,output_row_hash,monthly_cycle_id)
+    VALUES(v_run,'withdrawal-cross-project',true,10,20,repeat('9',64),v_cycle) RETURNING id INTO v_result;
+  INSERT INTO public.monthly_cycle_bookkeeping_credits(monthly_cycle_id,run_id,source_result_id,user_id,usd_equivalent_amount,
+    idempotency_key,credited_by_user_id) VALUES(v_cycle,v_run,v_result,v_actor,20,'withdrawal-cross-project-credit',v_actor) RETURNING id INTO v_credit;
+  INSERT INTO public.user_withdrawal_obligations(source_bookkeeping_credit_id,monthly_cycle_id,user_id,total_minor,state,available_at,evidence_hash)
+    VALUES(v_credit,v_cycle,v_actor,2000,'available','2026-09-30T00:00:00Z',repeat('8',64)) RETURNING id INTO v_cross_obligation;
+  INSERT INTO public.payout_inventory_lots(obligation_id,legacy_inventory_key,project_id,user_id,monthly_cycle_id,rail_key,
+    financial_asset_id,custody_account_id,fx_snapshot_id,canonical_minor_total,native_atomic_total,deterministic_sequence,evidence_hash)
+  VALUES(v_cross_obligation,'legacy:other-project:stripe',v_other_project,v_actor,v_cycle,'stripe_bank_transfer',v_stripe_asset,v_stripe_custody,
+    v_stripe_fx,2000,2000,0,repeat('7',64));
+
   -- Production and literal staging fail closed.
   v_failed:=false; BEGIN PERFORM public.create_user_withdrawal_request_v3(v_actor,jsonb_build_object('contractVersion','withdrawal_request.v3',
     'deploymentEnvironment','production','payoutRouteId',v_stripe_route,'requestedMinor',1000,'projectId',v_project,'assetKey','stripe_sandbox_usd','userFeeBps',0,'idempotencyKey','prod-denied-1'));
@@ -82,6 +94,7 @@ BEGIN
     OR (SELECT claimed_minor FROM public.user_withdrawal_obligation_claims WHERE withdrawal_request_id=v_request_id ORDER BY sequence_no OFFSET 1 LIMIT 1)<>500
     OR (SELECT sum(native_atomic_amount) FROM public.payout_inventory_reservations WHERE withdrawal_request_id=v_request_id)<>2500
     OR (SELECT count(*) FROM public.payout_intents WHERE withdrawal_request_id=v_request_id AND source_result_id IS NULL)<>1
+    OR EXISTS(SELECT 1 FROM public.user_withdrawal_obligation_claims WHERE withdrawal_request_id=v_request_id AND obligation_id=v_cross_obligation)
   THEN RAISE EXCEPTION 'partial oldest-first or exact inventory reservation failed'; END IF;
   v_replay:=public.create_user_withdrawal_request_v3(v_actor,jsonb_build_object('contractVersion','withdrawal_request.v3','deploymentEnvironment','local',
     'payoutRouteId',v_stripe_route,'requestedMinor',2500,'projectId',v_project,'assetKey','stripe_sandbox_usd','userFeeBps',0,'idempotencyKey','stripe-partial-1'));
@@ -93,7 +106,7 @@ BEGIN
 
   -- The chosen project is part of the immutable request snapshot and cannot borrow same-asset inventory from another project.
   v_failed:=false; BEGIN PERFORM public.create_user_withdrawal_request_v3(v_actor,jsonb_build_object('contractVersion','withdrawal_request.v3',
-    'deploymentEnvironment','local','payoutRouteId',v_stripe_route,'requestedMinor',1000,'projectId',v_other_project,'assetKey','stripe_sandbox_usd','userFeeBps',0,'idempotencyKey','wrong-project-1'));
+    'deploymentEnvironment','local','payoutRouteId',v_stripe_route,'requestedMinor',1000,'projectId',v_other_project+1000000,'assetKey','stripe_sandbox_usd','userFeeBps',0,'idempotencyKey','wrong-project-1'));
   EXCEPTION WHEN OTHERS THEN v_failed:=SQLERRM LIKE '%withdrawal_asset_not_eligible%'; END;
   IF NOT v_failed OR EXISTS(
     SELECT 1 FROM public.payout_inventory_reservations reservation

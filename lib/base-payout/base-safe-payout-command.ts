@@ -5,7 +5,7 @@ import { createBaseSafePayoutChain, type BasePayoutChainRequest } from "./base-s
 import type { BaseSafePayoutOperatorInput } from "../edge-functions/base-safe-payout-contract.ts"
 
 type Result={ok:true;data:Record<string,unknown>}|{ok:false;error:{code:string;message:string}}
-type ChainLike={requestHash:(request:BasePayoutChainRequest)=>Promise<Hex>;execute:(request:BasePayoutChainRequest)=>Promise<Hex>;
+type ChainLike={requestHash:(request:BasePayoutChainRequest)=>Promise<Hex>;authorization:(request:BasePayoutChainRequest,requestHash:Hex)=>Promise<{authorized:boolean;blockNumber:bigint}>;execute:(request:BasePayoutChainRequest)=>Promise<Hex>;
   observe:(request:BasePayoutChainRequest,txHash:Hex,previous?:import("./base-safe-payout-chain.ts").BasePayoutChainObservation)=>Promise<import("./base-safe-payout-chain.ts").BasePayoutChainObservation>}
 type Env={deploymentEnvironment:string;rpcUrl:string;privateKey?:Hex;now?:()=>Date;chainFactory?:(input:{rpcUrl:string;chainId:number;privateKey?:Hex})=>ChainLike}
 const code=(message:string)=>message.match(/base_(?:payout|paymaster)_[a-z_]+/)?.[0]??"base_payout_failed"
@@ -40,8 +40,24 @@ export async function executeBaseSafePayoutOperator(supabase:SupabaseClient<Data
     nativeAtomicAmount:row.native_atomic_amount,feeRecipientAddress:row.fee_recipient_address,userFeeNativeAmount:row.user_fee_native_amount,
     gasBudgetNative:row.gas_budget_native,epochKey:row.epoch_key,expiresAt:Math.floor(new Date(row.expires_at).getTime()/1000),moduleNonce:row.module_nonce})
   const chain=(env.chainFactory??createBaseSafePayoutChain)({rpcUrl:env.rpcUrl,chainId:Number(deployment.chain_id),privateKey:env.privateKey})
+  if(input.action==="confirm_authorization") {
+    const proof=await chain.authorization(request,row.request_hash as Hex)
+    if(!proof.authorized)return {ok:false,error:{code:"base_payout_safe_authorization_required",message:"The epoch Safe has not authorized this exact request hash."}}
+    const evidenceHash=await sha256(JSON.stringify({commandId:input.commandId,requestHash:row.request_hash,moduleAddress:deployment.module_address,
+      blockNumber:proof.blockNumber.toString(),authorized:true,observationSource:"trusted_viem_v1"}))
+    const confirmed=await supabase.rpc("confirm_base_safe_payout_authorization",{p_actor_user_id:actorUserId,p_command:{contractVersion:"base_safe_payout_authorization_proof.v1",
+      deploymentEnvironment:env.deploymentEnvironment,commandId:input.commandId,requestHash:row.request_hash,blockNumber:proof.blockNumber.toString(),authorized:true,
+      observationSource:"trusted_viem_v1",evidenceHash}})
+    if(confirmed.error)return {ok:false,error:{code:code(confirmed.error.message),message:confirmed.error.message}}
+    return {ok:true,data:confirmed.data as Record<string,unknown>}
+  }
   if(input.action==="execute") {
-    try { return {ok:true,data:{commandId:input.commandId,txHash:await chain.execute(request),status:"submitted"}} }
+    if(!row.chain_authorized_at)return {ok:false,error:{code:"base_payout_safe_authorization_required",message:"Confirm the epoch Safe authorization before limited-signer execution."}}
+    try {
+      const proof=await chain.authorization(request,row.request_hash as Hex)
+      if(!proof.authorized)return {ok:false,error:{code:"base_payout_safe_authorization_required",message:"The epoch Safe authorization is not active for this exact request hash."}}
+      return {ok:true,data:{commandId:input.commandId,txHash:await chain.execute(request),status:"submitted"}}
+    }
     catch(error){const message=error instanceof Error?error.message:"Base payout execution failed.";return {ok:false,error:{code:code(message),message}}}
   }
   const observedHash=input.replacementTxHash??input.txHash
@@ -69,4 +85,9 @@ export async function executeBaseSafePayoutOperator(supabase:SupabaseClient<Data
     if(rpc.error)return {ok:false,error:{code:code(rpc.error.message),message:rpc.error.message}}
     return {ok:true,data:rpc.data as Record<string,unknown>}
   } catch(error){const message=error instanceof Error?error.message:"Base payout observation failed.";return {ok:false,error:{code:code(message),message}}}
+}
+
+async function sha256(value:string){
+  const bytes=new TextEncoder().encode(value)
+  return Array.from(new Uint8Array(await crypto.subtle.digest("SHA-256",bytes))).map((item)=>item.toString(16).padStart(2,"0")).join("")
 }

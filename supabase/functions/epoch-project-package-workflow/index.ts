@@ -35,7 +35,7 @@ async function handleRequest(request: Request) {
   if (request.method === "OPTIONS") return new Response("ok", { headers: { "access-control-allow-origin": "*", "access-control-allow-headers": "authorization,apikey,content-type" } })
   if (request.method !== "POST") return json(edgeCommandFailure("method_not_allowed", "POST required."))
   const body = await parseJsonBody(request)
-  if (!body.ok) return json(edgeCommandFailure("invalid_payload", body.error))
+  if (!body.ok) return json(edgeCommandFailure("invalid_payload", body.error ?? "Request body must be valid JSON."))
   const validation = validateEpochProjectPackageWorkflowInput(body.body)
   if (!validation.ok) return json(validation)
   const auth = await authenticateRequest(request)
@@ -57,7 +57,7 @@ async function handleRequest(request: Request) {
       p_project_slug: input.projectSlug ?? null,
     })
     if (error) return json(edgeCommandFailure(failureCode(error.message), error.message))
-    return json(edgeCommandSuccess({ action: "read", packages: (data ?? []).map((row) => summary(row as Record<string, unknown>)) }))
+    return json(edgeCommandSuccess({ action: "read", packages: (data ?? []).map((row: unknown) => summary(row as Record<string, unknown>)) }))
   }
 
   if (input.action === "validate") {
@@ -97,7 +97,7 @@ async function handleRequest(request: Request) {
     } })
     if (recordError) return json(edgeCommandFailure(failureCode(recordError.message), recordError.message))
     const { data: rows } = await auth.adminClient.rpc("list_epoch_project_packages", { p_actor_user_id: auth.user.id, p_project_slug: null })
-    const updated = (rows ?? []).find((row) => Number(row.id) === input.packageId)
+    const updated = (rows ?? []).find((row: Record<string, unknown>) => Number(row.id) === input.packageId)
     return json(edgeCommandSuccess({ action: "send_reconciliation_email", packageId: input.packageId,
       deliveryEventId: Number(deliveryEventId), providerMessageId, deadlineAt: String(updated?.reconciliation_deadline_at ?? deliveredAt) }))
   }

@@ -432,6 +432,9 @@ export type Database = {
         Row: {
           authorized_at: string
           authorized_by_user_id: string
+          chain_authorization_block_number: number | null
+          chain_authorization_evidence_hash: string | null
+          chain_authorized_at: string | null
           deployment_id: number
           epoch_key: string
           expires_at: string
@@ -456,6 +459,9 @@ export type Database = {
         Insert: {
           authorized_at?: string
           authorized_by_user_id: string
+          chain_authorization_block_number?: number | null
+          chain_authorization_evidence_hash?: string | null
+          chain_authorized_at?: string | null
           deployment_id: number
           epoch_key: string
           expires_at: string
@@ -480,6 +486,9 @@ export type Database = {
         Update: {
           authorized_at?: string
           authorized_by_user_id?: string
+          chain_authorization_block_number?: number | null
+          chain_authorization_evidence_hash?: string | null
+          chain_authorized_at?: string | null
           deployment_id?: number
           epoch_key?: string
           expires_at?: string
@@ -11671,6 +11680,10 @@ export type Database = {
           p_succeeded: boolean
         }
         Returns: string
+      }
+      confirm_base_safe_payout_authorization: {
+        Args: { p_actor_user_id: string; p_command: Json }
+        Returns: Json
       }
       confirm_epoch_allocation_close_root: {
         Args: { p_command: Json }

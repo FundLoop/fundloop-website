@@ -15,6 +15,13 @@ export function createBaseSafePayoutChain(input:{rpcUrl:string;chainId:number;pr
       return publicClient.readContract({address:request.moduleAddress,abi:moduleAbi,functionName:"requestHash",
         args:[request.tokenAddress,request.recipientAddress,request.nativeAtomicAmount,request.feeRecipientAddress,request.userFeeNativeAmount,request.gasBudgetNative,request.epochKey,request.expiresAt,request.moduleNonce]}) as Promise<Hex>
     },
+    async authorization(request:BasePayoutChainRequest,requestHash:Hex) {
+      const [authorized,blockNumber]=await Promise.all([
+        publicClient.readContract({address:request.moduleAddress,abi:moduleAbi,functionName:"authorizedRequests",args:[requestHash]}),
+        publicClient.getBlockNumber(),
+      ])
+      return {authorized:Boolean(authorized),blockNumber}
+    },
     async execute(request:BasePayoutChainRequest) {
       if(!input.privateKey) throw new Error("base_payout_limited_signer_unavailable")
       const account=privateKeyToAccount(input.privateKey)

@@ -7,6 +7,8 @@ describe("Stripe bank-transfer intake",()=>{
   it("allows only sandbox USD and keeps CAD and production fail closed",()=>{
     const input={projectSlug:"ecostream",paymentId:1,currencyCode:"USD",expectedAmountMinor:"128000"}
     expect(validateStripeBankTransferIntentCreateInput(input,"local")).toMatchObject({ok:true})
+    expect(validateStripeBankTransferIntentCreateInput(input,"development")).toMatchObject({ok:true})
+    expect(validateStripeBankTransferIntentCreateInput(input,"preview")).toMatchObject({ok:true})
     expect(validateStripeBankTransferIntentCreateInput({...input,currencyCode:"CAD"},"local")).toMatchObject({ok:false,error:{code:"cad_bank_transfer_unavailable"}})
     expect(validateStripeBankTransferIntentCreateInput(input,"production")).toMatchObject({ok:false,error:{code:"production_disabled"}})
     expect(validateStripeBankTransferIntentCreateInput({...input,cardNumber:"4242"},"local")).toMatchObject({ok:false,error:{code:"invalid_payload"}})
@@ -17,6 +19,10 @@ describe("Stripe bank-transfer intake",()=>{
     expect(result).toMatchObject({ok:true,data:{providerCustomerId:"cus_fixture",providerPaymentIntentId:"pi_fixture"}})
     expect(provider.createCustomer).toHaveBeenCalledWith(expect.objectContaining({idempotencyKey:"fundloop:stripe-intake:1:1:customer"}))
     expect(provider.createPaymentIntent).toHaveBeenCalledWith(expect.objectContaining({idempotencyKey:"fundloop:stripe-intake:1:1:intent",currency:"usd",amountMinor:128000}))
+  })
+  it.each(["development","preview"])("allows the %s review runtime without enabling production",async(environment)=>{
+    const provider={createCustomer:vi.fn(async()=>({id:"cus_fixture",livemode:false})),createPaymentIntent:vi.fn(async()=>({id:"pi_fixture",livemode:false,status:"requires_action",hostedInstructionsUrl:null}))}
+    expect(await createStripeBankTransferIntent(provider,{environment,projectId:1,projectSlug:"ecostream",paymentId:1,amountMinor:"128000",currencyCode:"USD",actorUserId:"actor"})).toMatchObject({ok:true})
   })
   it("rejects live objects even when the runtime claims local",async()=>{
     const result=await createStripeBankTransferIntent({createCustomer:async()=>({id:"cus_live",livemode:true}),createPaymentIntent:async()=>({id:"pi_unused",livemode:true,status:"x",hostedInstructionsUrl:null})},

@@ -21,7 +21,7 @@ async function handleRequest(request: Request) {
   const secretKey = getEnv("STRIPE_SECRET_KEY")?.trim(); const platformAccount = getEnv("STRIPE_ACCOUNT_ID")?.trim()
   if (!secretKey?.startsWith("sk_test_") || !platformAccount?.match(/^acct_[A-Za-z0-9]+$/)) return json(edgeCommandFailure("stripe_connect_sandbox_not_configured", "Stripe sandbox credentials are not configured."))
   const stripe = new Stripe(secretKey, { httpClient: Stripe.createFetchHttpClient() })
-  const platform = await stripe.accounts.retrieve(null)
+  const platform = await stripe.accounts.retrieveCurrent()
   if ("deleted" in platform || platform.id !== platformAccount) return json(edgeCommandFailure("stripe_connect_platform_mismatch", "Stripe sandbox account binding does not match."))
   const provider = {
     createTransfer: (input: { amount: number; currency: string; destination: string; transferGroup: string; commandId: string }, idempotencyKey: string) => stripe.transfers.create({

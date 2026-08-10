@@ -25,7 +25,7 @@ async function handleRequest(request: Request) {
   const existing = await auth.adminClient.from("stripe_connect_accounts").select("provider_account_id").eq("user_id", auth.user.id).maybeSingle()
   if (existing.error) return json(edgeCommandFailure("stripe_connect_account_read_failed", existing.error.message))
   try {
-    const platform = await stripe.accounts.retrieve(null)
+    const platform = await stripe.accounts.retrieveCurrent()
     if ("deleted" in platform || platform.id !== platformAccount) return json(edgeCommandFailure("stripe_connect_platform_mismatch", "Stripe sandbox account binding does not match."))
     let providerAccountId = existing.data?.provider_account_id as string | undefined
     if (!providerAccountId) {

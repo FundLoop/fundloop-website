@@ -34,7 +34,7 @@ export async function createStripeBankTransferIntent(
   provider: StripeBankTransferProvider,
   input: StripeBankTransferAdapterInput,
 ): Promise<EdgeCommandResult<StripeBankTransferAdapterOutput>> {
-  if (!["local","dev","test"].includes(input.environment)) {
+  if (!["local","development","dev","preview","test"].includes(input.environment)) {
     return edgeCommandFailure("production_disabled", "Stripe bank-transfer intake is unavailable in this environment.")
   }
   if (!Number.isInteger(input.projectId) || input.projectId <= 0 || !Number.isInteger(input.paymentId) || input.paymentId <= 0 ||

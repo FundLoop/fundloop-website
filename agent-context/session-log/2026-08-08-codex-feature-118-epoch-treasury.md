@@ -2031,3 +2031,62 @@ both local acknowledgement writes failed, without requiring an operator retry to
 
 - Commit this narrow recovery fix and request independent local revalidation. Leave #141 In Progress
   until the Fundloop Stripe sandbox has Connect enabled and the real provider checkpoint can run.
+
+### session v41: close PR #150 review integrity findings
+
+- Timestamp: 2026-08-10T03:51:32-04:00
+- Agent: Codex
+- Branch: codex/134-funded-redistribution
+- Head: 11fa5b7
+
+#### Objective
+
+Address all actionable Copilot and Codex review findings on PR #150 without widening the
+review-only, non-production payout boundary.
+
+#### Actions Taken
+
+- Added a forward migration and typed Base operator checkpoint that reads the module's exact
+  `authorizedRequests` mapping, persists a service-only chain proof, and refuses limited-signer
+  execution until both persisted and current on-chain authorization are true. Updated the admin
+  copy and controls to separate database preparation, Safe threshold authorization, proof, and
+  execution.
+- Replaced the withdrawal v3 command with a project/asset/rail-scoped obligation selector. The
+  request and payout intent now retain USD or CAD from the selected fiat asset, while Base
+  stablecoin obligations retain their canonical USD reporting currency.
+- Normalized Stripe bank-transfer local/development/dev/preview/test gates, switched platform
+  account reads to Stripe's typed `retrieveCurrent()` API, and repaired strict Deno typing and
+  duplicate webhook-field construction across the earlier #131/#133 Edge handlers.
+- Extended SQL, contract, component, and command tests for cross-project obligation isolation,
+  CAD currency, Safe proof mismatch/success, execution denial before proof, review runtimes, and
+  current-platform account lookup. Regenerated canonical Supabase types.
+
+#### Validation Notes
+
+- Fresh local Supabase reset applied all migrations and seed through
+  `20260810150000_review_feedback_integrity.sql`. Withdrawal, Base Safe, Stripe Connect, and Stripe
+  bank-transfer executable SQL passed; the Base wrapper also passed with committed disposable
+  fixtures.
+- Strict Deno passed all fourteen added Edge handlers. Focused Vitest passed 5 files / 22 tests;
+  Hardhat passed 17 / 17; full Node 22 `CI=1 pnpm check` passed lint, 158 files / 702 tests,
+  typecheck, and the 165-page production build. `git diff --check` passed.
+- The authenticated Base operator Playwright checkpoint passed at exact 1440x900 and 390x844 with
+  refreshed screenshots and zero console errors. Initial browser attempts exposed only missing or
+  incompatible local Supabase key configuration; the final run used the current local publishable
+  and secret keys and passed.
+
+#### Reflections
+
+- A database record named "authorized" is not chain authority. The limited signer must remain
+  unusable until the Safe threshold has authorized the exact request hash and the runtime has
+  independently observed that mapping.
+- Project scope must constrain the liability claims themselves, not only the later inventory
+  reservation, or an unrelated project can be locked even when no value is transferred.
+- Stripe SDK v22 exposes `retrieveCurrent()` as the typed no-id platform-account API; it is clearer
+  and safer than relying on the legacy `retrieve(null)` overload.
+
+#### Suggested Next Steps
+
+- Commit and push this review batch, reply to and resolve all eight PR threads, wait for post-push
+  CI, and merge only after the published integration validator is green. Keep #131 and #141
+  In Progress until their real Stripe provider checkpoints can execute.

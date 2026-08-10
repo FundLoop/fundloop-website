@@ -4,6 +4,7 @@ export const BASE_SAFE_PAYOUT_OPERATOR_FUNCTION="base-safe-payout-operator"
 
 export type BaseSafePayoutOperatorInput =
   | { action: "authorize"; payoutIntentId: number; deploymentId: number; gasBudgetNative: string }
+  | { action: "confirm_authorization"; commandId: number }
   | { action: "execute"; commandId: number }
   | { action: "observe"; commandId: number; txHash: `0x${string}`; replacementTxHash?: `0x${string}` }
 
@@ -20,8 +21,9 @@ export function validateBaseSafePayoutOperatorInput(input: unknown): EdgeCommand
     typeof value.gasBudgetNative === "string" && integer.test(value.gasBudgetNative)) {
     return edgeCommandSuccess({ action:"authorize",payoutIntentId:Number(value.payoutIntentId),deploymentId:Number(value.deploymentId),gasBudgetNative:value.gasBudgetNative })
   }
-  if (value.action === "execute" && exact(value,["action","commandId"]) && Number.isSafeInteger(value.commandId) && Number(value.commandId)>0) {
-    return edgeCommandSuccess({ action:"execute",commandId:Number(value.commandId) })
+  if ((value.action === "confirm_authorization" || value.action === "execute") && exact(value,["action","commandId"]) &&
+    Number.isSafeInteger(value.commandId) && Number(value.commandId)>0) {
+    return edgeCommandSuccess({ action:value.action,commandId:Number(value.commandId) })
   }
   if (value.action === "observe" && (exact(value,["action","commandId","txHash"]) || exact(value,["action","commandId","txHash","replacementTxHash"])) &&
     Number.isSafeInteger(value.commandId) && Number(value.commandId)>0 && typeof value.txHash === "string" && txHash.test(value.txHash) &&

@@ -112,6 +112,20 @@ BEGIN
     OR (SELECT sum(native_atomic_amount) FROM public.base_payout_fee_inventory_reservations WHERE command_id=v_command_id)<>1000000
   THEN RAISE EXCEPTION 'valid payout authorization failed'; END IF;
 
+  IF (SELECT chain_authorized_at FROM public.base_payout_execution_commands WHERE id=v_command_id) IS NOT NULL
+  THEN RAISE EXCEPTION 'database preparation falsely claimed onchain Safe authorization'; END IF;
+  v_failed:=false; BEGIN PERFORM public.confirm_base_safe_payout_authorization(v_operator,jsonb_build_object(
+    'contractVersion','base_safe_payout_authorization_proof.v1','deploymentEnvironment','local','commandId',v_command_id,
+    'requestHash','0x'||repeat('f',64),'blockNumber',12,'authorized',true,'observationSource','trusted_viem_v1','evidenceHash',repeat('7',64)));
+  EXCEPTION WHEN OTHERS THEN v_failed:=SQLERRM LIKE '%base_payout_authorization_command_mismatch%'; END;
+  IF NOT v_failed THEN RAISE EXCEPTION 'wrong Safe request hash was accepted'; END IF;
+  PERFORM public.confirm_base_safe_payout_authorization(v_operator,jsonb_build_object(
+    'contractVersion','base_safe_payout_authorization_proof.v1','deploymentEnvironment','local','commandId',v_command_id,
+    'requestHash',v_request_hash,'blockNumber',12,'authorized',true,'observationSource','trusted_viem_v1','evidenceHash',repeat('7',64)));
+  IF (SELECT chain_authorized_at IS NULL OR chain_authorization_block_number<>12 OR chain_authorization_evidence_hash<>repeat('7',64)
+      FROM public.base_payout_execution_commands WHERE id=v_command_id)
+  THEN RAISE EXCEPTION 'valid Safe authorization proof was not persisted'; END IF;
+
   v_failed:=false; BEGIN EXECUTE 'SET LOCAL ROLE authenticated'; PERFORM public.authorize_base_safe_payout(v_operator,'{}');
   EXCEPTION WHEN insufficient_privilege THEN v_failed:=true; END; RESET ROLE;
   IF NOT v_failed THEN RAISE EXCEPTION 'authenticated executed payout RPC'; END IF;

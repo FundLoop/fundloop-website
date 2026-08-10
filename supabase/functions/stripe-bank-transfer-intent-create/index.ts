@@ -7,13 +7,13 @@ import { authenticateRequest,getEnv,json,parseJsonBody,serve } from "../_shared/
 
 function environment() { return (getEnv("FUNDLOOP_DEPLOYMENT_ENV")??"production").trim().toLowerCase() }
 
-async function projectAdminContext(client,actorUserId,slug) {
+async function projectAdminContext(client: any,actorUserId:string,slug:string) {
   const {data:project,error}=await client.from("projects").select("id,slug,organization_id").eq("slug",slug).maybeSingle()
   if(error||!project)return {ok:false,error:"Project not found."}
   const {data:participant}=await client.from("participants").select("id").eq("project_id",project.id).eq("user_id",actorUserId).eq("is_admin",true).maybeSingle()
   if(participant?.id)return {ok:true,project}
   const {data:roles}=await client.from("ref_roles").select("id").in("name",["Founder","Admin"])
-  const roleIds=(roles??[]).map((role)=>role.id)
+  const roleIds=(roles??[]).map((role:{id:number})=>role.id)
   if(project.organization_id&&roleIds.length) {
     const {data:member}=await client.from("organization_members").select("id").eq("organization_id",project.organization_id)
       .eq("user_id",actorUserId).eq("status","active").is("deleted_at",null).in("role_id",roleIds).maybeSingle()
@@ -26,13 +26,13 @@ async function handleRequest(request:Request) {
   if(request.method==="OPTIONS")return new Response("ok",{headers:{"access-control-allow-origin":"*","access-control-allow-headers":"authorization,apikey,content-type"}})
   if(request.method!=="POST")return json(edgeCommandFailure("method_not_allowed","POST required."))
   const runtimeEnvironment=environment()
-  const body=await parseJsonBody(request);if(!body.ok)return json(edgeCommandFailure("invalid_payload",body.error))
+  const body=await parseJsonBody(request);if(!body.ok)return json(edgeCommandFailure("invalid_payload",body.error??"Request body must be valid JSON."))
   const input=validateStripeBankTransferIntentCreateInput(body.body,runtimeEnvironment);if(!input.ok)return json(input)
   const auth=await authenticateRequest(request);if(!auth.ok||!auth.user)return json(edgeCommandFailure(auth.code??"not_authenticated",auth.error))
   const acknowledgement=await requireCurrentTermsAcknowledgement(auth.adminClient,{actorUserId:auth.user.id,actorCapacity:"project_actor",sourceSurface:"project_funding_preview"})
   if(!acknowledgement.ok)return json(edgeCommandFailure(acknowledgement.code,acknowledgement.message))
   const context=await projectAdminContext(auth.adminClient,auth.user.id,input.data.projectSlug)
-  if(!context.ok)return json(edgeCommandFailure("permission_denied",context.error))
+  if(!context.ok)return json(edgeCommandFailure("permission_denied",context.error??"Project access is required."))
   const {data:payment,error:paymentError}=await auth.adminClient.from("payments").select("id,project_id,payment_amount").eq("id",input.data.paymentId).eq("project_id",context.project.id).maybeSingle()
   if(paymentError||!payment)return json(edgeCommandFailure("payment_not_found","Payment not found."))
   if(String(Math.round(Number(payment.payment_amount)*100))!==input.data.expectedAmountMinor)return json(edgeCommandFailure("amount_mismatch","Payment amount changed; reload before requesting instructions."))

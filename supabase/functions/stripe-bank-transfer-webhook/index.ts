@@ -16,7 +16,7 @@ function balanceSnapshots(balance:Stripe.Balance) {
 async function handleRequest(request:Request) {
   if(request.method!=="POST")return json(edgeCommandFailure("method_not_allowed","POST required."))
   const runtimeEnvironment=environment()
-  if(!["local","dev","test"].includes(runtimeEnvironment))return json(edgeCommandFailure("production_disabled","Stripe webhooks are unavailable in this environment."))
+  if(!["local","development","dev","preview","test"].includes(runtimeEnvironment))return json(edgeCommandFailure("production_disabled","Stripe webhooks are unavailable in this environment."))
   const secretKey=getEnv("STRIPE_SECRET_KEY")?.trim(),webhookSecret=getEnv("STRIPE_WEBHOOK_SECRET")?.trim(),providerAccountId=getEnv("STRIPE_ACCOUNT_ID")?.trim()
   if(!secretKey?.startsWith("sk_test_")||!webhookSecret?.startsWith("whsec_")||!providerAccountId?.match(/^acct_[A-Za-z0-9]+$/))
     return json(edgeCommandFailure("stripe_sandbox_not_configured","Stripe sandbox webhook credentials are not configured."))
@@ -47,8 +47,7 @@ async function handleRequest(request:Request) {
   if(!evidence)return json(edgeCommandSuccess({ignored:true,eventId:event.id}))
   const balance=await stripe.balance.retrieve();const snapshots=balanceSnapshots(balance)
   const command={contractVersion:"stripe_bank_transfer_webhook.v1",deploymentEnvironment:runtimeEnvironment,providerEventId:event.id,
-    providerAccountId,eventType:event.type,providerObjectId:evidence.providerObjectId,providerPaymentIntentId:evidence.providerPaymentIntentId,
-    providerCustomerId:evidence.providerCustomerId,providerCreatedAt:new Date(event.created*1000).toISOString(),apiVersion:event.api_version??"",
+    providerAccountId,eventType:event.type,providerCreatedAt:new Date(event.created*1000).toISOString(),apiVersion:event.api_version??"",
     signatureTimestamp:timestamp,payloadSha256,livemode:false,observationSource:"stripe_sdk_v1",...evidence,balanceSnapshots:snapshots,
     balanceEvidenceHash:await sha256(JSON.stringify(snapshots))}
   const {data,error}=await clients.adminClient.rpc("ingest_stripe_bank_transfer_webhook",{p_command:command})
