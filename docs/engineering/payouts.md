@@ -25,14 +25,9 @@ The enum exists now so the product and operator model can be multi-rail before a
 
 `monthly-cycle-bookkeeping-credits-create` is the MVP handoff from approved calculation results into user-visible bookkeeping earnings. It creates rows in `monthly_cycle_bookkeeping_credits` from verified calculation output, preserving USD equivalent amount, selected asset fills, source/project breakdown, and allocator explanation metadata. These records are deliberately `credited` and `not_paid`: they prove the user's account has been credited in bookkeeping state, but they are not transfer instructions and they do not imply settlement has happened.
 
-`monthly-cycle-payout-intents-create` converts approved `zkas_published_user_results` into `payout_intents`.
+The legacy `monthly-cycle-payout-intents-create` result-to-intent command is retired. Approved close packages create withdrawal obligations; users then create one project-scoped asset reservation through `user-withdrawal-request-create`.
 
-The command is idempotent per published result and cycle. It creates:
-
-- `ready` intents when a user has an active default payout route
-- `draft` intents when the user still needs to configure a route
-
-This keeps missing payout routes visible without blocking the whole cycle from entering distribution work. Asset preferences are handled separately by `user_asset_preferences`; they guide future asset fulfillment planning but do not prove a destination is ready.
+The withdrawal command is idempotent per user-supplied request key and immutable project/asset/route/amount snapshot. It creates a `draft` intent only after exact inventory is reserved; otherwise the request is queued without manufacturing an unbacked liability. Missing payout routes remain visible in the earnings workspace before request creation. Asset preferences are handled separately by `user_asset_preferences`; they guide future asset fulfillment planning but do not prove a destination is ready.
 
 For the operational MVP, bookkeeping credits are the success target. Payout intents remain the later outbound-planning model for actual transfer readiness.
 

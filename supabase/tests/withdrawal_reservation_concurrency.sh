@@ -11,12 +11,13 @@ psql "$database_url" -v ON_ERROR_STOP=1 -f "$tmp_dir/setup.sql" >/dev/null
 
 actor_id="$(psql "$database_url" -Atc "select user_id from user_withdrawal_obligations order by id limit 1")"
 route_id="$(psql "$database_url" -Atc "select id from user_payout_routes where user_id='$actor_id' and rail='evm' order by id limit 1")"
+project_id="$(psql "$database_url" -Atc "select project_id from payout_inventory_lots where user_id='$actor_id' and rail_key='base_stablecoin' order by id limit 1")"
 
 request_sql() {
   local key="$1"
-  psql "$database_url" -v ON_ERROR_STOP=1 -Atc "select public.create_user_withdrawal_request_v2(
-    '$actor_id'::uuid,jsonb_build_object('contractVersion','withdrawal_request.v2','deploymentEnvironment','local',
-    'payoutRouteId',$route_id,'requestedMinor',30000,'assetKey','base_review_usdc','userFeeBps',0,'idempotencyKey','$key'));"
+  psql "$database_url" -v ON_ERROR_STOP=1 -Atc "select public.create_user_withdrawal_request_v3(
+    '$actor_id'::uuid,jsonb_build_object('contractVersion','withdrawal_request.v3','deploymentEnvironment','local',
+    'payoutRouteId',$route_id,'requestedMinor',30000,'projectId',$project_id,'assetKey','base_review_usdc','userFeeBps',0,'idempotencyKey','$key'));"
 }
 
 set +e

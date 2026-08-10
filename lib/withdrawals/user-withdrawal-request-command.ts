@@ -29,9 +29,9 @@ export async function executeUserWithdrawalRequestCreate(
       actorUserId: input.actorUserId, actorCapacity: "user", sourceSurface: "payout_preview",
     })
     if (!acknowledgement.ok) return { ok: false, error: { code: acknowledgement.code, message: acknowledgement.message } }
-    const { data, error } = await supabase.rpc("create_user_withdrawal_request_v2", { p_actor_user_id: input.actorUserId, p_command: {
-      contractVersion: "withdrawal_request.v2", deploymentEnvironment: input.deploymentEnvironment, payoutRouteId: input.payoutRouteId,
-      requestedMinor: input.requestedMinor, assetKey: input.assetKey, userFeeBps: input.userFeeBps, idempotencyKey: input.idempotencyKey,
+    const { data, error } = await supabase.rpc("create_user_withdrawal_request_v3", { p_actor_user_id: input.actorUserId, p_command: {
+      contractVersion: "withdrawal_request.v3", deploymentEnvironment: input.deploymentEnvironment, payoutRouteId: input.payoutRouteId,
+      requestedMinor: input.requestedMinor, projectId: input.projectId, assetKey: input.assetKey, userFeeBps: input.userFeeBps, idempotencyKey: input.idempotencyKey,
     } })
     if (error) {
       const code = errorCode(error.message)

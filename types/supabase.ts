@@ -8603,6 +8603,7 @@ export type Database = {
           net_minor: number | null
           payout_route_id: number
           production_enabled: boolean
+          project_id: number | null
           queue_for_cycle_id: number | null
           queue_for_cycle_key: string | null
           rail_key: string | null
@@ -8628,6 +8629,7 @@ export type Database = {
           net_minor?: number | null
           payout_route_id: number
           production_enabled?: boolean
+          project_id?: number | null
           queue_for_cycle_id?: number | null
           queue_for_cycle_key?: string | null
           rail_key?: string | null
@@ -8653,6 +8655,7 @@ export type Database = {
           net_minor?: number | null
           payout_route_id?: number
           production_enabled?: boolean
+          project_id?: number | null
           queue_for_cycle_id?: number | null
           queue_for_cycle_key?: string | null
           rail_key?: string | null
@@ -8679,6 +8682,13 @@ export type Database = {
             columns: ["payout_route_id"]
             isOneToOne: false
             referencedRelation: "user_payout_routes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "user_withdrawal_requests_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
             referencedColumns: ["id"]
           },
           {
@@ -10679,6 +10689,10 @@ export type Database = {
         Args: { p_actor_user_id: string; p_command: Json }
         Returns: Json
       }
+      create_user_withdrawal_request_v3: {
+        Args: { p_actor_user_id: string; p_command: Json }
+        Returns: Json
+      }
       decide_epoch_project_package: {
         Args: { p_command: Json }
         Returns: number
@@ -11260,7 +11274,6 @@ export type Database = {
     }
   }
 }
-
 type DatabaseWithoutInternals = Omit<Database, "__InternalSupabase">
 
 type DefaultSchema = DatabaseWithoutInternals[Extract<keyof Database, "public">]

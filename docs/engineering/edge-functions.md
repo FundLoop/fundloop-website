@@ -118,7 +118,7 @@ For monthly-cycle operations:
 - the command authenticates an internal admin, reads cycle-linked approved zkAS inputs, runs the pure MVP capped-equalization allocator from `locked_manifest.mvp_inputs`, writes deterministic package/run/result artifacts to Supabase Storage, creates a completed but unverified zkAS run, persists user result rows plus MVP allocation detail rows, and advances the cycle into `calculation`
 - `monthly-cycle-verification-review` records cycle-level result review decisions after calculation and either moves the cycle to `verification` or records that cleanup is needed
 - `monthly-cycle-approval` requires verified completed calculation output and advances the cycle to `approval`, creating the checkpoint future payout/distribution work must consume
-- `monthly-cycle-payout-intents-create` requires an approved cycle, converts published user results into idempotent payout intents, and advances the cycle into `distribution`
+- `user-withdrawal-request-create` requires a Terms-review acknowledgement and reserves a single project-linked asset against approved obligations; the former direct result-to-intent function is retired
 
 For chain and payout execution:
 
@@ -174,7 +174,7 @@ supabase functions serve project-onchain-payment-submission-record --env-file .e
 supabase functions serve admin-payment-receipt-confirm --env-file .env.local
 supabase functions serve admin-onchain-payment-reconciliation-run --env-file .env.local
 supabase functions serve monthly-cycle-lock --env-file .env.local
-supabase functions serve monthly-cycle-payout-intents-create --env-file .env.local
+supabase functions serve user-withdrawal-request-create --env-file .env.local
 ```
 
 Once the local stack is running, invoke the command through the app or by calling the local functions endpoint with an authenticated bearer token.

@@ -4,10 +4,11 @@ import { normalizeUserWithdrawalRequestResult, validateUserWithdrawalRequestInpu
 
 describe("user withdrawal request v2 contract", () => {
   it("accepts exact create fields and 0%-100% fee snapshots", () => {
-    const base = { action: "create", payoutRouteId: 3, requestedMinor: 1000, assetKey: "stripe_sandbox_usd", idempotencyKey: "request-123" }
+    const base = { action: "create", payoutRouteId: 3, requestedMinor: 1000, projectId: 7, assetKey: "stripe_sandbox_usd", idempotencyKey: "request-123" }
     expect(validateUserWithdrawalRequestInput({ ...base, userFeeBps: 0 }).ok).toBe(true)
     expect(validateUserWithdrawalRequestInput({ ...base, userFeeBps: 10000 }).ok).toBe(true)
     expect(validateUserWithdrawalRequestInput({ ...base, userFeeBps: 10001 }).ok).toBe(false)
+    expect(validateUserWithdrawalRequestInput({ ...base, projectId: 0, userFeeBps: 0 }).ok).toBe(false)
     expect(validateUserWithdrawalRequestInput({ ...base, userFeeBps: 0, actorUserId: "forged" }).ok).toBe(false)
   })
 

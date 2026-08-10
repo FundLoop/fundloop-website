@@ -1,6 +1,5 @@
 import { notFound } from "next/navigation"
 import { ArrowLeft, Banknote, CheckCircle2, FileWarning, Route } from "lucide-react"
-import { MonthlyCyclePayoutIntentsButton } from "@/components/admin/monthly-cycle-payout-intents-button"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -52,7 +51,7 @@ export default async function AdminCyclePayoutsPage({ params }: PageProps) {
           <div className="space-y-3 rounded-[var(--radius-xl)] border border-[color:var(--surface-border)] bg-[var(--surface-panel-strong)] p-4">
             <Badge variant={overview.cycle.status === "distribution" ? "default" : "secondary"}>{overview.cycle.statusLabel}</Badge>
             <div className="text-sm text-[var(--text-muted)]">{overview.cycle.periodStart} to {overview.cycle.periodEnd}</div>
-            <MonthlyCyclePayoutIntentsButton cycleKey={overview.cycle.cycleKey} disabled={!overview.canCreateIntents} />
+            <p className="max-w-xs text-sm text-[var(--text-muted)]">Direct result-based intent creation is retired. Users create project-scoped withdrawal reservations from their earnings workspace.</p>
           </div>
         </div>
       </section>

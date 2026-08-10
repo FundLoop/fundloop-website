@@ -3,7 +3,7 @@ SET LOCAL search_path=public,extensions,pg_catalog;
 
 DO $$
 DECLARE
-  v_actor uuid; v_other uuid; v_cycle bigint; v_next_cycle bigint; v_project bigint; v_run bigint; v_result bigint;
+  v_actor uuid; v_other uuid; v_cycle bigint; v_next_cycle bigint; v_project bigint; v_other_project bigint; v_run bigint; v_result bigint;
   v_credit bigint; v_obligation bigint; v_stripe_asset bigint; v_stripe_custody bigint; v_base_asset bigint; v_base_custody bigint;
   v_stripe_fx bigint; v_base_fx bigint; v_stripe_route bigint; v_base_route bigint; v_request jsonb; v_request_id uuid; v_replay jsonb;
   v_failed boolean; v_index integer; v_claims numeric; v_intents integer;
@@ -11,6 +11,7 @@ BEGIN
   SELECT user_id INTO v_actor FROM public.users WHERE email='maya@fundloop.example.com';
   SELECT user_id INTO v_other FROM public.users WHERE user_id<>v_actor ORDER BY created_at,user_id LIMIT 1;
   SELECT id INTO v_project FROM public.projects ORDER BY id LIMIT 1;
+  SELECT id INTO v_other_project FROM public.projects WHERE id<>v_project ORDER BY id LIMIT 1;
   INSERT INTO public.monthly_cycles(cycle_key,year,month,period_start,period_end,status) VALUES
     ('2026-10',2026,10,'2026-10-01','2026-10-31','open'),('2026-11',2026,11,'2026-11-01','2026-11-30','open')
   ON CONFLICT(cycle_key) DO UPDATE SET status=excluded.status;
@@ -62,18 +63,18 @@ BEGIN
   END LOOP;
 
   -- Production and literal staging fail closed.
-  v_failed:=false; BEGIN PERFORM public.create_user_withdrawal_request_v2(v_actor,jsonb_build_object('contractVersion','withdrawal_request.v2',
-    'deploymentEnvironment','production','payoutRouteId',v_stripe_route,'requestedMinor',1000,'assetKey','stripe_sandbox_usd','userFeeBps',0,'idempotencyKey','prod-denied-1'));
+  v_failed:=false; BEGIN PERFORM public.create_user_withdrawal_request_v3(v_actor,jsonb_build_object('contractVersion','withdrawal_request.v3',
+    'deploymentEnvironment','production','payoutRouteId',v_stripe_route,'requestedMinor',1000,'projectId',v_project,'assetKey','stripe_sandbox_usd','userFeeBps',0,'idempotencyKey','prod-denied-1'));
   EXCEPTION WHEN OTHERS THEN v_failed:=SQLERRM LIKE '%withdrawal_runtime_disabled%'; END;
   IF NOT v_failed THEN RAISE EXCEPTION 'production withdrawal was accepted'; END IF;
 
   -- Stripe minimum and exact oldest-first partial claim.
-  v_failed:=false; BEGIN PERFORM public.create_user_withdrawal_request_v2(v_actor,jsonb_build_object('contractVersion','withdrawal_request.v2',
-    'deploymentEnvironment','local','payoutRouteId',v_stripe_route,'requestedMinor',999,'assetKey','stripe_sandbox_usd','userFeeBps',0,'idempotencyKey','stripe-small-1'));
+  v_failed:=false; BEGIN PERFORM public.create_user_withdrawal_request_v3(v_actor,jsonb_build_object('contractVersion','withdrawal_request.v3',
+    'deploymentEnvironment','local','payoutRouteId',v_stripe_route,'requestedMinor',999,'projectId',v_project,'assetKey','stripe_sandbox_usd','userFeeBps',0,'idempotencyKey','stripe-small-1'));
   EXCEPTION WHEN OTHERS THEN v_failed:=SQLERRM LIKE '%withdrawal_minimum_not_met%'; END;
   IF NOT v_failed THEN RAISE EXCEPTION 'Stripe sub-$10 request was accepted'; END IF;
-  v_request:=public.create_user_withdrawal_request_v2(v_actor,jsonb_build_object('contractVersion','withdrawal_request.v2','deploymentEnvironment','local',
-    'payoutRouteId',v_stripe_route,'requestedMinor',2500,'assetKey','stripe_sandbox_usd','userFeeBps',0,'idempotencyKey','stripe-partial-1'));
+  v_request:=public.create_user_withdrawal_request_v3(v_actor,jsonb_build_object('contractVersion','withdrawal_request.v3','deploymentEnvironment','local',
+    'payoutRouteId',v_stripe_route,'requestedMinor',2500,'projectId',v_project,'assetKey','stripe_sandbox_usd','userFeeBps',0,'idempotencyKey','stripe-partial-1'));
   v_request_id:=(v_request->>'requestId')::uuid;
   SELECT sum(claimed_minor) INTO v_claims FROM public.user_withdrawal_obligation_claims WHERE withdrawal_request_id=v_request_id;
   IF v_request->>'status'<>'reserved' OR v_claims<>2500 OR (SELECT count(*) FROM public.user_withdrawal_obligation_claims WHERE withdrawal_request_id=v_request_id)<>2
@@ -82,28 +83,39 @@ BEGIN
     OR (SELECT sum(native_atomic_amount) FROM public.payout_inventory_reservations WHERE withdrawal_request_id=v_request_id)<>2500
     OR (SELECT count(*) FROM public.payout_intents WHERE withdrawal_request_id=v_request_id AND source_result_id IS NULL)<>1
   THEN RAISE EXCEPTION 'partial oldest-first or exact inventory reservation failed'; END IF;
-  v_replay:=public.create_user_withdrawal_request_v2(v_actor,jsonb_build_object('contractVersion','withdrawal_request.v2','deploymentEnvironment','local',
-    'payoutRouteId',v_stripe_route,'requestedMinor',2500,'assetKey','stripe_sandbox_usd','userFeeBps',0,'idempotencyKey','stripe-partial-1'));
+  v_replay:=public.create_user_withdrawal_request_v3(v_actor,jsonb_build_object('contractVersion','withdrawal_request.v3','deploymentEnvironment','local',
+    'payoutRouteId',v_stripe_route,'requestedMinor',2500,'projectId',v_project,'assetKey','stripe_sandbox_usd','userFeeBps',0,'idempotencyKey','stripe-partial-1'));
   IF v_replay->>'requestId'<>v_request->>'requestId' THEN RAISE EXCEPTION 'idempotent replay changed request'; END IF;
-  v_failed:=false; BEGIN PERFORM public.create_user_withdrawal_request_v2(v_actor,jsonb_build_object('contractVersion','withdrawal_request.v2',
-    'deploymentEnvironment','local','payoutRouteId',v_stripe_route,'requestedMinor',2600,'assetKey','stripe_sandbox_usd','userFeeBps',0,'idempotencyKey','stripe-partial-1'));
+  v_failed:=false; BEGIN PERFORM public.create_user_withdrawal_request_v3(v_actor,jsonb_build_object('contractVersion','withdrawal_request.v3',
+    'deploymentEnvironment','local','payoutRouteId',v_stripe_route,'requestedMinor',2600,'projectId',v_project,'assetKey','stripe_sandbox_usd','userFeeBps',0,'idempotencyKey','stripe-partial-1'));
   EXCEPTION WHEN OTHERS THEN v_failed:=SQLERRM LIKE '%withdrawal_idempotency_conflict%'; END;
   IF NOT v_failed THEN RAISE EXCEPTION 'changed idempotent request was accepted'; END IF;
 
+  -- The chosen project is part of the immutable request snapshot and cannot borrow same-asset inventory from another project.
+  v_failed:=false; BEGIN PERFORM public.create_user_withdrawal_request_v3(v_actor,jsonb_build_object('contractVersion','withdrawal_request.v3',
+    'deploymentEnvironment','local','payoutRouteId',v_stripe_route,'requestedMinor',1000,'projectId',v_other_project,'assetKey','stripe_sandbox_usd','userFeeBps',0,'idempotencyKey','wrong-project-1'));
+  EXCEPTION WHEN OTHERS THEN v_failed:=SQLERRM LIKE '%withdrawal_asset_not_eligible%'; END;
+  IF NOT v_failed OR EXISTS(
+    SELECT 1 FROM public.payout_inventory_reservations reservation
+    JOIN public.user_withdrawal_requests request ON request.id=reservation.withdrawal_request_id
+    JOIN public.payout_inventory_lots lot ON lot.id=reservation.inventory_lot_id
+    WHERE lot.project_id<>request.project_id
+  ) THEN RAISE EXCEPTION 'project-scoped withdrawal borrowed cross-project inventory'; END IF;
+
   -- Base minimum, 100% fee snapshot, and zero provider-backed intent for zero net.
-  v_failed:=false; BEGIN PERFORM public.create_user_withdrawal_request_v2(v_actor,jsonb_build_object('contractVersion','withdrawal_request.v2',
-    'deploymentEnvironment','local','payoutRouteId',v_base_route,'requestedMinor',499,'assetKey','base_review_usdc','userFeeBps',0,'idempotencyKey','base-small-1'));
+  v_failed:=false; BEGIN PERFORM public.create_user_withdrawal_request_v3(v_actor,jsonb_build_object('contractVersion','withdrawal_request.v3',
+    'deploymentEnvironment','local','payoutRouteId',v_base_route,'requestedMinor',499,'projectId',v_project,'assetKey','base_review_usdc','userFeeBps',0,'idempotencyKey','base-small-1'));
   EXCEPTION WHEN OTHERS THEN v_failed:=SQLERRM LIKE '%withdrawal_minimum_not_met%'; END;
   IF NOT v_failed THEN RAISE EXCEPTION 'Base sub-$5 request was accepted'; END IF;
-  v_request:=public.create_user_withdrawal_request_v2(v_actor,jsonb_build_object('contractVersion','withdrawal_request.v2','deploymentEnvironment','local',
-    'payoutRouteId',v_base_route,'requestedMinor',500,'assetKey','base_review_usdc','userFeeBps',10000,'idempotencyKey','base-full-fee-1'));
+  v_request:=public.create_user_withdrawal_request_v3(v_actor,jsonb_build_object('contractVersion','withdrawal_request.v3','deploymentEnvironment','local',
+    'payoutRouteId',v_base_route,'requestedMinor',500,'projectId',v_project,'assetKey','base_review_usdc','userFeeBps',10000,'idempotencyKey','base-full-fee-1'));
   IF v_request->>'status'<>'closed' OR v_request->>'feeMinor'<>'500' OR v_request->>'netMinor'<>'0'
     OR EXISTS(SELECT 1 FROM public.payout_intents WHERE withdrawal_request_id=(v_request->>'requestId')::uuid)
   THEN RAISE EXCEPTION '100 percent fee snapshot did not close safely'; END IF;
 
   -- A held request preserves claims and reservations, then cancellation releases both.
-  v_request:=public.create_user_withdrawal_request_v2(v_actor,jsonb_build_object('contractVersion','withdrawal_request.v2','deploymentEnvironment','local',
-    'payoutRouteId',v_base_route,'requestedMinor',500,'assetKey','base_review_usdc','userFeeBps',0,'idempotencyKey','base-hold-1'));
+  v_request:=public.create_user_withdrawal_request_v3(v_actor,jsonb_build_object('contractVersion','withdrawal_request.v3','deploymentEnvironment','local',
+    'payoutRouteId',v_base_route,'requestedMinor',500,'projectId',v_project,'assetKey','base_review_usdc','userFeeBps',0,'idempotencyKey','base-hold-1'));
   v_request_id:=(v_request->>'requestId')::uuid;
   PERFORM public.place_withdrawal_compliance_hold(v_other,v_request_id,'review_required',repeat('e',64),'local');
   IF (SELECT status FROM public.user_withdrawal_requests WHERE id=v_request_id)<>'held'
@@ -117,8 +129,8 @@ BEGIN
   THEN RAISE EXCEPTION 'cancellation left active reservations'; END IF;
 
   -- Reservation expiry requeues the timely claim and removes the live intent.
-  v_request:=public.create_user_withdrawal_request_v2(v_actor,jsonb_build_object('contractVersion','withdrawal_request.v2','deploymentEnvironment','local',
-    'payoutRouteId',v_stripe_route,'requestedMinor',1000,'assetKey','stripe_sandbox_usd','userFeeBps',0,'idempotencyKey','stripe-expiry-1'));
+  v_request:=public.create_user_withdrawal_request_v3(v_actor,jsonb_build_object('contractVersion','withdrawal_request.v3','deploymentEnvironment','local',
+    'payoutRouteId',v_stripe_route,'requestedMinor',1000,'projectId',v_project,'assetKey','stripe_sandbox_usd','userFeeBps',0,'idempotencyKey','stripe-expiry-1'));
   v_request_id:=(v_request->>'requestId')::uuid;
   v_index:=public.expire_withdrawal_inventory_reservations(clock_timestamp()+interval '49 hours','local');
   IF v_index<1
@@ -131,15 +143,27 @@ BEGIN
     (SELECT string_agg(status::text,',') FROM public.payout_intents WHERE withdrawal_request_id=v_request_id); END IF;
 
   -- Depleted selected-asset inventory queues without an unbacked intent.
+  UPDATE public.epoch_shadow_states SET monthly_cycle_id=v_cycle,current_stage='payout_readying',updated_at=clock_timestamp()
+  WHERE id=(SELECT id FROM public.epoch_shadow_states WHERE current_stage<>'closed' ORDER BY updated_at DESC,id DESC LIMIT 1);
   UPDATE public.payout_inventory_lots SET status='closed' WHERE user_id=v_actor AND financial_asset_id=v_stripe_asset AND legacy_inventory_key<>'legacy:stripe:20';
-  v_request:=public.create_user_withdrawal_request_v2(v_actor,jsonb_build_object('contractVersion','withdrawal_request.v2','deploymentEnvironment','local',
-    'payoutRouteId',v_stripe_route,'requestedMinor',1000,'assetKey','stripe_sandbox_usd','userFeeBps',0,'idempotencyKey','stripe-queue-1'));
+  v_request:=public.create_user_withdrawal_request_v3(v_actor,jsonb_build_object('contractVersion','withdrawal_request.v3','deploymentEnvironment','local',
+    'payoutRouteId',v_stripe_route,'requestedMinor',1000,'projectId',v_project,'assetKey','stripe_sandbox_usd','userFeeBps',0,'idempotencyKey','stripe-queue-1'));
   v_request_id:=(v_request->>'requestId')::uuid;
   IF v_request->>'status'<>'queued' OR EXISTS(SELECT 1 FROM public.payout_intents WHERE withdrawal_request_id=v_request_id)
     OR EXISTS(SELECT 1 FROM public.payout_inventory_reservations WHERE withdrawal_request_id=v_request_id)
     OR (SELECT queue_for_cycle_id FROM public.user_withdrawal_requests WHERE id=v_request_id)<>v_next_cycle
     OR (SELECT queue_for_cycle_key FROM public.user_withdrawal_requests WHERE id=v_request_id)<>'2026-11'
   THEN RAISE EXCEPTION 'depleted inventory created an unbacked liability'; END IF;
+
+  -- Queue derivation follows the current processing epoch, not an old obligation source cycle.
+  UPDATE public.epoch_shadow_states SET monthly_cycle_id=v_next_cycle,current_stage='payout_readying',updated_at=clock_timestamp()
+  WHERE id=(SELECT id FROM public.epoch_shadow_states WHERE current_stage<>'closed' ORDER BY updated_at DESC,id DESC LIMIT 1);
+  INSERT INTO public.monthly_cycles(cycle_key,year,month,period_start,period_end,status)
+    VALUES('2026-12',2026,12,'2026-12-01','2026-12-31','open') ON CONFLICT(cycle_key) DO NOTHING;
+  v_request:=public.create_user_withdrawal_request_v3(v_actor,jsonb_build_object('contractVersion','withdrawal_request.v3','deploymentEnvironment','local',
+    'payoutRouteId',v_stripe_route,'requestedMinor',1000,'projectId',v_project,'assetKey','stripe_sandbox_usd','userFeeBps',0,'idempotencyKey','current-epoch-queue-1'));
+  IF v_request->>'status'<>'queued' OR (SELECT queue_for_cycle_key FROM public.user_withdrawal_requests WHERE id=(v_request->>'requestId')::uuid)<>'2026-12'
+  THEN RAISE EXCEPTION 'queue target followed source cycle instead of current processing epoch'; END IF;
 
   -- Direct result-based intent creation is retired.
   v_failed:=false; BEGIN INSERT INTO public.payout_intents(monthly_cycle_id,source_result_id,user_id,amount_usd,status,idempotency_key)
@@ -148,7 +172,7 @@ BEGIN
   IF NOT v_failed THEN RAISE EXCEPTION 'direct result payout intent was accepted'; END IF;
 
   -- Browser/service roles cannot bypass typed commands or mutate control tables.
-  v_failed:=false; BEGIN EXECUTE 'SET LOCAL ROLE authenticated'; PERFORM public.create_user_withdrawal_request_v2(v_actor,'{}');
+  v_failed:=false; BEGIN EXECUTE 'SET LOCAL ROLE authenticated'; PERFORM public.create_user_withdrawal_request_v3(v_actor,'{}');
   EXCEPTION WHEN insufficient_privilege THEN v_failed:=true; END; RESET ROLE;
   IF NOT v_failed THEN RAISE EXCEPTION 'authenticated could execute withdrawal RPC'; END IF;
   v_failed:=false; BEGIN EXECUTE 'SET LOCAL ROLE service_role'; INSERT INTO public.payout_inventory_reservations(

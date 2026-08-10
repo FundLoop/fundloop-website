@@ -1707,3 +1707,52 @@ is unavailable and remains production fail-closed.
 
 - Commit #139 separately, post implementation evidence, stop local services, and send exact HEAD to
   the independent validator before moving #139 to In Review or beginning its dependent task.
+
+### session v35: close withdrawal validation gaps (#139)
+
+- Timestamp: 2026-08-10T00:44:51-04:00
+- Agent: Codex
+- Branch: codex/134-funded-redistribution
+- Head: 36d8fbc
+
+#### Objective
+
+Close independent-validation gaps by binding each request to one exact project/asset inventory,
+retiring the remaining direct result-to-intent app path, and deriving depleted-inventory rollover
+from the active processing epoch rather than an old obligation source cycle.
+
+#### Actions Taken
+
+- Added a forward migration and `withdrawal_request.v3` command. Project ID is now part of the
+  validated browser contract, immutable request hash/snapshot, eligibility check, and reservation
+  query; same-asset lots from another project cannot satisfy the request.
+- Changed queued-request derivation to use the latest non-closed shadow processing epoch and its
+  next available monthly cycle, with a deterministic next-cycle key when the row is not yet present.
+- Removed the legacy direct-result payout-intent component, typed adapters, Edge handler, command,
+  and success tests. The admin payout page now directs operators to project-scoped user withdrawals.
+- Updated architecture docs, executable SQL, the two-session race, generated Supabase types, unit
+  contracts, and exact desktop/mobile browser evidence.
+
+#### Validation Notes
+
+- Fresh local Supabase migration/seed replay passed. Executable SQL passed project mismatch denial,
+  absence of cross-project reservations, current-epoch rollover (`2026-11` to `2026-12` despite
+  `2026-10` sources), production/auth/direct-write denial, and all prior lifecycle assertions.
+- Two-session concurrency passed with one winner and one safe loser; active claims remained 36,000
+  of 40,000 minor units. Strict Deno passed the remaining withdrawal Edge handler.
+- Focused Node 22 Vitest passed 4 files / 17 tests. Full Node 22 `CI=1 pnpm check` passed lint,
+  148 files / 670 tests, typecheck, and the 165-page production build; `git diff --check` passed.
+- Authenticated Playwright passed 1/1 with zero console errors. Exact 1440x900 and 390x844 captures
+  were regenerated and visually inspected; the project-specific select is clear at both sizes.
+
+#### Reflections
+
+- Asset symbol alone is not a custody scope: project identity must be present at every boundary
+  from option value through request hash and reservation row selection.
+- Rollover is a fulfillment promise made at request time, so it follows the live processing epoch,
+  not the age of earnings used to satisfy the obligation claim.
+
+#### Suggested Next Steps
+
+- Commit this narrow validator fix, post evidence, stop local services, and request independent
+  revalidation before moving #139 to In Review or starting #140.

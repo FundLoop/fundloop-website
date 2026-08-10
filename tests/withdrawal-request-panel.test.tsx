@@ -18,7 +18,7 @@ describe("WithdrawalRequestPanel", () => {
     fireEvent.click(screen.getByRole("button", { name: "Reserve $25.00" }))
     expect(await screen.findByText("$25.00 · stripe_sandbox_usd")).toBeTruthy()
     expect(screen.getByText("Reserved")).toBeTruthy()
-    expect(createRequest).toHaveBeenCalledWith(expect.objectContaining({ action: "create", requestedMinor: 2500, assetKey: "stripe_sandbox_usd" }))
+    expect(createRequest).toHaveBeenCalledWith(expect.objectContaining({ action: "create", requestedMinor: 2500, projectId: 4, assetKey: "stripe_sandbox_usd" }))
   })
 
   it("enforces the Stripe minimum and requires eligible inventory", () => {

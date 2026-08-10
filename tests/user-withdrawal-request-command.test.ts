@@ -6,14 +6,14 @@ describe("user withdrawal request v2 command", () => {
     return { from: vi.fn(() => ({ select() { return this }, eq() { return this }, maybeSingle: vi.fn(async () => ({ data: { id: "acceptance-1" }, error: null })) })), rpc }
   }
   const input = { action: "create" as const, actorUserId: "user-1", deploymentEnvironment: "local", payoutRouteId: 3,
-    requestedMinor: 12500, assetKey: "stripe_sandbox_usd", userFeeBps: 0, idempotencyKey: "request-123" }
+    requestedMinor: 12500, projectId: 7, assetKey: "stripe_sandbox_usd", userFeeBps: 0, idempotencyKey: "request-123" }
 
   it("maps a backed partial reservation without claiming payment", async () => {
     const rpc = vi.fn(async () => ({ data: { requestId: "req-1", status: "reserved", requestedMinor: "12500", feeMinor: "0",
       netMinor: "12500", assetKey: "stripe_sandbox_usd", railKey: "stripe_bank_transfer", payoutIntentId: 9, noPayoutExecuted: true }, error: null }))
     const result = await executeUserWithdrawalRequestCreate(acknowledgedClient(rpc) as never, input)
     expect(result).toEqual({ ok: true, data: expect.objectContaining({ requestId: "req-1", status: "reserved", noPayoutExecuted: true }) })
-    expect(rpc).toHaveBeenCalledWith("create_user_withdrawal_request_v2", expect.objectContaining({ p_command: expect.objectContaining({ requestedMinor: 12500 }) }))
+    expect(rpc).toHaveBeenCalledWith("create_user_withdrawal_request_v3", expect.objectContaining({ p_command: expect.objectContaining({ requestedMinor: 12500, projectId: 7 }) }))
   })
 
   it("maps depleted inventory to a queue with no payout intent", async () => {

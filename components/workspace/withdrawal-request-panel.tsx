@@ -32,6 +32,7 @@ export function WithdrawalRequestPanel({ eligibleUsd, defaultRoute, assetOptions
   const [requests, setRequests] = useState(initialRequests)
   const [amount, setAmount] = useState(eligibleUsd > 0 ? eligibleUsd.toFixed(2) : "")
   const [assetKey, setAssetKey] = useState(compatibleAssets[0]?.assetKey ?? "")
+  const [projectId, setProjectId] = useState(compatibleAssets[0]?.projectId ?? 0)
   const [feePercent, setFeePercent] = useState("0")
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -40,10 +41,10 @@ export function WithdrawalRequestPanel({ eligibleUsd, defaultRoute, assetOptions
   const requestedMinor = Number.isFinite(amountNumber) ? Math.round(amountNumber * 100) : 0
 
   async function requestWithdrawal() {
-    if (!defaultRoute || !termsPreviewAcknowledged || !assetKey || requestedMinor <= 0) return
+    if (!defaultRoute || !termsPreviewAcknowledged || !assetKey || projectId <= 0 || requestedMinor <= 0) return
     setBusy(true); setError(null)
     const result = await invokeUserWithdrawalRequestCreate({ action: "create", payoutRouteId: defaultRoute.id, requestedMinor,
-      assetKey, userFeeBps: Math.round(Number(feePercent) * 100), idempotencyKey: crypto.randomUUID() })
+      projectId, assetKey, userFeeBps: Math.round(Number(feePercent) * 100), idempotencyKey: crypto.randomUUID() })
     setBusy(false)
     if (!result.ok) { setError(result.error.message); return }
     const now = new Date().toISOString()
@@ -62,7 +63,7 @@ export function WithdrawalRequestPanel({ eligibleUsd, defaultRoute, assetOptions
   }
 
   const minimum = defaultRoute?.rail === "fiat_stub" ? 10 : 5
-  const canSubmit = termsPreviewAcknowledged && !busy && Boolean(defaultRoute && assetKey) && amountNumber >= minimum && Number(feePercent) >= 0 && Number(feePercent) <= 100
+  const canSubmit = termsPreviewAcknowledged && !busy && Boolean(defaultRoute && assetKey && projectId) && amountNumber >= minimum && Number(feePercent) >= 0 && Number(feePercent) <= 100
 
   return <div className="space-y-4">
     {termsPreviewRequired ? <TermsPreviewGate sourceSurface="payout_preview" actorCapacity="user" onAcknowledged={setTermsPreviewAcknowledged} /> : null}
@@ -83,9 +84,13 @@ export function WithdrawalRequestPanel({ eligibleUsd, defaultRoute, assetOptions
             <span className="block text-xs font-normal text-[var(--text-muted)]">Minimum {usd(minimum)} · partial requests allowed</span>
           </label>
           <label className="space-y-2 text-sm font-medium">Project-linked asset
-            <select aria-label="Project-linked asset" value={assetKey} onChange={(event) => setAssetKey(event.target.value)} className="h-11 w-full rounded-xl border border-[color:var(--surface-border)] bg-[var(--surface-panel)] px-3">
+            <select aria-label="Project-linked asset" value={`${projectId}:${assetKey}`} onChange={(event) => {
+              const selected = compatibleAssets.find((asset) => `${asset.projectId}:${asset.assetKey}` === event.target.value)
+              setProjectId(selected?.projectId ?? 0)
+              setAssetKey(selected?.assetKey ?? "")
+            }} className="h-11 w-full rounded-xl border border-[color:var(--surface-border)] bg-[var(--surface-panel)] px-3">
               <option value="">Select eligible inventory</option>
-              {compatibleAssets.map((asset) => <option key={`${asset.projectId}:${asset.assetKey}`} value={asset.assetKey}>{asset.symbol} · project {asset.projectId} · {usd(asset.availableUsd)}</option>)}
+              {compatibleAssets.map((asset) => <option key={`${asset.projectId}:${asset.assetKey}`} value={`${asset.projectId}:${asset.assetKey}`}>{asset.symbol} · project {asset.projectId} · {usd(asset.availableUsd)}</option>)}
             </select>
           </label>
           <label className="space-y-2 text-sm font-medium">User fee snapshot (%)

@@ -3,7 +3,7 @@ import { edgeCommandFailure, edgeCommandSuccess, type EdgeCommandResult } from "
 export const USER_WITHDRAWAL_REQUEST_CREATE_FUNCTION = "user-withdrawal-request-create"
 
 export type UserWithdrawalRequestInput =
-  | { action: "create"; payoutRouteId: number; requestedMinor: number; assetKey: string; userFeeBps: number; idempotencyKey: string }
+  | { action: "create"; payoutRouteId: number; requestedMinor: number; projectId: number; assetKey: string; userFeeBps: number; idempotencyKey: string }
   | { action: "cancel" | "retry"; requestId: string; reason?: string }
 
 export type UserWithdrawalRequestResult = {
@@ -13,6 +13,7 @@ export type UserWithdrawalRequestResult = {
   feeMinor?: string
   netMinor?: string
   assetKey?: string
+  projectId?: number
   railKey?: "stripe_bank_transfer" | "base_stablecoin"
   payoutIntentId?: number | null
   noPayoutExecuted: true
@@ -34,15 +35,16 @@ function exactKeys(value: Record<string, unknown>, allowed: string[]) {
 export function validateUserWithdrawalRequestInput(input: unknown): EdgeCommandResult<UserWithdrawalRequestInput> {
   const value = record(input)
   if (!value || typeof value.action !== "string") return edgeCommandFailure("invalid_payload", "A withdrawal action is required.")
-  if (value.action === "create" && exactKeys(value, ["action", "payoutRouteId", "requestedMinor", "assetKey", "userFeeBps", "idempotencyKey"])) {
+  if (value.action === "create" && exactKeys(value, ["action", "payoutRouteId", "requestedMinor", "projectId", "assetKey", "userFeeBps", "idempotencyKey"])) {
     const idempotencyKey = typeof value.idempotencyKey === "string" ? value.idempotencyKey.trim() : ""
     if (!Number.isSafeInteger(value.payoutRouteId) || Number(value.payoutRouteId) <= 0 ||
       !Number.isSafeInteger(value.requestedMinor) || Number(value.requestedMinor) <= 0 ||
+      !Number.isSafeInteger(value.projectId) || Number(value.projectId) <= 0 ||
       !Number.isInteger(value.userFeeBps) || Number(value.userFeeBps) < 0 || Number(value.userFeeBps) > 10000 ||
       typeof value.assetKey !== "string" || !assetPattern.test(value.assetKey) || idempotencyKey.length < 8 || idempotencyKey.length > 128) {
       return edgeCommandFailure("invalid_payload", "Route, positive minor-unit amount, eligible asset, 0%-100% fee snapshot, and idempotency key are required.")
     }
-    return edgeCommandSuccess({ action: "create", payoutRouteId: Number(value.payoutRouteId), requestedMinor: Number(value.requestedMinor),
+    return edgeCommandSuccess({ action: "create", payoutRouteId: Number(value.payoutRouteId), requestedMinor: Number(value.requestedMinor), projectId: Number(value.projectId),
       assetKey: value.assetKey, userFeeBps: Number(value.userFeeBps), idempotencyKey })
   }
   if ((value.action === "cancel" || value.action === "retry") &&
