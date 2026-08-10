@@ -390,6 +390,388 @@ export type Database = {
           },
         ]
       }
+      base_paymaster_budgets: {
+        Row: {
+          deployment_id: number
+          evidence_hash: string
+          is_paused: boolean
+          max_per_request_native: number
+          remaining_native: number
+          updated_at: string
+          version: number
+        }
+        Insert: {
+          deployment_id: number
+          evidence_hash: string
+          is_paused?: boolean
+          max_per_request_native: number
+          remaining_native: number
+          updated_at?: string
+          version?: number
+        }
+        Update: {
+          deployment_id?: number
+          evidence_hash?: string
+          is_paused?: boolean
+          max_per_request_native?: number
+          remaining_native?: number
+          updated_at?: string
+          version?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "base_paymaster_budgets_deployment_id_fkey"
+            columns: ["deployment_id"]
+            isOneToOne: true
+            referencedRelation: "base_safe_payout_deployments"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      base_payout_execution_commands: {
+        Row: {
+          authorized_at: string
+          authorized_by_user_id: string
+          deployment_id: number
+          epoch_key: string
+          expires_at: string
+          fee_recipient_address: string
+          financial_asset_id: number
+          gas_budget_native: number
+          id: number
+          module_nonce: number
+          monthly_cycle_id: number
+          native_atomic_amount: number
+          payout_execution_attempt_id: number
+          payout_intent_id: number
+          production_enabled: boolean
+          project_id: number
+          recipient_address: string
+          request_hash: string
+          status: string
+          token_address: string
+          user_fee_native_amount: number
+          withdrawal_request_id: string
+        }
+        Insert: {
+          authorized_at?: string
+          authorized_by_user_id: string
+          deployment_id: number
+          epoch_key: string
+          expires_at: string
+          fee_recipient_address: string
+          financial_asset_id: number
+          gas_budget_native: number
+          id?: never
+          module_nonce: number
+          monthly_cycle_id: number
+          native_atomic_amount: number
+          payout_execution_attempt_id: number
+          payout_intent_id: number
+          production_enabled?: boolean
+          project_id: number
+          recipient_address: string
+          request_hash: string
+          status?: string
+          token_address: string
+          user_fee_native_amount?: number
+          withdrawal_request_id: string
+        }
+        Update: {
+          authorized_at?: string
+          authorized_by_user_id?: string
+          deployment_id?: number
+          epoch_key?: string
+          expires_at?: string
+          fee_recipient_address?: string
+          financial_asset_id?: number
+          gas_budget_native?: number
+          id?: never
+          module_nonce?: number
+          monthly_cycle_id?: number
+          native_atomic_amount?: number
+          payout_execution_attempt_id?: number
+          payout_intent_id?: number
+          production_enabled?: boolean
+          project_id?: number
+          recipient_address?: string
+          request_hash?: string
+          status?: string
+          token_address?: string
+          user_fee_native_amount?: number
+          withdrawal_request_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "base_payout_execution_commands_authorized_by_user_id_fkey"
+            columns: ["authorized_by_user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "base_payout_execution_commands_deployment_id_fkey"
+            columns: ["deployment_id"]
+            isOneToOne: false
+            referencedRelation: "base_safe_payout_deployments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "base_payout_execution_commands_financial_asset_id_fkey"
+            columns: ["financial_asset_id"]
+            isOneToOne: false
+            referencedRelation: "financial_assets"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "base_payout_execution_commands_monthly_cycle_id_fkey"
+            columns: ["monthly_cycle_id"]
+            isOneToOne: false
+            referencedRelation: "monthly_cycles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "base_payout_execution_commands_payout_execution_attempt_id_fkey"
+            columns: ["payout_execution_attempt_id"]
+            isOneToOne: true
+            referencedRelation: "payout_execution_attempts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "base_payout_execution_commands_payout_intent_id_fkey"
+            columns: ["payout_intent_id"]
+            isOneToOne: true
+            referencedRelation: "payout_intents"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "base_payout_execution_commands_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "base_payout_execution_commands_withdrawal_request_id_fkey"
+            columns: ["withdrawal_request_id"]
+            isOneToOne: true
+            referencedRelation: "user_withdrawal_requests"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      base_payout_execution_observations: {
+        Row: {
+          block_hash: string
+          block_number: number
+          command_id: number
+          confirmation_count: number
+          created_at: string
+          current_block_number: number
+          evidence_hash: string
+          id: number
+          l1_batch_finalized: boolean
+          ledger_transaction_id: number | null
+          observation_source: string
+          observed_at: string
+          observed_fee_recipient_address: string
+          observed_native_atomic_amount: number
+          observed_recipient_address: string
+          observed_request_hash: string
+          observed_token_address: string
+          observed_user_fee_native_amount: number
+          receipt_success: boolean
+          replacement_tx_hash: string | null
+          status: string
+          tx_hash: string
+        }
+        Insert: {
+          block_hash: string
+          block_number: number
+          command_id: number
+          confirmation_count: number
+          created_at?: string
+          current_block_number: number
+          evidence_hash: string
+          id?: never
+          l1_batch_finalized?: boolean
+          ledger_transaction_id?: number | null
+          observation_source: string
+          observed_at: string
+          observed_fee_recipient_address: string
+          observed_native_atomic_amount: number
+          observed_recipient_address: string
+          observed_request_hash: string
+          observed_token_address: string
+          observed_user_fee_native_amount: number
+          receipt_success: boolean
+          replacement_tx_hash?: string | null
+          status: string
+          tx_hash: string
+        }
+        Update: {
+          block_hash?: string
+          block_number?: number
+          command_id?: number
+          confirmation_count?: number
+          created_at?: string
+          current_block_number?: number
+          evidence_hash?: string
+          id?: never
+          l1_batch_finalized?: boolean
+          ledger_transaction_id?: number | null
+          observation_source?: string
+          observed_at?: string
+          observed_fee_recipient_address?: string
+          observed_native_atomic_amount?: number
+          observed_recipient_address?: string
+          observed_request_hash?: string
+          observed_token_address?: string
+          observed_user_fee_native_amount?: number
+          receipt_success?: boolean
+          replacement_tx_hash?: string | null
+          status?: string
+          tx_hash?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "base_payout_execution_observations_command_id_fkey"
+            columns: ["command_id"]
+            isOneToOne: false
+            referencedRelation: "base_payout_execution_commands"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "base_payout_execution_observations_ledger_transaction_id_fkey"
+            columns: ["ledger_transaction_id"]
+            isOneToOne: false
+            referencedRelation: "ledger_transactions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "base_payout_execution_observations_ledger_transaction_id_fkey"
+            columns: ["ledger_transaction_id"]
+            isOneToOne: false
+            referencedRelation: "shadow_ledger_trial_balance"
+            referencedColumns: ["ledger_transaction_id"]
+          },
+        ]
+      }
+      base_payout_fee_inventory_reservations: {
+        Row: {
+          command_id: number
+          inventory_lot_id: number
+          native_atomic_amount: number
+          status: string
+        }
+        Insert: {
+          command_id: number
+          inventory_lot_id: number
+          native_atomic_amount: number
+          status?: string
+        }
+        Update: {
+          command_id?: number
+          inventory_lot_id?: number
+          native_atomic_amount?: number
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "base_payout_fee_inventory_reservations_command_id_fkey"
+            columns: ["command_id"]
+            isOneToOne: false
+            referencedRelation: "base_payout_execution_commands"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "base_payout_fee_inventory_reservations_inventory_lot_id_fkey"
+            columns: ["inventory_lot_id"]
+            isOneToOne: false
+            referencedRelation: "payout_inventory_lots"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      base_payout_reconciliation_links: {
+        Row: {
+          command_id: number
+          created_at: string
+          ledger_transaction_id: number
+          observation_id: number
+        }
+        Insert: {
+          command_id: number
+          created_at?: string
+          ledger_transaction_id: number
+          observation_id: number
+        }
+        Update: {
+          command_id?: number
+          created_at?: string
+          ledger_transaction_id?: number
+          observation_id?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "base_payout_reconciliation_links_command_id_fkey"
+            columns: ["command_id"]
+            isOneToOne: true
+            referencedRelation: "base_payout_execution_commands"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "base_payout_reconciliation_links_ledger_transaction_id_fkey"
+            columns: ["ledger_transaction_id"]
+            isOneToOne: true
+            referencedRelation: "ledger_transactions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "base_payout_reconciliation_links_ledger_transaction_id_fkey"
+            columns: ["ledger_transaction_id"]
+            isOneToOne: true
+            referencedRelation: "shadow_ledger_trial_balance"
+            referencedColumns: ["ledger_transaction_id"]
+          },
+          {
+            foreignKeyName: "base_payout_reconciliation_links_observation_id_fkey"
+            columns: ["observation_id"]
+            isOneToOne: true
+            referencedRelation: "base_payout_execution_observations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      base_payout_runtime_controls: {
+        Row: {
+          authorization_enabled: boolean
+          deployment_environment: string
+          observation_enabled: boolean
+          production_value_flow_enabled: boolean
+        }
+        Insert: {
+          authorization_enabled?: boolean
+          deployment_environment: string
+          observation_enabled?: boolean
+          production_value_flow_enabled?: boolean
+        }
+        Update: {
+          authorization_enabled?: boolean
+          deployment_environment?: string
+          observation_enabled?: boolean
+          production_value_flow_enabled?: boolean
+        }
+        Relationships: [
+          {
+            foreignKeyName: "base_payout_runtime_controls_deployment_environment_fkey"
+            columns: ["deployment_environment"]
+            isOneToOne: true
+            referencedRelation: "financial_runtime_controls"
+            referencedColumns: ["deployment_environment"]
+          },
+        ]
+      }
       base_project_fee_versions: {
         Row: {
           created_at: string
@@ -425,6 +807,110 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "projects"
             referencedColumns: ["id"]
+          },
+        ]
+      }
+      base_safe_payout_assets: {
+        Row: {
+          deployment_id: number
+          evidence_hash: string
+          financial_asset_id: number
+          is_enabled: boolean
+          token_address: string
+        }
+        Insert: {
+          deployment_id: number
+          evidence_hash: string
+          financial_asset_id: number
+          is_enabled?: boolean
+          token_address: string
+        }
+        Update: {
+          deployment_id?: number
+          evidence_hash?: string
+          financial_asset_id?: number
+          is_enabled?: boolean
+          token_address?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "base_safe_payout_assets_deployment_id_fkey"
+            columns: ["deployment_id"]
+            isOneToOne: false
+            referencedRelation: "base_safe_payout_deployments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "base_safe_payout_assets_financial_asset_id_fkey"
+            columns: ["financial_asset_id"]
+            isOneToOne: false
+            referencedRelation: "financial_assets"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      base_safe_payout_deployments: {
+        Row: {
+          chain_id: number
+          created_at: string
+          deployment_environment: string
+          evidence_hash: string
+          id: number
+          is_active: boolean
+          is_paused: boolean
+          limited_signer_address: string
+          max_per_epoch_native: number
+          max_per_transaction_native: number
+          max_rolling_24h_native: number
+          module_address: string
+          paymaster_policy_address: string
+          production_enabled: boolean
+          safe_address: string
+          safe_role: string
+        }
+        Insert: {
+          chain_id: number
+          created_at?: string
+          deployment_environment: string
+          evidence_hash: string
+          id?: never
+          is_active?: boolean
+          is_paused?: boolean
+          limited_signer_address: string
+          max_per_epoch_native: number
+          max_per_transaction_native: number
+          max_rolling_24h_native: number
+          module_address: string
+          paymaster_policy_address: string
+          production_enabled?: boolean
+          safe_address: string
+          safe_role: string
+        }
+        Update: {
+          chain_id?: number
+          created_at?: string
+          deployment_environment?: string
+          evidence_hash?: string
+          id?: never
+          is_active?: boolean
+          is_paused?: boolean
+          limited_signer_address?: string
+          max_per_epoch_native?: number
+          max_per_transaction_native?: number
+          max_rolling_24h_native?: number
+          module_address?: string
+          paymaster_policy_address?: string
+          production_enabled?: boolean
+          safe_address?: string
+          safe_role?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "base_safe_payout_deployments_deployment_environment_fkey"
+            columns: ["deployment_environment"]
+            isOneToOne: false
+            referencedRelation: "base_payout_runtime_controls"
+            referencedColumns: ["deployment_environment"]
           },
         ]
       }
@@ -10627,6 +11113,10 @@ export type Database = {
         Args: { p_command: Json }
         Returns: Json
       }
+      authorize_base_safe_payout: {
+        Args: { p_actor_user_id: string; p_command: Json }
+        Returns: Json
+      }
       can_read_ledger_transaction: {
         Args: { p_transaction_id: number }
         Returns: boolean
@@ -10789,6 +11279,10 @@ export type Database = {
           role_id: number
           user_id: string
         }[]
+      }
+      get_base_safe_payout_authorization_input: {
+        Args: { p_deployment_id: number; p_payout_intent_id: number }
+        Returns: Json
       }
       get_public_epoch_project_package: {
         Args: { p_cycle_key: string; p_project_slug: string }
@@ -11057,6 +11551,7 @@ export type Database = {
         Args: { p_command: Json }
         Returns: number
       }
+      reconcile_base_safe_payout: { Args: { p_command: Json }; Returns: Json }
       record_base_intake_v2_receipt: {
         Args: { p_command: Json }
         Returns: number
@@ -11274,6 +11769,7 @@ export type Database = {
     }
   }
 }
+
 type DatabaseWithoutInternals = Omit<Database, "__InternalSupabase">
 
 type DefaultSchema = DatabaseWithoutInternals[Extract<keyof Database, "public">]

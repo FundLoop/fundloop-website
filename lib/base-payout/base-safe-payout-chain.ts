@@ -1,0 +1,29 @@
+import { createPublicClient, createWalletClient, http, type Hex } from "viem"
+import { privateKeyToAccount } from "viem/accounts"
+import { fundLoopSafePayoutModuleAbi as moduleAbi,observeBaseSafePayoutReceipt } from "../../contracts/lib/base-safe-payout-observer.js"
+
+export type BasePayoutChainRequest = { moduleAddress: Hex; tokenAddress: Hex; recipientAddress: Hex; nativeAtomicAmount: bigint;feeRecipientAddress:Hex;userFeeNativeAmount:bigint; epochKey: Hex; expiresAt: bigint; moduleNonce: bigint }
+export type BasePayoutChainObservation = { status:"confirming"|"finalized"|"failed";txHash:Hex;blockNumber:bigint;blockHash:Hex;currentBlockNumber:bigint;
+  confirmationCount:number;l1BatchFinalized:boolean;receiptSuccess:boolean;observedTokenAddress:Hex;observedRecipientAddress:Hex;
+  observedNativeAtomicAmount:string;observedFeeRecipientAddress:Hex;observedUserFeeNativeAmount:string;observedRequestHash:Hex;observedAt:string }
+
+export function createBaseSafePayoutChain(input:{rpcUrl:string;chainId:number;privateKey?:Hex}) {
+  const chain={id:input.chainId,name:`FundLoop Base ${input.chainId}`,nativeCurrency:{name:"Ether",symbol:"ETH",decimals:18},rpcUrls:{default:{http:[input.rpcUrl]}}} as const
+  const publicClient=createPublicClient({chain,transport:http(input.rpcUrl)})
+  return {
+    async requestHash(request:BasePayoutChainRequest) {
+      return publicClient.readContract({address:request.moduleAddress,abi:moduleAbi,functionName:"requestHash",
+        args:[request.tokenAddress,request.recipientAddress,request.nativeAtomicAmount,request.feeRecipientAddress,request.userFeeNativeAmount,request.epochKey,request.expiresAt,request.moduleNonce]}) as Promise<Hex>
+    },
+    async execute(request:BasePayoutChainRequest) {
+      if(!input.privateKey) throw new Error("base_payout_limited_signer_unavailable")
+      const account=privateKeyToAccount(input.privateKey)
+      const wallet=createWalletClient({account,chain,transport:http(input.rpcUrl)})
+      return wallet.writeContract({address:request.moduleAddress,abi:moduleAbi,functionName:"executePayout",
+        args:[request.tokenAddress,request.recipientAddress,request.nativeAtomicAmount,request.feeRecipientAddress,request.userFeeNativeAmount,request.epochKey,request.expiresAt,request.moduleNonce]})
+    },
+    async observe(request:BasePayoutChainRequest,txHash:Hex):Promise<BasePayoutChainObservation> {
+      return await observeBaseSafePayoutReceipt({client:publicClient,moduleAddress:request.moduleAddress,txHash,chainId:input.chainId}) as BasePayoutChainObservation
+    },
+  }
+}

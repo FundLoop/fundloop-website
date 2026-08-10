@@ -81,6 +81,27 @@ Use local Supabase when:
 - exercising browser flows that create or mutate rows
 - running local wallet E2E flows
 
+### Base payout review variables
+
+Task #140 keeps Safe payout execution non-production and fail-closed. Local/dev/test review requires:
+
+```bash
+FUNDLOOP_DEPLOYMENT_ENV=local
+NEXT_PUBLIC_BASE_PAYOUT_REVIEW_ENABLED=true
+BASE_PAYOUT_RPC_URL=http://127.0.0.1:8545
+# BASE_PAYOUT_LIMITED_SIGNER_PRIVATE_KEY is untracked and local/test only.
+```
+
+Never store the limited signer key, Safe owner keys, paymaster keys, or RPC credentials in tracked
+files. The limited key can call only the reviewed module and is independently restricted to the
+allowlisted token/recipient/request hash, $20 per transaction, $500 rolling 24 hours, and $5,000 per
+epoch. Safe owner-threshold enablement remains a human-controlled external action. Base Sepolia
+deployment additionally requires `BASE_SEPOLIA_RPC_URL`, `BASE_SEPOLIA_PRIVATE_KEY`,
+`BASE_SEPOLIA_EPOCH_SAFE_ADDRESS`, `BASE_SEPOLIA_PLATFORM_SAFE_ADDRESS`, and
+`BASE_PAYOUT_LIMITED_SIGNER_ADDRESS`; absent values stop before
+deployment. Production is denied by the Edge runtime, database controls, deployment constraints,
+and tracked manifests.
+
 If local Supabase is unavailable, do not silently switch to a shared remote database for destructive validation. Either use static tests only or call out the missing validation.
 
 ## Remote Supabase Workflow

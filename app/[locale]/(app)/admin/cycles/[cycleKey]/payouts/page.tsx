@@ -1,11 +1,13 @@
 import { notFound } from "next/navigation"
 import { ArrowLeft, Banknote, CheckCircle2, FileWarning, Route } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
+import { BasePayoutOperatorControls } from "@/components/admin/base-payout-operator-controls"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Link } from "@/i18n/navigation"
 import { loadMonthlyCyclePayoutOverview } from "@/lib/monthly-cycles/monthly-cycle-payouts"
+import { loadBasePayoutOperatorOverview } from "@/lib/base-payout/base-payout-operator-overview"
 import { requireInternalAdminActor } from "@/lib/zkas/auth"
 
 type PageProps = {
@@ -24,6 +26,7 @@ export default async function AdminCyclePayoutsPage({ params }: PageProps) {
   })()
 
   if (!overview) notFound()
+  const basePayout = await loadBasePayoutOperatorOverview(overview.cycle.id)
 
   return (
     <div className="container mx-auto space-y-8 px-4 py-12">
@@ -223,6 +226,9 @@ export default async function AdminCyclePayoutsPage({ params }: PageProps) {
           </Table>
         </CardContent>
       </Card>
+
+      <BasePayoutOperatorControls enabled={basePayout.enabled} deployments={basePayout.deployments} commands={basePayout.commands}
+        intents={overview.intents.rows.map((intent)=>({id:intent.id,rail:intent.rail,status:intent.status,amount_usd:Number(intent.amount_usd),payout_route_id:intent.payout_route_id}))}/>
     </div>
   )
 }

@@ -1756,3 +1756,66 @@ from the active processing epoch rather than an old obligation source cycle.
 
 - Commit this narrow validator fix, post evidence, stop local services, and request independent
   revalidation before moving #139 to In Review or starting #140.
+
+### session v36: execute review-only Base Safe payouts (#140)
+
+- Timestamp: 2026-08-10T01:36:54-04:00
+- Agent: Codex
+- Branch: codex/134-funded-redistribution
+- Head: dced0f0
+
+#### Objective
+
+Implement an executable, non-production Base Safe/module and paymaster payout boundary that binds
+the recipient net and user-fee transfers, observes real receipts, and permits paid state only after
+exact finalized evidence and a balanced neutral-ledger journal.
+
+#### Actions Taken
+
+- Added a Safe payout module with owner-authorized request hashes, exact token/user/platform
+  destinations, net/fee amounts, epoch, expiry, nonce, replay protection, token allowlist, pause,
+  signer rotation, and independent per-transaction, rolling-day, and epoch limits. Added separate
+  epoch/platform Safe fixtures and a bounded review paymaster budget.
+- Added a guarded deployment script for explicit local fixtures and reviewed Base Sepolia inputs.
+  Production is rejected, Safe enablement remains an owner-threshold action, and no private key or
+  deployed address is tracked.
+- Added a forward-only Supabase control plane for Safe deployments/assets, paymaster budgets,
+  typed execution commands, separately reserved fee inventory, immutable receipt observations,
+  final reconciliation links, and service-only RPC access. Authorization derives the user route,
+  project asset, platform Safe, fee split, gross limits, and gas budget from trusted state.
+- Added a typed internal Edge command and viem adapter. The adapter hashes and executes only the
+  persisted command, observes the exact module event from a real receipt, and cannot run in
+  production. Failed, replaced, and reorged evidence stays unpaid; final exact evidence consumes
+  both inventory legs and posts recipient/platform debits against epoch custody.
+- Added an admin review surface with both Safes, independent limits, net/fee split, command hash,
+  execution, and finality controls. Updated payout/environment/treasury docs and Supabase types.
+
+#### Validation Notes
+
+- Passed fresh local Supabase migration/seed replay and integrated executable SQL for project
+  packages, financial prep, funded allocation, close, withdrawals, and Base payouts. Base probes
+  cover production/auth/direct-DML denial, wrong token/recipient/platform Safe, gross over-limit,
+  depleted paymaster, fee inventory, failed/replaced/reorg evidence, finality denial, exact paid
+  transition, balanced gross journal, and append-only observations.
+- Passed Hardhat 15/15, including a real local epoch Safe transfer split between the recipient and
+  platform Safe, exact viem receipt observation, replay/expiry/revocation/pause/module denial,
+  rolling/epoch limits, and paymaster depletion/rotation. Local guarded deployment passed;
+  production refused; Base Sepolia stopped on absent authorized RPC/key credentials.
+- Passed strict Deno checks, focused Node 22 Vitest (4 files / 8 tests), typecheck, lint, and
+  `git diff --check`. Full Node 22 `CI=1 pnpm check` passed 152 files / 678 tests plus the 165-page
+  production build.
+- Authenticated local Playwright passed 1/1 with zero console errors. Exact 1440x900 and 390x844
+  captures under `output/playwright/issue-140/` were visually inspected and show both Safes,
+  limits, recipient/platform split, reconciled command, and disabled execution controls.
+
+#### Reflections
+
+- The selected user fee is a custody movement, not merely display math: it needs its own inventory
+  reservation, exact Safe destination, gross limits, receipt evidence, and ledger leg.
+- Database counters are defense in depth. The Safe module independently owns the irreversible
+  token, destination, amount, expiry, replay, signer, and cumulative-limit checks.
+
+#### Suggested Next Steps
+
+- Commit #140 separately, post implementation evidence, stop local Supabase, and request
+  independent validation before moving #140 to In Review or beginning #141.

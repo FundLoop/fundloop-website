@@ -31,6 +31,25 @@ The withdrawal command is idempotent per user-supplied request key and immutable
 
 For the operational MVP, bookkeeping credits are the success target. Payout intents remain the later outbound-planning model for actual transfer readiness.
 
+Task #140 adds a review-only Base execution boundary for withdrawal-backed intents. Separate epoch
+and platform Safes use separate module deployments. The limited signer cannot choose an arbitrary
+token, recipient, amount, epoch, expiry, or nonce: Safe owners authorize the exact request hash and
+the module independently enforces token permission, replay protection, pause/revocation, $20 per
+transaction, $500 rolling 24 hours, and $5,000 per epoch. A separate paymaster budget helper enforces
+per-request sponsorship, depletion, replay, pause, and controller rotation.
+
+The exact request binds two conserved token legs: the withdrawal net goes to the user's persisted
+recipient and the selected user fee goes to the separately configured platform Safe. The fee leg
+receives its own project inventory reservation, participates in every gross module/database limit,
+and is consumed only with the finalized recipient leg. Reconciliation debits recipient and platform
+fee controls and credits epoch custody for the same gross native and functional totals.
+
+The Edge adapter derives the module request hash from database-owned intent/request/deployment state,
+can sign only in explicit non-production environments, and observes receipts through viem. A request
+becomes paid only after the exact module event is successful, the receipt block is finalized under
+the configured chain finality view, and the database atomically creates a balanced neutral-ledger
+journal. Failed, replaced, and reorged observations remain immutable evidence and never imply paid.
+
 ## What Is Not Included Yet
 
 Session 28 added the chain-abstracted execution interface in `lib/execution/`. It can now build deterministic payout batch drafts from ready intents.
