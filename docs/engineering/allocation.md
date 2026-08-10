@@ -505,3 +505,27 @@ Allocation and approval are conditional internal records. They do not create use
 ownership, a general-ledger payable, an external transfer, or a production value
 flow. Production activation remains blocked on the named accounting, legal,
 privacy, custody, and payout gates.
+
+## Approved close package boundary
+
+Task #137 consumes only the persisted `settled_cubid_redistribution_v1` result.
+The authenticated operator command independently reruns the immutable manifest and
+must reproduce the exact result hash before Postgres can approve it. Postgres never
+reruns allocation under a different policy during posting.
+
+Approval creates append-only conditional award controls and source-linked neutral
+ledger postings for retained lots, redistribution top-ups, and returned residue.
+The controls are explicitly `not_payable`, `not_user_owned`, and asset-review
+pending. Intermediate score and overlap pool rows remain provenance evidence, not
+additional postings or claims.
+
+One root hash covers allocation, trial-balance, custody, project-funds, fee, FX,
+carryover, initial-claim, redistribution-pool, top-up, provisional-award, and
+exception artifacts. Operator artifacts may contain private evidence. User reads
+return only the authenticated user's award; founder reads return only a managed
+project aggregate; public project and epoch reads suppress cohort counts below the
+privacy threshold and never contain user IDs, scores, or overlap membership.
+
+The close command records both required `reviewing -> payout_readying` hard gates
+and stops there. It cannot create a payable, open `payout_open`, call a provider,
+submit a transfer, or enable production value flow.

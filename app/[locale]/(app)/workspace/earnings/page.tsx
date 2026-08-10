@@ -9,6 +9,8 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { WithdrawalRequestPanel } from "@/components/workspace/withdrawal-request-panel"
+import { EpochCloseSummaryCard } from "@/components/epoch-close-summary-card"
+import { loadLatestUserEpochClose } from "@/lib/monthly-cycles/epoch-close-review"
 
 type WorkspaceEarningsPageProps = {
   params: Promise<{ locale: string }>
@@ -240,7 +242,10 @@ export default async function WorkspaceEarningsPage({ params }: WorkspaceEarning
     redirect(`/${locale}/join`)
   }
 
-  const earnings = await getUserEarningsWorkspace(navigationContext)
+  const [earnings, epochClose] = await Promise.all([
+    getUserEarningsWorkspace(navigationContext),
+    navigationContext.user ? loadLatestUserEpochClose(navigationContext.user.id) : Promise.resolve(null),
+  ])
   const nextAction = earnings.summary.nextAction
 
   return (
@@ -284,6 +289,18 @@ export default async function WorkspaceEarningsPage({ params }: WorkspaceEarning
           </div>
         </div>
       </section>
+
+      {epochClose ? <EpochCloseSummaryCard
+        eyebrow="Provisional epoch award"
+        title="Your approved allocation is conditional and not payable"
+        description="This review record preserves the approved result and redistribution top-up. It is not user-owned, cannot be withdrawn, and does not prove a payout or transfer."
+        cycleKey={epochClose.cycleKey}
+        rootHash={epochClose.rootHash}
+        values={[
+          {label:"Retained initial",value:epochClose.retainedInitialMinor},{label:"Redistribution top-up",value:epochClose.topUpMinor},
+          {label:"Final minor units",value:epochClose.finalAwardMinor},{label:"Payable state",value:epochClose.payableStatus},
+        ]}
+      /> : null}
 
       {earnings.warnings.length > 0 ? (
         <section className="rounded-3xl border border-amber-300/70 bg-amber-50/80 p-5 text-sm leading-6 text-amber-950 dark:border-amber-400/30 dark:bg-amber-400/10 dark:text-amber-100">

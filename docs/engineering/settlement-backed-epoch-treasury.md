@@ -1144,3 +1144,28 @@ classification stays provisional and production-disabled until qualified approva
 
 This Task changes documentation only. Product schema, rail, signer, Safe, payout, and
 remote-provider implementation remains owned by the blocked Goal Tasks.
+
+## 24. Provisional award posting and close package
+
+Task #137 adds the local/dev/test-only handoff from an approved funded allocation
+to `payout_readying`. The Edge command owns the authenticated actor and runtime,
+recalculates the immutable manifest, and refuses approval unless the rerun hash,
+persisted result hash, and manifest hash match exactly.
+
+The database creates append-only non-payable award controls and one balanced
+provisional neutral-ledger transaction for each positive retained/top-up/source
+fill or returned-residue fill. Every posting retains its source project and exact
+allocation disposition; the close artifacts retain native asset/custody, FX, fee,
+exact USD, canonical minor-unit, and returned-residue evidence.
+
+The root package includes twelve versioned artifact classes: allocation result,
+trial balance, custody, project funds, fees, FX, carryover, initial claims,
+redistribution pool, top-ups, provisional awards, and exceptions. Public/project
+artifacts are aggregate-only; private user evidence is never exposed through those
+views. The package records both opt-out-window and approved-close-package hard
+gates, advances only to `payout_readying`, and keeps the existing
+`payout_readiness_complete` gate between this Goal and any later `payout_open`.
+
+Production close controls are immutable false. No user payable, ownership
+recognition, payout intent, provider instruction, custody movement, external call,
+or real-value transfer is created.

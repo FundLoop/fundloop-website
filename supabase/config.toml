@@ -418,6 +418,7 @@ deno_version = 2
 [edge_runtime.secrets]
 FUNDLOOP_INTERNAL_ADMIN_EMAILS = "env(FUNDLOOP_INTERNAL_ADMIN_EMAILS)"
 FUNDLOOP_ZKAS_SUPERADMIN_EMAILS = "env(FUNDLOOP_ZKAS_SUPERADMIN_EMAILS)"
+FUNDLOOP_DEPLOYMENT_ENV = "env(FUNDLOOP_DEPLOYMENT_ENV)"
 
 [analytics]
 enabled = true
@@ -441,4 +442,10 @@ s3_secret_key = "env(S3_SECRET_KEY)"
 enabled = true
 verify_jwt = false
 entrypoint = "./functions/epoch-funded-allocation/index.ts"
+import_map = "./functions/deno.json"
+
+[functions.epoch-allocation-close]
+enabled = true
+verify_jwt = false
+entrypoint = "./functions/epoch-allocation-close/index.ts"
 import_map = "./functions/deno.json"

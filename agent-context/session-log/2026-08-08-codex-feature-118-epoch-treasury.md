@@ -1499,3 +1499,61 @@ payable, payout, provider call, production path, or value flow.
 
 - Run the final fresh replay, all integrated SQL and full Node 22 gate, commit #136 separately, post
   evidence, stop local services, and request independent issue validation before starting #137.
+
+### session v31: approved provisional awards and close package (#137)
+
+- Timestamp: 2026-08-09T23:17:16-04:00
+- Agent: Codex
+- Branch: codex/134-funded-redistribution
+- Head: 7dda20e
+
+#### Objective
+
+Independently rerun and approve the exact settled allocation, post source-linked provisional award
+controls into the neutral ledger, publish privacy-safe role views and a reproducible close package,
+and stop the shadow state at `payout_readying` without creating payables, ownership, provider calls,
+transfers, production activation, or value flow.
+
+#### Actions Taken
+
+- Added immutable approvals, provisional award controls and source fills, project aggregates, close
+  artifacts, and close packages. Approval independently reruns the persisted allocation and requires
+  exact manifest/result equality before writing the 12-artifact root-hashed close package.
+- Posted each positive retained, redistributed, and returned-residue terminal disposition through
+  source-linked neutral-ledger control accounts. Award rows remain explicitly conditional,
+  `not_payable`, `not_user_owned`, and `review_pending`.
+- Added the `approved_close_package_ready` hard gate and an atomic reviewing-to-`payout_readying`
+  shadow transition. The workflow cannot open payout, create a payable, invoke a provider, or move
+  value, and all command/runtime/database paths fail closed outside local/dev/test.
+- Added authenticated typed Edge approve/read commands, service-only actor-scoped reads, operator,
+  user, founder-project, and public project summaries. Public output applies a cohort threshold and
+  excludes identities, Cubid scores, individual awards, and cross-project membership.
+- Updated canonical allocation, operational, and treasury architecture, generated Supabase types,
+  executable SQL, focused contract/migration/UI tests, and a real local Playwright fixture.
+
+#### Validation Notes
+
+- Passed repeated fresh local Supabase migration/seed replays plus executable #135 and #136/#137
+  SQL: exact rerun/approval, idempotency, 12 artifacts/root, award and ledger conservation,
+  non-payable/non-owned controls, `payout_readying`, RLS/RPC/direct-write denial, production denial,
+  and thresholded public output.
+- Passed strict Deno check and focused Node 22 Vitest: 7 files / 26 tests.
+- Passed real authenticated local Edge and browser flows: calculate, approve, operator close, user
+  conditional award, founder EcoStream aggregate, and unauthenticated privacy-thresholded public
+  summary. Playwright passed 2/2 with zero captured console errors; exact 1440x900 and 390x844
+  artifacts under `output/playwright/issue-137/` were visually inspected.
+- Passed full Node 22 `CI=1 pnpm check`: lint, 149 test files / 673 tests, typecheck, and production
+  build with 165 generated pages. `git diff --check` passed. Local Next, Edge, and Supabase services
+  were stopped after validation.
+
+#### Reflections
+
+- Browser evidence must target the exact project represented by the close package. The seed actor
+  manages both Civic Mesh and EcoStream, while the settled fixture belongs to EcoStream.
+- Public browser assertions should prove sensitive identity absence while retaining explicit privacy
+  copy; banning the phrase `Cubid scores` would incorrectly reject the safe disclosure itself.
+
+#### Suggested Next Steps
+
+- Commit #137 as a distinct reviewable checkpoint, post implementation evidence, and request an
+  independent validator before promoting it to In Review or starting the dependent integrated Goal.

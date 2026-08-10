@@ -487,3 +487,18 @@ Operational MVP is complete only when:
 - CUBID linkage is required; full phone/provider verification improves readiness but does not block MVP earning credits.
 - Existing monthly-cycle, payout-intent, reporting, and zkAS structures should be reused where practical.
 - Real outbound payouts remain explicitly deferred.
+
+## Settlement-backed provisional close
+
+The newer settlement-backed path has a production-disabled close boundary separate
+from legacy MVP bookkeeping credits. An operator approves only after an independent
+deterministic rerun reproduces the persisted manifest/result hashes. The command
+posts source-linked provisional controls, publishes one reproducible root hash,
+and advances the shadow epoch from `reviewing` to `payout_readying` only.
+
+These rows are conditional award controls, not the legacy credited earnings table,
+not user-owned balances, and not payables. User, founder, public, and operator
+surfaces use separate read models: users see only self; founders see only their
+project aggregate; public cohort counts require at least three users; operators
+retain the private artifact inventory. `payout_open`, payout intents, provider
+calls, asset transfers, and production value flow remain outside this Goal.

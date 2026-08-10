@@ -23,6 +23,9 @@ DECLARE
   v_artifact jsonb;
   v_run bigint;
   v_replay bigint;
+  v_close jsonb;
+  v_close_replay jsonb;
+  v_root_hash text;
   v_failed boolean;
 BEGIN
   INSERT INTO public.monthly_cycles(cycle_key,year,month,period_start,period_end,status)
@@ -128,6 +131,53 @@ BEGIN
   EXCEPTION WHEN OTHERS THEN v_failed:=SQLERRM LIKE '%epoch_allocation_result_conflict%'; END;
   IF NOT v_failed THEN RAISE EXCEPTION 'changed allocation result replay was accepted'; END IF;
 
+  UPDATE public.epoch_shadow_states SET monthly_cycle_id=v_cycle,current_stage='reviewing',state_version=100,is_paused=false
+  WHERE accounting_period_id=(SELECT id FROM public.accounting_periods WHERE period_key='local_review_2026_08');
+  INSERT INTO public.participants(project_id,user_id,is_admin) VALUES(v_project,v_actor,true)
+  ON CONFLICT(project_id,user_id) DO UPDATE SET is_admin=true;
+
+  v_failed:=false;
+  BEGIN
+    PERFORM public.approve_epoch_allocation_close(jsonb_build_object('contractVersion','epoch_allocation_close.v1',
+      'deploymentEnvironment','production','actorUserId',v_actor,'runId',v_run,'manifestHash',v_manifest_hash,
+      'resultHash',repeat('8',64),'rerunResultHash',repeat('8',64)));
+  EXCEPTION WHEN OTHERS THEN v_failed:=SQLERRM LIKE '%epoch_close_runtime_disabled%'; END;
+  IF NOT v_failed THEN RAISE EXCEPTION 'production close approval was accepted'; END IF;
+
+  v_failed:=false;
+  BEGIN
+    PERFORM public.approve_epoch_allocation_close(jsonb_build_object('contractVersion','epoch_allocation_close.v1',
+      'deploymentEnvironment','local','actorUserId',v_actor,'runId',v_run,'manifestHash',v_manifest_hash,
+      'resultHash',repeat('8',64),'rerunResultHash',repeat('9',64)));
+  EXCEPTION WHEN OTHERS THEN v_failed:=SQLERRM LIKE '%epoch_close_approved_result_mismatch%'; END;
+  IF NOT v_failed THEN RAISE EXCEPTION 'mismatched deterministic rerun was accepted'; END IF;
+
+  v_close:=public.approve_epoch_allocation_close(jsonb_build_object('contractVersion','epoch_allocation_close.v1',
+    'deploymentEnvironment','local','actorUserId',v_actor,'runId',v_run,'manifestHash',v_manifest_hash,
+    'resultHash',repeat('8',64),'rerunResultHash',repeat('8',64)));
+  v_root_hash:=v_close->>'rootHash';
+  IF v_close->>'status'<>'payout_readying' OR v_root_hash !~ '^[0-9a-f]{64}$'
+    OR v_root_hash=repeat('0',64) THEN RAISE EXCEPTION 'close package did not finalize'; END IF;
+  v_close_replay:=public.approve_epoch_allocation_close(jsonb_build_object('contractVersion','epoch_allocation_close.v1',
+    'deploymentEnvironment','local','actorUserId',v_actor,'runId',v_run,'manifestHash',v_manifest_hash,
+    'resultHash',repeat('8',64),'rerunResultHash',repeat('8',64)));
+  IF v_close_replay->>'rootHash'<>v_root_hash THEN RAISE EXCEPTION 'close package replay was not idempotent'; END IF;
+  IF (SELECT current_stage FROM public.epoch_shadow_states WHERE monthly_cycle_id=v_cycle)<>'payout_readying'
+    OR (SELECT count(*) FROM public.epoch_close_artifacts WHERE close_package_id=(v_close->>'closePackageId')::bigint)<>12
+    OR EXISTS(SELECT 1 FROM public.epoch_provisional_award_controls WHERE monthly_cycle_id=v_cycle
+      AND (payable_status<>'not_payable' OR ownership_status<>'not_user_owned' OR status<>'conditional'))
+    OR (SELECT coalesce(sum(final_award_minor),0) FROM public.epoch_provisional_award_controls WHERE monthly_cycle_id=v_cycle)<>v_funded_minor
+    OR (SELECT coalesce(sum(functional_usd_amount) FILTER(WHERE side='debit'),0)-coalesce(sum(functional_usd_amount) FILTER(WHERE side='credit'),0)
+      FROM public.ledger_postings posting JOIN public.ledger_transactions transaction ON transaction.id=posting.transaction_id
+      WHERE transaction.idempotency_key LIKE 'epoch-close:'||v_run::text||':%')<>0
+  THEN RAISE EXCEPTION 'close package award or ledger conservation failed'; END IF;
+  IF (SELECT published_user_count FROM public.epoch_close_public_view WHERE cycle_key='2026-08') IS NOT NULL
+    OR (SELECT row_to_json(public_row)::text FROM public.epoch_close_public_view public_row WHERE cycle_key='2026-08') LIKE '%'||v_actor::text||'%'
+  THEN RAISE EXCEPTION 'public close view leaked private cohort data'; END IF;
+  IF jsonb_array_length(public.read_epoch_close_scope(v_actor,'user','2026-08',NULL))<>1
+    OR jsonb_array_length(public.read_epoch_close_scope(v_actor,'project','2026-08',v_project))<>1
+  THEN RAISE EXCEPTION 'scoped close reads did not return expected rows'; END IF;
+
   v_failed:=false;
   BEGIN EXECUTE 'SET LOCAL ROLE authenticated'; PERFORM public.lock_funded_epoch_allocation('{}'::jsonb);
   EXCEPTION WHEN insufficient_privilege THEN v_failed:=true; END; RESET ROLE;
@@ -138,6 +188,17 @@ BEGIN
     VALUES(v_manifest_id,'settled_cubid_redistribution_v1',repeat('a',64),'{}',1,1,0,0,0,0,1,v_actor,'local');
   EXCEPTION WHEN insufficient_privilege THEN v_failed:=true; END; RESET ROLE;
   IF NOT v_failed THEN RAISE EXCEPTION 'service role direct allocation write was accepted'; END IF;
+  v_failed:=false;
+  BEGIN EXECUTE 'SET LOCAL ROLE authenticated'; PERFORM public.read_epoch_close_scope(v_actor,'user','2026-08',NULL);
+  EXCEPTION WHEN insufficient_privilege THEN v_failed:=true; END; RESET ROLE;
+  IF NOT v_failed THEN RAISE EXCEPTION 'authenticated close RPC was executable directly'; END IF;
+  v_failed:=false;
+  BEGIN EXECUTE 'SET LOCAL ROLE service_role'; INSERT INTO public.epoch_provisional_award_controls(approval_id,run_award_id,monthly_cycle_id,
+    user_id,retained_initial_minor,redistribution_top_up_minor,final_award_minor,minor_unit_cap,approved_result_hash)
+    SELECT id,(SELECT id FROM public.epoch_allocation_user_awards WHERE run_id=v_run LIMIT 1),v_cycle,v_actor,1,0,1,1,repeat('8',64)
+    FROM public.epoch_allocation_approvals WHERE run_id=v_run;
+  EXCEPTION WHEN insufficient_privilege THEN v_failed:=true; END; RESET ROLE;
+  IF NOT v_failed THEN RAISE EXCEPTION 'service role direct provisional award write was accepted'; END IF;
 END $$;
 
 ROLLBACK;

@@ -2,6 +2,7 @@ import { notFound } from "next/navigation"
 import { AlertTriangle, ArrowLeft, CheckCircle2, FileSearch, Info, ShieldAlert } from "lucide-react"
 import { ProjectAttributionDatasetReviewActions } from "@/components/admin/project-attribution-dataset-review-actions"
 import { EpochFundedAllocationActions } from "@/components/admin/epoch-funded-allocation-actions"
+import { EpochAllocationCloseActions } from "@/components/admin/epoch-allocation-close-actions"
 import { Link } from "@/i18n/navigation"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -15,6 +16,7 @@ import {
   type MonthlyCyclePrepPosture,
   type MonthlyCyclePrepSeverity,
 } from "@/lib/monthly-cycles/monthly-cycle-prep"
+import { loadEpochCloseOperator } from "@/lib/monthly-cycles/epoch-close-review"
 
 type PageProps = {
   params: Promise<{ cycleKey: string; locale: string }>
@@ -70,9 +72,9 @@ function IssueCard({ issue }: { issue: MonthlyCyclePrepIssue }) {
 
 export default async function AdminCyclePrepPage({ params }: PageProps) {
   const { cycleKey, locale } = await params
-  const [review,financialPrep,fundedAllocation] = await (async () => {
+  const [review,financialPrep,fundedAllocation,epochClose] = await (async () => {
     await requireInternalAdminActor()
-    return Promise.all([loadMonthlyCyclePrepReview(cycleKey),loadEpochFinancialPrepReview(cycleKey),loadEpochFundedAllocationReview(cycleKey)])
+    return Promise.all([loadMonthlyCyclePrepReview(cycleKey),loadEpochFinancialPrepReview(cycleKey),loadEpochFundedAllocationReview(cycleKey),loadEpochCloseOperator(cycleKey)])
   })()
 
   if (!review) {
@@ -270,6 +272,29 @@ export default async function AdminCyclePrepPage({ params }: PageProps) {
             No settled allocation manifest is locked yet. Only approved packages with reconciled, journal-backed source lots can enter this review.
           </p>
         )}
+      </section>
+
+      <section className="space-y-5 rounded-[calc(var(--radius-2xl)+0.25rem)] border border-cyan-300/60 bg-[var(--surface-panel)] p-6 shadow-[var(--surface-shadow-panel)] dark:border-cyan-500/30">
+        <div className="flex flex-wrap items-start justify-between gap-4">
+          <div>
+            <p className="text-[0.72rem] font-semibold uppercase tracking-[0.28em] text-[var(--interactive-primary)]">Approved epoch close</p>
+            <h2 className="mt-2 text-2xl font-semibold text-[var(--text-strong)]">Conditional awards and reproducible close package</h2>
+            <p className="mt-2 max-w-3xl text-sm leading-6 text-[var(--text-muted)]">
+              Approval independently reruns the exact persisted allocation, posts source-linked provisional controls, and stops at payout readying. Awards remain non-payable and not user-owned; no provider or value flow is opened.
+            </p>
+          </div>
+          <Badge variant="outline">Production disabled</Badge>
+        </div>
+        {!epochClose && fundedAllocation.allocation?.result_hash ? <EpochAllocationCloseActions cycleKey={cycleKey} /> : null}
+        {epochClose ? <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+          {[
+            ["Stage",epochClose.status ?? "payout_readying"],["Funded minor",String(epochClose.funded_minor ?? 0)],
+            ["Final / residue",`${epochClose.final_allocation_minor ?? 0} / ${epochClose.returned_residue_minor ?? 0}`],
+            ["Pool / top-up",`${epochClose.redistribution_pool_minor ?? 0} / ${epochClose.top_up_minor ?? 0}`],
+            ["Conditional users",String(epochClose.user_count ?? 0)],["Artifacts",String(epochClose.artifact_count ?? 0)],
+            ["Result",epochClose.result_hash?.slice(0,12) ?? "pending"],["Root",epochClose.root_hash?.slice(0,12) ?? "pending"],
+          ].map(([label,value])=><div key={label} className="rounded-xl border border-[color:var(--surface-border)] p-3"><p className="text-xs uppercase tracking-[0.14em] text-[var(--text-soft)]">{label}</p><p className="mt-1 break-all font-mono font-semibold">{value}</p></div>)}
+        </div> : <p className="rounded-xl border border-dashed border-[color:var(--surface-border)] p-4 text-sm text-[var(--text-muted)]">A calculated persisted result is required before approval. Payout opening remains a separate blocked Goal.</p>}
       </section>
 
       <section className="grid gap-6 lg:grid-cols-[minmax(0,1.3fr)_minmax(20rem,0.7fr)]">
