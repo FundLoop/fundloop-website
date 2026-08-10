@@ -44,6 +44,14 @@ BEGIN
   v_request_id:=(v_request->>'requestId')::uuid;SELECT id INTO v_intent FROM public.payout_intents WHERE withdrawal_request_id=v_request_id;
   v_prepared:=public.prepare_stripe_connect_payout(v_operator,v_intent,'local');v_command:=(v_prepared->>'commandId')::bigint;
   IF v_prepared->>'netMinor'<>'975' OR v_prepared->>'canonicalNetMinor'<>'975' OR v_prepared->>'feeMinor'<>'25' THEN RAISE EXCEPTION 'user fee snapshot changed at provider boundary';END IF;
+  IF (SELECT user_fee_provider_minor FROM public.stripe_connect_payout_commands WHERE id=v_command)<>25
+    OR (SELECT sum(reserved_minor) FROM public.stripe_connect_fee_inventory_reservations WHERE withdrawal_request_id=v_request_id AND status='reserved')<>25
+    OR (SELECT sum(native_atomic_amount) FROM public.stripe_connect_fee_inventory_reservations WHERE withdrawal_request_id=v_request_id AND status='reserved')<>25
+  THEN RAISE EXCEPTION 'user fee inventory was not independently reserved';END IF;
+  v_prepared:=public.prepare_stripe_connect_payout(v_operator,v_intent,'local');
+  IF (v_prepared->>'commandId')::bigint<>v_command OR (v_prepared->>'resumed')::boolean IS NOT TRUE
+  THEN RAISE EXCEPTION 'processing payout did not resume its idempotent provider command';END IF;
+  PERFORM public.record_stripe_connect_payout_submission(v_command,'tr_paid1','po_paid1','req_paid1');
   PERFORM public.record_stripe_connect_payout_submission(v_command,'tr_paid1','po_paid1','req_paid1');
 
   v_event:=jsonb_build_object('contractVersion','stripe_connect_webhook.v1','deploymentEnvironment','local','providerEventId','evt_transit1',
@@ -63,8 +71,12 @@ BEGIN
   SELECT ledger_transaction_id INTO v_ledger FROM public.stripe_connect_payout_commands WHERE id=v_command;
   IF v_ledger IS NULL OR (SELECT status FROM public.payout_intents WHERE id=v_intent)<>'paid' OR (SELECT status FROM public.user_withdrawal_requests WHERE id=v_request_id)<>'paid'
     OR (SELECT status FROM public.payout_execution_attempts WHERE id=(v_prepared->>'attemptId')::bigint)<>'reconciled'
-    OR (SELECT sum(functional_usd_amount) FILTER(WHERE side='debit') FROM public.ledger_postings WHERE transaction_id=v_ledger)<>9.75
-    OR (SELECT sum(functional_usd_amount) FILTER(WHERE side='credit') FROM public.ledger_postings WHERE transaction_id=v_ledger)<>9.75
+    OR (SELECT sum(functional_usd_amount) FILTER(WHERE side='debit') FROM public.ledger_postings WHERE transaction_id=v_ledger)<>10
+    OR (SELECT sum(functional_usd_amount) FILTER(WHERE side='credit') FROM public.ledger_postings WHERE transaction_id=v_ledger)<>10
+    OR (SELECT sum(reserved_minor) FROM public.payout_inventory_reservations WHERE withdrawal_request_id=v_request_id AND status='consumed')<>975
+    OR (SELECT sum(reserved_minor) FROM public.stripe_connect_fee_inventory_reservations WHERE withdrawal_request_id=v_request_id AND status='consumed')<>25
+    OR NOT EXISTS(SELECT 1 FROM public.ledger_postings posting JOIN public.ledger_accounts account ON account.id=posting.account_id
+      WHERE posting.transaction_id=v_ledger AND account.account_key='stripe_user_fee_revenue' AND posting.side='credit' AND posting.functional_usd_amount=0.25)
   THEN RAISE EXCEPTION 'provider paid state was not atomically journal reconciled';END IF;
 
   -- CAD preserves canonical USD value separately from provider-native minor units.

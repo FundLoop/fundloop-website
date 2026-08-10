@@ -30,6 +30,25 @@ describe("Stripe Connect payout command", () => {
     expect(await submitStripeConnectPayout({ rpc } as never, { createTransfer, createPayout }, "actor", 7, "local")).toMatchObject({ ok: true })
     expect(createTransfer).not.toHaveBeenCalled(); expect(createPayout).toHaveBeenCalledWith(expect.anything(), "stripe-connect:7:2:payout")
   })
+  it("retries the local acknowledgement without recreating the provider payout", async () => {
+    const rpc = vi.fn().mockResolvedValueOnce({ data: { commandId: 11, providerAccountId: "acct_test_1", currencyCode: "usd", netMinor: "975",
+      existingTransferId: "tr_existing", transferIdempotencyKey: "stripe-connect:7:1:transfer", payoutIdempotencyKey: "stripe-connect:7:1:payout" }, error: null })
+      .mockResolvedValueOnce({ data: null, error: { message: "temporary database acknowledgement failure" } })
+      .mockResolvedValueOnce({ data: { commandId: 11, status: "submitted" }, error: null })
+    const createTransfer = vi.fn(); const createPayout = vi.fn(async () => ({ id: "po_existing" }))
+    expect(await submitStripeConnectPayout({ rpc } as never, { createTransfer, createPayout }, "actor", 7, "local")).toMatchObject({ ok: true })
+    expect(createTransfer).not.toHaveBeenCalled(); expect(createPayout).toHaveBeenCalledTimes(1)
+    expect(rpc).toHaveBeenLastCalledWith("record_stripe_connect_payout_submission", expect.objectContaining({ p_payout_id: "po_existing" }))
+  })
+  it("reports a recoverable local commit gap without marking the provider payout failed", async () => {
+    const rpc = vi.fn().mockResolvedValueOnce({ data: { commandId: 12, providerAccountId: "acct_test_1", currencyCode: "usd", netMinor: "975",
+      existingTransferId: "tr_existing", transferIdempotencyKey: "stripe-connect:7:1:transfer", payoutIdempotencyKey: "stripe-connect:7:1:payout" }, error: null })
+      .mockResolvedValue({ data: null, error: { message: "temporary database acknowledgement failure" } })
+    const result = await submitStripeConnectPayout({ rpc } as never, { createTransfer: vi.fn(), createPayout: vi.fn(async () => ({ id: "po_existing" })) }, "actor", 7, "local")
+    expect(result).toMatchObject({ ok: false, error: { code: "stripe_connect_local_commit_pending" } })
+    expect(rpc).toHaveBeenCalledTimes(3)
+    expect(rpc.mock.calls.some(([name]) => name === "record_stripe_connect_payout_failure")).toBe(false)
+  })
   it("fails production closed before database or Stripe access", async () => {
     const rpc = vi.fn(); const result = await submitStripeConnectPayout({ rpc } as never, {} as never, "actor", 7, "production")
     expect(result).toMatchObject({ ok: false, error: { code: "stripe_connect_runtime_disabled" } }); expect(rpc).not.toHaveBeenCalled()

@@ -39,10 +39,16 @@ export async function submitStripeConnectPayout(
     const payout = await provider.createPayout({ amount: Number(value.netMinor), currency: String(value.currencyCode),
       providerAccountId: String(value.providerAccountId), commandId: String(value.commandId), transferId },
     String(value.payoutIdempotencyKey))
-    const recorded = await admin.rpc("record_stripe_connect_payout_submission", {
+    let recorded = await admin.rpc("record_stripe_connect_payout_submission", {
       p_command_id: Number(value.commandId), p_transfer_id: transferId, p_payout_id: payout.id, p_provider_request_id: "",
     })
-    if (recorded.error) return { ok: false, error: { code: failureCode(recorded.error.message), message: recorded.error.message } }
+    if (recorded.error) {
+      recorded = await admin.rpc("record_stripe_connect_payout_submission", {
+        p_command_id: Number(value.commandId), p_transfer_id: transferId, p_payout_id: payout.id, p_provider_request_id: "",
+      })
+    }
+    if (recorded.error) return { ok: false, error: { code: "stripe_connect_local_commit_pending",
+      message: "Stripe accepted the idempotent payout, but FundLoop could not record it yet. Retry safely with the same command." } }
     return { ok: true, data: recorded.data as Record<string, unknown> }
   } catch (error) {
     const message = error instanceof Error ? error.message : "Stripe Connect payout submission failed."

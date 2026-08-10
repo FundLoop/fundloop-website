@@ -8598,6 +8598,65 @@ export type Database = {
           },
         ]
       }
+      stripe_connect_fee_inventory_reservations: {
+        Row: {
+          command_id: number | null
+          created_at: string
+          inventory_lot_id: number
+          native_atomic_amount: number
+          reserved_minor: number
+          status: string
+          withdrawal_request_id: string
+        }
+        Insert: {
+          command_id?: number | null
+          created_at?: string
+          inventory_lot_id: number
+          native_atomic_amount: number
+          reserved_minor: number
+          status?: string
+          withdrawal_request_id: string
+        }
+        Update: {
+          command_id?: number | null
+          created_at?: string
+          inventory_lot_id?: number
+          native_atomic_amount?: number
+          reserved_minor?: number
+          status?: string
+          withdrawal_request_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "stripe_connect_fee_inventory_reserva_withdrawal_request_id_fkey"
+            columns: ["withdrawal_request_id"]
+            isOneToOne: false
+            referencedRelation: "user_withdrawal_requests"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "stripe_connect_fee_inventory_reservations_command_id_fkey"
+            columns: ["command_id"]
+            isOneToOne: false
+            referencedRelation: "stripe_connect_payout_commands"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "stripe_connect_fee_inventory_reservations_command_id_fkey"
+            columns: ["command_id"]
+            isOneToOne: false
+            referencedRelation: "user_stripe_connect_payouts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "stripe_connect_fee_inventory_reservations_inventory_lot_id_fkey"
+            columns: ["inventory_lot_id"]
+            isOneToOne: false
+            referencedRelation: "payout_inventory_lots"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       stripe_connect_payout_commands: {
         Row: {
           attempt_no: number
@@ -8623,6 +8682,7 @@ export type Database = {
           submitted_at: string | null
           updated_at: string
           user_fee_minor: number
+          user_fee_provider_minor: number
           withdrawal_request_id: string
         }
         Insert: {
@@ -8649,6 +8709,7 @@ export type Database = {
           submitted_at?: string | null
           updated_at?: string
           user_fee_minor: number
+          user_fee_provider_minor?: number
           withdrawal_request_id: string
         }
         Update: {
@@ -8675,6 +8736,7 @@ export type Database = {
           submitted_at?: string | null
           updated_at?: string
           user_fee_minor?: number
+          user_fee_provider_minor?: number
           withdrawal_request_id?: string
         }
         Relationships: [
@@ -11973,6 +12035,14 @@ export type Database = {
         Returns: Json
       }
       prepare_stripe_connect_payout: {
+        Args: {
+          p_actor_user_id: string
+          p_environment: string
+          p_payout_intent_id: number
+        }
+        Returns: Json
+      }
+      prepare_stripe_connect_payout_once: {
         Args: {
           p_actor_user_id: string
           p_environment: string

@@ -11,6 +11,10 @@ async function handleRequest(request: Request) {
   if (request.method !== "POST") return json(edgeCommandFailure("method_not_allowed", "POST required."))
   const parsed = await parseJsonBody(request); const validated = validateStripeConnectPayoutInput(parsed.ok ? parsed.body : undefined)
   if (!validated.ok) return json(validated)
+  const deploymentEnvironment = environment()
+  if (!["local", "development", "dev", "preview", "test"].includes(deploymentEnvironment)) {
+    return json(edgeCommandFailure("stripe_connect_runtime_disabled", "Stripe Connect payouts are unavailable in production."))
+  }
   const auth = await authenticateRequest(request)
   if (!auth.ok || !auth.user) return json(edgeCommandFailure(auth.code ?? "not_authenticated", auth.error))
   if (!isInternalAdminEmail(auth.user.email ?? null, getEnv("FUNDLOOP_INTERNAL_ADMIN_EMAILS"))) return json(edgeCommandFailure("forbidden", "Internal operator access is required."))
@@ -29,7 +33,7 @@ async function handleRequest(request: Request) {
       metadata: { fundloop_payout_command_id: input.commandId, fundloop_transfer_id: input.transferId },
     }, { stripeAccount: input.providerAccountId, idempotencyKey }),
   }
-  const result = await submitStripeConnectPayout(auth.adminClient, provider, auth.user.id, validated.data.payoutIntentId, environment())
+  const result = await submitStripeConnectPayout(auth.adminClient, provider, auth.user.id, validated.data.payoutIntentId, deploymentEnvironment)
   return json(result.ok ? edgeCommandSuccess(result.data) : edgeCommandFailure(result.error.code, result.error.message), result.ok ? {} : { status: 400 })
 }
 serve(handleRequest); export { handleRequest }

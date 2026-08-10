@@ -1933,3 +1933,55 @@ marks paid only after trusted provider settlement evidence and a balanced neutra
 - Commit #141 separately, post implementation evidence, stop local Supabase, and request exact-HEAD
   independent validation. Enable Connect on the Fundloop Stripe sandbox before the real hosted
   onboarding, signed-webhook, and USD/CAD provider checkpoint; keep live mode deferred.
+
+### session v39: conserve Stripe fees and recover provider acknowledgements (#141)
+
+- Timestamp: 2026-08-10T03:04:11-04:00
+- Agent: Codex
+- Branch: codex/134-funded-redistribution
+- Head: 6f1d60e
+
+#### Objective
+
+Close independent-validation gaps in user-fee inventory/journal conservation and Stripe-provider
+success followed by a failed local acknowledgement, while preserving the sandbox-only boundary.
+
+#### Actions Taken
+
+- Added a forward migration with separately source-linked canonical/native fee inventory. Fee
+  reservations reuse held provenance during remediation, remain unavailable to later withdrawals,
+  and become consumed only with the provider-paid reconciliation transition.
+- Added provisional user-fee control and revenue legs to the same balanced settlement journal.
+  Net custody retains exact provider-native/FX evidence while functional debit and credit totals
+  now equal the gross withdrawal; no provider fee asset is falsely transferred out of custody.
+- Made in-flight payout preparation resumable. A provider-created payout whose first local
+  acknowledgement fails is recovered with the same command, transfer, and payout idempotency keys;
+  acknowledgement is itself idempotent and rejects changed provider references.
+- Retried one transient acknowledgement in the adapter, exposed a precise local-commit-pending
+  result if both writes fail, and moved the production runtime denial before any Stripe API access.
+  Updated generated types, executable SQL, focused tests, and the sandbox runbook.
+
+#### Validation Notes
+
+- Fresh local Supabase replay and executable Stripe Connect SQL passed. The $10 gross fixture now
+  proves 975 net plus 25 fee inventory consumed, a $10 balanced journal, the exact 25-cent fee
+  revenue leg, resumable processing, and idempotent repeated provider acknowledgement.
+- Strict Deno checks passed all three Edge handlers. Focused Vitest passed 6 files / 17 tests;
+  typecheck, lint, and diff-check passed. Full Node 22 `CI=1 pnpm check` passed lint, 158 files /
+  697 tests, typecheck, and the 165-page production build.
+- The Stripe sandbox checkpoint remains externally blocked because Connect is not enabled on the
+  Fundloop sandbox. No connected account, provider payout, signed connected-account webhook, live
+  credential, or production value flow was created.
+
+#### Reflections
+
+- A payout fee consumes user entitlement and inventory even when it remains in platform custody;
+  separate source provenance plus fee-control/revenue entries make that disposition explicit.
+- Provider idempotency is only useful if the local state machine can resume the exact command after
+  an acknowledgement fault. Retrying by creating a new local attempt would hide, not solve, the gap.
+
+#### Suggested Next Steps
+
+- Commit the two local fixes and request independent revalidation. Keep #141 In Progress until
+  Connect is enabled and the real hosted onboarding, signed-webhook, and USD/CAD sandbox checkpoint
+  can be executed; continue other non-production Feature #118 work in the meantime.

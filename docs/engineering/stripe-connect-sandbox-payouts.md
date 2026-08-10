@@ -10,17 +10,18 @@ The withdrawal obligation remains the canonical source. The provider sequence is
 
 1. A user creates one inventory-backed withdrawal request.
 2. Stripe-hosted onboarding must report `details_submitted`, payouts enabled, an eligible external account, and no currently-due requirements.
-3. An internal operator submits the persisted payout intent. The adapter transfers only the net provider-native amount to the connected account, then creates a standard payout with separate idempotency keys.
+3. An internal operator submits the persisted payout intent. FundLoop separately reserves the user-selected fee from the same project/asset inventory, then the adapter transfers only the net provider-native amount to the connected account and creates a standard payout with separate idempotency keys.
 4. Signed connected-account webhooks update provider state. Duplicate events are payload-bound; older events are retained as out of order without regressing state.
 5. `payout.paid` is not sufficient by itself. FundLoop matches account, payout ID, currency, provider-native amount, and canonical USD value, posts a balanced neutral-ledger transaction, then atomically marks the execution attempt, intent, withdrawal, claims, and reservations reconciled/paid.
 
-Failed or canceled payouts move the withdrawal to remediation. If the platform-to-connected-account transfer already succeeded, retry reuses that transfer and creates only a new payout, preventing double funding.
+Failed or canceled payouts move the withdrawal and both net/fee reservations to remediation. If the platform-to-connected-account transfer already succeeded, retry reuses that transfer and creates only a new payout, preventing double funding. If Stripe accepts the payout but the local acknowledgement fails, the still-processing command is resumable with the same transfer and payout idempotency keys; the provider result is never replaced by a new payout merely because the local write failed.
 
 ## Currency model
 
 - USD and CAD routes are allowed.
 - Withdrawal entitlements and user-fee snapshots remain canonical USD minor units.
 - The provider payout uses the selected inventory asset's native minor units at the originating locked FX snapshot.
+- The selected fee has separate canonical/native inventory provenance. Paid consumes net and fee inventory exactly once; the balanced journal records the native net custody movement plus paired user-fee control/revenue legs so its functional totals equal the gross withdrawal.
 - Ledger postings retain both functional USD and provider-native amount/FX evidence.
 
 ## Local configuration
