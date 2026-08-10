@@ -63,6 +63,8 @@ describe("policy review routes", () => {
     expect(termsOutput).not.toContain(termsReviewDocument.documentId)
     expect(termsOutput).not.toContain(termsReviewDocument.contentHash)
     expect(termsOutput).not.toContain("No live contribution")
+    expect(termsOutput).not.toContain("non-refundable as of right")
+    expect(termsOutput).not.toContain("best-effort basis only")
     termsView.unmount()
 
     const privacyView = render(await privacyRoute.default({ params: Promise.resolve({ locale: "en" }) }))
@@ -95,6 +97,9 @@ describe("policy review routes", () => {
     expect(termsView.container.textContent).toContain(termsReviewDocument.documentId)
     expect(termsView.container.textContent).toContain(termsReviewDocument.contentHash)
     expect(termsView.container.textContent).toContain("No live contribution")
+    expect(termsView.container.textContent).toContain("non-refundable as of right")
+    expect(termsView.container.textContent).toContain("does not intend to provide escrow")
+    expect(termsView.container.textContent).toContain("best-effort basis only")
     termsView.unmount()
 
     const privacyView = render(await privacyRoute.default({ params: Promise.resolve({ locale: "en" }) }))

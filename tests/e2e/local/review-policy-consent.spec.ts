@@ -1,6 +1,10 @@
 import { expect, test } from "@playwright/test"
 import { randomUUID } from "node:crypto"
+import { mkdir } from "node:fs/promises"
+import path from "node:path"
 import { createClient } from "@supabase/supabase-js"
+import { POLICY_ACKNOWLEDGEMENT_FUNCTION } from "../../../lib/edge-functions/policy-acknowledgement-contract"
+import { termsReviewDocument } from "../../../lib/policies/review-policy"
 import { loginThroughE2EEndpoint } from "../support/e2e-login"
 
 function requiredEnv(name: string) {
@@ -9,7 +13,7 @@ function requiredEnv(name: string) {
   return value
 }
 
-test("keeps legacy onboarding private until separate grant and removes discovery after withdrawal", async ({ page }) => {
+test("records both Terms review capacities, then keeps publication private until separate consent", async ({ page, browser }) => {
   test.setTimeout(180_000)
   const baseURL = requiredEnv("PLAYWRIGHT_LOCAL_BASE_URL")
   const supabaseUrl = requiredEnv("NEXT_PUBLIC_SUPABASE_URL")
@@ -79,6 +83,66 @@ test("keeps legacy onboarding private until separate grant and removes discovery
     })
     const { error: signInError } = await actorClient.auth.signInWithPassword({ email, password })
     if (signInError) throw new Error(signInError.message)
+
+    const policyContext = await browser.newContext({ viewport: { width: 1440, height: 900 }, reducedMotion: "reduce" })
+    const policyPage = await policyContext.newPage()
+    await policyPage.goto(`${baseURL}/terms`)
+    const disclosureHeading = policyPage.getByRole("heading", { name: "Proposed no-refund, no-escrow, and best-effort model" })
+    await expect(disclosureHeading).toBeVisible()
+    await expect(policyPage.getByText(/non-refundable as of right/i)).toBeVisible()
+    await expect(policyPage.getByText(/does not intend to provide escrow/i)).toBeVisible()
+    await expect(policyPage.getByText(/eligible payout request on a best-effort basis only/i)).toBeVisible()
+    const policyOutput = path.join(process.cwd(), "output", "playwright", "feature-118-policy")
+    await mkdir(policyOutput, { recursive: true })
+    await policyPage.addStyleTag({ content: "nextjs-portal { display: none !important; }" })
+    await policyPage.waitForTimeout(1_000)
+    await disclosureHeading.scrollIntoViewIfNeeded()
+    await policyPage.screenshot({ path: path.join(policyOutput, "terms-disclosures-desktop-1440x900.png") })
+    await policyPage.setViewportSize({ width: 390, height: 844 })
+    await disclosureHeading.scrollIntoViewIfNeeded()
+    await policyPage.waitForTimeout(300)
+    await policyPage.screenshot({ path: path.join(policyOutput, "terms-disclosures-mobile-390x844.png") })
+    await policyContext.close()
+
+    const { data: publicProject, error: projectError } = await supabase
+      .from("projects")
+      .select("id")
+      .eq("status", "active")
+      .eq("is_public", true)
+      .is("deleted_at", null)
+      .limit(1)
+      .single()
+    if (projectError || !publicProject) throw new Error(projectError?.message ?? "No public project is available for review-policy smoke.")
+
+    const { error: participantError } = await supabase.from("participants").insert({
+      project_id: publicProject.id,
+      user_id: userId,
+      is_admin: true,
+      is_favorite: false,
+    })
+    if (participantError) throw new Error(participantError.message)
+
+    for (const acknowledgement of [
+      { actorCapacity: "project_actor", sourceSurface: "project_funding_preview" },
+      { actorCapacity: "user", sourceSurface: "payout_preview" },
+    ] as const) {
+      const result = await actorClient.functions.invoke(POLICY_ACKNOWLEDGEMENT_FUNCTION, {
+        body: { ...termsReviewDocument, ...acknowledgement },
+      })
+      expect(result.error).toBeNull()
+      expect(result.data).toMatchObject({ ok: true, data: { status: "review", noLegalEffect: true, noValueFlowEnabled: true } })
+    }
+
+    const { data: acceptances, error: acceptanceError } = await supabase
+      .from("legal_acceptance_records")
+      .select("actor_capacity,source_surface,document_status")
+      .eq("actor_user_id", userId)
+    if (acceptanceError) throw new Error(acceptanceError.message)
+    expect(acceptances).toEqual(expect.arrayContaining([
+      { actor_capacity: "project_actor", source_surface: "project_funding_preview", document_status: "review" },
+      { actor_capacity: "user", source_surface: "payout_preview", document_status: "review" },
+    ]))
+
     const { data: publishResult, error: publishError } = await actorClient.functions.invoke("user-onboarding-publish", { body: {} })
     if (publishError || publishResult?.ok !== true) {
       throw new Error(publishError?.message ?? publishResult?.error?.message ?? "Could not complete onboarding.")
@@ -101,24 +165,6 @@ test("keeps legacy onboarding private until separate grant and removes discovery
       is_birthyear_public: false,
       is_birthday_public: false,
     })
-
-    const { data: publicProject, error: projectError } = await supabase
-      .from("projects")
-      .select("id")
-      .eq("status", "active")
-      .eq("is_public", true)
-      .is("deleted_at", null)
-      .limit(1)
-      .single()
-    if (projectError || !publicProject) throw new Error(projectError?.message ?? "No public project is available for discovery smoke.")
-
-    const { error: participantError } = await supabase.from("participants").insert({
-      project_id: publicProject.id,
-      user_id: userId,
-      is_admin: false,
-      is_favorite: false,
-    })
-    if (participantError) throw new Error(participantError.message)
 
     await page.goto(`${baseURL}/users?q=${encodeURIComponent(displayName)}`)
     await expect(page.getByText(displayName, { exact: true })).toHaveCount(0)
@@ -145,8 +191,10 @@ test("keeps legacy onboarding private until separate grant and removes discovery
     await page.goto(`${baseURL}/users?q=${encodeURIComponent(displayName)}`)
     await expect(page.getByText(displayName, { exact: true })).toHaveCount(0)
   } finally {
+    await supabase.from("legal_acceptance_records").delete().eq("actor_user_id", userId)
     await supabase.from("profile_publication_consents").delete().eq("user_id", userId)
     await supabase.from("user_onboarding_drafts").delete().eq("user_id", userId)
+    await supabase.from("participants").delete().eq("user_id", userId)
     await supabase.from("users").delete().eq("user_id", userId)
     await supabase.auth.admin.deleteUser(userId)
   }

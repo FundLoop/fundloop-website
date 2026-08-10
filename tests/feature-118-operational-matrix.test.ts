@@ -71,5 +71,8 @@ describe("Feature #118 operational capability matrix", () => {
     expect(script).toContain('let cleanup = await run("supabase", ["db", "reset", "--local"]')
     expect(script).toContain('if (!cleanup.ok) cleanup = await run("supabase", ["db", "reset", "--local"]')
     expect(script).not.toMatch(/db push|supabase link|--linked|productionValueFlowEnabled: true/)
+    const personaRunner = readFileSync(path.resolve("scripts/run-playwright-local-personas.mjs"), "utf8")
+    expect(personaRunner).toContain("async function waitForProbe")
+    expect(personaRunner).toContain("attempt < 30")
   })
 })

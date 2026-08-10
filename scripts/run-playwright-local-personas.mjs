@@ -84,18 +84,20 @@ function readEnv() {
   }
 }
 
-async function probe(url, headers, reasonCode) {
-  try {
-    const response = await fetch(url, { headers, signal: AbortSignal.timeout(5_000) })
-    if (!response.ok) throw new Error("not-ok")
-  } catch {
-    throw new Error(reasonCode)
+async function waitForProbe(url, headers, reasonCode) {
+  for (let attempt = 0; attempt < 30; attempt += 1) {
+    try {
+      const response = await fetch(url, { headers, signal: AbortSignal.timeout(1_000) })
+      if (response.ok) return
+    } catch {}
+    await delay(500)
   }
+  throw new Error(reasonCode)
 }
 
 async function preflight(env) {
-  await probe(`${env.supabaseUrl}/auth/v1/health`, { apikey: env.anonKey }, "persona-supabase-unavailable")
-  await probe(`${env.mailpitUrl}/api/v1/info`, {}, "persona-mailpit-unavailable")
+  await waitForProbe(`${env.supabaseUrl}/auth/v1/health`, { apikey: env.anonKey }, "persona-supabase-unavailable")
+  await waitForProbe(`${env.mailpitUrl}/api/v1/info`, {}, "persona-mailpit-unavailable")
   const status = await capture("supabase", ["status", "--output", "json"], process.env)
   let localStatus
   try { localStatus = JSON.parse(status) } catch { throw new Error("persona-supabase-status-invalid") }

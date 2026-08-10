@@ -54,13 +54,17 @@ export default async function TermsPage({ params }: PageProps) {
       <p>A future workflow may require a versioned project list and finally settled contribution before a monthly cutoff. Declarations and pending transfers are not settled funds. Ownership, refunds, insolvency treatment, payment-regulatory classification, and any silence-as-approval mechanism remain unresolved production questions.</p>
       <h2>4. Proposed user boundary</h2>
       <p>Displayed calculations and conditional awards must not be described as guaranteed earnings, deposits, escrow, wages, investments, or presently enforceable debt. The legal and accounting recognition event remains unapproved. A request is not execution or settlement.</p>
-      <h2>5. Fees, assets, and public chains</h2>
+      <h2>5. Proposed no-refund, no-escrow, and best-effort model</h2>
+      <p>Subject to qualified counsel and accountant review, the product intent is that a finally settled project submission would be non-refundable as of right. FundLoop could attempt a discretionary refund on a best-effort basis, without guaranteeing that a refund is available or successful.</p>
+      <p>FundLoop does not intend to provide escrow, deposit, trust, or stored-value accounts. Internal platform and epoch treasury labels would be operational controls only, not user escrow or proof that a project or user owns segregated funds.</p>
+      <p>FundLoop would attempt an eligible payout request on a best-effort basis only. A request would not guarantee execution, timing, rail or currency availability, final settlement, or success. Holds, provider or network limits, fees, expiry, and carryover could apply under the final approved terms.</p>
+      <h2>6. Fees, assets, and public chains</h2>
       <p>Fee presentation, tax treatment, gross-versus-net accounting, exchange rates, custody, supported assets, and payout rails remain subject to final approval. Public blockchain activity can expose persistent wallet, asset, amount, destination, and transaction information.</p>
-      <h2>6. Privacy and optional choices</h2>
+      <h2>7. Privacy and optional choices</h2>
       <p>General Terms acknowledgement must remain separate from optional public-profile publication and project membership. See the <Link href="/privacy">non-effective Privacy Notice preview</Link> for the data-flow inventory and unresolved questions.</p>
-      <h2>7. Production gates</h2>
+      <h2>8. Production gates</h2>
       <ul><li>qualified counsel and accountant/bookkeeper approval evidence;</li><li>approved immutable text and version hashes;</li><li>verified provider, treasury, data-flow, retention, and runtime controls;</li><li>production launch review proving review drafts cannot become effective.</li></ul>
-      <h2>8. Questions remain open</h2>
+      <h2>9. Questions remain open</h2>
       <p>Payment regulation, FINTRAC duties, ownership, refunds, user claims, securities, consumer protection, tax, employment, privacy, abandoned property, enforceability, governing law, and dispute terms are deliberately not answered by this preview.</p>
     </LegalPageShell>
   )

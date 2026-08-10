@@ -2287,3 +2287,53 @@ local gate with truthful provider classifications, exact visual evidence, and ze
 - Commit #144 and request independent exact-commit validation before moving it to In Review.
 - Validate integrated Goal #142 after #144 passes. Feature #118 remains externally blocked only by
   #131 until Stripe enables the required customer-balance bank-transfer capability.
+
+### session v46: expose the proposed Terms disclosure model (#144)
+
+- Timestamp: 2026-08-10T13:02:00-04:00
+- Agent: Codex
+- Branch: codex/118-operational-readiness
+- Head: 0a26f96
+
+#### Objective
+
+Close the independent validator's disclosure-surface gap without presenting unapproved legal or
+accounting conclusions as effective Terms.
+
+#### Actions Taken
+
+- Added the canonical proposed no-refund, no-escrow, discretionary-refund, and best-effort payout
+  model to the local/dev Terms review page under the existing draft/not-effective boundary.
+- Kept refunds, ownership, enforceability, and recognition explicitly unresolved for production and
+  retained counsel/accountant approval as a hard production gate.
+- Added executable route assertions that the review wording is present locally and absent from the
+  production placeholder, and registered omission of those disclosures as a high-risk matrix case.
+- Extended the real authenticated Edge/browser and SQL evidence to record both the project actor on
+  `project_funding_preview` and the user on `payout_preview`, then verify exact persisted capacities.
+- Added bounded Supabase/Mailpit readiness retries to the standalone persona launcher after a clean
+  reset exposed an API health race; target and environment checks remain unchanged.
+
+#### Validation Notes
+
+- Canonical run `feature-118-20260810T192804001Z-28a2b3e3` passed all 18 phases with digest
+  `5627c964c8295344f44b9a0fc7c90edfd1b6605a242a2e17bb064d4734906a85`.
+- The browser lane passed 2/2 with both authenticated acknowledgement capacities, private-profile
+  grant/withdrawal, and real Edge-to-Mailpit delivery. Exact disclosure captures passed visual
+  inspection at 1440x900 and 390x844.
+- SQL passed both acceptance records and all nine remaining control-plane suites. Focused policy and
+  matrix tests, 17 Hardhat tests, lint, typecheck, diff-check, 161 files / 714 tests, and the 165-page
+  production build passed.
+- The canonical legal draft and immutable hash are unchanged; this surface now exposes language
+  already present in `docs/legal/review-drafts/terms-canada.md` rather than inventing a new policy.
+- Production still branches before all draft text and metadata, even with a hostile preview flag.
+
+#### Reflections
+
+- A capability matrix must validate the user-visible disclosure itself, not infer it from a
+  version/hash acknowledgement control.
+- Product intent can be testable before professional approval only when the UI labels it prominently
+  as non-effective and the production route fails closed.
+
+#### Suggested Next Steps
+
+- Commit this narrow validator fix and request exact-commit revalidation of #144.

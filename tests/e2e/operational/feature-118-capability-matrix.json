@@ -8,15 +8,15 @@
       "id": "policy-user-review-acknowledgement",
       "state": "local-real",
       "personas": ["new-member", "returning-member"],
-      "evidence": ["tests/e2e/local/review-policy-consent.spec.ts", "tests/review-policy-gates.test.ts"],
-      "highRisk": ["wrong-document-hash", "production-preview-override", "material-version-reacceptance"]
+      "evidence": ["tests/e2e/local/review-policy-consent.spec.ts", "supabase/tests/review_policy_controls.sql", "tests/review-policy-gates.test.ts"],
+      "highRisk": ["wrong-document-hash", "production-preview-override", "material-version-reacceptance", "missing-no-refund-no-escrow-best-effort-review-disclosure"]
     },
     {
       "id": "policy-project-review-acknowledgement",
       "state": "local-real",
       "personas": ["new-founder", "returning-founder"],
-      "evidence": ["tests/review-policy-gates.test.ts", "supabase/tests/review_policy_controls.sql"],
-      "highRisk": ["funding-without-current-terms", "production-draft-exposure"]
+      "evidence": ["tests/e2e/local/review-policy-consent.spec.ts", "tests/review-policy-gates.test.ts", "supabase/tests/review_policy_controls.sql"],
+      "highRisk": ["funding-without-current-terms", "production-draft-exposure", "missing-no-refund-no-escrow-best-effort-review-disclosure"]
     },
     {
       "id": "profile-private-publication-consent",
