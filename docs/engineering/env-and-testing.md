@@ -102,6 +102,25 @@ deployment additionally requires `BASE_SEPOLIA_RPC_URL`, `BASE_SEPOLIA_PRIVATE_K
 deployment. Production is denied by the Edge runtime, database controls, deployment constraints,
 and tracked manifests.
 
+### Stripe Connect payout review variables
+
+Task #141 uses only a Stripe sandbox/test-mode platform and remains production-disabled:
+
+```bash
+FUNDLOOP_DEPLOYMENT_ENV=local
+FUNDLOOP_SITE_URL=http://127.0.0.1:3000
+NEXT_PUBLIC_STRIPE_CONNECT_REVIEW_ENABLED=true
+STRIPE_SECRET_KEY=sk_test_...
+STRIPE_ACCOUNT_ID=acct_...
+STRIPE_CONNECT_WEBHOOK_SECRET=whsec_...
+```
+
+The webhook secret is temporary output from `stripe listen --forward-connect-to`; keep it untracked.
+The Edge functions verify that the test key resolves to `STRIPE_ACCOUNT_ID`, reject live events, and
+accept only local/development/dev/preview/test runtimes. See
+[`stripe-connect-sandbox-payouts.md`](./stripe-connect-sandbox-payouts.md) for the hosted onboarding,
+USD/CAD amount, retry, and settlement-journal boundaries.
+
 If local Supabase is unavailable, do not silently switch to a shared remote database for destructive validation. Either use static tests only or call out the missing validation.
 
 ## Remote Supabase Workflow

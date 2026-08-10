@@ -1871,3 +1871,65 @@ and executable gas sponsorship without broadening the non-production boundary.
 
 - Commit the narrow #140 validation fix, post evidence, stop local Supabase, and request exact-HEAD
   revalidation before changing status or beginning #141.
+
+### session v38: add Stripe Connect sandbox payout control plane (#141)
+
+- Timestamp: 2026-08-10T02:47:20-04:00
+- Agent: Codex
+- Branch: codex/134-funded-redistribution
+- Head: 3d37714
+
+#### Objective
+
+Implement Stripe-hosted USD/CAD onboarding and a test-mode-only Connect payout lifecycle that
+keeps bank credentials at Stripe, derives every payout from approved FundLoop obligations, and
+marks paid only after trusted provider settlement evidence and a balanced neutral-ledger journal.
+
+#### Actions Taken
+
+- Added a forward-only Stripe Connect control plane for redacted account readiness and requirement
+  history, payout commands, immutable signed-webhook evidence, observations, USD/CAD custody, and
+  service-only typed RPCs. Direct service mutations are denied and all runtime controls fail closed
+  outside local/dev/test/preview environments.
+- Added authenticated hosted Express onboarding/management and an internal payout operator Edge
+  boundary. Both bind a test-mode platform account; the webhook verifies the raw Stripe signature,
+  rejects live-mode and unrelated events, retrieves provider state through the SDK, and preserves
+  payload-bound deduplication and out-of-order evidence without regressing state.
+- Derived gross, fee, net, currency, account, withdrawal, allocation claims, and custody inventory
+  from persisted state. Retry reuses an already-created transfer, requirement changes place the
+  route and obligation on hold, and paid requires exact account/currency/amount evidence before
+  balanced canonical/native ledger posting and atomic claim/reservation reconciliation.
+- Added user account/earnings and operator payout surfaces, typed contracts/invokers/read models,
+  SQL/Vitest/Playwright coverage, exact environment documentation, generated Supabase types, and
+  a sandbox operating runbook. User surfaces retain only country, currency, readiness, and a
+  redacted destination last four; no routing or account numbers enter FundLoop storage.
+
+#### Validation Notes
+
+- Fresh local Supabase migration/seed replay passed. Executable SQL passed USD and CAD lifecycles,
+  exact 2.5% fee derivation, locked-FX native amounts, duplicate/conflicting/out-of-order webhooks,
+  requirement-change holds, failure/remediation, transfer-reusing retry, balanced paid journals,
+  production/auth/direct-write denial, and user-scoped reads.
+- Strict Deno checks passed all three Edge handlers. Focused Node 22 Vitest passed 6 files / 15
+  tests; typecheck, lint, and `git diff --check` passed. Full Node 22 `CI=1 pnpm check` passed lint,
+  158 files / 695 tests, typecheck, and the 165-page production build. Schema lint reported only
+  the pre-existing unused `inspect_project_invitation_review.p_actor_user_id` warning.
+- Authenticated local Playwright passed 1/1 with zero console errors. Exact 1440x900 and 390x844
+  captures under `output/playwright/issue-141/` were visually inspected and show sandbox readiness,
+  redacted destination `6789`, hosted-provider actions, and the settlement-plus-journal paid rule.
+- Official Stripe CLI access to the Fundloop sandbox was verified, but real connected-account
+  creation stopped at Stripe's provider gate because Connect is not enabled for that sandbox. No
+  external account, payout, webhook, live credential, or production value flow was created.
+
+#### Reflections
+
+- A provider retry must distinguish transfer funding from connected-account payout execution;
+  stable but separate idempotency keys plus persisted transfer reuse prevent double funding.
+- Provider settlement is evidence, not authority over FundLoop amounts. Canonical USD, selected
+  user fee, locked FX, custody asset, and allocation claims remain derived and conserved locally.
+
+#### Suggested Next Steps
+
+- Commit #141 separately, post implementation evidence, stop local Supabase, and request exact-HEAD
+  independent validation. Enable Connect on the Fundloop Stripe sandbox before the real hosted
+  onboarding, signed-webhook, and USD/CAD provider checkpoint; keep live mode deferred.

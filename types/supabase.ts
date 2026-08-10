@@ -8464,6 +8464,411 @@ export type Database = {
         }
         Relationships: []
       }
+      stripe_connect_account_events: {
+        Row: {
+          created_at: string
+          currently_due_count: number
+          disabled_reason: string | null
+          event_type: string
+          evidence_hash: string
+          external_account_enabled: boolean
+          id: number
+          onboarding_status: string
+          payouts_enabled: boolean
+          provider_created_at: string
+          provider_event_id: string | null
+          stripe_connect_account_id: number
+        }
+        Insert: {
+          created_at?: string
+          currently_due_count: number
+          disabled_reason?: string | null
+          event_type: string
+          evidence_hash: string
+          external_account_enabled: boolean
+          id?: never
+          onboarding_status: string
+          payouts_enabled: boolean
+          provider_created_at: string
+          provider_event_id?: string | null
+          stripe_connect_account_id: number
+        }
+        Update: {
+          created_at?: string
+          currently_due_count?: number
+          disabled_reason?: string | null
+          event_type?: string
+          evidence_hash?: string
+          external_account_enabled?: boolean
+          id?: never
+          onboarding_status?: string
+          payouts_enabled?: boolean
+          provider_created_at?: string
+          provider_event_id?: string | null
+          stripe_connect_account_id?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "stripe_connect_account_events_stripe_connect_account_id_fkey"
+            columns: ["stripe_connect_account_id"]
+            isOneToOne: false
+            referencedRelation: "stripe_connect_accounts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      stripe_connect_accounts: {
+        Row: {
+          country_code: string
+          created_at: string
+          currently_due_count: number
+          default_currency: string
+          details_submitted: boolean
+          disabled_reason: string | null
+          eventually_due_count: number
+          evidence_hash: string
+          external_account_enabled: boolean
+          external_account_last4: string | null
+          id: number
+          onboarding_status: string
+          payout_route_id: number | null
+          payouts_enabled: boolean
+          production_enabled: boolean
+          provider_account_id: string
+          provider_updated_at: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          country_code: string
+          created_at?: string
+          currently_due_count?: number
+          default_currency: string
+          details_submitted?: boolean
+          disabled_reason?: string | null
+          eventually_due_count?: number
+          evidence_hash: string
+          external_account_enabled?: boolean
+          external_account_last4?: string | null
+          id?: never
+          onboarding_status: string
+          payout_route_id?: number | null
+          payouts_enabled?: boolean
+          production_enabled?: boolean
+          provider_account_id: string
+          provider_updated_at: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          country_code?: string
+          created_at?: string
+          currently_due_count?: number
+          default_currency?: string
+          details_submitted?: boolean
+          disabled_reason?: string | null
+          eventually_due_count?: number
+          evidence_hash?: string
+          external_account_enabled?: boolean
+          external_account_last4?: string | null
+          id?: never
+          onboarding_status?: string
+          payout_route_id?: number | null
+          payouts_enabled?: boolean
+          production_enabled?: boolean
+          provider_account_id?: string
+          provider_updated_at?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "stripe_connect_accounts_payout_route_id_fkey"
+            columns: ["payout_route_id"]
+            isOneToOne: true
+            referencedRelation: "user_payout_routes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "stripe_connect_accounts_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: true
+            referencedRelation: "users"
+            referencedColumns: ["user_id"]
+          },
+        ]
+      }
+      stripe_connect_payout_commands: {
+        Row: {
+          attempt_no: number
+          command_hash: string
+          created_at: string
+          currency_code: string
+          failure_code: string | null
+          gross_minor: number
+          id: number
+          idempotency_key: string
+          ledger_transaction_id: number | null
+          net_minor: number
+          payout_execution_attempt_id: number
+          payout_intent_id: number
+          production_enabled: boolean
+          provider_payout_id: string | null
+          provider_payout_minor: number
+          provider_request_id: string | null
+          provider_transfer_id: string | null
+          settled_at: string | null
+          status: string
+          stripe_connect_account_id: number
+          submitted_at: string | null
+          updated_at: string
+          user_fee_minor: number
+          withdrawal_request_id: string
+        }
+        Insert: {
+          attempt_no: number
+          command_hash: string
+          created_at?: string
+          currency_code: string
+          failure_code?: string | null
+          gross_minor: number
+          id?: never
+          idempotency_key: string
+          ledger_transaction_id?: number | null
+          net_minor: number
+          payout_execution_attempt_id: number
+          payout_intent_id: number
+          production_enabled?: boolean
+          provider_payout_id?: string | null
+          provider_payout_minor: number
+          provider_request_id?: string | null
+          provider_transfer_id?: string | null
+          settled_at?: string | null
+          status?: string
+          stripe_connect_account_id: number
+          submitted_at?: string | null
+          updated_at?: string
+          user_fee_minor: number
+          withdrawal_request_id: string
+        }
+        Update: {
+          attempt_no?: number
+          command_hash?: string
+          created_at?: string
+          currency_code?: string
+          failure_code?: string | null
+          gross_minor?: number
+          id?: never
+          idempotency_key?: string
+          ledger_transaction_id?: number | null
+          net_minor?: number
+          payout_execution_attempt_id?: number
+          payout_intent_id?: number
+          production_enabled?: boolean
+          provider_payout_id?: string | null
+          provider_payout_minor?: number
+          provider_request_id?: string | null
+          provider_transfer_id?: string | null
+          settled_at?: string | null
+          status?: string
+          stripe_connect_account_id?: number
+          submitted_at?: string | null
+          updated_at?: string
+          user_fee_minor?: number
+          withdrawal_request_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "stripe_connect_payout_commands_ledger_transaction_id_fkey"
+            columns: ["ledger_transaction_id"]
+            isOneToOne: true
+            referencedRelation: "ledger_transactions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "stripe_connect_payout_commands_ledger_transaction_id_fkey"
+            columns: ["ledger_transaction_id"]
+            isOneToOne: true
+            referencedRelation: "shadow_ledger_trial_balance"
+            referencedColumns: ["ledger_transaction_id"]
+          },
+          {
+            foreignKeyName: "stripe_connect_payout_commands_payout_execution_attempt_id_fkey"
+            columns: ["payout_execution_attempt_id"]
+            isOneToOne: true
+            referencedRelation: "payout_execution_attempts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "stripe_connect_payout_commands_payout_intent_id_fkey"
+            columns: ["payout_intent_id"]
+            isOneToOne: false
+            referencedRelation: "payout_intents"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "stripe_connect_payout_commands_stripe_connect_account_id_fkey"
+            columns: ["stripe_connect_account_id"]
+            isOneToOne: false
+            referencedRelation: "stripe_connect_accounts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "stripe_connect_payout_commands_withdrawal_request_id_fkey"
+            columns: ["withdrawal_request_id"]
+            isOneToOne: false
+            referencedRelation: "user_withdrawal_requests"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      stripe_connect_payout_observations: {
+        Row: {
+          amount_minor: number
+          arrival_at: string | null
+          created_at: string
+          currency_code: string
+          destination_last4: string | null
+          evidence_hash: string
+          failure_code: string | null
+          id: number
+          provider_status: string
+          stripe_connect_payout_command_id: number
+          webhook_event_id: number
+        }
+        Insert: {
+          amount_minor: number
+          arrival_at?: string | null
+          created_at?: string
+          currency_code: string
+          destination_last4?: string | null
+          evidence_hash: string
+          failure_code?: string | null
+          id?: never
+          provider_status: string
+          stripe_connect_payout_command_id: number
+          webhook_event_id: number
+        }
+        Update: {
+          amount_minor?: number
+          arrival_at?: string | null
+          created_at?: string
+          currency_code?: string
+          destination_last4?: string | null
+          evidence_hash?: string
+          failure_code?: string | null
+          id?: never
+          provider_status?: string
+          stripe_connect_payout_command_id?: number
+          webhook_event_id?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "stripe_connect_payout_observa_stripe_connect_payout_comman_fkey"
+            columns: ["stripe_connect_payout_command_id"]
+            isOneToOne: false
+            referencedRelation: "stripe_connect_payout_commands"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "stripe_connect_payout_observa_stripe_connect_payout_comman_fkey"
+            columns: ["stripe_connect_payout_command_id"]
+            isOneToOne: false
+            referencedRelation: "user_stripe_connect_payouts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "stripe_connect_payout_observations_webhook_event_id_fkey"
+            columns: ["webhook_event_id"]
+            isOneToOne: true
+            referencedRelation: "stripe_connect_webhook_events"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      stripe_connect_runtime_controls: {
+        Row: {
+          deployment_environment: string
+          onboarding_enabled: boolean
+          payout_enabled: boolean
+          production_value_flow_enabled: boolean
+          updated_at: string
+          webhook_enabled: boolean
+        }
+        Insert: {
+          deployment_environment: string
+          onboarding_enabled?: boolean
+          payout_enabled?: boolean
+          production_value_flow_enabled?: boolean
+          updated_at?: string
+          webhook_enabled?: boolean
+        }
+        Update: {
+          deployment_environment?: string
+          onboarding_enabled?: boolean
+          payout_enabled?: boolean
+          production_value_flow_enabled?: boolean
+          updated_at?: string
+          webhook_enabled?: boolean
+        }
+        Relationships: [
+          {
+            foreignKeyName: "stripe_connect_runtime_controls_deployment_environment_fkey"
+            columns: ["deployment_environment"]
+            isOneToOne: true
+            referencedRelation: "financial_runtime_controls"
+            referencedColumns: ["deployment_environment"]
+          },
+        ]
+      }
+      stripe_connect_webhook_events: {
+        Row: {
+          command_sha256: string
+          created_at: string
+          event_type: string
+          id: number
+          livemode: boolean
+          observation_source: string
+          ordering_status: string
+          payload_sha256: string
+          provider_account_id: string
+          provider_created_at: string
+          provider_event_id: string
+          provider_object_id: string
+          signature_timestamp: number
+        }
+        Insert: {
+          command_sha256: string
+          created_at?: string
+          event_type: string
+          id?: never
+          livemode: boolean
+          observation_source: string
+          ordering_status: string
+          payload_sha256: string
+          provider_account_id: string
+          provider_created_at: string
+          provider_event_id: string
+          provider_object_id: string
+          signature_timestamp: number
+        }
+        Update: {
+          command_sha256?: string
+          created_at?: string
+          event_type?: string
+          id?: never
+          livemode?: boolean
+          observation_source?: string
+          ordering_status?: string
+          payload_sha256?: string
+          provider_account_id?: string
+          provider_created_at?: string
+          provider_event_id?: string
+          provider_object_id?: string
+          signature_timestamp?: number
+        }
+        Relationships: []
+      }
       stripe_webhook_events: {
         Row: {
           api_version: string | null
@@ -11009,6 +11414,45 @@ export type Database = {
         }
         Relationships: []
       }
+      user_stripe_connect_payouts: {
+        Row: {
+          created_at: string | null
+          currency_code: string | null
+          failure_code: string | null
+          gross_minor: number | null
+          id: number | null
+          ledger_transaction_id: number | null
+          net_minor: number | null
+          settled_at: string | null
+          status: string | null
+          submitted_at: string | null
+          user_fee_minor: number | null
+          user_id: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "stripe_connect_accounts_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: true
+            referencedRelation: "users"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "stripe_connect_payout_commands_ledger_transaction_id_fkey"
+            columns: ["ledger_transaction_id"]
+            isOneToOne: true
+            referencedRelation: "ledger_transactions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "stripe_connect_payout_commands_ledger_transaction_id_fkey"
+            columns: ["ledger_transaction_id"]
+            isOneToOne: true
+            referencedRelation: "shadow_ledger_trial_balance"
+            referencedColumns: ["ledger_transaction_id"]
+          },
+        ]
+      }
       user_withdrawal_asset_inventory: {
         Row: {
           asset_key: string | null
@@ -11351,6 +11795,10 @@ export type Database = {
           webhook_event_id: number
         }[]
       }
+      ingest_stripe_connect_webhook: {
+        Args: { p_command: Json }
+        Returns: Json
+      }
       inspect_project_invitation_review: {
         Args: {
           p_actor_email: string
@@ -11524,6 +11972,14 @@ export type Database = {
         }
         Returns: Json
       }
+      prepare_stripe_connect_payout: {
+        Args: {
+          p_actor_user_id: string
+          p_environment: string
+          p_payout_intent_id: number
+        }
+        Returns: Json
+      }
       publish_project_onboarding_draft_atomic: {
         Args: {
           p_billing_email: string
@@ -11638,6 +12094,23 @@ export type Database = {
         Args: { p_command: Json }
         Returns: number
       }
+      record_stripe_connect_payout_failure: {
+        Args: {
+          p_command_id: number
+          p_failure_code: string
+          p_transfer_id: string
+        }
+        Returns: Json
+      }
+      record_stripe_connect_payout_submission: {
+        Args: {
+          p_command_id: number
+          p_payout_id: string
+          p_provider_request_id: string
+          p_transfer_id: string
+        }
+        Returns: Json
+      }
       replace_user_asset_preferences_atomic: {
         Args: { p_preferences?: Json; p_user_id: string }
         Returns: {
@@ -11702,6 +12175,14 @@ export type Database = {
       soft_delete_wallet_connections: {
         Args: { p_id: number }
         Returns: undefined
+      }
+      stripe_connect_runtime_enabled: {
+        Args: { p_capability: string; p_environment: string }
+        Returns: boolean
+      }
+      sync_stripe_connect_account: {
+        Args: { p_actor_user_id: string; p_command: Json }
+        Returns: Json
       }
       validate_epoch_project_package: {
         Args: { p_command: Json }

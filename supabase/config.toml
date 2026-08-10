@@ -40,6 +40,24 @@ verify_jwt = false
 entrypoint = "./functions/stripe-bank-transfer-status-read/index.ts"
 import_map = "./functions/deno.json"
 
+[functions.stripe-connect-account]
+enabled = true
+verify_jwt = false
+entrypoint = "./functions/stripe-connect-account/index.ts"
+import_map = "./functions/deno.json"
+
+[functions.stripe-connect-payout-operator]
+enabled = true
+verify_jwt = false
+entrypoint = "./functions/stripe-connect-payout-operator/index.ts"
+import_map = "./functions/deno.json"
+
+[functions.stripe-connect-webhook]
+enabled = true
+verify_jwt = false
+entrypoint = "./functions/stripe-connect-webhook/index.ts"
+import_map = "./functions/deno.json"
+
 [functions.epoch-project-package-workflow]
 enabled = true
 verify_jwt = false

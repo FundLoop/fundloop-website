@@ -48,8 +48,9 @@ export function WithdrawalRequestPanel({ eligibleUsd, defaultRoute, assetOptions
     setBusy(false)
     if (!result.ok) { setError(result.error.message); return }
     const now = new Date().toISOString()
+    const selectedCurrency = compatibleAssets.find((asset) => asset.assetKey === (result.data.assetKey ?? assetKey) && asset.projectId === projectId)?.symbol === "CAD" ? "CAD" : "USD"
     setRequests((current) => [{ id: result.data.requestId, payoutRouteId: defaultRoute.id, status: result.data.status,
-      requestedUsdAmount: Number(result.data.requestedMinor ?? requestedMinor) / 100, currencyCode: "USD", creditCount: 0,
+      requestedUsdAmount: Number(result.data.requestedMinor ?? requestedMinor) / 100, currencyCode: selectedCurrency, creditCount: 0,
       requestedAt: now, assetKey: result.data.assetKey ?? assetKey, feeUsd: Number(result.data.feeMinor ?? 0) / 100,
       netUsd: Number(result.data.netMinor ?? requestedMinor) / 100, statusReason: null }, ...current])
   }

@@ -9,6 +9,8 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { WithdrawalRequestPanel } from "@/components/workspace/withdrawal-request-panel"
+import { StripeConnectPanel } from "@/components/account/stripe-connect-panel"
+import { getStripeConnectOverview } from "@/lib/stripe/stripe-connect-overview"
 import { EpochCloseSummaryCard } from "@/components/epoch-close-summary-card"
 import { loadLatestUserEpochClose } from "@/lib/monthly-cycles/epoch-close-review"
 
@@ -242,9 +244,10 @@ export default async function WorkspaceEarningsPage({ params }: WorkspaceEarning
     redirect(`/${locale}/join`)
   }
 
-  const [earnings, epochClose] = await Promise.all([
+  const [earnings, epochClose, stripeConnect] = await Promise.all([
     getUserEarningsWorkspace(navigationContext),
     navigationContext.user ? loadLatestUserEpochClose(navigationContext.user.id) : Promise.resolve(null),
+    getStripeConnectOverview(navigationContext.user?.id),
   ])
   const nextAction = earnings.summary.nextAction
 
@@ -329,6 +332,8 @@ export default async function WorkspaceEarningsPage({ params }: WorkspaceEarning
         assetOptions={earnings.withdrawalAssetOptions}
         initialRequests={earnings.withdrawalRequests}
       />
+
+      <StripeConnectPanel initial={stripeConnect} />
 
       <section className="grid gap-5 lg:grid-cols-[0.9fr_1.1fr]">
         <Card className="bg-[var(--surface-panel-strong)] shadow-[var(--surface-shadow-panel)]">

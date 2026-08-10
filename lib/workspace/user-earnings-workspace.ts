@@ -84,7 +84,7 @@ export type UserWithdrawalRequest = {
   payoutRouteId: number
   status: "requested" | "reserved" | "queued" | "held" | "paid" | "cancelled" | "closed"
   requestedUsdAmount: number
-  currencyCode: "USD"
+  currencyCode: "USD" | "CAD"
   creditCount: number
   requestedAt: string
   assetKey: string | null
