@@ -1985,3 +1985,49 @@ success followed by a failed local acknowledgement, while preserving the sandbox
 - Commit the two local fixes and request independent revalidation. Keep #141 In Progress until
   Connect is enabled and the real hosted onboarding, signed-webhook, and USD/CAD sandbox checkpoint
   can be executed; continue other non-production Feature #118 work in the meantime.
+
+### session v40: heal Stripe payout acknowledgement through signed webhooks (#141)
+
+- Timestamp: 2026-08-10T03:11:51-04:00
+- Agent: Codex
+- Branch: codex/134-funded-redistribution
+- Head: d8ee487
+
+#### Objective
+
+Ensure a signed Stripe webhook can recover and reconcile a provider payout that succeeded before
+both local acknowledgement writes failed, without requiring an operator retry to arrive first.
+
+#### Actions Taken
+
+- Added exact FundLoop command and transfer identifiers to Stripe payout webhook observations from
+  provider-owned payout metadata after SDK refetch and signature verification.
+- Added a forward-only service RPC wrapper that validates runtime, observation source, account,
+  command, payout, and transfer identity before binding the missing provider references. Conflicting
+  or unknown metadata is rejected; the existing immutable webhook lifecycle then continues normally.
+- Extended executable SQL to omit local submission acknowledgement, ingest the signed in-transit
+  event, prove it healed both provider references, and then reconcile the paid event. Updated static
+  contract coverage, generated Supabase types, and the sandbox recovery runbook.
+
+#### Validation Notes
+
+- Fresh local Supabase migration/seed replay passed through the new recovery migration. Executable
+  Stripe Connect SQL passed, including webhook-first reference healing, repeated acknowledgement,
+  fee inventory conservation, USD/CAD settlement, remediation, and all prior privilege gates.
+- Strict Deno passed the webhook handler. Focused Vitest passed 6 files / 17 tests; typecheck, lint,
+  and diff-check passed. Full Node 22 `CI=1 pnpm check` passed lint, 158 files / 697 tests,
+  typecheck, and the 165-page production build.
+- Real hosted onboarding and payout proof remains externally blocked by the Fundloop sandbox Connect
+  activation state; the new recovery behavior is validated locally with trusted-contract fixtures.
+
+#### Reflections
+
+- Provider metadata is a useful recovery index only after signature verification and authoritative
+  SDK refetch. Treating browser or raw webhook JSON as the same authority would reopen the boundary.
+- Webhook retry and operator retry must converge on one command and one provider payout; neither may
+  depend on winning the race to store the first acknowledgement.
+
+#### Suggested Next Steps
+
+- Commit this narrow recovery fix and request independent local revalidation. Leave #141 In Progress
+  until the Fundloop Stripe sandbox has Connect enabled and the real provider checkpoint can run.

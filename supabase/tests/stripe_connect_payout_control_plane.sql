@@ -51,14 +51,16 @@ BEGIN
   v_prepared:=public.prepare_stripe_connect_payout(v_operator,v_intent,'local');
   IF (v_prepared->>'commandId')::bigint<>v_command OR (v_prepared->>'resumed')::boolean IS NOT TRUE
   THEN RAISE EXCEPTION 'processing payout did not resume its idempotent provider command';END IF;
-  PERFORM public.record_stripe_connect_payout_submission(v_command,'tr_paid1','po_paid1','req_paid1');
-  PERFORM public.record_stripe_connect_payout_submission(v_command,'tr_paid1','po_paid1','req_paid1');
-
   v_event:=jsonb_build_object('contractVersion','stripe_connect_webhook.v1','deploymentEnvironment','local','providerEventId','evt_transit1',
     'providerAccountId','acct_fundloop141','eventType','payout.updated','providerObjectId','po_paid1','providerCreatedAt','2026-08-10T14:00:00Z',
     'signatureTimestamp',extract(epoch FROM '2026-08-10T14:00:00Z'::timestamptz)::bigint,'payloadSha256',repeat('c',64),'livemode',false,'observationSource','stripe_sdk_v1',
-    'providerStatus','in_transit','amountMinor','975','currencyCode','USD','destinationLast4','6789','failureCode','','arrivalAt','2026-08-12T00:00:00Z');
+    'providerStatus','in_transit','amountMinor','975','currencyCode','USD','destinationLast4','6789','failureCode','','arrivalAt','2026-08-12T00:00:00Z',
+    'providerCommandId',v_command::text,'providerTransferId','tr_paid1');
   PERFORM public.ingest_stripe_connect_webhook(v_event);
+  IF (SELECT provider_payout_id FROM public.stripe_connect_payout_commands WHERE id=v_command)<>'po_paid1'
+    OR (SELECT provider_transfer_id FROM public.stripe_connect_payout_commands WHERE id=v_command)<>'tr_paid1'
+  THEN RAISE EXCEPTION 'signed webhook did not heal provider/local acknowledgement gap';END IF;
+  PERFORM public.record_stripe_connect_payout_submission(v_command,'tr_paid1','po_paid1','req_paid1');
   PERFORM public.ingest_stripe_connect_webhook(v_event);
   v_failed:=false;BEGIN PERFORM public.ingest_stripe_connect_webhook(v_event||jsonb_build_object('amountMinor','976'));EXCEPTION WHEN OTHERS THEN v_failed:=SQLERRM LIKE '%stripe_connect_webhook_dedupe_conflict%';END;
   IF NOT v_failed THEN RAISE EXCEPTION 'changed duplicate webhook was accepted';END IF;
@@ -107,7 +109,7 @@ BEGIN
   PERFORM public.record_stripe_connect_payout_submission(v_command,'tr_cad1','po_cad1','req_cad1');
   PERFORM public.ingest_stripe_connect_webhook(v_event||jsonb_build_object('providerEventId','evt_cadpaid1','providerAccountId','acct_fundloopcad141',
     'eventType','payout.paid','providerObjectId','po_cad1','providerCreatedAt','2026-08-10T15:30:00Z','providerStatus','paid','amountMinor','1334','currencyCode','CAD',
-    'destinationLast4','1414','payloadSha256',repeat('4',64)));
+    'destinationLast4','1414','payloadSha256',repeat('4',64),'providerCommandId',v_command::text,'providerTransferId','tr_cad1'));
   SELECT ledger_transaction_id INTO v_ledger FROM public.stripe_connect_payout_commands WHERE id=v_command;
   IF v_ledger IS NULL OR (SELECT sum(functional_usd_amount) FILTER(WHERE side='debit') FROM public.ledger_postings WHERE transaction_id=v_ledger)<>10
     OR (SELECT sum(native_atomic_amount) FILTER(WHERE side='debit') FROM public.ledger_postings WHERE transaction_id=v_ledger)<>1334
@@ -119,7 +121,8 @@ BEGIN
   v_prepared:=public.prepare_stripe_connect_payout(v_operator,v_intent,'local');v_failed_command:=(v_prepared->>'commandId')::bigint;
   PERFORM public.record_stripe_connect_payout_submission(v_failed_command,'tr_failed1','po_failed1','req_failed1');
   PERFORM public.ingest_stripe_connect_webhook(v_event||jsonb_build_object('providerEventId','evt_failed1','eventType','payout.failed','providerObjectId','po_failed1',
-    'providerCreatedAt','2026-08-10T16:00:00Z','providerStatus','failed','amountMinor','1000','failureCode','account_closed','payloadSha256',repeat('f',64)));
+    'providerCreatedAt','2026-08-10T16:00:00Z','providerStatus','failed','amountMinor','1000','failureCode','account_closed','payloadSha256',repeat('f',64),
+    'providerCommandId',v_failed_command::text,'providerTransferId','tr_failed1'));
   IF (SELECT status FROM public.stripe_connect_payout_commands WHERE id=v_failed_command)<>'needs_remediation'
     OR (SELECT status FROM public.user_withdrawal_requests WHERE id=v_request_id)<>'held' OR (SELECT ledger_transaction_id FROM public.stripe_connect_payout_commands WHERE id=v_failed_command) IS NOT NULL
   THEN RAISE EXCEPTION 'failed payout was falsely reconciled or not held';END IF;

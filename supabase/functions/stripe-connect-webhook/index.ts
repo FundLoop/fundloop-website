@@ -45,7 +45,8 @@ async function handleRequest(request: Request) {
       eventType: event.type, providerObjectId: payout.id, providerCreatedAt: new Date(event.created * 1000).toISOString(),
       signatureTimestamp: timestamp, payloadSha256, livemode: false, observationSource: "stripe_sdk_v1", providerStatus: payoutStatus(payout.status),
       amountMinor: String(payout.amount), currencyCode: payout.currency.toUpperCase(), destinationLast4: destination?.last4 ?? "",
-      failureCode: payout.failure_code ?? "", arrivalAt: payout.arrival_date ? new Date(payout.arrival_date * 1000).toISOString() : "" }
+      failureCode: payout.failure_code ?? "", arrivalAt: payout.arrival_date ? new Date(payout.arrival_date * 1000).toISOString() : "",
+      providerCommandId: payout.metadata?.fundloop_payout_command_id ?? "", providerTransferId: payout.metadata?.fundloop_transfer_id ?? "" }
   }
   const result = await clients.adminClient.rpc("ingest_stripe_connect_webhook", { p_command: command })
   return json(result.error ? edgeCommandFailure("stripe_connect_webhook_ingest_failed", result.error.message) : edgeCommandSuccess({ eventId: event.id, result: result.data }), result.error ? { status: 500 } : {})

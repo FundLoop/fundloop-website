@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest"
 
 const migration = readFileSync("supabase/migrations/20260810140000_stripe_connect_payout_control_plane.sql", "utf8")
 const integrity = readFileSync("supabase/migrations/20260810141000_stripe_connect_fee_and_commit_recovery.sql", "utf8")
+const webhookRecovery = readFileSync("supabase/migrations/20260810142000_stripe_connect_webhook_commit_recovery.sql", "utf8")
 const webhook = readFileSync("supabase/functions/stripe-connect-webhook/index.ts", "utf8")
 const account = readFileSync("supabase/functions/stripe-connect-account/index.ts", "utf8")
 const payoutOperator = readFileSync("supabase/functions/stripe-connect-payout-operator/index.ts", "utf8")
@@ -23,6 +24,8 @@ describe("Stripe Connect payout migration", () => {
     expect(integrity).toContain("stripe_connect_fee_inventory_reservations")
     expect(integrity).toContain("stripe_user_fee_revenue")
     expect(integrity).toContain("'resumed',true")
+    expect(webhookRecovery).toContain("providerCommandId")
+    expect(webhookRecovery).toContain("stripe_connect_provider_reference_conflict")
   })
   it("verifies signed test-mode webhooks and never accepts raw bank input", () => {
     expect(webhook).toContain("constructEventAsync")

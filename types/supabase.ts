@@ -11861,6 +11861,10 @@ export type Database = {
         Args: { p_command: Json }
         Returns: Json
       }
+      ingest_stripe_connect_webhook_once: {
+        Args: { p_command: Json }
+        Returns: Json
+      }
       inspect_project_invitation_review: {
         Args: {
           p_actor_email: string
