@@ -1,5 +1,6 @@
 // This module is the Node-only service-role boundary for persona fixture setup and cleanup.
 import { createHash, randomBytes, randomUUID } from "node:crypto"
+import { execFileSync } from "node:child_process"
 import { chmod, mkdir, readFile } from "node:fs/promises"
 import path from "node:path"
 import { createClient, type SupabaseClient } from "@supabase/supabase-js"
@@ -69,6 +70,43 @@ function isUuid(value: string) {
 function fixtureNumericId(controller: MutableFixtureController, offset: number) {
   const hash = createHash("sha256").update(controller.ledger.run.runId).digest().readUInt32BE(0)
   return 1_700_000_000 + (hash % 100_000_000) + offset
+}
+
+const LOCAL_OWNER_CLEANUP_TABLES = new Set([
+  "payout_inventory_lots",
+  "user_withdrawal_obligations",
+])
+
+function localDatabaseUrl() {
+  const value = process.env.PLAYWRIGHT_PERSONA_DB_URL?.trim()
+  if (!value) throw new Error("persona-database-url-missing")
+  const parsed = new URL(value)
+  if (parsed.protocol !== "postgresql:" || parsed.hostname !== "127.0.0.1" || parsed.port !== "55322" || parsed.pathname !== "/postgres") {
+    throw new Error("persona-database-url-refused")
+  }
+  return parsed.toString()
+}
+
+function sqlLiteral(value: string | number) {
+  if (typeof value === "number" && Number.isSafeInteger(value)) return String(value)
+  if (typeof value === "string" && /^[A-Za-z0-9:_-]{1,160}$/.test(value)) return `'${value}'`
+  throw new Error("persona-local-sql-value-refused")
+}
+
+function runLocalOwnerSql(sql: string) {
+  return execFileSync("psql", [localDatabaseUrl(), "-X", "-v", "ON_ERROR_STOP=1", "-At"], {
+    cwd: process.cwd(), input: `${sql.trim()}\n`, encoding: "utf8", stdio: ["pipe", "pipe", "pipe"],
+  }).trim()
+}
+
+function deleteLocalOwnerRecord(record: OwnedDatabaseRecord) {
+  if (!LOCAL_OWNER_CLEANUP_TABLES.has(record.table)) return false
+  const predicates = Object.entries(record.primaryKey).map(([key, value]) => {
+    if (!/^[a-z][a-z0-9_]*$/.test(key)) throw new Error("ownership-ledger-invalid")
+    return `${key}=${sqlLiteral(value)}`
+  })
+  runLocalOwnerSql(`DELETE FROM public.${record.table} WHERE ${predicates.join(" AND ")};`)
+  return true
 }
 
 export function createPersonaServiceClient(input: { supabaseUrl: string; serviceRoleKey: string }) {
@@ -177,7 +215,7 @@ export function createPersonaFixtureController(input: CreateControllerInput): Mu
         return !remaining.error && remaining.data === null
       }
       for (const record of orderedRecords.filter((record) => record.table !== "users")) {
-        if (await deleteOwnedRecord(record)) deletedCount += 1; else fail()
+        if (await deleteOwnedRecord(record) || deleteLocalOwnerRecord(record)) deletedCount += 1; else fail()
       }
 
       const cleanCycles: OwnedCycle[] = []
@@ -657,6 +695,39 @@ export async function arrangeMemberEarnings(
     "persona-payout-route-create-failed",
   )
   await controller.recordDatabaseRow({ table: "user_payout_routes", primaryKey: { id: route.id }, cleanupPhase: 95 })
+
+  const evidenceHash = createHash("sha256").update(`${controller.ledger.run.runId}:withdrawal-inventory`).digest("hex")
+  const legacyInventoryKey = `persona:${controller.ledger.run.runId.toLowerCase()}:stripe`
+  const protectedIds = runLocalOwnerSql(`
+    WITH asset AS (
+      SELECT id FROM public.financial_assets WHERE asset_key='stripe_sandbox_usd'
+    ), custody AS (
+      SELECT custody.id FROM public.financial_custody_accounts custody
+      JOIN asset ON asset.id=custody.asset_id ORDER BY custody.id LIMIT 1
+    ), fx AS (
+      SELECT snapshot.id,snapshot.financial_asset_id FROM public.epoch_fx_snapshots snapshot
+      JOIN asset ON asset.id=snapshot.financial_asset_id
+      WHERE snapshot.status='posted' AND snapshot.deployment_environment='local'
+      ORDER BY snapshot.id LIMIT 1
+    ), obligation AS (
+      INSERT INTO public.user_withdrawal_obligations(source_bookkeeping_credit_id,monthly_cycle_id,user_id,total_minor,state,available_at,evidence_hash)
+      VALUES(${sqlLiteral(credit.id)},${sqlLiteral(input.cycleId)},${sqlLiteral(input.actorUserId)},12500,'available',clock_timestamp(),${sqlLiteral(evidenceHash)})
+      RETURNING id
+    ), lot AS (
+      INSERT INTO public.payout_inventory_lots(obligation_id,legacy_inventory_key,project_id,user_id,monthly_cycle_id,rail_key,
+        financial_asset_id,custody_account_id,fx_snapshot_id,canonical_minor_total,native_atomic_total,deterministic_sequence,evidence_hash)
+      SELECT obligation.id,${sqlLiteral(legacyInventoryKey)},${sqlLiteral(input.projectId)},${sqlLiteral(input.actorUserId)},${sqlLiteral(input.cycleId)},
+        'stripe_bank_transfer',fx.financial_asset_id,custody.id,fx.id,12500,12500,1,${sqlLiteral(evidenceHash)}
+      FROM obligation,fx,custody RETURNING id,obligation_id,fx_snapshot_id
+    )
+    SELECT lot.obligation_id||'|'||lot.id FROM lot;
+  `).split("|").map(Number)
+  if (protectedIds.length !== 2 || protectedIds.some((value) => !Number.isSafeInteger(value))) {
+    throw new Error("persona-withdrawal-inventory-create-failed")
+  }
+  const [obligationId, inventoryLotId] = protectedIds
+  await controller.recordDatabaseRow({ table: "payout_inventory_lots", primaryKey: { id: inventoryLotId }, cleanupPhase: 140 })
+  await controller.recordDatabaseRow({ table: "user_withdrawal_obligations", primaryKey: { id: obligationId }, cleanupPhase: 130 })
 }
 
 export async function resolveSeededOperator(supabase: SupabaseClient<Database>, password = "FundLoopFounder123!") {

@@ -47,13 +47,12 @@ const founderInvitation = (actorAlias: "new-founder" | "returning-founder"): Che
   capabilityId: "project-invitation-persistence",
 })
 
-const founderCadenceHandoff = (actorAlias: "new-founder" | "returning-founder"): CheckpointDefinition => ({
-  id: "cadence.await-operator-distribution",
-  title: "Hand the prepared cycle to the operator cadence",
+const privatePublicationChoice = (actorAlias: "new-member" | "new-founder"): CheckpointDefinition => ({
+  id: "profile.review-publication-choice",
+  title: "Keep onboarding private and expose a separate unselected publication control",
   actorAlias,
-  surface: "fixture-observation",
-  mode: "expected-pending",
-  capabilityId: "founder-distribution-after-operator-cadence",
+  surface: "browser",
+  capabilityId: "profile-publication-consent",
 })
 
 export function newMemberJourney(actions: PersonaJourneyActions): PersonaJourney {
@@ -65,6 +64,7 @@ export function newMemberJourney(actions: PersonaJourneyActions): PersonaJourney
       { id: "auth.request-local-otp", title: "Request local OTP from the public invitation flow", actorAlias: "new-member", surface: "browser", capabilityId: "public-local-otp" },
       { id: "auth.verify-local-otp", title: "Verify the Mailpit OTP in the browser", actorAlias: "new-member", surface: "browser", capabilityId: "public-local-otp" },
       { id: "member.publish-profile", title: "Publish a personal profile", actorAlias: "new-member", surface: "browser", capabilityId: "personal-profile" },
+      privatePublicationChoice("new-member"),
       { id: "member.view-earnings-total", title: "View accumulated credited earnings", actorAlias: "new-member", surface: "browser", capabilityId: "member-earnings" },
       { id: "member.view-project-sources", title: "View project earnings sources", actorAlias: "new-member", surface: "browser", capabilityId: "member-earnings-sources" },
       memberWithdrawal("new-member"),
@@ -96,11 +96,11 @@ export function newFounderJourney(actions: PersonaJourneyActions): PersonaJourne
       { id: "auth.request-local-otp", title: "Request local OTP from the public invitation flow", actorAlias: "new-founder", surface: "browser", capabilityId: "public-local-otp" },
       { id: "auth.verify-local-otp", title: "Verify the Mailpit OTP in the browser", actorAlias: "new-founder", surface: "browser", capabilityId: "public-local-otp" },
       { id: "founder.publish-personal-profile", title: "Publish a founder personal profile", actorAlias: "new-founder", surface: "browser", capabilityId: "personal-profile" },
+      privatePublicationChoice("new-founder"),
       { id: "founder.publish-project-profile", title: "Publish a project profile", actorAlias: "new-founder", surface: "browser", capabilityId: "project-profile" },
       founderInvitation("new-founder"),
       { id: "founder.submit-monthly-contribution", title: "Submit the monthly contribution", actorAlias: "new-founder", surface: "browser", capabilityId: "project-monthly-contribution" },
       { id: "founder.submit-active-user-attribution", title: "Submit active-user attribution", actorAlias: "new-founder", surface: "browser", capabilityId: "project-attribution" },
-      founderCadenceHandoff("new-founder"),
     ],
   }, actions)
 }
@@ -116,7 +116,6 @@ export function returningFounderJourney(actions: PersonaJourneyActions): Persona
       founderInvitation("returning-founder"),
       { id: "founder.submit-next-month-contribution", title: "Submit the next monthly contribution", actorAlias: "returning-founder", surface: "browser", capabilityId: "project-monthly-contribution" },
       { id: "founder.submit-next-month-attribution", title: "Submit the next active-user attribution", actorAlias: "returning-founder", surface: "browser", capabilityId: "project-attribution" },
-      founderCadenceHandoff("returning-founder"),
     ],
   }, actions)
 }

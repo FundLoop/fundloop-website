@@ -4,7 +4,7 @@ import { createContext, type ReactNode, useContext, useEffect, useMemo, useState
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query"
 import { createAppKit } from "@reown/appkit/react"
 import { WagmiAdapter } from "@reown/appkit-adapter-wagmi"
-import { useConnect, WagmiProvider } from "wagmi"
+import { http, useConnect, WagmiProvider } from "wagmi"
 import { createConfiguredChain, SUPPORTED_CHAIN_CONFIGS, type SupportedChainKey } from "@/lib/onchain/supported-chains"
 import { ZERO_REOWN_PROJECT_ID, type WalletRuntimeConfig } from "@/lib/onchain/runtime-config"
 
@@ -132,13 +132,21 @@ export function Web3Provider({
   const hasConfiguredNetworks = networks.length > 0
   const adapterNetworks = useMemo(() => (networks.length > 0 ? networks : [fallbackChain]), [networks])
   const appKitNetworks = adapterNetworks as [typeof adapterNetworks[number], ...typeof adapterNetworks[number][]]
+  const configuredTransports = useMemo(
+    () => Object.fromEntries(runtimeConfig.activeChains.map((chain) => [chain.evmChainId, http(chain.rpcUrl)])),
+    [runtimeConfig.activeChains],
+  )
   const wagmiAdapter = useMemo(
     () =>
       new WagmiAdapter({
         projectId: reownProjectId,
         networks: appKitNetworks,
+        transports: configuredTransports,
+        batch: {
+          multicall: runtimeConfig.environment !== "local",
+        },
       }),
-    [appKitNetworks, reownProjectId],
+    [appKitNetworks, configuredTransports, reownProjectId, runtimeConfig.environment],
   )
 
   useEffect(() => {

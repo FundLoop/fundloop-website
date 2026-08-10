@@ -473,3 +473,9 @@ enabled = true
 verify_jwt = false
 entrypoint = "./functions/withdrawal-operator/index.ts"
 import_map = "./functions/deno.json"
+
+[functions.financial-cutover]
+enabled = true
+verify_jwt = false
+entrypoint = "./functions/financial-cutover/index.ts"
+import_map = "./functions/deno.json"

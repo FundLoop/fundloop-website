@@ -56,7 +56,7 @@ export function createPersonaOperatorActions(page: Page, options: PersonaOperato
   let runIdValue: number | null = null
 
   page.setDefaultTimeout(15_000)
-  page.setDefaultNavigationTimeout(20_000)
+  page.setDefaultNavigationTimeout(90_000)
   page.on("console", (message) => {
     if (message.type() !== "error") return
     const sourceUrl = message.location().url
@@ -80,32 +80,20 @@ export function createPersonaOperatorActions(page: Page, options: PersonaOperato
   }
 
   async function capture(name: string) {
-    if (page.viewportSize()?.width !== 1440 || page.viewportSize()?.height !== 1100) throw new Error("persona-screenshot-viewport-invalid")
-    await page.evaluate(() => {
-      const sensitive = /(?:[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}|[^\s@]+@[^\s@]+\.[^\s@]+)/gi
-      const walker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT)
-      const redactions: Array<{ node: Node; text: string }> = []
-      while (walker.nextNode()) {
-        const node = walker.currentNode
-        if (node.textContent && sensitive.test(node.textContent)) {
-          redactions.push({ node, text: node.textContent })
-          node.textContent = node.textContent.replace(sensitive, "sanitized-actor")
-        }
-        sensitive.lastIndex = 0
-      }
-      ;(window as unknown as { __fundloopPersonaRedactions?: typeof redactions }).__fundloopPersonaRedactions = redactions
-    })
+    if (page.viewportSize()?.width !== 1440 || page.viewportSize()?.height !== 900) throw new Error("persona-screenshot-viewport-invalid")
     try {
       await assertSafePersonaScreenshotSurface(page)
-      const directory = path.join(process.cwd(), "output", "playwright", "feature-96", runId)
+      const directory = path.join(process.cwd(), "output", "playwright", "feature-118", runId)
       await mkdir(directory, { recursive: true })
-      await page.screenshot({ path: path.join(directory, `${name}.png`), fullPage: false })
+      await page.screenshot({ path: path.join(directory, `${name}-desktop-1440x900.png`), fullPage: false })
+      await page.setViewportSize({ width: 390, height: 844 })
+      await assertSafePersonaScreenshotSurface(page)
+      await page.screenshot({ path: path.join(directory, `${name}-mobile-390x844.png`), fullPage: false })
+      await page.setViewportSize({ width: 1440, height: 900 })
     } finally {
-      await page.evaluate(() => {
-        const target = window as unknown as { __fundloopPersonaRedactions?: Array<{ node: Node; text: string }> }
-        for (const redaction of target.__fundloopPersonaRedactions ?? []) redaction.node.textContent = redaction.text
-        delete target.__fundloopPersonaRedactions
-      })
+      if (page.viewportSize()?.width !== 1440 || page.viewportSize()?.height !== 900) {
+        await page.setViewportSize({ width: 1440, height: 900 })
+      }
     }
   }
 

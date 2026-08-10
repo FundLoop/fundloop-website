@@ -24,6 +24,34 @@ FROM public.record_review_policy_acknowledgement(
   'payout_preview'
 );
 
+SELECT *
+FROM public.record_review_policy_acknowledgement(
+  '10000000-0000-4000-8000-000000000001',
+  'fundloop-terms-ca-review-draft-2026-08-08',
+  '5fdad9b8c1a73e4072612820d079e357e56abf0a217f499de84db2cd78b5aa20',
+  'en-CA',
+  'project_actor',
+  'project_funding_preview'
+);
+
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM public.legal_acceptance_records
+    WHERE actor_user_id = '10000000-0000-4000-8000-000000000001'
+      AND actor_capacity = 'user'
+      AND source_surface = 'payout_preview'
+  ) OR NOT EXISTS (
+    SELECT 1 FROM public.legal_acceptance_records
+    WHERE actor_user_id = '10000000-0000-4000-8000-000000000001'
+      AND actor_capacity = 'project_actor'
+      AND source_surface = 'project_funding_preview'
+  ) THEN
+    RAISE EXCEPTION 'both user and project Terms review acknowledgements were not recorded';
+  END IF;
+END
+$$;
+
 DO $$
 BEGIN
   BEGIN
@@ -51,7 +79,7 @@ SELECT set_config('request.jwt.claim.sub', '10000000-0000-4000-8000-000000000001
 
 DO $$
 BEGIN
-  IF (SELECT count(*) FROM public.legal_acceptance_records) <> 1 THEN
+  IF (SELECT count(*) FROM public.legal_acceptance_records) <> 2 THEN
     RAISE EXCEPTION 'Terms self-read policy failed';
   END IF;
 

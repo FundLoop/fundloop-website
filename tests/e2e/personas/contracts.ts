@@ -171,6 +171,20 @@ export type HarnessRunSummary = {
   durationMs: number
   cycleKeys: Readonly<Partial<Record<PersonaId, string>>>
   services: Omit<ServiceOwnership, "nextPid">
+  capabilityMatrix?: {
+    schemaVersion: 1
+    featureIssue: 118
+    taskIssue: 144
+    digest: string
+    capabilities: readonly {
+      id: string
+      state: "local-real" | "sandbox-real" | "stubbed" | "pending"
+      personas: readonly PersonaId[]
+      evidence: readonly string[]
+      pendingReason?: string
+      highRisk: readonly string[]
+    }[]
+  }
   personas: readonly PersonaResult[]
   cleanup: CleanupResult
 }

@@ -25,6 +25,11 @@ const FORBIDDEN_VALUE = [
   /\b[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}\b/i,
   /\b0x[0-9a-f]{40}\b/i,
 ]
+const FORBIDDEN_VALUE_REASON = ["jwt", "six-digit-code", "email", "uuid", "wallet-address"] as const
+
+if (FORBIDDEN_VALUE.length !== FORBIDDEN_VALUE_REASON.length) {
+  throw new Error("persona-screenshot-sensitive-pattern-reason-mismatch")
+}
 
 export function sanitizeEvidence(evidence: SanitizedEvidence): SanitizedEvidence {
   const output: Record<string, string | number | boolean | null> = {}
@@ -64,12 +69,14 @@ export async function assertSafePersonaScreenshotSurface(page: Page) {
   ].join(","))
   if (await sensitiveControls.count()) throw new Error("screenshot-sensitive-control-visible")
   const text = await page.locator("body").innerText()
-  if (FORBIDDEN_VALUE.some((pattern) => pattern.test(text))) throw new Error("screenshot-sensitive-value-visible")
+  const textMatch = FORBIDDEN_VALUE.findIndex((pattern) => pattern.test(text))
+  if (textMatch >= 0) throw new Error(`screenshot-sensitive-${FORBIDDEN_VALUE_REASON[textMatch]}-visible`)
   const controlValues = await page.locator("input, textarea").evaluateAll((controls) =>
     controls.map((control) => (control as HTMLInputElement | HTMLTextAreaElement).value).filter(Boolean),
   )
-  if (controlValues.some((value) => FORBIDDEN_VALUE.some((pattern) => pattern.test(value)))) {
-    throw new Error("screenshot-sensitive-value-visible")
+  const controlMatch = FORBIDDEN_VALUE.findIndex((pattern) => controlValues.some((value) => pattern.test(value)))
+  if (controlMatch >= 0) {
+    throw new Error(`screenshot-sensitive-${FORBIDDEN_VALUE_REASON[controlMatch]}-visible`)
   }
 }
 

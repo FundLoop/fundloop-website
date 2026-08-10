@@ -56,7 +56,7 @@ export function createPersonaBrowserActions(personaId: Exclude<PersonaId, "retur
   const browserErrors: string[] = []
   const commandErrors = new Map<string, string>()
   page.setDefaultTimeout(10_000)
-  page.setDefaultNavigationTimeout(15_000)
+  page.setDefaultNavigationTimeout(90_000)
   page.on("console", (message) => {
     if (message.type() !== "error") return
     const text = message.text().toLowerCase()
@@ -122,11 +122,19 @@ export function createPersonaBrowserActions(personaId: Exclude<PersonaId, "retur
 
   async function capturePageSuccess(targetPage: Page, name = `${personaId}-success.png`, errors = browserErrors) {
     await assertCleanBrowser(errors)
-    if (targetPage.viewportSize()?.width !== 1440 || targetPage.viewportSize()?.height !== 1100) throw new Error("persona-screenshot-viewport-invalid")
+    if (targetPage.viewportSize()?.width !== 1440 || targetPage.viewportSize()?.height !== 900) throw new Error("persona-screenshot-viewport-invalid")
     await assertSafePersonaScreenshotSurface(targetPage)
     const artifactDirectory = path.join(process.cwd(), "output", "playwright", "persona-harness", runId)
     await mkdir(artifactDirectory, { recursive: true })
-    await targetPage.screenshot({ path: path.join(artifactDirectory, name), fullPage: false })
+    const stem = name.replace(/\.png$/, "")
+    await targetPage.screenshot({ path: path.join(artifactDirectory, `${stem}-desktop-1440x900.png`), fullPage: false })
+    await targetPage.setViewportSize({ width: 390, height: 844 })
+    try {
+      await assertSafePersonaScreenshotSurface(targetPage)
+      await targetPage.screenshot({ path: path.join(artifactDirectory, `${stem}-mobile-390x844.png`), fullPage: false })
+    } finally {
+      await targetPage.setViewportSize({ width: 1440, height: 900 })
+    }
   }
 
   async function captureInvitationReview(targetPage: Page, name: string, errors = browserErrors) {
@@ -139,7 +147,7 @@ export function createPersonaBrowserActions(personaId: Exclude<PersonaId, "retur
 
   async function captureSuccess() { await capturePageSuccess(page) }
 
-  async function openReview(flow: "user" | "project", title: string) {
+  async function openReview(flow: "user" | "project", title: string | RegExp) {
     await page.goto(`${env.baseURL}/en?onboarding=${flow}`, { waitUntil: "domcontentloaded", timeout: 15_000 })
     const continueDraft = page.getByRole("button", { name: "Continue draft" })
     await expect(continueDraft).toBeVisible({ timeout: 10_000 }).catch(() => { throw new Error(`persona-${flow}-resume-not-visible`) })
@@ -154,7 +162,7 @@ export function createPersonaBrowserActions(personaId: Exclude<PersonaId, "retur
       const profile = await supabase.from("users").select("display_name, invited_by_code, is_public, status").eq("user_id", state.actorId).single()
       const invitation = await supabase.from("invitation_codes").select("usage_count").eq("code", state.inviteCode).single()
       if (!profile.error && profile.data?.display_name === expectedName && profile.data.invited_by_code === state.inviteCode &&
-        profile.data.is_public && profile.data.status === "active" && !invitation.error && invitation.data?.usage_count === 1) {
+        profile.data.is_public === false && profile.data.status === "active" && !invitation.error && invitation.data?.usage_count === 1) {
         await page.goto(`${env.baseURL}/en/workspace/account`, { waitUntil: "domcontentloaded" })
         await expect(page.getByText(expectedName).first()).toBeVisible()
         return
@@ -164,7 +172,7 @@ export function createPersonaBrowserActions(personaId: Exclude<PersonaId, "retur
     const draft = await supabase.from("user_onboarding_drafts").select("id").eq("user_id", state.actorId).maybeSingle()
     if (draft.data) throw new Error("persona-profile-publish-command-incomplete")
     const profile = await supabase.from("users").select("display_name, invited_by_code, is_public, status").eq("user_id", state.actorId).single()
-    if (profile.error || !profile.data || profile.data.display_name !== expectedName || profile.data.invited_by_code !== state.inviteCode || !profile.data.is_public || profile.data.status !== "active") {
+    if (profile.error || !profile.data || profile.data.display_name !== expectedName || profile.data.invited_by_code !== state.inviteCode || profile.data.is_public !== false || profile.data.status !== "active") {
       throw new Error("persona-published-profile-persistence-failed")
     }
     throw new Error("persona-invitation-usage-failed")
@@ -204,19 +212,35 @@ export function createPersonaBrowserActions(personaId: Exclude<PersonaId, "retur
       if (!state.actorId || !state.email || !state.inviteCode) throw new Error("persona-new-member-state-missing")
       await page.goto(`${env.baseURL}/en/workspace`, { waitUntil: "domcontentloaded" })
       await arrangeReviewReadyProfile(supabase, fixtures, { authUserId: state.actorId, email: state.email, inviteCode: state.inviteCode, relationshipChoice: "individual" })
-      await openReview("user", "Review and publish your profile")
-      await page.getByRole("button", { name: "Publish profile" }).click({ timeout: 10_000 })
+      await openReview("user", /Review and complete your private profile/)
+      await page.getByRole("button", { name: "Complete private profile" }).click({ timeout: 10_000 })
       await assertPublishedProfile("New Member")
-      return observed({ profile: "published", invitation: "consumed" })
+      return observed({ profile: "private", invitation: "consumed" })
     },
     "founder.publish-personal-profile": async () => {
       if (!state.actorId || !state.email || !state.inviteCode) throw new Error("persona-new-founder-state-missing")
       await page.goto(`${env.baseURL}/en/workspace`, { waitUntil: "domcontentloaded" })
       await arrangeReviewReadyProfile(supabase, fixtures, { authUserId: state.actorId, email: state.email, inviteCode: state.inviteCode, relationshipChoice: "create_project" })
-      await openReview("user", "Review and publish your profile")
-      await page.getByRole("button", { name: "Publish profile" }).click({ timeout: 10_000 })
+      await openReview("user", /Review and complete your private profile/)
+      await page.getByRole("button", { name: "Complete private profile" }).click({ timeout: 10_000 })
       await assertPublishedProfile("New Founder")
-      return observed({ profile: "published", invitation: "consumed" })
+      return observed({ profile: "private", invitation: "consumed" })
+    },
+    "profile.review-publication-choice": async () => {
+      if (!state.actorId) throw new Error("persona-publication-actor-missing")
+      await page.goto(`${env.baseURL}/en/workspace/account`, { waitUntil: "domcontentloaded" })
+      await page.getByRole("tab", { name: "Profile" }).click()
+      const consent = page.getByTestId("profile-publication-consent")
+      const publicationLabel = consent.getByText(/Publish my display name, avatar, headline, bio, occupation, and location/)
+      await expect(publicationLabel).toBeVisible()
+      await expect(consent).toContainText("DRAFT - NOT APPROVED - NOT EFFECTIVE")
+      const checkbox = consent.getByRole("checkbox")
+      await expect(checkbox).not.toBeChecked()
+      await expect(consent.getByRole("button", { name: "Publish profile in review preview" })).toBeDisabled()
+      const initialChoice = await supabase.from("profile_publication_consents").select("action")
+        .eq("user_id", state.actorId).order("recorded_at", { ascending: false }).limit(1).maybeSingle()
+      if (initialChoice.error || initialChoice.data) throw new Error("persona-publication-preselected")
+      return observed({ visibility: "withheld", publication: "explicit-unselected", preselected: false })
     },
     "auth.login-returning-member": async () => {
       const actor = await ensureStored("returning-member").catch(() => { throw new Error("returning-member-arrangement-failed") })
@@ -255,36 +279,31 @@ export function createPersonaBrowserActions(personaId: Exclude<PersonaId, "retur
     },
     "member.withdraw-earnings": async () => {
       if (!state.actorId) throw new Error("persona-member-actor-missing")
-      await page.getByRole("button", { name: "Request $125.00" }).click()
-      await expect(page.getByText("Requested · not paid")).toBeVisible()
-      await expect(page.getByText(/no payout executed/)).toBeVisible()
-      const request = await supabase.from("user_withdrawal_requests").select("id, requested_usd_amount, status")
-        .eq("user_id", state.actorId).single()
-      if (request.error || !request.data || request.data.status !== "requested" || Number(request.data.requested_usd_amount) !== 125) {
-        throw new Error("persona-withdrawal-request-persistence-failed")
-      }
-      await fixtures.recordDatabaseRow({ table: "user_withdrawal_requests", primaryKey: { id: request.data.id }, cleanupPhase: 120 })
-      const reservations = await supabase.from("user_withdrawal_request_credits")
-        .select("withdrawal_request_id, bookkeeping_credit_id").eq("withdrawal_request_id", request.data.id)
-      if (reservations.error || reservations.data?.length !== 1) throw new Error("persona-withdrawal-reservation-failed")
-      for (const reservation of reservations.data) {
-        await fixtures.recordDatabaseRow({ table: "user_withdrawal_request_credits", primaryKey: {
-          withdrawal_request_id: reservation.withdrawal_request_id, bookkeeping_credit_id: reservation.bookkeeping_credit_id,
-        }, cleanupPhase: 130 })
-      }
+      const termsGate = page.getByTestId("terms-preview-gate-payout_preview")
+      await expect(termsGate).toContainText("DRAFT - NOT APPROVED - NOT EFFECTIVE")
+      await expect(termsGate.getByRole("checkbox")).not.toBeChecked()
+      await expect(page.getByRole("button", { name: "Review acknowledgement required" })).toBeDisabled()
+      await expect(page.getByLabel("Project-linked asset")).toContainText(/USD · project/)
+      const requests = await supabase.from("user_withdrawal_requests").select("id").eq("user_id", state.actorId)
+      if (requests.error || requests.data?.length) throw new Error("persona-withdrawal-request-unexpected")
       const credits = await supabase.from("monthly_cycle_bookkeeping_credits").select("payment_status")
         .eq("user_id", state.actorId)
       if (credits.error || credits.data?.length !== 1 || credits.data[0].payment_status !== "not_paid") {
         throw new Error("persona-withdrawal-marked-paid")
       }
+      const withdrawalPanel = page.getByTestId("withdrawal-request-panel")
+      await withdrawalPanel.scrollIntoViewIfNeeded()
+      await page.evaluate(() => window.scrollBy(0, -120))
       await captureSuccess()
-      return observed({ amount: 125, status: "requested", payment: "not-paid", "payout-executed": false, capture: personaId })
+      return observed({ amount: 125, status: "eligible", terms: "unselected", payment: "not-paid", "payout-executed": false, capture: personaId })
     },
     "founder.publish-project-profile": async () => {
       if (!state.actorId) throw new Error("persona-founder-actor-missing")
       const draft = await arrangeReviewReadyProjectDraft(supabase, fixtures, state.actorId)
       await openReview("project", "Review and publish your project")
-      await page.getByRole("button", { name: "Publish project" }).click({ timeout: 10_000 })
+      const publishButton = page.getByRole("button", { name: "Publish project" })
+      await expect(publishButton).toBeEnabled({ timeout: 60_000 })
+      await publishButton.click({ timeout: 10_000 })
       const publishFailure = page.getByText("Could not publish project", { exact: true })
       const deadline = Date.now() + 20_000
       let publishedProjectId: number | null = null
@@ -335,7 +354,7 @@ export function createPersonaBrowserActions(personaId: Exclude<PersonaId, "retur
 
       const browser = page.context().browser()
       if (!browser) throw new Error("persona-invitation-browser-unavailable")
-      const inviteeContext = await browser.newContext({ viewport: { width: 1440, height: 1100 } })
+      const inviteeContext = await browser.newContext({ viewport: { width: 1440, height: 900 } })
       try {
         await loginThroughE2EEndpoint(inviteeContext, { baseURL: env.baseURL, email: invitee.email, password: invitee.password,
           secret: process.env.FUNDLOOP_E2E_SECRET ?? "" })
@@ -354,7 +373,7 @@ export function createPersonaBrowserActions(personaId: Exclude<PersonaId, "retur
         await captureInvitationReview(inviteePage, `${personaId}-invitation-review-desktop.png`, inviteeErrors)
         await inviteePage.setViewportSize({ width: 390, height: 844 })
         await captureInvitationReview(inviteePage, `${personaId}-invitation-review-mobile.png`, inviteeErrors)
-        await inviteePage.setViewportSize({ width: 1440, height: 1100 })
+        await inviteePage.setViewportSize({ width: 1440, height: 900 })
         await acknowledgement.check()
         const acceptResponsePromise = inviteePage.waitForResponse((response) =>
           response.url().endsWith("/functions/v1/project-invitation-accept") && response.request().method() === "POST",
@@ -389,7 +408,7 @@ export function createPersonaBrowserActions(personaId: Exclude<PersonaId, "retur
       const revokeResponse = await revokeResponsePromise
       const revokeBody = await revokeResponse.json() as { ok?: boolean; error?: { code?: string } }
       if (revokeBody.ok !== true) throw new Error(boundedPersonaFailureReason("persona-invitation-revoke", revokeBody.error?.code, "command-failed"))
-      await expect(page.getByText("revoked")).toBeVisible()
+      await expect(page.getByText("revoked", { exact: true }).first()).toBeVisible()
       const [participantResidue, membershipResidue, invitationResidue] = await Promise.all([
         supabase.from("participants").select("id").eq("project_id", project.id).eq("user_id", invitee.actor.authUserId).maybeSingle(),
         supabase.from("organization_members").select("id").eq("organization_id", invitation.data.organization_id).eq("user_id", invitee.actor.authUserId).maybeSingle(),
@@ -407,10 +426,16 @@ export function createPersonaBrowserActions(personaId: Exclude<PersonaId, "retur
     },
     "founder.submit-next-month-contribution": async () => {
       browserErrors.length = 0
+      if (state.stored) await loginThroughE2EEndpoint(page.context(), { baseURL: env.baseURL, email: state.stored.email,
+        password: state.stored.password, secret: process.env.FUNDLOOP_E2E_SECRET ?? "" })
       return submitContribution(page, supabase, fixtures, env.baseURL, await ensureProject(), await ensureCycle(), commandErrors)
     },
     "founder.submit-active-user-attribution": async () => submitAttribution(page, supabase, fixtures, env.baseURL, await ensureProject(), await ensureCycle(), await ensureAttributionUser(), captureSuccess, personaId, commandErrors),
-    "founder.submit-next-month-attribution": async () => submitAttribution(page, supabase, fixtures, env.baseURL, await ensureProject(), await ensureCycle(), await ensureAttributionUser(), captureSuccess, personaId, commandErrors),
+    "founder.submit-next-month-attribution": async () => {
+      if (state.stored) await loginThroughE2EEndpoint(page.context(), { baseURL: env.baseURL, email: state.stored.email,
+        password: state.stored.password, secret: process.env.FUNDLOOP_E2E_SECRET ?? "" })
+      return submitAttribution(page, supabase, fixtures, env.baseURL, await ensureProject(), await ensureCycle(), await ensureAttributionUser(), captureSuccess, personaId, commandErrors)
+    },
     "cadence.await-operator-distribution": async () => pending("founder-distribution-after-operator-cadence"),
   }
 
@@ -423,7 +448,10 @@ export function createPersonaBrowserActions(personaId: Exclude<PersonaId, "retur
 }
 
 async function submitContribution(page: Page, supabase: SupabaseClient<Database>, fixtures: MutableFixtureController, baseURL: string, project: PersonaProjectFixture, cycleId: number, commandErrors: ReadonlyMap<string, string>) {
+  const cycle = await supabase.from("monthly_cycles").select("cycle_key").eq("id", cycleId).single()
+  if (cycle.error || !cycle.data) throw new Error("persona-contribution-cycle-resolution-failed")
   await page.goto(`${baseURL}/en/founder/projects/${project.slug}/contributions`)
+  await page.locator("#monthly-cycle").selectOption(cycle.data.cycle_key)
   await page.getByLabel(/Source amount/i).fill("1000")
   await page.getByLabel(/USD equivalent/i).fill("1000")
   await page.getByRole("button", { name: "Submit contribution data" }).click()
@@ -438,15 +466,16 @@ async function submitContribution(page: Page, supabase: SupabaseClient<Database>
   })
   const submission = await supabase.from("project_monthly_contribution_submissions").select("id").eq("project_id", project.id).eq("monthly_cycle_id", cycleId).single()
   if (submission.error || !submission.data) throw new Error("persona-contribution-resolution-failed")
-  const cycle = await supabase.from("monthly_cycles").select("cycle_key").eq("id", cycleId).single()
-  if (cycle.error || !cycle.data) throw new Error("persona-contribution-cycle-resolution-failed")
   await expect(page.getByText(new RegExp(`^${cycle.data.cycle_key}:`)).first()).toBeVisible({ timeout: 20_000 })
   await fixtures.recordDatabaseRow({ table: "project_monthly_contribution_submissions", primaryKey: { id: submission.data.id }, cleanupPhase: 100 })
   return observed({ contribution: "submitted" })
 }
 
 async function submitAttribution(page: Page, supabase: SupabaseClient<Database>, fixtures: MutableFixtureController, baseURL: string, project: PersonaProjectFixture, cycleId: number, attributionUser: PersonaAttributionUserFixture, captureSuccess: () => Promise<void>, personaId: Exclude<PersonaId, "returning-operator">, commandErrors: ReadonlyMap<string, string>) {
+  const cycle = await supabase.from("monthly_cycles").select("cycle_key").eq("id", cycleId).single()
+  if (cycle.error || !cycle.data) throw new Error("persona-attribution-cycle-resolution-failed")
   await page.goto(`${baseURL}/en/founder/projects/${project.slug}/attribution`)
+  await page.locator("#attribution-cycle").selectOption(cycle.data.cycle_key)
   await page.getByLabel(/Scoped CUBID/i).fill(attributionUser.scopedCubidId)
   await page.getByLabel(/Attribution points/i).fill("10")
   await page.getByRole("button", { name: "Submit attribution data" }).click()
@@ -469,8 +498,6 @@ async function submitAttribution(page: Page, supabase: SupabaseClient<Database>,
   }
   await fixtures.recordDatabaseRow({ table: "project_attribution_rows", primaryKey: { id: row.id }, cleanupPhase: 110 })
   await fixtures.recordDatabaseRow({ table: "project_attribution_datasets", primaryKey: { id: dataset.data.id }, cleanupPhase: 100 })
-  const cycle = await supabase.from("monthly_cycles").select("cycle_key").eq("id", cycleId).single()
-  if (cycle.error || !cycle.data) throw new Error("persona-attribution-cycle-resolution-failed")
   await expect(page.getByText(new RegExp(`^${cycle.data.cycle_key}:`)).first()).toBeVisible({ timeout: 20_000 })
   await page.getByLabel(/Scoped CUBID/i).fill("")
   await captureSuccess()

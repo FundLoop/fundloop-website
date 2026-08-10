@@ -985,6 +985,22 @@ FROM public.stripe_bank_transfer_custody_routes route
 WHERE route.sandbox_enabled AND NOT route.production_enabled
 ON CONFLICT(source_kind,asset_code)DO NOTHING;
 
+-- Stable local-only FX evidence for disposable persona withdrawal fixtures. The
+-- immutable snapshot is part of the canonical seed baseline, not owned by an
+-- individual persona run, and cannot enable production value flow.
+INSERT INTO public.epoch_fx_snapshots(
+  monthly_cycle_id,financial_asset_id,version,method,rate_usd_per_unit,status,
+  stablecoin_peg_status,preanalysis,reviewed_by_user_id,posted_at,evidence_hash,deployment_environment
+)
+SELECT cycle.id,asset.id,1,'manual_after_exhaustion',1,'posted','within_band',
+  '{"fixture":"persona_harness_seed","production":false}'::jsonb,
+  '00000000-0000-4000-8000-000000000101'::uuid,'2026-05-31T23:59:59Z',
+  'd0d37406708b197b4a75c0a1db71a60dd4adcd23a90d2aa95dc79e8a083909fe','local'
+FROM public.monthly_cycles cycle
+JOIN public.financial_assets asset ON asset.asset_key='stripe_sandbox_usd'
+WHERE cycle.cycle_key='2026-05'
+ON CONFLICT(monthly_cycle_id,financial_asset_id,version)DO NOTHING;
+
 INSERT INTO public.financial_references (
   reference_key, reference_type, asset_id, custody_account_id,
   native_atomic_limit, evidence_hash

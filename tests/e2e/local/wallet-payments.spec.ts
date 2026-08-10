@@ -9,6 +9,19 @@ function hashToHex(seed: string) {
   return `0x${createHash("sha256").update(seed).digest("hex")}`
 }
 
+async function acknowledgeProjectFundingTerms(page: import("@playwright/test").Page) {
+  const checkbox = page.getByRole("checkbox", {
+    name: "I reviewed the non-effective Terms preview and understand this is only a test acknowledgement.",
+  })
+  await expect(checkbox).toBeVisible()
+  await checkbox.check()
+  const acknowledgement = page.waitForResponse((response) =>
+    response.url().includes("/functions/v1/policy-acknowledgement-record") && response.request().method() === "POST")
+  await page.getByRole("button", { name: "Record review acknowledgement" }).click()
+  expect((await acknowledgement).ok()).toBe(true)
+  await expect(page.getByText("Review acknowledgement recorded. The simulated boundary is unlocked for this page session only.")).toBeVisible()
+}
+
 async function rpcRequest<T>(url: string, method: string, params: unknown[]) {
   const response = await fetch(url, {
     method: "POST",
@@ -60,6 +73,7 @@ test.describe("local-wallet project payments", () => {
       })
 
       await page.goto(`${env.baseURL}/projects/${fixture.project.slug}/payments`)
+      await acknowledgeProjectFundingTerms(page)
 
       await page.getByTestId(`pay-with-crypto-${fixture.payments.draftId}`).click()
       await expect(page.getByTestId("project-crypto-payment-dialog")).toBeVisible()

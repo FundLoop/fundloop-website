@@ -4144,6 +4144,471 @@ export type Database = {
           },
         ]
       }
+      financial_cutover_canonical_links: {
+        Row: {
+          canonical_id: string
+          canonical_type: string
+          evidence_hash: string
+          id: number
+          ledger_transaction_id: number | null
+          linked_at: string
+          run_id: number
+          source_record_id: number
+          withdrawal_obligation_id: number | null
+        }
+        Insert: {
+          canonical_id: string
+          canonical_type: string
+          evidence_hash: string
+          id?: never
+          ledger_transaction_id?: number | null
+          linked_at?: string
+          run_id: number
+          source_record_id: number
+          withdrawal_obligation_id?: number | null
+        }
+        Update: {
+          canonical_id?: string
+          canonical_type?: string
+          evidence_hash?: string
+          id?: never
+          ledger_transaction_id?: number | null
+          linked_at?: string
+          run_id?: number
+          source_record_id?: number
+          withdrawal_obligation_id?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "financial_cutover_canonical_links_ledger_transaction_id_fkey"
+            columns: ["ledger_transaction_id"]
+            isOneToOne: false
+            referencedRelation: "ledger_transactions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "financial_cutover_canonical_links_ledger_transaction_id_fkey"
+            columns: ["ledger_transaction_id"]
+            isOneToOne: false
+            referencedRelation: "shadow_ledger_trial_balance"
+            referencedColumns: ["ledger_transaction_id"]
+          },
+          {
+            foreignKeyName: "financial_cutover_canonical_links_run_id_fkey"
+            columns: ["run_id"]
+            isOneToOne: false
+            referencedRelation: "financial_cutover_reconciliation_report"
+            referencedColumns: ["run_id"]
+          },
+          {
+            foreignKeyName: "financial_cutover_canonical_links_run_id_fkey"
+            columns: ["run_id"]
+            isOneToOne: false
+            referencedRelation: "financial_cutover_runs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "financial_cutover_canonical_links_source_record_id_fkey"
+            columns: ["source_record_id"]
+            isOneToOne: false
+            referencedRelation: "financial_cutover_source_records"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "financial_cutover_canonical_links_withdrawal_obligation_id_fkey"
+            columns: ["withdrawal_obligation_id"]
+            isOneToOne: false
+            referencedRelation: "financial_cutover_canonical_credit_reads"
+            referencedColumns: ["canonical_obligation_id"]
+          },
+          {
+            foreignKeyName: "financial_cutover_canonical_links_withdrawal_obligation_id_fkey"
+            columns: ["withdrawal_obligation_id"]
+            isOneToOne: false
+            referencedRelation: "financial_cutover_compatibility_positions"
+            referencedColumns: ["canonical_obligation_id"]
+          },
+          {
+            foreignKeyName: "financial_cutover_canonical_links_withdrawal_obligation_id_fkey"
+            columns: ["withdrawal_obligation_id"]
+            isOneToOne: false
+            referencedRelation: "user_withdrawal_obligation_balances"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "financial_cutover_canonical_links_withdrawal_obligation_id_fkey"
+            columns: ["withdrawal_obligation_id"]
+            isOneToOne: false
+            referencedRelation: "user_withdrawal_obligations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      financial_cutover_differences: {
+        Row: {
+          canonical_minor: number | null
+          created_at: string
+          detail: Json
+          difference_minor: number | null
+          difference_type: string
+          id: number
+          legacy_minor: number | null
+          run_id: number
+          severity: string
+          source_record_id: number
+        }
+        Insert: {
+          canonical_minor?: number | null
+          created_at?: string
+          detail?: Json
+          difference_minor?: number | null
+          difference_type: string
+          id?: never
+          legacy_minor?: number | null
+          run_id: number
+          severity: string
+          source_record_id: number
+        }
+        Update: {
+          canonical_minor?: number | null
+          created_at?: string
+          detail?: Json
+          difference_minor?: number | null
+          difference_type?: string
+          id?: never
+          legacy_minor?: number | null
+          run_id?: number
+          severity?: string
+          source_record_id?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "financial_cutover_differences_run_id_fkey"
+            columns: ["run_id"]
+            isOneToOne: false
+            referencedRelation: "financial_cutover_reconciliation_report"
+            referencedColumns: ["run_id"]
+          },
+          {
+            foreignKeyName: "financial_cutover_differences_run_id_fkey"
+            columns: ["run_id"]
+            isOneToOne: false
+            referencedRelation: "financial_cutover_runs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "financial_cutover_differences_source_record_id_fkey"
+            columns: ["source_record_id"]
+            isOneToOne: false
+            referencedRelation: "financial_cutover_source_records"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      financial_cutover_instance_state: {
+        Row: {
+          active_run_id: number | null
+          canonical_reads_enabled: boolean
+          deployment_environment: string
+          legacy_writes_enabled: boolean
+          production_value_flow_enabled: boolean
+          singleton: boolean
+          state_version: number
+          updated_at: string
+        }
+        Insert: {
+          active_run_id?: number | null
+          canonical_reads_enabled?: boolean
+          deployment_environment?: string
+          legacy_writes_enabled?: boolean
+          production_value_flow_enabled?: boolean
+          singleton?: boolean
+          state_version?: number
+          updated_at?: string
+        }
+        Update: {
+          active_run_id?: number | null
+          canonical_reads_enabled?: boolean
+          deployment_environment?: string
+          legacy_writes_enabled?: boolean
+          production_value_flow_enabled?: boolean
+          singleton?: boolean
+          state_version?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "financial_cutover_instance_state_active_run_id_fkey"
+            columns: ["active_run_id"]
+            isOneToOne: false
+            referencedRelation: "financial_cutover_reconciliation_report"
+            referencedColumns: ["run_id"]
+          },
+          {
+            foreignKeyName: "financial_cutover_instance_state_active_run_id_fkey"
+            columns: ["active_run_id"]
+            isOneToOne: false
+            referencedRelation: "financial_cutover_runs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "financial_cutover_instance_state_deployment_environment_fkey"
+            columns: ["deployment_environment"]
+            isOneToOne: false
+            referencedRelation: "financial_cutover_runtime_controls"
+            referencedColumns: ["deployment_environment"]
+          },
+        ]
+      }
+      financial_cutover_runs: {
+        Row: {
+          activated_at: string | null
+          actor_user_id: string
+          blocker_count: number
+          canonical_minor_total: number
+          command_hash: string
+          contract_version: string
+          deployment_environment: string
+          evidence_hash: string
+          id: number
+          idempotency_key: string
+          legacy_minor_total: number
+          manifest_hash: string | null
+          prepared_at: string
+          production_enabled: boolean
+          rolled_back_at: string | null
+          source_count: number
+          status: string
+          warning_count: number
+        }
+        Insert: {
+          activated_at?: string | null
+          actor_user_id: string
+          blocker_count?: number
+          canonical_minor_total?: number
+          command_hash: string
+          contract_version?: string
+          deployment_environment: string
+          evidence_hash: string
+          id?: never
+          idempotency_key: string
+          legacy_minor_total?: number
+          manifest_hash?: string | null
+          prepared_at?: string
+          production_enabled?: boolean
+          rolled_back_at?: string | null
+          source_count?: number
+          status?: string
+          warning_count?: number
+        }
+        Update: {
+          activated_at?: string | null
+          actor_user_id?: string
+          blocker_count?: number
+          canonical_minor_total?: number
+          command_hash?: string
+          contract_version?: string
+          deployment_environment?: string
+          evidence_hash?: string
+          id?: never
+          idempotency_key?: string
+          legacy_minor_total?: number
+          manifest_hash?: string | null
+          prepared_at?: string
+          production_enabled?: boolean
+          rolled_back_at?: string | null
+          source_count?: number
+          status?: string
+          warning_count?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "financial_cutover_runs_actor_user_id_fkey"
+            columns: ["actor_user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "financial_cutover_runs_deployment_environment_fkey"
+            columns: ["deployment_environment"]
+            isOneToOne: false
+            referencedRelation: "financial_cutover_runtime_controls"
+            referencedColumns: ["deployment_environment"]
+          },
+        ]
+      }
+      financial_cutover_runtime_controls: {
+        Row: {
+          activation_enabled: boolean
+          deployment_environment: string
+          prepare_enabled: boolean
+          production_value_flow_enabled: boolean
+          updated_at: string
+        }
+        Insert: {
+          activation_enabled?: boolean
+          deployment_environment: string
+          prepare_enabled?: boolean
+          production_value_flow_enabled?: boolean
+          updated_at?: string
+        }
+        Update: {
+          activation_enabled?: boolean
+          deployment_environment?: string
+          prepare_enabled?: boolean
+          production_value_flow_enabled?: boolean
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "financial_cutover_runtime_controls_deployment_environment_fkey"
+            columns: ["deployment_environment"]
+            isOneToOne: true
+            referencedRelation: "financial_runtime_controls"
+            referencedColumns: ["deployment_environment"]
+          },
+        ]
+      }
+      financial_cutover_source_records: {
+        Row: {
+          classification: string
+          classification_evidence_hash: string
+          created_at: string
+          currency_code: string | null
+          id: number
+          legacy_minor: number | null
+          monthly_cycle_id: number | null
+          project_id: number | null
+          run_id: number
+          source_hash: string
+          source_id: string
+          source_snapshot: Json
+          source_type: string
+          user_id: string | null
+        }
+        Insert: {
+          classification: string
+          classification_evidence_hash: string
+          created_at?: string
+          currency_code?: string | null
+          id?: never
+          legacy_minor?: number | null
+          monthly_cycle_id?: number | null
+          project_id?: number | null
+          run_id: number
+          source_hash: string
+          source_id: string
+          source_snapshot: Json
+          source_type: string
+          user_id?: string | null
+        }
+        Update: {
+          classification?: string
+          classification_evidence_hash?: string
+          created_at?: string
+          currency_code?: string | null
+          id?: never
+          legacy_minor?: number | null
+          monthly_cycle_id?: number | null
+          project_id?: number | null
+          run_id?: number
+          source_hash?: string
+          source_id?: string
+          source_snapshot?: Json
+          source_type?: string
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "financial_cutover_source_records_monthly_cycle_id_fkey"
+            columns: ["monthly_cycle_id"]
+            isOneToOne: false
+            referencedRelation: "monthly_cycles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "financial_cutover_source_records_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "financial_cutover_source_records_run_id_fkey"
+            columns: ["run_id"]
+            isOneToOne: false
+            referencedRelation: "financial_cutover_reconciliation_report"
+            referencedColumns: ["run_id"]
+          },
+          {
+            foreignKeyName: "financial_cutover_source_records_run_id_fkey"
+            columns: ["run_id"]
+            isOneToOne: false
+            referencedRelation: "financial_cutover_runs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "financial_cutover_source_records_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["user_id"]
+          },
+        ]
+      }
+      financial_cutover_state_events: {
+        Row: {
+          actor_user_id: string
+          detail: Json
+          event_type: string
+          evidence_hash: string
+          id: number
+          recorded_at: string
+          run_id: number
+        }
+        Insert: {
+          actor_user_id: string
+          detail?: Json
+          event_type: string
+          evidence_hash: string
+          id?: never
+          recorded_at?: string
+          run_id: number
+        }
+        Update: {
+          actor_user_id?: string
+          detail?: Json
+          event_type?: string
+          evidence_hash?: string
+          id?: never
+          recorded_at?: string
+          run_id?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "financial_cutover_state_events_actor_user_id_fkey"
+            columns: ["actor_user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "financial_cutover_state_events_run_id_fkey"
+            columns: ["run_id"]
+            isOneToOne: false
+            referencedRelation: "financial_cutover_reconciliation_report"
+            referencedColumns: ["run_id"]
+          },
+          {
+            foreignKeyName: "financial_cutover_state_events_run_id_fkey"
+            columns: ["run_id"]
+            isOneToOne: false
+            referencedRelation: "financial_cutover_runs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       financial_references: {
         Row: {
           asset_id: number
@@ -6346,6 +6811,20 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "monthly_cycles"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "payout_inventory_lots_obligation_id_fkey"
+            columns: ["obligation_id"]
+            isOneToOne: false
+            referencedRelation: "financial_cutover_canonical_credit_reads"
+            referencedColumns: ["canonical_obligation_id"]
+          },
+          {
+            foreignKeyName: "payout_inventory_lots_obligation_id_fkey"
+            columns: ["obligation_id"]
+            isOneToOne: false
+            referencedRelation: "financial_cutover_compatibility_positions"
+            referencedColumns: ["canonical_obligation_id"]
           },
           {
             foreignKeyName: "payout_inventory_lots_obligation_id_fkey"
@@ -9428,6 +9907,20 @@ export type Database = {
             foreignKeyName: "user_withdrawal_obligation_claims_obligation_id_fkey"
             columns: ["obligation_id"]
             isOneToOne: false
+            referencedRelation: "financial_cutover_canonical_credit_reads"
+            referencedColumns: ["canonical_obligation_id"]
+          },
+          {
+            foreignKeyName: "user_withdrawal_obligation_claims_obligation_id_fkey"
+            columns: ["obligation_id"]
+            isOneToOne: false
+            referencedRelation: "financial_cutover_compatibility_positions"
+            referencedColumns: ["canonical_obligation_id"]
+          },
+          {
+            foreignKeyName: "user_withdrawal_obligation_claims_obligation_id_fkey"
+            columns: ["obligation_id"]
+            isOneToOne: false
             referencedRelation: "user_withdrawal_obligation_balances"
             referencedColumns: ["id"]
           },
@@ -9509,6 +10002,20 @@ export type Database = {
             foreignKeyName: "user_withdrawal_obligations_source_bookkeeping_credit_id_fkey"
             columns: ["source_bookkeeping_credit_id"]
             isOneToOne: true
+            referencedRelation: "financial_cutover_canonical_credit_reads"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "user_withdrawal_obligations_source_bookkeeping_credit_id_fkey"
+            columns: ["source_bookkeeping_credit_id"]
+            isOneToOne: true
+            referencedRelation: "financial_cutover_compatibility_positions"
+            referencedColumns: ["legacy_credit_id"]
+          },
+          {
+            foreignKeyName: "user_withdrawal_obligations_source_bookkeeping_credit_id_fkey"
+            columns: ["source_bookkeeping_credit_id"]
+            isOneToOne: true
             referencedRelation: "monthly_cycle_bookkeeping_credits"
             referencedColumns: ["id"]
           },
@@ -9548,6 +10055,20 @@ export type Database = {
           withdrawal_request_id?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "user_withdrawal_request_credits_bookkeeping_credit_id_fkey"
+            columns: ["bookkeeping_credit_id"]
+            isOneToOne: true
+            referencedRelation: "financial_cutover_canonical_credit_reads"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "user_withdrawal_request_credits_bookkeeping_credit_id_fkey"
+            columns: ["bookkeeping_credit_id"]
+            isOneToOne: true
+            referencedRelation: "financial_cutover_compatibility_positions"
+            referencedColumns: ["legacy_credit_id"]
+          },
           {
             foreignKeyName: "user_withdrawal_request_credits_bookkeeping_credit_id_fkey"
             columns: ["bookkeeping_credit_id"]
@@ -11326,6 +11847,214 @@ export type Database = {
           },
         ]
       }
+      financial_cutover_canonical_credit_reads: {
+        Row: {
+          allocation_breakdown: Json | null
+          asset_fills: Json | null
+          canonical_obligation_id: number | null
+          canonical_state: string | null
+          credited_at: string | null
+          currency_code: string | null
+          id: number | null
+          monthly_cycle_id: number | null
+          payment_status: string | null
+          read_source: string | null
+          run_id: number | null
+          source_breakdown: Json | null
+          source_result_id: number | null
+          status: string | null
+          usd_equivalent_amount: number | null
+          user_id: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "monthly_cycle_bookkeeping_credits_monthly_cycle_id_fkey"
+            columns: ["monthly_cycle_id"]
+            isOneToOne: false
+            referencedRelation: "monthly_cycles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "monthly_cycle_bookkeeping_credits_run_id_fkey"
+            columns: ["run_id"]
+            isOneToOne: false
+            referencedRelation: "zkas_runs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "monthly_cycle_bookkeeping_credits_source_result_id_fkey"
+            columns: ["source_result_id"]
+            isOneToOne: false
+            referencedRelation: "zkas_run_results"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "monthly_cycle_bookkeeping_credits_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["user_id"]
+          },
+        ]
+      }
+      financial_cutover_compatibility_positions: {
+        Row: {
+          canonical_minor: number | null
+          canonical_obligation_id: number | null
+          canonical_state: string | null
+          legacy_credit_id: number | null
+          legacy_status: string | null
+          monthly_cycle_id: number | null
+          read_source: string | null
+          usd_equivalent_amount: number | null
+          user_id: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "monthly_cycle_bookkeeping_credits_monthly_cycle_id_fkey"
+            columns: ["monthly_cycle_id"]
+            isOneToOne: false
+            referencedRelation: "monthly_cycles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "monthly_cycle_bookkeeping_credits_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["user_id"]
+          },
+        ]
+      }
+      financial_cutover_reconciliation_report: {
+        Row: {
+          activated_at: string | null
+          blocker_count: number | null
+          canonical_minor_total: number | null
+          deployment_environment: string | null
+          difference_minor: number | null
+          legacy_minor_total: number | null
+          linked_source_count: number | null
+          manifest_hash: string | null
+          prepared_at: string | null
+          rolled_back_at: string | null
+          run_id: number | null
+          source_count: number | null
+          status: string | null
+          warning_count: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "financial_cutover_runs_deployment_environment_fkey"
+            columns: ["deployment_environment"]
+            isOneToOne: false
+            referencedRelation: "financial_cutover_runtime_controls"
+            referencedColumns: ["deployment_environment"]
+          },
+        ]
+      }
+      financial_cutover_source_report: {
+        Row: {
+          canonical_id: string | null
+          canonical_minor: number | null
+          canonical_type: string | null
+          classification: string | null
+          classification_evidence_hash: string | null
+          currency_code: string | null
+          difference_minor: number | null
+          difference_type: string | null
+          ledger_transaction_id: number | null
+          legacy_minor: number | null
+          monthly_cycle_id: number | null
+          project_id: number | null
+          run_id: number | null
+          severity: string | null
+          source_hash: string | null
+          source_id: string | null
+          source_type: string | null
+          user_id: string | null
+          withdrawal_obligation_id: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "financial_cutover_canonical_links_ledger_transaction_id_fkey"
+            columns: ["ledger_transaction_id"]
+            isOneToOne: false
+            referencedRelation: "ledger_transactions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "financial_cutover_canonical_links_ledger_transaction_id_fkey"
+            columns: ["ledger_transaction_id"]
+            isOneToOne: false
+            referencedRelation: "shadow_ledger_trial_balance"
+            referencedColumns: ["ledger_transaction_id"]
+          },
+          {
+            foreignKeyName: "financial_cutover_canonical_links_withdrawal_obligation_id_fkey"
+            columns: ["withdrawal_obligation_id"]
+            isOneToOne: false
+            referencedRelation: "financial_cutover_canonical_credit_reads"
+            referencedColumns: ["canonical_obligation_id"]
+          },
+          {
+            foreignKeyName: "financial_cutover_canonical_links_withdrawal_obligation_id_fkey"
+            columns: ["withdrawal_obligation_id"]
+            isOneToOne: false
+            referencedRelation: "financial_cutover_compatibility_positions"
+            referencedColumns: ["canonical_obligation_id"]
+          },
+          {
+            foreignKeyName: "financial_cutover_canonical_links_withdrawal_obligation_id_fkey"
+            columns: ["withdrawal_obligation_id"]
+            isOneToOne: false
+            referencedRelation: "user_withdrawal_obligation_balances"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "financial_cutover_canonical_links_withdrawal_obligation_id_fkey"
+            columns: ["withdrawal_obligation_id"]
+            isOneToOne: false
+            referencedRelation: "user_withdrawal_obligations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "financial_cutover_source_records_monthly_cycle_id_fkey"
+            columns: ["monthly_cycle_id"]
+            isOneToOne: false
+            referencedRelation: "monthly_cycles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "financial_cutover_source_records_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "financial_cutover_source_records_run_id_fkey"
+            columns: ["run_id"]
+            isOneToOne: false
+            referencedRelation: "financial_cutover_reconciliation_report"
+            referencedColumns: ["run_id"]
+          },
+          {
+            foreignKeyName: "financial_cutover_source_records_run_id_fkey"
+            columns: ["run_id"]
+            isOneToOne: false
+            referencedRelation: "financial_cutover_runs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "financial_cutover_source_records_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["user_id"]
+          },
+        ]
+      }
       project_category_count: {
         Row: {
           category_id: number | null
@@ -11626,6 +12355,18 @@ export type Database = {
           status: string
         }[]
       }
+      activate_financial_cutover: {
+        Args: { p_actor_user_id: string; p_command: Json }
+        Returns: Json
+      }
+      activate_financial_cutover_unchecked: {
+        Args: { p_actor_user_id: string; p_command: Json }
+        Returns: Json
+      }
+      activate_financial_cutover_without_complete_supersession_events: {
+        Args: { p_actor_user_id: string; p_command: Json }
+        Returns: Json
+      }
       apply_external_funding: {
         Args: {
           p_deployment_environment: string
@@ -11639,6 +12380,10 @@ export type Database = {
       approve_epoch_allocation_close: {
         Args: { p_command: Json }
         Returns: Json
+      }
+      assert_financial_cutover_activation_current: {
+        Args: { p_run_id: number }
+        Returns: undefined
       }
       authorize_base_safe_payout: {
         Args: { p_actor_user_id: string; p_command: Json }
@@ -11800,6 +12545,14 @@ export type Database = {
       finalize_silent_epoch_project_packages: {
         Args: { p_environment: string; p_now?: string }
         Returns: number
+      }
+      financial_cutover_current_source_hash: {
+        Args: { p_source_id: string; p_source_type: string }
+        Returns: string
+      }
+      financial_cutover_runtime_enabled: {
+        Args: { p_capability: string; p_environment: string }
+        Returns: boolean
       }
       get_active_org_members: {
         Args: { org_id: number }
@@ -12051,6 +12804,10 @@ export type Database = {
         }
         Returns: Json
       }
+      prepare_financial_cutover: {
+        Args: { p_actor_user_id: string; p_command: Json }
+        Returns: Json
+      }
       prepare_stripe_connect_payout: {
         Args: {
           p_actor_user_id: string
@@ -12235,6 +12992,10 @@ export type Database = {
           recorded_at: string
           status: string
         }[]
+      }
+      rollback_financial_cutover: {
+        Args: { p_actor_user_id: string; p_command: Json }
+        Returns: Json
       }
       set_epoch_shadow_pause: {
         Args: {

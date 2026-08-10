@@ -767,6 +767,8 @@ The close package contains:
 
 ## 14. Migration and cutover
 
+Task #143 implements the local/non-production migration in the [financial cutover runbook](./financial-cutover-runbook.md). It preserves hashed source classifications and explicit difference reports, routes allocation to reconciled funding applications, routes approved legacy credits to balanced provisional liabilities, and keeps direct published-result payout intents retired. The reversible switch never deletes legacy or canonical evidence and cannot be activated in production.
+
 ### Phase A: additive foundation
 
 1. Prepare review-only Terms, Privacy Notice, data-flow, and accounting-recognition

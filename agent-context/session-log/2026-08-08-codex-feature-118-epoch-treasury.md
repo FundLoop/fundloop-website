@@ -2090,3 +2090,318 @@ review-only, non-production payout boundary.
 - Commit and push this review batch, reply to and resolve all eight PR threads, wait for post-push
   CI, and merge only after the published integration validator is green. Keep #131 and #141
   In Progress until their real Stripe provider checkpoints can execute.
+
+### session v42: add reversible financial cutover controls (#143)
+
+- Timestamp: 2026-08-10T10:31:04-04:00
+- Agent: Codex
+- Branch: codex/118-operational-readiness
+- Head: 66d599d
+
+#### Objective
+
+Provide a reversible, non-production cutover from legacy monetary projections to canonical funded
+obligations and neutral-ledger liabilities without deleting history, duplicating claims, or enabling
+production value flow.
+
+#### Actions Taken
+
+- Added a forward-only financial cutover control plane that snapshots and hashes legacy payments,
+  monthly cycles, bookkeeping credits, withdrawal requests, and payout intents; records explicit
+  classifications, differences, canonical links, state changes, and the singleton compatibility
+  switch.
+- Added service-only prepare, activate, rollback, and read commands. Activation re-locks all source
+  tables, revalidates source hashes, posts reviewed opening liabilities exactly once, blocks
+  unresolved active credits/requests/intents, switches canonical reads, and makes legacy monetary
+  writes read-only. Rollback preserves all source and canonical evidence.
+- Added the typed Edge boundary, exact runtime and actor derivation, generated schema types, a
+  non-production runbook, architecture links, executable RLS/RPC/conservation tests, and a retained
+  pre-feature migration harness that proves a real representative legacy row upgrades safely.
+
+#### Validation Notes
+
+- Fresh local Supabase replay and the executable financial cutover suite passed. The suite proves
+  blocker classification, exact $12.34 opening-liability conservation, source-drift rejection,
+  idempotent replay, no duplicate obligation, write freeze, rollback retention, production denial,
+  and authenticated/service-role privilege boundaries.
+- The pre-feature harness reset to migration `20260810150000`, inserted a representative $42 legacy
+  bookkeeping credit, applied the cutover migration, and proved it was preserved as an explicit
+  `legacy_unverified` blocker before restoring the current schema.
+- Focused Vitest passed 2 files / 6 tests; strict Deno, TypeScript, lint, and diff-check passed.
+  Schema lint reported only two pre-existing unused-parameter warnings. Full Node 22
+  `CI=1 pnpm check` passed lint, 160 files / 708 tests, typecheck, and the 165-page build.
+
+#### Reflections
+
+- A cutover is safe only if its approval set and source hashes are revalidated while the source
+  tables are locked; a prepared report alone cannot authorize later state after source drift.
+- Reversibility means restoring routing and write policy while retaining both legacy and canonical
+  evidence. Deleting the new liabilities on rollback would make audit recovery less reliable.
+
+#### Suggested Next Steps
+
+- Commit #143 and request independent validation. Keep production activation disabled. After #143
+  passes, implement #144 operational monitoring, alerts, and recovery evidence on this branch.
+
+### session v43: close cutover activation races (#143)
+
+- Timestamp: 2026-08-10T10:45:40-04:00
+- Agent: Codex
+- Branch: codex/118-operational-readiness
+- Head: f071047
+
+#### Objective
+
+Resolve the independent validator's canonical-evidence race, monthly-cycle write-boundary gap, and
+cross-environment singleton inconsistency before promoting the financial cutover task.
+
+#### Actions Taken
+
+- Added a forward migration that locks every legacy and canonical classification dependency before
+  activation, then recomputes package, close, obligation, claim, request, and payout evidence. Any
+  gained, lost, changed, or amount-mismatched verification now rejects the prepared manifest.
+- Wrapped the original activation RPC behind the new revalidation boundary and removed all direct
+  execution privileges from the unchecked implementation. Cross-environment activation now
+  supersedes every other active run and appends actor/evidence-bound supersession events so the
+  singleton and run statuses cannot disagree.
+- Extended the legacy write boundary to `monthly_cycles`, added executable post-prepare package
+  mutation and local-to-dev singleton probes, and expanded static migration coverage.
+
+#### Validation Notes
+
+- Fresh local migration replay passed through `20260810161000`. Executable cutover SQL passed the
+  validator's post-prepare package-link mutation denial, legacy cycle-write denial, and exactly-one
+  active cross-environment transition, alongside all prior conservation/RLS/replay/rollback checks.
+- The representative pre-feature migration harness passed again with both cutover migrations and
+  restored the current schema. Focused Vitest passed 2 files / 7 tests; strict Deno, typecheck, lint,
+  type generation, and diff-check passed.
+- Full Node 22 `CI=1 pnpm check` passed lint, 160 files / 709 tests, typecheck, and the 165-page
+  production build. Production and provider value flow remain disabled.
+
+#### Reflections
+
+- Source-row immutability is insufficient when classification depends on external canonical tables;
+  the decision graph must be locked and re-evaluated as one activation transaction.
+- A singleton pointer is not enough if per-run status can contradict it. Superseding globally and
+  recording immutable events makes the operator and audit views agree.
+
+#### Suggested Next Steps
+
+- Commit this forward fix, post evidence, and request exact-commit revalidation before starting
+  #144. Keep local Supabase only long enough for that validator's executable probes.
+
+### session v44: retain same-environment supersession evidence (#143)
+
+- Timestamp: 2026-08-10T10:52:37-04:00
+- Agent: Codex
+- Branch: codex/118-operational-readiness
+- Head: f180d32
+
+#### Objective
+
+Close the final #143 audit gap by retaining an immutable supersession event when one local cutover
+run replaces another run in the same deployment environment.
+
+#### Actions Taken
+
+- Added a narrow forward wrapper that snapshots all prior active run IDs under the singleton advisory
+  lock before delegating to the already validated activation boundary.
+- After activation, the wrapper appends any missing actor/evidence-bound supersession event exactly
+  once. This covers same-environment replacement while deduplicating events already written for
+  cross-environment replacement.
+- Extended executable SQL with local run A → local run B → dev run C, proving each displaced run is
+  superseded once and the singleton retains exactly one active run. Updated static migration coverage
+  and regenerated Supabase types.
+
+#### Validation Notes
+
+- Fresh local replay through `20260810162000` passed. The complete executable cutover suite passed,
+  including canonical-evidence drift, cycle write retirement, same-environment event retention,
+  cross-environment replacement, conservation, replay, rollback, and privilege checks.
+- Focused Vitest passed 2 files / 7 tests; typecheck, type generation, and diff-check passed. The full
+  Node 22 gate is rerun before this commit is finalized.
+
+#### Reflections
+
+- Capturing prior active IDs before delegation is necessary because the inner transition may validly
+  change their status before an outer audit layer can query them.
+- Supersession evidence should be idempotent by transition kind and run, independent of whether the
+  replacement crosses an environment label.
+
+#### Suggested Next Steps
+
+- Commit and request one final exact-commit revalidation. Promote #143 only after that audit passes,
+  then begin #144 on the same retained branch.
+
+### session v45: operationalize the Feature #118 evidence matrix (#144)
+
+- Timestamp: 2026-08-10T12:41:56-04:00
+- Agent: Codex
+- Branch: codex/118-operational-readiness
+- Head: 5cb308a
+
+#### Objective
+
+Turn the Feature #118 operator and five-persona acceptance surface into one repeatable, fail-closed
+local gate with truthful provider classifications, exact visual evidence, and zero owned residue.
+
+#### Actions Taken
+
+- Added a machine-readable 18-capability matrix that distinguishes local-real, sandbox-real,
+  stubbed, and pending behavior and binds every claim to its evidence owner and high-risk cases.
+- Added the `test:e2e:feature-118` orchestrator. It refuses non-loopback Supabase targets, replays the
+  schema, runs all five personas, the privacy and real Edge-to-Mailpit browser lane, ten SQL suites,
+  focused contracts, Hardhat, the full Node 22 gate, and a final reset with a digest-bound summary.
+- Hardened the persona and local-browser runners with process-group cleanup, bounded diagnostics,
+  runtime-only secrets, exact 1440x900 and 390x844 captures, and stable cold-start navigation.
+- Extended the operator journey through lock, calculation, verification, approval, bookkeeping,
+  observability, and founder/member readback. Removed raw participant UUIDs from the reviewed admin
+  result and payout surfaces.
+- Recorded a deterministic local FX seed, safe disabled-chain synchronization, capability/privacy
+  requirements, operational instructions, and the external Stripe inbound and production gates.
+
+#### Validation Notes
+
+- Canonical run `feature-118-20260810T163447180Z-43f7b007` passed all 18 recorded phases: fresh
+  replay, five personas, two browser checks, ten SQL suites, 18 focused tests, 17 Hardhat tests,
+  full Node 22 check, and the final zero-residue reset.
+- The full gate passed lint, 161 Vitest files / 714 tests, typecheck, and the 165-page production
+  build. Persona and Mailpit screenshots were inspected at exactly 1440x900 and 390x844.
+- Every persona cleanup report was clean with zero owned residue. No production value flow, hosted
+  mutation, remote Supabase write, provider mutation, payable, transfer, or payout was enabled.
+- Stripe Connect USD/CAD payout remains truthfully classified from retained sandbox evidence; Stripe
+  customer-balance USD/CAD intake remains pending, Base USDT/PYUSD remain stubbed, and policy and
+  accounting approvals remain deferred to production.
+
+#### Reflections
+
+- A green operational matrix is trustworthy only when unavailable capabilities remain visibly
+  pending and the summary is bound to the reviewed classification file.
+- Immutable consent and withdrawal evidence must have separate transactional owners; deleting it in
+  persona cleanup would make a clean report misleading.
+- Process-group cleanup is part of test correctness because orphaned Edge or Next processes can make
+  a later run pass against stale runtime state.
+
+#### Suggested Next Steps
+
+- Commit #144 and request independent exact-commit validation before moving it to In Review.
+- Validate integrated Goal #142 after #144 passes. Feature #118 remains externally blocked only by
+  #131 until Stripe enables the required customer-balance bank-transfer capability.
+
+### session v46: expose the proposed Terms disclosure model (#144)
+
+- Timestamp: 2026-08-10T13:02:00-04:00
+- Agent: Codex
+- Branch: codex/118-operational-readiness
+- Head: 0a26f96
+
+#### Objective
+
+Close the independent validator's disclosure-surface gap without presenting unapproved legal or
+accounting conclusions as effective Terms.
+
+#### Actions Taken
+
+- Added the canonical proposed no-refund, no-escrow, discretionary-refund, and best-effort payout
+  model to the local/dev Terms review page under the existing draft/not-effective boundary.
+- Kept refunds, ownership, enforceability, and recognition explicitly unresolved for production and
+  retained counsel/accountant approval as a hard production gate.
+- Added executable route assertions that the review wording is present locally and absent from the
+  production placeholder, and registered omission of those disclosures as a high-risk matrix case.
+- Extended the real authenticated Edge/browser and SQL evidence to record both the project actor on
+  `project_funding_preview` and the user on `payout_preview`, then verify exact persisted capacities.
+- Added bounded Supabase/Mailpit readiness retries to the standalone persona launcher after a clean
+  reset exposed an API health race; target and environment checks remain unchanged.
+
+#### Validation Notes
+
+- Canonical run `feature-118-20260810T192804001Z-28a2b3e3` passed all 18 phases with digest
+  `5627c964c8295344f44b9a0fc7c90edfd1b6605a242a2e17bb064d4734906a85`.
+- The browser lane passed 2/2 with both authenticated acknowledgement capacities, private-profile
+  grant/withdrawal, and real Edge-to-Mailpit delivery. Exact disclosure captures passed visual
+  inspection at 1440x900 and 390x844.
+- SQL passed both acceptance records and all nine remaining control-plane suites. Focused policy and
+  matrix tests, 17 Hardhat tests, lint, typecheck, diff-check, 161 files / 714 tests, and the 165-page
+  production build passed.
+- The canonical legal draft and immutable hash are unchanged; this surface now exposes language
+  already present in `docs/legal/review-drafts/terms-canada.md` rather than inventing a new policy.
+- Production still branches before all draft text and metadata, even with a hostile preview flag.
+
+#### Reflections
+
+- A capability matrix must validate the user-visible disclosure itself, not infer it from a
+  version/hash acknowledgement control.
+- Product intent can be testable before professional approval only when the UI labels it prominently
+  as non-effective and the production route fails closed.
+
+#### Suggested Next Steps
+
+- Commit this narrow validator fix and request exact-commit revalidation of #144.
+
+### session v47: close PR #151 review gaps (#143, #144)
+
+- Timestamp: 2026-08-10T17:13:28-04:00
+- Agent: Codex
+- Branch: codex/118-operational-readiness
+- Head: 2ba5668
+
+#### Objective
+
+Address every actionable PR #151 review thread while preserving the reversible, non-production
+cutover and complete local operational evidence boundary.
+
+#### Actions Taken
+
+- Added a forward canonical-credit compatibility view and a server-owned cutover read-mode helper.
+  The earnings workspace and monthly-cycle payout overview now read canonical obligation amounts and
+  payment state only for an exact active singleton, retain legacy reads only for the exact inactive
+  state, and fail closed with no monetary rows for missing or contradictory state.
+- Removed the broad `monthly_cycles` write guard so typed lifecycle transitions remain inputs to the
+  canonical epoch engine while legacy payment, bookkeeping-credit, withdrawal-request, and payout-
+  intent writes remain retired. Extended executable SQL and architecture documentation accordingly.
+- Restored every local Playwright spec under the `local-wallet` project and separated the operational
+  Mailpit lane. The runner now replays a clean schema and commits each authored SQL fixture before
+  its workflow, waits through Edge cold starts, and stops active child commands without performing a
+  heavy final reset after interruption.
+- Guaranteed desktop viewport restoration after mobile evidence failures, preserved direct local-
+  owner cleanup after REST transport errors, and added a screenshot-pattern/reason invariant.
+- Routed local wagmi reads through the configured Hardhat RPC without unsupported multicall and made
+  token approval wait for receipt finality plus a refreshed allowance before enabling submission.
+- Bound deposit recording to the exact submitted transaction hash so an earlier approval receipt
+  cannot be mistaken for the deposit, and made recording idempotent across receipt-state rerenders.
+- Split allocation and Stripe Connect browser setup into dedicated deterministic fixtures. Added a
+  narrow local-console filter for the known fake Reown endpoints while retaining failures for all
+  product-owned console errors, plus phase-selectable retries for the serialized runner.
+
+#### Validation Notes
+
+- A fresh local Supabase reset applied every migration through
+  `20260810163000_financial_cutover_read_integration.sql`; the executable
+  `financial_cutover_control_plane.sql` suite and both dedicated rollback fixtures passed.
+- Focused Vitest passed 6 files / 26 tests, including the cutover read-mode matrix, migration
+  contract, deposit-receipt race regression, operational matrix, cleanup, viewport, and reporting
+  invariants.
+- The complete `local-wallet` project passed 8/8 browser tests: policy/profile acknowledgement,
+  token approval/deposit/reconciliation and mismatch retry, allocation/root reload and privacy
+  views, withdrawal, Base payout, and Stripe Connect reconciliation. The separate operational lane
+  passed 1/1 with real authenticated Edge-to-Mailpit delivery. Required desktop/mobile captures
+  were retained at 1440x900 and 390x844.
+- Full Node 22 `CI=1 pnpm check` passed: lint, 162 Vitest files / 722 tests, typecheck, and the
+  165-route production build. Runner syntax, documentation links, secret/artifact scans, and
+  `git diff --check` also passed.
+- Local services and child process groups were stopped after the evidence run; production, provider,
+  legal/accounting, canonical cutover, and real-value-flow gates remain fail closed.
+
+#### Reflections
+
+- A cutover is not active merely because writes are blocked; the application read paths must resolve
+  the canonical state through a fail-closed server boundary.
+- Lifecycle state and monetary projections are different write classes. Freezing the former would
+  prevent the canonical epoch engine from receiving its own inputs.
+- Test orchestration must be interruptible: cleanup that starts a new database reset after SIGTERM
+  defeats an operator's attempt to relieve an overloaded workstation.
+
+#### Suggested Next Steps
+
+- Commit and push this review-fix batch, reply to and resolve all six PR threads without requesting
+  rereview, wait for green CI/Vercel/Supabase checks, then merge and run approved cleanup.

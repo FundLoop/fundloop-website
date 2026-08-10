@@ -27,6 +27,8 @@ The enum exists now so the product and operator model can be multi-rail before a
 
 The legacy `monthly-cycle-payout-intents-create` result-to-intent command is retired. Approved close packages create withdrawal obligations; users then create one project-scoped asset reservation through `user-withdrawal-request-create`.
 
+Task #143 adds the [financial cutover runbook](./financial-cutover-runbook.md). A service-only prepare step classifies every legacy payment, cycle, bookkeeping credit, withdrawal request, and payout intent; active legacy credits/requests/intents block activation unless they have an exact canonical link or reviewed opening-balance treatment. Local/dev/test activation posts approved opening liabilities once, switches the server-owned earnings and payout read model to canonical obligations, and makes legacy monetary projections read-only. Monthly-cycle lifecycle transitions remain typed inputs to the canonical epoch engine and are not frozen by the cutover. Production remains disabled.
+
 The withdrawal command is idempotent per user-supplied request key and immutable project/asset/route/amount snapshot. It creates a `draft` intent only after exact inventory is reserved; otherwise the request is queued without manufacturing an unbacked liability. Missing payout routes remain visible in the earnings workspace before request creation. Asset preferences are handled separately by `user_asset_preferences`; they guide future asset fulfillment planning but do not prove a destination is ready.
 
 For the operational MVP, bookkeeping credits are the success target. Payout intents remain the later outbound-planning model for actual transfer readiness.

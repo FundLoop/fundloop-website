@@ -1,7 +1,7 @@
-import { randomBytes } from "node:crypto"
-import { spawn } from "node:child_process"
+import { createHash, randomBytes } from "node:crypto"
+import { execFileSync, spawn } from "node:child_process"
 import { closeSync, existsSync, mkdirSync, openSync, readFileSync, readdirSync, rmSync } from "node:fs"
-import { mkdir, open, readFile, rename } from "node:fs/promises"
+import { mkdir, open, readFile, rename, rm } from "node:fs/promises"
 import path from "node:path"
 import process from "node:process"
 import { setTimeout as delay } from "node:timers/promises"
@@ -84,27 +84,65 @@ function readEnv() {
   }
 }
 
-async function probe(url, headers, reasonCode) {
-  try {
-    const response = await fetch(url, { headers, signal: AbortSignal.timeout(5_000) })
-    if (!response.ok) throw new Error("not-ok")
-  } catch {
-    throw new Error(reasonCode)
+async function waitForProbe(url, headers, reasonCode) {
+  for (let attempt = 0; attempt < 30; attempt += 1) {
+    try {
+      const response = await fetch(url, { headers, signal: AbortSignal.timeout(1_000) })
+      if (response.ok) return
+    } catch {}
+    await delay(500)
   }
+  throw new Error(reasonCode)
 }
 
 async function preflight(env) {
-  await probe(`${env.supabaseUrl}/auth/v1/health`, { apikey: env.anonKey }, "persona-supabase-unavailable")
-  await probe(`${env.mailpitUrl}/api/v1/info`, {}, "persona-mailpit-unavailable")
+  await waitForProbe(`${env.supabaseUrl}/auth/v1/health`, { apikey: env.anonKey }, "persona-supabase-unavailable")
+  await waitForProbe(`${env.mailpitUrl}/api/v1/info`, {}, "persona-mailpit-unavailable")
   const status = await capture("supabase", ["status", "--output", "json"], process.env)
   let localStatus
   try { localStatus = JSON.parse(status) } catch { throw new Error("persona-supabase-status-invalid") }
   const reportedApi = localStatus.API_URL ?? localStatus.api_url
   if (reportedApi && normalizeLoopback(reportedApi).origin !== env.supabaseUrl) throw new Error("persona-supabase-status-mismatch")
+  const dbUrl = localStatus.DB_URL ?? localStatus.db_url
+  const parsedDb = dbUrl ? normalizeLoopback(dbUrl) : null
+  if (!parsedDb || parsedDb.protocol !== "postgresql:" || parsedDb.hostname !== "127.0.0.1" || parsedDb.port !== "55322" || parsedDb.pathname !== "/postgres") {
+    throw new Error("persona-database-url-refused")
+  }
+  return parsedDb.toString()
+}
+
+const LOCAL_OWNER_CLEANUP_TABLES = new Set([
+  "payout_inventory_lots",
+  "user_withdrawal_obligations",
+])
+
+function sqlLiteral(value) {
+  if (typeof value === "number" && Number.isSafeInteger(value)) return String(value)
+  if (typeof value === "string" && /^[A-Za-z0-9:_-]{1,160}$/.test(value)) return `'${value}'`
+  throw new Error("ownership-ledger-invalid")
+}
+
+function deleteLocalOwnerRecord(record, dbUrl) {
+  if (!LOCAL_OWNER_CLEANUP_TABLES.has(record.table)) return false
+  const predicates = Object.entries(record.primaryKey).map(([key, value]) => {
+    if (!/^[a-z][a-z0-9_]*$/.test(key)) throw new Error("ownership-ledger-invalid")
+    return `${key}=${sqlLiteral(value)}`
+  })
+  execFileSync("psql", [dbUrl, "-X", "-v", "ON_ERROR_STOP=1", "-q"], {
+    cwd: root,
+    input: `DELETE FROM public.${record.table} WHERE ${predicates.join(" AND ")};\n`,
+    stdio: ["pipe", "ignore", "pipe"],
+  })
+  return true
 }
 
 function spawnChild(command, args, env, stdio = "inherit") {
-  return spawn(command, args, { cwd: root, env, stdio })
+  return spawn(command, args, { cwd: root, env, stdio, detached: true })
+}
+
+function stopChildGroup(child) {
+  if (!child?.pid || child.exitCode !== null) return
+  try { process.kill(-child.pid, "SIGTERM") } catch { child.kill("SIGTERM") }
 }
 
 function capture(command, args, env) {
@@ -144,6 +182,38 @@ async function assertPortFree(baseURL) {
   throw new Error("persona-next-port-occupied")
 }
 
+async function startLocalEdgeRuntime(runId, env) {
+  const envPath = path.join(outputRoot, runId, "edge-runtime.env")
+  await mkdir(path.dirname(envPath), { recursive: true, mode: 0o700 })
+  const handle = await open(envPath, "w", 0o600)
+  try {
+    await handle.writeFile([
+      "FUNDLOOP_DEPLOYMENT_ENV=local",
+      `FUNDLOOP_INTERNAL_ADMIN_EMAILS=${localOperatorEmail}`,
+      `FUNDLOOP_ZKAS_SUPERADMIN_EMAILS=${localOperatorEmail}`,
+      "NEXT_PUBLIC_POLICY_REVIEW_PREVIEW=1",
+      "",
+    ].join("\n"))
+    await handle.sync()
+  } finally {
+    await handle.close()
+  }
+  const child = spawnChild("supabase", ["functions", "serve", "--env-file", envPath], env)
+  for (let attempt = 0; attempt < 30; attempt += 1) {
+    if (child.exitCode !== null) throw new Error("persona-edge-runtime-exited")
+    await delay(250)
+    try {
+      const response = await fetch("http://127.0.0.1:55321/functions/v1/monthly-cycle-lock", {
+        method: "OPTIONS",
+        signal: AbortSignal.timeout(1_000),
+      })
+      if (response.ok) return { child, envPath }
+    } catch {}
+  }
+  stopChildGroup(child)
+  throw new Error("persona-edge-runtime-readiness-timeout")
+}
+
 async function writeAtomic(filePath, value) {
   await mkdir(path.dirname(filePath), { recursive: true, mode: 0o700 })
   const temp = `${filePath}.tmp`
@@ -162,6 +232,13 @@ async function aggregate(run, selected, startedAt, services, playwrightExitCode,
   const status = playwrightExitCode !== 0 || missing.length || personas.some((result) => result.status === "failed" || result.cleanup.status === "residual")
     ? "failed"
     : personas.some((result) => result.status === "incomplete") ? "incomplete" : "passed"
+  const matrixPath = path.join(root, "tests", "e2e", "operational", "feature-118-capability-matrix.json")
+  const matrixText = await readFile(matrixPath, "utf8")
+  const capabilityMatrix = JSON.parse(matrixText)
+  if (capabilityMatrix.schemaVersion !== 1 || capabilityMatrix.featureIssue !== 118 || capabilityMatrix.taskIssue !== 144 ||
+    capabilityMatrix.productionValueFlowEnabled !== false || !Array.isArray(capabilityMatrix.capabilities)) {
+    throw new Error("persona-capability-matrix-invalid")
+  }
   const summary = {
     schemaVersion: 1,
     runId: run,
@@ -173,6 +250,13 @@ async function aggregate(run, selected, startedAt, services, playwrightExitCode,
     durationMs: Date.now() - Date.parse(startedAt),
     cycleKeys: Object.fromEntries(selected.map((persona) => [persona, addCycleMonths(cycleBase, cycleOffsets[persona])])),
     services,
+    capabilityMatrix: {
+      schemaVersion: capabilityMatrix.schemaVersion,
+      featureIssue: capabilityMatrix.featureIssue,
+      taskIssue: capabilityMatrix.taskIssue,
+      digest: createHash("sha256").update(matrixText).digest("hex"),
+      capabilities: capabilityMatrix.capabilities,
+    },
     personas,
     cleanup: personas.length !== selected.length || personas.some((result) => result.cleanup.status === "residual")
       ? {
@@ -254,11 +338,19 @@ async function cleanupLedger(ledgerPath, env) {
       if (!/^[a-z][a-z0-9_]*$/.test(key)) throw new Error("ownership-ledger-invalid")
       query.set(key, `eq.${value}`)
     }
-    await serviceFetch(
-      `${env.supabaseUrl}/rest/v1/${record.table}?${query}`,
-      { method: "DELETE", headers: { prefer: "return=minimal" } },
-      `cleanup-record-delete-failed-${record.table}`,
-    )
+    let deletionOk = false
+    try {
+      const deletion = await fetch(
+        `${env.supabaseUrl}/rest/v1/${record.table}?${query}`,
+        { method: "DELETE", headers: { ...serviceHeaders, prefer: "return=minimal" } },
+      )
+      deletionOk = deletion.ok
+    } catch {
+      deletionOk = false
+    }
+    if (!deletionOk && !deleteLocalOwnerRecord(record, env.dbUrl)) {
+      throw new Error(`cleanup-record-delete-failed-${record.table}`)
+    }
     deletedCount += 1
   }
   for (const record of orderedRecords.filter((record) => record.table !== "users")) {
@@ -408,11 +500,14 @@ async function main() {
   const lockPath = path.join(outputRoot, "local.lock")
   let lockDescriptor
   let app = null
+  let edgeRuntime = null
+  let edgeEnvPath = null
   let stopping = false
   const stop = () => {
     if (stopping) return
     stopping = true
-    if (app && app.exitCode === null) app.kill("SIGTERM")
+    stopChildGroup(app)
+    stopChildGroup(edgeRuntime)
   }
   process.once("SIGINT", () => { stop(); process.exitCode = 1 })
   process.once("SIGTERM", () => { stop(); process.exitCode = 1 })
@@ -424,8 +519,8 @@ async function main() {
   }
 
   try {
-    const env = readEnv()
-    await preflight(env)
+    const baseEnv = readEnv()
+    const env = { ...baseEnv, dbUrl: await preflight(baseEnv) }
     if (options.cleanupRun) {
       await cleanupRun(options.cleanupRun, env)
       console.log(`persona cleanup ${options.cleanupRun}: clean`)
@@ -447,12 +542,16 @@ async function main() {
       PLAYWRIGHT_PERSONA_SELECTED: selected.join(","),
       PLAYWRIGHT_PERSONA_FORCE_FAILURE: options.forceFailure ? "true" : "false",
       PLAYWRIGHT_PERSONA_FORCE_TIMEOUT: options.forceTimeout ? "true" : "false",
+      PLAYWRIGHT_PERSONA_DB_URL: env.dbUrl,
       FUNDLOOP_DEPLOYMENT_ENV: "local",
       FUNDLOOP_E2E_ENABLED: "true",
       FUNDLOOP_E2E_SECRET: process.env.FUNDLOOP_E2E_SECRET?.trim() || `persona-${randomBytes(24).toString("base64url")}`,
       FUNDLOOP_INTERNAL_ADMIN_EMAILS: localOperatorEmail,
       FUNDLOOP_ZKAS_SUPERADMIN_EMAILS: localOperatorEmail,
     }
+    const edge = await startLocalEdgeRuntime(runId, sharedEnv)
+    edgeRuntime = edge.child
+    edgeEnvPath = edge.envPath
     app = spawnChild("pnpm", ["dev", "--port", "3002", "--hostname", "127.0.0.1"], sharedEnv)
     await waitForApp(env.baseURL, app)
     const grep = options.selfTest ? "@harness:self-test" : `@persona:(${selected.join("|")})`
@@ -471,6 +570,7 @@ async function main() {
     process.exitCode = summary.exitCode
   } finally {
     stop()
+    if (edgeEnvPath) await rm(edgeEnvPath, { force: true })
     if (lockDescriptor !== undefined) closeSync(lockDescriptor)
     rmSync(lockPath, { force: true })
   }

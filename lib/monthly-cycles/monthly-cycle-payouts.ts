@@ -1,6 +1,7 @@
 import "server-only"
 
 import { getAdminSupabaseClient } from "@/lib/supabase-admin"
+import { readFinancialCutoverMode } from "@/lib/financial-cutover/read-model"
 import type { Database } from "@/types/supabase"
 import { monthlyCycleStatusLabels, type MonthlyCycleStatus, type MonthlyCycleWarning } from "."
 
@@ -197,6 +198,10 @@ async function softRead<T>(scope: string, read: () => unknown, warnings: Monthly
 export async function loadMonthlyCyclePayoutOverview(cycleKey: string): Promise<MonthlyCyclePayoutOverview | null> {
   const supabase = getAdminSupabaseClient()
   const warnings: MonthlyCycleWarning[] = []
+  const cutoverReadMode = await readFinancialCutoverMode(supabase)
+  if (cutoverReadMode === "unavailable") {
+    warnings.push({ scope: "financial-cutover", message: "Canonical payout read state could not be verified." })
+  }
   const { data: cycle, error: cycleError } = await supabase
     .from("monthly_cycles")
     .select("id, cycle_key, period_start, period_end, status, approval_started_at, distribution_started_at, status_note")
@@ -213,13 +218,21 @@ export async function loadMonthlyCyclePayoutOverview(cycleKey: string): Promise<
       warnings,
     ),
     softRead<BookkeepingCreditRow>(
-      "monthly_cycle_bookkeeping_credits",
+      cutoverReadMode === "canonical" ? "financial_cutover_canonical_credit_reads" : "monthly_cycle_bookkeeping_credits",
       () =>
-        supabase
-          .from("monthly_cycle_bookkeeping_credits")
-          .select("id, user_id, usd_equivalent_amount, status, payment_status, asset_fills")
-          .eq("monthly_cycle_id", cycle.id)
-          .order("usd_equivalent_amount", { ascending: false }),
+        cutoverReadMode === "canonical"
+          ? supabase
+              .from("financial_cutover_canonical_credit_reads")
+              .select("id, user_id, usd_equivalent_amount, status, payment_status, asset_fills")
+              .eq("monthly_cycle_id", cycle.id)
+              .order("usd_equivalent_amount", { ascending: false })
+          : cutoverReadMode === "legacy"
+            ? supabase
+                .from("monthly_cycle_bookkeeping_credits")
+                .select("id, user_id, usd_equivalent_amount, status, payment_status, asset_fills")
+                .eq("monthly_cycle_id", cycle.id)
+                .order("usd_equivalent_amount", { ascending: false })
+            : Promise.resolve({ data: [], error: null }),
       warnings,
     ),
     softRead<ReturnedPoolRow>(
