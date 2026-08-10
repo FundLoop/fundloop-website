@@ -14,6 +14,8 @@ describe("epoch close role surfaces", () => {
     expect(operatorAction).toContain("Reproduce result and prepare close root")
     expect(operatorAction).toContain("Approve exact root and enter payout readying")
     expect(operatorAction).toContain("epoch-close-root-review")
+    expect(operatorAction).toContain("initialRootReview")
+    expect(operatorPage).toContain('epochClose?.status === "root_review_required"')
     expect(operatorPage).toContain("Awards remain non-payable and not user-owned")
     expect(operatorAction).toContain("invokeEpochAllocationCloseBrowser")
     expect(operatorAction).not.toContain(".from(")

@@ -52,6 +52,8 @@ test("operator approves the exact result and role surfaces preserve privacy", as
   const prepared=(await (await preparationResponse).json()) as {ok:boolean;data?:{rootHash:string}}
   expect(prepared).toMatchObject({ok:true})
   await expect(page.getByTestId("epoch-close-root-review")).toContainText(prepared.data?.rootHash ?? "missing-root")
+  await page.reload()
+  await expect(page.getByTestId("epoch-close-root-review")).toContainText(prepared.data?.rootHash ?? "missing-root")
   const approvalResponse=page.waitForResponse(response=>response.url().includes("/functions/v1/epoch-allocation-close")&&response.request().method()==="POST")
   await page.getByRole("button",{name:"Approve exact root and enter payout readying"}).click()
   expect((await (await approvalResponse).json()) as {ok:boolean}).toMatchObject({ok:true})

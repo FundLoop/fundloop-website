@@ -6,11 +6,14 @@ import { useToast } from "@/hooks/use-toast"
 import { useRouter } from "@/i18n/navigation"
 import { invokeEpochAllocationCloseBrowser } from "@/lib/edge-functions/epoch-allocation-close"
 
-export function EpochAllocationCloseActions({ cycleKey }: { cycleKey: string }) {
+export function EpochAllocationCloseActions({ cycleKey, initialRootReview = null }: {
+  cycleKey: string
+  initialRootReview?: { closePackageId: number; rootHash: string } | null
+}) {
   const router = useRouter()
   const { toast } = useToast()
   const [busy, setBusy] = useState(false)
-  const [rootReview, setRootReview] = useState<{ closePackageId: number; rootHash: string } | null>(null)
+  const [rootReview, setRootReview] = useState<{ closePackageId: number; rootHash: string } | null>(initialRootReview)
   async function approve() {
     setBusy(true)
     const result = await invokeEpochAllocationCloseBrowser({ action: "approve", cycleKey })

@@ -1614,3 +1614,37 @@ source-link all exact fractions, and withhold all public totals below privacy th
 
 - Commit this validator-fix batch separately, post corrective evidence, and return exact HEAD to the
   same independent validator before promoting #137 or beginning #139.
+
+### session v33: resume persisted close-root review (#137)
+
+- Timestamp: 2026-08-09T23:51:40-04:00
+- Agent: Codex
+- Branch: codex/134-funded-redistribution
+- Head: a159818
+
+#### Objective
+
+Make the required exact-root approval resumable after reload or navigation instead of relying on
+ephemeral browser component state.
+
+#### Actions Taken
+
+- Hydrated `root_review_required` package ID and root hash from the operator read model into the
+  close action component.
+- Kept the confirmation action available for persisted prepared packages while continuing to hide
+  it once the package reaches `payout_readying`.
+- Extended the real Playwright flow to reload the admin page after preparation, verify the same
+  persisted root is still visible, and only then submit exact-root confirmation.
+
+#### Validation Notes
+
+- Passed focused close UI/contract tests, Node 22 typecheck, lint, and diff-check.
+- Passed real authenticated Edge + Playwright 2/2 with a deliberate reload between root preparation
+  and confirmation; all operator/user/founder/public assertions and zero-console-error checks passed.
+- Passed full Node 22 `CI=1 pnpm check`: 149 files / 674 tests, typecheck, and production build / 165
+  pages. Local Next, Edge, and Supabase services were stopped.
+
+#### Suggested Next Steps
+
+- Commit this narrow resumability fix, post evidence, and return exact HEAD for final independent
+  #137 validation before moving the issue or beginning #139.

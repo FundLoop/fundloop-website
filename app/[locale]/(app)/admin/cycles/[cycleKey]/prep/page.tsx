@@ -80,6 +80,9 @@ export default async function AdminCyclePrepPage({ params }: PageProps) {
   if (!review) {
     notFound()
   }
+  const persistedRootReview = epochClose?.status === "root_review_required" && epochClose.close_package_id && epochClose.root_hash
+    ? { closePackageId: epochClose.close_package_id, rootHash: epochClose.root_hash }
+    : null
 
   return (
     <div className="container mx-auto space-y-8 px-4 py-12">
@@ -285,7 +288,9 @@ export default async function AdminCyclePrepPage({ params }: PageProps) {
           </div>
           <Badge variant="outline">Production disabled</Badge>
         </div>
-        {!epochClose && fundedAllocation.allocation?.result_hash ? <EpochAllocationCloseActions cycleKey={cycleKey} /> : null}
+        {fundedAllocation.allocation?.result_hash && (!epochClose || persistedRootReview)
+          ? <EpochAllocationCloseActions cycleKey={cycleKey} initialRootReview={persistedRootReview} />
+          : null}
         {epochClose ? <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
           {[
             ["Stage",epochClose.status ?? "payout_readying"],["Funded minor",String(epochClose.funded_minor ?? 0)],
