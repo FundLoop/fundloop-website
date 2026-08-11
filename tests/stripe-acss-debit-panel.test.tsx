@@ -17,12 +17,13 @@ describe("StripeAcssDebitPanel", () => {
     expect((screen.getByRole("button", {name: /Open CAD PAD Checkout/i}) as HTMLButtonElement).disabled).toBe(true)
   })
 
-  it("submits only CAD amount and project identifiers", async () => {
+  it("submits only CAD quote dimensions and project identifiers", async () => {
     vi.mocked(invokeStripeAcssDebitStatusBrowser).mockResolvedValue({ok: true, data: []})
     vi.mocked(invokeStripeAcssDebitCheckoutBrowser).mockResolvedValue({ok: false, error: {code: "unavailable", message: "Capability unavailable."}})
     render(<StripeAcssDebitPanel projectSlug="ecostream" payments={[payment]} termsAcknowledged/>)
     fireEvent.click(await screen.findByRole("button", {name: /Open CAD PAD Checkout/i}))
-    await waitFor(() => expect(invokeStripeAcssDebitCheckoutBrowser).toHaveBeenCalledWith({projectSlug: "ecostream", paymentId: 7, currencyCode: "CAD", expectedAmountMinor: "2500"}))
+    await waitFor(() => expect(invokeStripeAcssDebitCheckoutBrowser).toHaveBeenCalledWith({projectSlug: "ecostream", paymentId: 7, currencyCode: "CAD"}))
+    expect(screen.getByTestId("stripe-acss-payment-7").textContent).toMatch(/USD obligation \$25\.00/)
     expect((await screen.findByRole("alert")).textContent).toBe("Capability unavailable.")
   })
 

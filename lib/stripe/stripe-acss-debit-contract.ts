@@ -10,7 +10,6 @@ export type StripeAcssDebitCheckoutCreateInput = {
   projectSlug: string
   paymentId: number
   currencyCode: StripeAcssDebitCurrency
-  expectedAmountMinor: string
 }
 
 export type StripeAcssDebitCheckoutCreateOutput = {
@@ -39,15 +38,15 @@ export function validateStripeAcssDebitCheckoutCreateInput(value: unknown, envir
     return edgeCommandFailure("production_disabled", "Canadian PAD intake is unavailable in this environment.")
   }
   if (!isObject(value)) return edgeCommandFailure("invalid_payload", "Expected an object.")
-  const allowed = new Set(["projectSlug", "paymentId", "currencyCode", "expectedAmountMinor"])
+  const allowed = new Set(["projectSlug", "paymentId", "currencyCode"])
   if (Object.keys(value).some((key) => !allowed.has(key))) return edgeCommandFailure("invalid_payload", "Unexpected PAD input field.")
   const currencyCode = String(value.currencyCode ?? "").toUpperCase()
   if (typeof value.projectSlug !== "string" || !SLUG.test(value.projectSlug) || !Number.isInteger(value.paymentId) || Number(value.paymentId) <= 0 ||
-      !["CAD", "USD"].includes(currencyCode) || typeof value.expectedAmountMinor !== "string" || !/^[1-9]\d*$/.test(value.expectedAmountMinor)) {
+      !["CAD", "USD"].includes(currencyCode)) {
     return edgeCommandFailure("invalid_payload", "Canadian PAD fields are invalid.")
   }
   return edgeCommandSuccess({ projectSlug: value.projectSlug, paymentId: Number(value.paymentId),
-    currencyCode: currencyCode as StripeAcssDebitCurrency, expectedAmountMinor: value.expectedAmountMinor })
+    currencyCode: currencyCode as StripeAcssDebitCurrency })
 }
 
 export function isStripeAcssDebitCheckoutCreateOutput(value: unknown): value is StripeAcssDebitCheckoutCreateOutput {

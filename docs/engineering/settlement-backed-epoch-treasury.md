@@ -676,7 +676,9 @@ Canadian project funding instead has a distinct one-time PAD rail: Stripe-hosted
 dynamic payment-method configuration, explicit mandate acknowledgement, delayed settlement,
 and authoritative signed-event re-fetch. PAD is not treated as a push transfer, does not reuse
 mandates, and cannot fund a package until available custody and a conserved provisional journal
-exist. CAD is the safe default; USD stays disabled without exact-account denomination evidence.
+exist. CAD Checkout amounts are derived server-side from fresh reviewed USD/CAD quotes rather
+than copied from the USD obligation or supplied by the browser. CAD is the safe default; USD
+stays disabled without exact-account denomination evidence.
 See [Stripe Canadian PAD intake](./stripe-canadian-pad-intake.md).
 
 EUR and GBP project funding has a separate one-time Pay by Bank rail. It uses
@@ -690,8 +692,14 @@ Signed webhook evidence is authoritatively re-fetched and cannot fund a package 
 custody and a conserved provisional journal exist. Refund-pending invalidates package sources;
 successful full or partial refunds reverse the original receipt exactly, cumulative refunds retire
 prior residual journals, and the single current residual is conserved but quarantined from
-allocation. Pay by Bank does not invent a dispute workflow.
+allocation. EUR/GBP Checkout amounts are derived server-side from fresh reviewed USD funding
+quotes. Pay by Bank does not invent a dispute workflow.
 See [Stripe Pay by Bank intake](./stripe-pay-by-bank-intake.md).
+
+The three Stripe project-funding rails share one immutable settlement claim per legacy payment.
+The first ledger-backed available event wins under a payment-scoped advisory lock; another rail
+cannot settle or enter a package for that payment. Package sources must reproduce the claimed
+command, reviewed quote where currency conversion applies, and exact native amount.
 
 Any Stripe intake rail must prove an exact Stripe/bank arrangement with either separate externally
 reconcilable platform and epoch custody identifiers or a clearing account that

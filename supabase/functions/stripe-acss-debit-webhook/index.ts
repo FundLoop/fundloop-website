@@ -84,7 +84,11 @@ async function handleRequest(request: Request) {
   if (event.livemode) return json(edgeCommandFailure("live_mode_denied", "Live-mode Stripe events are forbidden."), {status: 403})
   const observation = await authoritativeObservation(stripe, event)
   if (!observation) return json(edgeCommandSuccess({ignored: true, eventId: event.id}))
-  if (observation.paymentMethodType !== "acss_debit" || !observation.providerMandateId) return json(edgeCommandFailure("stripe_acss_authoritative_mismatch", "Authoritative Stripe state did not prove an ACSS debit mandate."), {status: 409})
+  const terminalBeforeMandate = ["failed", "canceled"].includes(observation.evidenceType)
+  if ((!terminalBeforeMandate && observation.paymentMethodType !== "acss_debit") || (!terminalBeforeMandate && !observation.providerMandateId) ||
+      (terminalBeforeMandate && observation.paymentMethodType !== null && observation.paymentMethodType !== "acss_debit")) {
+    return json(edgeCommandFailure("stripe_acss_authoritative_mismatch", "Authoritative Stripe state did not match the ACSS debit lifecycle."), {status: 409})
+  }
   const clients = createFunctionClients(request)
   if (!clients.ok) return json(edgeCommandFailure("function_not_configured", clients.error))
   const payloadSha256 = await sha256(payload)

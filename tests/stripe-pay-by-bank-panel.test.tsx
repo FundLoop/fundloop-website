@@ -17,13 +17,14 @@ describe("StripePayByBankPanel", () => {
     expect((screen.getByRole("button", {name: /Open Pay by Bank Checkout/i}) as HTMLButtonElement).disabled).toBe(true)
   })
 
-  it("submits only selected currency/country, amount, and project identifiers", async () => {
+  it("submits only selected currency/country quote dimensions and project identifiers", async () => {
     vi.mocked(invokeStripePayByBankStatusBrowser).mockResolvedValue({ok: true, data: []})
     vi.mocked(invokeStripePayByBankCheckoutBrowser).mockResolvedValue({ok: false, error: {code: "unavailable", message: "Capability unavailable."}})
     render(<StripePayByBankPanel projectSlug="ecostream" payments={[payment]} termsAcknowledged/>)
     fireEvent.click(await screen.findByRole("button", {name: /Open Pay by Bank Checkout/i}))
     await waitFor(() => expect(invokeStripePayByBankCheckoutBrowser).toHaveBeenCalledWith({projectSlug: "ecostream", paymentId: 7,
-      currencyCode: "GBP", customerCountry: "GB", expectedAmountMinor: "2500"}))
+      currencyCode: "GBP", customerCountry: "GB"}))
+    expect(screen.getByTestId("stripe-pay-by-bank-payment-7").textContent).toMatch(/USD obligation \$25\.00/)
     expect((await screen.findByRole("alert")).textContent).toBe("Capability unavailable.")
   })
 

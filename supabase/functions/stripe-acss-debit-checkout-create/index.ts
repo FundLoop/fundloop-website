@@ -38,10 +38,8 @@ async function handleRequest(request: Request) {
   if (!acknowledgement.ok) return json(edgeCommandFailure(acknowledgement.code, acknowledgement.message))
   const project = await projectAdminContext(auth.adminClient, auth.user.id, input.data.projectSlug)
   if (!project) return json(edgeCommandFailure("permission_denied", "You do not have permission to fund this project."))
-  const {data: payment, error: paymentError} = await auth.adminClient.from("payments").select("id,project_id,payment_amount").eq("id", input.data.paymentId).eq("project_id", project.id).maybeSingle()
-  if (paymentError || !payment || String(Math.round(Number(payment.payment_amount) * 100)) !== input.data.expectedAmountMinor) {
-    return json(edgeCommandFailure("payment_mismatch", "Payment amount changed; reload before opening PAD Checkout."))
-  }
+  const {data: payment, error: paymentError} = await auth.adminClient.from("payments").select("id,project_id").eq("id", input.data.paymentId).eq("project_id", project.id).maybeSingle()
+  if (paymentError || !payment) return json(edgeCommandFailure("payment_mismatch", "Payment changed; reload before opening PAD Checkout."))
   const secretKey = getEnv("STRIPE_SECRET_KEY")?.trim()
   const providerAccountId = getEnv("STRIPE_ACCOUNT_ID")?.trim()
   const configurationId = getEnv("STRIPE_ACSS_DEBIT_PAYMENT_METHOD_CONFIGURATION_ID")?.trim()
@@ -51,9 +49,15 @@ async function handleRequest(request: Request) {
   const {data: commandId, error: prepareError} = await auth.adminClient.rpc("prepare_stripe_acss_debit_command", {p_command: {
     contractVersion: "stripe_acss_debit_prepare.v1", deploymentEnvironment: runtimeEnvironment, actorUserId: auth.user.id,
     projectSlug: input.data.projectSlug, paymentId: input.data.paymentId, currencyCode: input.data.currencyCode,
-    expectedAmountMinor: input.data.expectedAmountMinor,
   }})
   if (prepareError || typeof commandId !== "string") return json(edgeCommandFailure("stripe_acss_prepare_failed", prepareError?.message ?? "PAD command could not be prepared."))
+  const {data: preparedCommand, error: preparedCommandError} = await auth.adminClient.from("stripe_acss_debit_commands")
+    .select("expected_amount_minor,funding_quote_id").eq("id", commandId).maybeSingle()
+  const expectedAmountMinor = preparedCommand?.expected_amount_minor === null || preparedCommand?.expected_amount_minor === undefined
+    ? null : String(preparedCommand.expected_amount_minor)
+  if (preparedCommandError || !preparedCommand?.funding_quote_id || !expectedAmountMinor || !/^[1-9]\d*$/.test(expectedAmountMinor)) {
+    return json(edgeCommandFailure("stripe_acss_funding_quote_unavailable", "A fresh reviewed CAD conversion quote is required before Checkout."))
+  }
   const stripe = new Stripe(secretKey, {httpClient: Stripe.createFetchHttpClient()})
   let result
   try {
@@ -81,7 +85,7 @@ async function handleRequest(request: Request) {
         return {id: session.id, url: session.url, livemode: session.livemode}
       },
     }, {environment: runtimeEnvironment, commandId, projectId: project.id, projectSlug: input.data.projectSlug,
-      paymentId: input.data.paymentId, amountMinor: input.data.expectedAmountMinor, currencyCode: input.data.currencyCode,
+      paymentId: input.data.paymentId, amountMinor: expectedAmountMinor, currencyCode: input.data.currencyCode,
       actorUserId: auth.user.id, paymentMethodConfigurationId: configurationId, appOrigin: origin(), usdAccountEvidenceVerified: false})
   } catch (error) {
     const message = error instanceof Error ? error.message : ""
@@ -94,7 +98,7 @@ async function handleRequest(request: Request) {
     capabilityEvidenceHash: result.data.capabilityEvidenceHash}})
   if (acknowledgeError) return json(edgeCommandFailure("stripe_acss_checkout_ack_failed", "Stripe Checkout was created; retry safely to recover the local acknowledgement."))
   return json(edgeCommandSuccess({commandId, checkoutSessionId: result.data.checkoutSessionId, checkoutUrl: result.data.checkoutUrl,
-    currencyCode: input.data.currencyCode, expectedAmountMinor: input.data.expectedAmountMinor, status: "checkout_created", sandboxOnly: true}))
+    currencyCode: input.data.currencyCode, expectedAmountMinor, status: "checkout_created", sandboxOnly: true}))
 }
 serve(handleRequest)
 export {handleRequest}

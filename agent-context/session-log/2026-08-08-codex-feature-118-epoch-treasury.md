@@ -2797,3 +2797,49 @@ reach custody-backed FX, fee processing, and allocation lock candidates.
 #### Suggested Next Steps
 
 - Commit the bounded fix, then rerun integrated Goal #134 validation.
+
+### session v56: bind project payments to one quoted settlement rail (PR #154)
+
+- Timestamp: 2026-08-11T04:49:23-04:00
+- Agent: Codex
+- Branch: codex/130-multi-rail-bank-intake
+- Head: c86dfa3 (pre-commit)
+
+#### Objective
+
+Close the three actionable Codex review findings on PR #154: prevent one project payment from
+settling through multiple Stripe rails, derive foreign-currency Checkout amounts from reviewed
+quotes, and retain terminal CAD PAD evidence that arrives before mandate creation.
+
+#### Actions Taken
+
+- Added append-only, non-production funding quotes that bind a USD payment obligation to an exact
+  CAD, EUR, or GBP source amount. The database derives the foreign minor-unit amount from the
+  reviewed rate; browser and Checkout request contracts cannot supply or override it.
+- Added one immutable settlement-rail claim per payment. Ledger-backed availability claims under a
+  payment-scoped advisory lock, later cross-rail settlement rolls back atomically, and package
+  sources must reproduce the claim, command, quote, and native amount.
+- Preserved failed or canceled CAD PAD evidence when Stripe has not created a mandate, while all
+  nonterminal and settled evidence continues to require and pin the exact mandate identity.
+- Updated downstream SQL fixtures to carry explicit settled-rail claims, regenerated canonical
+  Supabase types, and corrected the CAD PAD, Pay by Bank, and settlement architecture docs.
+
+#### Validation Notes
+
+- Fresh local Supabase replay applied `20260811115000_project_payment_rail_integrity.sql` and seed.
+- Seven executable SQL suites passed: rail integrity, CAD PAD, Pay by Bank, project packages,
+  financial prep, funded allocation, and allocation close.
+- Focused Vitest passed 7 files / 34 tests; strict Deno passed four affected Edge handlers.
+- Full Node 22 `CI=1 pnpm check` passed lint, 169 files / 757 tests, typecheck, and the 165-route
+  production build; diff-check passed.
+
+#### Reflections
+
+- A legacy payment is an obligation, not a presentment-currency amount or a rail-specific receipt.
+  Conversion and settlement ownership therefore need independent immutable evidence before a
+  reconciled provider event can enter allocation.
+
+#### Suggested Next Steps
+
+- Commit and push the review fix, reply to and resolve the three addressed Codex threads, then wait
+  for PR checks without requesting a second Codex review.

@@ -23,6 +23,10 @@ BEGIN
   EXCEPTION WHEN OTHERS THEN v_denied:=SQLERRM LIKE '%stripe_acss_currency_unavailable%';END;
   IF NOT v_denied THEN RAISE EXCEPTION 'usd_without_evidence_should_fail';END IF;
 
+  PERFORM public.post_project_payment_funding_quote(jsonb_build_object('contractVersion','project_payment_funding_quote.v1','deploymentEnvironment','local',
+    'actorUserId',v_actor,'paymentId',v_payment,'railKey','stripe_acss_debit','currencyCode','CAD','rateUsdPerUnit','1',
+    'sourceKey','local_review_fx','observedAt',clock_timestamp()-interval '1 minute','freshnessExpiresAt',clock_timestamp()+interval '1 day','evidenceHash',repeat('c',64)));
+
   v_base:=jsonb_build_object('contractVersion','stripe_acss_debit_prepare.v1','deploymentEnvironment','local','actorUserId',v_actor,
     'projectSlug','nomad-workspaces','paymentId',v_payment,'currencyCode','CAD','expectedAmountMinor','10000');
   v_command:=public.prepare_stripe_acss_debit_command(v_base);
@@ -124,10 +128,22 @@ BEGIN
 
   INSERT INTO public.payments(project_id,period_start,period_end,revenue,payment_amount,payment_percentage,updated_by)
   VALUES(3,'2026-08-01','2026-08-31',1000,101,10.1,v_actor) RETURNING id INTO v_payment2;
+  PERFORM public.post_project_payment_funding_quote(jsonb_build_object('contractVersion','project_payment_funding_quote.v1','deploymentEnvironment','local',
+    'actorUserId',v_actor,'paymentId',v_payment2,'railKey','stripe_acss_debit','currencyCode','CAD','rateUsdPerUnit','1',
+    'sourceKey','local_review_fx','observedAt',clock_timestamp()-interval '1 minute','freshnessExpiresAt',clock_timestamp()+interval '1 day','evidenceHash',repeat('b',64)));
   v_command2:=public.prepare_stripe_acss_debit_command(jsonb_build_object('contractVersion','stripe_acss_debit_prepare.v1','deploymentEnvironment','local',
     'actorUserId',v_actor,'projectSlug','nomad-workspaces','paymentId',v_payment2,'currencyCode','CAD','expectedAmountMinor','10100'));
   PERFORM public.acknowledge_stripe_acss_debit_checkout(jsonb_build_object('commandId',v_command2,'providerAccountId','acct_testpad',
     'providerCheckoutSessionId','cs_test_padterminal','capabilityEvidenceHash',repeat('d',64)));
+  v_evidence:=public.ingest_stripe_acss_debit_webhook(jsonb_build_object('contractVersion','stripe_acss_debit_webhook.v1','deploymentEnvironment','local',
+    'providerEventId','evt_padfailedbeforemandate','providerAccountId','acct_testpad','eventType','payment_intent.payment_failed','providerObjectId','pi_padterminal',
+    'providerCreatedAt','2026-08-11T10:00:00Z','apiVersion','2026-06-24.dahlia','signatureTimestamp',1786432800,'payloadSha256',repeat('4',64),
+    'livemode',false,'observationSource','stripe_sdk_v1','capabilityEvidenceHash',repeat('d',64),'evidenceType','failed','commandId',v_command2,
+    'providerCheckoutSessionId','cs_test_padterminal','providerPaymentIntentId','pi_padterminal','providerChargeId',NULL,'providerMandateId',NULL,
+    'providerBalanceTransactionId',NULL,'currencyCode','CAD','grossAmountMinor','10100','feeAmountMinor',NULL,'netAmountMinor',NULL,
+    'balanceStatus',NULL,'paymentMethodType',NULL));
+  IF NOT EXISTS(SELECT 1 FROM public.stripe_acss_debit_evidence WHERE id=v_evidence AND evidence_type='failed' AND provider_mandate_id IS NULL)
+    THEN RAISE EXCEPTION 'failed_before_mandate_should_be_recorded';END IF;
   PERFORM public.ingest_stripe_acss_debit_webhook(jsonb_build_object('contractVersion','stripe_acss_debit_webhook.v1','deploymentEnvironment','local',
     'providerEventId','evt_padterminalfirst','providerAccountId','acct_testpad','eventType','charge.dispute.closed','providerObjectId','dp_padterminal',
     'providerCreatedAt','2026-08-12T12:00:00Z','apiVersion','2026-06-24.dahlia','signatureTimestamp',1786525600,'payloadSha256',repeat('5',64),
@@ -173,6 +189,9 @@ BEGIN
 
   INSERT INTO public.payments(project_id,period_start,period_end,revenue,payment_amount,payment_percentage,updated_by)
   VALUES(3,'2026-08-01','2026-08-31',1000,102,10.2,v_actor) RETURNING id INTO v_payment3;
+  PERFORM public.post_project_payment_funding_quote(jsonb_build_object('contractVersion','project_payment_funding_quote.v1','deploymentEnvironment','local',
+    'actorUserId',v_actor,'paymentId',v_payment3,'railKey','stripe_acss_debit','currencyCode','CAD','rateUsdPerUnit','1',
+    'sourceKey','local_review_fx','observedAt',clock_timestamp()-interval '1 minute','freshnessExpiresAt',clock_timestamp()+interval '1 day','evidenceHash',repeat('a',64)));
   v_command3:=public.prepare_stripe_acss_debit_command(jsonb_build_object('contractVersion','stripe_acss_debit_prepare.v1','deploymentEnvironment','local',
     'actorUserId',v_actor,'projectSlug','nomad-workspaces','paymentId',v_payment3,'currencyCode','CAD','expectedAmountMinor','10200'));
   PERFORM public.acknowledge_stripe_acss_debit_checkout(jsonb_build_object('commandId',v_command3,'providerAccountId','acct_testpad',

@@ -2,7 +2,7 @@ import { describe, expect, it, vi } from "vitest"
 import { createStripeAcssDebitCheckout } from "@/lib/execution/adapters/stripe-acss-debit"
 import { validateStripeAcssDebitCheckoutCreateInput } from "@/lib/stripe/stripe-acss-debit-contract"
 
-const input = {projectSlug: "ecostream", paymentId: 7, currencyCode: "CAD" as const, expectedAmountMinor: "2500"}
+const input = {projectSlug: "ecostream", paymentId: 7, currencyCode: "CAD" as const}
 const adapterInput = {environment: "local", commandId: "00000000-0000-4000-8000-000000000001", projectId: 1, projectSlug: "ecostream",
   paymentId: 7, amountMinor: "2500", currencyCode: "CAD" as const, actorUserId: "actor", paymentMethodConfigurationId: "pmc_test123",
   appOrigin: "http://127.0.0.1:3000", usdAccountEvidenceVerified: false}
@@ -12,6 +12,7 @@ describe("Stripe ACSS debit contract", () => {
     expect(validateStripeAcssDebitCheckoutCreateInput(input, "local")).toMatchObject({ok: true})
     expect(validateStripeAcssDebitCheckoutCreateInput(input, "production")).toMatchObject({ok: false, error: {code: "production_disabled"}})
     expect(validateStripeAcssDebitCheckoutCreateInput({...input, accountNumber: "secret"}, "local")).toMatchObject({ok: false, error: {code: "invalid_payload"}})
+    expect(validateStripeAcssDebitCheckoutCreateInput({...input, expectedAmountMinor: "2500"}, "local")).toMatchObject({ok: false, error: {code: "invalid_payload"}})
   })
 
   it("requires capability and configuration evidence before mutation", async () => {

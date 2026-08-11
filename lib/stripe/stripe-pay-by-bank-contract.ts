@@ -11,7 +11,6 @@ export type StripePayByBankCheckoutCreateInput = {
   projectSlug: string
   paymentId: number
   currencyCode: StripePayByBankCurrency
-  expectedAmountMinor: string
   customerCountry: StripePayByBankCustomerCountry
 }
 
@@ -41,16 +40,15 @@ export function validateStripePayByBankCheckoutCreateInput(value: unknown, envir
     return edgeCommandFailure("production_disabled", "Pay by Bank intake is unavailable in this environment.")
   }
   if (!isObject(value)) return edgeCommandFailure("invalid_payload", "Expected an object.")
-  const allowed = new Set(["projectSlug", "paymentId", "currencyCode", "expectedAmountMinor", "customerCountry"])
+  const allowed = new Set(["projectSlug", "paymentId", "currencyCode", "customerCountry"])
   if (Object.keys(value).some((key) => !allowed.has(key))) return edgeCommandFailure("invalid_payload", "Unexpected Pay by Bank input field.")
   const currencyCode = String(value.currencyCode ?? "").toUpperCase()
   if (typeof value.projectSlug !== "string" || !SLUG.test(value.projectSlug) || !Number.isInteger(value.paymentId) || Number(value.paymentId) <= 0 ||
-      !["EUR", "GBP"].includes(currencyCode) || !["FI", "FR", "DE", "IE", "GB"].includes(String(value.customerCountry ?? "").toUpperCase()) ||
-      typeof value.expectedAmountMinor !== "string" || !/^[1-9]\d*$/.test(value.expectedAmountMinor)) {
+      !["EUR", "GBP"].includes(currencyCode) || !["FI", "FR", "DE", "IE", "GB"].includes(String(value.customerCountry ?? "").toUpperCase())) {
     return edgeCommandFailure("invalid_payload", "Pay by Bank fields are invalid.")
   }
   return edgeCommandSuccess({ projectSlug: value.projectSlug, paymentId: Number(value.paymentId),
-    currencyCode: currencyCode as StripePayByBankCurrency, expectedAmountMinor: value.expectedAmountMinor,
+    currencyCode: currencyCode as StripePayByBankCurrency,
     customerCountry: String(value.customerCountry).toUpperCase() as StripePayByBankCustomerCountry })
 }
 

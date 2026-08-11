@@ -2,7 +2,7 @@ import { describe, expect, it, vi } from "vitest"
 import { createStripePayByBankCheckout } from "@/lib/execution/adapters/stripe-pay-by-bank"
 import { validateStripePayByBankCheckoutCreateInput } from "@/lib/stripe/stripe-pay-by-bank-contract"
 
-const input = {projectSlug: "ecostream", paymentId: 7, currencyCode: "GBP" as const, expectedAmountMinor: "2500", customerCountry: "GB" as const}
+const input = {projectSlug: "ecostream", paymentId: 7, currencyCode: "GBP" as const, customerCountry: "GB" as const}
 const adapterInput = {environment: "local", commandId: "00000000-0000-4000-8000-000000000001", projectId: 1, projectSlug: "ecostream",
   paymentId: 7, amountMinor: "2500", currencyCode: "GBP" as const, customerCountry: "GB" as const,
   actorUserId: "actor", paymentMethodConfigurationId: "pmc_test123", appOrigin: "http://127.0.0.1:3000"}
@@ -14,6 +14,7 @@ describe("Stripe Pay by Bank contract", () => {
     expect(validateStripePayByBankCheckoutCreateInput(input, "local")).toMatchObject({ok: true})
     expect(validateStripePayByBankCheckoutCreateInput(input, "production")).toMatchObject({ok: false, error: {code: "production_disabled"}})
     expect(validateStripePayByBankCheckoutCreateInput({...input, accountNumber: "secret"}, "local")).toMatchObject({ok: false, error: {code: "invalid_payload"}})
+    expect(validateStripePayByBankCheckoutCreateInput({...input, expectedAmountMinor: "2500"}, "local")).toMatchObject({ok: false, error: {code: "invalid_payload"}})
     expect(validateStripePayByBankCheckoutCreateInput({...input, customerCountry: "CA"}, "local")).toMatchObject({ok: false, error: {code: "invalid_payload"}})
   })
 

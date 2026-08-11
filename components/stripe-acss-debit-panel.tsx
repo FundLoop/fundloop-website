@@ -32,7 +32,7 @@ export function StripeAcssDebitPanel({projectSlug, payments, termsAcknowledged}:
   const create = async (payment: PaymentOption) => {
     if (!termsAcknowledged) return
     setLoadingId(payment.id); setError(null)
-    const result = await invokeStripeAcssDebitCheckoutBrowser({projectSlug, paymentId: payment.id, currencyCode: "CAD", expectedAmountMinor: String(Math.round(payment.paymentAmount * 100))})
+    const result = await invokeStripeAcssDebitCheckoutBrowser({projectSlug, paymentId: payment.id, currencyCode: "CAD"})
     if (result.ok) window.location.assign(result.data.checkoutUrl)
     else { setError(result.error.message); setLoadingId(null) }
   }
@@ -40,7 +40,7 @@ export function StripeAcssDebitPanel({projectSlug, payments, termsAcknowledged}:
   return <Card data-testid="stripe-acss-debit-panel" className="border-sky-200 dark:border-sky-900">
     <CardHeader><div className="flex items-start gap-3"><div className="rounded-full bg-sky-100 p-2 text-sky-700 dark:bg-sky-950 dark:text-sky-300"><Landmark className="h-5 w-5"/></div><div>
       <CardTitle>Canadian pre-authorized debit</CardTitle>
-      <CardDescription>Authorize a one-time CAD business PAD in Stripe-hosted Checkout. FundLoop never receives your bank account details.</CardDescription>
+      <CardDescription>Authorize a one-time CAD business PAD in Stripe-hosted Checkout. A fresh reviewed FX quote converts the recorded USD obligation before Checkout; FundLoop never receives your bank account details.</CardDescription>
     </div></div></CardHeader>
     <CardContent className="space-y-4">
       <div className="rounded-md border border-amber-300 bg-amber-50 p-3 text-sm text-amber-950 dark:border-amber-800 dark:bg-amber-950/30 dark:text-amber-100">
@@ -50,7 +50,7 @@ export function StripeAcssDebitPanel({projectSlug, payments, termsAcknowledged}:
         const status = statuses.find((row) => row.paymentId === payment.id)
         const resumable = !status || ["prepared", "checkout_created", "checkout_completed", "processing"].includes(status.status)
         return <div key={payment.id} className="flex flex-col gap-3 rounded-md border p-3 sm:flex-row sm:items-center sm:justify-between" data-testid={`stripe-acss-payment-${payment.id}`}>
-          <div><p className="font-medium">Payment #{payment.id} · {new Intl.NumberFormat("en-CA", {style: "currency", currency: "CAD"}).format(payment.paymentAmount)}</p>
+          <div><p className="font-medium">Payment #{payment.id} · USD obligation {new Intl.NumberFormat("en-US", {style: "currency", currency: "USD"}).format(payment.paymentAmount)}</p>
             <p className="text-xs text-slate-500">{payment.periodStart} to {payment.periodEnd}</p>
             {status ? <div className="mt-2 flex flex-wrap gap-2"><Badge variant={status.availableForPackage ? "default" : "outline"}>{status.status.replaceAll("_", " ")}</Badge>
               <span className="text-xs text-slate-500">{statusDescription(status)}</span></div> : null}</div>

@@ -37,10 +37,8 @@ async function handleRequest(request: Request) {
   if (!acknowledgement.ok) return json(edgeCommandFailure(acknowledgement.code, acknowledgement.message))
   const project = await projectAdminContext(auth.adminClient, auth.user.id, input.data.projectSlug)
   if (!project) return json(edgeCommandFailure("permission_denied", "You do not have permission to fund this project."))
-  const {data: payment, error: paymentError} = await auth.adminClient.from("payments").select("id,project_id,payment_amount").eq("id", input.data.paymentId).eq("project_id", project.id).maybeSingle()
-  if (paymentError || !payment || String(Math.round(Number(payment.payment_amount) * 100)) !== input.data.expectedAmountMinor) {
-    return json(edgeCommandFailure("payment_mismatch", "Payment amount changed; reload before opening Pay by Bank Checkout."))
-  }
+  const {data: payment, error: paymentError} = await auth.adminClient.from("payments").select("id,project_id").eq("id", input.data.paymentId).eq("project_id", project.id).maybeSingle()
+  if (paymentError || !payment) return json(edgeCommandFailure("payment_mismatch", "Payment changed; reload before opening Pay by Bank Checkout."))
   const secretKey = getEnv("STRIPE_SECRET_KEY")?.trim()
   const platformAccountId = getEnv("STRIPE_ACCOUNT_ID")?.trim()
   const providerAccountId = getEnv("STRIPE_PAY_BY_BANK_MERCHANT_ACCOUNT_ID")?.trim() || platformAccountId
@@ -84,10 +82,17 @@ async function handleRequest(request: Request) {
   const {data: commandId, error: prepareError} = await auth.adminClient.rpc("prepare_stripe_pay_by_bank_command", {p_command: {
     contractVersion: "stripe_pay_by_bank_prepare.v1", deploymentEnvironment: runtimeEnvironment, actorUserId: auth.user.id,
     projectSlug: input.data.projectSlug, paymentId: input.data.paymentId, currencyCode: input.data.currencyCode,
-    expectedAmountMinor: input.data.expectedAmountMinor, customerCountry: input.data.customerCountry,
+    customerCountry: input.data.customerCountry,
     providerAccountId, platformAccountId, chargeTopology, merchantCountry: capabilitySnapshot.merchantCountry, privatePreviewEnabled: previewEnabled,
   }})
   if (prepareError || typeof commandId !== "string") return json(edgeCommandFailure("stripe_pay_by_bank_prepare_failed", prepareError?.message ?? "Pay by Bank command could not be prepared."))
+  const {data: preparedCommand, error: preparedCommandError} = await auth.adminClient.from("stripe_pay_by_bank_commands")
+    .select("expected_amount_minor,funding_quote_id").eq("id", commandId).maybeSingle()
+  const expectedAmountMinor = preparedCommand?.expected_amount_minor === null || preparedCommand?.expected_amount_minor === undefined
+    ? null : String(preparedCommand.expected_amount_minor)
+  if (preparedCommandError || !preparedCommand?.funding_quote_id || !expectedAmountMinor || !/^[1-9]\d*$/.test(expectedAmountMinor)) {
+    return json(edgeCommandFailure("stripe_pay_by_bank_funding_quote_unavailable", "A fresh reviewed source-currency conversion quote is required before Checkout."))
+  }
   let result
   try {
     result = await createStripePayByBankCheckout({
@@ -107,7 +112,7 @@ async function handleRequest(request: Request) {
         return {id: session.id, url: session.url, livemode: session.livemode}
       },
     }, {environment: runtimeEnvironment, commandId, projectId: project.id, projectSlug: input.data.projectSlug,
-      paymentId: input.data.paymentId, amountMinor: input.data.expectedAmountMinor, currencyCode: input.data.currencyCode,
+      paymentId: input.data.paymentId, amountMinor: expectedAmountMinor, currencyCode: input.data.currencyCode,
       actorUserId: auth.user.id, paymentMethodConfigurationId: configurationId, appOrigin: origin(), customerCountry: input.data.customerCountry})
   } catch (error) {
     const message = error instanceof Error ? error.message : ""
@@ -120,7 +125,7 @@ async function handleRequest(request: Request) {
     capabilityEvidenceHash: result.data.capabilityEvidenceHash}})
   if (acknowledgeError) return json(edgeCommandFailure("stripe_pay_by_bank_checkout_ack_failed", "Stripe Checkout was created; retry safely to recover the local acknowledgement."))
   return json(edgeCommandSuccess({commandId, checkoutSessionId: result.data.checkoutSessionId, checkoutUrl: result.data.checkoutUrl,
-    currencyCode: input.data.currencyCode, expectedAmountMinor: input.data.expectedAmountMinor, status: "checkout_created", sandboxOnly: true}))
+    currencyCode: input.data.currencyCode, expectedAmountMinor, status: "checkout_created", sandboxOnly: true}))
 }
 serve(handleRequest)
 export {handleRequest}

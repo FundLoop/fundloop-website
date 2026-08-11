@@ -7787,6 +7787,127 @@ export type Database = {
           },
         ]
       }
+      project_payment_funding_quotes: {
+        Row: {
+          actor_user_id: string
+          created_at: string
+          currency_code: string
+          deployment_environment: string
+          evidence_hash: string
+          freshness_expires_at: string
+          id: number
+          obligation_usd_minor: number
+          observed_at: string
+          payment_id: number
+          production_enabled: boolean
+          project_id: number
+          rail_key: string
+          rate_usd_per_unit: number
+          source_amount_minor: number
+          source_key: string
+        }
+        Insert: {
+          actor_user_id: string
+          created_at?: string
+          currency_code: string
+          deployment_environment: string
+          evidence_hash: string
+          freshness_expires_at: string
+          id?: never
+          obligation_usd_minor: number
+          observed_at: string
+          payment_id: number
+          production_enabled?: boolean
+          project_id: number
+          rail_key: string
+          rate_usd_per_unit: number
+          source_amount_minor: number
+          source_key: string
+        }
+        Update: {
+          actor_user_id?: string
+          created_at?: string
+          currency_code?: string
+          deployment_environment?: string
+          evidence_hash?: string
+          freshness_expires_at?: string
+          id?: never
+          obligation_usd_minor?: number
+          observed_at?: string
+          payment_id?: number
+          production_enabled?: boolean
+          project_id?: number
+          rail_key?: string
+          rate_usd_per_unit?: number
+          source_amount_minor?: number
+          source_key?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "project_payment_funding_quotes_actor_user_id_fkey"
+            columns: ["actor_user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "project_payment_funding_quotes_deployment_environment_fkey"
+            columns: ["deployment_environment"]
+            isOneToOne: false
+            referencedRelation: "financial_runtime_controls"
+            referencedColumns: ["deployment_environment"]
+          },
+          {
+            foreignKeyName: "project_payment_funding_quotes_payment_id_fkey"
+            columns: ["payment_id"]
+            isOneToOne: false
+            referencedRelation: "payments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "project_payment_funding_quotes_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      project_payment_settled_rail_claims: {
+        Row: {
+          command_reference: string
+          evidence_hash: string
+          payment_id: number
+          production_enabled: boolean
+          rail_key: string
+          settled_at: string
+        }
+        Insert: {
+          command_reference: string
+          evidence_hash: string
+          payment_id: number
+          production_enabled?: boolean
+          rail_key: string
+          settled_at?: string
+        }
+        Update: {
+          command_reference?: string
+          evidence_hash?: string
+          payment_id?: number
+          production_enabled?: boolean
+          rail_key?: string
+          settled_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "project_payment_settled_rail_claims_payment_id_fkey"
+            columns: ["payment_id"]
+            isOneToOne: true
+            referencedRelation: "payments"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       project_stats_monthly: {
         Row: {
           actual_percentage: number | null
@@ -8596,6 +8717,7 @@ export type Database = {
           currency_code: string
           deployment_environment: string
           expected_amount_minor: number
+          funding_quote_id: number | null
           id: string
           payment_id: number
           production_enabled: boolean
@@ -8616,6 +8738,7 @@ export type Database = {
           currency_code: string
           deployment_environment: string
           expected_amount_minor: number
+          funding_quote_id?: number | null
           id?: string
           payment_id: number
           production_enabled?: boolean
@@ -8636,6 +8759,7 @@ export type Database = {
           currency_code?: string
           deployment_environment?: string
           expected_amount_minor?: number
+          funding_quote_id?: number | null
           id?: string
           payment_id?: number
           production_enabled?: boolean
@@ -8669,6 +8793,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "stripe_acss_debit_runtime_controls"
             referencedColumns: ["deployment_environment"]
+          },
+          {
+            foreignKeyName: "stripe_acss_debit_commands_funding_quote_id_fkey"
+            columns: ["funding_quote_id"]
+            isOneToOne: false
+            referencedRelation: "project_payment_funding_quotes"
+            referencedColumns: ["id"]
           },
           {
             foreignKeyName: "stripe_acss_debit_commands_payment_id_fkey"
@@ -9861,6 +9992,7 @@ export type Database = {
           customer_country: string
           deployment_environment: string
           expected_amount_minor: number
+          funding_quote_id: number | null
           id: string
           merchant_country: string
           payment_id: number
@@ -9884,6 +10016,7 @@ export type Database = {
           customer_country: string
           deployment_environment: string
           expected_amount_minor: number
+          funding_quote_id?: number | null
           id?: string
           merchant_country: string
           payment_id: number
@@ -9907,6 +10040,7 @@ export type Database = {
           customer_country?: string
           deployment_environment?: string
           expected_amount_minor?: number
+          funding_quote_id?: number | null
           id?: string
           merchant_country?: string
           payment_id?: number
@@ -9941,6 +10075,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "stripe_pay_by_bank_runtime_controls"
             referencedColumns: ["deployment_environment"]
+          },
+          {
+            foreignKeyName: "stripe_pay_by_bank_commands_funding_quote_id_fkey"
+            columns: ["funding_quote_id"]
+            isOneToOne: false
+            referencedRelation: "project_payment_funding_quotes"
+            referencedColumns: ["id"]
           },
           {
             foreignKeyName: "stripe_pay_by_bank_commands_payment_id_fkey"
@@ -13680,6 +13821,10 @@ export type Database = {
         Args: { p_command: Json }
         Returns: number
       }
+      ingest_stripe_acss_debit_webhook_requiring_mandate: {
+        Args: { p_command: Json }
+        Returns: number
+      }
       ingest_stripe_bank_transfer_webhook: {
         Args: { p_command: Json }
         Returns: {
@@ -13876,6 +14021,10 @@ export type Database = {
       }
       post_epoch_fx_snapshot: { Args: { p_command: Json }; Returns: number }
       post_neutral_ledger_transaction: {
+        Args: { p_command: Json }
+        Returns: number
+      }
+      post_project_payment_funding_quote: {
         Args: { p_command: Json }
         Returns: number
       }

@@ -41,6 +41,10 @@ BEGIN
   EXCEPTION WHEN OTHERS THEN v_denied:=SQLERRM LIKE '%stripe_pay_by_bank_topology_account_mismatch%';END;
   IF NOT v_denied THEN RAISE EXCEPTION 'topology_account_mismatch_should_fail';END IF;
 
+  PERFORM public.post_project_payment_funding_quote(jsonb_build_object('contractVersion','project_payment_funding_quote.v1','deploymentEnvironment','local',
+    'actorUserId',v_actor,'paymentId',v_payment,'railKey','stripe_pay_by_bank','currencyCode','GBP','rateUsdPerUnit','1',
+    'sourceKey','local_review_fx','observedAt',clock_timestamp()-interval '1 minute','freshnessExpiresAt',clock_timestamp()+interval '1 day','evidenceHash',repeat('c',64)));
+
   v_base:=jsonb_build_object('contractVersion','stripe_pay_by_bank_prepare.v1','deploymentEnvironment','local','actorUserId',v_actor,
     'projectSlug','nomad-workspaces','paymentId',v_payment,'currencyCode','GBP','expectedAmountMinor','10000','customerCountry','GB',
     'merchantCountry','CA','chargeTopology','platform','providerAccountId','acct_testbank','platformAccountId','acct_testbank','privatePreviewEnabled',false);
@@ -228,6 +232,9 @@ BEGIN
 
   INSERT INTO public.payments(project_id,period_start,period_end,revenue,payment_amount,payment_percentage,updated_by)
   VALUES(3,'2026-08-01','2026-08-31',1000,101,10.1,v_actor) RETURNING id INTO v_terminal_payment;
+  PERFORM public.post_project_payment_funding_quote(jsonb_build_object('contractVersion','project_payment_funding_quote.v1','deploymentEnvironment','local',
+    'actorUserId',v_actor,'paymentId',v_terminal_payment,'railKey','stripe_pay_by_bank','currencyCode','GBP','rateUsdPerUnit','1',
+    'sourceKey','local_review_fx','observedAt',clock_timestamp()-interval '1 minute','freshnessExpiresAt',clock_timestamp()+interval '1 day','evidenceHash',repeat('b',64)));
   v_terminal:=public.prepare_stripe_pay_by_bank_command(v_base||jsonb_build_object('paymentId',v_terminal_payment,'expectedAmountMinor','10100'));
   PERFORM public.acknowledge_stripe_pay_by_bank_checkout(jsonb_build_object('commandId',v_terminal,'providerAccountId','acct_testbank',
     'providerCheckoutSessionId','cs_test_bankterminal','capabilityEvidenceHash',repeat('d',64)));
