@@ -479,3 +479,21 @@ enabled = true
 verify_jwt = false
 entrypoint = "./functions/financial-cutover/index.ts"
 import_map = "./functions/deno.json"
+
+[functions.stripe-pay-by-bank-checkout-create]
+enabled = true
+verify_jwt = false
+entrypoint = "./functions/stripe-pay-by-bank-checkout-create/index.ts"
+import_map = "./functions/deno.json"
+
+[functions.stripe-pay-by-bank-status-read]
+enabled = true
+verify_jwt = false
+entrypoint = "./functions/stripe-pay-by-bank-status-read/index.ts"
+import_map = "./functions/deno.json"
+
+[functions.stripe-pay-by-bank-webhook]
+enabled = true
+verify_jwt = false
+entrypoint = "./functions/stripe-pay-by-bank-webhook/index.ts"
+import_map = "./functions/deno.json"

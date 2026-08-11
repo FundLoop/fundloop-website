@@ -679,6 +679,17 @@ mandates, and cannot fund a package until available custody and a conserved prov
 exist. CAD is the safe default; USD stays disabled without exact-account denomination evidence.
 See [Stripe Canadian PAD intake](./stripe-canadian-pad-intake.md).
 
+EUR and GBP project funding has a separate one-time Pay by Bank rail. It uses
+Stripe-hosted Checkout and a dynamic payment-method configuration, and binds the exact merchant
+country, charge topology, `pay_by_bank_payments` capability, customer country, and presentment
+currency before provider mutation. UK and Finland customer paths are generally available;
+France, Germany, and Ireland remain private-preview gated for the exact merchant account.
+Signed webhook evidence is authoritatively re-fetched and cannot fund a package before available
+custody and a conserved provisional journal exist. Refund-pending invalidates package sources;
+successful full or partial refunds reverse the original receipt exactly, and any partial residual
+is conserved but quarantined from allocation. Pay by Bank does not invent a dispute workflow.
+See [Stripe Pay by Bank intake](./stripe-pay-by-bank-intake.md).
+
 Any Stripe intake rail must prove an exact Stripe/bank arrangement with either separate externally
 reconcilable platform and epoch custody identifiers or a clearing account that
 sweeps to separate custody within a defined SLA. Production Stripe intake remains

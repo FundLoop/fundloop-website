@@ -2519,3 +2519,66 @@ value-flow boundary.
 
 - Run the full Node 22 gate, commit the narrow validator-fix batch, and request independent #152
   revalidation. Begin #153 only after #152 passes and reaches In Review.
+
+### session v50: implement fail-closed EUR and GBP Pay by Bank intake (#153)
+
+- Timestamp: 2026-08-11T02:28:00-04:00
+- Agent: Codex
+- Branch: codex/130-multi-rail-bank-intake
+- Head: cde2b2b (pre-commit)
+
+#### Objective
+
+Add non-production one-time EUR/GBP Pay by Bank project funding with exact merchant, customer,
+currency, capability, configuration, topology, webhook, custody, ledger, refund, and package gates.
+
+#### Actions Taken
+
+- Added typed Checkout/status contracts, a provider adapter, browser invokers, three Edge handlers,
+  and a founder panel. The UI represents UK and Finland as generally available, keeps France,
+  Germany, and Ireland private-preview gated, and never collects bank credentials.
+- Bound provider discovery to the exact test merchant account, supported merchant country,
+  `pay_by_bank_payments` capability, dynamic payment-method configuration, charge topology,
+  customer country, and EUR/GBP presentment before command persistence or Checkout mutation.
+- Added a forward-only Supabase control plane with provisional EUR/GBP assets and custody, exact
+  source provenance, idempotent command/provider acknowledgement, append-only signed/refetched
+  evidence, RLS/service-only mechanics, and production-disabled runtime constraints.
+- Added balanced neutral-ledger receipt posting and exact refund accounting. Refund-pending
+  invalidates existing package sources; successful full or partial refunds reverse the original
+  receipt, partial residuals receive a separately conserved journal but remain quarantined from
+  allocation, and terminal expiry/refund evidence blocks older settlement.
+- Extended package funding compatibility without weakening Customer Balance, Base, or PAD source
+  shapes. Added the isolated runner phase, executable SQL, focused tests, generated types,
+  architecture/testing docs, and the operational capability-matrix entry.
+
+#### Validation Notes
+
+- Fresh local Supabase replay applied every migration through
+  `20260811110000_stripe_pay_by_bank_intake.sql`. Executable SQL passed production/private-preview
+  denial, authenticated direct-write denial, idempotency, exact merchant/country/session/intent/
+  charge binding, settled custody, fee/native/functional conservation, package provenance,
+  refund-pending invalidation, partial-refund reversal plus 75.00 residual, and terminal expiry
+  before late settlement.
+- Strict Deno passed all three handlers. Focused Vitest passed 4 files / 18 tests. Node 22 full
+  `CI=1 pnpm check` passed 168 files / 750 tests, lint, typecheck, and the 165-route build.
+- Focused Playwright passed 1/1 with zero unexpected console errors. Eight retained captures cover
+  authorization, pending, reconciled, and refund states at exact 1440x900 and 390x844; desktop and
+  mobile captures were visually inspected and contain no sensitive bank data.
+- Read-only canonical Stripe evidence shows Canadian account `acct_1U2VggGR0O1dEuJh` has
+  `pay_by_bank_payments=active`, but its sole active default configuration reports Pay by Bank
+  `available=false` and `value=off`. A follow-up read found zero Checkout Sessions, so the hosted
+  smoke is truthfully expected-pending with zero provider mutation.
+
+#### Reflections
+
+- A generic account capability is insufficient: the dynamic configuration and the exact merchant,
+  charge topology, customer country, and currency must agree before any provider-side mutation.
+- Partial refund correctness needs two ledgers: the original receipt is fully reversed and the
+  remaining provider custody is re-recorded exactly, while allocation eligibility stays closed
+  until a future explicit product contract can safely consume that residual.
+
+#### Suggested Next Steps
+
+- Commit #153 separately and run independent issue validation. If it passes, validate Goal #130 as
+  the integrated three-rail result while keeping Customer Balance unsupported, hosted Pay by Bank
+  expected-pending, and every production/value-flow path disabled.

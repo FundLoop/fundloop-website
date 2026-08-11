@@ -7,6 +7,31 @@ export type Json =
   | Json[]
 
 export type Database = {
+  graphql_public: {
+    Tables: {
+      [_ in never]: never
+    }
+    Views: {
+      [_ in never]: never
+    }
+    Functions: {
+      graphql: {
+        Args: {
+          extensions?: Json
+          operationName?: string
+          query?: string
+          variables?: Json
+        }
+        Returns: Json
+      }
+    }
+    Enums: {
+      [_ in never]: never
+    }
+    CompositeTypes: {
+      [_ in never]: never
+    }
+  }
   public: {
     Tables: {
       accounting_periods: {
@@ -2637,6 +2662,7 @@ export type Database = {
           source_position: number
           stripe_acss_debit_command_id: string | null
           stripe_intent_id: number | null
+          stripe_pay_by_bank_command_id: string | null
         }
         Insert: {
           asset_code: string
@@ -2652,6 +2678,7 @@ export type Database = {
           source_position: number
           stripe_acss_debit_command_id?: string | null
           stripe_intent_id?: number | null
+          stripe_pay_by_bank_command_id?: string | null
         }
         Update: {
           asset_code?: string
@@ -2667,6 +2694,7 @@ export type Database = {
           source_position?: number
           stripe_acss_debit_command_id?: string | null
           stripe_intent_id?: number | null
+          stripe_pay_by_bank_command_id?: string | null
         }
         Relationships: [
           {
@@ -2730,6 +2758,20 @@ export type Database = {
             columns: ["stripe_acss_debit_command_id"]
             isOneToOne: false
             referencedRelation: "stripe_acss_debit_status"
+            referencedColumns: ["command_id"]
+          },
+          {
+            foreignKeyName: "epoch_project_package_funding_stripe_pay_by_bank_command_i_fkey"
+            columns: ["stripe_pay_by_bank_command_id"]
+            isOneToOne: false
+            referencedRelation: "stripe_pay_by_bank_commands"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "epoch_project_package_funding_stripe_pay_by_bank_command_i_fkey"
+            columns: ["stripe_pay_by_bank_command_id"]
+            isOneToOne: false
+            referencedRelation: "stripe_pay_by_bank_status"
             referencedColumns: ["command_id"]
           },
         ]
@@ -9808,6 +9850,415 @@ export type Database = {
         }
         Relationships: []
       }
+      stripe_pay_by_bank_commands: {
+        Row: {
+          accounting_period_id: number
+          actor_user_id: string
+          capability_evidence_hash: string | null
+          charge_topology: string
+          created_at: string
+          currency_code: string
+          customer_country: string
+          deployment_environment: string
+          expected_amount_minor: number
+          id: string
+          merchant_country: string
+          payment_id: number
+          production_enabled: boolean
+          project_id: number
+          provider_account_id: string | null
+          provider_acknowledged_at: string | null
+          provider_charge_id: string | null
+          provider_checkout_session_id: string | null
+          provider_payment_intent_id: string | null
+          request_hash: string
+        }
+        Insert: {
+          accounting_period_id: number
+          actor_user_id: string
+          capability_evidence_hash?: string | null
+          charge_topology: string
+          created_at?: string
+          currency_code: string
+          customer_country: string
+          deployment_environment: string
+          expected_amount_minor: number
+          id?: string
+          merchant_country: string
+          payment_id: number
+          production_enabled?: boolean
+          project_id: number
+          provider_account_id?: string | null
+          provider_acknowledged_at?: string | null
+          provider_charge_id?: string | null
+          provider_checkout_session_id?: string | null
+          provider_payment_intent_id?: string | null
+          request_hash: string
+        }
+        Update: {
+          accounting_period_id?: number
+          actor_user_id?: string
+          capability_evidence_hash?: string | null
+          charge_topology?: string
+          created_at?: string
+          currency_code?: string
+          customer_country?: string
+          deployment_environment?: string
+          expected_amount_minor?: number
+          id?: string
+          merchant_country?: string
+          payment_id?: number
+          production_enabled?: boolean
+          project_id?: number
+          provider_account_id?: string | null
+          provider_acknowledged_at?: string | null
+          provider_charge_id?: string | null
+          provider_checkout_session_id?: string | null
+          provider_payment_intent_id?: string | null
+          request_hash?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "stripe_pay_by_bank_commands_accounting_period_id_fkey"
+            columns: ["accounting_period_id"]
+            isOneToOne: false
+            referencedRelation: "accounting_periods"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "stripe_pay_by_bank_commands_actor_user_id_fkey"
+            columns: ["actor_user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "stripe_pay_by_bank_commands_deployment_environment_fkey"
+            columns: ["deployment_environment"]
+            isOneToOne: false
+            referencedRelation: "stripe_pay_by_bank_runtime_controls"
+            referencedColumns: ["deployment_environment"]
+          },
+          {
+            foreignKeyName: "stripe_pay_by_bank_commands_payment_id_fkey"
+            columns: ["payment_id"]
+            isOneToOne: false
+            referencedRelation: "payments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "stripe_pay_by_bank_commands_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      stripe_pay_by_bank_custody_routes: {
+        Row: {
+          asset_id: number
+          currency_code: string
+          custody_account_id: number
+          evidence_hash: string
+          id: number
+          production_enabled: boolean
+          provisional_fx_usd_per_unit: number
+          sandbox_enabled: boolean
+        }
+        Insert: {
+          asset_id: number
+          currency_code: string
+          custody_account_id: number
+          evidence_hash: string
+          id?: never
+          production_enabled?: boolean
+          provisional_fx_usd_per_unit: number
+          sandbox_enabled?: boolean
+        }
+        Update: {
+          asset_id?: number
+          currency_code?: string
+          custody_account_id?: number
+          evidence_hash?: string
+          id?: never
+          production_enabled?: boolean
+          provisional_fx_usd_per_unit?: number
+          sandbox_enabled?: boolean
+        }
+        Relationships: [
+          {
+            foreignKeyName: "stripe_pay_by_bank_custody_routes_asset_id_fkey"
+            columns: ["asset_id"]
+            isOneToOne: false
+            referencedRelation: "financial_assets"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "stripe_pay_by_bank_custody_routes_custody_account_id_fkey"
+            columns: ["custody_account_id"]
+            isOneToOne: false
+            referencedRelation: "financial_custody_accounts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "stripe_pay_by_bank_route_asset_custody_fk"
+            columns: ["asset_id", "custody_account_id"]
+            isOneToOne: false
+            referencedRelation: "financial_custody_accounts"
+            referencedColumns: ["asset_id", "id"]
+          },
+        ]
+      }
+      stripe_pay_by_bank_evidence: {
+        Row: {
+          balance_status: string | null
+          command_id: string
+          created_at: string
+          currency_code: string
+          customer_country: string | null
+          evidence_hash: string
+          evidence_type: string
+          fee_amount_minor: number | null
+          gross_amount_minor: number
+          id: number
+          ledger_transaction_id: number | null
+          net_amount_minor: number | null
+          ordering_status: string
+          production_enabled: boolean
+          provider_balance_transaction_id: string | null
+          provider_charge_id: string | null
+          provider_checkout_session_id: string | null
+          provider_payment_intent_id: string | null
+          provider_refund_id: string | null
+          refund_amount_minor: number | null
+          reversal_ledger_transaction_id: number | null
+          webhook_event_id: number
+        }
+        Insert: {
+          balance_status?: string | null
+          command_id: string
+          created_at?: string
+          currency_code: string
+          customer_country?: string | null
+          evidence_hash: string
+          evidence_type: string
+          fee_amount_minor?: number | null
+          gross_amount_minor: number
+          id?: never
+          ledger_transaction_id?: number | null
+          net_amount_minor?: number | null
+          ordering_status: string
+          production_enabled?: boolean
+          provider_balance_transaction_id?: string | null
+          provider_charge_id?: string | null
+          provider_checkout_session_id?: string | null
+          provider_payment_intent_id?: string | null
+          provider_refund_id?: string | null
+          refund_amount_minor?: number | null
+          reversal_ledger_transaction_id?: number | null
+          webhook_event_id: number
+        }
+        Update: {
+          balance_status?: string | null
+          command_id?: string
+          created_at?: string
+          currency_code?: string
+          customer_country?: string | null
+          evidence_hash?: string
+          evidence_type?: string
+          fee_amount_minor?: number | null
+          gross_amount_minor?: number
+          id?: never
+          ledger_transaction_id?: number | null
+          net_amount_minor?: number | null
+          ordering_status?: string
+          production_enabled?: boolean
+          provider_balance_transaction_id?: string | null
+          provider_charge_id?: string | null
+          provider_checkout_session_id?: string | null
+          provider_payment_intent_id?: string | null
+          provider_refund_id?: string | null
+          refund_amount_minor?: number | null
+          reversal_ledger_transaction_id?: number | null
+          webhook_event_id?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "stripe_pay_by_bank_evidence_command_id_fkey"
+            columns: ["command_id"]
+            isOneToOne: false
+            referencedRelation: "stripe_pay_by_bank_commands"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "stripe_pay_by_bank_evidence_command_id_fkey"
+            columns: ["command_id"]
+            isOneToOne: false
+            referencedRelation: "stripe_pay_by_bank_status"
+            referencedColumns: ["command_id"]
+          },
+          {
+            foreignKeyName: "stripe_pay_by_bank_evidence_ledger_transaction_id_fkey"
+            columns: ["ledger_transaction_id"]
+            isOneToOne: false
+            referencedRelation: "ledger_transactions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "stripe_pay_by_bank_evidence_ledger_transaction_id_fkey"
+            columns: ["ledger_transaction_id"]
+            isOneToOne: false
+            referencedRelation: "shadow_ledger_trial_balance"
+            referencedColumns: ["ledger_transaction_id"]
+          },
+          {
+            foreignKeyName: "stripe_pay_by_bank_evidence_reversal_ledger_transaction_id_fkey"
+            columns: ["reversal_ledger_transaction_id"]
+            isOneToOne: false
+            referencedRelation: "ledger_transactions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "stripe_pay_by_bank_evidence_reversal_ledger_transaction_id_fkey"
+            columns: ["reversal_ledger_transaction_id"]
+            isOneToOne: false
+            referencedRelation: "shadow_ledger_trial_balance"
+            referencedColumns: ["ledger_transaction_id"]
+          },
+          {
+            foreignKeyName: "stripe_pay_by_bank_evidence_webhook_event_id_fkey"
+            columns: ["webhook_event_id"]
+            isOneToOne: false
+            referencedRelation: "stripe_webhook_events"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      stripe_pay_by_bank_package_invalidations: {
+        Row: {
+          command_id: string
+          created_at: string
+          evidence_id: number
+          funding_source_id: number
+          id: number
+          package_id: number
+          production_enabled: boolean
+          reason: string
+        }
+        Insert: {
+          command_id: string
+          created_at?: string
+          evidence_id: number
+          funding_source_id: number
+          id?: never
+          package_id: number
+          production_enabled?: boolean
+          reason: string
+        }
+        Update: {
+          command_id?: string
+          created_at?: string
+          evidence_id?: number
+          funding_source_id?: number
+          id?: never
+          package_id?: number
+          production_enabled?: boolean
+          reason?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "stripe_pay_by_bank_package_invalidations_command_id_fkey"
+            columns: ["command_id"]
+            isOneToOne: false
+            referencedRelation: "stripe_pay_by_bank_commands"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "stripe_pay_by_bank_package_invalidations_command_id_fkey"
+            columns: ["command_id"]
+            isOneToOne: false
+            referencedRelation: "stripe_pay_by_bank_status"
+            referencedColumns: ["command_id"]
+          },
+          {
+            foreignKeyName: "stripe_pay_by_bank_package_invalidations_evidence_id_fkey"
+            columns: ["evidence_id"]
+            isOneToOne: false
+            referencedRelation: "stripe_pay_by_bank_evidence"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "stripe_pay_by_bank_package_invalidations_funding_source_id_fkey"
+            columns: ["funding_source_id"]
+            isOneToOne: false
+            referencedRelation: "epoch_project_package_funding_sources"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "stripe_pay_by_bank_package_invalidations_package_id_fkey"
+            columns: ["package_id"]
+            isOneToOne: false
+            referencedRelation: "epoch_project_package_lock_candidates"
+            referencedColumns: ["package_id"]
+          },
+          {
+            foreignKeyName: "stripe_pay_by_bank_package_invalidations_package_id_fkey"
+            columns: ["package_id"]
+            isOneToOne: false
+            referencedRelation: "epoch_project_package_operator_view"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "stripe_pay_by_bank_package_invalidations_package_id_fkey"
+            columns: ["package_id"]
+            isOneToOne: false
+            referencedRelation: "epoch_project_packages"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      stripe_pay_by_bank_runtime_controls: {
+        Row: {
+          checkout_enabled: boolean
+          deployment_environment: string
+          eur_enabled: boolean
+          gbp_enabled: boolean
+          production_value_flow_enabled: boolean
+          provider_evidence_hash: string | null
+          provider_evidence_status: string
+          updated_at: string
+        }
+        Insert: {
+          checkout_enabled?: boolean
+          deployment_environment: string
+          eur_enabled?: boolean
+          gbp_enabled?: boolean
+          production_value_flow_enabled?: boolean
+          provider_evidence_hash?: string | null
+          provider_evidence_status?: string
+          updated_at?: string
+        }
+        Update: {
+          checkout_enabled?: boolean
+          deployment_environment?: string
+          eur_enabled?: boolean
+          gbp_enabled?: boolean
+          production_value_flow_enabled?: boolean
+          provider_evidence_hash?: string | null
+          provider_evidence_status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "stripe_pay_by_bank_runtime_controls_deployment_environment_fkey"
+            columns: ["deployment_environment"]
+            isOneToOne: true
+            referencedRelation: "financial_runtime_controls"
+            referencedColumns: ["deployment_environment"]
+          },
+        ]
+      }
       stripe_webhook_events: {
         Row: {
           api_version: string | null
@@ -12606,6 +13057,36 @@ export type Database = {
           },
         ]
       }
+      stripe_pay_by_bank_status: {
+        Row: {
+          available_for_package: boolean | null
+          command_id: string | null
+          created_at: string | null
+          currency_code: string | null
+          expected_amount_minor: number | null
+          payment_id: number | null
+          project_id: number | null
+          reversed: boolean | null
+          status: string | null
+          status_at: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "stripe_pay_by_bank_commands_payment_id_fkey"
+            columns: ["payment_id"]
+            isOneToOne: false
+            referencedRelation: "payments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "stripe_pay_by_bank_commands_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       user_identities: {
         Row: {
           created_at: string | null
@@ -12775,6 +13256,10 @@ export type Database = {
         }[]
       }
       acknowledge_stripe_acss_debit_checkout: {
+        Args: { p_command: Json }
+        Returns: string
+      }
+      acknowledge_stripe_pay_by_bank_checkout: {
         Args: { p_command: Json }
         Returns: string
       }
@@ -13058,6 +13543,10 @@ export type Database = {
         Args: { p_command: Json }
         Returns: Json
       }
+      ingest_stripe_pay_by_bank_webhook: {
+        Args: { p_command: Json }
+        Returns: number
+      }
       inspect_project_invitation_review: {
         Args: {
           p_actor_email: string
@@ -13186,6 +13675,27 @@ export type Database = {
           isSetofReturn: true
         }
       }
+      list_project_stripe_pay_by_bank_status: {
+        Args: { p_actor_user_id: string; p_project_slug: string }
+        Returns: {
+          available_for_package: boolean | null
+          command_id: string | null
+          created_at: string | null
+          currency_code: string | null
+          expected_amount_minor: number | null
+          payment_id: number | null
+          project_id: number | null
+          reversed: boolean | null
+          status: string | null
+          status_at: string | null
+        }[]
+        SetofOptions: {
+          from: "*"
+          to: "stripe_pay_by_bank_status"
+          isOneToOne: false
+          isSetofReturn: true
+        }
+      }
       lock_funded_epoch_allocation: { Args: { p_command: Json }; Returns: Json }
       manage_user_withdrawal_request: {
         Args: {
@@ -13275,6 +13785,10 @@ export type Database = {
           p_payout_intent_id: number
         }
         Returns: Json
+      }
+      prepare_stripe_pay_by_bank_command: {
+        Args: { p_command: Json }
+        Returns: string
       }
       publish_project_onboarding_draft_atomic: {
         Args: {
@@ -13492,6 +14006,10 @@ export type Database = {
         Args: { p_command: Json }
         Returns: number
       }
+      validate_epoch_project_package_without_pay_by_bank: {
+        Args: { p_command: Json }
+        Returns: number
+      }
       withdrawal_runtime_enabled: {
         Args: { p_environment: string }
         Returns: boolean
@@ -13685,6 +14203,9 @@ export type CompositeTypes<
     : never
 
 export const Constants = {
+  graphql_public: {
+    Enums: {},
+  },
   public: {
     Enums: {
       cubid_identity_status: ["unlinked", "linked", "verified"],
