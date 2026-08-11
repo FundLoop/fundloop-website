@@ -8,7 +8,7 @@ export const enMessages = {
     home: {
       title: "FundLoop - Mutual prosperity, made operational",
       description:
-        "Explore FundLoop’s public home, learn how the loop works, and discover how projects and participants share in aligned upside.",
+        "FundLoop helps projects pool part of their revenue and distribute it monthly to verified people based on participation and contribution.",
     },
     participation: {
       title: "Participation - FundLoop",
@@ -1245,7 +1245,7 @@ export const enMessages = {
   },
   home: {
     eyebrow: "Mutual prosperity, made operational",
-    heroTitle: "A Network State for Mutual Prosperity",
+    heroTitle: "A monthly economy for shared prosperity.",
     heroSuffix: "for Mutual Prosperity",
     heroPrefixes: [
       "A Network State",
@@ -1270,7 +1270,7 @@ export const enMessages = {
     ],
     heroThesis: "A networked economy where projects feed the loop and people share in the upside.",
     heroBody:
-      "FundLoop helps teams reward real contribution, grow with stronger proof-of-humanity signal, and route part of success back to the communities that make the whole system work.",
+      "Projects pool a slice of revenue. Verified people contribute. Every month, FundLoop closes the books, explains the result, and makes each person’s share claimable.",
     ctas: {
       project: "Start a project profile",
       participant: "Join as a participant",
@@ -1279,6 +1279,46 @@ export const enMessages = {
       projects: "Projects pledge 1%+ into the loop.",
       people: "People create signal through use.",
       value: "Value returns with more context.",
+    },
+    monthlyLoop: {
+      eyebrow: "One accountable month at a time",
+      title: "From project revenue to a person’s payment.",
+      body:
+        "FundLoop is the workflow engine between participation and payout. Each epoch locks money, identity, and attribution into one reproducible economic record.",
+      visual: {
+        month: "Monthly epoch",
+        center: "Pool. Verify. Distribute.",
+      },
+      stages: [
+        { step: "01", title: "Commit revenue", body: "Projects choose a recurring percentage of revenue to route into FundLoop." },
+        { step: "02", title: "Prove personhood", body: "People connect CUBID.me so uniqueness can be verified without turning private identity data into public content." },
+        { step: "03", title: "Build participation signal", body: "People use and support projects; projects record contribution and participation context." },
+        { step: "04", title: "Submit the month", body: "Projects send their funds, contribution totals, and attribution data for the open epoch." },
+        { step: "05", title: "Lock and verify", body: "FundLoop freezes the cycle, calculates distributions, reconciles money and data, and requires an operator review." },
+        { step: "06", title: "Claim the result", body: "Awards stay claimable for three complete payout months. After that window closes, unclaimed value returns to a future redistribution pool." },
+        { step: "07", title: "Publish the why", body: "Public, user, project, and operator reports explain what happened while respecting each person’s publication choices." },
+      ],
+    },
+    audiences: {
+      eyebrow: "Four views of the same system",
+      title: "One economic loop. Different workspaces.",
+      body: "Humans and agents use the same underlying workflows, permissions, and audit trail.",
+      items: [
+        { id: "people", label: "For people", title: "Discover, participate, and understand what you earned.", body: "Link your CUBID identity, find projects, build a contribution record, choose payout preferences, and review each monthly result.", href: "/participation", cta: "Explore participation" },
+        { id: "projects", label: "For project teams", title: "Turn a revenue commitment into a repeatable monthly practice.", body: "Onboard a project, manage members and payment routes, fund the epoch, submit attribution, and explain the outcome to your community.", href: "/founders", cta: "Explore the founder path" },
+        { id: "research", label: "For researchers and the public", title: "Study a practical experiment in post-capitalistic coordination.", body: "Follow public projects and monthly reports to see how identity, participation, capital, and pluralistic distribution interact in practice.", href: "/reports", cta: "Open public reporting" },
+        { id: "operators", label: "For operators and agents", title: "Run the same workflow through a control plane or MCP.", body: "Prepare epochs, verify exceptions, reconcile rails, publish reports, and automate bounded tasks through shared Edge Function contracts.", href: "/mcp", cta: "Explore the MCP interface" },
+      ],
+    },
+    trust: {
+      eyebrow: "Transparent without being extractive",
+      title: "Explain the money. Protect the person.",
+      body: "Auditability is not permission to expose people. FundLoop separates reproducible economic evidence from optional public identity and earnings visibility.",
+      items: [
+        { title: "Monthly records are reproducible", body: "Locked inputs, versioned policy, calculation artifacts, verification decisions, and payment events keep the result traceable." },
+        { title: "Private by default", body: "CUBID identity and payout details stay scoped to authorized workflows. Profiles and earnings appear publicly only through explicit publication choices." },
+        { title: "Humans and agents share the rules", body: "The web app and MCP interface converge on the same typed Edge Function commands, authorization boundaries, and event history." },
+      ],
     },
     theoryOfChange: {
       eyebrow: "Our theory of change",
@@ -1403,13 +1443,15 @@ export const enMessages = {
       openPage: "Open page",
     },
     closing: {
+      kicker: "Month one",
       eyebrow: "Start where you are",
       title:
-        "FundLoop already saves onboarding drafts, supports project profiles, and is ready for the next wave of aligned builders.",
+        "Join the people and projects building a transparent monthly economy.",
       body:
-        "If you are building a project, join the loop. If you are a participant, create your profile and be ready when value starts moving through the network.",
+        "Discover the model, create a private-by-default profile, or read the product and protocol documentation before stepping into the loop.",
       project: "Join as a project",
       participant: "Join as a participant",
+      documentation: "Read the documentation",
     },
   },
   participation: {

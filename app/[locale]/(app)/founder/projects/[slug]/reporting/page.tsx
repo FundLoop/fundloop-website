@@ -70,6 +70,7 @@ export default async function FounderProjectReportingPage({ params }: PageProps)
         values={[
           {label:"Funded minor",value:epochClose.fundedMinor},{label:"Eligible cohort",value:String(epochClose.cohortCount)},
           {label:"Initial claim USD",value:epochClose.initialClaimExactUsd},{label:"Score-pool contribution USD",value:epochClose.scorePoolContributionExactUsd},
+          {label:"Selected cap multiple",value:`${epochClose.capMultiple}×`},{label:"Epoch harvest (aggregate)",value:epochClose.harvestedUnclaimedMinor},
         ]}
       /> : null}
 

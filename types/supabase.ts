@@ -1257,6 +1257,13 @@ export type Database = {
             foreignKeyName: "epoch_allocation_approvals_run_id_fkey"
             columns: ["run_id"]
             isOneToOne: true
+            referencedRelation: "epoch_allocation_operator_view_v2"
+            referencedColumns: ["run_id"]
+          },
+          {
+            foreignKeyName: "epoch_allocation_approvals_run_id_fkey"
+            columns: ["run_id"]
+            isOneToOne: true
             referencedRelation: "epoch_allocation_runs"
             referencedColumns: ["id"]
           },
@@ -1309,6 +1316,13 @@ export type Database = {
             referencedColumns: ["manifest_id"]
           },
           {
+            foreignKeyName: "epoch_allocation_manifest_cohort_manifest_id_fkey"
+            columns: ["manifest_id"]
+            isOneToOne: false
+            referencedRelation: "epoch_allocation_operator_view_v2"
+            referencedColumns: ["manifest_id"]
+          },
+          {
             foreignKeyName: "epoch_allocation_manifest_cohort_project_id_fkey"
             columns: ["project_id"]
             isOneToOne: false
@@ -1321,6 +1335,120 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "users"
             referencedColumns: ["user_id"]
+          },
+        ]
+      }
+      epoch_allocation_manifest_pool_sources: {
+        Row: {
+          canonical_minor_capacity: number
+          custody_account_id: number
+          evidence_hash: string
+          exact_usd: number
+          financial_asset_id: number
+          fx_snapshot_id: number
+          id: number
+          manifest_id: number
+          native_atomic_amount: number
+          origin_cycle_key: string
+          origin_kind: string
+          pool_source_id: number
+          project_id: number
+          rail_key: string
+          source_lot_key: string
+          source_order: number
+        }
+        Insert: {
+          canonical_minor_capacity: number
+          custody_account_id: number
+          evidence_hash: string
+          exact_usd: number
+          financial_asset_id: number
+          fx_snapshot_id: number
+          id?: never
+          manifest_id: number
+          native_atomic_amount: number
+          origin_cycle_key: string
+          origin_kind: string
+          pool_source_id: number
+          project_id: number
+          rail_key: string
+          source_lot_key: string
+          source_order: number
+        }
+        Update: {
+          canonical_minor_capacity?: number
+          custody_account_id?: number
+          evidence_hash?: string
+          exact_usd?: number
+          financial_asset_id?: number
+          fx_snapshot_id?: number
+          id?: never
+          manifest_id?: number
+          native_atomic_amount?: number
+          origin_cycle_key?: string
+          origin_kind?: string
+          pool_source_id?: number
+          project_id?: number
+          rail_key?: string
+          source_lot_key?: string
+          source_order?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "epoch_allocation_manifest_pool_sources_custody_account_id_fkey"
+            columns: ["custody_account_id"]
+            isOneToOne: false
+            referencedRelation: "financial_custody_accounts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "epoch_allocation_manifest_pool_sources_financial_asset_id_fkey"
+            columns: ["financial_asset_id"]
+            isOneToOne: false
+            referencedRelation: "financial_assets"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "epoch_allocation_manifest_pool_sources_fx_snapshot_id_fkey"
+            columns: ["fx_snapshot_id"]
+            isOneToOne: false
+            referencedRelation: "epoch_fx_snapshots"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "epoch_allocation_manifest_pool_sources_manifest_id_fkey"
+            columns: ["manifest_id"]
+            isOneToOne: false
+            referencedRelation: "epoch_allocation_manifests"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "epoch_allocation_manifest_pool_sources_manifest_id_fkey"
+            columns: ["manifest_id"]
+            isOneToOne: false
+            referencedRelation: "epoch_allocation_operator_view"
+            referencedColumns: ["manifest_id"]
+          },
+          {
+            foreignKeyName: "epoch_allocation_manifest_pool_sources_manifest_id_fkey"
+            columns: ["manifest_id"]
+            isOneToOne: false
+            referencedRelation: "epoch_allocation_operator_view_v2"
+            referencedColumns: ["manifest_id"]
+          },
+          {
+            foreignKeyName: "epoch_allocation_manifest_pool_sources_pool_source_id_fkey"
+            columns: ["pool_source_id"]
+            isOneToOne: true
+            referencedRelation: "epoch_redistribution_pool_sources"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "epoch_allocation_manifest_pool_sources_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
           },
         ]
       }
@@ -1413,6 +1541,13 @@ export type Database = {
             referencedColumns: ["manifest_id"]
           },
           {
+            foreignKeyName: "epoch_allocation_manifest_sources_manifest_id_fkey"
+            columns: ["manifest_id"]
+            isOneToOne: false
+            referencedRelation: "epoch_allocation_operator_view_v2"
+            referencedColumns: ["manifest_id"]
+          },
+          {
             foreignKeyName: "epoch_allocation_manifest_sources_project_id_fkey"
             columns: ["project_id"]
             isOneToOne: false
@@ -1446,9 +1581,13 @@ export type Database = {
         Row: {
           actor_user_id: string
           calculated_at: string | null
+          cap_multiple: number | null
+          carry_in_minor: number
+          current_funded_minor: number
           deployment_environment: string
           funded_exact_usd: number
           funded_minor: number
+          harvested_unclaimed_minor: number
           id: number
           locked_at: string
           manifest: Json
@@ -1457,15 +1596,20 @@ export type Database = {
           monthly_cycle_id: number
           policy_key: string
           production_enabled: boolean
+          selected_preview_hash: string | null
           status: string
           version: number
         }
         Insert: {
           actor_user_id: string
           calculated_at?: string | null
+          cap_multiple?: number | null
+          carry_in_minor?: number
+          current_funded_minor?: number
           deployment_environment: string
           funded_exact_usd: number
           funded_minor: number
+          harvested_unclaimed_minor?: number
           id?: never
           locked_at?: string
           manifest: Json
@@ -1474,15 +1618,20 @@ export type Database = {
           monthly_cycle_id: number
           policy_key?: string
           production_enabled?: boolean
+          selected_preview_hash?: string | null
           status?: string
           version: number
         }
         Update: {
           actor_user_id?: string
           calculated_at?: string | null
+          cap_multiple?: number | null
+          carry_in_minor?: number
+          current_funded_minor?: number
           deployment_environment?: string
           funded_exact_usd?: number
           funded_minor?: number
+          harvested_unclaimed_minor?: number
           id?: never
           locked_at?: string
           manifest?: Json
@@ -1491,6 +1640,7 @@ export type Database = {
           monthly_cycle_id?: number
           policy_key?: string
           production_enabled?: boolean
+          selected_preview_hash?: string | null
           status?: string
           version?: number
         }
@@ -1522,10 +1672,14 @@ export type Database = {
         Row: {
           actor_user_id: string
           artifact: Json
+          cap_multiple: number | null
+          carry_in_minor: number
           created_at: string
+          current_funded_minor: number
           deployment_environment: string
           final_allocation_minor: number
           funded_minor: number
+          harvested_unclaimed_minor: number
           id: number
           manifest_id: number
           overlap_pool_minor: number
@@ -1540,10 +1694,14 @@ export type Database = {
         Insert: {
           actor_user_id: string
           artifact: Json
+          cap_multiple?: number | null
+          carry_in_minor?: number
           created_at?: string
+          current_funded_minor?: number
           deployment_environment: string
           final_allocation_minor: number
           funded_minor: number
+          harvested_unclaimed_minor?: number
           id?: never
           manifest_id: number
           overlap_pool_minor: number
@@ -1558,10 +1716,14 @@ export type Database = {
         Update: {
           actor_user_id?: string
           artifact?: Json
+          cap_multiple?: number | null
+          carry_in_minor?: number
           created_at?: string
+          current_funded_minor?: number
           deployment_environment?: string
           final_allocation_minor?: number
           funded_minor?: number
+          harvested_unclaimed_minor?: number
           id?: never
           manifest_id?: number
           overlap_pool_minor?: number
@@ -1602,6 +1764,13 @@ export type Database = {
             referencedRelation: "epoch_allocation_operator_view"
             referencedColumns: ["manifest_id"]
           },
+          {
+            foreignKeyName: "epoch_allocation_runs_manifest_id_fkey"
+            columns: ["manifest_id"]
+            isOneToOne: true
+            referencedRelation: "epoch_allocation_operator_view_v2"
+            referencedColumns: ["manifest_id"]
+          },
         ]
       }
       epoch_allocation_runtime_controls: {
@@ -1639,7 +1808,9 @@ export type Database = {
           disposition_kind: string
           exact_usd: number
           id: number
-          manifest_source_id: number
+          manifest_pool_source_id: number | null
+          manifest_source_id: number | null
+          policy_key: string
           run_id: number
           stable_position: number
           user_id: string | null
@@ -1649,7 +1820,9 @@ export type Database = {
           disposition_kind: string
           exact_usd: number
           id?: never
-          manifest_source_id: number
+          manifest_pool_source_id?: number | null
+          manifest_source_id?: number | null
+          policy_key?: string
           run_id: number
           stable_position: number
           user_id?: string | null
@@ -1659,12 +1832,21 @@ export type Database = {
           disposition_kind?: string
           exact_usd?: number
           id?: never
-          manifest_source_id?: number
+          manifest_pool_source_id?: number | null
+          manifest_source_id?: number | null
+          policy_key?: string
           run_id?: number
           stable_position?: number
           user_id?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "epoch_allocation_source_dispositio_manifest_pool_source_id_fkey"
+            columns: ["manifest_pool_source_id"]
+            isOneToOne: false
+            referencedRelation: "epoch_allocation_manifest_pool_sources"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "epoch_allocation_source_dispositions_manifest_source_id_fkey"
             columns: ["manifest_source_id"]
@@ -1677,6 +1859,13 @@ export type Database = {
             columns: ["run_id"]
             isOneToOne: false
             referencedRelation: "epoch_allocation_operator_view"
+            referencedColumns: ["run_id"]
+          },
+          {
+            foreignKeyName: "epoch_allocation_source_dispositions_run_id_fkey"
+            columns: ["run_id"]
+            isOneToOne: false
+            referencedRelation: "epoch_allocation_operator_view_v2"
             referencedColumns: ["run_id"]
           },
           {
@@ -1699,39 +1888,51 @@ export type Database = {
         Row: {
           aggregate_initial_exact_usd: number
           baseline_exact_usd: number
+          cap_multiple: number | null
           exact_cap_usd: number
           final_minor: number
           id: number
+          initial_claim_minor: number | null
           minor_unit_cap: number
+          policy_key: string
           project_claims: Json
           retained_initial_minor: number
           run_id: number
+          top_up_capacity_minor: number | null
           top_up_minor: number
           user_id: string
         }
         Insert: {
           aggregate_initial_exact_usd: number
           baseline_exact_usd: number
+          cap_multiple?: number | null
           exact_cap_usd: number
           final_minor: number
           id?: never
+          initial_claim_minor?: number | null
           minor_unit_cap: number
+          policy_key?: string
           project_claims: Json
           retained_initial_minor: number
           run_id: number
+          top_up_capacity_minor?: number | null
           top_up_minor: number
           user_id: string
         }
         Update: {
           aggregate_initial_exact_usd?: number
           baseline_exact_usd?: number
+          cap_multiple?: number | null
           exact_cap_usd?: number
           final_minor?: number
           id?: never
+          initial_claim_minor?: number | null
           minor_unit_cap?: number
+          policy_key?: string
           project_claims?: Json
           retained_initial_minor?: number
           run_id?: number
+          top_up_capacity_minor?: number | null
           top_up_minor?: number
           user_id?: string
         }
@@ -1741,6 +1942,13 @@ export type Database = {
             columns: ["run_id"]
             isOneToOne: false
             referencedRelation: "epoch_allocation_operator_view"
+            referencedColumns: ["run_id"]
+          },
+          {
+            foreignKeyName: "epoch_allocation_user_awards_run_id_fkey"
+            columns: ["run_id"]
+            isOneToOne: false
+            referencedRelation: "epoch_allocation_operator_view_v2"
             referencedColumns: ["run_id"]
           },
           {
@@ -1915,13 +2123,18 @@ export type Database = {
       epoch_close_packages: {
         Row: {
           approval_id: number
+          cap_multiple: number | null
+          carry_in_minor: number
           created_at: string
+          current_funded_minor: number
           final_allocation_minor: number
           funded_minor: number
+          harvested_unclaimed_minor: number
           id: number
           manifest_hash: string
           monthly_cycle_id: number
           package_version: number
+          policy_key: string
           production_enabled: boolean
           redistribution_pool_minor: number
           result_hash: string
@@ -1935,13 +2148,18 @@ export type Database = {
         }
         Insert: {
           approval_id: number
+          cap_multiple?: number | null
+          carry_in_minor?: number
           created_at?: string
+          current_funded_minor?: number
           final_allocation_minor: number
           funded_minor: number
+          harvested_unclaimed_minor?: number
           id?: never
           manifest_hash: string
           monthly_cycle_id: number
           package_version?: number
+          policy_key?: string
           production_enabled?: boolean
           redistribution_pool_minor: number
           result_hash: string
@@ -1955,13 +2173,18 @@ export type Database = {
         }
         Update: {
           approval_id?: number
+          cap_multiple?: number | null
+          carry_in_minor?: number
           created_at?: string
+          current_funded_minor?: number
           final_allocation_minor?: number
           funded_minor?: number
+          harvested_unclaimed_minor?: number
           id?: never
           manifest_hash?: string
           monthly_cycle_id?: number
           package_version?: number
+          policy_key?: string
           production_enabled?: boolean
           redistribution_pool_minor?: number
           result_hash?: string
@@ -2021,9 +2244,11 @@ export type Database = {
       epoch_close_project_summaries: {
         Row: {
           approval_id: number
+          cap_multiple: number | null
           cohort_count: number
           created_at: string
           funded_minor: number
+          harvested_unclaimed_minor: number
           id: number
           initial_claim_exact_usd: number
           monthly_cycle_id: number
@@ -2034,9 +2259,11 @@ export type Database = {
         }
         Insert: {
           approval_id: number
+          cap_multiple?: number | null
           cohort_count: number
           created_at?: string
           funded_minor: number
+          harvested_unclaimed_minor?: number
           id?: never
           initial_claim_exact_usd: number
           monthly_cycle_id: number
@@ -2047,9 +2274,11 @@ export type Database = {
         }
         Update: {
           approval_id?: number
+          cap_multiple?: number | null
           cohort_count?: number
           created_at?: string
           funded_minor?: number
+          harvested_unclaimed_minor?: number
           id?: never
           initial_claim_exact_usd?: number
           monthly_cycle_id?: number
@@ -3097,13 +3326,17 @@ export type Database = {
           approval_id: number
           approved_result_hash: string
           asset_eligibility_status: string
+          cap_multiple: number | null
           created_at: string
           final_award_minor: number
           id: number
+          initial_claim_minor: number | null
           minor_unit_cap: number
           monthly_cycle_id: number
           ownership_status: string
           payable_status: string
+          policy_key: string
+          redistribution_ceiling_minor: number | null
           redistribution_top_up_minor: number
           retained_initial_minor: number
           run_award_id: number
@@ -3114,13 +3347,17 @@ export type Database = {
           approval_id: number
           approved_result_hash: string
           asset_eligibility_status?: string
+          cap_multiple?: number | null
           created_at?: string
           final_award_minor: number
           id?: never
+          initial_claim_minor?: number | null
           minor_unit_cap: number
           monthly_cycle_id: number
           ownership_status?: string
           payable_status?: string
+          policy_key?: string
+          redistribution_ceiling_minor?: number | null
           redistribution_top_up_minor: number
           retained_initial_minor: number
           run_award_id: number
@@ -3131,13 +3368,17 @@ export type Database = {
           approval_id?: number
           approved_result_hash?: string
           asset_eligibility_status?: string
+          cap_multiple?: number | null
           created_at?: string
           final_award_minor?: number
           id?: never
+          initial_claim_minor?: number | null
           minor_unit_cap?: number
           monthly_cycle_id?: number
           ownership_status?: string
           payable_status?: string
+          policy_key?: string
+          redistribution_ceiling_minor?: number | null
           redistribution_top_up_minor?: number
           retained_initial_minor?: number
           run_award_id?: number
@@ -3186,7 +3427,9 @@ export type Database = {
           fill_kind: string
           id: number
           ledger_transaction_id: number
-          manifest_source_id: number
+          manifest_pool_source_id: number | null
+          manifest_source_id: number | null
+          policy_key: string
           project_id: number
           user_id: string | null
         }
@@ -3200,7 +3443,9 @@ export type Database = {
           fill_kind: string
           id?: never
           ledger_transaction_id: number
-          manifest_source_id: number
+          manifest_pool_source_id?: number | null
+          manifest_source_id?: number | null
+          policy_key?: string
           project_id: number
           user_id?: string | null
         }
@@ -3214,11 +3459,20 @@ export type Database = {
           fill_kind?: string
           id?: never
           ledger_transaction_id?: number
-          manifest_source_id?: number
+          manifest_pool_source_id?: number | null
+          manifest_source_id?: number | null
+          policy_key?: string
           project_id?: number
           user_id?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "epoch_provisional_award_source_fil_manifest_pool_source_id_fkey"
+            columns: ["manifest_pool_source_id"]
+            isOneToOne: false
+            referencedRelation: "epoch_allocation_manifest_pool_sources"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "epoch_provisional_award_source_fills_approval_id_fkey"
             columns: ["approval_id"]
@@ -3274,6 +3528,186 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "users"
             referencedColumns: ["user_id"]
+          },
+        ]
+      }
+      epoch_redistribution_pool_sources: {
+        Row: {
+          canonical_minor: number
+          created_at: string
+          custody_account_id: number
+          evidence_hash: string
+          exact_usd: number
+          financial_asset_id: number
+          fx_snapshot_id: number
+          id: number
+          minor_unit_scale: number
+          native_atomic_amount: number
+          origin_award_fill_id: number | null
+          origin_disposition_id: number | null
+          origin_inventory_lot_id: number | null
+          origin_kind: string
+          origin_monthly_cycle_id: number
+          origin_obligation_id: number | null
+          predecessor_pool_source_id: number | null
+          production_enabled: boolean
+          project_id: number
+          rail_key: string
+          source_lot_key: string
+          source_order: number
+          state: string
+          target_monthly_cycle_id: number
+        }
+        Insert: {
+          canonical_minor: number
+          created_at?: string
+          custody_account_id: number
+          evidence_hash: string
+          exact_usd: number
+          financial_asset_id: number
+          fx_snapshot_id: number
+          id?: never
+          minor_unit_scale?: number
+          native_atomic_amount: number
+          origin_award_fill_id?: number | null
+          origin_disposition_id?: number | null
+          origin_inventory_lot_id?: number | null
+          origin_kind: string
+          origin_monthly_cycle_id: number
+          origin_obligation_id?: number | null
+          predecessor_pool_source_id?: number | null
+          production_enabled?: boolean
+          project_id: number
+          rail_key: string
+          source_lot_key: string
+          source_order: number
+          state?: string
+          target_monthly_cycle_id: number
+        }
+        Update: {
+          canonical_minor?: number
+          created_at?: string
+          custody_account_id?: number
+          evidence_hash?: string
+          exact_usd?: number
+          financial_asset_id?: number
+          fx_snapshot_id?: number
+          id?: never
+          minor_unit_scale?: number
+          native_atomic_amount?: number
+          origin_award_fill_id?: number | null
+          origin_disposition_id?: number | null
+          origin_inventory_lot_id?: number | null
+          origin_kind?: string
+          origin_monthly_cycle_id?: number
+          origin_obligation_id?: number | null
+          predecessor_pool_source_id?: number | null
+          production_enabled?: boolean
+          project_id?: number
+          rail_key?: string
+          source_lot_key?: string
+          source_order?: number
+          state?: string
+          target_monthly_cycle_id?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "epoch_redistribution_pool_sourc_predecessor_pool_source_id_fkey"
+            columns: ["predecessor_pool_source_id"]
+            isOneToOne: true
+            referencedRelation: "epoch_redistribution_pool_sources"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "epoch_redistribution_pool_sources_custody_account_id_fkey"
+            columns: ["custody_account_id"]
+            isOneToOne: false
+            referencedRelation: "financial_custody_accounts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "epoch_redistribution_pool_sources_financial_asset_id_fkey"
+            columns: ["financial_asset_id"]
+            isOneToOne: false
+            referencedRelation: "financial_assets"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "epoch_redistribution_pool_sources_fx_snapshot_id_fkey"
+            columns: ["fx_snapshot_id"]
+            isOneToOne: false
+            referencedRelation: "epoch_fx_snapshots"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "epoch_redistribution_pool_sources_origin_award_fill_id_fkey"
+            columns: ["origin_award_fill_id"]
+            isOneToOne: false
+            referencedRelation: "epoch_provisional_award_source_fills"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "epoch_redistribution_pool_sources_origin_disposition_id_fkey"
+            columns: ["origin_disposition_id"]
+            isOneToOne: true
+            referencedRelation: "epoch_allocation_source_dispositions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "epoch_redistribution_pool_sources_origin_inventory_lot_id_fkey"
+            columns: ["origin_inventory_lot_id"]
+            isOneToOne: false
+            referencedRelation: "payout_inventory_lots"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "epoch_redistribution_pool_sources_origin_monthly_cycle_id_fkey"
+            columns: ["origin_monthly_cycle_id"]
+            isOneToOne: false
+            referencedRelation: "monthly_cycles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "epoch_redistribution_pool_sources_origin_obligation_id_fkey"
+            columns: ["origin_obligation_id"]
+            isOneToOne: false
+            referencedRelation: "financial_cutover_canonical_credit_reads"
+            referencedColumns: ["canonical_obligation_id"]
+          },
+          {
+            foreignKeyName: "epoch_redistribution_pool_sources_origin_obligation_id_fkey"
+            columns: ["origin_obligation_id"]
+            isOneToOne: false
+            referencedRelation: "financial_cutover_compatibility_positions"
+            referencedColumns: ["canonical_obligation_id"]
+          },
+          {
+            foreignKeyName: "epoch_redistribution_pool_sources_origin_obligation_id_fkey"
+            columns: ["origin_obligation_id"]
+            isOneToOne: false
+            referencedRelation: "user_withdrawal_obligation_balances"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "epoch_redistribution_pool_sources_origin_obligation_id_fkey"
+            columns: ["origin_obligation_id"]
+            isOneToOne: false
+            referencedRelation: "user_withdrawal_obligations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "epoch_redistribution_pool_sources_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "epoch_redistribution_pool_sources_target_monthly_cycle_id_fkey"
+            columns: ["target_monthly_cycle_id"]
+            isOneToOne: false
+            referencedRelation: "monthly_cycles"
+            referencedColumns: ["id"]
           },
         ]
       }
@@ -11077,8 +11511,10 @@ export type Database = {
       user_withdrawal_obligations: {
         Row: {
           available_at: string
+          claim_window_closed_at: string | null
           created_at: string
           evidence_hash: string
+          harvested_minor: number
           id: number
           monthly_cycle_id: number
           production_enabled: boolean
@@ -11091,8 +11527,10 @@ export type Database = {
         }
         Insert: {
           available_at?: string
+          claim_window_closed_at?: string | null
           created_at?: string
           evidence_hash: string
+          harvested_minor?: number
           id?: never
           monthly_cycle_id: number
           production_enabled?: boolean
@@ -11105,8 +11543,10 @@ export type Database = {
         }
         Update: {
           available_at?: string
+          claim_window_closed_at?: string | null
           created_at?: string
           evidence_hash?: string
+          harvested_minor?: number
           id?: never
           monthly_cycle_id?: number
           production_enabled?: boolean
@@ -12625,16 +13065,47 @@ export type Database = {
         }
         Relationships: []
       }
+      epoch_allocation_operator_view_v2: {
+        Row: {
+          calculated_at: string | null
+          cap_multiple: number | null
+          carry_in_minor: number | null
+          carry_out_residue_minor: number | null
+          current_funded_minor: number | null
+          cycle_key: string | null
+          final_allocation_minor: number | null
+          funded_minor: number | null
+          harvested_unclaimed_minor: number | null
+          initial_claim_minor: number | null
+          locked_at: string | null
+          manifest_hash: string | null
+          manifest_id: number | null
+          provisional_only: boolean | null
+          result_hash: string | null
+          run_id: number | null
+          score_pool_minor: number | null
+          selected_preview_hash: string | null
+          status: string | null
+          top_up_minor: number | null
+          user_count: number | null
+        }
+        Relationships: []
+      }
       epoch_close_operator_view: {
         Row: {
           actor_user_id: string | null
           approved_at: string | null
           artifact_count: number | null
+          cap_multiple: number | null
+          carry_in_minor: number | null
           close_package_id: number | null
+          current_funded_minor: number | null
           cycle_key: string | null
           final_allocation_minor: number | null
           funded_minor: number | null
+          harvested_unclaimed_minor: number | null
           manifest_hash: string | null
+          policy_key: string | null
           provisional_only: boolean | null
           redistribution_pool_minor: number | null
           result_hash: string | null
@@ -12657,9 +13128,11 @@ export type Database = {
       }
       epoch_close_public_project_view: {
         Row: {
+          cap_multiple: number | null
           created_at: string | null
           cycle_key: string | null
           funded_minor: number | null
+          harvested_unclaimed_minor: number | null
           project_slug: string | null
           published_cohort_count: number | null
           root_hash: string | null
@@ -12670,10 +13143,12 @@ export type Database = {
       }
       epoch_close_public_view: {
         Row: {
+          cap_multiple: number | null
           created_at: string | null
           cycle_key: string | null
           final_allocation_minor: number | null
           funded_minor: number | null
+          harvested_unclaimed_minor: number | null
           published_user_count: number | null
           redistribution_pool_minor: number | null
           returned_residue_minor: number | null
@@ -13478,7 +13953,9 @@ export type Database = {
       user_withdrawal_obligation_balances: {
         Row: {
           available_minor: number | null
+          claim_window_closed_at: string | null
           closed_minor: number | null
+          harvested_minor: number | null
           held_minor: number | null
           id: number | null
           monthly_cycle_id: number | null
@@ -13580,6 +14057,10 @@ export type Database = {
         Returns: number
       }
       approve_epoch_allocation_close: {
+        Args: { p_command: Json }
+        Returns: Json
+      }
+      approve_epoch_allocation_close_v2: {
         Args: { p_command: Json }
         Returns: Json
       }
@@ -13695,6 +14176,14 @@ export type Database = {
       epoch_allocation_runtime_enabled: {
         Args: { p_environment: string }
         Returns: boolean
+      }
+      epoch_allocation_v2_preview_input: {
+        Args: {
+          p_cap_multiple: number
+          p_cycle_key: string
+          p_environment: string
+        }
+        Returns: Json
       }
       epoch_close_runtime_enabled: {
         Args: { p_environment: string }
@@ -13999,6 +14488,10 @@ export type Database = {
         }
       }
       lock_funded_epoch_allocation: { Args: { p_command: Json }; Returns: Json }
+      lock_funded_epoch_allocation_v2: {
+        Args: { p_command: Json }
+        Returns: Json
+      }
       manage_user_withdrawal_request: {
         Args: {
           p_action: string
@@ -14173,6 +14666,10 @@ export type Database = {
         Returns: number
       }
       record_funded_epoch_allocation: {
+        Args: { p_command: Json }
+        Returns: number
+      }
+      record_funded_epoch_allocation_v2: {
         Args: { p_command: Json }
         Returns: number
       }

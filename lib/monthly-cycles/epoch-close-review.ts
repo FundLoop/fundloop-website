@@ -16,16 +16,23 @@ export type EpochCloseOperatorRow = {
   top_up_minor: string | number | null
   returned_residue_minor: string | number | null
   artifact_count: number | null
+  policy_key: string | null
+  cap_multiple: string | number | null
+  current_funded_minor: string | number | null
+  harvested_unclaimed_minor: string | number | null
+  carry_in_minor: string | number | null
 }
 
 export type EpochCloseUserRow = {
   cycleKey: string
   rootHash: string
   status: string
-  retainedInitialMinor: string
+  initialClaimMinor: string
   topUpMinor: string
   finalAwardMinor: string
-  minorUnitCap: string
+  redistributionCeilingMinor: string
+  capMultiple: string
+  harvestedUnclaimedMinor: string
   payableStatus: string
   ownershipStatus: string
   assetEligibilityStatus: string
@@ -41,6 +48,8 @@ export type EpochCloseProjectRow = {
   initialClaimExactUsd: string
   scorePoolContributionExactUsd: string
   sourceCount: number
+  capMultiple: string
+  harvestedUnclaimedMinor: string
 }
 
 function enabled() {
@@ -62,15 +71,24 @@ export async function loadLatestUserEpochClose(userId: string): Promise<EpochClo
   if (!control.data) return null
   const [cycle, approval] = await Promise.all([
     admin.from("monthly_cycles").select("cycle_key").eq("id", control.data.monthly_cycle_id).single(),
-    admin.from("epoch_close_packages").select("root_hash,status").eq("approval_id", control.data.approval_id).eq("status", "payout_readying").maybeSingle(),
+    admin.from("epoch_close_packages").select("*").eq("approval_id", control.data.approval_id).eq("status", "payout_readying").maybeSingle(),
   ])
   if (cycle.error) throw new Error(cycle.error.message)
   if (approval.error) throw new Error(approval.error.message)
   if (!approval.data) return null
+  const controlRow = control.data as typeof control.data & {
+    initial_claim_minor?: string | number | null
+    redistribution_ceiling_minor?: string | number | null
+    cap_multiple?: string | number | null
+  }
+  const closeRow = approval.data as typeof approval.data & { harvested_unclaimed_minor?: string | number | null }
   return {
-    cycleKey: cycle.data.cycle_key, rootHash: approval.data.root_hash, status: approval.data.status,
-    retainedInitialMinor: String(control.data.retained_initial_minor), topUpMinor: String(control.data.redistribution_top_up_minor),
-    finalAwardMinor: String(control.data.final_award_minor), minorUnitCap: String(control.data.minor_unit_cap),
+    cycleKey: cycle.data.cycle_key, rootHash: closeRow.root_hash, status: closeRow.status,
+    initialClaimMinor: String(controlRow.initial_claim_minor ?? controlRow.retained_initial_minor),
+    topUpMinor: String(controlRow.redistribution_top_up_minor), finalAwardMinor: String(controlRow.final_award_minor),
+    redistributionCeilingMinor: String(controlRow.redistribution_ceiling_minor ?? controlRow.minor_unit_cap),
+    capMultiple: Number(controlRow.cap_multiple ?? 3).toFixed(2),
+    harvestedUnclaimedMinor: String(closeRow.harvested_unclaimed_minor ?? 0),
     payableStatus: control.data.payable_status, ownershipStatus: control.data.ownership_status,
     assetEligibilityStatus: control.data.asset_eligibility_status,
   }
@@ -89,18 +107,28 @@ export async function loadLatestProjectEpochClose(projectId: number): Promise<Ep
   if (cycle.error) throw new Error(cycle.error.message)
   if (close.error) throw new Error(close.error.message)
   if (!close.data) return null
+  const summaryRow = summary.data as typeof summary.data & {
+    cap_multiple?: string | number | null
+    harvested_unclaimed_minor?: string | number | null
+  }
   return {
     cycleKey: cycle.data.cycle_key, rootHash: close.data.root_hash, status: close.data.status,
-    fundedMinor: String(summary.data.funded_minor), cohortCount: summary.data.cohort_count,
-    theoreticalShareExactUsd: String(summary.data.theoretical_share_exact_usd), initialClaimExactUsd: String(summary.data.initial_claim_exact_usd),
-    scorePoolContributionExactUsd: String(summary.data.score_pool_contribution_exact_usd), sourceCount: summary.data.source_count,
+    fundedMinor: String(summaryRow.funded_minor), cohortCount: summaryRow.cohort_count,
+    theoreticalShareExactUsd: String(summaryRow.theoretical_share_exact_usd), initialClaimExactUsd: String(summaryRow.initial_claim_exact_usd),
+    scorePoolContributionExactUsd: String(summaryRow.score_pool_contribution_exact_usd), sourceCount: summaryRow.source_count,
+    capMultiple: Number(summaryRow.cap_multiple ?? 3).toFixed(2),
+    harvestedUnclaimedMinor: String(summaryRow.harvested_unclaimed_minor ?? 0),
   }
 }
 
-export async function loadPublicProjectEpochClose(projectSlug: string) {
+export async function loadPublicProjectEpochClose(projectSlug: string): Promise<{
+  cycle_key: string | null; project_slug: string | null; root_hash: string | null; status: string | null
+  funded_minor: string | number | null; published_cohort_count: number | null; source_count: number | null
+  cap_multiple: string | number | null; harvested_unclaimed_minor: string | number | null; created_at: string | null
+} | null> {
   if (!enabled()) return null
   const result = await getAdminSupabaseClient().from("epoch_close_public_project_view").select("*").eq("project_slug", projectSlug)
     .order("created_at", { ascending: false }).limit(1).maybeSingle()
   if (result.error) throw new Error(result.error.message)
-  return result.data
+  return result.data as unknown as Awaited<ReturnType<typeof loadPublicProjectEpochClose>>
 }

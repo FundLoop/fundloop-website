@@ -1,6 +1,6 @@
 # FundLoop Target-State Architecture
 
-Last drafted: 2026-04-14
+Last reviewed: 2026-08-11
 
 Related planning docs:
 - [Engineering Docs Index](./README.md)
@@ -12,13 +12,12 @@ Related planning docs:
 
 ## 1. North Star
 
-FundLoop should become a production-grade monthly economic coordination engine that serves two first-class audiences:
+FundLoop should become a production-grade monthly economic coordination engine that serves four first-class audiences:
 
-- humans
-  - regular users discovering projects, proving personhood, participating, and managing earnings
-  - founders and project members onboarding, funding the loop, managing contribution operations, and growing their project presence
-- agents
-  - MCP-compatible software agents acting on behalf of users, founders, or project teams through deterministic protocol-facing interfaces
+- regular users discovering projects, proving personhood through CUBID.me, participating, tracking earnings, and managing payouts;
+- founders, developers, and project members onboarding projects, committing revenue, funding monthly epochs, submitting attribution, and reporting to their communities;
+- researchers and the general public studying practical post-capitalistic and decentralized economic coordination through privacy-safe public evidence; and
+- internal operators and MCP-compatible agents running, verifying, reconciling, reporting, or assisting with the same governed workflows.
 
 The target system is not just a website and not just an internal dashboard. It is:
 
@@ -26,6 +25,17 @@ The target system is not just a website and not just an internal dashboard. It i
 - a reliable money and identity workflow engine
 - an audit-friendly monthly bookkeeping and distribution system
 - an agent-operable protocol interface
+
+The core economic loop is:
+
+1. projects commit a recurring percentage of revenue;
+2. people prove uniqueness through CUBID.me and build participation signal;
+3. projects submit monthly contribution and attribution data together with funds;
+4. FundLoop locks the epoch, calculates distributions, reconciles inputs, and records verification;
+5. approved awards remain claimable through three complete payout months, after which unclaimed value is harvested into a future redistribution pool; and
+6. public, user, project, and operator reports explain the outcome without publishing PII, profiles, or earnings unless the person explicitly opted in.
+
+Allocation preserves the full sum of every score-adjusted initial claim. An operator-selected monthly multiple limits redistribution top-ups only. The global redistribution pool contains score discounts, exactly E−3 unclaimed awards, and prior carry-in residue; no ceiling-derived overflow enters it. The selected multiple and aggregate harvest are immutable monthly report and root-hash inputs.
 
 ## 2. Product Outcomes the Architecture Must Satisfy
 
@@ -43,12 +53,13 @@ The target architecture is successful only if it supports all of the following s
 - support for EVM and Solana rails through chain-abstracted execution services
 - stubbed but intentional multi-currency fiat rails for inbound project funding and outbound user payouts
 - a first-class monthly economic cadence:
+  - project funding and attribution submission
   - end-of-month lock
-  - prep
-  - zk-calculation / distribution
-  - cleanup / verification
-  - distribution / payout
-  - reporting
+  - settlement and identity preparation
+  - deterministic calculation
+  - cleanup, verification, and approval
+  - claim and payout execution
+  - privacy-scoped reporting
 
 ## 3. Target System Shape
 
@@ -172,6 +183,8 @@ Target capabilities:
 - founder acquisition and onboarding funnels
 - transparent explanation of identity, cadence, payouts, and verification
 - data-forward reporting pages that build trust instead of hype
+- public research context that distinguishes a testable economic experiment from ideological or financial claims
+- explicit privacy language: public economic evidence does not imply public identity or earnings
 
 All current placeholder, half-marketing, or stubbed public pages should resolve into one of three states:
 

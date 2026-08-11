@@ -36,8 +36,8 @@ function formatCurrency(locale: string, value: number) {
   }).format(value)
 }
 
-function sumIntegerValues(left: string | number | null, right: string | number | null) {
-  return (BigInt(String(left ?? 0)) + BigInt(String(right ?? 0))).toString()
+function sumIntegerValues(...values: Array<string | number | null>) {
+  return values.reduce<bigint>((sum,value)=>sum+BigInt(String(value ?? 0)),BigInt(0)).toString()
 }
 
 function severityIcon(severity: MonthlyCyclePrepSeverity) {
@@ -246,7 +246,7 @@ export default async function AdminCyclePrepPage({ params }: PageProps) {
             <p className="text-[0.72rem] font-semibold uppercase tracking-[0.28em] text-[var(--interactive-primary)]">Settled Cubid redistribution</p>
             <h2 className="mt-2 text-2xl font-semibold text-[var(--text-strong)]">Immutable allocation review</h2>
             <p className="mt-2 max-w-3xl text-sm leading-6 text-[var(--text-muted)]">
-              Equal project shares are discounted by locked Cubid scores. Score shortfalls and overlap-cap overflow fund lowest-current-total-first top-ups under the preserved 3× cap. Results remain provisional: no payable, payout, provider call, or value movement is created here.
+              Equal project shares are discounted by locked Cubid scores. Score discounts, E−3 harvests, and carry-in residue fund lowest-current-total-first top-ups. The selected monthly multiple sets each redistribution top-up ceiling only; every initial claim remains intact.
             </p>
           </div>
           <Badge variant="outline">Production disabled</Badge>
@@ -256,9 +256,12 @@ export default async function AdminCyclePrepPage({ params }: PageProps) {
           <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
             {[
               ["State",fundedAllocation.allocation.status ?? "locked"],
-              ["Funded minor",fundedAllocation.allocation.funded_minor ?? "0"],
-              ["Redistribution pool",sumIntegerValues(fundedAllocation.allocation.score_pool_minor,fundedAllocation.allocation.overlap_pool_minor)],
-              ["Top-up / residue",`${fundedAllocation.allocation.top_up_minor ?? "0"} / ${fundedAllocation.allocation.returned_residue_minor ?? "0"}`],
+              ["Selected multiple",`${fundedAllocation.allocation.cap_multiple ?? "pending"}×`],
+              ["Current funded",fundedAllocation.allocation.current_funded_minor ?? "0"],
+              ["E−3 harvested",fundedAllocation.allocation.harvested_unclaimed_minor ?? "0"],
+              ["Carry-in",fundedAllocation.allocation.carry_in_minor ?? "0"],
+              ["Redistribution pool",sumIntegerValues(fundedAllocation.allocation.score_pool_minor,fundedAllocation.allocation.harvested_unclaimed_minor,fundedAllocation.allocation.carry_in_minor)],
+              ["Top-up / carry-out",`${fundedAllocation.allocation.top_up_minor ?? "0"} / ${fundedAllocation.allocation.carry_out_residue_minor ?? "0"}`],
               ["Final allocation",fundedAllocation.allocation.final_allocation_minor ?? "0"],
               ["Users",String(fundedAllocation.allocation.user_count ?? 0)],
               ["Manifest",fundedAllocation.allocation.manifest_hash?.slice(0,12) ?? "pending"],
@@ -296,6 +299,8 @@ export default async function AdminCyclePrepPage({ params }: PageProps) {
             ["Stage",epochClose.status ?? "payout_readying"],["Funded minor",String(epochClose.funded_minor ?? 0)],
             ["Final / residue",`${epochClose.final_allocation_minor ?? 0} / ${epochClose.returned_residue_minor ?? 0}`],
             ["Pool / top-up",`${epochClose.redistribution_pool_minor ?? 0} / ${epochClose.top_up_minor ?? 0}`],
+            ["Selected cap",epochClose.cap_multiple == null ? "pending" : `${Number(epochClose.cap_multiple).toFixed(2)}×`],
+            ["E−3 harvested",String(epochClose.harvested_unclaimed_minor ?? 0)],
             ["Conditional users",String(epochClose.user_count ?? 0)],["Artifacts",String(epochClose.artifact_count ?? 0)],
             ["Result",epochClose.result_hash?.slice(0,12) ?? "pending"],["Root",epochClose.root_hash?.slice(0,12) ?? "pending"],
           ].map(([label,value])=><div key={label} className="rounded-xl border border-[color:var(--surface-border)] p-3"><p className="text-xs uppercase tracking-[0.14em] text-[var(--text-soft)]">{label}</p><p className="mt-1 break-all font-mono font-semibold">{value}</p></div>)}

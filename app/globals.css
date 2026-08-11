@@ -76,6 +76,16 @@
   }
 }
 
+@keyframes loop-node-pulse {
+  0%, 100% { opacity: 0.58; transform: translate(-50%, -50%) scale(0.96); }
+  45% { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+}
+
+@keyframes loop-dash {
+  0%, 100% { stroke-dasharray: 5 100; stroke-dashoffset: 0; opacity: 0.45; }
+  50% { stroke-dasharray: 26 100; stroke-dashoffset: -18; opacity: 1; }
+}
+
 @keyframes accordion-down {
   from {
     height: 0;

@@ -311,19 +311,15 @@ occurs. Later policy edits never rewrite prior events.
     and the conditional award enters compliance hold pending an authorized resolution. It
     is not silently redistributed and completed payouts are not clawed back.
 22. Each difference between theoretical share and score-adjusted initial claim
-    enters one global epoch redistribution pool. The allocator aggregates each
-    user's initial project claims, defines baseline as the largest single-project
-    initial claim, defines exact cap as three times baseline, and floors it to the
-    allocation minor unit for the canonical executable cap. If aggregate initial
-    exceeds cap, every project/source initial lot is proportionally retained by
-    `exact cap / aggregate`; each exact difference enters the global pool as source-linked
-    overlap-cap overflow. Water-filling starts from the canonical floored and
-    cap-bounded retained current total and
-    raises equal-current uncapped users together until the next level, cap, or
-    exhaustion. Aggregate initial and baseline do not break equal-current ties. A capped or zero-baseline user receives
-    no top-up. Retained-lot and final-award rounding may never cross the floored cap;
-    descending-fraction residual assignment skips capped candidates and sends the
-    rejected fraction or unit, with source provenance, into pool/residue.
+    enters one global epoch redistribution pool together with exactly E−3 unclaimed
+    awards and prior carry-in residue. The allocator preserves every initial project
+    claim, defines baseline as the largest single-project claim, and applies the
+    operator-selected `1.00`–`10.00` decimal multiple only to the redistribution
+    top-up ceiling. Top-up capacity is `max(ceiling - full initial total, 0)`.
+    Water-filling starts from full initial totals and raises equal-current users until
+    the next level, top-up ceiling, or exhaustion. A zero-baseline user or a user
+    already without capacity receives no top-up. Undistributed residue carries into
+    the next epoch with source provenance.
 23. Cubid is queried during reconciliation and again at lock. A prior validated
     snapshot may be used during an outage only within a configured short TTL;
     otherwise the user remains unresolved and cannot lock.
@@ -339,10 +335,10 @@ first to the 97 B-only users with the lowest aggregate initial claims. Equal-cur
 continuous treatment and the sole fractional-remainder/stable-user-ID minor-unit rule,
 rounding, caps, and complete funded-source provenance must reproduce exactly.
 
-Adversarial overlap fixture: score-adjusted initial lots `[100,100,100,100]` produce
-aggregate `$400`, baseline `$100`, cap `$300`, retention factor `0.75`, four retained
-`$75` lots, and four source-linked `$25` overflow lots. The user begins water-filling
-at cap and receives no top-up. These conservation and input-order properties apply
+Adversarial multi-project fixture: score-adjusted initial lots `[100,100,100,100]`
+produce aggregate `$400`, baseline `$100`, and a selected `3.00` redistribution
+top-up ceiling of `$300`. The full `$400` initial total remains intact and the user
+receives no top-up. These conservation and input-order properties apply
 to arbitrary overlap counts and to exact-decimal, minor-unit, and native-unit rows.
 
 Fractional cap fixture: four `$0.335` lots produce aggregate `$1.34`, baseline
@@ -734,28 +730,24 @@ Process:
 2. Calculate each initial project claim as theoretical share multiplied by locked
    score divided by locked maximum score; send every shortfall into one global
    epoch redistribution pool.
-3. Aggregate each user's initial claims, set baseline to the largest single-project
-   initial claim, set exact cap to three times baseline, and floor that value to the
-   allocation minor unit for the canonical retained/final cap.
-4. Before redistribution, clamp aggregate initial to cap. Scale every project/source
-   initial lot by `min(1, exact cap / aggregate)`, retain the scaled lot, and move its exact
-   difference into the pool as source-linked overlap-cap overflow.
-5. Define the global pool as score-discount contributions plus overlap-cap overflow,
-   then redistribute lowest-current-total first through deterministic water-filling;
+3. Aggregate each user's initial claims without clipping, set baseline to the largest
+   single-project initial claim, and floor `baseline × selected monthly multiple` to
+   the allocation minor unit for the redistribution top-up ceiling.
+4. Set top-up capacity to `max(0, ceiling - full initial total)`. A user above the
+   ceiling keeps every initial claim and receives no top-up.
+5. Define the global pool as score-discount contributions plus exactly E−3 unclaimed
+   awards plus prior carry-in residue, then redistribute lowest-current-total first;
    exact equal-current users remain equal until a level/cap/exhaustion boundary.
    For indivisible canonical units, use only descending exact-target fractional
    remainder then stable user ID, with cap-aware skipping.
-   A user already at cap, including a zero-baseline user at cap zero, receives no top-up.
+   A user without remaining top-up capacity, including a zero-baseline user, receives no top-up.
 6. Preserve project, rail, asset, native, FX, and functional-USD source lots for
    every initial claim, top-up, and cap-exhausted returned/carryover residue.
-7. Apply exact-decimal cap scaling first. Allocate retained functional-USD and native
-   values in a separate exact ledger where each non-negative initial source equals
-   exact retained plus exact overflow. Derive canonical initial units first against
+7. Preserve exact-decimal initial claims first. Allocate functional-USD and native
+   values in a separate exact ledger, then derive canonical initial units against
    the funded canonical total by descending fractional remainder then stable source
-   ID. Assign retained units to the floored target with the same ordering constrained
-   by `0 <= retained <= initial`, skipping saturated/zero-capacity lots and any cap
-   breach; canonical overflow is `initial - retained`. Track sub-minor residual and
-   cross-source transfers separately with provenance, never as exact overflow.
+   ID. Apply the ceiling only while assigning top-ups. Track sub-minor residual and
+   cross-source transfers separately with provenance and carry undistributed residue.
 8. Prove conservation by project, rail, asset, native quantity, redistribution pool,
    and functional USD for arbitrary overlap count and input order, separately for
    exact decimals and integer minor-unit outputs, with no lost/double-assigned units.

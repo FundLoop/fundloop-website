@@ -8,7 +8,7 @@ export const frMessages = {
     home: {
       title: "FundLoop - Une prospérité mutuelle rendue opérationnelle",
       description:
-        "Découvrez la page d’accueil publique de FundLoop, comprenez le fonctionnement de la boucle et voyez comment projets et participants partagent une croissance alignée.",
+        "FundLoop aide les projets à mutualiser une part de leurs revenus et à la distribuer chaque mois à des personnes vérifiées selon leur participation et leur contribution.",
     },
     participation: {
       title: "Participation - FundLoop",
@@ -1229,7 +1229,7 @@ export const frMessages = {
   },
   home: {
     eyebrow: "Prospérité mutuelle, rendue opérationnelle",
-    heroTitle: "Une économie en réseau où les projets alimentent la boucle et où les personnes partagent la valeur créée.",
+    heroTitle: "Une économie mensuelle pour une prospérité partagée.",
     heroSuffix: "pour une prospérité mutuelle",
     heroPrefixes: [
       "Un État-réseau",
@@ -1255,7 +1255,7 @@ export const frMessages = {
     heroThesis:
       "Une économie en réseau où les projets alimentent la boucle et où les personnes partagent la valeur créée.",
     heroBody:
-      "FundLoop aide les équipes à récompenser de vraies contributions, à croître avec un meilleur signal de preuve d’humanité et à redistribuer une partie de leur succès aux communautés qui rendent le système possible.",
+      "Les projets mettent en commun une part de leurs revenus. Des personnes vérifiées contribuent. Chaque mois, FundLoop clôture les comptes, explique le résultat et rend la part de chacun réclamable.",
     ctas: {
       project: "Créer un profil projet",
       participant: "Rejoindre comme participant",
@@ -1264,6 +1264,42 @@ export const frMessages = {
       projects: "Les projets consacrent 1 % ou plus à la boucle.",
       people: "Les personnes créent du signal par l’usage.",
       value: "La valeur revient avec plus de contexte.",
+    },
+    monthlyLoop: {
+      eyebrow: "Un mois responsable à la fois",
+      title: "Du revenu du projet au paiement d’une personne.",
+      body: "FundLoop est le moteur de workflow entre participation et paiement. Chaque époque verrouille argent, identité et attribution dans un registre économique reproductible.",
+      visual: { month: "Époque mensuelle", center: "Mutualiser. Vérifier. Distribuer." },
+      stages: [
+        { step: "01", title: "Engager des revenus", body: "Les projets choisissent un pourcentage récurrent de leurs revenus à verser dans FundLoop." },
+        { step: "02", title: "Prouver son humanité", body: "Les personnes connectent CUBID.me afin que leur unicité soit vérifiée sans rendre publiques leurs données d’identité." },
+        { step: "03", title: "Construire le signal", body: "Les personnes utilisent et soutiennent les projets ; les projets consignent le contexte de contribution et de participation." },
+        { step: "04", title: "Soumettre le mois", body: "Les projets envoient les fonds, les totaux de contribution et les données d’attribution pour l’époque ouverte." },
+        { step: "05", title: "Verrouiller et vérifier", body: "FundLoop fige le cycle, calcule les distributions, rapproche argent et données, puis exige une revue opérateur." },
+        { step: "06", title: "Réclamer le résultat", body: "Les allocations restent réclamables pendant trois mois de paiement complets. À la clôture de ce délai, la valeur non réclamée retourne dans un futur fonds de redistribution." },
+        { step: "07", title: "Publier l’explication", body: "Les rapports publics, personnels, projet et opérateur expliquent le résultat tout en respectant les choix de publication." },
+      ],
+    },
+    audiences: {
+      eyebrow: "Quatre vues du même système",
+      title: "Une boucle économique. Des espaces distincts.",
+      body: "Humains et agents utilisent les mêmes workflows, permissions et traces d’audit.",
+      items: [
+        { id: "people", label: "Pour les personnes", title: "Découvrez, participez et comprenez vos gains.", body: "Liez votre identité CUBID, trouvez des projets, construisez un historique de contribution, choisissez vos préférences de paiement et examinez chaque résultat mensuel.", href: "/participation", cta: "Explorer la participation" },
+        { id: "projects", label: "Pour les équipes projet", title: "Transformez un engagement de revenus en pratique mensuelle.", body: "Intégrez un projet, gérez membres et routes de paiement, financez l’époque, soumettez l’attribution et expliquez le résultat à votre communauté.", href: "/founders", cta: "Explorer le parcours fondateur" },
+        { id: "research", label: "Pour la recherche et le public", title: "Étudiez une expérience concrète de coordination post-capitaliste.", body: "Suivez les projets et rapports publics pour observer comment identité, participation, capital et distribution pluraliste interagissent en pratique.", href: "/reports", cta: "Ouvrir les rapports publics" },
+        { id: "operators", label: "Pour opérateurs et agents", title: "Exécutez le même workflow par un poste de contrôle ou MCP.", body: "Préparez les époques, vérifiez les exceptions, rapprochez les rails, publiez des rapports et automatisez des tâches bornées via des contrats Edge Function partagés.", href: "/mcp", cta: "Explorer l’interface MCP" },
+      ],
+    },
+    trust: {
+      eyebrow: "Transparent sans être extractif",
+      title: "Expliquer l’argent. Protéger la personne.",
+      body: "L’auditabilité n’autorise pas l’exposition des personnes. FundLoop sépare les preuves économiques reproductibles de la visibilité publique optionnelle de l’identité et des gains.",
+      items: [
+        { title: "Des registres mensuels reproductibles", body: "Entrées verrouillées, politique versionnée, artefacts de calcul, décisions de vérification et événements de paiement rendent le résultat traçable." },
+        { title: "Privé par défaut", body: "L’identité CUBID et les détails de paiement restent réservés aux workflows autorisés. Profils et gains ne deviennent publics que par choix explicite." },
+        { title: "Humains et agents partagent les règles", body: "L’application web et l’interface MCP convergent vers les mêmes commandes Edge Function typées, limites d’autorisation et historiques d’événements." },
+      ],
     },
     theoryOfChange: {
       eyebrow: "Notre théorie du changement",
@@ -1388,13 +1424,13 @@ export const frMessages = {
       openPage: "Ouvrir la page",
     },
     closing: {
+      kicker: "Premier mois",
       eyebrow: "Commencez là où vous êtes",
-      title:
-        "FundLoop enregistre déjà des brouillons d’onboarding, prend en charge les profils projet et se prépare pour la prochaine vague de builders alignés.",
-      body:
-        "Si vous construisez un projet, rejoignez la boucle. Si vous participez, créez votre profil et soyez prêt lorsque la valeur commencera à circuler dans le réseau.",
+      title: "Rejoignez les personnes et projets qui bâtissent une économie mensuelle transparente.",
+      body: "Découvrez le modèle, créez un profil privé par défaut ou lisez la documentation produit et protocole avant d’entrer dans la boucle.",
       project: "Rejoindre comme projet",
       participant: "Rejoindre comme participant",
+      documentation: "Lire la documentation",
     },
   },
   participation: {

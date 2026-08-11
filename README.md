@@ -1,8 +1,17 @@
-# FundLoop Website
+# FundLoop
 
-FundLoop connects projects and users in a revenue-sharing ecosystem. Projects pledge a portion of revenue back to the network, and active users can receive recurring community distributions.
+FundLoop is a monthly economic coordination platform. Projects pool a recurring share of revenue, verified people build participation and contribution signal, and FundLoop locks each month, calculates and verifies distributions, makes approved payments claimable, and publishes privacy-respecting reports about what happened and why.
 
-This repository contains the FundLoop website and app shell built with Next.js, React, TypeScript, Tailwind CSS, and Supabase.
+This repository contains the multilingual web app, Supabase workflow engine, payment and accounting control planes, and MCP interface. FundLoop is intentionally more than a website: the human and agent interfaces are expected to use the same typed Edge Function workflows, authorization rules, and audit history.
+
+The four primary audiences are:
+
+- people discovering projects, proving uniqueness through CUBID.me, participating, and managing earnings and payouts;
+- founders, developers, and project members managing revenue commitments, funding routes, monthly attribution, and project reporting;
+- researchers and the public following the practical design of post-capitalistic, decentralized coordination; and
+- internal operators and agents preparing epochs, reconciling money and data, publishing reports, and working through MCP.
+
+See the [target architecture](docs/engineering/target-state-architecture.md) and the [2026-08-11 capability review](docs/engineering/capability-review-2026-08-11.md) for the intended system and an evidence-based account of what is and is not currently usable.
 
 ## Stack
 
