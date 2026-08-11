@@ -44,6 +44,13 @@ describe("i18n message loading", () => {
     expect(messages.home.heroTitle).toContain("économie")
     expect(messages.home.heroPrefixes).toHaveLength(19)
     expect(messages.home.heroPrefixes[0]).toBe("Un État-réseau")
+    expect(messages.home.monthlyLoop.stages).toHaveLength(7)
+    expect(messages.home.audiences.items.map((item) => item.id)).toEqual([
+      "people",
+      "projects",
+      "research",
+      "operators",
+    ])
     expect(messages.home.heroThesis).toContain("économie en réseau")
     expect(messages.home.theoryOfChange.ideas.pluralism.body).toContain("FundLoop")
     expect(messages.shell.nav.resources).toBe("Ressources")

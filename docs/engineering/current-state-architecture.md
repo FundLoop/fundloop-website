@@ -1,6 +1,6 @@
 # FundLoop Current-State Architecture
 
-Last reviewed: 2026-04-14
+Last reviewed: 2026-08-11
 
 Related planning docs:
 - [Engineering Docs Index](./README.md)
@@ -9,6 +9,15 @@ Related planning docs:
 - [Target-State Architecture](./target-state-architecture.md)
 - [Archived Sessions 1-52 Roadmap](../../agent-context/todo-1-through-52.md)
 - [MCP TODO Roadmap](../../agent-context/todo-mcp.md)
+- [2026-08-11 Capability Review](./capability-review-2026-08-11.md)
+
+## 2026-08-11 status note
+
+This document still explains the repo structure, but the April subsystem descriptions below are no longer a complete capability inventory. `dev` now also contains the settlement-backed epoch shadow state machine, neutral-ledger foundations, funded allocation, withdrawal reservation, Base Safe and Stripe Connect payout control planes, multi-rail intake contracts, financial cutover controls, review-policy gates, publication consent, and expanded local operational validation.
+
+Those additions must not be read as proof of a working dev or production economy. At the review timestamp, application CI on `dev` passed, but Supabase Dev deployment was blocked at the neutral-ledger migration and its remote Edge Function inventory was materially behind the branch. Most of the new financial paths are explicitly local-real, sandbox-real, stubbed, or pending—not production enabled. The linked capability review records that distinction and should be treated as the current environment-level truth.
+
+The `codex/public-monthly-coordination-story` worktree adds a local-only `settled_cubid_redistribution_v2` implementation. It preserves full score-adjusted initial claims, applies the selected monthly cap multiple only to redistribution top-ups, and adds exactly E−3 unclaimed-award harvest plus carry-forward residue as source-linked pool inputs. This worktree state is not deployed and does not enable production value flow.
 
 ## 1. What This Repo Is Today
 

@@ -1,371 +1,155 @@
-import Link from "next/link"
 import type { Metadata } from "next"
 import { notFound } from "next/navigation"
 import { getTranslations } from "next-intl/server"
-import { ArrowRight, ExternalLink, HeartHandshake, ShieldCheck, Sparkles, Users } from "lucide-react"
+import { ArrowRight, Bot, Building2, Eye, FlaskConical, LockKeyhole, UserRound } from "lucide-react"
 import { Link as LocaleLink } from "@/i18n/navigation"
 import { isValidLocale } from "@/i18n/routing"
 import { Button } from "@/components/ui/button"
-import {
-  MarketingPage,
-  MarketingSection,
-  SectionBody,
-  SectionEyebrow,
-  SectionTitle,
-} from "@/components/marketing/page-chrome"
+import { MarketingPage, MarketingSection, SectionBody, SectionEyebrow, SectionTitle } from "@/components/marketing/page-chrome"
 import { Reveal } from "@/components/marketing/reveal"
-import { NetworkConstellation } from "@/components/marketing/network-constellation"
-import { JourneyConfidenceBand, type JourneyConfidenceItem } from "@/components/marketing/journey-confidence-band"
-import { RotatingHeroTitle } from "@/components/marketing/rotating-hero-title"
-import { ecosystemSites, resourceLinks } from "@/lib/public-site"
-import { useCases } from "@/lib/use-cases"
+import { MonthlyLoopVisual } from "@/components/marketing/monthly-loop-visual"
 
-const iconMap = {
-  fairdrops: Sparkles,
-  "proof-of-humanity": ShieldCheck,
-  "community-engagement": Users,
-  "give-back": HeartHandshake,
-  "viral-growth": Sparkles,
+type MonthlyStage = { step: string; title: string; body: string }
+type Audience = { id: "people" | "projects" | "research" | "operators"; label: string; title: string; body: string; href: string; cta: string }
+type Principle = { title: string; body: string }
+
+const audienceIcons = {
+  people: UserRound,
+  projects: Building2,
+  research: FlaskConical,
+  operators: Bot,
 } as const
 
-const ecosystemPreviewNames = ["ChainCrew", "ClearPass", "Cubid", "SmarTrust", "TCOIN", "Solar Village"] as const
-
-type HomeStep = {
-  step: string
-  title: string
-  body: string
-}
-
-type EntryPath =
-  {
-    eyebrow: string
-    title: string
-    body: string
-    cta: string
-    href: string
-  }
-
-type PageProps = {
-  params: Promise<{ locale: string }>
-}
+type PageProps = { params: Promise<{ locale: string }> }
 
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
   const { locale } = await params
   const t = await getTranslations({ locale, namespace: "metadata.home" })
-
-  return {
-    title: t("title"),
-    description: t("description"),
-  }
+  return { title: t("title"), description: t("description") }
 }
 
 export default async function Home({ params }: PageProps) {
   const { locale } = await params
-
-  if (!isValidLocale(locale)) {
-    notFound()
-  }
+  if (!isValidLocale(locale)) notFound()
 
   const t = await getTranslations({ locale, namespace: "home" })
-  const polishT = await getTranslations({ locale, namespace: "journeyPolish.home" })
-  const shellT = await getTranslations({ locale, namespace: "shell" })
-  const loopSteps = t.raw("howItWorks.steps") as HomeStep[]
-  const entryPaths = t.raw("entryPaths") as EntryPath[]
-  const heroPrefixes = t.raw("heroPrefixes") as string[]
-  const exploreResourceLinks = resourceLinks.map((link) => ({
-    ...link,
-    label: shellT(`nav.resourceLinks.${link.id}.label`),
-    description: shellT(`nav.resourceLinks.${link.id}.description`),
-  }))
-  const ecosystemPreviewSites = ecosystemPreviewNames
-    .map((name) => ecosystemSites.find((site) => site.name === name))
-    .filter((site): site is (typeof ecosystemSites)[number] => Boolean(site))
+  const stages = t.raw("monthlyLoop.stages") as MonthlyStage[]
+  const audiences = t.raw("audiences.items") as Audience[]
+  const principles = t.raw("trust.items") as Principle[]
 
   return (
-    <MarketingPage>
-      <section className="relative min-h-[calc(100svh-5.5rem)]">
-        <div className="mx-auto grid min-h-[calc(100svh-5.5rem)] max-w-7xl grid-cols-[minmax(0,1fr)] items-end gap-12 px-6 pb-14 pt-10 sm:px-8 lg:grid-cols-[minmax(0,1.02fr)_minmax(22rem,0.98fr)] lg:px-12">
-          <Reveal className="min-w-0 max-w-3xl pb-4">
-            <SectionEyebrow>{t("eyebrow")}</SectionEyebrow>
-            <p className="mt-6 font-display text-[clamp(4rem,12vw,8.5rem)] leading-none tracking-[-0.07em]">FundLoop</p>
-            <RotatingHeroTitle prefixes={heroPrefixes} suffix={t("heroSuffix")} />
-            <SectionBody className="mt-6 max-w-xl font-medium text-[var(--marketing-ink)]">
-              {t("heroThesis")}
-            </SectionBody>
-            <SectionBody className="mt-3 max-w-xl">{t("heroBody")}</SectionBody>
-            <div id="project-signup" className="mt-10 flex scroll-mt-28 flex-col gap-4 sm:flex-row">
-              <Button
-                asChild
-                size="lg"
-                className="rounded-full bg-[var(--marketing-accent)] px-7 text-white hover:bg-[color:var(--marketing-accent)]/92"
-              >
-                <LocaleLink href="/?onboarding=project">
-                  {t("ctas.project")}
-                  <ArrowRight className="h-4 w-4" />
-                </LocaleLink>
+    <MarketingPage className="[--marketing-accent:#d45f35]">
+      <section className="relative min-h-[calc(100svh-5.5rem)] overflow-hidden border-b border-[color:var(--marketing-line)] bg-[#101b1a] text-[#fff9ef]">
+        <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_75%_20%,rgba(212,95,53,0.24),transparent_30%),radial-gradient(circle_at_10%_82%,rgba(126,175,203,0.16),transparent_33%)]" />
+        <div className="relative mx-auto grid min-h-[calc(100svh-5.5rem)] max-w-[100rem] items-center gap-10 px-6 py-12 sm:px-8 lg:grid-cols-[minmax(0,0.82fr)_minmax(34rem,1.18fr)] lg:px-12">
+          <Reveal className="z-10 max-w-3xl">
+            <p className="text-[0.68rem] font-semibold uppercase tracking-[0.3em] text-[#f5b195]">{t("eyebrow")}</p>
+            <p className="mt-6 font-display text-[clamp(4.25rem,10vw,8.5rem)] leading-[0.8] tracking-[-0.075em]">FundLoop</p>
+            <h1 className="mt-8 max-w-3xl text-[clamp(2.15rem,5vw,4.65rem)] font-semibold leading-[0.95] tracking-[-0.055em]">
+              {t("heroTitle")}
+            </h1>
+            <p className="mt-6 max-w-2xl text-lg leading-8 text-[#dbe3df]">{t("heroBody")}</p>
+            <div className="mt-9 flex flex-col gap-3 sm:flex-row">
+              <Button asChild size="lg" className="rounded-full bg-[#e06b40] px-7 text-white hover:bg-[#ef7950]">
+                <LocaleLink href="/?onboarding=user">{t("ctas.participant")}<ArrowRight className="h-4 w-4" /></LocaleLink>
               </Button>
-              <Button
-                asChild
-                size="lg"
-                variant="outline"
-                className="rounded-full border-[color:var(--marketing-line-strong)] bg-transparent px-7 text-[var(--marketing-ink)] hover:bg-black/[0.04] dark:text-[var(--marketing-paper)] dark:hover:bg-white/[0.06]"
-              >
-                <LocaleLink href="/?onboarding=user">
-                  {t("ctas.participant")}
-                  <ArrowRight className="h-4 w-4" />
-                </LocaleLink>
+              <Button asChild size="lg" variant="outline" className="rounded-full border-white/28 bg-white/[0.04] px-7 text-white hover:bg-white/10 hover:text-white">
+                <LocaleLink href="/?onboarding=project">{t("ctas.project")}<ArrowRight className="h-4 w-4" /></LocaleLink>
               </Button>
-            </div>
-            <div className="mt-10 grid gap-3 text-sm text-[var(--marketing-muted-strong)] sm:grid-cols-3">
-              <p className="border-t border-[color:var(--marketing-line)] pt-3">{t("statLines.projects")}</p>
-              <p className="border-t border-[color:var(--marketing-line)] pt-3">{t("statLines.people")}</p>
-              <p className="border-t border-[color:var(--marketing-line)] pt-3">{t("statLines.value")}</p>
             </div>
           </Reveal>
 
-          <Reveal delay={120} className="lg:pb-6">
-            <NetworkConstellation />
+          <Reveal
+            delay={120}
+            className="pointer-events-none absolute -right-[19rem] top-20 w-[34rem] min-w-0 opacity-55 sm:-right-64 sm:top-16 lg:pointer-events-auto lg:static lg:w-auto lg:opacity-100"
+          >
+            <MonthlyLoopVisual
+              monthLabel={t("monthlyLoop.visual.month")}
+              centerLabel={t("monthlyLoop.visual.center")}
+              stages={stages.map(({ title }) => title)}
+            />
           </Reveal>
         </div>
       </section>
 
-      <JourneyConfidenceBand
-        eyebrow={polishT("eyebrow")}
-        title={polishT("title")}
-        body={polishT("body")}
-        primaryCta={polishT("primaryCta")}
-        primaryHref="/participation"
-        secondaryCta={polishT("secondaryCta")}
-        secondaryHref="/founders"
-        items={polishT.raw("items") as JourneyConfidenceItem[]}
-      />
-
-      <MarketingSection className="border-b border-[color:var(--marketing-line)] bg-white/34 dark:bg-white/[0.02]">
-        <div className="grid gap-12 lg:grid-cols-[minmax(0,0.72fr)_minmax(0,1.28fr)] lg:gap-20">
+      <MarketingSection className="border-b border-[color:var(--marketing-line)] bg-white/35 dark:bg-white/[0.02]">
+        <div className="grid gap-14 lg:grid-cols-[minmax(0,0.72fr)_minmax(0,1.28fr)] lg:gap-24">
           <Reveal className="lg:sticky lg:top-28 lg:self-start">
-            <SectionEyebrow>{t("theoryOfChange.eyebrow")}</SectionEyebrow>
-            <SectionTitle className="mt-4 max-w-lg text-5xl sm:text-6xl">
-              {t("theoryOfChange.title")}
-            </SectionTitle>
-            <SectionBody className="mt-5">{t("theoryOfChange.body")}</SectionBody>
+            <SectionEyebrow>{t("monthlyLoop.eyebrow")}</SectionEyebrow>
+            <SectionTitle className="mt-5 max-w-xl text-5xl sm:text-6xl">{t("monthlyLoop.title")}</SectionTitle>
+            <SectionBody className="mt-6">{t("monthlyLoop.body")}</SectionBody>
           </Reveal>
-
-          <div>
-            {["capitalism", "basicIncome", "pluralism"].map((idea, index) => (
-              <Reveal key={idea} delay={index * 90}>
-                <article className="grid gap-5 border-t border-[color:var(--marketing-line)] py-8 sm:grid-cols-[4rem_minmax(0,1fr)] sm:py-10">
-                  <p className="font-display text-3xl leading-none text-[var(--marketing-accent)]">
-                    {String(index + 1).padStart(2, "0")}
-                  </p>
+          <ol>
+            {stages.map((stage, index) => (
+              <Reveal key={stage.step} delay={index * 55}>
+                <li className="group grid gap-5 border-t border-[color:var(--marketing-line)] py-7 sm:grid-cols-[5.5rem_minmax(0,1fr)] sm:py-9">
+                  <span className="font-display text-4xl leading-none text-[var(--marketing-accent)] transition-transform duration-300 group-hover:translate-x-1">{stage.step}</span>
                   <div>
-                    <h2 className="max-w-2xl font-display text-3xl leading-[1.02] tracking-[-0.04em] sm:text-4xl">
-                      {t(`theoryOfChange.ideas.${idea}.title`)}
-                    </h2>
-                    <p className="mt-4 max-w-2xl text-base leading-7 text-[var(--marketing-muted-strong)]">
-                      {t(`theoryOfChange.ideas.${idea}.body`)}
-                    </p>
+                    <h2 className="text-2xl font-semibold tracking-[-0.035em] sm:text-3xl">{stage.title}</h2>
+                    <p className="mt-3 max-w-2xl text-base leading-7 text-[var(--marketing-muted-strong)]">{stage.body}</p>
                   </div>
-                </article>
+                </li>
               </Reveal>
             ))}
-          </div>
-        </div>
-      </MarketingSection>
-
-      <MarketingSection className="border-y border-[color:var(--marketing-line)] bg-white/34 dark:bg-white/[0.02]">
-        <div className="grid gap-12 lg:grid-cols-[minmax(0,0.88fr)_minmax(0,1.12fr)]">
-          <Reveal className="lg:sticky lg:top-28 lg:self-start">
-            <SectionEyebrow>{t("howItWorks.eyebrow")}</SectionEyebrow>
-            <SectionTitle className="mt-4 max-w-xl text-5xl sm:text-6xl">{t("howItWorks.title")}</SectionTitle>
-            <SectionBody className="mt-5">{t("howItWorks.body")}</SectionBody>
-          </Reveal>
-
-          <div className="space-y-10">
-            {loopSteps.map((item, index) => (
-              <Reveal key={item.step} delay={index * 90}>
-                <div className="grid gap-5 border-t border-[color:var(--marketing-line)] pt-6 sm:grid-cols-[5rem_minmax(0,1fr)]">
-                  <p className="font-display text-4xl leading-none text-[var(--marketing-accent)]">{item.step}</p>
-                  <div>
-                    <h2 className="text-2xl font-semibold tracking-[-0.04em] sm:text-3xl">{item.title}</h2>
-                    <p className="mt-3 max-w-xl text-base leading-7 text-[var(--marketing-muted-strong)]">{item.body}</p>
-                  </div>
-                </div>
-              </Reveal>
-            ))}
-          </div>
+          </ol>
         </div>
       </MarketingSection>
 
       <MarketingSection>
-        <div className="grid gap-12 lg:grid-cols-2">
-          {entryPaths.map((path, index) => (
-            <Reveal key={path.title} delay={index * 120}>
-              <div className="flex h-full flex-col justify-between border-t border-[color:var(--marketing-line)] pt-6">
-                <div>
-                  <SectionEyebrow>{path.eyebrow}</SectionEyebrow>
-                  <h2 className="mt-4 max-w-lg font-display text-4xl leading-none tracking-[-0.04em] sm:text-5xl">
-                    {path.title}
-                  </h2>
-                  <p className="mt-5 max-w-xl text-base leading-7 text-[var(--marketing-muted-strong)]">{path.body}</p>
-                </div>
-                <LocaleLink
-                  href={path.href}
-                  className="group mt-10 inline-flex items-center gap-2 text-sm font-semibold uppercase tracking-[0.18em] text-[var(--marketing-accent)]"
-                >
-                  {path.cta}
-                  <ArrowRight className="h-4 w-4 transition-transform duration-200 group-hover:translate-x-1" />
-                </LocaleLink>
-              </div>
-            </Reveal>
-          ))}
-        </div>
-      </MarketingSection>
-
-      <MarketingSection id="use-cases" className="border-y border-[color:var(--marketing-line)] bg-white/34 dark:bg-white/[0.02]">
-        <div className="grid gap-12 lg:grid-cols-[minmax(0,0.78fr)_minmax(0,1.22fr)]">
-          <Reveal className="lg:sticky lg:top-28 lg:self-start">
-            <SectionEyebrow>{t("useCases.eyebrow")}</SectionEyebrow>
-            <SectionTitle className="mt-4 text-5xl sm:text-6xl">{t("useCases.title")}</SectionTitle>
-            <SectionBody className="mt-5">{t("useCases.body")}</SectionBody>
-          </Reveal>
-
-          <div className="space-y-5">
-            {useCases.map((useCase, index) => {
-              const Icon = iconMap[useCase.slug as keyof typeof iconMap] ?? Sparkles
-
-              return (
-                <Reveal key={useCase.slug} delay={index * 80}>
-                  <LocaleLink
-                    href={useCase.href}
-                    className="group block border-t border-[color:var(--marketing-line)] px-1 py-6 transition-colors hover:text-[var(--marketing-accent)]"
-                  >
-                    <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-                      <div className="max-w-2xl">
-                        <div className="flex items-center gap-3">
-                          <span className="inline-flex h-11 w-11 items-center justify-center rounded-full border border-[color:var(--marketing-line)] bg-white/55 dark:bg-white/[0.04]">
-                            <Icon className="h-4 w-4" />
-                          </span>
-                          <p className="text-[0.68rem] font-semibold uppercase tracking-[0.28em] text-[var(--marketing-muted)]">
-                            {t(`useCases.items.${useCase.slug}.eyebrow`)}
-                          </p>
-                        </div>
-                        <h2 className="mt-4 font-display text-4xl leading-none tracking-[-0.04em]">
-                          {t(`useCases.items.${useCase.slug}.label`)}
-                        </h2>
-                        <p className="mt-4 text-base leading-7 text-[var(--marketing-muted-strong)]">
-                          {t(`useCases.items.${useCase.slug}.description`)}
-                        </p>
-                      </div>
-                      <span className="mt-1 inline-flex items-center gap-2 text-sm font-semibold uppercase tracking-[0.18em]">
-                        {t("useCases.explore")}
-                        <ArrowRight className="h-4 w-4 transition-transform duration-200 group-hover:translate-x-1" />
-                      </span>
-                    </div>
-                  </LocaleLink>
-                </Reveal>
-              )
-            })}
-          </div>
-        </div>
-      </MarketingSection>
-
-      <MarketingSection>
-        <div className="grid gap-10 lg:grid-cols-[minmax(0,0.86fr)_minmax(0,1.14fr)]">
-          <Reveal>
-            <SectionEyebrow>{t("ecosystem.eyebrow")}</SectionEyebrow>
-            <SectionTitle className="mt-4 text-5xl sm:text-6xl">{t("ecosystem.title")}</SectionTitle>
-            <SectionBody className="mt-5">{t("ecosystem.body")}</SectionBody>
-            <LocaleLink
-              href="/ecosystem"
-              className="group mt-8 inline-flex items-center gap-2 text-sm font-semibold uppercase tracking-[0.18em] text-[var(--marketing-accent)]"
-            >
-              {t("ecosystem.cta")}
-              <ArrowRight className="h-4 w-4 transition-transform duration-200 group-hover:translate-x-1" />
-            </LocaleLink>
-          </Reveal>
-
-          <div className="grid gap-4 sm:grid-cols-2">
-            {ecosystemPreviewSites.map((site, index) => (
-              <Reveal key={site.url} delay={index * 70}>
-                <Link
-                  href={site.url}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="group flex h-full flex-col justify-between rounded-[1.75rem] border border-[color:var(--marketing-line)] bg-white/58 p-5 transition-transform duration-200 hover:-translate-y-1 dark:bg-white/[0.03]"
-                >
-                  <div>
-                    <p className="text-sm font-semibold uppercase tracking-[0.18em]">{site.name}</p>
-                    <p className="mt-3 text-sm leading-6 text-[var(--marketing-muted-strong)]">
-                      {t(`ecosystem.sites.${site.name}`)}
-                    </p>
-                  </div>
-                  <span className="mt-5 inline-flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.2em] text-[var(--marketing-accent)]">
-                    {t("ecosystem.visitSite")}
-                    <ExternalLink className="h-3.5 w-3.5" />
-                  </span>
-                </Link>
-              </Reveal>
-            ))}
-          </div>
-        </div>
-      </MarketingSection>
-
-      <MarketingSection className="border-y border-[color:var(--marketing-line)] bg-white/34 dark:bg-white/[0.02]">
-        <div className="grid gap-10 lg:grid-cols-[minmax(0,0.82fr)_minmax(0,1.18fr)]">
-          <Reveal className="lg:sticky lg:top-28 lg:self-start">
-            <SectionEyebrow>{t("resources.eyebrow")}</SectionEyebrow>
-            <SectionTitle className="mt-4 text-5xl sm:text-6xl">{t("resources.title")}</SectionTitle>
-          </Reveal>
-          <div className="grid gap-5 sm:grid-cols-2">
-            {exploreResourceLinks.map((resource, index) => (
-              <Reveal key={resource.href} delay={index * 70}>
-                <LocaleLink
-                  href={resource.href}
-                  className="group flex min-h-48 flex-col justify-between rounded-[1.75rem] border border-[color:var(--marketing-line)] bg-white/58 p-5 transition-transform duration-200 hover:-translate-y-1 dark:bg-white/[0.03]"
-                >
-                  <div>
-                    <p className="text-[0.68rem] font-semibold uppercase tracking-[0.24em] text-[var(--marketing-muted)]">
-                      {resource.label}
-                    </p>
-                    <p className="mt-4 text-base leading-7 text-[var(--marketing-muted-strong)]">{resource.description}</p>
-                  </div>
-                  <span className="mt-8 inline-flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.18em] text-[var(--marketing-accent)]">
-                    {t("resources.openPage")}
-                    <ArrowRight className="h-3.5 w-3.5 transition-transform duration-200 group-hover:translate-x-1" />
-                  </span>
-                </LocaleLink>
-              </Reveal>
-            ))}
-          </div>
-        </div>
-      </MarketingSection>
-
-      <MarketingSection className="pb-24 pt-10">
         <Reveal>
-          <div className="rounded-[2rem] border border-[color:var(--marketing-line)] bg-[linear-gradient(135deg,rgba(255,248,238,0.84),rgba(244,203,141,0.2))] p-8 dark:bg-[linear-gradient(135deg,rgba(18,27,25,0.94),rgba(239,139,87,0.12))] sm:p-10">
-            <SectionEyebrow>{t("closing.eyebrow")}</SectionEyebrow>
-            <SectionTitle className="mt-4 max-w-4xl text-5xl sm:text-6xl">{t("closing.title")}</SectionTitle>
-            <SectionBody className="mt-5 max-w-3xl">{t("closing.body")}</SectionBody>
-            <div className="mt-8 flex flex-col gap-4 sm:flex-row">
-              <Button
-                asChild
-                size="lg"
-                className="rounded-full bg-[var(--marketing-accent)] px-7 text-white hover:bg-[color:var(--marketing-accent)]/92"
-              >
-                <LocaleLink href="/?onboarding=project">
-                  {t("closing.project")}
-                  <ArrowRight className="h-4 w-4" />
+          <SectionEyebrow>{t("audiences.eyebrow")}</SectionEyebrow>
+          <SectionTitle className="mt-5 max-w-4xl text-5xl sm:text-7xl">{t("audiences.title")}</SectionTitle>
+          <SectionBody className="mt-6">{t("audiences.body")}</SectionBody>
+        </Reveal>
+        <div className="mt-14 grid border-t border-[color:var(--marketing-line)] lg:grid-cols-2">
+          {audiences.map((audience, index) => {
+            const Icon = audienceIcons[audience.id]
+            return (
+              <Reveal key={audience.id} delay={index * 70}>
+                <LocaleLink href={audience.href} className="group block min-h-full border-b border-[color:var(--marketing-line)] py-9 lg:odd:border-r lg:odd:pr-10 lg:even:pl-10">
+                  <div className="flex items-center justify-between gap-4">
+                    <span className="inline-flex items-center gap-3 text-[0.68rem] font-semibold uppercase tracking-[0.24em] text-[var(--marketing-muted)]"><Icon className="h-4 w-4 text-[var(--marketing-accent)]" />{audience.label}</span>
+                    <ArrowRight className="h-5 w-5 text-[var(--marketing-accent)] transition-transform duration-300 group-hover:translate-x-1" />
+                  </div>
+                  <h2 className="mt-7 max-w-xl font-display text-4xl leading-[0.98] tracking-[-0.045em] sm:text-5xl">{audience.title}</h2>
+                  <p className="mt-5 max-w-xl text-base leading-7 text-[var(--marketing-muted-strong)]">{audience.body}</p>
+                  <span className="mt-7 inline-block text-xs font-semibold uppercase tracking-[0.2em] text-[var(--marketing-accent)]">{audience.cta}</span>
                 </LocaleLink>
-              </Button>
-              <Button
-                asChild
-                variant="outline"
-                size="lg"
-                className="rounded-full border-[color:var(--marketing-line-strong)] bg-transparent px-7 hover:bg-black/[0.04] dark:hover:bg-white/[0.06]"
-              >
-                <LocaleLink href="/?onboarding=user">{t("closing.participant")}</LocaleLink>
-              </Button>
-            </div>
+              </Reveal>
+            )
+          })}
+        </div>
+      </MarketingSection>
+
+      <MarketingSection className="border-y border-[color:var(--marketing-line)] bg-[#101b1a] text-[#fff9ef]">
+        <div className="grid gap-14 lg:grid-cols-[minmax(0,0.85fr)_minmax(0,1.15fr)] lg:gap-24">
+          <Reveal>
+            <span className="inline-flex h-14 w-14 items-center justify-center rounded-full border border-white/18 text-[#f5b195]"><LockKeyhole className="h-6 w-6" /></span>
+            <p className="mt-7 text-[0.68rem] font-semibold uppercase tracking-[0.28em] text-[#f5b195]">{t("trust.eyebrow")}</p>
+            <h2 className="mt-5 max-w-2xl font-display text-5xl leading-[0.94] tracking-[-0.05em] sm:text-6xl">{t("trust.title")}</h2>
+            <p className="mt-6 max-w-xl text-lg leading-8 text-[#cbd8d3]">{t("trust.body")}</p>
+          </Reveal>
+          <div>
+            {principles.map((principle, index) => (
+              <Reveal key={principle.title} delay={index * 80}>
+                <div className="grid gap-4 border-t border-white/14 py-7 sm:grid-cols-[3rem_minmax(0,1fr)]">
+                  <Eye className="mt-1 h-5 w-5 text-[#f5b195]" />
+                  <div><h3 className="text-xl font-semibold tracking-[-0.025em]">{principle.title}</h3><p className="mt-2 max-w-2xl leading-7 text-[#b9cac4]">{principle.body}</p></div>
+                </div>
+              </Reveal>
+            ))}
+          </div>
+        </div>
+      </MarketingSection>
+
+      <MarketingSection className="py-20 sm:py-28">
+        <Reveal>
+          <p className="font-display text-[clamp(3.5rem,9vw,8rem)] leading-[0.83] tracking-[-0.07em] text-[var(--marketing-accent)]">{t("closing.kicker")}</p>
+          <SectionTitle className="mt-7 max-w-5xl text-5xl sm:text-7xl">{t("closing.title")}</SectionTitle>
+          <SectionBody className="mt-6 max-w-3xl">{t("closing.body")}</SectionBody>
+          <div className="mt-9 flex flex-col gap-3 sm:flex-row">
+            <Button asChild size="lg" className="rounded-full bg-[var(--marketing-accent)] px-7 text-white hover:bg-[color:var(--marketing-accent)]/90"><LocaleLink href="/participation">{t("closing.participant")}<ArrowRight className="h-4 w-4" /></LocaleLink></Button>
+            <Button asChild size="lg" variant="outline" className="rounded-full border-[color:var(--marketing-line-strong)] bg-transparent px-7"><LocaleLink href="/documentation">{t("closing.documentation")}</LocaleLink></Button>
           </div>
         </Reveal>
       </MarketingSection>
