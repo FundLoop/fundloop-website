@@ -135,6 +135,32 @@ BEGIN
     RAISE EXCEPTION 'sequential_partial_refund_should_replace_residual';END IF;
 
   PERFORM public.ingest_stripe_pay_by_bank_webhook(jsonb_build_object('contractVersion','stripe_pay_by_bank_webhook.v1','deploymentEnvironment','local',
+    'providerEventId','evt_bankrefunded2replay','providerAccountId','acct_testbank','eventType','refund.updated','providerObjectId','re_bankfixture2',
+    'providerCreatedAt','2026-08-11T13:05:00Z','apiVersion','2026-06-24.dahlia','signatureTimestamp',1786443100,'payloadSha256',repeat('b',64),
+    'livemode',false,'observationSource','stripe_sdk_v1','capabilityEvidenceHash',repeat('d',64),'evidenceType','refunded','commandId',v_command,
+    'providerCheckoutSessionId','cs_test_bankfixture','providerPaymentIntentId','pi_bankfixture','providerChargeId','ch_bankfixture','providerRefundId','re_bankfixture2',
+    'providerBalanceTransactionId','txn_bankfixture','currencyCode','GBP','customerCountry','GB','grossAmountMinor','10000','refundAmountMinor','2500','cumulativeRefundedAmountMinor','5000',
+    'feeAmountMinor','30','netAmountMinor','9970','balanceStatus','available','paymentMethodType','pay_by_bank'));
+  IF NOT EXISTS(SELECT 1 FROM public.stripe_pay_by_bank_refund_observations WHERE provider_event_id='evt_bankrefunded2replay')
+    OR (SELECT count(*) FROM public.stripe_pay_by_bank_evidence e WHERE e.command_id=v_command AND e.evidence_type='refunded'
+      AND e.ledger_transaction_id IS NOT NULL AND NOT EXISTS(SELECT 1 FROM public.ledger_transactions r WHERE r.reversal_of_transaction_id=e.ledger_transaction_id))<>1
+    OR (SELECT native_atomic_amount FROM public.ledger_postings WHERE transaction_id=v_second_residual AND side='debit')<>5000 THEN
+    RAISE EXCEPTION 'same_status_provider_replay_should_be_idempotent';END IF;
+
+  PERFORM public.ingest_stripe_pay_by_bank_webhook(jsonb_build_object('contractVersion','stripe_pay_by_bank_webhook.v1','deploymentEnvironment','local',
+    'providerEventId','evt_bankrefundedstale','providerAccountId','acct_testbank','eventType','refund.updated','providerObjectId','re_bankfixture4',
+    'providerCreatedAt','2026-08-11T13:10:00Z','apiVersion','2026-06-24.dahlia','signatureTimestamp',1786443400,'payloadSha256',repeat('c',64),
+    'livemode',false,'observationSource','stripe_sdk_v1','capabilityEvidenceHash',repeat('d',64),'evidenceType','refunded','commandId',v_command,
+    'providerCheckoutSessionId','cs_test_bankfixture','providerPaymentIntentId','pi_bankfixture','providerChargeId','ch_bankfixture','providerRefundId','re_bankfixture4',
+    'providerBalanceTransactionId','txn_bankfixture','currencyCode','GBP','customerCountry','GB','grossAmountMinor','10000','refundAmountMinor','2500','cumulativeRefundedAmountMinor','2500',
+    'feeAmountMinor','30','netAmountMinor','9970','balanceStatus','available','paymentMethodType','pay_by_bank'));
+  IF NOT EXISTS(SELECT 1 FROM public.stripe_pay_by_bank_refund_observations WHERE provider_event_id='evt_bankrefundedstale')
+    OR (SELECT count(*) FROM public.stripe_pay_by_bank_evidence e WHERE e.command_id=v_command AND e.evidence_type='refunded'
+      AND e.ledger_transaction_id IS NOT NULL AND NOT EXISTS(SELECT 1 FROM public.ledger_transactions r WHERE r.reversal_of_transaction_id=e.ledger_transaction_id))<>1
+    OR (SELECT native_atomic_amount FROM public.ledger_postings WHERE transaction_id=v_second_residual AND side='debit')<>5000 THEN
+    RAISE EXCEPTION 'decreasing_cumulative_refund_should_not_enlarge_residual';END IF;
+
+  PERFORM public.ingest_stripe_pay_by_bank_webhook(jsonb_build_object('contractVersion','stripe_pay_by_bank_webhook.v1','deploymentEnvironment','local',
     'providerEventId','evt_bankrefundedfull','providerAccountId','acct_testbank','eventType','refund.updated','providerObjectId','re_bankfixture3',
     'providerCreatedAt','2026-08-11T14:00:00Z','apiVersion','2026-06-24.dahlia','signatureTimestamp',1786446400,'payloadSha256',repeat('9',64),
     'livemode',false,'observationSource','stripe_sdk_v1','capabilityEvidenceHash',repeat('d',64),'evidenceType','refunded','commandId',v_command,
@@ -148,6 +174,29 @@ BEGIN
   IF NOT EXISTS(SELECT 1 FROM public.stripe_pay_by_bank_refund_observations WHERE command_id=v_command AND provider_refund_id='re_bankfixture3'
       AND evidence_type='refunded' AND current_refund_amount_minor=5000 AND cumulative_successful_refund_amount_minor=10000) THEN
     RAISE EXCEPTION 'successful_refund_current_and_cumulative_amounts_not_preserved';END IF;
+
+  PERFORM public.ingest_stripe_pay_by_bank_webhook(jsonb_build_object('contractVersion','stripe_pay_by_bank_webhook.v1','deploymentEnvironment','local',
+    'providerEventId','evt_bankrefundedafterfull','providerAccountId','acct_testbank','eventType','refund.updated','providerObjectId','re_bankfixture5',
+    'providerCreatedAt','2026-08-11T15:00:00Z','apiVersion','2026-06-24.dahlia','signatureTimestamp',1786450000,'payloadSha256',repeat('f',64),
+    'livemode',false,'observationSource','stripe_sdk_v1','capabilityEvidenceHash',repeat('d',64),'evidenceType','refunded','commandId',v_command,
+    'providerCheckoutSessionId','cs_test_bankfixture','providerPaymentIntentId','pi_bankfixture','providerChargeId','ch_bankfixture','providerRefundId','re_bankfixture5',
+    'providerBalanceTransactionId','txn_bankfixture','currencyCode','GBP','customerCountry','GB','grossAmountMinor','10000','refundAmountMinor','5000','cumulativeRefundedAmountMinor','5000',
+    'feeAmountMinor','30','netAmountMinor','9970','balanceStatus','available','paymentMethodType','pay_by_bank'));
+  IF NOT EXISTS(SELECT 1 FROM public.stripe_pay_by_bank_refund_observations WHERE provider_event_id='evt_bankrefundedafterfull')
+    OR EXISTS(SELECT 1 FROM public.stripe_pay_by_bank_evidence e WHERE e.command_id=v_command AND e.evidence_type='refunded'
+      AND e.ledger_transaction_id IS NOT NULL AND NOT EXISTS(SELECT 1 FROM public.ledger_transactions r WHERE r.reversal_of_transaction_id=e.ledger_transaction_id)) THEN
+    RAISE EXCEPTION 'stale_refund_after_full_should_not_recreate_residual';END IF;
+  v_denied:=false;
+  BEGIN
+    PERFORM public.ingest_stripe_pay_by_bank_webhook(jsonb_build_object('contractVersion','stripe_pay_by_bank_webhook.v1','deploymentEnvironment','local',
+      'providerEventId','evt_bankrefundedafterfull','providerAccountId','acct_testbank','eventType','refund.updated','providerObjectId','re_bankfixture5',
+      'providerCreatedAt','2026-08-11T15:00:00Z','apiVersion','2026-06-24.dahlia','signatureTimestamp',1786450001,'payloadSha256',repeat('e',64),
+      'livemode',false,'observationSource','stripe_sdk_v1','capabilityEvidenceHash',repeat('d',64),'evidenceType','refunded','commandId',v_command,
+      'providerCheckoutSessionId','cs_test_bankfixture','providerPaymentIntentId','pi_bankfixture','providerChargeId','ch_bankfixture','providerRefundId','re_bankfixture5',
+      'providerBalanceTransactionId','txn_bankfixture','currencyCode','GBP','customerCountry','GB','grossAmountMinor','10000','refundAmountMinor','5000','cumulativeRefundedAmountMinor','5000',
+      'feeAmountMinor','30','netAmountMinor','9970','balanceStatus','available','paymentMethodType','pay_by_bank'));
+  EXCEPTION WHEN OTHERS THEN v_denied:=SQLERRM LIKE '%stripe_pay_by_bank_webhook_dedupe_conflict%';END;
+  IF NOT v_denied THEN RAISE EXCEPTION 'changed_stale_provider_event_should_conflict';END IF;
 
   INSERT INTO public.payments(project_id,period_start,period_end,revenue,payment_amount,payment_percentage,updated_by)
   VALUES(3,'2026-08-01','2026-08-31',1000,101,10.1,v_actor) RETURNING id INTO v_terminal_payment;

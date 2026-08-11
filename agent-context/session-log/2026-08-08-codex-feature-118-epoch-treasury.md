@@ -2677,3 +2677,45 @@ non-production, signed-webhook, or cumulative custody boundaries.
 
 - Run the full Node 22 gate, commit this narrow normalization fix, then request independent #153
   revalidation before promoting the issue or validating Goal #130.
+
+### session v53: enforce monotonic Pay by Bank refund custody (#153)
+
+- Timestamp: 2026-08-11T03:02:00-04:00
+- Agent: Codex
+- Branch: codex/130-multi-rail-bank-intake
+- Head: cc32950 (pre-commit)
+
+#### Objective
+
+Prevent stale or duplicate cumulative refund observations from enlarging or recreating Pay by Bank
+residual custody while retaining replay-safe signed evidence.
+
+#### Actions Taken
+
+- Added a forward refund-ordering migration that serializes each command's refund observations and
+  accepts custody changes only when the cumulative successful-refund total strictly increases.
+- Retained equal or decreasing signed observations in the append-only normalization table with
+  provider event, provider timestamp, payload hash, and canonical command hash, without invoking
+  ledger mutation again.
+- Replaced the overly broad command/refund/status uniqueness rule with exact provider-event
+  idempotency. Exact replay returns the canonical evidence ID; a changed payload for that event
+  fails closed.
+- Added executable regressions for an equal same-refund event, 50.00 to 25.00 out-of-order decrease,
+  stale 50.00 after a full 100.00 refund, and changed-payload conflict.
+
+#### Validation Notes
+
+- Fresh local replay applied `20260811113000_stripe_pay_by_bank_refund_ordering.sql` and the full Pay
+  by Bank executable SQL passed all original plus monotonic-ordering assertions.
+- Strict Deno passed all three Pay by Bank handlers. The full Node 22 `CI=1 pnpm check` passed 168
+  files / 753 tests, lint, typecheck, and the 165-route production build; diff-check passed.
+
+#### Reflections
+
+- Provider delivery order cannot define custody. The monotonic cumulative provider total is the
+  state invariant; event identity remains the audit and replay invariant.
+
+#### Suggested Next Steps
+
+- Run strict Edge/focused/full Node 22 gates, commit, and request another independent #153
+  revalidation before changing issue status.

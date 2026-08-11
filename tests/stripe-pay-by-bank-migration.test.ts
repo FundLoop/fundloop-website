@@ -4,6 +4,7 @@ import { describe, expect, it } from "vitest"
 const sql = readFileSync("supabase/migrations/20260811110000_stripe_pay_by_bank_intake.sql", "utf8")
 const fixes = readFileSync("supabase/migrations/20260811111000_stripe_pay_by_bank_validator_fixes.sql", "utf8")
 const refundNormalization = readFileSync("supabase/migrations/20260811112000_stripe_pay_by_bank_refund_normalization.sql", "utf8")
+const refundOrdering = readFileSync("supabase/migrations/20260811113000_stripe_pay_by_bank_refund_ordering.sql", "utf8")
 const edge = readFileSync("supabase/functions/stripe-pay-by-bank-checkout-create/index.ts", "utf8")
 const webhook = readFileSync("supabase/functions/stripe-pay-by-bank-webhook/index.ts", "utf8")
 
@@ -54,5 +55,11 @@ describe("Stripe Pay by Bank boundaries", () => {
     expect(refundNormalization).toContain("stripe_pay_by_bank_refund_observations_append_only")
     expect(refundNormalization).toContain("stripe_pay_by_bank_refund_normalization_missing")
     expect(refundNormalization).toContain("CASE WHEN p_command->>'evidenceType'='refunded' THEN v_cumulative ELSE v_current END")
+  })
+  it("ignores equal or decreasing cumulative refund observations without losing signed evidence", () => {
+    expect(refundOrdering).toContain("v_cumulative<=v_max_cumulative")
+    expect(refundOrdering).toContain("stripe_pay_by_bank_refund_observations_provider_event_key")
+    expect(refundOrdering).toContain("provider_event_id=p_command->>'providerEventId'")
+    expect(refundOrdering).toContain("stripe_pay_by_bank_webhook_dedupe_conflict")
   })
 })

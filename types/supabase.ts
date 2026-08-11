@@ -10224,35 +10224,47 @@ export type Database = {
       stripe_pay_by_bank_refund_observations: {
         Row: {
           command_id: string
+          command_sha256: string
           created_at: string
           cumulative_successful_refund_amount_minor: number
           current_refund_amount_minor: number
           evidence_id: number
           evidence_type: string
           id: number
+          payload_sha256: string
           production_enabled: boolean
+          provider_created_at: string
+          provider_event_id: string
           provider_refund_id: string
         }
         Insert: {
           command_id: string
+          command_sha256: string
           created_at?: string
           cumulative_successful_refund_amount_minor: number
           current_refund_amount_minor: number
           evidence_id: number
           evidence_type: string
           id?: never
+          payload_sha256: string
           production_enabled?: boolean
+          provider_created_at: string
+          provider_event_id: string
           provider_refund_id: string
         }
         Update: {
           command_id?: string
+          command_sha256?: string
           created_at?: string
           cumulative_successful_refund_amount_minor?: number
           current_refund_amount_minor?: number
           evidence_id?: number
           evidence_type?: string
           id?: never
+          payload_sha256?: string
           production_enabled?: boolean
+          provider_created_at?: string
+          provider_event_id?: string
           provider_refund_id?: string
         }
         Relationships: [
@@ -10273,7 +10285,7 @@ export type Database = {
           {
             foreignKeyName: "stripe_pay_by_bank_refund_observations_evidence_id_fkey"
             columns: ["evidence_id"]
-            isOneToOne: true
+            isOneToOne: false
             referencedRelation: "stripe_pay_by_bank_evidence"
             referencedColumns: ["id"]
           },
