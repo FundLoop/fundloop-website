@@ -1,4 +1,4 @@
-import { calculateFundedRedistribution, type FundedRedistributionInput } from "../../../lib/monthly-cycles/funded-redistribution-calculator.ts"
+import { calculateFundedRedistributionV2, type FundedRedistributionV2Input } from "../../../lib/monthly-cycles/funded-redistribution-v2-calculator.ts"
 import { validateEpochAllocationCloseInput } from "../../../lib/edge-functions/epoch-allocation-close-contract.ts"
 import { edgeCommandFailure, edgeCommandSuccess } from "../../../lib/edge-functions/result.ts"
 import { isInternalAdminEmail } from "../../../lib/internal-admin-emails.ts"
@@ -6,7 +6,9 @@ import { authenticateRequest, getEnv, json, parseJsonBody, serve } from "../_sha
 
 const allowedEnvironments = new Set(["local", "development", "dev", "preview", "test"])
 function environment() { return (getEnv("FUNDLOOP_DEPLOYMENT_ENV") ?? "production").trim().toLowerCase() }
-function errorCode(message: string) { return message.match(/epoch_close_[a-z_]+/)?.[0] ?? "epoch_close_failed" }
+function errorCode(message: string) {
+  return message.match(/epoch_close_[a-z0-9_]+/)?.[0] ?? message.match(/funded_allocation_v2_[a-z0-9_]+/)?.[0] ?? "epoch_close_failed"
+}
 
 async function handleRequest(request: Request) {
   if (request.method === "OPTIONS") return new Response("ok", { headers: { "access-control-allow-origin": "*", "access-control-allow-headers": "authorization,apikey,content-type" } })
@@ -47,18 +49,30 @@ async function handleRequest(request: Request) {
     if (confirmed.error) return json(edgeCommandFailure(errorCode(confirmed.error.message), confirmed.error.message))
     return json(edgeCommandSuccess({ action: "confirm_root", ...(confirmed.data as Record<string, unknown>) }))
   }
-  const locked = await auth.adminClient.rpc("lock_funded_epoch_allocation", {
-    p_command: { contractVersion: "epoch_funded_allocation_lock.v1", deploymentEnvironment, actorUserId: auth.user.id, cycleKey: input.cycleKey },
-  })
-  if (locked.error) return json(edgeCommandFailure(errorCode(locked.error.message), locked.error.message))
-  const manifest = locked.data as { manifestId: number; manifestHash: string; manifest: Omit<FundedRedistributionInput, "manifestHash"> }
+  const cycle = await auth.adminClient.from("monthly_cycles").select("id").eq("cycle_key", input.cycleKey).maybeSingle()
+  if (cycle.error || !cycle.data) return json(edgeCommandFailure("epoch_close_cycle_invalid", "Cycle not found."))
+  const locked = await auth.adminClient.from("epoch_allocation_manifests")
+    .select("id,manifest_hash,manifest,status")
+    .eq("monthly_cycle_id", cycle.data.id)
+    .eq("policy_key", "settled_cubid_redistribution_v2")
+    .order("version", { ascending: false })
+    .limit(1)
+    .maybeSingle()
+  if (locked.error || !locked.data || !["locked", "calculated"].includes(locked.data.status)) {
+    return json(edgeCommandFailure("epoch_close_v2_manifest_unavailable", "A selected and calculated v2 allocation manifest is required."))
+  }
+  const manifest = {
+    manifestId: locked.data.id,
+    manifestHash: locked.data.manifest_hash,
+    manifest: locked.data.manifest as Omit<FundedRedistributionV2Input, "manifestHash">,
+  }
   const run = await auth.adminClient.from("epoch_allocation_runs").select("id,result_hash").eq("manifest_id", manifest.manifestId).maybeSingle()
   if (run.error || !run.data) return json(edgeCommandFailure("epoch_close_run_unavailable", "A persisted allocation result is required."))
   try {
-    const rerun = await calculateFundedRedistribution({ ...manifest.manifest, manifestHash: manifest.manifestHash })
+    const rerun = await calculateFundedRedistributionV2({ ...manifest.manifest, manifestHash: manifest.manifestHash })
     if (rerun.resultHash !== run.data.result_hash) return json(edgeCommandFailure("epoch_close_deterministic_rerun_mismatch", "The independent deterministic rerun did not match the persisted result."))
-    const approved = await auth.adminClient.rpc("approve_epoch_allocation_close", { p_command: {
-      contractVersion: "epoch_allocation_close.v1", deploymentEnvironment, actorUserId: auth.user.id, runId: run.data.id,
+    const approved = await auth.adminClient.rpc("approve_epoch_allocation_close_v2", { p_command: {
+      contractVersion: "epoch_allocation_close.v2", deploymentEnvironment, actorUserId: auth.user.id, runId: run.data.id,
       manifestHash: manifest.manifestHash, resultHash: run.data.result_hash, rerunResultHash: rerun.resultHash,
     } })
     if (approved.error) return json(edgeCommandFailure(errorCode(approved.error.message), approved.error.message))

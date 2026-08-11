@@ -124,7 +124,23 @@ export type EpochFinancialPrepReview = {
 }
 
 export type EpochFundedAllocationReview = {
-  allocation: Database["public"]["Views"]["epoch_allocation_operator_view"]["Row"] | null
+  allocation: {
+    cycle_key: string | null
+    status: string | null
+    cap_multiple: number | null
+    current_funded_minor: string | number | null
+    harvested_unclaimed_minor: string | number | null
+    carry_in_minor: string | number | null
+    funded_minor: string | number | null
+    score_pool_minor: string | number | null
+    top_up_minor: string | number | null
+    carry_out_residue_minor: string | number | null
+    final_allocation_minor: string | number | null
+    user_count: number | null
+    manifest_hash: string | null
+    selected_preview_hash: string | null
+    result_hash: string | null
+  } | null
   productionDisabled: boolean
   runtimeAvailable: boolean
 }
@@ -135,9 +151,10 @@ export async function loadEpochFundedAllocationReview(cycleKey: string): Promise
     return {allocation:null,productionDisabled:true,runtimeAvailable:false}
   }
   const supabase=getAdminSupabaseClient()
-  const result=await supabase.from("epoch_allocation_operator_view").select("*").eq("cycle_key",parsedCycleKey).maybeSingle()
+  const result=await supabase.from("epoch_allocation_operator_view_v2" as "epoch_allocation_operator_view")
+    .select("*").eq("cycle_key",parsedCycleKey).maybeSingle()
   if (result.error) throw new Error(result.error.message)
-  return {allocation:result.data,productionDisabled:true,runtimeAvailable:true}
+  return {allocation:result.data as EpochFundedAllocationReview["allocation"],productionDisabled:true,runtimeAvailable:true}
 }
 
 export async function loadEpochFinancialPrepReview(cycleKey: string): Promise<EpochFinancialPrepReview> {

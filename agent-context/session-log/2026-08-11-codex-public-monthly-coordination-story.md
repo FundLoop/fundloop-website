@@ -105,3 +105,58 @@ and E−3 unclaimed awards become a redistribution source.
 
 - Review the policy commit before the implementation commit so schema and runtime
   fields can be checked against the equations and conservation rules directly.
+
+### session v3: Implement allocation v2 and harvested redistribution
+
+- Timestamp: 2026-08-11T17:41:00-04:00
+- Agent: Codex
+- Branch: codex/public-monthly-coordination-story
+- Head: ab0c32d
+
+#### Objective
+
+Implement the documented v2 policy through deterministic calculation, forward-only
+schema, operator selection, independent close, withdrawal preparation, and monthly
+reporting while keeping production value flow disabled.
+
+#### Actions Taken
+
+- Added the deterministic v2 calculator with immutable source capacities, full
+  initial claims, top-up-only ceilings, lowest-current-total-first water filling,
+  and source-linked carry-out residue.
+- Added read-only `1.00`–`10.00` previews, a `3.00` initial scenario, selected-preview
+  locking, v2 calculation, and independent v2 close reruns.
+- Added a forward-only migration for E−3 harvested and carry-forward pool sources,
+  claim/harvest serialization, released-claim handling, newest-lot-first partial
+  harvest, duplicate guards, conservation constraints, and v2 withdrawal inventory.
+- Added selected cap and aggregate harvest fields to operator, project, private-user,
+  and privacy-thresholded public reports and bound them into report/root artifacts.
+- Regenerated local Supabase types and added focused calculator, contract, migration,
+  UI, reporting, and multilingual regression coverage.
+
+#### Validation Notes
+
+- Applied the full migration chain and seed from a fresh disposable local Supabase
+  volume with Vector excluded, then passed schema lint at error level.
+- Passed Node 22 `CI=1 pnpm check`: lint, 171 test files / 773 tests, typecheck, and a
+  165-page production build.
+- After the final canonical-capacity correction, passed 22 focused v2 tests,
+  typecheck, schema lint, and `git diff --check`.
+- The repository-wide `supabase test db` command remains non-TAP and fails in two
+  older fixtures before v2 coverage: one lacks an active payout route and one
+  violates the project-payment rail-claim integrity guard.
+
+#### Reflections
+
+- Harvested and carried sources already have authoritative canonical minor amounts;
+  largest-remainder assignment must apply only to current project sources so a cent
+  cannot move into or out of an obligation or predecessor residue lot.
+- Harvest must lock obligations before balance revalidation so a claim and harvest
+  cannot consume the same value concurrently.
+
+#### Suggested Next Steps
+
+- Add a fixture-backed four-epoch SQL scenario once the repository DB harness is
+  converted to a reliable TAP gate.
+- Keep production activation, remote Supabase mutation, push, and PR work in
+  separately authorized sessions.

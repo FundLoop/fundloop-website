@@ -8,16 +8,19 @@ const readModel = readFileSync("lib/monthly-cycles/monthly-cycle-prep.ts", "utf8
 describe("epoch funded allocation operator review", () => {
   it("shows the score discount, redistribution, cap, provenance, and provisional boundary", () => {
     expect(page).toContain("Settled Cubid redistribution")
-    expect(page).toContain("Score shortfalls and overlap-cap overflow")
-    expect(page).toContain("preserved 3× cap")
-    expect(page).toContain("no payable, payout, provider call, or value movement")
+    expect(page).toContain("Score discounts, E−3 harvests, and carry-in residue")
+    expect(page).toContain("redistribution top-up ceiling")
+    expect(page).toContain("Selected cap")
+    expect(page).toContain("E−3 harvested")
+    expect(page).toContain("no provider or value flow is opened")
     expect(page).toContain("Manifest")
     expect(page).toContain("Result")
   })
 
   it("exposes explicit lock and calculate controls only through the typed Edge invoker", () => {
     expect(actions).toContain("invokeEpochFundedAllocationBrowser")
-    expect(actions).toContain("Lock funded inputs")
+    expect(actions).toContain("Preview scenario")
+    expect(actions).toContain("Lock selected scenario")
     expect(actions).toContain("Calculate provisional redistribution")
     expect(actions).not.toContain(".from(")
   })

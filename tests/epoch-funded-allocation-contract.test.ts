@@ -3,12 +3,15 @@ import { describe, expect, it } from "vitest"
 import { validateEpochFundedAllocationInput } from "@/lib/edge-functions/epoch-funded-allocation-contract"
 
 describe("epoch funded allocation Edge contract", () => {
-  it("accepts only exact read, lock, and calculate inputs", () => {
+  it("accepts only exact read, preview, lock, and calculate inputs", () => {
     expect(validateEpochFundedAllocationInput({ action: "read" })).toMatchObject({ ok: true })
     expect(validateEpochFundedAllocationInput({ action: "read", cycleKey: "2026-08" })).toMatchObject({ ok: true })
-    expect(validateEpochFundedAllocationInput({ action: "lock", cycleKey: "2026-08" })).toMatchObject({ ok: true })
+    expect(validateEpochFundedAllocationInput({ action: "preview", cycleKey: "2026-08", capMultiple: "3.00" })).toMatchObject({ ok: true })
+    expect(validateEpochFundedAllocationInput({ action: "lock", cycleKey: "2026-08", capMultiple: "3.00", selectedPreviewHash: "a".repeat(64) })).toMatchObject({ ok: true })
     expect(validateEpochFundedAllocationInput({ action: "calculate", cycleKey: "2026-08" })).toMatchObject({ ok: true })
     expect(validateEpochFundedAllocationInput({ action: "calculate", cycleKey: "2026-8" })).toMatchObject({ ok: false })
+    expect(validateEpochFundedAllocationInput({ action: "preview", cycleKey: "2026-08", capMultiple: "3" })).toMatchObject({ ok: false })
+    expect(validateEpochFundedAllocationInput({ action: "preview", cycleKey: "2026-08", capMultiple: "10.01" })).toMatchObject({ ok: false })
   })
 
   it("rejects caller-owned actor, environment, artifact, and source inputs", () => {
@@ -24,7 +27,7 @@ describe("epoch funded allocation Edge contract", () => {
     expect(source).toContain("actorUserId: auth.user.id")
     expect(source).toContain("deploymentEnvironment: environment")
     expect(source).toContain('new Set(["local", "development", "dev", "preview", "test"])')
-    expect(source).toContain("calculateFundedRedistribution")
+    expect(source).toContain("calculateFundedRedistributionV2")
     expect(source).not.toContain('allowedEnvironments.add("production")')
   })
 })

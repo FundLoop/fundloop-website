@@ -300,7 +300,9 @@ export default async function WorkspaceEarningsPage({ params }: WorkspaceEarning
         cycleKey={epochClose.cycleKey}
         rootHash={epochClose.rootHash}
         values={[
-          {label:"Retained initial",value:epochClose.retainedInitialMinor},{label:"Redistribution top-up",value:epochClose.topUpMinor},
+          {label:"Initial claims",value:epochClose.initialClaimMinor},{label:"Redistribution top-up",value:epochClose.topUpMinor},
+          {label:"Top-up ceiling",value:epochClose.redistributionCeilingMinor},{label:"Selected cap multiple",value:`${epochClose.capMultiple}×`},
+          {label:"Epoch harvest (aggregate)",value:epochClose.harvestedUnclaimedMinor},
           {label:"Final minor units",value:epochClose.finalAwardMinor},{label:"Payable state",value:epochClose.payableStatus},
         ]}
       /> : null}

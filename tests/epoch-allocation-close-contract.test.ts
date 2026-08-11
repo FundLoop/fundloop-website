@@ -21,7 +21,9 @@ describe("epoch allocation close Edge contract", () => {
 
   it("reruns the trusted manifest and binds actor and runtime inside Edge", () => {
     const source = readFileSync("supabase/functions/epoch-allocation-close/index.ts", "utf8")
-    expect(source).toContain("calculateFundedRedistribution")
+    expect(source).toContain("calculateFundedRedistributionV2")
+    expect(source).toContain('"settled_cubid_redistribution_v2"')
+    expect(source).toContain('"approve_epoch_allocation_close_v2"')
     expect(source).toContain("rerun.resultHash !== run.data.result_hash")
     expect(source).toContain("actorUserId: auth.user.id")
     expect(source).toContain("confirm_epoch_allocation_close_root")
