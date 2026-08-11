@@ -670,13 +670,16 @@ event-ID deduplication, idempotency keys, and out-of-order event handling. A rec
 becomes eligible only from independently observed availability evidence, not merely
 a successful payment intent.
 
-The current Stripe Customer Balance bank-transfer product supports USD but does not
-offer CAD presentment. Task #131 therefore keeps CAD fail-closed and records the provider
-gap explicitly; Canadian PAD is not substituted because it is a pull-based debit. The
-durable asset/custody model remains currency-aware so an authoritative future CAD push-
-transfer provider can be added without weakening the signed-event or reconciliation gates.
+The retained Stripe Customer Balance bank-transfer implementation remains fail-closed
+because the canonical Canadian sandbox exposes no supported push-transfer currencies.
+Canadian project funding instead has a distinct one-time PAD rail: Stripe-hosted Checkout,
+dynamic payment-method configuration, explicit mandate acknowledgement, delayed settlement,
+and authoritative signed-event re-fetch. PAD is not treated as a push transfer, does not reuse
+mandates, and cannot fund a package until available custody and a conserved provisional journal
+exist. CAD is the safe default; USD stays disabled without exact-account denomination evidence.
+See [Stripe Canadian PAD intake](./stripe-canadian-pad-intake.md).
 
-Task #131 must prove an exact Stripe/bank arrangement with either separate externally
+Any Stripe intake rail must prove an exact Stripe/bank arrangement with either separate externally
 reconcilable platform and epoch custody identifiers or a clearing account that
 sweeps to separate custody within a defined SLA. Production Stripe intake remains
 disabled if neither topology is available. Connected-account onboarding uses

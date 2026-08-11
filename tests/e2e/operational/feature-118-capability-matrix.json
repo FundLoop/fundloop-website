@@ -120,6 +120,14 @@
       "highRisk": ["unsupported-currency", "unsigned-webhook", "duplicate-event", "provider-capability-absence"]
     },
     {
+      "id": "stripe-canadian-pad-intake",
+      "state": "local-real",
+      "personas": ["new-founder", "returning-founder", "returning-operator"],
+      "evidence": ["supabase/tests/stripe_acss_debit_intake.sql", "docs/engineering/stripe-canadian-pad-intake.md"],
+      "pendingReason": "Real hosted PAD remains unavailable unless the canonical test account and dedicated payment-method configuration both report active capability; production and USD remain disabled.",
+      "highRisk": ["premature-settlement", "mandate-reuse", "unsigned-webhook", "authoritative-refetch-mismatch", "refund-dispute-double-reversal"]
+    },
+    {
       "id": "hosted-remote-safe-public-smoke",
       "state": "pending",
       "personas": [],

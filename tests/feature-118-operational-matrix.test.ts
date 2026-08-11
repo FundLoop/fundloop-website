@@ -38,12 +38,14 @@ describe("Feature #118 operational capability matrix", () => {
       "base-usdc-intake-and-safe-payout",
       "stripe-connect-usd-cad-payout",
       "stripe-bank-transfer-usd-cad-intake",
+      "stripe-canadian-pad-intake",
     ]))
   })
 
   it("never represents a stubbed or unavailable provider path as real", () => {
     const stripeIntake = matrix.capabilities.find((entry) => entry.id === "stripe-bank-transfer-usd-cad-intake")
     expect(stripeIntake?.state).toBe("pending")
+    expect(matrix.capabilities.find((entry) => entry.id === "stripe-canadian-pad-intake")?.state).toBe("local-real")
     expect(matrix.capabilities.find((entry) => entry.id === "base-usdt-review-route")?.state).toBe("stubbed")
     expect(matrix.capabilities.find((entry) => entry.id === "base-pyusd-review-route")?.state).toBe("stubbed")
     for (const entry of matrix.capabilities.filter((candidate) => ["pending", "stubbed"].includes(candidate.state))) {

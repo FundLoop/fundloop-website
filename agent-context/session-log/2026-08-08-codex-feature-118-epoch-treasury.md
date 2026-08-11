@@ -2405,3 +2405,65 @@ cutover and complete local operational evidence boundary.
 
 - Commit and push this review-fix batch, reply to and resolve all six PR threads without requesting
   rereview, wait for green CI/Vercel/Supabase checks, then merge and run approved cleanup.
+
+### session v48: implement fail-closed Canadian PAD intake (#152)
+
+- Timestamp: 2026-08-11T01:25:00-04:00
+- Agent: Codex
+- Branch: codex/130-multi-rail-bank-intake
+- Head: 1709bbd (pre-commit)
+
+#### Objective
+
+Add a non-production Canadian pre-authorized debit funding rail using Stripe-hosted Checkout while
+keeping Customer Balance bank transfer, USD PAD, production activation, mandate reuse, and real
+value flow fail closed.
+
+#### Actions Taken
+
+- Added typed CAD PAD Checkout/status contracts, a provider adapter, authenticated browser
+  invokers, three strict Edge handlers, and a founder payment panel. Checkout uses an active
+  dynamic payment-method configuration and integration identifier without hard-coded
+  `payment_method_types`, saved methods, or off-session mandate reuse.
+- Added a forward-only Supabase control plane for runtime/capability evidence, a provisional CAD
+  asset/custody route, idempotent prepared commands and provider acknowledgement recovery,
+  append-only signed webhook observations, authoritative session/intent/charge/mandate/balance
+  transaction checks, balanced neutral-ledger posting, one-time reversal, scoped status reads, and
+  service-role-only commands.
+- Extended epoch package funding sources with an exact PAD command reference. The package validator
+  attaches only settled, unreversed custody-backed sources; pending Checkout or processing evidence
+  cannot make a package fundable.
+- Added executable SQL, adapter/contract/component/migration tests, a serial local runner phase,
+  exact desktop/mobile Playwright evidence, generated Supabase types, architecture/testing docs,
+  and the Feature #118 capability matrix entry.
+- Rechecked the canonical `fundloop-canonical` Stripe CLI profile. It is test-only and Canadian, has
+  zero Checkout Sessions, and its active default configuration reports `acss_debit.available=false`
+  and `value=off`; therefore the real provider path truthfully stops before Checkout mutation.
+
+#### Validation Notes
+
+- Fresh local Supabase replay applied every migration through
+  `20260811100000_stripe_acss_debit_intake.sql`. Executable PAD SQL passed production and USD
+  denial, authenticated direct-write denial, idempotent prepare, pending-not-fundable, exact
+  available custody, native/functional balance, package linkage, refund reversal, and replay safety.
+- Strict Deno checks passed for all three new PAD handlers. Focused Vitest passed 4 files / 13 tests;
+  Node 22 full `CI=1 pnpm check` passed 165 files / 731 tests, typecheck, lint, and the 165-route
+  production build.
+- The local founder Playwright spec passed at 1440x900 and 390x844 with zero unexpected console
+  errors. Both retained screenshots were visually inspected and contain no bank, transit, or
+  institution details.
+- Stripe test capability evidence used read-only CLI calls only. No Stripe object, remote database,
+  live credential, production policy, payable, payout, or real value flow was created.
+
+#### Reflections
+
+- A hosted return is merely user-flow completion; custody eligibility needs an independently
+  refetched available balance transaction, exact mandate/session binding, and conserved journal.
+- Provider absence is a valid smoke result only when the implementation proves the denial occurs
+  before provider mutation and deterministic fixtures still exercise every local state transition.
+
+#### Suggested Next Steps
+
+- Commit #152 separately, run independent issue validation, and start #153 only after a passing
+  verdict. Keep PAD unavailable until the canonical test payment-method configuration becomes
+  authoritative; never infer USD eligibility from locale or user input.
