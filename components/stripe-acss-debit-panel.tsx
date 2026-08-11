@@ -11,6 +11,15 @@ import type { StripeAcssDebitStatus } from "@/lib/stripe/stripe-acss-debit-contr
 
 type PaymentOption = {id: number; paymentAmount: number; statusCode: string; periodStart: string; periodEnd: string}
 
+function statusDescription(status: StripeAcssDebitStatus) {
+  if (status.reversed || ["refunded", "dispute_lost"].includes(status.status)) return "Reversed and removed from package eligibility; the project requires new settled funding."
+  if (status.status === "disputed") return "Dispute open; this source is blocked from every project package until Stripe resolves it."
+  if (status.availableForPackage) return "Reconciled: available custody and balanced provisional journal verified."
+  if (["processing", "checkout_completed"].includes(status.status)) return "Authorization recorded; PAD settlement is pending and not fundable."
+  if (status.status === "checkout_created") return "Authorization required in Stripe-hosted Checkout; no funding has been recorded."
+  return "Not fundable; awaiting authoritative settlement."
+}
+
 export function StripeAcssDebitPanel({projectSlug, payments, termsAcknowledged}: {projectSlug: string; payments: PaymentOption[]; termsAcknowledged: boolean}) {
   const [statuses, setStatuses] = useState<StripeAcssDebitStatus[]>([])
   const [loadingId, setLoadingId] = useState<number | null>(null)
@@ -39,13 +48,14 @@ export function StripeAcssDebitPanel({projectSlug, payments, termsAcknowledged}:
       </div>
       {eligible.length === 0 ? <p className="text-sm text-slate-500">No draft payment is ready for PAD authorization.</p> : <div className="space-y-2">{eligible.map((payment) => {
         const status = statuses.find((row) => row.paymentId === payment.id)
+        const resumable = !status || ["prepared", "checkout_created", "checkout_completed", "processing"].includes(status.status)
         return <div key={payment.id} className="flex flex-col gap-3 rounded-md border p-3 sm:flex-row sm:items-center sm:justify-between" data-testid={`stripe-acss-payment-${payment.id}`}>
           <div><p className="font-medium">Payment #{payment.id} · {new Intl.NumberFormat("en-CA", {style: "currency", currency: "CAD"}).format(payment.paymentAmount)}</p>
             <p className="text-xs text-slate-500">{payment.periodStart} to {payment.periodEnd}</p>
             {status ? <div className="mt-2 flex flex-wrap gap-2"><Badge variant={status.availableForPackage ? "default" : "outline"}>{status.status.replaceAll("_", " ")}</Badge>
-              <span className="text-xs text-slate-500">{status.availableForPackage ? "Available custody and balanced provisional journal verified." : "Not fundable; awaiting authoritative settlement."}</span></div> : null}</div>
-          <Button variant="outline" disabled={!termsAcknowledged || loadingId !== null || Boolean(status?.availableForPackage)} onClick={() => void create(payment)} data-testid={`stripe-acss-create-${payment.id}`}>
-            {loadingId === payment.id ? <RefreshCw className="mr-2 h-4 w-4 animate-spin"/> : <Landmark className="mr-2 h-4 w-4"/>}{status ? "Resume CAD PAD" : "Open CAD PAD Checkout"}
+              <span className="text-xs text-slate-500">{statusDescription(status)}</span></div> : null}</div>
+          <Button variant="outline" disabled={!termsAcknowledged || loadingId !== null || !resumable} onClick={() => void create(payment)} data-testid={`stripe-acss-create-${payment.id}`}>
+            {loadingId === payment.id ? <RefreshCw className="mr-2 h-4 w-4 animate-spin"/> : <Landmark className="mr-2 h-4 w-4"/>}{!resumable ? "New payment required" : status ? "Resume CAD PAD" : "Open CAD PAD Checkout"}
           </Button>
         </div>
       })}</div>}

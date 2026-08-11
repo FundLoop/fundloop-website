@@ -2,6 +2,7 @@ import { readFileSync } from "node:fs"
 import { describe, expect, it } from "vitest"
 
 const sql = readFileSync("supabase/migrations/20260811100000_stripe_acss_debit_intake.sql", "utf8")
+const lifecycleSql = readFileSync("supabase/migrations/20260811103000_stripe_acss_debit_lifecycle_integrity.sql", "utf8")
 const edge = readFileSync("supabase/functions/stripe-acss-debit-checkout-create/index.ts", "utf8")
 const webhook = readFileSync("supabase/functions/stripe-acss-debit-webhook/index.ts", "utf8")
 
@@ -25,5 +26,12 @@ describe("Stripe ACSS debit boundaries", () => {
     expect(webhook).toContain("constructEventAsync")
     expect(webhook).toContain("authoritativeObservation")
     expect(webhook).toContain("paymentIntents.retrieve")
+    expect(webhook).toContain("checkout.sessions.list")
+  })
+  it("pins provider identities and invalidates disputed or reversed package sources", () => {
+    expect(lifecycleSql).toContain("stripe_acss_provider_identity_conflict")
+    expect(lifecycleSql).toContain("stripe_acss_terminal_evidence_blocks_settlement")
+    expect(lifecycleSql).toContain("stripe_acss_debit_package_invalidations")
+    expect(lifecycleSql).toContain("NOT IN ('disputed','refunded','dispute_lost')")
   })
 })

@@ -2467,3 +2467,55 @@ value flow fail closed.
 - Commit #152 separately, run independent issue validation, and start #153 only after a passing
   verdict. Keep PAD unavailable until the canonical test payment-method configuration becomes
   authoritative; never infer USD eligibility from locale or user input.
+
+### session v49: close Canadian PAD lifecycle validation gaps (#152)
+
+- Timestamp: 2026-08-11T01:55:00-04:00
+- Agent: Codex
+- Branch: codex/130-multi-rail-bank-intake
+- Head: a123cd5 (pre-commit)
+
+#### Objective
+
+Close every independent #152 validation finding without broadening the provider, production, or
+value-flow boundary.
+
+#### Actions Taken
+
+- Added a forward lifecycle-integrity migration that pins the unique Checkout Session,
+  PaymentIntent, Charge, and mandate identities to the prepared PAD command and rejects missing or
+  changed provider identities.
+- Made refund and lost-dispute evidence durable terminal barriers against later settlement. Open
+  disputes now block package eligibility immediately.
+- Added append-only package-source invalidation records. Refund, open-dispute, and lost-dispute
+  evidence marks every already-linked package unsettled while preserving its immutable source
+  evidence; a won dispute can only support a newly validated package.
+- Updated the signed webhook refetch to resolve the unique command-bound Checkout Session for every
+  PaymentIntent, refund, and dispute event rather than accepting a null session comparison.
+- Expanded founder lifecycle copy and disabled terminal-state resume actions. The local browser
+  fixture now retains authorization, pending, reconciled, and reversal evidence at exact desktop
+  and mobile viewports.
+
+#### Validation Notes
+
+- A disposable local Supabase start from no backup applied every migration through
+  `20260811103000_stripe_acss_debit_lifecycle_integrity.sql`.
+- Executable PAD SQL passed package invalidation, terminal-before-settlement denial, open-dispute
+  denial, missing-session denial, provider-identity drift denial, exact posting/reversal, and all
+  prior production/RLS/idempotency checks.
+- Strict Deno passed all three PAD handlers; focused Vitest passed 3 files / 14 tests.
+- Playwright passed 1/1 with zero unexpected product console errors and retained eight captures:
+  authorization, pending, reconciled, and reversal at 1440x900 and 390x844. The captures were
+  dimension-checked and visually inspected.
+
+#### Reflections
+
+- Webhook order cannot be trusted. Terminal negative evidence must be durable independently of the
+  provider timestamp so an older positive event cannot restore custody later.
+- Reversing a ledger entry is insufficient if an immutable package source already consumed it;
+  downstream eligibility needs its own append-only invalidation evidence.
+
+#### Suggested Next Steps
+
+- Run the full Node 22 gate, commit the narrow validator-fix batch, and request independent #152
+  revalidation. Begin #153 only after #152 passes and reaches In Review.

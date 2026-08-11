@@ -7,31 +7,6 @@ export type Json =
   | Json[]
 
 export type Database = {
-  graphql_public: {
-    Tables: {
-      [_ in never]: never
-    }
-    Views: {
-      [_ in never]: never
-    }
-    Functions: {
-      graphql: {
-        Args: {
-          extensions?: Json
-          operationName?: string
-          query?: string
-          variables?: Json
-        }
-        Returns: Json
-      }
-    }
-    Enums: {
-      [_ in never]: never
-    }
-    CompositeTypes: {
-      [_ in never]: never
-    }
-  }
   public: {
     Tables: {
       accounting_periods: {
@@ -8585,7 +8560,10 @@ export type Database = {
           project_id: number
           provider_account_id: string | null
           provider_acknowledged_at: string | null
+          provider_charge_id: string | null
           provider_checkout_session_id: string | null
+          provider_mandate_id: string | null
+          provider_payment_intent_id: string | null
           request_hash: string
         }
         Insert: {
@@ -8602,7 +8580,10 @@ export type Database = {
           project_id: number
           provider_account_id?: string | null
           provider_acknowledged_at?: string | null
+          provider_charge_id?: string | null
           provider_checkout_session_id?: string | null
+          provider_mandate_id?: string | null
+          provider_payment_intent_id?: string | null
           request_hash: string
         }
         Update: {
@@ -8619,7 +8600,10 @@ export type Database = {
           project_id?: number
           provider_account_id?: string | null
           provider_acknowledged_at?: string | null
+          provider_charge_id?: string | null
           provider_checkout_session_id?: string | null
+          provider_mandate_id?: string | null
+          provider_payment_intent_id?: string | null
           request_hash?: string
         }
         Relationships: [
@@ -8830,6 +8814,89 @@ export type Database = {
             columns: ["webhook_event_id"]
             isOneToOne: false
             referencedRelation: "stripe_webhook_events"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      stripe_acss_debit_package_invalidations: {
+        Row: {
+          command_id: string
+          created_at: string
+          evidence_id: number
+          funding_source_id: number
+          id: number
+          package_id: number
+          production_enabled: boolean
+          reason: string
+        }
+        Insert: {
+          command_id: string
+          created_at?: string
+          evidence_id: number
+          funding_source_id: number
+          id?: never
+          package_id: number
+          production_enabled?: boolean
+          reason: string
+        }
+        Update: {
+          command_id?: string
+          created_at?: string
+          evidence_id?: number
+          funding_source_id?: number
+          id?: never
+          package_id?: number
+          production_enabled?: boolean
+          reason?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "stripe_acss_debit_package_invalidations_command_id_fkey"
+            columns: ["command_id"]
+            isOneToOne: false
+            referencedRelation: "stripe_acss_debit_commands"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "stripe_acss_debit_package_invalidations_command_id_fkey"
+            columns: ["command_id"]
+            isOneToOne: false
+            referencedRelation: "stripe_acss_debit_status"
+            referencedColumns: ["command_id"]
+          },
+          {
+            foreignKeyName: "stripe_acss_debit_package_invalidations_evidence_id_fkey"
+            columns: ["evidence_id"]
+            isOneToOne: false
+            referencedRelation: "stripe_acss_debit_evidence"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "stripe_acss_debit_package_invalidations_funding_source_id_fkey"
+            columns: ["funding_source_id"]
+            isOneToOne: false
+            referencedRelation: "epoch_project_package_funding_sources"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "stripe_acss_debit_package_invalidations_package_id_fkey"
+            columns: ["package_id"]
+            isOneToOne: false
+            referencedRelation: "epoch_project_package_lock_candidates"
+            referencedColumns: ["package_id"]
+          },
+          {
+            foreignKeyName: "stripe_acss_debit_package_invalidations_package_id_fkey"
+            columns: ["package_id"]
+            isOneToOne: false
+            referencedRelation: "epoch_project_package_operator_view"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "stripe_acss_debit_package_invalidations_package_id_fkey"
+            columns: ["package_id"]
+            isOneToOne: false
+            referencedRelation: "epoch_project_packages"
             referencedColumns: ["id"]
           },
         ]
@@ -13618,9 +13685,6 @@ export type CompositeTypes<
     : never
 
 export const Constants = {
-  graphql_public: {
-    Enums: {},
-  },
   public: {
     Enums: {
       cubid_identity_status: ["unlinked", "linked", "verified"],

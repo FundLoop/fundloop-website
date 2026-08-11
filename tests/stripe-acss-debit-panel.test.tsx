@@ -25,4 +25,18 @@ describe("StripeAcssDebitPanel", () => {
     await waitFor(() => expect(invokeStripeAcssDebitCheckoutBrowser).toHaveBeenCalledWith({projectSlug: "ecostream", paymentId: 7, currencyCode: "CAD", expectedAmountMinor: "2500"}))
     expect((await screen.findByRole("alert")).textContent).toBe("Capability unavailable.")
   })
+
+  it.each([
+    ["checkout_created", false, false, /Authorization required in Stripe-hosted Checkout/i],
+    ["processing", false, false, /settlement is pending and not fundable/i],
+    ["settled_available", true, false, /Reconciled: available custody/i],
+    ["refunded", false, true, /Reversed and removed from package eligibility/i],
+  ] as const)("renders the %s lifecycle state", async (status, availableForPackage, reversed, copy) => {
+    vi.mocked(invokeStripeAcssDebitStatusBrowser).mockResolvedValue({ok: true, data: [{commandId: "00000000-0000-4000-8000-000000000001",
+      paymentId: 7, currencyCode: "CAD", expectedAmountMinor: "2500", status, statusAt: "2026-08-11T00:00:00Z",
+      availableForPackage, reversed}]})
+    render(<StripeAcssDebitPanel projectSlug="ecostream" payments={[payment]} termsAcknowledged/>)
+    expect(await screen.findByText(copy)).toBeTruthy()
+    if (reversed) expect((screen.getByRole("button", {name: /New payment required/i}) as HTMLButtonElement).disabled).toBe(true)
+  })
 })

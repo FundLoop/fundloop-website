@@ -31,6 +31,18 @@ function observePaymentIntent(pi: Stripe.PaymentIntent, sessionId: string | null
     balanceStatus: balance?.status === "available" ? "available" : balance?.status === "pending" ? "pending" : null, paymentMethodType: type}
 }
 
+async function checkoutSessionForPaymentIntent(stripe: Stripe, pi: Stripe.PaymentIntent) {
+  const sessions = await stripe.checkout.sessions.list({payment_intent: pi.id, limit: 2})
+  const commandId = pi.metadata?.fundloop_pad_command_id
+  const matching = sessions.data.filter((session) => session.metadata?.fundloop_pad_command_id === commandId)
+  return matching.length === 1 ? matching[0] : null
+}
+
+async function observeWithCheckout(stripe: Stripe, pi: Stripe.PaymentIntent, evidenceType?: StripeAcssDebitObservation["evidenceType"]) {
+  const session = await checkoutSessionForPaymentIntent(stripe, pi)
+  return session ? observePaymentIntent(pi, session.id, evidenceType) : null
+}
+
 async function authoritativeObservation(stripe: Stripe, event: Stripe.Event): Promise<StripeAcssDebitObservation | null> {
   const raw = event.data.object as {id?: string; payment_intent?: string | Stripe.PaymentIntent; metadata?: Record<string,string>; amount?: number; amount_refunded?: number; currency?: string; status?: string}
   if (event.type === "checkout.session.completed" && raw.id?.startsWith("cs_")) {
@@ -40,19 +52,19 @@ async function authoritativeObservation(stripe: Stripe, event: Stripe.Event): Pr
   }
   if (event.type.startsWith("payment_intent.") && raw.id?.startsWith("pi_")) {
     const pi = await stripe.paymentIntents.retrieve(raw.id, {expand: ["latest_charge.balance_transaction", "payment_method"]})
-    return observePaymentIntent(pi, null)
+    return observeWithCheckout(stripe, pi)
   }
   if (event.type === "charge.refunded" && raw.id?.startsWith("ch_")) {
     const charge = await stripe.charges.retrieve(raw.id, {expand: ["payment_intent.latest_charge.balance_transaction", "payment_intent.payment_method"]})
     const pi = typeof charge.payment_intent === "object" ? charge.payment_intent : null
-    return pi ? observePaymentIntent(pi, null, "refunded") : null
+    return pi ? observeWithCheckout(stripe, pi, "refunded") : null
   }
   if (event.type.startsWith("charge.dispute.") && raw.id?.startsWith("dp_")) {
     const dispute = await stripe.disputes.retrieve(raw.id, {expand: ["charge.payment_intent.latest_charge.balance_transaction", "charge.payment_intent.payment_method"]})
     const charge = typeof dispute.charge === "object" ? dispute.charge : null
     const pi = charge && typeof charge.payment_intent === "object" ? charge.payment_intent : null
     const kind = event.type === "charge.dispute.closed" ? dispute.status === "won" ? "dispute_won" : "dispute_lost" : "disputed"
-    return pi ? observePaymentIntent(pi, null, kind) : null
+    return pi ? observeWithCheckout(stripe, pi, kind) : null
   }
   return null
 }
@@ -85,4 +97,4 @@ async function handleRequest(request: Request) {
   return json(error ? edgeCommandFailure("stripe_acss_webhook_ingest_failed", error.message) : edgeCommandSuccess({ignored: false, eventId: event.id, evidenceId: data}), error ? {status: 500} : {})
 }
 serve(handleRequest)
-export {handleRequest, authoritativeObservation}
+export {handleRequest, authoritativeObservation, checkoutSessionForPaymentIntent}
