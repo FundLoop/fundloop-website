@@ -4,7 +4,7 @@ BEGIN;
 DO $$
 DECLARE v_actor uuid:='290eb647-f25f-43f3-bf6b-1e2b2cf25e69';v_payment bigint;v_command uuid;v_command_replay uuid;v_evidence bigint;
   v_payment2 bigint;v_payment3 bigint;v_command2 uuid;v_command3 uuid;
-  v_ledger bigint;v_reversal bigint;v_package bigint;v_cycle bigint;v_denied boolean:=false;v_direct_denied boolean:=false;
+  v_ledger bigint;v_reversal bigint;v_package bigint;v_cycle bigint;v_dataset bigint;v_source_row bigint;v_fx_observation bigint;v_prep_count integer;v_denied boolean:=false;v_direct_denied boolean:=false;
   v_base jsonb;
 BEGIN
   INSERT INTO public.payments(project_id,period_start,period_end,revenue,payment_amount,payment_percentage,updated_by)
@@ -71,6 +71,34 @@ BEGIN
   IF NOT EXISTS(SELECT 1 FROM public.epoch_project_package_funding_sources WHERE package_id=v_package AND source_kind='stripe_acss_debit'
       AND stripe_acss_debit_command_id=v_command) OR (SELECT funding_status FROM public.epoch_project_packages WHERE id=v_package)<>'settled' THEN
     RAISE EXCEPTION 'settled_pad_not_bound_to_exact_package';END IF;
+  INSERT INTO public.project_attribution_datasets(project_id,monthly_cycle_id,status,row_count,total_attribution_points,submitted_by_user_id)
+  VALUES(3,v_cycle,'approved',1,1,v_actor) RETURNING id INTO v_dataset;
+  INSERT INTO public.project_attribution_rows(dataset_id,project_id,monthly_cycle_id,row_index,scoped_cubid_id,user_id,attribution_points)
+  VALUES(v_dataset,3,v_cycle,1,'pad-prep-fixture',v_actor,1) RETURNING id INTO v_source_row;
+  INSERT INTO public.epoch_project_package_cohort(package_id,source_row_id,user_id,project_pseudonym,cubid_decision,eligibility_status,
+    locked_cubid_score,locked_max_cubid_score,cubid_evidence_at,cubid_evidence_expires_at,evidence_hash)
+  VALUES(v_package,v_source_row,v_actor,repeat('d',64),'valid','eligible',10,20,clock_timestamp(),clock_timestamp()+interval '1 day',repeat('e',64));
+  UPDATE public.epoch_project_packages SET status='approved',list_status='valid',funding_status='settled',compliance_status='passed',cubid_status='eligible',
+    cohort_count=1,eligible_user_count=1,approved_at=clock_timestamp(),approved_by_user_id=v_actor WHERE id=v_package;
+  v_fx_observation:=public.record_epoch_fx_observation(jsonb_build_object('contractVersion','epoch_fx_observation.v1','deploymentEnvironment','local',
+    'cycleKey','2026-08','assetKey','stripe_acss_cad','sourceKey','pad_primary_fixture','sourceRank',1,'rateUsdPerUnit','0.75',
+    'observedAt',clock_timestamp(),'freshnessExpiresAt',clock_timestamp()+interval '1 hour','reasonabilityStatus','eligible',
+    'evidenceHash',repeat('b',64),'actorUserId',v_actor));
+  PERFORM public.post_epoch_fx_snapshot(jsonb_build_object('contractVersion','epoch_fx_snapshot.v1','deploymentEnvironment','local',
+    'cycleKey','2026-08','assetKey','stripe_acss_cad','method','primary','observationId',v_fx_observation,'preanalysis',jsonb_build_object('fresh',true),
+    'evidenceHash',repeat('c',64),'actorUserId',v_actor));
+  v_prep_count:=public.prepare_epoch_financial_sources(jsonb_build_object('contractVersion','epoch_financial_prep.v1','deploymentEnvironment','local',
+      'packageId',v_package,'actorUserId',v_actor));
+  IF v_prep_count<>1
+    OR NOT EXISTS(SELECT 1 FROM public.epoch_valuation_source_lots lot JOIN public.financial_assets asset ON asset.id=lot.financial_asset_id
+      JOIN public.financial_custody_accounts custody ON custody.id=lot.custody_account_id
+      WHERE lot.package_id=v_package AND lot.source_kind='stripe_acss_debit' AND asset.asset_key='stripe_acss_cad'
+        AND custody.custody_key='stripe_acss_cad_clearing' AND lot.native_atomic_amount=10000 AND lot.gross_exact_usd=75)
+    OR NOT EXISTS(SELECT 1 FROM public.epoch_funded_allocation_lock_candidates WHERE package_id=v_package AND source_kind='stripe_acss_debit') THEN
+    RAISE EXCEPTION 'settled_pad_did_not_reach_financial_prep count %, lot %',v_prep_count,
+      (SELECT row_to_json(x) FROM(SELECT lot.source_kind,asset.asset_key,custody.custody_key,lot.native_atomic_amount,lot.gross_exact_usd
+        FROM public.epoch_valuation_source_lots lot JOIN public.financial_assets asset ON asset.id=lot.financial_asset_id
+        JOIN public.financial_custody_accounts custody ON custody.id=lot.custody_account_id WHERE lot.package_id=v_package LIMIT 1)x);END IF;
 
   PERFORM public.ingest_stripe_acss_debit_webhook(jsonb_build_object('contractVersion','stripe_acss_debit_webhook.v1','deploymentEnvironment','local',
     'providerEventId','evt_padrefund','providerAccountId','acct_testpad','eventType','charge.refunded','providerObjectId','ch_padfixture',

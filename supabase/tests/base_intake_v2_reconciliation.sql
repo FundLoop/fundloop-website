@@ -215,6 +215,50 @@ BEGIN
     WHERE receipt_id=v_receipt_id AND observed_receipt_block_number=101 AND status='exact') THEN
     RAISE EXCEPTION 'stored low block number became exact';
   END IF;
+  PERFORM public.reconcile_base_intake_v2_receipt(base_command || jsonb_build_object('currentBlockNumber',103,'observedAt','2026-08-09T12:09:00Z'));
+  IF (SELECT status FROM public.base_intake_v2_reconciliation_events WHERE receipt_id=v_receipt_id ORDER BY observed_at DESC,id DESC LIMIT 1)<>'exact' THEN
+    RAISE EXCEPTION 'Base exact latest evidence missing for financial prep';
+  END IF;
+END $$;
+
+RESET ROLE;
+DO $$
+DECLARE v_actor uuid:='00000000-0000-4000-8000-000000000101';v_cohort_user uuid;v_cycle bigint;v_package bigint;v_receipt bigint;v_source_row bigint;v_fx_observation bigint;v_prep_count integer;
+BEGIN
+  INSERT INTO public.monthly_cycles(cycle_key,year,month,period_start,period_end,status)
+  VALUES('2026-08',2026,8,'2026-08-01','2026-08-31','prep') ON CONFLICT(cycle_key)DO UPDATE SET status=excluded.status
+  RETURNING id INTO v_cycle;
+  SELECT id INTO v_receipt FROM public.base_intake_v2_receipts WHERE provider_event_id='base:local:receipt:1';
+  SELECT row.id,row.user_id INTO v_source_row,v_cohort_user FROM public.project_attribution_rows row
+  WHERE row.project_id=101 AND row.user_id IS NOT NULL ORDER BY row.id LIMIT 1;
+  INSERT INTO public.epoch_project_packages(project_id,intended_cycle_id,canonical_cycle_id,version,status,list_status,funding_status,
+    compliance_status,cubid_status,cutoff_at,approved_at,approved_by_user_id,project_fee_assessed_once,base_fee_deferred,
+    payment_count,funding_source_count,cohort_count,eligible_user_count,preliminary_usd,manifest,manifest_hash,created_by_user_id)
+  VALUES(101,v_cycle,v_cycle,1,'approved','valid','settled','passed','eligible','2026-09-01T07:00:00Z','2026-09-02T00:00:00Z',v_actor,
+    true,true,0,1,1,1,9.75,'{}',repeat('6',64),v_actor) RETURNING id INTO v_package;
+  INSERT INTO public.epoch_project_package_funding_sources(package_id,source_position,source_kind,base_receipt_id,asset_code,
+    native_atomic_amount,preliminary_usd,source_evidence_hash,project_fee_assessed_once,base_fee_deferred)
+  SELECT v_package,0,'base_stablecoin',receipt.id,receipt.token_symbol,receipt.net_epoch_native_amount,9.75,receipt.evidence_hash,true,true
+  FROM public.base_intake_v2_receipts receipt WHERE receipt.id=v_receipt;
+  INSERT INTO public.epoch_project_package_cohort(package_id,source_row_id,user_id,project_pseudonym,cubid_decision,eligibility_status,
+    locked_cubid_score,locked_max_cubid_score,cubid_evidence_at,cubid_evidence_expires_at,evidence_hash)
+  VALUES(v_package,v_source_row,v_cohort_user,repeat('9',64),'valid','eligible',10,20,clock_timestamp(),clock_timestamp()+interval '1 day',repeat('a',64));
+  v_fx_observation:=public.record_epoch_fx_observation(jsonb_build_object('contractVersion','epoch_fx_observation.v1','deploymentEnvironment','local',
+    'cycleKey','2026-08','assetKey','base_usdc','sourceKey','base_primary_fixture','sourceRank',1,'rateUsdPerUnit','1',
+    'observedAt',clock_timestamp(),'freshnessExpiresAt',clock_timestamp()+interval '1 hour','reasonabilityStatus','eligible',
+    'evidenceHash',repeat('7',64),'actorUserId',v_actor));
+  PERFORM public.post_epoch_fx_snapshot(jsonb_build_object('contractVersion','epoch_fx_snapshot.v1','deploymentEnvironment','local',
+    'cycleKey','2026-08','assetKey','base_usdc','method','primary','observationId',v_fx_observation,'preanalysis',jsonb_build_object('fresh',true),
+    'evidenceHash',repeat('8',64),'actorUserId',v_actor));
+  v_prep_count:=public.prepare_epoch_financial_sources(jsonb_build_object('contractVersion','epoch_financial_prep.v1','deploymentEnvironment','local',
+    'packageId',v_package,'actorUserId',v_actor));
+  IF v_prep_count<>1 OR NOT EXISTS(SELECT 1 FROM public.epoch_valuation_source_lots lot
+      JOIN public.financial_assets asset ON asset.id=lot.financial_asset_id
+      JOIN public.financial_custody_accounts custody ON custody.id=lot.custody_account_id
+      WHERE lot.package_id=v_package AND lot.source_kind='base_stablecoin' AND asset.asset_key='base_usdc'
+        AND custody.custody_key='base_usdc_epoch_treasury' AND lot.native_atomic_amount=9750000 AND lot.gross_exact_usd=9.75)
+    OR NOT EXISTS(SELECT 1 FROM public.epoch_funded_allocation_lock_candidates WHERE package_id=v_package AND source_kind='base_stablecoin') THEN
+    RAISE EXCEPTION 'settled_base_did_not_reach_financial_prep';END IF;
 END $$;
 
 DO $$

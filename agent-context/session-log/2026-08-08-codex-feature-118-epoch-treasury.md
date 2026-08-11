@@ -2752,3 +2752,48 @@ Close the sole integrated Goal #130 validation failure without changing any inta
 #### Suggested Next Steps
 
 - Run the full Node 22 gate, commit the narrow typing fix, then rerun integrated Goal #130 validation.
+
+### session v55: connect expanded intake rails to funded allocation prep (#134)
+
+- Timestamp: 2026-08-11T03:42:00-04:00
+- Agent: Codex
+- Branch: codex/130-multi-rail-bank-intake
+- Head: 3dfb9e8 (pre-commit)
+
+#### Objective
+
+Close integrated Goal #134's expanded-source gap so every supported reconciled package source can
+reach custody-backed FX, fee processing, and allocation lock candidates.
+
+#### Actions Taken
+
+- Added forward-only Base USDC/USDT/PYUSD financial assets, epoch-treasury custody accounts, and
+  source routes; linked Base deployment assets to those canonical financial assets.
+- Imported CAD PAD and EUR/GBP Pay by Bank custody routes into epoch prep and widened source-lot
+  constraints without enabling production or provider mutations.
+- Replaced the old two-branch prep evidence switch with explicit Customer Balance, Base, CAD PAD,
+  and Pay by Bank validation. Each branch binds project, asset, native amount, canonical provider
+  state, and exact custody route before FX and neutral-ledger fee posting.
+- Added executable Base, CAD PAD, and GBP Pay by Bank paths from reconciled intake through FX,
+  valuation source lot, conserved fee journal, and funded allocation lock candidate. Existing
+  generic allocation and close suites continue to consume those rail-neutral candidates.
+- Updated focused migration coverage and the canonical allocation architecture note.
+
+#### Validation Notes
+
+- Fresh local Supabase replay applied `20260811114000_epoch_multi_rail_financial_prep.sql`.
+- Seven executable SQL suites passed: Base intake, project packages, financial prep, funded
+  allocation, allocation close, CAD PAD, and EUR/GBP Pay by Bank.
+- Focused migration coverage passed 3 files / 17 tests with one worker.
+- Full Node 22 `CI=1 pnpm check` passed lint, 168 files / 754 tests, typecheck, and the
+  165-route production build; diff-check passed.
+
+#### Reflections
+
+- Package admission and allocation preparation are separate trust boundaries. Adding a source kind
+  to package capture is incomplete until prep revalidates its canonical evidence and maps the exact
+  rail/asset/custody dimensions.
+
+#### Suggested Next Steps
+
+- Commit the bounded fix, then rerun integrated Goal #134 validation.
