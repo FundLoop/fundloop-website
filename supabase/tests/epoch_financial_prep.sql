@@ -26,6 +26,10 @@ BEGIN
   INSERT INTO public.stripe_bank_transfer_intents(project_id,payment_id,accounting_period_id,actor_user_id,currency_code,expected_amount_minor,
     provider_account_id,provider_customer_id,provider_payment_intent_id,instruction_evidence_hash,deployment_environment)
   VALUES(v_project,v_payment2,1,v_actor,'USD',10000,'acct_prep2','cus_prep2','pi_prep2',repeat('2',64),'local') RETURNING id INTO v_intent2;
+  INSERT INTO public.project_payment_settled_rail_claims(payment_id,rail_key,command_reference,evidence_hash)
+  VALUES
+    (v_payment1,'stripe_bank_transfer',v_intent1::text,repeat('1',64)),
+    (v_payment2,'stripe_bank_transfer',v_intent2::text,repeat('2',64));
 
   INSERT INTO public.epoch_project_packages(project_id,intended_cycle_id,canonical_cycle_id,version,status,list_status,funding_status,
     compliance_status,cubid_status,cutoff_at,frozen_at,approved_at,approved_by_user_id,project_fee_assessed_once,base_fee_deferred,

@@ -2405,3 +2405,441 @@ cutover and complete local operational evidence boundary.
 
 - Commit and push this review-fix batch, reply to and resolve all six PR threads without requesting
   rereview, wait for green CI/Vercel/Supabase checks, then merge and run approved cleanup.
+
+### session v48: implement fail-closed Canadian PAD intake (#152)
+
+- Timestamp: 2026-08-11T01:25:00-04:00
+- Agent: Codex
+- Branch: codex/130-multi-rail-bank-intake
+- Head: 1709bbd (pre-commit)
+
+#### Objective
+
+Add a non-production Canadian pre-authorized debit funding rail using Stripe-hosted Checkout while
+keeping Customer Balance bank transfer, USD PAD, production activation, mandate reuse, and real
+value flow fail closed.
+
+#### Actions Taken
+
+- Added typed CAD PAD Checkout/status contracts, a provider adapter, authenticated browser
+  invokers, three strict Edge handlers, and a founder payment panel. Checkout uses an active
+  dynamic payment-method configuration and integration identifier without hard-coded
+  `payment_method_types`, saved methods, or off-session mandate reuse.
+- Added a forward-only Supabase control plane for runtime/capability evidence, a provisional CAD
+  asset/custody route, idempotent prepared commands and provider acknowledgement recovery,
+  append-only signed webhook observations, authoritative session/intent/charge/mandate/balance
+  transaction checks, balanced neutral-ledger posting, one-time reversal, scoped status reads, and
+  service-role-only commands.
+- Extended epoch package funding sources with an exact PAD command reference. The package validator
+  attaches only settled, unreversed custody-backed sources; pending Checkout or processing evidence
+  cannot make a package fundable.
+- Added executable SQL, adapter/contract/component/migration tests, a serial local runner phase,
+  exact desktop/mobile Playwright evidence, generated Supabase types, architecture/testing docs,
+  and the Feature #118 capability matrix entry.
+- Rechecked the canonical `fundloop-canonical` Stripe CLI profile. It is test-only and Canadian, has
+  zero Checkout Sessions, and its active default configuration reports `acss_debit.available=false`
+  and `value=off`; therefore the real provider path truthfully stops before Checkout mutation.
+
+#### Validation Notes
+
+- Fresh local Supabase replay applied every migration through
+  `20260811100000_stripe_acss_debit_intake.sql`. Executable PAD SQL passed production and USD
+  denial, authenticated direct-write denial, idempotent prepare, pending-not-fundable, exact
+  available custody, native/functional balance, package linkage, refund reversal, and replay safety.
+- Strict Deno checks passed for all three new PAD handlers. Focused Vitest passed 4 files / 13 tests;
+  Node 22 full `CI=1 pnpm check` passed 165 files / 731 tests, typecheck, lint, and the 165-route
+  production build.
+- The local founder Playwright spec passed at 1440x900 and 390x844 with zero unexpected console
+  errors. Both retained screenshots were visually inspected and contain no bank, transit, or
+  institution details.
+- Stripe test capability evidence used read-only CLI calls only. No Stripe object, remote database,
+  live credential, production policy, payable, payout, or real value flow was created.
+
+#### Reflections
+
+- A hosted return is merely user-flow completion; custody eligibility needs an independently
+  refetched available balance transaction, exact mandate/session binding, and conserved journal.
+- Provider absence is a valid smoke result only when the implementation proves the denial occurs
+  before provider mutation and deterministic fixtures still exercise every local state transition.
+
+#### Suggested Next Steps
+
+- Commit #152 separately, run independent issue validation, and start #153 only after a passing
+  verdict. Keep PAD unavailable until the canonical test payment-method configuration becomes
+  authoritative; never infer USD eligibility from locale or user input.
+
+### session v49: close Canadian PAD lifecycle validation gaps (#152)
+
+- Timestamp: 2026-08-11T01:55:00-04:00
+- Agent: Codex
+- Branch: codex/130-multi-rail-bank-intake
+- Head: a123cd5 (pre-commit)
+
+#### Objective
+
+Close every independent #152 validation finding without broadening the provider, production, or
+value-flow boundary.
+
+#### Actions Taken
+
+- Added a forward lifecycle-integrity migration that pins the unique Checkout Session,
+  PaymentIntent, Charge, and mandate identities to the prepared PAD command and rejects missing or
+  changed provider identities.
+- Made refund and lost-dispute evidence durable terminal barriers against later settlement. Open
+  disputes now block package eligibility immediately.
+- Added append-only package-source invalidation records. Refund, open-dispute, and lost-dispute
+  evidence marks every already-linked package unsettled while preserving its immutable source
+  evidence; a won dispute can only support a newly validated package.
+- Updated the signed webhook refetch to resolve the unique command-bound Checkout Session for every
+  PaymentIntent, refund, and dispute event rather than accepting a null session comparison.
+- Expanded founder lifecycle copy and disabled terminal-state resume actions. The local browser
+  fixture now retains authorization, pending, reconciled, and reversal evidence at exact desktop
+  and mobile viewports.
+
+#### Validation Notes
+
+- A disposable local Supabase start from no backup applied every migration through
+  `20260811103000_stripe_acss_debit_lifecycle_integrity.sql`.
+- Executable PAD SQL passed package invalidation, terminal-before-settlement denial, open-dispute
+  denial, missing-session denial, provider-identity drift denial, exact posting/reversal, and all
+  prior production/RLS/idempotency checks.
+- Strict Deno passed all three PAD handlers; focused Vitest passed 3 files / 14 tests.
+- Playwright passed 1/1 with zero unexpected product console errors and retained eight captures:
+  authorization, pending, reconciled, and reversal at 1440x900 and 390x844. The captures were
+  dimension-checked and visually inspected.
+
+#### Reflections
+
+- Webhook order cannot be trusted. Terminal negative evidence must be durable independently of the
+  provider timestamp so an older positive event cannot restore custody later.
+- Reversing a ledger entry is insufficient if an immutable package source already consumed it;
+  downstream eligibility needs its own append-only invalidation evidence.
+
+#### Suggested Next Steps
+
+- Run the full Node 22 gate, commit the narrow validator-fix batch, and request independent #152
+  revalidation. Begin #153 only after #152 passes and reaches In Review.
+
+### session v50: implement fail-closed EUR and GBP Pay by Bank intake (#153)
+
+- Timestamp: 2026-08-11T02:28:00-04:00
+- Agent: Codex
+- Branch: codex/130-multi-rail-bank-intake
+- Head: cde2b2b (pre-commit)
+
+#### Objective
+
+Add non-production one-time EUR/GBP Pay by Bank project funding with exact merchant, customer,
+currency, capability, configuration, topology, webhook, custody, ledger, refund, and package gates.
+
+#### Actions Taken
+
+- Added typed Checkout/status contracts, a provider adapter, browser invokers, three Edge handlers,
+  and a founder panel. The UI represents UK and Finland as generally available, keeps France,
+  Germany, and Ireland private-preview gated, and never collects bank credentials.
+- Bound provider discovery to the exact test merchant account, supported merchant country,
+  `pay_by_bank_payments` capability, dynamic payment-method configuration, charge topology,
+  customer country, and EUR/GBP presentment before command persistence or Checkout mutation.
+- Added a forward-only Supabase control plane with provisional EUR/GBP assets and custody, exact
+  source provenance, idempotent command/provider acknowledgement, append-only signed/refetched
+  evidence, RLS/service-only mechanics, and production-disabled runtime constraints.
+- Added balanced neutral-ledger receipt posting and exact refund accounting. Refund-pending
+  invalidates existing package sources; successful full or partial refunds reverse the original
+  receipt, partial residuals receive a separately conserved journal but remain quarantined from
+  allocation, and terminal expiry/refund evidence blocks older settlement.
+- Extended package funding compatibility without weakening Customer Balance, Base, or PAD source
+  shapes. Added the isolated runner phase, executable SQL, focused tests, generated types,
+  architecture/testing docs, and the operational capability-matrix entry.
+
+#### Validation Notes
+
+- Fresh local Supabase replay applied every migration through
+  `20260811110000_stripe_pay_by_bank_intake.sql`. Executable SQL passed production/private-preview
+  denial, authenticated direct-write denial, idempotency, exact merchant/country/session/intent/
+  charge binding, settled custody, fee/native/functional conservation, package provenance,
+  refund-pending invalidation, partial-refund reversal plus 75.00 residual, and terminal expiry
+  before late settlement.
+- Strict Deno passed all three handlers. Focused Vitest passed 4 files / 18 tests. Node 22 full
+  `CI=1 pnpm check` passed 168 files / 750 tests, lint, typecheck, and the 165-route build.
+- Focused Playwright passed 1/1 with zero unexpected console errors. Eight retained captures cover
+  authorization, pending, reconciled, and refund states at exact 1440x900 and 390x844; desktop and
+  mobile captures were visually inspected and contain no sensitive bank data.
+- Read-only canonical Stripe evidence shows Canadian account `acct_1U2VggGR0O1dEuJh` has
+  `pay_by_bank_payments=active`, but its sole active default configuration reports Pay by Bank
+  `available=false` and `value=off`. A follow-up read found zero Checkout Sessions, so the hosted
+  smoke is truthfully expected-pending with zero provider mutation.
+
+#### Reflections
+
+- A generic account capability is insufficient: the dynamic configuration and the exact merchant,
+  charge topology, customer country, and currency must agree before any provider-side mutation.
+- Partial refund correctness needs two ledgers: the original receipt is fully reversed and the
+  remaining provider custody is re-recorded exactly, while allocation eligibility stays closed
+  until a future explicit product contract can safely consume that residual.
+
+#### Suggested Next Steps
+
+- Commit #153 separately and run independent issue validation. If it passes, validate Goal #130 as
+  the integrated three-rail result while keeping Customer Balance unsupported, hosted Pay by Bank
+  expected-pending, and every production/value-flow path disabled.
+
+### session v51: close Pay by Bank validator boundary gaps (#153)
+
+- Timestamp: 2026-08-11T02:42:00-04:00
+- Agent: Codex
+- Branch: codex/130-multi-rail-bank-intake
+- Head: baec6ad (pre-commit)
+
+#### Objective
+
+Close all five independent #153 validation findings while preserving the zero-provider-mutation,
+non-production, no-value-flow boundary.
+
+#### Actions Taken
+
+- Restricted the implemented charge topologies to platform and direct charges. The Edge boundary
+  and a forward database constraint now reject destination/separate paths and reject any mismatch
+  between topology, platform account, and provider account before command creation.
+- Corrected canonical-platform discovery to use Stripe's current-account retrieval form while
+  retaining exact connected-account retrieval for direct charges. Webhooks remain bound to the
+  same platform/direct ownership model.
+- Removed the bare environment private-preview allowlist. France, Germany, and Ireland now remain
+  unconditionally closed until an authoritative merchant-scoped Stripe signal exists.
+- Required the dynamic payment-method configuration to have Pay by Bank as its sole available/on
+  method, preventing cards or unrelated methods from appearing in the hosted session.
+- Changed authoritative refund observation to use cumulative `Charge.amount_refunded`. Added a
+  forward residual-retirement control plane so each later cumulative refund reverses the prior
+  residual before posting the single new balance; a final full refund leaves zero live residual.
+
+#### Validation Notes
+
+- Fresh local replay applied the new forward migration
+  `20260811111000_stripe_pay_by_bank_validator_fixes.sql` cleanly.
+- Executable Pay by Bank SQL passed explicit destination denial, platform/account mismatch denial,
+  private-preview denial even with a hostile true flag, first 25.00 partial refund, cumulative
+  50.00 replacement, final 100.00 refund, zero live residual, and all prior settlement/package/RLS
+  checks.
+- Strict Deno passed all three handlers; focused Vitest passed 4 files / 19 tests; typecheck and
+  diff-check passed before the final full gate.
+
+#### Reflections
+
+- Advertising a topology enum is not implementation. A rail should expose only charge patterns
+  whose provider request, event ownership, custody, and reconciliation are all concretely bound.
+- Refund records are incremental objects, but custody state is cumulative. Residual accounting must
+  replace the prior balance rather than treating every refund object as a new independent balance.
+
+#### Suggested Next Steps
+
+- Rerun the full Node 22 gate, commit this narrow forward fix, and request independent #153
+  revalidation against both the original findings and the new sequential-refund probes.
+
+### session v52: normalize current and cumulative Pay by Bank refunds (#153)
+
+- Timestamp: 2026-08-11T02:51:00-04:00
+- Agent: Codex
+- Branch: codex/130-multi-rail-bank-intake
+- Head: 9210f75 (pre-commit)
+
+#### Objective
+
+Close the remaining independent #153 refund-normalization finding without weakening the
+non-production, signed-webhook, or cumulative custody boundaries.
+
+#### Actions Taken
+
+- Split authoritative Stripe refund evidence into the current `Refund.amount` and cumulative
+  successful `Charge.amount_refunded`, rather than using the cumulative value for every refund
+  lifecycle status.
+- Added a forward-only normalized refund observation table and RPC wrapper. Pending and failed
+  events retain their current refund amount even when cumulative successful refunds are zero;
+  successful events alone pass the cumulative total into residual custody replacement.
+- Extended executable SQL through pending to failed, first partial, second partial, and full refund
+  transitions. The assertions retain both amount dimensions and prove 75.00, 50.00, then zero live
+  residual without double counting.
+- Updated the typed observation contract, focused boundary tests, generated Supabase types, and the
+  Pay by Bank architecture note.
+
+#### Validation Notes
+
+- Fresh local Supabase replay applied `20260811112000_stripe_pay_by_bank_refund_normalization.sql`.
+- Executable Pay by Bank SQL passed, including pending and failed events with current amount 25.00
+  and cumulative successful amount zero, followed by cumulative 25.00, 50.00, and 100.00 success.
+- Strict Deno passed all three Pay by Bank Edge handlers. Focused Vitest passed 3 files / 16 tests.
+
+#### Reflections
+
+- A Stripe Refund object describes one refund attempt, while the Charge describes cumulative
+  successful value. Persisting both prevents failed or pending attempts from corrupting custody
+  while retaining enough evidence to audit each provider lifecycle transition.
+
+#### Suggested Next Steps
+
+- Run the full Node 22 gate, commit this narrow normalization fix, then request independent #153
+  revalidation before promoting the issue or validating Goal #130.
+
+### session v53: enforce monotonic Pay by Bank refund custody (#153)
+
+- Timestamp: 2026-08-11T03:02:00-04:00
+- Agent: Codex
+- Branch: codex/130-multi-rail-bank-intake
+- Head: cc32950 (pre-commit)
+
+#### Objective
+
+Prevent stale or duplicate cumulative refund observations from enlarging or recreating Pay by Bank
+residual custody while retaining replay-safe signed evidence.
+
+#### Actions Taken
+
+- Added a forward refund-ordering migration that serializes each command's refund observations and
+  accepts custody changes only when the cumulative successful-refund total strictly increases.
+- Retained equal or decreasing signed observations in the append-only normalization table with
+  provider event, provider timestamp, payload hash, and canonical command hash, without invoking
+  ledger mutation again.
+- Replaced the overly broad command/refund/status uniqueness rule with exact provider-event
+  idempotency. Exact replay returns the canonical evidence ID; a changed payload for that event
+  fails closed.
+- Added executable regressions for an equal same-refund event, 50.00 to 25.00 out-of-order decrease,
+  stale 50.00 after a full 100.00 refund, and changed-payload conflict.
+
+#### Validation Notes
+
+- Fresh local replay applied `20260811113000_stripe_pay_by_bank_refund_ordering.sql` and the full Pay
+  by Bank executable SQL passed all original plus monotonic-ordering assertions.
+- Strict Deno passed all three Pay by Bank handlers. The full Node 22 `CI=1 pnpm check` passed 168
+  files / 753 tests, lint, typecheck, and the 165-route production build; diff-check passed.
+
+#### Reflections
+
+- Provider delivery order cannot define custody. The monotonic cumulative provider total is the
+  state invariant; event identity remains the audit and replay invariant.
+
+#### Suggested Next Steps
+
+- Run strict Edge/focused/full Node 22 gates, commit, and request another independent #153
+  revalidation before changing issue status.
+
+### session v54: close integrated strict Deno boundary (#130)
+
+- Timestamp: 2026-08-11T03:18:00-04:00
+- Agent: Codex
+- Branch: codex/130-multi-rail-bank-intake
+- Head: 9f6a80d (pre-commit)
+
+#### Objective
+
+Close the sole integrated Goal #130 validation failure without changing any intake behavior.
+
+#### Actions Taken
+
+- Added a deterministic fallback message when the shared JSON parser returns an unsuccessful result
+  without an error string in the Base receipt-record and reconciliation Edge handlers.
+- Kept authentication, runtime, provider observation, RPC, and production boundaries unchanged.
+
+#### Validation Notes
+
+- Strict Deno passed all 12 integrated package and intake handlers: Base receipt/reconciliation,
+  package workflow, Customer Balance, CAD PAD, and EUR/GBP Pay by Bank.
+- Full Node 22 `CI=1 pnpm check` passed 168 files / 753 tests, lint, typecheck, and the
+  165-route production build; diff-check passed.
+
+#### Reflections
+
+- The app TypeScript gate does not cover Deno Edge entrypoints. Integrated Goal validation must keep
+  the strict Edge batch as a separate required gate.
+
+#### Suggested Next Steps
+
+- Run the full Node 22 gate, commit the narrow typing fix, then rerun integrated Goal #130 validation.
+
+### session v55: connect expanded intake rails to funded allocation prep (#134)
+
+- Timestamp: 2026-08-11T03:42:00-04:00
+- Agent: Codex
+- Branch: codex/130-multi-rail-bank-intake
+- Head: 3dfb9e8 (pre-commit)
+
+#### Objective
+
+Close integrated Goal #134's expanded-source gap so every supported reconciled package source can
+reach custody-backed FX, fee processing, and allocation lock candidates.
+
+#### Actions Taken
+
+- Added forward-only Base USDC/USDT/PYUSD financial assets, epoch-treasury custody accounts, and
+  source routes; linked Base deployment assets to those canonical financial assets.
+- Imported CAD PAD and EUR/GBP Pay by Bank custody routes into epoch prep and widened source-lot
+  constraints without enabling production or provider mutations.
+- Replaced the old two-branch prep evidence switch with explicit Customer Balance, Base, CAD PAD,
+  and Pay by Bank validation. Each branch binds project, asset, native amount, canonical provider
+  state, and exact custody route before FX and neutral-ledger fee posting.
+- Added executable Base, CAD PAD, and GBP Pay by Bank paths from reconciled intake through FX,
+  valuation source lot, conserved fee journal, and funded allocation lock candidate. Existing
+  generic allocation and close suites continue to consume those rail-neutral candidates.
+- Updated focused migration coverage and the canonical allocation architecture note.
+
+#### Validation Notes
+
+- Fresh local Supabase replay applied `20260811114000_epoch_multi_rail_financial_prep.sql`.
+- Seven executable SQL suites passed: Base intake, project packages, financial prep, funded
+  allocation, allocation close, CAD PAD, and EUR/GBP Pay by Bank.
+- Focused migration coverage passed 3 files / 17 tests with one worker.
+- Full Node 22 `CI=1 pnpm check` passed lint, 168 files / 754 tests, typecheck, and the
+  165-route production build; diff-check passed.
+
+#### Reflections
+
+- Package admission and allocation preparation are separate trust boundaries. Adding a source kind
+  to package capture is incomplete until prep revalidates its canonical evidence and maps the exact
+  rail/asset/custody dimensions.
+
+#### Suggested Next Steps
+
+- Commit the bounded fix, then rerun integrated Goal #134 validation.
+
+### session v56: bind project payments to one quoted settlement rail (PR #154)
+
+- Timestamp: 2026-08-11T04:49:23-04:00
+- Agent: Codex
+- Branch: codex/130-multi-rail-bank-intake
+- Head: c86dfa3 (pre-commit)
+
+#### Objective
+
+Close the three actionable Codex review findings on PR #154: prevent one project payment from
+settling through multiple Stripe rails, derive foreign-currency Checkout amounts from reviewed
+quotes, and retain terminal CAD PAD evidence that arrives before mandate creation.
+
+#### Actions Taken
+
+- Added append-only, non-production funding quotes that bind a USD payment obligation to an exact
+  CAD, EUR, or GBP source amount. The database derives the foreign minor-unit amount from the
+  reviewed rate; browser and Checkout request contracts cannot supply or override it.
+- Added one immutable settlement-rail claim per payment. Ledger-backed availability claims under a
+  payment-scoped advisory lock, later cross-rail settlement rolls back atomically, and package
+  sources must reproduce the claim, command, quote, and native amount.
+- Preserved failed or canceled CAD PAD evidence when Stripe has not created a mandate, while all
+  nonterminal and settled evidence continues to require and pin the exact mandate identity.
+- Updated downstream SQL fixtures to carry explicit settled-rail claims, regenerated canonical
+  Supabase types, and corrected the CAD PAD, Pay by Bank, and settlement architecture docs.
+
+#### Validation Notes
+
+- Fresh local Supabase replay applied `20260811115000_project_payment_rail_integrity.sql` and seed.
+- Seven executable SQL suites passed: rail integrity, CAD PAD, Pay by Bank, project packages,
+  financial prep, funded allocation, and allocation close.
+- Focused Vitest passed 7 files / 34 tests; strict Deno passed four affected Edge handlers.
+- Full Node 22 `CI=1 pnpm check` passed lint, 169 files / 757 tests, typecheck, and the 165-route
+  production build; diff-check passed.
+
+#### Reflections
+
+- A legacy payment is an obligation, not a presentment-currency amount or a rail-specific receipt.
+  Conversion and settlement ownership therefore need independent immutable evidence before a
+  reconciled provider event can enter allocation.
+
+#### Suggested Next Steps
+
+- Commit and push the review fix, reply to and resolve the three addressed Codex threads, then wait
+  for PR checks without requesting a second Codex review.

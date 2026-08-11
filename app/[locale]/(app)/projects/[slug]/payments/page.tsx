@@ -28,6 +28,8 @@ import { capturePaymentFlowEvent } from "@/lib/observability/payment-flow-client
 import { ProjectCryptoRouteManager } from "@/components/project-crypto-route-manager"
 import { TermsPreviewGate } from "@/components/policies/terms-preview-gate"
 import { StripeBankTransferPanel } from "@/components/stripe-bank-transfer-panel"
+import { StripeAcssDebitPanel } from "@/components/stripe-acss-debit-panel"
+import { StripePayByBankPanel } from "@/components/stripe-pay-by-bank-panel"
 import { ArrowLeft, Plus, Calculator, Save, AlertTriangle, Trash2, Info } from "lucide-react"
 
 interface PaymentMethod {
@@ -595,6 +597,23 @@ export default function ProjectPaymentsPage() {
             periodStart: payment.period_start,
             periodEnd: payment.period_end,
           }))}
+        />
+        <StripeAcssDebitPanel
+          projectSlug={slug}
+          termsAcknowledged={termsPreviewAcknowledged}
+          payments={payments.map((payment) => ({
+            id: payment.id,
+            paymentAmount: payment.payment_amount,
+            statusCode: payment.status_code,
+            periodStart: payment.period_start,
+            periodEnd: payment.period_end,
+          }))}
+        />
+        <StripePayByBankPanel
+          projectSlug={slug}
+          payments={payments.map((payment) => ({id: payment.id, paymentAmount: Number(payment.payment_amount),
+            statusCode: payment.status_code, periodStart: payment.period_start, periodEnd: payment.period_end}))}
+          termsAcknowledged={termsPreviewAcknowledged}
         />
 
         {/* Add New Payments Section */}

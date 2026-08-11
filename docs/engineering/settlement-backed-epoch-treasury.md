@@ -670,13 +670,38 @@ event-ID deduplication, idempotency keys, and out-of-order event handling. A rec
 becomes eligible only from independently observed availability evidence, not merely
 a successful payment intent.
 
-The current Stripe Customer Balance bank-transfer product supports USD but does not
-offer CAD presentment. Task #131 therefore keeps CAD fail-closed and records the provider
-gap explicitly; Canadian PAD is not substituted because it is a pull-based debit. The
-durable asset/custody model remains currency-aware so an authoritative future CAD push-
-transfer provider can be added without weakening the signed-event or reconciliation gates.
+The retained Stripe Customer Balance bank-transfer implementation remains fail-closed
+because the canonical Canadian sandbox exposes no supported push-transfer currencies.
+Canadian project funding instead has a distinct one-time PAD rail: Stripe-hosted Checkout,
+dynamic payment-method configuration, explicit mandate acknowledgement, delayed settlement,
+and authoritative signed-event re-fetch. PAD is not treated as a push transfer, does not reuse
+mandates, and cannot fund a package until available custody and a conserved provisional journal
+exist. CAD Checkout amounts are derived server-side from fresh reviewed USD/CAD quotes rather
+than copied from the USD obligation or supplied by the browser. CAD is the safe default; USD
+stays disabled without exact-account denomination evidence.
+See [Stripe Canadian PAD intake](./stripe-canadian-pad-intake.md).
 
-Task #131 must prove an exact Stripe/bank arrangement with either separate externally
+EUR and GBP project funding has a separate one-time Pay by Bank rail. It uses
+Stripe-hosted Checkout and a dynamic payment-method configuration, and binds the exact merchant
+country, implemented platform/direct topology, `pay_by_bank_payments` capability, dedicated
+Pay-by-Bank-only configuration, customer country, and presentment currency before provider
+mutation. Destination/separate-charge paths remain disabled. UK and Finland customer paths are
+generally available; France, Germany, and Ireland remain closed until authoritative exact-account
+private-preview evidence exists.
+Signed webhook evidence is authoritatively re-fetched and cannot fund a package before available
+custody and a conserved provisional journal exist. Refund-pending invalidates package sources;
+successful full or partial refunds reverse the original receipt exactly, cumulative refunds retire
+prior residual journals, and the single current residual is conserved but quarantined from
+allocation. EUR/GBP Checkout amounts are derived server-side from fresh reviewed USD funding
+quotes. Pay by Bank does not invent a dispute workflow.
+See [Stripe Pay by Bank intake](./stripe-pay-by-bank-intake.md).
+
+The three Stripe project-funding rails share one immutable settlement claim per legacy payment.
+The first ledger-backed available event wins under a payment-scoped advisory lock; another rail
+cannot settle or enter a package for that payment. Package sources must reproduce the claimed
+command, reviewed quote where currency conversion applies, and exact native amount.
+
+Any Stripe intake rail must prove an exact Stripe/bank arrangement with either separate externally
 reconcilable platform and epoch custody identifiers or a clearing account that
 sweeps to separate custody within a defined SLA. Production Stripe intake remains
 disabled if neither topology is available. Connected-account onboarding uses

@@ -174,6 +174,8 @@ Use the smallest relevant validation first, then broaden before reporting comple
 | Supabase schema migrations | Local Supabase replay plus generated types | `supabase db reset`, regenerate `types/supabase.ts`, focused tests |
 | Supabase Edge Functions | Contract/command tests plus Deno/Supabase validation | focused contract tests, `deno info` or `deno check`, PR dry-run |
 | Stripe bank-transfer intake | FundLoop sandbox CLI plus local signed webhook/SQL/browser evidence | `stripe whoami --project-name fundloop`, `stripe listen`, fresh local reset, `supabase/tests/stripe_bank_transfer_intake.sql`; never `--live` |
+| Stripe Canadian PAD intake | Dedicated test-mode payment-method configuration plus signed webhook/refetch, SQL, and browser evidence | fresh local reset, `supabase/tests/stripe_acss_debit_intake.sql`, strict Deno, focused PAD Playwright; CAD only and never `--live` |
+| Stripe EUR/GBP Pay by Bank intake | Exact test merchant country/capability/dynamic configuration plus signed webhook/refetch, SQL, and browser evidence | fresh local reset, `supabase/tests/stripe_pay_by_bank_intake.sql`, strict Deno, focused Pay by Bank Playwright; GB/FI general, FR/DE/IE private-preview gated, never `--live` |
 | Onchain contract changes | Hardhat workspace | `pnpm --dir contracts test` |
 | Local wallet and control-plane browser flows | Serialized local E2E lane with per-workflow replay/fixtures | `pnpm test:e2e:local` when prerequisites are available |
 | Persona happy paths | Local-only persona E2E lane | Start/reset caller-owned local Supabase, then `pnpm test:e2e:personas` or filter with `-- --persona <id>` |

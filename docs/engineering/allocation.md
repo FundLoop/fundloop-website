@@ -106,6 +106,14 @@ canonical minor-unit scale, and deterministic source order. The lock-candidate
 view joins those lots to the package's eligible cohort and exposes the locked Cubid
 score, versioned maximum score, and eligible-user count without computing a claim.
 
+The prep boundary resolves each supported settled package source through an exact
+rail/asset custody route: fail-closed Stripe Customer Balance USD, Base
+USDC/USDT/PYUSD epoch-treasury receipts, Canadian CAD PAD, and EUR/GBP Pay by Bank.
+Each rail is revalidated against its canonical settled or exact evidence before FX
+and fee posting; a symbol-only or cross-rail match is rejected. Provider-hosted
+availability remains independent from this local accounting path and cannot enable
+production value flow.
+
 The four `$0.335` precision fixture is stored as four independent exact source lots;
 it is not pre-aggregated or rounded to cents. Carryover creates a successor lot with
 an explicit predecessor reference and the same funded-principal classification.

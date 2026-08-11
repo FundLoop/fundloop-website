@@ -223,7 +223,7 @@ async function startLocalEdgeRuntime(env) {
 
 async function main() {
   loadLocalEnv()
-  const phaseOrder = ["wallet", "allocation", "withdrawal", "base", "stripe-connect", "operational"]
+  const phaseOrder = ["wallet", "allocation", "withdrawal", "base", "stripe-connect", "stripe-pad", "stripe-pay-by-bank", "operational"]
   const startPhase = process.env.PLAYWRIGHT_LOCAL_START_PHASE?.trim() || "wallet"
   const startPhaseIndex = phaseOrder.indexOf(startPhase)
   if (startPhaseIndex < 0) {
@@ -432,6 +432,16 @@ async function main() {
       await applyCommittedSqlFixture("supabase/tests/stripe_connect_payout_control_plane.sql", dbUrl, sharedEnv)
       await applyCommittedSqlFixture("supabase/tests/fixtures/stripe_connect_browser_ready.sql", dbUrl, sharedEnv)
       await runBrowserFiles("tests/e2e/local/stripe-connect-payout-control-plane.spec.ts")
+    }
+
+    if (shouldRunPhase("stripe-pad")) {
+      await resetDatabase()
+      await runBrowserFiles("tests/e2e/local/stripe-acss-debit-intake.spec.ts")
+    }
+
+    if (shouldRunPhase("stripe-pay-by-bank")) {
+      await resetDatabase()
+      await runBrowserFiles("tests/e2e/local/stripe-pay-by-bank-intake.spec.ts")
     }
 
     if (shouldRunPhase("operational")) {

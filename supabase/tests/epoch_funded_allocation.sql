@@ -41,6 +41,8 @@ BEGIN
     provider_account_id,provider_customer_id,provider_payment_intent_id,instruction_evidence_hash,deployment_environment)
   VALUES(v_project,v_payment,1,v_actor,'USD',10000,'acct_allocation','cus_allocation','pi_allocation',repeat('1',64),'local')
   RETURNING id INTO v_intent;
+  INSERT INTO public.project_payment_settled_rail_claims(payment_id,rail_key,command_reference,evidence_hash)
+  VALUES(v_payment,'stripe_bank_transfer',v_intent::text,repeat('1',64));
   INSERT INTO public.epoch_project_packages(project_id,intended_cycle_id,canonical_cycle_id,version,status,list_status,funding_status,
     compliance_status,cubid_status,cutoff_at,frozen_at,approved_at,approved_by_user_id,project_fee_assessed_once,base_fee_deferred,
     payment_count,funding_source_count,cohort_count,eligible_user_count,preliminary_usd,manifest,manifest_hash,created_by_user_id)

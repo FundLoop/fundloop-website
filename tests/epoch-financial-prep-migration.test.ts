@@ -2,6 +2,7 @@ import { readFileSync } from "node:fs"
 import { describe,expect,it } from "vitest"
 
 const sql=readFileSync("supabase/migrations/20260809150000_epoch_financial_prep.sql","utf8")
+const multiRail=readFileSync("supabase/migrations/20260811114000_epoch_multi_rail_financial_prep.sql","utf8")
 const edge=readFileSync("supabase/functions/epoch-financial-prep/index.ts","utf8")
 const scheduler=readFileSync("supabase/functions/epoch-financial-prep-scheduler/index.ts","utf8")
 
@@ -42,5 +43,16 @@ describe("epoch financial prep migration",()=>{
     expect(scheduler).toContain("harvest_expired_epoch_source_lots")
     expect(scheduler).toContain("internal_secret")
     expect(scheduler).toContain("!allowed.has(environment)")
+  })
+  it("maps every supported settled intake rail into an exact custody-backed source lot",()=>{
+    for(const kind of ["stripe_bank_transfer","base_stablecoin","stripe_acss_debit","stripe_pay_by_bank"]){
+      expect(multiRail).toContain(`v_source.source_kind='${kind}'`)
+    }
+    expect(multiRail).toContain("stripe_acss_debit_custody_routes")
+    expect(multiRail).toContain("stripe_pay_by_bank_custody_routes")
+    expect(multiRail).toContain("'base_'||lower(asset.symbol)||'_epoch_treasury'")
+    expect(multiRail).toContain("s.available_for_package")
+    expect(multiRail).toContain("(newer.observed_at,newer.id)>(e.observed_at,e.id)")
+    expect(multiRail).toContain("epoch_financial_prep_source_evidence_mismatch")
   })
 })
