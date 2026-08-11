@@ -26,7 +26,8 @@ function observePaymentIntent(pi: Stripe.PaymentIntent, session: Stripe.Checkout
   return {evidenceType: normalized, commandId, providerObjectId: refund?.id ?? pi.id, providerCheckoutSessionId: session.id,
     providerPaymentIntentId: pi.id, providerChargeId: charge?.id ?? null, providerRefundId: refund?.id ?? null,
     providerBalanceTransactionId: balance?.id ?? null, currencyCode: currency as StripePayByBankCurrency,
-    grossAmountMinor: String(gross), refundAmountMinor: refund ? String(charge?.amount_refunded ?? refund.amount) : null,
+    grossAmountMinor: String(gross), refundAmountMinor: refund ? String(refund.amount) : null,
+    cumulativeRefundedAmountMinor: refund ? String(charge?.amount_refunded ?? 0) : null,
     feeAmountMinor: fee === null ? null : String(fee), netAmountMinor: net === null ? null : String(net),
     balanceStatus: balance?.status === "available" ? "available" : balance?.status === "pending" ? "pending" : null,
     paymentMethodType: type, customerCountry: country as StripePayByBankObservation["customerCountry"]}
@@ -60,6 +61,7 @@ async function authoritativeObservation(stripe: Stripe, event: Stripe.Event): Pr
     return {evidenceType: "expired", commandId, providerObjectId: session.id, providerCheckoutSessionId: session.id,
       providerPaymentIntentId: null, providerChargeId: null, providerRefundId: null, providerBalanceTransactionId: null,
       currencyCode: currency as StripePayByBankCurrency, grossAmountMinor: String(session.amount_total ?? 0), refundAmountMinor: null,
+      cumulativeRefundedAmountMinor: null,
       feeAmountMinor: null, netAmountMinor: null, balanceStatus: null, paymentMethodType: null,
       customerCountry: country as StripePayByBankObservation["customerCountry"]}
   }

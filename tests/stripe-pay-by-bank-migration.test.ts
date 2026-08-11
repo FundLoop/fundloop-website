@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest"
 
 const sql = readFileSync("supabase/migrations/20260811110000_stripe_pay_by_bank_intake.sql", "utf8")
 const fixes = readFileSync("supabase/migrations/20260811111000_stripe_pay_by_bank_validator_fixes.sql", "utf8")
+const refundNormalization = readFileSync("supabase/migrations/20260811112000_stripe_pay_by_bank_refund_normalization.sql", "utf8")
 const edge = readFileSync("supabase/functions/stripe-pay-by-bank-checkout-create/index.ts", "utf8")
 const webhook = readFileSync("supabase/functions/stripe-pay-by-bank-webhook/index.ts", "utf8")
 
@@ -44,5 +45,14 @@ describe("Stripe Pay by Bank boundaries", () => {
     expect(fixes).toContain("upper(p_command->>'customerCountry') IN('FR','DE','IE')")
     expect(fixes).toContain("retire_prior_stripe_pay_by_bank_residuals")
     expect(fixes).toContain("stripe_pay_by_bank_residual_retirements")
+  })
+  it("keeps the current refund object amount separate from cumulative successful refunds", () => {
+    expect(webhook).toContain("refund ? String(refund.amount) : null")
+    expect(webhook).toContain("refund ? String(charge?.amount_refunded ?? 0) : null")
+    expect(refundNormalization).toContain("current_refund_amount_minor")
+    expect(refundNormalization).toContain("cumulative_successful_refund_amount_minor")
+    expect(refundNormalization).toContain("stripe_pay_by_bank_refund_observations_append_only")
+    expect(refundNormalization).toContain("stripe_pay_by_bank_refund_normalization_missing")
+    expect(refundNormalization).toContain("CASE WHEN p_command->>'evidenceType'='refunded' THEN v_cumulative ELSE v_current END")
   })
 })

@@ -74,6 +74,7 @@ export type StripePayByBankObservation = {
   currencyCode: StripePayByBankCurrency
   grossAmountMinor: string
   refundAmountMinor: string | null
+  cumulativeRefundedAmountMinor: string | null
   feeAmountMinor: string | null
   netAmountMinor: string | null
   balanceStatus: "pending" | "available" | null

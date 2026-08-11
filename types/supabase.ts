@@ -10221,6 +10221,64 @@ export type Database = {
           },
         ]
       }
+      stripe_pay_by_bank_refund_observations: {
+        Row: {
+          command_id: string
+          created_at: string
+          cumulative_successful_refund_amount_minor: number
+          current_refund_amount_minor: number
+          evidence_id: number
+          evidence_type: string
+          id: number
+          production_enabled: boolean
+          provider_refund_id: string
+        }
+        Insert: {
+          command_id: string
+          created_at?: string
+          cumulative_successful_refund_amount_minor: number
+          current_refund_amount_minor: number
+          evidence_id: number
+          evidence_type: string
+          id?: never
+          production_enabled?: boolean
+          provider_refund_id: string
+        }
+        Update: {
+          command_id?: string
+          created_at?: string
+          cumulative_successful_refund_amount_minor?: number
+          current_refund_amount_minor?: number
+          evidence_id?: number
+          evidence_type?: string
+          id?: never
+          production_enabled?: boolean
+          provider_refund_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "stripe_pay_by_bank_refund_observations_command_id_fkey"
+            columns: ["command_id"]
+            isOneToOne: false
+            referencedRelation: "stripe_pay_by_bank_commands"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "stripe_pay_by_bank_refund_observations_command_id_fkey"
+            columns: ["command_id"]
+            isOneToOne: false
+            referencedRelation: "stripe_pay_by_bank_status"
+            referencedColumns: ["command_id"]
+          },
+          {
+            foreignKeyName: "stripe_pay_by_bank_refund_observations_evidence_id_fkey"
+            columns: ["evidence_id"]
+            isOneToOne: true
+            referencedRelation: "stripe_pay_by_bank_evidence"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       stripe_pay_by_bank_residual_retirements: {
         Row: {
           command_id: string
@@ -13627,6 +13685,10 @@ export type Database = {
         Returns: Json
       }
       ingest_stripe_pay_by_bank_webhook: {
+        Args: { p_command: Json }
+        Returns: number
+      }
+      ingest_stripe_pay_by_bank_webhook_without_refund_normalization: {
         Args: { p_command: Json }
         Returns: number
       }

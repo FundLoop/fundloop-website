@@ -2633,3 +2633,47 @@ non-production, no-value-flow boundary.
 
 - Rerun the full Node 22 gate, commit this narrow forward fix, and request independent #153
   revalidation against both the original findings and the new sequential-refund probes.
+
+### session v52: normalize current and cumulative Pay by Bank refunds (#153)
+
+- Timestamp: 2026-08-11T02:51:00-04:00
+- Agent: Codex
+- Branch: codex/130-multi-rail-bank-intake
+- Head: 9210f75 (pre-commit)
+
+#### Objective
+
+Close the remaining independent #153 refund-normalization finding without weakening the
+non-production, signed-webhook, or cumulative custody boundaries.
+
+#### Actions Taken
+
+- Split authoritative Stripe refund evidence into the current `Refund.amount` and cumulative
+  successful `Charge.amount_refunded`, rather than using the cumulative value for every refund
+  lifecycle status.
+- Added a forward-only normalized refund observation table and RPC wrapper. Pending and failed
+  events retain their current refund amount even when cumulative successful refunds are zero;
+  successful events alone pass the cumulative total into residual custody replacement.
+- Extended executable SQL through pending to failed, first partial, second partial, and full refund
+  transitions. The assertions retain both amount dimensions and prove 75.00, 50.00, then zero live
+  residual without double counting.
+- Updated the typed observation contract, focused boundary tests, generated Supabase types, and the
+  Pay by Bank architecture note.
+
+#### Validation Notes
+
+- Fresh local Supabase replay applied `20260811112000_stripe_pay_by_bank_refund_normalization.sql`.
+- Executable Pay by Bank SQL passed, including pending and failed events with current amount 25.00
+  and cumulative successful amount zero, followed by cumulative 25.00, 50.00, and 100.00 success.
+- Strict Deno passed all three Pay by Bank Edge handlers. Focused Vitest passed 3 files / 16 tests.
+
+#### Reflections
+
+- A Stripe Refund object describes one refund attempt, while the Charge describes cumulative
+  successful value. Persisting both prevents failed or pending attempts from corrupting custody
+  while retaining enough evidence to audit each provider lifecycle transition.
+
+#### Suggested Next Steps
+
+- Run the full Node 22 gate, commit this narrow normalization fix, then request independent #153
+  revalidation before promoting the issue or validating Goal #130.

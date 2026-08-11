@@ -86,7 +86,7 @@ BEGIN
     'providerCreatedAt','2026-08-11T10:00:00Z','apiVersion','2026-06-24.dahlia','signatureTimestamp',1786432000,'payloadSha256',repeat('3',64),
     'livemode',false,'observationSource','stripe_sdk_v1','capabilityEvidenceHash',repeat('d',64),'evidenceType','refund_pending','commandId',v_command,
     'providerCheckoutSessionId','cs_test_bankfixture','providerPaymentIntentId','pi_bankfixture','providerChargeId','ch_bankfixture','providerRefundId','re_bankfixture',
-    'providerBalanceTransactionId','txn_bankfixture','currencyCode','GBP','customerCountry','GB','grossAmountMinor','10000','refundAmountMinor','2500',
+    'providerBalanceTransactionId','txn_bankfixture','currencyCode','GBP','customerCountry','GB','grossAmountMinor','10000','refundAmountMinor','2500','cumulativeRefundedAmountMinor','0',
     'feeAmountMinor','30','netAmountMinor','9970','balanceStatus','available','paymentMethodType','pay_by_bank'));
   IF (SELECT available_for_package FROM public.stripe_pay_by_bank_status WHERE command_id=v_command)
     OR (SELECT funding_status FROM public.epoch_project_packages WHERE id=v_package)<>'unsettled'
@@ -94,11 +94,27 @@ BEGIN
     RAISE EXCEPTION 'refund_pending_should_invalidate';END IF;
 
   PERFORM public.ingest_stripe_pay_by_bank_webhook(jsonb_build_object('contractVersion','stripe_pay_by_bank_webhook.v1','deploymentEnvironment','local',
+    'providerEventId','evt_bankrefundfailed','providerAccountId','acct_testbank','eventType','refund.failed','providerObjectId','re_bankfixture',
+    'providerCreatedAt','2026-08-11T11:00:00Z','apiVersion','2026-06-24.dahlia','signatureTimestamp',1786435600,'payloadSha256',repeat('a',64),
+    'livemode',false,'observationSource','stripe_sdk_v1','capabilityEvidenceHash',repeat('d',64),'evidenceType','refund_failed','commandId',v_command,
+    'providerCheckoutSessionId','cs_test_bankfixture','providerPaymentIntentId','pi_bankfixture','providerChargeId','ch_bankfixture','providerRefundId','re_bankfixture',
+    'providerBalanceTransactionId','txn_bankfixture','currencyCode','GBP','customerCountry','GB','grossAmountMinor','10000','refundAmountMinor','2500','cumulativeRefundedAmountMinor','0',
+    'feeAmountMinor','30','netAmountMinor','9970','balanceStatus','available','paymentMethodType','pay_by_bank'));
+  IF NOT EXISTS(SELECT 1 FROM public.stripe_pay_by_bank_refund_observations WHERE command_id=v_command AND provider_refund_id='re_bankfixture'
+      AND evidence_type='refund_failed' AND current_refund_amount_minor=2500 AND cumulative_successful_refund_amount_minor=0) THEN
+    RAISE EXCEPTION 'refund_failed_current_and_cumulative_amounts_not_preserved';END IF;
+  v_direct_denied:=false;
+  BEGIN
+    UPDATE public.stripe_pay_by_bank_refund_observations SET current_refund_amount_minor=1 WHERE command_id=v_command;
+  EXCEPTION WHEN OTHERS THEN v_direct_denied:=SQLERRM LIKE '%stripe_pay_by_bank_records_are_append_only%';END;
+  IF NOT v_direct_denied THEN RAISE EXCEPTION 'refund_observations_should_be_append_only';END IF;
+
+  PERFORM public.ingest_stripe_pay_by_bank_webhook(jsonb_build_object('contractVersion','stripe_pay_by_bank_webhook.v1','deploymentEnvironment','local',
     'providerEventId','evt_bankrefunded','providerAccountId','acct_testbank','eventType','refund.updated','providerObjectId','re_bankfixture',
     'providerCreatedAt','2026-08-11T12:00:00Z','apiVersion','2026-06-24.dahlia','signatureTimestamp',1786439200,'payloadSha256',repeat('5',64),
     'livemode',false,'observationSource','stripe_sdk_v1','capabilityEvidenceHash',repeat('d',64),'evidenceType','refunded','commandId',v_command,
     'providerCheckoutSessionId','cs_test_bankfixture','providerPaymentIntentId','pi_bankfixture','providerChargeId','ch_bankfixture','providerRefundId','re_bankfixture',
-    'providerBalanceTransactionId','txn_bankfixture','currencyCode','GBP','customerCountry','GB','grossAmountMinor','10000','refundAmountMinor','2500',
+    'providerBalanceTransactionId','txn_bankfixture','currencyCode','GBP','customerCountry','GB','grossAmountMinor','10000','refundAmountMinor','2500','cumulativeRefundedAmountMinor','2500',
     'feeAmountMinor','30','netAmountMinor','9970','balanceStatus','available','paymentMethodType','pay_by_bank'));
   SELECT id INTO v_reversal FROM public.ledger_transactions WHERE reversal_of_transaction_id=v_ledger;
   SELECT e.ledger_transaction_id INTO v_residual FROM public.stripe_pay_by_bank_evidence e WHERE command_id=v_command AND evidence_type='refunded' ORDER BY id DESC LIMIT 1;
@@ -110,7 +126,7 @@ BEGIN
     'providerCreatedAt','2026-08-11T13:00:00Z','apiVersion','2026-06-24.dahlia','signatureTimestamp',1786442800,'payloadSha256',repeat('8',64),
     'livemode',false,'observationSource','stripe_sdk_v1','capabilityEvidenceHash',repeat('d',64),'evidenceType','refunded','commandId',v_command,
     'providerCheckoutSessionId','cs_test_bankfixture','providerPaymentIntentId','pi_bankfixture','providerChargeId','ch_bankfixture','providerRefundId','re_bankfixture2',
-    'providerBalanceTransactionId','txn_bankfixture','currencyCode','GBP','customerCountry','GB','grossAmountMinor','10000','refundAmountMinor','5000',
+    'providerBalanceTransactionId','txn_bankfixture','currencyCode','GBP','customerCountry','GB','grossAmountMinor','10000','refundAmountMinor','2500','cumulativeRefundedAmountMinor','5000',
     'feeAmountMinor','30','netAmountMinor','9970','balanceStatus','available','paymentMethodType','pay_by_bank'));
   SELECT e.ledger_transaction_id INTO v_second_residual FROM public.stripe_pay_by_bank_evidence e
     WHERE command_id=v_command AND provider_refund_id='re_bankfixture2';
@@ -123,12 +139,15 @@ BEGIN
     'providerCreatedAt','2026-08-11T14:00:00Z','apiVersion','2026-06-24.dahlia','signatureTimestamp',1786446400,'payloadSha256',repeat('9',64),
     'livemode',false,'observationSource','stripe_sdk_v1','capabilityEvidenceHash',repeat('d',64),'evidenceType','refunded','commandId',v_command,
     'providerCheckoutSessionId','cs_test_bankfixture','providerPaymentIntentId','pi_bankfixture','providerChargeId','ch_bankfixture','providerRefundId','re_bankfixture3',
-    'providerBalanceTransactionId','txn_bankfixture','currencyCode','GBP','customerCountry','GB','grossAmountMinor','10000','refundAmountMinor','10000',
+    'providerBalanceTransactionId','txn_bankfixture','currencyCode','GBP','customerCountry','GB','grossAmountMinor','10000','refundAmountMinor','5000','cumulativeRefundedAmountMinor','10000',
     'feeAmountMinor','30','netAmountMinor','9970','balanceStatus','available','paymentMethodType','pay_by_bank'));
   IF NOT EXISTS(SELECT 1 FROM public.ledger_transactions WHERE reversal_of_transaction_id=v_second_residual)
     OR EXISTS(SELECT 1 FROM public.stripe_pay_by_bank_evidence e WHERE e.command_id=v_command AND e.evidence_type='refunded'
       AND e.ledger_transaction_id IS NOT NULL AND NOT EXISTS(SELECT 1 FROM public.ledger_transactions r WHERE r.reversal_of_transaction_id=e.ledger_transaction_id)) THEN
     RAISE EXCEPTION 'full_refund_should_retire_all_residuals';END IF;
+  IF NOT EXISTS(SELECT 1 FROM public.stripe_pay_by_bank_refund_observations WHERE command_id=v_command AND provider_refund_id='re_bankfixture3'
+      AND evidence_type='refunded' AND current_refund_amount_minor=5000 AND cumulative_successful_refund_amount_minor=10000) THEN
+    RAISE EXCEPTION 'successful_refund_current_and_cumulative_amounts_not_preserved';END IF;
 
   INSERT INTO public.payments(project_id,period_start,period_end,revenue,payment_amount,payment_percentage,updated_by)
   VALUES(3,'2026-08-01','2026-08-31',1000,101,10.1,v_actor) RETURNING id INTO v_terminal_payment;
