@@ -27,6 +27,13 @@ describe("epoch allocation v2 migration", () => {
     expect(sql).toContain("ORDER BY deterministic_sequence DESC,inventory_lot_id DESC")
   })
 
+  it("excludes harvested value from withdrawal state and oldest-first allocation", () => {
+    expect(sql).toContain("v_claimed<v_total-v_harvested")
+    expect(sql).toContain("obligation.total_minor-obligation.harvested_minor-coalesce")
+    expect(sql).toContain("AS unclaimed_minor")
+    expect(sql).toContain("withdrawal_available_amount_insufficient")
+  })
+
   it("carries residue with provenance and exposes privacy-thresholded cap and harvest fields", () => {
     expect(sql).toContain("origin_disposition_id")
     expect(sql).toContain("carryforward_residue")

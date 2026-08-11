@@ -160,3 +160,40 @@ reporting while keeping production value flow disabled.
   converted to a reliable TAP gate.
 - Keep production activation, remote Supabase mutation, push, and PR work in
   separately authorized sessions.
+
+### session v4: Codex review withdrawal availability fix
+
+- Timestamp: 2026-08-11T18:15:00-04:00
+- Agent: Codex
+- Branch: codex/public-monthly-coordination-story
+- Head: 2214068
+
+#### Objective
+
+Address the Codex P2 finding on PR #185 so harvested obligation value cannot shadow
+newer valid withdrawal obligations.
+
+#### Actions Taken
+
+- Replaced the obligation-state refresh calculation to compare active claims against
+  `total_minor - harvested_minor`.
+- Replaced the v3 withdrawal availability and oldest-first allocation queries so
+  both subtract harvested value and skip obligations with no remaining balance.
+- Added migration regression assertions for state refresh, aggregate availability,
+  and oldest-first unclaimed-minor calculation.
+
+#### Validation Notes
+
+- Focused migration tests, local schema replay/lint, and post-fix CI are required
+  before resolving the review thread.
+
+#### Reflections
+
+- A final insertion guard prevents double spending but is not sufficient UX or
+  ordering behavior: harvested obligations must also disappear from every upstream
+  availability and selection calculation.
+
+#### Suggested Next Steps
+
+- Reply to and resolve the original Codex thread after the fix is pushed, then merge
+  only after the final head is green.
