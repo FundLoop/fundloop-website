@@ -45,10 +45,10 @@ async function handleRequest(request: Request) {
   const platformAccountId = getEnv("STRIPE_ACCOUNT_ID")?.trim()
   const providerAccountId = getEnv("STRIPE_PAY_BY_BANK_MERCHANT_ACCOUNT_ID")?.trim() || platformAccountId
   const configurationId = getEnv("STRIPE_PAY_BY_BANK_PAYMENT_METHOD_CONFIGURATION_ID")?.trim()
-  const chargeTopology = (getEnv("STRIPE_PAY_BY_BANK_CHARGE_TOPOLOGY")?.trim() || "platform") as "platform" | "direct" | "destination" | "separate_charges_transfers"
-  const previewCountries = (getEnv("STRIPE_PAY_BY_BANK_PRIVATE_PREVIEW_COUNTRIES") ?? "").split(",").map((value) => value.trim().toUpperCase()).filter(Boolean)
+  const chargeTopology = (getEnv("STRIPE_PAY_BY_BANK_CHARGE_TOPOLOGY")?.trim() || "platform") as "platform" | "direct"
   if (!secretKey?.startsWith("sk_test_") || !platformAccountId?.match(/^acct_[A-Za-z0-9]+$/) || !providerAccountId?.match(/^acct_[A-Za-z0-9]+$/) ||
-      !configurationId?.match(/^pmc_[A-Za-z0-9]+$/) || !["platform","direct","destination","separate_charges_transfers"].includes(chargeTopology)) {
+      !configurationId?.match(/^pmc_[A-Za-z0-9]+$/) || !["platform","direct"].includes(chargeTopology) ||
+      (chargeTopology === "platform") !== (providerAccountId === platformAccountId)) {
     return json(edgeCommandFailure("stripe_pay_by_bank_not_configured", "Pay by Bank sandbox capability/configuration evidence is unavailable."))
   }
   const stripe = new Stripe(secretKey, {httpClient: Stripe.createFetchHttpClient()})
@@ -58,19 +58,25 @@ async function handleRequest(request: Request) {
     configurationActive: boolean; chargeTopology: typeof chargeTopology; privatePreviewCountries: Array<"FI"|"FR"|"DE"|"IE"|"GB">}
   try {
     const [account, configuration] = await Promise.all([
-      stripe.accounts.retrieve(providerAccountId),
+      connected ? stripe.accounts.retrieve(providerAccountId) : stripe.accounts.retrieve(null),
       stripe.paymentMethodConfigurations.retrieve(configurationId, {}, requestOptions),
     ])
     const capabilities = (account as unknown as {capabilities?: Record<string, string>}).capabilities ?? {}
-    const method = (configuration as unknown as {pay_by_bank?: {available?: boolean; display_preference?: {value?: string}}}).pay_by_bank
+    const configurationRecord = configuration as unknown as Record<string, unknown>
+    const method = configurationRecord.pay_by_bank as {available?: boolean; display_preference?: {value?: string}} | undefined
+    const activeMethods = Object.entries(configurationRecord).filter(([, value]) => {
+      if (!value || typeof value !== "object" || Array.isArray(value)) return false
+      const candidate = value as {available?: unknown; display_preference?: {value?: unknown}}
+      return candidate.available === true && candidate.display_preference?.value !== "off"
+    }).map(([key]) => key)
     capabilitySnapshot = {accountId: account.id, livemode: false, merchantCountry: account.country ?? "",
       payByBankActive: capabilities.pay_by_bank_payments === "active", chargeTopology,
-      configurationActive: method?.available === true && method.display_preference?.value !== "off",
-      privatePreviewCountries: previewCountries as Array<"FI"|"FR"|"DE"|"IE"|"GB">}
+      configurationActive: method?.available === true && method.display_preference?.value !== "off" && activeMethods.length === 1 && activeMethods[0] === "pay_by_bank",
+      privatePreviewCountries: []}
   } catch {
     return json(edgeCommandFailure("stripe_pay_by_bank_not_enabled", "Authoritative Pay by Bank capability/configuration evidence is unavailable."))
   }
-  const previewEnabled = capabilitySnapshot.privatePreviewCountries.includes(input.data.customerCountry)
+  const previewEnabled = false
   if (capabilitySnapshot.livemode || !capabilitySnapshot.payByBankActive || !capabilitySnapshot.configurationActive ||
       (["FR","DE","IE"].includes(input.data.customerCountry) && !previewEnabled)) {
     return json(edgeCommandFailure("stripe_pay_by_bank_not_enabled", "Pay by Bank is unavailable for this exact merchant and customer country."))
@@ -79,7 +85,7 @@ async function handleRequest(request: Request) {
     contractVersion: "stripe_pay_by_bank_prepare.v1", deploymentEnvironment: runtimeEnvironment, actorUserId: auth.user.id,
     projectSlug: input.data.projectSlug, paymentId: input.data.paymentId, currencyCode: input.data.currencyCode,
     expectedAmountMinor: input.data.expectedAmountMinor, customerCountry: input.data.customerCountry,
-    providerAccountId, chargeTopology, merchantCountry: capabilitySnapshot.merchantCountry, privatePreviewEnabled: previewEnabled,
+    providerAccountId, platformAccountId, chargeTopology, merchantCountry: capabilitySnapshot.merchantCountry, privatePreviewEnabled: previewEnabled,
   }})
   if (prepareError || typeof commandId !== "string") return json(edgeCommandFailure("stripe_pay_by_bank_prepare_failed", prepareError?.message ?? "Pay by Bank command could not be prepared."))
   let result

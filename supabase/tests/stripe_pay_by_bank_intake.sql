@@ -5,7 +5,7 @@ DO $$
 DECLARE
   v_actor uuid:='290eb647-f25f-43f3-bf6b-1e2b2cf25e69';
   v_payment bigint;v_terminal_payment bigint;v_command uuid;v_terminal uuid;v_evidence bigint;
-  v_ledger bigint;v_reversal bigint;v_residual bigint;v_package bigint;v_cycle bigint;
+  v_ledger bigint;v_reversal bigint;v_residual bigint;v_second_residual bigint;v_package bigint;v_cycle bigint;
   v_denied boolean:=false;v_direct_denied boolean:=false;v_base jsonb;
 BEGIN
   INSERT INTO public.payments(project_id,period_start,period_end,revenue,payment_amount,payment_percentage,updated_by)
@@ -14,7 +14,7 @@ BEGIN
   BEGIN
     PERFORM public.prepare_stripe_pay_by_bank_command(jsonb_build_object('contractVersion','stripe_pay_by_bank_prepare.v1','deploymentEnvironment','production',
       'actorUserId',v_actor,'projectSlug','nomad-workspaces','paymentId',v_payment,'currencyCode','GBP','expectedAmountMinor','10000',
-      'customerCountry','GB','merchantCountry','CA','chargeTopology','platform','providerAccountId','acct_testbank','privatePreviewEnabled',false));
+      'customerCountry','GB','merchantCountry','CA','chargeTopology','platform','providerAccountId','acct_testbank','platformAccountId','acct_testbank','privatePreviewEnabled',false));
   EXCEPTION WHEN OTHERS THEN v_denied:=SQLERRM LIKE '%stripe_pay_by_bank_runtime_disabled%';END;
   IF NOT v_denied THEN RAISE EXCEPTION 'production_prepare_should_fail';END IF;
 
@@ -22,13 +22,28 @@ BEGIN
   BEGIN
     PERFORM public.prepare_stripe_pay_by_bank_command(jsonb_build_object('contractVersion','stripe_pay_by_bank_prepare.v1','deploymentEnvironment','local',
       'actorUserId',v_actor,'projectSlug','nomad-workspaces','paymentId',v_payment,'currencyCode','EUR','expectedAmountMinor','10000',
-      'customerCountry','DE','merchantCountry','CA','chargeTopology','platform','providerAccountId','acct_testbank','privatePreviewEnabled',false));
+      'customerCountry','DE','merchantCountry','CA','chargeTopology','platform','providerAccountId','acct_testbank','platformAccountId','acct_testbank','privatePreviewEnabled',true));
   EXCEPTION WHEN OTHERS THEN v_denied:=SQLERRM LIKE '%stripe_pay_by_bank_private_preview_unavailable%';END;
   IF NOT v_denied THEN RAISE EXCEPTION 'private_preview_should_fail';END IF;
 
+  v_denied:=false;
+  BEGIN
+    PERFORM public.prepare_stripe_pay_by_bank_command(jsonb_build_object('contractVersion','stripe_pay_by_bank_prepare.v1','deploymentEnvironment','local',
+      'actorUserId',v_actor,'projectSlug','nomad-workspaces','paymentId',v_payment,'currencyCode','GBP','expectedAmountMinor','10000',
+      'customerCountry','GB','merchantCountry','CA','chargeTopology','destination','providerAccountId','acct_testbank','platformAccountId','acct_testbank'));
+  EXCEPTION WHEN OTHERS THEN v_denied:=SQLERRM LIKE '%stripe_pay_by_bank_eligibility_mismatch%';END;
+  IF NOT v_denied THEN RAISE EXCEPTION 'unimplemented_topology_should_fail';END IF;
+  v_denied:=false;
+  BEGIN
+    PERFORM public.prepare_stripe_pay_by_bank_command(jsonb_build_object('contractVersion','stripe_pay_by_bank_prepare.v1','deploymentEnvironment','local',
+      'actorUserId',v_actor,'projectSlug','nomad-workspaces','paymentId',v_payment,'currencyCode','GBP','expectedAmountMinor','10000',
+      'customerCountry','GB','merchantCountry','CA','chargeTopology','platform','providerAccountId','acct_connected','platformAccountId','acct_testbank'));
+  EXCEPTION WHEN OTHERS THEN v_denied:=SQLERRM LIKE '%stripe_pay_by_bank_topology_account_mismatch%';END;
+  IF NOT v_denied THEN RAISE EXCEPTION 'topology_account_mismatch_should_fail';END IF;
+
   v_base:=jsonb_build_object('contractVersion','stripe_pay_by_bank_prepare.v1','deploymentEnvironment','local','actorUserId',v_actor,
     'projectSlug','nomad-workspaces','paymentId',v_payment,'currencyCode','GBP','expectedAmountMinor','10000','customerCountry','GB',
-    'merchantCountry','CA','chargeTopology','platform','providerAccountId','acct_testbank','privatePreviewEnabled',false);
+    'merchantCountry','CA','chargeTopology','platform','providerAccountId','acct_testbank','platformAccountId','acct_testbank','privatePreviewEnabled',false);
   v_command:=public.prepare_stripe_pay_by_bank_command(v_base);
   IF v_command<>public.prepare_stripe_pay_by_bank_command(v_base) THEN RAISE EXCEPTION 'prepare_not_idempotent';END IF;
   PERFORM public.acknowledge_stripe_pay_by_bank_checkout(jsonb_build_object('commandId',v_command,'providerAccountId','acct_testbank',
@@ -89,6 +104,31 @@ BEGIN
   SELECT e.ledger_transaction_id INTO v_residual FROM public.stripe_pay_by_bank_evidence e WHERE command_id=v_command AND evidence_type='refunded' ORDER BY id DESC LIMIT 1;
   IF v_reversal IS NULL OR v_residual IS NULL OR (SELECT native_atomic_amount FROM public.ledger_postings WHERE transaction_id=v_residual AND side='debit')<>7500
     OR (SELECT available_for_package FROM public.stripe_pay_by_bank_status WHERE command_id=v_command) THEN RAISE EXCEPTION 'partial_refund_conservation_failed';END IF;
+
+  PERFORM public.ingest_stripe_pay_by_bank_webhook(jsonb_build_object('contractVersion','stripe_pay_by_bank_webhook.v1','deploymentEnvironment','local',
+    'providerEventId','evt_bankrefunded2','providerAccountId','acct_testbank','eventType','refund.updated','providerObjectId','re_bankfixture2',
+    'providerCreatedAt','2026-08-11T13:00:00Z','apiVersion','2026-06-24.dahlia','signatureTimestamp',1786442800,'payloadSha256',repeat('8',64),
+    'livemode',false,'observationSource','stripe_sdk_v1','capabilityEvidenceHash',repeat('d',64),'evidenceType','refunded','commandId',v_command,
+    'providerCheckoutSessionId','cs_test_bankfixture','providerPaymentIntentId','pi_bankfixture','providerChargeId','ch_bankfixture','providerRefundId','re_bankfixture2',
+    'providerBalanceTransactionId','txn_bankfixture','currencyCode','GBP','customerCountry','GB','grossAmountMinor','10000','refundAmountMinor','5000',
+    'feeAmountMinor','30','netAmountMinor','9970','balanceStatus','available','paymentMethodType','pay_by_bank'));
+  SELECT e.ledger_transaction_id INTO v_second_residual FROM public.stripe_pay_by_bank_evidence e
+    WHERE command_id=v_command AND provider_refund_id='re_bankfixture2';
+  IF v_second_residual IS NULL OR (SELECT native_atomic_amount FROM public.ledger_postings WHERE transaction_id=v_second_residual AND side='debit')<>5000
+    OR NOT EXISTS(SELECT 1 FROM public.ledger_transactions WHERE reversal_of_transaction_id=v_residual) THEN
+    RAISE EXCEPTION 'sequential_partial_refund_should_replace_residual';END IF;
+
+  PERFORM public.ingest_stripe_pay_by_bank_webhook(jsonb_build_object('contractVersion','stripe_pay_by_bank_webhook.v1','deploymentEnvironment','local',
+    'providerEventId','evt_bankrefundedfull','providerAccountId','acct_testbank','eventType','refund.updated','providerObjectId','re_bankfixture3',
+    'providerCreatedAt','2026-08-11T14:00:00Z','apiVersion','2026-06-24.dahlia','signatureTimestamp',1786446400,'payloadSha256',repeat('9',64),
+    'livemode',false,'observationSource','stripe_sdk_v1','capabilityEvidenceHash',repeat('d',64),'evidenceType','refunded','commandId',v_command,
+    'providerCheckoutSessionId','cs_test_bankfixture','providerPaymentIntentId','pi_bankfixture','providerChargeId','ch_bankfixture','providerRefundId','re_bankfixture3',
+    'providerBalanceTransactionId','txn_bankfixture','currencyCode','GBP','customerCountry','GB','grossAmountMinor','10000','refundAmountMinor','10000',
+    'feeAmountMinor','30','netAmountMinor','9970','balanceStatus','available','paymentMethodType','pay_by_bank'));
+  IF NOT EXISTS(SELECT 1 FROM public.ledger_transactions WHERE reversal_of_transaction_id=v_second_residual)
+    OR EXISTS(SELECT 1 FROM public.stripe_pay_by_bank_evidence e WHERE e.command_id=v_command AND e.evidence_type='refunded'
+      AND e.ledger_transaction_id IS NOT NULL AND NOT EXISTS(SELECT 1 FROM public.ledger_transactions r WHERE r.reversal_of_transaction_id=e.ledger_transaction_id)) THEN
+    RAISE EXCEPTION 'full_refund_should_retire_all_residuals';END IF;
 
   INSERT INTO public.payments(project_id,period_start,period_end,revenue,payment_amount,payment_percentage,updated_by)
   VALUES(3,'2026-08-01','2026-08-31',1000,101,10.1,v_actor) RETURNING id INTO v_terminal_payment;

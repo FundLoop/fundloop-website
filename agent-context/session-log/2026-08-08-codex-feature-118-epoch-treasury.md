@@ -2582,3 +2582,54 @@ currency, capability, configuration, topology, webhook, custody, ledger, refund,
 - Commit #153 separately and run independent issue validation. If it passes, validate Goal #130 as
   the integrated three-rail result while keeping Customer Balance unsupported, hosted Pay by Bank
   expected-pending, and every production/value-flow path disabled.
+
+### session v51: close Pay by Bank validator boundary gaps (#153)
+
+- Timestamp: 2026-08-11T02:42:00-04:00
+- Agent: Codex
+- Branch: codex/130-multi-rail-bank-intake
+- Head: baec6ad (pre-commit)
+
+#### Objective
+
+Close all five independent #153 validation findings while preserving the zero-provider-mutation,
+non-production, no-value-flow boundary.
+
+#### Actions Taken
+
+- Restricted the implemented charge topologies to platform and direct charges. The Edge boundary
+  and a forward database constraint now reject destination/separate paths and reject any mismatch
+  between topology, platform account, and provider account before command creation.
+- Corrected canonical-platform discovery to use Stripe's current-account retrieval form while
+  retaining exact connected-account retrieval for direct charges. Webhooks remain bound to the
+  same platform/direct ownership model.
+- Removed the bare environment private-preview allowlist. France, Germany, and Ireland now remain
+  unconditionally closed until an authoritative merchant-scoped Stripe signal exists.
+- Required the dynamic payment-method configuration to have Pay by Bank as its sole available/on
+  method, preventing cards or unrelated methods from appearing in the hosted session.
+- Changed authoritative refund observation to use cumulative `Charge.amount_refunded`. Added a
+  forward residual-retirement control plane so each later cumulative refund reverses the prior
+  residual before posting the single new balance; a final full refund leaves zero live residual.
+
+#### Validation Notes
+
+- Fresh local replay applied the new forward migration
+  `20260811111000_stripe_pay_by_bank_validator_fixes.sql` cleanly.
+- Executable Pay by Bank SQL passed explicit destination denial, platform/account mismatch denial,
+  private-preview denial even with a hostile true flag, first 25.00 partial refund, cumulative
+  50.00 replacement, final 100.00 refund, zero live residual, and all prior settlement/package/RLS
+  checks.
+- Strict Deno passed all three handlers; focused Vitest passed 4 files / 19 tests; typecheck and
+  diff-check passed before the final full gate.
+
+#### Reflections
+
+- Advertising a topology enum is not implementation. A rail should expose only charge patterns
+  whose provider request, event ownership, custody, and reconciliation are all concretely bound.
+- Refund records are incremental objects, but custody state is cumulative. Residual accounting must
+  replace the prior balance rather than treating every refund object as a new independent balance.
+
+#### Suggested Next Steps
+
+- Rerun the full Node 22 gate, commit this narrow forward fix, and request independent #153
+  revalidation against both the original findings and the new sequential-refund probes.

@@ -26,7 +26,7 @@ function observePaymentIntent(pi: Stripe.PaymentIntent, session: Stripe.Checkout
   return {evidenceType: normalized, commandId, providerObjectId: refund?.id ?? pi.id, providerCheckoutSessionId: session.id,
     providerPaymentIntentId: pi.id, providerChargeId: charge?.id ?? null, providerRefundId: refund?.id ?? null,
     providerBalanceTransactionId: balance?.id ?? null, currencyCode: currency as StripePayByBankCurrency,
-    grossAmountMinor: String(gross), refundAmountMinor: refund ? String(refund.amount) : null,
+    grossAmountMinor: String(gross), refundAmountMinor: refund ? String(charge?.amount_refunded ?? refund.amount) : null,
     feeAmountMinor: fee === null ? null : String(fee), netAmountMinor: net === null ? null : String(net),
     balanceStatus: balance?.status === "available" ? "available" : balance?.status === "pending" ? "pending" : null,
     paymentMethodType: type, customerCountry: country as StripePayByBankObservation["customerCountry"]}

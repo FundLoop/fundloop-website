@@ -681,13 +681,16 @@ See [Stripe Canadian PAD intake](./stripe-canadian-pad-intake.md).
 
 EUR and GBP project funding has a separate one-time Pay by Bank rail. It uses
 Stripe-hosted Checkout and a dynamic payment-method configuration, and binds the exact merchant
-country, charge topology, `pay_by_bank_payments` capability, customer country, and presentment
-currency before provider mutation. UK and Finland customer paths are generally available;
-France, Germany, and Ireland remain private-preview gated for the exact merchant account.
+country, implemented platform/direct topology, `pay_by_bank_payments` capability, dedicated
+Pay-by-Bank-only configuration, customer country, and presentment currency before provider
+mutation. Destination/separate-charge paths remain disabled. UK and Finland customer paths are
+generally available; France, Germany, and Ireland remain closed until authoritative exact-account
+private-preview evidence exists.
 Signed webhook evidence is authoritatively re-fetched and cannot fund a package before available
 custody and a conserved provisional journal exist. Refund-pending invalidates package sources;
-successful full or partial refunds reverse the original receipt exactly, and any partial residual
-is conserved but quarantined from allocation. Pay by Bank does not invent a dispute workflow.
+successful full or partial refunds reverse the original receipt exactly, cumulative refunds retire
+prior residual journals, and the single current residual is conserved but quarantined from
+allocation. Pay by Bank does not invent a dispute workflow.
 See [Stripe Pay by Bank intake](./stripe-pay-by-bank-intake.md).
 
 Any Stripe intake rail must prove an exact Stripe/bank arrangement with either separate externally

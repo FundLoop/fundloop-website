@@ -3,7 +3,7 @@ import type { StripePayByBankCurrency, StripePayByBankCustomerCountry } from "..
 
 export type StripePayByBankProvider = {
   discoverCapability(): Promise<{ accountId: string; livemode: boolean; merchantCountry: string; payByBankActive: boolean;
-    configurationActive: boolean; chargeTopology: "platform" | "direct" | "destination" | "separate_charges_transfers";
+    configurationActive: boolean; chargeTopology: "platform" | "direct";
     privatePreviewCountries: StripePayByBankCustomerCountry[] }>
   createCheckoutSession(input: {
     idempotencyKey: string
@@ -46,7 +46,7 @@ export async function createStripePayByBankCheckout(provider: StripePayByBankPro
   if (capability.livemode) return edgeCommandFailure("live_mode_denied", "Live-mode Stripe objects are forbidden.")
   const supportedMerchantCountries = new Set(["AT","AU","BE","BG","CA","CH","CY","CZ","DE","DK","EE","ES","FI","FR","GB","GR","HR","HU","IE","IT","LI","LT","LU","LV","MT","NL","NO","PL","PT","RO","SE","SG","SI","SK","US"])
   if (!supportedMerchantCountries.has(capability.merchantCountry) || !capability.payByBankActive || !capability.configurationActive ||
-      !["platform","direct","destination","separate_charges_transfers"].includes(capability.chargeTopology)) {
+      !["platform","direct"].includes(capability.chargeTopology)) {
     return edgeCommandFailure("stripe_pay_by_bank_not_enabled", "Pay by Bank is not enabled in the FundLoop Stripe sandbox configuration.")
   }
   if (["FR","DE","IE"].includes(input.customerCountry) && !capability.privatePreviewCountries.includes(input.customerCountry)) {

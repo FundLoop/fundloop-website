@@ -2,6 +2,7 @@ import { readFileSync } from "node:fs"
 import { describe, expect, it } from "vitest"
 
 const sql = readFileSync("supabase/migrations/20260811110000_stripe_pay_by_bank_intake.sql", "utf8")
+const fixes = readFileSync("supabase/migrations/20260811111000_stripe_pay_by_bank_validator_fixes.sql", "utf8")
 const edge = readFileSync("supabase/functions/stripe-pay-by-bank-checkout-create/index.ts", "utf8")
 const webhook = readFileSync("supabase/functions/stripe-pay-by-bank-webhook/index.ts", "utf8")
 
@@ -27,11 +28,21 @@ describe("Stripe Pay by Bank boundaries", () => {
     expect(webhook).toContain("authoritativeObservation")
     expect(webhook).toContain("paymentIntents.retrieve")
     expect(webhook).toContain("checkout.sessions.list")
+    expect(edge).toContain("stripe.accounts.retrieve(null)")
+    expect(edge).toContain("activeMethods.length === 1")
+    expect(edge).toContain('(chargeTopology === "platform") !== (providerAccountId === platformAccountId)')
   })
   it("pins provider identities and invalidates refund-pending or refunded package sources", () => {
     expect(sql).toContain("stripe_pay_by_bank_provider_identity_conflict")
     expect(sql).toContain("stripe_pay_by_bank_terminal_evidence_blocks_settlement")
     expect(sql).toContain("stripe_pay_by_bank_package_invalidations")
     expect(sql).toContain("reason IN('refund_pending','refunded')")
+  })
+  it("supports only implemented topologies, keeps private previews closed, and retires cumulative refund residuals", () => {
+    expect(fixes).toContain("charge_topology IN('platform','direct')")
+    expect(fixes).toContain("stripe_pay_by_bank_topology_account_mismatch")
+    expect(fixes).toContain("upper(p_command->>'customerCountry') IN('FR','DE','IE')")
+    expect(fixes).toContain("retire_prior_stripe_pay_by_bank_residuals")
+    expect(fixes).toContain("stripe_pay_by_bank_residual_retirements")
   })
 })

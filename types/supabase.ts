@@ -9864,6 +9864,7 @@ export type Database = {
           id: string
           merchant_country: string
           payment_id: number
+          platform_account_id: string
           production_enabled: boolean
           project_id: number
           provider_account_id: string | null
@@ -9886,6 +9887,7 @@ export type Database = {
           id?: string
           merchant_country: string
           payment_id: number
+          platform_account_id: string
           production_enabled?: boolean
           project_id: number
           provider_account_id?: string | null
@@ -9908,6 +9910,7 @@ export type Database = {
           id?: string
           merchant_country?: string
           payment_id?: number
+          platform_account_id?: string
           production_enabled?: boolean
           project_id?: number
           provider_account_id?: string | null
@@ -10214,6 +10217,86 @@ export type Database = {
             columns: ["package_id"]
             isOneToOne: false
             referencedRelation: "epoch_project_packages"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      stripe_pay_by_bank_residual_retirements: {
+        Row: {
+          command_id: string
+          created_at: string
+          id: number
+          production_enabled: boolean
+          refund_evidence_id: number
+          residual_transaction_id: number
+          reversal_transaction_id: number
+        }
+        Insert: {
+          command_id: string
+          created_at?: string
+          id?: never
+          production_enabled?: boolean
+          refund_evidence_id: number
+          residual_transaction_id: number
+          reversal_transaction_id: number
+        }
+        Update: {
+          command_id?: string
+          created_at?: string
+          id?: never
+          production_enabled?: boolean
+          refund_evidence_id?: number
+          residual_transaction_id?: number
+          reversal_transaction_id?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "stripe_pay_by_bank_residual_retire_residual_transaction_id_fkey"
+            columns: ["residual_transaction_id"]
+            isOneToOne: false
+            referencedRelation: "ledger_transactions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "stripe_pay_by_bank_residual_retire_residual_transaction_id_fkey"
+            columns: ["residual_transaction_id"]
+            isOneToOne: false
+            referencedRelation: "shadow_ledger_trial_balance"
+            referencedColumns: ["ledger_transaction_id"]
+          },
+          {
+            foreignKeyName: "stripe_pay_by_bank_residual_retire_reversal_transaction_id_fkey"
+            columns: ["reversal_transaction_id"]
+            isOneToOne: true
+            referencedRelation: "ledger_transactions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "stripe_pay_by_bank_residual_retire_reversal_transaction_id_fkey"
+            columns: ["reversal_transaction_id"]
+            isOneToOne: true
+            referencedRelation: "shadow_ledger_trial_balance"
+            referencedColumns: ["ledger_transaction_id"]
+          },
+          {
+            foreignKeyName: "stripe_pay_by_bank_residual_retirements_command_id_fkey"
+            columns: ["command_id"]
+            isOneToOne: false
+            referencedRelation: "stripe_pay_by_bank_commands"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "stripe_pay_by_bank_residual_retirements_command_id_fkey"
+            columns: ["command_id"]
+            isOneToOne: false
+            referencedRelation: "stripe_pay_by_bank_status"
+            referencedColumns: ["command_id"]
+          },
+          {
+            foreignKeyName: "stripe_pay_by_bank_residual_retirements_refund_evidence_id_fkey"
+            columns: ["refund_evidence_id"]
+            isOneToOne: false
+            referencedRelation: "stripe_pay_by_bank_evidence"
             referencedColumns: ["id"]
           },
         ]
