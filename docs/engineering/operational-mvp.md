@@ -225,11 +225,12 @@ Definitions:
 - Project pool contribution = theoretical project share minus the initial project claim; all contributions enter one global epoch redistribution pool.
 - Aggregate initial claim = the sum of one user's score-adjusted initial project claims.
 - User baseline = the largest single-project score-adjusted initial claim for that user.
-- Exact user cap = `3 ×` baseline; canonical minor-unit cap = floor of that exact cap to the allocation minor unit. Before redistribution, aggregate initial claim is clamped, and neither retained-lot nor final-award rounding may cross the canonical cap.
-- Raw proportional retained source lot = exact initial project/source lot multiplied by `min(1, exact cap / aggregate initial claim)`; its non-negative exact difference is exact overflow. Canonical initial/retained/overflow units are derived independently, while the source-provenanced sub-minor residual bridges exact and canonical totals.
-- Global epoch redistribution pool = score-discount project pool contributions plus overlap-cap overflow.
-- Pre-redistribution current = the canonical retained target: floor `min(aggregate initial claim, exact cap)` to the allocation minor unit and bound it by the floored minor-unit cap. A user already at cap, including a zero-baseline user at cap zero, receives no top-up.
-- User final allocation = pre-redistribution current plus the deterministic lowest-current-total-first water-filling top-up, never above the cap.
+- Selected monthly cap multiple = an operator-selected decimal from `1.00` through `10.00`, previewed read-only and persisted only when selected. `3.00` is the initial scenario, not a permanent constant.
+- Redistribution top-up ceiling = floor of `largest single-project initial claim × selected cap multiple` to canonical minor units.
+- Initial total = the full canonical sum of every score-adjusted initial project claim. It is never reduced by the redistribution top-up ceiling.
+- Top-up capacity = `max(0, redistribution top-up ceiling − initial total)`. A user whose initial total already exceeds the ceiling keeps that full initial total and receives no top-up.
+- Global epoch redistribution pool = score-discount project contributions plus exactly E−3 unclaimed awards plus prior carry-in residue.
+- User final allocation = full initial total plus deterministic lowest-current-total-first water-filling top-up, bounded only by top-up capacity.
 - Asset fulfillment = selected asset credit fills based on the user's highest-priority accepted available assets.
 - Every initial claim, pool contribution, top-up, and returned/carryover residue retains project, rail, asset, native, FX, and USD provenance.
 
@@ -238,7 +239,7 @@ Scores are individual discounts against equal project shares, not weights divide
 the sum of cohort scores. Redistribution principal is not a fee, revenue, treasury
 sweep, or payable.
 
-Task #136 implements this as a separate `settled_cubid_redistribution_v1`
+The corrected path is `settled_cubid_redistribution_v2`
 local/dev path. It reserves only approved, reconciled, neutral-ledger-backed source
 lots; records immutable manifest and result hashes; and proves canonical source,
 pool, cap, award, and returned-residue conservation. The operator prep workspace
@@ -252,12 +253,12 @@ cross-project overlap.
 
 Rounding:
 
-- Maintain separate exact-decimal and canonical integer-minor-unit source ledgers. Every exact source satisfies non-negative `exact initial = exact retained + exact overflow`.
+- Maintain separate exact-decimal and canonical integer-minor-unit source ledgers. Every exact source is assigned to initial claims, score-discount pool, top-ups, or carry-out residue without clipping an initial claim.
 - Derive canonical initial source units first against the funded canonical total using descending fractional remainder then stable project/rail/asset/source-lot ID.
-- Calculate exact-decimal cap scaling before rounding.
-- Floor the retained-total target to the allocation minor unit and bound it by the canonical floored cap. Assign canonical retained units by constrained largest remainder, requiring `0 <= retained minor lot <= initial minor lot` and skipping saturated or zero-capacity lots.
-- Define canonical overflow units only as `initial minor lot - retained minor lot`; they are never negative.
-- Move an exact fraction or candidate minor unit rejected by the cap into the global overflow pool as cap-floor overflow with its original project/rail/asset/native/FX/USD provenance; together with proportional overlap overflow it may fund another uncapped user and otherwise becomes source-linked returned/carryover residue.
+- Calculate the exact redistribution top-up ceiling before rounding, but never scale or clip initial claims.
+- Assign canonical initial units by constrained largest remainder, then calculate top-up capacity as `max(ceiling − initial, 0)`.
+- Put only score discounts, E−3 harvested lots, and carry-in residue into the redistribution pool.
+- Carry an undistributed exact fraction or canonical unit into the next epoch with its original project/rail/asset/native/FX/USD and predecessor provenance.
 - Track sub-minor exact residual and deterministic cross-source residual transfers separately with source provenance; never calculate exact overflow from a rounded retained lot.
 - Apply the same stable largest-remainder rule within each rail/asset/custody group for native atomic units.
 - Round after USD normalization.
@@ -268,7 +269,7 @@ Outputs:
 
 - per-user result rows
 - per-project/user theoretical-share, score-factor, and initial-claim rows
-- source-linked retained-initial, score-discount contribution, overlap-cap overflow,
+- source-linked full initial-claim, score-discount contribution, E−3 harvest, carry-in,
   and redistribution-top-up rows
 - selected asset fill rows
 - returned/carryover residue rows with originating source provenance
@@ -280,14 +281,14 @@ Outputs:
 Acceptance criteria:
 
 - Same locked manifest produces same result hash.
-- Every non-negative exact initial source lot equals exact retained plus exact overflow; independently, every canonical initial source unit equals bounded canonical retained plus non-negative canonical overflow.
-- Retained initial lots plus score-discount contributions plus overlap-cap overflow equal the funded pool.
-- Top-ups plus returned/carryover residue equal score-discount contributions plus overlap-cap overflow.
+- Every score-adjusted initial claim remains intact, including when a user's aggregate initial total exceeds the redistribution top-up ceiling.
+- Initial claims plus score-discount contributions equal current funded project sources.
+- Top-ups plus carry-out residue equal score-discount contributions plus E−3 harvest plus carry-in residue.
 - Final allocations plus returned/carryover residue equal total funded pool USD after deterministic rounding.
-- No retained-lot target or final allocation exceeds the floored minor-unit `3 ×` baseline cap.
+- No top-up exceeds `max(redistribution top-up ceiling − initial total, 0)`; a final allocation may exceed the ceiling only because its preserved initial total already did.
 - The canonical A+B fixture uses 100 B users each exactly `10/20`, produces `$150 + $500 = $650` of redistribution, and sends it first to the 97 B-only lowest earners.
-- The four-project overlap fixture `[100,100,100,100]` clamps `$400` to a `$300` cap, retains `$75` per source, and contributes four `$25` overflow lots before water-filling.
-- The fractional fixture with four `$0.335` lots has aggregate `$1.34`, baseline `$0.335`, exact cap `$1.005`, canonical cent cap `$1.00`, four `$0.25` retained lots, `$0.335` exact overflow, 34 canonical overflow cents, and a separately source-linked `$0.005` exact-to-canonical residual; it never awards `$1.01`.
+- The four-project fixture `[100,100,100,100]` preserves the full `$400` initial total. With a `$300` top-up ceiling it receives zero top-up and contributes no ceiling-derived value to the pool.
+- Decimal multiples at `1.00`, `3.00`, `10.00`, and intermediate `0.01` increments reproduce the same hashes for equivalent input permutations.
 - The two-`$0.006` retained-lot/one-cent-target counterexample assigns canonical initial capacity first, retains the cent only on that source, produces no negative source overflow, and separately reconciles exact `$0.012` to one canonical cent.
 - The one-cent equal-current-user fixture gives two users exact `$0.005` top-up targets; fractional remainders tie, so stable user ID alone selects the cent and input permutation leaves the result hash unchanged.
 - Arbitrary overlap count and project/source input permutation properties conserve exact decimals, USD minor units, and native atomic units.
@@ -305,9 +306,9 @@ Verification checks:
 - all included projects have approved packages and reconciled, journal-backed funded sources
 - all included project cohorts and score/max snapshots are approved and locked
 - all included users are CUBID-linked at lock time
-- retained initial lots, both pool-contribution classes, top-ups, and source-linked returned/carryover residue conserve the monthly pool after rounding
-- no user allocation exceeds the floored canonical minor-unit `3 ×` baseline cap
-- users already at cap and zero-baseline users receive no top-up
+- full initial claims, score discounts, E−3 harvest, carry-in, top-ups, and source-linked carry-out residue conserve the monthly pool after rounding
+- no top-up exceeds `max(redistribution top-up ceiling − full initial total, 0)`
+- users without top-up capacity and zero-baseline users receive no top-up
 - asset fills respect accepted preference order and recorded availability
 - no negative credits
 - artifact hashes exist

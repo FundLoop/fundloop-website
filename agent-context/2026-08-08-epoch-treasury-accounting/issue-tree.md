@@ -649,19 +649,18 @@ Goal invariants:
 - equal theoretical funded project share per eligible user;
 - initial project claim equals theoretical share multiplied by locked Cubid score
   divided by the versioned locked maximum score;
-- baseline is the largest single-project score-adjusted initial claim; exact cap is
-  `3 ×` baseline and the canonical retained/final cap is that value floored to the
-  allocation minor unit;
-- before redistribution, aggregate initial is clamped to cap; if aggregate exceeds
-  cap, every project/source initial lot is scaled by `exact cap / aggregate`, retained
-  proportionally, and its exact difference becomes source-linked overlap overflow;
-- one global pool equals score-discount shortfalls plus overlap-cap overflow, and
-  clamped current totals are raised lowest-first through stable deterministic
-  water-filling;
+- baseline is the largest single-project score-adjusted initial claim; an operator
+  selects a decimal multiple from `1.00` through `10.00` per epoch, with `3.00` used
+  only as the initial preview;
+- the floored baseline-times-multiple value is a redistribution top-up ceiling only;
+  aggregate initial claims remain intact even when already above that ceiling;
+- one global pool equals score-discount shortfalls plus exactly E−3 unclaimed awards
+  plus prior carry-in residue, and full initial totals are raised lowest-first through
+  stable deterministic water-filling only while top-up capacity remains;
 - exact equal-current users rise together; aggregate initial and baseline do not
   break ties, while indivisible minor units use only exact-target fractional
   remainder then stable user ID with cap-aware skipping;
-- capped users and zero-baseline users receive no top-up;
+- users with no remaining top-up capacity and zero-baseline users receive no top-up;
 - cap-aware residual assignment skips any user/source whose next unit would cross
   cap and keeps rejected exact fractions or minor units source-linked in the global
   pool or returned/carryover residue;
@@ -724,15 +723,13 @@ Scope:
 - divide each funded project pool equally across eligible users;
 - calculate `initial claim = theoretical share × locked score / locked max score`
   and create source-linked score-discount shortfall lots;
-- aggregate user initial claims, define baseline as the largest single-project
-  initial claim, set exact cap to `3 ×` baseline, floor it to the allocation minor
-  unit as the canonical cap, and clamp aggregate initial before redistribution;
-- when aggregate exceeds exact cap, apply one `exact cap / aggregate` factor to every
-  project/source initial lot and move each difference into the pool as overlap-cap
-  overflow; start water-filling from the canonical retained target, namely floored
-  `min(aggregate, exact cap)` bounded by the floored minor-unit cap;
-- define the global pool as score-discount shortfalls plus overlap-cap overflow;
-  capped and zero-baseline users receive no top-up;
+- aggregate all user initial claims without clipping, define baseline as the largest
+  single-project initial claim, and calculate a redistribution top-up ceiling from
+  the operator-selected immutable decimal multiple;
+- calculate top-up capacity as `max(ceiling - full initial total, 0)` and start
+  water-filling from the full initial total;
+- define the global pool as score-discount shortfalls plus exactly E−3 unclaimed
+  awards plus prior carry-in residue; users without top-up capacity receive no top-up;
 - treat exact equal-current users equally until the next level/cap/exhaustion; for
   indivisible minor units use only descending exact-target fractional remainder then
   stable user ID with cap-aware skipping;
@@ -753,7 +750,7 @@ Scope:
 Validation:
 
 - no-receipt/no-allocation invariant;
-- invalid score/max, pre-redistribution cap, zero-baseline, arbitrary-overlap,
+- invalid score/max, selected-cap validation, preserved-above-ceiling initial totals, zero-baseline,
   input-permutation, asset/native/USD conservation, privacy, and source
   attribution;
 - repeat run equivalence;
@@ -761,9 +758,9 @@ Validation:
   initial and `$150` pool; B `$1,000`, 100 users each exactly `10/20` gives `$500`
   initial and `$500` pool; because the three A users also use B, the combined
   `$650` goes first to the 97 B-only lowest earners;
-- four-project overlap fixture `[100,100,100,100]`: aggregate `$400`, baseline
-  `$100`, cap `$300`, four retained `$75` source lots, four `$25` overflow lots,
-  then water-fill only uncapped users; and
+- four-project fixture `[100,100,100,100]`: aggregate `$400`, baseline `$100`, and
+  selected `3.00` top-up ceiling `$300`; preserve the full `$400`, assign no top-up,
+  and contribute no ceiling-derived value to the pool; and
 - fractional cap fixture: four `$0.335` lots yield aggregate `$1.34`, baseline
   `$0.335`, exact cap `$1.005`, canonical cent cap `$1.00`, and four `$0.25`
   retained lots; exact overflow is `$0.335`, canonical overflow is 34 cents, and
@@ -801,10 +798,10 @@ Scope:
   without recognizing user ownership before payout is processed;
 - publish exact approved project totals/counts without user identifiers or
   cross-project membership inference;
-- persist theoretical shares, score/max, initial claims, aggregate/exact/floored caps,
-  separate exact/canonical source ledgers, retention factors, retained source lots, score-discount contributions,
-  overlap-cap overflow, pre-redistribution current, top-ups, final allocations, and
-  source-linked residue;
+- persist theoretical shares, score/max, full initial claims, selected cap multiple,
+  redistribution top-up ceilings and capacity, separate exact/canonical source ledgers,
+  score-discount contributions, E−3 harvest, carry-in, top-ups, final allocations,
+  and source-linked carry-out residue;
 - generate trial balance, custody, project funds, fee, FX, carryover, initial claim,
   redistribution pool, top-up, returned-residue, provisional award, and exception
   artifacts under one root hash, without payable classification;

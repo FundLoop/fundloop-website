@@ -507,20 +507,18 @@ short transaction.
 - Each funded project's theoretical share is equal across its eligible users. The
   initial project claim is that share multiplied by `locked score / locked maximum
   score`; it is not weighted by the sum of cohort scores or mutable activity points.
-- Baseline is the largest single-project score-adjusted initial claim and cap is
-  exact `3 ×` baseline. The canonical minor-unit cap is that exact value floored to
-  the allocation minor unit. Before redistribution, aggregate initial claim is clamped to that
-  canonical rounding bound, and retained-lot and final-award rounding may never exceed it. If aggregate exceeds the exact cap, every project/source initial lot is scaled by
-  `exact cap / aggregate`; each lot's exact difference enters the pool as overlap-cap
-  overflow. A zero-baseline user has cap zero, and any user already at cap receives
-  no top-up.
+- Baseline is the largest single-project score-adjusted initial claim. The operator
+  previews decimal multiples from `1.00` through `10.00` and selects one per epoch;
+  `3.00` is only the initial scenario. The floored product is a redistribution
+  top-up ceiling, never an initial-claim cap. Every initial claim remains intact.
+  Top-up capacity is `max(ceiling - aggregate initial, 0)`.
 - Descending-fraction residual assignment is cap-aware and skips any user/source
   whose next unit would cross the canonical cap. Sub-minor exact residuals and
   rejected candidate canonical units retain original source provenance, may combine
   in the global pool or fund another uncapped user, and otherwise become
   source-linked returned/carryover residue.
-- Every theoretical-share score discount and overlap-cap overflow enters one global
-  epoch redistribution pool. Exact equal-current users are raised together until
+- Every theoretical-share score discount, exactly E−3 unclaimed-award harvest, and
+  prior carry-in residue enters one global epoch redistribution pool. Exact equal-current users are raised together until
   the next level/cap/exhaustion. Aggregate initial and baseline do not break ties;
   indivisible units use only exact-target fractional remainder then stable user ID.
 - Pool source lots and top-up fills preserve project, rail, asset, native quantity,
@@ -537,10 +535,10 @@ short transaction.
   users each exactly `10/20`, producing `$500` initial claims and `$500` of pool. The
   three A users also use B, so the combined `$650` goes first to the 97 B-only users
   with the lowest aggregate initial claims.
-- Adversarial overlap evidence uses initial lots `[100,100,100,100]`: aggregate
-  `$400`, baseline `$100`, cap `$300`, four retained `$75` lots, and four source-linked
-  `$25` overflow lots before water-filling. Arbitrary overlap counts must preserve
-  the same exact-decimal, minor-unit, native-unit, and input-order invariants.
+- Adversarial multi-project evidence uses initial lots `[100,100,100,100]`: aggregate
+  `$400`, baseline `$100`, and a selected `3.00` top-up ceiling of `$300`. The full
+  `$400` initial total remains awarded, the user receives no top-up, and no
+  ceiling-derived value enters the pool.
 - Fractional-cap evidence uses four `$0.335` lots: aggregate `$1.34`, baseline
   `$0.335`, exact cap `$1.005`, and canonical cent cap `$1.00`. Four `$0.25`
   retained lots total `$1.00`; exact overflow remains `$0.335`, canonical overflow
@@ -1001,7 +999,7 @@ boundary while the production value path remains disabled behind its named gate.
 | Base custody | Separate platform and epoch Safe accounts; new versioned intake or explicit reconciled split; old single-treasury deployment is never reinterpreted | Tasks #132 and #140 approve deployments | Base intake/payout activation |
 | Limited signer | $20 per payout, $500 per rolling 24-hour window, $5,000 per epoch; token/recipient allowlists, nonce, expiry, pause, and independent Safe enforcement | Task #140 selects Safe owner threshold, audited module deployment, paymaster budget, and alert thresholds | Automated Base payouts |
 | FX and depeg | Immutable monthly rate, primary/fallback/manual evidence, reasonability review, and ±0.3% stablecoin pause | Task #135 selects source hierarchy and recovery/reactivation runbook | Valuing and later stages |
-| Cubid evidence | Valid and whitelisted IDs only; project pseudonyms; equal theoretical project share discounted by locked score/max; aggregate initials pre-clamped to `3 ×` largest-project baseline with source-linked overflow, then lowest-earner-first global redistribution; grey/black holds | Task #136 selects numeric cache TTL and authorized exception workflow | Allocation lock |
+| Cubid evidence | Valid and whitelisted IDs only; project pseudonyms; equal theoretical project share discounted by locked score/max; full aggregate initials preserved; operator-selected monthly multiple limits redistribution top-ups only; score discounts, E−3 harvest, and carry-in fund lowest-earner-first redistribution; grey/black holds | Task #136 selects numeric cache TTL and authorized exception workflow | Allocation lock |
 | Project review deadline | Midnight Pacific at the end of the next FundLoop business day after accepted reconciliation-email delivery | Tasks #128/#133 select provider event mapping and versioned holiday rows | Project-package lock |
 | Risk reserve | Reversals never silently reduce unrelated awards; losses and receivables are explicit | Tasks #121/#135 set reserve target, chargeback recovery, and bad-debt policy | Controlled production value |
 | Rounding and queues | Exact atomic native quantities, exact numeric USD, deterministic sequence, explicit dust, and no negative inventory | Task #139 sets per-asset dust and queued-request terminal policy | Payout opening |
@@ -1078,9 +1076,9 @@ partial indexes cover unresolved events and open work queues.
 ### `conditional_award.v1`
 
 - source allocation/epoch, user, theoretical project shares, locked score/max,
-  initial claims, aggregate initial claim, largest-single-project baseline, cap,
-  retention factor, retained initial lots, overlap-cap overflow, pre-redistribution
-  current, redistribution top-up, final locked USD amount, project/source fills, eligible
+  initial claims, aggregate initial claim, largest-single-project baseline, selected
+  cap multiple, redistribution top-up ceiling and capacity, E−3 harvest, carry-in,
+  redistribution top-up, carry-out residue, final locked USD amount, project/source fills, eligible
   rail/asset inventory, expiry, Cubid evidence, hold state, and immutable result hash;
 - available, reserved, queued, processed, expired, and reversed memorandum amounts
   whose conservation equals the approved award; and

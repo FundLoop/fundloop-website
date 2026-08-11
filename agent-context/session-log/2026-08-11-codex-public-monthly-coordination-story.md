@@ -62,3 +62,46 @@ or production capability.
   function before claiming shared-dev parity.
 - Run one hosted founder/user/operator acceptance flow and complete deterministic
   report generation plus three-month claim lifecycle proof.
+
+### session v2: Correct allocation policy documentation
+
+- Timestamp: 2026-08-11T17:35:00-04:00
+- Agent: Codex
+- Branch: codex/public-monthly-coordination-story
+- Head: 1d5b0ad
+
+#### Objective
+
+Correct the durable allocation contract so the selected monthly multiple limits
+redistribution top-ups only, while full score-adjusted initial claims remain intact
+and E−3 unclaimed awards become a redistribution source.
+
+#### Actions Taken
+
+- Replaced the current allocation specification with
+  `settled_cubid_redistribution_v2` terminology, equations, conservation rules,
+  immutable cap-selection inputs, and audience-specific reporting requirements.
+- Corrected the operational MVP and settlement-backed treasury documents to remove
+  initial-claim clipping and ceiling-derived pool value.
+- Updated the epoch accounting sprint definition and issue tree to define the pool
+  as score discounts, exactly E−3 harvested awards, and prior carry-in residue.
+- Documented three complete payout months, newest-lot-first partial harvest, released
+  claim handling, deterministic residue carry-forward, and the production boundary.
+
+#### Validation Notes
+
+- Confirmed the active engineering and issue-tree documents no longer describe
+  initial-claim clipping or overlap-cap overflow as current policy.
+- Passed `git diff --check` for the documentation package.
+
+#### Reflections
+
+- “Redistribution top-up ceiling” is materially different from “final cap”: a final
+  award may exceed the ceiling when the preserved initial total already exceeds it.
+- The selected multiple and aggregate E−3 harvest belong in every monthly report
+  scope and root hash, not only in an operator-side calculation note.
+
+#### Suggested Next Steps
+
+- Review the policy commit before the implementation commit so schema and runtime
+  fields can be checked against the equations and conservation rules directly.
