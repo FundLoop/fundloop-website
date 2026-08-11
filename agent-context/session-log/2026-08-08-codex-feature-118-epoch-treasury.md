@@ -2719,3 +2719,36 @@ residual custody while retaining replay-safe signed evidence.
 
 - Run strict Edge/focused/full Node 22 gates, commit, and request another independent #153
   revalidation before changing issue status.
+
+### session v54: close integrated strict Deno boundary (#130)
+
+- Timestamp: 2026-08-11T03:18:00-04:00
+- Agent: Codex
+- Branch: codex/130-multi-rail-bank-intake
+- Head: 9f6a80d (pre-commit)
+
+#### Objective
+
+Close the sole integrated Goal #130 validation failure without changing any intake behavior.
+
+#### Actions Taken
+
+- Added a deterministic fallback message when the shared JSON parser returns an unsuccessful result
+  without an error string in the Base receipt-record and reconciliation Edge handlers.
+- Kept authentication, runtime, provider observation, RPC, and production boundaries unchanged.
+
+#### Validation Notes
+
+- Strict Deno passed all 12 integrated package and intake handlers: Base receipt/reconciliation,
+  package workflow, Customer Balance, CAD PAD, and EUR/GBP Pay by Bank.
+- Full Node 22 `CI=1 pnpm check` passed 168 files / 753 tests, lint, typecheck, and the
+  165-route production build; diff-check passed.
+
+#### Reflections
+
+- The app TypeScript gate does not cover Deno Edge entrypoints. Integrated Goal validation must keep
+  the strict Edge batch as a separate required gate.
+
+#### Suggested Next Steps
+
+- Run the full Node 22 gate, commit the narrow typing fix, then rerun integrated Goal #130 validation.

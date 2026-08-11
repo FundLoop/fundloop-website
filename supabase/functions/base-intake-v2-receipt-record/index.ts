@@ -6,7 +6,7 @@ async function handleRequest(request: Request) {
   if (request.method !== "POST") return json(edgeCommandFailure("method_not_allowed", "POST required."))
   const environment = (getEnv("FUNDLOOP_DEPLOYMENT_ENV") ?? "").toLowerCase()
   const body = await parseJsonBody(request)
-  if (!body.ok) return json(edgeCommandFailure("invalid_payload", body.error))
+  if (!body.ok) return json(edgeCommandFailure("invalid_payload", body.error ?? "Invalid JSON body."))
   const auth = await authenticateRequestOrInternalSecret(request, {
     secretEnvName: "FUNDLOOP_BASE_INTAKE_SECRET",
     secretHeaderName: "x-fundloop-base-intake-secret",
