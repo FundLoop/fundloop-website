@@ -824,3 +824,94 @@ syntax impossible to silently ignore.
 - Return this follow-up to independent validation, then let the orchestrator publish
   and require CI-owned read-back of all 62 functions plus the safe Dev smoke.
 - Keep #160 In Progress until that hosted evidence passes.
+
+### session v18: Fail closed on ambiguous dynamic imports (#160)
+
+- Timestamp: 2026-08-12T16:45:15-04:00
+- Agent: Codex
+- Branch: `codex/155-goal-1-runtime-source-closure-recovery`
+- Head: `95ecd23be0947e63eb1c675923dac7c58fa0352b`
+
+#### Objective
+
+Address independent validation by covering standard two-argument dynamic imports and
+refusing any dynamic dependency that cannot be derived exactly.
+
+#### Actions Taken
+
+- Accepted string-literal dynamic imports with either one argument or the standard
+  second import-attributes/options argument.
+- Continued deriving the first literal source for two-argument JSON imports so the
+  runtime asset remains byte-bound.
+- Made nonliteral dynamic import specifiers and invalid arity fail closed instead of
+  silently omitting a possible repository dependency.
+- Added positive one-/two-argument and negative nonliteral/over-arity coverage and
+  documented the exact dynamic-import contract.
+
+#### Tests And Validation Notes
+
+- Passed: Node 22 focused source-readback and delivery-parity suites, 41/41 tests.
+- Passed: focused ESLint, TypeScript typecheck, script syntax, workflow YAML parse,
+  and `git diff --check`.
+- No network request, remote mutation, workflow, push, PR, Production action, #161
+  work, or value-flow activation occurred.
+
+#### Reflections
+
+Dynamic import options do not change the dependency identity, but a nonliteral first
+argument makes that identity unknowable. Closure verification must accept the former
+and reject the latter.
+
+#### Suggested Next Steps
+
+- Return this follow-up to independent validation, then require CI-owned all-function
+  read-back and the safe Dev smoke before #160 progresses.
+
+### session v17: Derive runtime-only Edge Function source closures (#160)
+
+- Timestamp: 2026-08-12T16:42:06-04:00
+- Agent: Codex
+- Branch: `codex/155-goal-1-runtime-source-closure-recovery`
+- Head: `064b64730ee562b516be605a8e0ec3abd85439fa`
+
+#### Objective
+
+Match the reviewed expected source closure to Deno's deployed runtime graph without
+allowlisting the missing `types/supabase.ts` module or conceding any remote content.
+
+#### Actions Taken
+
+- Replaced regex import discovery with the repo-pinned TypeScript 5.9 compiler API.
+- Excluded only erased whole `import type` / `export type` edges and named clauses
+  whose specifiers are all inline `type`; mixed clauses with a value remain runtime
+  dependencies.
+- Preserved value imports/re-exports, export-star edges, side-effect imports, dynamic
+  imports, and runtime JSON assets. Invalid TypeScript parse diagnostics fail closed.
+- Added a synthetic runtime graph covering pure type-only, inline type-only, mixed,
+  side-effect, dynamic, value re-export, type re-export, and export-star cases.
+- Proved all 62 function closures derive and the admin reconciliation closure omits
+  `types/supabase.ts` while retaining its reviewed value-bearing modules. Documented
+  the compiler dependency and retained pre-mutation Deno graph guard.
+
+#### Tests And Validation Notes
+
+- Passed: Node 22 focused source-readback and delivery-parity suites, 39/39 tests,
+  including all-62 closure derivation and fail-closed invalid syntax.
+- Passed: focused ESLint, TypeScript typecheck, script syntax, workflow YAML parse,
+  and `git diff --check`.
+- Full `CI=1 pnpm check` was not repeated; the focused all-function graph plus
+  typecheck is proportionate, and the full check passed in session v15.
+- No remote API call or mutation, workflow, push, PR, status change, Production
+  action, #161 work, or value-flow activation occurred.
+
+#### Reflections
+
+Expected parity must model the runtime compiler graph rather than textual references.
+Using language semantics removes erased type edges precisely while continuing to bind
+every deployed value-bearing source byte.
+
+#### Suggested Next Steps
+
+- Return the commit to independent validation, then let the orchestrator publish and
+  require CI-owned read-back of all 62 functions plus the safe Dev smoke.
+- Keep #160 In Progress until that hosted evidence passes.

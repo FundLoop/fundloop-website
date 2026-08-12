@@ -1,6 +1,8 @@
-import { readFileSync } from "node:fs"
+import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs"
+import os from "node:os"
+import path from "node:path"
 import { describe, expect, it, vi } from "vitest"
-import { expectedSourceClosure, parseFunctionSourceResponse, verifyDownloadedSource } from "../scripts/verify-supabase-function-parity.mjs"
+import { expectedFunctionNames, expectedSourceClosure, parseFunctionSourceResponse, verifyDownloadedSource } from "../scripts/verify-supabase-function-parity.mjs"
 
 type Part = { headers: Record<string, string>, body: string | Buffer }
 
@@ -31,6 +33,89 @@ function file(path: string, body: string | Buffer = "export {}\n", extraHeaders:
 }
 
 describe("Supabase Management API function source read-back", () => {
+  it("derives runtime-only TypeScript dependency edges without concessions", () => {
+    const root = mkdtempSync(path.join(os.tmpdir(), "fundloop-runtime-closure-"))
+    try {
+      const functionDir = path.join(root, "supabase/functions/example")
+      mkdirSync(functionDir, { recursive: true })
+      const files: Record<string, string> = {
+        "supabase/functions/example/index.ts": [
+          'import type { Pure } from "../../../lib/pure.ts"',
+          'import { type InlineOnly } from "../../../lib/inline-only.ts"',
+          'import { type MixedType, mixedValue } from "../../../lib/mixed.ts"',
+          'import "../../../lib/side-effect.ts"',
+          'export type { ReExportType } from "../../../lib/re-export-type.ts"',
+          'export { type MixedExportType, reExportValue } from "../../../lib/re-export-mixed.ts"',
+          'export * from "../../../lib/re-export-all.ts"',
+          'void import("../../../lib/dynamic.ts")',
+          'void import("../../../lib/dynamic-json.json", { with: { type: "json" } })',
+          "void mixedValue",
+        ].join("\n"),
+        "lib/pure.ts": "export type Pure = string\n",
+        "lib/inline-only.ts": "export type InlineOnly = string\n",
+        "lib/mixed.ts": "export type MixedType = string; export const mixedValue = 1\n",
+        "lib/side-effect.ts": "globalThis.runtimeSideEffect = true\n",
+        "lib/re-export-type.ts": "export type ReExportType = string\n",
+        "lib/re-export-mixed.ts": "export type MixedExportType = string; export const reExportValue = 1\n",
+        "lib/re-export-all.ts": "export const reExportAllValue = 1\n",
+        "lib/dynamic.ts": "export const dynamicValue = 1\n",
+        "lib/dynamic-json.json": "{\"runtime\":true}\n",
+      }
+      for (const [relative, contents] of Object.entries(files)) {
+        mkdirSync(path.dirname(path.join(root, relative)), { recursive: true })
+        writeFileSync(path.join(root, relative), contents)
+      }
+      expect(expectedSourceClosure("example", root)).toEqual([
+        "lib/dynamic-json.json",
+        "lib/dynamic.ts",
+        "lib/mixed.ts",
+        "lib/re-export-all.ts",
+        "lib/re-export-mixed.ts",
+        "lib/side-effect.ts",
+        "supabase/functions/example/index.ts",
+      ])
+    } finally {
+      rmSync(root, { recursive: true, force: true })
+    }
+  })
+
+  it("fails closed when a reviewed module cannot be parsed", () => {
+    const root = mkdtempSync(path.join(os.tmpdir(), "fundloop-runtime-closure-invalid-"))
+    try {
+      const entrypoint = path.join(root, "supabase/functions/example/index.ts")
+      mkdirSync(path.dirname(entrypoint), { recursive: true })
+      writeFileSync(entrypoint, 'import { broken from "../../../lib/value.ts"\n')
+      expect(() => expectedSourceClosure("example", root)).toThrow("invalid syntax")
+    } finally {
+      rmSync(root, { recursive: true, force: true })
+    }
+  })
+
+  it.each([
+    ["nonliteral", "const specifier = '../../../lib/value.ts'; void import(specifier)", /string literal/],
+    ["over-arity", "void import('../../../lib/value.ts', {}, {})", /invalid syntax|one or two arguments/],
+  ])("fails closed on %s dynamic imports", (_label, source, expectedError) => {
+    const root = mkdtempSync(path.join(os.tmpdir(), "fundloop-runtime-dynamic-invalid-"))
+    try {
+      const entrypoint = path.join(root, "supabase/functions/example/index.ts")
+      mkdirSync(path.dirname(entrypoint), { recursive: true })
+      writeFileSync(entrypoint, source)
+      expect(() => expectedSourceClosure("example", root)).toThrow(expectedError)
+    } finally {
+      rmSync(root, { recursive: true, force: true })
+    }
+  })
+
+  it("derives runtime closures for all functions and omits erased Supabase types from admin reconciliation", () => {
+    const names = expectedFunctionNames()
+    expect(names).toHaveLength(62)
+    for (const name of names) expect(expectedSourceClosure(name).length).toBeGreaterThan(0)
+    const adminClosure = expectedSourceClosure("admin-onchain-payment-reconciliation-run")
+    expect(adminClosure).not.toContain("types/supabase.ts")
+    expect(adminClosure).toContain("lib/onchain/payment-reconciliation.ts")
+    expect(adminClosure).toContain("lib/payments/admin-payment-operations-command.ts")
+  })
+
   it("accepts the official multipart response and strips only the known monorepo root", async () => {
     const expected = ["lib/edge-functions/result.ts", "supabase/functions/example/index.ts"]
     const parsed = await parseFunctionSourceResponse(multipart([
