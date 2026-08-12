@@ -1364,3 +1364,43 @@ timestamps. Evidence contracts need an explicit wire grammar before semantic par
 
 - Return this localized fix to independent validation and keep hosted observation in the
   orchestrator-owned publish path.
+
+### session v29: Validate RFC3339 calendar and clock semantics (#161)
+
+- Timestamp: 2026-08-12T19:54:00-04:00
+- Agent: Codex
+- Branch: `codex/155-goal-1-manifest-provenance-routing-recovery`
+- Head: `ab67866471cc4d8ba818e3a804638119e637ac01`
+
+#### Objective
+
+Reject calendar-invalid or out-of-range clock timestamps that satisfy the RFC3339 wire
+shape but cannot represent valid immutable deployment evidence.
+
+#### Actions Taken
+
+- Added leap-year-aware month/day validation and strict hour, minute, and second ranges
+  to the shared deploy/drift timestamp predicate.
+- Retained PostgreSQL microsecond-offset and ISO `Z` support.
+- Added both-path negatives for a non-leap February 29, April 31, and hour 24, plus
+  minute/second overflow; added leap-day and calendar/clock boundary positives.
+
+#### Tests And Validation Notes
+
+- Passed on Node 22: focused environment-manifest and delivery-parity suites, 23/23.
+- Passed: focused ESLint, TypeScript typecheck, script syntax, workflow YAML parse, and
+  `git diff --check`.
+- Initial validation hit host-level `ENOSPC`; only this worktree's generated `.next`
+  cache was deleted, after which all gates passed. No tracked or authored file was removed.
+- No push, workflow dispatch, remote call or mutation, status change, Production action,
+  #162 work, credential prompt, or value-flow activation occurred.
+
+#### Reflections
+
+Wire-format validation and semantic calendar validation are separate requirements;
+evidence needs both to remain deterministic across runtimes.
+
+#### Suggested Next Steps
+
+- Return the amended localized commit to independent validation and keep hosted
+  observation in the orchestrator-owned publish path.

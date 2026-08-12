@@ -185,9 +185,13 @@ describe("Supabase delivery parity", () => {
     const deployEvidence = bindObservedMigrationDeployEvidence(expected, observed)
     expect(deployEvidence.recordedAt).toBe(observed.recordedAt)
     expect(validateMatchingMigrationEvidence(observed, expected, expected.inventorySha256)).toBe(true)
-    for (const recordedAt of ["0", "12", "2026-08-12", "2026-08-12 23:28:57+00:00", "2026-08-12T23:28:57", "2026-08-12T23:28:57+24:00"]) {
+    for (const recordedAt of ["0", "12", "2026-08-12", "2026-08-12 23:28:57+00:00", "2026-08-12T23:28:57", "2026-08-12T23:28:57+24:00", "2026-02-29T00:00:00Z", "2026-04-31T23:59:59Z", "2026-12-31T24:00:00Z"]) {
       expect(() => bindObservedMigrationDeployEvidence(expected, { ...observed, recordedAt }), recordedAt).toThrow("remote immutable row")
       expect(validateMatchingMigrationEvidence({ ...observed, recordedAt }, expected, expected.inventorySha256), recordedAt).toBe(false)
+    }
+    for (const recordedAt of ["2024-02-29T00:00:00Z", "2026-01-01T00:00:00Z", "2026-12-31T23:59:59.999999-23:59"]) {
+      expect(bindObservedMigrationDeployEvidence(expected, { ...observed, recordedAt }).recordedAt, recordedAt).toBe(recordedAt)
+      expect(validateMatchingMigrationEvidence({ ...observed, recordedAt }, expected, expected.inventorySha256), recordedAt).toBe(true)
     }
     expect(() => bindObservedMigrationDeployEvidence(expected, { ...observed, inventorySha256: "0".repeat(64) })).toThrow("remote immutable row")
   })
@@ -197,6 +201,8 @@ describe("Supabase delivery parity", () => {
       "2026-08-12T23:28:57.708226+00:00",
       "2026-08-12T23:28:57Z",
       "2026-08-12T19:28:57.1-04:00",
+      "2024-02-29T00:00:00Z",
+      "2026-12-31T23:59:59+23:59",
     ]) expect(isExplicitRfc3339Timestamp(timestamp), timestamp).toBe(true)
 
     for (const timestamp of [
@@ -209,6 +215,11 @@ describe("Supabase delivery parity", () => {
       "2026-08-12T23:28:57+0000",
       "2026-08-12T23:28:57+24:00",
       "2026-08-12T23:28:57+00:60",
+      "2026-02-29T00:00:00Z",
+      "2026-04-31T23:59:59Z",
+      "2026-12-31T24:00:00Z",
+      "2026-12-31T23:60:00Z",
+      "2026-12-31T23:59:60Z",
     ]) expect(isExplicitRfc3339Timestamp(timestamp), timestamp).toBe(false)
   })
 
