@@ -163,8 +163,8 @@ Supabase Management API with the CI-only bearer token and
 `Accept: multipart/form-data`. This matches the pinned CLI 2.113.0 response contract
 without using its filesystem extractor, which cannot safely retain legitimate
 monorepo-root closure members outside `supabase/functions`. The repo-owned reader
-compares the multipart path set against a separately derived
-transitive checkout closure before comparing every byte plus the canonical closure
+compares the multipart path set against a separately derived transitive runtime
+checkout closure before comparing every byte plus the canonical closure
 SHA-256 against the reviewed checkout. It records the remote bundle digest, version,
 status, project ref, environment, candidate Git SHA, and observation time. The
 reader rejects redirects and non-200 responses without logging response bodies,
@@ -194,6 +194,15 @@ signature, the remote migration history is the byte-bound reviewed prefix, the r
 is the sole pending migration, and production value flow remains disabled. The
 post-deploy verifier has no repair exception: it requires the complete migration
 history and zero normalized schema drift.
+
+The expected function closure is derived with the repo-pinned TypeScript compiler
+API after `pnpm install --frozen-lockfile`. It follows side-effect imports, dynamic
+imports, value imports/re-exports, mixed clauses containing any value binding, and
+runtime JSON assets. Whole `import type` / `export type` clauses and named clauses
+whose bindings are all explicitly `type` are excluded because Deno erases those
+modules from the deployed runtime bundle. Parse diagnostics fail closed, and the Deno
+module-graph preflight still runs before migration or function mutation. This is a
+language-semantic graph rule, not a path or remote-content allowlist.
 
 The two sanitized `fundloop.public-schema-parity/v1` and
 `fundloop.edge-function-parity/v1` JSON records are uploaded as one 30-day Actions

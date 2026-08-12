@@ -3,6 +3,7 @@ import { execFileSync } from "node:child_process"
 import { readFileSync, readdirSync, statSync, writeFileSync } from "node:fs"
 import path from "node:path"
 import { pathToFileURL } from "node:url"
+import ts from "typescript"
 
 const repoRoot = process.cwd()
 const managementApiOrigin = "https://api.supabase.com"
@@ -53,8 +54,38 @@ export function expectedSourceClosure(functionName, root = repoRoot) {
   const visit = (file) => {
     if (visited.has(file)) return
     visited.add(file)
+    if (path.extname(file) === ".json") return
     const source = readFileSync(file, "utf8")
-    const imports = [...source.matchAll(/(?:from\s*|import\s*|import\s*\(\s*)["']([^"']+)["']/g)].map((match) => match[1])
+    const sourceFile = ts.createSourceFile(file, source, ts.ScriptTarget.Latest, true, file.endsWith(".tsx") ? ts.ScriptKind.TSX : ts.ScriptKind.TS)
+    if (sourceFile.parseDiagnostics.length) throw new Error(`Unable to derive runtime source closure from invalid syntax: ${path.relative(root, file)}`)
+    const imports = []
+    const addModuleSpecifier = (node) => {
+      if (node && ts.isStringLiteralLike(node)) imports.push(node.text)
+    }
+    const visitNode = (node) => {
+      if (ts.isImportDeclaration(node)) {
+        const clause = node.importClause
+        const onlyInlineTypes = clause
+          && !clause.name
+          && clause.namedBindings
+          && ts.isNamedImports(clause.namedBindings)
+          && clause.namedBindings.elements.length > 0
+          && clause.namedBindings.elements.every((element) => element.isTypeOnly)
+        if (!clause?.isTypeOnly && !onlyInlineTypes) addModuleSpecifier(node.moduleSpecifier)
+      } else if (ts.isExportDeclaration(node)) {
+        const onlyInlineTypes = node.exportClause
+          && ts.isNamedExports(node.exportClause)
+          && node.exportClause.elements.length > 0
+          && node.exportClause.elements.every((element) => element.isTypeOnly)
+        if (!node.isTypeOnly && !onlyInlineTypes) addModuleSpecifier(node.moduleSpecifier)
+      } else if (ts.isCallExpression(node)
+        && node.expression.kind === ts.SyntaxKind.ImportKeyword
+        && node.arguments.length === 1) {
+        addModuleSpecifier(node.arguments[0])
+      }
+      ts.forEachChild(node, visitNode)
+    }
+    visitNode(sourceFile)
     for (const specifier of imports) {
       const dependency = resolveRepoImport(file, specifier, root)
       if (dependency) visit(dependency)
