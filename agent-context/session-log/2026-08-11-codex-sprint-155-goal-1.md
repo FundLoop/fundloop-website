@@ -100,3 +100,55 @@ that absence explicit rather than reconstructing authority from incomplete logs.
 - Independently validate #157 together with its fixture smoke.
 - Implement executable replay and post-deploy parity collection only in Goal #158;
   do not mutate a remote environment from this evidence-design Task.
+
+### session v3: Close evidence evaluator fail-open gaps (#157)
+
+- Timestamp: 2026-08-11T20:33:00-04:00
+- Agent: Codex
+- Branch: `codex/155-supabase-ci-gate`
+- Head: `231eb0a8bc7c2f3371e6b2cdf94944a1f937e607`
+
+#### Objective
+
+Correct the independent validator's counterexamples so the v1 manifest has one
+canonical executable evaluator and cannot claim a stronger gate while required
+inventory, binding, protection, approval, alert, or runtime evidence is invalid.
+
+#### Actions Taken
+
+- Added `evaluateProductionReadinessManifest` with deterministic inventory and
+  approval-scope hashing plus stable blocking drift codes.
+- Enforced strict ordering, uniqueness, exact item and aggregate digests, active
+  function read-back, schema parity, and migration version/name consistency.
+- Bound the candidate SHA/app deployment to observed app SHA, Supabase environment
+  and canonical project ref, Actions run/attempt, and post-deploy observation times.
+- Made required prerequisites, branch/environment protections, named checks,
+  scoped/unexpired approvals, blocking-alert delivery, and runtime controls fail
+  closed; enforced gate dependencies and rejected contradictory pass declarations.
+- Strengthened the JSON Schema and replaced placeholder fixture hashes with
+  evaluator-recomputed inventory and approval-scope hashes.
+- Expanded the focused test from four happy-path/smoke cases to a 42-case positive
+  and negative matrix covering every validator counterexample.
+
+#### Tests And Validation Notes
+
+- Passed: Node 22 focused Vitest, 42/42 tests with the single-worker fork pool.
+- Passed: strict Draft 2020-12 AJV validation of the canonical fixture.
+- Passed: full TypeScript typecheck and focused ESLint after implementation.
+- Passed: full lint, strict-schema negative probes for empty approvals, unprotected
+  controls, duplicate inventory, and contradictory pass gates, local link checks,
+  and `git diff --check`.
+- UI visual evidence is N/A; this remains evidence-contract code/docs/tests only.
+
+#### Reflections
+
+A structural JSON Schema cannot enforce sorted semantic keys, recomputed aggregate
+digests, environment-specific project identity, approval scope, or gate dependency
+by itself. The schema is now the structural gate and the canonical evaluator owns
+those cross-field invariants with reproducible failure codes.
+
+#### Suggested Next Steps
+
+- Return this focused fix commit to independent validation for #157.
+- Keep #157 `In Progress`; do not begin #159 or mutate remote delivery state until
+  the orchestrator accepts revalidation.

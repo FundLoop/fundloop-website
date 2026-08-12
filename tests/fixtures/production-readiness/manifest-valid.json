@@ -14,7 +14,7 @@
   "expected": {
     "migrationInventory": {
       "algorithm": "sha256-raw-bytes-sorted-filename-v1",
-      "inventorySha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "inventorySha256": "2795e60e971152b8f05998366962591de6ddbd6ca01fe7b154024dd675035d8c",
       "items": [
         { "version": "20260809020000", "name": "20260809020000_neutral_ledger_foundations.sql", "fileSha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb" },
         { "version": "20260811120000", "name": "20260811120000_epoch_allocation_policy_v2.sql", "fileSha256": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc" }
@@ -22,7 +22,7 @@
     },
     "functionInventory": {
       "algorithm": "sha256-function-tree-sorted-path-v1",
-      "inventorySha256": "dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+      "inventorySha256": "2e5a753a2461ed5741610bf6a48d6fa1981a036c3b66ea2710a0f12bd6338362",
       "items": [
         { "name": "epoch-funded-allocation", "sourceSha256": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee", "remoteVersion": null, "remoteStatus": "NOT_OBSERVED" },
         { "name": "financial-cutover", "sourceSha256": "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff", "remoteVersion": null, "remoteStatus": "NOT_OBSERVED" }
@@ -32,10 +32,15 @@
   },
   "observed": {
     "observedAt": "2026-08-11T20:30:00-04:00",
+    "environment": "dev",
     "projectRef": "kyxtqnfnksvcaugxwzuj",
+    "applicationDeploymentId": "fixture-vercel-deployment",
+    "applicationGitSha": "7eacafe7d1003a7f9e529d4887423d158e017732",
+    "githubRunId": 1,
+    "githubRunAttempt": 1,
     "migrationInventory": {
       "algorithm": "sha256-raw-bytes-sorted-filename-v1",
-      "inventorySha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "inventorySha256": "2795e60e971152b8f05998366962591de6ddbd6ca01fe7b154024dd675035d8c",
       "items": [
         { "version": "20260809020000", "name": "20260809020000_neutral_ledger_foundations.sql", "fileSha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb" },
         { "version": "20260811120000", "name": "20260811120000_epoch_allocation_policy_v2.sql", "fileSha256": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc" }
@@ -43,7 +48,7 @@
     },
     "functionInventory": {
       "algorithm": "sha256-function-tree-sorted-path-v1",
-      "inventorySha256": "dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+      "inventorySha256": "2e5a753a2461ed5741610bf6a48d6fa1981a036c3b66ea2710a0f12bd6338362",
       "items": [
         { "name": "epoch-funded-allocation", "sourceSha256": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee", "remoteVersion": 1, "remoteStatus": "ACTIVE" },
         { "name": "financial-cutover", "sourceSha256": "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff", "remoteVersion": 1, "remoteStatus": "ACTIVE" }
@@ -66,7 +71,11 @@
   },
   "prerequisites": [
     { "prerequisiteId": "fresh-replay", "status": "pass", "evidenceSha256": "2929292929292929292929292929292929292929292929292929292929292929", "observedAt": "2026-08-11T20:15:00-04:00" },
-    { "prerequisiteId": "upgrade-rehearsal", "status": "pass", "evidenceSha256": "3030303030303030303030303030303030303030303030303030303030303030", "observedAt": "2026-08-11T20:15:00-04:00" }
+    { "prerequisiteId": "upgrade-rehearsal", "status": "pass", "evidenceSha256": "3030303030303030303030303030303030303030303030303030303030303030", "observedAt": "2026-08-11T20:15:00-04:00" },
+    { "prerequisiteId": "migration-plan-review", "status": "pass", "evidenceSha256": "3131313131313131313131313131313131313131313131313131313131313131", "observedAt": "2026-08-11T20:15:00-04:00" },
+    { "prerequisiteId": "expected-inventory", "status": "pass", "evidenceSha256": "3232323232323232323232323232323232323232323232323232323232323232", "observedAt": "2026-08-11T20:15:00-04:00" },
+    { "prerequisiteId": "required-secret-presence", "status": "pass", "evidenceSha256": "3333333333333333333333333333333333333333333333333333333333333333", "observedAt": "2026-08-11T20:15:00-04:00" },
+    { "prerequisiteId": "provider-runtime-classification", "status": "pass", "evidenceSha256": "3434343434343434343434343434343434343434343434343434343434343434", "observedAt": "2026-08-11T20:15:00-04:00" }
   ],
   "githubControls": {
     "observedAt": "2026-08-11T20:30:00-04:00",
@@ -101,7 +110,17 @@
     "reportHash": "2121212121212121212121212121212121212121212121212121212121212121",
     "rootHash": "2222222222222222222222222222222222222222222222222222222222222222"
   },
-  "approvals": [],
+  "approvals": [
+    {
+      "approvalType": "code-review",
+      "status": "approved",
+      "artifactSha256": "3535353535353535353535353535353535353535353535353535353535353535",
+      "scopeManifestSha256": "d14c395b02a693f188e90fb10b139ac6b195496d952b71f214b16184bb36f9c8",
+      "approverRole": "independent-code-reviewer",
+      "recordedAt": "2026-08-11T20:25:30-04:00",
+      "expiresAt": "2026-08-12T20:25:30-04:00"
+    }
+  ],
   "alerts": [],
   "gates": {
     "deploy": { "status": "pass", "evidenceSha256": "2323232323232323232323232323232323232323232323232323232323232323", "evaluatedAt": "2026-08-11T20:30:00-04:00", "blockers": [] },

@@ -4,7 +4,7 @@ Contract version: `fundloop.production-readiness/v1`
 
 Status: required evidence design for Sprint #155. This document defines how later Tasks prove replay, deployment, parity, hosted acceptance, Production promotion, cutover, and go-live. It does not perform or authorize any of them.
 
-The machine-readable shape is [production-readiness-manifest.schema.json](./production-readiness-manifest.schema.json). A conforming JSON document is necessary but not sufficient: every digest and observation must be independently regenerated, every required gate must pass in order, and missing or unreadable evidence fails closed.
+The machine-readable shape is [production-readiness-manifest.schema.json](./production-readiness-manifest.schema.json), and [`evaluateProductionReadinessManifest`](../../lib/release-readiness/evidence-manifest.ts) is the canonical executable cross-field evaluator. A conforming JSON document is necessary but not sufficient: the evaluator must return no blocking codes, every digest and observation must be independently regenerated, every required gate must pass in order, and missing or unreadable evidence fails closed.
 
 ## 1. One immutable candidate, several independent gates
 
@@ -43,6 +43,11 @@ Expected migrations are every `supabase/migrations/*.sql` regular file at the ca
 
 Observed migrations come from `supabase_migrations.schema_migrations` plus a repo-owned append-only deploy-evidence record through a read-only migration-role query after deploy. The deploy record must persist the exact candidate filename/digest inventory and run/SHA before application; a version without that remotely readable digest binding is `unverifiable-migration-source` and blocks parity. Missing, unexpected, duplicate, reordered, repaired-in-place, or digest-mismatched entries are blocking drift. A CLI plan alone is not an observed inventory.
 
+The evaluator independently recomputes `inventorySha256`, rejects duplicate names,
+requires strict ASCII filename order, and requires each migration version to match
+its filename prefix. The same checks run over both expected and observed inventories;
+copying one incorrect aggregate digest to both sides cannot pass.
+
 ### 2.3 Edge Functions
 
 Expected functions are each direct directory under `supabase/functions/` except `_shared` and `_vendor`, sorted by ASCII name. For each function:
@@ -54,6 +59,10 @@ Expected functions are each direct directory under `supabase/functions/` except 
 5. canonicalize sorted `{name,sourceSha256}` entries as the function `inventorySha256` using `sha256-function-tree-sorted-path-v1`.
 
 Name/status/version read-back from the Supabase management API is required but insufficient because it does not expose source bytes. The deploy job must publish the expected source digest as an immutable artifact and the deployed function must expose or be associated with an independently readable deployment digest. A missing digest is `unverifiable-function-source`, which blocks parity. Missing functions, unexplained extras, inactive functions, or digest mismatch also block. An intentionally retired extra needs a reviewed quarantine/tombstone record bound to the manifest; silence is not retirement evidence.
+
+Function inventories also require strict ASCII name order, unique names, independently
+recomputed aggregate hashes, matching source digests, an active remote status, and
+a non-null remote version.
 
 ### 2.4 Public-schema fingerprint
 
@@ -76,6 +85,13 @@ The deployment record must contain the Actions run ID and attempt, run `headSha`
 - both database and function steps succeeded; and
 - expected/observed inventories and schema fingerprint match.
 
+The observed block separately records application deployment ID and observed Git
+SHA, Supabase environment/project ref, and Actions run ID/attempt. All must match
+the candidate/deployment record. Backend, GitHub-control, and runtime-control
+observations must occur after deploy completion and no later than manifest
+generation. Canonical FundLoop refs are Dev `kyxtqnfnksvcaugxwzuj` and Production
+`tpouimiyfmvucrerfhfc`; changing them requires a reviewed contract update.
+
 A rerun is a new run attempt and must be named. A partially applied failed deployment remains a failed deploy until a reviewed forward fix produces a new successful run and parity read-back.
 
 The `prerequisites` collection fails the deploy gate unless every environment-required entry is `pass`. Dev requires fresh replay, upgrade rehearsal, migration-plan review, expected-inventory generation, required-secret presence checks (names/booleans only), and provider/runtime configuration classification. Production additionally requires backup/restore rehearsal, approved rollback, protection read-back, professional packet status, and explicit Production-deploy approval.
@@ -88,7 +104,7 @@ The `prerequisites` collection fails the deploy gate unless every environment-re
 | Warning | A non-authoritative timestamp/version differs while all signed source and runtime evidence matches; expiring evidence is inside its renewal window | Human review before the next gate; cannot mask a blocker. |
 | Informational | Observation time, run duration, or provider request identifier changes while its immutable evidence digest and subject remain the same | Record for audit; no gate effect. |
 
-The parity evaluator must emit stable codes and exact expected/observed values. At minimum: `missing-migration`, `unexpected-migration`, `migration-digest`, `missing-function`, `unexpected-function`, `function-digest`, `schema-fingerprint`, `deployment-sha`, `deployment-incomplete`, `protection-missing`, `approval-missing`, and `value-flow-enabled-before-go-live`.
+The parity evaluator must emit stable codes and exact expected/observed values. At minimum: `missing-migration`, `unexpected-migration`, `duplicate-migration`, `migration-order`, `migration-digest`, `migration-inventory-digest`, `missing-function`, `unexpected-function`, `duplicate-function`, `function-order`, `function-digest`, `function-inventory-digest`, `schema-fingerprint`, `deployment-sha`, `deployment-incomplete`, `environment-binding`, `project-binding`, `application-deployment-binding`, `application-sha-binding`, `workflow-run-binding`, `prerequisite-missing`, `prerequisite-not-passed`, `protection-missing`, `approval-missing`, `approval-stale`, `alert-delivery-failed`, `cutover-control-enabled-before-approval`, `value-flow-enabled-before-go-live`, `gate-dependency`, and `gate-contradiction`. A subject may follow a colon; the code before it remains exact.
 
 Every blocking result creates an `alerts` entry containing manifest ID/digest in its evidence artifact, environment, stable code, subject, first-observed time, run/deployment IDs, owner, severity, delivery status, and evidence digest. The evaluator posts the sanitized alert to the configured GitHub/operations sink and records the delivery receipt in the evidence artifact. A `failed` or `pending` blocking-alert delivery is itself blocking. Repair is always a forward PR/migration/function change or explicit configuration correction; never rewrite applied migrations, reset a shared project, delete unexplained functions, or mutate audit evidence to make parity pass.
 
@@ -108,7 +124,7 @@ Every migration runs on fresh replay before a remote plan. Rehearsal must also c
 
 The manifest records live, timestamped API read-back for the exact base branch and `Production` environment. Dev/main promotion requires PR enforcement and named required checks. Production deploy requires at least one required reviewer and the repository-approved bypass posture. A checked-in workflow reference is not protection evidence.
 
-Approvals are immutable evidence objects, not booleans. Each records type, `approved|rejected|pending|not-required`, artifact hash, exact manifest-scope hash, approver role, and timestamp. A required approval with a different manifest hash is stale. Secrets, personal email addresses, tokens, and private provider payloads never enter the manifest; use opaque evidence IDs plus sanitized digests.
+Approvals are immutable evidence objects, not booleans. Each records type, `approved|rejected|pending|not-required`, artifact hash, exact manifest-scope hash, approver role, recorded timestamp, and expiry timestamp. A required approval with a different manifest hash, future recorded time, or expired timestamp is stale. Secrets, personal email addresses, tokens, and private provider payloads never enter the manifest; use opaque evidence IDs plus sanitized digests.
 
 Required approval classes by gate:
 
@@ -124,6 +140,11 @@ Required approval classes by gate:
 Runtime controls must be read from the deployed database/function boundary, not inferred from source defaults. The manifest binds the observation source and digest plus `neutralPostingEnabled`, `cutoverPrepareEnabled`, `cutoverActivationEnabled`, and `productionValueFlowEnabled`.
 
 Production deployment and parity require `productionValueFlowEnabled=false`. The Sprint's Production validation also requires posting/cutover controls in their approved disabled state. A missing row, permission error, unknown environment, stale observation, or true value-flow flag fails closed. Only the later go-live manifest may authorize a reviewed transition, and it must include activation and rollback evidence for the exact manifest.
+
+Enabling cutover prepare or activation while its gate lacks the required approvals is
+blocking. A Production neutral-posting or value-flow flag is blocking before an
+internally consistent go-live gate. Gate declarations cannot override failed
+prerequisites, protections, parity, approvals, alerts, or runtime-control checks.
 
 ## 8. Capability evidence
 
@@ -170,7 +191,7 @@ This is intentional: historical success can prove that named workflow steps comp
 
 ## 11. Fixture drift smoke
 
-The fixture [`tests/fixtures/production-readiness/manifest-valid.json`](../../tests/fixtures/production-readiness/manifest-valid.json) represents a parity-valid Dev manifest. [`tests/production-readiness-evidence-contract.test.ts`](../../tests/production-readiness-evidence-contract.test.ts) removes one expected migration and one expected function from observed inventory in separate cases. Both must produce blocking `missing-*` drift. It also proves deploy success, parity, and value-flow authority are evaluated independently.
+The fixture [`tests/fixtures/production-readiness/manifest-valid.json`](../../tests/fixtures/production-readiness/manifest-valid.json) represents a parity-valid Dev manifest with recomputed inventory and approval-scope hashes. [`tests/production-readiness-evidence-contract.test.ts`](../../tests/production-readiness-evidence-contract.test.ts) runs the full negative matrix: missing, unexpected, reordered, duplicate, digest-changed, and aggregate-hash migration/function drift; wrong Git/app/environment/project/run/attempt/time binding; prerequisite and protection failures; missing/stale approval; failed alert delivery; cutover/value-flow violations; and contradictory pass gates. Every counterexample must return its documented blocking code.
 
 ## 12. Stop conditions
 

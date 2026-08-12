@@ -53,10 +53,15 @@
     "observed": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["observedAt", "projectRef", "migrationInventory", "functionInventory", "schemaFingerprint"],
+      "required": ["observedAt", "environment", "projectRef", "applicationDeploymentId", "applicationGitSha", "githubRunId", "githubRunAttempt", "migrationInventory", "functionInventory", "schemaFingerprint"],
       "properties": {
         "observedAt": { "$ref": "#/$defs/dateTime" },
+        "environment": { "enum": ["dev", "production"] },
         "projectRef": { "type": "string", "pattern": "^[a-z]{20}$" },
+        "applicationDeploymentId": { "$ref": "#/$defs/nonEmpty" },
+        "applicationGitSha": { "$ref": "#/$defs/gitSha" },
+        "githubRunId": { "type": "integer", "minimum": 1 },
+        "githubRunAttempt": { "type": "integer", "minimum": 1 },
         "migrationInventory": { "$ref": "#/$defs/migrationInventory" },
         "functionInventory": { "$ref": "#/$defs/functionInventory" },
         "schemaFingerprint": { "$ref": "#/$defs/schemaFingerprint" }
@@ -83,6 +88,7 @@
     "prerequisites": {
       "type": "array",
       "minItems": 1,
+      "uniqueItems": true,
       "items": {
         "type": "object",
         "additionalProperties": false,
@@ -102,11 +108,11 @@
       "properties": {
         "observedAt": { "$ref": "#/$defs/dateTime" },
         "baseBranch": { "enum": ["dev", "main"] },
-        "pullRequestRequired": { "type": "boolean" },
-        "requiredChecks": { "type": "array", "uniqueItems": true, "items": { "$ref": "#/$defs/nonEmpty" } },
+        "pullRequestRequired": { "const": true },
+        "requiredChecks": { "type": "array", "minItems": 2, "uniqueItems": true, "items": { "$ref": "#/$defs/nonEmpty" } },
         "productionEnvironment": { "const": "Production" },
-        "requiredReviewerCount": { "type": "integer", "minimum": 0 },
-        "adminBypassAllowed": { "type": "boolean" }
+        "requiredReviewerCount": { "type": "integer", "minimum": 1 },
+        "adminBypassAllowed": { "const": false }
       }
     },
     "runtimeControls": {
@@ -126,6 +132,7 @@
     "capabilities": {
       "type": "array",
       "minItems": 1,
+      "uniqueItems": true,
       "items": {
         "type": "object",
         "additionalProperties": false,
@@ -159,22 +166,26 @@
     },
     "approvals": {
       "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
       "items": {
         "type": "object",
         "additionalProperties": false,
-        "required": ["approvalType", "status", "artifactSha256", "scopeManifestSha256", "approverRole", "recordedAt"],
+        "required": ["approvalType", "status", "artifactSha256", "scopeManifestSha256", "approverRole", "recordedAt", "expiresAt"],
         "properties": {
           "approvalType": { "enum": ["code-review", "production-deploy", "legal", "accounting", "privacy-retention", "provider", "opening-balance", "cutover", "go-live", "rollback"] },
           "status": { "enum": ["approved", "rejected", "pending", "not-required"] },
           "artifactSha256": { "$ref": "#/$defs/sha256" },
           "scopeManifestSha256": { "$ref": "#/$defs/sha256" },
           "approverRole": { "$ref": "#/$defs/nonEmpty" },
-          "recordedAt": { "$ref": "#/$defs/dateTime" }
+          "recordedAt": { "$ref": "#/$defs/dateTime" },
+          "expiresAt": { "$ref": "#/$defs/dateTime" }
         }
       }
     },
     "alerts": {
       "type": "array",
+      "uniqueItems": true,
       "items": {
         "type": "object",
         "additionalProperties": false,
@@ -218,6 +229,8 @@
         "inventorySha256": { "$ref": "#/$defs/sha256" },
         "items": {
           "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
           "items": {
             "type": "object",
             "additionalProperties": false,
@@ -240,6 +253,8 @@
         "inventorySha256": { "$ref": "#/$defs/sha256" },
         "items": {
           "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
           "items": {
             "type": "object",
             "additionalProperties": false,
@@ -273,7 +288,14 @@
         "evidenceSha256": { "$ref": "#/$defs/sha256" },
         "evaluatedAt": { "$ref": "#/$defs/dateTime" },
         "blockers": { "type": "array", "uniqueItems": true, "items": { "$ref": "#/$defs/nonEmpty" } }
-      }
+      },
+      "allOf": [
+        {
+          "if": { "properties": { "status": { "const": "pass" } }, "required": ["status"] },
+          "then": { "properties": { "blockers": { "type": "array", "maxItems": 0 } } },
+          "else": { "properties": { "blockers": { "type": "array", "minItems": 1 } } }
+        }
+      ]
     }
   }
 }
