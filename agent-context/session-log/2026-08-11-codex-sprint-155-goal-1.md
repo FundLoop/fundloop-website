@@ -674,3 +674,48 @@ only a literal true value may authorize the repair path.
 - Let the parent inspect and push this focused fix, then reply to and resolve the
   review thread after the pushed commit is available.
 - Keep #160 In Progress until the CI-owned Dev deploy proves strict zero drift.
+
+### session v14: Confirm reviewed Edge Function prune in CI (#160)
+
+- Timestamp: 2026-08-12T14:21:06-04:00
+- Agent: Codex
+- Branch: `codex/155-goal-1-function-prune-recovery`
+- Head: `c840ec9421486cc48aa5d28d48614ccbafc7861b`
+
+#### Objective
+
+Allow the noninteractive CI-owned Dev deployment to delete the one exact reviewed
+retired Edge Function only after the existing parity guard authorizes that inventory.
+
+#### Actions Taken
+
+- Added the Supabase CLI global `--yes` flag to the existing all-function deploy and
+  prune command so GitHub-hosted CI confirms the reviewed deletion without a prompt.
+- Strengthened the workflow contract test to require the predeploy inventory guard,
+  confirmed prune, and postdeploy read-back in that exact order, and to reject the
+  former unconfirmed command.
+- Documented that confirmation derives solely from the due, environment-scoped
+  retirement manifest; unexplained extras still fail before any prune.
+
+#### Tests And Validation Notes
+
+- Passed: Node 22 focused Supabase delivery parity suite, 11/11 tests, and focused
+  ESLint.
+- Passed: workflow YAML parse and `git diff --check`.
+- Passed: local pinned Supabase CLI help contract exposes `--prune`, `--jobs`, and the
+  global `--yes` flag accepted by the deploy command.
+- No Supabase project was linked or mutated; no workflow, push, PR, Production action,
+  function deletion, or value-flow activation occurred.
+
+#### Reflections
+
+Noninteractive confirmation is safe only after a separately tested verifier narrows
+the destructive set to reviewed retirements. Ordering that verifier before mutation
+and retaining postdeploy read-back keeps the operation fail closed.
+
+#### Suggested Next Steps
+
+- Let the orchestrator independently validate and publish this branch, then require
+  the CI-owned Dev run to prune the retired function and complete exact postdeploy
+  read-back plus the safe runtime smoke.
+- Keep #160 In Progress and do not start #161 until that hosted evidence passes.
