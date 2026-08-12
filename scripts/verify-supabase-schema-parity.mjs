@@ -236,9 +236,15 @@ export function validateMigrationDeployEvidence(expected, observed) {
     && observed.inventorySha256 === expected.inventorySha256
 }
 
+export function isExplicitRfc3339Timestamp(value) {
+  return typeof value === "string"
+    && /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d+)?(?:Z|[+-](?:[01]\d|2[0-3]):[0-5]\d)$/.test(value)
+    && Number.isFinite(Date.parse(value))
+}
+
 export function bindObservedMigrationDeployEvidence(expected, observed) {
   if (!validateMigrationDeployEvidence(expected, observed)
-    || !Number.isFinite(Date.parse(observed.recordedAt ?? ""))) {
+    || !isExplicitRfc3339Timestamp(observed.recordedAt)) {
     throw new Error("migration-deployment-evidence-invalid: remote immutable row failed candidate or timestamp validation")
   }
   return { ...expected, recordedAt: observed.recordedAt }
@@ -298,7 +304,7 @@ export function validateMatchingMigrationEvidence(evidence, binding, expectedInv
     && /^[0-9a-f]{40}$/.test(evidence.candidateGitSha ?? "")
     && /^\d+$/.test(evidence.actionsRunId ?? "")
     && Number.isInteger(evidence.runAttempt) && evidence.runAttempt >= 1
-    && Number.isFinite(Date.parse(evidence.recordedAt ?? ""))
+    && isExplicitRfc3339Timestamp(evidence.recordedAt)
     && evidence.inventorySha256 === migrationInventorySha256(evidence.migrations ?? [])
     && evidence.inventorySha256 === expectedInventorySha256
 }

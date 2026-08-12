@@ -3,7 +3,7 @@ import os from "node:os"
 import path from "node:path"
 import { describe, expect, it } from "vitest"
 import { classifyFunctionInventory, compareClosurePaths, expectedFunctionNames, expectedSourceClosure } from "../scripts/verify-supabase-function-parity.mjs"
-import { bindObservedMigrationDeployEvidence, buildMigrationDeployEvidence, buildSchemaDiagnostic, expectedMigrationInventory, libpqConnectionEnvironment, migrationInventorySha256, normalizePublicSchema, validateMatchingMigrationEvidence, validateMigrationDeployEvidence, validatePendingSchemaRepair } from "../scripts/verify-supabase-schema-parity.mjs"
+import { bindObservedMigrationDeployEvidence, buildMigrationDeployEvidence, buildSchemaDiagnostic, expectedMigrationInventory, isExplicitRfc3339Timestamp, libpqConnectionEnvironment, migrationInventorySha256, normalizePublicSchema, validateMatchingMigrationEvidence, validateMigrationDeployEvidence, validatePendingSchemaRepair } from "../scripts/verify-supabase-schema-parity.mjs"
 
 const workflow = readFileSync(".github/workflows/supabase-deploy.yml", "utf8")
 const schemaVerifier = readFileSync("scripts/verify-supabase-schema-parity.mjs", "utf8")
@@ -181,12 +181,35 @@ describe("Supabase delivery parity", () => {
       inventorySha256: "",
     }
     expected.inventorySha256 = migrationInventorySha256(expected.migrations)
-    const observed = { ...structuredClone(expected), recordedAt: "2026-08-12T19:00:00.123Z" }
+    const observed = { ...structuredClone(expected), recordedAt: "2026-08-12T23:28:57.708226+00:00" }
     const deployEvidence = bindObservedMigrationDeployEvidence(expected, observed)
     expect(deployEvidence.recordedAt).toBe(observed.recordedAt)
     expect(validateMatchingMigrationEvidence(observed, expected, expected.inventorySha256)).toBe(true)
-    expect(() => bindObservedMigrationDeployEvidence(expected, { ...observed, recordedAt: "invalid" })).toThrow("remote immutable row")
+    for (const recordedAt of ["0", "12", "2026-08-12", "2026-08-12 23:28:57+00:00", "2026-08-12T23:28:57", "2026-08-12T23:28:57+24:00"]) {
+      expect(() => bindObservedMigrationDeployEvidence(expected, { ...observed, recordedAt }), recordedAt).toThrow("remote immutable row")
+      expect(validateMatchingMigrationEvidence({ ...observed, recordedAt }, expected, expected.inventorySha256), recordedAt).toBe(false)
+    }
     expect(() => bindObservedMigrationDeployEvidence(expected, { ...observed, inventorySha256: "0".repeat(64) })).toThrow("remote immutable row")
+  })
+
+  it("requires explicit RFC3339 seconds and timezone for immutable timestamps", () => {
+    for (const timestamp of [
+      "2026-08-12T23:28:57.708226+00:00",
+      "2026-08-12T23:28:57Z",
+      "2026-08-12T19:28:57.1-04:00",
+    ]) expect(isExplicitRfc3339Timestamp(timestamp), timestamp).toBe(true)
+
+    for (const timestamp of [
+      "0",
+      "12",
+      "2026-08-12",
+      "2026-08-12 23:28:57+00:00",
+      "2026-08-12T23:28:57",
+      "2026-08-12T23:28Z",
+      "2026-08-12T23:28:57+0000",
+      "2026-08-12T23:28:57+24:00",
+      "2026-08-12T23:28:57+00:60",
+    ]) expect(isExplicitRfc3339Timestamp(timestamp), timestamp).toBe(false)
   })
 
   it("keeps candidate-bound migration evidence append-only and non-browser-readable", () => {

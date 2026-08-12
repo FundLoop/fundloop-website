@@ -1324,3 +1324,43 @@ but cannot safely identify the selected target of a manual cross-environment dis
 
 - Return this commit to independent validation, then publish only through the
   orchestrator-owned flow and exercise explicit hosted Dev observation.
+
+### session v28: Require explicit RFC3339 deployment timestamps (#161)
+
+- Timestamp: 2026-08-12T20:00:00-04:00
+- Agent: Codex
+- Branch: `codex/155-goal-1-manifest-provenance-routing-recovery`
+- Head: `cb9f7a2a8d4247740217dfbc1c429af36f2d9120`
+
+#### Objective
+
+Close the remaining evidence-validator ambiguity by accepting only explicit RFC3339
+timestamps with seconds and a timezone in both deploy and drift provenance paths.
+
+#### Actions Taken
+
+- Added one shared timestamp predicate requiring `T`, seconds, optional fractional
+  seconds, and either `Z` or a bounded `±HH:MM` offset, plus a finite parsed value.
+- Applied it to candidate-bound deploy evidence binding and latest-matching drift
+  evidence validation.
+- Added PostgreSQL microsecond-offset and ISO `Z` positives plus adversarial numeric,
+  date-only, space-separated, timezone-less, missing-seconds, and malformed-offset
+  negatives, including direct checks through both evidence validators.
+
+#### Tests And Validation Notes
+
+- Passed on Node 22: focused environment-manifest and delivery-parity suites, 23/23.
+- Passed: focused ESLint, TypeScript typecheck, script syntax, workflow YAML parse, and
+  `git diff --check`.
+- No push, workflow dispatch, remote call or mutation, status change, Production action,
+  #162 work, credential prompt, or value-flow activation occurred.
+
+#### Reflections
+
+Generic JavaScript date parsing accepts shorthand values that are not auditable
+timestamps. Evidence contracts need an explicit wire grammar before semantic parsing.
+
+#### Suggested Next Steps
+
+- Return this localized fix to independent validation and keep hosted observation in the
+  orchestrator-owned publish path.
