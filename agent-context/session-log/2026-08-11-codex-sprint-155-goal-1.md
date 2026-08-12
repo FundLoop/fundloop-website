@@ -825,6 +825,48 @@ syntax impossible to silently ignore.
   and require CI-owned read-back of all 62 functions plus the safe Dev smoke.
 - Keep #160 In Progress until that hosted evidence passes.
 
+### session v18: Fail closed on ambiguous dynamic imports (#160)
+
+- Timestamp: 2026-08-12T16:45:15-04:00
+- Agent: Codex
+- Branch: `codex/155-goal-1-runtime-source-closure-recovery`
+- Head: `95ecd23be0947e63eb1c675923dac7c58fa0352b`
+
+#### Objective
+
+Address independent validation by covering standard two-argument dynamic imports and
+refusing any dynamic dependency that cannot be derived exactly.
+
+#### Actions Taken
+
+- Accepted string-literal dynamic imports with either one argument or the standard
+  second import-attributes/options argument.
+- Continued deriving the first literal source for two-argument JSON imports so the
+  runtime asset remains byte-bound.
+- Made nonliteral dynamic import specifiers and invalid arity fail closed instead of
+  silently omitting a possible repository dependency.
+- Added positive one-/two-argument and negative nonliteral/over-arity coverage and
+  documented the exact dynamic-import contract.
+
+#### Tests And Validation Notes
+
+- Passed: Node 22 focused source-readback and delivery-parity suites, 41/41 tests.
+- Passed: focused ESLint, TypeScript typecheck, script syntax, workflow YAML parse,
+  and `git diff --check`.
+- No network request, remote mutation, workflow, push, PR, Production action, #161
+  work, or value-flow activation occurred.
+
+#### Reflections
+
+Dynamic import options do not change the dependency identity, but a nonliteral first
+argument makes that identity unknowable. Closure verification must accept the former
+and reject the latter.
+
+#### Suggested Next Steps
+
+- Return this follow-up to independent validation, then require CI-owned all-function
+  read-back and the safe Dev smoke before #160 progresses.
+
 ### session v17: Derive runtime-only Edge Function source closures (#160)
 
 - Timestamp: 2026-08-12T16:42:06-04:00

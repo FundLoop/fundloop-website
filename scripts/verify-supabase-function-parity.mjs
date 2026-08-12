@@ -78,9 +78,9 @@ export function expectedSourceClosure(functionName, root = repoRoot) {
           && node.exportClause.elements.length > 0
           && node.exportClause.elements.every((element) => element.isTypeOnly)
         if (!node.isTypeOnly && !onlyInlineTypes) addModuleSpecifier(node.moduleSpecifier)
-      } else if (ts.isCallExpression(node)
-        && node.expression.kind === ts.SyntaxKind.ImportKeyword
-        && node.arguments.length === 1) {
+      } else if (ts.isCallExpression(node) && node.expression.kind === ts.SyntaxKind.ImportKeyword) {
+        if (node.arguments.length < 1 || node.arguments.length > 2) throw new Error(`Dynamic import must have one or two arguments: ${path.relative(root, file)}`)
+        if (!ts.isStringLiteralLike(node.arguments[0])) throw new Error(`Dynamic import specifier must be a string literal: ${path.relative(root, file)}`)
         addModuleSpecifier(node.arguments[0])
       }
       ts.forEachChild(node, visitNode)

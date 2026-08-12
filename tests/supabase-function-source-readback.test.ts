@@ -48,6 +48,7 @@ describe("Supabase Management API function source read-back", () => {
           'export { type MixedExportType, reExportValue } from "../../../lib/re-export-mixed.ts"',
           'export * from "../../../lib/re-export-all.ts"',
           'void import("../../../lib/dynamic.ts")',
+          'void import("../../../lib/dynamic-json.json", { with: { type: "json" } })',
           "void mixedValue",
         ].join("\n"),
         "lib/pure.ts": "export type Pure = string\n",
@@ -58,12 +59,14 @@ describe("Supabase Management API function source read-back", () => {
         "lib/re-export-mixed.ts": "export type MixedExportType = string; export const reExportValue = 1\n",
         "lib/re-export-all.ts": "export const reExportAllValue = 1\n",
         "lib/dynamic.ts": "export const dynamicValue = 1\n",
+        "lib/dynamic-json.json": "{\"runtime\":true}\n",
       }
       for (const [relative, contents] of Object.entries(files)) {
         mkdirSync(path.dirname(path.join(root, relative)), { recursive: true })
         writeFileSync(path.join(root, relative), contents)
       }
       expect(expectedSourceClosure("example", root)).toEqual([
+        "lib/dynamic-json.json",
         "lib/dynamic.ts",
         "lib/mixed.ts",
         "lib/re-export-all.ts",
@@ -83,6 +86,21 @@ describe("Supabase Management API function source read-back", () => {
       mkdirSync(path.dirname(entrypoint), { recursive: true })
       writeFileSync(entrypoint, 'import { broken from "../../../lib/value.ts"\n')
       expect(() => expectedSourceClosure("example", root)).toThrow("invalid syntax")
+    } finally {
+      rmSync(root, { recursive: true, force: true })
+    }
+  })
+
+  it.each([
+    ["nonliteral", "const specifier = '../../../lib/value.ts'; void import(specifier)", /string literal/],
+    ["over-arity", "void import('../../../lib/value.ts', {}, {})", /invalid syntax|one or two arguments/],
+  ])("fails closed on %s dynamic imports", (_label, source, expectedError) => {
+    const root = mkdtempSync(path.join(os.tmpdir(), "fundloop-runtime-dynamic-invalid-"))
+    try {
+      const entrypoint = path.join(root, "supabase/functions/example/index.ts")
+      mkdirSync(path.dirname(entrypoint), { recursive: true })
+      writeFileSync(entrypoint, source)
+      expect(() => expectedSourceClosure("example", root)).toThrow(expectedError)
     } finally {
       rmSync(root, { recursive: true, force: true })
     }

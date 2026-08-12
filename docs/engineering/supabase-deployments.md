@@ -203,6 +203,9 @@ whose bindings are all explicitly `type` are excluded because Deno erases those
 modules from the deployed runtime bundle. Parse diagnostics fail closed, and the Deno
 module-graph preflight still runs before migration or function mutation. This is a
 language-semantic graph rule, not a path or remote-content allowlist.
+Dynamic imports accept the standard string-literal one-argument form and two-argument
+form with import attributes/options. Nonliteral specifiers and any other arity fail
+closed rather than risking an underived repository dependency.
 
 The two sanitized `fundloop.public-schema-parity/v1` and
 `fundloop.edge-function-parity/v1` JSON records are uploaded as one 30-day Actions
