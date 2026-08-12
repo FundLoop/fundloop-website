@@ -1,11 +1,15 @@
 import { createHash } from "node:crypto"
 import { execFileSync } from "node:child_process"
-import { cpSync, mkdirSync, mkdtempSync, readFileSync, readdirSync, rmSync, statSync, writeFileSync } from "node:fs"
-import os from "node:os"
+import { readFileSync, readdirSync, statSync, writeFileSync } from "node:fs"
 import path from "node:path"
 import { pathToFileURL } from "node:url"
 
 const repoRoot = process.cwd()
+const managementApiOrigin = "https://api.supabase.com"
+const maxResponseBytes = 16 * 1024 * 1024
+const maxFileBytes = 2 * 1024 * 1024
+const maxFileCount = 256
+const knownRepoRootPrefix = "fundloop-website/"
 
 export function expectedFunctionNames(root = repoRoot) {
   return readdirSync(path.join(root, "supabase/functions"), { withFileTypes: true })
@@ -16,24 +20,19 @@ export function expectedFunctionNames(root = repoRoot) {
     .sort()
 }
 
-function filesUnder(root) {
-  const files = []
-  const visit = (directory) => {
-    for (const entry of readdirSync(directory, { withFileTypes: true })) {
-      const fullPath = path.join(directory, entry.name)
-      if (entry.isDirectory()) visit(fullPath)
-      else if (entry.isFile()) files.push(fullPath)
-    }
-  }
-  visit(root)
-  return files.sort()
-}
-
 function digestFiles(root, files) {
   const hash = createHash("sha256")
   for (const file of files) {
     const relative = path.relative(root, file).split(path.sep).join("/")
     hash.update(relative).update("\0").update(createHash("sha256").update(readFileSync(file)).digest("hex")).update("\n")
+  }
+  return hash.digest("hex")
+}
+
+function digestSourceMap(files) {
+  const hash = createHash("sha256")
+  for (const [relative, contents] of [...files].sort(([left], [right]) => left.localeCompare(right))) {
+    hash.update(relative).update("\0").update(createHash("sha256").update(contents).digest("hex")).update("\n")
   }
   return hash.digest("hex")
 }
@@ -96,32 +95,146 @@ function remoteFunctions(projectRef) {
   return JSON.parse(execFileSync("supabase", ["functions", "list", "--project-ref", projectRef, "--output", "json"], { encoding: "utf8" }))
 }
 
-function verifyDownloadedSource(projectRef, functionName) {
-  const tempRoot = mkdtempSync(path.join(os.tmpdir(), `fundloop-function-${functionName}-`))
-  try {
-    mkdirSync(path.join(tempRoot, "supabase"), { recursive: true })
-    cpSync(path.join(repoRoot, "supabase/config.toml"), path.join(tempRoot, "supabase/config.toml"), { recursive: true })
-    execFileSync("supabase", ["functions", "download", functionName, "--project-ref", projectRef, "--workdir", tempRoot, "--use-api"], { stdio: "pipe" })
-    const downloadedFiles = filesUnder(tempRoot).filter((file) => !file.includes(`${path.sep}supabase${path.sep}.temp${path.sep}`) && !file.endsWith("supabase/config.toml"))
-    if (downloadedFiles.length === 0) throw new Error(`Downloaded function ${functionName} has no source files`)
-    const expectedPaths = expectedSourceClosure(functionName)
-    const observedPaths = downloadedFiles.map((file) => path.relative(tempRoot, file).split(path.sep).join("/")).sort()
-    const { missingPaths, extraPaths } = compareClosurePaths(expectedPaths, observedPaths)
-    if (missingPaths.length || extraPaths.length) throw new Error(`Remote ${functionName} closure mismatch: missing=${missingPaths.join(",")} extra=${extraPaths.join(",")}`)
-    const localFiles = expectedPaths.map((relative) => path.join(repoRoot, relative))
-    for (const relative of expectedPaths) {
-      if (!readFileSync(path.join(tempRoot, relative)).equals(readFileSync(path.join(repoRoot, relative)))) throw new Error(`Remote ${functionName} source differs: ${relative}`)
-    }
-    const observedSourceSha256 = digestFiles(tempRoot, downloadedFiles)
-    const expectedSourceSha256 = digestFiles(repoRoot, localFiles)
-    if (expectedSourceSha256 !== observedSourceSha256) throw new Error(`Remote ${functionName} source digest differs from reviewed source`)
-    return { expectedSourceSha256, observedSourceSha256 }
-  } finally {
-    rmSync(tempRoot, { recursive: true, force: true })
+function parseDisposition(value) {
+  if (!value?.startsWith("form-data;")) return null
+  const params = new Map()
+  for (const match of value.matchAll(/;\s*([a-zA-Z0-9_-]+)="((?:[^"\\]|\\.)*)"/g)) {
+    params.set(match[1].toLowerCase(), match[2].replace(/\\(["\\])/g, "$1"))
   }
+  return params
 }
 
-function main() {
+function safeArchivePath(rawPath) {
+  if (!rawPath || rawPath.includes("\0") || rawPath.includes("\\") || rawPath.startsWith("/") || /^[a-zA-Z]:/.test(rawPath)) {
+    throw new Error("Remote function archive contains an unsafe path")
+  }
+  const segments = rawPath.split("/")
+  if (segments.some((segment) => !segment || segment === "." || segment === "..")) throw new Error("Remote function archive contains an unsafe path")
+  const relative = rawPath.startsWith(knownRepoRootPrefix) ? rawPath.slice(knownRepoRootPrefix.length) : rawPath
+  return relative
+}
+
+function multipartBoundary(contentType) {
+  const segments = contentType.split(";")
+  if (segments.shift()?.trim().toLowerCase() !== "multipart/form-data") return null
+  const params = new Map()
+  for (const segment of segments) {
+    const separator = segment.indexOf("=")
+    if (separator <= 0) return null
+    const name = segment.slice(0, separator).trim().toLowerCase()
+    let value = segment.slice(separator + 1).trim()
+    if (value.startsWith('"') && value.endsWith('"')) value = value.slice(1, -1).replace(/\\(["\\])/g, "$1")
+    if (!name || !value || params.has(name)) return null
+    params.set(name, value)
+  }
+  return params.get("boundary") ?? null
+}
+
+async function readBoundedBody(response) {
+  const declared = Number(response.headers.get("content-length"))
+  if (Number.isFinite(declared) && declared > maxResponseBytes) throw new Error("Remote function response exceeds size limit")
+  if (!response.body) throw new Error("Remote function response has no body")
+  const chunks = []
+  let total = 0
+  for await (const chunk of response.body) {
+    total += chunk.byteLength
+    if (total > maxResponseBytes) throw new Error("Remote function response exceeds size limit")
+    chunks.push(Buffer.from(chunk))
+  }
+  return Buffer.concat(chunks, total)
+}
+
+export async function parseFunctionSourceResponse(response, functionName, expectedPaths) {
+  if (response.redirected || response.status >= 300 && response.status < 400) throw new Error("Remote function download refused redirect")
+  if (response.status !== 200) throw new Error(`Remote function download failed with status ${response.status}`)
+  const contentType = response.headers.get("content-type") ?? ""
+  const boundary = multipartBoundary(contentType)
+  if (!boundary || boundary.length > 70 || /[^\x21-\x7e]/.test(boundary)) throw new Error("Remote function response has invalid multipart content type")
+  const body = await readBoundedBody(response)
+  const delimiter = Buffer.from(`--${boundary}`)
+  const files = new Map()
+  const collisionKeys = new Set()
+  let cursor = 0
+  if (!body.subarray(0, delimiter.length).equals(delimiter)) throw new Error("Remote function response has invalid multipart framing")
+  cursor = delimiter.length
+  while (true) {
+    if (body.subarray(cursor, cursor + 2).toString() === "--") {
+      cursor += 2
+      if (body.subarray(cursor).toString() !== "\r\n") throw new Error("Remote function response has invalid multipart trailer")
+      break
+    }
+    if (body.subarray(cursor, cursor + 2).toString() !== "\r\n") throw new Error("Remote function response has invalid multipart framing")
+    cursor += 2
+    const headerEnd = body.indexOf("\r\n\r\n", cursor)
+    if (headerEnd < 0 || headerEnd - cursor > 16 * 1024) throw new Error("Remote function response has invalid multipart headers")
+    const headerLines = body.subarray(cursor, headerEnd).toString("utf8").split("\r\n")
+    const headers = new Map()
+    for (const line of headerLines) {
+      if (/^[ \t]/.test(line)) throw new Error("Remote function response contains folded headers")
+      const separator = line.indexOf(":")
+      if (separator <= 0) throw new Error("Remote function response has invalid multipart headers")
+      const name = line.slice(0, separator).toLowerCase()
+      if (headers.has(name)) throw new Error("Remote function response has duplicate multipart headers")
+      headers.set(name, line.slice(separator + 1).trim())
+    }
+    const next = body.indexOf(Buffer.from(`\r\n--${boundary}`), headerEnd + 4)
+    if (next < 0) throw new Error("Remote function response has invalid multipart framing")
+    const contents = body.subarray(headerEnd + 4, next)
+    cursor = next + 2 + delimiter.length
+    const disposition = parseDisposition(headers.get("content-disposition"))
+    if (!disposition) throw new Error("Remote function response has invalid content disposition")
+    const rawPath = headers.get("supabase-path") ?? disposition.get("filename")
+    if (!rawPath) {
+      if (disposition.get("name") !== "metadata" || contents.byteLength > 64 * 1024) throw new Error("Remote function response contains a non-file entry")
+      continue
+    }
+    const entryType = (headers.get("supabase-file-type") ?? "file").toLowerCase()
+    const partType = (headers.get("content-type") ?? "").toLowerCase()
+    if (!["file", "regular"].includes(entryType) || partType.includes("symlink") || partType.includes("directory")) throw new Error("Remote function archive contains a non-regular entry")
+    if (contents.byteLength > maxFileBytes) throw new Error("Remote function archive file exceeds size limit")
+    if (files.size >= maxFileCount) throw new Error("Remote function archive exceeds file count limit")
+    const relative = safeArchivePath(rawPath)
+    const collisionKey = relative.normalize("NFC").toLowerCase()
+    if (files.has(relative) || collisionKeys.has(collisionKey)) throw new Error("Remote function archive contains duplicate or colliding paths")
+    collisionKeys.add(collisionKey)
+    files.set(relative, Buffer.from(contents))
+  }
+  if (!files.size) throw new Error(`Remote ${functionName} has no source files`)
+  const observedPaths = [...files.keys()].sort()
+  const { missingPaths, extraPaths } = compareClosurePaths(expectedPaths, observedPaths)
+  if (missingPaths.length || extraPaths.length) {
+    const extraPathSha256 = extraPaths.map((relative) => createHash("sha256").update(relative).digest("hex")).sort()
+    throw new Error(`Remote ${functionName} closure mismatch: missing=${missingPaths.join(",")} extraCount=${extraPaths.length} extraPathSha256=${extraPathSha256.join(",")}`)
+  }
+  return files
+}
+
+export async function verifyDownloadedSource(projectRef, functionName, accessToken, fetchImpl = fetch) {
+  if (!/^[a-z0-9]{20}$/.test(projectRef)) throw new Error("Invalid Supabase project ref")
+  if (!/^[a-z0-9][a-z0-9-]{0,62}$/.test(functionName)) throw new Error("Invalid Edge Function slug")
+  if (!accessToken) throw new Error("SUPABASE_ACCESS_TOKEN is required for source read-back")
+  const expectedPaths = expectedSourceClosure(functionName)
+  let response
+  try {
+    response = await fetchImpl(`${managementApiOrigin}/v1/projects/${projectRef}/functions/${functionName}/body`, {
+      headers: { accept: "multipart/form-data", authorization: `Bearer ${accessToken}` },
+      redirect: "error",
+      signal: AbortSignal.timeout(30_000),
+    })
+  } catch {
+    throw new Error("Remote function source read-back transport failed")
+  }
+  const files = await parseFunctionSourceResponse(response, functionName, expectedPaths)
+  for (const relative of expectedPaths) {
+    if (!files.get(relative).equals(readFileSync(path.join(repoRoot, relative)))) throw new Error(`Remote ${functionName} source differs: ${relative}`)
+  }
+  const expectedSourceSha256 = digestFiles(repoRoot, expectedPaths.map((relative) => path.join(repoRoot, relative)))
+  const observedSourceSha256 = digestSourceMap(files)
+  if (expectedSourceSha256 !== observedSourceSha256) throw new Error(`Remote ${functionName} source digest differs from reviewed source`)
+  return { expectedSourceSha256, observedSourceSha256 }
+}
+
+async function main() {
   const phase = process.argv[2]
   const projectRef = process.env.SUPABASE_PROJECT_REF
   const environment = process.env.TARGET_ENVIRONMENT
@@ -142,17 +255,18 @@ function main() {
   if (inventory.missing.length || inventory.extras.length) {
     throw new Error(`Function inventory mismatch: missing=${inventory.missing.join(",")} extra=${inventory.extras.join(",")}`)
   }
-  const functions = observed.sort((left, right) => left.name.localeCompare(right.name)).map((entry) => {
+  const functions = []
+  for (const entry of observed.sort((left, right) => left.name.localeCompare(right.name))) {
     if (entry.status !== "ACTIVE" || !entry.ezbr_sha256) throw new Error(`Remote function is not verifiable and active: ${entry.name}`)
-    const source = verifyDownloadedSource(projectRef, entry.name)
-    return {
+    const source = await verifyDownloadedSource(projectRef, entry.name, process.env.SUPABASE_ACCESS_TOKEN)
+    functions.push({
       name: entry.name,
       ...source,
       deployedBundleSha256: entry.ezbr_sha256,
       remoteVersion: entry.version,
       remoteStatus: entry.status,
-    }
-  })
+    })
+  }
   const manifest = {
     contractVersion: "fundloop.edge-function-parity/v1",
     candidateGitSha: process.env.GITHUB_SHA ?? "local-unbound",
@@ -166,4 +280,4 @@ function main() {
   console.log(`Verified ${functions.length} active Edge Functions with exact downloaded source parity.`)
 }
 
-if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) main()
+if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) await main()

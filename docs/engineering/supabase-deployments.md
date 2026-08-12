@@ -158,11 +158,24 @@ fingerprint. Missing, extra, inactive, or unverifiable functions block parity.
 
 After deployment, the workflow lists the remote inventory again, requires exactly
 the derived local names with `ACTIVE` status, downloads every deployed source closure
-through the management API, and compares its path set against a separately derived
+through `GET /v1/projects/{project-ref}/functions/{slug}/body` on the official
+Supabase Management API with the CI-only bearer token and
+`Accept: multipart/form-data`. This matches the pinned CLI 2.113.0 response contract
+without using its filesystem extractor, which cannot safely retain legitimate
+monorepo-root closure members outside `supabase/functions`. The repo-owned reader
+compares the multipart path set against a separately derived
 transitive checkout closure before comparing every byte plus the canonical closure
 SHA-256 against the reviewed checkout. It records the remote bundle digest, version,
 status, project ref, environment, candidate Git SHA, and observation time. The
-database verifier independently replays all tracked migrations into a randomized
+reader rejects redirects and non-200 responses without logging response bodies,
+validates project/function identifiers, bounds the response, file count, and each
+file, and rejects absolute/traversal paths, symlink/non-regular markers, duplicate or
+case/Unicode-colliding paths, and missing/extra closure members. Only the known
+`fundloop-website/` archive prefix is stripped; no source path or byte is allowlisted
+out of comparison. The contract follows Supabase CLI tag `v2.113.0`,
+`apps/cli-go/internal/functions/download/download.go` (`readForm` and `getPartPath`).
+This is multipart source read-back, not ZIP extraction. The database verifier
+independently replays all tracked migrations into a randomized
 Postgres 17 local stack and requires exact remote migration-version equality. Before
 `db push`, the deploy run persists the sorted per-file SHA-256 inventory with the
 candidate Git SHA, Actions run/attempt, environment, and project ref in the repo-owned

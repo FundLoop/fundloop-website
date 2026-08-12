@@ -719,3 +719,63 @@ and retaining postdeploy read-back keeps the operation fail closed.
   the CI-owned Dev run to prune the retired function and complete exact postdeploy
   read-back plus the safe runtime smoke.
 - Keep #160 In Progress and do not start #161 until that hosted evidence passes.
+
+### session v15: Secure Management API function source read-back (#160)
+
+- Timestamp: 2026-08-12T16:14:48-04:00
+- Agent: Codex
+- Branch: `codex/155-goal-1-function-source-readback-recovery`
+- Head: `6868db96e31cab9bf3f711b224347296b3825924`
+
+#### Objective
+
+Replace the pinned CLI's filesystem extraction failure with a repo-owned, read-only
+source verifier that preserves exact closure and byte parity for all reviewed Edge
+Functions.
+
+#### Actions Taken
+
+- Reproduced the pinned Supabase CLI 2.113.0 Management API contract from its tagged
+  Go source: authenticated GET of the function body with an
+  `Accept: multipart/form-data` response, `Supabase-Path` precedence, and
+  Content-Disposition filename fallback.
+- Replaced `supabase functions download --use-api` with a bounded multipart reader
+  against the same official endpoint. It validates project refs and slugs, rejects
+  redirects/non-200 responses and sanitizes transport failures without exposing
+  tokens, bodies, or unreviewed remote paths.
+- Enforced response, part-count, and per-file limits; exact terminal framing; regular
+  file-only entries; safe relative paths; duplicate/case/Unicode collision rejection;
+  and normalization of only the known `fundloop-website/` archive prefix.
+- Preserved independently derived checkout closures, exact missing/extra comparison,
+  byte-for-byte checks, canonical source digests, and remote deployment bindings.
+  Unknown extra paths are reported only by count and opaque SHA-256.
+- Added a synthetic Management API fixture matrix and documented that this is direct
+  multipart source read-back rather than ZIP extraction.
+
+#### Tests And Validation Notes
+
+- Passed: Node 22 focused source-readback and delivery-parity suites, 28/28 tests;
+  focused ESLint and TypeScript typecheck.
+- Passed: synthetic good monorepo closure and negative probes for traversal, absolute
+  paths, symlink/non-regular markers, duplicate/colliding paths, missing/extra paths,
+  changed bytes, response/file/count limits, malformed/truncated/trailing multipart,
+  `Supabase-Path` precedence, non-200/redirect/auth/transport failures, and identifier
+  validation. Secret-like unknown paths and provider/token/body text remained absent
+  from errors.
+- Passed: script syntax, workflow YAML parse, and `git diff --check`.
+- Passed: Node 22 `CI=1 pnpm check`, including lint, the full test suite, typecheck,
+  and Next production build with 165 generated pages.
+- No Management API or Supabase project was called or mutated; no workflow, push, PR,
+  Production action, #161 work, or value-flow activation occurred.
+
+#### Reflections
+
+Remote bundle metadata is untrusted even when it comes from the deployment provider.
+Parsing the official multipart contract in memory avoids the CLI extractor's shared
+filesystem assumptions while keeping every reviewed closure byte covered.
+
+#### Suggested Next Steps
+
+- Let the orchestrator independently validate and publish the branch, then require
+  CI-owned postdeploy read-back across all 62 active functions and the safe Dev smoke.
+- Keep #160 In Progress until that hosted evidence passes; do not start #161.
