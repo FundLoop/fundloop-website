@@ -168,6 +168,8 @@ describe("Supabase delivery parity", () => {
     expect(workflow).toContain(confirmedPrune)
     expect(workflow).not.toContain("supabase functions deploy --project-ref \"$SUPABASE_PROJECT_REF\" --prune --jobs 1\n")
     expect(workflow).toContain(postdeployReadback)
+    expect(workflow).toContain("SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}")
+    expect(schemaVerifier).not.toContain("functions download")
     expect(workflow.indexOf(predeployGuard)).toBeLessThan(workflow.indexOf(confirmedPrune))
     expect(workflow.indexOf(confirmedPrune)).toBeLessThan(workflow.indexOf(postdeployReadback))
     expect(workflow).toContain("epoch-allocation-close")
