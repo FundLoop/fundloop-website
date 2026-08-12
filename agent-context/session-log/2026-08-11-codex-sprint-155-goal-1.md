@@ -633,3 +633,44 @@ borrowing the repair exception.
   require the CI-owned Dev deploy to apply the repair and produce strict zero-drift
   schema/function parity before #160 can pass.
 - Do not manually mutate Dev, touch Production, enable value flow, or start #161.
+
+### session v13: Fail closed when reviewed payment policy is absent (#160)
+
+- Timestamp: 2026-08-12T11:42:52-04:00
+- Agent: Codex
+- Branch: `codex/155-goal-1-dev-schema-drift-recovery`
+- Head: `46e84bd90b7f8126982f3da5d9f0f3a93574c28c`
+
+#### Objective
+
+Address PR #192 review feedback showing that an absent
+`public_payments_read_all` policy makes the exact-drift predicate null and could let
+the migration continue past its fail-closed guard.
+
+#### Actions Taken
+
+- Changed the repair precondition guard to require the exact-drift predicate to be
+  explicitly true; false and null now both raise SQLSTATE `55000` before any DDL.
+- Added focused regression coverage for the null-safe predicate and removal of the
+  unsafe `IF NOT` form.
+
+#### Tests And Validation Notes
+
+- Passed: Node 22 focused Supabase delivery parity suite, 11/11 tests; focused ESLint
+  and `git diff --check`.
+- Passed: disposable PostgreSQL 17 missing-policy probe with the other exact drift
+  preconditions present. The migration returned SQLSTATE `55000`; the before/after
+  catalog fingerprint remained `6fa78d9d5083bb55ffe00dcdc924f4d8`.
+- The task-owned probe database was stopped and its container removed. No remote
+  database, deployment, branch, PR thread, or Production state was changed.
+
+#### Reflections
+
+SQL three-valued logic must be handled explicitly in destructive precondition gates;
+only a literal true value may authorize the repair path.
+
+#### Suggested Next Steps
+
+- Let the parent inspect and push this focused fix, then reply to and resolve the
+  review thread after the pushed commit is available.
+- Keep #160 In Progress until the CI-owned Dev deploy proves strict zero drift.

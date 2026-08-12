@@ -105,6 +105,8 @@ describe("Supabase delivery parity", () => {
     expect(migration).toContain("8355071b6c97ae9ab87905ec5fa9b19380272cb553a01609cd7ca9e18be26946")
     expect(migration).toContain("policy.roles = ARRAY['anon']::name[]")
     expect(migration).toContain("v_payment_roles = ARRAY['authenticated', 'anon']::name[]")
+    expect(migration).toContain("IF v_exact_dev_drift IS NOT TRUE THEN")
+    expect(migration).not.toContain("IF NOT v_exact_dev_drift THEN")
     expect(migration).toContain("month BETWEEN 1 AND 12")
     expect(migration).toContain("FROM pg_catalog.pg_policy policy")
     expect(migration).toContain("DROP POLICY %I ON public.cron_logs")

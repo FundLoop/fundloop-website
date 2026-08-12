@@ -70,7 +70,7 @@ BEGIN
     RETURN;
   END IF;
 
-  IF NOT v_exact_dev_drift THEN
+  IF v_exact_dev_drift IS NOT TRUE THEN
     RAISE EXCEPTION USING
       ERRCODE = '55000',
       MESSAGE = 'dev_public_schema_drift_precondition_failed';
