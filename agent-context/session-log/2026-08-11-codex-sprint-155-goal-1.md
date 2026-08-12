@@ -825,6 +825,51 @@ syntax impossible to silently ignore.
   and require CI-owned read-back of all 62 functions plus the safe Dev smoke.
 - Keep #160 In Progress until that hosted evidence passes.
 
+### session v19: Bind inline-type module edges retained by Supabase (#160)
+
+- Timestamp: 2026-08-12T17:01:05-04:00
+- Agent: Codex
+- Branch: `codex/155-goal-1-inline-type-module-recovery`
+- Head: `b10c0db3d2d0a8cf6589ad3a47b68b5ddd3765ba`
+
+#### Objective
+
+Match Supabase's observed bundle closure by retaining ordinary module declarations
+whose named bindings are all inline `type`, without restoring erased whole-declaration
+type imports.
+
+#### Actions Taken
+
+- Narrowed exclusion to `ImportClause.isTypeOnly` and `ExportDeclaration.isTypeOnly`,
+  the AST representation of whole `import type` and `export type` declarations.
+- Kept every ordinary import/export declaration bound even when all named specifiers
+  use inline `type`, while preserving all prior runtime, dynamic, JSON, and fail-closed
+  behavior.
+- Updated the synthetic graph so inline-only import and re-export modules are included
+  while whole-declaration type-only modules remain omitted.
+- Proved all 62 closures derive and admin reconciliation includes reviewed
+  `lib/onchain/payment-submissions.ts` but excludes whole-declaration-only
+  `types/supabase.ts`. Updated the deployment runbook.
+
+#### Tests And Validation Notes
+
+- Passed: Node 22 focused source-readback and delivery-parity suites, 41/41 tests.
+- Passed: focused ESLint, TypeScript typecheck, script syntax, workflow YAML parse,
+  and `git diff --check`.
+- No remote request or mutation, workflow, push, PR, Project status change, Production
+  action, #161 work, or value-flow activation occurred.
+
+#### Reflections
+
+Supabase's bundle preserves module edges from ordinary declarations even when their
+bindings are inline types. The verifier must follow observed compiler semantics at
+the declaration level rather than infer erasure from individual specifiers.
+
+#### Suggested Next Steps
+
+- Return this commit to independent validation, then require CI-owned all-function
+  read-back and safe Dev smoke before advancing #160.
+
 ### session v18: Fail closed on ambiguous dynamic imports (#160)
 
 - Timestamp: 2026-08-12T16:45:15-04:00

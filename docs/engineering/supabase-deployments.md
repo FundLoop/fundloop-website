@@ -198,9 +198,10 @@ history and zero normalized schema drift.
 The expected function closure is derived with the repo-pinned TypeScript compiler
 API after `pnpm install --frozen-lockfile`. It follows side-effect imports, dynamic
 imports, value imports/re-exports, mixed clauses containing any value binding, and
-runtime JSON assets. Whole `import type` / `export type` clauses and named clauses
-whose bindings are all explicitly `type` are excluded because Deno erases those
-modules from the deployed runtime bundle. Parse diagnostics fail closed, and the Deno
+runtime JSON assets. Only declarations using the whole-declaration `import type` or
+`export type` form are excluded. Ordinary import/export
+declarations remain bound even when every named specifier uses inline `type`, matching
+the Supabase bundle's retained module closure. Parse diagnostics fail closed, and the Deno
 module-graph preflight still runs before migration or function mutation. This is a
 language-semantic graph rule, not a path or remote-content allowlist.
 Dynamic imports accept the standard string-literal one-argument form and two-argument

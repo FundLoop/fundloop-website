@@ -45,6 +45,7 @@ describe("Supabase Management API function source read-back", () => {
           'import { type MixedType, mixedValue } from "../../../lib/mixed.ts"',
           'import "../../../lib/side-effect.ts"',
           'export type { ReExportType } from "../../../lib/re-export-type.ts"',
+          'export { type InlineReExportOnly } from "../../../lib/re-export-inline-only.ts"',
           'export { type MixedExportType, reExportValue } from "../../../lib/re-export-mixed.ts"',
           'export * from "../../../lib/re-export-all.ts"',
           'void import("../../../lib/dynamic.ts")',
@@ -56,6 +57,7 @@ describe("Supabase Management API function source read-back", () => {
         "lib/mixed.ts": "export type MixedType = string; export const mixedValue = 1\n",
         "lib/side-effect.ts": "globalThis.runtimeSideEffect = true\n",
         "lib/re-export-type.ts": "export type ReExportType = string\n",
+        "lib/re-export-inline-only.ts": "export type InlineReExportOnly = string\n",
         "lib/re-export-mixed.ts": "export type MixedExportType = string; export const reExportValue = 1\n",
         "lib/re-export-all.ts": "export const reExportAllValue = 1\n",
         "lib/dynamic.ts": "export const dynamicValue = 1\n",
@@ -68,8 +70,10 @@ describe("Supabase Management API function source read-back", () => {
       expect(expectedSourceClosure("example", root)).toEqual([
         "lib/dynamic-json.json",
         "lib/dynamic.ts",
+        "lib/inline-only.ts",
         "lib/mixed.ts",
         "lib/re-export-all.ts",
+        "lib/re-export-inline-only.ts",
         "lib/re-export-mixed.ts",
         "lib/side-effect.ts",
         "supabase/functions/example/index.ts",
@@ -112,6 +116,7 @@ describe("Supabase Management API function source read-back", () => {
     for (const name of names) expect(expectedSourceClosure(name).length).toBeGreaterThan(0)
     const adminClosure = expectedSourceClosure("admin-onchain-payment-reconciliation-run")
     expect(adminClosure).not.toContain("types/supabase.ts")
+    expect(adminClosure).toContain("lib/onchain/payment-submissions.ts")
     expect(adminClosure).toContain("lib/onchain/payment-reconciliation.ts")
     expect(adminClosure).toContain("lib/payments/admin-payment-operations-command.ts")
   })
