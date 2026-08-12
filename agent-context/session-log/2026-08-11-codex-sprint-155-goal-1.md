@@ -825,6 +825,88 @@ syntax impossible to silently ignore.
   and require CI-owned read-back of all 62 functions plus the safe Dev smoke.
 - Keep #160 In Progress until that hosted evidence passes.
 
+### session v22: Reject control whitespace in Bearer credentials (#160)
+
+- Timestamp: 2026-08-12T17:49:39-04:00
+- Agent: Codex
+- Branch: `codex/155-goal-1-missing-bearer-recovery`
+- Head: `95f66e2adac5a8e8328f508c12a7a0395a87ed8a`
+
+#### Objective
+
+Address independent validation by preventing tab/control whitespace from satisfying
+the local Bearer credential syntax gate.
+
+#### Actions Taken
+
+- Restricted the scheme/credential separator to one or more literal ASCII spaces.
+- Added adversarial cases for a tab separator and an embedded tab; both return `401`
+  before provider authentication.
+- Proved multiple literal spaces remain accepted and proceed to the provider auth
+  boundary.
+
+#### Tests And Validation Notes
+
+- Passed: Node 22 focused HTTP, epoch-close contract, and delivery-parity suites,
+  29/29 tests; focused ESLint and TypeScript typecheck.
+- Passed: Deno check of `epoch-allocation-close` and `git diff --check`.
+- No remote request or mutation, workflow, push, PR, Production action, #161 work, or
+  value-flow activation occurred.
+
+#### Reflections
+
+Credential grammar should accept deliberate compatibility choices, such as repeated
+literal spaces, without treating control whitespace as equivalent syntax.
+
+#### Suggested Next Steps
+
+- Return this commit to independent validation, then require CI-owned exact parity and
+  the hosted unauthenticated `401` smoke before advancing #160.
+
+### session v21: Reject missing credentials before provider auth (#160)
+
+- Timestamp: 2026-08-12T17:44:55-04:00
+- Agent: Codex
+- Branch: `codex/155-goal-1-safe-auth-smoke-recovery`
+- Head: `ba6a7ae97833b3ba947bedf453b9a6fb54a59447`
+
+#### Objective
+
+Make the hosted unauthenticated GET smoke return `401` even when the Supabase auth
+client throws on a missing Authorization header.
+
+#### Actions Taken
+
+- Added a local Authorization syntax gate after OPTIONS and before provider auth.
+- Absent, blank/whitespace, non-Bearer, or Bearer-without-credentials headers now
+  return the fixed `not_authenticated` `401` envelope without calling the auth client.
+- Valid Bearer token syntax continues to provider authentication; a provider throw on
+  such a request remains a sanitized infrastructure `500`.
+- Added direct adversarial spy coverage and documented the credential/provider failure
+  distinction.
+
+#### Tests And Validation Notes
+
+- Passed: Node 22 focused HTTP, epoch-close contract, and delivery-parity suites,
+  26/26 tests; focused ESLint and TypeScript typecheck.
+- Passed: Deno check of `epoch-allocation-close`, workflow YAML parse, and
+  `git diff --check`.
+- Tests prove all malformed/missing credential forms return `401` with the provider
+  spy untouched, valid Bearer reaches it, and a provider throw remains sanitized.
+- No remote request or mutation, workflow, push, PR, Project status change, Production
+  action, #161 work, or value-flow activation occurred.
+
+#### Reflections
+
+Missing credentials are an authentication denial, not provider infrastructure
+failure. Classifying them before the SDK makes the hosted smoke deterministic and
+keeps operational failures distinguishable.
+
+#### Suggested Next Steps
+
+- Return this commit to independent validation, then require CI-owned exact parity and
+  the unauthenticated `401` Dev smoke before advancing #160.
+
 ### session v20: Enforce authenticated Edge smoke semantics (#160)
 
 - Timestamp: 2026-08-12T17:28:03-04:00

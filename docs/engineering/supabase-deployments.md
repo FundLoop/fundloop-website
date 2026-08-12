@@ -223,6 +223,10 @@ GET or POST receives `401` without revealing payload validation, authenticated
 non-POST receives `405` with `Allow: POST`, malformed authenticated JSON/input receives
 `400`, and authenticated non-admin operator actions receive `403`. Existing domain and
 RPC failure envelope status behavior is otherwise unchanged.
+Absent, blank, malformed, or non-Bearer Authorization headers are rejected locally as
+`401` before the Supabase auth client is called. Only a syntactically valid Bearer
+credential reaches provider authentication; provider transport failures remain a
+sanitized `500`, distinct from missing credentials.
 
 FundLoop no longer keeps a function-local CUBID mirror under `supabase/functions/_vendor/`. CUBID server and Edge code imports the runtime-agnostic `@cubid/core` package, and the Supabase Deno import map resolves it through `jsr:@cubid/core@0.1.0`. Browser-only CUBID compatibility helpers may still depend on local vendored tarballs, but Edge Functions must not depend on `node_modules/@cubid/api/dist/index.mjs`.
 
