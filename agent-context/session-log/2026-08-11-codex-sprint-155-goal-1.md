@@ -1245,3 +1245,40 @@ avoids accidental output serialization.
 
 - Independently validate this focused recovery, publish it to `dev`, and rerun the
   manual read-only Dev observation before advancing #161.
+### session v26: Remove containerized libpq URI ambiguity (#161)
+
+- Timestamp: 2026-08-12T19:20:00-04:00
+- Agent: Codex
+- Branch: `codex/155-goal-1-drift-libpq-recovery`
+- Head: `8b00e245e7c8277a8fe53265b243c40d8b3d119c`
+
+#### Objective
+
+Make the read-only drift verifier preserve special-character pooler passwords when
+running PostgreSQL 17 client tools inside the disposable parity container.
+
+#### Actions Taken
+
+- Parse the already validated Postgres URL once into individual libpq fields.
+- Pass only environment variable names through `docker exec --env`; values remain in
+  the subprocess environment and never appear in command arguments or logs.
+- Run containerized `psql` and `pg_dump` without a URI, eliminating libpq authority
+  ambiguity while retaining required TLS for remote hosts and disabling it locally.
+- Added encoded password and local/remote SSL-mode contract coverage.
+
+#### Tests And Validation Notes
+
+- Passed: Node 22 focused delivery-parity suite, 13/13.
+- Passed: focused ESLint, TypeScript typecheck, Node syntax, and `git diff --check`.
+- No remote mutation, Production action, credential prompt, reset, or value-flow
+  activation was performed.
+
+#### Reflections
+
+Secrets with URI-reserved bytes should reach libpq as structured connection fields,
+not be reparsed as authority text inside another process boundary.
+
+#### Suggested Next Steps
+
+- Independently validate this focused recovery, publish to `dev`, then rerun the
+  read-only Dev drift observation against the same SHA-bound deploy baseline.

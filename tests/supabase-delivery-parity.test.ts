@@ -3,7 +3,7 @@ import os from "node:os"
 import path from "node:path"
 import { describe, expect, it } from "vitest"
 import { classifyFunctionInventory, compareClosurePaths, expectedFunctionNames, expectedSourceClosure } from "../scripts/verify-supabase-function-parity.mjs"
-import { buildMigrationDeployEvidence, buildSchemaDiagnostic, expectedMigrationInventory, migrationInventorySha256, normalizePublicSchema, validateMatchingMigrationEvidence, validateMigrationDeployEvidence, validatePendingSchemaRepair } from "../scripts/verify-supabase-schema-parity.mjs"
+import { buildMigrationDeployEvidence, buildSchemaDiagnostic, expectedMigrationInventory, libpqConnectionEnvironment, migrationInventorySha256, normalizePublicSchema, validateMatchingMigrationEvidence, validateMigrationDeployEvidence, validatePendingSchemaRepair } from "../scripts/verify-supabase-schema-parity.mjs"
 
 const workflow = readFileSync(".github/workflows/supabase-deploy.yml", "utf8")
 const schemaVerifier = readFileSync("scripts/verify-supabase-schema-parity.mjs", "utf8")
@@ -11,6 +11,21 @@ const retired = JSON.parse(readFileSync("supabase/retired-functions.json", "utf8
 const repairManifest = JSON.parse(readFileSync("supabase/schema-repair-manifests/20260812_dev_public_schema_drift.json", "utf8"))
 
 describe("Supabase delivery parity", () => {
+  it("passes containerized libpq credentials as fields instead of an ambiguous URI", () => {
+    expect(libpqConnectionEnvironment("postgresql://postgres.aaaaaaaaaaaaaaaaaaaa:p%40ss%3A%2F%24@aws-0-ca-central-1.pooler.supabase.com:5432/postgres")).toEqual({
+      PGHOST: "aws-0-ca-central-1.pooler.supabase.com",
+      PGPORT: "5432",
+      PGUSER: "postgres.aaaaaaaaaaaaaaaaaaaa",
+      PGPASSWORD: "p@ss:/$",
+      PGDATABASE: "postgres",
+      PGSSLMODE: "require",
+    })
+    expect(libpqConnectionEnvironment("postgresql://postgres:postgres@127.0.0.1:5432/postgres").PGSSLMODE).toBe("disable")
+    expect(schemaVerifier).not.toContain('"psql", dbUrl')
+    expect(schemaVerifier).not.toMatch(/run\("psql", \[(?:dbUrl|remoteDbUrl)/)
+    expect(schemaVerifier).not.toContain('"--no-comments", dbUrl')
+    expect(schemaVerifier).not.toContain('`PGPASSWORD=${')
+  })
   it("derives the expected function inventory and records the one reviewed retirement", () => {
     const expected = expectedFunctionNames()
     expect(expected).toHaveLength(62)
