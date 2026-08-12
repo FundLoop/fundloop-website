@@ -54,10 +54,10 @@ describe("Supabase delivery parity", () => {
   })
 
   it("keeps the Edge reconciliation observer inside the application source boundary", () => {
-    const edgeObserver = readFileSync("lib/onchain/base-intake-v2-observer.js", "utf8")
+    const edgeObserver = readFileSync("lib/onchain/base-intake-v2-observer.mjs", "utf8")
     const contractObserver = readFileSync("contracts/lib/base-intake-v2-observer.js", "utf8")
     expect(edgeObserver).toContain("export async function observeBaseIntakeV2Receipt")
     expect(edgeObserver).not.toContain("contracts/lib")
-    expect(contractObserver).toContain('../../lib/onchain/base-intake-v2-observer.js')
+    expect(contractObserver).toContain('../../lib/onchain/base-intake-v2-observer.mjs')
   })
 })

@@ -412,3 +412,44 @@ original gate result. The deploy-mode condition prevents dry-run collection, whi
 - Publish only through the orchestrator's Goal PR flow, then re-run independent #160
   validation after the candidate has merged and the CI-owned Dev deployment finishes.
 - Do not deploy manually, start #161, or cross the Production/value-flow boundary.
+
+### session v9: Preserve Node and Edge observer interoperability (#160)
+
+- Timestamp: 2026-08-12T07:44:03-04:00
+- Agent: Codex
+- Branch: `codex/155-goal-1-delivery-integrity-post-ci`
+- Head: `5f0b2f7970525b9aba920e7d1853889762b44488`
+
+#### Objective
+
+Repair PR #191's contracts-test regression without reversing the Edge-safe ownership
+direction established for the Base intake v2 receipt observer.
+
+#### Actions Taken
+
+- Reproduced the Node 22 named-export failure in the contracts suite: the root-owned
+  `.js` implementation was interpreted across the root/CommonJS and contracts/ESM
+  package boundary and therefore did not expose the requested ESM named export.
+- Renamed the application-owned observer implementation to explicit `.mjs` and updated
+  both the contracts re-export and Edge entrypoint to import that canonical module.
+- Updated the focused delivery regression to require the application-owned `.mjs`
+  implementation while continuing to reject a dependency back into `contracts/`.
+
+#### Tests And Validation Notes
+
+- Passed: Node 22 `pnpm --dir contracts test`, 17/17 tests.
+- Passed: frozen Deno import resolution for `base-intake-v2-reconcile`.
+- Passed: Node 22 focused delivery-parity suite, 5/5 with one fork worker.
+- Passed: focused ESLint, full TypeScript typecheck, and `git diff --check`.
+
+#### Reflections
+
+An explicit `.mjs` boundary is narrower and more reliable than changing module type
+for the entire root or onchain directory. Both runtimes now consume the same reviewed
+implementation without making the Edge closure depend on the contracts workspace.
+
+#### Suggested Next Steps
+
+- Let the orchestrator push the existing branch and require PR #191's Contracts Test
+  plus all #160 delivery gates to pass before merge.
+- Do not deploy manually, start #161, or cross the Production/value-flow boundary.
