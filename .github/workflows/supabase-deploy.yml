@@ -301,12 +301,12 @@ jobs:
           echo "Safe Dev smoke passed for ${GITHUB_SHA}: epoch-allocation-close denied unauthenticated access."
 
       - name: Upload sanitized Supabase parity evidence
-        if: steps.target.outputs.mode == 'deploy'
+        if: ${{ always() && steps.target.outputs.mode == 'deploy' }}
         uses: actions/upload-artifact@v4
         with:
           name: supabase-parity-${{ steps.target.outputs.target_environment }}-${{ github.sha }}
           path: |
             ${{ runner.temp }}/supabase-schema-parity.json
             ${{ runner.temp }}/supabase-function-parity.json
-          if-no-files-found: error
+          if-no-files-found: warn
           retention-days: 30

@@ -49,6 +49,8 @@ describe("Supabase delivery parity", () => {
     expect(workflow).toContain("epoch-allocation-close")
     expect(workflow).toContain('status_code}" != "401"')
     expect(workflow).toContain("actions/upload-artifact@v4")
+    expect(workflow).toContain("if: ${{ always() && steps.target.outputs.mode == 'deploy' }}")
+    expect(workflow).toContain("if-no-files-found: warn")
   })
 
   it("keeps the Edge reconciliation observer inside the application source boundary", () => {

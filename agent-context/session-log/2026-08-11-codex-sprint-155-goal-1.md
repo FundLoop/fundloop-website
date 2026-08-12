@@ -375,3 +375,40 @@ disabled controls, and remote-safe denial smoke must agree in the same CI run.
   parity artifacts plus the `epoch-allocation-close` denial smoke before #160 review.
 - Do not start #161, deploy Production, enable cutover/value flow, or retire the
   retained prior worktree branch before lifecycle cleanup is authorized.
+
+### session v8: Preserve failed parity diagnostics (#160)
+
+- Timestamp: 2026-08-12T07:35:00-04:00
+- Agent: Codex
+- Branch: `codex/155-goal-1-delivery-integrity-post-ci`
+- Head: `adc861f4ed35964ef46b9381426329fa69b7c504`
+
+#### Objective
+
+Apply the independent validator's pre-publish hardening note so a failed delivery
+verification can still retain any sanitized parity record produced before failure.
+
+#### Actions Taken
+
+- Made the parity artifact step explicitly failure-safe with `always()` while still
+  restricting collection to resolved deploy-mode runs.
+- Changed an entirely absent artifact set to a warning so diagnostic collection does
+  not replace the primary migration, parity, deploy, or smoke failure.
+- Extended the focused workflow contract test to pin both behaviors.
+
+#### Tests And Validation Notes
+
+- Passed: Node 22 focused delivery-parity suite, workflow YAML parsing, focused
+  ESLint, and `git diff --check`.
+
+#### Reflections
+
+Failure evidence is useful only when it remains sanitized and cannot obscure the
+original gate result. The deploy-mode condition prevents dry-run collection, while
+`always()` preserves safely generated partial diagnostics.
+
+#### Suggested Next Steps
+
+- Publish only through the orchestrator's Goal PR flow, then re-run independent #160
+  validation after the candidate has merged and the CI-owned Dev deployment finishes.
+- Do not deploy manually, start #161, or cross the Production/value-flow boundary.
