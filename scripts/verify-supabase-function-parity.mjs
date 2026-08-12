@@ -332,7 +332,7 @@ async function main() {
   }
   const manifest = {
     contractVersion: "fundloop.edge-function-parity/v1",
-    candidateGitSha: process.env.GITHUB_SHA ?? "local-unbound",
+    candidateGitSha: process.env.OBSERVATION_GIT_SHA ?? process.env.GITHUB_SHA ?? "local-unbound",
     environment,
     projectRef,
     observedAt: new Date().toISOString(),
