@@ -825,6 +825,44 @@ syntax impossible to silently ignore.
   and require CI-owned read-back of all 62 functions plus the safe Dev smoke.
 - Keep #160 In Progress until that hosted evidence passes.
 
+### session v22: Reject control whitespace in Bearer credentials (#160)
+
+- Timestamp: 2026-08-12T17:49:39-04:00
+- Agent: Codex
+- Branch: `codex/155-goal-1-missing-bearer-recovery`
+- Head: `95f66e2adac5a8e8328f508c12a7a0395a87ed8a`
+
+#### Objective
+
+Address independent validation by preventing tab/control whitespace from satisfying
+the local Bearer credential syntax gate.
+
+#### Actions Taken
+
+- Restricted the scheme/credential separator to one or more literal ASCII spaces.
+- Added adversarial cases for a tab separator and an embedded tab; both return `401`
+  before provider authentication.
+- Proved multiple literal spaces remain accepted and proceed to the provider auth
+  boundary.
+
+#### Tests And Validation Notes
+
+- Passed: Node 22 focused HTTP, epoch-close contract, and delivery-parity suites,
+  29/29 tests; focused ESLint and TypeScript typecheck.
+- Passed: Deno check of `epoch-allocation-close` and `git diff --check`.
+- No remote request or mutation, workflow, push, PR, Production action, #161 work, or
+  value-flow activation occurred.
+
+#### Reflections
+
+Credential grammar should accept deliberate compatibility choices, such as repeated
+literal spaces, without treating control whitespace as equivalent syntax.
+
+#### Suggested Next Steps
+
+- Return this commit to independent validation, then require CI-owned exact parity and
+  the hosted unauthenticated `401` smoke before advancing #160.
+
 ### session v21: Reject missing credentials before provider auth (#160)
 
 - Timestamp: 2026-08-12T17:44:55-04:00

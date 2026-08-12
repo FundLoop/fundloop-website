@@ -77,6 +77,8 @@ describe("epoch-allocation-close HTTP boundary", () => {
     ["blank", "   "],
     ["wrong scheme", "Basic dXNlcjpwYXNz"],
     ["Bearer without credentials", "Bearer   "],
+    ["tab separator", "Bearer\tabc.def.ghi"],
+    ["embedded tab", "Bearer abc.def\t.ghi"],
   ])("rejects %s authorization before provider auth", async (_label, authorization) => {
     const auth = dependencies(adminAuth())
     const headers = authorization === undefined ? undefined : { authorization }
@@ -89,6 +91,16 @@ describe("epoch-allocation-close HTTP boundary", () => {
   it("passes a valid Bearer credential to provider authentication", async () => {
     const auth = dependencies(adminAuth())
     const response = await handleRequest(request("GET"), auth.authenticateRequest, accepted)
+    expect(response.status).toBe(405)
+    expect(auth.authenticateRequest).toHaveBeenCalledOnce()
+  })
+
+  it("accepts multiple literal spaces before a valid Bearer credential", async () => {
+    const auth = dependencies(adminAuth())
+    const response = await handleRequest(new Request("https://example.test", {
+      method: "GET",
+      headers: { authorization: "Bearer   abc.def.ghi" },
+    }), auth.authenticateRequest, accepted)
     expect(response.status).toBe(405)
     expect(auth.authenticateRequest).toHaveBeenCalledOnce()
   })

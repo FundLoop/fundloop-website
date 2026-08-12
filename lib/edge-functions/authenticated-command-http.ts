@@ -21,7 +21,7 @@ export async function handleRequest(
 ) {
   if (request.method === "OPTIONS") return new Response("ok", { headers: corsHeaders })
   const authorization = request.headers.get("authorization")
-  if (!authorization || !/^Bearer[ \t]+[A-Za-z0-9\-._~+/]+=*$/i.test(authorization)) {
+  if (!authorization || !/^Bearer +[A-Za-z0-9\-._~+/]+=*$/i.test(authorization)) {
     return commandFailure("not_authenticated", "User not authenticated.", 401)
   }
   let auth
