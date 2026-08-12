@@ -152,3 +152,56 @@ those cross-field invariants with reproducible failure codes.
 - Return this focused fix commit to independent validation for #157.
 - Keep #157 `In Progress`; do not begin #159 or mutate remote delivery state until
   the orchestrator accepts revalidation.
+
+### session v4: Execute fresh-schema replay in PR CI (#159)
+
+- Timestamp: 2026-08-11T20:53:10-04:00
+- Agent: Codex
+- Branch: `codex/155-supabase-ci-gate`
+- Head: `8d102b940d073e93208be9b72ea792cdb0057bb2`
+
+#### Objective
+
+Replace listing-only PR migration evidence with a secret-free executable replay of
+the exact deployment CLI contract, representative SQL suites, and a fail-closed
+invalid-migration smoke while retaining non-mutating remote planning.
+
+#### Actions Taken
+
+- Reproduced PR #185's SQLSTATE `42601` at migration `20260809020000` with pinned
+  Supabase CLI `2.90.0` against a uniquely named empty loopback database.
+- Proved CLI `2.113.0` applies the unchanged 93-migration history through
+  `20260811120000`, then pinned that version for both replay and deployment.
+- Added a PR-only isolated database job that runs full-history `db push`, compares
+  applied versions to tracked migration files, loads local seed data, and runs
+  review-policy, funded-allocation, and payment-rail SQL/RLS/RPC suites.
+- Added a disposable invalid-migration smoke that requires CLI failure and verifies
+  the invalid version never enters history while the valid final migration remains.
+- Retained remote `db push --dry-run` planning, updated deployment documentation,
+  and bound the evidence fixture to the selected CLI version.
+
+#### Tests And Validation Notes
+
+- Passed: Node 22 fresh local replay, 93/93 ordered migrations through
+  `20260811120000`, including the former `20260809020000` parser regression.
+- Passed: three representative SQL/RLS/RPC suites on the replayed schema.
+- Passed: disposable invalid migration failed with SQLSTATE `42P01`; history still
+  contained `20260811120000` and excluded `20991231235959`.
+- Passed: focused replay contract test, 5/5; both Node replay scripts parsed.
+- Passed: Node 22 `CI=1 pnpm check`: lint, 172 files/820 tests, typecheck, and Next
+  production build with 165 generated pages.
+- The first full check detected the evidence fixture's now-stale approval-scope hash;
+  the hash was recomputed for CLI `2.113.0`, and the complete rerun passed.
+- `git diff --check` and workflow syntax checks run before commit.
+
+#### Reflections
+
+The migration itself did not require rewriting: the failure was the old CLI's
+prepared-statement parser. Executing the deployment-shaped command on an empty local
+database catches that class of failure without granting PR code shared credentials.
+
+#### Suggested Next Steps
+
+- Independently validate #159 and its loopback/failure boundaries before PR yeet.
+- Keep the worktree for Goal #158 Task #160 and do not deploy or mutate Supabase
+  until the orchestrator reaches the explicit delivery stage.

@@ -140,7 +140,7 @@ The migration is intentionally incremental so the transport layer can stabilize 
 
 Remote Supabase deployment is handled by the `Supabase Deploy` GitHub Actions workflow.
 
-- PRs into `dev` and `main` run `supabase db push --dry-run` against the matching Supabase target.
+- PRs into `dev` and `main` run a secret-free executable fresh-schema replay first, then `supabase db push --dry-run` against the matching Supabase target.
 - Pushes to `dev` and `main` run `supabase db push` and then deploy each tracked function directory explicitly.
 - `main` deploys use the GitHub `Production` environment gate; non-production runs use `Preview`.
 - The workflow deploys all tracked Edge Functions in one command, but it does not manage function runtime secrets.

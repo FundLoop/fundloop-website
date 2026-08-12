@@ -78,7 +78,7 @@ jobs:
       - name: Setup Supabase CLI
         uses: supabase/setup-cli@v1
         with:
-          version: 2.90.0
+          version: 2.113.0
 
       - name: Install PostgreSQL client
         if: github.event_name == 'push' || (github.event_name == 'workflow_dispatch' && inputs.mode == 'deploy')
@@ -186,7 +186,7 @@ jobs:
           echo "::add-mask::${supabase_db_url}"
 
           export PGOPTIONS="-c app.settings.fundloop_target_environment=${TARGET_ENVIRONMENT}"
-          supabase db push --yes --db-url "$supabase_db_url" --dry-run
+          supabase db push --yes --include-all --db-url "$supabase_db_url" --dry-run
 
       - name: Deploy database migrations
         if: steps.target.outputs.mode == 'deploy'
@@ -244,7 +244,7 @@ jobs:
           SQL
 
           export PGOPTIONS="-c app.settings.fundloop_target_environment=${TARGET_ENVIRONMENT}"
-          supabase db push --yes --db-url "$supabase_db_url"
+          supabase db push --yes --include-all --db-url "$supabase_db_url"
 
       - name: Install function bundle dependencies
         if: steps.target.outputs.mode == 'deploy'

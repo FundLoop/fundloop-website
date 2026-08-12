@@ -44,6 +44,8 @@
     "mcp:inspect": "pnpm --filter @fundloop/mcp-server inspect",
     "mcp:registry:check": "node scripts/validate-mcp-server-json.mjs",
     "mcp:publish": "pnpm --filter @fundloop/mcp-server publish:metadata",
+    "supabase:replay:pr": "node scripts/run-supabase-pr-replay.mjs",
+    "supabase:replay:failure-smoke": "node scripts/smoke-supabase-pr-replay-failure.mjs",
     "supabase:functions:serve:project-payment-drafts-create": "supabase functions serve project-payment-drafts-create --env-file .env.local",
     "typecheck": "tsc --noEmit",
     "check": "pnpm lint && pnpm test && pnpm typecheck && pnpm build"
