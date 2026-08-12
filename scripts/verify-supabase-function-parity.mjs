@@ -95,13 +95,66 @@ function remoteFunctions(projectRef) {
   return JSON.parse(execFileSync("supabase", ["functions", "list", "--project-ref", projectRef, "--output", "json"], { encoding: "utf8" }))
 }
 
-function parseDisposition(value) {
-  if (!value?.startsWith("form-data;")) return null
-  const params = new Map()
-  for (const match of value.matchAll(/;\s*([a-zA-Z0-9_-]+)="((?:[^"\\]|\\.)*)"/g)) {
-    params.set(match[1].toLowerCase(), match[2].replace(/\\(["\\])/g, "$1"))
+function parseMimeParameters(value, expectedType) {
+  if (typeof value !== "string") return null
+  let cursor = 0
+  const skipWhitespace = () => {
+    while (value[cursor] === " " || value[cursor] === "\t") cursor += 1
   }
-  return params
+  const readToken = () => {
+    const start = cursor
+    while (cursor < value.length && /[!#$%&'*+.^_`|~0-9A-Za-z-]/.test(value[cursor])) cursor += 1
+    return value.slice(start, cursor)
+  }
+  skipWhitespace()
+  const typeStart = cursor
+  while (cursor < value.length && /[!#$%&'*+.^_`|~0-9A-Za-z\/-]/.test(value[cursor])) cursor += 1
+  const mediaType = value.slice(typeStart, cursor).toLowerCase()
+  if (mediaType !== expectedType) return null
+  const params = new Map()
+  while (true) {
+    skipWhitespace()
+    if (cursor === value.length) return params
+    if (value[cursor] !== ";") return null
+    cursor += 1
+    skipWhitespace()
+    const name = readToken().toLowerCase()
+    if (!name || params.has(name)) return null
+    skipWhitespace()
+    if (value[cursor] !== "=") return null
+    cursor += 1
+    skipWhitespace()
+    let parameterValue = ""
+    if (value[cursor] === '"') {
+      cursor += 1
+      let closed = false
+      while (cursor < value.length) {
+        const character = value[cursor]
+        cursor += 1
+        if (character === '"') {
+          closed = true
+          break
+        }
+        if (character === "\\") {
+          if (cursor >= value.length || /[\x00-\x08\x0a-\x1f\x7f]/.test(value[cursor])) return null
+          parameterValue += value[cursor]
+          cursor += 1
+          continue
+        }
+        if (/[^\x20-\x21\x23-\x7e]/.test(character)) return null
+        parameterValue += character
+      }
+      if (!closed) return null
+    } else {
+      parameterValue = readToken()
+      if (!parameterValue) return null
+    }
+    params.set(name, parameterValue)
+  }
+}
+
+function parseDisposition(value) {
+  return parseMimeParameters(value, "form-data")
 }
 
 function safeArchivePath(rawPath) {
@@ -115,19 +168,8 @@ function safeArchivePath(rawPath) {
 }
 
 function multipartBoundary(contentType) {
-  const segments = contentType.split(";")
-  if (segments.shift()?.trim().toLowerCase() !== "multipart/form-data") return null
-  const params = new Map()
-  for (const segment of segments) {
-    const separator = segment.indexOf("=")
-    if (separator <= 0) return null
-    const name = segment.slice(0, separator).trim().toLowerCase()
-    let value = segment.slice(separator + 1).trim()
-    if (value.startsWith('"') && value.endsWith('"')) value = value.slice(1, -1).replace(/\\(["\\])/g, "$1")
-    if (!name || !value || params.has(name)) return null
-    params.set(name, value)
-  }
-  return params.get("boundary") ?? null
+  const params = parseMimeParameters(contentType, "multipart/form-data")
+  return params?.get("boundary") ?? null
 }
 
 async function readBoundedBody(response) {
@@ -149,7 +191,7 @@ export async function parseFunctionSourceResponse(response, functionName, expect
   if (response.status !== 200) throw new Error(`Remote function download failed with status ${response.status}`)
   const contentType = response.headers.get("content-type") ?? ""
   const boundary = multipartBoundary(contentType)
-  if (!boundary || boundary.length > 70 || /[^\x21-\x7e]/.test(boundary)) throw new Error("Remote function response has invalid multipart content type")
+  if (!boundary || !/^[0-9A-Za-z'()+_,./:=?-]{1,70}$/.test(boundary)) throw new Error("Remote function response has invalid multipart content type")
   const body = await readBoundedBody(response)
   const delimiter = Buffer.from(`--${boundary}`)
   const files = new Map()

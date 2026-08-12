@@ -50,6 +50,28 @@ describe("Supabase Management API function source read-back", () => {
   })
 
   it.each([
+    ["duplicate filename", "form-data; name=\"file\"; filename=\"safe.ts\"; filename=\"other.ts\""],
+    ["duplicate name", "form-data; name=\"file\"; name=\"other\"; filename=\"safe.ts\""],
+    ["trailing junk", "form-data; name=\"file\"; filename=\"safe.ts\" junk"],
+    ["unterminated quote", "form-data; name=\"file\"; filename=\"safe.ts"],
+  ])("rejects malformed Content-Disposition: %s", async (_label, disposition) => {
+    const response = multipart([file("ignored.ts", "safe\n", {
+      "Content-Disposition": disposition,
+      "Supabase-Path": "safe.ts",
+    })])
+    await expect(parseFunctionSourceResponse(response, "example", ["safe.ts"]))
+      .rejects.toThrow("invalid content disposition")
+  })
+
+  it("accepts valid quoted escapes in MIME parameters", async () => {
+    const response = multipart([file("ignored.ts", "safe\n", {
+      "Content-Disposition": "form-data; name=\"fi\\\"le\"; filename=\"safe.ts\"",
+    })])
+    const parsed = await parseFunctionSourceResponse(response, "example", ["safe.ts"])
+    expect(parsed.get("safe.ts")?.toString()).toBe("safe\n")
+  })
+
+  it.each([
     ["traversal", "../secret.ts"],
     ["absolute POSIX", "/etc/passwd"],
     ["absolute Windows", "C:/secret.ts"],
@@ -105,6 +127,9 @@ describe("Supabase Management API function source read-back", () => {
     ["trailing bytes", rawResponse("--fundloop-source-boundary--\r\ntrailing")],
     ["malformed header", rawResponse("--fundloop-source-boundary\r\nnot-a-header\r\n\r\nsafe\r\n--fundloop-source-boundary--\r\n")],
     ["duplicate boundary parameter", rawResponse("--one--\r\n", "multipart/form-data; boundary=one; boundary=two")],
+    ["boundary trailing junk", rawResponse("--one--\r\n", "multipart/form-data; boundary=one junk")],
+    ["boundary unterminated quote", rawResponse("--one--\r\n", "multipart/form-data; boundary=\"one")],
+    ["boundary duplicate charset", rawResponse("--one--\r\n", "multipart/form-data; boundary=one; charset=utf-8; charset=ascii")],
   ])("rejects %s", async (_label, response) => {
     await expect(parseFunctionSourceResponse(response, "example", ["safe.ts"]))
       .rejects.toThrow(/multipart/)

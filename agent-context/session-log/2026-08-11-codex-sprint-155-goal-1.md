@@ -779,3 +779,48 @@ filesystem assumptions while keeping every reviewed closure byte covered.
 - Let the orchestrator independently validate and publish the branch, then require
   CI-owned postdeploy read-back across all 62 active functions and the safe Dev smoke.
 - Keep #160 In Progress until that hosted evidence passes; do not start #161.
+
+### session v16: Fully validate multipart MIME parameters (#160)
+
+- Timestamp: 2026-08-12T16:22:43-04:00
+- Agent: Codex
+- Branch: `codex/155-goal-1-function-source-readback-recovery`
+- Head: `ef3fbaf18878914b31f08e18b4afe5fd5cc5cce5`
+
+#### Objective
+
+Address independent validator findings by making the function source reader reject
+ambiguous or partially parsed multipart MIME parameters before trusting any path.
+
+#### Actions Taken
+
+- Replaced permissive Content-Disposition and boundary parsing with one strict parser
+  that consumes the complete type and parameter grammar, accepts valid token and
+  quoted-string values, and rejects duplicate names, malformed escapes, unterminated
+  quotes, empty values, and all unconsumed trailing syntax.
+- Preserved official `Supabase-Path` precedence while requiring Content-Disposition
+  itself to be valid before either path source is used.
+- Added adversarial coverage for duplicate `name`/`filename`, trailing junk,
+  malformed/duplicate boundary and charset parameters, and legal quoted escapes.
+
+#### Tests And Validation Notes
+
+- Passed: Node 22 focused source-readback and delivery-parity suites, 36/36 tests;
+  focused ESLint and TypeScript typecheck.
+- Passed: script syntax, workflow YAML parse, and `git diff --check`.
+- Full `CI=1 pnpm check` was not repeated for this localized parser follow-up; it
+  passed in session v15 before the validator fix.
+- No network request, remote Supabase mutation, workflow, push, PR, Production action,
+  #161 work, or value-flow activation occurred.
+
+#### Reflections
+
+Security-sensitive MIME parsing must reject ambiguity, not merely extract the fields
+it recognizes. Full consumption makes duplicate or trailing attacker-controlled
+syntax impossible to silently ignore.
+
+#### Suggested Next Steps
+
+- Return this follow-up to independent validation, then let the orchestrator publish
+  and require CI-owned read-back of all 62 functions plus the safe Dev smoke.
+- Keep #160 In Progress until that hosted evidence passes.
