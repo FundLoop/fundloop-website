@@ -1,5 +1,5 @@
 import { validateBaseIntakeReconciliationCommand } from "../../../lib/onchain/base-intake-v2-contract.ts"
-import { observeBaseIntakeV2Receipt } from "../../../lib/onchain/base-intake-v2-observer.js"
+import { observeBaseIntakeV2Receipt } from "../../../lib/onchain/base-intake-v2-observer.mjs"
 import { edgeCommandFailure, edgeCommandSuccess } from "../../../lib/edge-functions/result.ts"
 import { authenticateRequestOrInternalSecret, getEnv, json, parseJsonBody, serve } from "../_shared/command-runtime.ts"
 import { createPublicClient, http } from "npm:viem"

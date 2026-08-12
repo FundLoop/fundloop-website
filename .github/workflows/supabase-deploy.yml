@@ -11,9 +11,11 @@ on:
       - "types/**"
       - "package.json"
       - "pnpm-lock.yaml"
+      - "scripts/verify-supabase-*.mjs"
       - "supabase/config.toml"
       - "supabase/functions/**"
       - "supabase/migrations/**"
+      - "supabase/retired-functions.json"
       - "vendor/cubid/**"
   push:
     branches:
@@ -25,9 +27,11 @@ on:
       - "types/**"
       - "package.json"
       - "pnpm-lock.yaml"
+      - "scripts/verify-supabase-*.mjs"
       - "supabase/config.toml"
       - "supabase/functions/**"
       - "supabase/migrations/**"
+      - "supabase/retired-functions.json"
       - "vendor/cubid/**"
   workflow_dispatch:
     inputs:
@@ -145,6 +149,21 @@ jobs:
           echo "Supabase project ref: ${{ steps.target.outputs.project_ref }}"
           echo "Mode: ${{ steps.target.outputs.mode }}"
 
+      - name: Setup Deno
+        uses: denoland/setup-deno@v2
+        with:
+          deno-version: v2.7.11
+
+      - name: Install function bundle dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Verify Edge Function module graph
+        run: |
+          set -euo pipefail
+          find supabase/functions -mindepth 2 -maxdepth 2 -name index.ts -print0 \
+            | sort -z \
+            | xargs -0 deno cache --no-check --frozen --config supabase/functions/deno.json
+
       - name: Dry-run database migrations
         if: steps.target.outputs.mode == 'dry-run'
         env:
@@ -191,6 +210,7 @@ jobs:
       - name: Deploy database migrations
         if: steps.target.outputs.mode == 'deploy'
         env:
+          SUPABASE_PROJECT_REF: ${{ steps.target.outputs.project_ref }}
           TARGET_ENVIRONMENT: ${{ steps.target.outputs.target_environment }}
         run: |
           set -euo pipefail
@@ -235,6 +255,22 @@ jobs:
             updated_at timestamptz NOT NULL DEFAULT now()
           );
 
+          CREATE TABLE IF NOT EXISTS public.supabase_deploy_migration_evidence (
+            id bigint GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+            contract_version text NOT NULL DEFAULT 'fundloop.migration-deploy-evidence/v1' CHECK (contract_version = 'fundloop.migration-deploy-evidence/v1'),
+            candidate_git_sha text NOT NULL CHECK (candidate_git_sha ~ '^[0-9a-f]{40}$'),
+            actions_run_id bigint NOT NULL CHECK (actions_run_id > 0),
+            run_attempt integer NOT NULL CHECK (run_attempt > 0),
+            deployment_environment text NOT NULL CHECK (deployment_environment IN ('dev', 'main')),
+            project_ref text NOT NULL CHECK (project_ref ~ '^[a-z0-9]{20,}$'),
+            migration_inventory jsonb NOT NULL CHECK (jsonb_typeof(migration_inventory) = 'array'),
+            inventory_sha256 text NOT NULL CHECK (inventory_sha256 ~ '^[0-9a-f]{64}$'),
+            recorded_at timestamptz NOT NULL DEFAULT clock_timestamp(),
+            UNIQUE (candidate_git_sha, actions_run_id, run_attempt, deployment_environment, project_ref)
+          );
+
+          REVOKE ALL ON TABLE public.supabase_deploy_migration_evidence FROM anon, authenticated;
+
           INSERT INTO public.supabase_deploy_context (id, target_environment, updated_at)
           VALUES (true, :'target_environment', now())
           ON CONFLICT (id) DO UPDATE
@@ -244,35 +280,71 @@ jobs:
           SQL
 
           export PGOPTIONS="-c app.settings.fundloop_target_environment=${TARGET_ENVIRONMENT}"
+
+          evidence_file="${RUNNER_TEMP}/supabase-migration-deploy-evidence.json"
+          SUPABASE_MIGRATION_EVIDENCE_OUTPUT="${evidence_file}" \
+            node scripts/verify-supabase-schema-parity.mjs prepare
+          evidence_inventory="$(node -e 'const fs=require("node:fs"); const v=JSON.parse(fs.readFileSync(process.argv[1],"utf8")); process.stdout.write(JSON.stringify(v.migrations))' "${evidence_file}")"
+          evidence_sha="$(node -e 'const fs=require("node:fs"); const v=JSON.parse(fs.readFileSync(process.argv[1],"utf8")); process.stdout.write(v.inventorySha256)' "${evidence_file}")"
+
+          psql "${supabase_db_url}" -v ON_ERROR_STOP=1 \
+            -v candidate_git_sha="${GITHUB_SHA}" \
+            -v actions_run_id="${GITHUB_RUN_ID}" \
+            -v run_attempt="${GITHUB_RUN_ATTEMPT}" \
+            -v target_environment="${TARGET_ENVIRONMENT}" \
+            -v project_ref="${SUPABASE_PROJECT_REF}" \
+            -v migration_inventory="${evidence_inventory}" \
+            -v inventory_sha256="${evidence_sha}" <<'SQL'
+          INSERT INTO public.supabase_deploy_migration_evidence (
+            contract_version, candidate_git_sha, actions_run_id, run_attempt, deployment_environment,
+            project_ref, migration_inventory, inventory_sha256
+          ) VALUES (
+            'fundloop.migration-deploy-evidence/v1', :'candidate_git_sha', :'actions_run_id'::bigint, :'run_attempt'::integer,
+            :'target_environment', :'project_ref', :'migration_inventory'::jsonb,
+            :'inventory_sha256'
+          );
+          SQL
+
           supabase db push --yes --include-all --db-url "$supabase_db_url"
 
-      - name: Install function bundle dependencies
-        if: steps.target.outputs.mode == 'deploy'
-        run: pnpm install --frozen-lockfile
+          SUPABASE_SCHEMA_DB_URL="${supabase_db_url}" \
+            SUPABASE_SCHEMA_PARITY_OUTPUT="${RUNNER_TEMP}/supabase-schema-parity.json" \
+            node scripts/verify-supabase-schema-parity.mjs
 
       - name: Deploy Edge Functions
         if: steps.target.outputs.mode == 'deploy'
         env:
           SUPABASE_PROJECT_REF: ${{ steps.target.outputs.project_ref }}
+          TARGET_ENVIRONMENT: ${{ steps.target.outputs.target_environment }}
         run: |
           set -euo pipefail
 
-          function_names="$(
-            find supabase/functions \
-              -mindepth 1 \
-              -maxdepth 1 \
-              -type d \
-              ! -name "_shared" \
-              ! -name "_vendor" \
-              -exec basename {} \; | sort
-          )"
+          node scripts/verify-supabase-function-parity.mjs predeploy
+          supabase functions deploy --project-ref "$SUPABASE_PROJECT_REF" --prune --jobs 1
+          SUPABASE_PARITY_OUTPUT="${RUNNER_TEMP}/supabase-function-parity.json" \
+            node scripts/verify-supabase-function-parity.mjs postdeploy
 
-          if [[ -z "${function_names}" ]]; then
-            echo "::error::No deployable Supabase Edge Functions were found under supabase/functions."
+      - name: Smoke newly delivered Dev function
+        if: steps.target.outputs.mode == 'deploy' && steps.target.outputs.target_environment == 'dev'
+        env:
+          SUPABASE_PROJECT_REF: ${{ steps.target.outputs.project_ref }}
+        run: |
+          set -euo pipefail
+          status_code="$(curl --silent --show-error --output /dev/null --write-out '%{http_code}' \
+            "https://${SUPABASE_PROJECT_REF}.supabase.co/functions/v1/epoch-allocation-close")"
+          if [[ "${status_code}" != "401" ]]; then
+            echo "::error::Expected safe unauthenticated epoch-allocation-close denial (401), received ${status_code}."
             exit 1
           fi
+          echo "Safe Dev smoke passed for ${GITHUB_SHA}: epoch-allocation-close denied unauthenticated access."
 
-          while IFS= read -r function_name; do
-            echo "Deploying Edge Function: ${function_name}"
-            supabase functions deploy "${function_name}" --project-ref "$SUPABASE_PROJECT_REF"
-          done <<< "${function_names}"
+      - name: Upload sanitized Supabase parity evidence
+        if: ${{ always() && steps.target.outputs.mode == 'deploy' }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: supabase-parity-${{ steps.target.outputs.target_environment }}-${{ github.sha }}
+          path: |
+            ${{ runner.temp }}/supabase-schema-parity.json
+            ${{ runner.temp }}/supabase-function-parity.json
+          if-no-files-found: warn
+          retention-days: 30

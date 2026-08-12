@@ -308,3 +308,205 @@ scope-bound evidence; a deploy or self-declared gate cannot supply that authorit
 - Let the orchestrator reply to and resolve the two exact PR review threads after
   this commit is pushed; do not request a second review.
 - Do not begin #160 or merge PR #190 from this review-fix session.
+
+### session v7: Restore exact Supabase Dev delivery parity (#160)
+
+- Timestamp: 2026-08-12T07:29:17-04:00
+- Agent: Codex
+- Branch: `codex/155-goal-1-delivery-integrity-post-ci`
+- Head: `12f223a945685193e3e8e49ea4dc9797327dc182`
+
+#### Objective
+
+Repair the code-owned Edge bundle failure from Dev deploy run `31589614923` and
+make the next CI-owned Dev deploy prove exact migration, effective-schema, and
+Edge Function parity without crossing the Production or value-flow boundary.
+
+#### Actions Taken
+
+- Moved the Base intake v2 observer implementation into the application library
+  consumed by the Edge entrypoint and made the contracts workspace re-export it,
+  removing the bundler's failing cross-workspace dependency direction.
+- Added a frozen Deno import-graph preflight for all 62 function entrypoints before
+  any function deploy, then changed delivery to one all-function pinned CLI command.
+- Added an explicit Dev-only retirement contract for the remote-only
+  `monthly-cycle-payout-intents-create`; unexplained extras fail before `--prune`.
+- Added post-deploy exact inventory/source verification: every active remote function
+  is downloaded, byte-compared with the checkout, closure-digested, and bound to its
+  remote bundle digest, project, environment, Git SHA, version, status, and time.
+- Added a Postgres 17 full-history replay/read-back verifier requiring all 93 remote
+  migration versions, zero enabled production-value-flow controls, and byte-identical
+  normalized full `public` schema dumps from the same pinned database toolchain.
+- Added sanitized parity artifacts and a Dev-only unauthenticated `401` smoke of
+  `epoch-allocation-close`. No remote seed/reset, Production deployment, provider
+  mutation, runtime secret access, or value-flow activation was added or performed.
+- Updated the deployment runbook and focused workflow/parity tests.
+
+#### Tests And Validation Notes
+
+- Passed: Node 22 focused delivery-parity suite, 5/5; script syntax and workflow YAML.
+- Passed: frozen Deno import resolution for all 62 Edge Function entrypoints.
+- Passed: read-only Dev predeploy inventory guard: 39 observed functions, 62 expected,
+  and only the named time-bounded retirement is an extra; no remote mutation occurred.
+- Passed: real task-owned full-history replay, all 93 migrations through
+  `20260811120000`, three representative SQL suites, invalid migration rejection,
+  and stack cleanup without backup.
+- Passed: container-pinned two-stack Postgres 17 parity surrogate with all 93 versions,
+  all discovered production-value-flow controls disabled, and full normalized public
+  schema SHA-256 `bc2a61fb984ee984b68275be9b848f319a7411c21401d860f632579b1adc6cf0`.
+- Passed: focused ESLint, full typecheck, and `CI=1 pnpm check`: lint, 173 files / 838
+  tests, typecheck, and Next production build with 165 generated pages.
+- Passed: `git diff --check`. A diagnostic full Deno typecheck found 159 pre-existing
+  loose-JavaScript typing errors, so the bundle-resolution gate uses `deno cache
+  --no-check --frozen`; this validates the deployment failure class without claiming
+  or weakening the repository's separate TypeScript gates.
+
+#### Reflections
+
+Exact delivery evidence needs both logical inventory and executable content. A green
+migration step or function name list cannot prove the reviewed code is deployed; the
+candidate-bound source closure, bundle digest, migration history, effective schema,
+disabled controls, and remote-safe denial smoke must agree in the same CI run.
+
+#### Suggested Next Steps
+
+- Independently validate #160, then let the orchestrator open the Goal PR to `dev`.
+- After merge, require a green CI-owned Dev deploy and inspect the two sanitized
+  parity artifacts plus the `epoch-allocation-close` denial smoke before #160 review.
+- Do not start #161, deploy Production, enable cutover/value flow, or retire the
+  retained prior worktree branch before lifecycle cleanup is authorized.
+
+### session v8: Preserve failed parity diagnostics (#160)
+
+- Timestamp: 2026-08-12T07:35:00-04:00
+- Agent: Codex
+- Branch: `codex/155-goal-1-delivery-integrity-post-ci`
+- Head: `adc861f4ed35964ef46b9381426329fa69b7c504`
+
+#### Objective
+
+Apply the independent validator's pre-publish hardening note so a failed delivery
+verification can still retain any sanitized parity record produced before failure.
+
+#### Actions Taken
+
+- Made the parity artifact step explicitly failure-safe with `always()` while still
+  restricting collection to resolved deploy-mode runs.
+- Changed an entirely absent artifact set to a warning so diagnostic collection does
+  not replace the primary migration, parity, deploy, or smoke failure.
+- Extended the focused workflow contract test to pin both behaviors.
+
+#### Tests And Validation Notes
+
+- Passed: Node 22 focused delivery-parity suite, workflow YAML parsing, focused
+  ESLint, and `git diff --check`.
+
+#### Reflections
+
+Failure evidence is useful only when it remains sanitized and cannot obscure the
+original gate result. The deploy-mode condition prevents dry-run collection, while
+`always()` preserves safely generated partial diagnostics.
+
+#### Suggested Next Steps
+
+- Publish only through the orchestrator's Goal PR flow, then re-run independent #160
+  validation after the candidate has merged and the CI-owned Dev deployment finishes.
+- Do not deploy manually, start #161, or cross the Production/value-flow boundary.
+
+### session v9: Preserve Node and Edge observer interoperability (#160)
+
+- Timestamp: 2026-08-12T07:44:03-04:00
+- Agent: Codex
+- Branch: `codex/155-goal-1-delivery-integrity-post-ci`
+- Head: `5f0b2f7970525b9aba920e7d1853889762b44488`
+
+#### Objective
+
+Repair PR #191's contracts-test regression without reversing the Edge-safe ownership
+direction established for the Base intake v2 receipt observer.
+
+#### Actions Taken
+
+- Reproduced the Node 22 named-export failure in the contracts suite: the root-owned
+  `.js` implementation was interpreted across the root/CommonJS and contracts/ESM
+  package boundary and therefore did not expose the requested ESM named export.
+- Renamed the application-owned observer implementation to explicit `.mjs` and updated
+  both the contracts re-export and Edge entrypoint to import that canonical module.
+- Updated the focused delivery regression to require the application-owned `.mjs`
+  implementation while continuing to reject a dependency back into `contracts/`.
+
+#### Tests And Validation Notes
+
+- Passed: Node 22 `pnpm --dir contracts test`, 17/17 tests.
+- Passed: frozen Deno import resolution for `base-intake-v2-reconcile`.
+- Passed: Node 22 focused delivery-parity suite, 5/5 with one fork worker.
+- Passed: focused ESLint, full TypeScript typecheck, and `git diff --check`.
+
+#### Reflections
+
+An explicit `.mjs` boundary is narrower and more reliable than changing module type
+for the entire root or onchain directory. Both runtimes now consume the same reviewed
+implementation without making the Edge closure depend on the contracts workspace.
+
+#### Suggested Next Steps
+
+- Let the orchestrator push the existing branch and require PR #191's Contracts Test
+  plus all #160 delivery gates to pass before merge.
+- Do not deploy manually, start #161, or cross the Production/value-flow boundary.
+
+### session v10: Close PR #191 exact-parity review gaps (#160)
+
+- Timestamp: 2026-08-12T08:06:33-04:00
+- Agent: Codex
+- Branch: `codex/155-goal-1-delivery-integrity-post-ci`
+- Head: `180720531c4cbc960642f8b7f7986d90b881a54a`
+
+#### Objective
+
+Address all four actionable PR #191 review findings without weakening exact schema,
+migration, function-source, or pre-mutation delivery coverage.
+
+#### Actions Taken
+
+- Added a forward-only append-only deploy-evidence table and generated type. Before
+  `db push`, CI now persists the reviewed candidate's sorted migration filenames and
+  exact raw-byte SHA-256 values with Git SHA, Actions run/attempt, target environment,
+  and project ref. Post-deploy parity reads back and independently recomputes every
+  file and aggregate digest; missing or changed evidence fails `migration-digest`.
+- Replaced downloaded-file-selected local hashing with an independently derived
+  transitive checkout closure. Remote missing/extra paths fail before byte comparison,
+  and expected/observed closure digests are computed from their own path sets.
+- Moved dependency install and frozen Deno graph resolution ahead of both PR dry-run
+  and deploy database steps, so an invalid Edge graph cannot follow remote mutation.
+- Implemented contract section 2.4 exactly: Postgres 17 `pg_dump --no-comments`, CRLF
+  conversion, comment/blank/restrict removal, trailing ASCII-space trimming, exactly
+  one final LF, full public schema coverage, and exact client-version recording.
+- Added positive/negative tests for migration byte/binding/duplicate drift, function
+  closure path drift, workflow ordering, append-only evidence, and normalization.
+- Updated the deployment runbook for the new evidence and closure boundaries.
+
+#### Tests And Validation Notes
+
+- Passed: Node 22 focused delivery-parity suite, 8/8 tests.
+- Passed: frozen Deno import resolution for all 62 Edge Function entrypoints.
+- Passed: task-owned fresh replay of 94 migrations through `20260812120000`, three
+  representative SQL suites, invalid migration rejection, and scoped cleanup.
+- Passed: candidate-bound two-stack Postgres 17 schema parity, including remote
+  migration digest read-back and canonical full-public-schema SHA-256
+  `1d9b2700029d53c82d59b077fa52cbed6802120b6755b9821d278ebfd3c50102`;
+  reviewed migration inventory SHA-256
+  `40481dbaf772009a793295402a7e07473e269e6502bb2bf77b80776625484f0e`.
+- Passed: Node 22 contracts, 17/17; focused ESLint; full TypeScript typecheck;
+  workflow YAML parsing; script syntax; and `git diff --check`.
+
+#### Reflections
+
+Versions, downloaded paths, and nominal step ordering are each weaker than reviewed
+bytes and independent derivation. The delivery record now survives as append-only
+remote evidence, and graph/schema checks fail before the authority they guard.
+
+#### Suggested Next Steps
+
+- Let the orchestrator push the existing PR branch, reply to and resolve the four
+  named review threads, then require all PR checks without requesting rereview.
+- Do not deploy manually, start #161, or cross the Production/value-flow boundary.

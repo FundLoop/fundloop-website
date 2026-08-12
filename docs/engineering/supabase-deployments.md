@@ -1,6 +1,6 @@
 # Supabase Remote Deployments
 
-Last reviewed: 2026-08-11
+Last reviewed: 2026-08-12
 
 FundLoop deploys Supabase schema migrations and Edge Functions through the `Supabase Deploy` GitHub Actions workflow.
 
@@ -89,18 +89,63 @@ Workflow helpers must not print rewritten database URLs to logs. If a helper con
 
 Local `supabase db reset` and `supabase migration up` commands normally do not set `app.settings.fundloop_target_environment`. Target-aware migrations should treat a missing marker as local/no-op unless the migration is explicitly required for local schema correctness. Unsupported explicit marker values should still fail loudly.
 
-Edge Functions are deployed by enumerating each local function directory under `supabase/functions/` except `_shared` and `_vendor`, then deploying the remaining function directories one by one:
+Before either a remote dry-run or any deploy-mode database mutation, runs resolve every tracked Edge Function import graph
+with the pinned Deno runtime and frozen lockfile. This catches missing cross-workspace
+imports before the first remote bundle is created:
 
 ```bash
-supabase functions deploy "<function-name>" --project-ref "$SUPABASE_PROJECT_REF"
+find supabase/functions -mindepth 2 -maxdepth 2 -name index.ts -print0 \
+  | sort -z \
+  | xargs -0 deno cache --no-check --frozen --config supabase/functions/deno.json
 ```
 
-Before bundling functions on deploy runs, the workflow installs repo dependencies with `pnpm install --frozen-lockfile` so package dependencies remain available to the Deno bundler. `supabase/functions/deno.json` enables `nodeModulesDir` for that bundle step and maps Edge-safe package imports explicitly when needed.
+The deploy then derives the expected inventory from directories that contain an
+`index.ts`, checks the current remote inventory, and refuses to proceed if any extra
+remote name is not a due, environment-scoped entry in
+`supabase/retired-functions.json`. After that guard, one pinned CLI command deploys
+all current functions and prunes only the reviewed retirement:
+
+```bash
+supabase functions deploy --project-ref "$SUPABASE_PROJECT_REF" --prune --jobs 1
+```
+
+Before bundling functions on deploy runs, the workflow installs repo dependencies
+with `pnpm install --frozen-lockfile` so package dependencies remain available to the
+Deno bundler. `supabase/functions/deno.json` enables `nodeModulesDir` for that bundle
+step and maps Edge-safe package imports explicitly when needed. Edge-owned runtime
+modules must stay below the application source boundary; other workspaces may
+re-export them, but an Edge entrypoint must not depend on a re-export back into a
+different workspace.
 
 Successful deploy output alone does not prove exact function source parity. The v1
 evidence contract requires a candidate source digest, remote deployment digest or
 equivalent independently readable binding, exact name inventory, and schema
 fingerprint. Missing, extra, inactive, or unverifiable functions block parity.
+
+After deployment, the workflow lists the remote inventory again, requires exactly
+the derived local names with `ACTIVE` status, downloads every deployed source closure
+through the management API, and compares its path set against a separately derived
+transitive checkout closure before comparing every byte plus the canonical closure
+SHA-256 against the reviewed checkout. It records the remote bundle digest, version,
+status, project ref, environment, candidate Git SHA, and observation time. The
+database verifier independently replays all tracked migrations into a randomized
+Postgres 17 local stack and requires exact remote migration-version equality. Before
+`db push`, the deploy run persists the sorted per-file SHA-256 inventory with the
+candidate Git SHA, Actions run/attempt, environment, and project ref in the repo-owned
+append-only `supabase_deploy_migration_evidence` table. Post-deploy parity reads that
+exact record back and independently recomputes both its file and aggregate digests;
+versions without this binding are unverifiable. The verifier also requires every
+public `production_value_flow_enabled` control to remain disabled and compares the
+full normalized `pg_dump --schema-only --schema=public --no-comments` output
+byte-for-byte using the exact `pg17-public-schema-normalized-v1` algorithm.
+
+The two sanitized `fundloop.public-schema-parity/v1` and
+`fundloop.edge-function-parity/v1` JSON records are uploaded as one 30-day Actions
+artifact bound to the target environment and Git SHA. They contain no database URL,
+token, runtime secret, row data, or PII. A Dev deploy concludes with an unauthenticated
+call to `epoch-allocation-close`; only the expected `401` denial counts as the
+remote-safe smoke. Workflow success without these read-backs and smoke is not Dev
+parity.
 
 FundLoop no longer keeps a function-local CUBID mirror under `supabase/functions/_vendor/`. CUBID server and Edge code imports the runtime-agnostic `@cubid/core` package, and the Supabase Deno import map resolves it through `jsr:@cubid/core@0.1.0`. Browser-only CUBID compatibility helpers may still depend on local vendored tarballs, but Edge Functions must not depend on `node_modules/@cubid/api/dist/index.mjs`.
 

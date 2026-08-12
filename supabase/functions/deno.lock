@@ -8,6 +8,7 @@
     "npm:@supabase/supabase-js@2.104.0": "2.104.0",
     "npm:openai@^4.52.5": "4.104.0_zod@4.3.6",
     "npm:stripe@22.4.0": "22.4.0",
+    "npm:viem@*": "2.48.1_zod@4.3.6",
     "npm:viem@2.48.1": "2.48.1_zod@4.3.6",
     "npm:zod@4.3.6": "4.3.6"
   },
