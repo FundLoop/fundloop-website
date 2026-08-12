@@ -65,19 +65,9 @@ export function expectedSourceClosure(functionName, root = repoRoot) {
     const visitNode = (node) => {
       if (ts.isImportDeclaration(node)) {
         const clause = node.importClause
-        const onlyInlineTypes = clause
-          && !clause.name
-          && clause.namedBindings
-          && ts.isNamedImports(clause.namedBindings)
-          && clause.namedBindings.elements.length > 0
-          && clause.namedBindings.elements.every((element) => element.isTypeOnly)
-        if (!clause?.isTypeOnly && !onlyInlineTypes) addModuleSpecifier(node.moduleSpecifier)
+        if (!clause?.isTypeOnly) addModuleSpecifier(node.moduleSpecifier)
       } else if (ts.isExportDeclaration(node)) {
-        const onlyInlineTypes = node.exportClause
-          && ts.isNamedExports(node.exportClause)
-          && node.exportClause.elements.length > 0
-          && node.exportClause.elements.every((element) => element.isTypeOnly)
-        if (!node.isTypeOnly && !onlyInlineTypes) addModuleSpecifier(node.moduleSpecifier)
+        if (!node.isTypeOnly) addModuleSpecifier(node.moduleSpecifier)
       } else if (ts.isCallExpression(node) && node.expression.kind === ts.SyntaxKind.ImportKeyword) {
         if (node.arguments.length < 1 || node.arguments.length > 2) throw new Error(`Dynamic import must have one or two arguments: ${path.relative(root, file)}`)
         if (!ts.isStringLiteralLike(node.arguments[0])) throw new Error(`Dynamic import specifier must be a string literal: ${path.relative(root, file)}`)
