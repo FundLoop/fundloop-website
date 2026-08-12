@@ -13,8 +13,6 @@ jobs:
     name: Supabase fresh-schema replay
     if: github.event_name == 'pull_request'
     runs-on: ubuntu-latest
-    env:
-      SUPABASE_REPLAY_DB_URL: postgresql://postgres:postgres@127.0.0.1:55322/postgres
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -37,18 +35,8 @@ jobs:
           sudo apt-get update
           sudo apt-get install --yes postgresql-client
 
-      - name: Start isolated local database
-        run: supabase db start --yes
-
-      - name: Replay migrations and representative SQL suites
-        run: pnpm supabase:replay:pr
-
-      - name: Prove invalid migrations fail closed
-        run: pnpm supabase:replay:failure-smoke
-
-      - name: Stop isolated local database
-        if: always()
-        run: supabase stop --no-backup
+      - name: Bootstrap, replay, smoke, and clean up isolated local database
+        run: pnpm supabase:replay:ci
 
   validate:
     runs-on: ubuntu-latest

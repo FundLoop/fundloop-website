@@ -205,3 +205,54 @@ database catches that class of failure without granting PR code shared credentia
 - Independently validate #159 and its loopback/failure boundaries before PR yeet.
 - Keep the worktree for Goal #158 Task #160 and do not deploy or mutate Supabase
   until the orchestrator reaches the explicit delivery stage.
+
+### session v5: Isolate the PR replay bootstrap (#159)
+
+- Timestamp: 2026-08-12T00:16:00-04:00
+- Agent: Codex
+- Branch: `codex/155-supabase-ci-gate`
+- Head: `b409325b06524de93895cd26f5f75044ac515f08`
+
+#### Objective
+
+Fix PR #190's hosted replay bootstrap so Supabase startup cannot apply FundLoop
+migrations or seed before the deployment-shaped replay owns those actions.
+
+#### Actions Taken
+
+- Replaced repository-context `supabase db start` with one lifecycle wrapper that
+  creates a randomized task-owned workdir, empty migrations directory, seed-disabled
+  config, and dynamically allocated loopback database port.
+- Removed shared Dev/Main database URLs and Supabase access token from the wrapper's
+  child environment before starting or operating the local stack.
+- Added an absent-or-empty-safe migration-history preflight that blocks the replay
+  if any application migration is already recorded.
+- Kept the exact pinned `supabase db push --yes --include-all --db-url` execution,
+  exact 93-version comparison, one seed application, representative suites, and
+  disposable invalid-migration smoke.
+- Scoped cleanup to the randomized workdir and `supabase stop --no-backup`, including
+  failure paths; ordinary developer Supabase projects and volumes are not targeted.
+- Updated focused workflow-contract tests and deployment documentation.
+
+#### Tests And Validation Notes
+
+- Passed: Node 22 syntax checks for all three replay scripts and workflow YAML parse.
+- Passed: focused deployment-audit suite, 7/7 tests.
+- Passed: non-loopback refusal probes for replay and invalid-migration helpers.
+- Passed: real wrapper replay on Docker/Colima: zero-history preflight, 93 migrations
+  through `20260811120000`, seed once, three SQL/RLS/RPC suites, and invalid migration
+  rejection with SQLSTATE `42P01` and unchanged valid history.
+- Passed: task-owned stack stopped with `backup=false`; no matching replay container
+  remained and no existing FundLoop/user stack was targeted.
+- Passed: focused lint, full typecheck, and `git diff --check`.
+
+#### Reflections
+
+Supabase's normal project startup is intentionally convenient and applies tracked
+migrations and seed. Deployment-gate replay requires a separate bootstrap project so
+the deployment CLI—not local startup—remains the only application migration owner.
+
+#### Suggested Next Steps
+
+- Let PR #190 rerun the corrected hosted bootstrap and require green checks.
+- Do not start #160 or merge; the sprint orchestrator owns CI/review follow-through.

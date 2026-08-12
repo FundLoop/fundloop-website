@@ -45,6 +45,7 @@ describe("deployment audit rows", () => {
 describe("Supabase deployment replay contract", () => {
   const ciWorkflow = readFileSync(".github/workflows/ci.yml", "utf8")
   const deployWorkflow = readFileSync(".github/workflows/supabase-deploy.yml", "utf8")
+  const bootstrapRunner = readFileSync("scripts/run-supabase-pr-replay-ci.mjs", "utf8")
   const replayRunner = readFileSync("scripts/run-supabase-pr-replay.mjs", "utf8")
   const failureSmoke = readFileSync("scripts/smoke-supabase-pr-replay-failure.mjs", "utf8")
 
@@ -55,13 +56,32 @@ describe("Supabase deployment replay contract", () => {
   })
 
   it("executes full migration history locally before retaining remote dry-run planning", () => {
-    expect(ciWorkflow).toContain("supabase db start --yes")
-    expect(ciWorkflow).toContain("pnpm supabase:replay:pr")
-    expect(ciWorkflow).toContain("pnpm supabase:replay:failure-smoke")
-    expect(ciWorkflow).toContain("supabase stop --no-backup")
+    expect(ciWorkflow).toContain("pnpm supabase:replay:ci")
+    expect(ciWorkflow).not.toContain("supabase db start --yes")
+    expect(bootstrapRunner).toContain('["db", "start", "--yes", "--workdir", bootstrapRoot]')
+    expect(bootstrapRunner).toContain('["stop", "--no-backup", "--workdir", bootstrapRoot]')
+    expect(bootstrapRunner).toContain('["scripts/run-supabase-pr-replay.mjs"]')
+    expect(bootstrapRunner).toContain('["scripts/smoke-supabase-pr-replay-failure.mjs"]')
     expect(deployWorkflow).toContain('supabase db push --yes --include-all --db-url "$supabase_db_url" --dry-run')
     expect(replayRunner).toContain('run("supabase", ["db", "push", "--yes", "--include-all", "--db-url", dbUrl])')
     expect(replayRunner).toContain("supabase_migrations.schema_migrations order by version")
+  })
+
+  it("bootstraps a unique seed-disabled workdir and requires zero application history", () => {
+    expect(bootstrapRunner).toContain("fundloop-pr-replay-${randomBytes(8)")
+    expect(bootstrapRunner).toContain('[db.seed]\nenabled = false')
+    expect(bootstrapRunner).toContain('mkdirSync(path.join(bootstrapSupabase, "migrations")')
+    expect(bootstrapRunner).toContain("127.0.0.1:${dbPort}")
+    expect(bootstrapRunner).toContain('delete isolatedEnv[key]')
+    expect(replayRunner).toContain("Replay preflight passed: application migration history is empty.")
+    expect(replayRunner).toContain("replay database already contains % application migrations")
+  })
+
+  it("seeds once after the exact history check", () => {
+    expect(bootstrapRunner).not.toContain("supabase/seed.sql")
+    expect(replayRunner.match(/supabase\/seed\.sql/g)).toHaveLength(1)
+    expect(replayRunner.indexOf("supabase_migrations.schema_migrations order by version"))
+      .toBeLessThan(replayRunner.indexOf("supabase/seed.sql"))
   })
 
   it("covers the prepared-statement regression, final migration, and representative SQL boundaries", () => {

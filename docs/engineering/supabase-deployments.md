@@ -30,13 +30,18 @@ through `20260811120000` and the representative suites passed. The
 therefore requires fresh executable replay before merge and exact post-deploy
 migration, function, and schema read-back before parity can pass.
 
-The isolated replay has no shared database credentials or GitHub environment. It
-starts a local Postgres service, runs the same `supabase db push` deployment command
-with `--include-all`, compares the applied migration history to every tracked file,
-loads the local seed, and runs review-policy, funded-allocation, and payment-rail
-SQL suites. A disposable invalid migration must
+The isolated replay has no shared database credentials or GitHub environment. Its
+wrapper creates a randomized, task-owned Supabase workdir with an empty migrations
+directory and seed disabled, then starts its database on a dynamically allocated
+loopback port. Before repository migration execution, the runner fails if the
+application migration table already contains any row. It then runs the same
+`supabase db push` deployment command with `--include-all`, compares the applied
+migration history to every tracked file, loads the local seed exactly once, and runs
+review-policy, funded-allocation, and payment-rail SQL suites. A disposable invalid migration must
 also fail without entering migration history. Both replay helpers reject any
-non-loopback database hostname.
+non-loopback database hostname. The wrapper removes only its randomized local stack
+and workdir, including after a replay or smoke failure; it never stops an ordinary
+developer Supabase project.
 
 ## Required GitHub Secrets
 

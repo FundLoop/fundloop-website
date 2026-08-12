@@ -61,6 +61,26 @@ for (const requiredVersion of requiredRegressionMigrations) {
   }
 }
 
+run("psql", [
+  dbUrl,
+  "-X",
+  "-v",
+  "ON_ERROR_STOP=1",
+  "-c",
+  `DO $preflight$
+  DECLARE migration_count bigint;
+  BEGIN
+    IF to_regclass('supabase_migrations.schema_migrations') IS NOT NULL THEN
+      EXECUTE 'SELECT count(*) FROM supabase_migrations.schema_migrations' INTO migration_count;
+      IF migration_count <> 0 THEN
+        RAISE EXCEPTION 'replay database already contains % application migrations', migration_count;
+      END IF;
+    END IF;
+  END
+  $preflight$;`,
+])
+console.log("Replay preflight passed: application migration history is empty.")
+
 // This is the same executable db-push contract used for shared deployments. On an
 // empty local database, --include-all makes the full-history intent explicit.
 run("supabase", ["db", "push", "--yes", "--include-all", "--db-url", dbUrl])
