@@ -4,6 +4,7 @@ import { describe, expect, it } from "vitest"
 import { buildEnvironmentManifest, buildSafeSmokeEvidence, verifyEnvironmentManifest } from "../scripts/verify-supabase-environment-manifest.mjs"
 import { shouldObservePush, SUPABASE_DEPLOY_PATH_GLOBS } from "../scripts/classify-supabase-drift-push.mjs"
 import { expectedFunctionNames, expectedSourceClosure } from "../scripts/verify-supabase-function-parity.mjs"
+import { resolveSupabasePoolerTarget } from "../scripts/resolve-supabase-pooler-target.mjs"
 
 const migration = { version: "20260812130000", name: "20260812130000_repair.sql", fileSha256: "a".repeat(64) }
 const functionEntry = (index: number) => ({
@@ -99,8 +100,32 @@ describe("immutable Supabase environment manifests", () => {
     expect(workflow).not.toContain("supabase db push")
     expect(workflow).not.toContain("supabase functions deploy")
     expect(workflow).toContain("SUPABASE_SCHEMA_DIAGNOSTIC_OUTPUT: ${{ runner.temp }}/supabase-schema-diagnostic.json")
+    expect(workflow).toContain("project_ref=\"$(node scripts/resolve-supabase-pooler-target.mjs)\"")
+    expect(workflow).toContain("main) db_url=\"${MAIN_SUPABASE_SESSION_POOLER_URL}\"")
+    expect(workflow).toContain("SUPABASE_SCHEMA_DB_URL=\"${db_url}\" node scripts/verify-supabase-schema-parity.mjs drift")
+    expect(workflow).not.toContain("TARGET_SUPABASE_SESSION_POOLER_URL")
+    expect(workflow).not.toContain("echo \"db_url=${db_url}\" >> \"$GITHUB_OUTPUT\"")
+    expect(workflow).not.toContain("steps.target.outputs.db_url")
+    expect(workflow).not.toContain("::add-mask::")
     expect(workflow).toContain("if: ${{ always() }}")
     expect(workflow).toContain("${{ runner.temp }}/supabase-schema-diagnostic.json")
+  })
+
+  it("selects exact pooler credentials and rejects hostile connection targets", () => {
+    const ref = "a".repeat(20)
+    const dev = `postgresql://postgres.${ref}:p%40ss%3Aword@aws-0-ca-central-1.pooler.supabase.com:5432/postgres`
+    const main = `postgres://postgres.${"b".repeat(20)}:main-secret@aws-0-ca-central-1.pooler.supabase.com:5432/postgres`
+    expect(resolveSupabasePoolerTarget("dev", { dev, main })).toEqual({ projectRef: ref, url: dev })
+    expect(resolveSupabasePoolerTarget("main", { dev, main }).projectRef).toBe("b".repeat(20))
+    expect(() => resolveSupabasePoolerTarget("main", { dev, main: "" })).toThrow("missing-main-pooler-credential")
+    for (const hostile of [
+      `https://postgres.${ref}:secret@aws-0-ca-central-1.pooler.supabase.com:5432/postgres`,
+      `postgresql://postgres.${ref}:secret@evil.example:5432/postgres`,
+      `postgresql://postgres.${ref}:secret@pooler.supabase.com.evil.example:5432/postgres`,
+      `postgresql://postgres.${ref}:secret@aws-0-ca-central-1.pooler.supabase.com:6543/postgres`,
+      `postgresql://postgres.${ref}:secret@aws-0-ca-central-1.pooler.supabase.com:5432/other`,
+      `postgresql://postgres.${ref}@aws-0-ca-central-1.pooler.supabase.com:5432/postgres`,
+    ]) expect(() => resolveSupabasePoolerTarget("dev", { dev: hostile, main })).toThrow()
   })
 
   it("assigns every reviewed Edge Function closure member to the deploy lane", () => {

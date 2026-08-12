@@ -71,21 +71,24 @@ jobs:
           TARGET_ENVIRONMENT: ${{ matrix.target }}
         run: |
           set -euo pipefail
-          if [[ "${TARGET_ENVIRONMENT}" == "dev" ]]; then db_url="${DEV_SUPABASE_SESSION_POOLER_URL}"; else db_url="${MAIN_SUPABASE_SESSION_POOLER_URL}"; fi
-          [[ -n "${db_url}" ]] || { echo "::error::Missing required ${TARGET_ENVIRONMENT} read-only database credential."; exit 1; }
-          project_ref="$(DB_URL="${db_url}" node -e 'const u=new URL(process.env.DB_URL);const m=decodeURIComponent(u.username).match(/^postgres\.([a-z0-9]{20,})$/);if(!m)throw Error("invalid pooler username");console.log(m[1])')"
-          echo "db_url=${db_url}" >> "$GITHUB_OUTPUT"
+          project_ref="$(node scripts/resolve-supabase-pooler-target.mjs)"
           echo "project_ref=${project_ref}" >> "$GITHUB_OUTPUT"
           echo "observation_sha=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
       - name: Observe exact schema and migration drift
         env:
           TARGET_ENVIRONMENT: ${{ matrix.target }}
           SUPABASE_PROJECT_REF: ${{ steps.target.outputs.project_ref }}
-          SUPABASE_SCHEMA_DB_URL: ${{ steps.target.outputs.db_url }}
           SUPABASE_SCHEMA_PARITY_OUTPUT: ${{ runner.temp }}/supabase-schema-parity.json
           SUPABASE_SCHEMA_DIAGNOSTIC_OUTPUT: ${{ runner.temp }}/supabase-schema-diagnostic.json
           OBSERVATION_GIT_SHA: ${{ steps.target.outputs.observation_sha }}
-        run: node scripts/verify-supabase-schema-parity.mjs drift
+        run: |
+          set -euo pipefail
+          case "${TARGET_ENVIRONMENT}" in
+            dev) db_url="${DEV_SUPABASE_SESSION_POOLER_URL}" ;;
+            main) db_url="${MAIN_SUPABASE_SESSION_POOLER_URL}" ;;
+            *) echo "::error::Unsupported target environment."; exit 1 ;;
+          esac
+          SUPABASE_SCHEMA_DB_URL="${db_url}" node scripts/verify-supabase-schema-parity.mjs drift
       - name: Observe exact Edge Function drift
         env:
           TARGET_ENVIRONMENT: ${{ matrix.target }}

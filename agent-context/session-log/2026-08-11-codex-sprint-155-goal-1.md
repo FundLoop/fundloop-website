@@ -1198,3 +1198,50 @@ every deployed value-bearing source byte.
 - Return the commit to independent validation, then let the orchestrator publish and
   require CI-owned read-back of all 62 functions plus the safe Dev smoke.
 - Keep #160 In Progress until that hosted evidence passes.
+### session v25: Preserve protected drift credentials across steps (#161)
+
+- Timestamp: 2026-08-12T18:54:20-04:00
+- Agent: Codex
+- Branch: `codex/155-goal-1-drift-secret-transport-recovery`
+- Head: `f49dd54e87769ae7ed09b0631077119dca8fe4d6`
+
+#### Objective
+
+Repair the read-only Dev drift workflow after GitHub command-file transport corrupted
+a URL-encoded pooler credential, without changing Dev or weakening parity checks.
+
+#### Actions Taken
+
+- Selected the target pooler secret directly into a masked job environment variable
+  and stopped writing database URLs to `GITHUB_OUTPUT`.
+- Kept step outputs limited to the non-secret project reference and observation SHA;
+  schema observation now consumes the job-scoped secret environment value directly.
+- Replaced expression fallback with explicit Dev/Main selection, so a missing Main
+  credential fails rather than falling through to Dev.
+- Added a pre-network URL validator for Postgres protocol, trusted Supabase pooler
+  hostname, session-pooler port, database path, project username, and password.
+- Added workflow contract tests that reject secret step-output transport and documented
+  the credential boundary in the deployment runbook.
+
+#### Tests And Validation Notes
+
+- Passed: Node 22 focused environment-manifest and delivery-parity suites, 19/19,
+  including encoded credentials, missing Main, hostile protocols/hosts, wrong ports,
+  wrong databases, and missing passwords.
+- Passed: focused ESLint, TypeScript typecheck, workflow YAML parse, and
+  `git diff --check`.
+- The failing read-only run was transport-only: the CI-owned deploy immediately before
+  it passed exact 95-migration/schema/62-function/401/value-flow evidence. No remote
+  mutation, Production action, credential prompt, reset, or value-flow activation was
+  performed by this recovery.
+
+#### Reflections
+
+GitHub command files are not an appropriate transport for structured secrets. Keeping
+the selected URL in the masked job environment preserves its encoded authority and
+avoids accidental output serialization.
+
+#### Suggested Next Steps
+
+- Independently validate this focused recovery, publish it to `dev`, and rerun the
+  manual read-only Dev observation before advancing #161.
