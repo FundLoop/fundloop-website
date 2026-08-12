@@ -75,6 +75,12 @@ developer Supabase project.
 
 - `DEV_SUPABASE_SESSION_POOLER_URL`
 - `MAIN_SUPABASE_SESSION_POOLER_URL`
+
+The read-only drift job selects exactly one target pooler secret into a masked job
+environment variable. It never writes a database URL to `GITHUB_OUTPUT` or an
+artifact; step outputs contain only the derived project reference and checkout SHA.
+This preserves URL-encoded credentials byte-for-byte across steps and keeps them out
+of GitHub's command-file transport.
 - `SUPABASE_ACCESS_TOKEN`
 
 The pooler URLs must be session-pooler Postgres connection strings with the standard Supabase username format:
