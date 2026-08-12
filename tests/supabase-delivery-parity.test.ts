@@ -158,11 +158,18 @@ describe("Supabase delivery parity", () => {
   })
 
   it("deploys atomically with prune, verifies exact sources/schema, smokes Dev, and uploads evidence", () => {
+    const predeployGuard = "node scripts/verify-supabase-function-parity.mjs predeploy"
+    const confirmedPrune = "supabase functions deploy --project-ref \"$SUPABASE_PROJECT_REF\" --prune --jobs 1 --yes"
+    const postdeployReadback = "node scripts/verify-supabase-function-parity.mjs postdeploy"
+
     expect(workflow).toContain("verify-supabase-schema-parity.mjs")
     expect(workflow).toContain("deno cache --no-check --frozen --config supabase/functions/deno.json")
-    expect(workflow).toContain("verify-supabase-function-parity.mjs predeploy")
-    expect(workflow).toContain("supabase functions deploy --project-ref \"$SUPABASE_PROJECT_REF\" --prune --jobs 1")
-    expect(workflow).toContain("verify-supabase-function-parity.mjs postdeploy")
+    expect(workflow).toContain(predeployGuard)
+    expect(workflow).toContain(confirmedPrune)
+    expect(workflow).not.toContain("supabase functions deploy --project-ref \"$SUPABASE_PROJECT_REF\" --prune --jobs 1\n")
+    expect(workflow).toContain(postdeployReadback)
+    expect(workflow.indexOf(predeployGuard)).toBeLessThan(workflow.indexOf(confirmedPrune))
+    expect(workflow.indexOf(confirmedPrune)).toBeLessThan(workflow.indexOf(postdeployReadback))
     expect(workflow).toContain("epoch-allocation-close")
     expect(workflow).toContain('status_code}" != "401"')
     expect(workflow).toContain("actions/upload-artifact@v4")

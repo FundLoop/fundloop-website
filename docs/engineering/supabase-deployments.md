@@ -134,8 +134,14 @@ remote name is not a due, environment-scoped entry in
 all current functions and prunes only the reviewed retirement:
 
 ```bash
-supabase functions deploy --project-ref "$SUPABASE_PROJECT_REF" --prune --jobs 1
+supabase functions deploy --project-ref "$SUPABASE_PROJECT_REF" --prune --jobs 1 --yes
 ```
+
+`--yes` confirms the reviewed prune noninteractively only after the predeploy parity
+guard has rejected every unexplained extra and limited deletion to due,
+environment-scoped entries in `supabase/retired-functions.json`. The command remains
+fail closed: removing or reordering that guard is covered by the workflow contract
+test, and postdeploy read-back must still prove the exact resulting inventory.
 
 Before bundling functions on deploy runs, the workflow installs repo dependencies
 with `pnpm install --frozen-lockfile` so package dependencies remain available to the

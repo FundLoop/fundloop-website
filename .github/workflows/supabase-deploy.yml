@@ -328,7 +328,7 @@ jobs:
           set -euo pipefail
 
           node scripts/verify-supabase-function-parity.mjs predeploy
-          supabase functions deploy --project-ref "$SUPABASE_PROJECT_REF" --prune --jobs 1
+          supabase functions deploy --project-ref "$SUPABASE_PROJECT_REF" --prune --jobs 1 --yes
           SUPABASE_PARITY_OUTPUT="${RUNNER_TEMP}/supabase-function-parity.json" \
             node scripts/verify-supabase-function-parity.mjs postdeploy
 
