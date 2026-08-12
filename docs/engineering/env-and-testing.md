@@ -127,7 +127,7 @@ If local Supabase is unavailable, do not silently switch to a shared remote data
 
 Remote Supabase mutation is intentionally narrow:
 
-- PRs to `dev` and `main` run remote `supabase db push --dry-run`.
+- PRs to `dev` and `main` first run a secret-free fresh local `supabase db push` replay plus representative SQL/RLS/RPC suites, then run remote non-mutating `supabase db push --dry-run` planning.
 - Pushes to `dev` deploy migrations and functions to the dev Supabase project.
 - Pushes to `main` deploy through the GitHub `Production` environment gate.
 - Agents must not manually push, reset, re-link, or seed remote Supabase unless the user explicitly grants that permission in the current prompt.

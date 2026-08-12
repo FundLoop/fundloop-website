@@ -1,8 +1,11 @@
 # Dev To Main Release Candidate Path
 
-Last reviewed: 2026-05-05
+Last reviewed: 2026-08-11
 
-Session 52 records the first credible promotion path from `dev` to `main`. This document is intentionally operational: it separates what the repo can enforce from what GitHub/Supabase operators must configure before production data is touched.
+Session 52 records the first credible promotion path from `dev` to `main`. Sprint
+#155 adds the immutable [production-readiness evidence contract](./production-readiness-evidence-contract.md).
+This document is intentionally operational: it separates what the repo can enforce
+from what GitHub/Supabase operators must configure before production data is touched.
 
 ## Current Verified Repo State
 
@@ -19,11 +22,15 @@ Session 52 records the first credible promotion path from `dev` to `main`. This 
 
 ## Release Blockers To Configure In GitHub
 
-GitHub API checks on 2026-05-05 returned `Branch not protected` for both `dev` and `main`. They also showed no protection rules on the `Production` environment. Before the first production release candidate is treated as safe:
+GitHub API checks on 2026-08-11 again returned `Branch not protected` for both `dev`
+and `main`, no repository rulesets, and no protection rules on the `Production`
+environment. `Production` also allowed admin bypass. Before a production release
+candidate is treated as safe:
 
 - Protect `dev` and require pull requests before merge.
 - Protect `main` and require pull requests before merge.
 - Require the `CI / validate` check on both `dev` and `main`.
+- Require the `CI / Supabase fresh-schema replay` check on both `dev` and `main`.
 - Require the `Supabase dry-run` check on PRs into both `dev` and `main` when Supabase paths change.
 - Add required reviewers to the `Production` GitHub environment so main-target Supabase deploys pause for approval.
 - Disable or tightly control admin bypass for the `Production` environment if the team wants a hard approval gate.
@@ -60,7 +67,12 @@ The repo cannot read secret values from GitHub or Supabase. Treat this as an ope
 8. Merge the PR into `main` only after the production approval gate and branch protections are active.
 9. Approve the `Production` environment deployment when ready.
 10. Confirm the push-triggered main Supabase deploy applies migrations and deploys functions successfully.
-11. Run the production smoke checklist below.
+11. Regenerate the v1 evidence manifest and require exact migration/function/schema
+    parity for the main SHA while `productionValueFlowEnabled=false`.
+12. Run the production smoke checklist below and bind it to the same app/Supabase
+    deployment IDs.
+13. Keep cutover and go-live pending until their separate approvals and evidence
+    pass. Production deploy is not authority for either action.
 
 ## Migration And Rollback Rules
 

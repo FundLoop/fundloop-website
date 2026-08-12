@@ -1,6 +1,6 @@
 # Repo Status
 
-Last reviewed: 2026-04-27
+Last reviewed: 2026-08-11 (release-readiness rows refreshed; other rows retain their prior evidence date)
 
 | Requirement | Status |
 | --- | --- |
@@ -14,8 +14,8 @@ Last reviewed: 2026-04-27
 | CUBID integration | Partial: the FundLoop side has meaningful CUBID linkage/snapshot work, but still depends on local tarballs and temporary Deno import mapping until the CUBID package publication is complete. |
 | Testing strategy | Pass: Vitest, typecheck, build, Playwright lanes, contract tests, and change-type validation ownership are documented in `docs/engineering/env-and-testing.md`; coverage thresholds remain optional future hardening. |
 | Local acceptance harness | Pass: remote-safe and local-wallet Playwright lanes exist; the local lane depends on local Supabase and Hardhat environment setup. |
-| CI | Partial: app CI runs lint, tests, typecheck, build, and contract tests on PRs and selected pushes; the Supabase deploy workflow now handles dry-runs and branch-targeted deploys, but direct `dev` pushes do not run the full app CI workflow. |
-| Supabase deploy path | Partial: the dedicated deploy workflow exists and uses branch-scoped environments, but Session 52 verified that GitHub currently reports no branch protection on `dev`/`main` and no required reviewers on `Production`; configure those before production promotion. |
+| CI | Partial: app CI runs lint, tests, typecheck, build, and contract tests on PRs and pushes to `dev`/`main`; the Supabase PR dry-run plans migrations but does not execute SQL, so Sprint #155 requires executable replay before merge. |
+| Supabase deploy path | Blocked for release: push run `31542120571` failed on migration `20260809020000` before function deployment. Live 2026-08-11 read-back found no branch protection/rulesets or Production required reviewers, Dev missing 25 tracked functions with one retired extra, and no Production functions. The v1 evidence contract now defines replay, deploy, parity, hosted, Production, cutover, and go-live gates. |
 | Supabase Edge Function compliance | Partial: the repo guidance and docs now clearly require typed Edge Function command paths for writes, but remaining direct server/zkAS workflows should still be retired through the roadmap. |
 | Environment conventions | Pass: README and `docs/engineering/env-and-testing.md` now define `.env.local` for local Supabase, optional ignored `.env.remote.local` for non-production smoke credentials, and remote Supabase mutation limits. |
 | Artifact hygiene | Pass: disposable ignored artifacts were removed locally, including `.next`, `.playwright-cli`, `output`, `.DS_Store`, `tsconfig.tsbuildinfo`, and `supabase/functions/node_modules`; dependency installs under `node_modules` and `contracts/node_modules` were intentionally retained. |
