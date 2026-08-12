@@ -167,6 +167,7 @@ jobs:
       - name: Dry-run database migrations
         if: steps.target.outputs.mode == 'dry-run'
         env:
+          SUPABASE_PROJECT_REF: ${{ steps.target.outputs.project_ref }}
           TARGET_ENVIRONMENT: ${{ steps.target.outputs.target_environment }}
         run: |
           set -euo pipefail
@@ -206,6 +207,12 @@ jobs:
 
           export PGOPTIONS="-c app.settings.fundloop_target_environment=${TARGET_ENVIRONMENT}"
           supabase db push --yes --include-all --db-url "$supabase_db_url" --dry-run
+
+          if [[ "${TARGET_ENVIRONMENT}" == "dev" ]]; then
+            SUPABASE_SCHEMA_DB_URL="${supabase_db_url}" \
+              SUPABASE_SCHEMA_DIAGNOSTIC_OUTPUT="${RUNNER_TEMP}/supabase-schema-diagnostic.json" \
+              node scripts/verify-supabase-schema-parity.mjs diagnose
+          fi
 
       - name: Deploy database migrations
         if: steps.target.outputs.mode == 'deploy'
@@ -308,6 +315,7 @@ jobs:
           supabase db push --yes --include-all --db-url "$supabase_db_url"
 
           SUPABASE_SCHEMA_DB_URL="${supabase_db_url}" \
+            SUPABASE_SCHEMA_DIAGNOSTIC_OUTPUT="${RUNNER_TEMP}/supabase-schema-diagnostic.json" \
             SUPABASE_SCHEMA_PARITY_OUTPUT="${RUNNER_TEMP}/supabase-schema-parity.json" \
             node scripts/verify-supabase-schema-parity.mjs
 
@@ -345,6 +353,16 @@ jobs:
           name: supabase-parity-${{ steps.target.outputs.target_environment }}-${{ github.sha }}
           path: |
             ${{ runner.temp }}/supabase-schema-parity.json
+            ${{ runner.temp }}/supabase-schema-diagnostic.json
             ${{ runner.temp }}/supabase-function-parity.json
+          if-no-files-found: warn
+          retention-days: 30
+
+      - name: Upload sanitized Dev schema diagnostic
+        if: ${{ always() && steps.target.outputs.mode == 'dry-run' && steps.target.outputs.target_environment == 'dev' }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: supabase-schema-diagnostic-dev-${{ github.sha }}
+          path: ${{ runner.temp }}/supabase-schema-diagnostic.json
           if-no-files-found: warn
           retention-days: 30

@@ -104,6 +104,7 @@ describe("production-readiness evidence contract v1", () => {
     ["duplicate function", "duplicate-function:observed", (manifest: ProductionReadinessManifest) => { manifest.observed.functionInventory.items.push({ ...manifest.observed.functionInventory.items[0]!, sourceSha256: "6".repeat(64) }) }],
     ["changed function digest", "function-digest:epoch-funded-allocation", (manifest: ProductionReadinessManifest) => { manifest.observed.functionInventory.items[0]!.sourceSha256 = "8".repeat(64) }],
     ["function inventory digest", "function-inventory-digest:observed", (manifest: ProductionReadinessManifest) => { manifest.observed.functionInventory.inventorySha256 = "7".repeat(64) }],
+    ["legacy schema algorithm", "schema-fingerprint-algorithm", (manifest: ProductionReadinessManifest) => { manifest.observed.schemaFingerprint.algorithm = "pg17-public-schema-normalized-v1" }],
   ])("blocks %s drift", (_name, code, mutate) => {
     expect(evaluate(mutate)).toContain(code)
   })

@@ -1,6 +1,6 @@
 import { createHash, randomBytes } from "node:crypto"
 import { execFileSync } from "node:child_process"
-import { mkdirSync, mkdtempSync, readFileSync, readdirSync, rmSync, writeFileSync } from "node:fs"
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, readdirSync, rmSync, writeFileSync } from "node:fs"
 import net from "node:net"
 import os from "node:os"
 import path from "node:path"
@@ -29,7 +29,7 @@ function availablePort() {
   })
 }
 
-export function normalizePublicSchema(dump) {
+function normalizePublicSchemaV1(dump) {
   const lines = dump
     .replace(/\r\n?/g, "\n")
     .split("\n")
@@ -38,8 +38,153 @@ export function normalizePublicSchema(dump) {
   return `${lines.join("\n")}\n`
 }
 
+function normalizePolicyRoleOrder(line) {
+  const match = line.match(/^(CREATE POLICY .+ ON .+ TO )([^;]+?)( (?:USING|WITH CHECK) .+;|;)$/)
+  if (!match) return line
+  const roles = match[2].split(",").map((role) => role.trim()).sort()
+  return `${match[1]}${roles.join(", ")}${match[3]}`
+}
+
+export function normalizePublicSchema(dump) {
+  return normalizePublicSchemaV1(dump)
+    .split("\n")
+    .map(normalizePolicyRoleOrder)
+    .join("\n")
+}
+
 function fingerprint(schema) {
   return createHash("sha256").update(schema).digest("hex")
+}
+
+function safeObjectIdentity(value) {
+  return value.replace(/[^A-Za-z0-9_.:#\- ()\[\]]/g, "?").slice(0, 240)
+}
+
+export function schemaObjectManifest(dump, normalize = normalizePublicSchema) {
+  const sections = []
+  let identity = "preamble"
+  let lines = []
+  const occurrences = new Map()
+  const flush = () => {
+    const normalized = normalize(lines.join("\n"))
+    if (normalized === "\n") return
+    const occurrence = (occurrences.get(identity) ?? 0) + 1
+    occurrences.set(identity, occurrence)
+    sections.push({
+      objectKey: `${identity}#${occurrence}`,
+      sha256: fingerprint(normalized),
+      normalizedLineCount: normalized.split("\n").length - 1,
+    })
+  }
+  for (const line of dump.replace(/\r\n?/g, "\n").split("\n")) {
+    const header = line.match(/^-- Name: (.*); Type: (.*); Schema: (.*); Owner: .*$/)
+    if (header) {
+      flush()
+      identity = `${header[3]}.${header[1]} [${header[2]}]`
+      lines = []
+    } else {
+      lines.push(line)
+    }
+  }
+  flush()
+  return sections
+}
+
+function buildSchemaDiagnosticWithNormalizer(expectedDump, observedDump, metadata, maxLineDifferences, normalize) {
+  const expectedSchema = normalize(expectedDump)
+  const observedSchema = normalize(observedDump)
+  const expectedObjects = schemaObjectManifest(expectedDump, normalize)
+  const observedObjects = schemaObjectManifest(observedDump, normalize)
+  const expectedByKey = new Map(expectedObjects.map((entry) => [entry.objectKey, entry]))
+  const observedByKey = new Map(observedObjects.map((entry) => [entry.objectKey, entry]))
+  const allKeys = [...new Set([...expectedByKey.keys(), ...observedByKey.keys()])].sort()
+  const objectDifferences = allKeys.flatMap((objectKey) => {
+    const expected = expectedByKey.get(objectKey)
+    const observed = observedByKey.get(objectKey)
+    const objectKeySha256 = fingerprint(objectKey)
+    if (!expected) {
+      const objectType = objectKey.match(/ \[([^\]]+)\]#\d+$/)?.[1] ?? "UNKNOWN"
+      const policyParent = objectKey.match(/^([^ ]+) .+ \[POLICY\]#\d+$/)?.[1]
+      const reviewedParentObjectKey = policyParent && expectedByKey.has(`${policyParent} [TABLE]#1`)
+        ? safeObjectIdentity(`${policyParent} [TABLE]#1`)
+        : null
+      return [{ objectKeySha256, status: "unexpected", objectType, reviewedParentObjectKey, observedSha256: observed.sha256 }]
+    }
+    if (!observed) return [{ reviewedObjectKey: safeObjectIdentity(objectKey), objectKeySha256, status: "missing", expectedSha256: expected.sha256 }]
+    if (expected.sha256 !== observed.sha256) return [{ reviewedObjectKey: safeObjectIdentity(objectKey), objectKeySha256, status: "changed", expectedSha256: expected.sha256, observedSha256: observed.sha256 }]
+    return []
+  })
+  const expectedLines = expectedSchema.split("\n").slice(0, -1)
+  const observedLines = observedSchema.split("\n").slice(0, -1)
+  const lineDifferenceCount = Math.max(expectedLines.length, observedLines.length) - expectedLines.filter((line, index) => line === observedLines[index]).length
+  const lineDifferences = []
+  for (let index = 0; index < Math.max(expectedLines.length, observedLines.length) && lineDifferences.length < maxLineDifferences; index += 1) {
+    if (expectedLines[index] === observedLines[index]) continue
+    lineDifferences.push({
+      lineNumber: index + 1,
+      expectedLineSha256: expectedLines[index] === undefined ? null : fingerprint(expectedLines[index]),
+      observedLineSha256: observedLines[index] === undefined ? null : fingerprint(observedLines[index]),
+    })
+  }
+  const expectedSha256 = fingerprint(expectedSchema)
+  const observedSha256 = fingerprint(observedSchema)
+  return {
+    contractVersion: "fundloop.public-schema-diagnostic/v2",
+    status: expectedSha256 === observedSha256 ? "pass" : "drift",
+    ...metadata,
+    expectedSha256,
+    observedSha256,
+    expectedNormalizedLineCount: expectedLines.length,
+    observedNormalizedLineCount: observedLines.length,
+    expectedObjectCount: expectedObjects.length,
+    observedObjectCount: observedObjects.length,
+    expectedObjects: expectedObjects.map(({ objectKey, ...entry }) => ({ reviewedObjectKey: safeObjectIdentity(objectKey), objectKeySha256: fingerprint(objectKey), ...entry })),
+    observedObjects: observedObjects.map(({ objectKey, ...entry }) => ({ reviewedObjectKey: expectedByKey.has(objectKey) ? safeObjectIdentity(objectKey) : null, objectKeySha256: fingerprint(objectKey), ...entry })),
+    objectDifferenceCount: objectDifferences.length,
+    objectDifferences,
+    lineDifferenceCount,
+    lineDifferencesTruncated: lineDifferenceCount > lineDifferences.length,
+    lineDifferences,
+  }
+}
+
+export function buildSchemaDiagnostic(expectedDump, observedDump, metadata = {}, maxLineDifferences = 200) {
+  const diagnostic = buildSchemaDiagnosticWithNormalizer(expectedDump, observedDump, metadata, maxLineDifferences, normalizePublicSchema)
+  const legacy = buildSchemaDiagnosticWithNormalizer(expectedDump, observedDump, {}, 0, normalizePublicSchemaV1)
+  diagnostic.legacyRepairSignature = {
+    expectedSha256: legacy.expectedSha256,
+    observedSha256: legacy.observedSha256,
+    expectedNormalizedLineCount: legacy.expectedNormalizedLineCount,
+    observedNormalizedLineCount: legacy.observedNormalizedLineCount,
+    expectedObjectCount: legacy.expectedObjectCount,
+    observedObjectCount: legacy.observedObjectCount,
+    objectDifferences: legacy.objectDifferences,
+  }
+  return diagnostic
+}
+
+function canonicalObjectDifferences(value) {
+  return canonicalJson(value.map((entry) => Object.fromEntries(Object.entries(entry).filter(([, field]) => field !== null))))
+}
+
+export function validatePendingSchemaRepair(manifest, diagnostic, observedVersions, expectedVersions) {
+  if (!manifest || manifest.contractVersion !== "fundloop.public-schema-repair/v1") return false
+  const repairIsOnlyPendingMigration = expectedVersions.length === observedVersions.length + 1
+    && expectedVersions.at(-1) === manifest.repairMigrationVersion
+    && canonicalJson(expectedVersions.slice(0, -1)) === canonicalJson(observedVersions)
+  return repairIsOnlyPendingMigration
+    && manifest.environment === diagnostic.environment
+    && manifest.projectRef === diagnostic.projectRef
+    && manifest.baselineMigrationCount === observedVersions.length
+    && manifest.baselineMigrationInventorySha256 === diagnostic.baselineMigrationInventorySha256
+    && manifest.expectedSha256 === diagnostic.legacyRepairSignature?.expectedSha256
+    && manifest.observedSha256 === diagnostic.legacyRepairSignature?.observedSha256
+    && manifest.expectedNormalizedLineCount === diagnostic.legacyRepairSignature?.expectedNormalizedLineCount
+    && manifest.observedNormalizedLineCount === diagnostic.legacyRepairSignature?.observedNormalizedLineCount
+    && manifest.expectedObjectCount === diagnostic.legacyRepairSignature?.expectedObjectCount
+    && manifest.observedObjectCount === diagnostic.legacyRepairSignature?.observedObjectCount
+    && manifest.enabledProductionValueFlowControlCount === diagnostic.enabledProductionValueFlowControlCount
+    && canonicalObjectDifferences(manifest.objectDifferences) === canonicalObjectDifferences(diagnostic.legacyRepairSignature?.objectDifferences ?? [])
 }
 
 function canonicalJson(value) {
@@ -99,6 +244,10 @@ function pgDumpVersionFromParityContainer(projectId) {
   return run("docker", ["exec", `supabase_db_${projectId}`, "pg_dump", "--version"], { encoding: "utf8" }).trim()
 }
 
+function psqlFromParityContainer(projectId, dbUrl, sql) {
+  return run("docker", ["exec", `supabase_db_${projectId}`, "psql", dbUrl, "-X", "-v", "ON_ERROR_STOP=1", "-Atqc", sql], { encoding: "utf8" }).trim()
+}
+
 function observedMigrationEvidence(dbUrl, binding) {
   const sql = `select json_build_object('contractVersion',contract_version,'candidateGitSha',candidate_git_sha,'actionsRunId',actions_run_id::text,'runAttempt',run_attempt,'environment',deployment_environment,'projectRef',project_ref,'migrations',migration_inventory,'inventorySha256',inventory_sha256)::text from public.supabase_deploy_migration_evidence where candidate_git_sha='${binding.candidateGitSha}' and actions_run_id=${Number(binding.actionsRunId)} and run_attempt=${Number(binding.runAttempt)} and deployment_environment='${binding.environment}' and project_ref='${binding.projectRef}' order by recorded_at desc limit 1`
   const output = run("psql", [dbUrl, "-X", "-v", "ON_ERROR_STOP=1", "-Atqc", sql], { encoding: "utf8" }).trim()
@@ -106,8 +255,8 @@ function observedMigrationEvidence(dbUrl, binding) {
   return JSON.parse(output)
 }
 
-function assertValueFlowDisabled(dbUrl) {
-  const tableNames = run("psql", [dbUrl, "-X", "-v", "ON_ERROR_STOP=1", "-Atqc", "select table_name from information_schema.columns where table_schema='public' and column_name='production_value_flow_enabled' order by table_name"], { encoding: "utf8" })
+function assertValueFlowDisabledWithQuery(query) {
+  const tableNames = query("select table_name from information_schema.columns where table_schema='public' and column_name='production_value_flow_enabled' order by table_name")
     .trim()
     .split("\n")
     .filter(Boolean)
@@ -115,10 +264,14 @@ function assertValueFlowDisabled(dbUrl) {
   let enabledCount = 0
   for (const tableName of tableNames) {
     if (!/^[a-z][a-z0-9_]*$/.test(tableName)) throw new Error(`Unsafe runtime-control table name: ${tableName}`)
-    enabledCount += Number(run("psql", [dbUrl, "-X", "-v", "ON_ERROR_STOP=1", "-Atqc", `select count(*) from public.${tableName} where production_value_flow_enabled`], { encoding: "utf8" }).trim())
+    enabledCount += Number(query(`select count(*) from public.${tableName} where production_value_flow_enabled`).trim())
   }
   if (enabledCount !== 0) throw new Error(`Delivery verification found ${enabledCount} enabled production value-flow controls`)
   return { enabledCount, tableCount: tableNames.length }
+}
+
+function assertValueFlowDisabled(dbUrl) {
+  return assertValueFlowDisabledWithQuery((sql) => run("psql", [dbUrl, "-X", "-v", "ON_ERROR_STOP=1", "-Atqc", sql], { encoding: "utf8" }).trim())
 }
 
 async function main() {
@@ -140,6 +293,11 @@ async function main() {
   const remoteDumpDbUrl = process.env.SUPABASE_SCHEMA_DUMP_DB_URL ?? remoteDbUrl
   const projectRef = process.env.SUPABASE_PROJECT_REF
   const targetEnvironment = process.env.TARGET_ENVIRONMENT
+  const diagnosticMode = process.argv[2] === "diagnose"
+  const repairManifestPath = path.join(process.cwd(), "supabase/schema-repair-manifests/20260812_dev_public_schema_drift.json")
+  const repairManifest = diagnosticMode && existsSync(repairManifestPath)
+    ? JSON.parse(readFileSync(repairManifestPath, "utf8"))
+    : null
   const deploymentBinding = {
     candidateGitSha: process.env.GITHUB_SHA,
     actionsRunId: process.env.GITHUB_RUN_ID,
@@ -147,7 +305,7 @@ async function main() {
     environment: targetEnvironment,
     projectRef,
   }
-  if (!remoteDbUrl || !projectRef || !["dev", "main"].includes(targetEnvironment) || !/^[0-9a-f]{40}$/.test(deploymentBinding.candidateGitSha ?? "") || !/^\d+$/.test(deploymentBinding.actionsRunId ?? "") || !/^\d+$/.test(deploymentBinding.runAttempt ?? "")) {
+  if (!remoteDbUrl || !projectRef || !["dev", "main"].includes(targetEnvironment) || !/^[0-9a-f]{40}$/.test(deploymentBinding.candidateGitSha ?? "") || (!diagnosticMode && (!/^\d+$/.test(deploymentBinding.actionsRunId ?? "") || !/^\d+$/.test(deploymentBinding.runAttempt ?? "")))) {
     throw new Error("Candidate-bound GitHub deployment context, SUPABASE_SCHEMA_DB_URL, SUPABASE_PROJECT_REF, and TARGET_ENVIRONMENT=dev|main are required")
   }
 
@@ -183,38 +341,70 @@ sql_paths = []
 
     const expectedMigrations = expectedMigrationInventory()
     const expectedVersions = expectedMigrations.map((entry) => entry.version)
-    const observedVersions = run("psql", [remoteDbUrl, "-X", "-v", "ON_ERROR_STOP=1", "-Atqc", "select version from supabase_migrations.schema_migrations order by version"], { encoding: "utf8" }).trim().split("\n")
-    if (JSON.stringify(expectedVersions) !== JSON.stringify(observedVersions)) {
+    const observedVersions = psqlFromParityContainer(projectId, remoteDbUrl, "select version from supabase_migrations.schema_migrations order by version").split("\n")
+    const repairIsOnlyPendingMigration = diagnosticMode && repairManifest
+      && expectedVersions.length === observedVersions.length + 1
+      && expectedVersions.at(-1) === repairManifest.repairMigrationVersion
+      && canonicalJson(expectedVersions.slice(0, -1)) === canonicalJson(observedVersions)
+    if (JSON.stringify(expectedVersions) !== JSON.stringify(observedVersions) && !repairIsOnlyPendingMigration) {
       throw new Error(`Migration history drift: expected=${expectedVersions.join(",")} observed=${observedVersions.join(",")}`)
     }
-    const expectedEvidence = buildMigrationDeployEvidence(deploymentBinding)
-    const observedEvidence = observedMigrationEvidence(remoteDbUrl, deploymentBinding)
-    if (!validateMigrationDeployEvidence(expectedEvidence, observedEvidence)) {
-      throw new Error("migration-digest: remote candidate-bound deploy evidence differs from reviewed migration bytes")
+    let expectedEvidence
+    if (!diagnosticMode) {
+      expectedEvidence = buildMigrationDeployEvidence(deploymentBinding)
+      const observedEvidence = observedMigrationEvidence(remoteDbUrl, deploymentBinding)
+      if (!validateMigrationDeployEvidence(expectedEvidence, observedEvidence)) {
+        throw new Error("migration-digest: remote candidate-bound deploy evidence differs from reviewed migration bytes")
+      }
     }
-    const valueFlowControls = assertValueFlowDisabled(remoteDbUrl)
+    const valueFlowControls = diagnosticMode
+      ? assertValueFlowDisabledWithQuery((sql) => psqlFromParityContainer(projectId, remoteDbUrl, sql))
+      : assertValueFlowDisabled(remoteDbUrl)
 
     const containerLocalDbUrl = "postgresql://postgres:postgres@127.0.0.1:5432/postgres"
-    const expectedSchema = normalizePublicSchema(dumpPublicSchemaFromParityContainer(projectId, containerLocalDbUrl))
-    const observedSchema = normalizePublicSchema(dumpPublicSchemaFromParityContainer(projectId, remoteDumpDbUrl))
-    const expectedSha256 = fingerprint(expectedSchema)
-    const observedSha256 = fingerprint(observedSchema)
-    if (expectedSchema !== observedSchema) {
-      throw new Error(`Effective public schema drift: expected=${expectedSha256} observed=${observedSha256}`)
+    const expectedDump = dumpPublicSchemaFromParityContainer(projectId, containerLocalDbUrl)
+    const observedDump = dumpPublicSchemaFromParityContainer(projectId, remoteDumpDbUrl)
+    const diagnostic = buildSchemaDiagnostic(expectedDump, observedDump, {
+      candidateGitSha: process.env.GITHUB_SHA,
+      environment: targetEnvironment,
+      projectRef,
+      observedAt: new Date().toISOString(),
+      pgDumpVersion: pgDumpVersionFromParityContainer(projectId),
+      migrationCount: observedVersions.length,
+      migrationInventorySha256: expectedEvidence?.inventorySha256 ?? migrationInventorySha256(expectedMigrations),
+      baselineMigrationInventorySha256: repairIsOnlyPendingMigration
+        ? migrationInventorySha256(expectedMigrations.slice(0, -1))
+        : null,
+      enabledProductionValueFlowControlCount: valueFlowControls.enabledCount,
+    })
+    const pendingRepairValidated = diagnostic.status === "drift"
+      && validatePendingSchemaRepair(repairManifest, diagnostic, observedVersions, expectedVersions)
+    if (pendingRepairValidated) diagnostic.repairValidation = {
+      status: "pending-exact-match",
+      repairMigrationVersion: repairManifest.repairMigrationVersion,
+      baselineMigrationInventorySha256: repairManifest.baselineMigrationInventorySha256,
     }
+    if (!repairIsOnlyPendingMigration) delete diagnostic.legacyRepairSignature
+    if (process.env.SUPABASE_SCHEMA_DIAGNOSTIC_OUTPUT) writeFileSync(process.env.SUPABASE_SCHEMA_DIAGNOSTIC_OUTPUT, `${JSON.stringify(diagnostic, null, 2)}\n`, "utf8")
+    if (diagnostic.status === "drift" && !pendingRepairValidated) throw new Error(`Effective public schema drift: expected=${diagnostic.expectedSha256} observed=${diagnostic.observedSha256}; sanitized diagnostic written`)
+    if (pendingRepairValidated) {
+      console.log(`Validated exact pending Dev schema repair ${repairManifest.repairMigrationVersion} for observed drift ${diagnostic.observedSha256}`)
+      return
+    }
+    const { expectedSha256, observedSha256 } = diagnostic
     const result = {
       contractVersion: "fundloop.public-schema-parity/v1",
       candidateGitSha: process.env.GITHUB_SHA ?? "local-unbound",
       environment: targetEnvironment,
       projectRef,
       postgresMajor: 17,
-      algorithm: "pg17-public-schema-normalized-v1",
-      pgDumpVersion: pgDumpVersionFromParityContainer(projectId),
+      algorithm: "pg17-public-schema-normalized-v2",
+      pgDumpVersion: diagnostic.pgDumpVersion,
       expectedSha256,
       observedSha256,
       observedAt: new Date().toISOString(),
       migrationCount: observedVersions.length,
-      migrationInventorySha256: expectedEvidence.inventorySha256,
+      migrationInventorySha256: diagnostic.migrationInventorySha256,
       productionValueFlowControlTableCount: valueFlowControls.tableCount,
       enabledProductionValueFlowControlCount: valueFlowControls.enabledCount,
     }

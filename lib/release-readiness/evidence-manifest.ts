@@ -194,6 +194,7 @@ export function evaluateProductionReadinessManifest(manifest: ProductionReadines
   if (manifest.observed.applicationDeploymentId !== manifest.candidate.applicationDeploymentId) add("application-deployment-binding", parityBlockers)
   if (manifest.observed.applicationGitSha !== manifest.candidate.gitSha) add("application-sha-binding", parityBlockers)
   if (manifest.observed.githubRunId !== manifest.deployment.githubRunId || manifest.observed.githubRunAttempt !== manifest.deployment.githubRunAttempt) add("workflow-run-binding", parityBlockers)
+  if (manifest.expected.schemaFingerprint.algorithm !== "pg17-public-schema-normalized-v2" || manifest.observed.schemaFingerprint.algorithm !== "pg17-public-schema-normalized-v2") add("schema-fingerprint-algorithm", parityBlockers)
 
   for (const [subject, observedAt] of [
     ["backend", manifest.observed.observedAt],
