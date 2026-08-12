@@ -249,10 +249,33 @@ function psqlFromParityContainer(projectId, dbUrl, sql) {
 }
 
 function observedMigrationEvidence(dbUrl, binding) {
-  const sql = `select json_build_object('contractVersion',contract_version,'candidateGitSha',candidate_git_sha,'actionsRunId',actions_run_id::text,'runAttempt',run_attempt,'environment',deployment_environment,'projectRef',project_ref,'migrations',migration_inventory,'inventorySha256',inventory_sha256)::text from public.supabase_deploy_migration_evidence where candidate_git_sha='${binding.candidateGitSha}' and actions_run_id=${Number(binding.actionsRunId)} and run_attempt=${Number(binding.runAttempt)} and deployment_environment='${binding.environment}' and project_ref='${binding.projectRef}' order by recorded_at desc limit 1`
+  const sql = `select json_build_object('contractVersion',contract_version,'candidateGitSha',candidate_git_sha,'actionsRunId',actions_run_id::text,'runAttempt',run_attempt,'environment',deployment_environment,'projectRef',project_ref,'migrations',migration_inventory,'inventorySha256',inventory_sha256,'recordedAt',recorded_at)::text from public.supabase_deploy_migration_evidence where candidate_git_sha='${binding.candidateGitSha}' and actions_run_id=${Number(binding.actionsRunId)} and run_attempt=${Number(binding.runAttempt)} and deployment_environment='${binding.environment}' and project_ref='${binding.projectRef}' order by recorded_at desc limit 1`
   const output = run("psql", [dbUrl, "-X", "-v", "ON_ERROR_STOP=1", "-Atqc", sql], { encoding: "utf8" }).trim()
   if (!output) throw new Error("unverifiable-migration-source: no candidate-bound remote deploy evidence")
   return JSON.parse(output)
+}
+
+export function validateMatchingMigrationEvidence(evidence, binding, expectedInventorySha256) {
+  return evidence.contractVersion === "fundloop.migration-deploy-evidence/v1"
+    && evidence.environment === binding.environment
+    && evidence.projectRef === binding.projectRef
+    && /^[0-9a-f]{40}$/.test(evidence.candidateGitSha ?? "")
+    && /^\d+$/.test(evidence.actionsRunId ?? "")
+    && Number.isInteger(evidence.runAttempt) && evidence.runAttempt >= 1
+    && Number.isFinite(Date.parse(evidence.recordedAt ?? ""))
+    && evidence.inventorySha256 === migrationInventorySha256(evidence.migrations ?? [])
+    && evidence.inventorySha256 === expectedInventorySha256
+}
+
+function latestMatchingMigrationEvidence(dbUrl, binding, expectedInventorySha256) {
+  const sql = `select json_build_object('contractVersion',contract_version,'candidateGitSha',candidate_git_sha,'actionsRunId',actions_run_id::text,'runAttempt',run_attempt,'environment',deployment_environment,'projectRef',project_ref,'migrations',migration_inventory,'inventorySha256',inventory_sha256,'recordedAt',recorded_at)::text from public.supabase_deploy_migration_evidence where deployment_environment='${binding.environment}' and project_ref='${binding.projectRef}' and inventory_sha256='${expectedInventorySha256}' order by recorded_at desc limit 1`
+  const output = run("psql", [dbUrl, "-X", "-v", "ON_ERROR_STOP=1", "-Atqc", sql], { encoding: "utf8" }).trim()
+  if (!output) throw new Error("deployment-evidence-missing: no immutable deployment record matches reviewed migration bytes")
+  const evidence = JSON.parse(output)
+  if (!validateMatchingMigrationEvidence(evidence, binding, expectedInventorySha256)) {
+    throw new Error("deployment-evidence-invalid: immutable deployment record failed independent validation")
+  }
+  return evidence
 }
 
 function assertValueFlowDisabledWithQuery(query) {
@@ -294,18 +317,19 @@ async function main() {
   const projectRef = process.env.SUPABASE_PROJECT_REF
   const targetEnvironment = process.env.TARGET_ENVIRONMENT
   const diagnosticMode = process.argv[2] === "diagnose"
+  const driftMode = process.argv[2] === "drift"
   const repairManifestPath = path.join(process.cwd(), "supabase/schema-repair-manifests/20260812_dev_public_schema_drift.json")
   const repairManifest = diagnosticMode && existsSync(repairManifestPath)
     ? JSON.parse(readFileSync(repairManifestPath, "utf8"))
     : null
   const deploymentBinding = {
-    candidateGitSha: process.env.GITHUB_SHA,
+    candidateGitSha: process.env.OBSERVATION_GIT_SHA ?? process.env.GITHUB_SHA,
     actionsRunId: process.env.GITHUB_RUN_ID,
     runAttempt: process.env.GITHUB_RUN_ATTEMPT,
     environment: targetEnvironment,
     projectRef,
   }
-  if (!remoteDbUrl || !projectRef || !["dev", "main"].includes(targetEnvironment) || !/^[0-9a-f]{40}$/.test(deploymentBinding.candidateGitSha ?? "") || (!diagnosticMode && (!/^\d+$/.test(deploymentBinding.actionsRunId ?? "") || !/^\d+$/.test(deploymentBinding.runAttempt ?? "")))) {
+  if (!remoteDbUrl || !projectRef || !["dev", "main"].includes(targetEnvironment) || !/^[0-9a-f]{40}$/.test(deploymentBinding.candidateGitSha ?? "") || (!diagnosticMode && !driftMode && (!/^\d+$/.test(deploymentBinding.actionsRunId ?? "") || !/^\d+$/.test(deploymentBinding.runAttempt ?? "")))) {
     throw new Error("Candidate-bound GitHub deployment context, SUPABASE_SCHEMA_DB_URL, SUPABASE_PROJECT_REF, and TARGET_ENVIRONMENT=dev|main are required")
   }
 
@@ -350,12 +374,20 @@ sql_paths = []
       throw new Error(`Migration history drift: expected=${expectedVersions.join(",")} observed=${observedVersions.join(",")}`)
     }
     let expectedEvidence
-    if (!diagnosticMode) {
+    if (!diagnosticMode && !driftMode) {
       expectedEvidence = buildMigrationDeployEvidence(deploymentBinding)
       const observedEvidence = observedMigrationEvidence(remoteDbUrl, deploymentBinding)
       if (!validateMigrationDeployEvidence(expectedEvidence, observedEvidence)) {
         throw new Error("migration-digest: remote candidate-bound deploy evidence differs from reviewed migration bytes")
       }
+    } else if (driftMode) {
+      const expectedInventory = buildMigrationDeployEvidence({
+        ...deploymentBinding,
+        actionsRunId: process.env.GITHUB_RUN_ID ?? "1",
+        runAttempt: process.env.GITHUB_RUN_ATTEMPT ?? "1",
+      })
+      expectedEvidence = latestMatchingMigrationEvidence(remoteDbUrl, deploymentBinding, expectedInventory.inventorySha256)
+      if (canonicalJson(expectedEvidence.migrations) !== canonicalJson(expectedInventory.migrations)) throw new Error("migration-digest: matching digest record has different ordered inventory")
     }
     const valueFlowControls = diagnosticMode
       ? assertValueFlowDisabledWithQuery((sql) => psqlFromParityContainer(projectId, remoteDbUrl, sql))
@@ -365,7 +397,7 @@ sql_paths = []
     const expectedDump = dumpPublicSchemaFromParityContainer(projectId, containerLocalDbUrl)
     const observedDump = dumpPublicSchemaFromParityContainer(projectId, remoteDumpDbUrl)
     const diagnostic = buildSchemaDiagnostic(expectedDump, observedDump, {
-      candidateGitSha: process.env.GITHUB_SHA,
+      candidateGitSha: process.env.OBSERVATION_GIT_SHA ?? process.env.GITHUB_SHA,
       environment: targetEnvironment,
       projectRef,
       observedAt: new Date().toISOString(),
@@ -394,7 +426,7 @@ sql_paths = []
     const { expectedSha256, observedSha256 } = diagnostic
     const result = {
       contractVersion: "fundloop.public-schema-parity/v1",
-      candidateGitSha: process.env.GITHUB_SHA ?? "local-unbound",
+      candidateGitSha: process.env.OBSERVATION_GIT_SHA ?? process.env.GITHUB_SHA ?? "local-unbound",
       environment: targetEnvironment,
       projectRef,
       postgresMajor: 17,
@@ -404,7 +436,17 @@ sql_paths = []
       observedSha256,
       observedAt: new Date().toISOString(),
       migrationCount: observedVersions.length,
+      migrationHistory: observedVersions,
+      migrationInventory: expectedMigrations,
       migrationInventorySha256: diagnostic.migrationInventorySha256,
+      certifiedDeployment: {
+        gitSha: expectedEvidence?.candidateGitSha ?? process.env.GITHUB_SHA,
+        githubRunId: String(expectedEvidence?.actionsRunId ?? process.env.GITHUB_RUN_ID),
+        githubRunAttempt: Number(expectedEvidence?.runAttempt ?? process.env.GITHUB_RUN_ATTEMPT),
+        recordedAt: expectedEvidence?.recordedAt ?? new Date().toISOString(),
+        environment: targetEnvironment,
+        projectRef,
+      },
       productionValueFlowControlTableCount: valueFlowControls.tableCount,
       enabledProductionValueFlowControlCount: valueFlowControls.enabledCount,
     }

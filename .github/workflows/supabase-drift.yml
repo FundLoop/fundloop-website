@@ -1,0 +1,134 @@
+name: Supabase Drift Detection
+
+on:
+  push:
+    branches: [dev, main]
+  workflow_run:
+    workflows: [Supabase Deploy]
+    types: [completed]
+  schedule:
+    - cron: "17 6 * * *"
+  workflow_dispatch:
+    inputs:
+      target_environment:
+        description: Environment to observe without mutation
+        required: true
+        type: choice
+        options: [dev, main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: supabase-drift-${{ inputs.target_environment || github.ref_name || 'scheduled' }}
+  cancel-in-progress: false
+
+jobs:
+  classify:
+    runs-on: ubuntu-latest
+    outputs:
+      should_observe: ${{ steps.classify.outputs.should_observe }}
+    steps:
+      - uses: actions/checkout@v4
+        if: github.event_name == 'push'
+        with: { fetch-depth: 0 }
+      - name: Classify observation ownership
+        id: classify
+        run: |
+          set -euo pipefail
+          if [[ "${GITHUB_EVENT_NAME}" != "push" ]]; then
+            echo "should_observe=true" >> "$GITHUB_OUTPUT"
+          else
+            should_observe="$(git diff --name-only "${{ github.event.before }}" "${{ github.sha }}" | node scripts/classify-supabase-drift-push.mjs)"
+            echo "should_observe=${should_observe}" >> "$GITHUB_OUTPUT"
+          fi
+  observe:
+    name: Read-only ${{ matrix.target }} drift
+    strategy:
+      fail-fast: false
+      matrix:
+        target: ${{ fromJSON(format('["{0}"]', github.event_name == 'schedule' && 'dev' || inputs.target_environment || github.event.workflow_run.head_branch || github.ref_name)) }}
+    needs: classify
+    if: needs.classify.outputs.should_observe == 'true' && (github.event_name != 'workflow_run' || (github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.repository.full_name == github.repository && (github.event.workflow_run.head_branch == 'dev' || github.event.workflow_run.head_branch == 'main')))
+    runs-on: ubuntu-latest
+    environment: ${{ matrix.target == 'main' && 'Production' || 'Preview' }}
+    env:
+      DEV_SUPABASE_SESSION_POOLER_URL: ${{ secrets.DEV_SUPABASE_SESSION_POOLER_URL }}
+      MAIN_SUPABASE_SESSION_POOLER_URL: ${{ secrets.MAIN_SUPABASE_SESSION_POOLER_URL }}
+      SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event_name == 'workflow_run' && github.event.workflow_run.head_sha || github.event_name == 'push' && github.sha || matrix.target }}
+      - uses: actions/setup-node@v4
+        with: { node-version: 22 }
+      - run: corepack enable && pnpm install --frozen-lockfile
+      - uses: supabase/setup-cli@v1
+        with: { version: 2.113.0 }
+      - run: sudo apt-get update && sudo apt-get install --yes postgresql-client
+      - name: Resolve read-only target
+        id: target
+        env:
+          TARGET_ENVIRONMENT: ${{ matrix.target }}
+        run: |
+          set -euo pipefail
+          if [[ "${TARGET_ENVIRONMENT}" == "dev" ]]; then db_url="${DEV_SUPABASE_SESSION_POOLER_URL}"; else db_url="${MAIN_SUPABASE_SESSION_POOLER_URL}"; fi
+          [[ -n "${db_url}" ]] || { echo "::error::Missing required ${TARGET_ENVIRONMENT} read-only database credential."; exit 1; }
+          project_ref="$(DB_URL="${db_url}" node -e 'const u=new URL(process.env.DB_URL);const m=decodeURIComponent(u.username).match(/^postgres\.([a-z0-9]{20,})$/);if(!m)throw Error("invalid pooler username");console.log(m[1])')"
+          echo "db_url=${db_url}" >> "$GITHUB_OUTPUT"
+          echo "project_ref=${project_ref}" >> "$GITHUB_OUTPUT"
+          echo "observation_sha=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
+      - name: Observe exact schema and migration drift
+        env:
+          TARGET_ENVIRONMENT: ${{ matrix.target }}
+          SUPABASE_PROJECT_REF: ${{ steps.target.outputs.project_ref }}
+          SUPABASE_SCHEMA_DB_URL: ${{ steps.target.outputs.db_url }}
+          SUPABASE_SCHEMA_PARITY_OUTPUT: ${{ runner.temp }}/supabase-schema-parity.json
+          OBSERVATION_GIT_SHA: ${{ steps.target.outputs.observation_sha }}
+        run: node scripts/verify-supabase-schema-parity.mjs drift
+      - name: Observe exact Edge Function drift
+        env:
+          TARGET_ENVIRONMENT: ${{ matrix.target }}
+          SUPABASE_PROJECT_REF: ${{ steps.target.outputs.project_ref }}
+          SUPABASE_PARITY_OUTPUT: ${{ runner.temp }}/supabase-function-parity.json
+          OBSERVATION_GIT_SHA: ${{ steps.target.outputs.observation_sha }}
+        run: node scripts/verify-supabase-function-parity.mjs postdeploy
+      - name: Record safe hosted runtime denial
+        env:
+          TARGET_ENVIRONMENT: ${{ matrix.target }}
+          SUPABASE_PROJECT_REF: ${{ steps.target.outputs.project_ref }}
+          OBSERVATION_GIT_SHA: ${{ steps.target.outputs.observation_sha }}
+          SUPABASE_SAFE_SMOKE_OUTPUT: ${{ runner.temp }}/supabase-safe-runtime-smoke.json
+        run: |
+          set -euo pipefail
+          status_code="$(curl --silent --show-error --output /dev/null --write-out '%{http_code}' \
+            "https://${SUPABASE_PROJECT_REF}.supabase.co/functions/v1/epoch-allocation-close")"
+          SUPABASE_SAFE_SMOKE_STATUS_CODE="${status_code}" node scripts/verify-supabase-environment-manifest.mjs record-smoke
+      - name: Verify immutable observation manifest
+        id: environment_manifest
+        env:
+          SUPABASE_SCHEMA_PARITY_OUTPUT: ${{ runner.temp }}/supabase-schema-parity.json
+          SUPABASE_FUNCTION_PARITY_OUTPUT: ${{ runner.temp }}/supabase-function-parity.json
+          SUPABASE_SAFE_SMOKE_OUTPUT: ${{ runner.temp }}/supabase-safe-runtime-smoke.json
+          SUPABASE_ENVIRONMENT_MANIFEST_OUTPUT: ${{ runner.temp }}/supabase-environment-manifest.json
+          SUPABASE_MANIFEST_MODE: drift
+          OBSERVATION_GIT_SHA: ${{ steps.target.outputs.observation_sha }}
+        run: node scripts/verify-supabase-environment-manifest.mjs compose
+      - uses: actions/upload-artifact@v4
+        with:
+          name: environment-manifest-${{ matrix.target }}-deploy-${{ steps.environment_manifest.outputs.deployment_sha }}-${{ steps.environment_manifest.outputs.deployment_run_id }}-${{ steps.environment_manifest.outputs.deployment_run_attempt }}-observe-${{ steps.environment_manifest.outputs.observation_sha }}-${{ steps.environment_manifest.outputs.observation_run_id }}-${{ steps.environment_manifest.outputs.observation_run_attempt }}
+          path: ${{ runner.temp }}/supabase-environment-manifest.json
+          if-no-files-found: error
+          retention-days: 90
+      - name: Upload sanitized drift diagnostics
+        if: ${{ always() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: supabase-drift-diagnostics-${{ matrix.target }}-${{ github.run_id }}-${{ github.run_attempt }}
+          path: |
+            ${{ runner.temp }}/supabase-schema-parity.json
+            ${{ runner.temp }}/supabase-schema-diagnostic.json
+            ${{ runner.temp }}/supabase-function-parity.json
+            ${{ runner.temp }}/supabase-safe-runtime-smoke.json
+          if-no-files-found: warn
+          retention-days: 30

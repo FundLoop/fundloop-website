@@ -825,6 +825,66 @@ syntax impossible to silently ignore.
   and require CI-owned read-back of all 62 functions plus the safe Dev smoke.
 - Keep #160 In Progress until that hosted evidence passes.
 
+### session v23: Publish immutable delivery manifests and detect remote drift (#161)
+
+- Timestamp: 2026-08-12T18:29:13-04:00
+- Agent: Codex
+- Branch: `codex/155-goal-1-delivery-integrity-post-ci`
+- Head: `f046192fd7732fb82343468e1fe6cb2b1d9e35ac`
+
+#### Objective
+
+Bind each successfully verified Supabase environment to immutable deployment and
+observation evidence, then detect schema, migration, function-source, runtime-control,
+and safe-hosted-boundary drift without mutating or automatically repairing a remote.
+
+#### Actions Taken
+
+- Added the versioned `fundloop.environment-delivery-manifest/v1` composer and
+  fail-closed verifier with distinct certified-deployment and observation provenance,
+  canonical inventory/evidence/self digests, exact migration/schema/function parity,
+  evidence-bearing prerequisites, and zero enabled value-flow controls.
+- Hardened migration drift observation to select the latest append-only deployment
+  evidence whose independently recomputed ordered byte inventory exactly matches the
+  checkout; function source observation remains bound to the observed checkout SHA.
+- Published collision-resistant immutable artifacts only after exact parity and a
+  sanitized, digest-bound unauthenticated `401` runtime smoke.
+- Added a read-only drift workflow for every push, successful same-repo backend deploy,
+  daily Dev schedule, and explicit manual target. A shared path classifier gives UI-only
+  pushes direct ownership while backend or mixed pushes wait for post-deploy observation.
+- Kept the classifier and both Supabase Deploy path lists exactly aligned by test, added
+  failure-safe sanitized diagnostics, documented the Production approval boundary, and
+  added broad provenance/tamper/ordering/digest/status tests.
+
+#### Tests And Validation Notes
+
+- Passed on Node 22: focused manifest and delivery suites, 17/17 tests.
+- Passed on Node 22 with the single-worker fork pool: full Vitest suite, 176 files and
+  896 tests; full ESLint; TypeScript typecheck; Next.js production build; contracts,
+  17/17 tests.
+- Passed: script syntax, both workflow YAML parses, and `git diff --check`.
+- The first full `CI=1 pnpm check` was interrupted only after its default Vitest pool
+  produced no progress for more than three minutes amid host-wide stale Vitest process
+  contention; the same full gates then passed separately using one fork worker.
+- A local read-only Dev smoke was not run because neither required existing Dev database
+  credential nor the Management API token was present in the environment. No prompt,
+  remote call, workflow dispatch, mutation, push, PR, Production action, #162 work, or
+  value-flow activation occurred.
+
+#### Reflections
+
+UI-only delivery observation must not pretend the application SHA deployed the backend.
+The immutable manifest therefore records the current observation separately and accepts
+an earlier backend deployment only through exact append-only migration-byte evidence and
+fresh direct schema/function read-back.
+
+#### Suggested Next Steps
+
+- Run independent validation, then publish the branch and let hosted CI perform the
+  authorized Dev read-only observation with its existing protected credentials.
+- Keep Production observation behind the human `Production` environment approval and
+  complete that protected release/validation path under #162.
+
 ### session v22: Reject control whitespace in Bearer credentials (#160)
 
 - Timestamp: 2026-08-12T17:49:39-04:00

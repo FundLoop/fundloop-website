@@ -3,7 +3,7 @@ import os from "node:os"
 import path from "node:path"
 import { describe, expect, it } from "vitest"
 import { classifyFunctionInventory, compareClosurePaths, expectedFunctionNames, expectedSourceClosure } from "../scripts/verify-supabase-function-parity.mjs"
-import { buildMigrationDeployEvidence, buildSchemaDiagnostic, expectedMigrationInventory, migrationInventorySha256, normalizePublicSchema, validateMigrationDeployEvidence, validatePendingSchemaRepair } from "../scripts/verify-supabase-schema-parity.mjs"
+import { buildMigrationDeployEvidence, buildSchemaDiagnostic, expectedMigrationInventory, migrationInventorySha256, normalizePublicSchema, validateMatchingMigrationEvidence, validateMigrationDeployEvidence, validatePendingSchemaRepair } from "../scripts/verify-supabase-schema-parity.mjs"
 
 const workflow = readFileSync(".github/workflows/supabase-deploy.yml", "utf8")
 const schemaVerifier = readFileSync("scripts/verify-supabase-schema-parity.mjs", "utf8")
@@ -136,6 +136,27 @@ describe("Supabase delivery parity", () => {
     }
   })
 
+  it("independently rejects a forged latest deployment-evidence index", () => {
+    const migrations = [{ version: "20260101000000", name: "20260101000000_first.sql", fileSha256: "a".repeat(64) }]
+    const inventorySha256 = migrationInventorySha256(migrations)
+    const binding = { environment: "dev", projectRef: "a".repeat(20) }
+    const evidence = {
+      contractVersion: "fundloop.migration-deploy-evidence/v1",
+      candidateGitSha: "b".repeat(40),
+      actionsRunId: "42",
+      runAttempt: 1,
+      ...binding,
+      migrations,
+      inventorySha256,
+      recordedAt: "2026-08-12T19:00:00Z",
+    }
+    expect(validateMatchingMigrationEvidence(evidence, binding, inventorySha256)).toBe(true)
+    const changed = structuredClone(evidence)
+    changed.migrations[0].fileSha256 = "0".repeat(64)
+    expect(validateMatchingMigrationEvidence(changed, binding, inventorySha256)).toBe(false)
+    expect(validateMatchingMigrationEvidence({ ...evidence, environment: "main" }, binding, inventorySha256)).toBe(false)
+  })
+
   it("keeps candidate-bound migration evidence append-only and non-browser-readable", () => {
     const sql = readFileSync("supabase/migrations/20260812120000_supabase_deploy_migration_evidence.sql", "utf8")
     expect(sql).toContain("BEFORE UPDATE OR DELETE")
@@ -174,6 +195,8 @@ describe("Supabase delivery parity", () => {
     expect(workflow.indexOf(confirmedPrune)).toBeLessThan(workflow.indexOf(postdeployReadback))
     expect(workflow).toContain("epoch-allocation-close")
     expect(workflow).toContain('status_code}" != "401"')
+    expect(workflow).toContain("Record safe hosted runtime denial")
+    expect(workflow.indexOf("Record safe hosted runtime denial")).toBeLessThan(workflow.indexOf("Publish immutable environment manifest"))
     expect(workflow).toContain("actions/upload-artifact@v4")
     expect(workflow).toContain("if: ${{ always() && steps.target.outputs.mode == 'deploy' }}")
     expect(workflow).toContain("if-no-files-found: warn")

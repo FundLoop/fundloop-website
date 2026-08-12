@@ -7,10 +7,12 @@ on:
       - main
     paths:
       - ".github/workflows/supabase-deploy.yml"
+      - ".github/workflows/supabase-drift.yml"
       - "lib/**"
       - "types/**"
       - "package.json"
       - "pnpm-lock.yaml"
+      - "scripts/classify-supabase-drift-push.mjs"
       - "scripts/verify-supabase-*.mjs"
       - "supabase/config.toml"
       - "supabase/functions/**"
@@ -23,10 +25,12 @@ on:
       - main
     paths:
       - ".github/workflows/supabase-deploy.yml"
+      - ".github/workflows/supabase-drift.yml"
       - "lib/**"
       - "types/**"
       - "package.json"
       - "pnpm-lock.yaml"
+      - "scripts/classify-supabase-drift-push.mjs"
       - "scripts/verify-supabase-*.mjs"
       - "supabase/config.toml"
       - "supabase/functions/**"
@@ -332,10 +336,13 @@ jobs:
           SUPABASE_PARITY_OUTPUT="${RUNNER_TEMP}/supabase-function-parity.json" \
             node scripts/verify-supabase-function-parity.mjs postdeploy
 
-      - name: Smoke newly delivered Dev function
-        if: steps.target.outputs.mode == 'deploy' && steps.target.outputs.target_environment == 'dev'
+      - name: Record safe hosted runtime denial
+        if: steps.target.outputs.mode == 'deploy'
         env:
           SUPABASE_PROJECT_REF: ${{ steps.target.outputs.project_ref }}
+          TARGET_ENVIRONMENT: ${{ steps.target.outputs.target_environment }}
+          OBSERVATION_GIT_SHA: ${{ github.sha }}
+          SUPABASE_SAFE_SMOKE_OUTPUT: ${{ runner.temp }}/supabase-safe-runtime-smoke.json
         run: |
           set -euo pipefail
           status_code="$(curl --silent --show-error --output /dev/null --write-out '%{http_code}' \
@@ -344,7 +351,19 @@ jobs:
             echo "::error::Expected safe unauthenticated epoch-allocation-close denial (401), received ${status_code}."
             exit 1
           fi
-          echo "Safe Dev smoke passed for ${GITHUB_SHA}: epoch-allocation-close denied unauthenticated access."
+          SUPABASE_SAFE_SMOKE_STATUS_CODE="${status_code}" node scripts/verify-supabase-environment-manifest.mjs record-smoke
+          echo "Safe hosted smoke passed for ${GITHUB_SHA}: epoch-allocation-close denied unauthenticated access."
+
+      - name: Publish immutable environment manifest
+        id: environment_manifest
+        if: steps.target.outputs.mode == 'deploy'
+        env:
+          SUPABASE_SCHEMA_PARITY_OUTPUT: ${{ runner.temp }}/supabase-schema-parity.json
+          SUPABASE_FUNCTION_PARITY_OUTPUT: ${{ runner.temp }}/supabase-function-parity.json
+          SUPABASE_SAFE_SMOKE_OUTPUT: ${{ runner.temp }}/supabase-safe-runtime-smoke.json
+          SUPABASE_ENVIRONMENT_MANIFEST_OUTPUT: ${{ runner.temp }}/supabase-environment-manifest.json
+          SUPABASE_MANIFEST_MODE: deploy
+        run: node scripts/verify-supabase-environment-manifest.mjs compose
 
       - name: Upload sanitized Supabase parity evidence
         if: ${{ always() && steps.target.outputs.mode == 'deploy' }}
@@ -355,8 +374,19 @@ jobs:
             ${{ runner.temp }}/supabase-schema-parity.json
             ${{ runner.temp }}/supabase-schema-diagnostic.json
             ${{ runner.temp }}/supabase-function-parity.json
+            ${{ runner.temp }}/supabase-safe-runtime-smoke.json
+            ${{ runner.temp }}/supabase-environment-manifest.json
           if-no-files-found: warn
           retention-days: 30
+
+      - name: Upload immutable environment manifest
+        if: steps.target.outputs.mode == 'deploy'
+        uses: actions/upload-artifact@v4
+        with:
+          name: environment-manifest-${{ steps.target.outputs.target_environment }}-deploy-${{ steps.environment_manifest.outputs.deployment_sha }}-${{ steps.environment_manifest.outputs.deployment_run_id }}-${{ steps.environment_manifest.outputs.deployment_run_attempt }}-observe-${{ steps.environment_manifest.outputs.observation_sha }}-${{ steps.environment_manifest.outputs.observation_run_id }}-${{ steps.environment_manifest.outputs.observation_run_attempt }}
+          path: ${{ runner.temp }}/supabase-environment-manifest.json
+          if-no-files-found: error
+          retention-days: 90
 
       - name: Upload sanitized Dev schema diagnostic
         if: ${{ always() && steps.target.outputs.mode == 'dry-run' && steps.target.outputs.target_environment == 'dev' }}

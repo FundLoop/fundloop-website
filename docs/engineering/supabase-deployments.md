@@ -228,6 +228,38 @@ Absent, blank, malformed, or non-Bearer Authorization headers are rejected local
 credential reaches provider authentication; provider transport failures remain a
 sanitized `500`, distinct from missing credentials.
 
+## Immutable delivery manifests and read-only drift
+
+Every successful Supabase deployment now publishes a verified
+`fundloop.environment-delivery-manifest/v1` artifact. Its collision-resistant name
+contains the environment plus both identities: the certified backend deployment
+SHA/run/attempt and the read-only observation SHA/run/attempt. The manifest binds the
+append-only, byte-digested migration evidence; exact remote history and normalized
+schema; the independently derived, ordered Edge Function closure inventory and remote
+source/bundle/version/status read-back; the value-flow control read-back; and the safe
+hosted `401` denial. It intentionally does not claim branch protection, approvals, or
+fresh-replay evidence that this workflow did not independently observe.
+
+Observation and deployment provenance are distinct. A UI-only checkout may observe a
+certified backend deployment from an earlier SHA only when the latest matching
+append-only deploy-evidence record independently recomputes to the checkout's exact
+ordered migration byte inventory. Function source parity remains bound to the current
+observation checkout. In deployment mode the two SHA/run/attempt identities must be
+identical.
+
+`Supabase Drift Detection` never deploys, repairs, seeds, prunes, or invokes database
+mutation commands. UI-only dev/main pushes are observed directly. A shared classifier
+assigns any backend or mixed push to `Supabase Deploy`; only its successful, same-repo
+`workflow_run` performs the read-only observation, eliminating the pre-deploy race.
+The classifier's canonical path set is tested for exact equality with both deploy
+workflow path lists. The daily schedule observes Dev only. Production observation is
+an explicit manual or main-push protected-environment operation; missing Production
+approval or read-only credentials fails closed and remains part of #162 rather than
+being silently skipped. Scheduled Production automation is not claimed.
+An Actions job failure is the automatic drift alert. Failure-safe artifact upload
+retains only the sanitized component evidence that was produced before the blocker;
+invalid observations are never published as immutable passing manifests.
+
 FundLoop no longer keeps a function-local CUBID mirror under `supabase/functions/_vendor/`. CUBID server and Edge code imports the runtime-agnostic `@cubid/core` package, and the Supabase Deno import map resolves it through `jsr:@cubid/core@0.1.0`. Browser-only CUBID compatibility helpers may still depend on local vendored tarballs, but Edge Functions must not depend on `node_modules/@cubid/api/dist/index.mjs`.
 
 The workflow pins Supabase CLI `2.113.0` instead of using `latest`. Any future pin
