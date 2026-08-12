@@ -38,6 +38,42 @@ function digestFiles(root, files) {
   return hash.digest("hex")
 }
 
+function resolveRepoImport(fromFile, specifier, root) {
+  if (!specifier.startsWith(".")) return null
+  const candidate = path.resolve(path.dirname(fromFile), specifier)
+  const options = [candidate, `${candidate}.ts`, `${candidate}.js`, `${candidate}.mjs`, path.join(candidate, "index.ts")]
+  const resolved = options.find((file) => statSync(file, { throwIfNoEntry: false })?.isFile())
+  if (!resolved || path.relative(root, resolved).startsWith("..")) throw new Error(`Unresolved or out-of-repository import ${specifier} from ${path.relative(root, fromFile)}`)
+  return resolved
+}
+
+export function expectedSourceClosure(functionName, root = repoRoot) {
+  const entrypoint = path.join(root, "supabase/functions", functionName, "index.ts")
+  if (!statSync(entrypoint, { throwIfNoEntry: false })?.isFile()) throw new Error(`Missing function entrypoint: ${functionName}`)
+  const visited = new Set()
+  const visit = (file) => {
+    if (visited.has(file)) return
+    visited.add(file)
+    const source = readFileSync(file, "utf8")
+    const imports = [...source.matchAll(/(?:from\s*|import\s*|import\s*\(\s*)["']([^"']+)["']/g)].map((match) => match[1])
+    for (const specifier of imports) {
+      const dependency = resolveRepoImport(file, specifier, root)
+      if (dependency) visit(dependency)
+    }
+  }
+  visit(entrypoint)
+  return [...visited].map((file) => path.relative(root, file).split(path.sep).join("/")).sort()
+}
+
+export function compareClosurePaths(expectedPaths, observedPaths) {
+  const expected = [...expectedPaths].sort()
+  const observed = [...observedPaths].sort()
+  return {
+    missingPaths: expected.filter((relative) => !observed.includes(relative)),
+    extraPaths: observed.filter((relative) => !expected.includes(relative)),
+  }
+}
+
 export function classifyFunctionInventory(expected, observed, retired, environment, now = Date.now()) {
   const expectedSet = new Set(expected)
   const observedSet = new Set(observed.map((entry) => entry.name))
@@ -66,16 +102,17 @@ function verifyDownloadedSource(projectRef, functionName) {
     mkdirSync(path.join(tempRoot, "supabase"), { recursive: true })
     cpSync(path.join(repoRoot, "supabase/config.toml"), path.join(tempRoot, "supabase/config.toml"), { recursive: true })
     execFileSync("supabase", ["functions", "download", functionName, "--project-ref", projectRef, "--workdir", tempRoot, "--use-api"], { stdio: "pipe" })
-    const downloadedFiles = filesUnder(tempRoot).filter((file) => !file.endsWith("supabase/config.toml"))
+    const downloadedFiles = filesUnder(tempRoot).filter((file) => !file.includes(`${path.sep}supabase${path.sep}.temp${path.sep}`) && !file.endsWith("supabase/config.toml"))
     if (downloadedFiles.length === 0) throw new Error(`Downloaded function ${functionName} has no source files`)
-    for (const downloaded of downloadedFiles) {
-      const relative = path.relative(tempRoot, downloaded)
-      const local = path.join(repoRoot, relative)
-      if (!statSync(local, { throwIfNoEntry: false })?.isFile()) throw new Error(`Remote ${functionName} contains untracked source: ${relative}`)
-      if (!readFileSync(downloaded).equals(readFileSync(local))) throw new Error(`Remote ${functionName} source differs: ${relative}`)
+    const expectedPaths = expectedSourceClosure(functionName)
+    const observedPaths = downloadedFiles.map((file) => path.relative(tempRoot, file).split(path.sep).join("/")).sort()
+    const { missingPaths, extraPaths } = compareClosurePaths(expectedPaths, observedPaths)
+    if (missingPaths.length || extraPaths.length) throw new Error(`Remote ${functionName} closure mismatch: missing=${missingPaths.join(",")} extra=${extraPaths.join(",")}`)
+    const localFiles = expectedPaths.map((relative) => path.join(repoRoot, relative))
+    for (const relative of expectedPaths) {
+      if (!readFileSync(path.join(tempRoot, relative)).equals(readFileSync(path.join(repoRoot, relative)))) throw new Error(`Remote ${functionName} source differs: ${relative}`)
     }
     const observedSourceSha256 = digestFiles(tempRoot, downloadedFiles)
-    const localFiles = downloadedFiles.map((downloaded) => path.join(repoRoot, path.relative(tempRoot, downloaded)))
     const expectedSourceSha256 = digestFiles(repoRoot, localFiles)
     if (expectedSourceSha256 !== observedSourceSha256) throw new Error(`Remote ${functionName} source digest differs from reviewed source`)
     return { expectedSourceSha256, observedSourceSha256 }

@@ -9142,6 +9142,45 @@ export type Database = {
           },
         ]
       }
+      supabase_deploy_migration_evidence: {
+        Row: {
+          actions_run_id: number
+          candidate_git_sha: string
+          contract_version: string
+          deployment_environment: string
+          id: number
+          inventory_sha256: string
+          migration_inventory: Json
+          project_ref: string
+          recorded_at: string
+          run_attempt: number
+        }
+        Insert: {
+          actions_run_id: number
+          candidate_git_sha: string
+          contract_version?: string
+          deployment_environment: string
+          id?: never
+          inventory_sha256: string
+          migration_inventory: Json
+          project_ref: string
+          recorded_at?: string
+          run_attempt: number
+        }
+        Update: {
+          actions_run_id?: number
+          candidate_git_sha?: string
+          contract_version?: string
+          deployment_environment?: string
+          id?: never
+          inventory_sha256?: string
+          migration_inventory?: Json
+          project_ref?: string
+          recorded_at?: string
+          run_attempt?: number
+        }
+        Relationships: []
+      }
       stripe_acss_debit_commands: {
         Row: {
           accounting_period_id: number

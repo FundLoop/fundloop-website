@@ -89,7 +89,7 @@ Workflow helpers must not print rewritten database URLs to logs. If a helper con
 
 Local `supabase db reset` and `supabase migration up` commands normally do not set `app.settings.fundloop_target_environment`. Target-aware migrations should treat a missing marker as local/no-op unless the migration is explicitly required for local schema correctness. Unsupported explicit marker values should still fail loudly.
 
-Before remote mutation, deploy runs resolve every tracked Edge Function import graph
+Before either a remote dry-run or any deploy-mode database mutation, runs resolve every tracked Edge Function import graph
 with the pinned Deno runtime and frozen lockfile. This catches missing cross-workspace
 imports before the first remote bundle is created:
 
@@ -124,13 +124,20 @@ fingerprint. Missing, extra, inactive, or unverifiable functions block parity.
 
 After deployment, the workflow lists the remote inventory again, requires exactly
 the derived local names with `ACTIVE` status, downloads every deployed source closure
-through the management API, and compares every byte plus the canonical closure
+through the management API, and compares its path set against a separately derived
+transitive checkout closure before comparing every byte plus the canonical closure
 SHA-256 against the reviewed checkout. It records the remote bundle digest, version,
 status, project ref, environment, candidate Git SHA, and observation time. The
 database verifier independently replays all tracked migrations into a randomized
-Postgres 17 local stack, requires exact remote migration-version equality, requires
-every public `production_value_flow_enabled` control to remain disabled, and compares normalized
-`pg_dump --schema-only --schema=public` fingerprints byte-for-byte.
+Postgres 17 local stack and requires exact remote migration-version equality. Before
+`db push`, the deploy run persists the sorted per-file SHA-256 inventory with the
+candidate Git SHA, Actions run/attempt, environment, and project ref in the repo-owned
+append-only `supabase_deploy_migration_evidence` table. Post-deploy parity reads that
+exact record back and independently recomputes both its file and aggregate digests;
+versions without this binding are unverifiable. The verifier also requires every
+public `production_value_flow_enabled` control to remain disabled and compares the
+full normalized `pg_dump --schema-only --schema=public --no-comments` output
+byte-for-byte using the exact `pg17-public-schema-normalized-v1` algorithm.
 
 The two sanitized `fundloop.public-schema-parity/v1` and
 `fundloop.edge-function-parity/v1` JSON records are uploaded as one 30-day Actions

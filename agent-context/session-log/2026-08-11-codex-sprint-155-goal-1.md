@@ -453,3 +453,60 @@ implementation without making the Edge closure depend on the contracts workspace
 - Let the orchestrator push the existing branch and require PR #191's Contracts Test
   plus all #160 delivery gates to pass before merge.
 - Do not deploy manually, start #161, or cross the Production/value-flow boundary.
+
+### session v10: Close PR #191 exact-parity review gaps (#160)
+
+- Timestamp: 2026-08-12T08:06:33-04:00
+- Agent: Codex
+- Branch: `codex/155-goal-1-delivery-integrity-post-ci`
+- Head: `180720531c4cbc960642f8b7f7986d90b881a54a`
+
+#### Objective
+
+Address all four actionable PR #191 review findings without weakening exact schema,
+migration, function-source, or pre-mutation delivery coverage.
+
+#### Actions Taken
+
+- Added a forward-only append-only deploy-evidence table and generated type. Before
+  `db push`, CI now persists the reviewed candidate's sorted migration filenames and
+  exact raw-byte SHA-256 values with Git SHA, Actions run/attempt, target environment,
+  and project ref. Post-deploy parity reads back and independently recomputes every
+  file and aggregate digest; missing or changed evidence fails `migration-digest`.
+- Replaced downloaded-file-selected local hashing with an independently derived
+  transitive checkout closure. Remote missing/extra paths fail before byte comparison,
+  and expected/observed closure digests are computed from their own path sets.
+- Moved dependency install and frozen Deno graph resolution ahead of both PR dry-run
+  and deploy database steps, so an invalid Edge graph cannot follow remote mutation.
+- Implemented contract section 2.4 exactly: Postgres 17 `pg_dump --no-comments`, CRLF
+  conversion, comment/blank/restrict removal, trailing ASCII-space trimming, exactly
+  one final LF, full public schema coverage, and exact client-version recording.
+- Added positive/negative tests for migration byte/binding/duplicate drift, function
+  closure path drift, workflow ordering, append-only evidence, and normalization.
+- Updated the deployment runbook for the new evidence and closure boundaries.
+
+#### Tests And Validation Notes
+
+- Passed: Node 22 focused delivery-parity suite, 8/8 tests.
+- Passed: frozen Deno import resolution for all 62 Edge Function entrypoints.
+- Passed: task-owned fresh replay of 94 migrations through `20260812120000`, three
+  representative SQL suites, invalid migration rejection, and scoped cleanup.
+- Passed: candidate-bound two-stack Postgres 17 schema parity, including remote
+  migration digest read-back and canonical full-public-schema SHA-256
+  `1d9b2700029d53c82d59b077fa52cbed6802120b6755b9821d278ebfd3c50102`;
+  reviewed migration inventory SHA-256
+  `40481dbaf772009a793295402a7e07473e269e6502bb2bf77b80776625484f0e`.
+- Passed: Node 22 contracts, 17/17; focused ESLint; full TypeScript typecheck;
+  workflow YAML parsing; script syntax; and `git diff --check`.
+
+#### Reflections
+
+Versions, downloaded paths, and nominal step ordering are each weaker than reviewed
+bytes and independent derivation. The delivery record now survives as append-only
+remote evidence, and graph/schema checks fail before the authority they guard.
+
+#### Suggested Next Steps
+
+- Let the orchestrator push the existing PR branch, reply to and resolve the four
+  named review threads, then require all PR checks without requesting rereview.
+- Do not deploy manually, start #161, or cross the Production/value-flow boundary.
