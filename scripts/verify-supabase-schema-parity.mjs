@@ -236,8 +236,30 @@ export function validateMigrationDeployEvidence(expected, observed) {
     && observed.inventorySha256 === expected.inventorySha256
 }
 
+export function libpqConnectionEnvironment(dbUrl) {
+  const parsed = new URL(dbUrl)
+  if (!["postgres:", "postgresql:"].includes(parsed.protocol) || !parsed.hostname || !parsed.username || !parsed.pathname.startsWith("/")) throw new Error("invalid-libpq-connection-url")
+  return {
+    PGHOST: parsed.hostname,
+    PGPORT: parsed.port || "5432",
+    PGUSER: decodeURIComponent(parsed.username),
+    PGPASSWORD: decodeURIComponent(parsed.password),
+    PGDATABASE: decodeURIComponent(parsed.pathname.slice(1)),
+    PGSSLMODE: parsed.hostname === "127.0.0.1" || parsed.hostname === "localhost" ? "disable" : "require",
+  }
+}
+
+function containerLibpqConnection(projectId, dbUrl) {
+  const env = libpqConnectionEnvironment(dbUrl)
+  return {
+    args: ["exec", ...Object.keys(env).flatMap((name) => ["--env", name]), `supabase_db_${projectId}`],
+    env: { ...process.env, ...env },
+  }
+}
+
 function dumpPublicSchemaFromParityContainer(projectId, dbUrl) {
-  return run("docker", ["exec", `supabase_db_${projectId}`, "pg_dump", "--schema-only", "--schema=public", "--no-owner", "--no-privileges", "--no-comments", dbUrl], { encoding: "utf8" })
+  const connection = containerLibpqConnection(projectId, dbUrl)
+  return run("docker", [...connection.args, "pg_dump", "--schema-only", "--schema=public", "--no-owner", "--no-privileges", "--no-comments"], { encoding: "utf8", env: connection.env })
 }
 
 function pgDumpVersionFromParityContainer(projectId) {
@@ -245,12 +267,18 @@ function pgDumpVersionFromParityContainer(projectId) {
 }
 
 function psqlFromParityContainer(projectId, dbUrl, sql) {
-  return run("docker", ["exec", `supabase_db_${projectId}`, "psql", dbUrl, "-X", "-v", "ON_ERROR_STOP=1", "-Atqc", sql], { encoding: "utf8" }).trim()
+  const connection = containerLibpqConnection(projectId, dbUrl)
+  return run("docker", [...connection.args, "psql", "-X", "-v", "ON_ERROR_STOP=1", "-Atqc", sql], { encoding: "utf8", env: connection.env }).trim()
+}
+
+function psqlFromHost(dbUrl, sql) {
+  const connection = libpqConnectionEnvironment(dbUrl)
+  return run("psql", ["-X", "-v", "ON_ERROR_STOP=1", "-Atqc", sql], { encoding: "utf8", env: { ...process.env, ...connection } }).trim()
 }
 
 function observedMigrationEvidence(dbUrl, binding) {
   const sql = `select json_build_object('contractVersion',contract_version,'candidateGitSha',candidate_git_sha,'actionsRunId',actions_run_id::text,'runAttempt',run_attempt,'environment',deployment_environment,'projectRef',project_ref,'migrations',migration_inventory,'inventorySha256',inventory_sha256,'recordedAt',recorded_at)::text from public.supabase_deploy_migration_evidence where candidate_git_sha='${binding.candidateGitSha}' and actions_run_id=${Number(binding.actionsRunId)} and run_attempt=${Number(binding.runAttempt)} and deployment_environment='${binding.environment}' and project_ref='${binding.projectRef}' order by recorded_at desc limit 1`
-  const output = run("psql", [dbUrl, "-X", "-v", "ON_ERROR_STOP=1", "-Atqc", sql], { encoding: "utf8" }).trim()
+  const output = psqlFromHost(dbUrl, sql)
   if (!output) throw new Error("unverifiable-migration-source: no candidate-bound remote deploy evidence")
   return JSON.parse(output)
 }
@@ -269,7 +297,7 @@ export function validateMatchingMigrationEvidence(evidence, binding, expectedInv
 
 function latestMatchingMigrationEvidence(dbUrl, binding, expectedInventorySha256) {
   const sql = `select json_build_object('contractVersion',contract_version,'candidateGitSha',candidate_git_sha,'actionsRunId',actions_run_id::text,'runAttempt',run_attempt,'environment',deployment_environment,'projectRef',project_ref,'migrations',migration_inventory,'inventorySha256',inventory_sha256,'recordedAt',recorded_at)::text from public.supabase_deploy_migration_evidence where deployment_environment='${binding.environment}' and project_ref='${binding.projectRef}' and inventory_sha256='${expectedInventorySha256}' order by recorded_at desc limit 1`
-  const output = run("psql", [dbUrl, "-X", "-v", "ON_ERROR_STOP=1", "-Atqc", sql], { encoding: "utf8" }).trim()
+  const output = psqlFromHost(dbUrl, sql)
   if (!output) throw new Error("deployment-evidence-missing: no immutable deployment record matches reviewed migration bytes")
   const evidence = JSON.parse(output)
   if (!validateMatchingMigrationEvidence(evidence, binding, expectedInventorySha256)) {
@@ -294,7 +322,7 @@ function assertValueFlowDisabledWithQuery(query) {
 }
 
 function assertValueFlowDisabled(dbUrl) {
-  return assertValueFlowDisabledWithQuery((sql) => run("psql", [dbUrl, "-X", "-v", "ON_ERROR_STOP=1", "-Atqc", sql], { encoding: "utf8" }).trim())
+  return assertValueFlowDisabledWithQuery((sql) => psqlFromHost(dbUrl, sql))
 }
 
 async function main() {
