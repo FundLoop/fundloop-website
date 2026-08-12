@@ -28,7 +28,7 @@
         { "name": "financial-cutover", "sourceSha256": "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff", "remoteVersion": null, "remoteStatus": "NOT_OBSERVED" }
       ]
     },
-    "schemaFingerprint": { "algorithm": "pg17-public-schema-normalized-v1", "postgresMajor": 17, "normalizedSchemaSha256": "1212121212121212121212121212121212121212121212121212121212121212" }
+    "schemaFingerprint": { "algorithm": "pg17-public-schema-normalized-v2", "postgresMajor": 17, "normalizedSchemaSha256": "1212121212121212121212121212121212121212121212121212121212121212" }
   },
   "observed": {
     "observedAt": "2026-08-11T20:30:00-04:00",
@@ -54,7 +54,7 @@
         { "name": "financial-cutover", "sourceSha256": "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff", "remoteVersion": 1, "remoteStatus": "ACTIVE" }
       ]
     },
-    "schemaFingerprint": { "algorithm": "pg17-public-schema-normalized-v1", "postgresMajor": 17, "normalizedSchemaSha256": "1212121212121212121212121212121212121212121212121212121212121212" }
+    "schemaFingerprint": { "algorithm": "pg17-public-schema-normalized-v2", "postgresMajor": 17, "normalizedSchemaSha256": "1212121212121212121212121212121212121212121212121212121212121212" }
   },
   "deployment": {
     "githubRunId": 1,
@@ -115,7 +115,7 @@
       "approvalType": "code-review",
       "status": "approved",
       "artifactSha256": "3535353535353535353535353535353535353535353535353535353535353535",
-      "scopeManifestSha256": "870348849ace3af4fa997e48438bb99962f4bf24a71d4937b12e2619ab11d1a5",
+      "scopeManifestSha256": "eaf2467eafedd31780c8f45dddefb561a7f351034cca4676f1c4069f98516dd7",
       "approverRole": "independent-code-reviewer",
       "recordedAt": "2026-08-11T20:25:30-04:00",
       "expiresAt": "2026-08-12T20:25:30-04:00"

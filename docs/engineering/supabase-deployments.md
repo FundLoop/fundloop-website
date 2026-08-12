@@ -18,11 +18,11 @@ PR runs intentionally do not mutate shared databases or deploy functions.
 PR dry-runs targeting Dev also execute a read-only effective-schema diagnostic after
 the remote migration plan. The diagnostic replays the complete candidate history in
 a randomized Postgres 17 stack and compares that full `public` schema with a read-only
-Dev dump. Unknown drift remains blocking; the diagnostic never allowlists or
-normalizes away a mismatch.
+Dev dump. Unknown drift remains blocking; only the reviewed, unordered policy-role
+set is canonicalized.
 
 Before failing, the runner writes a sanitized
-`fundloop.public-schema-diagnostic/v1` artifact. It contains candidate/environment
+`fundloop.public-schema-diagnostic/v2` artifact. It contains candidate/environment
 bindings, exact expected/observed schema hashes, complete per-object hash manifests,
 missing/changed reviewed object identifiers, opaque hashes for unexpected remote
 identifiers, and at most 200 differing line-number/hash pairs. It contains no schema
@@ -30,6 +30,18 @@ DDL, row data, database URL, credentials, secrets, function bodies, default valu
 or unknown remote object names. Aggregate counts and hashes retain full coverage even
 when the line-difference sample is truncated. Deploy runs produce the same diagnostic
 before a schema mismatch throws, so failure-safe artifact upload preserves it.
+
+PR #192 artifact `9146378398` bound the remaining Dev drift to three structural
+differences with production value flow disabled: a legacy Boolean parse tree on the
+reviewed `monthly_cycles_month_bounds_check`; environment-specific output ordering
+for the unchanged `public_payments_read_all` role set; and one extra permissive INSERT
+policy on reviewed `cron_logs`. The extra policy name remains opaque; its complete
+object-key SHA-256 and safe catalog shape bind the forward repair. Migration
+`20260812130000_repair_dev_public_schema_drift.sql` changes only the exact matching
+legacy state, drops the extra policy through its object-key hash, and fails with
+SQLSTATE `55000` for any other state. The role-order difference is handled by schema
+normalization v2 because Postgres role OIDs are environment-specific and the role set
+is unordered.
 
 Live API read-back on 2026-08-11 still reported no protection rules on the
 `Production` environment and `can_admins_bypass=true`. It also reported no branch
@@ -153,7 +165,16 @@ exact record back and independently recomputes both its file and aggregate diges
 versions without this binding are unverifiable. The verifier also requires every
 public `production_value_flow_enabled` control to remain disabled and compares the
 full normalized `pg_dump --schema-only --schema=public --no-comments` output
-byte-for-byte using the exact `pg17-public-schema-normalized-v1` algorithm.
+byte-for-byte using the exact `pg17-public-schema-normalized-v2` algorithm. Version 2
+sorts only the unordered role set in `CREATE POLICY ... TO ...`; object names,
+definitions, expressions, and every other schema byte remain covered.
+
+One pending forward repair may pass the Dev PR diagnostic only when the tracked
+`fundloop.public-schema-repair/v1` manifest matches the complete legacy drift
+signature, the remote migration history is the byte-bound reviewed prefix, the repair
+is the sole pending migration, and production value flow remains disabled. The
+post-deploy verifier has no repair exception: it requires the complete migration
+history and zero normalized schema drift.
 
 The two sanitized `fundloop.public-schema-parity/v1` and
 `fundloop.edge-function-parity/v1` JSON records are uploaded as one 30-day Actions

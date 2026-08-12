@@ -284,7 +284,7 @@
       "additionalProperties": false,
       "required": ["algorithm", "postgresMajor", "normalizedSchemaSha256"],
       "properties": {
-        "algorithm": { "const": "pg17-public-schema-normalized-v1" },
+        "algorithm": { "const": "pg17-public-schema-normalized-v2" },
         "postgresMajor": { "const": 17 },
         "normalizedSchemaSha256": { "$ref": "#/$defs/sha256" }
       }

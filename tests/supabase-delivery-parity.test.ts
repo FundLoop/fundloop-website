@@ -3,11 +3,12 @@ import os from "node:os"
 import path from "node:path"
 import { describe, expect, it } from "vitest"
 import { classifyFunctionInventory, compareClosurePaths, expectedFunctionNames, expectedSourceClosure } from "../scripts/verify-supabase-function-parity.mjs"
-import { buildMigrationDeployEvidence, buildSchemaDiagnostic, expectedMigrationInventory, migrationInventorySha256, normalizePublicSchema, validateMigrationDeployEvidence } from "../scripts/verify-supabase-schema-parity.mjs"
+import { buildMigrationDeployEvidence, buildSchemaDiagnostic, expectedMigrationInventory, migrationInventorySha256, normalizePublicSchema, validateMigrationDeployEvidence, validatePendingSchemaRepair } from "../scripts/verify-supabase-schema-parity.mjs"
 
 const workflow = readFileSync(".github/workflows/supabase-deploy.yml", "utf8")
 const schemaVerifier = readFileSync("scripts/verify-supabase-schema-parity.mjs", "utf8")
 const retired = JSON.parse(readFileSync("supabase/retired-functions.json", "utf8"))
+const repairManifest = JSON.parse(readFileSync("supabase/schema-repair-manifests/20260812_dev_public_schema_drift.json", "utf8"))
 
 describe("Supabase delivery parity", () => {
   it("derives the expected function inventory and records the one reviewed retirement", () => {
@@ -39,20 +40,27 @@ describe("Supabase delivery parity", () => {
     expect(classifyFunctionInventory(expected, [{ name: "current" }, { name: "monthly-cycle-payout-intents-create" }], retired, "main").unexplainedExtras).toEqual(["monthly-cycle-payout-intents-create"])
   })
 
-  it("implements the exact pg17-public-schema-normalized-v1 bytes", () => {
+  it("implements the exact pg17-public-schema-normalized-v2 bytes", () => {
     expect(normalizePublicSchema("-- header\r\n\\restrict token\r\n\r\nSET statement_timeout = 0;   \r\nCREATE TABLE public.example (); \r\n\\unrestrict token\r\n"))
       .toBe("SET statement_timeout = 0;\nCREATE TABLE public.example ();\n")
     expect(normalizePublicSchema("CREATE TABLE public.example ();\n\n\n")).toBe("CREATE TABLE public.example ();\n")
+    expect(normalizePublicSchema("CREATE POLICY example ON public.example FOR SELECT TO authenticated, anon USING (true);\n"))
+      .toBe("CREATE POLICY example ON public.example FOR SELECT TO anon, authenticated USING (true);\n")
   })
 
   it("emits bounded, structural schema drift without remote DDL or unknown identifiers", () => {
     const expected = "-- Name: projects; Type: TABLE; Schema: public; Owner: -\nCREATE TABLE public.projects (id bigint);\n"
-    const observed = `${expected.replace("id bigint", "id integer")}-- Name: person@example.com; Type: TABLE; Schema: public; Owner: -\nCREATE TABLE public.\"person@example.com\" (secret text);\n`
+    const observed = `${expected.replace("id bigint", "id integer")}-- Name: projects person@example.com; Type: POLICY; Schema: public; Owner: -\nCREATE POLICY \"person@example.com\" ON public.projects USING (secret_check());\n`
     const diagnostic = buildSchemaDiagnostic(expected, observed, { candidateGitSha: "a".repeat(40) }, 1)
     expect(diagnostic.status).toBe("drift")
     expect(diagnostic.expectedObjectCount).toBe(1)
     expect(diagnostic.observedObjectCount).toBe(2)
     expect(diagnostic.objectDifferenceCount).toBe(2)
+    expect(diagnostic.objectDifferences).toContainEqual(expect.objectContaining({
+      status: "unexpected",
+      objectType: "POLICY",
+      reviewedParentObjectKey: "public.projects [TABLE]#1",
+    }))
     expect(diagnostic.lineDifferences).toHaveLength(1)
     expect(diagnostic.lineDifferencesTruncated).toBe(true)
     const serialized = JSON.stringify(diagnostic)
@@ -60,6 +68,48 @@ describe("Supabase delivery parity", () => {
     expect(serialized).not.toContain("person@example.com")
     expect(serialized).not.toContain("secret text")
     expect(serialized).not.toContain("CREATE TABLE")
+  })
+
+  it("accepts only the exact versioned Dev drift while its repair is the sole pending migration", () => {
+    const baselineMigrations = expectedMigrationInventory().slice(0, -1)
+    expect(migrationInventorySha256(baselineMigrations)).toBe(repairManifest.baselineMigrationInventorySha256)
+    const diagnostic = {
+      environment: repairManifest.environment,
+      projectRef: repairManifest.projectRef,
+      enabledProductionValueFlowControlCount: 0,
+      baselineMigrationInventorySha256: repairManifest.baselineMigrationInventorySha256,
+      legacyRepairSignature: {
+        expectedSha256: repairManifest.expectedSha256,
+        observedSha256: repairManifest.observedSha256,
+        expectedNormalizedLineCount: repairManifest.expectedNormalizedLineCount,
+        observedNormalizedLineCount: repairManifest.observedNormalizedLineCount,
+        expectedObjectCount: repairManifest.expectedObjectCount,
+        observedObjectCount: repairManifest.observedObjectCount,
+        objectDifferences: structuredClone(repairManifest.objectDifferences),
+      },
+    }
+    const observedVersions = Array.from({ length: repairManifest.baselineMigrationCount }, (_, index) => String(index).padStart(14, "0"))
+    const expectedVersions = [...observedVersions, repairManifest.repairMigrationVersion]
+    expect(validatePendingSchemaRepair(repairManifest, diagnostic, observedVersions, expectedVersions)).toBe(true)
+    expect(validatePendingSchemaRepair(repairManifest, { ...diagnostic, legacyRepairSignature: { ...diagnostic.legacyRepairSignature, observedSha256: "0".repeat(64) } }, observedVersions, expectedVersions)).toBe(false)
+    const changedBaseline = structuredClone(baselineMigrations)
+    changedBaseline[0].fileSha256 = "0".repeat(64)
+    expect(validatePendingSchemaRepair(repairManifest, { ...diagnostic, baselineMigrationInventorySha256: migrationInventorySha256(changedBaseline) }, observedVersions, expectedVersions)).toBe(false)
+    expect(validatePendingSchemaRepair(repairManifest, { ...diagnostic, legacyRepairSignature: { ...diagnostic.legacyRepairSignature, objectDifferences: diagnostic.legacyRepairSignature.objectDifferences.slice(1) } }, observedVersions, expectedVersions)).toBe(false)
+    expect(validatePendingSchemaRepair(repairManifest, diagnostic, observedVersions, [...expectedVersions, "20260812140000"])).toBe(false)
+  })
+
+  it("repairs only the exact catalog-bound Dev drift and keeps the unknown policy name opaque", () => {
+    const migration = readFileSync("supabase/migrations/20260812130000_repair_dev_public_schema_drift.sql", "utf8")
+    expect(migration).toContain("dev_public_schema_drift_precondition_failed")
+    expect(migration).toContain("8355071b6c97ae9ab87905ec5fa9b19380272cb553a01609cd7ca9e18be26946")
+    expect(migration).toContain("policy.roles = ARRAY['anon']::name[]")
+    expect(migration).toContain("v_payment_roles = ARRAY['authenticated', 'anon']::name[]")
+    expect(migration).toContain("month BETWEEN 1 AND 12")
+    expect(migration).toContain("FROM pg_catalog.pg_policy policy")
+    expect(migration).toContain("DROP POLICY %I ON public.cron_logs")
+    expect(migration).not.toContain("Enable insert")
+    expect(migration).not.toContain("Allow insert")
   })
 
   it("binds sorted reviewed migration bytes to candidate deployment evidence", () => {

@@ -569,3 +569,67 @@ silently excluded or normalized away.
   and scope a forward-only repair from the named structural differences.
 - Keep #160 In Progress; do not deploy manually, start #161, mutate Production, or
   enable value flow while Dev schema drift remains unexplained.
+
+### session v12: Bind and repair the exact Dev schema drift (#160)
+
+- Timestamp: 2026-08-12T11:16:13-04:00
+- Agent: Codex
+- Branch: `codex/155-goal-1-dev-schema-drift-recovery`
+- Head: `1ba90db45a3c3893e40e990a220691d0f2f23d7a`
+
+#### Objective
+
+Identify PR #192's sanitized Dev drift without disclosing the unknown object name,
+then provide a forward-only repair whose PR exception is bound to that exact state
+and whose post-deploy verifier still requires zero drift.
+
+#### Actions Taken
+
+- Read artifact `9146378398` and used the Supabase Management API read-only database
+  role to inspect catalog metadata only. No rows, URLs, definitions outside reviewed
+  objects, credentials, PII, or unknown raw object names were retrieved into evidence.
+- Bound the differences to the legacy Boolean parse tree for
+  `monthly_cycles_month_bounds_check`, environment-specific output ordering for the
+  unchanged `public_payments_read_all` role set, and one duplicate permissive anon
+  INSERT policy on reviewed `cron_logs` identified only by its object-key SHA-256.
+- Added a forward-only migration that accepts only the already-clean state or the
+  complete exact catalog precondition. The drift path drops the extra policy through
+  its opaque identity hash and rebuilds the reviewed constraint; every other state
+  fails with SQLSTATE `55000`.
+- Added a versioned repair manifest and PR evaluator. The exception requires the exact
+  legacy schema/object signature, value flow disabled, all first 94 reviewed migration
+  bytes matching inventory SHA-256 `40481dba...`, and the repair as the sole pending
+  migration. Deploy mode retains strict full-history and zero-drift enforcement.
+- Advanced schema normalization to v2 by sorting only the unordered policy-role set,
+  removing role-OID output nondeterminism without excluding any schema object or
+  definition. Updated the evidence contract, evaluator/schema, fixture, and runbook.
+
+#### Tests And Validation Notes
+
+- Passed: Node 22 focused delivery/evidence suites, 65/65 tests; focused ESLint,
+  script syntax, workflow YAML parsing, strict AJV Draft 2020-12, and diff check.
+- Passed: pinned Supabase CLI 2.113.0 fresh replay of 95 migrations through
+  `20260812130000`, three representative SQL suites, invalid-migration rejection with
+  intact valid history, and task-owned cleanup.
+- Passed: disposable full-schema repair probe. Both the exact opaque-hash drift path
+  and already-clean path converged byte-for-byte under normalization v2; the raw
+  unknown policy name never appeared in output or tracked files.
+- Passed: Node 22 `CI=1 pnpm check`: lint, 173 files / 845 tests, typecheck, and Next
+  production build with 165 generated pages.
+- Candidate migration inventory is 95 files with SHA-256
+  `8162d0148248a6f46afaaff3ea96aa17783a0e179bb9d5895d840e5b88bc7348`;
+  production value flow remained disabled and no remote write occurred.
+
+#### Reflections
+
+Catalog semantics distinguish repairable drift from presentation nondeterminism. An
+opaque identity hash can safely target one reviewed duplicate without publishing its
+name, while the immutable baseline byte inventory prevents a rewritten migration from
+borrowing the repair exception.
+
+#### Suggested Next Steps
+
+- Let the orchestrator independently validate and publish the existing draft PR, then
+  require the CI-owned Dev deploy to apply the repair and produce strict zero-drift
+  schema/function parity before #160 can pass.
+- Do not manually mutate Dev, touch Production, enable value flow, or start #161.

@@ -66,13 +66,21 @@ a non-null remote version.
 
 ### 2.4 Public-schema fingerprint
 
-`pg17-public-schema-normalized-v1` requires PostgreSQL client major 17 and:
+`pg17-public-schema-normalized-v2` requires PostgreSQL client major 17 and:
 
 ```bash
 pg_dump --schema-only --schema=public --no-owner --no-privileges --no-comments "$DATABASE_URL"
 ```
 
-Normalize the output by converting CRLF to LF, removing `--` comment lines, blank lines, and `\\restrict`/`\\unrestrict` lines, trimming trailing ASCII spaces from each remaining line, and ending with one LF. Hash those UTF-8 bytes as `normalizedSchemaSha256`. Record the exact `pg_dump --version`. Expected is generated from a fresh replay; observed is generated read-only from the target. Any mismatch is blocking until an allowlisted, reviewed nondeterminism is removed from the algorithm itself; do not whitelist an environment's unexplained output.
+Normalize the output by converting CRLF to LF, removing `--` comment lines, blank
+lines, and `\\restrict`/`\\unrestrict` lines, trimming trailing ASCII spaces from
+each remaining line, sorting the comma-separated role names in a `CREATE POLICY ...
+TO ...` clause (Postgres emits that unordered set according to environment-specific
+role OIDs), and ending with one LF. Hash those UTF-8 bytes as
+`normalizedSchemaSha256`. Record the exact `pg_dump --version`. Expected is generated
+from a fresh replay; observed is generated read-only from the target. Any other
+mismatch is blocking until a reviewed nondeterminism is removed from the algorithm
+itself; do not whitelist an environment's unexplained output.
 
 ## 3. Deployment binding
 
