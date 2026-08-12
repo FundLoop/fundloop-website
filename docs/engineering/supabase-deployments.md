@@ -256,6 +256,10 @@ workflow path lists. The daily schedule observes Dev only. Production observatio
 an explicit manual or main-push protected-environment operation; missing Production
 approval or read-only credentials fails closed and remains part of #162 rather than
 being silently skipped. Scheduled Production automation is not claimed.
+Both deployment and observation use the same `supabase-<environment>` concurrency
+group, so an observation cannot overlap a mutation for its target. The backend path
+contract covers every currently derived Edge closure member, including contract
+observers and MCP server sources, plus the pnpm workspace/install inputs.
 An Actions job failure is the automatic drift alert. Failure-safe artifact upload
 retains only the sanitized component evidence that was produced before the blocker;
 invalid observations are never published as immutable passing manifests.

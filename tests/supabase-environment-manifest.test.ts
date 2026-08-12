@@ -3,6 +3,7 @@ import { createHash } from "node:crypto"
 import { describe, expect, it } from "vitest"
 import { buildEnvironmentManifest, buildSafeSmokeEvidence, verifyEnvironmentManifest } from "../scripts/verify-supabase-environment-manifest.mjs"
 import { shouldObservePush, SUPABASE_DEPLOY_PATH_GLOBS } from "../scripts/classify-supabase-drift-push.mjs"
+import { expectedFunctionNames, expectedSourceClosure } from "../scripts/verify-supabase-function-parity.mjs"
 
 const migration = { version: "20260812130000", name: "20260812130000_repair.sql", fileSha256: "a".repeat(64) }
 const functionEntry = (index: number) => ({
@@ -90,11 +91,25 @@ describe("immutable Supabase environment manifests", () => {
       expect(paths).toEqual(SUPABASE_DEPLOY_PATH_GLOBS)
     }
     expect(workflow).toContain("repository.full_name == github.repository")
+    expect(workflow).toContain("group: supabase-${{ matrix.target }}")
+    expect(workflow).not.toContain("group: supabase-drift-")
     expect(workflow).toContain("github.event_name == 'schedule' && 'dev'")
     expect(workflow).toContain("verify-supabase-schema-parity.mjs drift")
     expect(workflow).toContain("verify-supabase-function-parity.mjs postdeploy")
     expect(workflow).not.toContain("supabase db push")
     expect(workflow).not.toContain("supabase functions deploy")
+    expect(workflow).toContain("SUPABASE_SCHEMA_DIAGNOSTIC_OUTPUT: ${{ runner.temp }}/supabase-schema-diagnostic.json")
+    expect(workflow).toContain("if: ${{ always() }}")
+    expect(workflow).toContain("${{ runner.temp }}/supabase-schema-diagnostic.json")
+  })
+
+  it("assigns every reviewed Edge Function closure member to the deploy lane", () => {
+    const closureFiles = new Set(expectedFunctionNames().flatMap((name) => expectedSourceClosure(name)))
+    expect(closureFiles.size).toBeGreaterThan(62)
+    for (const file of closureFiles) expect(shouldObservePush([file]), file).toBe(false)
+    for (const installInput of ["package.json", "pnpm-lock.yaml", "pnpm-workspace.yaml", "supabase/functions/deno.json", "supabase/config.toml"]) {
+      expect(shouldObservePush([installInput]), installInput).toBe(false)
+    }
   })
 
   it("assigns UI-only pushes directly and backend or mixed pushes to post-deploy observation", () => {

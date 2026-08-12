@@ -19,10 +19,6 @@ on:
 permissions:
   contents: read
 
-concurrency:
-  group: supabase-drift-${{ inputs.target_environment || github.ref_name || 'scheduled' }}
-  cancel-in-progress: false
-
 jobs:
   classify:
     runs-on: ubuntu-latest
@@ -52,6 +48,9 @@ jobs:
     if: needs.classify.outputs.should_observe == 'true' && (github.event_name != 'workflow_run' || (github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.repository.full_name == github.repository && (github.event.workflow_run.head_branch == 'dev' || github.event.workflow_run.head_branch == 'main')))
     runs-on: ubuntu-latest
     environment: ${{ matrix.target == 'main' && 'Production' || 'Preview' }}
+    concurrency:
+      group: supabase-${{ matrix.target }}
+      cancel-in-progress: false
     env:
       DEV_SUPABASE_SESSION_POOLER_URL: ${{ secrets.DEV_SUPABASE_SESSION_POOLER_URL }}
       MAIN_SUPABASE_SESSION_POOLER_URL: ${{ secrets.MAIN_SUPABASE_SESSION_POOLER_URL }}
@@ -84,6 +83,7 @@ jobs:
           SUPABASE_PROJECT_REF: ${{ steps.target.outputs.project_ref }}
           SUPABASE_SCHEMA_DB_URL: ${{ steps.target.outputs.db_url }}
           SUPABASE_SCHEMA_PARITY_OUTPUT: ${{ runner.temp }}/supabase-schema-parity.json
+          SUPABASE_SCHEMA_DIAGNOSTIC_OUTPUT: ${{ runner.temp }}/supabase-schema-diagnostic.json
           OBSERVATION_GIT_SHA: ${{ steps.target.outputs.observation_sha }}
         run: node scripts/verify-supabase-schema-parity.mjs drift
       - name: Observe exact Edge Function drift

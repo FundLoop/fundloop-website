@@ -885,6 +885,49 @@ fresh direct schema/function read-back.
 - Keep Production observation behind the human `Production` environment approval and
   complete that protected release/validation path under #162.
 
+### session v24: Close drift workflow ownership and diagnostics gaps (#161)
+
+- Timestamp: 2026-08-12T18:35:00-04:00
+- Agent: Codex
+- Branch: `codex/155-goal-1-delivery-integrity-post-ci`
+- Head: `b9378beeedf5c14e5eecb4e55f8f1481910ebe39`
+
+#### Objective
+
+Address independent validation by proving every reviewed Edge source and install input
+uses the post-deploy observation lane, preventing deploy/observe overlap, and retaining
+schema diagnostics when read-only drift verification fails.
+
+#### Actions Taken
+
+- Extended the canonical deploy path contract to contract observers, MCP server source,
+  and the pnpm workspace definition in both deploy triggers and the shared classifier.
+- Added an all-function adversarial test that unions every derived expected source
+  closure and proves each file is classified as backend-affecting, while retaining exact
+  YAML/classifier equality and backend-only/UI-only/mixed cases.
+- Moved drift concurrency to the observation job with the exact deploy-compatible
+  `supabase-<target>` group and bound the sanitized schema diagnostic output before its
+  existing failure-safe artifact upload.
+
+#### Tests And Validation Notes
+
+- Passed on Node 22: focused environment-manifest and delivery-parity suites, 18/18.
+- Passed: focused ESLint, TypeScript typecheck, script syntax, both workflow YAML parses,
+  and `git diff --check`.
+- No remote call or mutation, workflow dispatch, push, PR, status change, Production
+  action, #162 work, credential prompt, or value-flow activation occurred.
+
+#### Reflections
+
+Workflow ownership is only race-free when the changed-path classifier and deploy trigger
+are one test-enforced contract. Checking the actual derived closure union makes future
+source-root additions fail locally instead of silently taking the UI-only lane.
+
+#### Suggested Next Steps
+
+- Return the focused follow-up to independent validation, then publish only through the
+  orchestrator-owned flow and require hosted Dev read-only evidence.
+
 ### session v22: Reject control whitespace in Bearer credentials (#160)
 
 - Timestamp: 2026-08-12T17:49:39-04:00

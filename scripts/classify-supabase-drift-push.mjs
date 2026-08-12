@@ -4,10 +4,13 @@ import { pathToFileURL } from "node:url"
 export const SUPABASE_DEPLOY_PATH_GLOBS = [
   ".github/workflows/supabase-deploy.yml",
   ".github/workflows/supabase-drift.yml",
+  "contracts/lib/**",
   "lib/**",
+  "packages/mcp-server/**",
   "types/**",
   "package.json",
   "pnpm-lock.yaml",
+  "pnpm-workspace.yaml",
   "scripts/classify-supabase-drift-push.mjs",
   "scripts/verify-supabase-*.mjs",
   "supabase/config.toml",
