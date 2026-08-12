@@ -825,6 +825,59 @@ syntax impossible to silently ignore.
   and require CI-owned read-back of all 62 functions plus the safe Dev smoke.
 - Keep #160 In Progress until that hosted evidence passes.
 
+### session v20: Enforce authenticated Edge smoke semantics (#160)
+
+- Timestamp: 2026-08-12T17:28:03-04:00
+- Agent: Codex
+- Branch: `codex/155-goal-1-safe-auth-smoke-recovery`
+- Head: `5e2a5fef76575c9cac08af440acb5b21656491aa`
+
+#### Objective
+
+Make the safe unauthenticated Dev smoke prove the function's own authorization
+boundary with HTTP `401`, without exposing payload validation or changing gateway JWT
+mode.
+
+#### Actions Taken
+
+- Added a repo-owned authenticated POST HTTP boundary used by
+  `epoch-allocation-close`: OPTIONS remains public, then authentication runs before
+  method and command-body handling.
+- Returned fixed, non-provider-controlled envelopes with `401` for unauthenticated
+  requests, `405` plus `Allow: POST` for authenticated non-POST requests, and `400`
+  for authenticated invalid JSON/command payloads. Authentication infrastructure
+  failures return a generic `500`.
+- Made authenticated non-admin operator actions explicitly `403`; preserved all
+  existing downstream domain/RPC failure envelope status behavior to minimize scope.
+- Added injected-auth tests of the actual shared HTTP handler used by the Edge wrapper,
+  including an unauthenticated malformed POST whose downstream parser spy remains
+  untouched. Added wrapper ordering/status contract assertions and documented why
+  `verify_jwt=false` remains intentional.
+
+#### Tests And Validation Notes
+
+- Passed: Node 22 focused HTTP, epoch-close contract, and delivery-parity suites,
+  21/21 tests; focused ESLint and TypeScript typecheck.
+- Passed: Deno check of `epoch-allocation-close`, workflow YAML parse, and
+  `git diff --check`.
+- Tests prove unauthenticated GET and malformed POST return `401`, authenticated GET
+  returns `405`, authenticated malformed POST returns `400`, OPTIONS skips auth,
+  forbidden returns `403`, and provider-controlled auth error text is never echoed.
+- No remote request or mutation, workflow, push, PR, Project status change, Production
+  action, #161 work, or value-flow activation occurred.
+
+#### Reflections
+
+An auth smoke is meaningful only when the application handler—not merely the gateway—
+returns an explicit denial. Authenticating before parsing also prevents unauthenticated
+callers from using validation differences as a command-shape oracle.
+
+#### Suggested Next Steps
+
+- Return this commit to independent validation, then require the CI-owned Dev deploy
+  to complete exact parity and observe the unauthenticated `401` smoke.
+- Keep #160 In Progress until that hosted run passes.
+
 ### session v19: Bind inline-type module edges retained by Supabase (#160)
 
 - Timestamp: 2026-08-12T17:01:05-04:00

@@ -30,5 +30,8 @@ describe("epoch allocation close Edge contract", () => {
     expect(source).toContain("deploymentEnvironment")
     expect(source).toContain('["local", "development", "dev", "preview", "test"]')
     expect(source).not.toContain('allowedEnvironments.add("production")')
+    expect(source.indexOf("handleAuthenticatedHttpRequest")).toBeLessThan(source.indexOf("parseJsonBody(request)"))
+    expect(source).toContain('failure("forbidden", "Internal operator access is required.", 403)')
+    expect(source).toContain('failure("invalid_payload", parsed.error ?? "Request body must be valid JSON.", 400)')
   })
 })
