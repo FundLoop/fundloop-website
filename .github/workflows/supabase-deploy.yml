@@ -11,9 +11,11 @@ on:
       - "types/**"
       - "package.json"
       - "pnpm-lock.yaml"
+      - "scripts/verify-supabase-*.mjs"
       - "supabase/config.toml"
       - "supabase/functions/**"
       - "supabase/migrations/**"
+      - "supabase/retired-functions.json"
       - "vendor/cubid/**"
   push:
     branches:
@@ -25,9 +27,11 @@ on:
       - "types/**"
       - "package.json"
       - "pnpm-lock.yaml"
+      - "scripts/verify-supabase-*.mjs"
       - "supabase/config.toml"
       - "supabase/functions/**"
       - "supabase/migrations/**"
+      - "supabase/retired-functions.json"
       - "vendor/cubid/**"
   workflow_dispatch:
     inputs:
@@ -145,6 +149,12 @@ jobs:
           echo "Supabase project ref: ${{ steps.target.outputs.project_ref }}"
           echo "Mode: ${{ steps.target.outputs.mode }}"
 
+      - name: Setup Deno
+        if: steps.target.outputs.mode == 'deploy'
+        uses: denoland/setup-deno@v2
+        with:
+          deno-version: v2.7.11
+
       - name: Dry-run database migrations
         if: steps.target.outputs.mode == 'dry-run'
         env:
@@ -191,6 +201,7 @@ jobs:
       - name: Deploy database migrations
         if: steps.target.outputs.mode == 'deploy'
         env:
+          SUPABASE_PROJECT_REF: ${{ steps.target.outputs.project_ref }}
           TARGET_ENVIRONMENT: ${{ steps.target.outputs.target_environment }}
         run: |
           set -euo pipefail
@@ -246,33 +257,56 @@ jobs:
           export PGOPTIONS="-c app.settings.fundloop_target_environment=${TARGET_ENVIRONMENT}"
           supabase db push --yes --include-all --db-url "$supabase_db_url"
 
+          SUPABASE_SCHEMA_DB_URL="${supabase_db_url}" \
+            SUPABASE_SCHEMA_PARITY_OUTPUT="${RUNNER_TEMP}/supabase-schema-parity.json" \
+            node scripts/verify-supabase-schema-parity.mjs
+
       - name: Install function bundle dependencies
         if: steps.target.outputs.mode == 'deploy'
         run: pnpm install --frozen-lockfile
+
+      - name: Verify Edge Function module graph
+        if: steps.target.outputs.mode == 'deploy'
+        run: |
+          set -euo pipefail
+          find supabase/functions -mindepth 2 -maxdepth 2 -name index.ts -print0 \
+            | sort -z \
+            | xargs -0 deno cache --no-check --frozen --config supabase/functions/deno.json
 
       - name: Deploy Edge Functions
         if: steps.target.outputs.mode == 'deploy'
         env:
           SUPABASE_PROJECT_REF: ${{ steps.target.outputs.project_ref }}
+          TARGET_ENVIRONMENT: ${{ steps.target.outputs.target_environment }}
         run: |
           set -euo pipefail
 
-          function_names="$(
-            find supabase/functions \
-              -mindepth 1 \
-              -maxdepth 1 \
-              -type d \
-              ! -name "_shared" \
-              ! -name "_vendor" \
-              -exec basename {} \; | sort
-          )"
+          node scripts/verify-supabase-function-parity.mjs predeploy
+          supabase functions deploy --project-ref "$SUPABASE_PROJECT_REF" --prune --jobs 1
+          SUPABASE_PARITY_OUTPUT="${RUNNER_TEMP}/supabase-function-parity.json" \
+            node scripts/verify-supabase-function-parity.mjs postdeploy
 
-          if [[ -z "${function_names}" ]]; then
-            echo "::error::No deployable Supabase Edge Functions were found under supabase/functions."
+      - name: Smoke newly delivered Dev function
+        if: steps.target.outputs.mode == 'deploy' && steps.target.outputs.target_environment == 'dev'
+        env:
+          SUPABASE_PROJECT_REF: ${{ steps.target.outputs.project_ref }}
+        run: |
+          set -euo pipefail
+          status_code="$(curl --silent --show-error --output /dev/null --write-out '%{http_code}' \
+            "https://${SUPABASE_PROJECT_REF}.supabase.co/functions/v1/epoch-allocation-close")"
+          if [[ "${status_code}" != "401" ]]; then
+            echo "::error::Expected safe unauthenticated epoch-allocation-close denial (401), received ${status_code}."
             exit 1
           fi
+          echo "Safe Dev smoke passed for ${GITHUB_SHA}: epoch-allocation-close denied unauthenticated access."
 
-          while IFS= read -r function_name; do
-            echo "Deploying Edge Function: ${function_name}"
-            supabase functions deploy "${function_name}" --project-ref "$SUPABASE_PROJECT_REF"
-          done <<< "${function_names}"
+      - name: Upload sanitized Supabase parity evidence
+        if: steps.target.outputs.mode == 'deploy'
+        uses: actions/upload-artifact@v4
+        with:
+          name: supabase-parity-${{ steps.target.outputs.target_environment }}-${{ github.sha }}
+          path: |
+            ${{ runner.temp }}/supabase-schema-parity.json
+            ${{ runner.temp }}/supabase-function-parity.json
+          if-no-files-found: error
+          retention-days: 30
