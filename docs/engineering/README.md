@@ -36,6 +36,7 @@ Current high-signal docs:
 - [Operational MVP](./operational-mvp.md)
 - [Operations Runbook](./operations-runbook.md)
 - [Persona Happy-Path Harness](./persona-happy-path-harness.md)
+- [Production-Readiness Evidence Contract](./production-readiness-evidence-contract.md)
 - [Reporting Publication](./reporting.md)
 - [Feature #118 Release-Readiness Inventory — 2026-08-11](./release-readiness-inventory-2026-08-11.md)
 - [Release Candidate Path](./release-candidate.md)

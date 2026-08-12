@@ -1,6 +1,6 @@
 # Supabase Remote Deployments
 
-Last reviewed: 2026-05-05
+Last reviewed: 2026-08-11
 
 FundLoop deploys Supabase schema migrations and Edge Functions through the `Supabase Deploy` GitHub Actions workflow.
 
@@ -15,7 +15,17 @@ FundLoop deploys Supabase schema migrations and Edge Functions through the `Supa
 
 PR runs intentionally do not mutate shared databases or deploy functions.
 
-Session 52 verified the workflow routing and GitHub environment names. The `Preview` and `Production` environments exist, but the GitHub API reported no environment protection rules on 2026-05-05. Add required reviewers to `Production` before treating the main deploy as approval-gated.
+Live API read-back on 2026-08-11 still reported no protection rules on the
+`Production` environment and `can_admins_bypass=true`. It also reported no branch
+protection for `dev` or `main`. Add and read back the required controls before
+treating the main deploy as approval-gated.
+
+The workflow's PR `supabase db push --dry-run` is remote planning evidence only. It
+does not execute unapplied SQL: PR #185's dry-run passed, then push run `31542120571`
+failed while executing `20260809020000_neutral_ledger_foundations.sql`. The
+[production-readiness evidence contract](./production-readiness-evidence-contract.md)
+therefore requires fresh executable replay before merge and exact post-deploy
+migration, function, and schema read-back before parity can pass.
 
 ## Required GitHub Secrets
 
@@ -70,6 +80,11 @@ supabase functions deploy "<function-name>" --project-ref "$SUPABASE_PROJECT_REF
 ```
 
 Before bundling functions on deploy runs, the workflow installs repo dependencies with `pnpm install --frozen-lockfile` so package dependencies remain available to the Deno bundler. `supabase/functions/deno.json` enables `nodeModulesDir` for that bundle step and maps Edge-safe package imports explicitly when needed.
+
+Successful deploy output alone does not prove exact function source parity. The v1
+evidence contract requires a candidate source digest, remote deployment digest or
+equivalent independently readable binding, exact name inventory, and schema
+fingerprint. Missing, extra, inactive, or unverifiable functions block parity.
 
 FundLoop no longer keeps a function-local CUBID mirror under `supabase/functions/_vendor/`. CUBID server and Edge code imports the runtime-agnostic `@cubid/core` package, and the Supabase Deno import map resolves it through `jsr:@cubid/core@0.1.0`. Browser-only CUBID compatibility helpers may still depend on local vendored tarballs, but Edge Functions must not depend on `node_modules/@cubid/api/dist/index.mjs`.
 
