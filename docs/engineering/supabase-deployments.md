@@ -216,6 +216,14 @@ call to `epoch-allocation-close`; only the expected `401` denial counts as the
 remote-safe smoke. Workflow success without these read-backs and smoke is not Dev
 parity.
 
+`epoch-allocation-close` intentionally retains `verify_jwt = false` because its
+repo-owned handler authenticates the supported bearer token formats. Except for
+`OPTIONS`, authentication runs before method and payload handling: unauthenticated
+GET or POST receives `401` without revealing payload validation, authenticated
+non-POST receives `405` with `Allow: POST`, malformed authenticated JSON/input receives
+`400`, and authenticated non-admin operator actions receive `403`. Existing domain and
+RPC failure envelope status behavior is otherwise unchanged.
+
 FundLoop no longer keeps a function-local CUBID mirror under `supabase/functions/_vendor/`. CUBID server and Edge code imports the runtime-agnostic `@cubid/core` package, and the Supabase Deno import map resolves it through `jsr:@cubid/core@0.1.0`. Browser-only CUBID compatibility helpers may still depend on local vendored tarballs, but Edge Functions must not depend on `node_modules/@cubid/api/dist/index.mjs`.
 
 The workflow pins Supabase CLI `2.113.0` instead of using `latest`. Any future pin
