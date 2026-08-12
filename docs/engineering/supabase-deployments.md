@@ -15,6 +15,22 @@ FundLoop deploys Supabase schema migrations and Edge Functions through the `Supa
 
 PR runs intentionally do not mutate shared databases or deploy functions.
 
+PR dry-runs targeting Dev also execute a read-only effective-schema diagnostic after
+the remote migration plan. The diagnostic replays the complete candidate history in
+a randomized Postgres 17 stack and compares that full `public` schema with a read-only
+Dev dump. Unknown drift remains blocking; the diagnostic never allowlists or
+normalizes away a mismatch.
+
+Before failing, the runner writes a sanitized
+`fundloop.public-schema-diagnostic/v1` artifact. It contains candidate/environment
+bindings, exact expected/observed schema hashes, complete per-object hash manifests,
+missing/changed reviewed object identifiers, opaque hashes for unexpected remote
+identifiers, and at most 200 differing line-number/hash pairs. It contains no schema
+DDL, row data, database URL, credentials, secrets, function bodies, default values,
+or unknown remote object names. Aggregate counts and hashes retain full coverage even
+when the line-difference sample is truncated. Deploy runs produce the same diagnostic
+before a schema mismatch throws, so failure-safe artifact upload preserves it.
+
 Live API read-back on 2026-08-11 still reported no protection rules on the
 `Production` environment and `can_admins_bypass=true`. It also reported no branch
 protection for `dev` or `main`. Add and read back the required controls before

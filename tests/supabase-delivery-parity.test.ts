@@ -3,7 +3,7 @@ import os from "node:os"
 import path from "node:path"
 import { describe, expect, it } from "vitest"
 import { classifyFunctionInventory, compareClosurePaths, expectedFunctionNames, expectedSourceClosure } from "../scripts/verify-supabase-function-parity.mjs"
-import { buildMigrationDeployEvidence, expectedMigrationInventory, migrationInventorySha256, normalizePublicSchema, validateMigrationDeployEvidence } from "../scripts/verify-supabase-schema-parity.mjs"
+import { buildMigrationDeployEvidence, buildSchemaDiagnostic, expectedMigrationInventory, migrationInventorySha256, normalizePublicSchema, validateMigrationDeployEvidence } from "../scripts/verify-supabase-schema-parity.mjs"
 
 const workflow = readFileSync(".github/workflows/supabase-deploy.yml", "utf8")
 const schemaVerifier = readFileSync("scripts/verify-supabase-schema-parity.mjs", "utf8")
@@ -43,6 +43,23 @@ describe("Supabase delivery parity", () => {
     expect(normalizePublicSchema("-- header\r\n\\restrict token\r\n\r\nSET statement_timeout = 0;   \r\nCREATE TABLE public.example (); \r\n\\unrestrict token\r\n"))
       .toBe("SET statement_timeout = 0;\nCREATE TABLE public.example ();\n")
     expect(normalizePublicSchema("CREATE TABLE public.example ();\n\n\n")).toBe("CREATE TABLE public.example ();\n")
+  })
+
+  it("emits bounded, structural schema drift without remote DDL or unknown identifiers", () => {
+    const expected = "-- Name: projects; Type: TABLE; Schema: public; Owner: -\nCREATE TABLE public.projects (id bigint);\n"
+    const observed = `${expected.replace("id bigint", "id integer")}-- Name: person@example.com; Type: TABLE; Schema: public; Owner: -\nCREATE TABLE public.\"person@example.com\" (secret text);\n`
+    const diagnostic = buildSchemaDiagnostic(expected, observed, { candidateGitSha: "a".repeat(40) }, 1)
+    expect(diagnostic.status).toBe("drift")
+    expect(diagnostic.expectedObjectCount).toBe(1)
+    expect(diagnostic.observedObjectCount).toBe(2)
+    expect(diagnostic.objectDifferenceCount).toBe(2)
+    expect(diagnostic.lineDifferences).toHaveLength(1)
+    expect(diagnostic.lineDifferencesTruncated).toBe(true)
+    const serialized = JSON.stringify(diagnostic)
+    expect(serialized).toContain("public.projects [TABLE]#1")
+    expect(serialized).not.toContain("person@example.com")
+    expect(serialized).not.toContain("secret text")
+    expect(serialized).not.toContain("CREATE TABLE")
   })
 
   it("binds sorted reviewed migration bytes to candidate deployment evidence", () => {
@@ -99,6 +116,10 @@ describe("Supabase delivery parity", () => {
     expect(workflow).toContain("actions/upload-artifact@v4")
     expect(workflow).toContain("if: ${{ always() && steps.target.outputs.mode == 'deploy' }}")
     expect(workflow).toContain("if-no-files-found: warn")
+    expect(workflow).toContain("verify-supabase-schema-parity.mjs diagnose")
+    expect(workflow).toContain("supabase-schema-diagnostic-dev-${{ github.sha }}")
+    expect(workflow).toContain("steps.target.outputs.mode == 'dry-run' && steps.target.outputs.target_environment == 'dev'")
+    expect(workflow.indexOf("supabase db push --yes --include-all --db-url \"$supabase_db_url\" --dry-run")).toBeLessThan(workflow.indexOf("verify-supabase-schema-parity.mjs diagnose"))
     expect(workflow).toContain("supabase_deploy_migration_evidence")
     expect(workflow).toContain("verify-supabase-schema-parity.mjs prepare")
     expect(workflow.indexOf("Verify Edge Function module graph")).toBeLessThan(workflow.indexOf("Dry-run database migrations"))

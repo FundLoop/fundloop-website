@@ -510,3 +510,62 @@ remote evidence, and graph/schema checks fail before the authority they guard.
 - Let the orchestrator push the existing PR branch, reply to and resolve the four
   named review threads, then require all PR checks without requesting rereview.
 - Do not deploy manually, start #161, or cross the Production/value-flow boundary.
+
+### session v11: Preserve sanitized Dev schema-drift diagnostics (#160)
+
+- Timestamp: 2026-08-12T10:43:59-04:00
+- Agent: Codex
+- Branch: `codex/155-goal-1-dev-schema-drift-recovery`
+- Head: `367c7ed083d96def7455e5135486682562016e5f`
+
+#### Objective
+
+Make the authoritative post-merge Dev schema mismatch diagnosable from a PR without
+mutating Dev, disclosing remote definitions, or allowing unknown drift to pass.
+
+#### Actions Taken
+
+- Added PR-to-Dev read-only diagnostic mode after the non-mutating migration plan.
+  It replays all 94 migrations in a randomized Postgres 17 stack and compares the
+  complete canonical `public` schema against a read-only Dev dump.
+- Added `fundloop.public-schema-diagnostic/v1`, written before schema mismatch throws.
+  It records exact full-schema hashes/counts, complete per-object hash manifests,
+  reviewed missing/changed object labels, opaque hashes for unknown remote object
+  identities, and at most 200 line-number/hash differences with a total count.
+- Kept unknown drift blocking. The diagnostic contains no DDL, function bodies,
+  default expressions, row data, database URLs, credentials, secrets, PII, or unknown
+  remote names; full hashes and manifests preserve coverage despite bounded line output.
+- Added failure-safe artifact upload for PR Dev diagnostics and included the same file
+  in deploy-mode parity artifacts so a future failed verifier still yields evidence.
+- Extended focused tests and documented the read-only, sanitized, fail-closed contract.
+
+#### Tests And Validation Notes
+
+- Passed: Node 22 focused delivery-parity suite, 9/9 tests; workflow YAML and script
+  syntax; focused ESLint; and `git diff --check`.
+- Passed: disposable structural-drift smoke against two task-owned Postgres 17 stacks.
+  One added column failed closed with expected SHA
+  `1d9b2700029d53c82d59b077fa52cbed6802120b6755b9821d278ebfd3c50102`
+  and observed SHA
+  `6c9e1416a58d9a5f74b97865764ac5ed91a97b42e8bcbb5386edee090bf33924`;
+  one changed object and 11,552 differing line positions were counted, 200 line hashes
+  were sampled, and neither the injected identifier nor DDL appeared in the artifact.
+- Passed: task-owned stacks stopped without backup and no matching containers remained.
+- Passed: Node 22 `CI=1 pnpm check`: lint, 173 files / 842 tests, typecheck, and Next
+  production build with 165 generated pages.
+- Actual Dev diagnosis is intentionally deferred to the PR workflow: its environment-
+  scoped pooler URL was not present locally and no credential was requested.
+
+#### Reflections
+
+A diagnostic can retain complete structural accountability without publishing remote
+definitions. Known reviewed identifiers are useful context; unknown identities and
+all differing lines remain opaque hashes, while aggregate hashes ensure nothing is
+silently excluded or normalized away.
+
+#### Suggested Next Steps
+
+- Let the orchestrator publish the existing branch, inspect the sanitized PR artifact,
+  and scope a forward-only repair from the named structural differences.
+- Keep #160 In Progress; do not deploy manually, start #161, mutate Production, or
+  enable value flow while Dev schema drift remains unexplained.
