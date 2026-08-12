@@ -1282,3 +1282,45 @@ not be reparsed as authority text inside another process boundary.
 
 - Independently validate this focused recovery, publish to `dev`, then rerun the
   read-only Dev drift observation against the same SHA-bound deploy baseline.
+
+### session v27: Preserve deploy provenance and route manual observations safely (#161)
+
+- Timestamp: 2026-08-12T19:46:00-04:00
+- Agent: Codex
+- Branch: `codex/155-goal-1-manifest-provenance-routing-recovery`
+- Head: `3ccafbbda0724fadb6191202319851c6e92840b3`
+
+#### Objective
+
+Close the final manifest provenance and observation-routing gaps without expanding into
+Production validation or Task #162.
+
+#### Actions Taken
+
+- Bound deploy-mode certified provenance to the actual `recorded_at` timestamp returned
+  by the independently validated append-only migration evidence row.
+- Added positive/negative coverage proving deploy and drift use the same immutable row
+  timestamp and reject invalid timestamps or changed inventory digests.
+- Restricted automatic `workflow_run` observations to successful same-repository
+  push-origin deploys on `dev` or `main`. Manual cross-target deploys now require the
+  drift workflow's explicit environment selection instead of inferring from branch.
+- Documented both provenance and manual routing contracts.
+
+#### Tests And Validation Notes
+
+- Passed on Node 22: focused environment-manifest and delivery-parity suites, 22/22.
+- Passed: focused ESLint, TypeScript typecheck, script syntax, workflow YAML parse, and
+  `git diff --check`.
+- No push, workflow dispatch, remote call or mutation, status change, Production action,
+  #162 work, credential prompt, or value-flow activation occurred.
+
+#### Reflections
+
+An immutable record's creation time is evidence, while a verifier's wall-clock time is
+only observation metadata. Likewise, branch identity is authoritative for push deploys
+but cannot safely identify the selected target of a manual cross-environment dispatch.
+
+#### Suggested Next Steps
+
+- Return this commit to independent validation, then publish only through the
+  orchestrator-owned flow and exercise explicit hosted Dev observation.

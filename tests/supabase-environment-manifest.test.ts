@@ -92,6 +92,7 @@ describe("immutable Supabase environment manifests", () => {
       expect(paths).toEqual(SUPABASE_DEPLOY_PATH_GLOBS)
     }
     expect(workflow).toContain("repository.full_name == github.repository")
+    expect(workflow).toContain("github.event.workflow_run.event == 'push'")
     expect(workflow).toContain("group: supabase-${{ matrix.target }}")
     expect(workflow).not.toContain("group: supabase-drift-")
     expect(workflow).toContain("github.event_name == 'schedule' && 'dev'")
@@ -109,6 +110,15 @@ describe("immutable Supabase environment manifests", () => {
     expect(workflow).not.toContain("::add-mask::")
     expect(workflow).toContain("if: ${{ always() }}")
     expect(workflow).toContain("${{ runner.temp }}/supabase-schema-diagnostic.json")
+  })
+
+  it("observes push deploys by branch but never infers a manual cross-target deploy", () => {
+    const workflow = readFileSync(".github/workflows/supabase-drift.yml", "utf8")
+    expect(workflow).toContain("github.event.workflow_run.head_branch || github.ref_name")
+    expect(workflow).toContain("github.event.workflow_run.event == 'push'")
+    expect(workflow).not.toContain("github.event.workflow_run.event == 'workflow_dispatch'")
+    expect(workflow).toContain("inputs.target_environment")
+    expect(workflow).toContain("options: [dev, main]")
   })
 
   it("selects exact pooler credentials and rejects hostile connection targets", () => {

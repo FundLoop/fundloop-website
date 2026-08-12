@@ -236,6 +236,14 @@ export function validateMigrationDeployEvidence(expected, observed) {
     && observed.inventorySha256 === expected.inventorySha256
 }
 
+export function bindObservedMigrationDeployEvidence(expected, observed) {
+  if (!validateMigrationDeployEvidence(expected, observed)
+    || !Number.isFinite(Date.parse(observed.recordedAt ?? ""))) {
+    throw new Error("migration-deployment-evidence-invalid: remote immutable row failed candidate or timestamp validation")
+  }
+  return { ...expected, recordedAt: observed.recordedAt }
+}
+
 export function libpqConnectionEnvironment(dbUrl) {
   const parsed = new URL(dbUrl)
   if (!["postgres:", "postgresql:"].includes(parsed.protocol) || !parsed.hostname || !parsed.username || !parsed.pathname.startsWith("/")) throw new Error("invalid-libpq-connection-url")
@@ -405,9 +413,8 @@ sql_paths = []
     if (!diagnosticMode && !driftMode) {
       expectedEvidence = buildMigrationDeployEvidence(deploymentBinding)
       const observedEvidence = observedMigrationEvidence(remoteDbUrl, deploymentBinding)
-      if (!validateMigrationDeployEvidence(expectedEvidence, observedEvidence)) {
-        throw new Error("migration-digest: remote candidate-bound deploy evidence differs from reviewed migration bytes")
-      }
+      try { expectedEvidence = bindObservedMigrationDeployEvidence(expectedEvidence, observedEvidence) }
+      catch { throw new Error("migration-digest: remote candidate-bound deploy evidence differs from reviewed migration bytes or has no immutable timestamp") }
     } else if (driftMode) {
       const expectedInventory = buildMigrationDeployEvidence({
         ...deploymentBinding,

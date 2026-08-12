@@ -251,12 +251,16 @@ certified backend deployment from an earlier SHA only when the latest matching
 append-only deploy-evidence record independently recomputes to the checkout's exact
 ordered migration byte inventory. Function source parity remains bound to the current
 observation checkout. In deployment mode the two SHA/run/attempt identities must be
-identical.
+identical, and `certifiedDeployment.recordedAt` is the timestamp read back from that
+validated immutable database row—not the later verification or manifest timestamp.
 
 `Supabase Drift Detection` never deploys, repairs, seeds, prunes, or invokes database
 mutation commands. UI-only dev/main pushes are observed directly. A shared classifier
 assigns any backend or mixed push to `Supabase Deploy`; only its successful, same-repo
-`workflow_run` performs the read-only observation, eliminating the pre-deploy race.
+push-origin `workflow_run` performs the read-only observation, eliminating the
+pre-deploy race. A manually dispatched deploy can target an environment different from
+its source branch, so it is deliberately not inferred from `head_branch`; run the drift
+workflow explicitly for that selected target instead.
 The classifier's canonical path set is tested for exact equality with both deploy
 workflow path lists. The daily schedule observes Dev only. Production observation is
 an explicit manual or main-push protected-environment operation; missing Production

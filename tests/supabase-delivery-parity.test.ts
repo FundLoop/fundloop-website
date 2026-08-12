@@ -3,7 +3,7 @@ import os from "node:os"
 import path from "node:path"
 import { describe, expect, it } from "vitest"
 import { classifyFunctionInventory, compareClosurePaths, expectedFunctionNames, expectedSourceClosure } from "../scripts/verify-supabase-function-parity.mjs"
-import { buildMigrationDeployEvidence, buildSchemaDiagnostic, expectedMigrationInventory, libpqConnectionEnvironment, migrationInventorySha256, normalizePublicSchema, validateMatchingMigrationEvidence, validateMigrationDeployEvidence, validatePendingSchemaRepair } from "../scripts/verify-supabase-schema-parity.mjs"
+import { bindObservedMigrationDeployEvidence, buildMigrationDeployEvidence, buildSchemaDiagnostic, expectedMigrationInventory, libpqConnectionEnvironment, migrationInventorySha256, normalizePublicSchema, validateMatchingMigrationEvidence, validateMigrationDeployEvidence, validatePendingSchemaRepair } from "../scripts/verify-supabase-schema-parity.mjs"
 
 const workflow = readFileSync(".github/workflows/supabase-deploy.yml", "utf8")
 const schemaVerifier = readFileSync("scripts/verify-supabase-schema-parity.mjs", "utf8")
@@ -170,6 +170,23 @@ describe("Supabase delivery parity", () => {
     changed.migrations[0].fileSha256 = "0".repeat(64)
     expect(validateMatchingMigrationEvidence(changed, binding, inventorySha256)).toBe(false)
     expect(validateMatchingMigrationEvidence({ ...evidence, environment: "main" }, binding, inventorySha256)).toBe(false)
+  })
+
+  it("preserves one validated immutable timestamp for deploy and drift provenance", () => {
+    const expected = {
+      contractVersion: "fundloop.migration-deploy-evidence/v1",
+      candidateGitSha: "b".repeat(40), actionsRunId: "42", runAttempt: 1,
+      environment: "dev", projectRef: "a".repeat(20),
+      migrations: [{ version: "20260101000000", name: "20260101000000_first.sql", fileSha256: "a".repeat(64) }],
+      inventorySha256: "",
+    }
+    expected.inventorySha256 = migrationInventorySha256(expected.migrations)
+    const observed = { ...structuredClone(expected), recordedAt: "2026-08-12T19:00:00.123Z" }
+    const deployEvidence = bindObservedMigrationDeployEvidence(expected, observed)
+    expect(deployEvidence.recordedAt).toBe(observed.recordedAt)
+    expect(validateMatchingMigrationEvidence(observed, expected, expected.inventorySha256)).toBe(true)
+    expect(() => bindObservedMigrationDeployEvidence(expected, { ...observed, recordedAt: "invalid" })).toThrow("remote immutable row")
+    expect(() => bindObservedMigrationDeployEvidence(expected, { ...observed, inventorySha256: "0".repeat(64) })).toThrow("remote immutable row")
   })
 
   it("keeps candidate-bound migration evidence append-only and non-browser-readable", () => {
