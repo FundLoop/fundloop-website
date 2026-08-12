@@ -37,6 +37,7 @@ Current high-signal docs:
 - [Operations Runbook](./operations-runbook.md)
 - [Persona Happy-Path Harness](./persona-happy-path-harness.md)
 - [Reporting Publication](./reporting.md)
+- [Feature #118 Release-Readiness Inventory — 2026-08-11](./release-readiness-inventory-2026-08-11.md)
 - [Release Candidate Path](./release-candidate.md)
 - [Route Inventory](./route-inventory.md)
 - [Settlement-backed Epoch Treasury and Auditable Payouts](./settlement-backed-epoch-treasury.md)
