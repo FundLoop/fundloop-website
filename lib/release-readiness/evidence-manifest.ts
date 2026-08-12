@@ -105,7 +105,9 @@ const EXPECTED_PROJECT_REFS: Record<EvidenceEnvironment, string> = {
   production: "tpouimiyfmvucrerfhfc",
 }
 
-const REQUIRED_CHECKS = ["CI / validate", "Supabase dry-run"]
+const REQUIRED_CHECKS = ["CI / validate", "CI / Supabase fresh-schema replay", "Supabase dry-run"]
+const CUTOVER_APPROVALS = ["legal", "accounting", "privacy-retention", "provider", "opening-balance", "cutover", "rollback"]
+const GO_LIVE_APPROVALS = [...CUTOVER_APPROVALS, "go-live"]
 const REQUIRED_PREREQUISITES: Record<EvidenceEnvironment, string[]> = {
   dev: ["fresh-replay", "upgrade-rehearsal", "migration-plan-review", "expected-inventory", "required-secret-presence", "provider-runtime-classification"],
   production: ["fresh-replay", "upgrade-rehearsal", "migration-plan-review", "expected-inventory", "required-secret-presence", "provider-runtime-classification", "backup-restore-rehearsal", "rollback-rehearsal", "protection-read-back", "professional-packet-status", "production-deploy-approval"],
@@ -243,10 +245,6 @@ export function evaluateProductionReadinessManifest(manifest: ProductionReadines
   if (manifest.githubControls.requiredReviewerCount < 1) add("protection-missing:production-reviewer", deployBlockers)
   if (manifest.githubControls.adminBypassAllowed) add("protection-missing:admin-bypass", deployBlockers)
 
-  if (manifest.runtimeControls.cutoverPrepareEnabled || manifest.runtimeControls.cutoverActivationEnabled) add("cutover-control-enabled-before-approval", cutoverBlockers, goLiveBlockers)
-  if (manifest.runtimeControls.productionValueFlowEnabled && manifest.gates.goLive.status !== "pass") add("value-flow-enabled-before-go-live", goLiveBlockers)
-  if (manifest.environment === "production" && manifest.runtimeControls.neutralPostingEnabled && manifest.gates.goLive.status !== "pass") add("neutral-posting-enabled-before-go-live", goLiveBlockers)
-
   const capabilityIds = new Set(manifest.capabilities.map((capability) => capability.capabilityId))
   if (capabilityIds.size !== manifest.capabilities.length) add("duplicate-capability", hostedBlockers)
   for (const capability of manifest.capabilities) {
@@ -265,10 +263,32 @@ export function evaluateProductionReadinessManifest(manifest: ProductionReadines
   const requireApprovals = (types: string[], group: Set<string>) => {
     for (const type of types) if (approvals.get(type)?.status !== "approved") add(`approval-missing:${type}`, group)
   }
+  const hasFreshScopedApprovals = (types: string[]) => types.every((type) => {
+    const approval = approvals.get(type)
+    return approval?.status === "approved"
+      && approval.scopeManifestSha256 === scopeHash
+      && timestamp(approval.recordedAt) <= generatedAt
+      && timestamp(approval.expiresAt) > generatedAt
+  })
   if (manifest.gates.deploy.status === "pass" || manifest.gates.parity.status === "pass") requireApprovals(["code-review"], deployBlockers)
   if (manifest.gates.productionDeploy.status === "pass") requireApprovals(["code-review", "production-deploy", "rollback"], productionBlockers)
-  if (manifest.gates.cutover.status === "pass") requireApprovals(["legal", "accounting", "privacy-retention", "provider", "opening-balance", "cutover", "rollback"], cutoverBlockers)
-  if (manifest.gates.goLive.status === "pass") requireApprovals(["legal", "accounting", "privacy-retention", "provider", "opening-balance", "cutover", "go-live", "rollback"], goLiveBlockers)
+  if (manifest.gates.cutover.status === "pass") requireApprovals(CUTOVER_APPROVALS, cutoverBlockers)
+  if (manifest.gates.goLive.status === "pass") requireApprovals(GO_LIVE_APPROVALS, goLiveBlockers)
+
+  const cutoverAuthorized = manifest.environment === "production"
+    && manifest.gates.productionDeploy.status === "pass"
+    && manifest.gates.productionDeploy.blockers.length === 0
+    && manifest.gates.cutover.status === "pass"
+    && manifest.gates.cutover.blockers.length === 0
+    && hasFreshScopedApprovals(CUTOVER_APPROVALS)
+  const goLiveAuthorized = cutoverAuthorized
+    && manifest.gates.goLive.status === "pass"
+    && manifest.gates.goLive.blockers.length === 0
+    && hasFreshScopedApprovals(GO_LIVE_APPROVALS)
+
+  if ((manifest.runtimeControls.cutoverPrepareEnabled || manifest.runtimeControls.cutoverActivationEnabled) && !cutoverAuthorized) add("cutover-control-enabled-before-approval", cutoverBlockers, goLiveBlockers)
+  if (manifest.runtimeControls.productionValueFlowEnabled && !goLiveAuthorized) add("value-flow-enabled-before-go-live", goLiveBlockers)
+  if (manifest.environment === "production" && manifest.runtimeControls.neutralPostingEnabled && !goLiveAuthorized) add("neutral-posting-enabled-before-go-live", goLiveBlockers)
 
   for (const alert of manifest.alerts) {
     if (alert.severity === "blocking" && alert.deliveryStatus !== "delivered") add(`alert-delivery-failed:${alert.code}`, deployBlockers)

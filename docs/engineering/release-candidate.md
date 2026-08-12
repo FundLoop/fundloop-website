@@ -30,6 +30,7 @@ candidate is treated as safe:
 - Protect `dev` and require pull requests before merge.
 - Protect `main` and require pull requests before merge.
 - Require the `CI / validate` check on both `dev` and `main`.
+- Require the `CI / Supabase fresh-schema replay` check on both `dev` and `main`.
 - Require the `Supabase dry-run` check on PRs into both `dev` and `main` when Supabase paths change.
 - Add required reviewers to the `Production` GitHub environment so main-target Supabase deploys pause for approval.
 - Disable or tightly control admin bypass for the `Production` environment if the team wants a hard approval gate.

@@ -122,7 +122,7 @@ Every migration runs on fresh replay before a remote plan. Rehearsal must also c
 
 ## 6. GitHub protection and approvals
 
-The manifest records live, timestamped API read-back for the exact base branch and `Production` environment. Dev/main promotion requires PR enforcement and named required checks. Production deploy requires at least one required reviewer and the repository-approved bypass posture. A checked-in workflow reference is not protection evidence.
+The manifest records live, timestamped API read-back for the exact base branch and `Production` environment. Dev/main promotion requires PR enforcement and the exact `CI / validate`, `CI / Supabase fresh-schema replay`, and `Supabase dry-run` checks. Production deploy requires at least one required reviewer and the repository-approved bypass posture. A checked-in workflow reference is not protection evidence.
 
 Approvals are immutable evidence objects, not booleans. Each records type, `approved|rejected|pending|not-required`, artifact hash, exact manifest-scope hash, approver role, recorded timestamp, and expiry timestamp. A required approval with a different manifest hash, future recorded time, or expired timestamp is stale. Secrets, personal email addresses, tokens, and private provider payloads never enter the manifest; use opaque evidence IDs plus sanitized digests.
 
@@ -141,9 +141,13 @@ Runtime controls must be read from the deployed database/function boundary, not 
 
 Production deployment and parity require `productionValueFlowEnabled=false`. The Sprint's Production validation also requires posting/cutover controls in their approved disabled state. A missing row, permission error, unknown environment, stale observation, or true value-flow flag fails closed. Only the later go-live manifest may authorize a reviewed transition, and it must include activation and rollback evidence for the exact manifest.
 
-Enabling cutover prepare or activation while its gate lacks the required approvals is
-blocking. A Production neutral-posting or value-flow flag is blocking before an
-internally consistent go-live gate. Gate declarations cannot override failed
+Enabling cutover prepare or activation is accepted only in a Production manifest
+whose cutover gate and Production-deploy dependency are consistent passes and whose
+legal, accounting, privacy/retention, provider, opening-balance, cutover, and
+rollback approvals are approved, unexpired, and bound to that exact manifest scope.
+Production value flow or neutral posting is accepted only when the go-live gate is
+also a consistent pass with a fresh scope-bound go-live approval. Deployment alone
+never authorizes any of these controls. Gate declarations cannot override failed
 prerequisites, protections, parity, approvals, alerts, or runtime-control checks.
 
 ## 8. Capability evidence

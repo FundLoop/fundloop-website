@@ -19,6 +19,68 @@ const evaluate = (mutate?: (manifest: ProductionReadinessManifest) => void) => {
   return evaluateProductionReadinessManifest(manifest).blocking
 }
 
+const productionTransition = (stage: "cutover" | "goLive") => {
+  const manifest = structuredClone(fixture)
+  manifest.environment = "production"
+  manifest.candidate.sourceRef = "refs/heads/main"
+  manifest.observed.environment = "production"
+  manifest.observed.projectRef = "tpouimiyfmvucrerfhfc"
+  manifest.githubControls.baseBranch = "main"
+  manifest.capabilities = manifest.capabilities.map((capability) => ({
+    ...capability,
+    environment: "production",
+    state: "production-deployed",
+  }))
+  for (const prerequisiteId of [
+    "backup-restore-rehearsal",
+    "rollback-rehearsal",
+    "protection-read-back",
+    "professional-packet-status",
+    "production-deploy-approval",
+  ]) {
+    manifest.prerequisites.push({
+      prerequisiteId,
+      status: "pass",
+      evidenceSha256: "4".repeat(64),
+      observedAt: "2026-08-11T20:15:00-04:00",
+    })
+  }
+  manifest.runtimeControls.cutoverPrepareEnabled = true
+  manifest.runtimeControls.cutoverActivationEnabled = true
+  manifest.runtimeControls.neutralPostingEnabled = stage === "goLive"
+  manifest.runtimeControls.productionValueFlowEnabled = stage === "goLive"
+  manifest.gates.hostedAcceptance = { ...manifest.gates.hostedAcceptance, status: "pass", blockers: [] }
+  manifest.gates.productionDeploy = { ...manifest.gates.productionDeploy, status: "pass", blockers: [] }
+  manifest.gates.cutover = { ...manifest.gates.cutover, status: "pass", blockers: [] }
+  manifest.gates.goLive = stage === "goLive"
+    ? { ...manifest.gates.goLive, status: "pass", blockers: [] }
+    : { ...manifest.gates.goLive, status: "pending", blockers: ["separate-go-live-approval-required"] }
+
+  const approvalTypes = [
+    "code-review",
+    "production-deploy",
+    "legal",
+    "accounting",
+    "privacy-retention",
+    "provider",
+    "opening-balance",
+    "cutover",
+    ...(stage === "goLive" ? ["go-live"] : []),
+    "rollback",
+  ]
+  const scopeManifestSha256 = approvalScopeSha256(manifest)
+  manifest.approvals = approvalTypes.map((approvalType) => ({
+    approvalType,
+    status: "approved",
+    artifactSha256: "5".repeat(64),
+    scopeManifestSha256,
+    approverRole: `${approvalType}-approver`,
+    recordedAt: "2026-08-11T20:25:30-04:00",
+    expiresAt: "2026-08-12T20:25:30-04:00",
+  }))
+  return manifest
+}
+
 describe("production-readiness evidence contract v1", () => {
   it("publishes a machine-readable schema and a fixture accepted by the canonical evaluator", () => {
     expect(schema.required).toEqual(expect.arrayContaining(["candidate", "expected", "observed", "deployment", "prerequisites", "runtimeControls", "approvals", "alerts", "gates"]))
@@ -67,7 +129,8 @@ describe("production-readiness evidence contract v1", () => {
     ["missing prerequisite", "prerequisite-missing:fresh-replay", (manifest: ProductionReadinessManifest) => { manifest.prerequisites = manifest.prerequisites.filter((entry) => entry.prerequisiteId !== "fresh-replay") }],
     ["failed prerequisite", "prerequisite-not-passed:fresh-replay", (manifest: ProductionReadinessManifest) => { manifest.prerequisites[0]!.status = "fail" }],
     ["missing PR protection", "protection-missing:pull-request", (manifest: ProductionReadinessManifest) => { manifest.githubControls.pullRequestRequired = false }],
-    ["missing required check", "protection-missing:check:CI / validate", (manifest: ProductionReadinessManifest) => { manifest.githubControls.requiredChecks = ["Supabase dry-run"] }],
+    ["missing required check", "protection-missing:check:CI / validate", (manifest: ProductionReadinessManifest) => { manifest.githubControls.requiredChecks = ["CI / Supabase fresh-schema replay", "Supabase dry-run"] }],
+    ["missing replay check", "protection-missing:check:CI / Supabase fresh-schema replay", (manifest: ProductionReadinessManifest) => { manifest.githubControls.requiredChecks = ["CI / validate", "Supabase dry-run"] }],
     ["missing Production reviewer", "protection-missing:production-reviewer", (manifest: ProductionReadinessManifest) => { manifest.githubControls.requiredReviewerCount = 0 }],
     ["admin bypass", "protection-missing:admin-bypass", (manifest: ProductionReadinessManifest) => { manifest.githubControls.adminBypassAllowed = true }],
     ["failed blocking alert", "alert-delivery-failed:parity-drift", (manifest: ProductionReadinessManifest) => { manifest.alerts.push({ code: "parity-drift", severity: "blocking", subject: "fixture", firstObservedAt: manifest.generatedAt, owner: "release-owner", deliveryStatus: "failed", evidenceSha256: "9".repeat(64) }) }],
@@ -76,6 +139,50 @@ describe("production-readiness evidence contract v1", () => {
     ["value flow enabled", "value-flow-enabled-before-go-live", (manifest: ProductionReadinessManifest) => { manifest.runtimeControls.productionValueFlowEnabled = true }],
   ])("fails closed for %s", (_name, code, mutate) => {
     expect(evaluate(mutate)).toContain(code)
+  })
+
+  it("accepts the required fresh-schema replay check when present", () => {
+    expect(fixture.githubControls.requiredChecks).toContain("CI / Supabase fresh-schema replay")
+    expect(evaluate()).not.toContain("protection-missing:check:CI / Supabase fresh-schema replay")
+  })
+
+  it("accepts cutover controls only with a consistent cutover pass and fresh scoped approvals", () => {
+    const manifest = productionTransition("cutover")
+    expect(evaluateProductionReadinessManifest(manifest).blocking).toEqual([])
+  })
+
+  it("accepts Production value flow only with a consistent go-live pass and fresh scoped approvals", () => {
+    const manifest = productionTransition("goLive")
+    expect(evaluateProductionReadinessManifest(manifest).blocking).toEqual([])
+  })
+
+  it.each([
+    ["missing", "approval-missing:opening-balance", (manifest: ProductionReadinessManifest) => { manifest.approvals = manifest.approvals.filter((approval) => approval.approvalType !== "opening-balance") }],
+    ["expired", "approval-stale:cutover", (manifest: ProductionReadinessManifest) => { manifest.approvals.find((approval) => approval.approvalType === "cutover")!.expiresAt = manifest.generatedAt }],
+    ["scope-mismatched", "approval-stale:cutover", (manifest: ProductionReadinessManifest) => { manifest.approvals.find((approval) => approval.approvalType === "cutover")!.scopeManifestSha256 = "0".repeat(64) }],
+  ])("blocks cutover activation with a %s approval", (_name, code, mutate) => {
+    const manifest = productionTransition("cutover")
+    mutate(manifest)
+    expect(evaluateProductionReadinessManifest(manifest).blocking).toEqual(expect.arrayContaining([code, "cutover-control-enabled-before-approval"]))
+  })
+
+  it("blocks activation when cutover is declared pass with contradictory blockers", () => {
+    const manifest = productionTransition("cutover")
+    manifest.gates.cutover.blockers = ["contradictory-cutover-blocker"]
+    expect(evaluateProductionReadinessManifest(manifest).blocking).toEqual(expect.arrayContaining([
+      "cutover-control-enabled-before-approval",
+      "gate-contradiction:cutover",
+    ]))
+  })
+
+  it.each([
+    ["missing", "approval-missing:go-live", (manifest: ProductionReadinessManifest) => { manifest.approvals = manifest.approvals.filter((approval) => approval.approvalType !== "go-live") }],
+    ["expired", "approval-stale:go-live", (manifest: ProductionReadinessManifest) => { manifest.approvals.find((approval) => approval.approvalType === "go-live")!.expiresAt = manifest.generatedAt }],
+    ["scope-mismatched", "approval-stale:go-live", (manifest: ProductionReadinessManifest) => { manifest.approvals.find((approval) => approval.approvalType === "go-live")!.scopeManifestSha256 = "0".repeat(64) }],
+  ])("blocks value flow with a %s go-live approval", (_name, code, mutate) => {
+    const manifest = productionTransition("goLive")
+    mutate(manifest)
+    expect(evaluateProductionReadinessManifest(manifest).blocking).toEqual(expect.arrayContaining([code, "value-flow-enabled-before-go-live"]))
   })
 
   it("blocks a missing approval required by a claimed Production pass", () => {

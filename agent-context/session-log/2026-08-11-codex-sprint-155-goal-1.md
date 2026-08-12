@@ -256,3 +256,55 @@ the deployment CLI—not local startup—remains the only application migration 
 
 - Let PR #190 rerun the corrected hosted bootstrap and require green checks.
 - Do not start #160 or merge; the sprint orchestrator owns CI/review follow-through.
+
+### session v6: Address PR #190 readiness-evaluator review (#157/#159)
+
+- Timestamp: 2026-08-12T00:31:00-04:00
+- Agent: Codex
+- Branch: `codex/155-supabase-ci-gate`
+- Head: `994bcfea511b202cc1ea6a8be38524045f1dd52b`
+
+#### Objective
+
+Make the new executable replay an exact required protection check while preserving
+fail-closed Sprint behavior and permitting only separately approved later cutover
+and go-live runtime-control transitions.
+
+#### Actions Taken
+
+- Added exact `CI / Supabase fresh-schema replay` protection enforcement to the
+  canonical evaluator, schema, fixture, release checklist, and evidence contract.
+- Replaced unconditional cutover/value-flow blockers with gate-specific authorization
+  that requires Production, consistent pass declarations, and complete approved,
+  unexpired, exact-manifest-scope approval sets.
+- Kept deployment, cutover, and go-live separate: deployment alone still blocks all
+  activation; cutover approvals cannot authorize value flow; go-live additionally
+  requires its own fresh approval.
+- Added positive tests for correctly approved cutover/go-live manifests and negative
+  tests for missing replay protection, premature controls, missing/expired/scope-
+  mismatched approvals, and contradictory cutover gates.
+
+#### Tests And Validation Notes
+
+- Passed: Node 22 focused evaluator suite, 53/53 tests.
+- Passed: focused lint and full TypeScript typecheck.
+- Passed: strict AJV Draft 2020-12 schema/fixture validation.
+- Passed: the five unrelated test files that timed out or contaminated DOM state in
+  the highly concurrent full run, 5 files/13 tests, with a single fork worker.
+- Full `CI=1 pnpm check` reached tests after lint but had 11 unrelated failures in
+  five UI test files (timeouts/cross-test DOM state); all five passed immediately in
+  isolated single-worker rerun. The focused evaluator, lint, and typecheck remained
+  green; no affected product/UI files changed.
+- `git diff --check` run before commit.
+
+#### Reflections
+
+Fail-closed does not mean permanently disabled. Runtime activation becomes valid only
+when the manifest itself proves the distinct later authority boundary with fresh,
+scope-bound evidence; a deploy or self-declared gate cannot supply that authority.
+
+#### Suggested Next Steps
+
+- Let the orchestrator reply to and resolve the two exact PR review threads after
+  this commit is pushed; do not request a second review.
+- Do not begin #160 or merge PR #190 from this review-fix session.

@@ -109,7 +109,17 @@
         "observedAt": { "$ref": "#/$defs/dateTime" },
         "baseBranch": { "enum": ["dev", "main"] },
         "pullRequestRequired": { "const": true },
-        "requiredChecks": { "type": "array", "minItems": 2, "uniqueItems": true, "items": { "$ref": "#/$defs/nonEmpty" } },
+        "requiredChecks": {
+          "type": "array",
+          "minItems": 3,
+          "uniqueItems": true,
+          "allOf": [
+            { "contains": { "const": "CI / validate" } },
+            { "contains": { "const": "CI / Supabase fresh-schema replay" } },
+            { "contains": { "const": "Supabase dry-run" } }
+          ],
+          "items": { "$ref": "#/$defs/nonEmpty" }
+        },
         "productionEnvironment": { "const": "Production" },
         "requiredReviewerCount": { "type": "integer", "minimum": 1 },
         "adminBypassAllowed": { "const": false }
