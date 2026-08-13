@@ -273,3 +273,15 @@
 - Validation: exact-head Feature #118 matrix `feature-118-20260813T203826902Z-e30a4710` passed fresh replay, all five personas, wallet/provider/allocation/operational lanes, SQL, focused contracts, Hardhat, Node 22 full check (`183` files / `968` tests / typecheck / `165` pages), and final zero-residue reset with value flow disabled. FundLoop Supabase was stopped immediately and zero containers verified. Audit-specific focused Vitest, scoped ESLint, Node 22 typecheck, Markdown/source review, and diff checks follow this entry.
 - Reflections: service-role-only/RLS-protected tables do not constitute an isolated allocator when the same application database and immutable artifacts retain the project-scoped ID, FundLoop user ID, email, score, and per-project claims. Audience report output is materially safer, but it cannot repair the upstream retained join or backup/support access.
 - Next steps: commit the audit and stop at #204's approval boundary. Ask the user whether to insert the proposed R1–R4 remediation Tasks under Goal #163. Do not create Tasks, implement repairs, start #188, or restart Supabase without explicit approval and a new lease.
+
+### session v24: limit allocator remediation to reachable interfaces (#204)
+
+- Timestamp: 2026-08-13T21:10:38Z
+- Agent: Codex (`issue-implementer` audit-scope correction)
+- Branch: `codex/155-goal-2-integrated-evidence`
+- Head before commit: `90b08cfb09a569a38e06f6341abc8b5f833e8da5`
+- Objective: ensure the proposed remediation covers only interfaces that touch FundLoop or the allocator/adjudicator and does not turn external-only diagram arrows into FundLoop work.
+- Actions: retained end-to-end arrow classification for audit traceability, but explicitly excluded Participant → Project, Participant → CUBID, Project → CUBID, and CUBID → Project from remediation reach. Narrowed the target project plane to FundLoop ingress, made external tokens/proofs/consent assertions opaque dependencies, and updated R1/R2 plus the approval boundary so any future Task can cover only a FundLoop or allocator/adjudicator endpoint.
+- Validation: allocator audit Vitest passed `4/4`, including the new reach-boundary regression; scoped ESLint, Node 22 typecheck, and `git diff --check` passed. No Supabase, Docker, browser, hosted, provider, Production, payout, or value-flow command ran.
+- Reflections: complete audit coverage and remediation authority are different. External arrows still matter as assumptions at FundLoop ingress, but FundLoop should neither promise nor implement behavior wholly owned by Participants, Projects, or CUBID.
+- Next steps: commit the scope correction and keep #204/#188 blocked. Await explicit approval before creating the narrowed R1–R4 Tasks; do not restart Supabase or implement remediation.

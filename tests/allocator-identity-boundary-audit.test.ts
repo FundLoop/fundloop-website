@@ -34,6 +34,20 @@ describe("allocator identity-boundary audit evidence", () => {
     expect(audit).toContain("Production value flow is disabled")
   })
 
+  test("excludes external-only arrows from remediation reach", () => {
+    expect(audit).toContain("## Remediation reach boundary")
+    for (const externalArrow of [
+      "Participant → Project",
+      "Participant → CUBID",
+      "Project → CUBID",
+      "CUBID → Project",
+    ]) {
+      expect(audit).toContain(externalArrow)
+    }
+    expect(audit).toContain("may cover only FundLoop or allocator/adjudicator endpoints")
+    expect(audit).toContain("Do not alter upstream Participant/Project/CUBID flows")
+  })
+
   test("defines approval-gated remediation without changing allocation policy", () => {
     for (const task of [
       "R1 — Introduce scoped identity-link vault and token contracts",
