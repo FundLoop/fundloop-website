@@ -99,11 +99,11 @@ JOIN public.monthly_cycle_report_artifacts artifact ON artifact.id=event.artifac
 WHERE event.metadata ? 'artifactPath'
   AND event.metadata->>'artifactPath' NOT LIKE '%'||artifact.path_token||'%';
 
-ALTER TABLE public.monthly_cycle_report_events DISABLE TRIGGER monthly_cycle_report_events_append_only;
+ALTER TABLE public.monthly_cycle_report_events DISABLE TRIGGER monthly_report_events_append_only;
 UPDATE public.monthly_cycle_report_events event
 SET metadata=(event.metadata-'artifactPath')||jsonb_build_object('pathToken',redaction.path_token,'pathRedacted',true)
 FROM monthly_report_path_redactions redaction WHERE redaction.event_id=event.id;
-ALTER TABLE public.monthly_cycle_report_events ENABLE TRIGGER monthly_cycle_report_events_append_only;
+ALTER TABLE public.monthly_cycle_report_events ENABLE TRIGGER monthly_report_events_append_only;
 
 INSERT INTO public.monthly_cycle_report_events(artifact_id,event_type,actor_user_id,evidence_hash,metadata)
 SELECT artifact_id,'path_metadata_redacted',actor_user_id,evidence_hash,
