@@ -6,6 +6,7 @@ const root = process.cwd()
 const read = (path: string) => readFileSync(resolve(root, path), "utf8")
 
 const audit = read("docs/engineering/2026-08-13-allocator-identity-boundary-audit.md")
+const improvementSuggestions = read("docs/project-reviews/2026-08-13-business-red-team/improvement-suggestions.md")
 const attribution = read("supabase/migrations/20260720203000_project_attribution_datasets.sql")
 const packages = read("supabase/migrations/20260809140000_epoch_project_packages.sql")
 const allocation = read("supabase/migrations/20260809160000_epoch_funded_allocation.sql")
@@ -55,5 +56,24 @@ describe("allocator identity-boundary audit evidence", () => {
     expect(audit).toMatch(/add mandatory currency to allocator inputs, outputs, persisted artifacts, hashes, and replay\s+checks/)
     expect(audit).toContain("Replace project claims in allocator results with currency claims")
     expect(audit).toContain("A shared physical database is accepted for the MVP")
+  })
+
+  test("cross-references every allocator recommendation to MVP, Cubid, FundLoop, or v2 ownership", () => {
+    expect(improvementSuggestions).toContain("### 2026-08-13 implementation and deferral map")
+    expect(improvementSuggestions).toContain("**Accepted MVP bypass**")
+    for (const issue of [
+      "FundLoop/fundloop-website/issues/204",
+      "FundLoop/fundloop-website/issues/188",
+      "Cubid-Me/cubid-monorepo/issues/77",
+      "Cubid-Me/cubid-monorepo/issues/79",
+      "Cubid-Me/cubid-monorepo/issues/80",
+      "Cubid-Me/cubid-monorepo/issues/81",
+    ]) {
+      expect(improvementSuggestions).toContain(issue)
+    }
+    expect(improvementSuggestions).toContain("FundLoop may retain the identity join before and after")
+    expect(improvementSuggestions).toContain("Project claims become currency claims in privacy v2")
+    expect(improvementSuggestions).toContain("Project membership/self-identification is not an")
+    expect(improvementSuggestions).toContain("> allocator input")
   })
 })
