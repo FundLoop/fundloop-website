@@ -189,3 +189,15 @@
 - Validation: the canonical rerun proved the repaired four-epoch suite green and passed 20/21; only the cutover wrapper reported a non-diagnostic exit after redundant replay. Running that wrapper directly with tracing passed its historical reset, fixture, migration-up, assertion, and current restore. Focused runner tests, lint, typecheck, syntax, and the final canonical result follow below.
 - Reflections: isolation must have one accountable owner. Nesting parent resets around a wrapper that deliberately owns two full versioned resets increases host pressure without improving test independence.
 - Next steps: rerun the canonical suite with single-owner cutover isolation, then proceed to the focused wallet gate only if all 21 suites pass.
+
+### session v17: version the business review and allocator-boundary target (#204)
+
+- Timestamp: 2026-08-13T18:10:11Z
+- Agent: Codex (`task-interview` / `issue-vetting` correction)
+- Branch: `codex/155-goal-2-integrated-evidence`
+- Head before commit: `92ccb56691db2d022de125e9695d07673022a3cb`
+- Objective: make the dated FundLoop business critique and improvement proposal, including the three target allocator information-flow diagrams, versioned and reachable from the registered Sprint #155 worktree before allocator-boundary audit vetting.
+- Actions: added the dated critique and improvement-suggestions documents under `docs/project-reviews/2026-08-13-business-red-team/`; preserved the three Mermaid contracts for the conventional MVP, alias-separated ZK target, and consented-PII project path; and recorded the product, privacy, reporting, fee, cap, custody, pilot, and stop-work recommendations without changing application behavior.
+- Validation: source and Sprint-worktree documents were byte-for-byte identical before commit; `git diff --check` passed. No code, schema, runtime, provider, hosted, Production, payout, or value-flow validation was required or run for this documentation-only commit.
+- Reflections: the allocator audit needs an immutable target contract, but the audit remains a Sprint-level discovery and architecture gate rather than an implementation Task nested under Goal #163. Native blockers preserve the required sequencing into #188 without misrepresenting the audit as a predetermined remediation.
+- Next steps: move #204 directly under Sprint #155, update #155/#163/#204 to describe the Sprint-level gate, return #204 to Scoped, and rerun issue vetting. If the audit later finds violations, stop for explicit approval before inserting remediation Tasks; every approved remediation Task must be locally green before #204 can close.
