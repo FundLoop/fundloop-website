@@ -12,6 +12,7 @@ export type McpWorkflowReadOperation =
   | "operator.cycle.observability"
   | "operator.payments.reconciliation_visibility"
   | "operator.reporting.coverage"
+  | "reporting.artifacts.read"
 
 export type McpWorkflowReadInput = {
   operation: McpWorkflowReadOperation
@@ -32,6 +33,7 @@ const operations: readonly McpWorkflowReadOperation[] = [
   "operator.cycle.observability",
   "operator.payments.reconciliation_visibility",
   "operator.reporting.coverage",
+  "reporting.artifacts.read",
 ]
 
 function isPlainObject(value: unknown): value is Record<string, unknown> {

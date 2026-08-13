@@ -7,7 +7,7 @@ DECLARE
   v_payment bigint;v_terminal_payment bigint;v_command uuid;v_terminal uuid;v_evidence bigint;
   v_ledger bigint;v_reversal bigint;v_residual bigint;v_second_residual bigint;v_package bigint;v_cycle bigint;v_dataset bigint;v_source_row bigint;v_fx_observation bigint;v_prep_count integer;
   v_preview jsonb;v_manifest jsonb;v_manifest_id bigint;v_manifest_hash text;v_source_lot_id bigint;v_source_lot_key text;
-  v_artifact jsonb;v_run bigint;v_close jsonb;v_close_replay jsonb;v_root_hash text;
+  v_artifact jsonb;v_run bigint;v_close jsonb;v_close_replay jsonb;v_root_hash text;v_reports jsonb;v_publish jsonb;
   v_exact numeric(38,18);v_funded_minor numeric(78,0);v_initial_minor numeric(78,0);v_score_minor numeric(78,0);v_topup_minor numeric(78,0);v_residue_minor numeric(78,0);
   v_denied boolean:=false;v_direct_denied boolean:=false;v_base jsonb;
 BEGIN
@@ -185,6 +185,44 @@ BEGIN
         AND close_package.current_funded_minor=v_funded_minor AND close_package.production_enabled=false
         AND summary.project_id=3 AND summary.source_count=1) THEN
     RAISE EXCEPTION 'eur_pay_by_bank_close_or_replay_failed';END IF;
+
+  v_reports:=public.generate_monthly_cycle_reports(jsonb_build_object('contractVersion','monthly_cycle_reports_generate.v1',
+    'deploymentEnvironment','local','actorUserId',v_actor,'closePackageId',v_close->>'closePackageId'));
+  IF (v_reports->>'artifactCount')::integer<>5 OR (public.generate_monthly_cycle_reports(jsonb_build_object(
+    'contractVersion','monthly_cycle_reports_generate.v1','deploymentEnvironment','local','actorUserId',v_actor,
+    'closePackageId',v_close->>'closePackageId'))->>'createdCount')::integer<>0 THEN
+    RAISE EXCEPTION 'monthly_report_generation_or_replay_failed';END IF;
+  v_publish:=public.publish_monthly_cycle_reports(jsonb_build_object('contractVersion','monthly_cycle_reports_publish.v1',
+    'deploymentEnvironment','local','actorUserId',v_actor,'closePackageId',v_close->>'closePackageId','rootHash',v_root_hash));
+  IF (v_publish->>'publishedCount')::integer<>5 OR (SELECT count(*) FROM public.monthly_cycle_reports
+      WHERE monthly_cycle_id=v_cycle AND artifact_hash~'^[0-9a-f]{64}$')<>5
+    OR (SELECT count(DISTINCT audience) FROM public.monthly_cycle_report_artifacts
+      WHERE close_package_id=(v_close->>'closePackageId')::bigint AND state='published')<>5 THEN
+    RAISE EXCEPTION 'monthly_report_publication_failed';END IF;
+  IF (public.publish_monthly_cycle_reports(jsonb_build_object('contractVersion','monthly_cycle_reports_publish.v1',
+    'deploymentEnvironment','local','actorUserId',v_actor,'closePackageId',v_close->>'closePackageId','rootHash',v_root_hash))->>'publishedCount')::integer<>5
+    OR EXISTS(SELECT 1 FROM public.monthly_cycle_report_artifacts WHERE close_package_id=(v_close->>'closePackageId')::bigint
+      AND artifact_hash<>encode(extensions.digest(pg_catalog.convert_to(artifact::text,'UTF8'),'sha256'),'hex')) THEN
+    RAISE EXCEPTION 'monthly_report_publication_replay_or_hash_failed';END IF;
+  v_denied:=false;
+  BEGIN
+    PERFORM public.publish_monthly_cycle_reports(jsonb_build_object('contractVersion','monthly_cycle_reports_publish.v1',
+      'deploymentEnvironment','production','actorUserId',v_actor,'closePackageId',v_close->>'closePackageId','rootHash',v_root_hash));
+  EXCEPTION WHEN OTHERS THEN v_denied:=SQLERRM LIKE '%monthly_report_publication_runtime_disabled%';END;
+  IF NOT v_denied THEN RAISE EXCEPTION 'production_monthly_report_publish_should_fail';END IF;
+  v_prep_count:=public.apply_monthly_report_retention(v_actor,clock_timestamp()+interval '8 years',10);
+  IF v_prep_count<>5
+    OR NOT EXISTS(SELECT 1 FROM public.monthly_cycle_report_artifacts WHERE close_package_id=(v_close->>'closePackageId')::bigint
+      AND audience='mcp' AND state='tombstoned' AND artifact->>'originalHash'=artifact_hash)
+    OR NOT EXISTS(SELECT 1 FROM public.monthly_cycle_report_events event JOIN public.monthly_cycle_report_artifacts artifact ON artifact.id=event.artifact_id
+      WHERE artifact.close_package_id=(v_close->>'closePackageId')::bigint AND artifact.audience='mcp' AND event.event_type='tombstoned') THEN
+    RAISE EXCEPTION 'monthly_report_retention_failed count %, states %, hash %, events %',v_prep_count,
+      (SELECT jsonb_agg(jsonb_build_object('audience',audience,'state',state,'original',artifact->>'originalHash','hash',artifact_hash))
+       FROM public.monthly_cycle_report_artifacts WHERE close_package_id=(v_close->>'closePackageId')::bigint),
+      (SELECT count(*) FROM public.monthly_cycle_report_artifacts WHERE close_package_id=(v_close->>'closePackageId')::bigint
+       AND audience='mcp' AND state='tombstoned' AND artifact->>'originalHash'=artifact_hash),
+      (SELECT count(*) FROM public.monthly_cycle_report_events event JOIN public.monthly_cycle_report_artifacts artifact ON artifact.id=event.artifact_id
+       WHERE artifact.close_package_id=(v_close->>'closePackageId')::bigint AND artifact.audience='mcp' AND event.event_type='tombstoned');END IF;
 
   PERFORM public.ingest_stripe_pay_by_bank_webhook(jsonb_build_object('contractVersion','stripe_pay_by_bank_webhook.v1','deploymentEnvironment','local',
     'providerEventId','evt_bankrefundpending','providerAccountId','acct_testbank','eventType','refund.updated','providerObjectId','re_bankfixture',

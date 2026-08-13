@@ -21,3 +21,15 @@
 - Validation: fresh local migration replay applied the new migration. Exact EUR SQL and the browser allocation fixture passed with rollback and no residue. Focused Vitest passed `16/16`; Node 22 typecheck and scoped ESLint passed. All evidence is local fixture evidence, not hosted/provider certification; Production and value-flow controls remained disabled.
 - Reflections: the batch failure was a truthful integrity-trigger rejection of an incomplete browser fixture. Integrated EUR coverage then exposed a separate product defect: identical v2 result replay was rejected after the manifest advanced to `calculated`. Checking the immutable existing result before invoking the once-only calculator preserves conflict safety and restores idempotency.
 - Next steps: independent validation remains pending. Implement #181 and #186 on this branch, then rerun the complete Feature #118 matrix and the Goal-level adversarial gate before publication.
+
+### session v3: generate and publish deterministic audience reports (#181)
+
+- Timestamp: 2026-08-13T12:46:00Z
+- Agent: Codex (`issue-implementer` handoff)
+- Branch: `codex/155-goal-2-integrated-evidence`
+- Head before commit: `f06cd431ee9b733b226626e31dd45ea4d2a483f3`
+- Objective: replace metadata-first reporting with deterministic, authorized generation, publication, explanation, audit, retention, and MCP reads for every required audience.
+- Actions: added forward-only report artifact/event schema and generated types; typed generate/publish/read Edge commands; close-root-bound public, user, founder, operator, and MCP artifacts; completeness/hash/replay gates; seven-year executable tombstones; public/self/founder/operator MCP authorization; and an MCP artifact-read tool. Updated the EUR integrated close fixture to prove five-audience generation/publication, exact replay, Production denial, and retention audit.
+- Validation: fresh local replay applied both reporting migrations. The integrated SQL smoke passed inside rollback with five generated/published/tombstoned audiences and no residue. Focused report/storage/MCP Vitest passed `54/54`; Node 22 typecheck, scoped ESLint, Deno check for the new Edge Function, and `git diff --check` passed. Hosted Dev verification remains explicitly owned by #183 and was not claimed.
+- Reflections: enum expansion must commit before later migration constraints reference the new value. Retention mutation and later assertions must be sequenced in PL/pgSQL rather than embedded in one reorderable boolean expression. MCP coverage needs a real callable tool, not only an unregistered Edge operation.
+- Next steps: independent validation remains pending. Implement #186's complete TAP/four-epoch lifecycle, rerun Feature #118 and the Goal adversarial batch, then hand the complete branch to validators and #188 publication.

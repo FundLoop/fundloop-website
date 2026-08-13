@@ -5889,6 +5889,161 @@ export type Database = {
           },
         ]
       }
+      monthly_cycle_report_artifacts: {
+        Row: {
+          artifact: Json
+          artifact_hash: string
+          audience: Database["public"]["Enums"]["monthly_cycle_report_audience"]
+          close_package_id: number
+          generated_at: string
+          generated_by_user_id: string
+          id: number
+          monthly_cycle_id: number
+          production_enabled: boolean
+          published_at: string | null
+          retention_expires_at: string
+          state: string
+          subject_project_id: number | null
+          subject_user_id: string | null
+          superseded_by_id: number | null
+          tombstoned_at: string | null
+          version: number
+        }
+        Insert: {
+          artifact: Json
+          artifact_hash: string
+          audience: Database["public"]["Enums"]["monthly_cycle_report_audience"]
+          close_package_id: number
+          generated_at?: string
+          generated_by_user_id: string
+          id?: never
+          monthly_cycle_id: number
+          production_enabled?: boolean
+          published_at?: string | null
+          retention_expires_at: string
+          state?: string
+          subject_project_id?: number | null
+          subject_user_id?: string | null
+          superseded_by_id?: number | null
+          tombstoned_at?: string | null
+          version?: number
+        }
+        Update: {
+          artifact?: Json
+          artifact_hash?: string
+          audience?: Database["public"]["Enums"]["monthly_cycle_report_audience"]
+          close_package_id?: number
+          generated_at?: string
+          generated_by_user_id?: string
+          id?: never
+          monthly_cycle_id?: number
+          production_enabled?: boolean
+          published_at?: string | null
+          retention_expires_at?: string
+          state?: string
+          subject_project_id?: number | null
+          subject_user_id?: string | null
+          superseded_by_id?: number | null
+          tombstoned_at?: string | null
+          version?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "monthly_cycle_report_artifacts_close_package_id_fkey"
+            columns: ["close_package_id"]
+            isOneToOne: false
+            referencedRelation: "epoch_close_operator_view"
+            referencedColumns: ["close_package_id"]
+          },
+          {
+            foreignKeyName: "monthly_cycle_report_artifacts_close_package_id_fkey"
+            columns: ["close_package_id"]
+            isOneToOne: false
+            referencedRelation: "epoch_close_packages"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "monthly_cycle_report_artifacts_generated_by_user_id_fkey"
+            columns: ["generated_by_user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "monthly_cycle_report_artifacts_monthly_cycle_id_fkey"
+            columns: ["monthly_cycle_id"]
+            isOneToOne: false
+            referencedRelation: "monthly_cycles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "monthly_cycle_report_artifacts_subject_project_id_fkey"
+            columns: ["subject_project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "monthly_cycle_report_artifacts_subject_user_id_fkey"
+            columns: ["subject_user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "monthly_cycle_report_artifacts_superseded_by_id_fkey"
+            columns: ["superseded_by_id"]
+            isOneToOne: false
+            referencedRelation: "monthly_cycle_report_artifacts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      monthly_cycle_report_events: {
+        Row: {
+          actor_user_id: string
+          artifact_id: number
+          created_at: string
+          event_type: string
+          evidence_hash: string
+          id: number
+          metadata: Json
+        }
+        Insert: {
+          actor_user_id: string
+          artifact_id: number
+          created_at?: string
+          event_type: string
+          evidence_hash: string
+          id?: never
+          metadata?: Json
+        }
+        Update: {
+          actor_user_id?: string
+          artifact_id?: number
+          created_at?: string
+          event_type?: string
+          evidence_hash?: string
+          id?: never
+          metadata?: Json
+        }
+        Relationships: [
+          {
+            foreignKeyName: "monthly_cycle_report_events_actor_user_id_fkey"
+            columns: ["actor_user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "monthly_cycle_report_events_artifact_id_fkey"
+            columns: ["artifact_id"]
+            isOneToOne: false
+            referencedRelation: "monthly_cycle_report_artifacts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       monthly_cycle_reports: {
         Row: {
           artifact_bucket: string
@@ -14169,6 +14324,10 @@ export type Database = {
         }
         Returns: number
       }
+      apply_monthly_report_retention: {
+        Args: { p_actor_user_id: string; p_as_of: string; p_limit?: number }
+        Returns: number
+      }
       approve_epoch_allocation_close: {
         Args: { p_command: Json }
         Returns: Json
@@ -14357,6 +14516,10 @@ export type Database = {
       financial_cutover_runtime_enabled: {
         Args: { p_capability: string; p_environment: string }
         Returns: boolean
+      }
+      generate_monthly_cycle_reports: {
+        Args: { p_command: Json }
+        Returns: Json
       }
       get_active_org_members: {
         Args: { org_id: number }
@@ -14702,6 +14865,10 @@ export type Database = {
         Args: { p_command: Json }
         Returns: string
       }
+      publish_monthly_cycle_reports: {
+        Args: { p_command: Json }
+        Returns: Json
+      }
       publish_project_onboarding_draft_atomic: {
         Args: {
           p_billing_email: string
@@ -14783,6 +14950,10 @@ export type Database = {
         Returns: number
       }
       record_funded_epoch_allocation_v2: {
+        Args: { p_command: Json }
+        Returns: number
+      }
+      record_funded_epoch_allocation_v2_once: {
         Args: { p_command: Json }
         Returns: number
       }
@@ -14933,7 +15104,12 @@ export type Database = {
     }
     Enums: {
       cubid_identity_status: "unlinked" | "linked" | "verified"
-      monthly_cycle_report_audience: "public" | "user" | "founder" | "operator"
+      monthly_cycle_report_audience:
+        | "public"
+        | "user"
+        | "founder"
+        | "operator"
+        | "mcp"
       monthly_cycle_status:
         | "open"
         | "locked"
@@ -15125,7 +15301,13 @@ export const Constants = {
   public: {
     Enums: {
       cubid_identity_status: ["unlinked", "linked", "verified"],
-      monthly_cycle_report_audience: ["public", "user", "founder", "operator"],
+      monthly_cycle_report_audience: [
+        "public",
+        "user",
+        "founder",
+        "operator",
+        "mcp",
+      ],
       monthly_cycle_status: [
         "open",
         "locked",

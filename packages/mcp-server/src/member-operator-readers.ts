@@ -85,6 +85,18 @@ export type UserPayoutRoutesList = {
   warnings: Array<{ scope: string; message: string }>
 }
 
+export type PublishedMonthlyReports = {
+  cycleKey: string | null
+  reports: Array<{
+    audience: string
+    subject_user_id: string | null
+    subject_project_id: number | null
+    artifact: unknown
+    artifact_hash: string
+    published_at: string | null
+  }>
+}
+
 export type OperatorCycleStatus = {
   cycleKey: string
   status: string
@@ -118,12 +130,14 @@ export type OperatorReportingCoverage = {
   userReports: number
   founderReports: number
   operatorReports: number
+  mcpReports: number
   artifactCount: number
 }
 
 export type UserWorkflowReader = {
   getWorkspaceSummary(auth: McpAuthContext): Promise<UserWorkspaceSummary>
   listPayoutRoutes(auth: McpAuthContext): Promise<UserPayoutRoutesList>
+  listPublishedReports(input: { cycleKey?: string }, auth: McpAuthContext): Promise<PublishedMonthlyReports>
 }
 
 export type ProjectMemberWorkflowReader = {
@@ -162,6 +176,10 @@ export class EdgeUserWorkflowReader implements UserWorkflowReader {
 
   async listPayoutRoutes(auth: McpAuthContext): Promise<UserPayoutRoutesList> {
     return invokeRead(this.edge, { operation: "user.payout.routes.list" }, auth)
+  }
+
+  async listPublishedReports(input: { cycleKey?: string }, auth: McpAuthContext): Promise<PublishedMonthlyReports> {
+    return invokeRead(this.edge, { operation: "reporting.artifacts.read", ...input }, auth)
   }
 }
 

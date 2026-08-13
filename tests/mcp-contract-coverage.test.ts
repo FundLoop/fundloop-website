@@ -110,6 +110,9 @@ function createContext(auth: McpAuthContext = authenticatedAuth): McpToolHandler
           warnings: [],
         }
       },
+      async listPublishedReports(input) {
+        return { cycleKey: input.cycleKey ?? "2026-04", reports: [] }
+      },
     },
     projectMemberReader: {
       async getProjectReportingStatus() {
@@ -151,7 +154,7 @@ function createContext(auth: McpAuthContext = authenticatedAuth): McpToolHandler
         return { submitted: 0, confirming: 0, awaitingConfirmation: 0, confirmed: 1, failed: 0 }
       },
       async getReportingCoverage() {
-        return { cycleKey: "2026-04", publicReports: 1, userReports: 1, founderReports: 1, operatorReports: 1, artifactCount: 1 }
+        return { cycleKey: "2026-04", publicReports: 1, userReports: 1, founderReports: 1, operatorReports: 1, mcpReports: 1, artifactCount: 1 }
       },
     },
   }
