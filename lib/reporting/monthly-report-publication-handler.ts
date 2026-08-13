@@ -9,9 +9,8 @@ type PreparedArtifact = {
   cycleKey: string
   closePackageId: string | number
   audience: "public" | "user" | "founder" | "operator" | "mcp"
-  subjectUserId?: string | null
-  subjectProjectId?: string | number | null
   version: number
+  pathToken: string
   artifactBytes: string
   artifactHash: string
   artifactPath: string
@@ -76,10 +75,9 @@ async function publish(operations: MonthlyReportPublicationOperations, input: Mo
   if (!Array.isArray(artifacts) || artifacts.length === 0) return edgeCommandFailure("monthly_report_prepare_failed", "No artifacts were prepared.")
   const uploaded: string[] = []
   for (const artifact of artifacts) {
-    const subject = artifact.audience === "user" ? artifact.subjectUserId : artifact.audience === "founder" ? artifact.subjectProjectId : null
     const expectedPath = buildMonthlyCycleReportPublicationPath({
       cycleKey: artifact.cycleKey, closePackageId: artifact.closePackageId, audience: artifact.audience,
-      subjectId: subject, version: artifact.version, artifactHash: artifact.artifactHash,
+      pathToken: artifact.pathToken, version: artifact.version, artifactHash: artifact.artifactHash,
     })
     const bytes = new TextEncoder().encode(artifact.artifactBytes)
     if (expectedPath !== artifact.artifactPath || await sha256Hex(bytes) !== artifact.artifactHash) {
