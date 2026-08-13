@@ -2078,9 +2078,7 @@ export type Database = {
       epoch_close_artifacts: {
         Row: {
           artifact: Json
-          artifact_bytes: string
           artifact_hash: string
-          artifact_path: string | null
           artifact_key: string
           audience: string
           close_package_id: number
@@ -5903,9 +5901,9 @@ export type Database = {
           generated_by_user_id: string
           id: number
           monthly_cycle_id: number
+          path_token: string
           production_enabled: boolean
           published_at: string | null
-          path_token: string
           regeneration_key: string | null
           removed_artifact_path: string | null
           removed_artifact_path_evidence_hash: string | null
@@ -5913,11 +5911,11 @@ export type Database = {
           state: string
           storage_verified_at: string | null
           storage_verified_hash: string | null
-          subject_project_id: number | null
           subject_evidence_hash: string | null
+          subject_project_id: number | null
           subject_user_id: string | null
-          supersedes_id: number | null
           superseded_by_id: number | null
+          supersedes_id: number | null
           tombstone_reason: string | null
           tombstoned_at: string | null
           version: number
@@ -5933,9 +5931,9 @@ export type Database = {
           generated_by_user_id: string
           id?: never
           monthly_cycle_id: number
+          path_token?: string
           production_enabled?: boolean
           published_at?: string | null
-          path_token?: string
           regeneration_key?: string | null
           removed_artifact_path?: string | null
           removed_artifact_path_evidence_hash?: string | null
@@ -5943,11 +5941,11 @@ export type Database = {
           state?: string
           storage_verified_at?: string | null
           storage_verified_hash?: string | null
-          subject_project_id?: number | null
           subject_evidence_hash?: string | null
+          subject_project_id?: number | null
           subject_user_id?: string | null
-          supersedes_id?: number | null
           superseded_by_id?: number | null
+          supersedes_id?: number | null
           tombstone_reason?: string | null
           tombstoned_at?: string | null
           version?: number
@@ -5963,9 +5961,9 @@ export type Database = {
           generated_by_user_id?: string
           id?: never
           monthly_cycle_id?: number
+          path_token?: string
           production_enabled?: boolean
           published_at?: string | null
-          path_token?: string
           regeneration_key?: string | null
           removed_artifact_path?: string | null
           removed_artifact_path_evidence_hash?: string | null
@@ -5973,11 +5971,11 @@ export type Database = {
           state?: string
           storage_verified_at?: string | null
           storage_verified_hash?: string | null
-          subject_project_id?: number | null
           subject_evidence_hash?: string | null
+          subject_project_id?: number | null
           subject_user_id?: string | null
-          supersedes_id?: number | null
           superseded_by_id?: number | null
+          supersedes_id?: number | null
           tombstone_reason?: string | null
           tombstoned_at?: string | null
           version?: number
@@ -6026,15 +6024,15 @@ export type Database = {
             referencedColumns: ["user_id"]
           },
           {
-            foreignKeyName: "monthly_cycle_report_artifacts_supersedes_id_fkey"
-            columns: ["supersedes_id"]
+            foreignKeyName: "monthly_cycle_report_artifacts_superseded_by_id_fkey"
+            columns: ["superseded_by_id"]
             isOneToOne: false
             referencedRelation: "monthly_cycle_report_artifacts"
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "monthly_cycle_report_artifacts_superseded_by_id_fkey"
-            columns: ["superseded_by_id"]
+            foreignKeyName: "monthly_cycle_report_artifacts_supersedes_id_fkey"
+            columns: ["supersedes_id"]
             isOneToOne: false
             referencedRelation: "monthly_cycle_report_artifacts"
             referencedColumns: ["id"]
@@ -14349,7 +14347,6 @@ export type Database = {
           status: string
         }[]
       }
-      persona_goal2_schema_readiness: { Args: never; Returns: Json }
       acknowledge_stripe_acss_debit_checkout: {
         Args: { p_command: Json }
         Returns: string
@@ -14542,6 +14539,14 @@ export type Database = {
         Args: { p_environment: string; p_now: string }
         Returns: number
       }
+      finalize_monthly_cycle_report_publication: {
+        Args: { p_command: Json }
+        Returns: Json
+      }
+      finalize_monthly_cycle_report_tombstone: {
+        Args: { p_command: Json }
+        Returns: Json
+      }
       finalize_onchain_payment_reconciliation: {
         Args: {
           p_confirmation_count: number
@@ -14565,14 +14570,6 @@ export type Database = {
         Args: { p_environment: string; p_now?: string }
         Returns: number
       }
-      finalize_monthly_cycle_report_publication: {
-        Args: { p_command: Json }
-        Returns: Json
-      }
-      finalize_monthly_cycle_report_tombstone: {
-        Args: { p_command: Json }
-        Returns: Json
-      }
       financial_cutover_current_source_hash: {
         Args: { p_source_id: string; p_source_type: string }
         Returns: string
@@ -14582,31 +14579,6 @@ export type Database = {
         Returns: boolean
       }
       generate_monthly_cycle_reports: {
-        Args: { p_command: Json }
-        Returns: Json
-      }
-      monthly_cycle_report_candidates: {
-        Args: { p_close_package_id: number }
-        Returns: {
-          artifact: Json
-          audience: Database["public"]["Enums"]["monthly_cycle_report_audience"]
-          subject_project_id: number | null
-          subject_user_id: string | null
-        }[]
-      }
-      prepare_monthly_cycle_report_publication: {
-        Args: { p_command: Json }
-        Returns: Json
-      }
-      prepare_monthly_cycle_report_tombstone: {
-        Args: { p_command: Json }
-        Returns: Json
-      }
-      record_monthly_report_publication_failure: {
-        Args: { p_command: Json }
-        Returns: Json
-      }
-      regenerate_monthly_cycle_reports: {
         Args: { p_command: Json }
         Returns: Json
       }
@@ -14867,6 +14839,31 @@ export type Database = {
         }
         Returns: Json
       }
+      monthly_cycle_report_candidates: {
+        Args: { p_close_package_id: number }
+        Returns: {
+          artifact: Json
+          audience: Database["public"]["Enums"]["monthly_cycle_report_audience"]
+          subject_project_id: number
+          subject_user_id: string
+        }[]
+      }
+      monthly_cycle_report_object_path: {
+        Args: {
+          p_artifact_hash: string
+          p_audience: Database["public"]["Enums"]["monthly_cycle_report_audience"]
+          p_close_package_id: number
+          p_cycle_key: string
+          p_path_token: string
+          p_version: number
+        }
+        Returns: string
+      }
+      monthly_cycle_report_path_token: {
+        Args: { p_artifact_id: number }
+        Returns: string
+      }
+      persona_goal2_schema_readiness: { Args: never; Returns: Json }
       place_withdrawal_compliance_hold: {
         Args: {
           p_actor_user_id: string
@@ -14928,6 +14925,14 @@ export type Database = {
       }
       prepare_financial_cutover: {
         Args: { p_actor_user_id: string; p_command: Json }
+        Returns: Json
+      }
+      prepare_monthly_cycle_report_publication: {
+        Args: { p_command: Json }
+        Returns: Json
+      }
+      prepare_monthly_cycle_report_tombstone: {
+        Args: { p_command: Json }
         Returns: Json
       }
       prepare_stripe_acss_debit_command: {
@@ -15046,6 +15051,10 @@ export type Database = {
         Args: { p_command: Json }
         Returns: number
       }
+      record_monthly_report_publication_failure: {
+        Args: { p_command: Json }
+        Returns: Json
+      }
       record_profile_publication_choice: {
         Args: {
           p_action: string
@@ -15095,6 +15104,10 @@ export type Database = {
           p_provider_request_id: string
           p_transfer_id: string
         }
+        Returns: Json
+      }
+      regenerate_monthly_cycle_reports: {
+        Args: { p_command: Json }
         Returns: Json
       }
       replace_user_asset_preferences_atomic: {

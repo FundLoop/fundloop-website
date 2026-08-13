@@ -7,6 +7,7 @@ import { buildMonthlyCycleReportPublicationPath } from "@/lib/storage/artifacts"
 
 const migration = readFileSync("supabase/migrations/20260813140000_monthly_report_storage_and_version_integrity.sql", "utf8")
 const privacyMigration = readFileSync("supabase/migrations/20260813150000_monthly_report_opaque_paths.sql", "utf8")
+const tombstoneInvariantMigration = readFileSync("supabase/migrations/20260813151000_monthly_report_tombstone_artifact_invariant.sql", "utf8")
 const operator = { id: "00000000-0000-4000-8000-000000000001", email: "operator@example.com" }
 const member = { id: "00000000-0000-4000-8000-000000000002", email: "member@example.com" }
 
@@ -193,5 +194,14 @@ describe("monthly report publication", () => {
     expect(privacyMigration).toContain("DISABLE TRIGGER monthly_report_events_append_only")
     expect(privacyMigration).toContain("ENABLE TRIGGER monthly_report_events_append_only")
     expect(privacyMigration).not.toContain("TRIGGER monthly_cycle_report_events_append_only")
+  })
+
+  it("retains tombstone hash evidence without weakening live report artifact pairs", () => {
+    expect(tombstoneInvariantMigration).toContain("DROP CONSTRAINT monthly_cycle_reports_artifact_pair_check")
+    expect(tombstoneInvariantMigration).toContain("ADD CONSTRAINT monthly_cycle_reports_artifact_pair_check CHECK")
+    expect(tombstoneInvariantMigration).toMatch(/artifact_path IS NOT NULL[\s\S]*artifact_path IS NULL[\s\S]*artifact_hash IS NULL/)
+    expect(tombstoneInvariantMigration).toMatch(/NOT coalesce\(\(payload->>'tombstoned'\)::boolean, false\)/)
+    expect(tombstoneInvariantMigration).toMatch(/artifact_hash ~ '\^\[0-9a-f\]\{64\}\$'[\s\S]*coalesce\(\(payload->>'tombstoned'\)::boolean, false\)[\s\S]*report_artifact_id IS NOT NULL/)
+    expect(tombstoneInvariantMigration).not.toMatch(/artifact_path IS NULL\s+OR/)
   })
 })

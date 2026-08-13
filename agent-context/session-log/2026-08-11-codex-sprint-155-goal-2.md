@@ -153,3 +153,15 @@
 - Validation: focused publication contract Vitest and diff checks passed before commit. The exact fresh lean Supabase replay is the next authorized runtime gate; no remote, hosted, Production, provider, payout, or value-flow state is in scope.
 - Reflections: PostgreSQL trigger names are table-local runtime identifiers and must match the defining migration exactly; a similarly named table does not imply a generated trigger name.
 - Next steps: restart the task-owned lean local stack, rerun fresh replay through `20260813150000`, then continue generated schema, reporting/Storage, strict TAP/EUR/four-epoch, wallet, Feature118, and full-check certification in dependency order.
+
+### session v14: preserve evidence across report tombstones (#181)
+
+- Timestamp: 2026-08-13T16:43:00Z
+- Agent: Codex (`issue-implementer` runtime certification)
+- Branch: `codex/155-goal-2-integrated-evidence`
+- Head before commit: `489f66c`
+- Objective: fix the runtime-discovered mismatch between Storage-backed subject tombstones and the legacy report artifact-pair invariant.
+- Actions: added a forward-only corrective migration after the locally applied Goal 2 candidate history. The replacement invariant preserves the original live/unpublished rules, while permitting a removed path only for an explicit tombstone that retains a 64-hex immutable artifact hash and linked report artifact ID. Added adversarial static coverage for all required branches.
+- Validation: focused publication contract, lint, typecheck, migration replay, and the full real local publish/download/tombstone lifecycle are recorded after execution below. No remote, hosted, Production, provider, payout, or real-value-flow state is in scope.
+- Reflections: deleting a private Storage object must not force deletion of its evidence hash. The exception belongs only to an explicit linked tombstone; allowing arbitrary pathless hashed reports would weaken publication integrity.
+- Next steps: freshly replay the local candidate, prove exact object hash readback and tombstone post-state, then continue the strict TAP gate only if reporting is green.
