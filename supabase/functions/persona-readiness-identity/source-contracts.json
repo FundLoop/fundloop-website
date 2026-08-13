@@ -1,0 +1,24 @@
+{
+  "contractVersion": "fundloop.persona-selected-function-contracts.v1",
+  "functions": {
+    "monthly-cycle-approval": "6d7807fb3864aa89084baa026130ef369f57c4083126d836889dfb1a77b11ef9",
+    "monthly-cycle-bookkeeping-credits-create": "ccb99aed812cf8635c2f46b49441bfa126301f01a3d3866ed4ab3d77286c6f24",
+    "monthly-cycle-calculation-package": "fa56a8a9935dacd8aacb49bf637e73a90ffd95b766f67489b51703fe9f180f15",
+    "monthly-cycle-lock": "c11c9574386abbde6383dd77df716bbdaf1b0fbd98bae1c7364f02ad2c3509ab",
+    "monthly-cycle-verification-review": "fa826672774842073bfbbd66bb84ad93ce18b3a52dc5ec3b75ad78fd7aa73dfa",
+    "profile-publication-choice-record": "9d2073e9f774ce433451ef93ac2a7377d39bb46cb7804a3bf1453e5062006f88",
+    "project-attribution-dataset-submit": "0e254358a9f96066fde076059df37647818b55bc0143efe1a93d2435e3e5e517",
+    "project-invitation-accept": "9addbb9cbbad614534a85c4cb004c045687e09e4210e3cd58d1ca66d1e63083f",
+    "project-invitation-create": "c4a95259c423d3d68589f08044ad428edaa5008010ddde810f5c8c7a9576b491",
+    "project-invitation-inspect": "3da9c2c4f10aafa714359691ca90c126a1abab41b7f89c9a1738b0bbe76c62bf",
+    "project-invitation-list": "c80c15579c5d770779826c54c11432dd7fc1c56fd813f8281f4cf79725bf8c1c",
+    "project-invitation-revoke": "befaea1710e184affab90aa63f105c94db02f3310b08f59539405c8081f24aee",
+    "project-monthly-contribution-submit": "a21768239c13baa125ab30c92152e4f217b12b6ae7c4bd50b01d74b0af365966",
+    "project-onboarding-draft-clear": "99cb10f9313ad13e91f7efcfc3b8da3ecbb36246f9324b1825d821766922c72b",
+    "project-onboarding-draft-upsert": "55d3219c97eb20252ae19ea34c3cb4ba0a4ab5dd346ec38a83677bbe7a1414b5",
+    "project-onboarding-publish": "15152c5c472c2c3335070c8af8b6032f039336f1c069dcf592f00ccecdee3c80",
+    "user-onboarding-draft-clear": "2964396e12ed638a0edce2d3d4d54276a35323b15db84dcc9634b1ec5bc5afd3",
+    "user-onboarding-draft-upsert": "77890772172bd99d9d5e705114b286f01e15bd71fbb41f990e5bee3735386100",
+    "user-onboarding-publish": "471290491643cf6b94293e51edb081d4e905785af896260717e9aa6f1fe827a5"
+  }
+}

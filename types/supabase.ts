@@ -14294,6 +14294,7 @@ export type Database = {
           status: string
         }[]
       }
+      persona_goal2_schema_readiness: { Args: never; Returns: Json }
       acknowledge_stripe_acss_debit_checkout: {
         Args: { p_command: Json }
         Returns: string

@@ -1,0 +1,52 @@
+{
+  "new-member": {
+    "journeySource": "tests/e2e/personas/journeys.ts",
+    "readOnlyRoutes": ["/en/workspace/earnings", "/en/workspace/account"],
+    "commandBoundaries": {
+      "member.publish-profile": ["user-onboarding-draft-upsert", "user-onboarding-draft-clear", "user-onboarding-publish"],
+      "profile.review-publication-choice": ["profile-publication-choice-record"]
+    }
+  },
+  "returning-member": {
+    "journeySource": "tests/e2e/personas/journeys.ts",
+    "readOnlyRoutes": ["/en/workspace", "/en/workspace/account", "/en/workspace/earnings"],
+    "readOnlySources": [
+      "app/[locale]/(app)/workspace/page.tsx",
+      "app/[locale]/(app)/workspace/account/page.tsx",
+      "app/[locale]/(app)/workspace/earnings/page.tsx"
+    ],
+    "commandBoundaries": {}
+  },
+  "new-founder": {
+    "journeySource": "tests/e2e/personas/journeys.ts",
+    "readOnlyRoutes": ["/en/founder/projects"],
+    "commandBoundaries": {
+      "founder.publish-personal-profile": ["user-onboarding-draft-upsert", "user-onboarding-draft-clear", "user-onboarding-publish"],
+      "profile.review-publication-choice": ["profile-publication-choice-record"],
+      "founder.publish-project-profile": ["project-onboarding-draft-upsert", "project-onboarding-draft-clear", "project-onboarding-publish"],
+      "founder.create-project-invitation": ["project-invitation-create", "project-invitation-list", "project-invitation-inspect", "project-invitation-accept", "project-invitation-revoke"],
+      "founder.submit-monthly-contribution": ["project-monthly-contribution-submit"],
+      "founder.submit-active-user-attribution": ["project-attribution-dataset-submit"]
+    }
+  },
+  "returning-founder": {
+    "journeySource": "tests/e2e/personas/journeys.ts",
+    "readOnlyRoutes": ["/en/founder/projects"],
+    "commandBoundaries": {
+      "founder.create-project-invitation": ["project-invitation-create", "project-invitation-list", "project-invitation-inspect", "project-invitation-accept", "project-invitation-revoke"],
+      "founder.submit-next-month-contribution": ["project-monthly-contribution-submit"],
+      "founder.submit-next-month-attribution": ["project-attribution-dataset-submit"]
+    }
+  },
+  "returning-operator": {
+    "journeySource": "tests/e2e/personas/journeys.ts",
+    "readOnlyRoutes": ["/en/admin/cycles", "/en/admin/cycles/observability"],
+    "commandBoundaries": {
+      "operator.lock-cycle": ["monthly-cycle-lock"],
+      "operator.calculate-cycle": ["monthly-cycle-calculation-package"],
+      "operator.verify-cycle": ["monthly-cycle-verification-review"],
+      "operator.approve-cycle": ["monthly-cycle-approval"],
+      "operator.create-bookkeeping-credits": ["monthly-cycle-bookkeeping-credits-create"]
+    }
+  }
+}

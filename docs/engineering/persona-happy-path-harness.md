@@ -441,6 +441,12 @@ Service ownership is explicit:
 - The persona lane does not start Hardhat or reuse the injected local-wallet account because withdrawal requests do not execute wallet or payout transfers.
 - If future checkpoints need the wallet lane, orchestration must extract a shared child-process primitive from `scripts/run-playwright-local-wallet.mjs`; it must not nest `pnpm test:e2e:local` or silently start a second app/Supabase stack.
 
+## Candidate and runtime identity
+
+Persona readiness binds to the Goal 2 candidate rather than accepting a generic PostgREST response. The final forward migration installs a service-role-only, read-only schema identity that reports its contract and migration version plus an exact missing-feature list for the persona and Goal 2 relations, functions, and columns. A stale migration identity and a partially present schema are distinct failures.
+
+`tests/e2e/personas/readiness-boundaries.json` is the reviewable inventory of command surfaces reachable from each selected journey checkpoint. The runner verifies those checkpoints still exist, derives the exact union of function entrypoints, and hashes each function's transitive repo source closure through the deployment verifier's existing closure implementation. A persona with no command functions must enumerate its statically covered read-only routes. The local Edge runtime receives a fresh secret, run nonce, candidate commit, and selected-function digest in its private run-owned env file. Its nonmutating identity command must return those exact values before fixtures can start; routing `OPTIONS` alone is insufficient. Production refuses the identity command. Hosted source identity is certified separately by the authorized deployment manifest and function-source readback gates.
+
 ## Isolation and cleanup
 
 `scripts/run-playwright-local-personas.mjs` acquires `output/persona-harness/local.lock` with exclusive creation before preflight. A concurrent destructive persona run fails before mutation. The `local-personas` project uses `fullyParallel: false` and `workers: 1`; each persona gets a fresh browser context and fixture namespace. The run ID is `persona-<UTC timestamp>-<random suffix>` and is used in fixture metadata, not in user-facing assertions. The runner removes only its own lock in `finally`.
