@@ -20,6 +20,8 @@ DECLARE
   v_carry numeric(78,0);
   v_source_native numeric(78,0);
   v_disposition_exact numeric(38,18);
+  v_eur_source_lot bigint;
+  v_eur_funded_minor numeric(78,0);
   v_failed boolean := false;
 BEGIN
   SELECT id INTO STRICT v_origin FROM public.monthly_cycles WHERE cycle_key='2026-03';
@@ -35,6 +37,13 @@ BEGIN
   SELECT coalesce(sum(canonical_minor_capacity) FILTER(WHERE origin_kind='harvested_unclaimed'),0),
     coalesce(sum(canonical_minor_capacity) FILTER(WHERE origin_kind='carryforward_residue'),0)
   INTO v_harvest,v_carry FROM public.epoch_allocation_manifest_pool_sources WHERE manifest_id=v_manifest.id;
+  SELECT source.source_lot_id,source.canonical_minor_capacity INTO STRICT v_eur_source_lot,v_eur_funded_minor
+  FROM public.epoch_allocation_manifest_sources source
+  JOIN public.epoch_allocation_manifests manifest ON manifest.id=source.manifest_id
+  JOIN public.monthly_cycles cycle ON cycle.id=manifest.monthly_cycle_id
+  JOIN public.epoch_project_package_funding_sources package_source ON package_source.id=(
+    SELECT lot.package_source_id FROM public.epoch_valuation_source_lots lot WHERE lot.id=source.source_lot_id)
+  WHERE cycle.cycle_key='2026-07' AND package_source.stripe_pay_by_bank_command_id IS NOT NULL;
 
   IF v_manifest.monthly_cycle_id<>v_target OR v_manifest.policy_key<>'settled_cubid_redistribution_v2'
     OR v_manifest.current_funded_minor<=0 OR v_harvest<=0 OR v_carry<=0
@@ -45,6 +54,29 @@ BEGIN
     OR EXISTS(SELECT 1 FROM public.user_withdrawal_obligation_claims WHERE obligation_id=v_obligation.id
       AND status IN('reserved','queued','held','paid','closed') AND claimed_minor<=0)
   THEN RAISE EXCEPTION 'four_epoch_manifest_claim_harvest_conservation_failed'; END IF;
+
+  IF v_eur_funded_minor<>v_active+v_harvest+v_carry
+    OR EXISTS(SELECT 1 FROM public.epoch_allocation_manifest_sources current_source
+      JOIN public.epoch_valuation_source_lots current_lot ON current_lot.id=current_source.source_lot_id
+      WHERE current_source.manifest_id=v_manifest.id
+        AND (current_lot.id=v_eur_source_lot OR current_lot.origin_source_lot_id=v_eur_source_lot))
+    OR NOT EXISTS(SELECT 1 FROM public.epoch_allocation_manifest_sources current_source
+      JOIN public.epoch_valuation_source_lots current_lot ON current_lot.id=current_source.source_lot_id
+      JOIN public.epoch_project_package_funding_sources package_source ON package_source.id=current_lot.package_source_id
+      JOIN public.stripe_pay_by_bank_commands command ON command.id=package_source.stripe_pay_by_bank_command_id
+      JOIN public.stripe_pay_by_bank_evidence evidence ON evidence.command_id=command.id AND evidence.ledger_transaction_id IS NOT NULL
+      WHERE current_source.manifest_id=v_manifest.id AND command.provider_checkout_session_id='cs_test_four_epoch_current'
+        AND command.currency_code='EUR' AND command.expected_amount_minor=2000 AND evidence.gross_amount_minor=2000
+        AND evidence.fee_amount_minor=6 AND evidence.net_amount_minor=1994)
+    OR EXISTS(SELECT 1 FROM public.epoch_allocation_manifest_pool_sources pool_source
+      JOIN public.epoch_redistribution_pool_sources pool ON pool.id=pool_source.pool_source_id
+      LEFT JOIN public.payout_inventory_lots inventory ON inventory.id=pool.origin_inventory_lot_id
+      LEFT JOIN public.epoch_provisional_award_source_fills fill ON fill.id=coalesce(pool.origin_award_fill_id,inventory.source_fill_id)
+      LEFT JOIN public.epoch_allocation_source_dispositions disposition
+        ON disposition.id=coalesce(pool.origin_disposition_id,fill.disposition_id)
+      LEFT JOIN public.epoch_allocation_manifest_sources original_source ON original_source.id=disposition.manifest_source_id
+      WHERE pool_source.manifest_id=v_manifest.id AND original_source.source_lot_id IS DISTINCT FROM v_eur_source_lot)
+  THEN RAISE EXCEPTION 'four_epoch_eur_source_initial_harvest_carry_double_use_failed'; END IF;
 
   IF v_run.manifest_id<>v_manifest.id OR v_run.policy_key<>'settled_cubid_redistribution_v2'
     OR v_run.current_funded_minor<>v_manifest.current_funded_minor
