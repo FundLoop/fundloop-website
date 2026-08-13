@@ -201,3 +201,15 @@
 - Validation: source and Sprint-worktree documents were byte-for-byte identical before commit; `git diff --check` passed. No code, schema, runtime, provider, hosted, Production, payout, or value-flow validation was required or run for this documentation-only commit.
 - Reflections: the allocator audit needs an immutable target contract, but the audit remains a Sprint-level discovery and architecture gate rather than an implementation Task nested under Goal #163. Native blockers preserve the required sequencing into #188 without misrepresenting the audit as a predetermined remediation.
 - Next steps: move #204 directly under Sprint #155, update #155/#163/#204 to describe the Sprint-level gate, return #204 to Scoped, and rerun issue vetting. If the audit later finds violations, stop for explicit approval before inserting remediation Tasks; every approved remediation Task must be locally green before #204 can close.
+
+### session v18: isolate local Edge CPU budgets per request (#164)
+
+- Timestamp: 2026-08-13T18:27:00Z
+- Agent: Codex (`issue-implementer` runtime certification)
+- Branch: `codex/155-goal-2-integrated-evidence`
+- Head before commit: `9d6359b`
+- Objective: resolve the exact Feature #118 persona failure where readiness and the later operator command shared one local Edge worker CPU budget.
+- Actions: changed only the local Supabase Edge runtime policy from `per_worker` to its documented `oneshot` fallback and bound that selection in the operational matrix contract. This preserves every command, authentication, payload, assertion, and hosted/Production runtime limit while giving each local readiness and command request a fresh bounded isolate.
+- Validation: the first exact matrix passed fresh replay and four personas; the returning operator passed through approval, then `monthly-cycle-bookkeeping-credits-create` was cancelled by the local supervisor after explicit CPU soft/hard-limit logs. The harness cleaned every persona and completed its final zero-residue reset. Focused static gates and the one authorized post-fix matrix rerun follow below.
+- Reflections: a readiness OPTIONS request must not spend CPU from the later acceptance command's budget. Persistent hot-reload workers are useful for interactive development, but the repo's 64-function deterministic acceptance harness needs request-level isolation.
+- Next steps: restart the task-owned local stack so the runtime policy takes effect, run one exact Feature #118 matrix, then full Node 22 checks and stop the FundLoop stack if green.

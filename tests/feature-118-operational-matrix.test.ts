@@ -101,4 +101,11 @@ describe("Feature #118 operational capability matrix", () => {
     expect(playwrightConfig).toContain('name: "operational-local"')
     expect(playwrightConfig).toContain("/operational\\/.*\\.spec\\.ts/")
   })
+
+  it("uses fresh local Edge isolates so readiness cannot consume persona command CPU budgets", () => {
+    const config = readFileSync(path.resolve("supabase/config.toml"), "utf8")
+    const edgeRuntime = config.slice(config.indexOf("[edge_runtime]"), config.indexOf("[edge_runtime.secrets]"))
+    expect(edgeRuntime).toContain('policy = "oneshot"')
+    expect(edgeRuntime).not.toContain('policy = "per_worker"')
+  })
 })
