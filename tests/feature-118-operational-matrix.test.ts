@@ -108,4 +108,13 @@ describe("Feature #118 operational capability matrix", () => {
     expect(edgeRuntime).toContain('policy = "oneshot"')
     expect(edgeRuntime).not.toContain('policy = "per_worker"')
   })
+
+  it("gives the single real-wallet submission enough time for a cold Edge isolate without retrying", () => {
+    const walletSpec = readFileSync(path.resolve("tests/e2e/local/wallet-payments.spec.ts"), "utf8")
+    expect(walletSpec).toContain("LOCAL_WALLET_SUBMISSION_TIMEOUT_MS = 60_000")
+    expect(walletSpec).toContain("LOCAL_WALLET_PAYMENT_TEST_TIMEOUT_MS = 180_000")
+    expect(walletSpec).toContain("test.setTimeout(LOCAL_WALLET_PAYMENT_TEST_TIMEOUT_MS)")
+    expect(walletSpec).toContain("timeout: LOCAL_WALLET_SUBMISSION_TIMEOUT_MS")
+    expect(walletSpec).not.toMatch(/\.retry\(|retries\s*:/)
+  })
 })

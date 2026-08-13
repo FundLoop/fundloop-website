@@ -249,3 +249,15 @@
 - Validation: Supabase-free persona harness Vitest passed `6/6`; scoped ESLint, Node 22 typecheck, and `git diff --check` passed. The leased matrix had already completed its zero-residue cleanup; FundLoop Supabase was stopped and independently released before this static correction. No Supabase, Docker, Next, Edge, Playwright, provider, hosted, Production, payout, or real-value-flow command ran for this change.
 - Reflections: local `oneshot` isolates intentionally trade worker reuse for deterministic per-request CPU budgets, so a cold command response needs a bound aligned with the harness's existing 60-to-120-second readiness and state assertions. A longer response wait is not a retry and does not accept a failed or missing product response.
 - Next steps: request a fresh coordinator lease for exactly one final-head Feature #118 matrix. If it passes, run the remaining Supabase-free broad gates and independent Goal 2 validation; if it fails, stop and consolidate the exact failure before any further runtime iteration.
+
+### session v22: await the real cold wallet submission (#165)
+
+- Timestamp: 2026-08-13T20:36:07Z
+- Agent: Codex (`issue-implementer` final-matrix diagnosis)
+- Branch: `codex/155-goal-2-integrated-evidence`
+- Head before commit: `90e8b3a7c6cf`
+- Objective: correct the sole downstream failure from the exact Feature #118 matrix after all five personas and the monthly-cycle lock passed.
+- Actions: inspected matrix `feature-118-20260813T202119608Z-faafaec5` and its retained Playwright trace. The real token approval and deposit succeeded, and `project-onchain-payment-submission-record` returned HTTP 200 after 21.87 seconds from a fresh local oneshot Edge isolate; Playwright had already failed the dialog-close assertion at its generic 15-second bound. Gave this one real-wallet submission a 60-second completion assertion and a 180-second test budget, while retaining a single click, exact dialog close, awaiting-reconciliation row, explicit reconciliation call, and final Confirmed assertion. Added a source contract that rejects retries.
+- Validation: the matrix passed its 102-migration fresh replay, all five personas with clean cleanup, and final zero-residue reset; only the prematurely bounded wallet assertion failed, so subsequent matrix lanes correctly did not run. Supabase-free focused Vitest passed `10/10`; scoped ESLint, Node 22 typecheck, and `git diff --check` passed. FundLoop Supabase was stopped immediately after the matrix and independently verified released; no retry or additional reset was started.
+- Reflections: the trace distinguishes a slow successful command from a missing response: Kong recorded HTTP 200 with 21.78 seconds of upstream latency. Acceptance should await that one authoritative response under the documented cold-isolate policy, not retry the financial command or treat 15 seconds as a product invariant.
+- Next steps: request a fresh coordinator lease for one exact-head Feature #118 matrix. If fully green, run only the remaining Supabase-free broad checks and independent Goal 2 validation; otherwise stop and consolidate the next exact failure without retrying.
