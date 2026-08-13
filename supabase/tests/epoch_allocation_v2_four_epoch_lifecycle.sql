@@ -121,12 +121,11 @@ BEGIN
     OR (v_close->>'rootHash') !~ '^[0-9a-f]{64}$' THEN RAISE EXCEPTION 'four_epoch_close_rerun_root_failed'; END IF;
   PERFORM public.confirm_epoch_allocation_close_root(jsonb_build_object('contractVersion','epoch_allocation_close_root.v1',
     'deploymentEnvironment','local','actorUserId',v_actor,'closePackageId',v_close->>'closePackageId','rootHash',v_close->>'rootHash'));
-  v_reports:=public.generate_monthly_cycle_reports(jsonb_build_object('contractVersion','monthly_cycle_reports_generate.v1',
+  v_reports:=public.generate_monthly_cycle_reports(jsonb_build_object('contractVersion','monthly_cycle_reports_generate.v2',
     'deploymentEnvironment','local','actorUserId',v_actor,'closePackageId',v_close->>'closePackageId'));
-  v_report_replay:=public.generate_monthly_cycle_reports(jsonb_build_object('contractVersion','monthly_cycle_reports_generate.v1',
+  v_report_replay:=public.generate_monthly_cycle_reports(jsonb_build_object('contractVersion','monthly_cycle_reports_generate.v2',
     'deploymentEnvironment','local','actorUserId',v_actor,'closePackageId',v_close->>'closePackageId'));
-  IF v_reports->>'rootHash'<>v_report_replay->>'rootHash' OR v_reports->>'rootHash'<>v_close->>'rootHash'
-    OR (v_reports->>'artifactCount')::integer<5 OR (v_report_replay->>'createdCount')::integer<>0
+  IF v_reports->>'rootHash'<>v_close->>'rootHash' OR (v_reports->>'artifactCount')::integer<5 OR (v_report_replay->>'replayed')::boolean IS NOT TRUE
     OR EXISTS(SELECT 1 FROM public.monthly_cycle_report_artifacts artifact
       WHERE artifact.close_package_id=(v_close->>'closePackageId')::bigint
         AND artifact.artifact_hash<>encode(extensions.digest(convert_to(artifact.artifact::text,'UTF8'),'sha256'),'hex'))

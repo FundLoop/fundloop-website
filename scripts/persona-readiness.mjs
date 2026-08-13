@@ -111,10 +111,10 @@ export async function probeSupabaseFoundation(env, fetcher = fetch) {
   }, [200])
   let schemaIdentity
   try { schemaIdentity = await rest.json() } catch { throw new Error("schema-identity-partial-json") }
-  if (schemaIdentity?.contractVersion !== "fundloop.persona-goal2-schema-readiness.v1" || schemaIdentity?.migrationVersion !== "20260813133000") {
+  if (schemaIdentity?.contractVersion !== "fundloop.persona-goal2-schema-readiness.v2" || schemaIdentity?.migrationVersion !== "20260813140000") {
     throw new Error("schema-identity-stale-version")
   }
-  if (schemaIdentity?.ready !== true || schemaIdentity?.featureCount !== 18 || !Array.isArray(schemaIdentity?.missingFeatures) || schemaIdentity.missingFeatures.length > 0) {
+  if (schemaIdentity?.ready !== true || schemaIdentity?.featureCount !== 33 || !Array.isArray(schemaIdentity?.missingFeatures) || schemaIdentity.missingFeatures.length > 0) {
     throw new Error("schema-identity-partial-features")
   }
   const storage = await expectHttp(fetcher, `${env.supabaseUrl}/storage/v1/status`, { headers: commonHeaders })

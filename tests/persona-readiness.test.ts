@@ -25,9 +25,9 @@ function json(value: unknown, status = 200) {
 }
 
 const currentSchema = {
-  contractVersion: "fundloop.persona-goal2-schema-readiness.v1",
-  migrationVersion: "20260813133000",
-  featureCount: 18,
+  contractVersion: "fundloop.persona-goal2-schema-readiness.v2",
+  migrationVersion: "20260813140000",
+  featureCount: 33,
   missingFeatures: [],
   ready: true,
   productionValueFlowEnabled: false,
