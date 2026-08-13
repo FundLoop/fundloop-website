@@ -65,7 +65,7 @@ BEGIN
       JOIN public.epoch_project_package_funding_sources package_source ON package_source.id=current_lot.package_source_id
       JOIN public.stripe_pay_by_bank_commands command ON command.id=package_source.stripe_pay_by_bank_command_id
       JOIN public.stripe_pay_by_bank_evidence evidence ON evidence.command_id=command.id AND evidence.ledger_transaction_id IS NOT NULL
-      WHERE current_source.manifest_id=v_manifest.id AND command.provider_checkout_session_id='cs_test_four_epoch_current'
+      WHERE current_source.manifest_id=v_manifest.id AND command.provider_checkout_session_id='cs_test_fourepochcurrent'
         AND command.currency_code='EUR' AND command.expected_amount_minor=2000 AND evidence.gross_amount_minor=2000
         AND evidence.fee_amount_minor=6 AND evidence.net_amount_minor=1994)
     OR EXISTS(SELECT 1 FROM public.epoch_allocation_manifest_pool_sources pool_source

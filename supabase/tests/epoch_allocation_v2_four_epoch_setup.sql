@@ -8,6 +8,7 @@ DECLARE
   v_e_minus_2 bigint;
   v_e_minus_1 bigint;
   v_target bigint;
+  v_target_period bigint;
   v_fixture_cycle bigint;
   v_close public.epoch_close_packages%ROWTYPE;
   v_obligation public.user_withdrawal_obligations%ROWTYPE;
@@ -71,7 +72,7 @@ BEGIN
   v_unit:=greatest(1,floor(v_oldest.canonical_minor_total/10));
 
   INSERT INTO public.user_payout_routes(user_id,rail,label,currency_code,destination,is_default,status,created_by_user_id)
-  SELECT v_obligation.user_id,CASE lot.rail_key WHEN 'stripe_bank_transfer' THEN 'fiat_stub' ELSE 'evm' END,
+  SELECT v_obligation.user_id,(CASE lot.rail_key WHEN 'stripe_bank_transfer' THEN 'fiat_stub' ELSE 'evm' END)::public.payout_rail,
     'Four epoch lifecycle','USD',CASE lot.rail_key WHEN 'stripe_bank_transfer' THEN '{"bank":"hashed-fixture"}'::jsonb
       ELSE '{"address":"0x0000000000000000000000000000000000000001"}'::jsonb END,false,'active',v_actor
   FROM public.payout_inventory_lots lot WHERE lot.obligation_id=v_obligation.id ORDER BY lot.deterministic_sequence LIMIT 1
@@ -108,7 +109,12 @@ BEGIN
   -- EUR lot is reserved exclusively for its E-3 award and carry dispositions;
   -- cloning it here would spend the same economic source twice.
   INSERT INTO public.accounting_periods(period_key,starts_at,ends_at,timezone_name)
-  VALUES('local_review_2026_06','2026-06-01T07:00:00Z','2026-07-01T07:00:00Z','America/Los_Angeles');
+  VALUES('local_review_2026_06','2026-06-01T07:00:00Z','2026-07-01T07:00:00Z','America/Los_Angeles')
+  RETURNING id INTO v_target_period;
+  UPDATE public.epoch_shadow_states SET accounting_period_id=v_target_period,monthly_cycle_id=v_target,
+    current_stage='reviewing',state_version=state_version+1,is_paused=false,production_enabled=false,updated_at=clock_timestamp()
+  WHERE id=(SELECT id FROM public.epoch_shadow_states ORDER BY updated_at DESC,id DESC LIMIT 1);
+  IF NOT FOUND THEN RAISE EXCEPTION 'four_epoch_target_review_state_missing'; END IF;
   INSERT INTO public.payments(project_id,monthly_cycle_id,period_start,period_end,revenue,payment_amount,payment_percentage,updated_by)
   VALUES(3,v_target,'2026-06-01','2026-06-30',200,22,11,v_actor) RETURNING id INTO v_current_payment;
   PERFORM public.post_project_payment_funding_quote(jsonb_build_object(
@@ -122,16 +128,16 @@ BEGIN
     'customerCountry','FI','merchantCountry','CA','chargeTopology','platform','providerAccountId','acct_testbank',
     'platformAccountId','acct_testbank','privatePreviewEnabled',false));
   PERFORM public.acknowledge_stripe_pay_by_bank_checkout(jsonb_build_object(
-    'commandId',v_current_command,'providerAccountId','acct_testbank','providerCheckoutSessionId','cs_test_four_epoch_current',
+    'commandId',v_current_command,'providerAccountId','acct_testbank','providerCheckoutSessionId','cs_test_fourepochcurrent',
     'capabilityEvidenceHash',repeat('2',64)));
   v_current_evidence:=public.ingest_stripe_pay_by_bank_webhook(jsonb_build_object(
-    'contractVersion','stripe_pay_by_bank_webhook.v1','deploymentEnvironment','local','providerEventId','evt_four_epoch_current',
-    'providerAccountId','acct_testbank','eventType','payment_intent.succeeded','providerObjectId','pi_four_epoch_current',
+    'contractVersion','stripe_pay_by_bank_webhook.v1','deploymentEnvironment','local','providerEventId','evt_fourepochcurrent',
+    'providerAccountId','acct_testbank','eventType','payment_intent.succeeded','providerObjectId','pi_fourepochcurrent',
     'providerCreatedAt','2026-06-15T12:00:00Z','apiVersion','2026-06-24.dahlia','signatureTimestamp',1781524800,
     'payloadSha256',repeat('3',64),'livemode',false,'observationSource','stripe_sdk_v1','capabilityEvidenceHash',repeat('2',64),
-    'evidenceType','settled_available','commandId',v_current_command,'providerCheckoutSessionId','cs_test_four_epoch_current',
-    'providerPaymentIntentId','pi_four_epoch_current','providerChargeId','ch_four_epoch_current','providerRefundId',NULL,
-    'providerBalanceTransactionId','txn_four_epoch_current','currencyCode','EUR','customerCountry','FI','grossAmountMinor','2000',
+    'evidenceType','settled_available','commandId',v_current_command,'providerCheckoutSessionId','cs_test_fourepochcurrent',
+    'providerPaymentIntentId','pi_fourepochcurrent','providerChargeId','ch_fourepochcurrent','providerRefundId',NULL,
+    'providerBalanceTransactionId','txn_fourepochcurrent','currencyCode','EUR','customerCountry','FI','grossAmountMinor','2000',
     'refundAmountMinor',NULL,'feeAmountMinor','6','netAmountMinor','1994','balanceStatus','available','paymentMethodType','pay_by_bank'));
   v_current_package:=public.validate_epoch_project_package(jsonb_build_object(
     'deploymentEnvironment','local','actorRole','internal_admin','actorUserId',v_actor,'projectSlug','nomad-workspaces',
@@ -165,8 +171,11 @@ BEGIN
   IF v_current_source_lot=v_eur_source_lot OR EXISTS(SELECT 1 FROM public.epoch_valuation_source_lots lot
     WHERE lot.id=v_current_source_lot AND lot.origin_source_lot_id=v_eur_source_lot)
   THEN RAISE EXCEPTION 'four_epoch_eur_source_reused_as_current_funding';END IF;
-  UPDATE public.epoch_redistribution_pool_sources SET target_monthly_cycle_id=v_target,origin_monthly_cycle_id=v_origin
-  WHERE origin_kind='carryforward_residue' AND target_monthly_cycle_id>v_target;
+  UPDATE public.epoch_redistribution_pool_sources pool SET target_monthly_cycle_id=v_target,origin_monthly_cycle_id=v_origin
+  FROM public.epoch_allocation_source_dispositions disposition
+  JOIN public.epoch_allocation_manifest_sources source ON source.id=disposition.manifest_source_id
+  WHERE pool.origin_kind='carryforward_residue' AND pool.origin_disposition_id=disposition.id
+    AND source.source_lot_id=v_eur_source_lot;
 
   v_preview:=public.epoch_allocation_v2_preview_input('2026-06',1.50,'local');
   SELECT coalesce(sum((item.value->>'canonicalMinorCapacity')::numeric)
@@ -203,7 +212,11 @@ BEGIN
           AND (item.value->>'canonicalMinorCapacity')::numeric=lot.canonical_minor_total))
     OR EXISTS(SELECT 1 FROM jsonb_array_elements(v_preview->'redistributionSources') item(value)
       WHERE item.value->>'originKind'='harvested_unclaimed' AND item.value->>'originCycleKey'<>'2026-03')
-  THEN RAISE EXCEPTION 'four_epoch_eur_source_harvest_carry_no_double_use_failed'; END IF;
+  THEN RAISE EXCEPTION 'four_epoch_eur_source_harvest_carry_no_double_use_failed'
+    USING DETAIL=jsonb_build_object('originCycleKey',v_preview->>'originCycleKey','harvest',v_harvest,'expectedHarvest',v_obligation.total_minor-v_active,
+      'carry',v_carry,'active',v_active,'oldestHarvest',v_oldest_harvest,'expectedOldestHarvest',v_oldest.canonical_minor_total-v_active,
+      'newerTotal',v_newer_total,'redistributionSources',v_preview->'redistributionSources')::text;
+  END IF;
 END $$;
 
 COMMIT;
