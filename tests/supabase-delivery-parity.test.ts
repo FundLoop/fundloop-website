@@ -3,7 +3,7 @@ import os from "node:os"
 import path from "node:path"
 import { describe, expect, it } from "vitest"
 import { classifyFunctionInventory, compareClosurePaths, expectedFunctionNames, expectedSourceClosure } from "../scripts/verify-supabase-function-parity.mjs"
-import { bindObservedMigrationDeployEvidence, buildMigrationDeployEvidence, buildSchemaDiagnostic, expectedMigrationInventory, isExplicitRfc3339Timestamp, libpqConnectionEnvironment, migrationInventorySha256, normalizePublicSchema, validateMatchingMigrationEvidence, validateMigrationDeployEvidence, validatePendingSchemaRepair } from "../scripts/verify-supabase-schema-parity.mjs"
+import { bindObservedMigrationDeployEvidence, buildMigrationDeployEvidence, buildSchemaDiagnostic, compareExplicitRfc3339Timestamps, expectedMigrationInventory, isExplicitRfc3339Timestamp, libpqConnectionEnvironment, migrationInventorySha256, normalizePublicSchema, validateMatchingMigrationEvidence, validateMigrationDeployEvidence, validatePendingSchemaRepair } from "../scripts/verify-supabase-schema-parity.mjs"
 
 const workflow = readFileSync(".github/workflows/supabase-deploy.yml", "utf8")
 const schemaVerifier = readFileSync("scripts/verify-supabase-schema-parity.mjs", "utf8")
@@ -221,6 +221,13 @@ describe("Supabase delivery parity", () => {
       "2026-12-31T23:60:00Z",
       "2026-12-31T23:59:60Z",
     ]) expect(isExplicitRfc3339Timestamp(timestamp), timestamp).toBe(false)
+  })
+
+  it("orders explicit RFC3339 instants without losing fractional precision", () => {
+    expect(compareExplicitRfc3339Timestamps("2026-08-12T20:00:00.000001Z", "2026-08-12T20:00:00.000999Z")).toBe(-1)
+    expect(compareExplicitRfc3339Timestamps("2026-08-12T20:00:00.000999Z", "2026-08-12T20:00:00.000001Z")).toBe(1)
+    expect(compareExplicitRfc3339Timestamps("2026-08-12T20:00:00Z", "2026-08-12T16:00:00-04:00")).toBe(0)
+    expect(compareExplicitRfc3339Timestamps("2026-08-12T20:00:00.1Z", "2026-08-12T20:00:00.1000000000Z")).toBe(0)
   })
 
   it("keeps candidate-bound migration evidence append-only and non-browser-readable", () => {

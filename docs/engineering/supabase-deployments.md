@@ -253,6 +253,11 @@ ordered migration byte inventory. Function source parity remains bound to the cu
 observation checkout. In deployment mode the two SHA/run/attempt identities must be
 identical, and `certifiedDeployment.recordedAt` is the timestamp read back from that
 validated immutable database row—not the later verification or manifest timestamp.
+Schema, function, and hosted-smoke component evidence retain their own observation SHA
+and timestamp inside their digest-bound manifest sections. Every component SHA must
+equal the final observation SHA, and exact RFC3339 ordering (without millisecond
+truncation) requires the certified deployment to precede or equal every component,
+which must in turn precede or equal the final manifest observation.
 
 `Supabase Drift Detection` never deploys, repairs, seeds, prunes, or invokes database
 mutation commands. UI-only dev/main pushes are observed directly. A shared classifier

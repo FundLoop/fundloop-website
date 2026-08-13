@@ -236,16 +236,41 @@ export function validateMigrationDeployEvidence(expected, observed) {
     && observed.inventorySha256 === expected.inventorySha256
 }
 
-export function isExplicitRfc3339Timestamp(value) {
+function parseExplicitRfc3339Timestamp(value) {
   if (typeof value !== "string") return false
-  const match = /^(\d{4})-(0[1-9]|1[0-2])-(\d{2})T([01]\d|2[0-3]):([0-5]\d):([0-5]\d)(?:\.\d+)?(?:Z|[+-](?:[01]\d|2[0-3]):[0-5]\d)$/.exec(value)
+  const match = /^(\d{4})-(0[1-9]|1[0-2])-(\d{2})T([01]\d|2[0-3]):([0-5]\d):([0-5]\d)(?:\.(\d+))?(Z|([+-])([01]\d|2[0-3]):([0-5]\d))$/.exec(value)
   if (!match) return false
   const year = Number(match[1])
   const month = Number(match[2])
   const day = Number(match[3])
   const leapYear = year % 4 === 0 && (year % 100 !== 0 || year % 400 === 0)
   const daysInMonth = [31, leapYear ? 29 : 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31][month - 1]
-  return day >= 1 && day <= daysInMonth && Number.isFinite(Date.parse(value))
+  if (day < 1 || day > daysInMonth) return false
+  const utc = new Date(0)
+  utc.setUTCFullYear(year, month - 1, day)
+  utc.setUTCHours(Number(match[4]), Number(match[5]), Number(match[6]), 0)
+  const offsetSeconds = match[9]
+    ? (match[9] === "+" ? 1 : -1) * (Number(match[10]) * 60 + Number(match[11])) * 60
+    : 0
+  return {
+    epochSecond: BigInt(utc.getTime() / 1000 - offsetSeconds),
+    fractionalSecond: match[7] ?? "",
+  }
+}
+
+export function isExplicitRfc3339Timestamp(value) {
+  return parseExplicitRfc3339Timestamp(value) !== false
+}
+
+export function compareExplicitRfc3339Timestamps(left, right) {
+  const parsedLeft = parseExplicitRfc3339Timestamp(left)
+  const parsedRight = parseExplicitRfc3339Timestamp(right)
+  if (!parsedLeft || !parsedRight) throw new Error("invalid-explicit-rfc3339-timestamp")
+  if (parsedLeft.epochSecond !== parsedRight.epochSecond) return parsedLeft.epochSecond < parsedRight.epochSecond ? -1 : 1
+  const precision = Math.max(parsedLeft.fractionalSecond.length, parsedRight.fractionalSecond.length)
+  const leftFraction = parsedLeft.fractionalSecond.padEnd(precision, "0")
+  const rightFraction = parsedRight.fractionalSecond.padEnd(precision, "0")
+  return leftFraction === rightFraction ? 0 : leftFraction < rightFraction ? -1 : 1
 }
 
 export function bindObservedMigrationDeployEvidence(expected, observed) {

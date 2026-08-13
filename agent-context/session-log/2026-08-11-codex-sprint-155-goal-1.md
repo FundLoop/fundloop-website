@@ -1451,3 +1451,53 @@ independent consumers must enforce the same wire, calendar, clock, and timezone 
 
 - Publish this single review-fix commit to PR #202, reply with exact validation evidence,
   and resolve only the addressed timestamp-contract thread.
+
+### session v31: Bind exact component provenance chronology (#161)
+
+- Timestamp: 2026-08-12T23:54:25-04:00
+- Agent: Codex
+- Branch: `codex/155-goal-1-manifest-provenance-routing-recovery`
+- Head: `9b52ae3d20efdf3e3162fc32da7b17a2f1c39bf7`
+
+#### Objective
+
+Close the consolidated independent-validator gap by proving that every manifest
+component was observed from the final checkout after its certified deployment and no
+later than the final observation, without losing accepted fractional precision.
+
+#### Actions Taken
+
+- Added one exact RFC3339 comparator using epoch seconds, timezone offsets, and the full
+  fractional-second string rather than millisecond-truncating `Date.parse` ordering.
+- Preserved schema and function observation SHA/timestamps in their digest-bound final
+  manifest sections; hosted-smoke provenance remains bound through prerequisite evidence.
+- Required schema, function, and hosted-smoke SHAs to equal the final observation SHA.
+- Enforced certified deployment <= each component observation <= final observation in
+  both composition and independent verification with precise blockers.
+- Documented the component provenance and exact chronology contract.
+
+#### Tests And Validation Notes
+
+- Passed on Node 22.23.2: focused environment-manifest, delivery-parity, and function
+  source-readback suites, 59/59.
+- Adversarial coverage includes digest-consistent stale/pre-deploy, post-observation,
+  cross-checkout, and microsecond-reversal forgeries, plus valid equality, timezone-offset,
+  PostgreSQL microsecond, ISO `Z`, and differing fractional-precision cases.
+- Passed: full repository ESLint, full TypeScript typecheck, affected script syntax,
+  Supabase deploy/drift workflow YAML parse, and `git diff --check`.
+- The first focused pass exposed an offset-regex capture-index error and newly strict
+  fixture chronology/checkout assumptions; both were corrected before the complete
+  focused and static validation sets passed.
+- No workflow dispatch, remote Supabase or Production mutation, status change, #162
+  work, credential prompt, reset, or value-flow activation occurred.
+
+#### Reflections
+
+Digest integrity cannot recover provenance that was discarded before composition, and
+millisecond timestamp coercion is insufficient once the evidence contract accepts
+microsecond precision.
+
+#### Suggested Next Steps
+
+- Push this single consolidated validator-fix commit to existing PR #202 for the
+  orchestrator's broad independent revalidation; do not open another PR or request review.

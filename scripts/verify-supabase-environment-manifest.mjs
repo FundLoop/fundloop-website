@@ -1,7 +1,7 @@
 import { createHash } from "node:crypto"
 import { appendFileSync, readFileSync, writeFileSync } from "node:fs"
 import { pathToFileURL } from "node:url"
-import { isExplicitRfc3339Timestamp } from "./verify-supabase-schema-parity.mjs"
+import { compareExplicitRfc3339Timestamps, isExplicitRfc3339Timestamp } from "./verify-supabase-schema-parity.mjs"
 
 const canonical = (value) => {
   if (Array.isArray(value)) return `[${value.map(canonical).join(",")}]`
@@ -39,8 +39,18 @@ export function buildEnvironmentManifest({ schema, functions, smoke, context }) 
   if (schema.environment !== functions.environment || schema.projectRef !== functions.projectRef) throw new Error("environment-binding: parity records disagree")
   if (schema.enabledProductionValueFlowControlCount !== 0) throw new Error("value-flow-enabled: immutable manifest publication refused")
   if (!isExplicitRfc3339Timestamp(schema.certifiedDeployment?.recordedAt)) throw new Error("deployment-time: immutable manifest publication refused")
+  if (!isExplicitRfc3339Timestamp(schema.observedAt)) throw new Error("schema-observation-time: immutable manifest publication refused")
+  if (!isExplicitRfc3339Timestamp(functions.observedAt)) throw new Error("function-observation-time: immutable manifest publication refused")
   if (!isExplicitRfc3339Timestamp(context.observedAt)) throw new Error("observation-time: immutable manifest publication refused")
+  if (schema.candidateGitSha !== context.gitSha) throw new Error("schema-observation-sha: immutable manifest publication refused")
+  if (functions.candidateGitSha !== context.gitSha) throw new Error("function-observation-sha: immutable manifest publication refused")
+  if (smoke.observationGitSha !== context.gitSha) throw new Error("hosted-smoke-observation-sha: immutable manifest publication refused")
   if (!verifySafeSmokeEvidence(smoke, { environment: schema.environment, projectRef: schema.projectRef, gitSha: context.gitSha })) throw new Error("runtime-smoke: evidence invalid")
+  if (compareExplicitRfc3339Timestamps(schema.certifiedDeployment.recordedAt, context.observedAt) > 0) throw new Error("deployment-after-observation: immutable manifest publication refused")
+  for (const [name, observedAt] of [["schema", schema.observedAt], ["function", functions.observedAt], ["hosted-smoke", smoke.observedAt]]) {
+    if (compareExplicitRfc3339Timestamps(observedAt, schema.certifiedDeployment.recordedAt) < 0) throw new Error(`${name}-before-deployment: immutable manifest publication refused`)
+    if (compareExplicitRfc3339Timestamps(observedAt, context.observedAt) > 0) throw new Error(`${name}-after-observation: immutable manifest publication refused`)
+  }
   const functionItems = functions.functions.map((entry) => ({
     name: entry.name,
     expectedSourceSha256: entry.expectedSourceSha256,
@@ -71,12 +81,16 @@ export function buildEnvironmentManifest({ schema, functions, smoke, context }) 
       observedHistory: schema.migrationHistory,
     },
     schema: {
+      candidateGitSha: schema.candidateGitSha,
+      observedAt: schema.observedAt,
       algorithm: schema.algorithm,
       expectedSha256: schema.expectedSha256,
       observedSha256: schema.observedSha256,
       postgresMajor: schema.postgresMajor,
     },
     functions: {
+      candidateGitSha: functions.candidateGitSha,
+      observedAt: functions.observedAt,
       algorithm: "sha256-function-runtime-closure-sorted-path-v1",
       count: functionItems.length,
       inventorySha256: functionInventorySha256,
@@ -114,8 +128,9 @@ export function verifyEnvironmentManifest(manifest) {
   const observationTimeValid = isExplicitRfc3339Timestamp(manifest.observation?.observedAt)
   if (!observationTimeValid) blockers.push("observation-time")
   if (!/^\d+$/.test(manifest.observation?.githubRunId ?? "") || !Number.isInteger(manifest.observation?.githubRunAttempt) || manifest.observation.githubRunAttempt < 1) blockers.push("observation-run")
-  if (deploymentTimeValid && observationTimeValid && Date.parse(manifest.certifiedDeployment.recordedAt) > Date.parse(manifest.observation.observedAt)) blockers.push("deployment-after-observation")
-  if (!/^[0-9a-f]{40}$/.test(manifest.observation?.functionCandidateGitSha ?? "") || manifest.observation.functionCandidateGitSha !== manifest.observation.gitSha) blockers.push("function-observation-sha")
+  if (deploymentTimeValid && observationTimeValid && compareExplicitRfc3339Timestamps(manifest.certifiedDeployment.recordedAt, manifest.observation.observedAt) > 0) blockers.push("deployment-after-observation")
+  if (!/^[0-9a-f]{40}$/.test(manifest.schema?.candidateGitSha ?? "") || manifest.schema.candidateGitSha !== manifest.observation?.gitSha) blockers.push("schema-observation-sha")
+  if (!/^[0-9a-f]{40}$/.test(manifest.functions?.candidateGitSha ?? "") || manifest.functions.candidateGitSha !== manifest.observation?.gitSha || manifest.observation?.functionCandidateGitSha !== manifest.functions?.candidateGitSha) blockers.push("function-observation-sha")
   if (!['deploy', 'drift'].includes(manifest.observation?.mode)) blockers.push("observation-mode")
   if (!['push', 'workflow_run', 'schedule', 'workflow_dispatch'].includes(manifest.observation?.trigger)) blockers.push("observation-trigger")
   if (manifest.observation?.mode === "deploy" && (manifest.certifiedDeployment?.gitSha !== manifest.observation.gitSha || manifest.certifiedDeployment?.githubRunId !== manifest.observation.githubRunId || manifest.certifiedDeployment?.githubRunAttempt !== manifest.observation.githubRunAttempt)) blockers.push("deploy-observation-binding")
@@ -146,6 +161,7 @@ export function verifyEnvironmentManifest(manifest) {
   }
   if (manifest.runtimeControls?.productionValueFlowEnabledCount !== 0) blockers.push("value-flow-enabled")
   const smoke = manifest.prerequisites?.hostedUnauthenticatedDenial?.evidence
+  if (!/^[0-9a-f]{40}$/.test(smoke?.observationGitSha ?? "") || smoke.observationGitSha !== manifest.observation?.gitSha) blockers.push("hosted-smoke-observation-sha")
   const smokeValid = verifySafeSmokeEvidence(smoke, { environment: manifest.environment, projectRef: manifest.projectRef, gitSha: manifest.observation?.gitSha })
   if (manifest.prerequisites?.migrationDeployment?.status !== "passed"
     || manifest.prerequisites?.schemaParity?.status !== "passed"
@@ -155,8 +171,18 @@ export function verifyEnvironmentManifest(manifest) {
     || manifest.prerequisites.valueFlowReadback.tableCount < 1
     || manifest.prerequisites.valueFlowReadback.enabledCount !== 0) blockers.push("value-flow-readback")
   if (manifest.prerequisites?.hostedUnauthenticatedDenial?.status !== "passed"
-    || !smokeValid
-    || (smokeValid && observationTimeValid && Date.parse(smoke.observedAt) > Date.parse(manifest.observation.observedAt))) blockers.push("runtime-smoke")
+    || !smokeValid) blockers.push("runtime-smoke")
+  const componentObservations = [
+    ["schema", manifest.schema?.observedAt],
+    ["function", manifest.functions?.observedAt],
+    ["hosted-smoke", smoke?.observedAt],
+  ]
+  for (const [name, observedAt] of componentObservations) {
+    const componentTimeValid = isExplicitRfc3339Timestamp(observedAt)
+    if (!componentTimeValid) blockers.push(`${name}-observation-time`)
+    if (componentTimeValid && deploymentTimeValid && compareExplicitRfc3339Timestamps(observedAt, manifest.certifiedDeployment.recordedAt) < 0) blockers.push(`${name}-before-deployment`)
+    if (componentTimeValid && observationTimeValid && compareExplicitRfc3339Timestamps(observedAt, manifest.observation.observedAt) > 0) blockers.push(`${name}-after-observation`)
+  }
   const expectedEvidence = [
     { evidenceId: "migration-deployment", sha256: sha256(canonical(manifest.certifiedDeployment)) },
     { evidenceId: "schema-parity", sha256: sha256(canonical({ migrations: manifest.migrations, schema: manifest.schema, runtimeControls: manifest.runtimeControls, certifiedDeployment: manifest.certifiedDeployment })) },
