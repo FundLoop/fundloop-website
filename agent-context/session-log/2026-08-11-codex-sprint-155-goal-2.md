@@ -81,3 +81,15 @@
 - Validation: focused delivery, source-readback, environment-manifest, and production-readiness manifest Vitest passed `118/118`; scoped ESLint, Node 22 typecheck, verifier syntax checks, and `git diff --check` passed. Supabase remained stopped; no Docker, local provider, reset, serve, wallet, matrix, or full-check command ran.
 - Reflections: candidate-derived inventory assertions must advance with a new deployable entrypoint, while signed or timestamped environment evidence must remain immutable until a new hosted observation is authorized and performed.
 - Next steps: retain the v6 permission gate before restarting local Supabase or running wallet/matrix validation. Hosted deployment inventory remains separate work and is not claimed by this local contract update.
+
+### session v8: make TAP and four-epoch evidence accountable (#186)
+
+- Timestamp: 2026-08-13T15:08:15Z
+- Agent: Codex (`issue-implementer` static remediation)
+- Branch: `codex/155-goal-2-integrated-evidence`
+- Head before commit: `e8887f5f0809fdceb74382582a649dcf0dcb0de7`
+- Objective: ensure the canonical database runner cannot turn invalid nested TAP into a passing suite, and replace the date-shift-only lifecycle fixture with executable E-3-through-E claim, harvest, calculation, close, carry, and reporting evidence.
+- Actions: added strict nested TAP validation for plans, numbering, failures, bailouts, and unaccounted output; registered explicit non-TAP SQL and shell ownership contracts; retained one top-level TAP item only after setup, assertion, and cleanup resolve. Split the four-epoch lifecycle into committed setup, real two-session claim/harvest serialization, trusted TypeScript calculation, and final SQL assertions. The lifecycle now models partial reserved/queued/held/paid/closed claims plus released re-eligibility, newest-first harvest with oldest retained value, duplicate-harvest rejection, score discount, current funding, harvest, carry-in/out, initial-claim and cap limits, source-level exact/minor/native/project/rail/asset/custody/FX/evidence conservation, predecessor chaining, close/root replay, report replay, and permutation-stable calculation hashes.
+- Validation: Supabase-free focused Vitest passed `29/29`; scoped ESLint, Node 22 typecheck, Node and shell syntax, discovery ownership inspection, and `git diff --check` passed. Supabase remained stopped; no Docker, Next, Edge, Playwright, provider, hosted, reset, or serve command ran.
+- Reflections: exit zero is meaningful only when the runner owns an explicit non-TAP process contract or validates the nested TAP. Real concurrency evidence requires distinct database sessions and a synchronization boundary; string presence alone is only a static contract guard.
+- Next steps: runtime execution of the rewritten SQL and two-session wrapper remains intentionally unproven until the user permits restarting local Supabase. At that boundary run the focused lifecycle once; a SQL/schema compatibility failure must be reported and fixed rather than converted into static success.

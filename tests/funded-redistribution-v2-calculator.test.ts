@@ -139,4 +139,20 @@ describe("settled Cubid redistribution v2", () => {
     }))
     expect(second.resultHash).toBe(first.resultHash)
   })
+
+  it("is deterministic across independent reruns and every source/cohort permutation", async () => {
+    const projectSources = [source(1, "100", "1"), source(2, "80", "2")]
+    const redistributionSources = [pool("harvested_unclaimed", "12.34", "3"), pool("carryforward_residue", "4.56", "4")]
+    const cohort = [member(1, "user-a", "7"), member(1, "user-b", "13"), member(2, "user-a", "10"), member(2, "user-c", "20")]
+    const expected = await calculateFundedRedistributionV2(input({ projectSources, redistributionSources, cohort, capMultiple: "2.75" }))
+    for (const permutation of [
+      { projectSources, redistributionSources, cohort },
+      { projectSources: [...projectSources].reverse(), redistributionSources, cohort: [...cohort].reverse() },
+      { projectSources, redistributionSources: [...redistributionSources].reverse(), cohort: [...cohort].reverse() },
+    ]) {
+      const rerun = await calculateFundedRedistributionV2(input({ ...permutation, capMultiple: "2.75" }))
+      expect(rerun.resultHash).toBe(expected.resultHash)
+      expect(rerun.hashInput).toEqual(expected.hashInput)
+    }
+  })
 })
