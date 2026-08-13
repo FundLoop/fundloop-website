@@ -184,7 +184,7 @@ Use the smallest relevant validation first, then broaden before reporting comple
 
 ## Local Persona Harness
 
-The persona harness is deliberately local-only. The caller starts and resets Supabase/Mailpit; the runner verifies the exact `55321`/`55324` endpoints, owns only a Next process on `127.0.0.1:3002`, and refuses occupied, hosted, or production endpoints before fixture access. It writes its private recovery ledger and sanitized summaries beneath ignored `output/persona-harness/`.
+The persona harness is deliberately local-only. The caller starts and resets Supabase/Mailpit; the runner verifies the exact `55321`/`55324` endpoints, owns only a Next process on `127.0.0.1:3002`, and refuses occupied, hosted, or production endpoints before fixture access. Readiness is bounded and classified: Auth, the current `supabase_deploy_completion_evidence` schema sentinel, Storage, Mailpit, every Edge Function required by the selected persona set, and an exact per-run Next commit/nonce identity must all answer before fixtures begin. A delayed healthy dependency is retried. If the local CLI reset leaves Auth and Storage containers healthy but Kong routing stale, one recovery restarts only the validated `supabase_kong_<project_id>` local container, then grants a bounded 90-second recovery window; fixtures never start during that interval. Stale app identity, partial schema/function inventory, and dead services fail with distinct reason codes. The readiness evidence is retained in the sanitized run summary. It writes its private recovery ledger and sanitized summaries beneath ignored `output/persona-harness/`.
 
 ```bash
 export FUNDLOOP_INTERNAL_ADMIN_EMAILS=maya@fundloop.example.com
