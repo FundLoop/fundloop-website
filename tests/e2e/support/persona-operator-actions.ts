@@ -24,6 +24,8 @@ import { assertSafePersonaScreenshotSurface } from "./persona-reporting"
 
 const observed = (evidence: CheckpointObservation["evidence"] = {}): CheckpointObservation => ({ outcome: "observed", evidence })
 
+export const PERSONA_EDGE_COMMAND_RESPONSE_TIMEOUT_MS = 60_000
+
 const REQUIRED_EVENT_TYPES = [
   "lock_attempt",
   "lock_success",
@@ -142,7 +144,10 @@ export function createPersonaOperatorActions(page: Page, options: PersonaOperato
     "operator.lock-cycle": async () => {
       await page.goto(`${env.baseURL}/en/admin/cycles`)
       const row = page.getByRole("row").filter({ hasText: cycleKey })
-      const lockResponse = page.waitForResponse((response) => response.url().includes("/functions/v1/monthly-cycle-lock"))
+      const lockResponse = page.waitForResponse(
+        (response) => response.url().includes("/functions/v1/monthly-cycle-lock"),
+        { timeout: PERSONA_EDGE_COMMAND_RESPONSE_TIMEOUT_MS },
+      )
       await row.getByRole("button", { name: "Lock", exact: true }).click()
       const response = await lockResponse
       const responseBody = await response.json().catch(() => null) as { ok?: boolean; error?: { code?: string } } | null

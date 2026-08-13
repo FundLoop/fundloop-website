@@ -237,3 +237,15 @@
 - Validation: Supabase-free project signup Vitest passed `4/4`; scoped ESLint, Node 22 typecheck, and `git diff --check` passed. No Supabase, Docker, Next, Edge, Playwright, provider, hosted, Production, payout, or real-value-flow process ran. Runtime matrix proof remains pending coordinator permission.
 - Reflections: increasing the review timeout could not fix this failure because the source could replace the awaited screen after the user advanced. Authentication refreshes may update identity-backed data, but they must not silently rewind an in-progress same-user workflow.
 - Next steps: when the coordinator grants the local stack lease and disk headroom is safe, run exactly `DOCKER_CONTEXT=colima-codex-supabase PATH=/opt/homebrew/opt/node@22/bin:$PATH pnpm test:e2e:feature-118`; do not publish or claim Goal 2 runtime green before that matrix and the remaining required static gates pass.
+
+### session v21: bound cold Edge command response waits (#164)
+
+- Timestamp: 2026-08-13T20:16:31Z
+- Agent: Codex (`issue-implementer` final-matrix diagnosis)
+- Branch: `codex/155-goal-2-integrated-evidence`
+- Head before commit: `8d49e4e4aeaf`
+- Objective: resolve the sole failure from the exact final-head Feature #118 matrix without retrying the command or weakening the monthly-cycle lock guard.
+- Actions: inspected run `persona-20260813T200754160Z-b1aae6cb`, where the returning operator passed authentication and readiness, the local oneshot runtime began serving `monthly-cycle-lock`, and Playwright failed at exactly its inherited 15-second response timeout. Added an explicit 60-second bound only to the lock response wait and exported the reviewed value for regression coverage. The command remains single-shot and its response body, override dialog, persisted status, and cleanup assertions remain unchanged.
+- Validation: Supabase-free persona harness Vitest passed `6/6`; scoped ESLint, Node 22 typecheck, and `git diff --check` passed. The leased matrix had already completed its zero-residue cleanup; FundLoop Supabase was stopped and independently released before this static correction. No Supabase, Docker, Next, Edge, Playwright, provider, hosted, Production, payout, or real-value-flow command ran for this change.
+- Reflections: local `oneshot` isolates intentionally trade worker reuse for deterministic per-request CPU budgets, so a cold command response needs a bound aligned with the harness's existing 60-to-120-second readiness and state assertions. A longer response wait is not a retry and does not accept a failed or missing product response.
+- Next steps: request a fresh coordinator lease for exactly one final-head Feature #118 matrix. If it passes, run the remaining Supabase-free broad gates and independent Goal 2 validation; if it fails, stop and consolidate the exact failure before any further runtime iteration.

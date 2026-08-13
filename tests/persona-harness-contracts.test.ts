@@ -10,6 +10,7 @@ import {
 } from "@/tests/e2e/personas/journeys"
 import { establishNewActor, provisionalNewActor } from "@/tests/e2e/support/persona-fixtures"
 import { createCycleClock } from "@/tests/e2e/support/persona-monthly-cycle"
+import { PERSONA_EDGE_COMMAND_RESPONSE_TIMEOUT_MS } from "@/tests/e2e/support/persona-operator-actions"
 import { parsePersonaSelection, personaGrep, validatePersonaJourneys } from "@/tests/e2e/support/persona-selection"
 
 describe("persona harness contracts", () => {
@@ -113,5 +114,6 @@ describe("persona harness contracts", () => {
       "operator.view-allocation-breakdown",
     ])
     expect(journey.checkpoints.every((checkpoint) => checkpoint.mode === "required")).toBe(true)
+    expect(PERSONA_EDGE_COMMAND_RESPONSE_TIMEOUT_MS).toBe(60_000)
   })
 })
