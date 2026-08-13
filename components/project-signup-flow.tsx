@@ -89,6 +89,7 @@ export default function ProjectSignupFlow({ onClose }: ProjectSignupFlowProps) {
   const slugEdited = useRef(false)
   const currentScreenRef = useRef<ProjectOnboardingScreen>("cubid")
   const loadStateRequestId = useRef(0)
+  const loadedAuthUserId = useRef<string | null>(null)
 
   const selectedCategories = useMemo(
     () =>
@@ -218,6 +219,7 @@ export default function ProjectSignupFlow({ onClose }: ProjectSignupFlowProps) {
       setCubidScore(state.profile?.cubid_score ?? null)
 
       if (!state.authUserId) {
+        loadedAuthUserId.current = null
         currentScreenRef.current = "cubid"
         setCurrentScreen("cubid")
         setPayload(DEFAULT_PROJECT_ONBOARDING_PAYLOAD)
@@ -228,14 +230,17 @@ export default function ProjectSignupFlow({ onClose }: ProjectSignupFlowProps) {
 
       if (state.projectDraft) {
         const draftPayload = mergeProjectOnboardingPayload(state.projectDraft.payload as Partial<ProjectOnboardingPayload>)
+        const isSameUserRefresh = loadedAuthUserId.current === state.authUserId
         setPayload(draftPayload)
         setResumeTargetScreen(
           PROJECT_SCREEN_ORDER.includes(state.projectDraft.current_screen as ProjectOnboardingScreen)
             ? (state.projectDraft.current_screen as ProjectOnboardingScreen)
             : "cubid",
         )
-        currentScreenRef.current = "resume"
-        setCurrentScreen("resume")
+        if (!isSameUserRefresh) {
+          currentScreenRef.current = "resume"
+          setCurrentScreen("resume")
+        }
         setDraftTimestamp(state.projectDraft.updated_at || state.projectDraft.started_at)
       } else {
         setPayload((previous) => mergeProjectOnboardingPayload(previous))
@@ -246,6 +251,7 @@ export default function ProjectSignupFlow({ onClose }: ProjectSignupFlowProps) {
         setDraftTimestamp(null)
       }
 
+      loadedAuthUserId.current = state.authUserId
       autosaveReady.current = true
       setLoading(false)
     }

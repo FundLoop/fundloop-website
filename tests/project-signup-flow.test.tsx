@@ -11,6 +11,7 @@ const invokeProjectOnboardingDraftUpsertBrowser = vi.fn()
 const invokeProjectOnboardingDraftClearBrowser = vi.fn()
 const invokeProjectOnboardingPublishBrowser = vi.fn()
 const invokeUserCubidResolveEmailBrowser = vi.fn()
+let authStateChange: ((event: string, session: { user: { id: string; email: string } } | null) => void) | undefined
 
 function createBrowserSupabaseClient() {
   const queryResponse = (data: unknown) => ({
@@ -28,7 +29,10 @@ function createBrowserSupabaseClient() {
   return {
     auth: {
       getUser: vi.fn().mockResolvedValue({ data: { user: { id: "user-1", email: "maya@example.com" } } }),
-      onAuthStateChange: vi.fn().mockReturnValue({ data: { subscription: { unsubscribe: vi.fn() } } }),
+      onAuthStateChange: vi.fn((callback) => {
+        authStateChange = callback
+        return { data: { subscription: { unsubscribe: vi.fn() } } }
+      }),
     },
     from(table: string) {
       switch (table) {
@@ -112,6 +116,7 @@ describe("ProjectSignupFlow", () => {
   beforeEach(() => {
     vi.useRealTimers()
     vi.clearAllMocks()
+    authStateChange = undefined
   })
 
   it("autosaves through the browser upsert adapter", async () => {
@@ -233,6 +238,58 @@ describe("ProjectSignupFlow", () => {
       expect(refresh).toHaveBeenCalled()
       expect(onClose).toHaveBeenCalled()
     })
+  })
+
+  it("does not return an active same-user draft to resume after an auth refresh", async () => {
+    getOnboardingState.mockResolvedValue({
+      authUserId: "user-1",
+      authEmail: "maya@example.com",
+      profile: {
+        cubid_identity_status: "linked",
+        cubid_id: "cubid-user-1",
+        primary_email_identity: "auth-identity-1",
+        cubid_score: 77,
+      },
+      userDraft: null,
+      projectDraft: {
+        id: 4,
+        user_id: "user-1",
+        current_screen: "review",
+        payload: {
+          name: "Civic Mesh",
+          slug: "civic-mesh",
+          website: "https://civicmesh.example.com",
+          description: "Routing public transit coordination.",
+          contactEmail: "team@civicmesh.example.com",
+          detailedDescription: "Longer description",
+          categoryIds: ["1"],
+          pledgeAccepted: true,
+          billingEmail: "finance@civicmesh.example.com",
+          billingFrequency: "monthly",
+          paymentPercentage: "1.0",
+          paymentPeriodicityId: "1",
+          cryptoPaymentMethods: [],
+        },
+        started_at: "2026-04-15T00:00:00.000Z",
+        updated_at: "2026-04-15T00:00:00.000Z",
+        completed_at: null,
+      },
+    })
+
+    const { default: ProjectSignupFlow } = await import("@/components/project-signup-flow")
+    render(<ProjectSignupFlow onClose={vi.fn()} />)
+
+    await screen.findByRole("heading", { name: /you already have a draft project/i })
+    fireEvent.click(screen.getByRole("button", { name: /continue draft/i }))
+    await screen.findByRole("heading", { name: /review and publish your project/i })
+
+    await act(async () => {
+      authStateChange?.("SIGNED_IN", { user: { id: "user-1", email: "maya@example.com" } })
+    })
+    await waitFor(() => expect(getOnboardingState).toHaveBeenCalledTimes(2))
+
+    expect(screen.getByRole("heading", { name: /review and publish your project/i })).toBeTruthy()
+    expect(screen.queryByRole("heading", { name: /you already have a draft project/i })).toBeNull()
   })
 
   it("lets the founder resolve CUBID before continuing to project basics", async () => {
