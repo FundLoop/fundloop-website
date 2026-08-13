@@ -14,8 +14,16 @@ function failure(code: string, message: string, status: number, headers?: Header
   return commandFailure(code, message, status, headers)
 }
 
-async function handleRequest(request: Request, dependencies = { authenticateRequest }) {
-  return handleAuthenticatedHttpRequest(request, dependencies.authenticateRequest, async (auth) => {
+type HandlerDependencies = { authenticateRequest?: typeof authenticateRequest }
+
+async function handleRequest(request: Request, dependencies?: HandlerDependencies) {
+  // Deno.serve supplies connection info as its second handler argument. Only
+  // treat that position as test injection when it contains the explicit auth
+  // function; otherwise use the real command-runtime boundary.
+  const authenticate = typeof dependencies?.authenticateRequest === "function"
+    ? dependencies.authenticateRequest
+    : authenticateRequest
+  return handleAuthenticatedHttpRequest(request, authenticate, async (auth) => {
     const parsed = await parseJsonBody(request)
     if (!parsed.ok) return failure("invalid_payload", parsed.error ?? "Request body must be valid JSON.", 400)
     const validated = validateEpochAllocationCloseInput(parsed.body)
