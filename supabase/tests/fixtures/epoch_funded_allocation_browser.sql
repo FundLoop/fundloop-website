@@ -33,6 +33,14 @@ BEGIN
   )
   RETURNING id INTO v_intent;
 
+  -- A funding source may only be packaged after authoritative settlement has
+  -- claimed the payment's one rail. This committed browser fixture models that
+  -- invariant explicitly instead of bypassing the provider provenance guard.
+  INSERT INTO public.project_payment_settled_rail_claims(
+    payment_id, rail_key, command_reference, evidence_hash
+  )
+  VALUES (v_payment, 'stripe_bank_transfer', v_intent::text, repeat('1', 64));
+
   INSERT INTO public.epoch_project_packages(
     project_id, intended_cycle_id, canonical_cycle_id, version, status, list_status, funding_status,
     compliance_status, cubid_status, cutoff_at, frozen_at, approved_at, approved_by_user_id,

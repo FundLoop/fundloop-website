@@ -97,6 +97,8 @@ Exact-decimal conservation is authoritative. Canonical minor units use determini
 
 Close independently reruns the immutable v2 manifest and rejects a result-hash mismatch. Conditional award controls record full initial claims, selected cap multiple, redistribution top-up ceiling, top-up, and final award. Preparing withdrawal inventory accepts v2 initial-claim and top-up fills and preserves both project-source and redistribution-source provenance.
 
+The calculation command is idempotent after the manifest advances to `calculated`: an exact result-hash replay returns the existing run, while a changed hash is rejected. The local EUR Pay by Bank fixture exercises authoritative settlement evidence, native EUR and USD-functional FX/fee conservation, package provenance, v2 lock, calculation replay, close replay, and later refund invalidation. Its close root remains immutable after invalidation; corrective handling is forward-only and never reinterprets the closed artifact.
+
 The monthly reporting package includes the selected cap multiple and aggregate E−3 harvested amount for:
 
 - operator reports;
