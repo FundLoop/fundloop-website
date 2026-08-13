@@ -185,10 +185,12 @@ async function waitForApp(baseURL, child, identity) {
 }
 
 async function warmPersonaRoutes(baseURL, child) {
-  for (const route of ["/en?onboarding=user", "/en?onboarding=project", "/en/admin/cycles/2035-05/zkas"]) {
+  for (const route of ["/en?onboarding=user", "/en?onboarding=project"]) {
     if (child.exitCode !== null) throw new Error("persona-next-exited")
     const response = await fetch(`${baseURL}${route}`, { redirect: "follow", signal: AbortSignal.timeout(90_000) })
-    if (!response.ok) throw new Error(`persona-next-warmup-failed:${route}:${response.status}`)
+    // Only public routes can be warmed before persona authentication. Protected
+    // operator routes remain exclusively exercised by their authenticated flow.
+    if (response.status >= 500) throw new Error(`persona-next-warmup-failed:${route}:${response.status}`)
     await response.arrayBuffer()
   }
 }
