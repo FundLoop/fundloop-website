@@ -18,15 +18,32 @@ candidate.
 - `fail`: the current implementation contradicts the diagram boundary.
 - `not implemented`: the arrow is deliberately unavailable and must not be marketed as current.
 
+## Remediation reach boundary
+
+The diagrams are audited end to end for traceability, but remediation is limited to arrows
+whose sender or receiver is **FundLoop** or the **allocator/adjudicator**. The following
+external-only arrows are observations and interface assumptions, not proposed FundLoop work:
+
+- Participant → Project;
+- Participant → CUBID;
+- Project → CUBID; and
+- CUBID → Project.
+
+That exclusion applies equally to the conventional, alias-separated ZK, and consented-email
+diagrams. FundLoop remediation may validate the opaque value received at its own ingress or sent
+from its own egress, but it must not redesign, implement, or certify the upstream Project/CUBID/
+Participant interaction. Where a grouped diagram row contains both external-only and FundLoop
+arrows, only the FundLoop segment is remediation scope.
+
 ## Diagram 1 — conventional scoped-identifier MVP
 
 | Arrow | Classification | Current command/artifact and boundary evidence |
 | --- | --- | --- |
-| Participant → Project: participant identifier | partial | Project invitation and attribution flows accept email, `user_id`, and `scoped_cubid_id`, but FundLoop hosts the project-facing command and database rather than a separated project plane (`project_invitations`, `project_attribution_rows`). |
+| Participant → Project: participant identifier | partial; audit-only | Project invitation and attribution flows accept email, `user_id`, and `scoped_cubid_id`, but this external relationship is outside remediation reach. Only FundLoop's later ingestion/storage is in scope. |
 | Participant → FundLoop: participant identifiers | pass | Supabase Auth and `user-cubid-resolve-email` bind the authenticated FundLoop user to email/CUBID state. |
-| Participant → CUBID: identity proofs | partial | CUBID-hosted provider flows and `user-cubid-sync-profile` exist, but FundLoop retains normalized and raw snapshot fields in `cubid_identity_snapshots`. |
-| Project → CUBID: project user identifier | fail | The project attribution command resolves rows inside FundLoop against `users`; there is no project-to-CUBID scoped-resolution boundary. |
-| CUBID → Project: project-scoped UUID | fail | `scoped_cubid_id` is submitted to and retained by FundLoop together with FundLoop `user_id` and email; it is not returned only to the project. |
+| Participant → CUBID: identity proofs | partial; audit-only | CUBID-hosted provider flows exist. Their proofing relationship is outside remediation reach; FundLoop's later snapshot retention remains separately in scope. |
+| Project → CUBID: project user identifier | not evidenced; audit-only | The external project-to-CUBID contract is outside FundLoop/allocator remediation reach and is not certified here. |
+| CUBID → Project: project-scoped UUID | not evidenced; audit-only | The external CUBID-to-project response is outside remediation reach. FundLoop's later receipt and retention of `scoped_cubid_id` remains in scope. |
 | FundLoop → CUBID: FundLoop identifiers | pass | `user-cubid-resolve-email` and `user-cubid-sync-profile` call the CUBID client from server/Edge code. |
 | CUBID → FundLoop: FundLoop UUID and score | partial | `users` and `cubid_identity_snapshots` retain the CUBID identifier and score, but the current identifier is not proven to be a FundLoop-only scoped UUID. |
 | Project → Allocator: project ID plus project-scoped UUIDs | fail | `project_attribution_rows` is a general `public` application table containing project ID, scoped CUBID ID, FundLoop user ID, and email before calculation. |
@@ -41,8 +58,8 @@ candidate.
 
 | Arrow group | Classification | Evidence |
 | --- | --- | --- |
-| Participant supplies unrelated X to Project, Y to FundLoop, and X/Y proofs to CUBID | not implemented | There is no alias-pair registration contract or proof ceremony. Current email/CUBID linkage is the conventional MVP path. |
-| Project resolves X to project-scoped UUID only | not implemented | No project-scoped CUBID client/service boundary exists. |
+| Participant supplies unrelated X to Project, Y to FundLoop, and X/Y proofs to CUBID | not implemented | Only Y → FundLoop is remediation scope. X → Project and X/Y → CUBID are external-only assumptions and will not become remediation Tasks. |
+| Project resolves X to project-scoped UUID only | not implemented; audit-only | This external Project ↔ CUBID interaction is outside remediation reach. |
 | FundLoop resolves Y to FundLoop-scoped UUID only | not implemented | Current resolution does not prove alias separation from a project identifier. |
 | Project submits project UUIDs while FundLoop submits verified funds/cap | fail for current MVP; not implemented for ZK | The same public database joins raw project and FundLoop identities before calculation. |
 | Allocator requests ZK linkage and score proof | not implemented | No circuit, proof request, verifier key, committed score proof, or ZK runtime is present. Legacy `zkas_*` names are not ZK evidence. |
@@ -57,7 +74,7 @@ administrator-collusion resistance, or ZK linkage as implemented.
 
 | Arrow | Classification | Evidence |
 | --- | --- | --- |
-| Participant → Project: consented email | partial | Invitation email and policy acknowledgements exist, but not the required project-list transfer consent contract. |
+| Participant → Project: consented email | partial; audit-only | The participant/project consent exchange is outside remediation reach. FundLoop may require a purpose/consent assertion at its ingress, but will not implement or certify the upstream exchange. |
 | Project → FundLoop: participant email list plus funds | not implemented | There is no secure eligible-email upload command or purpose-bound consent ledger for this product. |
 | FundLoop → CUBID: create/use secondary project account | not implemented | No secondary CUBID project-account lifecycle exists. |
 | FundLoop → CUBID: emails as project identifiers | not implemented | Current email resolution is a FundLoop-user command, not a project-list operation. |
@@ -108,10 +125,16 @@ available to the general service-role application and backups.
 
 ## Required target architecture
 
+This target begins at FundLoop ingress and allocator/adjudicator interfaces. It treats any
+external project-scoped identifier, CUBID response, consent assertion, or proof as an opaque,
+versioned input with a declared assurance level. It does not prescribe how a Project, CUBID, or
+Participant creates that value when neither FundLoop nor the allocator is an endpoint.
+
 ### Trust domains
 
-1. **Project submission plane** accepts a project-scoped participant token and attribution
-   facts. It cannot query FundLoop user records or CUBID/FundLoop identifiers.
+1. **FundLoop project-ingress plane** accepts an already-issued project-scoped participant token
+   and attribution facts at the FundLoop boundary. It cannot query FundLoop user records or
+   redesign/perform the external Project ↔ CUBID resolution.
 2. **FundLoop account plane** owns auth, payout readiness, and an opaque
    `fundloop_subject_token`. It cannot query project-scoped identifiers or membership maps.
 3. **Identity-link vault** is the only component allowed to resolve project tokens to
@@ -161,6 +184,8 @@ without returning project identity.
   allowlists and key/access policy; a database backup alone cannot be the privacy boundary.
 - Compatibility views must fail closed during rollout. No applied migration or v1 artifact is
   rewritten, and production value flow stays disabled.
+- No remediation changes participant-to-project collection, CUBID proofing, project-to-CUBID
+  resolution, or CUBID-to-project responses. Those remain external contracts and dependencies.
 
 ## Proposed remediation Tasks — approval required before creation
 
@@ -170,8 +195,9 @@ without returning project identity.
   modules under `lib/allocator-boundary/`; typed Edge commands; generated Supabase types; CUBID
   docs.
 - **Changes:** dedicated private schemas/roles, keyed project/run/FundLoop tokens, encrypted
-  mapping evidence, purpose/TTL/access events, and project/FundLoop APIs that cannot query the
-  opposite scope.
+  mapping evidence, purpose/TTL/access events, and FundLoop-ingress/allocator APIs that cannot
+  query the opposite scope. External Project/CUBID issuance is accepted as an opaque input and
+  is not implemented here.
 - **Dependencies:** current Goal 2 candidate; no native dependency change without separate
   approval.
 - **Validation:** fresh replay, grant/RLS/adversarial field tests, token unlinkability vectors,
@@ -184,9 +210,10 @@ without returning project identity.
 
 - **Surfaces:** `lib/attribution/`, project attribution Edge functions/contracts, project UI,
   project package cohort construction, migrations, Storage attribution artifacts, docs/tests.
-- **Changes:** remove email/FundLoop `user_id` resolution from project rows; submit only project
-  tokens and attribution facts; call R1 through a purpose-bound allocator preparation command;
-  quarantine and migrate legacy joins forward without rewriting history.
+- **Changes:** remove email/FundLoop `user_id` resolution from FundLoop's project rows; accept only
+  externally-issued project tokens and attribution facts at FundLoop ingress; call R1 through a
+  purpose-bound allocator preparation command; quarantine and migrate legacy joins forward
+  without rewriting history. Do not alter upstream Participant/Project/CUBID flows.
 - **Dependencies:** R1.
 - **Validation:** project-admin authorization, cross-project negatives, forbidden-column/storage
   scans, legacy compatibility/quarantine replay, exact package evidence.
@@ -231,4 +258,5 @@ without returning project identity.
 Violations AIB-001 through AIB-010 require architecture changes. Per #204, the four remediation
 Tasks above are proposals only: they have not been created, attached, or implemented. #204 and
 #188 remain blocked. Explicit user approval is required before inserting these Tasks under Goal
-#163 or changing the candidate architecture.
+#163 or changing the candidate architecture. Any created Task must retain the remediation reach
+boundary above and may cover only FundLoop or allocator/adjudicator endpoints.
