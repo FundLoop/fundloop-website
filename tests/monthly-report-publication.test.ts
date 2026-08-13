@@ -190,5 +190,8 @@ describe("monthly report publication", () => {
     expect(privacyMigration).not.toMatch(/coalesce\(v_candidate\.subject_user_id::text,v_candidate\.subject_project_id::text/)
     expect(privacyMigration).toMatch(/'pathToken',artifact\.path_token[\s\S]*'artifactPath',artifact\.artifact_path/)
     expect(privacyMigration).toMatch(/NEW\.state='tombstoned'[\s\S]*NEW\.removed_artifact_path:=[\s\S]*v_expected[\s\S]*NEW\.artifact_path:=NULL/)
+    expect(privacyMigration).toContain("DISABLE TRIGGER monthly_report_events_append_only")
+    expect(privacyMigration).toContain("ENABLE TRIGGER monthly_report_events_append_only")
+    expect(privacyMigration).not.toContain("TRIGGER monthly_cycle_report_events_append_only")
   })
 })

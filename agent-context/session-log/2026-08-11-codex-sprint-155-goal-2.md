@@ -141,3 +141,15 @@
 - Validation: Supabase-free focused publication, storage, and persona readiness Vitest passed `34/34`; scoped ESLint, Node 22 typecheck, Deno check of the actual Edge entrypoint, JavaScript syntax, and `git diff --check` passed. Supabase remained stopped; no Docker, Next, Edge serve, Playwright, provider, hosted, reset, Production, or value-flow command ran.
 - Reflections: hashing a subject into a token avoids direct disclosure, but binding the locator to the immutable artifact identity is cleaner and remains deterministic after subject erasure. A database-only migration must stop rather than claim it moved a verified Storage object; privacy repair of that object is an operator-controlled cross-system action.
 - Next steps: after explicit permission to restart local Supabase, replay the forward migration and exercise generate/publish/tombstone against private local Storage, including the legacy verified-path fail-closed case. Then rerun the reporting fixture and broader Goal 2 gates; hosted Storage migration or proof remains separate authorized work.
+
+### session v13: correct opaque-path event trigger replay (#181)
+
+- Timestamp: 2026-08-13T16:27:00Z
+- Agent: Codex (`issue-implementer` runtime certification)
+- Branch: `codex/155-goal-2-integrated-evidence`
+- Head before commit: `37a3532683090edd5a5f38354281aa3c3d3e8bab`
+- Objective: unblock fresh migration replay after the opaque-path migration referenced a non-existent append-only event trigger.
+- Actions: corrected both migration-time disable/enable statements to the trigger's exact registered name, `monthly_report_events_append_only`, and added a focused regression that binds the privacy migration to the defining migration's identifier while rejecting the erroneous variant.
+- Validation: focused publication contract Vitest and diff checks passed before commit. The exact fresh lean Supabase replay is the next authorized runtime gate; no remote, hosted, Production, provider, payout, or value-flow state is in scope.
+- Reflections: PostgreSQL trigger names are table-local runtime identifiers and must match the defining migration exactly; a similarly named table does not imply a generated trigger name.
+- Next steps: restart the task-owned lean local stack, rerun fresh replay through `20260813150000`, then continue generated schema, reporting/Storage, strict TAP/EUR/four-epoch, wallet, Feature118, and full-check certification in dependency order.
