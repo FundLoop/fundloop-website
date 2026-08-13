@@ -11,7 +11,9 @@ describe("four epoch allocation lifecycle executable contract", () => {
     for (const state of ["reserved", "queued", "held", "paid", "closed", "released"]) expect(setup).toContain(`'${state}'`)
     expect(setup).toContain("v_active<>5*v_unit")
     expect(setup).toContain("v_obligation.total_minor-v_active")
-    expect(setup).toContain("four_epoch_oldest_retained_newest_harvested_conservation_failed")
+    expect(setup).toContain("four_epoch_eur_source_harvest_carry_no_double_use_failed")
+    expect(setup).toContain("cs_test_four_epoch_current")
+    expect(setup).toMatch(/v_eur_source_lot[\s\S]*v_current_source_lot=v_eur_source_lot/)
   })
 
   it("runs a genuine two-session claim/harvest race and rejects the stale selection", () => {
@@ -35,10 +37,13 @@ describe("four epoch allocation lifecycle executable contract", () => {
       "four_epoch_close_rerun_root_failed",
       "four_epoch_report_hash_or_replay_failed",
       "four_epoch_carryout_predecessor_chain_failed",
+      "four_epoch_eur_source_initial_harvest_carry_double_use_failed",
     ]) expect(assertion).toContain(evidence)
     expect(assertion).toContain("manifest.funded_exact_usd")
     expect(assertion).toContain("source.native_atomic_amount<>lot.native_atomic_amount")
     expect(assertion).toContain("source.fx_snapshot_id<>lot.fx_snapshot_id")
     expect(assertion).toContain("source.evidence_hash<>lot.evidence_hash")
+    expect(assertion).toMatch(/v_eur_funded_minor<>v_active\+v_harvest\+v_carry/)
+    expect(assertion).toMatch(/coalesce\(pool\.origin_disposition_id,fill\.disposition_id\)/)
   })
 })

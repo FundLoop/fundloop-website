@@ -6,6 +6,9 @@ DECLARE
   v_actor uuid:='290eb647-f25f-43f3-bf6b-1e2b2cf25e69';
   v_payment bigint;v_terminal_payment bigint;v_command uuid;v_terminal uuid;v_evidence bigint;
   v_ledger bigint;v_reversal bigint;v_residual bigint;v_second_residual bigint;v_package bigint;v_cycle bigint;v_dataset bigint;v_source_row bigint;v_fx_observation bigint;v_prep_count integer;
+  v_quote public.project_payment_funding_quotes%ROWTYPE;v_provider public.stripe_pay_by_bank_evidence%ROWTYPE;
+  v_provider_event public.stripe_webhook_events%ROWTYPE;v_source public.epoch_project_package_funding_sources%ROWTYPE;
+  v_lot public.epoch_valuation_source_lots%ROWTYPE;v_fx public.epoch_fx_snapshots%ROWTYPE;
   v_preview jsonb;v_manifest jsonb;v_manifest_id bigint;v_manifest_hash text;v_source_lot_id bigint;v_source_lot_key text;
   v_artifact jsonb;v_run bigint;v_close jsonb;v_close_replay jsonb;v_root_hash text;v_reports jsonb;v_publish jsonb;
   v_exact numeric(38,18);v_funded_minor numeric(78,0);v_initial_minor numeric(78,0);v_score_minor numeric(78,0);v_topup_minor numeric(78,0);v_residue_minor numeric(78,0);
@@ -78,6 +81,32 @@ BEGIN
   IF (SELECT sum(CASE side WHEN'debit'THEN native_atomic_amount ELSE-native_atomic_amount END) FROM public.ledger_postings WHERE transaction_id=v_ledger)<>0
     OR (SELECT sum(CASE side WHEN'debit'THEN functional_usd_amount ELSE-functional_usd_amount END) FROM public.ledger_postings WHERE transaction_id=v_ledger)<>0 THEN
     RAISE EXCEPTION 'pay_by_bank_ledger_not_conserved';END IF;
+  SELECT * INTO STRICT v_quote FROM public.project_payment_funding_quotes WHERE id=(SELECT funding_quote_id FROM public.stripe_pay_by_bank_commands WHERE id=v_command);
+  SELECT * INTO STRICT v_provider FROM public.stripe_pay_by_bank_evidence WHERE id=v_evidence;
+  SELECT event.* INTO STRICT v_provider_event FROM public.stripe_webhook_events event WHERE event.id=v_provider.webhook_event_id;
+  IF v_quote.payment_id<>v_payment OR v_quote.project_id<>3 OR v_quote.rail_key<>'stripe_pay_by_bank'
+    OR v_quote.currency_code<>'EUR' OR v_quote.obligation_usd_minor<>11000 OR v_quote.source_amount_minor<>10000
+    OR v_quote.rate_usd_per_unit<>1.10 OR v_quote.source_key<>'local_review_fx' OR v_quote.evidence_hash<>repeat('c',64)
+    OR v_quote.observed_at>=v_quote.freshness_expires_at
+    OR v_provider.command_id<>v_command OR v_provider.evidence_type<>'settled_available' OR v_provider.currency_code<>'EUR'
+    OR v_provider.gross_amount_minor<>10000 OR v_provider.fee_amount_minor<>30 OR v_provider.net_amount_minor<>9970
+    OR v_provider.gross_amount_minor<>v_provider.fee_amount_minor+v_provider.net_amount_minor OR v_provider.balance_status<>'available'
+    OR v_provider.provider_checkout_session_id<>'cs_test_bankfixture' OR v_provider.provider_payment_intent_id<>'pi_bankfixture'
+    OR v_provider.provider_charge_id<>'ch_bankfixture' OR v_provider.provider_balance_transaction_id<>'txn_bankfixture'
+    OR v_provider.evidence_hash<>repeat('2',64) OR v_provider_event.provider_event_id<>'evt_banksettled'
+    OR v_provider_event.provider_created_at<>'2026-07-10T12:00:00Z'::timestamptz OR v_provider_event.payload_sha256<>repeat('2',64)
+    OR (SELECT count(*) FROM public.ledger_postings WHERE transaction_id=v_ledger)<>2
+    OR EXISTS(SELECT 1 FROM public.ledger_postings posting
+      JOIN public.stripe_pay_by_bank_custody_routes route ON route.currency_code='EUR'
+      WHERE posting.transaction_id=v_ledger AND (posting.native_atomic_amount<>v_quote.source_amount_minor
+        OR posting.functional_usd_amount<>v_quote.obligation_usd_minor/100
+        OR posting.fx_usd_per_unit<>v_quote.rate_usd_per_unit OR posting.asset_id<>route.asset_id
+        OR posting.custody_account_id<>route.custody_account_id OR posting.project_id<>3))
+    OR (SELECT count(DISTINCT side) FROM public.ledger_postings WHERE transaction_id=v_ledger)<>2
+    OR NOT EXISTS(SELECT 1 FROM public.ledger_transactions transaction WHERE transaction.id=v_ledger
+      AND transaction.transaction_type='stripe_pay_by_bank_receipt' AND transaction.effective_at=v_provider_event.provider_created_at
+      AND transaction.evidence_hash=v_provider.evidence_hash)
+  THEN RAISE EXCEPTION 'eur_provider_quote_ledger_provenance_failed';END IF;
 
   INSERT INTO public.monthly_cycles(cycle_key,year,month,period_start,period_end,created_by_user_id,updated_by_user_id)
   VALUES('2026-04',2026,4,'2026-04-01','2026-04-30',v_actor,v_actor);
@@ -93,6 +122,11 @@ BEGIN
   IF NOT EXISTS(SELECT 1 FROM public.epoch_project_package_funding_sources WHERE package_id=v_package AND source_kind='stripe_pay_by_bank'
       AND stripe_pay_by_bank_command_id=v_command AND asset_code='EUR' AND native_atomic_amount=10000) THEN
     RAISE EXCEPTION 'settled_source_not_bound_to_package';END IF;
+  SELECT * INTO STRICT v_source FROM public.epoch_project_package_funding_sources
+  WHERE package_id=v_package AND stripe_pay_by_bank_command_id=v_command;
+  IF v_source.asset_code<>v_quote.currency_code OR v_source.native_atomic_amount<>v_quote.source_amount_minor
+    OR v_source.preliminary_usd<>v_quote.obligation_usd_minor/100 OR v_source.source_evidence_hash<>v_provider.evidence_hash
+  THEN RAISE EXCEPTION 'eur_package_source_persisted_provenance_failed';END IF;
   INSERT INTO public.project_attribution_datasets(project_id,monthly_cycle_id,status,row_count,total_attribution_points,submitted_by_user_id)
   VALUES(3,v_cycle,'approved',1,1,v_actor) RETURNING id INTO v_dataset;
   INSERT INTO public.project_attribution_rows(dataset_id,project_id,monthly_cycle_id,row_index,scoped_cubid_id,user_id,attribution_points)
@@ -121,6 +155,30 @@ BEGIN
       (SELECT row_to_json(x) FROM(SELECT lot.source_kind,asset.asset_key,custody.custody_key,lot.native_atomic_amount,lot.gross_exact_usd
         FROM public.epoch_valuation_source_lots lot JOIN public.financial_assets asset ON asset.id=lot.financial_asset_id
         JOIN public.financial_custody_accounts custody ON custody.id=lot.custody_account_id WHERE lot.package_id=v_package LIMIT 1)x);END IF;
+  SELECT * INTO STRICT v_lot FROM public.epoch_valuation_source_lots WHERE package_source_id=v_source.id;
+  SELECT * INTO STRICT v_fx FROM public.epoch_fx_snapshots WHERE id=v_lot.fx_snapshot_id;
+  IF v_lot.project_id<>3 OR v_lot.monthly_cycle_id<>v_cycle OR v_lot.source_kind<>'stripe_pay_by_bank'
+    OR v_lot.rail_key<>'stripe_pay_by_bank' OR v_lot.native_atomic_amount<>v_source.native_atomic_amount
+    OR v_lot.source_preliminary_exact_usd<>v_source.preliminary_usd OR v_lot.gross_exact_usd<>110
+    OR v_lot.fx_difference_exact_usd<>0 OR v_lot.gross_exact_usd<>v_lot.project_fee_exact_usd+v_lot.base_fee_exact_usd+v_lot.distributable_exact_usd
+    OR v_lot.evidence_hash<>encode(extensions.digest(convert_to(v_lot.source_lot_key||':'||v_source.source_evidence_hash||':'||v_fx.evidence_hash,'UTF8'),'sha256'),'hex')
+    OR NOT EXISTS(SELECT 1 FROM public.epoch_fx_observations observation WHERE observation.id=v_fx.selected_observation_id
+      AND observation.rate_usd_per_unit=v_quote.rate_usd_per_unit AND observation.financial_asset_id=v_lot.financial_asset_id
+      AND observation.source_key='pay_by_bank_primary_fixture' AND observation.evidence_hash=repeat('b',64)
+      AND observation.observed_at<observation.freshness_expires_at AND v_fx.posted_at IS NOT NULL)
+    OR NOT EXISTS(SELECT 1 FROM public.ledger_transactions transaction WHERE transaction.id=v_lot.fee_ledger_transaction_id
+      AND transaction.transaction_type='epoch_review_fee_processing' AND transaction.evidence_hash=v_source.source_evidence_hash
+      AND transaction.effective_at=(SELECT period.starts_at FROM public.accounting_periods period WHERE period.id=transaction.accounting_period_id))
+    OR (SELECT sum(CASE posting.side WHEN 'debit' THEN posting.functional_usd_amount ELSE -posting.functional_usd_amount END)
+      FROM public.ledger_postings posting WHERE posting.transaction_id=v_lot.fee_ledger_transaction_id)<>0
+    OR NOT EXISTS(SELECT 1 FROM public.ledger_postings posting JOIN public.ledger_accounts account ON account.id=posting.account_id
+      WHERE posting.transaction_id=v_lot.fee_ledger_transaction_id
+      GROUP BY posting.transaction_id HAVING
+        sum(posting.functional_usd_amount) FILTER(WHERE account.account_key='epoch_review_gross_control' AND posting.side='debit')=v_lot.gross_exact_usd
+        AND coalesce(sum(posting.functional_usd_amount) FILTER(WHERE account.account_key='epoch_review_project_fee_control' AND posting.side='credit'),0)=v_lot.project_fee_exact_usd
+        AND sum(posting.functional_usd_amount) FILTER(WHERE account.account_key='epoch_review_base_fee_control' AND posting.side='credit')=v_lot.base_fee_exact_usd
+        AND sum(posting.functional_usd_amount) FILTER(WHERE account.account_key='epoch_review_distributable_control' AND posting.side='credit')=v_lot.distributable_exact_usd)
+  THEN RAISE EXCEPTION 'eur_financial_prep_persisted_provenance_or_conservation_failed';END IF;
 
   v_preview:=public.epoch_allocation_v2_preview_input('2026-07',1.50,'local');
   v_manifest:=public.lock_funded_epoch_allocation_v2(jsonb_build_object(
@@ -165,6 +223,26 @@ BEGIN
     OR (SELECT initial_claim_minor FROM public.epoch_allocation_user_awards WHERE run_id=v_run)<>v_initial_minor
     OR (SELECT top_up_minor FROM public.epoch_allocation_user_awards WHERE run_id=v_run)<>v_topup_minor THEN
     RAISE EXCEPTION 'eur_pay_by_bank_v2_calculation_or_replay_failed';END IF;
+  IF NOT EXISTS(SELECT 1 FROM public.epoch_allocation_runs run WHERE run.id=v_run AND run.manifest_id=v_manifest_id
+      AND run.artifact=v_artifact AND run.current_funded_minor=v_funded_minor
+      AND run.harvested_unclaimed_minor=0 AND run.carry_in_minor=0 AND run.funded_minor=v_funded_minor
+      AND run.retained_initial_minor=v_initial_minor AND run.score_pool_minor=v_score_minor
+      AND run.top_up_minor=v_topup_minor AND run.returned_residue_minor=v_residue_minor
+      AND run.final_allocation_minor=v_initial_minor+v_topup_minor)
+    OR (SELECT coalesce(sum(disposition.canonical_minor),0) FROM public.epoch_allocation_source_dispositions disposition
+      WHERE disposition.run_id=v_run AND disposition.manifest_source_id=(SELECT id FROM public.epoch_allocation_manifest_sources WHERE manifest_id=v_manifest_id)
+        AND disposition.disposition_kind IN('initial_claim','score_pool'))<>v_funded_minor
+    OR (SELECT coalesce(sum(disposition.exact_usd),0) FROM public.epoch_allocation_source_dispositions disposition
+      WHERE disposition.run_id=v_run AND disposition.manifest_source_id=(SELECT id FROM public.epoch_allocation_manifest_sources WHERE manifest_id=v_manifest_id)
+        AND disposition.disposition_kind IN('initial_claim','score_pool'))<>v_exact
+    OR EXISTS(SELECT 1 FROM jsonb_to_recordset(v_artifact->'sourceDispositions') item(
+        "sourceLotId" text,"kind" text,"canonicalMinor" text,"exactUsd" text)
+      WHERE NOT EXISTS(SELECT 1 FROM public.epoch_allocation_source_dispositions disposition
+        JOIN public.epoch_allocation_manifest_sources source ON source.id=disposition.manifest_source_id
+        WHERE disposition.run_id=v_run AND source.source_lot_id=item."sourceLotId"::bigint
+          AND disposition.disposition_kind=item."kind" AND disposition.canonical_minor=item."canonicalMinor"::numeric
+          AND disposition.exact_usd=item."exactUsd"::numeric))
+  THEN RAISE EXCEPTION 'eur_calculator_artifact_persisted_result_mismatch';END IF;
   v_denied:=false;
   BEGIN
     PERFORM public.record_funded_epoch_allocation_v2(jsonb_build_object('contractVersion','epoch_funded_allocation_result.v2',
@@ -185,6 +263,20 @@ BEGIN
         AND close_package.current_funded_minor=v_funded_minor AND close_package.production_enabled=false
         AND summary.project_id=3 AND summary.source_count=1) THEN
     RAISE EXCEPTION 'eur_pay_by_bank_close_or_replay_failed';END IF;
+  IF NOT EXISTS(SELECT 1 FROM public.epoch_close_packages close_package
+      JOIN public.epoch_allocation_approvals approval ON approval.id=close_package.approval_id
+      JOIN public.epoch_allocation_runs run ON run.id=approval.run_id
+      WHERE close_package.id=(v_close->>'closePackageId')::bigint AND close_package.manifest_hash=v_manifest_hash
+        AND close_package.result_hash=run.result_hash AND close_package.funded_minor=run.funded_minor
+        AND close_package.final_allocation_minor=run.final_allocation_minor
+        AND close_package.top_up_minor=run.top_up_minor AND close_package.returned_residue_minor=run.returned_residue_minor)
+    OR EXISTS(SELECT 1 FROM public.epoch_close_artifacts artifact
+      WHERE artifact.close_package_id=(v_close->>'closePackageId')::bigint
+        AND artifact.artifact_hash<>encode(extensions.digest(convert_to(artifact.artifact::text,'UTF8'),'sha256'),'hex'))
+    OR v_root_hash<>(SELECT encode(extensions.digest(convert_to(coalesce(jsonb_agg(jsonb_build_object(
+        'artifactKey',artifact.artifact_key,'artifactHash',artifact.artifact_hash) ORDER BY artifact.artifact_key),'[]'::jsonb)::text,'UTF8'),'sha256'),'hex')
+      FROM public.epoch_close_artifacts artifact WHERE artifact.close_package_id=(v_close->>'closePackageId')::bigint)
+  THEN RAISE EXCEPTION 'eur_close_persisted_hash_or_amount_conservation_failed';END IF;
 
   v_reports:=public.generate_monthly_cycle_reports(jsonb_build_object('contractVersion','monthly_cycle_reports_generate.v2',
     'deploymentEnvironment','local','actorUserId',v_actor,'closePackageId',v_close->>'closePackageId'));
@@ -192,6 +284,10 @@ BEGIN
     'contractVersion','monthly_cycle_reports_generate.v2','deploymentEnvironment','local','actorUserId',v_actor,
     'closePackageId',v_close->>'closePackageId'))->>'replayed')::boolean IS NOT TRUE THEN
     RAISE EXCEPTION 'monthly_report_generation_or_replay_failed';END IF;
+  IF EXISTS(SELECT 1 FROM public.monthly_cycle_report_artifacts report
+    WHERE report.close_package_id=(v_close->>'closePackageId')::bigint
+      AND (report.artifact->>'rootHash'<>v_root_hash OR report.artifact_hash<>encode(extensions.digest(convert_to(report.artifact_bytes,'UTF8'),'sha256'),'hex')))
+  THEN RAISE EXCEPTION 'eur_report_persisted_root_or_bytes_hash_failed';END IF;
   v_publish:=public.prepare_monthly_cycle_report_publication(jsonb_build_object('contractVersion','monthly_cycle_reports_publish.v2',
     'deploymentEnvironment','local','actorUserId',v_actor,'closePackageId',v_close->>'closePackageId','rootHash',v_root_hash));
   IF jsonb_array_length(v_publish->'artifacts')<>5 OR EXISTS(SELECT 1 FROM public.monthly_cycle_report_artifacts

@@ -7,6 +7,7 @@ const refundNormalization = readFileSync("supabase/migrations/20260811112000_str
 const refundOrdering = readFileSync("supabase/migrations/20260811113000_stripe_pay_by_bank_refund_ordering.sql", "utf8")
 const edge = readFileSync("supabase/functions/stripe-pay-by-bank-checkout-create/index.ts", "utf8")
 const webhook = readFileSync("supabase/functions/stripe-pay-by-bank-webhook/index.ts", "utf8")
+const fixture = readFileSync("supabase/tests/stripe_pay_by_bank_intake.sql", "utf8")
 
 describe("Stripe Pay by Bank boundaries", () => {
   it("keeps production fail closed and EUR/GBP service-only", () => {
@@ -61,5 +62,22 @@ describe("Stripe Pay by Bank boundaries", () => {
     expect(refundOrdering).toContain("stripe_pay_by_bank_refund_observations_provider_event_key")
     expect(refundOrdering).toContain("provider_event_id=p_command->>'providerEventId'")
     expect(refundOrdering).toContain("stripe_pay_by_bank_webhook_dedupe_conflict")
+  })
+
+  it("proves the EUR settlement from persisted provider evidence through allocation close and reports", () => {
+    for (const accountableFailure of [
+      "eur_provider_quote_ledger_provenance_failed",
+      "eur_package_source_persisted_provenance_failed",
+      "eur_financial_prep_persisted_provenance_or_conservation_failed",
+      "eur_calculator_artifact_persisted_result_mismatch",
+      "eur_close_persisted_hash_or_amount_conservation_failed",
+      "eur_report_persisted_root_or_bytes_hash_failed",
+    ]) expect(fixture).toContain(accountableFailure)
+
+    expect(fixture).toMatch(/v_provider\.gross_amount_minor<>v_provider\.fee_amount_minor\+v_provider\.net_amount_minor/)
+    expect(fixture).toMatch(/posting\.native_atomic_amount<>v_quote\.source_amount_minor[\s\S]*posting\.functional_usd_amount<>v_quote\.obligation_usd_minor\/100/)
+    expect(fixture).toMatch(/v_lot\.gross_exact_usd<>v_lot\.project_fee_exact_usd\+v_lot\.base_fee_exact_usd\+v_lot\.distributable_exact_usd/)
+    expect(fixture).toMatch(/jsonb_to_recordset\(v_artifact->'sourceDispositions'\)[\s\S]*epoch_allocation_source_dispositions/)
+    expect(fixture).toMatch(/jsonb_agg\(jsonb_build_object\([\s\S]*'artifactKey'[\s\S]*'artifactHash'/)
   })
 })
