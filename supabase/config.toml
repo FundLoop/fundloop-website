@@ -4,6 +4,12 @@
 # working directory name when running `supabase init`.
 project_id = "fundloop"
 
+[functions.persona-readiness-identity]
+enabled = true
+verify_jwt = false
+entrypoint = "./functions/persona-readiness-identity/index.ts"
+import_map = "./functions/deno.json"
+
 [functions.epoch-shadow-scheduler]
 enabled = true
 verify_jwt = false

@@ -10,8 +10,8 @@ import {
   probeAppIdentity,
   probeEdgeFunctions,
   probeSupabaseFoundation,
+  derivePersonaReadiness,
   recoverLocalGateway,
-  requiredPersonaFunctions,
   waitForReadinessProbe,
 } from "./persona-readiness.mjs"
 
@@ -202,7 +202,7 @@ async function assertPortFree(baseURL) {
   throw new Error("persona-next-port-occupied")
 }
 
-async function startLocalEdgeRuntime(runId, env, requiredFunctions) {
+async function startLocalEdgeRuntime(runId, env, readiness) {
   const envPath = path.join(outputRoot, runId, "edge-runtime.env")
   await mkdir(path.dirname(envPath), { recursive: true, mode: 0o700 })
   const handle = await open(envPath, "w", 0o600)
@@ -211,6 +211,9 @@ async function startLocalEdgeRuntime(runId, env, requiredFunctions) {
       "FUNDLOOP_DEPLOYMENT_ENV=local",
       `FUNDLOOP_INTERNAL_ADMIN_EMAILS=${localOperatorEmail}`,
       `FUNDLOOP_ZKAS_SUPERADMIN_EMAILS=${localOperatorEmail}`,
+      `FUNDLOOP_PERSONA_READINESS_SECRET=${readiness.secret}`,
+      `FUNDLOOP_PERSONA_READINESS_NONCE=${readiness.readinessNonce}`,
+      `FUNDLOOP_PERSONA_COMMIT_SHA=${readiness.commitSha}`,
       "NEXT_PUBLIC_POLICY_REVIEW_PREVIEW=1",
       "",
     ].join("\n"))
@@ -220,16 +223,20 @@ async function startLocalEdgeRuntime(runId, env, requiredFunctions) {
   }
   const child = spawnChild("supabase", ["functions", "serve", "--env-file", envPath], env)
   try {
-    const readiness = await waitForReadinessProbe({
+    const readinessResult = await waitForReadinessProbe({
       id: "edge-functions",
       attempts: 60,
       intervalMs: 250,
       probe: async () => {
         if (child.exitCode !== null) throw new Error("persona-edge-runtime-exited")
-        return probeEdgeFunctions({ supabaseUrl: "http://127.0.0.1:55321", anonKey: env.NEXT_PUBLIC_SUPABASE_ANON_KEY }, requiredFunctions)
+        return probeEdgeFunctions(
+          { supabaseUrl: "http://127.0.0.1:55321", anonKey: env.NEXT_PUBLIC_SUPABASE_ANON_KEY },
+          readiness.functions,
+          readiness,
+        )
       },
     })
-    return { child, envPath, readiness }
+    return { child, envPath, readiness: readinessResult }
   } catch (error) {
     stopChildGroup(child)
     throw error
@@ -576,8 +583,15 @@ async function main() {
       FUNDLOOP_PERSONA_COMMIT_SHA: await commitSha,
       SUPABASE_FUNCTIONS_WATCH_LIMIT: process.env.SUPABASE_FUNCTIONS_WATCH_LIMIT?.trim() || "4000",
     }
-    const requiredFunctions = requiredPersonaFunctions(selected)
-    const edge = await startLocalEdgeRuntime(runId, sharedEnv, requiredFunctions)
+    const derivedReadiness = derivePersonaReadiness(selected)
+    const requiredFunctions = derivedReadiness.functions
+    const edgeReadiness = {
+      ...derivedReadiness,
+      secret: randomBytes(32).toString("base64url"),
+      readinessNonce: runId,
+      commitSha: sharedEnv.FUNDLOOP_PERSONA_COMMIT_SHA,
+    }
+    const edge = await startLocalEdgeRuntime(runId, sharedEnv, edgeReadiness)
     edgeRuntime = edge.child
     edgeEnvPath = edge.envPath
     app = spawnChild("pnpm", ["dev", "--port", "3002", "--hostname", "127.0.0.1"], sharedEnv)
