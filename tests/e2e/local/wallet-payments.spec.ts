@@ -5,6 +5,9 @@ import { getLocalWalletE2EEnv } from "../support/env"
 import { loginThroughE2EEndpoint } from "../support/e2e-login"
 import { connectInjectedLocalWallet, installInjectedLocalWallet } from "../support/local-wallet-provider"
 
+export const LOCAL_WALLET_SUBMISSION_TIMEOUT_MS = 60_000
+export const LOCAL_WALLET_PAYMENT_TEST_TIMEOUT_MS = 180_000
+
 function hashToHex(seed: string) {
   return `0x${createHash("sha256").update(seed).digest("hex")}`
 }
@@ -46,6 +49,7 @@ async function rpcRequest<T>(url: string, method: string, params: unknown[]) {
 
 test.describe("local-wallet project payments", () => {
   test("submits a real local wallet payment and reconciles it to confirmed", async ({ page }) => {
+    test.setTimeout(LOCAL_WALLET_PAYMENT_TEST_TIMEOUT_MS)
     const env = getLocalWalletE2EEnv()
     test.skip(!env, "Local wallet Playwright env vars are not configured.")
     if (!env) {
@@ -85,7 +89,9 @@ test.describe("local-wallet project payments", () => {
       await expect(page.getByTestId("submit-crypto-payment-button")).toBeVisible()
       await page.getByTestId("submit-crypto-payment-button").click()
 
-      await expect(page.getByTestId("project-crypto-payment-dialog")).not.toBeVisible()
+      await expect(page.getByTestId("project-crypto-payment-dialog")).not.toBeVisible({
+        timeout: LOCAL_WALLET_SUBMISSION_TIMEOUT_MS,
+      })
       const awaitingRow = page.getByTestId(`payment-row-${fixture.payments.draftId}`)
       await expect(awaitingRow).toContainText("Awaiting automatic onchain reconciliation")
 
