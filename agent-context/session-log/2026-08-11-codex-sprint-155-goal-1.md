@@ -1673,3 +1673,68 @@ of that boundary they actually execute on.
 
 - Push this localized correction to existing PR #202 after the full static and replay
   gates pass, then report the exact head and CI state for independent validation.
+
+### session v35: Protect and rehearse the promotion path (#162)
+
+- Timestamp: 2026-08-13T06:35:32-04:00
+- Agent: Codex
+- Branch: `codex/155-goal-1-delivery-integrity-post-ci`
+- Head: `ae8c5a38d6740646fa0e7d48f2e820e81a5e8726`
+
+#### Objective
+
+Enforce the Dev-to-Production delivery controls through live GitHub configuration,
+make every protected PR report the exact Supabase required context, and rehearse the
+Production pause and failure path without approval or provider execution.
+
+#### Actions Taken
+
+- Captured the unsafe owner/admin API baseline: no rulesets, `dev` and `main`
+  protection HTTP 404s, and `Production` with no reviewer/branch policy plus
+  administrator bypass.
+- Protected `dev` and `main` with strict `CI / validate`, `CI / Supabase fresh-schema
+  replay`, and `Supabase dry-run` contexts, PR enforcement, administrator enforcement,
+  linear history, resolved conversations, and force-push/deletion denial.
+- Retained a zero branch-approval count because the repository has exactly one
+  collaborator/member; a write-authorized approval requirement plus administrator
+  enforcement would deadlock the sole member's PR. Human review remains procedural.
+- Configured `Production` with required reviewer `KazanderDad` (`98373366`), exact
+  custom deployment branch `main`, and `can_admins_bypass=false`. Preview remains the
+  non-approval dry-run environment.
+- Removed the PR event path filter from Supabase Deploy, added a fail-closed scope
+  classifier, gated provider execution on that result, and made one final exact
+  `Supabase dry-run` job report for every `dev`/`main` PR.
+- Refreshed deployment, release-candidate, repository-status, and timestamped live
+  control evidence documentation.
+
+#### Tests And Validation Notes
+
+- Owner/admin read-back at `2026-08-13T10:31:10Z` confirmed identical strict branch
+  contexts and protections, one Production reviewer, one exact `main` branch policy,
+  and administrator bypass disabled.
+- Focused Node 22 suites passed, 22/22; classifier positive/negative probes, script
+  syntax, workflow YAML parse, focused ESLint, full typecheck, and `git diff --check`
+  passed.
+- Full Node 22 repository checks passed: ESLint, 176 files/913 tests, TypeScript, and
+  Next production build with 165 generated pages.
+- Rehearsal run `31691571764` selected `main`/`deploy` from `dev`, reached a pending
+  `Production` review for `KazanderDad` with zero steps started, then failed because
+  the exact branch was not `main`. A `main`-ref dispatch was rejected HTTP 422 because
+  current `main` lacks the dispatch trigger. No approval was submitted.
+- No Supabase command, Production job step, schema/function deployment, reset,
+  migration rewrite, secret/PII read, payout, cutover, or value-flow activation ran.
+
+#### Reflections
+
+Path-filtering a required workflow makes its check disappear on unrelated PRs. The
+workflow must always report while keeping expensive credentialed execution scoped.
+With one eligible collaborator, live Production approval is enforceable but a branch
+approval count is not; adding a second qualified collaborator is the safe route to
+enforce branch reviews later.
+
+#### Suggested Next Steps
+
+- Independently validate Task #162, including live API read-back and rehearsal logs.
+- Keep the branch for #187's integrated Goal validation and single concluding PR.
+- Do not repeat a main-target deploy rehearsal or approve Production until the
+  separate human release boundary after promotion.

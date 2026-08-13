@@ -2,7 +2,11 @@ import { readFileSync } from "node:fs"
 import { createHash } from "node:crypto"
 import { describe, expect, it } from "vitest"
 import { buildEnvironmentManifest, buildSafeSmokeEvidence, verifyCertifiedDeploymentManifest, verifyEnvironmentManifest } from "../scripts/verify-supabase-environment-manifest.mjs"
-import { shouldObservePush, SUPABASE_DEPLOY_PATH_GLOBS } from "../scripts/classify-supabase-drift-push.mjs"
+import {
+  shouldObservePush,
+  shouldRunSupabaseDeploy,
+  SUPABASE_DEPLOY_PATH_GLOBS,
+} from "../scripts/classify-supabase-drift-push.mjs"
 import { expectedFunctionNames, expectedSourceClosure } from "../scripts/verify-supabase-function-parity.mjs"
 import { resolveSupabasePoolerTarget } from "../scripts/resolve-supabase-pooler-target.mjs"
 
@@ -256,11 +260,15 @@ describe("immutable Supabase environment manifests", () => {
     expect(workflow).toContain("head_sha")
     expect(workflow).not.toContain("paths-ignore:")
     const pathBlocks = [...deploy.matchAll(/    paths:\n((?:      - \"[^\"]+\"\n)+)/g)]
-    expect(pathBlocks).toHaveLength(2)
+    expect(pathBlocks).toHaveLength(1)
     for (const [, block] of pathBlocks) {
       const paths = [...block.matchAll(/      - \"([^\"]+)\"/g)].map((match) => match[1])
       expect(paths).toEqual(SUPABASE_DEPLOY_PATH_GLOBS)
     }
+    expect(deploy).toContain("name: Supabase ${{ github.event_name == 'pull_request' && 'dry-run'")
+    expect(deploy).toContain("needs.scope.outputs.should_run == 'true'")
+    expect(deploy).toContain('SUPABASE_RESULT: ${{ needs.supabase.result }}')
+    expect(deploy).toContain('if [[ "${SHOULD_RUN}" == "true" && "${SUPABASE_RESULT}" != "success" ]]')
     expect(workflow).toContain("repository.full_name == github.repository")
     expect(workflow).toContain("github.event.workflow_run.event == 'push'")
     expect(workflow).toContain("group: supabase-${{ matrix.target }}")
@@ -323,5 +331,7 @@ describe("immutable Supabase environment manifests", () => {
     expect(shouldObservePush(["app/en/page.tsx", "lib/edge-functions/result.ts"])).toBe(false)
     expect(shouldObservePush([".github/workflows/supabase-drift.yml"])).toBe(false)
     expect(shouldObservePush(["scripts/classify-supabase-drift-push.mjs"])).toBe(false)
+    expect(shouldRunSupabaseDeploy(["app/en/page.tsx", "components/ui/button.tsx"])).toBe(false)
+    expect(shouldRunSupabaseDeploy(["app/en/page.tsx", "supabase/migrations/example.sql"])).toBe(true)
   })
 })

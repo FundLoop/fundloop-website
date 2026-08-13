@@ -1,6 +1,6 @@
 # Dev To Main Release Candidate Path
 
-Last reviewed: 2026-08-11
+Last reviewed: 2026-08-13
 
 Session 52 records the first credible promotion path from `dev` to `main`. Sprint
 #155 adds the immutable [production-readiness evidence contract](./production-readiness-evidence-contract.md).
@@ -19,23 +19,31 @@ from what GitHub/Supabase operators must configure before production data is tou
 - Pushes to `dev` deploy migrations and Edge Functions to the dev Supabase target.
 - Pushes to `main` deploy migrations and Edge Functions to the main Supabase target through the `Production` GitHub environment.
 - App CI now runs on pushes to `dev`, pushes to `main`, `codex/**` feature branches, and pull requests.
+- `dev` and `main` are protected for administrators and require PRs, linear history,
+  resolved conversations, and the exact three delivery checks.
+- `Production` is restricted to `main`, requires a human approval, and does not
+  allow administrator bypass.
 
-## Release Blockers To Configure In GitHub
+The timestamped [GitHub delivery-control read-back](./github-delivery-controls-2026-08-13.md)
+records the unsafe baseline and the owner/admin API result after configuration.
 
-GitHub API checks on 2026-08-11 again returned `Branch not protected` for both `dev`
-and `main`, no repository rulesets, and no protection rules on the `Production`
-environment. `Production` also allowed admin bypass. Before a production release
-candidate is treated as safe:
+## Enforced GitHub Controls
 
-- Protect `dev` and require pull requests before merge.
-- Protect `main` and require pull requests before merge.
-- Require the `CI / validate` check on both `dev` and `main`.
-- Require the `CI / Supabase fresh-schema replay` check on both `dev` and `main`.
-- Require the `Supabase dry-run` check on PRs into both `dev` and `main` when Supabase paths change.
-- Add required reviewers to the `Production` GitHub environment so main-target Supabase deploys pause for approval.
-- Disable or tightly control admin bypass for the `Production` environment if the team wants a hard approval gate.
+GitHub API checks on 2026-08-13 confirm:
 
-These settings are repository configuration, not code. Re-run the GitHub API checks after configuration and record the result in the session log before promoting `dev` to `main`.
+- both branches require `CI / validate`, `CI / Supabase fresh-schema replay`, and
+  `Supabase dry-run` on every PR;
+- the Supabase check always reports, but only runs provider-backed dry-run work when
+  the reviewed path classifier says it is required;
+- both branches require PRs and enforce protection for administrators; the approval
+  count is zero while the repository has only one eligible human, avoiding an
+  administrator-enforced self-review deadlock; and
+- `Production` accepts only `main`, has one required human reviewer, and has
+  administrator bypass disabled.
+
+Re-read these live controls before promotion because checked-in documentation is not
+configuration evidence. Do not approve a Production deployment until the separate
+release authority boundary is satisfied.
 
 ## Required Secrets And Runtime Configuration
 

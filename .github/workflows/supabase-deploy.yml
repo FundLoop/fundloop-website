@@ -5,23 +5,6 @@ on:
     branches:
       - dev
       - main
-    paths:
-      - ".github/workflows/supabase-deploy.yml"
-      - ".github/workflows/supabase-drift.yml"
-      - "contracts/lib/**"
-      - "lib/**"
-      - "packages/mcp-server/**"
-      - "types/**"
-      - "package.json"
-      - "pnpm-lock.yaml"
-      - "pnpm-workspace.yaml"
-      - "scripts/classify-supabase-drift-push.mjs"
-      - "scripts/verify-supabase-*.mjs"
-      - "supabase/config.toml"
-      - "supabase/functions/**"
-      - "supabase/migrations/**"
-      - "supabase/retired-functions.json"
-      - "vendor/cubid/**"
   push:
     branches:
       - dev
@@ -69,8 +52,41 @@ permissions:
   contents: read
 
 jobs:
+  scope:
+    name: Classify Supabase change
+    runs-on: ubuntu-latest
+    outputs:
+      should_run: ${{ steps.classify.outputs.should_run }}
+    steps:
+      - name: Checkout full candidate history
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Classify candidate paths
+        id: classify
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          if [[ "${GITHUB_EVENT_NAME}" != "pull_request" ]]; then
+            should_run="true"
+          else
+            should_run="$(
+              git diff --name-only \
+                "${{ github.event.pull_request.base.sha }}" \
+                "${{ github.event.pull_request.head.sha }}" \
+                | node scripts/classify-supabase-drift-push.mjs deploy
+            )"
+          fi
+
+          echo "should_run=${should_run}" >> "${GITHUB_OUTPUT}"
+          echo "Supabase execution required: ${should_run}"
+
   supabase:
-    name: Supabase ${{ github.event_name == 'pull_request' && 'dry-run' || (github.event_name == 'workflow_dispatch' && inputs.mode || 'deploy') }}
+    name: Supabase execution
+    needs: scope
+    if: needs.scope.outputs.should_run == 'true'
     runs-on: ubuntu-latest
     environment: ${{ ((github.event_name == 'push' && github.ref_name == 'main') || (github.event_name == 'workflow_dispatch' && inputs.target_environment == 'main' && inputs.mode == 'deploy')) && 'Production' || 'Preview' }}
     env:
@@ -420,3 +436,36 @@ jobs:
           path: ${{ runner.temp }}/supabase-schema-diagnostic.json
           if-no-files-found: warn
           retention-days: 30
+
+  required-check:
+    name: Supabase ${{ github.event_name == 'pull_request' && 'dry-run' || (github.event_name == 'workflow_dispatch' && inputs.mode || 'deploy') }}
+    needs:
+      - scope
+      - supabase
+    if: ${{ always() }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Require execution when Supabase paths changed
+        env:
+          SCOPE_RESULT: ${{ needs.scope.result }}
+          SHOULD_RUN: ${{ needs.scope.outputs.should_run }}
+          SUPABASE_RESULT: ${{ needs.supabase.result }}
+        run: |
+          set -euo pipefail
+
+          if [[ "${SCOPE_RESULT}" != "success" ]]; then
+            echo "::error::Supabase path classification did not succeed (${SCOPE_RESULT})."
+            exit 1
+          fi
+
+          if [[ "${SHOULD_RUN}" == "true" && "${SUPABASE_RESULT}" != "success" ]]; then
+            echo "::error::Required Supabase execution did not succeed (${SUPABASE_RESULT})."
+            exit 1
+          fi
+
+          if [[ "${SHOULD_RUN}" == "false" && "${SUPABASE_RESULT}" != "skipped" ]]; then
+            echo "::error::Out-of-scope Supabase execution was not skipped (${SUPABASE_RESULT})."
+            exit 1
+          fi
+
+          echo "Supabase required check passed (scope=${SHOULD_RUN}, execution=${SUPABASE_RESULT})."

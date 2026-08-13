@@ -1,6 +1,6 @@
 # Supabase Remote Deployments
 
-Last reviewed: 2026-08-12
+Last reviewed: 2026-08-13
 
 FundLoop deploys Supabase schema migrations and Edge Functions through the `Supabase Deploy` GitHub Actions workflow.
 
@@ -14,6 +14,13 @@ FundLoop deploys Supabase schema migrations and Edge Functions through the `Supa
 - All other runs use the GitHub `Preview` environment.
 
 PR runs intentionally do not mutate shared databases or deploy functions.
+
+The workflow itself starts for every PR into `dev` or `main`, ensuring the protected
+branches always receive the exact `Supabase dry-run` status context. A checked-in
+path classifier gates the provider-backed execution. Relevant candidates must pass
+the remote plan and diagnostic; unrelated candidates must skip that execution and
+pass the final context only after the workflow verifies the skip. Classification or
+execution ambiguity fails closed. Push deployment remains path-filtered.
 
 PR dry-runs targeting Dev also execute a read-only effective-schema diagnostic after
 the remote migration plan. The diagnostic replays the complete candidate history in
@@ -50,10 +57,14 @@ SQLSTATE `55000` for any other state. The role-order difference is handled by sc
 normalization v2 because Postgres role OIDs are environment-specific and the role set
 is unordered.
 
-Live API read-back on 2026-08-11 still reported no protection rules on the
-`Production` environment and `can_admins_bypass=true`. It also reported no branch
-protection for `dev` or `main`. Add and read back the required controls before
-treating the main deploy as approval-gated.
+Live API read-back on 2026-08-13 confirms protected `dev` and `main` branches require
+PRs plus the app, executable replay, and Supabase checks. The approval count remains
+zero while FundLoop has only one eligible collaborator, preventing enforced
+self-review deadlock. `Production`
+is restricted to the exact `main` branch, requires the repository's human reviewer,
+and has administrator bypass disabled. See the timestamped
+[delivery-control evidence](./github-delivery-controls-2026-08-13.md). Re-read live
+state before promotion; no document substitutes for current configuration evidence.
 
 The workflow's remote PR `supabase db push --dry-run` remains planning evidence only.
 It is paired with an isolated, executable full-history replay because PR #185's
