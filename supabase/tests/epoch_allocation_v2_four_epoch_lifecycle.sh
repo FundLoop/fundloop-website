@@ -41,7 +41,6 @@ for _attempt in {1..40}; do
     claim_ready=true
     break
   fi
-  "${db[@]}" -Atc "select pg_advisory_unlock(hashtextextended('four-epoch-claim-ready',0))" >/dev/null
   sleep 0.05
 done
 if [[ "$claim_ready" != true ]]; then
@@ -51,10 +50,12 @@ if [[ "$claim_ready" != true ]]; then
 fi
 
 set +e
-"${db[@]}" -v preview_hash="$stale_preview_hash" -c "select public.lock_funded_epoch_allocation_v2(jsonb_build_object(
+"${db[@]}" -v preview_hash="$stale_preview_hash" >"$tmp_dir/harvest.out" 2>"$tmp_dir/harvest.err" <<'SQL'
+select public.lock_funded_epoch_allocation_v2(jsonb_build_object(
   'contractVersion','epoch_funded_allocation_lock.v2','deploymentEnvironment','local',
   'actorUserId','290eb647-f25f-43f3-bf6b-1e2b2cf25e69','cycleKey','2026-06','capMultiple','1.50',
-  'selectedPreviewHash',:'preview_hash'));" >"$tmp_dir/harvest.out" 2>"$tmp_dir/harvest.err"
+  'selectedPreviewHash',:'preview_hash'));
+SQL
 harvest_status=$?
 set -e
 wait "$claim_pid"
@@ -69,26 +70,35 @@ fi
     and request.idempotency_key='four-epoch-race-release' and claim.status='queued';" >/dev/null
 
 fresh_preview_hash="$("${db[@]}" -Atc "select public.epoch_allocation_v2_preview_input('2026-06',1.50,'local')->>'inputHash'")"
-lock_result="$("${db[@]}" -v preview_hash="$fresh_preview_hash" -Atc "select public.lock_funded_epoch_allocation_v2(jsonb_build_object(
+lock_result="$("${db[@]}" -v preview_hash="$fresh_preview_hash" -At <<'SQL'
+select public.lock_funded_epoch_allocation_v2(jsonb_build_object(
   'contractVersion','epoch_funded_allocation_lock.v2','deploymentEnvironment','local',
   'actorUserId','290eb647-f25f-43f3-bf6b-1e2b2cf25e69','cycleKey','2026-06','capMultiple','1.50',
-  'selectedPreviewHash',:'preview_hash'));" )"
+  'selectedPreviewHash',:'preview_hash'));
+SQL
+)"
 manifest_id="$(node -e 'process.stdout.write(String(JSON.parse(process.argv[1]).manifestId))' "$lock_result")"
 
-"${db[@]}" -v manifest_id="$manifest_id" -Atc "select jsonb_build_object(
+"${db[@]}" -v manifest_id="$manifest_id" -At >"$tmp_dir/calculator-input.json" <<'SQL'
+select jsonb_build_object(
   'cycleKey',cycle.cycle_key,'manifestHash',manifest.manifest_hash,'selectedPreviewHash',manifest.selected_preview_hash,
   'minorUnitScale',manifest.minor_unit_scale,'capMultiple',to_char(manifest.cap_multiple,'FM90.00'),
   'projectSources',manifest.manifest->'projectSources','redistributionSources',manifest.manifest->'redistributionSources',
   'cohort',manifest.manifest->'cohort')
 from public.epoch_allocation_manifests manifest join public.monthly_cycles cycle on cycle.id=manifest.monthly_cycle_id
-where manifest.id=:'manifest_id';" >"$tmp_dir/calculator-input.json"
+where manifest.id=:'manifest_id';
+SQL
 
-PATH="/opt/homebrew/opt/node@22/bin:$PATH" pnpm exec tsx scripts/calculate-four-epoch-allocation.mjs "$tmp_dir/calculator-input.json" >"$tmp_dir/artifact.json"
+PATH="/opt/homebrew/opt/node@22/bin:$PATH" node --no-warnings --experimental-strip-types \
+  scripts/calculate-four-epoch-allocation.mjs "$tmp_dir/calculator-input.json" >"$tmp_dir/artifact.json"
 artifact="$(<"$tmp_dir/artifact.json")"
 result_hash="$(node -e 'process.stdout.write(JSON.parse(process.argv[1]).resultHash)' "$artifact")"
-run_id="$("${db[@]}" -v manifest_id="$manifest_id" -v result_hash="$result_hash" -v artifact="$artifact" -Atc "select public.record_funded_epoch_allocation_v2_once(jsonb_build_object(
+run_id="$("${db[@]}" -v manifest_id="$manifest_id" -v result_hash="$result_hash" -v artifact="$artifact" -At <<'SQL'
+select public.record_funded_epoch_allocation_v2_once(jsonb_build_object(
   'contractVersion','epoch_funded_allocation_result.v2','deploymentEnvironment','local',
-  'actorUserId','290eb647-f25f-43f3-bf6b-1e2b2cf25e69','manifestId',:'manifest_id','resultHash',:'result_hash','artifact',:'artifact'::jsonb));")"
+  'actorUserId','290eb647-f25f-43f3-bf6b-1e2b2cf25e69','manifestId',:'manifest_id','resultHash',:'result_hash','artifact',:'artifact'::jsonb));
+SQL
+)"
 
 "${db[@]}" -v manifest_id="$manifest_id" -v run_id="$run_id" -f supabase/tests/epoch_allocation_v2_four_epoch_lifecycle.sql
 echo "four-epoch lifecycle passed: real claim/harvest serialization, deterministic calculation, close, reports, and conservation"

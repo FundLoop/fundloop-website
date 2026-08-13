@@ -165,3 +165,15 @@
 - Validation: focused publication contract, lint, typecheck, migration replay, and the full real local publish/download/tombstone lifecycle are recorded after execution below. No remote, hosted, Production, provider, payout, or real-value-flow state is in scope.
 - Reflections: deleting a private Storage object must not force deletion of its evidence hash. The exception belongs only to an explicit linked tombstone; allowing arbitrary pathless hashed reports would weaken publication integrity.
 - Next steps: freshly replay the local candidate, prove exact object hash readback and tombstone post-state, then continue the strict TAP gate only if reporting is green.
+
+### session v15: bind four-epoch fixture rail to its enum (#186)
+
+- Timestamp: 2026-08-13T17:54:00Z
+- Agent: Codex (`issue-implementer` runtime certification)
+- Branch: `codex/155-goal-2-integrated-evidence`
+- Head before commit: `622126e`
+- Objective: resolve the sole failure from the complete canonical 21-suite strict TAP pass.
+- Actions: cast the setup fixture's conditional payout rail explicitly to `public.payout_rail`, preserving the selected rail semantics while preventing PostgreSQL from resolving the `CASE` expression as `text`. Added a static regression guard for the typed boundary.
+- Validation: the initial complete runner passed 20/21 and identified the first SQLSTATE 42804 mismatch. A fresh focused execution then passed the real claim/harvest serialization, deterministic native-Node-22 calculation, persisted result, close/replay, generated reports, and full conservation assertions. Focused Vitest, shell syntax, lint, typecheck, and diff checks passed before commit. No remote, hosted, Production, provider, payout, or real-value-flow state is in scope.
+- Reflections: enum-compatible literals inside a multi-branch SQL expression still resolve to `text` unless explicitly typed. Runtime execution also proved that provider IDs must satisfy their exact format, psql variables require stdin scripts rather than `-c`, carry must bind through persisted disposition lineage rather than surrogate ID ordering, the calculator must use an installed runtime, and the target close needs an explicit reviewing shadow state.
+- Next steps: run the focused four-epoch wrapper against a freshly reset local candidate, then rerun the strict canonical suite once if focused execution is green.
