@@ -1,7 +1,7 @@
 import { createHash } from "node:crypto"
 import { appendFileSync, readFileSync, writeFileSync } from "node:fs"
 import { pathToFileURL } from "node:url"
-import { compareExplicitRfc3339Timestamps, isExplicitRfc3339Timestamp } from "./verify-supabase-schema-parity.mjs"
+import { compareExplicitRfc3339Timestamps, isExplicitRfc3339Timestamp, validateDeployCompletionEvidence } from "./verify-supabase-schema-parity.mjs"
 
 const canonical = (value) => {
   if (Array.isArray(value)) return `[${value.map(canonical).join(",")}]`
@@ -47,6 +47,16 @@ export function buildEnvironmentManifest({ schema, functions, smoke, context }) 
   if (smoke.observationGitSha !== context.gitSha) throw new Error("hosted-smoke-observation-sha: immutable manifest publication refused")
   if (!verifySafeSmokeEvidence(smoke, { environment: schema.environment, projectRef: schema.projectRef, gitSha: context.gitSha })) throw new Error("runtime-smoke: evidence invalid")
   if (compareExplicitRfc3339Timestamps(schema.certifiedDeployment.recordedAt, context.observedAt) > 0) throw new Error("deployment-after-observation: immutable manifest publication refused")
+  const deploymentEvidence = {
+    candidateGitSha: schema.certifiedDeployment.gitSha,
+    actionsRunId: schema.certifiedDeployment.githubRunId,
+    runAttempt: schema.certifiedDeployment.githubRunAttempt,
+    environment: schema.certifiedDeployment.environment,
+    projectRef: schema.certifiedDeployment.projectRef,
+    inventorySha256: schema.migrationInventorySha256,
+    recordedAt: schema.certifiedDeployment.recordedAt,
+  }
+  if (context.mode === "drift" && !validateDeployCompletionEvidence(schema.certifiedDeployment.completion, deploymentEvidence)) throw new Error("deployment-completion: immutable manifest publication refused")
   for (const [name, observedAt] of [["schema", schema.observedAt], ["function", functions.observedAt], ["hosted-smoke", smoke.observedAt]]) {
     if (compareExplicitRfc3339Timestamps(observedAt, schema.certifiedDeployment.recordedAt) < 0) throw new Error(`${name}-before-deployment: immutable manifest publication refused`)
     if (compareExplicitRfc3339Timestamps(observedAt, context.observedAt) > 0) throw new Error(`${name}-after-observation: immutable manifest publication refused`)
@@ -134,6 +144,16 @@ export function verifyEnvironmentManifest(manifest) {
   if (!['deploy', 'drift'].includes(manifest.observation?.mode)) blockers.push("observation-mode")
   if (!['push', 'workflow_run', 'schedule', 'workflow_dispatch'].includes(manifest.observation?.trigger)) blockers.push("observation-trigger")
   if (manifest.observation?.mode === "deploy" && (manifest.certifiedDeployment?.gitSha !== manifest.observation.gitSha || manifest.certifiedDeployment?.githubRunId !== manifest.observation.githubRunId || manifest.certifiedDeployment?.githubRunAttempt !== manifest.observation.githubRunAttempt)) blockers.push("deploy-observation-binding")
+  const completionEvidence = {
+    candidateGitSha: manifest.certifiedDeployment?.gitSha,
+    actionsRunId: manifest.certifiedDeployment?.githubRunId,
+    runAttempt: manifest.certifiedDeployment?.githubRunAttempt,
+    environment: manifest.certifiedDeployment?.environment,
+    projectRef: manifest.certifiedDeployment?.projectRef,
+    inventorySha256: manifest.migrations?.inventorySha256,
+    recordedAt: manifest.certifiedDeployment?.recordedAt,
+  }
+  if (manifest.observation?.mode === "drift" && deploymentTimeValid && !validateDeployCompletionEvidence(manifest.certifiedDeployment?.completion, completionEvidence)) blockers.push("deployment-completion")
   if (!Array.isArray(manifest.migrations?.orderedInventory) || manifest.migrations.orderedInventory.length !== manifest.migrations.observedHistory?.length) blockers.push("migration-history")
   if (manifest.migrations?.algorithm !== "sha256-raw-bytes-sorted-filename-v1" || !/^[0-9a-f]{64}$/.test(manifest.migrations?.inventorySha256 ?? "")) blockers.push("migration-contract")
   const migrationVersions = manifest.migrations?.orderedInventory?.map((item) => item.version) ?? []

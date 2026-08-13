@@ -9142,45 +9142,6 @@ export type Database = {
           },
         ]
       }
-      supabase_deploy_migration_evidence: {
-        Row: {
-          actions_run_id: number
-          candidate_git_sha: string
-          contract_version: string
-          deployment_environment: string
-          id: number
-          inventory_sha256: string
-          migration_inventory: Json
-          project_ref: string
-          recorded_at: string
-          run_attempt: number
-        }
-        Insert: {
-          actions_run_id: number
-          candidate_git_sha: string
-          contract_version?: string
-          deployment_environment: string
-          id?: never
-          inventory_sha256: string
-          migration_inventory: Json
-          project_ref: string
-          recorded_at?: string
-          run_attempt: number
-        }
-        Update: {
-          actions_run_id?: number
-          candidate_git_sha?: string
-          contract_version?: string
-          deployment_environment?: string
-          id?: never
-          inventory_sha256?: string
-          migration_inventory?: Json
-          project_ref?: string
-          recorded_at?: string
-          run_attempt?: number
-        }
-        Relationships: []
-      }
       stripe_acss_debit_commands: {
         Row: {
           accounting_period_id: number
@@ -11074,6 +11035,116 @@ export type Database = {
           provider_event_id?: string
           provider_object_id?: string
           signature_timestamp?: number
+        }
+        Relationships: []
+      }
+      supabase_deploy_completion_evidence: {
+        Row: {
+          actions_run_id: number
+          candidate_git_sha: string
+          completed_at: string
+          contract_version: string
+          deployment_environment: string
+          deployment_manifest_sha256: string
+          function_inventory_sha256: string
+          hosted_smoke_evidence_sha256: string
+          id: number
+          inventory_sha256: string
+          project_ref: string
+          run_attempt: number
+          schema_expected_sha256: string
+          schema_observed_sha256: string
+        }
+        Insert: {
+          actions_run_id: number
+          candidate_git_sha: string
+          completed_at?: string
+          contract_version?: string
+          deployment_environment: string
+          deployment_manifest_sha256: string
+          function_inventory_sha256: string
+          hosted_smoke_evidence_sha256: string
+          id?: never
+          inventory_sha256: string
+          project_ref: string
+          run_attempt: number
+          schema_expected_sha256: string
+          schema_observed_sha256: string
+        }
+        Update: {
+          actions_run_id?: number
+          candidate_git_sha?: string
+          completed_at?: string
+          contract_version?: string
+          deployment_environment?: string
+          deployment_manifest_sha256?: string
+          function_inventory_sha256?: string
+          hosted_smoke_evidence_sha256?: string
+          id?: never
+          inventory_sha256?: string
+          project_ref?: string
+          run_attempt?: number
+          schema_expected_sha256?: string
+          schema_observed_sha256?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "supabase_deploy_completion_ev_candidate_git_sha_actions_ru_fkey"
+            columns: [
+              "candidate_git_sha",
+              "actions_run_id",
+              "run_attempt",
+              "deployment_environment",
+              "project_ref",
+            ]
+            isOneToOne: true
+            referencedRelation: "supabase_deploy_migration_evidence"
+            referencedColumns: [
+              "candidate_git_sha",
+              "actions_run_id",
+              "run_attempt",
+              "deployment_environment",
+              "project_ref",
+            ]
+          },
+        ]
+      }
+      supabase_deploy_migration_evidence: {
+        Row: {
+          actions_run_id: number
+          candidate_git_sha: string
+          contract_version: string
+          deployment_environment: string
+          id: number
+          inventory_sha256: string
+          migration_inventory: Json
+          project_ref: string
+          recorded_at: string
+          run_attempt: number
+        }
+        Insert: {
+          actions_run_id: number
+          candidate_git_sha: string
+          contract_version?: string
+          deployment_environment: string
+          id?: never
+          inventory_sha256: string
+          migration_inventory: Json
+          project_ref: string
+          recorded_at?: string
+          run_attempt: number
+        }
+        Update: {
+          actions_run_id?: number
+          candidate_git_sha?: string
+          contract_version?: string
+          deployment_environment?: string
+          id?: never
+          inventory_sha256?: string
+          migration_inventory?: Json
+          project_ref?: string
+          recorded_at?: string
+          run_attempt?: number
         }
         Relationships: []
       }

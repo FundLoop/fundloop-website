@@ -3,7 +3,7 @@ import os from "node:os"
 import path from "node:path"
 import { describe, expect, it } from "vitest"
 import { classifyFunctionInventory, compareClosurePaths, expectedFunctionNames, expectedSourceClosure } from "../scripts/verify-supabase-function-parity.mjs"
-import { bindObservedMigrationDeployEvidence, buildMigrationDeployEvidence, buildSchemaDiagnostic, compareExplicitRfc3339Timestamps, expectedMigrationInventory, isExplicitRfc3339Timestamp, libpqConnectionEnvironment, migrationInventorySha256, normalizePublicSchema, validateMatchingMigrationEvidence, validateMigrationDeployEvidence, validatePendingSchemaRepair } from "../scripts/verify-supabase-schema-parity.mjs"
+import { bindObservedMigrationDeployEvidence, buildDeployCompletionEvidence, buildMigrationDeployEvidence, buildSchemaDiagnostic, compareExplicitRfc3339Timestamps, expectedMigrationInventory, isExplicitRfc3339Timestamp, libpqConnectionEnvironment, migrationInventorySha256, normalizePublicSchema, validateDeployCompletionEvidence, validateMatchingMigrationEvidence, validateMigrationDeployEvidence, validatePendingSchemaRepair } from "../scripts/verify-supabase-schema-parity.mjs"
 
 const workflow = readFileSync(".github/workflows/supabase-deploy.yml", "utf8")
 const schemaVerifier = readFileSync("scripts/verify-supabase-schema-parity.mjs", "utf8")
@@ -86,7 +86,9 @@ describe("Supabase delivery parity", () => {
   })
 
   it("accepts only the exact versioned Dev drift while its repair is the sole pending migration", () => {
-    const baselineMigrations = expectedMigrationInventory().slice(0, -1)
+    const migrations = expectedMigrationInventory()
+    const repairIndex = migrations.findIndex((entry) => entry.version === repairManifest.repairMigrationVersion)
+    const baselineMigrations = migrations.slice(0, repairIndex)
     expect(migrationInventorySha256(baselineMigrations)).toBe(repairManifest.baselineMigrationInventorySha256)
     const diagnostic = {
       environment: repairManifest.environment,
@@ -215,6 +217,7 @@ describe("Supabase delivery parity", () => {
       "2026-08-12T23:28:57+0000",
       "2026-08-12T23:28:57+24:00",
       "2026-08-12T23:28:57+00:60",
+      "2026-08-12T23:28:57-00:00",
       "2026-02-29T00:00:00Z",
       "2026-04-31T23:59:59Z",
       "2026-12-31T24:00:00Z",
@@ -230,11 +233,56 @@ describe("Supabase delivery parity", () => {
     expect(compareExplicitRfc3339Timestamps("2026-08-12T20:00:00.1Z", "2026-08-12T20:00:00.1000000000Z")).toBe(0)
   })
 
+  it("certifies only exact immutable candidate/completion evidence pairs", () => {
+    const evidence = {
+      contractVersion: "fundloop.migration-deploy-evidence/v1",
+      candidateGitSha: "b".repeat(40), actionsRunId: "42", runAttempt: 1,
+      environment: "dev", projectRef: "a".repeat(20),
+      migrations: [{ version: "20260101000000", name: "20260101000000_first.sql", fileSha256: "a".repeat(64) }],
+      inventorySha256: "c".repeat(64), recordedAt: "2026-08-13T00:00:00.000001Z",
+    }
+    const completion = {
+      contractVersion: "fundloop.deploy-completion-evidence/v1",
+      candidateGitSha: evidence.candidateGitSha, actionsRunId: evidence.actionsRunId,
+      runAttempt: evidence.runAttempt, environment: evidence.environment, projectRef: evidence.projectRef,
+      inventorySha256: evidence.inventorySha256,
+      schemaExpectedSha256: "d".repeat(64), schemaObservedSha256: "d".repeat(64),
+      functionInventorySha256: "e".repeat(64), hostedSmokeEvidenceSha256: "f".repeat(64),
+      deploymentManifestSha256: "1".repeat(64), completedAt: "2026-08-13T00:00:00.000999Z",
+    }
+    expect(validateDeployCompletionEvidence(completion, evidence)).toBe(true)
+    expect(validateDeployCompletionEvidence(undefined, evidence)).toBe(false)
+    expect(validateDeployCompletionEvidence({ ...completion, candidateGitSha: "9".repeat(40) }, evidence)).toBe(false)
+    expect(validateDeployCompletionEvidence({ ...completion, inventorySha256: "9".repeat(64) }, evidence)).toBe(false)
+    expect(validateDeployCompletionEvidence({ ...completion, schemaObservedSha256: "9".repeat(64) }, evidence)).toBe(false)
+    expect(validateDeployCompletionEvidence({ ...completion, completedAt: "2026-08-12T23:59:59Z" }, evidence)).toBe(false)
+    const manifest = {
+      contractVersion: "fundloop.environment-delivery-manifest/v1",
+      environment: evidence.environment, projectRef: evidence.projectRef,
+      observation: { mode: "deploy", gitSha: evidence.candidateGitSha, githubRunId: evidence.actionsRunId, githubRunAttempt: evidence.runAttempt },
+      certifiedDeployment: { gitSha: evidence.candidateGitSha, githubRunId: evidence.actionsRunId, githubRunAttempt: evidence.runAttempt, environment: evidence.environment, projectRef: evidence.projectRef },
+      migrations: { inventorySha256: evidence.inventorySha256 },
+      schema: { expectedSha256: completion.schemaExpectedSha256, observedSha256: completion.schemaObservedSha256 },
+      functions: { inventorySha256: completion.functionInventorySha256 },
+      prerequisites: { hostedUnauthenticatedDenial: { evidence: { evidenceSha256: completion.hostedSmokeEvidenceSha256 } } },
+      manifestSha256: completion.deploymentManifestSha256,
+    }
+    const binding = { candidateGitSha: evidence.candidateGitSha, actionsRunId: evidence.actionsRunId, runAttempt: evidence.runAttempt, environment: evidence.environment, projectRef: evidence.projectRef }
+    expect(buildDeployCompletionEvidence(manifest, binding)).toMatchObject({ deploymentManifestSha256: completion.deploymentManifestSha256 })
+    expect(() => buildDeployCompletionEvidence(manifest, { ...binding, actionsRunId: "43" })).toThrow("deployment-completion-invalid")
+  })
+
   it("keeps candidate-bound migration evidence append-only and non-browser-readable", () => {
     const sql = readFileSync("supabase/migrations/20260812120000_supabase_deploy_migration_evidence.sql", "utf8")
     expect(sql).toContain("BEFORE UPDATE OR DELETE")
     expect(sql).toContain("supabase_deploy_migration_evidence_is_append_only")
     expect(sql).toContain("REVOKE ALL ON TABLE public.supabase_deploy_migration_evidence FROM anon, authenticated")
+    const completionSql = readFileSync("supabase/migrations/20260813010000_supabase_deploy_completion_evidence.sql", "utf8")
+    expect(completionSql).toContain("REFERENCES public.supabase_deploy_migration_evidence")
+    expect(completionSql).toContain("supabase_deploy_completion_candidate_mismatch")
+    expect(completionSql).toContain("candidate.inventory_sha256 = NEW.inventory_sha256")
+    expect(completionSql).toContain("supabase_deploy_completion_evidence_is_append_only")
+    expect(completionSql).toContain("REVOKE ALL ON TABLE public.supabase_deploy_completion_evidence FROM anon, authenticated")
   })
 
   it("derives reviewed function closures independently and blocks missing or extra remote paths", () => {
@@ -270,6 +318,13 @@ describe("Supabase delivery parity", () => {
     expect(workflow).toContain('status_code}" != "401"')
     expect(workflow).toContain("Record safe hosted runtime denial")
     expect(workflow.indexOf("Record safe hosted runtime denial")).toBeLessThan(workflow.indexOf("Publish immutable environment manifest"))
+    expect(workflow.indexOf("Publish immutable environment manifest")).toBeLessThan(workflow.indexOf("Certify completed Supabase deployment"))
+    expect(workflow.indexOf("Certify completed Supabase deployment")).toBeLessThan(workflow.indexOf("Upload immutable environment manifest"))
+    expect(workflow).toContain("verify-supabase-schema-parity.mjs complete")
+    expect(workflow).toContain('SUPABASE_SCHEMA_DB_URL="${supabase_db_url}"')
+    const completionStep = workflow.slice(workflow.indexOf("- name: Certify completed Supabase deployment"), workflow.indexOf("- name: Upload sanitized Supabase parity evidence"))
+    expect(completionStep).not.toContain('psql "${supabase_db_url}"')
+    expect(schemaVerifier).toContain("INSERT INTO public.supabase_deploy_completion_evidence")
     expect(workflow).toContain("actions/upload-artifact@v4")
     expect(workflow).toContain("if: ${{ always() && steps.target.outputs.mode == 'deploy' }}")
     expect(workflow).toContain("if-no-files-found: warn")

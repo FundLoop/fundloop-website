@@ -12,6 +12,7 @@ function run(command, args, options = {}) {
     env: options.env ?? process.env,
     encoding: options.encoding,
     stdio: options.encoding ? "pipe" : "inherit",
+    input: options.input,
     maxBuffer: options.maxBuffer ?? 32 * 1024 * 1024,
   })
 }
@@ -240,6 +241,7 @@ function parseExplicitRfc3339Timestamp(value) {
   if (typeof value !== "string") return false
   const match = /^(\d{4})-(0[1-9]|1[0-2])-(\d{2})T([01]\d|2[0-3]):([0-5]\d):([0-5]\d)(?:\.(\d+))?(Z|([+-])([01]\d|2[0-3]):([0-5]\d))$/.exec(value)
   if (!match) return false
+  if (match[9] === "-" && match[10] === "00" && match[11] === "00") return false
   const year = Number(match[1])
   const month = Number(match[2])
   const day = Number(match[3])
@@ -340,12 +342,103 @@ export function validateMatchingMigrationEvidence(evidence, binding, expectedInv
     && evidence.inventorySha256 === expectedInventorySha256
 }
 
+export function validateDeployCompletionEvidence(completion, evidence) {
+  return completion?.contractVersion === "fundloop.deploy-completion-evidence/v1"
+    && completion.candidateGitSha === evidence.candidateGitSha
+    && completion.actionsRunId === evidence.actionsRunId
+    && completion.runAttempt === evidence.runAttempt
+    && completion.environment === evidence.environment
+    && completion.projectRef === evidence.projectRef
+    && completion.inventorySha256 === evidence.inventorySha256
+    && completion.schemaExpectedSha256 === completion.schemaObservedSha256
+    && /^[0-9a-f]{64}$/.test(completion.schemaExpectedSha256 ?? "")
+    && /^[0-9a-f]{64}$/.test(completion.functionInventorySha256 ?? "")
+    && /^[0-9a-f]{64}$/.test(completion.hostedSmokeEvidenceSha256 ?? "")
+    && /^[0-9a-f]{64}$/.test(completion.deploymentManifestSha256 ?? "")
+    && isExplicitRfc3339Timestamp(completion.completedAt)
+    && isExplicitRfc3339Timestamp(evidence.recordedAt)
+    && compareExplicitRfc3339Timestamps(completion.completedAt, evidence.recordedAt) >= 0
+}
+
+export function buildDeployCompletionEvidence(manifest, binding) {
+  const completion = {
+    contractVersion: "fundloop.deploy-completion-evidence/v1",
+    candidateGitSha: manifest?.certifiedDeployment?.gitSha,
+    actionsRunId: manifest?.certifiedDeployment?.githubRunId,
+    runAttempt: manifest?.certifiedDeployment?.githubRunAttempt,
+    environment: manifest?.environment,
+    projectRef: manifest?.projectRef,
+    inventorySha256: manifest?.migrations?.inventorySha256,
+    schemaExpectedSha256: manifest?.schema?.expectedSha256,
+    schemaObservedSha256: manifest?.schema?.observedSha256,
+    functionInventorySha256: manifest?.functions?.inventorySha256,
+    hostedSmokeEvidenceSha256: manifest?.prerequisites?.hostedUnauthenticatedDenial?.evidence?.evidenceSha256,
+    deploymentManifestSha256: manifest?.manifestSha256,
+  }
+  const digests = [completion.inventorySha256, completion.schemaExpectedSha256, completion.schemaObservedSha256, completion.functionInventorySha256, completion.hostedSmokeEvidenceSha256, completion.deploymentManifestSha256]
+  if (manifest?.contractVersion !== "fundloop.environment-delivery-manifest/v1"
+    || manifest?.observation?.mode !== "deploy"
+    || completion.candidateGitSha !== binding.candidateGitSha
+    || completion.actionsRunId !== binding.actionsRunId
+    || completion.runAttempt !== binding.runAttempt
+    || completion.environment !== binding.environment
+    || completion.projectRef !== binding.projectRef
+    || manifest?.certifiedDeployment?.environment !== binding.environment
+    || manifest?.certifiedDeployment?.projectRef !== binding.projectRef
+    || manifest?.observation?.gitSha !== binding.candidateGitSha
+    || manifest?.observation?.githubRunId !== binding.actionsRunId
+    || manifest?.observation?.githubRunAttempt !== binding.runAttempt
+    || completion.schemaExpectedSha256 !== completion.schemaObservedSha256
+    || digests.some((digest) => !/^[0-9a-f]{64}$/.test(digest ?? ""))) {
+    throw new Error("deployment-completion-invalid: manifest does not bind the exact successful deploy context")
+  }
+  return completion
+}
+
+function recordDeployCompletion(dbUrl, manifest, binding) {
+  const completion = buildDeployCompletionEvidence(manifest, binding)
+  const connection = libpqConnectionEnvironment(dbUrl)
+  const sql = `INSERT INTO public.supabase_deploy_completion_evidence (
+    contract_version, candidate_git_sha, actions_run_id, run_attempt,
+    deployment_environment, project_ref, inventory_sha256,
+    schema_expected_sha256, schema_observed_sha256,
+    function_inventory_sha256, hosted_smoke_evidence_sha256,
+    deployment_manifest_sha256
+  ) VALUES (
+    'fundloop.deploy-completion-evidence/v1', :'candidate_git_sha',
+    :'actions_run_id'::bigint, :'run_attempt'::integer,
+    :'target_environment', :'project_ref', :'inventory_sha256',
+    :'schema_expected_sha256', :'schema_observed_sha256',
+    :'function_inventory_sha256', :'hosted_smoke_evidence_sha256',
+    :'deployment_manifest_sha256'
+  );`
+  const variables = {
+    candidate_git_sha: completion.candidateGitSha,
+    actions_run_id: completion.actionsRunId,
+    run_attempt: String(completion.runAttempt),
+    target_environment: completion.environment,
+    project_ref: completion.projectRef,
+    inventory_sha256: completion.inventorySha256,
+    schema_expected_sha256: completion.schemaExpectedSha256,
+    schema_observed_sha256: completion.schemaObservedSha256,
+    function_inventory_sha256: completion.functionInventorySha256,
+    hosted_smoke_evidence_sha256: completion.hostedSmokeEvidenceSha256,
+    deployment_manifest_sha256: completion.deploymentManifestSha256,
+  }
+  run("psql", ["-X", "-v", "ON_ERROR_STOP=1", ...Object.entries(variables).flatMap(([name, value]) => ["-v", `${name}=${value}`])], {
+    encoding: "utf8",
+    env: { ...process.env, ...connection },
+    input: sql,
+  })
+}
+
 function latestMatchingMigrationEvidence(dbUrl, binding, expectedInventorySha256) {
-  const sql = `select json_build_object('contractVersion',contract_version,'candidateGitSha',candidate_git_sha,'actionsRunId',actions_run_id::text,'runAttempt',run_attempt,'environment',deployment_environment,'projectRef',project_ref,'migrations',migration_inventory,'inventorySha256',inventory_sha256,'recordedAt',recorded_at)::text from public.supabase_deploy_migration_evidence where deployment_environment='${binding.environment}' and project_ref='${binding.projectRef}' and inventory_sha256='${expectedInventorySha256}' order by recorded_at desc limit 1`
+  const sql = `select json_build_object('contractVersion',m.contract_version,'candidateGitSha',m.candidate_git_sha,'actionsRunId',m.actions_run_id::text,'runAttempt',m.run_attempt,'environment',m.deployment_environment,'projectRef',m.project_ref,'migrations',m.migration_inventory,'inventorySha256',m.inventory_sha256,'recordedAt',m.recorded_at,'completion',json_build_object('contractVersion',c.contract_version,'candidateGitSha',c.candidate_git_sha,'actionsRunId',c.actions_run_id::text,'runAttempt',c.run_attempt,'environment',c.deployment_environment,'projectRef',c.project_ref,'inventorySha256',c.inventory_sha256,'schemaExpectedSha256',c.schema_expected_sha256,'schemaObservedSha256',c.schema_observed_sha256,'functionInventorySha256',c.function_inventory_sha256,'hostedSmokeEvidenceSha256',c.hosted_smoke_evidence_sha256,'deploymentManifestSha256',c.deployment_manifest_sha256,'completedAt',c.completed_at))::text from public.supabase_deploy_migration_evidence m join public.supabase_deploy_completion_evidence c using (candidate_git_sha,actions_run_id,run_attempt,deployment_environment,project_ref) where m.deployment_environment='${binding.environment}' and m.project_ref='${binding.projectRef}' and m.inventory_sha256='${expectedInventorySha256}' order by c.completed_at desc limit 1`
   const output = psqlFromHost(dbUrl, sql)
   if (!output) throw new Error("deployment-evidence-missing: no immutable deployment record matches reviewed migration bytes")
   const evidence = JSON.parse(output)
-  if (!validateMatchingMigrationEvidence(evidence, binding, expectedInventorySha256)) {
+  if (!validateMatchingMigrationEvidence(evidence, binding, expectedInventorySha256)
+    || !validateDeployCompletionEvidence(evidence.completion, evidence)) {
     throw new Error("deployment-evidence-invalid: immutable deployment record failed independent validation")
   }
   return evidence
@@ -383,6 +476,21 @@ async function main() {
     if (!output || !/^[0-9a-f]{40}$/.test(evidence.candidateGitSha ?? "") || !/^\d+$/.test(evidence.actionsRunId) || evidence.runAttempt < 1 || !["dev", "main"].includes(evidence.environment) || !/^[a-z0-9]{20,}$/.test(evidence.projectRef ?? "")) throw new Error("Candidate-bound GitHub deployment context and SUPABASE_MIGRATION_EVIDENCE_OUTPUT are required")
     writeFileSync(output, `${JSON.stringify(evidence)}\n`, "utf8")
     console.log(`Prepared ${evidence.migrations.length} reviewed migration digests: ${evidence.inventorySha256}`)
+    return
+  }
+  if (process.argv[2] === "complete") {
+    const manifestPath = process.env.SUPABASE_ENVIRONMENT_MANIFEST_OUTPUT
+    const dbUrl = process.env.SUPABASE_SCHEMA_DB_URL
+    if (!manifestPath || !dbUrl) throw new Error("SUPABASE_ENVIRONMENT_MANIFEST_OUTPUT and SUPABASE_SCHEMA_DB_URL are required")
+    const binding = {
+      candidateGitSha: process.env.GITHUB_SHA,
+      actionsRunId: process.env.GITHUB_RUN_ID,
+      runAttempt: Number(process.env.GITHUB_RUN_ATTEMPT),
+      environment: process.env.TARGET_ENVIRONMENT,
+      projectRef: process.env.SUPABASE_PROJECT_REF,
+    }
+    recordDeployCompletion(dbUrl, JSON.parse(readFileSync(manifestPath, "utf8")), binding)
+    console.log(`Certified completed ${binding.environment} Supabase deployment ${binding.candidateGitSha}`)
     return
   }
   const remoteDbUrl = process.env.SUPABASE_SCHEMA_DB_URL
@@ -518,6 +626,7 @@ sql_paths = []
         recordedAt: expectedEvidence?.recordedAt ?? new Date().toISOString(),
         environment: targetEnvironment,
         projectRef,
+        ...(expectedEvidence?.completion ? { completion: expectedEvidence.completion } : {}),
       },
       productionValueFlowControlTableCount: valueFlowControls.tableCount,
       enabledProductionValueFlowControlCount: valueFlowControls.enabledCount,

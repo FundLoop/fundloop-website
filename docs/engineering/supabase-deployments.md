@@ -259,6 +259,21 @@ equal the final observation SHA, and exact RFC3339 ordering (without millisecond
 truncation) requires the certified deployment to precede or equal every component,
 which must in turn precede or equal the final manifest observation.
 
+Migration evidence is deliberately inserted before `supabase db push` so the exact
+candidate bytes remain auditable even when a deployment fails. That candidate row does
+not certify success. Only after migration/schema parity, Edge Function deployment and
+source read-back, hosted `401`, and manifest composition pass does the workflow append a
+separate immutable `fundloop.deploy-completion-evidence/v1` row. It binds the candidate
+SHA/run/attempt/environment/project and migration inventory to schema, function,
+hosted-smoke, and deployment-manifest digests. Read-only drift selects candidates only
+through an exact completion join; candidate-only, mismatched, legacy, or stale rows
+cannot become the certified deployment. Completion is written before artifact upload,
+and no failed prerequisite path reaches that write.
+
+All chronology-bearing evidence requires a semantic RFC3339 timestamp with an explicit
+known timezone. `Z`, `+00:00`, and known positive or negative offsets are accepted;
+RFC3339's unknown-local-offset form `-00:00` is rejected because it cannot prove order.
+
 `Supabase Drift Detection` never deploys, repairs, seeds, prunes, or invokes database
 mutation commands. UI-only dev/main pushes are observed directly. A shared classifier
 assigns any backend or mixed push to `Supabase Deploy`; only its successful, same-repo

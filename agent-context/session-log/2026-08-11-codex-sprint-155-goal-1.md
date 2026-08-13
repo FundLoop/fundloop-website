@@ -1501,3 +1501,58 @@ microsecond precision.
 
 - Push this single consolidated validator-fix commit to existing PR #202 for the
   orchestrator's broad independent revalidation; do not open another PR or request review.
+
+### session v32: Certify only completed Supabase deployments (#161)
+
+- Timestamp: 2026-08-13T00:08:30-04:00
+- Agent: Codex
+- Branch: `codex/155-goal-1-manifest-provenance-routing-recovery`
+- Head: `0fbed61ebfcaa58d638fd7a3c062abc2b295ac62`
+
+#### Objective
+
+Prevent pre-push candidate evidence from certifying a failed deployment and exclude
+RFC3339's unknown `-00:00` offset from every chronology-bearing evidence path.
+
+#### Actions Taken
+
+- Added a forward-only append-only deployment-completion evidence table with an exact
+  foreign-key binding to candidate SHA/run/attempt/environment/project evidence.
+- Bound successful completion to migration inventory, matching schema digests, function
+  inventory, hosted-smoke evidence, and the composed deployment-manifest digest.
+- Routed the completion insert through the existing structured libpq field helper so
+  credentials never appear in `psql` arguments or get reparsed as a URI.
+- Kept candidate byte evidence before `db push`, but moved success certification after
+  database/schema parity, function deployment/read-back, hosted `401`, and manifest
+  composition; immutable manifest upload occurs only after completion insertion.
+- Made drift select candidate evidence only through its exact completion join and retain
+  that completion record in digest-bound certified deployment provenance.
+- Rejected unknown `-00:00` offsets while retaining `Z`, `+00:00`, and known positive or
+  negative offsets; updated adversarial producer/verifier tests and deployment docs.
+- Regenerated `types/supabase.ts` from the canonical local 96-migration schema with the
+  repository-pinned Supabase CLI 2.113.0.
+
+#### Tests And Validation Notes
+
+- Passed on Node 22.23.2: focused environment-manifest, delivery-parity, and function
+  source-readback suites, 60/60.
+- Passed the pinned-CLI isolated fresh-history replay with deliberate invalid-migration
+  smoke and an observed exit code of zero.
+- A canonical local Supabase reset applied all 96 tracked migrations, including the new
+  completion contract; types were generated from that database and the local stack was
+  stopped with no backup.
+- Negative coverage includes candidate-only failed runs, mismatched/stale completions,
+  schema mismatch, digest-consistent `-00:00` manifests, and producer rejection; one
+  exact completed run passes.
+- No remote Supabase or Production mutation, workflow dispatch, status change, #162
+  work, credential prompt, reset, or value-flow activation occurred.
+
+#### Reflections
+
+Pre-deploy evidence proves intent and bytes, not successful delivery. A second immutable
+record avoids rewriting evidence while making completion an explicit, auditable gate.
+
+#### Suggested Next Steps
+
+- Push this consolidated certification fix to existing PR #202 only after the complete
+  focused/static validation set passes, then return it for broad independent revalidation.
