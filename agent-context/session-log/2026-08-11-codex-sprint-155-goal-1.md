@@ -1282,3 +1282,394 @@ not be reparsed as authority text inside another process boundary.
 
 - Independently validate this focused recovery, publish to `dev`, then rerun the
   read-only Dev drift observation against the same SHA-bound deploy baseline.
+
+### session v27: Preserve deploy provenance and route manual observations safely (#161)
+
+- Timestamp: 2026-08-12T19:46:00-04:00
+- Agent: Codex
+- Branch: `codex/155-goal-1-manifest-provenance-routing-recovery`
+- Head: `3ccafbbda0724fadb6191202319851c6e92840b3`
+
+#### Objective
+
+Close the final manifest provenance and observation-routing gaps without expanding into
+Production validation or Task #162.
+
+#### Actions Taken
+
+- Bound deploy-mode certified provenance to the actual `recorded_at` timestamp returned
+  by the independently validated append-only migration evidence row.
+- Added positive/negative coverage proving deploy and drift use the same immutable row
+  timestamp and reject invalid timestamps or changed inventory digests.
+- Restricted automatic `workflow_run` observations to successful same-repository
+  push-origin deploys on `dev` or `main`. Manual cross-target deploys now require the
+  drift workflow's explicit environment selection instead of inferring from branch.
+- Documented both provenance and manual routing contracts.
+
+#### Tests And Validation Notes
+
+- Passed on Node 22: focused environment-manifest and delivery-parity suites, 22/22.
+- Passed: focused ESLint, TypeScript typecheck, script syntax, workflow YAML parse, and
+  `git diff --check`.
+- No push, workflow dispatch, remote call or mutation, status change, Production action,
+  #162 work, credential prompt, or value-flow activation occurred.
+
+#### Reflections
+
+An immutable record's creation time is evidence, while a verifier's wall-clock time is
+only observation metadata. Likewise, branch identity is authoritative for push deploys
+but cannot safely identify the selected target of a manual cross-environment dispatch.
+
+#### Suggested Next Steps
+
+- Return this commit to independent validation, then publish only through the
+  orchestrator-owned flow and exercise explicit hosted Dev observation.
+
+### session v28: Require explicit RFC3339 deployment timestamps (#161)
+
+- Timestamp: 2026-08-12T20:00:00-04:00
+- Agent: Codex
+- Branch: `codex/155-goal-1-manifest-provenance-routing-recovery`
+- Head: `cb9f7a2a8d4247740217dfbc1c429af36f2d9120`
+
+#### Objective
+
+Close the remaining evidence-validator ambiguity by accepting only explicit RFC3339
+timestamps with seconds and a timezone in both deploy and drift provenance paths.
+
+#### Actions Taken
+
+- Added one shared timestamp predicate requiring `T`, seconds, optional fractional
+  seconds, and either `Z` or a bounded `±HH:MM` offset, plus a finite parsed value.
+- Applied it to candidate-bound deploy evidence binding and latest-matching drift
+  evidence validation.
+- Added PostgreSQL microsecond-offset and ISO `Z` positives plus adversarial numeric,
+  date-only, space-separated, timezone-less, missing-seconds, and malformed-offset
+  negatives, including direct checks through both evidence validators.
+
+#### Tests And Validation Notes
+
+- Passed on Node 22: focused environment-manifest and delivery-parity suites, 23/23.
+- Passed: focused ESLint, TypeScript typecheck, script syntax, workflow YAML parse, and
+  `git diff --check`.
+- No push, workflow dispatch, remote call or mutation, status change, Production action,
+  #162 work, credential prompt, or value-flow activation occurred.
+
+#### Reflections
+
+Generic JavaScript date parsing accepts shorthand values that are not auditable
+timestamps. Evidence contracts need an explicit wire grammar before semantic parsing.
+
+#### Suggested Next Steps
+
+- Return this localized fix to independent validation and keep hosted observation in the
+  orchestrator-owned publish path.
+
+### session v29: Validate RFC3339 calendar and clock semantics (#161)
+
+- Timestamp: 2026-08-12T19:54:00-04:00
+- Agent: Codex
+- Branch: `codex/155-goal-1-manifest-provenance-routing-recovery`
+- Head: `ab67866471cc4d8ba818e3a804638119e637ac01`
+
+#### Objective
+
+Reject calendar-invalid or out-of-range clock timestamps that satisfy the RFC3339 wire
+shape but cannot represent valid immutable deployment evidence.
+
+#### Actions Taken
+
+- Added leap-year-aware month/day validation and strict hour, minute, and second ranges
+  to the shared deploy/drift timestamp predicate.
+- Retained PostgreSQL microsecond-offset and ISO `Z` support.
+- Added both-path negatives for a non-leap February 29, April 31, and hour 24, plus
+  minute/second overflow; added leap-day and calendar/clock boundary positives.
+
+#### Tests And Validation Notes
+
+- Passed on Node 22: focused environment-manifest and delivery-parity suites, 23/23.
+- Passed: focused ESLint, TypeScript typecheck, script syntax, workflow YAML parse, and
+  `git diff --check`.
+- Initial validation hit host-level `ENOSPC`; only this worktree's generated `.next`
+  cache was deleted, after which all gates passed. No tracked or authored file was removed.
+- No push, workflow dispatch, remote call or mutation, status change, Production action,
+  #162 work, credential prompt, or value-flow activation occurred.
+
+#### Reflections
+
+Wire-format validation and semantic calendar validation are separate requirements;
+evidence needs both to remain deterministic across runtimes.
+
+#### Suggested Next Steps
+
+- Return the amended localized commit to independent validation and keep hosted
+  observation in the orchestrator-owned publish path.
+
+### session v30: Enforce final-manifest timestamp semantics (#161)
+
+- Timestamp: 2026-08-12T23:41:18-04:00
+- Agent: Codex
+- Branch: `codex/155-goal-1-manifest-provenance-routing-recovery`
+- Head: `f496642d796d5db4693cef6f1cd52489846649d8`
+
+#### Objective
+
+Make final environment-manifest composition and independent verification enforce the
+same semantic RFC3339-with-timezone timestamp contract as immutable database evidence.
+
+#### Actions Taken
+
+- Reused the shared strict timestamp predicate for certified deployment provenance,
+  observation metadata, and hosted-smoke evidence in the final manifest path.
+- Refused manifest composition with invalid deployment or observation timestamps and
+  returned precise independent-verifier blockers without cascading chronology noise.
+- Added self-consistent adversarial-manifest coverage for numeric shorthand, impossible
+  dates, timezone-less timestamps, and hour 24, plus PostgreSQL microsecond-offset and
+  ISO `Z` positives.
+- Audited every final-manifest timestamp comparison so chronology checks only run after
+  the relevant timestamps satisfy the shared semantic contract.
+
+#### Tests And Validation Notes
+
+- Passed on Node 22.23.2: focused environment-manifest, delivery-parity, and function
+  source-readback suites, 55/55.
+- Passed: full repository ESLint, full TypeScript typecheck, both affected Node script syntax
+  checks, Supabase deploy/drift workflow YAML parse, and `git diff --check`.
+- The first focused test run exposed a positive fixture whose deployment time followed
+  its observation; the fixture was corrected and the complete validation set rerun.
+- The first YAML command used an unsupported Ruby 2.6 keyword; the same two workflows
+  passed the compatible parser invocation immediately afterward.
+- No workflow dispatch, remote Supabase or Production mutation, status change, #162
+  work, credential prompt, reset, or value-flow activation occurred.
+
+#### Reflections
+
+A self-consistent digest proves integrity, not timestamp semantics. Producers and
+independent consumers must enforce the same wire, calendar, clock, and timezone rules.
+
+#### Suggested Next Steps
+
+- Publish this single review-fix commit to PR #202, reply with exact validation evidence,
+  and resolve only the addressed timestamp-contract thread.
+
+### session v31: Bind exact component provenance chronology (#161)
+
+- Timestamp: 2026-08-12T23:54:25-04:00
+- Agent: Codex
+- Branch: `codex/155-goal-1-manifest-provenance-routing-recovery`
+- Head: `9b52ae3d20efdf3e3162fc32da7b17a2f1c39bf7`
+
+#### Objective
+
+Close the consolidated independent-validator gap by proving that every manifest
+component was observed from the final checkout after its certified deployment and no
+later than the final observation, without losing accepted fractional precision.
+
+#### Actions Taken
+
+- Added one exact RFC3339 comparator using epoch seconds, timezone offsets, and the full
+  fractional-second string rather than millisecond-truncating `Date.parse` ordering.
+- Preserved schema and function observation SHA/timestamps in their digest-bound final
+  manifest sections; hosted-smoke provenance remains bound through prerequisite evidence.
+- Required schema, function, and hosted-smoke SHAs to equal the final observation SHA.
+- Enforced certified deployment <= each component observation <= final observation in
+  both composition and independent verification with precise blockers.
+- Documented the component provenance and exact chronology contract.
+
+#### Tests And Validation Notes
+
+- Passed on Node 22.23.2: focused environment-manifest, delivery-parity, and function
+  source-readback suites, 59/59.
+- Adversarial coverage includes digest-consistent stale/pre-deploy, post-observation,
+  cross-checkout, and microsecond-reversal forgeries, plus valid equality, timezone-offset,
+  PostgreSQL microsecond, ISO `Z`, and differing fractional-precision cases.
+- Passed: full repository ESLint, full TypeScript typecheck, affected script syntax,
+  Supabase deploy/drift workflow YAML parse, and `git diff --check`.
+- The first focused pass exposed an offset-regex capture-index error and newly strict
+  fixture chronology/checkout assumptions; both were corrected before the complete
+  focused and static validation sets passed.
+- No workflow dispatch, remote Supabase or Production mutation, status change, #162
+  work, credential prompt, reset, or value-flow activation occurred.
+
+#### Reflections
+
+Digest integrity cannot recover provenance that was discarded before composition, and
+millisecond timestamp coercion is insufficient once the evidence contract accepts
+microsecond precision.
+
+#### Suggested Next Steps
+
+- Push this single consolidated validator-fix commit to existing PR #202 for the
+  orchestrator's broad independent revalidation; do not open another PR or request review.
+
+### session v32: Certify only completed Supabase deployments (#161)
+
+- Timestamp: 2026-08-13T00:08:30-04:00
+- Agent: Codex
+- Branch: `codex/155-goal-1-manifest-provenance-routing-recovery`
+- Head: `0fbed61ebfcaa58d638fd7a3c062abc2b295ac62`
+
+#### Objective
+
+Prevent pre-push candidate evidence from certifying a failed deployment and exclude
+RFC3339's unknown `-00:00` offset from every chronology-bearing evidence path.
+
+#### Actions Taken
+
+- Added a forward-only append-only deployment-completion evidence table with an exact
+  foreign-key binding to candidate SHA/run/attempt/environment/project evidence.
+- Bound successful completion to migration inventory, matching schema digests, function
+  inventory, hosted-smoke evidence, and the composed deployment-manifest digest.
+- Routed the completion insert through the existing structured libpq field helper so
+  credentials never appear in `psql` arguments or get reparsed as a URI.
+- Kept candidate byte evidence before `db push`, but moved success certification after
+  database/schema parity, function deployment/read-back, hosted `401`, and manifest
+  composition; immutable manifest upload occurs only after completion insertion.
+- Made drift select candidate evidence only through its exact completion join and retain
+  that completion record in digest-bound certified deployment provenance.
+- Rejected unknown `-00:00` offsets while retaining `Z`, `+00:00`, and known positive or
+  negative offsets; updated adversarial producer/verifier tests and deployment docs.
+- Regenerated `types/supabase.ts` from the canonical local 96-migration schema with the
+  repository-pinned Supabase CLI 2.113.0.
+
+#### Tests And Validation Notes
+
+- Passed on Node 22.23.2: focused environment-manifest, delivery-parity, and function
+  source-readback suites, 60/60.
+- Passed the pinned-CLI isolated fresh-history replay with deliberate invalid-migration
+  smoke and an observed exit code of zero.
+- A canonical local Supabase reset applied all 96 tracked migrations, including the new
+  completion contract; types were generated from that database and the local stack was
+  stopped with no backup.
+- Negative coverage includes candidate-only failed runs, mismatched/stale completions,
+  schema mismatch, digest-consistent `-00:00` manifests, and producer rejection; one
+  exact completed run passes.
+- No remote Supabase or Production mutation, workflow dispatch, status change, #162
+  work, credential prompt, reset, or value-flow activation occurred.
+
+#### Reflections
+
+Pre-deploy evidence proves intent and bytes, not successful delivery. A second immutable
+record avoids rewriting evidence while making completion an explicit, auditable gate.
+
+#### Suggested Next Steps
+
+- Push this consolidated certification fix to existing PR #202 only after the complete
+  focused/static validation set passes, then return it for broad independent revalidation.
+
+### session v33: Bind certified artifacts and forward PR replay (#161)
+
+- Timestamp: 2026-08-13T00:38:10-04:00
+- Agent: Codex
+- Branch: `codex/155-goal-1-manifest-provenance-routing-recovery`
+- Head: `1222869c23180636b1440dd9e347df083f0f15e9`
+
+#### Objective
+
+Close the complete final PR #202 blocker set in one recovery commit: exact retained
+deployment evidence, artifact-before-completion ordering, strict completion chronology,
+and non-mutating PR diagnosis for ordinary forward migration tails.
+
+#### Actions Taken
+
+- Retained the complete sanitized deploy manifest in append-only completion evidence
+  and bound its self-digest, evidence list, migration/schema/function digests, certified
+  hosted-smoke digest, candidate identity, and final observation chronology before insert.
+- Made drift re-verify that retained deploy manifest and completion record independently,
+  while preserving the certified deploy smoke separately from a distinct fresh smoke
+  observed only after completion.
+- Moved required parity and immutable-manifest artifact publication ahead of the final
+  completion insert; a failed upload now leaves candidate-only evidence.
+- Generalized Dev PR diagnosis to accept one or more strictly forward pending migrations
+  only after full candidate replay, immutable byte-bound prefix validation, and a
+  disposable exact-prefix schema comparison against the current read-only remote.
+- Added adversarial coverage for changed/unknown history, skeletal and self-digest-tampered
+  manifests, every completion digest mismatch, reversed completion chronology, and
+  distinct fresh observation smoke.
+- Updated canonical generated database types and deployment documentation for the stored
+  manifest, evidence lifecycle, and forward-baseline PR contract.
+
+#### Tests And Validation Notes
+
+- Passed on Node 22.23.2 with single-worker forks: focused delivery parity,
+  environment-manifest, and function-source read-back suites, 62/62.
+- Passed the pinned Supabase CLI 2.113.0 isolated replay: all 96 migrations, three
+  representative SQL suites, and the deliberate invalid-migration history smoke.
+- Passed full repository ESLint and TypeScript typecheck.
+- Passed affected Node syntax, workflow YAML parse, and `git diff --check` before commit.
+- Two initial parallel Vitest tool processes orphaned despite a later successful run;
+  only those exact task-owned process trees were terminated, and all reported validation
+  uses the clean single-worker rerun.
+- A fully local workflow-equivalent remote baseline simulation was not run because the
+  verifier intentionally requires its PG17 container to reach a TLS remote target; the
+  pure forward-prefix matrix and full candidate/baseline replay paths are covered locally,
+  while the PR dry-run supplies the read-only Dev integration check after push.
+- No remote Supabase deployment/reset, workflow dispatch, Production action, status
+  change, #162 work, credential prompt, or value-flow activation occurred.
+
+#### Reflections
+
+Certification is the final mutation, not an optimistic marker. It is trustworthy only
+after required evidence is durably published and every stored digest can be recomputed
+from retained evidence rather than accepted as a correctly formatted claim.
+
+#### Suggested Next Steps
+
+- Push this one consolidated commit to existing PR #202, let its read-only Dev dry-run
+  exercise the exact 95-to-96 forward baseline, and return the exact head to independent
+  validation without opening another PR or requesting another review.
+
+### session v34: Route and verify the retained deployment baseline (#161)
+
+- Timestamp: 2026-08-13T05:52:47-04:00
+- Agent: Codex
+- Branch: `codex/155-goal-1-manifest-provenance-routing-recovery`
+- Head: `de242c78d39cae952a84325d487af6a0f4c8aff0`
+
+#### Objective
+
+Repair exact-head PR run `31667881328` without weakening the reviewed-forward-migration
+diagnostic, and make retained certified deploy manifests satisfy the complete deployment
+verification contract rather than only their self/evidence digest subset.
+
+#### Actions Taken
+
+- Replaced the forward-prefix database inside the candidate stack with a separately
+  task-owned Postgres 17 baseline stack whose host-side push and marker operations use
+  its dynamically allocated loopback port.
+- Preserved the isolated candidate replay and read-only remote comparison while keeping
+  the baseline container dump on its internal Postgres port.
+- Reused the complete deploy-manifest verifier for retained certification evidence, so
+  migration bytes/history/order, schema binding, function status/source/inventory,
+  smoke deployment binding, prerequisites, chronology, value-flow controls, and all
+  self/evidence digests must still pass.
+- Added explicit dynamic non-default-port coverage plus five recomputed, self-consistent
+  retained-manifest attacks: wrong schema digest, post-completion observation, inactive
+  function, mismatched migration history, and smoke/deployment SHA mismatch.
+
+#### Tests And Validation Notes
+
+- Passed Node 22 single-worker focused suites: environment manifest 14/14, delivery
+  parity 19/19, and function-source read-back 30/30.
+- Passed a workflow-equivalent disposable 95-to-96 forward diagnostic using a surrogate
+  remote prefix on host port 55432. It reported `reviewed-forward-replay`, exactly 95
+  baseline migrations, pending migration `20260813010000`, and zero enabled Production
+  value-flow controls.
+- Passed the pinned Supabase CLI 2.113.0 isolated replay: all 96 migrations, all three
+  representative SQL suites, and the deliberate invalid-migration history rejection.
+- Passed full repository ESLint and TypeScript typecheck, affected Node syntax checks,
+  workflow YAML parsing, and `git diff --check`.
+- The disposable surrogate and both verifier-owned stacks were stopped without backup.
+- No remote Supabase mutation/deployment/reset, workflow dispatch, Production action,
+  status change, #162 work, credential prompt, rereview, or value-flow activation occurred.
+
+#### Reflections
+
+A local Supabase stack exposes a randomized host port even though Postgres remains on
+5432 inside its container. Forward-baseline verification must bind commands to the side
+of that boundary they actually execute on.
+
+#### Suggested Next Steps
+
+- Push this localized correction to existing PR #202 after the full static and replay
+  gates pass, then report the exact head and CI state for independent validation.

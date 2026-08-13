@@ -3,7 +3,8 @@ import os from "node:os"
 import path from "node:path"
 import { describe, expect, it } from "vitest"
 import { classifyFunctionInventory, compareClosurePaths, expectedFunctionNames, expectedSourceClosure } from "../scripts/verify-supabase-function-parity.mjs"
-import { buildMigrationDeployEvidence, buildSchemaDiagnostic, expectedMigrationInventory, libpqConnectionEnvironment, migrationInventorySha256, normalizePublicSchema, validateMatchingMigrationEvidence, validateMigrationDeployEvidence, validatePendingSchemaRepair } from "../scripts/verify-supabase-schema-parity.mjs"
+import { buildEnvironmentManifest, buildSafeSmokeEvidence } from "../scripts/verify-supabase-environment-manifest.mjs"
+import { bindObservedMigrationDeployEvidence, buildDeployCompletionEvidence, buildMigrationDeployEvidence, buildSchemaDiagnostic, compareExplicitRfc3339Timestamps, expectedMigrationInventory, isExplicitRfc3339Timestamp, libpqConnectionEnvironment, localStackDatabaseUrl, migrationInventorySha256, normalizePublicSchema, validateDeployCompletionEvidence, validateForwardPendingMigrationHistory, validateMatchingMigrationEvidence, validateMigrationDeployEvidence, validatePendingSchemaRepair } from "../scripts/verify-supabase-schema-parity.mjs"
 
 const workflow = readFileSync(".github/workflows/supabase-deploy.yml", "utf8")
 const schemaVerifier = readFileSync("scripts/verify-supabase-schema-parity.mjs", "utf8")
@@ -21,10 +22,21 @@ describe("Supabase delivery parity", () => {
       PGSSLMODE: "require",
     })
     expect(libpqConnectionEnvironment("postgresql://postgres:postgres@127.0.0.1:5432/postgres").PGSSLMODE).toBe("disable")
+    expect(libpqConnectionEnvironment("postgresql://postgres:postgres@host.docker.internal:58743/postgres").PGSSLMODE).toBe("disable")
     expect(schemaVerifier).not.toContain('"psql", dbUrl')
     expect(schemaVerifier).not.toMatch(/run\("psql", \[(?:dbUrl|remoteDbUrl)/)
     expect(schemaVerifier).not.toContain('"--no-comments", dbUrl')
     expect(schemaVerifier).not.toContain('`PGPASSWORD=${')
+  })
+
+  it("routes host-side baseline replay through the dynamically allocated local port", () => {
+    expect(localStackDatabaseUrl(58743)).toBe("postgresql://postgres:postgres@127.0.0.1:58743/postgres")
+    expect(localStackDatabaseUrl(49171, "reviewed_prefix")).toBe("postgresql://postgres:postgres@127.0.0.1:49171/reviewed_prefix")
+    expect(() => localStackDatabaseUrl(0)).toThrow("invalid-local-database-target")
+    expect(() => localStackDatabaseUrl(65536)).toThrow("invalid-local-database-target")
+    expect(() => localStackDatabaseUrl(58743, "unsafe-name")).toThrow("invalid-local-database-target")
+    expect(schemaVerifier).toContain("const baselineLocalDbUrl = localStackDatabaseUrl(baselineDbPort)")
+    expect(schemaVerifier).not.toContain('const baselineDbUrl = "postgresql://postgres:postgres@127.0.0.1:5432')
   })
   it("derives the expected function inventory and records the one reviewed retirement", () => {
     const expected = expectedFunctionNames()
@@ -86,7 +98,9 @@ describe("Supabase delivery parity", () => {
   })
 
   it("accepts only the exact versioned Dev drift while its repair is the sole pending migration", () => {
-    const baselineMigrations = expectedMigrationInventory().slice(0, -1)
+    const migrations = expectedMigrationInventory()
+    const repairIndex = migrations.findIndex((entry) => entry.version === repairManifest.repairMigrationVersion)
+    const baselineMigrations = migrations.slice(0, repairIndex)
     expect(migrationInventorySha256(baselineMigrations)).toBe(repairManifest.baselineMigrationInventorySha256)
     const diagnostic = {
       environment: repairManifest.environment,
@@ -172,11 +186,156 @@ describe("Supabase delivery parity", () => {
     expect(validateMatchingMigrationEvidence({ ...evidence, environment: "main" }, binding, inventorySha256)).toBe(false)
   })
 
+  it("accepts only reviewed forward pending migrations over an exact immutable remote baseline", () => {
+    const migrations = [
+      { version: "20260101000000", name: "20260101000000_first.sql", fileSha256: "a".repeat(64) },
+      { version: "20260102000000", name: "20260102000000_second.sql", fileSha256: "b".repeat(64) },
+      { version: "20260103000000", name: "20260103000000_third.sql", fileSha256: "c".repeat(64) },
+    ]
+    const binding = { environment: "dev", projectRef: "a".repeat(20) }
+    const baseline = (count: number) => ({
+      contractVersion: "fundloop.migration-deploy-evidence/v1",
+      candidateGitSha: "d".repeat(40), actionsRunId: "42", runAttempt: 1, ...binding,
+      migrations: migrations.slice(0, count), inventorySha256: migrationInventorySha256(migrations.slice(0, count)),
+      recordedAt: "2026-08-13T00:00:00Z",
+    })
+    expect(validateForwardPendingMigrationHistory(migrations, [migrations[0].version, migrations[1].version], baseline(2), binding).pendingMigrations).toEqual([migrations[2]])
+    expect(validateForwardPendingMigrationHistory(migrations, [migrations[0].version], baseline(1), binding).pendingMigrations).toEqual(migrations.slice(1))
+    const changedBaseline = baseline(2)
+    changedBaseline.migrations[0].fileSha256 = "9".repeat(64)
+    expect(() => validateForwardPendingMigrationHistory(migrations, [migrations[0].version, migrations[1].version], changedBaseline, binding)).toThrow("migration-baseline-digest")
+    const malformedBaseline = baseline(2)
+    malformedBaseline.migrations[0] = { version: "invalid", name: "invalid.sql", fileSha256: "9".repeat(64) }
+    malformedBaseline.inventorySha256 = migrationInventorySha256(malformedBaseline.migrations)
+    expect(() => validateForwardPendingMigrationHistory(migrations, [migrations[0].version, migrations[1].version], malformedBaseline, binding)).toThrow("migration-baseline-digest")
+    expect(() => validateForwardPendingMigrationHistory(migrations, [migrations[0].version, "20260102595959"], baseline(2), binding)).toThrow("Migration history drift")
+    expect(() => validateForwardPendingMigrationHistory(migrations, [migrations[1].version], baseline(1), binding)).toThrow("Migration history drift")
+  })
+
+  it("preserves one validated immutable timestamp for deploy and drift provenance", () => {
+    const expected = {
+      contractVersion: "fundloop.migration-deploy-evidence/v1",
+      candidateGitSha: "b".repeat(40), actionsRunId: "42", runAttempt: 1,
+      environment: "dev", projectRef: "a".repeat(20),
+      migrations: [{ version: "20260101000000", name: "20260101000000_first.sql", fileSha256: "a".repeat(64) }],
+      inventorySha256: "",
+    }
+    expected.inventorySha256 = migrationInventorySha256(expected.migrations)
+    const observed = { ...structuredClone(expected), recordedAt: "2026-08-12T23:28:57.708226+00:00" }
+    const deployEvidence = bindObservedMigrationDeployEvidence(expected, observed)
+    expect(deployEvidence.recordedAt).toBe(observed.recordedAt)
+    expect(validateMatchingMigrationEvidence(observed, expected, expected.inventorySha256)).toBe(true)
+    for (const recordedAt of ["0", "12", "2026-08-12", "2026-08-12 23:28:57+00:00", "2026-08-12T23:28:57", "2026-08-12T23:28:57+24:00", "2026-02-29T00:00:00Z", "2026-04-31T23:59:59Z", "2026-12-31T24:00:00Z"]) {
+      expect(() => bindObservedMigrationDeployEvidence(expected, { ...observed, recordedAt }), recordedAt).toThrow("remote immutable row")
+      expect(validateMatchingMigrationEvidence({ ...observed, recordedAt }, expected, expected.inventorySha256), recordedAt).toBe(false)
+    }
+    for (const recordedAt of ["2024-02-29T00:00:00Z", "2026-01-01T00:00:00Z", "2026-12-31T23:59:59.999999-23:59"]) {
+      expect(bindObservedMigrationDeployEvidence(expected, { ...observed, recordedAt }).recordedAt, recordedAt).toBe(recordedAt)
+      expect(validateMatchingMigrationEvidence({ ...observed, recordedAt }, expected, expected.inventorySha256), recordedAt).toBe(true)
+    }
+    expect(() => bindObservedMigrationDeployEvidence(expected, { ...observed, inventorySha256: "0".repeat(64) })).toThrow("remote immutable row")
+  })
+
+  it("requires explicit RFC3339 seconds and timezone for immutable timestamps", () => {
+    for (const timestamp of [
+      "2026-08-12T23:28:57.708226+00:00",
+      "2026-08-12T23:28:57Z",
+      "2026-08-12T19:28:57.1-04:00",
+      "2024-02-29T00:00:00Z",
+      "2026-12-31T23:59:59+23:59",
+    ]) expect(isExplicitRfc3339Timestamp(timestamp), timestamp).toBe(true)
+
+    for (const timestamp of [
+      "0",
+      "12",
+      "2026-08-12",
+      "2026-08-12 23:28:57+00:00",
+      "2026-08-12T23:28:57",
+      "2026-08-12T23:28Z",
+      "2026-08-12T23:28:57+0000",
+      "2026-08-12T23:28:57+24:00",
+      "2026-08-12T23:28:57+00:60",
+      "2026-08-12T23:28:57-00:00",
+      "2026-02-29T00:00:00Z",
+      "2026-04-31T23:59:59Z",
+      "2026-12-31T24:00:00Z",
+      "2026-12-31T23:60:00Z",
+      "2026-12-31T23:59:60Z",
+    ]) expect(isExplicitRfc3339Timestamp(timestamp), timestamp).toBe(false)
+  })
+
+  it("orders explicit RFC3339 instants without losing fractional precision", () => {
+    expect(compareExplicitRfc3339Timestamps("2026-08-12T20:00:00.000001Z", "2026-08-12T20:00:00.000999Z")).toBe(-1)
+    expect(compareExplicitRfc3339Timestamps("2026-08-12T20:00:00.000999Z", "2026-08-12T20:00:00.000001Z")).toBe(1)
+    expect(compareExplicitRfc3339Timestamps("2026-08-12T20:00:00Z", "2026-08-12T16:00:00-04:00")).toBe(0)
+    expect(compareExplicitRfc3339Timestamps("2026-08-12T20:00:00.1Z", "2026-08-12T20:00:00.1000000000Z")).toBe(0)
+  })
+
+  it("certifies only exact immutable candidate/completion evidence pairs", () => {
+    const migration = { version: "20260101000000", name: "20260101000000_first.sql", fileSha256: "a".repeat(64) }
+    const inventorySha256 = migrationInventorySha256([migration])
+    const evidence = {
+      contractVersion: "fundloop.migration-deploy-evidence/v1",
+      candidateGitSha: "b".repeat(40), actionsRunId: "42", runAttempt: 1,
+      environment: "dev", projectRef: "a".repeat(20),
+      migrations: [migration], inventorySha256, recordedAt: "2026-08-13T00:00:00.000001Z",
+    }
+    const binding = { candidateGitSha: evidence.candidateGitSha, actionsRunId: evidence.actionsRunId, runAttempt: evidence.runAttempt, environment: evidence.environment, projectRef: evidence.projectRef }
+    const manifest = buildEnvironmentManifest({
+      schema: {
+        environment: evidence.environment, projectRef: evidence.projectRef, candidateGitSha: evidence.candidateGitSha,
+        observedAt: "2026-08-13T00:00:00.000100Z", algorithm: "pg17-public-schema-normalized-v2", postgresMajor: 17,
+        expectedSha256: "d".repeat(64), observedSha256: "d".repeat(64), migrationInventorySha256: inventorySha256,
+        migrationInventory: [migration], migrationHistory: [migration.version], enabledProductionValueFlowControlCount: 0,
+        productionValueFlowControlTableCount: 1,
+        certifiedDeployment: { gitSha: evidence.candidateGitSha, githubRunId: evidence.actionsRunId, githubRunAttempt: evidence.runAttempt, recordedAt: evidence.recordedAt, environment: evidence.environment, projectRef: evidence.projectRef },
+      },
+      functions: {
+        environment: evidence.environment, projectRef: evidence.projectRef, candidateGitSha: evidence.candidateGitSha,
+        observedAt: "2026-08-13T00:00:00.000200Z",
+        functions: [{ name: "example", expectedSourceSha256: "e".repeat(64), observedSourceSha256: "e".repeat(64), deployedBundleSha256: "f".repeat(64), remoteVersion: 1, remoteStatus: "ACTIVE" }],
+      },
+      smoke: buildSafeSmokeEvidence({ environment: evidence.environment, projectRef: evidence.projectRef, observationGitSha: evidence.candidateGitSha, statusCode: 401, observedAt: "2026-08-13T00:00:00.000300Z" }),
+      context: { gitSha: evidence.candidateGitSha, githubRunId: evidence.actionsRunId, githubRunAttempt: evidence.runAttempt, observedAt: "2026-08-13T00:00:00.000400Z", trigger: "push", mode: "deploy" },
+    })
+    const completion = {
+      contractVersion: "fundloop.deploy-completion-evidence/v1",
+      candidateGitSha: evidence.candidateGitSha, actionsRunId: evidence.actionsRunId,
+      runAttempt: evidence.runAttempt, environment: evidence.environment, projectRef: evidence.projectRef,
+      inventorySha256: evidence.inventorySha256,
+      schemaExpectedSha256: manifest.schema.expectedSha256, schemaObservedSha256: manifest.schema.observedSha256,
+      functionInventorySha256: manifest.functions.inventorySha256,
+      hostedSmokeEvidenceSha256: manifest.prerequisites.hostedUnauthenticatedDenial.evidence.evidenceSha256,
+      deploymentManifestSha256: manifest.manifestSha256, completedAt: "2026-08-13T00:00:00.000999Z",
+    }
+    expect(validateDeployCompletionEvidence(completion, evidence, manifest)).toBe(true)
+    expect(validateDeployCompletionEvidence(undefined, evidence, manifest)).toBe(false)
+    expect(validateDeployCompletionEvidence({ ...completion, candidateGitSha: "9".repeat(40) }, evidence, manifest)).toBe(false)
+    expect(validateDeployCompletionEvidence({ ...completion, inventorySha256: "9".repeat(64) }, evidence, manifest)).toBe(false)
+    expect(validateDeployCompletionEvidence({ ...completion, schemaObservedSha256: "9".repeat(64) }, evidence, manifest)).toBe(false)
+    expect(validateDeployCompletionEvidence({ ...completion, completedAt: "2026-08-12T23:59:59Z" }, evidence, manifest)).toBe(false)
+    const tampered = structuredClone(manifest)
+    tampered.manifestSha256 = "9".repeat(64)
+    expect(validateDeployCompletionEvidence(completion, evidence, tampered)).toBe(false)
+    expect(validateDeployCompletionEvidence(completion, evidence, { ...manifest, migrations: { inventorySha256 } })).toBe(false)
+    expect(buildDeployCompletionEvidence(manifest, binding)).toMatchObject({ deploymentManifestSha256: completion.deploymentManifestSha256 })
+    expect(() => buildDeployCompletionEvidence(manifest, { ...binding, actionsRunId: "43" })).toThrow("deployment-completion-invalid")
+  })
+
   it("keeps candidate-bound migration evidence append-only and non-browser-readable", () => {
     const sql = readFileSync("supabase/migrations/20260812120000_supabase_deploy_migration_evidence.sql", "utf8")
     expect(sql).toContain("BEFORE UPDATE OR DELETE")
     expect(sql).toContain("supabase_deploy_migration_evidence_is_append_only")
     expect(sql).toContain("REVOKE ALL ON TABLE public.supabase_deploy_migration_evidence FROM anon, authenticated")
+    const completionSql = readFileSync("supabase/migrations/20260813010000_supabase_deploy_completion_evidence.sql", "utf8")
+    expect(completionSql).toContain("REFERENCES public.supabase_deploy_migration_evidence")
+    expect(completionSql).toContain("supabase_deploy_completion_candidate_mismatch")
+    expect(completionSql).toContain("supabase_deploy_completion_manifest_mismatch")
+    expect(completionSql).toContain("deployment_manifest jsonb NOT NULL")
+    expect(completionSql).toContain("{observation,observedAt}")
+    expect(completionSql).toContain("candidate.inventory_sha256 = NEW.inventory_sha256")
+    expect(completionSql).toContain("supabase_deploy_completion_evidence_is_append_only")
+    expect(completionSql).toContain("REVOKE ALL ON TABLE public.supabase_deploy_completion_evidence FROM anon, authenticated")
   })
 
   it("derives reviewed function closures independently and blocks missing or extra remote paths", () => {
@@ -212,9 +371,17 @@ describe("Supabase delivery parity", () => {
     expect(workflow).toContain('status_code}" != "401"')
     expect(workflow).toContain("Record safe hosted runtime denial")
     expect(workflow.indexOf("Record safe hosted runtime denial")).toBeLessThan(workflow.indexOf("Publish immutable environment manifest"))
+    expect(workflow.indexOf("Publish immutable environment manifest")).toBeLessThan(workflow.indexOf("Upload sanitized Supabase parity evidence"))
+    expect(workflow.indexOf("Upload sanitized Supabase parity evidence")).toBeLessThan(workflow.indexOf("Upload immutable environment manifest"))
+    expect(workflow.indexOf("Upload immutable environment manifest")).toBeLessThan(workflow.indexOf("Certify completed Supabase deployment"))
+    expect(workflow).toContain("verify-supabase-environment-manifest.mjs complete")
+    expect(workflow).toContain('SUPABASE_SCHEMA_DB_URL="${supabase_db_url}"')
+    const completionStep = workflow.slice(workflow.indexOf("- name: Certify completed Supabase deployment"), workflow.indexOf("- name: Upload sanitized Dev schema diagnostic"))
+    expect(completionStep).not.toContain('psql "${supabase_db_url}"')
+    expect(schemaVerifier).toContain("INSERT INTO public.supabase_deploy_completion_evidence")
     expect(workflow).toContain("actions/upload-artifact@v4")
-    expect(workflow).toContain("if: ${{ always() && steps.target.outputs.mode == 'deploy' }}")
-    expect(workflow).toContain("if-no-files-found: warn")
+    expect(workflow).not.toContain("if: ${{ always() && steps.target.outputs.mode == 'deploy' }}")
+    expect(workflow).toContain("if-no-files-found: error")
     expect(workflow).toContain("verify-supabase-schema-parity.mjs diagnose")
     expect(workflow).toContain("supabase-schema-diagnostic-dev-${{ github.sha }}")
     expect(workflow).toContain("steps.target.outputs.mode == 'dry-run' && steps.target.outputs.target_environment == 'dev'")

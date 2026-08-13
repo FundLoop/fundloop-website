@@ -17,9 +17,16 @@ PR runs intentionally do not mutate shared databases or deploy functions.
 
 PR dry-runs targeting Dev also execute a read-only effective-schema diagnostic after
 the remote migration plan. The diagnostic replays the complete candidate history in
-a randomized Postgres 17 stack and compares that full `public` schema with a read-only
-Dev dump. Unknown drift remains blocking; only the reviewed, unordered policy-role
-set is canonicalized.
+a randomized Postgres 17 stack. When the PR contains ordinary forward migrations, it
+also replays the exact immutable remote-history prefix into a disposable baseline
+Postgres 17 stack and compares that baseline `public` schema with a read-only Dev dump.
+The baseline stack is separately task-owned and every host-side command uses its
+dynamically allocated loopback port; container-side reads continue to use the stack's
+internal Postgres port. The
+candidate tail must be strictly forward, may contain one or more migrations, and its
+full replay must already have succeeded. Changed bytes, an unknown/non-prefix remote
+version, missing byte-bound baseline evidence, or unexplained remote schema drift
+remain blocking. Only the reviewed, unordered policy-role set is canonicalized.
 
 Before failing, the runner writes a sanitized
 `fundloop.public-schema-diagnostic/v2` artifact. It contains candidate/environment
@@ -194,12 +201,13 @@ byte-for-byte using the exact `pg17-public-schema-normalized-v2` algorithm. Vers
 sorts only the unordered role set in `CREATE POLICY ... TO ...`; object names,
 definitions, expressions, and every other schema byte remain covered.
 
-One pending forward repair may pass the Dev PR diagnostic only when the tracked
-`fundloop.public-schema-repair/v1` manifest matches the complete legacy drift
-signature, the remote migration history is the byte-bound reviewed prefix, the repair
-is the sole pending migration, and production value flow remains disabled. The
-post-deploy verifier has no repair exception: it requires the complete migration
-history and zero normalized schema drift.
+Ordinary pending forward migrations may pass the Dev PR diagnostic only when remote
+history is the exact byte-bound reviewed prefix, a disposable replay of that prefix
+has zero normalized drift from Dev, the complete candidate tail replays successfully,
+and production value flow remains disabled. The legacy one-off
+`fundloop.public-schema-repair/v1` path remains limited to its exact recorded drift
+signature. The post-deploy verifier has no pending-migration exception: it requires
+the complete migration history and zero normalized schema drift.
 
 The expected function closure is derived with the repo-pinned TypeScript compiler
 API after `pnpm install --frozen-lockfile`. It follows side-effect imports, dynamic
@@ -251,12 +259,43 @@ certified backend deployment from an earlier SHA only when the latest matching
 append-only deploy-evidence record independently recomputes to the checkout's exact
 ordered migration byte inventory. Function source parity remains bound to the current
 observation checkout. In deployment mode the two SHA/run/attempt identities must be
-identical.
+identical, and `certifiedDeployment.recordedAt` is the timestamp read back from that
+validated immutable database row—not the later verification or manifest timestamp.
+Schema, function, and hosted-smoke component evidence retain their own observation SHA
+and timestamp inside their digest-bound manifest sections. Every component SHA must
+equal the final observation SHA, and exact RFC3339 ordering (without millisecond
+truncation) requires the certified deployment to precede or equal every component,
+which must in turn precede or equal the final manifest observation.
+
+Migration evidence is deliberately inserted before `supabase db push` so the exact
+candidate bytes remain auditable even when a deployment fails. That candidate row does
+not certify success. Only after migration/schema parity, Edge Function deployment and
+source read-back, hosted `401`, and manifest composition pass does the workflow append a
+separate immutable `fundloop.deploy-completion-evidence/v1` row. It binds the candidate
+SHA/run/attempt/environment/project and migration inventory to schema, function,
+certified deploy-smoke, and deployment-manifest digests, retains the complete sanitized
+deploy manifest, and requires completion time to follow every deploy observation.
+Both the required parity artifact and immutable manifest artifact must publish before
+the completion row is appended; an upload failure therefore leaves candidate-only
+evidence. Before that final mutation, the complete manifest, its self-digest, component
+digests, and evidence list are independently re-verified. Read-only drift selects
+candidates only through an exact completion join, re-verifies the retained deploy
+manifest, and binds every completion digest back to it. Candidate-only, skeletal,
+tampered, mismatched, legacy, or stale rows cannot become the certified deployment.
+The drift manifest retains the certified deploy smoke separately from a newly observed
+safe smoke; the fresh observation must be distinct and occur after completion.
+
+All chronology-bearing evidence requires a semantic RFC3339 timestamp with an explicit
+known timezone. `Z`, `+00:00`, and known positive or negative offsets are accepted;
+RFC3339's unknown-local-offset form `-00:00` is rejected because it cannot prove order.
 
 `Supabase Drift Detection` never deploys, repairs, seeds, prunes, or invokes database
 mutation commands. UI-only dev/main pushes are observed directly. A shared classifier
 assigns any backend or mixed push to `Supabase Deploy`; only its successful, same-repo
-`workflow_run` performs the read-only observation, eliminating the pre-deploy race.
+push-origin `workflow_run` performs the read-only observation, eliminating the
+pre-deploy race. A manually dispatched deploy can target an environment different from
+its source branch, so it is deliberately not inferred from `head_branch`; run the drift
+workflow explicitly for that selected target instead.
 The classifier's canonical path set is tested for exact equality with both deploy
 workflow path lists. The daily schedule observes Dev only. Production observation is
 an explicit manual or main-push protected-environment operation; missing Production

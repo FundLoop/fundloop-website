@@ -372,7 +372,7 @@ jobs:
         run: node scripts/verify-supabase-environment-manifest.mjs compose
 
       - name: Upload sanitized Supabase parity evidence
-        if: ${{ always() && steps.target.outputs.mode == 'deploy' }}
+        if: steps.target.outputs.mode == 'deploy'
         uses: actions/upload-artifact@v4
         with:
           name: supabase-parity-${{ steps.target.outputs.target_environment }}-${{ github.sha }}
@@ -381,8 +381,7 @@ jobs:
             ${{ runner.temp }}/supabase-schema-diagnostic.json
             ${{ runner.temp }}/supabase-function-parity.json
             ${{ runner.temp }}/supabase-safe-runtime-smoke.json
-            ${{ runner.temp }}/supabase-environment-manifest.json
-          if-no-files-found: warn
+          if-no-files-found: error
           retention-days: 30
 
       - name: Upload immutable environment manifest
@@ -393,6 +392,25 @@ jobs:
           path: ${{ runner.temp }}/supabase-environment-manifest.json
           if-no-files-found: error
           retention-days: 90
+
+      - name: Certify completed Supabase deployment
+        if: steps.target.outputs.mode == 'deploy'
+        env:
+          SUPABASE_PROJECT_REF: ${{ steps.target.outputs.project_ref }}
+          TARGET_ENVIRONMENT: ${{ steps.target.outputs.target_environment }}
+          SUPABASE_ENVIRONMENT_MANIFEST_OUTPUT: ${{ runner.temp }}/supabase-environment-manifest.json
+        run: |
+          set -euo pipefail
+
+          case "${TARGET_ENVIRONMENT}" in
+            dev) supabase_db_url="${DEV_SUPABASE_SESSION_POOLER_URL}" ;;
+            main) supabase_db_url="${MAIN_SUPABASE_SESSION_POOLER_URL}" ;;
+            *) echo "::error::Unsupported completion target '${TARGET_ENVIRONMENT}'."; exit 1 ;;
+          esac
+          echo "::add-mask::${supabase_db_url}"
+
+          SUPABASE_SCHEMA_DB_URL="${supabase_db_url}" \
+            node scripts/verify-supabase-environment-manifest.mjs complete
 
       - name: Upload sanitized Dev schema diagnostic
         if: ${{ always() && steps.target.outputs.mode == 'dry-run' && steps.target.outputs.target_environment == 'dev' }}
