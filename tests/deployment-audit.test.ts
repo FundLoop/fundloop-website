@@ -110,4 +110,12 @@ describe("Supabase deployment replay contract", () => {
     expect(deployWorkflow).toContain("name: Supabase ${{ github.event_name == 'pull_request' && 'dry-run'")
     expect(deployWorkflow).toContain('if [[ "${SHOULD_RUN}" == "false" && "${SUPABASE_RESULT}" != "skipped" ]]')
   })
+
+  it("uses job names as branch-protection contexts rather than workflow display labels", () => {
+    expect(ciWorkflow).toContain("name: Supabase fresh-schema replay")
+    expect(ciWorkflow).toContain("  validate:")
+    expect(ciWorkflow).not.toContain("name: CI / validate")
+    expect(ciWorkflow).not.toContain("name: CI / Supabase fresh-schema replay")
+    expect(deployWorkflow).toContain("name: Supabase ${{ github.event_name == 'pull_request' && 'dry-run'")
+  })
 })

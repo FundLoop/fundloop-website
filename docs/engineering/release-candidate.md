@@ -31,7 +31,7 @@ records the unsafe baseline and the owner/admin API result after configuration.
 
 GitHub API checks on 2026-08-13 confirm:
 
-- both branches require `CI / validate`, `CI / Supabase fresh-schema replay`, and
+- both branches require exact check-run contexts `validate`, `Supabase fresh-schema replay`, and
   `Supabase dry-run` on every PR;
 - the Supabase check always reports, but only runs provider-backed dry-run work when
   the reviewed path classifier says it is required;

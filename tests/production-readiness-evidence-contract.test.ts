@@ -130,8 +130,8 @@ describe("production-readiness evidence contract v1", () => {
     ["missing prerequisite", "prerequisite-missing:fresh-replay", (manifest: ProductionReadinessManifest) => { manifest.prerequisites = manifest.prerequisites.filter((entry) => entry.prerequisiteId !== "fresh-replay") }],
     ["failed prerequisite", "prerequisite-not-passed:fresh-replay", (manifest: ProductionReadinessManifest) => { manifest.prerequisites[0]!.status = "fail" }],
     ["missing PR protection", "protection-missing:pull-request", (manifest: ProductionReadinessManifest) => { manifest.githubControls.pullRequestRequired = false }],
-    ["missing required check", "protection-missing:check:CI / validate", (manifest: ProductionReadinessManifest) => { manifest.githubControls.requiredChecks = ["CI / Supabase fresh-schema replay", "Supabase dry-run"] }],
-    ["missing replay check", "protection-missing:check:CI / Supabase fresh-schema replay", (manifest: ProductionReadinessManifest) => { manifest.githubControls.requiredChecks = ["CI / validate", "Supabase dry-run"] }],
+    ["missing required check", "protection-missing:check:validate", (manifest: ProductionReadinessManifest) => { manifest.githubControls.requiredChecks = ["Supabase fresh-schema replay", "Supabase dry-run"] }],
+    ["missing replay check", "protection-missing:check:Supabase fresh-schema replay", (manifest: ProductionReadinessManifest) => { manifest.githubControls.requiredChecks = ["validate", "Supabase dry-run"] }],
     ["missing Production reviewer", "protection-missing:production-reviewer", (manifest: ProductionReadinessManifest) => { manifest.githubControls.requiredReviewerCount = 0 }],
     ["admin bypass", "protection-missing:admin-bypass", (manifest: ProductionReadinessManifest) => { manifest.githubControls.adminBypassAllowed = true }],
     ["failed blocking alert", "alert-delivery-failed:parity-drift", (manifest: ProductionReadinessManifest) => { manifest.alerts.push({ code: "parity-drift", severity: "blocking", subject: "fixture", firstObservedAt: manifest.generatedAt, owner: "release-owner", deliveryStatus: "failed", evidenceSha256: "9".repeat(64) }) }],
@@ -143,8 +143,8 @@ describe("production-readiness evidence contract v1", () => {
   })
 
   it("accepts the required fresh-schema replay check when present", () => {
-    expect(fixture.githubControls.requiredChecks).toContain("CI / Supabase fresh-schema replay")
-    expect(evaluate()).not.toContain("protection-missing:check:CI / Supabase fresh-schema replay")
+    expect(fixture.githubControls.requiredChecks).toContain("Supabase fresh-schema replay")
+    expect(evaluate()).not.toContain("protection-missing:check:Supabase fresh-schema replay")
   })
 
   it("accepts cutover controls only with a consistent cutover pass and fresh scoped approvals", () => {

@@ -33,7 +33,9 @@ Production value-flow enabled count remained zero.
 ## Promotion controls
 
 Owner/admin REST read-back confirmed protected `dev` and `main` require PRs, current
-branches, `CI / validate`, `CI / Supabase fresh-schema replay`, and `Supabase dry-run`.
+branches, `validate`, `Supabase fresh-schema replay`, and `Supabase dry-run`.
+These are check-run context names; the first two are jobs in the `CI` workflow, but
+GitHub branch protection does not prefix their contexts with the workflow name.
 Administrator enforcement, linear history, resolved conversations, and force-push
 and deletion denial are active.
 

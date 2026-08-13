@@ -114,8 +114,8 @@
           "minItems": 3,
           "uniqueItems": true,
           "allOf": [
-            { "contains": { "const": "CI / validate" } },
-            { "contains": { "const": "CI / Supabase fresh-schema replay" } },
+            { "contains": { "const": "validate" } },
+            { "contains": { "const": "Supabase fresh-schema replay" } },
             { "contains": { "const": "Supabase dry-run" } }
           ],
           "items": { "$ref": "#/$defs/nonEmpty" }

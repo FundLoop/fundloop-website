@@ -105,7 +105,7 @@ const EXPECTED_PROJECT_REFS: Record<EvidenceEnvironment, string> = {
   production: "tpouimiyfmvucrerfhfc",
 }
 
-const REQUIRED_CHECKS = ["CI / validate", "CI / Supabase fresh-schema replay", "Supabase dry-run"]
+const REQUIRED_CHECKS = ["validate", "Supabase fresh-schema replay", "Supabase dry-run"]
 const CUTOVER_APPROVALS = ["legal", "accounting", "privacy-retention", "provider", "opening-balance", "cutover", "rollback"]
 const GO_LIVE_APPROVALS = [...CUTOVER_APPROVALS, "go-live"]
 const REQUIRED_PREREQUISITES: Record<EvidenceEnvironment, string[]> = {
