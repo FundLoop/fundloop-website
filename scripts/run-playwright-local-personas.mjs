@@ -184,6 +184,15 @@ async function waitForApp(baseURL, child, identity) {
   })
 }
 
+async function warmPersonaRoutes(baseURL, child) {
+  for (const route of ["/en?onboarding=user", "/en?onboarding=project", "/en/admin/cycles/2035-05/zkas"]) {
+    if (child.exitCode !== null) throw new Error("persona-next-exited")
+    const response = await fetch(`${baseURL}${route}`, { redirect: "follow", signal: AbortSignal.timeout(90_000) })
+    if (!response.ok) throw new Error(`persona-next-warmup-failed:${route}:${response.status}`)
+    await response.arrayBuffer()
+  }
+}
+
 async function assertPortFree(baseURL) {
   try {
     await fetch(baseURL, { signal: AbortSignal.timeout(1_000) })
@@ -574,6 +583,7 @@ async function main() {
       readinessNonce: runId,
       commitSha: sharedEnv.FUNDLOOP_PERSONA_COMMIT_SHA,
     })
+    await warmPersonaRoutes(env.baseURL, app)
     const grep = options.selfTest ? "@harness:self-test" : `@persona:(${selected.join("|")})`
     removePrivateFailureArtifacts()
     const playwrightExitCode = await run("pnpm", ["exec", "playwright", "test", "--project=local-personas", "--reporter=list", "--grep", grep], sharedEnv)

@@ -152,7 +152,9 @@ export function createPersonaBrowserActions(personaId: Exclude<PersonaId, "retur
     const continueDraft = page.getByRole("button", { name: "Continue draft" })
     await expect(continueDraft).toBeVisible({ timeout: 30_000 }).catch(() => { throw new Error(`persona-${flow}-resume-not-visible`) })
     await continueDraft.click({ timeout: 30_000 })
-    await expect(page.getByRole("heading", { name: title })).toBeVisible({ timeout: 30_000 }).catch(() => { throw new Error(`persona-${flow}-review-not-visible`) })
+    // First compilation of the project review route can exceed 30 seconds when
+    // the full operational matrix has just started all local Edge Functions.
+    await expect(page.getByRole("heading", { name: title })).toBeVisible({ timeout: 60_000 }).catch(() => { throw new Error(`persona-${flow}-review-not-visible`) })
   }
 
   async function assertPublishedProfile(expectedName: "New Member" | "New Founder") {
