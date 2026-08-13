@@ -5,6 +5,7 @@ import path from "node:path"
 import { setTimeout as delay } from "node:timers/promises"
 import { fileURLToPath } from "node:url"
 import { createClient } from "@supabase/supabase-js"
+import { waitForLocalWalletSchema } from "./local-wallet-schema-readiness.mjs"
 
 const rootCwd = new URL("..", import.meta.url)
 const rootPath = fileURLToPath(rootCwd)
@@ -173,7 +174,8 @@ async function resetLocalDatabase(env = process.env) {
   for (let attempt = 1; attempt <= 2; attempt += 1) {
     try {
       await runCommand("supabase", ["db", "reset", "--local"], env)
-      return
+      lastError = null
+      break
     } catch (error) {
       lastError = error
       if (attempt < 2) {
@@ -181,7 +183,8 @@ async function resetLocalDatabase(env = process.env) {
       }
     }
   }
-  throw lastError
+  if (lastError) throw lastError
+  await waitForLocalWalletSchema({ env })
 }
 
 async function startLocalEdgeRuntime(env) {
@@ -400,7 +403,6 @@ async function main() {
     const runBrowserFiles = (...files) => runCommand("pnpm", ["exec", "playwright", "test", "--project=local-wallet", ...files], sharedEnv)
     const resetDatabase = async () => {
       await resetLocalDatabase(sharedEnv)
-      await waitForHttp(`${sharedEnv.NEXT_PUBLIC_SUPABASE_URL}/rest/v1/`)
     }
 
     if (shouldRunPhase("wallet")) {
