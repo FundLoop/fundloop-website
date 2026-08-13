@@ -57,3 +57,15 @@
 - Validation: exact matrix runs passed fresh replay and final zero-residue reset while harvesting two harness failures before the final run: anonymous protected-route warmup correctly failed authentication, then one five-persona run reached 4/5 green with clean cleanup and showed the generic `Continue draft` locator could select a stale personal flow. Focused persona harness contracts, scoped lint, typecheck, the final matrix, `CI=1 pnpm check`, and proportionate database recheck follow this amended commit.
 - Reflections: readiness warming may compile only routes whose preconditions the phase owns. Modal eligibility must refresh after profile activation, and resume actions must be scoped by flow identity rather than shared button text. Product authorization and persistence stay in the authenticated journeys.
 - Next steps: rerun focused harness contracts and the complete Feature #118 matrix, then run the Node 22 full check and stop every task-owned local service before independent validation handoff.
+
+### session v6: gate local-wallet resets on the current PostgREST schema (#186)
+
+- Timestamp: 2026-08-13T14:44:13Z
+- Agent: Codex (`issue-implementer` integration fix)
+- Branch: `codex/155-goal-2-integrated-evidence`
+- Head before commit: `fb02676d805d9725570fe2a8713fed0ccf3680f9`
+- Objective: prevent the local-wallet lane from continuing after a CLI reset while PostgREST still has a missing or stale schema cache.
+- Actions: added a bounded service-role schema sentinel after every local-wallet database reset; required HTTP 200, valid JSON, and the exact active Base/EVM/8453 `ref_chains` projection before chain sync or fixtures; removed the generic REST-root readiness shortcut; documented the reset contract; and added negative, delayed, and stale-response coverage. Updated the operational contract to follow the already-extracted persona readiness helper.
+- Validation: focused Vitest passed `8/8`; scoped ESLint, Node 22 typecheck, JavaScript syntax checks, and `git diff --check` passed. Per the user boundary, Supabase was kept stopped and no Docker, reset, serve, wallet, matrix, provider, hosted, or remote command ran.
+- Reflections: CLI reset completion and a non-5xx REST-root response cannot certify that PostgREST has loaded current tables and columns. A narrow data-contract probe gives the runner a truthful, classified timeout without weakening product assertions or retrying destructive resets.
+- Next steps: with explicit permission to restart local Supabase, run one focused wallet startup/allocation transition. Only if green, run one complete Feature #118 matrix; only if that is green, run the Node 22 `CI=1 pnpm check`, then stop the task-owned local stack.
