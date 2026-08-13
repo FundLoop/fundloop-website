@@ -73,7 +73,7 @@ jobs:
             should_run="true"
           else
             should_run="$(
-              git diff --name-only \
+              git diff --no-renames --name-only \
                 "${{ github.event.pull_request.base.sha }}" \
                 "${{ github.event.pull_request.head.sha }}" \
                 | node scripts/classify-supabase-drift-push.mjs deploy

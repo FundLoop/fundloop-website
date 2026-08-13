@@ -1800,3 +1800,46 @@ complete hosted outcome.
 - After validator acceptance, let the orchestrator use `$yeet` once for the Goal PR.
 - After human-authorized merge, certify the new Dev merge SHA before starting Goal 2;
   do not cross the Production release boundary.
+
+### session v37: Classify both sides of Supabase file moves (#162/#187)
+
+- Timestamp: 2026-08-13T06:58:17-04:00
+- Agent: Codex
+- Branch: `codex/155-goal-1-delivery-integrity-post-ci`
+- Head: `8aebdaa201c0b8b62f08e151961b44886578ba2a`
+
+#### Objective
+
+Close PR #203's single actionable review gap so moving a canonical Supabase file out
+of a deploy-owned path cannot make the required provider dry-run silently skip.
+
+#### Actions Taken
+
+- Disabled Git rename detection in the PR scope diff with
+  `git diff --no-renames --name-only`, making an exact move report its deletion and
+  addition paths independently.
+- Added workflow-contract coverage for the required option and adversarial classifier
+  cases for canonical-to-archive, archive-to-canonical, mixed function moves, and a
+  genuinely unrelated noncanonical move.
+- Reproduced the exact attack in a disposable Git repository: the default name-only
+  diff emitted only `archive/exact.sql`, while the no-renames diff emitted both that
+  destination and `supabase/migrations/exact.sql`; the classifier returned true.
+
+#### Tests And Validation Notes
+
+- Passed Node 22.23.2 focused deployment/manifest suites, 2 files and 23 tests.
+- Passed focused ESLint, Node classifier syntax, workflow YAML parse, the real exact-
+  rename adversarial smoke, and `git diff --check`.
+- No rereview request, merge, GitHub configuration change, environment approval,
+  Supabase mutation, Production action, or value-flow activation occurred.
+
+#### Reflections
+
+Path classification must model deletions as well as destinations. Disabling rename
+detection is the smallest fail-closed contract because every old and new path then
+uses the same audited classifier without parsing similarity scores or rename records.
+
+#### Suggested Next Steps
+
+- Push this commit to existing PR #203, reply to and resolve only the actionable
+  thread, then wait for the same PR's required checks without requesting rereview.

@@ -334,4 +334,18 @@ describe("immutable Supabase environment manifests", () => {
     expect(shouldRunSupabaseDeploy(["app/en/page.tsx", "components/ui/button.tsx"])).toBe(false)
     expect(shouldRunSupabaseDeploy(["app/en/page.tsx", "supabase/migrations/example.sql"])).toBe(true)
   })
+
+  it("classifies both sides of exact canonical moves with rename detection disabled", () => {
+    const deploy = readFileSync(".github/workflows/supabase-deploy.yml", "utf8")
+    expect(deploy).toContain("git diff --no-renames --name-only")
+
+    expect(shouldRunSupabaseDeploy(["supabase/migrations/exact.sql", "archive/exact.sql"])).toBe(true)
+    expect(shouldRunSupabaseDeploy(["archive/exact.sql", "supabase/migrations/exact.sql"])).toBe(true)
+    expect(shouldRunSupabaseDeploy([
+      "supabase/functions/example/index.ts",
+      "archive/example/index.ts",
+      "docs/unrelated.md",
+    ])).toBe(true)
+    expect(shouldRunSupabaseDeploy(["archive/old.md", "docs/new.md"])).toBe(false)
+  })
 })

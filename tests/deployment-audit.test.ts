@@ -103,6 +103,7 @@ describe("Supabase deployment replay contract", () => {
   it("always reports the required PR dry-run check and gates scoped execution", () => {
     expect(deployWorkflow).toContain("pull_request:\n    branches:\n      - dev\n      - main\n  push:")
     expect(deployWorkflow).toContain("name: Classify Supabase change")
+    expect(deployWorkflow).toContain("git diff --no-renames --name-only")
     expect(deployWorkflow).toContain("node scripts/classify-supabase-drift-push.mjs deploy")
     expect(deployWorkflow).toContain("name: Supabase execution")
     expect(deployWorkflow).toContain("needs.scope.outputs.should_run == 'true'")
