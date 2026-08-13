@@ -4,10 +4,10 @@ Session 21 introduced `public.monthly_cycles` as the canonical operational ancho
 Session 22 added the first mutation command, `monthly-cycle-lock`, so operators can freeze an open cycle into an immutable lock manifest.
 Session 27 added the outbound payout domain model and the first payout-intent creation command.
 
-The [2026-08-13 allocator identity-boundary audit](./2026-08-13-allocator-identity-boundary-audit.md)
-classifies the current lock/package/allocation records as noncompliant with the proposed
-allocator-only identity join: raw FundLoop user IDs and project-scoped claim information are
-persisted together. Publication remains blocked while the proposed remediation awaits approval.
+The [2026-08-13 allocator privacy-boundary audit](./2026-08-13-allocator-identity-boundary-audit.md)
+accepts the current FundLoop identity binding and per-project claim records for MVP validation.
+The allocator itself must remain field-limited, use logically allocator-only tables, consume a
+private Cubid scoped-ID/score resolver, and carry currency end to end.
 
 ## Schema Contract
 
