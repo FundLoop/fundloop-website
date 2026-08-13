@@ -8,7 +8,10 @@ const ownedByShell = new Map([
   ["epoch_allocation_v2_four_epoch_lifecycle.sql", "epoch_allocation_v2_four_epoch_lifecycle.sh"],
   ["epoch_allocation_v2_four_epoch_setup.sql", "epoch_allocation_v2_four_epoch_lifecycle.sh"],
 ])
-const isolatedShells = new Set(["base_safe_payout_control_plane.sh", "epoch_allocation_v2_four_epoch_lifecycle.sh", "withdrawal_reservation_concurrency.sh", "financial_cutover_pre_feature_migration.sh"])
+// The cutover upgrade wrapper is self-isolating: it resets to the historical
+// migration boundary and restores current itself. Wrapping it in two more
+// resets adds no isolation and can exhaust the local container during replay.
+const isolatedShells = new Set(["base_safe_payout_control_plane.sh", "epoch_allocation_v2_four_epoch_lifecycle.sh", "withdrawal_reservation_concurrency.sh"])
 const nonTapShellContracts = new Map([
   ["base_safe_payout_control_plane.sh", "wrapper-owned:setup-psql-and-assertion-psql"],
   ["epoch_allocation_v2_four_epoch_lifecycle.sh", "wrapper-owned:integrated-fixture-concurrency-and-assertion-psql"],

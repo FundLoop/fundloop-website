@@ -177,3 +177,15 @@
 - Validation: the initial complete runner passed 20/21 and identified the first SQLSTATE 42804 mismatch. A fresh focused execution then passed the real claim/harvest serialization, deterministic native-Node-22 calculation, persisted result, close/replay, generated reports, and full conservation assertions. Focused Vitest, shell syntax, lint, typecheck, and diff checks passed before commit. No remote, hosted, Production, provider, payout, or real-value-flow state is in scope.
 - Reflections: enum-compatible literals inside a multi-branch SQL expression still resolve to `text` unless explicitly typed. Runtime execution also proved that provider IDs must satisfy their exact format, psql variables require stdin scripts rather than `-c`, carry must bind through persisted disposition lineage rather than surrogate ID ordering, the calculator must use an installed runtime, and the target close needs an explicit reviewing shadow state.
 - Next steps: run the focused four-epoch wrapper against a freshly reset local candidate, then rerun the strict canonical suite once if focused execution is green.
+
+### session v16: recognize the cutover wrapper's owned isolation (#186)
+
+- Timestamp: 2026-08-13T18:11:00Z
+- Agent: Codex (`issue-implementer` runtime certification)
+- Branch: `codex/155-goal-2-integrated-evidence`
+- Head before commit: `2992b3a`
+- Objective: remove redundant container replay around the already self-isolating historical cutover migration wrapper.
+- Actions: kept the wrapper's explicit accountable contract but stopped the parent TAP runner from adding setup and cleanup resets around it. The wrapper itself resets to the pre-feature migration boundary, applies the upgrade, asserts preservation, and restores current schema under its EXIT trap. Added discovery coverage for that exact ownership distinction.
+- Validation: the canonical rerun proved the repaired four-epoch suite green and passed 20/21; only the cutover wrapper reported a non-diagnostic exit after redundant replay. Running that wrapper directly with tracing passed its historical reset, fixture, migration-up, assertion, and current restore. Focused runner tests, lint, typecheck, syntax, and the final canonical result follow below.
+- Reflections: isolation must have one accountable owner. Nesting parent resets around a wrapper that deliberately owns two full versioned resets increases host pressure without improving test independence.
+- Next steps: rerun the canonical suite with single-owner cutover isolation, then proceed to the focused wallet gate only if all 21 suites pass.

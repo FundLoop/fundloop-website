@@ -7,6 +7,8 @@ describe("database TAP runner", () => {
     expect(suites.length).toBeGreaterThanOrEqual(20)
     expect(suites.some((suite) => suite.name === "epoch_allocation_v2_four_epoch_lifecycle.sh" && suite.isolated)).toBe(true)
     expect(suites.some((suite) => suite.name === "base_safe_payout_control_plane.sh" && suite.isolated)).toBe(true)
+    expect(suites.some((suite) => suite.name === "financial_cutover_pre_feature_migration.sh" && !suite.isolated
+      && suite.contract === "wrapper-owned:versioned-reset-migration-and-assertion-psql")).toBe(true)
   })
 
   it("emits valid planned TAP and succeeds only when every suite and cleanup succeeds", () => {
