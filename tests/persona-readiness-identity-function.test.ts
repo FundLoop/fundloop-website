@@ -2,7 +2,8 @@ import { readFileSync } from "node:fs"
 import { describe, expect, it } from "vitest"
 
 const edge = readFileSync("supabase/functions/persona-readiness-identity/index.ts", "utf8")
-const schema = readFileSync("supabase/migrations/20260813133000_persona_goal2_schema_readiness.sql", "utf8")
+const schema = ["supabase/migrations/20260813133000_persona_goal2_schema_readiness.sql",
+  "supabase/migrations/20260813140000_monthly_report_storage_and_version_integrity.sql"].map((path) => readFileSync(path, "utf8")).join("\n")
 
 describe("persona candidate readiness identities", () => {
   it("keeps the runtime identity local, secret-bound, exact, and nonmutating", () => {
@@ -23,6 +24,7 @@ describe("persona candidate readiness identities", () => {
       "epoch_redistribution_pool_sources", "monthly_cycle_report_artifacts", "monthly_cycle_report_events",
       "harvested_minor", "selected_preview_hash", "lock_funded_epoch_allocation_v2",
       "record_funded_epoch_allocation_v2_once", "generate_monthly_cycle_reports", "publish_monthly_cycle_reports",
+      "regenerate_monthly_cycle_reports", "prepare_monthly_cycle_report_publication", "finalize_monthly_cycle_report_publication",
     ]) expect(schema).toContain(feature)
     expect(schema).toContain("missingFeatures")
     expect(schema).toContain("productionValueFlowEnabled',false")

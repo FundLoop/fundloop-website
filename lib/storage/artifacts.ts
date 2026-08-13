@@ -160,7 +160,7 @@ export function buildZkasRunArtifactPath(input: {
 
 export function buildMonthlyCycleReportArtifactPath(input: {
   cycleKey: string
-  audience: "public" | "user" | "founder" | "operator"
+  audience: "public" | "user" | "founder" | "operator" | "mcp"
   subjectId?: string | number | null
   fileName: string
 }) {
@@ -169,6 +169,23 @@ export function buildMonthlyCycleReportArtifactPath(input: {
   const subject = input.subjectId === null || input.subjectId === undefined ? null : requireSegment(input.subjectId, "Report subject")
   const fileName = normalizeFileName(input.fileName)
   return [cycleKey, audience, subject, fileName].filter(Boolean).join("/")
+}
+
+export function buildMonthlyCycleReportPublicationPath(input: {
+  cycleKey: string
+  closePackageId: string | number
+  audience: "public" | "user" | "founder" | "operator" | "mcp"
+  subjectId?: string | number | null
+  version: number
+  artifactHash: string
+}) {
+  const cycleKey = requireCycleKey(input.cycleKey)
+  if (!Number.isSafeInteger(input.version) || input.version < 1) throw new Error("Report version must be a positive integer.")
+  if (!/^[0-9a-f]{64}$/.test(input.artifactHash)) throw new Error("Report artifact hash must be a SHA-256 digest.")
+  const close = requireSegment(input.closePackageId, "Close package id")
+  const audience = requireSegment(input.audience, "Report audience")
+  const subject = input.subjectId === null || input.subjectId === undefined ? "global" : requireSegment(input.subjectId, "Report subject")
+  return `${cycleKey}/close-${close}/v${input.version}/${audience}/${subject}-${input.artifactHash}.json`
 }
 
 export function buildProjectAssetArtifactPath(input: {

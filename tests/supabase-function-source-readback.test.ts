@@ -117,6 +117,8 @@ describe("Supabase Management API function source read-back", () => {
     const monthlyReportClosure = expectedSourceClosure("monthly-report-publication")
     expect(monthlyReportClosure).toContain("supabase/functions/monthly-report-publication/index.ts")
     expect(monthlyReportClosure).toContain("lib/edge-functions/monthly-report-publication-contract.ts")
+    expect(monthlyReportClosure).toContain("lib/reporting/monthly-report-publication-handler.ts")
+    expect(monthlyReportClosure).toContain("lib/storage/artifacts.ts")
     expect(monthlyReportClosure).toContain("supabase/functions/_shared/command-runtime.ts")
     const personaReadinessClosure = expectedSourceClosure("persona-readiness-identity")
     expect(personaReadinessClosure).toContain("supabase/functions/persona-readiness-identity/index.ts")
