@@ -47,6 +47,7 @@
     "supabase:replay:pr": "node scripts/run-supabase-pr-replay.mjs",
     "supabase:replay:failure-smoke": "node scripts/smoke-supabase-pr-replay-failure.mjs",
     "supabase:replay:ci": "node scripts/run-supabase-pr-replay-ci.mjs",
+    "test:db": "node scripts/run-database-test-suite.mjs",
     "supabase:functions:serve:project-payment-drafts-create": "supabase functions serve project-payment-drafts-create --env-file .env.local",
     "typecheck": "tsc --noEmit",
     "check": "pnpm lint && pnpm test && pnpm typecheck && pnpm build"
