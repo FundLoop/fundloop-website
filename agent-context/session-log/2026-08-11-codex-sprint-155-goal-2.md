@@ -297,3 +297,15 @@
 - Validation: focused audit tests, scoped ESLint, Node 22 typecheck, link/issue-type/sub-issue/Project-status readback, Markdown review, and `git diff --check` follow this entry. No Supabase, Docker, browser, hosted service, provider, Production, payout, or value-flow command ran.
 - Reflections: the privacy boundary belongs at the allocator interface and authority surface. FundLoop's broader MVP evidence joins can remain temporarily without authorizing the allocator to read raw application identity or membership data.
 - Next steps: independently validate the revised audit and issue tree. Implement Cubid #79-#81 on one Goal branch/PR and add FundLoop currency/API/logical-table changes on the existing Goal 2 branch before #188 publication; preserve the v2 anonymization roadmap without treating it as an MVP blocker.
+
+### session v26: annotate the red-team proposals with MVP and Task ownership (#204)
+
+- Timestamp: 2026-08-13T21:48:00Z
+- Agent: Codex (`sprint-orchestrator` roadmap cross-reference update)
+- Branch: `codex/155-goal-2-integrated-evidence`
+- Head before commit: `52c6581`
+- Objective: make the existing business-review recommendations operationally unambiguous by recording which are implemented in Sprint #155, deliberately bypassed for MVP, or deferred to named cross-repo Tasks and post-Sprint Features.
+- Actions: preserved the existing review annotations and added an authoritative section-by-section disposition table; mapped the allocator boundary to FundLoop #204/#188 and Cubid #77-#81; replaced the obsolete claim that the allocator must be FundLoop's sole MVP identity join with the approved field/authority boundary; documented currency as mandatory MVP data; excluded project membership/self-identification from allocator inputs; and bound project-claims-to-currency-claims plus physical datastore separation to privacy v2. Updated the post-Sprint Feature 5 boundary and closing statement to match.
+- Validation: focused audit/review contract tests, scoped ESLint, Node 22 typecheck, Markdown link/wording review, and `git diff --check` follow this entry. No Supabase, Docker, browser, hosted service, provider, Production, payout, or value-flow command ran.
+- Reflections: a recommendation document can preserve a stronger destination without turning every destination property into an MVP gate. Explicit disposition and owner links prevent both silent deferral and accidental over-scoping.
+- Next steps: independently validate the combined audit/review documentation. Keep FundLoop #204 In Progress until its concrete API client, logical allocator ownership, currency propagation, and Cubid dependency are implemented; retain v2 claims/datastore/ZK work as roadmap rather than MVP scope.

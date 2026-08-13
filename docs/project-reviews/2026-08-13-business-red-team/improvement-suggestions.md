@@ -26,6 +26,60 @@ The objective is to preserve that thesis while sharply improving:
 - proof through real concierge pilots; and
 - discipline about what FundLoop will stop building.
 
+## Sprint #155 disposition tags
+
+The annotations below map these recommendations to
+[Sprint #155](https://github.com/FundLoop/fundloop-website/issues/155) as scoped on
+2026-08-13. They describe **coverage in the Sprint's accepted Task scope**, not a
+claim that every linked Task is complete or deployed. The live Task lifecycle remains
+the source of truth for implementation status.
+
+- **Addressed in Sprint scope** means a Task's objective or acceptance criteria
+  directly require the recommendation's outcome.
+- **Partially addressed in Sprint scope** means the Sprint supplies an important
+  control, proof, or prerequisite, but leaves material product work for later.
+- **Deliberate Sprint variance** means Sprint #155 intentionally does something
+  broader or differently sequenced than this proposal. The variance is recorded so
+  it can be evaluated rather than mistaken for silent roadmap drift.
+- **Accepted MVP bypass** means the recommendation remains desirable, but the MVP
+  is explicitly allowed to ship with a narrower or less private implementation.
+  These items must stay visible on the roadmap, but are not Sprint #155 release
+  blockers unless a linked Task says otherwise.
+
+### 2026-08-13 implementation and deferral map
+
+This table is the authoritative cross-reference for how the recommendations below
+relate to the approved MVP. A linked Task owns only the outcome stated in its issue;
+the link does not imply that the entire recommendation is implemented.
+
+| Sections | MVP disposition | Current implementation owner | Deferred owner or decision |
+| --- | --- | --- | --- |
+| 1 and 3 | Partial | FundLoop [#168](https://github.com/FundLoop/fundloop-website/issues/168), [#172](https://github.com/FundLoop/fundloop-website/issues/172), and [#183](https://github.com/FundLoop/fundloop-website/issues/183) cover truthful capability, governance, and hosted-language evidence. | Product-wide terminology and experimental-policy copy remain post-Sprint work. |
+| 2 | Accepted MVP bypass | Existing Goal 2 funding-source and accounting evidence supports the current approved funding paths. | Voluntary funding-choice product design belongs in post-Sprint Feature 2 or 3 below. |
+| 4, 5, and 8 | Accepted MVP bypass | FundLoop #183 verifies the hosted current story and role journeys. | The belief-led landing page, audience split, and multi-answer accordion belong in post-Sprint Feature 1. |
+| 6 and 7 | Partial | FundLoop [#181](https://github.com/FundLoop/fundloop-website/issues/181), [#182](https://github.com/FundLoop/fundloop-website/issues/182), and #183 cover reports, claims, and hosted founder/participant evidence. | Few-minute integration and broader UX simplification belong in post-Sprint Features 1 and 2. |
+| 9 and 9.1 | Deliberate MVP variance | FundLoop [#204](https://github.com/FundLoop/fundloop-website/issues/204) owns the allocator field/access boundary, allocator-only logical tables, currency propagation, and FundLoop integration. Cubid [Feature #77](https://github.com/Cubid-Me/cubid-monorepo/issues/77), [Goal #78](https://github.com/Cubid-Me/cubid-monorepo/issues/78), and Tasks [#79](https://github.com/Cubid-Me/cubid-monorepo/issues/79), [#80](https://github.com/Cubid-Me/cubid-monorepo/issues/80), and [#81](https://github.com/Cubid-Me/cubid-monorepo/issues/81) own the private scoped-ID/score API, resolution, and handoff. FundLoop #188 publishes the combined Goal 2 evidence. | FundLoop may retain identity joins before/after allocation and return per-project claims during MVP. Project claims become currency claims, unnecessary retained project correlation is removed, and a physically separate allocator datastore is evaluated in privacy v2. |
+| 9.2 | Accepted MVP bypass | #204 keeps ZK claims explicitly unavailable. | Alias separation, proofs, circuits, and administrator-collusion resistance belong in post-Sprint Feature 5. |
+| 9.3 | Accepted MVP bypass | FundLoop #168 and [#184](https://github.com/FundLoop/fundloop-website/issues/184) cover governance prerequisites only. | The secondary-account and consented email-list product belongs in post-Sprint Feature 2 and is not part of the allocator MVP. |
+| 10 | Partial | FundLoop #183, #184, and #204 bind current privacy claims and negatives. | The prominent public privacy narrative belongs in post-Sprint Feature 1. |
+| 11 and 12 | Partial | FundLoop [#165](https://github.com/FundLoop/fundloop-website/issues/165), [#169](https://github.com/FundLoop/fundloop-website/issues/169), #181, and [#186](https://github.com/FundLoop/fundloop-website/issues/186) cover fee/FX/cap evidence and explanation. | Final fee payer/model and stable cap policy belong in post-Sprint Feature 3. |
+| 13 and 14 | Partial | FundLoop #169, [#170](https://github.com/FundLoop/fundloop-website/issues/170), #172, [#173](https://github.com/FundLoop/fundloop-website/issues/173), #184, and #204 cover release, custody, governance, and phase boundaries. | Public sub-one-year commitment and final custody model require later product and professional decisions. |
+| 15 | Addressed in Sprint scope | FundLoop #181 and #183 implement and verify audience-scoped reporting; #204 constrains allocator-originated fields. | Pilot comprehension and correlation research remain part of post-Sprint Feature 4. |
+| 16 | Partial | Cubid #79-#81 provide the private allocator integration contract; FundLoop #204 consumes it. | The public ten-minute quickstart, external SDK/API, and webhook product belong in post-Sprint Feature 2. |
+| 17 and 18 | Accepted MVP bypass | Sprint #155 supplies no-value acceptance and evidence prerequisites. | Real concierge pilots and pre-committed kill criteria belong in post-Sprint Feature 4. |
+| 19 | Deliberate Sprint variance | FundLoop #165, [#166](https://github.com/FundLoop/fundloop-website/issues/166), and #186 finish bounded safety and production-readiness evidence. | After Sprint #155, further rail, asset, formula, or platform breadth requires a written exception tied to a pilot or safety need. |
+| 20 | Partial | FundLoop #169, #172, and #184 create scoped accounting, release, and governance evidence. | A unified product-level decision register belongs in post-Sprint Feature 3 or 4. |
+
+Two allocator-specific clarifications apply throughout this document:
+
+1. FundLoop's own project membership and user self-identification data has no role
+   in allocator input selection. The allocator receives project-scoped UUIDs, not
+   FundLoop membership rows or raw participant identity.
+2. The MVP may bind FundLoop users to per-project claims before and after
+   calculation so the logic can be validated. The privacy boundary limits what the
+   allocator can read and emit; it does not require FundLoop to erase those joins in
+   v1.
+
 ## 1. Product principles
 
 The improvements should be governed by six principles.
@@ -56,6 +110,15 @@ product boundary has failed.
 
 ### 1.3 State the current phase before describing the future
 
+> **Partially addressed in Sprint #155:**
+> [Task #172](https://github.com/FundLoop/fundloop-website/issues/172) requires
+> truthful capability labels and a refreshed release capability review;
+> [Task #183](https://github.com/FundLoop/fundloop-website/issues/183) tests the
+> public story across three languages; and
+> [Task #204](https://github.com/FundLoop/fundloop-website/issues/204) requires the
+> MVP, future ZK flow, and consented-PII flow to remain distinct. The broader public
+> roadmap and landing-page rewrite remain post-Sprint work.
+
 Every public claim should clearly distinguish:
 
 - what is true in the non-zero-knowledge MVP;
@@ -73,11 +136,24 @@ not as permanent economic doctrine.
 
 ### 1.5 Make reporting the proof layer
 
+> **Addressed in Sprint #155 scope:**
+> [Task #181](https://github.com/FundLoop/fundloop-website/issues/181) makes
+> deterministic audience-specific report generation, publication, explanation,
+> retention, privacy enforcement, and hosted verification a release requirement.
+
 FundLoop should not ask projects or participants to trust a complicated mechanism
 without intelligible evidence. Reporting should explain the monthly outcome without
 exposing the cross-project identity graph.
 
 ### 1.6 Stop treating breadth as progress
+
+> **Deliberate Sprint variance:** Sprint #155 finishes and validates already-selected
+> production-readiness surfaces before imposing the narrower post-Sprint product
+> boundary. [Task #165](https://github.com/FundLoop/fundloop-website/issues/165),
+> [Task #166](https://github.com/FundLoop/fundloop-website/issues/166), and
+> [Task #186](https://github.com/FundLoop/fundloop-website/issues/186) are the main
+> exceptions. They are bounded evidence and safety work, not evidence that continued
+> rail, asset, or formula expansion should count as product progress.
 
 Additional chains, assets, formulas, governance systems, and agent operations do
 not establish product-market fit. Near-term progress means fewer steps for projects,
@@ -121,6 +197,13 @@ The following questions must be explicit during setup:
 - What happens to value that cannot be paid?
 
 ## 3. Use reward language without promising income
+
+> **Partially addressed in Sprint #155 scope:**
+> [Task #183](https://github.com/FundLoop/fundloop-website/issues/183) requires the
+> hosted public story to distinguish current, hosted, and pending capabilities, while
+> [Task #168](https://github.com/FundLoop/fundloop-website/issues/168) packages the
+> relevant policy, payment, reporting, consent, and disclosure claims for legal
+> review. Neither Task, by itself, completes the product-wide terminology migration.
 
 FundLoop should remove words such as **income**, **salary**, and **entitlement** from
 its direct product promise unless a specific, legally reviewed context supports
@@ -260,6 +343,12 @@ reports, and use cases should move into the relevant audience experience.
 
 ## 6. Make project participation obviously simple
 
+> **Partially addressed in Sprint #155 scope:**
+> [Task #183](https://github.com/FundLoop/fundloop-website/issues/183) exercises a
+> hosted founder journey and [Task #181](https://github.com/FundLoop/fundloop-website/issues/181)
+> completes founder-facing reporting. Sprint #155 does not yet prove the promised
+> few-minute SDK onboarding or build the tech-agnostic project path.
+
 The project-facing site should lead with the operational simplicity FundLoop is
 trying to create:
 
@@ -319,6 +408,13 @@ FundLoop guarantees income or that every program has the same legal classificati
 
 ## 7. Make participant use obviously simple
 
+> **Partially addressed in Sprint #155 scope:**
+> [Task #182](https://github.com/FundLoop/fundloop-website/issues/182) proves the
+> current-and-prior-two-month claim window, payout-state handling, and rollover
+> lifecycle, and [Task #183](https://github.com/FundLoop/fundloop-website/issues/183)
+> exercises the hosted verified-participant journey. Simplifying the surrounding
+> public explanation and interaction design remains follow-up work.
+
 The participant-facing site should be explainable in one sentence:
 
 > Participate in projects that voluntarily reward people, then come to FundLoop to
@@ -376,9 +472,29 @@ plain-language description. Aspirational answers should be labelled as such.
 
 ## 9. Isolate the allocation engine as a privacy boundary
 
-The allocator should become a separately bounded module and the only FundLoop
-component allowed to amalgamate project-scoped CUBID identifiers into whole-user,
-FundLoop-scoped identifiers for allocation.
+> **Deliberate MVP variance with scoped implementation:**
+> [FundLoop #204](https://github.com/FundLoop/fundloop-website/issues/204) now tests
+> the allocator's field and authority boundary rather than requiring the allocator
+> to be FundLoop's only identity join. [Cubid #79](https://github.com/Cubid-Me/cubid-monorepo/issues/79)
+> owns the private contract/authentication, [Cubid #80](https://github.com/Cubid-Me/cubid-monorepo/issues/80)
+> owns project-scoped-to-FundLoop-scoped resolution and score evidence, and
+> [Cubid #81](https://github.com/Cubid-Me/cubid-monorepo/issues/81) owns privacy
+> negatives, hosted smoke, and the FundLoop handoff. FundLoop #204 owns the API
+> client, logical allocator-only tables/roles, forbidden-field contracts, and
+> mandatory currency. [FundLoop #188](https://github.com/FundLoop/fundloop-website/issues/188)
+> remains the Goal 2 publication gate.
+>
+> **Accepted MVP bypass:** FundLoop may retain the identity join before and after
+> allocation and may persist per-project claims linked to FundLoop users. The
+> allocator itself must receive only project-scoped UUIDs and required financial
+> facts, and may return only FundLoop-scoped UUIDs, scores, award/source facts,
+> project claims, and currency. Project membership/self-identification is not an
+> allocator input. Project claims become currency claims in privacy v2.
+
+The long-term allocator should become a separately bounded module and the only
+calculation component allowed to amalgamate project-scoped CUBID identifiers into
+whole-user, FundLoop-scoped identifiers. For the MVP, FundLoop may perform and
+retain the surrounding identity joins for validation and downstream processing.
 
 The boundary should have these properties:
 
@@ -395,10 +511,10 @@ The boundary should have these properties:
   transformations; and
 - tests proving that forbidden identifiers cannot cross each interface.
 
-This is not zero knowledge. It is a conventional privacy architecture that proves
-FundLoop can isolate the sensitive join, minimize the information returned to the
-main application, and stabilize the interfaces that a future ZK implementation
-would replace.
+This is not zero knowledge. For the MVP, it is a conventional privacy architecture
+that minimizes what reaches the allocator and stabilizes the interfaces a future ZK
+implementation would replace. It does not claim that the main FundLoop application
+cannot retain or reconstruct the mapping.
 
 The near-term claim should therefore be:
 
@@ -414,6 +530,10 @@ the deployed data flows, logs, reports, backups, and administrator tools have be
 verified against the contract.
 
 ### 9.1 High-level information flow
+
+The participant, project, and CUBID exchanges shown for context are descriptive
+assumptions, not FundLoop remediation scope. Only interfaces whose sender or receiver
+is FundLoop or the allocator are assigned to FundLoop/Cubid Tasks in this document.
 
 ```mermaid
 sequenceDiagram
@@ -444,28 +564,35 @@ sequenceDiagram
     fundloop-->>user: funds (simplified payout)
 ```
 
-The target minimization is:
+The diagram records the long-term minimization target. The approved MVP differs in
+these explicit ways:
 
 - the participant supplies the identifier each project already uses and separately
   supplies the identifiers FundLoop needs for its own account-resolution flow;
 - the project knows its own users and its project-scoped CUBID identifiers;
-- FundLoop exchanges its submitted user identifiers with CUBID to resolve
-  FundLoop-scoped UUIDs, but does not receive project-scoped UUID mappings through
-  this account-resolution flow;
+- FundLoop may exchange and retain the identifiers required to validate the current
+  mapping before and after allocation;
 - CUBID performs identity proofing and scoped identifier resolution;
-- the allocator temporarily sees the project-scoped and FundLoop-scoped mapping
-  needed for calculation;
-- the main FundLoop application receives its own submitted user identifiers,
-  FundLoop-scoped UUIDs, and FundLoop-scoped award output, but not the project's
-  scoped UUID mapping or a reusable project-to-project join; and
+- the allocator receives project-scoped UUIDs and requests FundLoop-scoped UUIDs
+  plus scores through the private Cubid API owned by Cubid #79-#81;
+- the allocator returns FundLoop-scoped UUIDs, award amounts, currency, source
+  evidence, and per-project claims to FundLoop during MVP;
+- FundLoop may retain the mapping and claims, while the allocator is forbidden from
+  reading raw user identity, project-membership/self-identification, auth, reporting,
+  support, or payout tables; and
 - reports reveal only the minimum appropriate to the participant, project,
   operator, or public audience.
 
-The schematic is a target information contract. Implementation, logs, support
-tools, reporting joins, backups, and incident access must be tested before using it
-as a privacy guarantee.
+The schematic is not an exact MVP storage diagram. FundLoop #204 is the operative
+MVP contract. A separate allocator database and replacement of project claims with
+currency claims remain privacy-v2 roadmap items.
 
 ### 9.2 Fully private alias-separation flow for the ZK phase
+
+> **Partially addressed in Sprint #155 scope:**
+> [Task #204](https://github.com/FundLoop/fundloop-website/issues/204) requires this
+> flow to be modelled separately and labelled unavailable unless implemented. It
+> explicitly does not implement ZK proofs, circuits, or proving infrastructure.
 
 A participant who wants stronger unlinkability should be able to use two unrelated
 identifiers:
@@ -536,6 +663,15 @@ other metadata side channels. Independent review must verify those assumptions
 before FundLoop claims administrator-collusion resistance.
 
 ### 9.3 Tech-agnostic project flow with consented identifier sharing
+
+> **Partially addressed in Sprint #155 scope:**
+> [Task #204](https://github.com/FundLoop/fundloop-website/issues/204) audits this as
+> a distinct future data contract, while
+> [Task #168](https://github.com/FundLoop/fundloop-website/issues/168) and
+> [Task #184](https://github.com/FundLoop/fundloop-website/issues/184) cover the
+> required consent, privacy, retention, and qualified governance conclusions. The
+> secondary CUBID project account and no-developer upload workflow are not delivered
+> by Sprint #155.
 
 Projects without a developer team should have a deliberately simple participation
 path. The project sends FundLoop a list of participant email addresses and the total
@@ -608,6 +744,15 @@ loop without presenting the diagrams as complete settlement specifications.
 
 ## 10. Be bold and specific about the privacy future
 
+> **Partially addressed in Sprint #155 scope:**
+> [Task #183](https://github.com/FundLoop/fundloop-website/issues/183) proves hosted
+> privacy negatives and public-copy accuracy,
+> [Task #204](https://github.com/FundLoop/fundloop-website/issues/204) establishes the
+> actual identifier-visibility contract, and
+> [Task #184](https://github.com/FundLoop/fundloop-website/issues/184) requires
+> qualified privacy and retention conclusions. The bold landing-page statement and
+> repeated in-product MVP disclosure remain a separate product change.
+
 The landing page should prominently state the privacy belief:
 
 > Rewards should not require every project to know your complete identity or where
@@ -635,6 +780,15 @@ only in a privacy policy:
 - payout setup.
 
 ## 11. Treat fee placement as a time-bounded prototype
+
+> **Partially addressed in Sprint #155 scope:**
+> [Task #165](https://github.com/FundLoop/fundloop-website/issues/165) proves fee and
+> FX conservation for the EUR source,
+> [Task #169](https://github.com/FundLoop/fundloop-website/issues/169) exposes fee
+> recognition and gross/net decisions for accounting review, and
+> [Task #181](https://github.com/FundLoop/fundloop-website/issues/181) makes fees
+> explainable in reports. Sprint #155 does not select the final fee payer, model, or
+> lock date.
 
 FundLoop is currently building fee capabilities at the front, middle, and back of
 the flow. These controls should be documented as an experimental fee-placement
@@ -674,6 +828,13 @@ include:
 
 ## 12. Treat the admin-controlled cap as a time-bounded policy playground
 
+> **Partially addressed in Sprint #155 scope:**
+> [Task #186](https://github.com/FundLoop/fundloop-website/issues/186) proves that the
+> selected cap applies only to redistribution top-ups with deterministic
+> conservation, while [Task #181](https://github.com/FundLoop/fundloop-website/issues/181)
+> requires audience-appropriate cap explanations. The Sprint does not choose the
+> post-MVP multiplier or publish a cap-stabilization date.
+
 The dynamic cap multiplier lets an administrator preview and select redistribution
 behaviour. During the MVP, this can be useful for learning how different caps affect
 concentration, low-reward participants, carryover, and comprehensibility.
@@ -699,6 +860,15 @@ affected participation period wherever possible, so participants do not experien
 the reward rule as retrospective discretion.
 
 ## 13. Publish a two-phase roadmap
+
+> **Partially addressed in Sprint #155 scope:**
+> [Task #172](https://github.com/FundLoop/fundloop-website/issues/172) creates an
+> evidence-bound Dev release decision,
+> [Task #173](https://github.com/FundLoop/fundloop-website/issues/173) owns controlled
+> promotion and Production parity, and
+> [Task #204](https://github.com/FundLoop/fundloop-website/issues/204) prevents the
+> non-ZK MVP from being described as the future ZK design. Sprint #155 does not
+> publish or commit the sub-one-year Phase 2 roadmap.
 
 The public roadmap should distinguish the non-ZK experimental MVP from the full
 launch and commit to completing the transition in less than one year.
@@ -770,6 +940,16 @@ boundary rather than silently extending the MVP's experimental controls.
 
 ## 14. Avoid custody wherever possible
 
+> **Partially addressed in Sprint #155 scope:**
+> [Task #169](https://github.com/FundLoop/fundloop-website/issues/169) requires an
+> accounting decision on custody,
+> [Task #170](https://github.com/FundLoop/fundloop-website/issues/170) proves ledger,
+> opening-balance, and cutover gates, and
+> [Task #184](https://github.com/FundLoop/fundloop-website/issues/184) requires
+> qualified legal, accounting, unclaimed-property, and custody conclusions before
+> value activation. These controls do not yet select and implement the final
+> non-custodial operating structure.
+
 FundLoop should prefer structures in which regulated providers or project-controlled
 accounts hold and move value, while FundLoop calculates instructions, records
 approvals, and reconciles evidence.
@@ -801,6 +981,14 @@ The final contracts, control of instructions, handling of balances, insolvency
 treatment, and user relationship must still be reviewed on their facts.
 
 ## 15. Make reporting the primary product proof while preserving privacy
+
+> **Addressed in Sprint #155 scope:**
+> [Task #181](https://github.com/FundLoop/fundloop-website/issues/181) owns
+> deterministic public, participant, founder, operator, and MCP reports with privacy
+> and authorization checks; [Task #183](https://github.com/FundLoop/fundloop-website/issues/183)
+> exercises those reports across hosted roles; and
+> [Task #204](https://github.com/FundLoop/fundloop-website/issues/204) tests that
+> reporting does not escape the intended identity boundary.
 
 Reporting should be the place where FundLoop earns trust and demonstrates value.
 The objective is not to publish the complete audit graph. It is to give each
@@ -863,6 +1051,13 @@ concierge pilots rather than assumed.
 
 ## 16. Reposition the developer product around a small integration contract
 
+> **Partially addressed in Sprint #155 scope:**
+> [Task #181](https://github.com/FundLoop/fundloop-website/issues/181) aligns MCP
+> reporting with the same typed report contracts used by human audiences, and
+> [Task #204](https://github.com/FundLoop/fundloop-website/issues/204) narrows and
+> versions the allocator input/output contract. Sprint #155 does not deliver the
+> ten-minute project quickstart, small external SDK/API contract, or webhook product.
+
 The developer proposition should lead with the shortest path to a working program,
 not MCP, architecture, or the internal control plane.
 
@@ -894,6 +1089,12 @@ assemble a monthly report. FundLoop should not pursue agent parity for every
 operation before the core human and API workflows are proven.
 
 ## 17. Run a concierge pilot before more platform expansion
+
+> **Deliberate Sprint sequencing variance:** Sprint #155 completes production
+> readiness, governance gates, and hosted no-value acceptance before the proposed
+> real design-partner pilot. [Task #183](https://github.com/FundLoop/fundloop-website/issues/183)
+> is a controlled founder/user/operator acceptance run, not a funded concierge pilot,
+> and must not be counted as market validation.
 
 FundLoop should recruit a small number of real design partners whose use cases
 exercise different parts of the thesis. A useful initial cohort could include:
@@ -947,6 +1148,12 @@ Measure:
 
 ## 18. Introduce explicit kill and pivot criteria
 
+> **Not addressed by Sprint #155:** the Sprint supplies evidence that future kill
+> criteria can consume, especially through
+> [Task #181](https://github.com/FundLoop/fundloop-website/issues/181) and
+> [Task #183](https://github.com/FundLoop/fundloop-website/issues/183), but it does
+> not pre-commit FundLoop to adoption, economics, comprehension, or renewal gates.
+
 Before the first pilot, FundLoop should publish internal continuation criteria so
 the team cannot redefine success after observing the outcome.
 
@@ -986,6 +1193,22 @@ of features.
 
 ## 19. Stop-work boundary
 
+> **Deliberate Sprint variance:**
+> [Task #165](https://github.com/FundLoop/fundloop-website/issues/165) adds durable EUR
+> Pay by Bank allocation coverage and
+> [Task #166](https://github.com/FundLoop/fundloop-website/issues/166) validates CAD
+> PAD, EUR/GBP Pay by Bank, and reviewed Base token reality. That is broader than the
+> proposed one-fiat/one-stablecoin operating boundary. The variance is acceptable as
+> finite production-readiness and capability-classification work: #166 requires one
+> supported hosted test rail, one unsupported no-mutation path, truthful labels, and
+> no provider/token activation or real value flow. It must not become precedent for
+> continued rail or asset expansion after Sprint #155.
+>
+> [Task #186](https://github.com/FundLoop/fundloop-website/issues/186) also spends
+> capacity on allocation complexity, but explicitly preserves the already-approved
+> v2 formula rather than adding another formula. This fits the section's allowance
+> for safety, reproducibility, migration, and test maintenance.
+
 Until the concierge pilots establish adoption, meaningful rewards, privacy
 acceptance, operational viability, and renewal, FundLoop should stop building:
 
@@ -1017,6 +1240,14 @@ Exceptions should require a written reason tied to one of the following:
 
 ## 20. Decision and evidence register
 
+> **Partially addressed in Sprint #155 scope:**
+> [Task #169](https://github.com/FundLoop/fundloop-website/issues/169),
+> [Task #172](https://github.com/FundLoop/fundloop-website/issues/172), and
+> [Task #184](https://github.com/FundLoop/fundloop-website/issues/184) create
+> versioned accounting, release, and qualified-governance evidence. Sprint #155 does
+> not yet establish one durable product-level register covering every experimental
+> decision and its final decision date.
+
 The roadmap should maintain a public or appropriately scoped register of the
 remaining experimental decisions.
 
@@ -1033,6 +1264,83 @@ remaining experimental decisions.
 | Developer interface | Small API/SDK contract; MCP as adapter | Stable ZK-aware integration contract | External integration time and pilot reliability |
 | Product viability | Concierge pilots | Repeatable self-serve or supportable operation | Renewal, meaningful reward, completion, cost and margin evidence |
 
+## 21. Post-Sprint #155 Feature-slicing proposals
+
+These proposals assume Sprint #155 is implemented and validated first, including
+the approved MVP allocator boundary under #204 and the private Cubid Feature #77.
+The Cubid tree is now approved/scoped; the remaining rows are candidate **Feature**
+boundaries, not approved Feature or Task issues. Detailed scope, dependencies, and
+acceptance criteria should be established through the normal Feature-planning
+workflow.
+
+### Option A: three broad Features
+
+| Feature | Primary outcome | Recommendations grouped |
+| --- | --- | --- |
+| Product contract and adoption experience | Replace the current public and integration story with one honest, two-sided path for projects and participants. | Sections 2–8, 10, and 16 |
+| Privacy, economics, and operating model | Complete the ZK transition plan, simplify fees and cap policy, minimize custody, narrow supported value routes, and publish the decision register. | Sections 9–14, 19, and 20 |
+| Concierge pilots and viability decision | Run real monthly pilots using private reporting, then apply the pre-committed continuation criteria. | Sections 15, 17, and 18 |
+
+This is the lowest-governance-overhead option. It is also the riskiest: each Feature
+contains several different user outcomes and specialist domains, making it easy for
+privacy, economics, or pilot learning to disappear inside a long implementation
+tree.
+
+### Option B: five outcome-aligned Features — recommended
+
+| Feature | Primary outcome | Recommendations grouped | Key completion boundary |
+| --- | --- | --- | --- |
+| **1. Public product contract and two-sided journeys** | Make the belief, reward language, current privacy phase, two audiences, and participant path immediately understandable. | Sections 3–5, 7, 8, 10, and the public part of 13 | Tested people/project journeys consistently distinguish estimated, approved, available, sent, and settled rewards and disclose the non-ZK MVP. |
+| **2. Simple project participation and developer integration** | Support one small integrated-project contract plus the consented, tech-agnostic path without exporting FundLoop's internal complexity. | Sections 2, 6, 9.3, and 16 | A new integrated project completes the quickstart, a no-developer project completes the consented upload path, and both receive the same scoped reports. |
+| **3. Predictable economics and narrow value movement** | Turn fee and cap controls into bounded experiments, decide the supported fiat/stablecoin routes, minimize custody, and publish decisions. | Sections 11–14, 19, and 20 | One dated experiment plan exists; legal/accounting conclusions bind it; one predictable fee policy, one cap policy, and one fiat plus one stablecoin operating route are selected or explicitly gated. |
+| **4. Concierge pilots and viability gates** | Test the thesis with real design partners and use reporting as the proof and learning layer. | Sections 15, 17, 18, and 20 | Three representative pilots complete the agreed monthly period with real funding and settlement evidence, measured comprehension and operating cost, renewal decisions, and an explicit continue/narrow/stop decision. |
+| **5. Privacy-preserving allocator Phase 2** | Replace MVP project claims with currency claims, remove unnecessary retained project correlation, decide physical datastore separation, and then introduce the reviewed ZK or equivalently privacy-preserving contract without weakening allocation or reports. | Sections 9, 9.2, 10, 13, and 15 | Currency-claim output and datastore boundaries are proven first; the alias-separated flow is then independently reviewed across the allocator, application, reports, logs, support tools, and retention surfaces. No MVP privacy claim is silently upgraded before this gate passes. |
+
+This is the recommended slice because each Feature has one externally meaningful
+outcome, while the dependency chain remains visible:
+
+1. Plan Features 1–3 immediately after Sprint #155 so the public promise, project
+   contract, and pilot economics agree before recruiting design partners.
+2. Implement the minimum useful scope of Features 1–3, then start Feature 4 before
+   resuming broad platform expansion.
+3. Plan Feature 5 early from #204's audited contract because privacy architecture has
+   a long lead time, but gate material build-out by the pilot continuation decision
+   unless a pilot's privacy requirement makes it an entry condition.
+4. Treat Feature 4's kill criteria as a release gate for further breadth, not merely
+   a retrospective report.
+
+The five-Feature option intentionally separates **economic-policy simplification**
+from **pilot execution**. This prevents the team from changing fees, cap policy, or
+route scope after seeing pilot results without recording that the experiment changed.
+It also separates the full ZK transition from the MVP-facing website work, so honest
+privacy disclosure can ship before the future proof system is ready.
+
+### Option C: seven narrow Features
+
+| Feature | Primary outcome | Recommendations grouped |
+| --- | --- | --- |
+| Belief, language, and roadmap | Rewrite the public promise and publish the phase boundary. | Sections 3, 4, 8, 10, and 13 |
+| Two-sided participant/project experience | Create the audience selector and simple participant journey. | Sections 5 and 7 |
+| Integrated project quickstart | Deliver voluntary funding choices and the small SDK/API contract. | Sections 2, 6, and 16 |
+| Tech-agnostic consented participation | Deliver the secondary CUBID project-account and secure PII-sharing flow. | Section 9.3 |
+| Predictable economics and value routes | Decide fees, cap policy, custody structure, and the one-fiat/one-stablecoin boundary. | Sections 11, 12, 14, 19, and 20 |
+| Privacy-preserving allocator Phase 2 | Deliver and independently verify the alias-separated ZK contract. | Sections 9, 9.2, 10, 13, and 15 |
+| Concierge pilots and kill decision | Run real pilots, measure reporting comprehension and economics, and make the continuation decision. | Sections 15, 17, 18, and 20 |
+
+This option provides the cleanest ownership and the smallest review units. Its cost is
+coordination: public copy, onboarding, consent, reporting, economics, and privacy
+would have more cross-Feature dependencies, and seven parallel roadmap promises may
+recreate the breadth problem this document is trying to correct.
+
+### Recommendation
+
+Start planning **five new Features using Option B**. It is granular enough to expose
+the distinct product, integration, economics, pilot, and privacy decisions, but small
+enough to manage as one post-Sprint program. Do not start all five implementation
+streams at once. The first implementation wave should make the promise and project
+boundary pilot-ready; the second should run the pilots; the ZK Feature should retain
+its own explicit architecture, independent-review, and continuation gates.
+
 ## Closing statement
 
 FundLoop does not need to abandon its thesis to respond to the red-team critique.
@@ -1044,7 +1352,8 @@ be simple:
 
 - projects voluntarily fund rewards and submit scoped participant references;
 - participants prove uniqueness without making a public identity dossier;
-- one isolated allocator performs the sensitive join and calculation;
+- one field-limited allocator performs the calculation through a private Cubid
+  scoped-ID/score API, while FundLoop temporarily retains the surrounding MVP joins;
 - FundLoop explains exactly what was approved, made available, and settled;
 - regulated providers or narrowly controlled accounts move the value wherever
   possible; and
