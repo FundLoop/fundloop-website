@@ -28,6 +28,16 @@ describe("epoch funded allocation Edge contract", () => {
     expect(source).toContain("deploymentEnvironment: environment")
     expect(source).toContain('new Set(["local", "development", "dev", "preview", "test"])')
     expect(source).toContain("calculateFundedRedistributionV2")
+    expect(source).toContain('return json(edgeCommandFailure("epoch_allocation_v2_manifest_not_locked"')
+    expect(source.indexOf('from("epoch_allocation_manifests")')).toBeLessThan(source.indexOf("calculateFundedRedistributionV2({ ...locked.manifest"))
     expect(source).not.toContain('allowedEnvironments.add("production")')
+  })
+
+  it("keeps browser acceptance behind a closed claim window with an E-3 origin", () => {
+    const fixture = readFileSync("supabase/tests/fixtures/epoch_funded_allocation_browser.sql", "utf8")
+    expect(fixture).toContain("VALUES ('2026-01', 2026, 1, '2026-01-01', '2026-01-31', 'completed')")
+    expect(fixture).toContain("VALUES ('2026-04', 2026, 4, '2026-04-01', '2026-04-30', 'prep')")
+    expect(fixture).toContain("'browser_allocation_2026_04', '2026-04-01T07:00:00Z', '2026-05-01T07:00:00Z'")
+    expect(fixture).not.toContain("2026-08-31")
   })
 })

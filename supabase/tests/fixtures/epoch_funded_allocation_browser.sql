@@ -6,6 +6,7 @@ DECLARE
   v_actor uuid;
   v_project bigint := 1;
   v_cycle bigint;
+  v_accounting_period bigint;
   v_payment bigint;
   v_intent bigint;
   v_package bigint;
@@ -13,13 +14,24 @@ DECLARE
 BEGIN
   SELECT user_id INTO STRICT v_actor FROM public.users WHERE email = 'maya@fundloop.example.com';
 
+  -- Keep browser acceptance deterministic relative to the real claim-window
+  -- guard: 2026-04 is closed at the repository's fixed 2026-08 test date and
+  -- has an explicit E-3 origin cycle for harvest evaluation.
   INSERT INTO public.monthly_cycles(cycle_key, year, month, period_start, period_end, status)
-  VALUES ('2026-08', 2026, 8, '2026-08-01', '2026-08-31', 'prep')
+  VALUES ('2026-01', 2026, 1, '2026-01-01', '2026-01-31', 'completed')
   ON CONFLICT (cycle_key) DO UPDATE SET status = excluded.status;
-  SELECT id INTO v_cycle FROM public.monthly_cycles WHERE cycle_key = '2026-08';
+  INSERT INTO public.monthly_cycles(cycle_key, year, month, period_start, period_end, status)
+  VALUES ('2026-04', 2026, 4, '2026-04-01', '2026-04-30', 'prep')
+  ON CONFLICT (cycle_key) DO UPDATE SET status = excluded.status;
+  SELECT id INTO v_cycle FROM public.monthly_cycles WHERE cycle_key = '2026-04';
+
+  INSERT INTO public.accounting_periods(period_key, starts_at, ends_at, timezone_name)
+  VALUES ('browser_allocation_2026_04', '2026-04-01T07:00:00Z', '2026-05-01T07:00:00Z', 'America/Los_Angeles')
+  ON CONFLICT (period_key) DO UPDATE SET status = 'open', closed_at = NULL, close_evidence_hash = NULL
+  RETURNING id INTO v_accounting_period;
 
   INSERT INTO public.payments(project_id, period_start, period_end, revenue, payment_amount, payment_percentage, monthly_cycle_id)
-  VALUES (v_project, '2026-08-01', '2026-08-31', 100, 100, 100, v_cycle)
+  VALUES (v_project, '2026-04-01', '2026-04-30', 100, 100, 100, v_cycle)
   RETURNING id INTO v_payment;
 
   INSERT INTO public.stripe_bank_transfer_intents(
@@ -28,7 +40,7 @@ BEGIN
     deployment_environment
   )
   VALUES (
-    v_project, v_payment, 1, v_actor, 'USD', 10000, 'acct_allocation', 'cus_allocation', 'pi_allocation',
+    v_project, v_payment, v_accounting_period, v_actor, 'USD', 10000, 'acct_allocation', 'cus_allocation', 'pi_allocation',
     repeat('1', 64), 'local'
   )
   RETURNING id INTO v_intent;
@@ -49,7 +61,7 @@ BEGIN
   )
   VALUES (
     v_project, v_cycle, v_cycle, 1, 'approved', 'valid', 'settled', 'passed', 'eligible',
-    '2026-09-01T07:00:00Z', '2026-09-01T07:00:00Z', '2026-09-02T00:00:00Z', v_actor,
+    '2026-05-01T07:00:00Z', '2026-05-01T07:00:00Z', '2026-05-02T00:00:00Z', v_actor,
     false, true, 1, 1, 1, 1, 100, '{}', repeat('2', 64), v_actor
   )
   RETURNING id INTO v_package;
@@ -66,13 +78,13 @@ BEGIN
   )
   VALUES (
     v_package, 101, v_actor, repeat('4', 64), 'valid', 'eligible', 10, 20,
-    '2026-08-31T00:00:00Z', '2026-09-02T00:00:00Z', repeat('5', 64)
+    '2026-04-30T00:00:00Z', '2026-05-02T00:00:00Z', repeat('5', 64)
   );
 
   v_observation := public.record_epoch_fx_observation(jsonb_build_object(
     'contractVersion', 'epoch_fx_observation.v1',
     'deploymentEnvironment', 'local',
-    'cycleKey', '2026-08',
+    'cycleKey', '2026-04',
     'assetKey', 'stripe_sandbox_usd',
     'sourceKey', 'allocation_primary',
     'sourceRank', 1,
@@ -87,7 +99,7 @@ BEGIN
   PERFORM public.post_epoch_fx_snapshot(jsonb_build_object(
     'contractVersion', 'epoch_fx_snapshot.v1',
     'deploymentEnvironment', 'local',
-    'cycleKey', '2026-08',
+    'cycleKey', '2026-04',
     'assetKey', 'stripe_sandbox_usd',
     'method', 'primary',
     'observationId', v_observation,

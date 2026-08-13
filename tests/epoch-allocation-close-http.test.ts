@@ -1,3 +1,4 @@
+import { readFileSync } from "node:fs"
 import { describe, expect, it, vi } from "vitest"
 import { commandFailure, handleRequest } from "@/lib/edge-functions/authenticated-command-http"
 
@@ -17,6 +18,12 @@ const request = (method: string, body?: string) => new Request("https://example.
 })
 
 describe("epoch-allocation-close HTTP boundary", () => {
+  it("does not confuse Deno serve connection info with injected dependencies", () => {
+    const source = readFileSync("supabase/functions/epoch-allocation-close/index.ts", "utf8")
+    expect(source).toContain('typeof dependencies?.authenticateRequest === "function"')
+    expect(source).toContain(": authenticateRequest")
+    expect(source).not.toContain("dependencies = { authenticateRequest }")
+  })
   it("authenticates unauthenticated GET before method handling", async () => {
     const auth = dependencies({ ok: false, code: "not_authenticated", error: "provider secret detail", user: null })
     const response = await handleRequest(request("GET"), auth.authenticateRequest, accepted)
