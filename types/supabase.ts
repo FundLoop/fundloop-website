@@ -11045,6 +11045,7 @@ export type Database = {
           completed_at: string
           contract_version: string
           deployment_environment: string
+          deployment_manifest: Json
           deployment_manifest_sha256: string
           function_inventory_sha256: string
           hosted_smoke_evidence_sha256: string
@@ -11061,6 +11062,7 @@ export type Database = {
           completed_at?: string
           contract_version?: string
           deployment_environment: string
+          deployment_manifest: Json
           deployment_manifest_sha256: string
           function_inventory_sha256: string
           hosted_smoke_evidence_sha256: string
@@ -11077,6 +11079,7 @@ export type Database = {
           completed_at?: string
           contract_version?: string
           deployment_environment?: string
+          deployment_manifest?: Json
           deployment_manifest_sha256?: string
           function_inventory_sha256?: string
           hosted_smoke_evidence_sha256?: string

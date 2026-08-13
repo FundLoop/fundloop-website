@@ -371,6 +371,28 @@ jobs:
           SUPABASE_MANIFEST_MODE: deploy
         run: node scripts/verify-supabase-environment-manifest.mjs compose
 
+      - name: Upload sanitized Supabase parity evidence
+        if: steps.target.outputs.mode == 'deploy'
+        uses: actions/upload-artifact@v4
+        with:
+          name: supabase-parity-${{ steps.target.outputs.target_environment }}-${{ github.sha }}
+          path: |
+            ${{ runner.temp }}/supabase-schema-parity.json
+            ${{ runner.temp }}/supabase-schema-diagnostic.json
+            ${{ runner.temp }}/supabase-function-parity.json
+            ${{ runner.temp }}/supabase-safe-runtime-smoke.json
+          if-no-files-found: error
+          retention-days: 30
+
+      - name: Upload immutable environment manifest
+        if: steps.target.outputs.mode == 'deploy'
+        uses: actions/upload-artifact@v4
+        with:
+          name: environment-manifest-${{ steps.target.outputs.target_environment }}-deploy-${{ steps.environment_manifest.outputs.deployment_sha }}-${{ steps.environment_manifest.outputs.deployment_run_id }}-${{ steps.environment_manifest.outputs.deployment_run_attempt }}-observe-${{ steps.environment_manifest.outputs.observation_sha }}-${{ steps.environment_manifest.outputs.observation_run_id }}-${{ steps.environment_manifest.outputs.observation_run_attempt }}
+          path: ${{ runner.temp }}/supabase-environment-manifest.json
+          if-no-files-found: error
+          retention-days: 90
+
       - name: Certify completed Supabase deployment
         if: steps.target.outputs.mode == 'deploy'
         env:
@@ -388,29 +410,7 @@ jobs:
           echo "::add-mask::${supabase_db_url}"
 
           SUPABASE_SCHEMA_DB_URL="${supabase_db_url}" \
-            node scripts/verify-supabase-schema-parity.mjs complete
-
-      - name: Upload sanitized Supabase parity evidence
-        if: ${{ always() && steps.target.outputs.mode == 'deploy' }}
-        uses: actions/upload-artifact@v4
-        with:
-          name: supabase-parity-${{ steps.target.outputs.target_environment }}-${{ github.sha }}
-          path: |
-            ${{ runner.temp }}/supabase-schema-parity.json
-            ${{ runner.temp }}/supabase-schema-diagnostic.json
-            ${{ runner.temp }}/supabase-function-parity.json
-            ${{ runner.temp }}/supabase-safe-runtime-smoke.json
-          if-no-files-found: warn
-          retention-days: 30
-
-      - name: Upload immutable environment manifest
-        if: steps.target.outputs.mode == 'deploy'
-        uses: actions/upload-artifact@v4
-        with:
-          name: environment-manifest-${{ steps.target.outputs.target_environment }}-deploy-${{ steps.environment_manifest.outputs.deployment_sha }}-${{ steps.environment_manifest.outputs.deployment_run_id }}-${{ steps.environment_manifest.outputs.deployment_run_attempt }}-observe-${{ steps.environment_manifest.outputs.observation_sha }}-${{ steps.environment_manifest.outputs.observation_run_id }}-${{ steps.environment_manifest.outputs.observation_run_attempt }}
-          path: ${{ runner.temp }}/supabase-environment-manifest.json
-          if-no-files-found: error
-          retention-days: 90
+            node scripts/verify-supabase-environment-manifest.mjs complete
 
       - name: Upload sanitized Dev schema diagnostic
         if: ${{ always() && steps.target.outputs.mode == 'dry-run' && steps.target.outputs.target_environment == 'dev' }}

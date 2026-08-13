@@ -1556,3 +1556,65 @@ record avoids rewriting evidence while making completion an explicit, auditable 
 
 - Push this consolidated certification fix to existing PR #202 only after the complete
   focused/static validation set passes, then return it for broad independent revalidation.
+
+### session v33: Bind certified artifacts and forward PR replay (#161)
+
+- Timestamp: 2026-08-13T00:38:10-04:00
+- Agent: Codex
+- Branch: `codex/155-goal-1-manifest-provenance-routing-recovery`
+- Head: `1222869c23180636b1440dd9e347df083f0f15e9`
+
+#### Objective
+
+Close the complete final PR #202 blocker set in one recovery commit: exact retained
+deployment evidence, artifact-before-completion ordering, strict completion chronology,
+and non-mutating PR diagnosis for ordinary forward migration tails.
+
+#### Actions Taken
+
+- Retained the complete sanitized deploy manifest in append-only completion evidence
+  and bound its self-digest, evidence list, migration/schema/function digests, certified
+  hosted-smoke digest, candidate identity, and final observation chronology before insert.
+- Made drift re-verify that retained deploy manifest and completion record independently,
+  while preserving the certified deploy smoke separately from a distinct fresh smoke
+  observed only after completion.
+- Moved required parity and immutable-manifest artifact publication ahead of the final
+  completion insert; a failed upload now leaves candidate-only evidence.
+- Generalized Dev PR diagnosis to accept one or more strictly forward pending migrations
+  only after full candidate replay, immutable byte-bound prefix validation, and a
+  disposable exact-prefix schema comparison against the current read-only remote.
+- Added adversarial coverage for changed/unknown history, skeletal and self-digest-tampered
+  manifests, every completion digest mismatch, reversed completion chronology, and
+  distinct fresh observation smoke.
+- Updated canonical generated database types and deployment documentation for the stored
+  manifest, evidence lifecycle, and forward-baseline PR contract.
+
+#### Tests And Validation Notes
+
+- Passed on Node 22.23.2 with single-worker forks: focused delivery parity,
+  environment-manifest, and function-source read-back suites, 62/62.
+- Passed the pinned Supabase CLI 2.113.0 isolated replay: all 96 migrations, three
+  representative SQL suites, and the deliberate invalid-migration history smoke.
+- Passed full repository ESLint and TypeScript typecheck.
+- Passed affected Node syntax, workflow YAML parse, and `git diff --check` before commit.
+- Two initial parallel Vitest tool processes orphaned despite a later successful run;
+  only those exact task-owned process trees were terminated, and all reported validation
+  uses the clean single-worker rerun.
+- A fully local workflow-equivalent remote baseline simulation was not run because the
+  verifier intentionally requires its PG17 container to reach a TLS remote target; the
+  pure forward-prefix matrix and full candidate/baseline replay paths are covered locally,
+  while the PR dry-run supplies the read-only Dev integration check after push.
+- No remote Supabase deployment/reset, workflow dispatch, Production action, status
+  change, #162 work, credential prompt, or value-flow activation occurred.
+
+#### Reflections
+
+Certification is the final mutation, not an optimistic marker. It is trustworthy only
+after required evidence is durably published and every stored digest can be recomputed
+from retained evidence rather than accepted as a correctly formatted claim.
+
+#### Suggested Next Steps
+
+- Push this one consolidated commit to existing PR #202, let its read-only Dev dry-run
+  exercise the exact 95-to-96 forward baseline, and return the exact head to independent
+  validation without opening another PR or requesting another review.

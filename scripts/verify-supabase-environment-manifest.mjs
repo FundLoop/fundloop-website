@@ -1,7 +1,7 @@
 import { createHash } from "node:crypto"
 import { appendFileSync, readFileSync, writeFileSync } from "node:fs"
 import { pathToFileURL } from "node:url"
-import { compareExplicitRfc3339Timestamps, isExplicitRfc3339Timestamp, validateDeployCompletionEvidence } from "./verify-supabase-schema-parity.mjs"
+import { compareExplicitRfc3339Timestamps, isExplicitRfc3339Timestamp, recordDeployCompletion, validateDeployCompletionEvidence } from "./verify-supabase-schema-parity.mjs"
 
 const canonical = (value) => {
   if (Array.isArray(value)) return `[${value.map(canonical).join(",")}]`
@@ -56,9 +56,14 @@ export function buildEnvironmentManifest({ schema, functions, smoke, context }) 
     inventorySha256: schema.migrationInventorySha256,
     recordedAt: schema.certifiedDeployment.recordedAt,
   }
-  if (context.mode === "drift" && !validateDeployCompletionEvidence(schema.certifiedDeployment.completion, deploymentEvidence)) throw new Error("deployment-completion: immutable manifest publication refused")
+  if (context.mode === "drift") {
+    const certifiedManifest = schema.certifiedDeployment.certifiedManifest
+    if (!validateDeployCompletionEvidence(schema.certifiedDeployment.completion, deploymentEvidence, certifiedManifest)) throw new Error("deployment-completion: immutable manifest publication refused")
+    if (certifiedManifest.prerequisites.hostedUnauthenticatedDenial.evidence.evidenceSha256 === smoke.evidenceSha256) throw new Error("observation-smoke-not-fresh: immutable manifest publication refused")
+  }
   for (const [name, observedAt] of [["schema", schema.observedAt], ["function", functions.observedAt], ["hosted-smoke", smoke.observedAt]]) {
     if (compareExplicitRfc3339Timestamps(observedAt, schema.certifiedDeployment.recordedAt) < 0) throw new Error(`${name}-before-deployment: immutable manifest publication refused`)
+    if (context.mode === "drift" && compareExplicitRfc3339Timestamps(observedAt, schema.certifiedDeployment.completion.completedAt) < 0) throw new Error(`${name}-before-completion: immutable manifest publication refused`)
     if (compareExplicitRfc3339Timestamps(observedAt, context.observedAt) > 0) throw new Error(`${name}-after-observation: immutable manifest publication refused`)
   }
   const functionItems = functions.functions.map((entry) => ({
@@ -153,7 +158,11 @@ export function verifyEnvironmentManifest(manifest) {
     inventorySha256: manifest.migrations?.inventorySha256,
     recordedAt: manifest.certifiedDeployment?.recordedAt,
   }
-  if (manifest.observation?.mode === "drift" && deploymentTimeValid && !validateDeployCompletionEvidence(manifest.certifiedDeployment?.completion, completionEvidence)) blockers.push("deployment-completion")
+  if (manifest.observation?.mode === "drift" && deploymentTimeValid) {
+    const certifiedManifest = manifest.certifiedDeployment?.certifiedManifest
+    if (!validateDeployCompletionEvidence(manifest.certifiedDeployment?.completion, completionEvidence, certifiedManifest)) blockers.push("deployment-completion")
+    if (certifiedManifest?.prerequisites?.hostedUnauthenticatedDenial?.evidence?.evidenceSha256 === manifest.prerequisites?.hostedUnauthenticatedDenial?.evidence?.evidenceSha256) blockers.push("observation-smoke-not-fresh")
+  }
   if (!Array.isArray(manifest.migrations?.orderedInventory) || manifest.migrations.orderedInventory.length !== manifest.migrations.observedHistory?.length) blockers.push("migration-history")
   if (manifest.migrations?.algorithm !== "sha256-raw-bytes-sorted-filename-v1" || !/^[0-9a-f]{64}$/.test(manifest.migrations?.inventorySha256 ?? "")) blockers.push("migration-contract")
   const migrationVersions = manifest.migrations?.orderedInventory?.map((item) => item.version) ?? []
@@ -201,6 +210,7 @@ export function verifyEnvironmentManifest(manifest) {
     const componentTimeValid = isExplicitRfc3339Timestamp(observedAt)
     if (!componentTimeValid) blockers.push(`${name}-observation-time`)
     if (componentTimeValid && deploymentTimeValid && compareExplicitRfc3339Timestamps(observedAt, manifest.certifiedDeployment.recordedAt) < 0) blockers.push(`${name}-before-deployment`)
+    if (componentTimeValid && manifest.observation?.mode === "drift" && isExplicitRfc3339Timestamp(manifest.certifiedDeployment?.completion?.completedAt) && compareExplicitRfc3339Timestamps(observedAt, manifest.certifiedDeployment.completion.completedAt) < 0) blockers.push(`${name}-before-completion`)
     if (componentTimeValid && observationTimeValid && compareExplicitRfc3339Timestamps(observedAt, manifest.observation.observedAt) > 0) blockers.push(`${name}-after-observation`)
   }
   const expectedEvidence = [
@@ -217,6 +227,23 @@ export function verifyEnvironmentManifest(manifest) {
 function main() {
   const command = process.argv[2]
   const output = process.env.SUPABASE_ENVIRONMENT_MANIFEST_OUTPUT
+  if (command === "complete") {
+    const dbUrl = process.env.SUPABASE_SCHEMA_DB_URL
+    if (!output || !dbUrl) throw new Error("SUPABASE_ENVIRONMENT_MANIFEST_OUTPUT and SUPABASE_SCHEMA_DB_URL are required")
+    const manifest = JSON.parse(readFileSync(output, "utf8"))
+    const result = verifyEnvironmentManifest(manifest)
+    if (!result.ok || manifest.observation?.mode !== "deploy") throw new Error(`deployment-completion-invalid: ${result.blockers.join(",") || "not-a-deploy-manifest"}`)
+    const binding = {
+      candidateGitSha: process.env.GITHUB_SHA,
+      actionsRunId: process.env.GITHUB_RUN_ID,
+      runAttempt: Number(process.env.GITHUB_RUN_ATTEMPT),
+      environment: process.env.TARGET_ENVIRONMENT,
+      projectRef: process.env.SUPABASE_PROJECT_REF,
+    }
+    recordDeployCompletion(dbUrl, manifest, binding)
+    console.log(`Certified completed ${binding.environment} Supabase deployment ${binding.candidateGitSha}`)
+    return
+  }
   if (command === "record-smoke") {
     const smokeOutput = process.env.SUPABASE_SAFE_SMOKE_OUTPUT
     if (!smokeOutput) throw new Error("SUPABASE_SAFE_SMOKE_OUTPUT is required")

@@ -1,6 +1,6 @@
 import { createHash, randomBytes } from "node:crypto"
 import { execFileSync } from "node:child_process"
-import { existsSync, mkdirSync, mkdtempSync, readFileSync, readdirSync, rmSync, writeFileSync } from "node:fs"
+import { copyFileSync, existsSync, mkdirSync, mkdtempSync, readFileSync, readdirSync, rmSync, writeFileSync } from "node:fs"
 import net from "node:net"
 import os from "node:os"
 import path from "node:path"
@@ -211,6 +211,25 @@ export function migrationInventorySha256(items) {
   return fingerprint(canonicalJson(items))
 }
 
+export function validateForwardPendingMigrationHistory(expectedMigrations, observedVersions, baselineEvidence, binding) {
+  const observedMigrations = expectedMigrations.slice(0, observedVersions.length)
+  const expectedVersions = expectedMigrations.map((entry) => entry.version)
+  if (observedVersions.length > expectedVersions.length
+    || canonicalJson(expectedVersions.slice(0, observedVersions.length)) !== canonicalJson(observedVersions)) {
+    throw new Error(`Migration history drift: expected-prefix=${expectedVersions.slice(0, observedVersions.length).join(",")} observed=${observedVersions.join(",")}`)
+  }
+  const baselineInventorySha256 = migrationInventorySha256(observedMigrations)
+  if (!validateMatchingMigrationEvidence(baselineEvidence, binding, baselineInventorySha256)
+    || canonicalJson(baselineEvidence.migrations) !== canonicalJson(observedMigrations)) {
+    throw new Error("migration-baseline-digest: remote history does not match the reviewed forward-migration baseline")
+  }
+  return {
+    observedMigrations,
+    pendingMigrations: expectedMigrations.slice(observedVersions.length),
+    baselineInventorySha256,
+  }
+}
+
 export function buildMigrationDeployEvidence(input, root = process.cwd()) {
   const migrations = expectedMigrationInventory(root)
   return {
@@ -330,6 +349,13 @@ function observedMigrationEvidence(dbUrl, binding) {
   return JSON.parse(output)
 }
 
+function latestMigrationBaselineEvidence(projectId, dbUrl, binding, baselineInventorySha256) {
+  const sql = `select json_build_object('contractVersion',contract_version,'candidateGitSha',candidate_git_sha,'actionsRunId',actions_run_id::text,'runAttempt',run_attempt,'environment',deployment_environment,'projectRef',project_ref,'migrations',migration_inventory,'inventorySha256',inventory_sha256,'recordedAt',recorded_at)::text from public.supabase_deploy_migration_evidence where deployment_environment='${binding.environment}' and project_ref='${binding.projectRef}' and inventory_sha256='${baselineInventorySha256}' order by recorded_at desc limit 1`
+  const output = psqlFromParityContainer(projectId, dbUrl, sql)
+  if (!output) throw new Error("migration-baseline-evidence-missing: no immutable deployment record matches the remote migration baseline")
+  return JSON.parse(output)
+}
+
 export function validateMatchingMigrationEvidence(evidence, binding, expectedInventorySha256) {
   return evidence.contractVersion === "fundloop.migration-deploy-evidence/v1"
     && evidence.environment === binding.environment
@@ -337,12 +363,47 @@ export function validateMatchingMigrationEvidence(evidence, binding, expectedInv
     && /^[0-9a-f]{40}$/.test(evidence.candidateGitSha ?? "")
     && /^\d+$/.test(evidence.actionsRunId ?? "")
     && Number.isInteger(evidence.runAttempt) && evidence.runAttempt >= 1
+    && Array.isArray(evidence.migrations)
+    && evidence.migrations.length >= 1
+    && evidence.migrations.every((migration) => /^\d{14}$/.test(migration.version ?? "")
+      && migration.name?.startsWith(`${migration.version}_`)
+      && /^[0-9a-f]{64}$/.test(migration.fileSha256 ?? ""))
+    && new Set(evidence.migrations.map((migration) => migration.version)).size === evidence.migrations.length
+    && canonicalJson(evidence.migrations.map((migration) => migration.version)) === canonicalJson([...evidence.migrations.map((migration) => migration.version)].sort())
     && isExplicitRfc3339Timestamp(evidence.recordedAt)
     && evidence.inventorySha256 === migrationInventorySha256(evidence.migrations ?? [])
     && evidence.inventorySha256 === expectedInventorySha256
 }
 
-export function validateDeployCompletionEvidence(completion, evidence) {
+function validateCertifiedDeploymentManifestIntegrity(manifest) {
+  if (!manifest || manifest.contractVersion !== "fundloop.environment-delivery-manifest/v1" || manifest.observation?.mode !== "deploy") return false
+  if (!Array.isArray(manifest.evidence)
+    || !Array.isArray(manifest.migrations?.orderedInventory) || manifest.migrations.orderedInventory.length === 0
+    || !Array.isArray(manifest.migrations?.observedHistory)
+    || !Array.isArray(manifest.functions?.items) || manifest.functions.items.length === 0
+    || !manifest.prerequisites?.hostedUnauthenticatedDenial?.evidence) return false
+  const { manifestSha256, ...payload } = manifest
+  const smoke = manifest.prerequisites?.hostedUnauthenticatedDenial?.evidence
+  const { evidenceSha256, ...smokePayload } = smoke ?? {}
+  const expectedEvidence = [
+    { evidenceId: "migration-deployment", sha256: fingerprint(canonicalJson(manifest.certifiedDeployment)) },
+    { evidenceId: "schema-parity", sha256: fingerprint(canonicalJson({ migrations: manifest.migrations, schema: manifest.schema, runtimeControls: manifest.runtimeControls, certifiedDeployment: manifest.certifiedDeployment })) },
+    { evidenceId: "function-parity", sha256: fingerprint(canonicalJson(manifest.functions)) },
+    { evidenceId: "runtime-prerequisites", sha256: fingerprint(canonicalJson(manifest.prerequisites)) },
+  ]
+  return /^[0-9a-f]{64}$/.test(manifestSha256 ?? "")
+    && manifestSha256 === fingerprint(canonicalJson(payload))
+    && canonicalJson(manifest.evidence) === canonicalJson(expectedEvidence)
+    && manifest.migrations.inventorySha256 === migrationInventorySha256(manifest.migrations.orderedInventory)
+    && manifest.migrations.orderedInventory.length === manifest.migrations.observedHistory?.length
+    && manifest.schema?.expectedSha256 === manifest.schema?.observedSha256
+    && manifest.functions.count === manifest.functions.items.length
+    && manifest.functions.inventorySha256 === fingerprint(canonicalJson(manifest.functions.items))
+    && smoke?.unauthenticatedStatusCode === 401
+    && evidenceSha256 === fingerprint(canonicalJson(smokePayload))
+}
+
+export function validateDeployCompletionEvidence(completion, evidence, certifiedManifest) {
   return completion?.contractVersion === "fundloop.deploy-completion-evidence/v1"
     && completion.candidateGitSha === evidence.candidateGitSha
     && completion.actionsRunId === evidence.actionsRunId
@@ -358,6 +419,33 @@ export function validateDeployCompletionEvidence(completion, evidence) {
     && isExplicitRfc3339Timestamp(completion.completedAt)
     && isExplicitRfc3339Timestamp(evidence.recordedAt)
     && compareExplicitRfc3339Timestamps(completion.completedAt, evidence.recordedAt) >= 0
+    && validateCertifiedDeploymentManifestIntegrity(certifiedManifest)
+    && certifiedManifest?.contractVersion === "fundloop.environment-delivery-manifest/v1"
+    && certifiedManifest.observation?.mode === "deploy"
+    && certifiedManifest.certifiedDeployment?.gitSha === completion.candidateGitSha
+    && certifiedManifest.certifiedDeployment?.githubRunId === completion.actionsRunId
+    && certifiedManifest.certifiedDeployment?.githubRunAttempt === completion.runAttempt
+    && certifiedManifest.certifiedDeployment?.recordedAt === evidence.recordedAt
+    && certifiedManifest.observation?.gitSha === completion.candidateGitSha
+    && certifiedManifest.observation?.githubRunId === completion.actionsRunId
+    && certifiedManifest.observation?.githubRunAttempt === completion.runAttempt
+    && certifiedManifest.environment === completion.environment
+    && certifiedManifest.projectRef === completion.projectRef
+    && certifiedManifest.migrations?.inventorySha256 === completion.inventorySha256
+    && certifiedManifest.schema?.expectedSha256 === completion.schemaExpectedSha256
+    && certifiedManifest.schema?.observedSha256 === completion.schemaObservedSha256
+    && certifiedManifest.functions?.inventorySha256 === completion.functionInventorySha256
+    && certifiedManifest.runtimeControls?.productionValueFlowEnabledCount === 0
+    && certifiedManifest.prerequisites?.migrationDeployment?.status === "passed"
+    && certifiedManifest.prerequisites?.schemaParity?.status === "passed"
+    && certifiedManifest.prerequisites?.functionParity?.status === "passed"
+    && certifiedManifest.prerequisites?.valueFlowReadback?.status === "passed"
+    && certifiedManifest.prerequisites?.valueFlowReadback?.enabledCount === 0
+    && certifiedManifest.prerequisites?.hostedUnauthenticatedDenial?.status === "passed"
+    && certifiedManifest.prerequisites?.hostedUnauthenticatedDenial?.evidence?.evidenceSha256 === completion.hostedSmokeEvidenceSha256
+    && certifiedManifest.manifestSha256 === completion.deploymentManifestSha256
+    && isExplicitRfc3339Timestamp(certifiedManifest.observation?.observedAt)
+    && compareExplicitRfc3339Timestamps(completion.completedAt, certifiedManifest.observation.observedAt) >= 0
 }
 
 export function buildDeployCompletionEvidence(manifest, binding) {
@@ -374,6 +462,7 @@ export function buildDeployCompletionEvidence(manifest, binding) {
     functionInventorySha256: manifest?.functions?.inventorySha256,
     hostedSmokeEvidenceSha256: manifest?.prerequisites?.hostedUnauthenticatedDenial?.evidence?.evidenceSha256,
     deploymentManifestSha256: manifest?.manifestSha256,
+    completedAt: new Date().toISOString(),
   }
   const digests = [completion.inventorySha256, completion.schemaExpectedSha256, completion.schemaObservedSha256, completion.functionInventorySha256, completion.hostedSmokeEvidenceSha256, completion.deploymentManifestSha256]
   if (manifest?.contractVersion !== "fundloop.environment-delivery-manifest/v1"
@@ -389,13 +478,15 @@ export function buildDeployCompletionEvidence(manifest, binding) {
     || manifest?.observation?.githubRunId !== binding.actionsRunId
     || manifest?.observation?.githubRunAttempt !== binding.runAttempt
     || completion.schemaExpectedSha256 !== completion.schemaObservedSha256
+    || !isExplicitRfc3339Timestamp(manifest?.observation?.observedAt)
+    || compareExplicitRfc3339Timestamps(completion.completedAt, manifest.observation.observedAt) < 0
     || digests.some((digest) => !/^[0-9a-f]{64}$/.test(digest ?? ""))) {
     throw new Error("deployment-completion-invalid: manifest does not bind the exact successful deploy context")
   }
   return completion
 }
 
-function recordDeployCompletion(dbUrl, manifest, binding) {
+export function recordDeployCompletion(dbUrl, manifest, binding) {
   const completion = buildDeployCompletionEvidence(manifest, binding)
   const connection = libpqConnectionEnvironment(dbUrl)
   const sql = `INSERT INTO public.supabase_deploy_completion_evidence (
@@ -403,14 +494,14 @@ function recordDeployCompletion(dbUrl, manifest, binding) {
     deployment_environment, project_ref, inventory_sha256,
     schema_expected_sha256, schema_observed_sha256,
     function_inventory_sha256, hosted_smoke_evidence_sha256,
-    deployment_manifest_sha256
+    deployment_manifest_sha256, deployment_manifest, completed_at
   ) VALUES (
     'fundloop.deploy-completion-evidence/v1', :'candidate_git_sha',
     :'actions_run_id'::bigint, :'run_attempt'::integer,
     :'target_environment', :'project_ref', :'inventory_sha256',
     :'schema_expected_sha256', :'schema_observed_sha256',
     :'function_inventory_sha256', :'hosted_smoke_evidence_sha256',
-    :'deployment_manifest_sha256'
+    :'deployment_manifest_sha256', :'deployment_manifest'::jsonb, :'completed_at'::timestamptz
   );`
   const variables = {
     candidate_git_sha: completion.candidateGitSha,
@@ -424,6 +515,8 @@ function recordDeployCompletion(dbUrl, manifest, binding) {
     function_inventory_sha256: completion.functionInventorySha256,
     hosted_smoke_evidence_sha256: completion.hostedSmokeEvidenceSha256,
     deployment_manifest_sha256: completion.deploymentManifestSha256,
+    deployment_manifest: JSON.stringify(manifest),
+    completed_at: completion.completedAt,
   }
   run("psql", ["-X", "-v", "ON_ERROR_STOP=1", ...Object.entries(variables).flatMap(([name, value]) => ["-v", `${name}=${value}`])], {
     encoding: "utf8",
@@ -433,12 +526,12 @@ function recordDeployCompletion(dbUrl, manifest, binding) {
 }
 
 function latestMatchingMigrationEvidence(dbUrl, binding, expectedInventorySha256) {
-  const sql = `select json_build_object('contractVersion',m.contract_version,'candidateGitSha',m.candidate_git_sha,'actionsRunId',m.actions_run_id::text,'runAttempt',m.run_attempt,'environment',m.deployment_environment,'projectRef',m.project_ref,'migrations',m.migration_inventory,'inventorySha256',m.inventory_sha256,'recordedAt',m.recorded_at,'completion',json_build_object('contractVersion',c.contract_version,'candidateGitSha',c.candidate_git_sha,'actionsRunId',c.actions_run_id::text,'runAttempt',c.run_attempt,'environment',c.deployment_environment,'projectRef',c.project_ref,'inventorySha256',c.inventory_sha256,'schemaExpectedSha256',c.schema_expected_sha256,'schemaObservedSha256',c.schema_observed_sha256,'functionInventorySha256',c.function_inventory_sha256,'hostedSmokeEvidenceSha256',c.hosted_smoke_evidence_sha256,'deploymentManifestSha256',c.deployment_manifest_sha256,'completedAt',c.completed_at))::text from public.supabase_deploy_migration_evidence m join public.supabase_deploy_completion_evidence c using (candidate_git_sha,actions_run_id,run_attempt,deployment_environment,project_ref) where m.deployment_environment='${binding.environment}' and m.project_ref='${binding.projectRef}' and m.inventory_sha256='${expectedInventorySha256}' order by c.completed_at desc limit 1`
+  const sql = `select json_build_object('contractVersion',m.contract_version,'candidateGitSha',m.candidate_git_sha,'actionsRunId',m.actions_run_id::text,'runAttempt',m.run_attempt,'environment',m.deployment_environment,'projectRef',m.project_ref,'migrations',m.migration_inventory,'inventorySha256',m.inventory_sha256,'recordedAt',m.recorded_at,'certifiedManifest',c.deployment_manifest,'completion',json_build_object('contractVersion',c.contract_version,'candidateGitSha',c.candidate_git_sha,'actionsRunId',c.actions_run_id::text,'runAttempt',c.run_attempt,'environment',c.deployment_environment,'projectRef',c.project_ref,'inventorySha256',c.inventory_sha256,'schemaExpectedSha256',c.schema_expected_sha256,'schemaObservedSha256',c.schema_observed_sha256,'functionInventorySha256',c.function_inventory_sha256,'hostedSmokeEvidenceSha256',c.hosted_smoke_evidence_sha256,'deploymentManifestSha256',c.deployment_manifest_sha256,'completedAt',c.completed_at))::text from public.supabase_deploy_migration_evidence m join public.supabase_deploy_completion_evidence c using (candidate_git_sha,actions_run_id,run_attempt,deployment_environment,project_ref) where m.deployment_environment='${binding.environment}' and m.project_ref='${binding.projectRef}' and m.inventory_sha256='${expectedInventorySha256}' order by c.completed_at desc limit 1`
   const output = psqlFromHost(dbUrl, sql)
   if (!output) throw new Error("deployment-evidence-missing: no immutable deployment record matches reviewed migration bytes")
   const evidence = JSON.parse(output)
   if (!validateMatchingMigrationEvidence(evidence, binding, expectedInventorySha256)
-    || !validateDeployCompletionEvidence(evidence.completion, evidence)) {
+    || !validateDeployCompletionEvidence(evidence.completion, evidence, evidence.certifiedManifest)) {
     throw new Error("deployment-evidence-invalid: immutable deployment record failed independent validation")
   }
   return evidence
@@ -476,21 +569,6 @@ async function main() {
     if (!output || !/^[0-9a-f]{40}$/.test(evidence.candidateGitSha ?? "") || !/^\d+$/.test(evidence.actionsRunId) || evidence.runAttempt < 1 || !["dev", "main"].includes(evidence.environment) || !/^[a-z0-9]{20,}$/.test(evidence.projectRef ?? "")) throw new Error("Candidate-bound GitHub deployment context and SUPABASE_MIGRATION_EVIDENCE_OUTPUT are required")
     writeFileSync(output, `${JSON.stringify(evidence)}\n`, "utf8")
     console.log(`Prepared ${evidence.migrations.length} reviewed migration digests: ${evidence.inventorySha256}`)
-    return
-  }
-  if (process.argv[2] === "complete") {
-    const manifestPath = process.env.SUPABASE_ENVIRONMENT_MANIFEST_OUTPUT
-    const dbUrl = process.env.SUPABASE_SCHEMA_DB_URL
-    if (!manifestPath || !dbUrl) throw new Error("SUPABASE_ENVIRONMENT_MANIFEST_OUTPUT and SUPABASE_SCHEMA_DB_URL are required")
-    const binding = {
-      candidateGitSha: process.env.GITHUB_SHA,
-      actionsRunId: process.env.GITHUB_RUN_ID,
-      runAttempt: Number(process.env.GITHUB_RUN_ATTEMPT),
-      environment: process.env.TARGET_ENVIRONMENT,
-      projectRef: process.env.SUPABASE_PROJECT_REF,
-    }
-    recordDeployCompletion(dbUrl, JSON.parse(readFileSync(manifestPath, "utf8")), binding)
-    console.log(`Certified completed ${binding.environment} Supabase deployment ${binding.candidateGitSha}`)
     return
   }
   const remoteDbUrl = process.env.SUPABASE_SCHEMA_DB_URL
@@ -546,13 +624,37 @@ sql_paths = []
 
     const expectedMigrations = expectedMigrationInventory()
     const expectedVersions = expectedMigrations.map((entry) => entry.version)
-    const observedVersions = psqlFromParityContainer(projectId, remoteDbUrl, "select version from supabase_migrations.schema_migrations order by version").split("\n")
+    const observedVersions = psqlFromParityContainer(projectId, remoteDbUrl, "select version from supabase_migrations.schema_migrations order by version").split("\n").filter(Boolean)
     const repairIsOnlyPendingMigration = diagnosticMode && repairManifest
       && expectedVersions.length === observedVersions.length + 1
       && expectedVersions.at(-1) === repairManifest.repairMigrationVersion
       && canonicalJson(expectedVersions.slice(0, -1)) === canonicalJson(observedVersions)
-    if (JSON.stringify(expectedVersions) !== JSON.stringify(observedVersions) && !repairIsOnlyPendingMigration) {
+    const hasForwardPendingMigrations = diagnosticMode
+      && expectedVersions.length > observedVersions.length
+      && canonicalJson(expectedVersions.slice(0, observedVersions.length)) === canonicalJson(observedVersions)
+    if (JSON.stringify(expectedVersions) !== JSON.stringify(observedVersions) && !repairIsOnlyPendingMigration && !hasForwardPendingMigrations) {
       throw new Error(`Migration history drift: expected=${expectedVersions.join(",")} observed=${observedVersions.join(",")}`)
+    }
+    let forwardPendingValidation = null
+    let expectedDump = dumpPublicSchemaFromParityContainer(projectId, "postgresql://postgres:postgres@127.0.0.1:5432/postgres")
+    if (hasForwardPendingMigrations && !repairIsOnlyPendingMigration) {
+      const baselineMigrations = expectedMigrations.slice(0, observedVersions.length)
+      const baselineInventorySha256 = migrationInventorySha256(baselineMigrations)
+      const baselineEvidence = latestMigrationBaselineEvidence(projectId, remoteDbUrl, deploymentBinding, baselineInventorySha256)
+      forwardPendingValidation = validateForwardPendingMigrationHistory(expectedMigrations, observedVersions, baselineEvidence, deploymentBinding)
+
+      const baselineRoot = path.join(bootstrapRoot, "forward-baseline")
+      const baselineSupabase = path.join(baselineRoot, "supabase")
+      mkdirSync(path.join(baselineSupabase, "migrations"), { recursive: true })
+      writeFileSync(path.join(baselineSupabase, "config.toml"), `project_id = "${projectId}-baseline"\n\n[db]\nmajor_version = 17\n\n[db.migrations]\nenabled = true\nschema_paths = []\n\n[db.seed]\nenabled = false\nsql_paths = []\n`, "utf8")
+      for (const migration of forwardPendingValidation.observedMigrations) {
+        copyFileSync(path.join(process.cwd(), "supabase/migrations", migration.name), path.join(baselineSupabase, "migrations", migration.name))
+      }
+      psqlFromParityContainer(projectId, "postgresql://postgres:postgres@127.0.0.1:5432/postgres", "CREATE DATABASE fundloop_forward_baseline")
+      const baselineDbUrl = "postgresql://postgres:postgres@127.0.0.1:5432/fundloop_forward_baseline"
+      psqlFromParityContainer(projectId, baselineDbUrl, `CREATE TABLE public.supabase_deploy_context (id boolean PRIMARY KEY DEFAULT true CHECK (id), target_environment text NOT NULL CHECK (target_environment IN ('dev', 'main')), updated_at timestamptz NOT NULL DEFAULT now()); INSERT INTO public.supabase_deploy_context (id, target_environment) VALUES (true, '${targetEnvironment}');`)
+      run("supabase", ["db", "push", "--yes", "--include-all", "--db-url", baselineDbUrl, "--workdir", baselineRoot], { env: localEnv })
+      expectedDump = dumpPublicSchemaFromParityContainer(projectId, baselineDbUrl)
     }
     let expectedEvidence
     if (!diagnosticMode && !driftMode) {
@@ -573,8 +675,6 @@ sql_paths = []
       ? assertValueFlowDisabledWithQuery((sql) => psqlFromParityContainer(projectId, remoteDbUrl, sql))
       : assertValueFlowDisabled(remoteDbUrl)
 
-    const containerLocalDbUrl = "postgresql://postgres:postgres@127.0.0.1:5432/postgres"
-    const expectedDump = dumpPublicSchemaFromParityContainer(projectId, containerLocalDbUrl)
     const observedDump = dumpPublicSchemaFromParityContainer(projectId, remoteDumpDbUrl)
     const diagnostic = buildSchemaDiagnostic(expectedDump, observedDump, {
       candidateGitSha: process.env.OBSERVATION_GIT_SHA ?? process.env.GITHUB_SHA,
@@ -583,7 +683,7 @@ sql_paths = []
       observedAt: new Date().toISOString(),
       pgDumpVersion: pgDumpVersionFromParityContainer(projectId),
       migrationCount: observedVersions.length,
-      migrationInventorySha256: expectedEvidence?.inventorySha256 ?? migrationInventorySha256(expectedMigrations),
+      migrationInventorySha256: expectedEvidence?.inventorySha256 ?? forwardPendingValidation?.baselineInventorySha256 ?? migrationInventorySha256(expectedMigrations),
       baselineMigrationInventorySha256: repairIsOnlyPendingMigration
         ? migrationInventorySha256(expectedMigrations.slice(0, -1))
         : null,
@@ -601,6 +701,17 @@ sql_paths = []
     if (diagnostic.status === "drift" && !pendingRepairValidated) throw new Error(`Effective public schema drift: expected=${diagnostic.expectedSha256} observed=${diagnostic.observedSha256}; sanitized diagnostic written`)
     if (pendingRepairValidated) {
       console.log(`Validated exact pending Dev schema repair ${repairManifest.repairMigrationVersion} for observed drift ${diagnostic.observedSha256}`)
+      return
+    }
+    if (forwardPendingValidation) {
+      diagnostic.forwardPendingValidation = {
+        status: "reviewed-forward-replay",
+        baselineMigrationCount: forwardPendingValidation.observedMigrations.length,
+        baselineMigrationInventorySha256: forwardPendingValidation.baselineInventorySha256,
+        pendingMigrationVersions: forwardPendingValidation.pendingMigrations.map((migration) => migration.version),
+      }
+      if (process.env.SUPABASE_SCHEMA_DIAGNOSTIC_OUTPUT) writeFileSync(process.env.SUPABASE_SCHEMA_DIAGNOSTIC_OUTPUT, `${JSON.stringify(diagnostic, null, 2)}\n`, "utf8")
+      console.log(`Validated ${forwardPendingValidation.pendingMigrations.length} reviewed forward migration(s) against exact remote baseline ${forwardPendingValidation.baselineInventorySha256}`)
       return
     }
     const { expectedSha256, observedSha256 } = diagnostic
@@ -627,6 +738,7 @@ sql_paths = []
         environment: targetEnvironment,
         projectRef,
         ...(expectedEvidence?.completion ? { completion: expectedEvidence.completion } : {}),
+        ...(expectedEvidence?.certifiedManifest ? { certifiedManifest: expectedEvidence.certifiedManifest } : {}),
       },
       productionValueFlowControlTableCount: valueFlowControls.tableCount,
       enabledProductionValueFlowControlCount: valueFlowControls.enabledCount,

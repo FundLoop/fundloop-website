@@ -18,20 +18,28 @@ const functionEntry = (index: number) => ({
 const stable = (value: any): string => Array.isArray(value) ? `[${value.map(stable).join(",")}]` : value && typeof value === "object" ? `{${Object.keys(value).sort().map((key) => `${JSON.stringify(key)}:${stable(value[key])}`).join(",")}}` : JSON.stringify(value)
 const digest = (value: any) => createHash("sha256").update(stable(value)).digest("hex")
 const migrationDigest = createHash("sha256").update(stable([migration])).digest("hex")
-const schema = {
+const schema: any = {
   environment: "dev", projectRef: "a".repeat(20), algorithm: "pg17-public-schema-normalized-v2", postgresMajor: 17,
   expectedSha256: "d".repeat(64), observedSha256: "d".repeat(64), migrationInventorySha256: migrationDigest,
   migrationInventory: [migration], migrationHistory: [migration.version], enabledProductionValueFlowControlCount: 0,
   productionValueFlowControlTableCount: 4,
-  candidateGitSha: "2".repeat(40), observedAt: "2026-08-12T19:30:00Z",
-  certifiedDeployment: { gitSha: "1".repeat(40), githubRunId: "100", githubRunAttempt: 2, recordedAt: "2026-08-12T19:00:00Z", environment: "dev", projectRef: "a".repeat(20), completion: {
-    contractVersion: "fundloop.deploy-completion-evidence/v1", candidateGitSha: "1".repeat(40), actionsRunId: "100", runAttempt: 2,
-    environment: "dev", projectRef: "a".repeat(20), inventorySha256: migrationDigest,
-    schemaExpectedSha256: "d".repeat(64), schemaObservedSha256: "d".repeat(64), functionInventorySha256: "e".repeat(64),
-    hostedSmokeEvidenceSha256: "f".repeat(64), deploymentManifestSha256: "1".repeat(64), completedAt: "2026-08-12T19:15:00Z",
-  } },
+  candidateGitSha: "2".repeat(40), observedAt: "2026-08-12T19:56:00Z",
+  certifiedDeployment: { gitSha: "1".repeat(40), githubRunId: "100", githubRunAttempt: 2, recordedAt: "2026-08-12T19:00:00Z", environment: "dev", projectRef: "a".repeat(20) },
 }
-const functions = { candidateGitSha: "2".repeat(40), observedAt: "2026-08-12T19:45:00Z", environment: "dev", projectRef: "a".repeat(20), functions: Array.from({ length: 62 }, (_, index) => functionEntry(index)) }
+const functions = { candidateGitSha: "2".repeat(40), observedAt: "2026-08-12T19:57:00Z", environment: "dev", projectRef: "a".repeat(20), functions: Array.from({ length: 62 }, (_, index) => functionEntry(index)) }
+const deployContext = { gitSha: "1".repeat(40), githubRunId: "100", githubRunAttempt: 2, observedAt: "2026-08-12T19:50:00Z", trigger: "push", mode: "deploy" }
+const deploySchema = { ...schema, candidateGitSha: deployContext.gitSha, observedAt: "2026-08-12T19:30:00Z", certifiedDeployment: { ...schema.certifiedDeployment } }
+const deployFunctions = { ...functions, candidateGitSha: deployContext.gitSha, observedAt: "2026-08-12T19:45:00Z" }
+const deploySmoke = buildSafeSmokeEvidence({ environment: "dev", projectRef: "a".repeat(20), observationGitSha: deployContext.gitSha, statusCode: 401, observedAt: "2026-08-12T19:49:00Z" })
+const certifiedManifest = buildEnvironmentManifest({ schema: deploySchema, functions: deployFunctions, smoke: deploySmoke, context: deployContext })
+schema.certifiedDeployment = { ...schema.certifiedDeployment, certifiedManifest, completion: {
+  contractVersion: "fundloop.deploy-completion-evidence/v1", candidateGitSha: "1".repeat(40), actionsRunId: "100", runAttempt: 2,
+  environment: "dev", projectRef: "a".repeat(20), inventorySha256: migrationDigest,
+  schemaExpectedSha256: certifiedManifest.schema.expectedSha256, schemaObservedSha256: certifiedManifest.schema.observedSha256,
+  functionInventorySha256: certifiedManifest.functions.inventorySha256,
+  hostedSmokeEvidenceSha256: deploySmoke.evidenceSha256, deploymentManifestSha256: certifiedManifest.manifestSha256,
+  completedAt: "2026-08-12T19:55:00Z",
+} }
 const context = { gitSha: "2".repeat(40), githubRunId: "200", githubRunAttempt: 3, observedAt: "2026-08-12T20:00:00Z", trigger: "push", mode: "drift" }
 const smoke = buildSafeSmokeEvidence({ environment: "dev", projectRef: "a".repeat(20), observationGitSha: context.gitSha, statusCode: 401, observedAt: "2026-08-12T19:59:00Z" })
 
@@ -47,26 +55,78 @@ const restoreManifestIntegrity = (manifest: any) => {
   return manifest
 }
 
+const withCertifiedChronology = (input: any, recordedAt: string, completedAt: string) => {
+  const next = structuredClone(input)
+  const certified = structuredClone(next.certifiedDeployment.certifiedManifest)
+  certified.certifiedDeployment.recordedAt = recordedAt
+  restoreManifestIntegrity(certified)
+  next.certifiedDeployment.recordedAt = recordedAt
+  next.certifiedDeployment.certifiedManifest = certified
+  next.certifiedDeployment.completion = {
+    ...next.certifiedDeployment.completion,
+    deploymentManifestSha256: certified.manifestSha256,
+    completedAt,
+  }
+  return next
+}
+
 describe("immutable Supabase environment manifests", () => {
   it("preserves distinct certified deployment and observation provenance", () => {
     const manifest = buildEnvironmentManifest({ schema, functions, smoke, context })
     expect(manifest.certifiedDeployment.gitSha).toBe("1".repeat(40))
     expect(manifest.observation.gitSha).toBe("2".repeat(40))
+    expect(manifest.certifiedDeployment.certifiedManifest.prerequisites.hostedUnauthenticatedDenial.evidence.evidenceSha256).not.toBe(manifest.prerequisites.hostedUnauthenticatedDenial.evidence.evidenceSha256)
     expect(verifyEnvironmentManifest(manifest)).toEqual({ ok: true, blockers: [] })
   })
 
+  it("binds completion to the full retained certified deploy manifest and a later fresh smoke", () => {
+    const valid = buildEnvironmentManifest({ schema, functions, smoke, context })
+    const completionCases: Array<[string, (changed: any) => void]> = [
+      ["schema", (changed) => { changed.certifiedDeployment.completion.schemaExpectedSha256 = "9".repeat(64); changed.certifiedDeployment.completion.schemaObservedSha256 = "9".repeat(64) }],
+      ["function", (changed) => { changed.certifiedDeployment.completion.functionInventorySha256 = "9".repeat(64) }],
+      ["deploy smoke", (changed) => { changed.certifiedDeployment.completion.hostedSmokeEvidenceSha256 = "9".repeat(64) }],
+      ["manifest", (changed) => { changed.certifiedDeployment.completion.deploymentManifestSha256 = "9".repeat(64) }],
+      ["reversed completion", (changed) => { changed.certifiedDeployment.completion.completedAt = "2026-08-12T19:49:59Z" }],
+    ]
+    for (const [name, mutate] of completionCases) {
+      const changedSchema = structuredClone(schema)
+      mutate(changedSchema)
+      expect(() => buildEnvironmentManifest({ schema: changedSchema, functions, smoke, context }), name).toThrow("deployment-completion")
+    }
+
+    const tamperedSelf = structuredClone(valid)
+    tamperedSelf.certifiedDeployment.certifiedManifest.manifestSha256 = "9".repeat(64)
+    restoreManifestIntegrity(tamperedSelf)
+    expect(verifyEnvironmentManifest(tamperedSelf).blockers).toContain("deployment-completion")
+
+    const skeletal = structuredClone(valid)
+    skeletal.certifiedDeployment.certifiedManifest = {
+      contractVersion: "fundloop.environment-delivery-manifest/v1",
+      environment: "dev", projectRef: schema.projectRef, observation: { mode: "deploy" },
+      manifestSha256: schema.certifiedDeployment.completion.deploymentManifestSha256,
+    }
+    restoreManifestIntegrity(skeletal)
+    expect(verifyEnvironmentManifest(skeletal).blockers).toContain("deployment-completion")
+
+    const sameShaSchema = { ...schema, candidateGitSha: deployContext.gitSha }
+    const sameShaFunctions = { ...functions, candidateGitSha: deployContext.gitSha }
+    const sameShaContext = { ...context, gitSha: deployContext.gitSha }
+    expect(() => buildEnvironmentManifest({ schema: sameShaSchema, functions: sameShaFunctions, smoke: deploySmoke, context: sameShaContext })).toThrow("observation-smoke-not-fresh")
+  })
+
   it("accepts deploy provenance only when deployment and observation are identical", () => {
-    const deployContext = { ...context, gitSha: schema.certifiedDeployment.gitSha, githubRunId: schema.certifiedDeployment.githubRunId, githubRunAttempt: schema.certifiedDeployment.githubRunAttempt, mode: "deploy" }
+    const localDeployContext = { ...context, gitSha: schema.certifiedDeployment.gitSha, githubRunId: schema.certifiedDeployment.githubRunId, githubRunAttempt: schema.certifiedDeployment.githubRunAttempt, mode: "deploy" }
     const { completion: _completion, ...deployCertifiedDeployment } = schema.certifiedDeployment
-    const deploySchema = { ...schema, candidateGitSha: deployContext.gitSha, certifiedDeployment: deployCertifiedDeployment }
-    const deployFunctions = { ...functions, candidateGitSha: deployContext.gitSha }
-    const deploySmoke = buildSafeSmokeEvidence({ environment: "dev", projectRef: schema.projectRef, observationGitSha: deployContext.gitSha, statusCode: 401, observedAt: "2026-08-12T19:59:00Z" })
-    expect(verifyEnvironmentManifest(buildEnvironmentManifest({ schema: deploySchema, functions: deployFunctions, smoke: deploySmoke, context: deployContext }))).toEqual({ ok: true, blockers: [] })
+    delete deployCertifiedDeployment.certifiedManifest
+    const localDeploySchema = { ...schema, candidateGitSha: localDeployContext.gitSha, certifiedDeployment: deployCertifiedDeployment }
+    const localDeployFunctions = { ...functions, candidateGitSha: localDeployContext.gitSha }
+    const localDeploySmoke = buildSafeSmokeEvidence({ environment: "dev", projectRef: schema.projectRef, observationGitSha: localDeployContext.gitSha, statusCode: 401, observedAt: "2026-08-12T19:59:00Z" })
+    expect(verifyEnvironmentManifest(buildEnvironmentManifest({ schema: localDeploySchema, functions: localDeployFunctions, smoke: localDeploySmoke, context: localDeployContext }))).toEqual({ ok: true, blockers: [] })
   })
 
   it("requires semantic RFC3339 timestamps when building and independently verifying manifests", () => {
-    for (const recordedAt of ["2026-08-12T23:28:57.708226+00:00", "2026-08-12T23:28:57Z"]) {
-      const positiveSchema = { ...schema, observedAt: "2026-08-12T23:40:00Z", certifiedDeployment: { ...schema.certifiedDeployment, recordedAt, completion: { ...schema.certifiedDeployment.completion, completedAt: "2026-08-12T23:35:00Z" } } }
+    for (const recordedAt of ["2026-08-12T18:28:57.708226+00:00", "2026-08-12T18:28:57Z"]) {
+      const positiveSchema = { ...schema, observedAt: "2026-08-12T23:40:00Z", certifiedDeployment: withCertifiedChronology(schema, recordedAt, "2026-08-12T23:35:00Z").certifiedDeployment }
       const positiveFunctions = { ...functions, observedAt: "2026-08-12T23:45:00Z" }
       const positiveSmoke = buildSafeSmokeEvidence({ environment: "dev", projectRef: schema.projectRef, observationGitSha: context.gitSha, statusCode: 401, observedAt: "2026-08-12T23:50:00Z" })
       const manifest = buildEnvironmentManifest({ schema: positiveSchema, functions: positiveFunctions, smoke: positiveSmoke, context: { ...context, observedAt: "2026-08-13T00:00:00Z" } })
@@ -112,7 +172,7 @@ describe("immutable Supabase environment manifests", () => {
     const preciseSmoke = buildSafeSmokeEvidence({ environment: "dev", projectRef: schema.projectRef, observationGitSha: context.gitSha, statusCode: 401, observedAt: "2026-08-12T20:00:00.000001Z" })
     expect(() => buildEnvironmentManifest({ schema: preciseSchema, functions: preciseFunctions, smoke: preciseSmoke, context: preciseContext })).toThrow("deployment-after-observation")
 
-    const equalSchema = { ...preciseSchema, certifiedDeployment: { ...preciseSchema.certifiedDeployment, recordedAt: preciseContext.observedAt, completion: { ...preciseSchema.certifiedDeployment.completion, completedAt: preciseContext.observedAt } } }
+    const equalSchema = { ...schema, observedAt: preciseContext.observedAt, certifiedDeployment: { ...schema.certifiedDeployment, completion: { ...schema.certifiedDeployment.completion, completedAt: preciseContext.observedAt } } }
     expect(verifyEnvironmentManifest(buildEnvironmentManifest({ schema: equalSchema, functions: preciseFunctions, smoke: preciseSmoke, context: preciseContext }))).toEqual({ ok: true, blockers: [] })
   })
 
