@@ -2,11 +2,11 @@
 
 Status: implemented behind local, development, preview, and test controls. Production value flow remains disabled.
 
-Privacy-boundary status: the [2026-08-13 allocator identity-boundary audit](./2026-08-13-allocator-identity-boundary-audit.md)
-found that the current public-schema attribution, cohort, manifest, and award records persist
-project-scoped and FundLoop-scoped identity joins outside an isolated allocator. The v2 formula
-is unchanged, but Goal 2 publication is blocked pending approval and completion of the proposed
-boundary remediation.
+Privacy-boundary status: the [2026-08-13 allocator privacy-boundary audit](./2026-08-13-allocator-identity-boundary-audit.md)
+accepts FundLoop's current pre/post-allocation identity joins and per-project claims for the MVP.
+The remaining multi-repo work is a private Cubid batch resolver, allocator-only logical storage
+and access, and explicit currency propagation. Project claims become currency claims in a later
+v2 privacy hardening step.
 
 Policy key: `settled_cubid_redistribution_v2`
 

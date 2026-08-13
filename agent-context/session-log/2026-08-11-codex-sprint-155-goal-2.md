@@ -285,3 +285,15 @@
 - Validation: allocator audit Vitest passed `4/4`, including the new reach-boundary regression; scoped ESLint, Node 22 typecheck, and `git diff --check` passed. No Supabase, Docker, browser, hosted, provider, Production, payout, or value-flow command ran.
 - Reflections: complete audit coverage and remediation authority are different. External arrows still matter as assumptions at FundLoop ingress, but FundLoop should neither promise nor implement behavior wholly owned by Participants, Projects, or CUBID.
 - Next steps: commit the scope correction and keep #204/#188 blocked. Await explicit approval before creating the narrowed R1–R4 Tasks; do not restart Supabase or implement remediation.
+
+### session v25: align the allocator audit with the approved MVP and Cubid split (#204)
+
+- Timestamp: 2026-08-13T21:34:00Z
+- Agent: Codex (`sprint-orchestrator` cross-repo scoping correction)
+- Branch: `codex/155-goal-2-integrated-evidence`
+- Head before commit: `840dd26ccf38bd1e94be1ccf3940567750a78dab`
+- Objective: replace the audit's overly strict future-state identity-isolation premise with the approved MVP allocator privacy boundary and establish the required Cubid-owned private resolver roadmap.
+- Actions: accepted FundLoop's pre/post-calculation identity joins and per-project claim binding for MVP logic validation; removed the invented adjudicator term; narrowed allocator input to project-scoped UUIDs and output to FundLoop-scoped UUIDs, scores, funds/claims, evidence, and mandatory currency; explicitly excluded project membership/self-identification from allocator inputs; retained logical allocator-only table/role ownership as the current database boundary; and recorded project-claims-to-currency-claims plus a physically separate allocator datastore as v2 hardening. Created Cubid Feature #77, Goal #78, and Tasks #79-#81 as native typed sub-issues in Cubid Project status Scoped, with one Goal branch/PR delivery rather than per-Task PRs. Updated FundLoop #204 with reciprocal links and the same acceptance contract.
+- Validation: focused audit tests, scoped ESLint, Node 22 typecheck, link/issue-type/sub-issue/Project-status readback, Markdown review, and `git diff --check` follow this entry. No Supabase, Docker, browser, hosted service, provider, Production, payout, or value-flow command ran.
+- Reflections: the privacy boundary belongs at the allocator interface and authority surface. FundLoop's broader MVP evidence joins can remain temporarily without authorizing the allocator to read raw application identity or membership data.
+- Next steps: independently validate the revised audit and issue tree. Implement Cubid #79-#81 on one Goal branch/PR and add FundLoop currency/API/logical-table changes on the existing Goal 2 branch before #188 publication; preserve the v2 anonymization roadmap without treating it as an MVP blocker.

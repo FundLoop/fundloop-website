@@ -1,262 +1,166 @@
-# Allocator identity-boundary audit
+# Allocator privacy-boundary audit
 
-Date: 2026-08-13  
-Task: #204  
-Audited target: the three diagrams in `docs/project-reviews/2026-08-13-business-red-team/improvement-suggestions.md` at commit `9d6359b`  
-Candidate: Goal 2 branch through `14f7f95`  
-Result: **fail — architectural remediation requires approval**
+Date: 2026-08-13
+Task: #204
+Audited target: Goal 2 candidate through `14f7f95` plus the approved MVP clarification
+Result: **pass with required cross-repo follow-up**
 
-This is a source and schema audit, not a privacy certification. It does not change the
-`settled_cubid_redistribution_v2` policy, enable a future flow, or repair the violations it
-records. The current conventional MVP is production-disabled and remains a no-value local
-candidate.
+This audit asks one narrow question: does the allocator receive only the identity and financial
+data needed to calculate awards? It does not require FundLoop to remove its pre-allocation or
+post-allocation identity joins in the MVP. Those joins are intentionally retained so the current
+logic can be validated. Production value flow remains disabled.
 
-## Classification
+The component is called the **allocator** throughout. There is no separate "adjudicator" in this
+architecture.
 
-- `pass`: the implemented command and persisted output match the diagram boundary.
-- `partial`: some behavior exists, but the identity or trust boundary differs.
-- `fail`: the current implementation contradicts the diagram boundary.
-- `not implemented`: the arrow is deliberately unavailable and must not be marketed as current.
+## Approved MVP boundary
 
-## Remediation reach boundary
+The approved data flow is:
 
-The diagrams are audited end to end for traceability, but remediation is limited to arrows
-whose sender or receiver is **FundLoop** or the **allocator/adjudicator**. The following
-external-only arrows are observations and interface assumptions, not proposed FundLoop work:
+1. FundLoop prepares a project-scoped list containing only `project_id` and project-scoped UUIDs,
+   plus calculation facts such as eligible funds, cap policy, cycle, source evidence, and currency.
+2. The allocator sends the project-scoped UUID list to a private Cubid allocator API.
+3. Cubid returns the corresponding FundLoop-scoped UUIDs and scores. It must not return raw email,
+   phone, legal name, global Cubid account ID, raw stamps, raw proof payloads, or unrelated project
+   membership data.
+4. The allocator calculates the award and returns FundLoop-scoped UUID, amounts, currency, source
+   evidence, and the MVP project-claim breakdown to FundLoop.
+5. FundLoop may bind that result to its user IDs, per-project claims, reports, and payout-control
+   records before and after calculation. This is accepted for the MVP and is not an audit failure.
 
-- Participant → Project;
-- Participant → CUBID;
-- Project → CUBID; and
-- CUBID → Project.
+People may self-identify as project participants elsewhere in FundLoop. Those membership records
+are application data, not allocator inputs, and must not be joined into the allocator request.
 
-That exclusion applies equally to the conventional, alias-separated ZK, and consented-email
-diagrams. FundLoop remediation may validate the opaque value received at its own ingress or sent
-from its own egress, but it must not redesign, implement, or certify the upstream Project/CUBID/
-Participant interaction. Where a grouped diagram row contains both external-only and FundLoop
-arrows, only the FundLoop segment is remediation scope.
+## Current findings
 
-## Diagram 1 — conventional scoped-identifier MVP
-
-| Arrow | Classification | Current command/artifact and boundary evidence |
+| ID | Result | Finding |
 | --- | --- | --- |
-| Participant → Project: participant identifier | partial; audit-only | Project invitation and attribution flows accept email, `user_id`, and `scoped_cubid_id`, but this external relationship is outside remediation reach. Only FundLoop's later ingestion/storage is in scope. |
-| Participant → FundLoop: participant identifiers | pass | Supabase Auth and `user-cubid-resolve-email` bind the authenticated FundLoop user to email/CUBID state. |
-| Participant → CUBID: identity proofs | partial; audit-only | CUBID-hosted provider flows exist. Their proofing relationship is outside remediation reach; FundLoop's later snapshot retention remains separately in scope. |
-| Project → CUBID: project user identifier | not evidenced; audit-only | The external project-to-CUBID contract is outside FundLoop/allocator remediation reach and is not certified here. |
-| CUBID → Project: project-scoped UUID | not evidenced; audit-only | The external CUBID-to-project response is outside remediation reach. FundLoop's later receipt and retention of `scoped_cubid_id` remains in scope. |
-| FundLoop → CUBID: FundLoop identifiers | pass | `user-cubid-resolve-email` and `user-cubid-sync-profile` call the CUBID client from server/Edge code. |
-| CUBID → FundLoop: FundLoop UUID and score | partial | `users` and `cubid_identity_snapshots` retain the CUBID identifier and score, but the current identifier is not proven to be a FundLoop-only scoped UUID. |
-| Project → Allocator: project ID plus project-scoped UUIDs | fail | `project_attribution_rows` is a general `public` application table containing project ID, scoped CUBID ID, FundLoop user ID, and email before calculation. |
-| Project → FundLoop: project name plus funds | pass | Projects, payments, packages, settlement evidence, and valuation lots provide the project/funding input without enabling payout. |
-| FundLoop → Allocator: project, verified funds, cap | partial | The v2 lock command provides exact sources and cap policy, but it is a service-role SQL function over the same application database, not an isolated allocator contract. |
-| Allocator → CUBID: project-scoped UUIDs | fail | No allocator-owned CUBID request exists. The app resolves the cross-scope mapping before lock. |
-| CUBID → Allocator: scoped UUID, FundLoop UUID, score | fail | `project-attribution-command.ts` performs the join and stores it in `project_attribution_rows`; package and manifest cohorts copy the joined user/project/score state. |
-| Allocator → FundLoop: FundLoop UUID plus award | fail | The result uses raw FundLoop `user_id`; `epoch_allocation_user_awards.project_claims` and the persisted run artifact retain per-project claims with that user identity. |
-| FundLoop → Participant: funds | not implemented | Payout/value-flow controls remain disabled. Current obligations, payout intents, and provider modules are no-value control-plane evidence only. |
+| APB-001 | accepted MVP | FundLoop currently resolves and retains project/FundLoop identity joins before and after allocation. This is deliberately allowed for short-term logic validation. |
+| APB-002 | follow-up required | There is no private allocator-owned Cubid batch API yet. The mapping is currently resolved inside FundLoop before calculation. |
+| APB-003 | follow-up required | Allocator records live in the shared `public` schema. They need an explicit allocator-only ownership and grant boundary even while the physical database remains shared. |
+| APB-004 | follow-up required | The allocator output does not carry an explicit currency datapoint alongside amounts and claims. Currency must be mandatory and bound into deterministic result evidence. |
+| APB-005 | accepted MVP | Results bind FundLoop users to per-project claims and return that data to FundLoop. This remains allowed in v1/MVP. |
+| APB-006 | future v2 | Project claims should later be reduced to currency claims so the retained result no longer exposes the project breakdown. This is roadmap work, not an MVP blocker. |
+| APB-007 | future architecture | A physically separate allocator database is desirable later. For the MVP, logically separate allocator tables, roles, commands, and field allowlists are sufficient. |
 
-## Diagram 2 — alias-separated ZK flow
+The earlier audit treated APB-001 and APB-005 as violations. That was stricter than the approved
+MVP and is superseded by this decision.
 
-| Arrow group | Classification | Evidence |
-| --- | --- | --- |
-| Participant supplies unrelated X to Project, Y to FundLoop, and X/Y proofs to CUBID | not implemented | Only Y → FundLoop is remediation scope. X → Project and X/Y → CUBID are external-only assumptions and will not become remediation Tasks. |
-| Project resolves X to project-scoped UUID only | not implemented; audit-only | This external Project ↔ CUBID interaction is outside remediation reach. |
-| FundLoop resolves Y to FundLoop-scoped UUID only | not implemented | Current resolution does not prove alias separation from a project identifier. |
-| Project submits project UUIDs while FundLoop submits verified funds/cap | fail for current MVP; not implemented for ZK | The same public database joins raw project and FundLoop identities before calculation. |
-| Allocator requests ZK linkage and score proof | not implemented | No circuit, proof request, verifier key, committed score proof, or ZK runtime is present. Legacy `zkas_*` names are not ZK evidence. |
-| CUBID returns proof without identifiers | not implemented | No proof response contract exists. |
-| ZK allocator returns FundLoop UUID plus award | not implemented | Current v2 allocator consumes and persists raw `user_id` plus project claims. |
-| FundLoop pays participant | not implemented | Production value flow is disabled. |
+## Allocator field contract
 
-Every future-ZK arrow is unavailable. Product/docs must not describe alias separation,
-administrator-collusion resistance, or ZK linkage as implemented.
-
-## Diagram 3 — consented email-list project flow
-
-| Arrow | Classification | Evidence |
-| --- | --- | --- |
-| Participant → Project: consented email | partial; audit-only | The participant/project consent exchange is outside remediation reach. FundLoop may require a purpose/consent assertion at its ingress, but will not implement or certify the upstream exchange. |
-| Project → FundLoop: participant email list plus funds | not implemented | There is no secure eligible-email upload command or purpose-bound consent ledger for this product. |
-| FundLoop → CUBID: create/use secondary project account | not implemented | No secondary CUBID project-account lifecycle exists. |
-| FundLoop → CUBID: emails as project identifiers | not implemented | Current email resolution is a FundLoop-user command, not a project-list operation. |
-| CUBID → FundLoop: project-scoped UUIDs | not implemented | No secondary-account response contract exists. |
-| FundLoop → Allocator: project ID plus project-scoped UUIDs | fail for current MVP; not implemented for this path | Current general tables would expose any such mapping to the app, which violates the target allocator-only join. |
-| FundLoop → Allocator: verified funds plus cap | partial | The no-value v2 source/cap input exists, but the allocator is not isolated. |
-| Allocator ↔ CUBID: scoped-to-FundLoop mapping and score | fail for current MVP; not implemented for this path | The current app performs and persists the mapping; no allocator-owned resolver exists. |
-| Allocator → FundLoop: FundLoop UUID plus award | fail for current MVP | Raw user/project claims remain in the app database and calculation artifact. |
-| Participant → FundLoop: email account identity | pass | Supabase Auth and CUBID email resolution provide this conventional account path. |
-| FundLoop → Participant: funds | not implemented | Production value flow is disabled. |
-
-The consented email-list route is unavailable. Existing project invitations must not be
-represented as the secondary-account upload product.
-
-## Persistent join inventory and violation register
-
-| ID | Severity | Location | Forbidden combination or propagation |
-| --- | --- | --- | --- |
-| AIB-001 | critical | `project_attribution_rows`; `lib/attribution/project-attribution-command.ts` | `project_id`, project `scoped_cubid_id`, FundLoop `user_id`, and `user_email` are stored in one general application row. The command can resolve by user ID, email, or CUBID ID. |
-| AIB-002 | critical | `epoch_project_package_cohort` | `source_row_id` links back to AIB-001 while the row also stores FundLoop `user_id`, project pseudonym, and locked CUBID score. |
-| AIB-003 | critical | `epoch_allocation_manifest_cohort` | The immutable allocator input stores `project_id`, raw FundLoop `user_id`, project pseudonym, and score in the public application schema. |
-| AIB-004 | critical | `epoch_allocation_runs`; `epoch_allocation_user_awards` | The result artifact and award row bind raw `user_id` to per-project `project_claims`; the main app can reproduce the cross-project join. |
-| AIB-005 | high | `monthly_cycle_allocation_project_results` | The legacy/current read model stores `project_id`, `user_id`, and `scoped_cubid_id` together and remains part of operator/monthly-cycle surfaces. |
-| AIB-006 | high | `cubid_identity_snapshots`; `users` | The app retains global CUBID ID, FundLoop user ID, primary email/phone, score, stamps, and raw identity payloads. This is broader than the target FundLoop-scoped account result and increases join impact. |
-| AIB-007 | high | lock/package/run JSON; Storage calculation artifacts | Immutable JSON copies the joined cohort and per-project claim data. Immutability preserves—not isolates—the join, and normal database backups inherit it. |
-| AIB-008 | medium | operator/service-role reads and support paths | RLS blocks ordinary table reads, but service-role functions and internal operator surfaces share the same database authority. There is no purpose-specific allocator role, separate encryption key, access event, or break-glass boundary. |
-| AIB-009 | medium | reporting, MCP, logs | Audience reports are materially scoped and MCP hashes common auth identifiers, but reporting generation and operator/MCP readers execute beside the joined source tables. No forbidden-field contract prevents a future query from exporting the join. |
-| AIB-010 | high | retention/backups | Report tombstones are executable, but allocator identity mappings, raw CUBID snapshots, immutable run artifacts, logs, and backups have no unified purpose-specific retention/deletion contract. |
-
-The allocator is therefore **not** the sole identity-amalgamation component. The join occurs
-in attribution resolution, persists across package/manifest/result tables, and remains
-available to the general service-role application and backups.
-
-## Current view by actor
-
-| Actor/view | Current visibility | Result |
-| --- | --- | --- |
-| Project admin | Project datasets and workflow through FundLoop; project membership uses FundLoop `user_id` | partial; app-hosted project plane can participate in the join |
-| FundLoop application | Users, CUBID snapshots, attribution joins, cohorts, manifests, awards, reports | fail; broad join authority |
-| CUBID | Conventional FundLoop email/account resolution and identity data | partial; no scoped project resolver contract evidenced |
-| Allocator | SQL functions in the same public database using service role | fail; no isolated authority or storage |
-| Operator/support | Internal role plus service-role read paths | fail; purpose/break-glass access is not isolated or immutably audited |
-| Participant | Self reports and payout readiness | partial; scoped output exists but underlying mapping is broadly retained |
-| Founder report | Project aggregate only | pass at the published report boundary |
-| Public report | Global aggregate only | pass at the published report boundary |
-| MCP | Audience/role-filtered reporting and hashed common observability identifiers | partial; safe output today, no schema-level forbidden-field guarantee |
-| Backups | Supabase database/Storage inherit retained joins | fail; no allocator-specific encryption, exclusion, key, TTL, or deletion evidence |
-
-## Required target architecture
-
-This target begins at FundLoop ingress and allocator/adjudicator interfaces. It treats any
-external project-scoped identifier, CUBID response, consent assertion, or proof as an opaque,
-versioned input with a declared assurance level. It does not prescribe how a Project, CUBID, or
-Participant creates that value when neither FundLoop nor the allocator is an endpoint.
-
-### Trust domains
-
-1. **FundLoop project-ingress plane** accepts an already-issued project-scoped participant token
-   and attribution facts at the FundLoop boundary. It cannot query FundLoop user records or
-   redesign/perform the external Project ↔ CUBID resolution.
-2. **FundLoop account plane** owns auth, payout readiness, and an opaque
-   `fundloop_subject_token`. It cannot query project-scoped identifiers or membership maps.
-3. **Identity-link vault** is the only component allowed to resolve project tokens to
-   FundLoop subject tokens and score evidence. It uses a dedicated database schema/role,
-   separate encryption key, purpose-bound commands, immutable access events, and explicit TTL.
-4. **Allocator** accepts only versioned source lots, project-local attribution keyed by a
-   one-run allocator token, score commitment/evidence, cap policy, and cycle identity. It has
-   no general-table access. Its output is keyed only by `fundloop_subject_token` plus award and
-   source-disposition hashes.
-5. **Projection plane** separately derives project aggregates, private participant output,
-   operator exceptions, public aggregates, and MCP output. It cannot expose or reconstruct the
-   identity-link vault.
-
-### Narrow contracts
-
-`allocator_identity_link.v1` input:
+### Allowed input
 
 ```text
-cycle_id, project_id, project_subject_token, purpose, expires_at,
-project_assertion_hash, cubid_score_commitment
+cycle_id
+project_id
+project_scoped_uid
+eligible_funds
+currency
+cap_policy
+source/evidence hashes
 ```
 
-Output to allocator only:
+### Allowed Cubid response
 
 ```text
-allocation_subject_token, score_value_or_commitment, evidence_hash, expires_at
+project_scoped_uid              # correlation key from the request
+fundloop_scoped_uid
+score
+score_version / evidence hash
 ```
 
-`settled_cubid_redistribution_v2` input keeps the approved formula and financial provenance,
-but replaces `user_id`, email, CUBID ID, and reusable project pseudonym with run-scoped
-`allocation_subject_token`. Output contains that token, award amounts, and source hashes. A
-separate account-plane redemption command maps the allocation token to a FundLoop subject
-without returning project identity.
+### Allowed allocator result to FundLoop
 
-### Data and access controls
+```text
+fundloop_scoped_uid
+award amount and exact minor-unit amount
+currency
+source/disposition hashes
+project claims                  # MVP only; replace with currency claims in v2
+```
 
-- New private schemas/roles for project submissions, identity links, and allocator records;
-  no `public`, `anon`, `authenticated`, general service-role, or broad operator grants.
-- Domain-separated keyed tokens for project, run, and FundLoop scopes; tokens must not be
-  derivable from raw UUID/email values or reusable across projects/runs.
-- Envelope encryption for retained link evidence with environment/purpose-specific keys.
-- Append-only access events recording actor, purpose, command, record hash, and outcome—never
-  raw identifier values.
-- Short TTL for link inputs; financial result hashes and aggregate evidence may persist without
-  the reversible link. Subject deletion must erase mappings while preserving no-PII audit hashes.
-- Backup/restore, support export, observability, and incident tooling must use the same field
-  allowlists and key/access policy; a database backup alone cannot be the privacy boundary.
-- Compatibility views must fail closed during rollout. No applied migration or v1 artifact is
-  rewritten, and production value flow stays disabled.
-- No remediation changes participant-to-project collection, CUBID proofing, project-to-CUBID
-  resolution, or CUBID-to-project responses. Those remain external contracts and dependencies.
+### Forbidden allocator fields
 
-## Proposed remediation Tasks — approval required before creation
+```text
+email, phone, legal/display name
+FundLoop authentication user_id
+global Cubid account/user ID
+raw stamps, raw identity snapshots, raw proof payloads
+FundLoop project-membership or self-identification rows
+wallet address or payout destination unless a later calculation explicitly requires it
+```
 
-### R1 — Introduce scoped identity-link vault and token contracts
+FundLoop may perform the final `fundloop_scoped_uid` to application `user_id` binding outside the
+allocator. The allocator must not gain general read access to FundLoop application tables merely
+because both currently use one Supabase project.
 
-- **Surfaces:** forward migrations under `supabase/migrations/`; new allocator/identity contract
-  modules under `lib/allocator-boundary/`; typed Edge commands; generated Supabase types; CUBID
-  docs.
-- **Changes:** dedicated private schemas/roles, keyed project/run/FundLoop tokens, encrypted
-  mapping evidence, purpose/TTL/access events, and FundLoop-ingress/allocator APIs that cannot
-  query the opposite scope. External Project/CUBID issuance is accepted as an opaque input and
-  is not implemented here.
-- **Dependencies:** current Goal 2 candidate; no native dependency change without separate
-  approval.
-- **Validation:** fresh replay, grant/RLS/adversarial field tests, token unlinkability vectors,
-  expiry/deletion/access-audit tests, Deno/typecheck.
-- **Smoke:** resolve one fixture mapping inside the vault, prove both outer planes cannot read or
-  correlate it, expire/delete it, preserve only sanctioned hashes.
-- **Stop:** commit and independent validator pass; no allocator calculation migration yet.
+## MVP storage and access boundary
 
-### R2 — Separate project attribution ingestion from FundLoop account resolution
+- Allocator-owned tables and functions must use an explicit allocator namespace/role boundary.
+- The allocator role may read only prepared source lots, project-scoped UUID inputs, returned
+  FundLoop-scoped UUIDs/scores, calculation policy, currency, and its own manifests/results.
+- FundLoop application, membership, auth, reporting, support, and payout tables are not allocator
+  tables. They remain FundLoop-owned even when they consume an allocator result.
+- Every request/result contract must reject unknown fields and scan deterministic JSON artifacts
+  for forbidden identity fields.
+- Internal service authentication, request IDs, replay/idempotency, batch bounds, timeout, and
+  audit hashes are required for the private Cubid API.
+- A shared physical database is accepted for the MVP; a separate allocator database is recorded
+  as future hardening, not a current release gate.
 
-- **Surfaces:** `lib/attribution/`, project attribution Edge functions/contracts, project UI,
-  project package cohort construction, migrations, Storage attribution artifacts, docs/tests.
-- **Changes:** remove email/FundLoop `user_id` resolution from FundLoop's project rows; accept only
-  externally-issued project tokens and attribution facts at FundLoop ingress; call R1 through a
-  purpose-bound allocator preparation command; quarantine and migrate legacy joins forward
-  without rewriting history. Do not alter upstream Participant/Project/CUBID flows.
-- **Dependencies:** R1.
-- **Validation:** project-admin authorization, cross-project negatives, forbidden-column/storage
-  scans, legacy compatibility/quarantine replay, exact package evidence.
-- **Smoke:** project submits attribution; project and FundLoop account planes each see only their
-  scope; allocator preparation receives run tokens; no raw join appears in logs/artifacts.
-- **Stop:** independent validator pass; v2 formula remains unchanged and value flow disabled.
+## Diagram disposition
 
-### R3 — Rekey v2 allocator inputs/results behind the isolated contract
+- The conventional scoped-identifier flow is the approved MVP.
+- The alias-separated/ZK diagram remains future work and must not be marketed as implemented.
+- The consented email-list flow remains unavailable.
+- Participant, Project, and Cubid interactions that do not touch FundLoop or the allocator remain
+  external assumptions. This audit neither remediates nor certifies them.
 
-- **Surfaces:** v2 lock/calculate/close SQL and Edge contracts, calculator input/output types,
-  manifest/cohort/award/disposition tables, close artifacts, claims preparation, four-epoch/EUR
-  fixtures, allocation docs.
-- **Changes:** replace raw `user_id`, project pseudonym, and `project_claims` identity payloads
-  with run-scoped allocation tokens and hashed project/source claims; allocator role has only
-  contract tables; account redemption projects FundLoop awards after calculation. Preserve all
-  cap, E−3, claim, FX, fee, and conservation semantics byte-for-byte at the policy layer.
-- **Dependencies:** R1 and R2.
-- **Validation:** calculator golden vectors before/after, canonical TAP, four-epoch concurrency,
-  EUR lineage, forbidden-field scans of DB/JSON/Storage, replay/close/root equivalence.
-- **Smoke:** deterministic no-value allocation where only the vault can connect one project token
-  to one FundLoop award; project permutation and replay hashes remain stable.
-- **Stop:** independent validator pass; no Production or payout activation.
+## Cross-repo delivery split
 
-### R4 — Enforce scoped projections, operator access, retention, and backup hygiene
+### Cubid repository
 
-- **Surfaces:** reporting generation/publication, MCP readers, operator/support tooling,
-  observability/logging, Storage paths, retention/tombstone commands, deployment/runbooks and
-  boundary tests.
-- **Changes:** audience-specific projection allowlists and minimum-cohort rules; purpose-bound
-  operator/break-glass reads with immutable access events; remove joined identifiers from logs,
-  exports and support views; allocator mapping TTL/deletion; backup/key/restore controls and
-  verified forbidden-field scans.
-- **Dependencies:** R3.
-- **Validation:** public/self/founder/operator/MCP privacy negatives, log/artifact/database dump
-  scans, backup/restore rehearsal, DSR/tombstone evidence, full Feature #118 and Node 22 check.
-- **Smoke:** generate every audience report and support trace from one no-value run, demonstrate
-  that no output or backup-access path reconstructs the project↔FundLoop mapping.
-- **Stop:** independent validator pass and combined #204 re-audit with no unresolved violation.
+Create a Feature tree for a private `cubid-allocator-api` that:
 
-## Decision and stop boundary
+- authenticates FundLoop's allocator as a server-to-server client;
+- accepts bounded batches of `project_id` plus project-scoped UUIDs;
+- resolves them to FundLoop-scoped UUIDs and current scores;
+- returns only the reviewed response fields;
+- rejects unknown, duplicate, cross-project, unauthorized, stale, and oversized requests; and
+- provides local and hosted privacy-negative evidence without exposing raw identifiers in logs.
 
-Violations AIB-001 through AIB-010 require architecture changes. Per #204, the four remediation
-Tasks above are proposals only: they have not been created, attached, or implemented. #204 and
-#188 remain blocked. Explicit user approval is required before inserting these Tasks under Goal
-#163 or changing the candidate architecture. Any created Task must retain the remediation reach
-boundary above and may cover only FundLoop or allocator/adjudicator endpoints.
+### FundLoop repository
+
+FundLoop follow-up work should:
+
+- call the private Cubid API from the allocator boundary rather than from project membership/UI
+  paths;
+- introduce explicit allocator-only tables/roles/contracts within the MVP database;
+- add mandatory currency to allocator inputs, outputs, persisted artifacts, hashes, and replay
+  checks; and
+- preserve current project-claim output for MVP while documenting its v2 replacement.
+
+## Roadmap
+
+### MVP
+
+- Private Cubid allocator API and authenticated batch mapping.
+- Project-scoped UUID input only; FundLoop-scoped UUID plus score output only.
+- Allocator-only logical tables and access policies.
+- Currency included end to end.
+- FundLoop identity joins and per-project claims remain permitted.
+
+### v2 privacy hardening
+
+- Replace project claims in allocator results with currency claims.
+- Remove unnecessary project correlation from retained allocator artifacts.
+- Evaluate moving allocator storage and execution to a physically separate database/service.
+- Revisit shorter retention and narrower FundLoop post-processing after MVP logic is certified.
+
+## Decision
+
+The present FundLoop identity joins are accepted for the MVP. The audit therefore no longer
+blocks on removing them. The remaining implementation dependencies are the private Cubid API,
+allocator-only logical ownership, and currency propagation. They must be delivered and validated
+before the multi-repo allocator boundary is described as implemented; none authorize Production
+deployment, payout activation, or real-value flow.
