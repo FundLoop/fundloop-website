@@ -112,8 +112,12 @@ describe("Supabase Management API function source read-back", () => {
 
   it("derives runtime closures for all functions and omits erased Supabase types from admin reconciliation", () => {
     const names = expectedFunctionNames()
-    expect(names).toHaveLength(62)
+    expect(names).toHaveLength(63)
     for (const name of names) expect(expectedSourceClosure(name).length).toBeGreaterThan(0)
+    const monthlyReportClosure = expectedSourceClosure("monthly-report-publication")
+    expect(monthlyReportClosure).toContain("supabase/functions/monthly-report-publication/index.ts")
+    expect(monthlyReportClosure).toContain("lib/edge-functions/monthly-report-publication-contract.ts")
+    expect(monthlyReportClosure).toContain("supabase/functions/_shared/command-runtime.ts")
     const adminClosure = expectedSourceClosure("admin-onchain-payment-reconciliation-run")
     expect(adminClosure).not.toContain("types/supabase.ts")
     expect(adminClosure).toContain("lib/onchain/payment-submissions.ts")
