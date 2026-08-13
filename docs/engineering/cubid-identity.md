@@ -4,6 +4,11 @@ Last reviewed: 2026-04-15
 
 This document describes the current FundLoop-to-CUBID integration shape after Sessions 14 through 16.
 
+The [2026-08-13 allocator identity-boundary audit](./2026-08-13-allocator-identity-boundary-audit.md)
+records that this conventional MVP stores CUBID identity/score state beside FundLoop user data
+and currently resolves project attribution inside the main application. It is not an
+alias-separated, allocator-only, or zero-knowledge identity boundary.
+
 ## Scope
 
 FundLoop now treats CUBID as the identity authority for publish- and payout-adjacent trust signals, while still keeping lightweight local app fields on `public.users`.

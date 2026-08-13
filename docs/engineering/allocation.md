@@ -2,6 +2,12 @@
 
 Status: implemented behind local, development, preview, and test controls. Production value flow remains disabled.
 
+Privacy-boundary status: the [2026-08-13 allocator identity-boundary audit](./2026-08-13-allocator-identity-boundary-audit.md)
+found that the current public-schema attribution, cohort, manifest, and award records persist
+project-scoped and FundLoop-scoped identity joins outside an isolated allocator. The v2 formula
+is unchanged, but Goal 2 publication is blocked pending approval and completion of the proposed
+boundary remediation.
+
 Policy key: `settled_cubid_redistribution_v2`
 
 The v1 policy and its persisted artifacts remain reproducible. New monthly calculations use v2 and must never reinterpret or rewrite v1 records.
