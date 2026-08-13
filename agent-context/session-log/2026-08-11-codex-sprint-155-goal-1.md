@@ -1738,3 +1738,65 @@ enforce branch reviews later.
 - Keep the branch for #187's integrated Goal validation and single concluding PR.
 - Do not repeat a main-target deploy rehearsal or approve Production until the
   separate human release boundary after promotion.
+
+### session v36: Certify Goal 1 for one concluding PR (#187)
+
+- Timestamp: 2026-08-13T06:46:47-04:00
+- Agent: Codex
+- Branch: `codex/155-goal-1-delivery-integrity-post-ci`
+- Head: `44505e3e913ae0e37058c37a09be01b37f7a20f0`
+
+#### Objective
+
+Bind the completed Goal 1 delivery controls, certified Dev baseline, live protection
+state, safe hosted checks, and broad local validation into one reviewable
+pre-publication record for the single concluding PR to `dev`.
+
+#### Actions Taken
+
+- Downloaded deploy artifact `9177162146` from run `31689293304` attempt 2 and drift
+  artifact `9177325011` from run `31690575339`; both exact manifests passed the
+  repository verifier.
+- Recorded the certified `ae8c5a38d6740646fa0e7d48f2e820e81a5e8726` Dev baseline:
+  96/96 migrations, matching PostgreSQL 17 public-schema digest, 62/62 active and
+  source-matched functions, safe hosted 401 denial, and 14 control tables with zero
+  enabled value flow.
+- Re-read protected `dev`/`main` and `Production`: all three strict checks remain,
+  branch protections apply to admins, Production retains exact reviewer/main-only/
+  no-bypass posture, and the sole-collaborator branch-review limitation is explicit.
+- Called the Dev MCP Edge health route with the project-matched public anon credential
+  and recorded only its safe shape/body digest; independently repeated the
+  unauthenticated mutation denial.
+- Added a machine-readable integrated evidence record, human-readable certification,
+  focused invariant tests, engineering-index link, and deployment-doc cross-link.
+
+#### Tests And Validation Notes
+
+- Passed Node 22.23.2 focused deployment/workflow/manifest/source/evidence suites,
+  6 files and 127 tests; both provider manifests independently verified.
+- Passed exact pinned Supabase CLI 2.113.0 replay: 96 migrations, three SQL suites,
+  deliberate SQLSTATE `42P01` rejection with valid history intact, and disposable
+  stack stopped without backup.
+- Passed `CI=1 pnpm check`: ESLint, 177 files/915 tests, TypeScript, and production
+  build with 165 generated pages. Workflow YAML, Node syntax, and diff checks passed.
+- The machine-wide CLI reported 2.101.0; its first stack was stopped during bootstrap
+  before application migrations, then the complete replay ran via pinned 2.113.0.
+- The first MCP health request omitted the public anon gateway credential and returned
+  401; the intended safe credentialed read returned 200. No secret value was logged.
+- No push, PR, merge, review request, GitHub configuration change, Production approval,
+  remote database/function mutation, reset, migration rewrite, payout, cutover, or
+  value-flow activation occurred.
+
+#### Reflections
+
+The existing Dev artifacts certify only their exact merged baseline, not the pending
+Goal publication commit. The concluding PR must pass its own checks, then the merged
+SHA requires a new CI-owned Dev deployment and drift artifact before Goal 1 is a
+complete hosted outcome.
+
+#### Suggested Next Steps
+
+- Run independent Goal-level validation on this exact commit and evidence record.
+- After validator acceptance, let the orchestrator use `$yeet` once for the Goal PR.
+- After human-authorized merge, certify the new Dev merge SHA before starting Goal 2;
+  do not cross the Production release boundary.

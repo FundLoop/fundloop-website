@@ -65,6 +65,8 @@ is restricted to the exact `main` branch, requires the repository's human review
 and has administrator bypass disabled. See the timestamped
 [delivery-control evidence](./github-delivery-controls-2026-08-13.md). Re-read live
 state before promotion; no document substitutes for current configuration evidence.
+The pre-publication [Goal #158 certification](./goal-158-delivery-integrity-evidence.md)
+binds those controls to the exact certified Dev deployment and drift artifacts.
 
 The workflow's remote PR `supabase db push --dry-run` remains planning evidence only.
 It is paired with an isolated, executable full-history replay because PR #185's

@@ -46,6 +46,7 @@ Current high-signal docs:
 - [Canadian Legal and Accounting Review Drafts](../legal/review-drafts/README.md)
 - [Supabase Storage Artifacts](./storage-artifacts.md)
 - [Supabase Remote Deployments](./supabase-deployments.md)
+- [Goal #158 Delivery-Integrity Certification](./goal-158-delivery-integrity-evidence.md)
 - [Target-State Architecture](./target-state-architecture.md)
 
 Agent-only live context still belongs in [agent-context](../../agent-context/README.md).
