@@ -311,8 +311,14 @@ export function libpqConnectionEnvironment(dbUrl) {
     PGUSER: decodeURIComponent(parsed.username),
     PGPASSWORD: decodeURIComponent(parsed.password),
     PGDATABASE: decodeURIComponent(parsed.pathname.slice(1)),
-    PGSSLMODE: parsed.hostname === "127.0.0.1" || parsed.hostname === "localhost" ? "disable" : "require",
+    PGSSLMODE: ["127.0.0.1", "localhost", "host.docker.internal"].includes(parsed.hostname) ? "disable" : "require",
   }
+}
+
+export function localStackDatabaseUrl(port, databaseName = "postgres") {
+  if (!Number.isInteger(port) || port < 1 || port > 65535
+    || !/^[a-z][a-z0-9_]*$/.test(databaseName)) throw new Error("invalid-local-database-target")
+  return `postgresql://postgres:postgres@127.0.0.1:${port}/${databaseName}`
 }
 
 function containerLibpqConnection(projectId, dbUrl) {
@@ -596,9 +602,15 @@ async function main() {
   const bootstrapRoot = mkdtempSync(path.join(os.tmpdir(), `${projectId}-`))
   const bootstrapSupabase = path.join(bootstrapRoot, "supabase")
   const dbPort = await availablePort()
-  const localDbUrl = `postgresql://postgres:postgres@127.0.0.1:${dbPort}/postgres`
+  const localDbUrl = localStackDatabaseUrl(dbPort)
+  const baselineProjectId = `fundloop-baseline-${randomBytes(8).toString("hex")}`
+  const baselineRoot = path.join(bootstrapRoot, "forward-baseline")
+  const baselineSupabase = path.join(baselineRoot, "supabase")
+  const baselineDbPort = await availablePort()
+  const baselineLocalDbUrl = localStackDatabaseUrl(baselineDbPort)
   const localEnv = { ...process.env, PGSSLMODE: "disable", PGOPTIONS: `-c app.settings.fundloop_target_environment=${targetEnvironment}` }
   let startAttempted = false
+  let baselineStartAttempted = false
 
   try {
     mkdirSync(path.join(bootstrapSupabase, "migrations"), { recursive: true })
@@ -643,18 +655,16 @@ sql_paths = []
       const baselineEvidence = latestMigrationBaselineEvidence(projectId, remoteDbUrl, deploymentBinding, baselineInventorySha256)
       forwardPendingValidation = validateForwardPendingMigrationHistory(expectedMigrations, observedVersions, baselineEvidence, deploymentBinding)
 
-      const baselineRoot = path.join(bootstrapRoot, "forward-baseline")
-      const baselineSupabase = path.join(baselineRoot, "supabase")
       mkdirSync(path.join(baselineSupabase, "migrations"), { recursive: true })
-      writeFileSync(path.join(baselineSupabase, "config.toml"), `project_id = "${projectId}-baseline"\n\n[db]\nmajor_version = 17\n\n[db.migrations]\nenabled = true\nschema_paths = []\n\n[db.seed]\nenabled = false\nsql_paths = []\n`, "utf8")
+      writeFileSync(path.join(baselineSupabase, "config.toml"), `project_id = "${baselineProjectId}"\n\n[db]\nport = ${baselineDbPort}\nmajor_version = 17\nhealth_timeout = "2m"\n\n[db.migrations]\nenabled = true\nschema_paths = []\n\n[db.seed]\nenabled = false\nsql_paths = []\n`, "utf8")
+      baselineStartAttempted = true
+      run("supabase", ["db", "start", "--yes", "--workdir", baselineRoot], { env: localEnv })
+      run("psql", [baselineLocalDbUrl, "-X", "-v", "ON_ERROR_STOP=1", "-c", `CREATE TABLE public.supabase_deploy_context (id boolean PRIMARY KEY DEFAULT true CHECK (id), target_environment text NOT NULL CHECK (target_environment IN ('dev', 'main')), updated_at timestamptz NOT NULL DEFAULT now()); INSERT INTO public.supabase_deploy_context (id, target_environment) VALUES (true, '${targetEnvironment}');`], { env: localEnv })
       for (const migration of forwardPendingValidation.observedMigrations) {
         copyFileSync(path.join(process.cwd(), "supabase/migrations", migration.name), path.join(baselineSupabase, "migrations", migration.name))
       }
-      psqlFromParityContainer(projectId, "postgresql://postgres:postgres@127.0.0.1:5432/postgres", "CREATE DATABASE fundloop_forward_baseline")
-      const baselineDbUrl = "postgresql://postgres:postgres@127.0.0.1:5432/fundloop_forward_baseline"
-      psqlFromParityContainer(projectId, baselineDbUrl, `CREATE TABLE public.supabase_deploy_context (id boolean PRIMARY KEY DEFAULT true CHECK (id), target_environment text NOT NULL CHECK (target_environment IN ('dev', 'main')), updated_at timestamptz NOT NULL DEFAULT now()); INSERT INTO public.supabase_deploy_context (id, target_environment) VALUES (true, '${targetEnvironment}');`)
-      run("supabase", ["db", "push", "--yes", "--include-all", "--db-url", baselineDbUrl, "--workdir", baselineRoot], { env: localEnv })
-      expectedDump = dumpPublicSchemaFromParityContainer(projectId, baselineDbUrl)
+      run("supabase", ["db", "push", "--yes", "--include-all", "--db-url", baselineLocalDbUrl, "--workdir", baselineRoot], { env: localEnv })
+      expectedDump = dumpPublicSchemaFromParityContainer(baselineProjectId, "postgresql://postgres:postgres@127.0.0.1:5432/postgres")
     }
     let expectedEvidence
     if (!diagnosticMode && !driftMode) {
@@ -746,6 +756,10 @@ sql_paths = []
     if (process.env.SUPABASE_SCHEMA_PARITY_OUTPUT) writeFileSync(process.env.SUPABASE_SCHEMA_PARITY_OUTPUT, `${JSON.stringify(result, null, 2)}\n`, "utf8")
     console.log(`Verified effective public schema parity: ${observedSha256}`)
   } finally {
+    if (baselineStartAttempted) {
+      try { run("supabase", ["stop", "--no-backup", "--workdir", baselineRoot], { env: localEnv }) }
+      catch (error) { console.error(`Could not fully stop task-owned schema baseline project ${baselineProjectId}:`, error) }
+    }
     if (startAttempted) {
       try { run("supabase", ["stop", "--no-backup", "--workdir", bootstrapRoot], { env: localEnv }) }
       catch (error) { console.error(`Could not fully stop task-owned schema project ${projectId}:`, error) }

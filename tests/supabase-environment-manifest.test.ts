@@ -1,7 +1,7 @@
 import { readFileSync } from "node:fs"
 import { createHash } from "node:crypto"
 import { describe, expect, it } from "vitest"
-import { buildEnvironmentManifest, buildSafeSmokeEvidence, verifyEnvironmentManifest } from "../scripts/verify-supabase-environment-manifest.mjs"
+import { buildEnvironmentManifest, buildSafeSmokeEvidence, verifyCertifiedDeploymentManifest, verifyEnvironmentManifest } from "../scripts/verify-supabase-environment-manifest.mjs"
 import { shouldObservePush, SUPABASE_DEPLOY_PATH_GLOBS } from "../scripts/classify-supabase-drift-push.mjs"
 import { expectedFunctionNames, expectedSourceClosure } from "../scripts/verify-supabase-function-parity.mjs"
 import { resolveSupabasePoolerTarget } from "../scripts/resolve-supabase-pooler-target.mjs"
@@ -81,6 +81,7 @@ describe("immutable Supabase environment manifests", () => {
 
   it("binds completion to the full retained certified deploy manifest and a later fresh smoke", () => {
     const valid = buildEnvironmentManifest({ schema, functions, smoke, context })
+    expect(verifyCertifiedDeploymentManifest(valid.certifiedDeployment.certifiedManifest)).toEqual({ ok: true, blockers: [] })
     const completionCases: Array<[string, (changed: any) => void]> = [
       ["schema", (changed) => { changed.certifiedDeployment.completion.schemaExpectedSha256 = "9".repeat(64); changed.certifiedDeployment.completion.schemaObservedSha256 = "9".repeat(64) }],
       ["function", (changed) => { changed.certifiedDeployment.completion.functionInventorySha256 = "9".repeat(64) }],
@@ -107,6 +108,22 @@ describe("immutable Supabase environment manifests", () => {
     }
     restoreManifestIntegrity(skeletal)
     expect(verifyEnvironmentManifest(skeletal).blockers).toContain("deployment-completion")
+
+    const retainedManifestCases: Array<[string, (forged: any) => void]> = [
+      ["wrong schema digest", (forged) => { forged.certifiedDeployment.certifiedManifest.schema.observedSha256 = "8".repeat(64) }],
+      ["schema observation after completion", (forged) => { forged.certifiedDeployment.certifiedManifest.schema.observedAt = "2026-08-12T19:56:00Z"; forged.certifiedDeployment.certifiedManifest.observation.observedAt = "2026-08-12T19:56:00Z" }],
+      ["inactive function", (forged) => { const certified = forged.certifiedDeployment.certifiedManifest; certified.functions.items[0].remoteStatus = "INACTIVE"; certified.functions.inventorySha256 = digest(certified.functions.items); forged.certifiedDeployment.completion.functionInventorySha256 = certified.functions.inventorySha256 }],
+      ["mismatched migration history", (forged) => { forged.certifiedDeployment.certifiedManifest.migrations.observedHistory = ["20990101000000"] }],
+      ["smoke checkout differs from deployment", (forged) => { const certified = forged.certifiedDeployment.certifiedManifest; certified.prerequisites.hostedUnauthenticatedDenial.evidence = buildSafeSmokeEvidence({ environment: "dev", projectRef: schema.projectRef, observationGitSha: "9".repeat(40), statusCode: 401, observedAt: deploySmoke.observedAt }); forged.certifiedDeployment.completion.hostedSmokeEvidenceSha256 = certified.prerequisites.hostedUnauthenticatedDenial.evidence.evidenceSha256 }],
+    ]
+    for (const [name, mutate] of retainedManifestCases) {
+      const forged = structuredClone(valid)
+      mutate(forged)
+      restoreManifestIntegrity(forged.certifiedDeployment.certifiedManifest)
+      forged.certifiedDeployment.completion.deploymentManifestSha256 = forged.certifiedDeployment.certifiedManifest.manifestSha256
+      restoreManifestIntegrity(forged)
+      expect(verifyEnvironmentManifest(forged).blockers, name).toContain("deployment-completion")
+    }
 
     const sameShaSchema = { ...schema, candidateGitSha: deployContext.gitSha }
     const sameShaFunctions = { ...functions, candidateGitSha: deployContext.gitSha }

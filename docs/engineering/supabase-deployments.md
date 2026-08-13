@@ -19,7 +19,10 @@ PR dry-runs targeting Dev also execute a read-only effective-schema diagnostic a
 the remote migration plan. The diagnostic replays the complete candidate history in
 a randomized Postgres 17 stack. When the PR contains ordinary forward migrations, it
 also replays the exact immutable remote-history prefix into a disposable baseline
-database and compares that baseline `public` schema with a read-only Dev dump. The
+Postgres 17 stack and compares that baseline `public` schema with a read-only Dev dump.
+The baseline stack is separately task-owned and every host-side command uses its
+dynamically allocated loopback port; container-side reads continue to use the stack's
+internal Postgres port. The
 candidate tail must be strictly forward, may contain one or more migrations, and its
 full replay must already have succeeded. Changed bytes, an unknown/non-prefix remote
 version, missing byte-bound baseline evidence, or unexplained remote schema drift

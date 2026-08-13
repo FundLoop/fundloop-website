@@ -4,7 +4,7 @@ import path from "node:path"
 import { describe, expect, it } from "vitest"
 import { classifyFunctionInventory, compareClosurePaths, expectedFunctionNames, expectedSourceClosure } from "../scripts/verify-supabase-function-parity.mjs"
 import { buildEnvironmentManifest, buildSafeSmokeEvidence } from "../scripts/verify-supabase-environment-manifest.mjs"
-import { bindObservedMigrationDeployEvidence, buildDeployCompletionEvidence, buildMigrationDeployEvidence, buildSchemaDiagnostic, compareExplicitRfc3339Timestamps, expectedMigrationInventory, isExplicitRfc3339Timestamp, libpqConnectionEnvironment, migrationInventorySha256, normalizePublicSchema, validateDeployCompletionEvidence, validateForwardPendingMigrationHistory, validateMatchingMigrationEvidence, validateMigrationDeployEvidence, validatePendingSchemaRepair } from "../scripts/verify-supabase-schema-parity.mjs"
+import { bindObservedMigrationDeployEvidence, buildDeployCompletionEvidence, buildMigrationDeployEvidence, buildSchemaDiagnostic, compareExplicitRfc3339Timestamps, expectedMigrationInventory, isExplicitRfc3339Timestamp, libpqConnectionEnvironment, localStackDatabaseUrl, migrationInventorySha256, normalizePublicSchema, validateDeployCompletionEvidence, validateForwardPendingMigrationHistory, validateMatchingMigrationEvidence, validateMigrationDeployEvidence, validatePendingSchemaRepair } from "../scripts/verify-supabase-schema-parity.mjs"
 
 const workflow = readFileSync(".github/workflows/supabase-deploy.yml", "utf8")
 const schemaVerifier = readFileSync("scripts/verify-supabase-schema-parity.mjs", "utf8")
@@ -22,10 +22,21 @@ describe("Supabase delivery parity", () => {
       PGSSLMODE: "require",
     })
     expect(libpqConnectionEnvironment("postgresql://postgres:postgres@127.0.0.1:5432/postgres").PGSSLMODE).toBe("disable")
+    expect(libpqConnectionEnvironment("postgresql://postgres:postgres@host.docker.internal:58743/postgres").PGSSLMODE).toBe("disable")
     expect(schemaVerifier).not.toContain('"psql", dbUrl')
     expect(schemaVerifier).not.toMatch(/run\("psql", \[(?:dbUrl|remoteDbUrl)/)
     expect(schemaVerifier).not.toContain('"--no-comments", dbUrl')
     expect(schemaVerifier).not.toContain('`PGPASSWORD=${')
+  })
+
+  it("routes host-side baseline replay through the dynamically allocated local port", () => {
+    expect(localStackDatabaseUrl(58743)).toBe("postgresql://postgres:postgres@127.0.0.1:58743/postgres")
+    expect(localStackDatabaseUrl(49171, "reviewed_prefix")).toBe("postgresql://postgres:postgres@127.0.0.1:49171/reviewed_prefix")
+    expect(() => localStackDatabaseUrl(0)).toThrow("invalid-local-database-target")
+    expect(() => localStackDatabaseUrl(65536)).toThrow("invalid-local-database-target")
+    expect(() => localStackDatabaseUrl(58743, "unsafe-name")).toThrow("invalid-local-database-target")
+    expect(schemaVerifier).toContain("const baselineLocalDbUrl = localStackDatabaseUrl(baselineDbPort)")
+    expect(schemaVerifier).not.toContain('const baselineDbUrl = "postgresql://postgres:postgres@127.0.0.1:5432')
   })
   it("derives the expected function inventory and records the one reviewed retirement", () => {
     const expected = expectedFunctionNames()

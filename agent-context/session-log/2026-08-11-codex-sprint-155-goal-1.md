@@ -1618,3 +1618,58 @@ from retained evidence rather than accepted as a correctly formatted claim.
 - Push this one consolidated commit to existing PR #202, let its read-only Dev dry-run
   exercise the exact 95-to-96 forward baseline, and return the exact head to independent
   validation without opening another PR or requesting another review.
+
+### session v34: Route and verify the retained deployment baseline (#161)
+
+- Timestamp: 2026-08-13T05:52:47-04:00
+- Agent: Codex
+- Branch: `codex/155-goal-1-manifest-provenance-routing-recovery`
+- Head: `de242c78d39cae952a84325d487af6a0f4c8aff0`
+
+#### Objective
+
+Repair exact-head PR run `31667881328` without weakening the reviewed-forward-migration
+diagnostic, and make retained certified deploy manifests satisfy the complete deployment
+verification contract rather than only their self/evidence digest subset.
+
+#### Actions Taken
+
+- Replaced the forward-prefix database inside the candidate stack with a separately
+  task-owned Postgres 17 baseline stack whose host-side push and marker operations use
+  its dynamically allocated loopback port.
+- Preserved the isolated candidate replay and read-only remote comparison while keeping
+  the baseline container dump on its internal Postgres port.
+- Reused the complete deploy-manifest verifier for retained certification evidence, so
+  migration bytes/history/order, schema binding, function status/source/inventory,
+  smoke deployment binding, prerequisites, chronology, value-flow controls, and all
+  self/evidence digests must still pass.
+- Added explicit dynamic non-default-port coverage plus five recomputed, self-consistent
+  retained-manifest attacks: wrong schema digest, post-completion observation, inactive
+  function, mismatched migration history, and smoke/deployment SHA mismatch.
+
+#### Tests And Validation Notes
+
+- Passed Node 22 single-worker focused suites: environment manifest 14/14, delivery
+  parity 19/19, and function-source read-back 30/30.
+- Passed a workflow-equivalent disposable 95-to-96 forward diagnostic using a surrogate
+  remote prefix on host port 55432. It reported `reviewed-forward-replay`, exactly 95
+  baseline migrations, pending migration `20260813010000`, and zero enabled Production
+  value-flow controls.
+- Passed the pinned Supabase CLI 2.113.0 isolated replay: all 96 migrations, all three
+  representative SQL suites, and the deliberate invalid-migration history rejection.
+- Passed full repository ESLint and TypeScript typecheck, affected Node syntax checks,
+  workflow YAML parsing, and `git diff --check`.
+- The disposable surrogate and both verifier-owned stacks were stopped without backup.
+- No remote Supabase mutation/deployment/reset, workflow dispatch, Production action,
+  status change, #162 work, credential prompt, rereview, or value-flow activation occurred.
+
+#### Reflections
+
+A local Supabase stack exposes a randomized host port even though Postgres remains on
+5432 inside its container. Forward-baseline verification must bind commands to the side
+of that boundary they actually execute on.
+
+#### Suggested Next Steps
+
+- Push this localized correction to existing PR #202 after the full static and replay
+  gates pass, then report the exact head and CI state for independent validation.

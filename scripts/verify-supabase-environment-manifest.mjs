@@ -58,7 +58,8 @@ export function buildEnvironmentManifest({ schema, functions, smoke, context }) 
   }
   if (context.mode === "drift") {
     const certifiedManifest = schema.certifiedDeployment.certifiedManifest
-    if (!validateDeployCompletionEvidence(schema.certifiedDeployment.completion, deploymentEvidence, certifiedManifest)) throw new Error("deployment-completion: immutable manifest publication refused")
+    if (!validateDeployCompletionEvidence(schema.certifiedDeployment.completion, deploymentEvidence, certifiedManifest)
+      || !verifyCertifiedDeploymentManifest(certifiedManifest).ok) throw new Error("deployment-completion: immutable manifest publication refused")
     if (certifiedManifest.prerequisites.hostedUnauthenticatedDenial.evidence.evidenceSha256 === smoke.evidenceSha256) throw new Error("observation-smoke-not-fresh: immutable manifest publication refused")
   }
   for (const [name, observedAt] of [["schema", schema.observedAt], ["function", functions.observedAt], ["hosted-smoke", smoke.observedAt]]) {
@@ -129,7 +130,7 @@ export function buildEnvironmentManifest({ schema, functions, smoke, context }) 
   return { ...payload, manifestSha256: sha256(canonical(payload)) }
 }
 
-export function verifyEnvironmentManifest(manifest) {
+function verifyEnvironmentManifestCore(manifest) {
   const { manifestSha256, ...payload } = manifest
   const blockers = []
   if (manifest.contractVersion !== "fundloop.environment-delivery-manifest/v1") blockers.push("contract-version")
@@ -149,20 +150,6 @@ export function verifyEnvironmentManifest(manifest) {
   if (!['deploy', 'drift'].includes(manifest.observation?.mode)) blockers.push("observation-mode")
   if (!['push', 'workflow_run', 'schedule', 'workflow_dispatch'].includes(manifest.observation?.trigger)) blockers.push("observation-trigger")
   if (manifest.observation?.mode === "deploy" && (manifest.certifiedDeployment?.gitSha !== manifest.observation.gitSha || manifest.certifiedDeployment?.githubRunId !== manifest.observation.githubRunId || manifest.certifiedDeployment?.githubRunAttempt !== manifest.observation.githubRunAttempt)) blockers.push("deploy-observation-binding")
-  const completionEvidence = {
-    candidateGitSha: manifest.certifiedDeployment?.gitSha,
-    actionsRunId: manifest.certifiedDeployment?.githubRunId,
-    runAttempt: manifest.certifiedDeployment?.githubRunAttempt,
-    environment: manifest.certifiedDeployment?.environment,
-    projectRef: manifest.certifiedDeployment?.projectRef,
-    inventorySha256: manifest.migrations?.inventorySha256,
-    recordedAt: manifest.certifiedDeployment?.recordedAt,
-  }
-  if (manifest.observation?.mode === "drift" && deploymentTimeValid) {
-    const certifiedManifest = manifest.certifiedDeployment?.certifiedManifest
-    if (!validateDeployCompletionEvidence(manifest.certifiedDeployment?.completion, completionEvidence, certifiedManifest)) blockers.push("deployment-completion")
-    if (certifiedManifest?.prerequisites?.hostedUnauthenticatedDenial?.evidence?.evidenceSha256 === manifest.prerequisites?.hostedUnauthenticatedDenial?.evidence?.evidenceSha256) blockers.push("observation-smoke-not-fresh")
-  }
   if (!Array.isArray(manifest.migrations?.orderedInventory) || manifest.migrations.orderedInventory.length !== manifest.migrations.observedHistory?.length) blockers.push("migration-history")
   if (manifest.migrations?.algorithm !== "sha256-raw-bytes-sorted-filename-v1" || !/^[0-9a-f]{64}$/.test(manifest.migrations?.inventorySha256 ?? "")) blockers.push("migration-contract")
   const migrationVersions = manifest.migrations?.orderedInventory?.map((item) => item.version) ?? []
@@ -221,6 +208,34 @@ export function verifyEnvironmentManifest(manifest) {
   ]
   if (canonical(manifest.evidence) !== canonical(expectedEvidence)) blockers.push("evidence")
   if (manifestSha256 !== sha256(canonical(payload))) blockers.push("manifest-digest")
+  return { ok: blockers.length === 0, blockers }
+}
+
+export function verifyCertifiedDeploymentManifest(manifest) {
+  const result = verifyEnvironmentManifestCore(manifest)
+  const blockers = [...result.blockers]
+  if (manifest.observation?.mode !== "deploy") blockers.push("certified-deployment-mode")
+  return { ok: blockers.length === 0, blockers }
+}
+
+export function verifyEnvironmentManifest(manifest) {
+  const result = verifyEnvironmentManifestCore(manifest)
+  const blockers = [...result.blockers]
+  if (manifest.observation?.mode === "drift" && isExplicitRfc3339Timestamp(manifest.certifiedDeployment?.recordedAt)) {
+    const certifiedManifest = manifest.certifiedDeployment?.certifiedManifest
+    const completionEvidence = {
+      candidateGitSha: manifest.certifiedDeployment?.gitSha,
+      actionsRunId: manifest.certifiedDeployment?.githubRunId,
+      runAttempt: manifest.certifiedDeployment?.githubRunAttempt,
+      environment: manifest.certifiedDeployment?.environment,
+      projectRef: manifest.certifiedDeployment?.projectRef,
+      inventorySha256: manifest.migrations?.inventorySha256,
+      recordedAt: manifest.certifiedDeployment?.recordedAt,
+    }
+    if (!validateDeployCompletionEvidence(manifest.certifiedDeployment?.completion, completionEvidence, certifiedManifest)
+      || !verifyCertifiedDeploymentManifest(certifiedManifest).ok) blockers.push("deployment-completion")
+    if (certifiedManifest?.prerequisites?.hostedUnauthenticatedDenial?.evidence?.evidenceSha256 === manifest.prerequisites?.hostedUnauthenticatedDenial?.evidence?.evidenceSha256) blockers.push("observation-smoke-not-fresh")
+  }
   return { ok: blockers.length === 0, blockers }
 }
 
