@@ -6,6 +6,14 @@ import path from "node:path"
 import process from "node:process"
 import { setTimeout as delay } from "node:timers/promises"
 import { fileURLToPath } from "node:url"
+import {
+  probeAppIdentity,
+  probeEdgeFunctions,
+  probeSupabaseFoundation,
+  recoverLocalGateway,
+  requiredPersonaFunctions,
+  waitForReadinessProbe,
+} from "./persona-readiness.mjs"
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..")
 const outputRoot = path.join(root, "output", "persona-harness")
@@ -84,20 +92,21 @@ function readEnv() {
   }
 }
 
-async function waitForProbe(url, headers, reasonCode) {
-  for (let attempt = 0; attempt < 30; attempt += 1) {
-    try {
-      const response = await fetch(url, { headers, signal: AbortSignal.timeout(1_000) })
-      if (response.ok) return
-    } catch {}
-    await delay(500)
-  }
-  throw new Error(reasonCode)
-}
-
 async function preflight(env) {
-  await waitForProbe(`${env.supabaseUrl}/auth/v1/health`, { apikey: env.anonKey }, "persona-supabase-unavailable")
-  await waitForProbe(`${env.mailpitUrl}/api/v1/info`, {}, "persona-mailpit-unavailable")
+  let foundation
+  try {
+    foundation = await waitForReadinessProbe({ id: "supabase-foundation", probe: () => probeSupabaseFoundation(env) })
+  } catch (error) {
+    if (!(error instanceof Error) || error.message !== "persona-readiness-supabase-foundation-unhealthy-timeout") throw error
+    const config = readFileSync(path.join(root, "supabase", "config.toml"), "utf8")
+    const projectId = config.match(/^project_id\s*=\s*"([^"]+)"/m)?.[1] ?? ""
+    await recoverLocalGateway(projectId, capture)
+    foundation = await waitForReadinessProbe({
+      id: "supabase-foundation-recovered",
+      probe: () => probeSupabaseFoundation(env),
+      attempts: 180,
+    })
+  }
   const status = await capture("supabase", ["status", "--output", "json"], process.env)
   let localStatus
   try { localStatus = JSON.parse(status) } catch { throw new Error("persona-supabase-status-invalid") }
@@ -108,7 +117,7 @@ async function preflight(env) {
   if (!parsedDb || parsedDb.protocol !== "postgresql:" || parsedDb.hostname !== "127.0.0.1" || parsedDb.port !== "55322" || parsedDb.pathname !== "/postgres") {
     throw new Error("persona-database-url-refused")
   }
-  return parsedDb.toString()
+  return { dbUrl: parsedDb.toString(), foundation }
 }
 
 const LOCAL_OWNER_CLEANUP_TABLES = new Set([
@@ -163,16 +172,16 @@ function run(command, args, env) {
   })
 }
 
-async function waitForApp(baseURL, child) {
-  for (let attempt = 0; attempt < 90; attempt += 1) {
-    if (child.exitCode !== null) throw new Error("persona-next-exited")
-    try {
-      const response = await fetch(baseURL, { redirect: "manual", signal: AbortSignal.timeout(2_000) })
-      if (response.status < 500) return
-    } catch {}
-    await delay(1_000)
-  }
-  throw new Error("persona-next-readiness-timeout")
+async function waitForApp(baseURL, child, identity) {
+  return waitForReadinessProbe({
+    id: "next-identity",
+    attempts: 90,
+    intervalMs: 1_000,
+    probe: async () => {
+      if (child.exitCode !== null) throw new Error("persona-next-exited")
+      return probeAppIdentity(baseURL, identity)
+    },
+  })
 }
 
 async function assertPortFree(baseURL) {
@@ -182,7 +191,7 @@ async function assertPortFree(baseURL) {
   throw new Error("persona-next-port-occupied")
 }
 
-async function startLocalEdgeRuntime(runId, env) {
+async function startLocalEdgeRuntime(runId, env, requiredFunctions) {
   const envPath = path.join(outputRoot, runId, "edge-runtime.env")
   await mkdir(path.dirname(envPath), { recursive: true, mode: 0o700 })
   const handle = await open(envPath, "w", 0o600)
@@ -199,19 +208,21 @@ async function startLocalEdgeRuntime(runId, env) {
     await handle.close()
   }
   const child = spawnChild("supabase", ["functions", "serve", "--env-file", envPath], env)
-  for (let attempt = 0; attempt < 30; attempt += 1) {
-    if (child.exitCode !== null) throw new Error("persona-edge-runtime-exited")
-    await delay(250)
-    try {
-      const response = await fetch("http://127.0.0.1:55321/functions/v1/monthly-cycle-lock", {
-        method: "OPTIONS",
-        signal: AbortSignal.timeout(1_000),
-      })
-      if (response.ok) return { child, envPath }
-    } catch {}
+  try {
+    const readiness = await waitForReadinessProbe({
+      id: "edge-functions",
+      attempts: 60,
+      intervalMs: 250,
+      probe: async () => {
+        if (child.exitCode !== null) throw new Error("persona-edge-runtime-exited")
+        return probeEdgeFunctions({ supabaseUrl: "http://127.0.0.1:55321", anonKey: env.NEXT_PUBLIC_SUPABASE_ANON_KEY }, requiredFunctions)
+      },
+    })
+    return { child, envPath, readiness }
+  } catch (error) {
+    stopChildGroup(child)
+    throw error
   }
-  stopChildGroup(child)
-  throw new Error("persona-edge-runtime-readiness-timeout")
 }
 
 async function writeAtomic(filePath, value) {
@@ -520,7 +531,8 @@ async function main() {
 
   try {
     const baseEnv = readEnv()
-    const env = { ...baseEnv, dbUrl: await preflight(baseEnv) }
+    const preflightResult = await preflight(baseEnv)
+    const env = { ...baseEnv, dbUrl: preflightResult.dbUrl }
     if (options.cleanupRun) {
       await cleanupRun(options.cleanupRun, env)
       console.log(`persona cleanup ${options.cleanupRun}: clean`)
@@ -530,6 +542,7 @@ async function main() {
     const selected = selectedPersonas(options.persona)
     const startedAt = new Date().toISOString()
     const runId = `persona-${startedAt.replace(/[-:.]/g, "")}-${randomBytes(4).toString("hex")}`
+    const commitSha = capture("git", ["rev-parse", "HEAD"], process.env).then((value) => value.trim())
     const cycleBase = process.env.FUNDLOOP_PERSONA_CYCLE_BASE?.trim() || "2035-01"
     await assertPortFree(env.baseURL)
     const sharedEnv = {
@@ -548,12 +561,19 @@ async function main() {
       FUNDLOOP_E2E_SECRET: process.env.FUNDLOOP_E2E_SECRET?.trim() || `persona-${randomBytes(24).toString("base64url")}`,
       FUNDLOOP_INTERNAL_ADMIN_EMAILS: localOperatorEmail,
       FUNDLOOP_ZKAS_SUPERADMIN_EMAILS: localOperatorEmail,
+      FUNDLOOP_PERSONA_READINESS_NONCE: runId,
+      FUNDLOOP_PERSONA_COMMIT_SHA: await commitSha,
+      SUPABASE_FUNCTIONS_WATCH_LIMIT: process.env.SUPABASE_FUNCTIONS_WATCH_LIMIT?.trim() || "4000",
     }
-    const edge = await startLocalEdgeRuntime(runId, sharedEnv)
+    const requiredFunctions = requiredPersonaFunctions(selected)
+    const edge = await startLocalEdgeRuntime(runId, sharedEnv, requiredFunctions)
     edgeRuntime = edge.child
     edgeEnvPath = edge.envPath
     app = spawnChild("pnpm", ["dev", "--port", "3002", "--hostname", "127.0.0.1"], sharedEnv)
-    await waitForApp(env.baseURL, app)
+    const appReadiness = await waitForApp(env.baseURL, app, {
+      readinessNonce: runId,
+      commitSha: sharedEnv.FUNDLOOP_PERSONA_COMMIT_SHA,
+    })
     const grep = options.selfTest ? "@harness:self-test" : `@persona:(${selected.join("|")})`
     removePrivateFailureArtifacts()
     const playwrightExitCode = await run("pnpm", ["exec", "playwright", "test", "--project=local-personas", "--reporter=list", "--grep", grep], sharedEnv)
@@ -563,7 +583,17 @@ async function main() {
       runId,
       selected,
       startedAt,
-      { supabase: "caller", mailpit: "caller", next: "runner" },
+      {
+        supabase: "caller",
+        mailpit: "caller",
+        next: "runner",
+        readiness: {
+          foundation: preflightResult.foundation,
+          edge: edge.readiness,
+          app: appReadiness,
+          requiredFunctions,
+        },
+      },
       playwrightExitCode,
       cycleBase,
     )

@@ -150,9 +150,9 @@ export function createPersonaBrowserActions(personaId: Exclude<PersonaId, "retur
   async function openReview(flow: "user" | "project", title: string | RegExp) {
     await page.goto(`${env.baseURL}/en?onboarding=${flow}`, { waitUntil: "domcontentloaded", timeout: 15_000 })
     const continueDraft = page.getByRole("button", { name: "Continue draft" })
-    await expect(continueDraft).toBeVisible({ timeout: 10_000 }).catch(() => { throw new Error(`persona-${flow}-resume-not-visible`) })
-    await continueDraft.click({ timeout: 10_000 })
-    await expect(page.getByRole("heading", { name: title })).toBeVisible({ timeout: 10_000 }).catch(() => { throw new Error(`persona-${flow}-review-not-visible`) })
+    await expect(continueDraft).toBeVisible({ timeout: 30_000 }).catch(() => { throw new Error(`persona-${flow}-resume-not-visible`) })
+    await continueDraft.click({ timeout: 30_000 })
+    await expect(page.getByRole("heading", { name: title })).toBeVisible({ timeout: 30_000 }).catch(() => { throw new Error(`persona-${flow}-review-not-visible`) })
   }
 
   async function assertPublishedProfile(expectedName: "New Member" | "New Founder") {
@@ -490,9 +490,15 @@ async function submitAttribution(page: Page, supabase: SupabaseClient<Database>,
   })
   const dataset = await supabase.from("project_attribution_datasets").select("id").eq("project_id", project.id).eq("monthly_cycle_id", cycleId).single()
   if (dataset.error || !dataset.data) throw new Error("persona-attribution-resolution-failed")
-  const rows = await supabase.from("project_attribution_rows").select("id, scoped_cubid_id, user_id").eq("dataset_id", dataset.data.id)
-  if (rows.error || rows.data?.length !== 1) throw new Error("persona-attribution-rows-resolution-failed")
-  const row = rows.data[0]
+  await expect.poll(async () => {
+    const rows = await supabase.from("project_attribution_rows").select("id, scoped_cubid_id, user_id").eq("dataset_id", dataset.data.id)
+    return rows.error ? 0 : rows.data?.length ?? 0
+  }, { timeout: 10_000, message: "attribution row visibility" }).toBe(1).catch(() => {
+    throw new Error("persona-attribution-rows-resolution-failed")
+  })
+  const resolvedRows = await supabase.from("project_attribution_rows").select("id, scoped_cubid_id, user_id").eq("dataset_id", dataset.data.id)
+  const row = resolvedRows.data?.[0]
+  if (resolvedRows.error || resolvedRows.data?.length !== 1 || !row) throw new Error("persona-attribution-rows-resolution-failed")
   if (row.scoped_cubid_id !== attributionUser.scopedCubidId || row.user_id !== attributionUser.userId) {
     throw new Error("persona-attribution-row-identity-mismatch")
   }

@@ -35,11 +35,11 @@ describe("persona local-only preflight", () => {
     expect(() => assertPersonaOptions({ payoutExecution: true })).toThrow("persona-payout-execution-refused")
   })
 
-  it("probes local auth and Mailpit with fixed failure codes", async () => {
+  it("probes Auth, the schema sentinel, Storage, and Mailpit with fixed failure codes", async () => {
     const env = readLocalPersonaEnv(localEnv())
     const ok = vi.fn(async () => new Response("{}", { status: 200 })) as unknown as typeof fetch
     await expect(probeLocalPersonaServices(env, ok)).resolves.toBeUndefined()
-    expect(ok).toHaveBeenCalledTimes(2)
+    expect(ok).toHaveBeenCalledTimes(4)
     const failed = vi.fn(async () => { throw new Error("private endpoint detail") }) as unknown as typeof fetch
     await expect(probeLocalPersonaServices(env, failed)).rejects.toThrow("persona-supabase-unavailable")
   })

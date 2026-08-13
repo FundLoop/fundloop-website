@@ -67,16 +67,20 @@ export async function probeLocalPersonaServices(
   fetcher: typeof fetch = fetch,
 ) {
   const checks = [
-    [`${env.supabaseUrl}/auth/v1/health`, { apikey: env.anonKey }],
-    [`${env.mailpitUrl}/api/v1/info`, {}],
+    [`${env.supabaseUrl}/auth/v1/health`, { apikey: env.anonKey }, "persona-supabase-unavailable"],
+    [`${env.supabaseUrl}/rest/v1/supabase_deploy_completion_evidence?select=id&limit=0`, {
+      apikey: env.serviceRoleKey, authorization: `Bearer ${env.serviceRoleKey}`,
+    }, "persona-schema-sentinel-unavailable"],
+    [`${env.supabaseUrl}/storage/v1/status`, { apikey: env.anonKey }, "persona-storage-unavailable"],
+    [`${env.mailpitUrl}/api/v1/info`, {}, "persona-mailpit-unavailable"],
   ] as const
 
-  for (const [url, headers] of checks) {
+  for (const [url, headers, reasonCode] of checks) {
     try {
       const response = await fetcher(url, { headers, signal: AbortSignal.timeout(5_000) })
       if (!response.ok) throw new Error("not-ok")
     } catch {
-      throw new Error(url.includes("/auth/") ? "persona-supabase-unavailable" : "persona-mailpit-unavailable")
+      throw new Error(reasonCode)
     }
   }
 }
