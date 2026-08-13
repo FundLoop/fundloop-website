@@ -64,7 +64,7 @@ export function OnboardingModalManager() {
     }
 
     void fetchStatus()
-  }, [authUserId, supabaseConfigured])
+  }, [authUserId, onboardingFlow, supabaseConfigured])
 
   useEffect(() => {
     if (!authUserId || profileStatus !== "inactive" || onboardingFlow) {

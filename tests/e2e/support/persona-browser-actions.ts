@@ -148,9 +148,11 @@ export function createPersonaBrowserActions(personaId: Exclude<PersonaId, "retur
   async function captureSuccess() { await capturePageSuccess(page) }
 
   async function openReview(flow: "user" | "project", title: string | RegExp) {
+    const resumeTitle = flow === "project" ? "You already have a draft project" : "You already have a draft profile"
+    const resumeHeading = page.getByRole("heading", { name: resumeTitle })
     await page.goto(`${env.baseURL}/en?onboarding=${flow}`, { waitUntil: "domcontentloaded", timeout: 15_000 })
+    await expect(resumeHeading).toBeVisible({ timeout: 60_000 }).catch(() => { throw new Error(`persona-${flow}-resume-not-visible`) })
     const continueDraft = page.getByRole("button", { name: "Continue draft" })
-    await expect(continueDraft).toBeVisible({ timeout: 30_000 }).catch(() => { throw new Error(`persona-${flow}-resume-not-visible`) })
     await continueDraft.click({ timeout: 30_000 })
     // First compilation of the project review route can exceed 30 seconds when
     // the full operational matrix has just started all local Edge Functions.
