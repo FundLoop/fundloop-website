@@ -175,17 +175,17 @@ export function buildMonthlyCycleReportPublicationPath(input: {
   cycleKey: string
   closePackageId: string | number
   audience: "public" | "user" | "founder" | "operator" | "mcp"
-  subjectId?: string | number | null
+  pathToken: string
   version: number
   artifactHash: string
 }) {
   const cycleKey = requireCycleKey(input.cycleKey)
   if (!Number.isSafeInteger(input.version) || input.version < 1) throw new Error("Report version must be a positive integer.")
   if (!/^[0-9a-f]{64}$/.test(input.artifactHash)) throw new Error("Report artifact hash must be a SHA-256 digest.")
+  if (!/^[0-9a-f]{64}$/.test(input.pathToken)) throw new Error("Report path token must be an opaque SHA-256 digest.")
   const close = requireSegment(input.closePackageId, "Close package id")
   const audience = requireSegment(input.audience, "Report audience")
-  const subject = input.subjectId === null || input.subjectId === undefined ? "global" : requireSegment(input.subjectId, "Report subject")
-  return `${cycleKey}/close-${close}/v${input.version}/${audience}/${subject}-${input.artifactHash}.json`
+  return `${cycleKey}/close-${close}/v${input.version}/${audience}/${input.pathToken}-${input.artifactHash}.json`
 }
 
 export function buildProjectAssetArtifactPath(input: {

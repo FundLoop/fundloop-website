@@ -6,6 +6,7 @@ import { createMonthlyReportPublicationHandler, type MonthlyReportPublicationOpe
 import { buildMonthlyCycleReportPublicationPath } from "@/lib/storage/artifacts"
 
 const migration = readFileSync("supabase/migrations/20260813140000_monthly_report_storage_and_version_integrity.sql", "utf8")
+const privacyMigration = readFileSync("supabase/migrations/20260813150000_monthly_report_opaque_paths.sql", "utf8")
 const operator = { id: "00000000-0000-4000-8000-000000000001", email: "operator@example.com" }
 const member = { id: "00000000-0000-4000-8000-000000000002", email: "member@example.com" }
 
@@ -16,9 +17,10 @@ async function body(response: Response) { return response.json() as Promise<any>
 function harness(options: { user?: typeof member | null; internal?: boolean; founder?: boolean; finalizeError?: boolean; auditError?: boolean } = {}) {
   const bytes = '{"audience":"public","schemaVersion":2}'
   const hash = digest(bytes)
-  const path = buildMonthlyCycleReportPublicationPath({ cycleKey: "2026-07", closePackageId: 7, audience: "public", version: 1, artifactHash: hash })
+  const pathToken = digest("fundloop:monthly-report-object-path:v1:artifact:11")
+  const path = buildMonthlyCycleReportPublicationPath({ cycleKey: "2026-07", closePackageId: 7, audience: "public", pathToken, version: 1, artifactHash: hash })
   const artifact = { artifactId: "11", cycleKey: "2026-07", closePackageId: "7", audience: "public" as const,
-    subjectUserId: null, subjectProjectId: null, version: 1, artifactBytes: bytes, artifactHash: hash, artifactPath: path }
+    pathToken, version: 1, artifactBytes: bytes, artifactHash: hash, artifactPath: path }
   const objects = new Map<string, Uint8Array>()
   const calls: Array<[string, unknown]> = []
   const operations: MonthlyReportPublicationOperations = {
@@ -111,8 +113,9 @@ describe("monthly report publication", () => {
     const test = harness()
     const secondBytes = '{"audience":"mcp","schemaVersion":2}'
     const secondHash = digest(secondBytes)
-    const secondPath = buildMonthlyCycleReportPublicationPath({ cycleKey: "2026-07", closePackageId: 7, audience: "mcp", version: 1, artifactHash: secondHash })
-    const second = { ...test.artifact, artifactId: "12", audience: "mcp" as const, artifactBytes: secondBytes, artifactHash: secondHash, artifactPath: secondPath }
+    const secondToken = digest("fundloop:monthly-report-object-path:v1:artifact:12")
+    const secondPath = buildMonthlyCycleReportPublicationPath({ cycleKey: "2026-07", closePackageId: 7, audience: "mcp", pathToken: secondToken, version: 1, artifactHash: secondHash })
+    const second = { ...test.artifact, artifactId: "12", audience: "mcp" as const, pathToken: secondToken, artifactBytes: secondBytes, artifactHash: secondHash, artifactPath: secondPath }
     vi.mocked(test.operations.rpc).mockImplementation(async (name, args) => {
       test.calls.push([name, args])
       if (name === "prepare_monthly_cycle_report_publication") return { data: { artifacts: [test.artifact, second] }, error: null }
@@ -133,6 +136,16 @@ describe("monthly report publication", () => {
     const result = await body(await test.handler(request({ action: "publish", closePackageId: "7", rootHash: "a".repeat(64) })))
     expect(result.error.code).toBe("monthly_report_artifact_mismatch")
     expect(test.operations.upload).not.toHaveBeenCalled()
+  })
+
+  it("never places raw user or project identifiers in publication paths", () => {
+    const artifactHash = "a".repeat(64)
+    const pathToken = digest("fundloop:monthly-report-object-path:v1:artifact:77")
+    for (const [audience, rawSubject] of [["user", member.id], ["founder", "93842"]] as const) {
+      const path = buildMonthlyCycleReportPublicationPath({ cycleKey: "2026-07", closePackageId: 7, audience, pathToken, version: 1, artifactHash })
+      expect(path).not.toContain(rawSubject)
+      expect(path).toContain(pathToken)
+    }
   })
 
   it("authorizes anonymous public, exact self, exact founder project, and internal scopes", async () => {
@@ -167,5 +180,15 @@ describe("monthly report publication", () => {
       "prepare_monthly_cycle_report_publication", "finalize_monthly_cycle_report_publication", "monthly_report_storage_publication_requires_edge",
       "subject_evidence_hash", "subject_tombstoned", "7 years", "productionValueFlowEnabled", "false"]) expect(migration).toContain(text)
     expect(migration).not.toContain("ON CONFLICT DO NOTHING RETURNING")
+    for (const evidence of ["monthly_cycle_report_path_token", "monthly_report_legacy_subject_path_requires_storage_migration",
+      "path_metadata_redacted", "removed_artifact_path_evidence_hash", "artifact.path_token", "20260813150000"])
+      expect(privacyMigration).toContain(evidence)
+    const prepare = privacyMigration.slice(privacyMigration.indexOf("CREATE OR REPLACE FUNCTION public.prepare_monthly_cycle_report_publication"),
+      privacyMigration.indexOf("REVOKE ALL ON FUNCTION"))
+    expect(prepare).not.toContain("subjectUserId")
+    expect(prepare).not.toContain("subjectProjectId")
+    expect(privacyMigration).not.toMatch(/coalesce\(v_candidate\.subject_user_id::text,v_candidate\.subject_project_id::text/)
+    expect(privacyMigration).toMatch(/'pathToken',artifact\.path_token[\s\S]*'artifactPath',artifact\.artifact_path/)
+    expect(privacyMigration).toMatch(/NEW\.state='tombstoned'[\s\S]*NEW\.removed_artifact_path:=[\s\S]*v_expected[\s\S]*NEW\.artifact_path:=NULL/)
   })
 })

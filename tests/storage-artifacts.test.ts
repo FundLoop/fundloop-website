@@ -18,11 +18,13 @@ import {
 describe("storage artifact paths", () => {
   it("builds exact immutable monthly report paths for every audience including MCP", () => {
     const hash = "a".repeat(64)
-    expect(buildMonthlyCycleReportPublicationPath({ cycleKey: "2026-07", closePackageId: 7, audience: "mcp", version: 2, artifactHash: hash }))
-      .toBe(`2026-07/close-7/v2/mcp/global-${hash}.json`)
-    expect(buildMonthlyCycleReportPublicationPath({ cycleKey: "2026-07", closePackageId: 7, audience: "user", subjectId: "ABC", version: 1, artifactHash: hash }))
-      .toBe(`2026-07/close-7/v1/user/abc-${hash}.json`)
-    expect(() => buildMonthlyCycleReportPublicationPath({ cycleKey: "bad", closePackageId: 7, audience: "public", version: 1, artifactHash: hash })).toThrow()
+    const token = "b".repeat(64)
+    expect(buildMonthlyCycleReportPublicationPath({ cycleKey: "2026-07", closePackageId: 7, audience: "mcp", pathToken: token, version: 2, artifactHash: hash }))
+      .toBe(`2026-07/close-7/v2/mcp/${token}-${hash}.json`)
+    expect(buildMonthlyCycleReportPublicationPath({ cycleKey: "2026-07", closePackageId: 7, audience: "user", pathToken: token, version: 1, artifactHash: hash }))
+      .toBe(`2026-07/close-7/v1/user/${token}-${hash}.json`)
+    expect(() => buildMonthlyCycleReportPublicationPath({ cycleKey: "bad", closePackageId: 7, audience: "public", pathToken: token, version: 1, artifactHash: hash })).toThrow()
+    expect(() => buildMonthlyCycleReportPublicationPath({ cycleKey: "2026-07", closePackageId: 7, audience: "user", pathToken: "raw-user-id", version: 1, artifactHash: hash })).toThrow()
   })
   it("builds canonical zkAS artifact paths", () => {
     expect(

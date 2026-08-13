@@ -5894,7 +5894,9 @@ export type Database = {
       monthly_cycle_report_artifacts: {
         Row: {
           artifact: Json
+          artifact_bytes: string
           artifact_hash: string
+          artifact_path: string | null
           audience: Database["public"]["Enums"]["monthly_cycle_report_audience"]
           close_package_id: number
           generated_at: string
@@ -5903,8 +5905,10 @@ export type Database = {
           monthly_cycle_id: number
           production_enabled: boolean
           published_at: string | null
+          path_token: string
           regeneration_key: string | null
           removed_artifact_path: string | null
+          removed_artifact_path_evidence_hash: string | null
           retention_expires_at: string
           state: string
           storage_verified_at: string | null
@@ -5931,8 +5935,10 @@ export type Database = {
           monthly_cycle_id: number
           production_enabled?: boolean
           published_at?: string | null
+          path_token?: string
           regeneration_key?: string | null
           removed_artifact_path?: string | null
+          removed_artifact_path_evidence_hash?: string | null
           retention_expires_at: string
           state?: string
           storage_verified_at?: string | null
@@ -5959,8 +5965,10 @@ export type Database = {
           monthly_cycle_id?: number
           production_enabled?: boolean
           published_at?: string | null
+          path_token?: string
           regeneration_key?: string | null
           removed_artifact_path?: string | null
+          removed_artifact_path_evidence_hash?: string | null
           retention_expires_at?: string
           state?: string
           storage_verified_at?: string | null
