@@ -272,7 +272,7 @@ and go-live runtime-control transitions.
 
 #### Actions Taken
 
-- Added exact `CI / Supabase fresh-schema replay` protection enforcement to the
+- Added exact `Supabase fresh-schema replay` protection enforcement to the
   canonical evaluator, schema, fixture, release checklist, and evidence contract.
 - Replaced unconditional cutover/value-flow blockers with gate-specific authorization
   that requires Production, consistent pass declarations, and complete approved,
@@ -1692,7 +1692,7 @@ Production pause and failure path without approval or provider execution.
 - Captured the unsafe owner/admin API baseline: no rulesets, `dev` and `main`
   protection HTTP 404s, and `Production` with no reviewer/branch policy plus
   administrator bypass.
-- Protected `dev` and `main` with strict `CI / validate`, `CI / Supabase fresh-schema
+- Protected `dev` and `main` with strict `validate`, `Supabase fresh-schema
   replay`, and `Supabase dry-run` contexts, PR enforcement, administrator enforcement,
   linear history, resolved conversations, and force-push/deletion denial.
 - Retained a zero branch-approval count because the repository has exactly one
@@ -1843,3 +1843,47 @@ uses the same audited classifier without parsing similarity scores or rename rec
 
 - Push this commit to existing PR #203, reply to and resolve only the actionable
   thread, then wait for the same PR's required checks without requesting rereview.
+
+### session v38: Bind protection to actual check-run contexts (#162/#187)
+
+- Timestamp: 2026-08-13T07:06:00-04:00
+- Agent: Codex
+- Branch: `codex/155-goal-1-delivery-integrity-post-ci`
+- Head: `ffeae93d4d1816b1b817300dcf23e7ef28dea32a`
+
+#### Objective
+
+Correct a merge-gate configuration defect where protected context labels included a
+workflow prefix that GitHub does not include in the actual check-run names.
+
+#### Actions Taken
+
+- Read exact-head PR #203 check runs through REST. GitHub Actions app `15368` reported
+  `validate`, `Supabase fresh-schema replay`, and `Supabase dry-run`.
+- Corrected live `dev` and `main` required checks to those exact three names, bound
+  each to app ID `15368`, and independently read back both branches with strict mode.
+- Updated the evidence evaluator, JSON Schema, fixture and approval-scope digest,
+  Goal certification, release docs, tests, and historical Goal session wording to
+  use actual check-run context semantics.
+- Added a regression contract that binds the tracked required names and app ID to an
+  exact-head REST check-run read-back and rejects workflow-qualified pseudo-contexts.
+
+#### Tests And Validation Notes
+
+- Passed Node 22 focused evidence/deployment/Goal suites, 3 files and 65 tests after
+  recomputing the fixture approval-scope hash for the corrected protected contexts.
+- Live `dev` and `main` read-back both returned strict=true and the same exact three
+  app-bound checks.
+- No administrator merge bypass, rereview, merge, Production action, Supabase
+  mutation, payout, cutover, or value-flow activation occurred.
+
+#### Reflections
+
+The PR UI visually groups a job as `workflow / job`, but classic branch protection
+matches the Checks API run name. Protection evidence must come from exact-head REST
+check runs and live branch read-back, not a composed UI label.
+
+#### Suggested Next Steps
+
+- Push this correction to existing PR #203 and wait for its exact-head checks.
+- Retry only the ordinary protected merge after checks pass; never use admin bypass.

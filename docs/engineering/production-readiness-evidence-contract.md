@@ -130,7 +130,7 @@ Every migration runs on fresh replay before a remote plan. Rehearsal must also c
 
 ## 6. GitHub protection and approvals
 
-The manifest records live, timestamped API read-back for the exact base branch and `Production` environment. Dev/main promotion requires PR enforcement and the exact `CI / validate`, `CI / Supabase fresh-schema replay`, and `Supabase dry-run` checks. Production deploy requires at least one required reviewer and the repository-approved bypass posture. A checked-in workflow reference is not protection evidence.
+The manifest records live, timestamped API read-back for the exact base branch and `Production` environment. Dev/main promotion requires PR enforcement and the exact `validate`, `Supabase fresh-schema replay`, and `Supabase dry-run` check-run contexts. The first two jobs belong to the `CI` workflow, but branch protection matches their unprefixed check-run names. Production deploy requires at least one required reviewer and the repository-approved bypass posture. A checked-in workflow reference is not protection evidence.
 
 Approvals are immutable evidence objects, not booleans. Each records type, `approved|rejected|pending|not-required`, artifact hash, exact manifest-scope hash, approver role, recorded timestamp, and expiry timestamp. A required approval with a different manifest hash, future recorded time, or expired timestamp is stale. Secrets, personal email addresses, tokens, and private provider payloads never enter the manifest; use opaque evidence IDs plus sanitized digests.
 

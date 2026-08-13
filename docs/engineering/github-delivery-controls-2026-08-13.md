@@ -19,8 +19,9 @@ secret value, deployment payload, or Supabase data was read.
 Both `dev` and `main` use classic branch protection with the same fail-closed
 contract:
 
-- require an up-to-date branch and the exact status contexts `CI / validate`,
-  `CI / Supabase fresh-schema replay`, and `Supabase dry-run`;
+- require an up-to-date branch and the exact check-run contexts `validate`,
+  `Supabase fresh-schema replay`, and `Supabase dry-run` (all GitHub Actions app ID
+  `15368`);
 - require the pull-request path and dismiss stale reviews;
 - enforce the rules for administrators;
 - require linear history and resolved conversations; and
@@ -50,6 +51,12 @@ with classic branch protection. API read-back, not this document, remains the
 authoritative current state.
 
 ## Required-check continuity
+
+GitHub branch protection matches the check-run `name`, not a display label composed
+from workflow and job. Exact-head REST read-back on PR #203 returned `validate`,
+`Supabase fresh-schema replay`, and `Supabase dry-run`; live branch protection was
+corrected to those exact values. `validate` and `Supabase fresh-schema replay` remain
+jobs in the `CI` workflow even though `CI /` is not part of their protected context.
 
 The Supabase workflow runs on every PR into `dev` or `main`. A scope classifier
 starts the provider-backed execution only when the candidate changes a reviewed

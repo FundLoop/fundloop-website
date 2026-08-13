@@ -16,6 +16,8 @@ interface Goal158Evidence {
   devDriftObservation: { certifiedDeploymentManifestSha256: string; blockingDriftCount: number }
   githubControls: {
     requiredChecks: string[]
+    requiredCheckAppId: number
+    exactHeadCheckRunReadback: { gitSha: string; appId: number; names: string[] }
     branches: Record<"dev" | "main", { pullRequestRequired: boolean; adminEnforcement: boolean; strictChecks: boolean; forcePushAllowed: boolean; deletionAllowed: boolean }>
     production: { allowedBranch: string; adminBypassAllowed: boolean; requiredReviewerId: number }
   }
@@ -44,10 +46,20 @@ describe("Goal #158 delivery-integrity evidence", () => {
     expect(evidence.devDeployment.safeRuntime).toMatchObject({ authenticatedPublicHealthStatus: 200, unauthorizedMutationStatus: 401 })
     expect(evidence.devDeployment.valueFlow).toMatchObject({ enabledTableCount: 0, productionValueFlowEnabledCount: 0 })
     expect(evidence.githubControls.requiredChecks).toEqual([
-      "CI / validate",
-      "CI / Supabase fresh-schema replay",
+      "validate",
+      "Supabase fresh-schema replay",
       "Supabase dry-run",
     ])
+    expect(evidence.githubControls.requiredCheckAppId).toBe(15368)
+    expect(evidence.githubControls.exactHeadCheckRunReadback).toMatchObject({
+      gitSha: expect.stringMatching(/^[0-9a-f]{40}$/),
+      appId: evidence.githubControls.requiredCheckAppId,
+      names: evidence.githubControls.requiredChecks,
+    })
+    expect(evidence.githubControls.requiredChecks).not.toEqual(expect.arrayContaining([
+      "CI / validate",
+      "CI / Supabase fresh-schema replay",
+    ]))
     for (const branch of ["dev", "main"] as const) {
       expect(evidence.githubControls.branches[branch]).toMatchObject({
         pullRequestRequired: true,

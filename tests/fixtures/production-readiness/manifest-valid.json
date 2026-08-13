@@ -81,7 +81,7 @@
     "observedAt": "2026-08-11T20:30:00-04:00",
     "baseBranch": "dev",
     "pullRequestRequired": true,
-    "requiredChecks": ["CI / validate", "CI / Supabase fresh-schema replay", "Supabase dry-run"],
+    "requiredChecks": ["validate", "Supabase fresh-schema replay", "Supabase dry-run"],
     "productionEnvironment": "Production",
     "requiredReviewerCount": 1,
     "adminBypassAllowed": false
@@ -115,7 +115,7 @@
       "approvalType": "code-review",
       "status": "approved",
       "artifactSha256": "3535353535353535353535353535353535353535353535353535353535353535",
-      "scopeManifestSha256": "eaf2467eafedd31780c8f45dddefb561a7f351034cca4676f1c4069f98516dd7",
+    "scopeManifestSha256": "3e977f2919b9fe7c7b2dc2871b868377c05d8a25c3778090e173ca7773f34d84",
       "approverRole": "independent-code-reviewer",
       "recordedAt": "2026-08-11T20:25:30-04:00",
       "expiresAt": "2026-08-12T20:25:30-04:00"

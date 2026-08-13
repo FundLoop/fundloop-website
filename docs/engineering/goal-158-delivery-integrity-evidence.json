@@ -1,6 +1,6 @@
 {
   "contractVersion": "fundloop.goal-158-delivery-integrity/v1",
-  "observedAt": "2026-08-13T10:46:47Z",
+  "observedAt": "2026-08-13T11:05:00Z",
   "candidate": {
     "sprintIssue": 155,
     "goalIssue": 158,
@@ -53,10 +53,20 @@
   },
   "githubControls": {
     "requiredChecks": [
-      "CI / validate",
-      "CI / Supabase fresh-schema replay",
+      "validate",
+      "Supabase fresh-schema replay",
       "Supabase dry-run"
     ],
+    "requiredCheckAppId": 15368,
+    "exactHeadCheckRunReadback": {
+      "gitSha": "ffeae93d4d1816b1b817300dcf23e7ef28dea32a",
+      "appId": 15368,
+      "names": [
+        "validate",
+        "Supabase fresh-schema replay",
+        "Supabase dry-run"
+      ]
+    },
     "branches": {
       "dev": {
         "pullRequestRequired": true,
