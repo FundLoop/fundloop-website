@@ -575,9 +575,26 @@ async function reportingCoverage(adminClient, input) {
       userReports: reports.filter((report) => report.audience === "user").length,
       founderReports: reports.filter((report) => report.audience === "founder").length,
       operatorReports: reports.filter((report) => report.audience === "operator").length,
+      mcpReports: reports.filter((report) => report.audience === "mcp").length,
       artifactCount: reports.filter((report) => report.artifact_path).length,
     },
   }
+}
+
+async function reportingArtifacts(adminClient, user, input) {
+  const internal = requireOperator(user)
+  const memberships = internal ? [] : await softRead("report-memberships", adminClient.from("participants").select("project_id,is_admin").eq("user_id", user.id), [], [])
+  const founderProjectIds = memberships.filter((row) => row.is_admin).map((row) => row.project_id)
+  let query = adminClient.from("monthly_cycle_report_artifacts")
+    .select("audience,subject_user_id,subject_project_id,artifact,artifact_hash,published_at,monthly_cycles!inner(cycle_key)")
+    .eq("state", "published").order("published_at", { ascending: false })
+  if (input.cycleKey) query = query.eq("monthly_cycles.cycle_key", input.cycleKey)
+  const { data, error } = await query
+  if (error) return { ok: false, code: "query_failed", message: error.message }
+  const reports = (data ?? []).filter((report) => internal || report.audience === "public" || report.audience === "mcp"
+    || (report.audience === "user" && report.subject_user_id === user.id)
+    || (report.audience === "founder" && founderProjectIds.includes(report.subject_project_id)))
+  return { ok: true, data: { cycleKey: input.cycleKey ?? null, reports } }
 }
 
 async function handleRequest(request) {
@@ -601,6 +618,7 @@ async function handleRequest(request) {
   if (input.operation === "founder.projects.list") result = await listManagedProjects(adminClient, auth.user.id)
   if (input.operation === "founder.project.cycle_status") result = await founderCycleStatus(adminClient, auth.user.id, input)
   if (input.operation === "project_member.project.reporting_status") result = await projectMemberReportingStatus(adminClient, auth.user.id, input)
+  if (input.operation === "reporting.artifacts.read") result = await reportingArtifacts(adminClient, auth.user, input)
 
   if (input.operation.startsWith("operator.")) {
     if (!requireOperator(auth.user)) return json(edgeCommandFailure("forbidden", "You do not have internal operator access."))

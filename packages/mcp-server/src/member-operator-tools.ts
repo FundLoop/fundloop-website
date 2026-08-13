@@ -126,6 +126,7 @@ function deriveReportingCoverage(input: OperatorReportingCoverage) {
     userReports: input.userReports,
     founderReports: input.founderReports,
     operatorReports: input.operatorReports,
+    mcpReports: input.mcpReports,
     artifactCount: input.artifactCount,
   }
   const missingAudiences = [
@@ -133,6 +134,7 @@ function deriveReportingCoverage(input: OperatorReportingCoverage) {
     ...(input.userReports === 0 ? ["user"] : []),
     ...(input.founderReports === 0 ? ["founder"] : []),
     ...(input.operatorReports === 0 ? ["operator"] : []),
+    ...(input.mcpReports === 0 ? ["mcp"] : []),
   ]
   const warningStates: string[] = []
   const nextActions: string[] = []
@@ -244,6 +246,34 @@ export function registerProjectMemberAndOperatorMcpTools(registry: McpToolRegist
           ...errorResult("User payout routes are temporarily unavailable."),
           errorCode: "workflow_read_failed",
         }
+      }
+    },
+  })
+
+  registry.register({
+    definition: {
+      name: "reporting.artifacts.read",
+      title: "Read Published Monthly Reports",
+      description: "Read deterministic published monthly report artifacts authorized for the current user, including public and MCP summaries.",
+      annotations: { readOnlyHint: true, destructiveHint: false, openWorldHint: false },
+      inputSchema: {
+        type: "object",
+        properties: { cycleKey: { type: "string", format: "cycle_key" } },
+        additionalProperties: false,
+      },
+      outputSchema: {
+        type: "object",
+        properties: { ok: { type: "boolean" }, cycleKey: { type: ["string", "null"] }, reports: { type: "array" } },
+        required: ["ok", "cycleKey", "reports"],
+        additionalProperties: false,
+      },
+    },
+    async handler(input, context) {
+      if (!context.userReader) return { ...errorResult("User workflow reader is not configured."), errorCode: "reader_not_configured" }
+      try {
+        return jsonTextResult({ ok: true, ...await context.userReader.listPublishedReports({ cycleKey: readOptionalString(input, "cycleKey") }, context.auth) })
+      } catch {
+        return { ...errorResult("Published monthly reports are temporarily unavailable."), errorCode: "workflow_read_failed" }
       }
     },
   })

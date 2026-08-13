@@ -116,6 +116,9 @@ const userReader: UserWorkflowReader = {
       warnings: [],
     }
   },
+  async listPublishedReports(input) {
+    return { cycleKey: input.cycleKey ?? "2026-04", reports: [] }
+  },
 }
 
 const operatorReader: OperatorWorkflowReader = {
@@ -154,6 +157,7 @@ const operatorReader: OperatorWorkflowReader = {
       userReports: 12,
       founderReports: 2,
       operatorReports: 1,
+      mcpReports: 1,
       artifactCount: 16,
     }
   },
@@ -489,7 +493,7 @@ describe("project-member and operator MCP tools", () => {
     expect(coverage.structuredContent).toMatchObject({
       ok: true,
       cycleKey: "2026-04",
-      counts: { publicReports: 1, userReports: 12, founderReports: 2, operatorReports: 1, artifactCount: 16 },
+      counts: { publicReports: 1, userReports: 12, founderReports: 2, operatorReports: 1, mcpReports: 1, artifactCount: 16 },
       missingAudiences: [],
       warningStates: [],
       nextActions: ["Reporting coverage is complete for the available audience counts."],
@@ -593,6 +597,7 @@ describe("project-member and operator MCP tools", () => {
           userReports: 3,
           founderReports: 0,
           operatorReports: 1,
+          mcpReports: 0,
           artifactCount: 0,
         }
       },
@@ -602,11 +607,11 @@ describe("project-member and operator MCP tools", () => {
     expect(result.structuredContent).toMatchObject({
       ok: true,
       cycleKey: "2026-04",
-      counts: { publicReports: 0, userReports: 3, founderReports: 0, operatorReports: 1, artifactCount: 0 },
-      missingAudiences: ["public", "founder"],
+      counts: { publicReports: 0, userReports: 3, founderReports: 0, operatorReports: 1, mcpReports: 0, artifactCount: 0 },
+      missingAudiences: ["public", "founder", "mcp"],
       warningStates: ["missing_report_audiences", "missing_report_artifacts"],
       nextActions: [
-        "Publish or verify missing report audiences: public, founder.",
+        "Publish or verify missing report audiences: public, founder, mcp.",
         "Verify that report artifacts were generated and attached before treating coverage as complete.",
       ],
     })
@@ -623,6 +628,7 @@ describe("project-member and operator MCP tools", () => {
           userReports: 1,
           founderReports: 1,
           operatorReports: 1,
+          mcpReports: 1,
           artifactCount: 1,
         }
       },
@@ -636,7 +642,7 @@ describe("project-member and operator MCP tools", () => {
     expect(result.structuredContent).toMatchObject({
       ok: true,
       cycleKey: null,
-      counts: { publicReports: 1, userReports: 1, founderReports: 1, operatorReports: 1, artifactCount: 1 },
+      counts: { publicReports: 1, userReports: 1, founderReports: 1, operatorReports: 1, mcpReports: 1, artifactCount: 1 },
     })
   })
 

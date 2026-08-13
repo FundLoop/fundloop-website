@@ -497,3 +497,9 @@ enabled = true
 verify_jwt = false
 entrypoint = "./functions/stripe-pay-by-bank-webhook/index.ts"
 import_map = "./functions/deno.json"
+
+[functions.monthly-report-publication]
+enabled = true
+verify_jwt = false
+entrypoint = "./functions/monthly-report-publication/index.ts"
+import_map = "./functions/deno.json"
