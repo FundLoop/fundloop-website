@@ -99,4 +99,14 @@ describe("Supabase deployment replay contract", () => {
     expect(failureSmoke).toContain("Invalid migration was rejected")
     expect(failureSmoke).toContain("20260811120000")
   })
+
+  it("always reports the required PR dry-run check and gates scoped execution", () => {
+    expect(deployWorkflow).toContain("pull_request:\n    branches:\n      - dev\n      - main\n  push:")
+    expect(deployWorkflow).toContain("name: Classify Supabase change")
+    expect(deployWorkflow).toContain("node scripts/classify-supabase-drift-push.mjs deploy")
+    expect(deployWorkflow).toContain("name: Supabase execution")
+    expect(deployWorkflow).toContain("needs.scope.outputs.should_run == 'true'")
+    expect(deployWorkflow).toContain("name: Supabase ${{ github.event_name == 'pull_request' && 'dry-run'")
+    expect(deployWorkflow).toContain('if [[ "${SHOULD_RUN}" == "false" && "${SUPABASE_RESULT}" != "skipped" ]]')
+  })
 })

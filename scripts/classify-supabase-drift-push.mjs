@@ -36,11 +36,24 @@ const globRegex = (glob) => {
 }
 const deployPathMatchers = SUPABASE_DEPLOY_PATH_GLOBS.map(globRegex)
 
+export function isSupabaseDeployPath(file) {
+  return deployPathMatchers.some((matcher) => matcher.test(file))
+}
+
+export function shouldRunSupabaseDeploy(paths) {
+  return paths.some(isSupabaseDeployPath)
+}
+
 export function shouldObservePush(paths) {
-  return !paths.some((file) => deployPathMatchers.some((matcher) => matcher.test(file)))
+  return !shouldRunSupabaseDeploy(paths)
 }
 
 if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
   const paths = readFileSync(0, "utf8").split("\n").filter(Boolean)
-  process.stdout.write(shouldObservePush(paths) ? "true\n" : "false\n")
+  const mode = process.argv[2] ?? "observe"
+  if (!new Set(["deploy", "observe"]).has(mode)) {
+    throw new Error(`Unsupported classification mode: ${mode}`)
+  }
+  const result = mode === "deploy" ? shouldRunSupabaseDeploy(paths) : shouldObservePush(paths)
+  process.stdout.write(result ? "true\n" : "false\n")
 }
