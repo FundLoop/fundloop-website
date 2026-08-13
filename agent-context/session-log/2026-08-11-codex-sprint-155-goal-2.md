@@ -69,3 +69,15 @@
 - Validation: focused Vitest passed `8/8`; scoped ESLint, Node 22 typecheck, JavaScript syntax checks, and `git diff --check` passed. Per the user boundary, Supabase was kept stopped and no Docker, reset, serve, wallet, matrix, provider, hosted, or remote command ran.
 - Reflections: CLI reset completion and a non-5xx REST-root response cannot certify that PostgREST has loaded current tables and columns. A narrow data-contract probe gives the runner a truthful, classified timeout without weakening product assertions or retrying destructive resets.
 - Next steps: with explicit permission to restart local Supabase, run one focused wallet startup/allocation transition. Only if green, run one complete Feature #118 matrix; only if that is green, run the Node 22 `CI=1 pnpm check`, then stop the task-owned local stack.
+
+### session v7: close the reporting function delivery inventory (#181)
+
+- Timestamp: 2026-08-13T14:48:00Z
+- Agent: Codex (`issue-implementer` integration fix)
+- Branch: `codex/155-goal-2-integrated-evidence`
+- Head before commit: `e0e1eee075df552358116ca06ccecdab095e5159`
+- Objective: make branch-current Supabase delivery and source-readback contracts include the new `monthly-report-publication` Edge Function.
+- Actions: audited every tracked exact `62` function claim. Updated only the two tests that derive the current deployable inventory to expect 63, asserted that `monthly-report-publication` is explicitly inventoried, and proved its source closure contains the entrypoint, typed reporting contract, and shared command runtime. Preserved historical Dev certification documents and Goal 1 evidence at their observed 62-function snapshots, and preserved the environment-manifest test's intentionally synthetic 62-item fixture.
+- Validation: focused delivery, source-readback, environment-manifest, and production-readiness manifest Vitest passed `118/118`; scoped ESLint, Node 22 typecheck, verifier syntax checks, and `git diff --check` passed. Supabase remained stopped; no Docker, local provider, reset, serve, wallet, matrix, or full-check command ran.
+- Reflections: candidate-derived inventory assertions must advance with a new deployable entrypoint, while signed or timestamped environment evidence must remain immutable until a new hosted observation is authorized and performed.
+- Next steps: retain the v6 permission gate before restarting local Supabase or running wallet/matrix validation. Hosted deployment inventory remains separate work and is not claimed by this local contract update.
