@@ -16,6 +16,7 @@ const functionEntry = (index: number) => ({
   remoteStatus: "ACTIVE",
 })
 const stable = (value: any): string => Array.isArray(value) ? `[${value.map(stable).join(",")}]` : value && typeof value === "object" ? `{${Object.keys(value).sort().map((key) => `${JSON.stringify(key)}:${stable(value[key])}`).join(",")}}` : JSON.stringify(value)
+const digest = (value: any) => createHash("sha256").update(stable(value)).digest("hex")
 const migrationDigest = createHash("sha256").update(stable([migration])).digest("hex")
 const schema = {
   environment: "dev", projectRef: "a".repeat(20), algorithm: "pg17-public-schema-normalized-v2", postgresMajor: 17,
@@ -27,6 +28,18 @@ const schema = {
 const functions = { candidateGitSha: "2".repeat(40), environment: "dev", projectRef: "a".repeat(20), functions: Array.from({ length: 62 }, (_, index) => functionEntry(index)) }
 const context = { gitSha: "2".repeat(40), githubRunId: "200", githubRunAttempt: 3, observedAt: "2026-08-12T20:00:00Z", trigger: "push", mode: "drift" }
 const smoke = buildSafeSmokeEvidence({ environment: "dev", projectRef: "a".repeat(20), observationGitSha: context.gitSha, statusCode: 401, observedAt: "2026-08-12T19:59:00Z" })
+
+const restoreManifestIntegrity = (manifest: any) => {
+  manifest.evidence = [
+    { evidenceId: "migration-deployment", sha256: digest(manifest.certifiedDeployment) },
+    { evidenceId: "schema-parity", sha256: digest({ migrations: manifest.migrations, schema: manifest.schema, runtimeControls: manifest.runtimeControls, certifiedDeployment: manifest.certifiedDeployment }) },
+    { evidenceId: "function-parity", sha256: digest(manifest.functions) },
+    { evidenceId: "runtime-prerequisites", sha256: digest(manifest.prerequisites) },
+  ]
+  const { manifestSha256: _ignored, ...payload } = manifest
+  manifest.manifestSha256 = digest(payload)
+  return manifest
+}
 
 describe("immutable Supabase environment manifests", () => {
   it("preserves distinct certified deployment and observation provenance", () => {
@@ -41,6 +54,29 @@ describe("immutable Supabase environment manifests", () => {
     const deployFunctions = { ...functions, candidateGitSha: deployContext.gitSha }
     const deploySmoke = buildSafeSmokeEvidence({ environment: "dev", projectRef: schema.projectRef, observationGitSha: deployContext.gitSha, statusCode: 401, observedAt: "2026-08-12T19:59:00Z" })
     expect(verifyEnvironmentManifest(buildEnvironmentManifest({ schema, functions: deployFunctions, smoke: deploySmoke, context: deployContext }))).toEqual({ ok: true, blockers: [] })
+  })
+
+  it("requires semantic RFC3339 timestamps when building and independently verifying manifests", () => {
+    for (const recordedAt of ["2026-08-12T23:28:57.708226+00:00", "2026-08-12T23:28:57Z"]) {
+      const manifest = buildEnvironmentManifest({ schema: { ...schema, certifiedDeployment: { ...schema.certifiedDeployment, recordedAt } }, functions, smoke, context: { ...context, observedAt: "2026-08-13T00:00:00Z" } })
+      expect(verifyEnvironmentManifest(manifest), recordedAt).toEqual({ ok: true, blockers: [] })
+    }
+
+    for (const recordedAt of ["0", "2026-04-31T23:59:59Z", "2026-08-12T23:28:57", "2026-12-31T24:00:00Z"]) {
+      const invalidSchema = { ...schema, certifiedDeployment: { ...schema.certifiedDeployment, recordedAt } }
+      expect(() => buildEnvironmentManifest({ schema: invalidSchema, functions, smoke, context }), recordedAt).toThrow("deployment-time")
+
+      const selfConsistent = restoreManifestIntegrity(structuredClone(buildEnvironmentManifest({ schema, functions, smoke, context })))
+      selfConsistent.certifiedDeployment.recordedAt = recordedAt
+      restoreManifestIntegrity(selfConsistent)
+      expect(verifyEnvironmentManifest(selfConsistent), recordedAt).toEqual({ ok: false, blockers: ["deployment-time"] })
+    }
+  })
+
+  it("applies the same timestamp contract to observation and hosted-smoke evidence", () => {
+    expect(() => buildEnvironmentManifest({ schema, functions, smoke, context: { ...context, observedAt: "2026-08-12T20:00:00" } })).toThrow("observation-time")
+    const timezoneLessSmoke = buildSafeSmokeEvidence({ environment: "dev", projectRef: schema.projectRef, observationGitSha: context.gitSha, statusCode: 401, observedAt: "2026-08-12T19:59:00" })
+    expect(() => buildEnvironmentManifest({ schema, functions, smoke: timezoneLessSmoke, context })).toThrow("runtime-smoke")
   })
 
   it("fails precisely for changed, reordered, missing, stale, and enabled assets", () => {

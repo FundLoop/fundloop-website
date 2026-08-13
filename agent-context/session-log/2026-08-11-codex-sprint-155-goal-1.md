@@ -1404,3 +1404,50 @@ evidence needs both to remain deterministic across runtimes.
 
 - Return the amended localized commit to independent validation and keep hosted
   observation in the orchestrator-owned publish path.
+
+### session v30: Enforce final-manifest timestamp semantics (#161)
+
+- Timestamp: 2026-08-12T23:41:18-04:00
+- Agent: Codex
+- Branch: `codex/155-goal-1-manifest-provenance-routing-recovery`
+- Head: `f496642d796d5db4693cef6f1cd52489846649d8`
+
+#### Objective
+
+Make final environment-manifest composition and independent verification enforce the
+same semantic RFC3339-with-timezone timestamp contract as immutable database evidence.
+
+#### Actions Taken
+
+- Reused the shared strict timestamp predicate for certified deployment provenance,
+  observation metadata, and hosted-smoke evidence in the final manifest path.
+- Refused manifest composition with invalid deployment or observation timestamps and
+  returned precise independent-verifier blockers without cascading chronology noise.
+- Added self-consistent adversarial-manifest coverage for numeric shorthand, impossible
+  dates, timezone-less timestamps, and hour 24, plus PostgreSQL microsecond-offset and
+  ISO `Z` positives.
+- Audited every final-manifest timestamp comparison so chronology checks only run after
+  the relevant timestamps satisfy the shared semantic contract.
+
+#### Tests And Validation Notes
+
+- Passed on Node 22.23.2: focused environment-manifest, delivery-parity, and function
+  source-readback suites, 55/55.
+- Passed: full repository ESLint, full TypeScript typecheck, both affected Node script syntax
+  checks, Supabase deploy/drift workflow YAML parse, and `git diff --check`.
+- The first focused test run exposed a positive fixture whose deployment time followed
+  its observation; the fixture was corrected and the complete validation set rerun.
+- The first YAML command used an unsupported Ruby 2.6 keyword; the same two workflows
+  passed the compatible parser invocation immediately afterward.
+- No workflow dispatch, remote Supabase or Production mutation, status change, #162
+  work, credential prompt, reset, or value-flow activation occurred.
+
+#### Reflections
+
+A self-consistent digest proves integrity, not timestamp semantics. Producers and
+independent consumers must enforce the same wire, calendar, clock, and timezone rules.
+
+#### Suggested Next Steps
+
+- Publish this single review-fix commit to PR #202, reply with exact validation evidence,
+  and resolve only the addressed timestamp-contract thread.
