@@ -9,3 +9,15 @@
 - Validation: focused Vitest `8/8`, Node 22 typecheck, JS syntax and diff checks passed. Three fresh replay/start all-five-persona runs passed with every checkpoint and cleanup clean (`persona-20260813T114610047Z-73ef1742`, `persona-20260813T115629164Z-8c29c1b6`, `persona-20260813T120609029Z-cbd25426`). Forced self-test passed. The broader Feature #118 matrix proved fresh replay, all-five-persona pass, and final zero-residue reset, then remained red in the existing local-wallet fixture with `epoch_project_package_payment_rail_claim_mismatch`; that batch-level failure is assigned to #165/#186 and is not represented as hosted evidence.
 - Reflections: local CLI reset can return before healthy Auth/Storage routing and can leave Kong bound to stale container addresses. Docker health alone is insufficient; exact HTTP readiness and app identity must gate fixture creation.
 - Next steps: implement #165's exact Pay by Bank fixture/provenance coverage, then #181/#186; rerun the complete Feature #118 matrix before independent validation or Goal publication.
+
+### session v2: prove exact EUR Pay by Bank allocation and replay (#165)
+
+- Timestamp: 2026-08-13T12:34:00Z
+- Agent: Codex (`issue-implementer` handoff)
+- Branch: `codex/155-goal-2-integrated-evidence`
+- Head before commit: `50051b95d34346173c8fa361a558fd7db2cbb7ae`
+- Objective: carry one authoritative EUR Pay by Bank settlement through native/functional valuation, fee and source provenance, v2 allocation, reproducible close, and refund invalidation without enabling value flow.
+- Actions: converted the real Pay by Bank provider/ledger/package fixture to EUR; added a closed-window v2 preview, lock, calculation replay, close replay, cap/top-up and immutable-root assertions; made invalidation exactly once; repaired the local wallet fixture's missing settled-rail claim; and added a forward-only v2 calculation replay wrapper that returns an identical calculated run while rejecting changed hashes.
+- Validation: fresh local migration replay applied the new migration. Exact EUR SQL and the browser allocation fixture passed with rollback and no residue. Focused Vitest passed `16/16`; Node 22 typecheck and scoped ESLint passed. All evidence is local fixture evidence, not hosted/provider certification; Production and value-flow controls remained disabled.
+- Reflections: the batch failure was a truthful integrity-trigger rejection of an incomplete browser fixture. Integrated EUR coverage then exposed a separate product defect: identical v2 result replay was rejected after the manifest advanced to `calculated`. Checking the immutable existing result before invoking the once-only calculator preserves conflict safety and restores idempotency.
+- Next steps: independent validation remains pending. Implement #181 and #186 on this branch, then rerun the complete Feature #118 matrix and the Goal-level adversarial gate before publication.

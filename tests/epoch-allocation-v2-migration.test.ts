@@ -2,6 +2,7 @@ import { readFileSync } from "node:fs"
 import { describe, expect, it } from "vitest"
 
 const sql = readFileSync("supabase/migrations/20260811120000_epoch_allocation_policy_v2.sql", "utf8")
+const replaySql = readFileSync("supabase/migrations/20260813123000_epoch_allocation_v2_replay.sql", "utf8")
 
 describe("epoch allocation v2 migration", () => {
   it("preserves v1 and binds a governed selected cap to immutable v2 artifacts", () => {
@@ -40,5 +41,12 @@ describe("epoch allocation v2 migration", () => {
     expect(sql).toContain("CASE WHEN package.user_count>=3 THEN package.cap_multiple ELSE NULL END")
     expect(sql).toContain("CASE WHEN package.user_count>=3 THEN package.harvested_unclaimed_minor ELSE NULL END")
     expect(sql).toContain("production_enabled=false")
+  })
+
+  it("replays an exact calculated result and rejects a changed result hash", () => {
+    expect(replaySql).toContain("record_funded_epoch_allocation_v2_once")
+    expect(replaySql).toContain("SELECT run.* INTO v_existing")
+    expect(replaySql).toContain("v_existing.result_hash<>p_command->>'resultHash'")
+    expect(replaySql).toContain("epoch_allocation_result_conflict")
   })
 })
