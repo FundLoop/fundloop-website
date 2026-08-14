@@ -38,6 +38,10 @@ const assertExactKeys = (value, expectedKeys, label) => {
   const expected = [...expectedKeys].sort()
   assert(JSON.stringify(actual) === JSON.stringify(expected), `${label} has unknown or missing fields`)
 }
+const assertStringArray = (value, label) => {
+  assert(Array.isArray(value) && value.length > 0, `${label} cannot be empty`)
+  assert(value.every((item) => typeof item === "string" && item.trim() === item && item.length > 0), `${label} must contain only nonempty strings`)
+}
 
 export function verifyCounselReviewPacket({ packet, repoRoot }) {
   assertExactKeys(packet, [
@@ -50,6 +54,9 @@ export function verifyCounselReviewPacket({ packet, repoRoot }) {
   assert(packet.effectiveDate === null, "draft counsel packet cannot have an effective date")
   assert(packet.productionAuthority === false, "draft counsel packet cannot grant production authority")
   assert(packet.valueFlowAuthority === false, "draft counsel packet cannot grant value-flow authority")
+  assert(typeof packet.entity === "string" && packet.entity.length > 0, "packet entity is required")
+  assert(typeof packet.reviewJurisdiction === "string" && packet.reviewJurisdiction.length > 0, "packet review jurisdiction is required")
+  assert(typeof packet.preparedAt === "string" && /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z$/.test(packet.preparedAt), "packet preparedAt must be UTC RFC3339 seconds")
   assert(/^fundloop-ca-counsel-review-\d{4}-\d{2}-\d{2}-v\d+$/.test(packet.packetId), "invalid packet id")
 
   const artifactPaths = new Set()
@@ -58,6 +65,8 @@ export function verifyCounselReviewPacket({ packet, repoRoot }) {
     for (const item of group) {
       assertExactKeys(item, group === packet.sourceArtifacts ? ["path", "role", "sha256"] : ["path", "control", "sha256"], `evidence item ${item?.path ?? "unknown"}`)
       assert(typeof item.path === "string" && !item.path.startsWith("/") && !item.path.includes(".."), "unsafe evidence path")
+      const description = group === packet.sourceArtifacts ? item.role : item.control
+      assert(typeof description === "string" && description.trim() === description && description.length > 0, `evidence description is invalid: ${item.path}`)
       assert(!artifactPaths.has(item.path), `duplicate evidence path: ${item.path}`)
       artifactPaths.add(item.path)
       const bytes = readFileSync(resolve(repoRoot, item.path))
@@ -77,16 +86,18 @@ export function verifyCounselReviewPacket({ packet, repoRoot }) {
       "approver", "decision", "conditions", "decidedAt", "engineeringDisposition", "reReviewTriggers",
     ], `decision ${decision?.id ?? "unknown"}`)
     assertExactKeys(decision.approver, ["name", "professionalStatus", "engagementReference"], `decision ${decision.id} approver`)
+    assert(typeof decision.id === "string" && typeof decision.title === "string" && decision.title.trim().length > 0, "decision identity is invalid")
     assert(decision.status === "pending_qualified_counsel", `${decision.id} must remain pending qualified counsel`)
     assert(decision.engineeringDisposition === "production_blocked_pending_qualified_counsel", `${decision.id} must block production`)
-    assert(Array.isArray(decision.sourceArtifacts) && decision.sourceArtifacts.length > 0, `${decision.id} needs draft sources`)
-    assert(Array.isArray(decision.runtimeEvidence) && decision.runtimeEvidence.length > 0, `${decision.id} needs runtime evidence`)
+    assertStringArray(decision.sourceArtifacts, `${decision.id} draft sources`)
+    assertStringArray(decision.runtimeEvidence, `${decision.id} runtime evidence`)
+    assertStringArray(decision.authoritativeSources, `${decision.id} authoritative sources`)
+    assertStringArray(decision.reReviewTriggers, `${decision.id} re-review triggers`)
     assert(decision.sourceArtifacts.every((path) => artifactPaths.has(path)), `${decision.id} references an unknown draft source`)
     assert(decision.runtimeEvidence.every((path) => artifactPaths.has(path)), `${decision.id} references unknown runtime evidence`)
-    assert(Array.isArray(decision.authoritativeSources) && decision.authoritativeSources.every((url) => /^https:\/\//.test(url)), `${decision.id} has invalid sources`)
+    assert(decision.authoritativeSources.every((url) => /^https:\/\//.test(url)), `${decision.id} has invalid sources`)
     assert(decision.approver?.name === null && decision.approver?.professionalStatus === null && decision.approver?.engagementReference === null, `${decision.id} must not fabricate an approver`)
     assert(decision.decision === null && decision.conditions === null && decision.decidedAt === null, `${decision.id} must not fabricate a conclusion`)
-    assert(Array.isArray(decision.reReviewTriggers) && decision.reReviewTriggers.length > 0, `${decision.id} needs re-review triggers`)
   }
 
   assert(isSha256(packet.packetSha256), "packet self digest is invalid")

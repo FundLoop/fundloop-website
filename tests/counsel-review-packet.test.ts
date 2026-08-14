@@ -56,6 +56,20 @@ describe("qualified counsel review packet", () => {
     approverLevel.decisions[0].approver.licenseVerified = true
     approverLevel.packetSha256 = counselReviewPacketDigest(approverLevel)
     expect(() => verifyCounselReviewPacket({ packet: approverLevel, repoRoot })).toThrow("decision ownership-refunds-escrow approver has unknown or missing fields")
+
+    const nestedArray = loadPacket()
+    nestedArray.decisions[0].reReviewTriggers.push({ qualifiedCounselApproval: true, reviewer: "Invented Reviewer" })
+    nestedArray.packetSha256 = counselReviewPacketDigest(nestedArray)
+    expect(() => verifyCounselReviewPacket({ packet: nestedArray, repoRoot })).toThrow("re-review triggers must contain only nonempty strings")
+  })
+
+  it("rejects non-string nested evidence references and sources", () => {
+    for (const field of ["sourceArtifacts", "runtimeEvidence", "authoritativeSources"] as const) {
+      const packet = loadPacket()
+      packet.decisions[0][field].push({ path: "invented", approved: true })
+      packet.packetSha256 = counselReviewPacketDigest(packet)
+      expect(() => verifyCounselReviewPacket({ packet, repoRoot })).toThrow("must contain only nonempty strings")
+    }
   })
 
   it("rejects missing decisions and unknown runtime mappings", () => {
