@@ -333,3 +333,15 @@
 - Validation: focused source-readback and delivery-parity suites, scoped ESLint, Node 22 typecheck, Node syntax, workflow YAML, and `git diff --check` follow this entry. The failed CI-owned run applied the database migrations and deployed all 64 functions, then failed closed before smoke/manifest/completion; no retry, Production action, payout, or real-value flow occurred.
 - Reflections: the provider chooses the repository root when a function imports app modules and the `supabase/` root when a closure stays inside Supabase. Canonicalization must recognize both exact provider roots without accepting arbitrary prefixes or weakening path provenance.
 - Next steps: publish one consolidated recovery PR to `dev`, use the existing Codex review policy without serial recovery PRs, and require a fresh merged-SHA deploy plus read-only drift manifest before #188 advances. Keep #205 blocked pending Cubid #77's dev merge.
+
+### session v29: document the exact provider archive roots (#188)
+
+- Timestamp: 2026-08-14T05:25:00Z
+- Agent: Codex (`sprint-orchestrator` recovery review follow-up)
+- Branch: `codex/155-goal-2-function-readback-recovery`
+- Head before commit: `84c06f6b10ee`
+- Objective: make the deployment runbook match the reviewed source-readback provenance boundary introduced by recovery PR #207.
+- Actions: documented the two exact provider archive roots, the one-way `functions/` to `supabase/functions/` canonicalization, mixed-root alias collision rejection, and continued refusal to normalize arbitrary prefixes or exempt any source path/byte.
+- Validation: Markdown review, focused source-readback tests, scoped lint, and `git diff --check` follow this entry. This documentation-only follow-up does not change deployment behavior or authorize any remote action.
+- Reflections: the verifier and runbook are one security contract; undocumented normalization is operational ambiguity even when implementation and tests are fail-closed.
+- Next steps: push this one review follow-up, reply to and resolve the existing thread without rereview, require exact-head CI, then merge and obtain fresh Dev deployment/drift manifests.

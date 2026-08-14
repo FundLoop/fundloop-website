@@ -196,9 +196,13 @@ status, project ref, environment, candidate Git SHA, and observation time. The
 reader rejects redirects and non-200 responses without logging response bodies,
 validates project/function identifiers, bounds the response, file count, and each
 file, and rejects absolute/traversal paths, symlink/non-regular markers, duplicate or
-case/Unicode-colliding paths, and missing/extra closure members. Only the known
-`fundloop-website/` archive prefix is stripped; no source path or byte is allowlisted
-out of comparison. The contract follows Supabase CLI tag `v2.113.0`,
+case/Unicode-colliding paths, and missing/extra closure members. The reader recognizes
+exactly two provider archive roots: it strips the known `fundloop-website/` monorepo
+prefix, and it maps an unprefixed `functions/` path from a closure rooted by the CLI at
+`supabase/` to the reviewed repository path `supabase/functions/`. A repo-root and
+Supabase-root alias of the same file is rejected as a duplicate/collision; arbitrary
+prefixes are not normalized. No source path or byte is allowlisted out of comparison.
+The contract follows Supabase CLI tag `v2.113.0`,
 `apps/cli-go/internal/functions/download/download.go` (`readForm` and `getPartPath`).
 This is multipart source read-back, not ZIP extraction. The database verifier
 independently replays all tracked migrations into a randomized
