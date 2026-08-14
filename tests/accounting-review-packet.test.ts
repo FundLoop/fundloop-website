@@ -25,7 +25,7 @@ describe("accountant/bookkeeping review packet", () => {
   })
 
   it("rejects unbalanced native or functional journals", () => {
-    for (const field of ["nativeMinor", "functionalUsdCent"] as const) {
+    for (const field of ["nativeMinor", "functionalUsdTenThousandth"] as const) {
       const example = load("accounting-review-example.json")
       example.events[0].postings[0][field] = "9999"
       expect(() => verifyAccountingReviewExample(example)).toThrow("not balanced in native and functional values")
@@ -33,11 +33,28 @@ describe("accountant/bookkeeping review packet", () => {
   })
 
   it("rejects broken E-3, target-funding, and top-up conservation", () => {
-    for (const field of ["e3HarvestedUsdCent", "independentCurrentFundingUsdCent", "capLimitedTopUpUsdCent"] as const) {
+    for (const field of ["e3HarvestedUsdTenThousandth", "independentCurrentFundingUsdTenThousandth", "capLimitedTopUpUsdTenThousandth"] as const) {
       const example = load("accounting-review-example.json")
       example.allocationMemorandum[field] = "1"
       expect(() => verifyAccountingReviewExample(example)).toThrow("conservation failed")
     }
+  })
+
+  it("rejects missing trial balances, placeholder events, and wrong FX", () => {
+    const noTrial = load("accounting-review-example.json")
+    noTrial.trialBalanceCheckpoints = []
+    expect(() => verifyAccountingReviewExample(noTrial)).toThrow("trial-balance checkpoints are incomplete")
+    const renamed = load("accounting-review-example.json")
+    renamed.events[0].id = "placeholder"
+    expect(() => verifyAccountingReviewExample(renamed)).toThrow("event set is incomplete or reordered")
+    const fx = load("accounting-review-example.json")
+    fx.events[0].postings[0].functionalUsdTenThousandth = "10000"
+    fx.events[0].postings[1].functionalUsdTenThousandth = "10000"
+    fx.events[3].postings[0].functionalUsdTenThousandth = "10000"
+    fx.events[3].postings[1].functionalUsdTenThousandth = "10000"
+    fx.trialBalanceCheckpoints[0].balances.find((row: { account: string }) => row.account === "custody-control").functionalUsdTenThousandth = "10000"
+    fx.trialBalanceCheckpoints[0].balances.find((row: { account: string }) => row.account === "unclassified-source-control").functionalUsdTenThousandth = "-10000"
+    expect(() => verifyAccountingReviewExample(fx)).toThrow("FX conversion")
   })
 
   it("rejects fabricated approvals and recomputed unknown authority fields", () => {

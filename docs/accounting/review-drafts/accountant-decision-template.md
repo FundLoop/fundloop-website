@@ -27,4 +27,3 @@ tax and records consequences, evidence, conditions, and re-review triggers.
 The reviewer must separately approve or reject the example's labels. Mathematical
 balance proves only arithmetic; it does not establish revenue, liability, custody,
 principal-agent, tax, reserve, abandoned-property, or ownership treatment.
-

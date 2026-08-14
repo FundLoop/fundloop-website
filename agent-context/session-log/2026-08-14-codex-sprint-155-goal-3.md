@@ -196,3 +196,51 @@ qualified accountant/bookkeeper can decide against exact repository evidence.
 - Commit Task #169 and run independent issue validation.
 - Keep #184 blocked until real qualified counsel and accountant records exist for
   the exact packet hashes.
+
+### session v5: Correct the accountant packet to runtime and lifecycle evidence
+
+- Timestamp: 2026-08-14T06:54:41Z
+- Agent: Codex
+- Branch: codex/155-goal-3-governance-cutover
+- Head before commit: 216259f
+
+#### Objective
+
+Resolve the independent Task #169 validator's fee-runtime, allocation-v2,
+lifecycle-example, verifier, and whitespace findings.
+
+#### Actions Taken
+
+- Corrected the fee walkthrough to the hashed runtime order: 1% project fee, then
+  2.5% base fee on the remainder, preserving four-decimal USD precision and the
+  persisted provider EUR gross/30-minor fee/net evidence.
+- Expanded the memorandum with exact E-3 origin/target cycles, native and functional
+  source values, timely protected and released claims, independent current funding,
+  preserved initial claims, score-discount pool, cap-limited top-up, and carry-out.
+- Added explicit non-posting expiry/carry and balanced-but-unposted opening-balance
+  illustrations.
+- Required exact lifecycle event identities, both trial-balance checkpoints, the
+  1.10 FX conversion, fee-sequence values, native/functional conservation, and
+  opening/expiry denial in the verifier.
+- Added adversarial regressions for empty checkpoints, placeholder events, and a
+  self-consistent but incorrect FX conversion; removed the blank EOF finding.
+
+#### Validation Notes
+
+- Passed Node 22 focused Vitest: 1 file, 9 tests.
+- Passed focused ESLint, full TypeScript typecheck, canonical packet verification,
+  and combined `git diff --check 216259f^`.
+- Corrected packet SHA-256:
+  `c94186608ca26be4f7643693fa16b64a0e4823559cc09b8ed720c3ee4e8820f8`.
+- No Supabase, Docker, opening-balance posting, provider, hosted, Production,
+  payout, cutover, or value-flow command was run.
+
+#### Reflections
+
+- Accounting review examples must match the exact runtime fee order and preserve
+  sufficient functional precision; a rounded cents-only example can conceal a real
+  treatment mismatch.
+
+#### Suggested Next Steps
+
+- Commit and rerun independent Task #169 validation at the corrected head.

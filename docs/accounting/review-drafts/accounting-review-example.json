@@ -6,41 +6,44 @@
   "nativeCurrency": "EUR",
   "nativeUnit": "minor",
   "functionalCurrency": "USD",
-  "functionalUnit": "cent",
+  "functionalUnit": "usd-ten-thousandth",
   "fxUsdPerNativeUnit": "1.10",
+  "providerEvidence": { "grossNativeMinor": "10000", "providerFeeNativeMinor": "30", "netNativeMinor": "9970", "balanceStatus": "available" },
   "events": [
     {
       "id": "settled-receipt",
       "decisionRefs": ["contribution-recognition-and-principal-agent", "custody-and-safeguarding", "fx-and-token-measurement"],
       "postings": [
-        { "account": "custody-control", "side": "debit", "nativeMinor": "10000", "functionalUsdCent": "11000" },
-        { "account": "unclassified-source-control", "side": "credit", "nativeMinor": "10000", "functionalUsdCent": "11000" }
+        { "account": "custody-control", "side": "debit", "nativeMinor": "10000", "functionalUsdTenThousandth": "1100000" },
+        { "account": "unclassified-source-control", "side": "credit", "nativeMinor": "10000", "functionalUsdTenThousandth": "1100000" }
       ]
     },
     {
       "id": "review-fee-split",
       "decisionRefs": ["fees-gross-net-and-tax", "contribution-recognition-and-principal-agent"],
       "postings": [
-        { "account": "gross-review-control", "side": "debit", "nativeMinor": "10000", "functionalUsdCent": "11000" },
-        { "account": "base-fee-review-control", "side": "credit", "nativeMinor": "250", "functionalUsdCent": "275" },
-        { "account": "distributable-review-control", "side": "credit", "nativeMinor": "9750", "functionalUsdCent": "10725" }
+        { "account": "gross-review-control", "side": "debit", "nativeMinor": "10000", "functionalUsdTenThousandth": "1100000" },
+        { "account": "project-fee-review-control", "side": "credit", "nativeMinor": "100", "functionalUsdTenThousandth": "11000" },
+        { "account": "base-fee-review-control", "side": "credit", "nativeMinor": "248", "functionalUsdTenThousandth": "27225" },
+        { "account": "distributable-review-control", "side": "credit", "nativeMinor": "9652", "functionalUsdTenThousandth": "1061775" }
       ]
     },
     {
       "id": "reverse-review-fee-split",
       "decisionRefs": ["refunds-disputes-reserves-and-losses", "fees-gross-net-and-tax"],
       "postings": [
-        { "account": "base-fee-review-control", "side": "debit", "nativeMinor": "250", "functionalUsdCent": "275" },
-        { "account": "distributable-review-control", "side": "debit", "nativeMinor": "9750", "functionalUsdCent": "10725" },
-        { "account": "gross-review-control", "side": "credit", "nativeMinor": "10000", "functionalUsdCent": "11000" }
+        { "account": "project-fee-review-control", "side": "debit", "nativeMinor": "100", "functionalUsdTenThousandth": "11000" },
+        { "account": "base-fee-review-control", "side": "debit", "nativeMinor": "248", "functionalUsdTenThousandth": "27225" },
+        { "account": "distributable-review-control", "side": "debit", "nativeMinor": "9652", "functionalUsdTenThousandth": "1061775" },
+        { "account": "gross-review-control", "side": "credit", "nativeMinor": "10000", "functionalUsdTenThousandth": "1100000" }
       ]
     },
     {
       "id": "reverse-settled-receipt",
       "decisionRefs": ["refunds-disputes-reserves-and-losses", "contribution-recognition-and-principal-agent"],
       "postings": [
-        { "account": "unclassified-source-control", "side": "debit", "nativeMinor": "10000", "functionalUsdCent": "11000" },
-        { "account": "custody-control", "side": "credit", "nativeMinor": "10000", "functionalUsdCent": "11000" }
+        { "account": "unclassified-source-control", "side": "debit", "nativeMinor": "10000", "functionalUsdTenThousandth": "1100000" },
+        { "account": "custody-control", "side": "credit", "nativeMinor": "10000", "functionalUsdTenThousandth": "1100000" }
       ]
     }
   ],
@@ -48,21 +51,23 @@
     {
       "afterEvent": "review-fee-split",
       "balances": [
-        { "account": "custody-control", "nativeMinor": "10000", "functionalUsdCent": "11000" },
-        { "account": "unclassified-source-control", "nativeMinor": "-10000", "functionalUsdCent": "-11000" },
-        { "account": "gross-review-control", "nativeMinor": "10000", "functionalUsdCent": "11000" },
-        { "account": "base-fee-review-control", "nativeMinor": "-250", "functionalUsdCent": "-275" },
-        { "account": "distributable-review-control", "nativeMinor": "-9750", "functionalUsdCent": "-10725" }
+        { "account": "custody-control", "nativeMinor": "10000", "functionalUsdTenThousandth": "1100000" },
+        { "account": "unclassified-source-control", "nativeMinor": "-10000", "functionalUsdTenThousandth": "-1100000" },
+        { "account": "gross-review-control", "nativeMinor": "10000", "functionalUsdTenThousandth": "1100000" },
+        { "account": "project-fee-review-control", "nativeMinor": "-100", "functionalUsdTenThousandth": "-11000" },
+        { "account": "base-fee-review-control", "nativeMinor": "-248", "functionalUsdTenThousandth": "-27225" },
+        { "account": "distributable-review-control", "nativeMinor": "-9652", "functionalUsdTenThousandth": "-1061775" }
       ]
     },
     {
       "afterEvent": "reverse-settled-receipt",
       "balances": [
-        { "account": "custody-control", "nativeMinor": "0", "functionalUsdCent": "0" },
-        { "account": "unclassified-source-control", "nativeMinor": "0", "functionalUsdCent": "0" },
-        { "account": "gross-review-control", "nativeMinor": "0", "functionalUsdCent": "0" },
-        { "account": "base-fee-review-control", "nativeMinor": "0", "functionalUsdCent": "0" },
-        { "account": "distributable-review-control", "nativeMinor": "0", "functionalUsdCent": "0" }
+        { "account": "custody-control", "nativeMinor": "0", "functionalUsdTenThousandth": "0" },
+        { "account": "unclassified-source-control", "nativeMinor": "0", "functionalUsdTenThousandth": "0" },
+        { "account": "gross-review-control", "nativeMinor": "0", "functionalUsdTenThousandth": "0" },
+        { "account": "project-fee-review-control", "nativeMinor": "0", "functionalUsdTenThousandth": "0" },
+        { "account": "base-fee-review-control", "nativeMinor": "0", "functionalUsdTenThousandth": "0" },
+        { "account": "distributable-review-control", "nativeMinor": "0", "functionalUsdTenThousandth": "0" }
       ]
     }
   ],
@@ -81,17 +86,31 @@
       "reconciliation-close-and-retention",
       "retention-and-unclaimed-property"
     ],
-    "originDistributableUsdCent": "10725",
-    "protectedTimelyClaimsUsdCent": "2680",
-    "e3HarvestedUsdCent": "5363",
-    "carryInUsdCent": "2682",
-    "independentCurrentFundingUsdCent": "2145",
-    "targetInputUsdCent": "10190",
-    "capLimitedTopUpUsdCent": "1608",
-    "carryOutUsdCent": "8582",
+    "originCycleKey": "2026-03",
+    "targetCycleKey": "2026-06",
+    "originDistributableNativeMinor": "10000",
+    "originDistributableUsdTenThousandth": "1061775",
+    "protectedTimelyClaimsNativeMinor": "2500",
+    "protectedTimelyClaimsUsdTenThousandth": "265444",
+    "e3HarvestedNativeMinor": "5000",
+    "e3HarvestedUsdTenThousandth": "530887",
+    "carryInNativeMinor": "2500",
+    "carryInUsdTenThousandth": "265444",
+    "independentCurrentFundingNativeMinor": "2000",
+    "independentCurrentFundingUsdTenThousandth": "212355",
+    "preservedInitialClaimsNativeMinor": "500",
+    "preservedInitialClaimsUsdTenThousandth": "53089",
+    "scoreDiscountPoolNativeMinor": "1500",
+    "scoreDiscountPoolUsdTenThousandth": "159266",
+    "capLimitedTopUpNativeMinor": "1500",
+    "capLimitedTopUpUsdTenThousandth": "159266",
+    "carryOutNativeMinor": "7500",
+    "carryOutUsdTenThousandth": "796331",
     "preservedInitialClaims": true,
     "releasedClaimsReeligible": true
   },
+  "expiryAndCarryIllustration": { "journalPosted": false, "originCycleKey": "2026-03", "targetCycleKey": "2026-06", "protectedClaimsExpire": false, "releasedClaimsReeligible": true, "unclaimedHarvestedAtExactlyE3": true },
+  "openingBalanceIllustration": { "posted": false, "nativeMinorDebit": "10000", "nativeMinorCredit": "10000", "functionalUsdTenThousandthDebit": "1100000", "functionalUsdTenThousandthCredit": "1100000", "classification": "pending-qualified-accountant" },
   "openingBalancePosted": false,
   "productionCutoverAuthorized": false,
   "valueFlowAuthorized": false

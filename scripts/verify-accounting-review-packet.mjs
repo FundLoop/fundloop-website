@@ -24,12 +24,15 @@ const exactKeys = (value, keys, label) => {
   assert(JSON.stringify(Object.keys(value).sort()) === JSON.stringify([...keys].sort()), `${label} has unknown or missing fields`)
 }
 const signed = (posting, field) => BigInt(posting[field]) * (posting.side === "debit" ? 1n : -1n)
+const EVENT_IDS = ["settled-receipt", "review-fee-split", "reverse-review-fee-split", "reverse-settled-receipt"]
 
 export function verifyAccountingReviewExample(example) {
-  exactKeys(example, ["schemaVersion", "status", "scenarioId", "classification", "nativeCurrency", "nativeUnit", "functionalCurrency", "functionalUnit", "fxUsdPerNativeUnit", "events", "trialBalanceCheckpoints", "allocationMemorandum", "openingBalancePosted", "productionCutoverAuthorized", "valueFlowAuthorized"], "accounting example")
+  exactKeys(example, ["schemaVersion", "status", "scenarioId", "classification", "nativeCurrency", "nativeUnit", "functionalCurrency", "functionalUnit", "fxUsdPerNativeUnit", "providerEvidence", "events", "trialBalanceCheckpoints", "allocationMemorandum", "expiryAndCarryIllustration", "openingBalanceIllustration", "openingBalancePosted", "productionCutoverAuthorized", "valueFlowAuthorized"], "accounting example")
   assert(example.schemaVersion === "fundloop.accounting-review-example/v1" && example.status === ACCOUNTING_DRAFT_BANNER, "accounting example must remain a draft")
   assert(example.openingBalancePosted === false && example.productionCutoverAuthorized === false && example.valueFlowAuthorized === false, "accounting example cannot authorize cutover or value flow")
-  assert(Array.isArray(example.events) && example.events.length === 4, "accounting example event set is incomplete")
+  exactKeys(example.providerEvidence, ["grossNativeMinor", "providerFeeNativeMinor", "netNativeMinor", "balanceStatus"], "provider evidence")
+  assert(BigInt(example.providerEvidence.grossNativeMinor) === BigInt(example.providerEvidence.providerFeeNativeMinor) + BigInt(example.providerEvidence.netNativeMinor) && example.providerEvidence.balanceStatus === "available", "provider fee/net evidence is not conserved")
+  assert(Array.isArray(example.events) && JSON.stringify(example.events.map((event) => event.id)) === JSON.stringify(EVENT_IDS), "accounting example event set is incomplete or reordered")
   const balances = new Map()
   const snapshots = new Map()
   const coveredDecisions = new Set()
@@ -39,34 +42,46 @@ export function verifyAccountingReviewExample(example) {
     event.decisionRefs.forEach((id) => coveredDecisions.add(id))
     let native = 0n; let functional = 0n
     for (const posting of event.postings) {
-      exactKeys(posting, ["account", "side", "nativeMinor", "functionalUsdCent"], `posting ${event.id}`)
-      assert(["debit", "credit"].includes(posting.side) && /^\d+$/.test(posting.nativeMinor) && /^\d+$/.test(posting.functionalUsdCent), `${event.id} has invalid posting values`)
-      native += signed(posting, "nativeMinor"); functional += signed(posting, "functionalUsdCent")
+      exactKeys(posting, ["account", "side", "nativeMinor", "functionalUsdTenThousandth"], `posting ${event.id}`)
+      assert(["debit", "credit"].includes(posting.side) && /^\d+$/.test(posting.nativeMinor) && /^\d+$/.test(posting.functionalUsdTenThousandth), `${event.id} has invalid posting values`)
+      native += signed(posting, "nativeMinor"); functional += signed(posting, "functionalUsdTenThousandth")
       const prior = balances.get(posting.account) ?? [0n, 0n]
-      balances.set(posting.account, [prior[0] + signed(posting, "nativeMinor"), prior[1] + signed(posting, "functionalUsdCent")])
+      balances.set(posting.account, [prior[0] + signed(posting, "nativeMinor"), prior[1] + signed(posting, "functionalUsdTenThousandth")])
     }
     assert(native === 0n && functional === 0n, `${event.id} is not balanced in native and functional values`)
     snapshots.set(event.id, new Map([...balances].map(([key, value]) => [key, [...value]])))
   }
+  assert(Array.isArray(example.trialBalanceCheckpoints) && example.trialBalanceCheckpoints.length === 2, "trial-balance checkpoints are incomplete")
   for (const checkpoint of example.trialBalanceCheckpoints) {
     exactKeys(checkpoint, ["afterEvent", "balances"], `checkpoint ${checkpoint?.afterEvent ?? "unknown"}`)
     const actual = snapshots.get(checkpoint.afterEvent); assert(actual, `unknown checkpoint event ${checkpoint.afterEvent}`)
     assert(checkpoint.balances.length === actual.size, `checkpoint ${checkpoint.afterEvent} account count mismatch`)
     for (const row of checkpoint.balances) {
-      exactKeys(row, ["account", "nativeMinor", "functionalUsdCent"], `checkpoint row ${checkpoint.afterEvent}`)
+      exactKeys(row, ["account", "nativeMinor", "functionalUsdTenThousandth"], `checkpoint row ${checkpoint.afterEvent}`)
       const value = actual.get(row.account)
-      assert(value && value[0] === BigInt(row.nativeMinor) && value[1] === BigInt(row.functionalUsdCent), `checkpoint mismatch: ${checkpoint.afterEvent}/${row.account}`)
+      assert(value && value[0] === BigInt(row.nativeMinor) && value[1] === BigInt(row.functionalUsdTenThousandth), `checkpoint mismatch: ${checkpoint.afterEvent}/${row.account}`)
     }
   }
+  const receipt = example.events[0].postings[0]
+  assert(BigInt(receipt.functionalUsdTenThousandth) * 10000n === BigInt(receipt.nativeMinor) * 1100000n, "receipt FX conversion does not match 1.10")
+  const fee = Object.fromEntries(example.events[1].postings.map((posting) => [posting.account, posting]))
+  assert(fee["project-fee-review-control"].functionalUsdTenThousandth === "11000" && fee["base-fee-review-control"].functionalUsdTenThousandth === "27225" && fee["distributable-review-control"].functionalUsdTenThousandth === "1061775", "fee sequence does not match hashed runtime")
   const memo = example.allocationMemorandum
-  exactKeys(memo, ["journalPosted", "decisionRefs", "originDistributableUsdCent", "protectedTimelyClaimsUsdCent", "e3HarvestedUsdCent", "carryInUsdCent", "independentCurrentFundingUsdCent", "targetInputUsdCent", "capLimitedTopUpUsdCent", "carryOutUsdCent", "preservedInitialClaims", "releasedClaimsReeligible"], "allocation memorandum")
+  exactKeys(memo, ["journalPosted", "decisionRefs", "originCycleKey", "targetCycleKey", "originDistributableNativeMinor", "originDistributableUsdTenThousandth", "protectedTimelyClaimsNativeMinor", "protectedTimelyClaimsUsdTenThousandth", "e3HarvestedNativeMinor", "e3HarvestedUsdTenThousandth", "carryInNativeMinor", "carryInUsdTenThousandth", "independentCurrentFundingNativeMinor", "independentCurrentFundingUsdTenThousandth", "preservedInitialClaimsNativeMinor", "preservedInitialClaimsUsdTenThousandth", "scoreDiscountPoolNativeMinor", "scoreDiscountPoolUsdTenThousandth", "capLimitedTopUpNativeMinor", "capLimitedTopUpUsdTenThousandth", "carryOutNativeMinor", "carryOutUsdTenThousandth", "preservedInitialClaims", "releasedClaimsReeligible"], "allocation memorandum")
   assert(memo.journalPosted === false && memo.preservedInitialClaims === true && memo.releasedClaimsReeligible === true, "allocation memorandum boundary is invalid")
   assert(Array.isArray(memo.decisionRefs) && memo.decisionRefs.every((id) => REQUIRED_ACCOUNTING_DECISIONS.includes(id)), "allocation memorandum has invalid decision references")
   memo.decisionRefs.forEach((id) => coveredDecisions.add(id))
   assert(JSON.stringify([...coveredDecisions].sort()) === JSON.stringify([...REQUIRED_ACCOUNTING_DECISIONS].sort()), "accounting example does not expose every required decision")
-  assert(BigInt(memo.originDistributableUsdCent) === BigInt(memo.protectedTimelyClaimsUsdCent) + BigInt(memo.e3HarvestedUsdCent) + BigInt(memo.carryInUsdCent), "origin claim/harvest/carry conservation failed")
-  assert(BigInt(memo.targetInputUsdCent) === BigInt(memo.independentCurrentFundingUsdCent) + BigInt(memo.e3HarvestedUsdCent) + BigInt(memo.carryInUsdCent), "target funding conservation failed")
-  assert(BigInt(memo.targetInputUsdCent) === BigInt(memo.capLimitedTopUpUsdCent) + BigInt(memo.carryOutUsdCent), "top-up/carry-out conservation failed")
+  assert(memo.originCycleKey === "2026-03" && memo.targetCycleKey === "2026-06", "allocation memorandum is not exactly E-3")
+  for (const suffix of ["NativeMinor", "UsdTenThousandth"]) {
+    assert(BigInt(memo[`originDistributable${suffix}`]) === BigInt(memo[`protectedTimelyClaims${suffix}`]) + BigInt(memo[`e3Harvested${suffix}`]) + BigInt(memo[`carryIn${suffix}`]), "origin claim/harvest/carry conservation failed")
+    assert(BigInt(memo[`independentCurrentFunding${suffix}`]) === BigInt(memo[`preservedInitialClaims${suffix}`]) + BigInt(memo[`scoreDiscountPool${suffix}`]), "initial claim/score-discount conservation failed")
+    assert(BigInt(memo[`scoreDiscountPool${suffix}`]) + BigInt(memo[`e3Harvested${suffix}`]) + BigInt(memo[`carryIn${suffix}`]) === BigInt(memo[`capLimitedTopUp${suffix}`]) + BigInt(memo[`carryOut${suffix}`]), "top-up/carry-out conservation failed")
+  }
+  exactKeys(example.expiryAndCarryIllustration, ["journalPosted", "originCycleKey", "targetCycleKey", "protectedClaimsExpire", "releasedClaimsReeligible", "unclaimedHarvestedAtExactlyE3"], "expiry illustration")
+  assert(example.expiryAndCarryIllustration.journalPosted === false && example.expiryAndCarryIllustration.protectedClaimsExpire === false && example.expiryAndCarryIllustration.unclaimedHarvestedAtExactlyE3 === true, "expiry illustration boundary is invalid")
+  exactKeys(example.openingBalanceIllustration, ["posted", "nativeMinorDebit", "nativeMinorCredit", "functionalUsdTenThousandthDebit", "functionalUsdTenThousandthCredit", "classification"], "opening balance illustration")
+  assert(example.openingBalanceIllustration.posted === false && example.openingBalanceIllustration.classification === "pending-qualified-accountant" && example.openingBalanceIllustration.nativeMinorDebit === example.openingBalanceIllustration.nativeMinorCredit && example.openingBalanceIllustration.functionalUsdTenThousandthDebit === example.openingBalanceIllustration.functionalUsdTenThousandthCredit, "opening balance illustration is unbalanced or authorized")
   return { ok: true }
 }
 
