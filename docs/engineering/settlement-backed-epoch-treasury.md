@@ -683,8 +683,8 @@ EUR and GBP project funding has a separate one-time Pay by Bank rail. It uses
 Stripe-hosted Checkout and a dynamic payment-method configuration, and binds the exact merchant
 country, implemented platform/direct topology, `pay_by_bank_payments` capability, dedicated
 Pay-by-Bank-only configuration, customer country, and presentment currency before provider
-mutation. Destination/separate-charge paths remain disabled. UK and Finland customer paths are
-generally available; France, Germany, and Ireland remain closed until authoritative exact-account
+mutation. Destination/separate-charge paths remain disabled. The UK customer path is generally
+available; Finland, France, Germany, and Ireland remain closed until authoritative exact-account
 private-preview evidence exists.
 Signed webhook evidence is authoritatively re-fetched and cannot fund a package before available
 custody and a conserved provisional journal exist. Refund-pending invalidates package sources;

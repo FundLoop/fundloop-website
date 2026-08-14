@@ -18,7 +18,7 @@ BEGIN
     'actorUserId',v_actor,'projectSlug','nomad-workspaces','paymentId',v_payment,'currencyCode','CAD','expectedAmountMinor','10000'));
   v_pbb:=public.prepare_stripe_pay_by_bank_command(jsonb_build_object('contractVersion','stripe_pay_by_bank_prepare.v1','deploymentEnvironment','local',
     'actorUserId',v_actor,'projectSlug','nomad-workspaces','paymentId',v_payment,'currencyCode','GBP','expectedAmountMinor','10000','customerCountry','GB',
-    'merchantCountry','CA','chargeTopology','platform','providerAccountId','acct_testbank','platformAccountId','acct_testbank'));
+    'merchantCountry','GB','chargeTopology','platform','providerAccountId','acct_testbank','platformAccountId','acct_testbank'));
   IF (SELECT expected_amount_minor FROM public.stripe_acss_debit_commands WHERE id=v_acss)<>12500
     OR (SELECT expected_amount_minor FROM public.stripe_pay_by_bank_commands WHERE id=v_pbb)<>8000 THEN
     RAISE EXCEPTION 'server_quote_did_not_convert_usd_obligation';

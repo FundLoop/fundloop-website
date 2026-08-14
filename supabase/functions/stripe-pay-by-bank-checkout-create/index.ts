@@ -76,7 +76,8 @@ async function handleRequest(request: Request) {
   }
   const previewEnabled = false
   if (capabilitySnapshot.livemode || !capabilitySnapshot.payByBankActive || !capabilitySnapshot.configurationActive ||
-      (["FR","DE","IE"].includes(input.data.customerCountry) && !previewEnabled)) {
+      !["DE", "GB"].includes(capabilitySnapshot.merchantCountry) ||
+      (["FI", "FR", "DE", "IE"].includes(input.data.customerCountry) && !previewEnabled)) {
     return json(edgeCommandFailure("stripe_pay_by_bank_not_enabled", "Pay by Bank is unavailable for this exact merchant and customer country."))
   }
   const {data: commandId, error: prepareError} = await auth.adminClient.rpc("prepare_stripe_pay_by_bank_command", {p_command: {

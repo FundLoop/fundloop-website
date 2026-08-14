@@ -5,6 +5,7 @@ const sql = readFileSync("supabase/migrations/20260811110000_stripe_pay_by_bank_
 const fixes = readFileSync("supabase/migrations/20260811111000_stripe_pay_by_bank_validator_fixes.sql", "utf8")
 const refundNormalization = readFileSync("supabase/migrations/20260811112000_stripe_pay_by_bank_refund_normalization.sql", "utf8")
 const refundOrdering = readFileSync("supabase/migrations/20260811113000_stripe_pay_by_bank_refund_ordering.sql", "utf8")
+const countryReality = readFileSync("supabase/migrations/20260918100000_stripe_pay_by_bank_country_reality.sql", "utf8")
 const edge = readFileSync("supabase/functions/stripe-pay-by-bank-checkout-create/index.ts", "utf8")
 const webhook = readFileSync("supabase/functions/stripe-pay-by-bank-webhook/index.ts", "utf8")
 const fixture = readFileSync("supabase/tests/stripe_pay_by_bank_intake.sql", "utf8")
@@ -44,9 +45,16 @@ describe("Stripe Pay by Bank boundaries", () => {
   it("supports only implemented topologies, keeps private previews closed, and retires cumulative refund residuals", () => {
     expect(fixes).toContain("charge_topology IN('platform','direct')")
     expect(fixes).toContain("stripe_pay_by_bank_topology_account_mismatch")
-    expect(fixes).toContain("upper(p_command->>'customerCountry') IN('FR','DE','IE')")
+    expect(countryReality).toContain("upper(p_command->>'customerCountry') IN ('FI', 'FR', 'DE', 'IE')")
     expect(fixes).toContain("retire_prior_stripe_pay_by_bank_residuals")
     expect(fixes).toContain("stripe_pay_by_bank_residual_retirements")
+  })
+  it("fails closed on legacy country drift and persists only current public Pay by Bank country support", () => {
+    expect(countryReality).toContain("stripe_pay_by_bank_legacy_country_reality_requires_review")
+    expect(countryReality).toContain("customer_country = 'GB'")
+    expect(countryReality).toContain("merchant_country IN ('DE', 'GB')")
+    expect(countryReality).toContain("stripe_pay_by_bank_private_preview_unavailable")
+    expect(countryReality).toContain("BEFORE INSERT ON public.stripe_pay_by_bank_commands")
   })
   it("keeps the current refund object amount separate from cumulative successful refunds", () => {
     expect(webhook).toContain("refund ? String(refund.amount) : null")
