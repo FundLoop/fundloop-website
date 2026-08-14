@@ -1,3 +1,4 @@
+import { readFileSync } from "node:fs"
 import { describe, expect, it, vi } from "vitest"
 import { edgeCommandSuccess, type EdgeCommandResult } from "@/lib/edge-functions/result"
 import type { EdgeCommandClient } from "@/packages/mcp-server/src/edge-client"
@@ -9,6 +10,8 @@ import { createBaseMcpResourceRegistry } from "@/packages/mcp-server/src/resourc
 import { handleMcpRequest } from "@/packages/mcp-server/src/server"
 import { sanitizeMcpText } from "@/packages/mcp-server/src/safety"
 import { createBaseMcpToolRegistry, type McpToolHandlerContext, type McpToolRegistry } from "@/packages/mcp-server/src/tools"
+
+const workflowReadEdge = readFileSync("supabase/functions/mcp-workflow-read/index.ts", "utf8")
 
 const authenticatedAuth: McpAuthContext = {
   actorRole: "founder",
@@ -218,6 +221,15 @@ function expectStrictObjectSchema(schema: { type?: string; additionalProperties?
 }
 
 describe("MCP automated contract coverage", () => {
+  it("keeps the mcp report audience restricted to internal operators", () => {
+    const reportingArtifacts = workflowReadEdge.slice(
+      workflowReadEdge.indexOf("async function reportingArtifacts"),
+      workflowReadEdge.indexOf("async function handleRequest"),
+    )
+    expect(reportingArtifacts).toContain('internal || report.audience === "public"')
+    expect(reportingArtifacts).not.toContain('report.audience === "mcp"')
+  })
+
   it("keeps every registered tool covered by strict schema, output, annotation, and safety metadata", () => {
     const tools = createContractRegistry().list()
     expect(tools.length).toBeGreaterThan(10)

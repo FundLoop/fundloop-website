@@ -25,9 +25,9 @@ function json(value: unknown, status = 200) {
 }
 
 const currentSchema = {
-  contractVersion: "fundloop.persona-goal2-schema-readiness.v2",
-  migrationVersion: "20260813150000",
-  featureCount: 35,
+  contractVersion: "fundloop.persona-goal2-schema-readiness.v3",
+  migrationVersion: "20260813152000",
+  featureCount: 36,
   missingFeatures: [],
   ready: true,
   productionValueFlowEnabled: false,
@@ -116,7 +116,7 @@ describe("persona readiness race", () => {
   })
 
   it.each([
-    [{ ...currentSchema, migrationVersion: "20260813130000" }, "schema-identity-stale-version"],
+    [{ ...currentSchema, migrationVersion: "20260813150000" }, "schema-identity-stale-version"],
     [{ ...currentSchema, ready: false, missingFeatures: ["relation:monthly_cycle_report_artifacts"] }, "schema-identity-partial-features"],
   ])("rejects stale or partial schema identity", async (identity, error) => {
     const fetcher = vi.fn(async (input: string | URL) => String(input).includes("/rpc/") ? json(identity) : json({ ok: true })) as unknown as typeof fetch

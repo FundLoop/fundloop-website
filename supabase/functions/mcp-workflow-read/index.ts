@@ -591,7 +591,7 @@ async function reportingArtifacts(adminClient, user, input) {
   if (input.cycleKey) query = query.eq("monthly_cycles.cycle_key", input.cycleKey)
   const { data, error } = await query
   if (error) return { ok: false, code: "query_failed", message: error.message }
-  const reports = (data ?? []).filter((report) => internal || report.audience === "public" || report.audience === "mcp"
+  const reports = (data ?? []).filter((report) => internal || report.audience === "public"
     || (report.audience === "user" && report.subject_user_id === user.id)
     || (report.audience === "founder" && founderProjectIds.includes(report.subject_project_id)))
   return { ok: true, data: { cycleKey: input.cycleKey ?? null, reports } }

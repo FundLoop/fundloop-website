@@ -309,3 +309,15 @@
 - Validation: focused audit/review contract tests, scoped ESLint, Node 22 typecheck, Markdown link/wording review, and `git diff --check` follow this entry. No Supabase, Docker, browser, hosted service, provider, Production, payout, or value-flow command ran.
 - Reflections: a recommendation document can preserve a stronger destination without turning every destination property into an MVP gate. Explicit disposition and owner links prevent both silent deferral and accidental over-scoping.
 - Next steps: independently validate the combined audit/review documentation. Keep FundLoop #204 In Progress until its concrete API client, logical allocator ownership, currency propagation, and Cubid dependency are implemented; retain v2 claims/datastore/ZK work as roadmap rather than MVP scope.
+
+### session v27: close Goal 2 publication review findings (#188)
+
+- Timestamp: 2026-08-14T05:04:00Z
+- Agent: Codex (`sprint-orchestrator` PR review follow-up)
+- Branch: `codex/155-goal-2-integrated-evidence`
+- Head before commit: `8ec7a6ff8ab7`
+- Objective: address the complete actionable Codex review set on Goal 2 publication PR #206 without expanding into the Cubid-dependent allocator successor.
+- Actions: removed the parallel ordinary-user path to the internal-only `mcp` monthly-report audience while retaining public, exact-self, founder-project, and internal access. Added a forward readiness migration that advances the Goal 2 schema identity only after the tombstone-aware report artifact constraint is present and structurally verified; updated the runner and focused contracts to reject the immediately preceding schema identity.
+- Validation: focused MCP/readiness tests, scoped ESLint, Node 22 typecheck, Deno module check, migration replay through CI fresh-schema validation, workflow dry-run, and `git diff --check` follow this entry. No local Supabase restart, hosted mutation, Production action, provider enablement, payout, or real-value flow is authorized by this review fix.
+- Reflections: a privileged audience must have one consistent authorization rule across direct Edge and MCP read paths, and readiness must bind behavior-changing constraints rather than only the tables/functions that surround them.
+- Next steps: commit and push one review-fix changeset, reply to and resolve both original PR threads, wait for exact-head CI, then merge #206 to `dev` only under the reviewed non-squash policy. Keep #205 blocked until Cubid #77 is confirmed merged to Cubid `dev`.
