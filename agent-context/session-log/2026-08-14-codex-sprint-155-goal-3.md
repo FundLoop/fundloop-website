@@ -53,3 +53,51 @@ conclusion or granting Production or value-flow authority.
 - Commit Task #168 and run its independent issue validation.
 - Prepare the separate accountant/bookkeeper packet under Task #169 on this Goal
   branch while Task #184 remains blocked on real qualified professional decisions.
+
+### session v2: Fail closed on counsel packet schema drift
+
+- Timestamp: 2026-08-14T06:39:30Z
+- Agent: Codex
+- Branch: codex/155-goal-3-governance-cutover
+- Head before commit: f28ac3c
+
+#### Objective
+
+Resolve the independent Task #168 validator's finding that a recomputed packet
+could carry unknown approval-like fields, and correct the original commit's
+whitespace evidence.
+
+#### Actions Taken
+
+- Added exact allowed-key validation for the packet root, both evidence record
+  shapes, every decision, and every approver object.
+- Exported the canonical packet digest helper so adversarial tests can recompute a
+  structurally valid self-digest around hostile unknown fields.
+- Added regressions for top-level approval objects, decision-level approval flags,
+  and approver-level qualification flags.
+- Removed two blank EOF lines and one trailing space identified by the validator,
+  then regenerated the affected source and packet hashes.
+
+#### Validation Notes
+
+- Passed Node 22 focused Vitest: 1 file, 7 tests, single-threaded after terminating
+  only this task's stuck fork-pool process tree during unrelated host contention.
+- Passed focused ESLint, full TypeScript typecheck, canonical packet verification,
+  and `git diff --check f28ac3c^`.
+- Corrected packet SHA-256:
+  `d72b8a1ad8e7104b33e1ed2e8cd20dfecf3e01920cbb3dbf3094b63314f36c77`.
+- The initial session-v1 statement that diff check passed was inaccurate for exact
+  commit f28ac3c; this corrective entry records the validator finding and combined
+  corrected branch result explicitly.
+- No Supabase, Docker, provider, hosted, Production, payout, cutover, or value-flow
+  command was run.
+
+#### Reflections
+
+- Hash integrity is only meaningful when the schema being hashed is closed; unknown
+  fields can otherwise smuggle a second, unreviewed authority vocabulary.
+
+#### Suggested Next Steps
+
+- Commit this focused validator fix and rerun independent Task #168 validation.
+- Advance #169 only after #168 passes.

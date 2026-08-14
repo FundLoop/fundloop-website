@@ -23,7 +23,7 @@ const canonicalize = (value) => {
   }
   return value
 }
-const packetDigest = (packet) => {
+export const counselReviewPacketDigest = (packet) => {
   const unsigned = { ...packet }
   delete unsigned.packetSha256
   return sha256(`${JSON.stringify(canonicalize(unsigned))}\n`)
@@ -32,8 +32,19 @@ const assert = (condition, message) => {
   if (!condition) throw new Error(message)
 }
 const isSha256 = (value) => typeof value === "string" && /^[0-9a-f]{64}$/.test(value)
+const assertExactKeys = (value, expectedKeys, label) => {
+  assert(value && typeof value === "object" && !Array.isArray(value), `${label} must be an object`)
+  const actual = Object.keys(value).sort()
+  const expected = [...expectedKeys].sort()
+  assert(JSON.stringify(actual) === JSON.stringify(expected), `${label} has unknown or missing fields`)
+}
 
 export function verifyCounselReviewPacket({ packet, repoRoot }) {
+  assertExactKeys(packet, [
+    "schemaVersion", "status", "packetId", "preparedAt", "effectiveDate", "entity",
+    "reviewJurisdiction", "productionAuthority", "valueFlowAuthority", "sourceArtifacts",
+    "runtimeEvidence", "decisions", "packetSha256",
+  ], "counsel packet")
   assert(packet.schemaVersion === PACKET_SCHEMA, "unexpected counsel packet schema")
   assert(packet.status === DRAFT_BANNER, "counsel packet must remain visibly non-effective")
   assert(packet.effectiveDate === null, "draft counsel packet cannot have an effective date")
@@ -45,6 +56,7 @@ export function verifyCounselReviewPacket({ packet, repoRoot }) {
   for (const group of [packet.sourceArtifacts, packet.runtimeEvidence]) {
     assert(Array.isArray(group) && group.length > 0, "packet evidence groups cannot be empty")
     for (const item of group) {
+      assertExactKeys(item, group === packet.sourceArtifacts ? ["path", "role", "sha256"] : ["path", "control", "sha256"], `evidence item ${item?.path ?? "unknown"}`)
       assert(typeof item.path === "string" && !item.path.startsWith("/") && !item.path.includes(".."), "unsafe evidence path")
       assert(!artifactPaths.has(item.path), `duplicate evidence path: ${item.path}`)
       artifactPaths.add(item.path)
@@ -60,8 +72,13 @@ export function verifyCounselReviewPacket({ packet, repoRoot }) {
   const decisionIds = packet.decisions.map((decision) => decision.id)
   assert(JSON.stringify(decisionIds) === JSON.stringify(REQUIRED_DECISIONS), "counsel decisions are missing, reordered, or unexpected")
   for (const decision of packet.decisions) {
+    assertExactKeys(decision, [
+      "id", "title", "status", "sourceArtifacts", "runtimeEvidence", "authoritativeSources",
+      "approver", "decision", "conditions", "decidedAt", "engineeringDisposition", "reReviewTriggers",
+    ], `decision ${decision?.id ?? "unknown"}`)
+    assertExactKeys(decision.approver, ["name", "professionalStatus", "engagementReference"], `decision ${decision.id} approver`)
     assert(decision.status === "pending_qualified_counsel", `${decision.id} must remain pending qualified counsel`)
-    assert(decision.engineeringDisposition === "production_blocked_pending_qualified_counsel", `${decision.id} must block production`) 
+    assert(decision.engineeringDisposition === "production_blocked_pending_qualified_counsel", `${decision.id} must block production`)
     assert(Array.isArray(decision.sourceArtifacts) && decision.sourceArtifacts.length > 0, `${decision.id} needs draft sources`)
     assert(Array.isArray(decision.runtimeEvidence) && decision.runtimeEvidence.length > 0, `${decision.id} needs runtime evidence`)
     assert(decision.sourceArtifacts.every((path) => artifactPaths.has(path)), `${decision.id} references an unknown draft source`)
@@ -73,7 +90,7 @@ export function verifyCounselReviewPacket({ packet, repoRoot }) {
   }
 
   assert(isSha256(packet.packetSha256), "packet self digest is invalid")
-  assert(packetDigest(packet) === packet.packetSha256, "packet self digest mismatch")
+  assert(counselReviewPacketDigest(packet) === packet.packetSha256, "packet self digest mismatch")
   return { ok: true, packetId: packet.packetId, packetSha256: packet.packetSha256 }
 }
 
@@ -82,7 +99,7 @@ export function writeCounselReviewPacket({ packetPath, repoRoot }) {
   for (const group of [packet.sourceArtifacts, packet.runtimeEvidence]) {
     for (const item of group) item.sha256 = sha256(readFileSync(resolve(repoRoot, item.path)))
   }
-  packet.packetSha256 = packetDigest(packet)
+  packet.packetSha256 = counselReviewPacketDigest(packet)
   writeFileSync(packetPath, `${JSON.stringify(packet, null, 2)}\n`)
   return verifyCounselReviewPacket({ packet, repoRoot })
 }

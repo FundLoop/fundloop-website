@@ -2,6 +2,7 @@ import { readFileSync } from "node:fs"
 import { resolve } from "node:path"
 import { describe, expect, it } from "vitest"
 import {
+  counselReviewPacketDigest,
   DRAFT_BANNER,
   REQUIRED_DECISIONS,
   verifyCounselReviewPacket,
@@ -38,6 +39,23 @@ describe("qualified counsel review packet", () => {
     const valueFlow = loadPacket()
     valueFlow.valueFlowAuthority = true
     expect(() => verifyCounselReviewPacket({ packet: valueFlow, repoRoot })).toThrow("cannot grant value-flow authority")
+  })
+
+  it("rejects recomputed manifests with unknown approval-bearing fields", () => {
+    const topLevel = loadPacket()
+    topLevel.qualifiedCounselApproval = { approved: true, reviewer: "Invented Reviewer" }
+    topLevel.packetSha256 = counselReviewPacketDigest(topLevel)
+    expect(() => verifyCounselReviewPacket({ packet: topLevel, repoRoot })).toThrow("counsel packet has unknown or missing fields")
+
+    const decisionLevel = loadPacket()
+    decisionLevel.decisions[0].approved = true
+    decisionLevel.packetSha256 = counselReviewPacketDigest(decisionLevel)
+    expect(() => verifyCounselReviewPacket({ packet: decisionLevel, repoRoot })).toThrow("decision ownership-refunds-escrow has unknown or missing fields")
+
+    const approverLevel = loadPacket()
+    approverLevel.decisions[0].approver.licenseVerified = true
+    approverLevel.packetSha256 = counselReviewPacketDigest(approverLevel)
+    expect(() => verifyCounselReviewPacket({ packet: approverLevel, repoRoot })).toThrow("decision ownership-refunds-escrow approver has unknown or missing fields")
   })
 
   it("rejects missing decisions and unknown runtime mappings", () => {
