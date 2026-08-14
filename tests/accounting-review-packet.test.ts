@@ -57,6 +57,20 @@ describe("accountant/bookkeeping review packet", () => {
     expect(() => verifyAccountingReviewExample(fx)).toThrow("FX conversion")
   })
 
+  it("rejects treatment, currency, unit, and checkpoint relabelling", () => {
+    for (const [field, value] of [["classification", "approved-revenue-and-liability-treatment"], ["nativeCurrency", "CAD"], ["functionalCurrency", "EUR"], ["functionalUnit", "cent"], ["fxUsdPerNativeUnit", "99.99"]] as const) {
+      const example = load("accounting-review-example.json")
+      example[field] = value
+      expect(() => verifyAccountingReviewExample(example)).toThrow(/cannot select|currency or FX/)
+    }
+    const duplicateCheckpoint = load("accounting-review-example.json")
+    duplicateCheckpoint.trialBalanceCheckpoints[1] = structuredClone(duplicateCheckpoint.trialBalanceCheckpoints[0])
+    expect(() => verifyAccountingReviewExample(duplicateCheckpoint)).toThrow("incomplete, duplicated, or reordered")
+    const duplicateAccount = load("accounting-review-example.json")
+    duplicateAccount.trialBalanceCheckpoints[0].balances[1].account = duplicateAccount.trialBalanceCheckpoints[0].balances[0].account
+    expect(() => verifyAccountingReviewExample(duplicateAccount)).toThrow("duplicate accounts")
+  })
+
   it("rejects fabricated approvals and recomputed unknown authority fields", () => {
     const approved = load("accounting-review-packet.json")
     approved.reviewer.name = "Invented Accountant"

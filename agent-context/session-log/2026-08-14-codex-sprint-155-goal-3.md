@@ -244,3 +244,36 @@ lifecycle-example, verifier, and whitespace findings.
 #### Suggested Next Steps
 
 - Commit and rerun independent Task #169 validation at the corrected head.
+
+### session v6: Pin accounting labels and trial-balance identity
+
+- Timestamp: 2026-08-14T06:57:35Z
+- Agent: Codex
+- Branch: codex/155-goal-3-governance-cutover
+- Head before commit: 142bfef
+
+#### Objective
+
+Close the remaining independent #169 semantic relabelling bypass.
+
+#### Actions Taken
+
+- Pinned the exact neutral scenario, classification, EUR native units, USD
+  functional units, and 1.10 review FX label.
+- Required exact ordered fee-stage and final-zero trial-balance checkpoints and
+  unique account rows.
+- Added adversarial tests for fabricated approved treatment, false currencies,
+  false unit/FX labels, duplicated checkpoints, and duplicate account rows.
+
+#### Validation Notes
+
+- Passed Node 22 focused Vitest: 1 file, 10 tests.
+- Passed focused ESLint, full TypeScript typecheck, canonical packet verification,
+  and combined `git diff --check 216259f^`.
+- Packet bytes/digest remain unchanged; only the verifier and tests tightened.
+- No Supabase, Docker, opening-balance posting, provider, hosted, Production,
+  payout, cutover, or value-flow command was run.
+
+#### Suggested Next Steps
+
+- Commit and request final independent #169 validation.

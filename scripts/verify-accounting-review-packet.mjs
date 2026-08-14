@@ -29,6 +29,8 @@ const EVENT_IDS = ["settled-receipt", "review-fee-split", "reverse-review-fee-sp
 export function verifyAccountingReviewExample(example) {
   exactKeys(example, ["schemaVersion", "status", "scenarioId", "classification", "nativeCurrency", "nativeUnit", "functionalCurrency", "functionalUnit", "fxUsdPerNativeUnit", "providerEvidence", "events", "trialBalanceCheckpoints", "allocationMemorandum", "expiryAndCarryIllustration", "openingBalanceIllustration", "openingBalancePosted", "productionCutoverAuthorized", "valueFlowAuthorized"], "accounting example")
   assert(example.schemaVersion === "fundloop.accounting-review-example/v1" && example.status === ACCOUNTING_DRAFT_BANNER, "accounting example must remain a draft")
+  assert(example.scenarioId === "eur-pay-by-bank-receipt-allocation-reversal-v1" && example.classification === "neutral-shadow-example", "accounting example cannot select or relabel treatment")
+  assert(example.nativeCurrency === "EUR" && example.nativeUnit === "minor" && example.functionalCurrency === "USD" && example.functionalUnit === "usd-ten-thousandth" && example.fxUsdPerNativeUnit === "1.10", "accounting example currency or FX labels are invalid")
   assert(example.openingBalancePosted === false && example.productionCutoverAuthorized === false && example.valueFlowAuthorized === false, "accounting example cannot authorize cutover or value flow")
   exactKeys(example.providerEvidence, ["grossNativeMinor", "providerFeeNativeMinor", "netNativeMinor", "balanceStatus"], "provider evidence")
   assert(BigInt(example.providerEvidence.grossNativeMinor) === BigInt(example.providerEvidence.providerFeeNativeMinor) + BigInt(example.providerEvidence.netNativeMinor) && example.providerEvidence.balanceStatus === "available", "provider fee/net evidence is not conserved")
@@ -51,11 +53,12 @@ export function verifyAccountingReviewExample(example) {
     assert(native === 0n && functional === 0n, `${event.id} is not balanced in native and functional values`)
     snapshots.set(event.id, new Map([...balances].map(([key, value]) => [key, [...value]])))
   }
-  assert(Array.isArray(example.trialBalanceCheckpoints) && example.trialBalanceCheckpoints.length === 2, "trial-balance checkpoints are incomplete")
+  assert(Array.isArray(example.trialBalanceCheckpoints) && JSON.stringify(example.trialBalanceCheckpoints.map((checkpoint) => checkpoint.afterEvent)) === JSON.stringify(["review-fee-split", "reverse-settled-receipt"]), "trial-balance checkpoints are incomplete, duplicated, or reordered")
   for (const checkpoint of example.trialBalanceCheckpoints) {
     exactKeys(checkpoint, ["afterEvent", "balances"], `checkpoint ${checkpoint?.afterEvent ?? "unknown"}`)
     const actual = snapshots.get(checkpoint.afterEvent); assert(actual, `unknown checkpoint event ${checkpoint.afterEvent}`)
     assert(checkpoint.balances.length === actual.size, `checkpoint ${checkpoint.afterEvent} account count mismatch`)
+    assert(new Set(checkpoint.balances.map((row) => row.account)).size === checkpoint.balances.length, `checkpoint ${checkpoint.afterEvent} has duplicate accounts`)
     for (const row of checkpoint.balances) {
       exactKeys(row, ["account", "nativeMinor", "functionalUsdTenThousandth"], `checkpoint row ${checkpoint.afterEvent}`)
       const value = actual.get(row.account)
