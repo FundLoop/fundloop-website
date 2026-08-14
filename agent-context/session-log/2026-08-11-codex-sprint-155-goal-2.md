@@ -321,3 +321,15 @@
 - Validation: focused MCP/readiness tests, scoped ESLint, Node 22 typecheck, Deno module check, migration replay through CI fresh-schema validation, workflow dry-run, and `git diff --check` follow this entry. No local Supabase restart, hosted mutation, Production action, provider enablement, payout, or real-value flow is authorized by this review fix.
 - Reflections: a privileged audience must have one consistent authorization rule across direct Edge and MCP read paths, and readiness must bind behavior-changing constraints rather than only the tables/functions that surround them.
 - Next steps: commit and push one review-fix changeset, reply to and resolve both original PR threads, wait for exact-head CI, then merge #206 to `dev` only under the reviewed non-squash policy. Keep #205 blocked until Cubid #77 is confirmed merged to Cubid `dev`.
+
+### session v28: normalize Supabase-root function readback (#188)
+
+- Timestamp: 2026-08-14T05:21:00Z
+- Agent: Codex (`sprint-orchestrator` post-merge recovery)
+- Branch: `codex/155-goal-2-function-readback-recovery`
+- Head before commit: `3078cd15f4fb`
+- Objective: recover merged-SHA Dev certification after the provider deployed all 64 functions but returned a different documented archive root for the self-contained persona readiness closure.
+- Actions: used the sanitized postdeploy error hashes to prove the three remote paths were exactly `functions/_shared/command-runtime.ts`, `functions/persona-readiness-identity/index.ts`, and `functions/persona-readiness-identity/source-contracts.json`. Added a single strict normalization from the provider's Supabase-root `functions/` namespace to the reviewed repository `supabase/functions/` namespace, while preserving repo-root normalization, unsafe-path rejection, exact missing/extra checks, byte/digest comparison, and duplicate/case/Unicode collision denial. Added positive self-contained closure coverage and an adversarial mixed-root alias collision.
+- Validation: focused source-readback and delivery-parity suites, scoped ESLint, Node 22 typecheck, Node syntax, workflow YAML, and `git diff --check` follow this entry. The failed CI-owned run applied the database migrations and deployed all 64 functions, then failed closed before smoke/manifest/completion; no retry, Production action, payout, or real-value flow occurred.
+- Reflections: the provider chooses the repository root when a function imports app modules and the `supabase/` root when a closure stays inside Supabase. Canonicalization must recognize both exact provider roots without accepting arbitrary prefixes or weakening path provenance.
+- Next steps: publish one consolidated recovery PR to `dev`, use the existing Codex review policy without serial recovery PRs, and require a fresh merged-SHA deploy plus read-only drift manifest before #188 advances. Keep #205 blocked pending Cubid #77's dev merge.

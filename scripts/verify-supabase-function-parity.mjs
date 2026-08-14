@@ -11,6 +11,7 @@ const maxResponseBytes = 16 * 1024 * 1024
 const maxFileBytes = 2 * 1024 * 1024
 const maxFileCount = 256
 const knownRepoRootPrefix = "fundloop-website/"
+const knownSupabaseRootPrefix = "functions/"
 
 export function expectedFunctionNames(root = repoRoot) {
   return readdirSync(path.join(root, "supabase/functions"), { withFileTypes: true })
@@ -184,8 +185,9 @@ function safeArchivePath(rawPath) {
   }
   const segments = rawPath.split("/")
   if (segments.some((segment) => !segment || segment === "." || segment === "..")) throw new Error("Remote function archive contains an unsafe path")
-  const relative = rawPath.startsWith(knownRepoRootPrefix) ? rawPath.slice(knownRepoRootPrefix.length) : rawPath
-  return relative
+  if (rawPath.startsWith(knownRepoRootPrefix)) return rawPath.slice(knownRepoRootPrefix.length)
+  if (rawPath.startsWith(knownSupabaseRootPrefix)) return `supabase/${rawPath}`
+  return rawPath
 }
 
 function multipartBoundary(contentType) {
