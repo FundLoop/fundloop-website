@@ -142,3 +142,57 @@ objects embedded in nominal string arrays.
 #### Suggested Next Steps
 
 - Commit and rerun independent Task #168 validation at the exact corrected head.
+
+### session v4: Prepare the accountant and bookkeeping review packet
+
+- Timestamp: 2026-08-14T06:48:17Z
+- Agent: Codex
+- Branch: codex/155-goal-3-governance-cutover
+- Head before commit: 0f0dff2
+
+#### Objective
+
+Implement Task #169 as a versioned, classification-neutral approval packet that a
+qualified accountant/bookkeeper can decide against exact repository evidence.
+
+#### Actions Taken
+
+- Added a blank qualified-accountant decision template covering framework,
+  currencies, labels, timing, measurement, journals, tax, records, conditions,
+  expiry, and re-review triggers without selecting treatment.
+- Added an exact EUR-native and USD-functional walkthrough from settled receipt
+  through fee split, allocation/obligation memorandum, E-3 harvest, timely claims,
+  carry-in/carry-out, cap-limited top-up, and full reversal.
+- Added trial-balance checkpoints and conservation equations using the persisted
+  EUR/four-epoch fixture values while labelling every account as neutral review
+  control rather than revenue, liability, expense, or custody policy.
+- Added a versioned packet binding the memo, architecture, example, migrations, and
+  SQL evidence to SHA-256 hashes, with all reviewer/conclusion fields null and all
+  opening-balance, cutover, and value-flow authorities false.
+- Added a strict verifier and adversarial tests for arithmetic imbalance,
+  incomplete decision exposure, E-3/carry/top-up breaks, fabricated approval,
+  unknown authority fields, changed evidence, and stale packet digests.
+
+#### Validation Notes
+
+- Passed Node 22 focused Vitest: 1 file, 8 tests.
+- Passed focused ESLint, full TypeScript typecheck, canonical packet verification,
+  and `git diff --check`.
+- Packet SHA-256:
+  `77af6f75e41e0f2a6778bd2bfe999cbf14a5254cdfb1a64b745507b01d978fc2`.
+- The smoke walkthrough exposes all eleven required decisions and reconciles each
+  journal in both EUR minor units and USD-functional cents.
+- No Supabase, Docker, opening-balance posting, provider, hosted, Production,
+  payout, cutover, or value-flow command was run.
+
+#### Reflections
+
+- A balanced example constrains arithmetic and provenance but deliberately cannot
+  choose recognition, principal-agent, gross/net, tax, liability, reserve, or
+  abandoned-property treatment.
+
+#### Suggested Next Steps
+
+- Commit Task #169 and run independent issue validation.
+- Keep #184 blocked until real qualified counsel and accountant records exist for
+  the exact packet hashes.
