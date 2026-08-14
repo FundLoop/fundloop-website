@@ -4,7 +4,8 @@ import { describe, expect, it } from "vitest"
 const edge = readFileSync("supabase/functions/persona-readiness-identity/index.ts", "utf8")
 const schema = ["supabase/migrations/20260813133000_persona_goal2_schema_readiness.sql",
   "supabase/migrations/20260813140000_monthly_report_storage_and_version_integrity.sql",
-  "supabase/migrations/20260813150000_monthly_report_opaque_paths.sql"].map((path) => readFileSync(path, "utf8")).join("\n")
+  "supabase/migrations/20260813150000_monthly_report_opaque_paths.sql",
+  "supabase/migrations/20260813152000_persona_goal2_tombstone_readiness.sql"].map((path) => readFileSync(path, "utf8")).join("\n")
 
 describe("persona candidate readiness identities", () => {
   it("keeps the runtime identity local, secret-bound, exact, and nonmutating", () => {
@@ -27,6 +28,7 @@ describe("persona candidate readiness identities", () => {
       "record_funded_epoch_allocation_v2_once", "generate_monthly_cycle_reports", "publish_monthly_cycle_reports",
       "regenerate_monthly_cycle_reports", "prepare_monthly_cycle_report_publication", "finalize_monthly_cycle_report_publication",
       "monthly_cycle_report_path_token", "path_token",
+      "monthly_cycle_reports_artifact_pair_check", "fundloop.persona-goal2-schema-readiness.v3", "20260813152000",
     ]) expect(schema).toContain(feature)
     expect(schema).toContain("missingFeatures")
     expect(schema).toContain("productionValueFlowEnabled',false")
