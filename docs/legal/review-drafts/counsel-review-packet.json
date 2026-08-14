@@ -37,12 +37,12 @@
     {
       "path": "docs/legal/review-drafts/counsel-redline-register.md",
       "role": "redline-register",
-      "sha256": "d5684cdb1cf3c0e063fea295cd6b44857475967628dc75ad62b7e44cd61a1089"
+      "sha256": "c8706e136b8b93affb9aa7280067055d8ddbd9e6dbce5c927d253d5e9630589f"
     },
     {
       "path": "docs/legal/review-drafts/counsel-decision-template.md",
       "role": "decision-template",
-      "sha256": "50ed1d6bff02a8fcc0e60f7649c1d9a158f7081df77d6fd6efd8b2ac5f6a2aff"
+      "sha256": "956e32c80e27ba0d4e873fd3f3becd17c266fa5d3ae4a943f1dec1bde16ad811"
     }
   ],
   "runtimeEvidence": [
@@ -344,5 +344,5 @@
       ]
     }
   ],
-  "packetSha256": "2c8a294b571dddf18a3e7853b28a86c84b566104a32a335465a8ca6acbb8e06c"
+  "packetSha256": "d72b8a1ad8e7104b33e1ed2e8cd20dfecf3e01920cbb3dbf3094b63314f36c77"
 }

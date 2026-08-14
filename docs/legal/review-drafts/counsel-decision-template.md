@@ -49,4 +49,3 @@ conclusions; this Task only prepares the review materials.
 | Implementation owner | Named FundLoop owner after review |
 | Verification evidence | PR, test, deployment, and hosted evidence identifiers |
 | Production disposition | Remains blocked until Task #184 validates the genuine record |
-

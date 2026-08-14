@@ -24,4 +24,3 @@ accepted/rejected assumptions, reasons, legal sources relied upon, conditions,
 expiry, re-review triggers, and whether the mapped runtime control is sufficient.
 Engineering must record each condition as a testable disposition. Task #184, not
 this draft register, owns accepting genuine professional conclusions.
-
