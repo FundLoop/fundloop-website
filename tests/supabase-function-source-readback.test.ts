@@ -142,6 +142,28 @@ describe("Supabase Management API function source read-back", () => {
     expect(parsed.get(expected[0])?.toString()).toBe("result\n")
   })
 
+  it("normalizes the provider Supabase archive root for self-contained closures", async () => {
+    const expected = [
+      "supabase/functions/_shared/command-runtime.ts",
+      "supabase/functions/persona-readiness-identity/index.ts",
+      "supabase/functions/persona-readiness-identity/source-contracts.json",
+    ]
+    const parsed = await parseFunctionSourceResponse(multipart([
+      file("functions/_shared/command-runtime.ts", "runtime\n"),
+      file("functions/persona-readiness-identity/index.ts", "entry\n"),
+      file("functions/persona-readiness-identity/source-contracts.json", "{}\n"),
+    ]), "persona-readiness-identity", expected)
+    expect([...parsed.keys()].sort()).toEqual(expected)
+  })
+
+  it("rejects repo-root and Supabase-root aliases of the same reviewed file", async () => {
+    await expect(parseFunctionSourceResponse(multipart([
+      file("functions/example/index.ts"),
+      file("fundloop-website/supabase/functions/example/index.ts"),
+    ]), "example", ["supabase/functions/example/index.ts"]))
+      .rejects.toThrow("duplicate or colliding paths")
+  })
+
   it("accepts legal multipart parameter ordering and gives Supabase-Path precedence", async () => {
     const response = multipart([file("wrong.ts", "right\n", { "Supabase-Path": "fundloop-website/safe.ts" })])
     response.headers.set("content-type", "multipart/form-data; charset=utf-8; boundary=\"fundloop-source-boundary\"")
