@@ -101,3 +101,44 @@ whitespace evidence.
 
 - Commit this focused validator fix and rerun independent Task #168 validation.
 - Advance #169 only after #168 passes.
+
+### session v3: Validate nested counsel packet values
+
+- Timestamp: 2026-08-14T06:42:38Z
+- Agent: Codex
+- Branch: codex/155-goal-3-governance-cutover
+- Head before commit: d955a26
+
+#### Objective
+
+Close the independent validator's remaining recursive-schema finding for hostile
+objects embedded in nominal string arrays.
+
+#### Actions Taken
+
+- Added nonempty trimmed-string validation for every draft-source, runtime-evidence,
+  authoritative-source, and re-review-trigger array member.
+- Added primitive validation for packet identity fields, UTC preparation time,
+  evidence descriptions, and decision identities.
+- Added recomputed-digest regressions for nested approval objects in re-review
+  triggers and object injection into all other decision string arrays.
+
+#### Validation Notes
+
+- Passed Node 22 focused Vitest: 1 file, 8 tests, single-threaded.
+- Passed focused ESLint, full TypeScript typecheck, canonical packet verification,
+  and combined `git diff --check f28ac3c^`.
+- Packet content and SHA remain unchanged because this fix tightens only the
+  verifier and its adversarial tests.
+- No Supabase, Docker, provider, hosted, Production, payout, cutover, or value-flow
+  command was run.
+
+#### Reflections
+
+- Recursive closure requires validating both object keys and every container's
+  member type; hashing alone cannot distinguish a declared string from an injected
+  approval object.
+
+#### Suggested Next Steps
+
+- Commit and rerun independent Task #168 validation at the exact corrected head.
