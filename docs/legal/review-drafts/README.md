@@ -22,6 +22,15 @@ receive, allocate, or pay live funds.
 2. [Privacy Notice review draft](./privacy-notice-canada.md)
 3. [Repository-grounded data-flow inventory](./data-flow-inventory.md)
 4. [Accounting-recognition review memo](./accounting-recognition-memo.md)
+5. [Versioned counsel review packet manifest](./counsel-review-packet.json)
+6. [Counsel redline register](./counsel-redline-register.md)
+7. [Qualified counsel decision record template](./counsel-decision-template.md)
+
+The manifest binds these drafts and the mapped runtime controls to exact SHA-256
+digests. Run `node scripts/verify-counsel-review-packet.mjs` before supplying the
+packet for review. A digest match proves only which bytes were reviewed; it is not
+an approval. The blank decision template must be completed by genuinely engaged,
+qualified Canadian counsel and independently incorporated under Task #184.
 
 The drafts intentionally use `proposed`, `intended`, and `subject to review` where
 FundLoop has made a product decision but a professional must determine the legal,
