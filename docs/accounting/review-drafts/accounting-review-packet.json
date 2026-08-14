@@ -1,0 +1,97 @@
+{
+  "schemaVersion": "fundloop.accounting-review-packet/v1",
+  "status": "DRAFT - NOT APPROVED - NOT EFFECTIVE",
+  "packetId": "fundloop-ca-accounting-review-2026-08-14-v1",
+  "preparedAt": "2026-08-14T00:00:00Z",
+  "effectiveDate": null,
+  "productionCutoverAuthority": false,
+  "valueFlowAuthority": false,
+  "openingBalanceAuthority": false,
+  "sourceArtifacts": [
+    {
+      "path": "docs/legal/review-drafts/accounting-recognition-memo.md",
+      "role": "recognition-alternatives",
+      "sha256": "f7e5bb0f797b8642321e84d1ff752f13da2cabccb49c25413b0599cc2e6b8a53"
+    },
+    {
+      "path": "docs/engineering/neutral-ledger-foundations.md",
+      "role": "neutral-ledger-boundary",
+      "sha256": "3dd2f234e0726d81756bd3f1af62bdbf64bf6a17268276d17be3556df2dccfe6"
+    },
+    {
+      "path": "docs/engineering/settlement-backed-epoch-treasury.md",
+      "role": "treasury-allocation-architecture",
+      "sha256": "9bcb254d62ef20d613dbfe86d2374a7d04f1826c1437f2b6ed6eb32b6629f60f"
+    },
+    {
+      "path": "docs/accounting/review-drafts/accounting-review-example.json",
+      "role": "balanced-native-functional-example",
+      "sha256": "d5d70bdea0041ba07ad4a8edf5285479707d72d06494e8f7e1f856d277fdf80d"
+    },
+    {
+      "path": "docs/accounting/review-drafts/accountant-decision-template.md",
+      "role": "qualified-reviewer-template",
+      "sha256": "fa823c6626206c69f4b57804fbdb31281b41a01161950d9daaeaaf77d82dc70f"
+    }
+  ],
+  "runtimeEvidence": [
+    {
+      "path": "supabase/migrations/20260809020000_neutral_ledger_foundations.sql",
+      "control": "balanced neutral ledger",
+      "sha256": "144e1f4f7dfe99310a01920ec45a98bed682d7c28518333fb5afbebb9ffd8716"
+    },
+    {
+      "path": "supabase/migrations/20260809150000_epoch_financial_prep.sql",
+      "control": "source-linked FX and fee preparation",
+      "sha256": "f8766a34d0d012e815309e6cc850b82bb167719c08e6190b94e0957e0fa726ce"
+    },
+    {
+      "path": "supabase/migrations/20260809160000_epoch_funded_allocation.sql",
+      "control": "conditional funded allocation",
+      "sha256": "0bd977252cbe95612786c94332bc4b4193de9f895a7e4f02e54f4f545600a99d"
+    },
+    {
+      "path": "supabase/migrations/20260809180000_withdrawal_obligation_control_plane.sql",
+      "control": "claim, hold, expiry, and payout boundary",
+      "sha256": "f0aa0b788c7de5d51dd2af57309db21f71a8e73deccf207421c29c1a9f96a688"
+    },
+    {
+      "path": "supabase/migrations/20260810160000_financial_cutover_control_plane.sql",
+      "control": "opening-balance and cutover denial",
+      "sha256": "d16bc8c26ac62b07ab360d19c6e6a9398d4b3270eb4c0aeb03015a01fbc5d89f"
+    },
+    {
+      "path": "supabase/tests/stripe_pay_by_bank_intake.sql",
+      "control": "persisted EUR source lineage and reversal fixture",
+      "sha256": "097141e7d2094caab3b52f70ce9d99aa60c13499435b55633fe21a06eaa4129d"
+    },
+    {
+      "path": "supabase/tests/epoch_allocation_v2_four_epoch_lifecycle.sql",
+      "control": "E-3 claim, harvest, carry, and cap proof",
+      "sha256": "c1bceafa168a35c50c4dbda97a6fddf87f5713b959eb4d25b82c5395f587a1d2"
+    }
+  ],
+  "requiredDecisions": [
+    "reporting-framework-and-currencies",
+    "contribution-recognition-and-principal-agent",
+    "custody-and-safeguarding",
+    "fees-gross-net-and-tax",
+    "fx-and-token-measurement",
+    "awards-liabilities-and-payout-timing",
+    "e3-harvest-claims-and-carryover",
+    "refunds-disputes-reserves-and-losses",
+    "opening-balances-and-cutover",
+    "reconciliation-close-and-retention",
+    "retention-and-unclaimed-property"
+  ],
+  "reviewer": {
+    "name": null,
+    "designation": null,
+    "engagementReference": null
+  },
+  "decisions": null,
+  "conditions": null,
+  "decidedAt": null,
+  "engineeringDisposition": "cutover_blocked_pending_qualified_accountant",
+  "packetSha256": "77af6f75e41e0f2a6778bd2bfe999cbf14a5254cdfb1a64b745507b01d978fc2"
+}
