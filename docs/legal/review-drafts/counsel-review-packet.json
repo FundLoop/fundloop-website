@@ -1,0 +1,348 @@
+{
+  "schemaVersion": "fundloop.counsel-review-packet/v1",
+  "status": "DRAFT - NOT APPROVED - NOT EFFECTIVE",
+  "packetId": "fundloop-ca-counsel-review-2026-08-14-v1",
+  "preparedAt": "2026-08-14T00:00:00Z",
+  "effectiveDate": null,
+  "entity": "Fundloop Canada Inc.",
+  "reviewJurisdiction": "Ontario, Canada",
+  "productionAuthority": false,
+  "valueFlowAuthority": false,
+  "sourceArtifacts": [
+    {
+      "path": "docs/legal/review-drafts/README.md",
+      "role": "packet-boundary",
+      "sha256": "7cbd5d5abb793826a7e08185b380b8f15af29bf7b1ee3319192253d3b1d405af"
+    },
+    {
+      "path": "docs/legal/review-drafts/terms-canada.md",
+      "role": "terms-redline-source",
+      "sha256": "5fdad9b8c1a73e4072612820d079e357e56abf0a217f499de84db2cd78b5aa20"
+    },
+    {
+      "path": "docs/legal/review-drafts/privacy-notice-canada.md",
+      "role": "privacy-redline-source",
+      "sha256": "97523eedf0c1cbf79b3cfd87eee42392815dd6458d45e1ceeaf68b2e859eb65a"
+    },
+    {
+      "path": "docs/legal/review-drafts/data-flow-inventory.md",
+      "role": "data-flow-source",
+      "sha256": "814c6c2184dda930d9eec1c713bcc644a22e6e8ee0cd9f7eb161484ebeb43461"
+    },
+    {
+      "path": "docs/legal/review-drafts/accounting-recognition-memo.md",
+      "role": "accounting-interface-source",
+      "sha256": "f7e5bb0f797b8642321e84d1ff752f13da2cabccb49c25413b0599cc2e6b8a53"
+    },
+    {
+      "path": "docs/legal/review-drafts/counsel-redline-register.md",
+      "role": "redline-register",
+      "sha256": "d5684cdb1cf3c0e063fea295cd6b44857475967628dc75ad62b7e44cd61a1089"
+    },
+    {
+      "path": "docs/legal/review-drafts/counsel-decision-template.md",
+      "role": "decision-template",
+      "sha256": "50ed1d6bff02a8fcc0e60f7649c1d9a158f7081df77d6fd6efd8b2ac5f6a2aff"
+    }
+  ],
+  "runtimeEvidence": [
+    {
+      "path": "app/[locale]/(public)/terms/page.tsx",
+      "control": "non-effective public Terms preview",
+      "sha256": "ab2c3a49117f37570c586d7204634560c6f412f9526e5e492316bfbfc51e0401"
+    },
+    {
+      "path": "app/[locale]/(public)/privacy/page.tsx",
+      "control": "non-effective public Privacy preview",
+      "sha256": "186903a1bb40ed090c95de0f52554524cc7b7e06eb33edfb9413ccc6f9e77145"
+    },
+    {
+      "path": "lib/policies/review-policy.ts",
+      "control": "immutable review metadata and effective-policy fail-close",
+      "sha256": "b0753925daa2901ac7f3582becc0c73fad33d600260bd8f33b80766b483b6b42"
+    },
+    {
+      "path": "lib/policies/terms-acknowledgement-guard.ts",
+      "control": "exact review-document acknowledgement guard",
+      "sha256": "73c730c7583399b39529f06ed8bf54837189d27c0d2331b50dd97a76830dbccb"
+    },
+    {
+      "path": "lib/policies/profile-publication-command.ts",
+      "control": "affirmative profile publication choice",
+      "sha256": "11d12ac8df0e097db41c5c0bfd2c8eacecaec9761dd3ee7526493421da56558d"
+    },
+    {
+      "path": "lib/invitations/project-invitation-command.ts",
+      "control": "invitation disclosure and acceptance boundary",
+      "sha256": "2c5ab57f49671f927630ad816adceef854e53dff0c3e9b22fe40068103e5115c"
+    },
+    {
+      "path": "supabase/migrations/20260808230000_review_policy_versions_and_acceptances.sql",
+      "control": "versioned review policy and acceptance evidence",
+      "sha256": "e0e897ca39684969f2d6c5cedaaa4bc831f05241d97a30da1c28ff1ea9a685bd"
+    },
+    {
+      "path": "supabase/migrations/20260808234500_project_invitation_review_sharing.sql",
+      "control": "project invitation sharing evidence",
+      "sha256": "09f8e85c8722465639eb803da7c5de8537cb9f41e738425b074b055a7b1b7ee4"
+    },
+    {
+      "path": "supabase/migrations/20260809180000_withdrawal_obligation_control_plane.sql",
+      "control": "conditional withdrawal, hold, expiry, and payout boundary",
+      "sha256": "f0aa0b788c7de5d51dd2af57309db21f71a8e73deccf207421c29c1a9f96a688"
+    },
+    {
+      "path": "supabase/migrations/20260810160000_financial_cutover_control_plane.sql",
+      "control": "production financial cutover controls",
+      "sha256": "d16bc8c26ac62b07ab360d19c6e6a9398d4b3270eb4c0aeb03015a01fbc5d89f"
+    },
+    {
+      "path": "docs/engineering/production-readiness-evidence-contract.md",
+      "control": "immutable professional approval and production manifest contract",
+      "sha256": "54ba6d718c3bb7ecc7055960e6213d2fecf3638e940018cf6ffebaa8d85dbd04"
+    },
+    {
+      "path": "lib/release-readiness/evidence-manifest.ts",
+      "control": "production evidence fail-closed evaluator",
+      "sha256": "32eba1d5b3c170609667fa25fc0ae4aa98f9af42ce686dd91fa11612068594fc"
+    }
+  ],
+  "decisions": [
+    {
+      "id": "ownership-refunds-escrow",
+      "title": "Ownership, refunds, escrow, custody, and insolvency",
+      "status": "pending_qualified_counsel",
+      "sourceArtifacts": [
+        "docs/legal/review-drafts/terms-canada.md",
+        "docs/legal/review-drafts/privacy-notice-canada.md",
+        "docs/legal/review-drafts/data-flow-inventory.md",
+        "docs/legal/review-drafts/counsel-redline-register.md"
+      ],
+      "runtimeEvidence": [
+        "supabase/migrations/20260810160000_financial_cutover_control_plane.sql",
+        "docs/engineering/production-readiness-evidence-contract.md",
+        "lib/release-readiness/evidence-manifest.ts"
+      ],
+      "authoritativeSources": [
+        "https://www.bankofcanada.ca/2026/06/criteria-for-registering-payment-service-providers/",
+        "https://www.ontario.ca/laws/statute/02c30"
+      ],
+      "approver": {
+        "name": null,
+        "professionalStatus": null,
+        "engagementReference": null
+      },
+      "decision": null,
+      "conditions": null,
+      "decidedAt": null,
+      "engineeringDisposition": "production_blocked_pending_qualified_counsel",
+      "reReviewTriggers": [
+        "provider or custody topology changes",
+        "refund or settlement behavior changes",
+        "supported jurisdiction changes"
+      ]
+    },
+    {
+      "id": "payout-ownership-and-finality",
+      "title": "Payout ownership, obligation, and final settlement",
+      "status": "pending_qualified_counsel",
+      "sourceArtifacts": [
+        "docs/legal/review-drafts/terms-canada.md",
+        "docs/legal/review-drafts/accounting-recognition-memo.md",
+        "docs/legal/review-drafts/counsel-redline-register.md"
+      ],
+      "runtimeEvidence": [
+        "supabase/migrations/20260809180000_withdrawal_obligation_control_plane.sql",
+        "supabase/migrations/20260810160000_financial_cutover_control_plane.sql",
+        "docs/engineering/production-readiness-evidence-contract.md"
+      ],
+      "authoritativeSources": [
+        "https://www.bankofcanada.ca/2026/06/criteria-for-registering-payment-service-providers/"
+      ],
+      "approver": {
+        "name": null,
+        "professionalStatus": null,
+        "engagementReference": null
+      },
+      "decision": null,
+      "conditions": null,
+      "decidedAt": null,
+      "engineeringDisposition": "production_blocked_pending_qualified_counsel",
+      "reReviewTriggers": [
+        "payout rail or finality evidence changes",
+        "conditional award language changes",
+        "production posting policy changes"
+      ]
+    },
+    {
+      "id": "holds-expiry-and-carryover",
+      "title": "Holds, review rights, expiry, and carryover",
+      "status": "pending_qualified_counsel",
+      "sourceArtifacts": [
+        "docs/legal/review-drafts/terms-canada.md",
+        "docs/legal/review-drafts/accounting-recognition-memo.md",
+        "docs/legal/review-drafts/counsel-redline-register.md"
+      ],
+      "runtimeEvidence": [
+        "supabase/migrations/20260809180000_withdrawal_obligation_control_plane.sql",
+        "docs/engineering/production-readiness-evidence-contract.md"
+      ],
+      "authoritativeSources": [
+        "https://www.ontario.ca/laws/statute/02c30"
+      ],
+      "approver": {
+        "name": null,
+        "professionalStatus": null,
+        "engagementReference": null
+      },
+      "decision": null,
+      "conditions": null,
+      "decidedAt": null,
+      "engineeringDisposition": "production_blocked_pending_qualified_counsel",
+      "reReviewTriggers": [
+        "claim expiry cadence changes",
+        "hold or appeal process changes",
+        "carryover destination changes"
+      ]
+    },
+    {
+      "id": "sanctions-and-payment-regulation",
+      "title": "Sanctions, payment regulation, safeguarding, and incident duties",
+      "status": "pending_qualified_counsel",
+      "sourceArtifacts": [
+        "docs/legal/review-drafts/terms-canada.md",
+        "docs/legal/review-drafts/privacy-notice-canada.md",
+        "docs/legal/review-drafts/data-flow-inventory.md",
+        "docs/legal/review-drafts/counsel-redline-register.md"
+      ],
+      "runtimeEvidence": [
+        "supabase/migrations/20260810160000_financial_cutover_control_plane.sql",
+        "docs/engineering/production-readiness-evidence-contract.md",
+        "lib/release-readiness/evidence-manifest.ts"
+      ],
+      "authoritativeSources": [
+        "https://fintrac-canafe.canada.ca/msb-esm/msb-eng",
+        "https://www.international.gc.ca/world-monde/international_relations-relations_internationales/sanctions/consolidated-consolide.aspx",
+        "https://www.bankofcanada.ca/2026/06/criteria-for-registering-payment-service-providers/"
+      ],
+      "approver": {
+        "name": null,
+        "professionalStatus": null,
+        "engagementReference": null
+      },
+      "decision": null,
+      "conditions": null,
+      "decidedAt": null,
+      "engineeringDisposition": "production_blocked_pending_qualified_counsel",
+      "reReviewTriggers": [
+        "payment function or customer role changes",
+        "screening provider changes",
+        "regulatory guidance changes"
+      ]
+    },
+    {
+      "id": "privacy-consent-and-invitations",
+      "title": "Privacy authority, consent, profile sharing, and invitations",
+      "status": "pending_qualified_counsel",
+      "sourceArtifacts": [
+        "docs/legal/review-drafts/privacy-notice-canada.md",
+        "docs/legal/review-drafts/data-flow-inventory.md",
+        "docs/legal/review-drafts/counsel-redline-register.md"
+      ],
+      "runtimeEvidence": [
+        "app/[locale]/(public)/privacy/page.tsx",
+        "lib/policies/profile-publication-command.ts",
+        "lib/invitations/project-invitation-command.ts",
+        "supabase/migrations/20260808234500_project_invitation_review_sharing.sql"
+      ],
+      "authoritativeSources": [
+        "https://laws-lois.justice.gc.ca/eng/acts/P-8.6/",
+        "https://www.priv.gc.ca/en/privacy-topics/privacy-laws-in-canada/the-personal-information-protection-and-electronic-documents-act-pipeda/p_principle/principles/p_consent/"
+      ],
+      "approver": {
+        "name": null,
+        "professionalStatus": null,
+        "engagementReference": null
+      },
+      "decision": null,
+      "conditions": null,
+      "decidedAt": null,
+      "engineeringDisposition": "production_blocked_pending_qualified_counsel",
+      "reReviewTriggers": [
+        "data fields or sharing recipients change",
+        "processor region or role changes",
+        "retention or deletion behavior changes"
+      ]
+    },
+    {
+      "id": "governing-law-and-disputes",
+      "title": "Governing law, venue, disputes, remedies, and mandatory rights",
+      "status": "pending_qualified_counsel",
+      "sourceArtifacts": [
+        "docs/legal/review-drafts/terms-canada.md",
+        "docs/legal/review-drafts/counsel-redline-register.md",
+        "docs/legal/review-drafts/counsel-decision-template.md"
+      ],
+      "runtimeEvidence": [
+        "app/[locale]/(public)/terms/page.tsx",
+        "lib/policies/review-policy.ts",
+        "supabase/migrations/20260808230000_review_policy_versions_and_acceptances.sql"
+      ],
+      "authoritativeSources": [
+        "https://www.ontario.ca/laws/statute/00e17",
+        "https://www.ontario.ca/laws/statute/02c30"
+      ],
+      "approver": {
+        "name": null,
+        "professionalStatus": null,
+        "engagementReference": null
+      },
+      "decision": null,
+      "conditions": null,
+      "decidedAt": null,
+      "engineeringDisposition": "production_blocked_pending_qualified_counsel",
+      "reReviewTriggers": [
+        "customer class or territory changes",
+        "dispute process changes",
+        "Terms version changes"
+      ]
+    },
+    {
+      "id": "prominent-disclosures-and-acceptance",
+      "title": "Decision-point disclosures, acceptance evidence, and reacceptance",
+      "status": "pending_qualified_counsel",
+      "sourceArtifacts": [
+        "docs/legal/review-drafts/README.md",
+        "docs/legal/review-drafts/terms-canada.md",
+        "docs/legal/review-drafts/privacy-notice-canada.md",
+        "docs/legal/review-drafts/counsel-redline-register.md"
+      ],
+      "runtimeEvidence": [
+        "app/[locale]/(public)/terms/page.tsx",
+        "app/[locale]/(public)/privacy/page.tsx",
+        "lib/policies/review-policy.ts",
+        "lib/policies/terms-acknowledgement-guard.ts",
+        "supabase/migrations/20260808230000_review_policy_versions_and_acceptances.sql"
+      ],
+      "authoritativeSources": [
+        "https://www.priv.gc.ca/en/privacy-topics/privacy-laws-in-canada/the-personal-information-protection-and-electronic-documents-act-pipeda/p_principle/principles/p_consent/",
+        "https://www.ontario.ca/laws/statute/00e17"
+      ],
+      "approver": {
+        "name": null,
+        "professionalStatus": null,
+        "engagementReference": null
+      },
+      "decision": null,
+      "conditions": null,
+      "decidedAt": null,
+      "engineeringDisposition": "production_blocked_pending_qualified_counsel",
+      "reReviewTriggers": [
+        "fees, assets, rails, or risk disclosures change",
+        "acceptance surface changes",
+        "material policy version changes"
+      ]
+    }
+  ],
+  "packetSha256": "2c8a294b571dddf18a3e7853b28a86c84b566104a32a335465a8ca6acbb8e06c"
+}
