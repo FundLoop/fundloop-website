@@ -26,12 +26,12 @@
     {
       "path": "docs/accounting/review-drafts/accounting-review-example.json",
       "role": "balanced-native-functional-example",
-      "sha256": "d5d70bdea0041ba07ad4a8edf5285479707d72d06494e8f7e1f856d277fdf80d"
+      "sha256": "b3ce19bf0a78c4fc764b1d6d3421158086468225af7f628c82932de50b9c0fd1"
     },
     {
       "path": "docs/accounting/review-drafts/accountant-decision-template.md",
       "role": "qualified-reviewer-template",
-      "sha256": "fa823c6626206c69f4b57804fbdb31281b41a01161950d9daaeaaf77d82dc70f"
+      "sha256": "7c5edba7cabf270cd6f1c71ce373d824d9ef0a0b81bb22fde51bd15214e94652"
     }
   ],
   "runtimeEvidence": [
@@ -93,5 +93,5 @@
   "conditions": null,
   "decidedAt": null,
   "engineeringDisposition": "cutover_blocked_pending_qualified_accountant",
-  "packetSha256": "77af6f75e41e0f2a6778bd2bfe999cbf14a5254cdfb1a64b745507b01d978fc2"
+  "packetSha256": "c94186608ca26be4f7643693fa16b64a0e4823559cc09b8ed720c3ee4e8820f8"
 }
