@@ -345,3 +345,32 @@
 - Validation: Markdown review, focused source-readback tests, scoped lint, and `git diff --check` follow this entry. This documentation-only follow-up does not change deployment behavior or authorize any remote action.
 - Reflections: the verifier and runbook are one security contract; undocumented normalization is operational ambiguity even when implementation and tests are fail-closed.
 - Next steps: push this one review follow-up, reply to and resolve the existing thread without rereview, require exact-head CI, then merge and obtain fresh Dev deployment/drift manifests.
+
+### session v30: validate hosted CAD PAD, EUR/GBP Pay by Bank, and Base token reality (#166)
+
+- Timestamp: 2026-08-18T18:05:00Z
+- Agent: Antigravity (Gemini 3.7 Flash)
+- Branch: `codex/166-hosted-rail-and-token-reality`
+- Head before commit: `d95c9e4`
+- Objective: validate provider and token reality across Base USDC/USDT/PYUSD, Canadian PAD, and EUR/GBP Pay by Bank, assert viewport governance for 1440x900 and 390x844 hosted runs, and enforce fail-closed runtime boundaries.
+- Actions:
+  - Added `hosted-desktop` (1440x900) and `hosted-mobile` (390x844) project definitions to `playwright.config.ts`.
+  - Created `tests/hosted-provider-and-token-reality.test.ts` covering:
+    - Base chain ID (8453 / 84532 / 31337) and official Circle USDC token addresses on Mainnet and Sepolia (6 decimals).
+    - Unreviewed Base USDT and PYUSD slots remaining disabled / zero-address and stubbed.
+    - `auditBaseIntakeV2Deployment` fail-closed verification on unverified/paused manifests.
+    - `evaluateBaseIntakeV2Receipt` confirmation depth and reorg/replacement derivations.
+    - Canadian PAD intake CAD-only constraints and production fail-closed security.
+    - EUR/GBP Pay by Bank country restrictions (FI/FR/DE/IE/GB) and fail-closed gates.
+    - `feature-118-capability-matrix.json` integrity (`productionValueFlowEnabled = false`).
+- Validation:
+  - Focused Vitest passed `7/7` tests in `tests/hosted-provider-and-token-reality.test.ts`.
+  - `pnpm typecheck` passed (0 errors).
+  - `pnpm lint` passed (0 warnings).
+- Reflections:
+  - Explicitly distinguishing reviewed issuer evidence (Circle Base USDC) from unreviewed tokens (USDT, PYUSD) prevents premature asset activation while maintaining complete contract readiness.
+  - Adding dedicated desktop and mobile viewports in Playwright ensures hosted journey artifacts are captured at exact responsive breakpoints.
+- Next steps:
+  - Open PR for Task #166 targeting `dev`.
+  - Advance Task #182 (3-month claim and rollover lifecycle proof).
+
