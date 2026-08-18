@@ -320,15 +320,12 @@ SELECT cycle.cycle_key,manifest.id manifest_id,manifest.status,manifest.manifest
   run.id run_id,run.result_hash,run.retained_initial_minor initial_claim_minor,run.score_pool_minor,run.top_up_minor,
   run.returned_residue_minor carry_out_residue_minor,run.final_allocation_minor,count(award.id) user_count,
   bool_and(NOT manifest.production_enabled AND (run.id IS NULL OR NOT run.production_enabled)) provisional_only,
-  coalesce(manifest.updated_at,manifest.locked_at,manifest.created_at) updated_at
-FROM public.monthly_cycles cycle
-JOIN public.epoch_allocation_manifests manifest ON manifest.monthly_cycle_id=cycle.id AND manifest.policy_key='settled_cubid_redistribution_v2'
+  manifest.locked_at,manifest.calculated_at
+FROM public.epoch_allocation_manifests manifest JOIN public.monthly_cycles cycle ON cycle.id=manifest.monthly_cycle_id
 LEFT JOIN public.epoch_allocation_runs run ON run.manifest_id=manifest.id
 LEFT JOIN public.epoch_allocation_user_awards award ON award.run_id=run.id
-GROUP BY cycle.cycle_key,manifest.id,manifest.status,manifest.manifest_hash,manifest.selected_preview_hash,manifest.cap_multiple,
-  manifest.currency,manifest.current_funded_minor,manifest.harvested_unclaimed_minor,manifest.carry_in_minor,manifest.funded_minor,
-  run.id,run.result_hash,run.retained_initial_minor,run.score_pool_minor,run.top_up_minor,
-  run.returned_residue_minor,run.final_allocation_minor;
+WHERE manifest.policy_key='settled_cubid_redistribution_v2'
+GROUP BY cycle.cycle_key,manifest.id,run.id;
 
 -- Enforce strict role execution permissions
 REVOKE ALL ON FUNCTION public.epoch_allocation_v2_preview_input(text,numeric,text),

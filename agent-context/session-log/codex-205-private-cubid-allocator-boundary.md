@@ -126,3 +126,41 @@ The one flaky test (`payment-flow-observability-route.test.ts` timing out under 
 3. **Open PR** from `codex/205-private-cubid-allocator-boundary` → `dev`
 4. **Phase 2 / Goal 163**: Multi-epoch lifecycle smoke test with real Cubid resolution in preview; assess `stale`/`conflict` handling policy with product team
 5. **Update `docs/engineering/cubid-identity.md`** and `docs/engineering/allocation.md` to reflect new private allocator integration surface
+
+---
+
+### session v2: fix operator view column references in migration
+
+**Timestamp:** 2026-08-18T15:36 UTC  
+**Agent:** Antigravity (Gemini 3.7 Flash)  
+**Branch:** `codex/205-private-cubid-allocator-boundary`  
+**Head:** 09f3bba
+
+---
+
+#### Objective
+
+Fix `epoch_allocation_operator_view_v2` definition in migration `20260818120000_allocator_logical_isolation_and_currency.sql` to resolve CI `Supabase fresh-schema replay` failure.
+
+---
+
+#### Actions Taken
+
+- Fixed `epoch_allocation_operator_view_v2` view definition in `supabase/migrations/20260818120000_allocator_logical_isolation_and_currency.sql`:
+  - Replaced non-existent `updated_at/created_at` column references with the canonical `manifest.locked_at, manifest.calculated_at` columns.
+  - Retained `manifest.currency` in the view select list and aligned `GROUP BY` with the canonical policy v2 view definition.
+
+---
+
+#### Validation
+
+- Migration syntax verified against baseline `20260811120000_epoch_allocation_policy_v2.sql`.
+- `pnpm typecheck` passed (0 errors).
+- `pnpm lint` passed (0 warnings).
+
+---
+
+#### Suggested Next Steps
+
+- Push commit to `codex/205-private-cubid-allocator-boundary` to trigger fresh CI run on PR #208.
+
