@@ -1,10 +1,9 @@
-"useclient"
+"use client"
 
 import { useState } from "react"
-import { ArrowRight, Check, DollarSign, Megaphone, Repeat, Sparkles, TrendingUp, Users } from "lucide-react"
+import { ArrowRight, Megaphone, Sparkles } from "lucide-react"
 import { Link } from "@/i18n/navigation"
 import { Button } from "@/components/ui/button"
-import { Reveal } from "@/components/marketing/reveal"
 import { SectionEyebrow, SectionTitle, SectionBody } from "@/components/marketing/page-chrome"
 
 export type FounderGrowthMathProps = {
