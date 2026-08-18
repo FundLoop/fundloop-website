@@ -37,6 +37,7 @@
     "test:e2e:personas": "node scripts/run-playwright-local-personas.mjs",
     "test:e2e:feature-118": "node scripts/run-feature-118-operational-matrix.mjs",
     "test:e2e:hosted-operational": "playwright test --project=hosted-operational",
+    "test:e2e:hosted-mobile": "playwright test --project=hosted-mobile",
     "mcp:dev": "pnpm --filter @fundloop/mcp-server dev",
     "mcp:test": "pnpm --filter @fundloop/mcp-server test",
     "mcp:smoke": "pnpm --filter @fundloop/mcp-server smoke",
