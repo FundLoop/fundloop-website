@@ -6,6 +6,8 @@ import { Link } from "@/i18n/navigation"
 import { Button } from "@/components/ui/button"
 import { Reveal } from "@/components/marketing/reveal"
 import { JourneyConfidenceBand, type JourneyConfidenceItem } from "@/components/marketing/journey-confidence-band"
+import { FounderGrowthMathPanel } from "@/components/marketing/founder-growth-math"
+import { FounderRuntimeMoatMathPanel } from "@/components/marketing/founder-runtime-moat-math"
 import {
   MarketingPage,
   MarketingSection,
@@ -138,6 +140,12 @@ export default async function FoundersPage({ params }: PageProps) {
         items={polishT.raw("items") as JourneyConfidenceItem[]}
       />
 
+      <MarketingSection id="growth-math" className="py-8 sm:py-12">
+        <Reveal>
+          <FounderGrowthMathPanel />
+        </Reveal>
+      </MarketingSection>
+
       <MarketingSection
         id="commitment"
         className="border-y border-[color:var(--marketing-line)] bg-white/34 dark:bg-white/[0.02]"
@@ -212,6 +220,12 @@ export default async function FoundersPage({ params }: PageProps) {
             </div>
           </div>
         </div>
+      </MarketingSection>
+
+      <MarketingSection id="runtime-moat" className="py-8 sm:py-12">
+        <Reveal>
+          <FounderRuntimeMoatMathPanel />
+        </Reveal>
       </MarketingSection>
 
       <MarketingSection
