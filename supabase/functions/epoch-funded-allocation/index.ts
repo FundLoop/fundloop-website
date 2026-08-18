@@ -2,12 +2,29 @@ import { calculateFundedRedistributionV2, type FundedRedistributionV2Input } fro
 import { validateEpochFundedAllocationInput } from "../../../lib/edge-functions/epoch-funded-allocation-contract.ts"
 import { edgeCommandFailure, edgeCommandSuccess } from "../../../lib/edge-functions/result.ts"
 import { isInternalAdminEmail } from "../../../lib/internal-admin-emails.ts"
+import { PrivateCubidAllocatorClient, type CubidAllocatorEnvironment } from "../../../lib/cubid/private-allocator-client.ts"
 import { authenticateRequest, getEnv, json, parseJsonBody, serve } from "../_shared/command-runtime.ts"
 
 const allowedEnvironments = new Set(["local", "development", "dev", "preview", "test"])
 
 function deploymentEnvironment() {
   return (getEnv("FUNDLOOP_DEPLOYMENT_ENV") ?? "production").trim().toLowerCase()
+}
+
+function getCubidAllocatorClient(environment: string): PrivateCubidAllocatorClient | null {
+  const baseUrl = getEnv("CUBID_ALLOCATOR_BASE_URL")
+  const keyId = getEnv("CUBID_ALLOCATOR_KEY_ID_PRIMARY")
+  const privateKeyPem = getEnv("CUBID_ALLOCATOR_PRIVATE_KEY_PRIMARY")
+  if (!baseUrl || !keyId || !privateKeyPem) return null
+  const env: CubidAllocatorEnvironment = environment === "production" ? "production" : environment === "preview" ? "preview" : "development"
+  return new PrivateCubidAllocatorClient({
+    baseUrl,
+    environment: env,
+    primaryKey: { keyId, privateKeyPem },
+    secondaryKey: getEnv("CUBID_ALLOCATOR_KEY_ID_SECONDARY") && getEnv("CUBID_ALLOCATOR_PRIVATE_KEY_SECONDARY")
+      ? { keyId: getEnv("CUBID_ALLOCATOR_KEY_ID_SECONDARY")!, privateKeyPem: getEnv("CUBID_ALLOCATOR_PRIVATE_KEY_SECONDARY")! }
+      : undefined,
+  })
 }
 
 function errorCode(message: string) {
@@ -48,13 +65,46 @@ async function handleRequest(request: Request) {
     })
     if (preview.error) return json(edgeCommandFailure(errorCode(preview.error.message), preview.error.message))
     const previewInput = preview.data as Omit<FundedRedistributionV2Input, "manifestHash" | "selectedPreviewHash"> & { inputHash: string }
+    const currency = input.currency ?? previewInput.currency ?? "USD"
+
+    const client = getCubidAllocatorClient(environment)
+    let resolvedCohort = previewInput.cohort
+    if (client && previewInput.cohort.length > 0) {
+      const projects = [...new Set(previewInput.cohort.map(c => c.projectId))]
+      const updatedCohort = [...previewInput.cohort]
+      for (const projId of projects) {
+        const cohortForProj = previewInput.cohort.filter(c => c.projectId === projId)
+        const batchRes = await client.resolveBatch({
+          contract_version: "2026-08-14",
+          project_id: projId,
+          items: cohortForProj.map(c => ({ project_scoped_uuid: c.projectPseudonym })),
+        })
+        if (!batchRes.ok) {
+          return json(edgeCommandFailure("cubid_allocator_resolution_failed", `Cubid allocator resolution failed: ${batchRes.error}`))
+        }
+        for (const item of batchRes.data.items) {
+          const matchIdx = updatedCohort.findIndex(c => c.projectId === projId && c.projectPseudonym === item.project_scoped_uuid)
+          if (matchIdx >= 0 && item.status === "resolved" && item.score !== null) {
+            updatedCohort[matchIdx] = {
+              ...updatedCohort[matchIdx],
+              lockedScore: item.score.toString(),
+              cubidEvidenceHash: item.evidence_hash ?? updatedCohort[matchIdx].cubidEvidenceHash,
+            }
+          }
+        }
+      }
+      resolvedCohort = updatedCohort
+    }
+
     try {
       const artifact = await calculateFundedRedistributionV2({
         ...previewInput,
+        cohort: resolvedCohort,
+        currency,
         manifestHash: previewInput.inputHash,
         selectedPreviewHash: previewInput.inputHash,
       })
-      return json(edgeCommandSuccess({ action: "preview", previewHash: previewInput.inputHash, artifact }))
+      return json(edgeCommandSuccess({ action: "preview", previewHash: previewInput.inputHash, currency, artifact }))
     } catch (error) {
       const message = error instanceof Error ? error.message : "Allocation preview failed."
       return json(edgeCommandFailure(errorCode(message), message))
@@ -77,7 +127,7 @@ async function handleRequest(request: Request) {
   const cycle = await auth.adminClient.from("monthly_cycles").select("id").eq("cycle_key", input.cycleKey).maybeSingle()
   if (cycle.error || !cycle.data) return json(edgeCommandFailure("epoch_allocation_cycle_invalid", "Cycle not found."))
   const lockedResult = await auth.adminClient.from("epoch_allocation_manifests")
-    .select("id,manifest_hash,manifest").eq("monthly_cycle_id", cycle.data.id)
+    .select("id,manifest_hash,manifest,currency").eq("monthly_cycle_id", cycle.data.id)
     .eq("policy_key", "settled_cubid_redistribution_v2").order("version", { ascending: false }).limit(1).maybeSingle()
   if (lockedResult.error || !lockedResult.data) {
     return json(edgeCommandFailure("epoch_allocation_v2_manifest_not_locked", "Select and lock a cap preview before calculating."))
@@ -86,21 +136,22 @@ async function handleRequest(request: Request) {
     manifestId: lockedResult.data.id,
     manifestHash: lockedResult.data.manifest_hash,
     manifest: lockedResult.data.manifest as Omit<FundedRedistributionV2Input, "manifestHash">,
+    currency: lockedResult.data.currency ?? "USD",
   }
   try {
-    const artifact = await calculateFundedRedistributionV2({ ...locked.manifest, manifestHash: locked.manifestHash })
+    const artifact = await calculateFundedRedistributionV2({ ...locked.manifest, manifestHash: locked.manifestHash, currency: locked.currency })
     const recorded = await auth.adminClient.rpc("record_funded_epoch_allocation_v2", {
-    p_command: {
-      contractVersion: "epoch_funded_allocation_result.v2",
-      deploymentEnvironment: environment,
-      actorUserId: auth.user.id,
-      manifestId: locked.manifestId,
-      resultHash: artifact.resultHash,
-      artifact,
-    },
-  })
+      p_command: {
+        contractVersion: "epoch_funded_allocation_result.v2",
+        deploymentEnvironment: environment,
+        actorUserId: auth.user.id,
+        manifestId: locked.manifestId,
+        resultHash: artifact.resultHash,
+        artifact,
+      },
+    })
     if (recorded.error) return json(edgeCommandFailure(errorCode(recorded.error.message), recorded.error.message))
-    return json(edgeCommandSuccess({ action: "calculate", manifestId: locked.manifestId, runId: Number(recorded.data), artifact }))
+    return json(edgeCommandSuccess({ action: "calculate", manifestId: locked.manifestId, runId: Number(recorded.data), currency: locked.currency, artifact }))
   } catch (error) {
     const message = error instanceof Error ? error.message : "Funded allocation calculation failed."
     return json(edgeCommandFailure(errorCode(message), message))
