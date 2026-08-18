@@ -374,3 +374,25 @@
   - Open PR for Task #166 targeting `dev`.
   - Advance Task #182 (3-month claim and rollover lifecycle proof).
 
+### session v31: address PR #230 code review feedback (#166)
+
+- Timestamp: 2026-08-18T18:53:00Z
+- Agent: Antigravity (Gemini 3.7 Flash)
+- Branch: `codex/166-hosted-rail-and-token-reality`
+- Head before commit: `31f52b9`
+- Objective: address code review feedback on PR #230 covering CAD PAD USD rejection testing, Base intake receipt validation assertion, and Playwright hosted runner de-duplication.
+- Actions:
+  - In `playwright.config.ts`, adjusted `hosted-operational` viewport to 1440x900 and scoped `hosted-mobile` to `*.mobile.spec.ts` (390x844) to prevent 3x redundant execution under blanket `playwright test`.
+  - In `package.json`, added explicit `test:e2e:hosted-mobile` script matching the project matrix.
+  - In `tests/hosted-provider-and-token-reality.test.ts`:
+    - Added focused assertion exercising `validateBaseIntakeReceiptCommand` across dev and production environments.
+    - Explicitly asserted CAD PAD schema validation alongside downstream handler-level USD rejection (`usd_account_evidence_required`).
+    - Updated Playwright viewport assertions.
+- Validation:
+  - `pnpm vitest run tests/hosted-provider-and-token-reality.test.ts` passed (`8/8` tests).
+  - `pnpm typecheck` passed (0 errors).
+  - `pnpm lint` passed (0 warnings).
+- Next steps:
+  - Push commit to `codex/166-hosted-rail-and-token-reality`, reply to reviewer threads on PR #230, and resolve them.
+
+

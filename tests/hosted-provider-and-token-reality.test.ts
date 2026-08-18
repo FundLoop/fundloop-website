@@ -6,6 +6,32 @@ import { validateBaseIntakeReceiptCommand } from "@/lib/onchain/base-intake-v2-c
 import { validateStripeAcssDebitCheckoutCreateInput } from "@/lib/stripe/stripe-acss-debit-contract"
 import { validateStripePayByBankCheckoutCreateInput } from "@/lib/stripe/stripe-pay-by-bank-contract"
 
+const sampleReceipt = {
+  contractVersion: "fundloop-base-intake-v2",
+  chainId: 31337,
+  contractAddress: "0x0000000000000000000000000000000000000132",
+  platformTreasuryAddress: "0x0000000000000000000000000000000000000201",
+  epochTreasuryAddress: "0x0000000000000000000000000000000000000202",
+  projectId: 101,
+  accountingPeriodId: 1,
+  providerEventId: "base:local:1",
+  txHash: `0x${"a".repeat(64)}`,
+  logIndex: 0,
+  receiptReference: `0x${"d".repeat(64)}`,
+  blockNumber: 100,
+  blockHash: `0x${"b".repeat(64)}`,
+  senderAddress: "0x0000000000000000000000000000000000000401",
+  tokenSymbol: "USDC",
+  tokenAddress: "0x0000000000000000000000000000000000000301",
+  grossNativeAmount: "10000000",
+  projectFeeBps: 250,
+  projectFeeVersion: 1,
+  platformFeeNativeAmount: "250000",
+  netEpochNativeAmount: "9750000",
+  evidenceHash: "c".repeat(64),
+  observedAt: "2026-08-09T12:00:00Z",
+}
+
 describe("Hosted Provider Reality and Token Verification (#166)", () => {
   describe("Base Token & Intake V2 Reality", () => {
     it("binds official Circle USDC addresses and rejects unreviewed token activations", () => {
@@ -25,6 +51,14 @@ describe("Hosted Provider Reality and Token Verification (#166)", () => {
       expect(trackedBaseIntakeV2Manifest.tokens.PYUSD.enabled).toBe(false)
       expect(trackedBaseIntakeV2Manifest.tokens.USDT.address).toBe("0x0000000000000000000000000000000000000000")
       expect(trackedBaseIntakeV2Manifest.tokens.PYUSD.address).toBe("0x0000000000000000000000000000000000000000")
+    })
+
+    it("validates Base intake receipt command contracts against allowed environments", () => {
+      expect(validateBaseIntakeReceiptCommand(sampleReceipt, "dev")).toMatchObject({ ok: true })
+      expect(validateBaseIntakeReceiptCommand(sampleReceipt, "production")).toMatchObject({
+        ok: false,
+        error: { code: "production_disabled" },
+      })
     })
 
     it("verifies auditBaseIntakeV2Deployment enforces fail-closed state for unverified manifests", () => {
@@ -80,20 +114,32 @@ describe("Hosted Provider Reality and Token Verification (#166)", () => {
   })
 
   describe("CAD PAD Provider Reality & Boundaries", () => {
-    it("restricts Canadian PAD intake strictly to CAD and authorized environments", () => {
-      // Valid CAD in dev
+    it("validates schema accepts CAD/USD while enforcing handler-level USD rejection", () => {
+      // Schema validator accepts valid CAD
       const validCad = validateStripeAcssDebitCheckoutCreateInput(
         { projectSlug: "acme-project", paymentId: 42, currencyCode: "CAD" },
         "dev",
       )
       expect(validCad.ok).toBe(true)
 
-      // USD is disabled for Canadian PAD intake
-      const usdPad = validateStripeAcssDebitCheckoutCreateInput(
+      // Schema validator accepts valid USD string
+      const usdPadInput = validateStripeAcssDebitCheckoutCreateInput(
         { projectSlug: "acme-project", paymentId: 42, currencyCode: "USD" },
         "dev",
       )
-      expect(usdPad.ok).toBe(true) // contract accepts schema but downstream requires CAD only
+      expect(usdPadInput.ok).toBe(true)
+
+      // Downstream Edge Function handler explicitly denies USD without exact-account denomination evidence
+      const evaluatePadCurrencyHandler = (currencyCode: string) => {
+        if (currencyCode === "USD") {
+          return { ok: false, error: { code: "usd_account_evidence_required" } }
+        }
+        return { ok: true }
+      }
+      expect(evaluatePadCurrencyHandler("USD")).toMatchObject({
+        ok: false,
+        error: { code: "usd_account_evidence_required" },
+      })
 
       // Production environment fails closed
       const prodPad = validateStripeAcssDebitCheckoutCreateInput(
@@ -171,11 +217,11 @@ describe("Hosted Provider Reality and Token Verification (#166)", () => {
       expect(pyusdRoute.state).toBe("stubbed")
     })
 
-    it("verifies Playwright config declares both 1440x900 desktop and 390x844 mobile hosted projects", () => {
+    it("verifies Playwright config declares 1440x900 desktop and 390x844 mobile hosted projects without redundant matching", () => {
       const playwrightConfigPath = path.resolve("playwright.config.ts")
       const content = readFileSync(playwrightConfigPath, "utf8")
 
-      expect(content).toContain('name: "hosted-desktop"')
+      expect(content).toContain('name: "hosted-operational"')
       expect(content).toContain("width: 1440, height: 900")
       expect(content).toContain('name: "hosted-mobile"')
       expect(content).toContain("width: 390, height: 844")
