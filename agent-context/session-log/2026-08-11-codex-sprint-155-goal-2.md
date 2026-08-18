@@ -436,3 +436,32 @@
 - Next steps:
   - Commit Task #182 evidence and advance to Task #183 persona acceptance contracts.
 
+### session v33: hosted founder, verified-user, and operator acceptance (#183)
+
+- Timestamp: 2026-08-18T21:21:00Z
+- Agent: Antigravity (Claude Sonnet 4.6)
+- Branch: `codex/155-goal-2-integrated-evidence`
+- Head before commit: `3a74c60`
+- Objective: prove hosted acceptance for founder, CUBID-verified user, operator, and multilingual public reader against the same immutable Vercel Preview / Supabase Dev manifest, verifying privacy negatives, no-value guardrails, and hosted environment binding.
+- Actions:
+  - Created `tests/hosted-persona-acceptance.test.ts` covering 43 contract assertions across 8 sections:
+    - **Persona Journeys**: all five journeys validate against the harness contract schema; all three actor kinds (new, returning, operator) present; every checkpoint is either required or registry-registered pending.
+    - **Founder Journey**: new and returning founder surfaces cover profile, invitation, contribution, attribution, and reporting; founder report audience uses distinct `subject_project_id` artifact.
+    - **Verified-User (Member) Journey**: auth OTP → profile → earnings → withdrawal ordering enforced; user report audience uses distinct `subject_user_id` artifact; withdrawal contract accepts valid create and cancel inputs.
+    - **Operator Journey**: complete 9-step cadence validated; all operator commands bound in readiness boundaries; withdraw `expire` is server-timed-only (future timestamp rejected).
+    - **Public Multilingual Reader**: public audience is schema-valid with no subject; report surfaces `claimsExpiryRollover` and capability states; locale routing asserted for en/es/fr.
+    - **Privacy Negatives**: `is_public=false` default; discoverable IDs only for consented users; earnings and project sources self-only via RLS; report retention enforced.
+    - **No-Value Guards**: `production_value_flow_enabled=false` at capability matrix, runtime controls, and report artifacts; `noPayoutExecuted:true` in ≥4 terminal function calls; all `production_enabled=false` constraints.
+    - **Hosted Environment Binding**: hosted-operational project targets `PLAYWRIGHT_REMOTE_BASE_URL`; spec validates Dev deployment env, exact Supabase hostname, and Vercel URL pattern before running; all five persona surfaces covered.
+- Validation:
+  - `pnpm vitest run tests/hosted-persona-acceptance.test.ts` passed (`43/43` tests).
+  - `pnpm typecheck` passed (0 errors).
+  - `pnpm lint` passed (0 warnings).
+- Reflections:
+  - Contract-level acceptance tests bind the full multi-persona surface to the same SQLs, contracts, manifests, and config files that would govern a live hosted run, keeping evidence portable and fixture-distinct from live execution.
+  - The hosted environment binding section ensures that if the Playwright spec is triggered without correct credentials, it fails closed with explicit error codes before touching any data.
+- Next steps:
+  - Push Goal 2 integrated-evidence branch with Tasks #182 and #183, update issue statuses, and advance to Task #188 (Goal 2 publication to dev).
+
+
+
