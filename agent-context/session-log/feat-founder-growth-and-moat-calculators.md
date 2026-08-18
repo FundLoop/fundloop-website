@@ -46,3 +46,45 @@ Equip the `/founders` marketing page with two dedicated economic calculator pane
 ### Next Steps
 
 - Open PR from `feat/founder-growth-and-moat-calculators` to `dev`.
+
+## Session v2: Fix Client Directive and Clean Up Unused Imports
+
+- **Timestamp:** 2026-08-18T21:28:00Z
+- **Agent:** Antigravity (Gemini 3.7 Flash)
+- **Branch:** `feat/founder-growth-and-moat-calculators`
+- **Head:** `cde129b`
+
+---
+
+### Objective
+
+Address review comments from @KazanderDad on PR #231 and fix CI build failures:
+1. Fix malformed `"useclient"` directive to `"use client"` in `components/marketing/founder-growth-math.tsx`.
+2. Remove unused icon and component imports in `components/marketing/founder-growth-math.tsx` and `components/marketing/founder-runtime-moat-math.tsx`.
+
+---
+
+### Actions Taken
+
+- **Fixed `components/marketing/founder-growth-math.tsx`:**
+  - Corrected directive to `"use client"`.
+  - Removed unused imports (`Check`, `DollarSign`, `Repeat`, `TrendingUp`, `Users`, `Reveal`).
+- **Fixed `components/marketing/founder-runtime-moat-math.tsx`:**
+  - Removed unused imports (`ArrowRight`, `Link`, `Button`).
+
+---
+
+### Validation
+
+- `pnpm typecheck` passed (0 errors).
+- `pnpm test` passed (994/994 tests across 188 test files).
+- `pnpm lint` passed (0 warnings).
+- `pnpm build` passed (production Turbopack build with 165 static routes generated).
+
+---
+
+### Next Steps
+
+- Push commit to `feat/founder-growth-and-moat-calculators`.
+- Reply to and resolve review comments on PR #231.
+

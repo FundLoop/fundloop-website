@@ -1,9 +1,7 @@
 "use client"
 
 import { useState } from "react"
-import { ArrowRight, Flame, HeartHandshake, ShieldCheck, Sparkles, TrendingUp, Users, Zap } from "lucide-react"
-import { Link } from "@/i18n/navigation"
-import { Button } from "@/components/ui/button"
+import { Flame, HeartHandshake, ShieldCheck, Sparkles, TrendingUp, Users, Zap } from "lucide-react"
 import { Slider } from "@/components/ui/slider"
 import { SectionEyebrow, SectionTitle, SectionBody } from "@/components/marketing/page-chrome"
 
