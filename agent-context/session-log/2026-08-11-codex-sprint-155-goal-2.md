@@ -320,8 +320,7 @@
 - Actions: removed the parallel ordinary-user path to the internal-only `mcp` monthly-report audience while retaining public, exact-self, founder-project, and internal access. Added a forward readiness migration that advances the Goal 2 schema identity only after the tombstone-aware report artifact constraint is present and structurally verified; updated the runner and focused contracts to reject the immediately preceding schema identity.
 - Validation: focused MCP/readiness tests, scoped ESLint, Node 22 typecheck, Deno module check, migration replay through CI fresh-schema validation, workflow dry-run, and `git diff --check` follow this entry. No local Supabase restart, hosted mutation, Production action, provider enablement, payout, or real-value flow is authorized by this review fix.
 - Reflections: a privileged audience must have one consistent authorization rule across direct Edge and MCP read paths, and readiness must bind behavior-changing constraints rather than only the tables/functions that surround them.
-- Next steps: commit and push one review-fix changeset, reply to and resolve both original PR threads, wait for exact-head CI, then merge #206 to `dev` only under the reviewed non-squash policy. Keep #205 blocked until Cubid #77 is confirmed merged to Cubid `dev`.
-
+- Next steps: commit and push one review-fix changeset, reply to and resolve both original PR threads, wait for exact-head CI, then merge #206 to `dev` only under the reviewed non-squash policy. Keep #205 blocked until Cubid #77 is confirmed merged to C
 ### session v28: normalize Supabase-root function readback (#188)
 
 - Timestamp: 2026-08-14T05:21:00Z
@@ -395,4 +394,45 @@
 - Next steps:
   - Push commit to `codex/166-hosted-rail-and-token-reality`, reply to reviewer threads on PR #230, and resolve them.
 
+### session v32: prove three-month claim and rollover lifecycle (#182)
+
+- Timestamp: 2026-08-18T19:06:00Z
+- Agent: Antigravity (Claude Sonnet 4.6)
+- Branch: `codex/155-goal-2-integrated-evidence`
+- Head before commit: `7251667` (post-merge from origin/dev)
+- Objective: prove the complete three-month retroactive claim lifecycle across obligation creation, oldest-first FIFO partial consumption, reservation expiry with timely-request protection, rollover provenance, destination readiness gates, accounting conservation, and no-value production guardrails.
+- Actions:
+  - Resolved merge conflict between `codex/155-goal-2-integrated-evidence` and `origin/dev` in session log.
+  - Created `tests/three-month-claim-lifecycle.test.ts` covering 30 contract assertions:
+    - E-3 rule: all three obligation migrations use `period_start+interval '3 months'` for expiry.
+    - `settled_cubid_redistribution_v2` policy also uses the E+3 expiry path.
+    - `isObligationClaimable` helper verifies N+0 through N+2 open, N+3 closed.
+    - Monthly report documents `claimsExpiryRollover` and `expiryCycleId`.
+    - SQL `ORDER BY obligation.available_at,obligation.id` and `ORDER BY lot.monthly_cycle_id,lot.deterministic_sequence,lot.id` enforce FIFO.
+    - `applyFifoPartialClaim` helper validates oldest-first partial consumption, cross-obligation spanning, balance conservation, and already-reserved exclusion.
+    - Timely-request protection: `timelyRequestPreserved:true` and `reservation_expired_requeued` in SQL.
+    - Lifecycle event log is append-only (`withdrawal_evidence_is_append_only`).
+    - All 10 lifecycle event types verified.
+    - `harvested` and `carried_forward` source lot states cover unclaimed value rollover.
+    - Destination queue gate: `eligible_inventory_depleted`, `queue_for_cycle_key`, retry action.
+    - One-live-withdrawal-intent index (`payout_intents_one_live_withdrawal_idx`).
+    - Destination and request hash format enforced.
+    - Production runtime controls fail completely closed.
+    - `noPayoutExecuted:true` present in ≥ 4 terminal function returns.
+    - All `production_enabled=false` constraints on obligations, inventory lots, and requests.
+    - Direct result payout intents retired.
+    - RLS and function grants verified.
+    - Compliance hold auditable.
+    - All 6 obligation balance status buckets in view.
+    - Released claims excluded from available calculation.
+    - `user_withdrawal_asset_inventory` filters only active lots.
+- Validation:
+  - `pnpm vitest run tests/three-month-claim-lifecycle.test.ts` passed (`30/30` tests).
+  - `pnpm typecheck` passed (0 errors).
+  - `pnpm lint` passed (0 warnings).
+- Reflections:
+  - Contract tests prove the SQL lifecycle state machine without requiring a live local Supabase, keeping the evidence portable and fixture-distinct from hosted proof.
+  - The FIFO partial-consumption helper mirrors the exact SQL `ORDER BY` logic and demonstrates balance conservation analytically.
+- Next steps:
+  - Commit Task #182 evidence and advance to Task #183 persona acceptance contracts.
 
