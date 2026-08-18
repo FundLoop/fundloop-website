@@ -314,7 +314,8 @@ BEGIN
   RETURN v_run_id;
 END; $$;
 
-CREATE OR REPLACE VIEW public.epoch_allocation_operator_view_v2 WITH(security_invoker=true) AS
+DROP VIEW IF EXISTS public.epoch_allocation_operator_view_v2;
+CREATE VIEW public.epoch_allocation_operator_view_v2 WITH(security_invoker=true) AS
 SELECT cycle.cycle_key,manifest.id manifest_id,manifest.status,manifest.manifest_hash,manifest.selected_preview_hash,manifest.cap_multiple,
   manifest.currency,manifest.current_funded_minor,manifest.harvested_unclaimed_minor,manifest.carry_in_minor,manifest.funded_minor,
   run.id run_id,run.result_hash,run.retained_initial_minor initial_claim_minor,run.score_pool_minor,run.top_up_minor,
@@ -326,6 +327,9 @@ LEFT JOIN public.epoch_allocation_runs run ON run.manifest_id=manifest.id
 LEFT JOIN public.epoch_allocation_user_awards award ON award.run_id=run.id
 WHERE manifest.policy_key='settled_cubid_redistribution_v2'
 GROUP BY cycle.cycle_key,manifest.id,run.id;
+
+REVOKE ALL ON TABLE public.epoch_allocation_operator_view_v2 FROM PUBLIC,anon,authenticated;
+GRANT SELECT ON TABLE public.epoch_allocation_operator_view_v2 TO service_role;
 
 -- Enforce strict role execution permissions
 REVOKE ALL ON FUNCTION public.epoch_allocation_v2_preview_input(text,numeric,text),

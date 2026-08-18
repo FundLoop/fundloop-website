@@ -164,3 +164,39 @@ Fix `epoch_allocation_operator_view_v2` definition in migration `20260818120000_
 
 - Push commit to `codex/205-private-cubid-allocator-boundary` to trigger fresh CI run on PR #208.
 
+---
+
+### session v3: drop and recreate operator view to prevent Postgres 42P16 column renaming error
+
+**Timestamp:** 2026-08-18T15:43 UTC  
+**Agent:** Antigravity (Gemini 3.7 Flash)  
+**Branch:** `codex/205-private-cubid-allocator-boundary`  
+**Head:** 4ff03ed
+
+---
+
+#### Objective
+
+Resolve PostgreSQL error `42P16: cannot change name of view column "current_funded_minor" to "currency"` during `Supabase fresh-schema replay` CI check.
+
+---
+
+#### Actions Taken
+
+- In `supabase/migrations/20260818120000_allocator_logical_isolation_and_currency.sql`, replaced `CREATE OR REPLACE VIEW` with explicit `DROP VIEW IF EXISTS` followed by `CREATE VIEW` and `REVOKE/GRANT` statements.
+- This allows PostgreSQL to cleanly add `manifest.currency` to `epoch_allocation_operator_view_v2` without triggering column reordering restrictions.
+
+---
+
+#### Validation
+
+- `pnpm typecheck` passed (0 errors).
+- `pnpm lint` passed (0 warnings).
+
+---
+
+#### Suggested Next Steps
+
+- Push commit to `codex/205-private-cubid-allocator-boundary` and monitor CI on PR #208.
+
+
