@@ -21,6 +21,7 @@ export type FundedProjectSourceInput = {
   nativeAtomicAmount: string
   fxSnapshotId: string
   evidenceHash: string
+  currency?: string
 }
 
 export type FundedRedistributionPoolSourceInput = Omit<FundedProjectSourceInput, "projectKey"> & {
@@ -44,6 +45,7 @@ export type FundedRedistributionV2Input = {
   minorUnitScale: number
   capMultiple: string
   selectedPreviewHash: string
+  currency?: string
   projectSources: FundedProjectSourceInput[]
   redistributionSources: FundedRedistributionPoolSourceInput[]
   cohort: FundedAllocationCohortV2Input[]
@@ -57,10 +59,12 @@ export type FundedSourceDispositionV2 = {
   kind: "initial_claim" | "score_pool" | "harvested_pool" | "carryin_pool" | "top_up" | "carryout_residue"
   canonicalMinor: string
   exactUsd: string
+  currency: string
 }
 
 export type FundedUserAllocationV2 = {
   userId: string
+  currency: string
   aggregateInitialExactUsd: string
   baselineExactUsd: string
   capMultiple: string
@@ -86,6 +90,7 @@ export type FundedRedistributionV2Result = {
   selectedPreviewHash: string
   minorUnitScale: number
   capMultiple: string
+  currency: string
   totals: {
     currentFundedExactUsd: string
     currentFundedMinor: string
@@ -125,9 +130,9 @@ function gcd(left: bigint, right: bigint): bigint {
 
 function fraction(numerator: bigint, denominator = ONE_BIGINT): Fraction {
   if (denominator === ZERO_BIGINT) throw new Error("funded_allocation_v2_division_by_zero")
-  const sign = denominator < ZERO_BIGINT ? -ONE_BIGINT : ONE_BIGINT
   const divisor = gcd(numerator, denominator)
-  return { numerator: (numerator / divisor) * sign, denominator: abs(denominator) / divisor }
+  const sign = denominator < ZERO_BIGINT ? -ONE_BIGINT : ONE_BIGINT
+  return { numerator: (numerator / divisor) * sign, denominator: (abs(denominator) / divisor) }
 }
 
 function add(left: Fraction, right: Fraction) {
@@ -194,8 +199,8 @@ function stableCompare(left: string, right: string) {
 function stableStringify(value: unknown): string {
   if (value === null || typeof value !== "object") return JSON.stringify(value)
   if (Array.isArray(value)) return `[${value.map(stableStringify).join(",")}]`
-  const record = value as Record<string, unknown>
-  return `{${Object.keys(record).sort().map((key) => `${JSON.stringify(key)}:${stableStringify(record[key])}`).join(",")}}`
+  const entries = Object.entries(value as Record<string, unknown>).sort(([left], [right]) => stableCompare(left, right))
+  return `{${entries.map(([key, item]) => `${JSON.stringify(key)}:${stableStringify(item)}`).join(",")}}`
 }
 
 async function sha256Hex(value: unknown) {
@@ -261,6 +266,10 @@ function validateAndNormalize(input: FundedRedistributionV2Input) {
   if (!/^\d{4}-\d{2}$/.test(input.cycleKey) || !/^[0-9a-f]{64}$/.test(input.manifestHash) || !/^[0-9a-f]{64}$/.test(input.selectedPreviewHash)) {
     throw new Error("funded_allocation_v2_manifest_invalid")
   }
+  const currency = (input.currency ?? "USD").trim().toUpperCase()
+  if (!/^[A-Z]{3}$/.test(currency)) {
+    throw new Error("funded_allocation_v2_currency_invalid")
+  }
   const scale = input.minorUnitScale
   power10(scale)
   const capMultiple = validateCapMultiple(input.capMultiple)
@@ -275,6 +284,9 @@ function validateAndNormalize(input: FundedRedistributionV2Input) {
   for (const source of [...projectSources, ...redistributionSources]) {
     if (sourceKeys.has(source.sourceLotKey)) throw new Error("funded_allocation_v2_source_duplicate")
     sourceKeys.add(source.sourceLotKey)
+    if (source.currency && source.currency.trim().toUpperCase() !== currency) {
+      throw new Error("funded_allocation_v2_currency_mismatch")
+    }
     if (source.minorUnitScale !== scale || compare(parseDecimal(source.exactUsd), ZERO) <= 0
       || !/^\d+$/.test(source.canonicalMinorCapacity)) {
       throw new Error("funded_allocation_v2_source_invalid")
@@ -294,11 +306,11 @@ function validateAndNormalize(input: FundedRedistributionV2Input) {
       throw new Error("funded_allocation_v2_score_invalid")
     }
   }
-  return { projectSources, redistributionSources, cohort, scale, capMultiple }
+  return { projectSources, redistributionSources, cohort, scale, capMultiple, currency }
 }
 
 export async function calculateFundedRedistributionV2(input: FundedRedistributionV2Input): Promise<FundedRedistributionV2Result> {
-  const { projectSources, redistributionSources, cohort, scale, capMultiple } = validateAndNormalize(input)
+  const { projectSources, redistributionSources, cohort, scale, capMultiple, currency } = validateAndNormalize(input)
   const cohortByProject = new Map<number, FundedAllocationCohortV2Input[]>()
   for (const member of cohort) cohortByProject.set(member.projectId, [...(cohortByProject.get(member.projectId) ?? []), member])
   for (const projectId of new Set(projectSources.map((source) => source.projectId))) {
@@ -431,6 +443,7 @@ export async function calculateFundedRedistributionV2(input: FundedRedistributio
       kind: "initial_claim",
       canonicalMinor: canonicalMinor.toString(),
       exactUsd: decimalString(claim.initial),
+      currency,
     })
   }
   for (const source of projectSources) {
@@ -438,13 +451,13 @@ export async function calculateFundedRedistributionV2(input: FundedRedistributio
     const exactUsd = availableExactPoolBySource.get(source.sourceLotKey) ?? ZERO
     if (canonicalMinor > ZERO_BIGINT || compare(exactUsd, ZERO) > 0) sourceDispositions.push({
       sourceLotId: source.sourceLotId, sourceLotKey: source.sourceLotKey, userId: null, projectId: source.projectId,
-      kind: "score_pool", canonicalMinor: canonicalMinor.toString(), exactUsd: decimalString(exactUsd),
+      kind: "score_pool", canonicalMinor: canonicalMinor.toString(), exactUsd: decimalString(exactUsd), currency,
     })
   }
   for (const source of redistributionSources) sourceDispositions.push({
     sourceLotId: source.sourceLotId, sourceLotKey: source.sourceLotKey, userId: null, projectId: source.projectId,
     kind: source.originKind === "harvested_unclaimed" ? "harvested_pool" : "carryin_pool",
-    canonicalMinor: (sourceCapacity.get(source.sourceLotKey) ?? ZERO_BIGINT).toString(), exactUsd: source.exactUsd,
+    canonicalMinor: (sourceCapacity.get(source.sourceLotKey) ?? ZERO_BIGINT).toString(), exactUsd: source.exactUsd, currency,
   })
 
   for (const user of [...userState].sort((left, right) => stableCompare(left.userId, right.userId))) {
@@ -459,7 +472,7 @@ export async function calculateFundedRedistributionV2(input: FundedRedistributio
       const consumedExact = compare(canonicalExact, availableExact) < 0 ? canonicalExact : availableExact
       sourceDispositions.push({
         sourceLotId: source.sourceLotId, sourceLotKey: source.sourceLotKey, userId: user.userId, projectId: source.projectId,
-        kind: "top_up", canonicalMinor: consumed.toString(), exactUsd: decimalString(consumedExact),
+        kind: "top_up", canonicalMinor: consumed.toString(), exactUsd: decimalString(consumedExact), currency,
       })
       availablePoolBySource.set(source.sourceLotKey, available - consumed)
       availableExactPoolBySource.set(source.sourceLotKey, subtract(availableExact, consumedExact))
@@ -473,12 +486,13 @@ export async function calculateFundedRedistributionV2(input: FundedRedistributio
     const exactUsd = availableExactPoolBySource.get(source.sourceLotKey) ?? ZERO
     if (canonicalMinor > ZERO_BIGINT || compare(exactUsd, ZERO) > 0) sourceDispositions.push({
       sourceLotId: source.sourceLotId, sourceLotKey: source.sourceLotKey, userId: null, projectId: source.projectId,
-      kind: "carryout_residue", canonicalMinor: canonicalMinor.toString(), exactUsd: decimalString(exactUsd),
+      kind: "carryout_residue", canonicalMinor: canonicalMinor.toString(), exactUsd: decimalString(exactUsd), currency,
     })
   }
 
   const users: FundedUserAllocationV2[] = userState.map((user) => ({
     userId: user.userId,
+    currency,
     aggregateInitialExactUsd: decimalString(user.aggregate),
     baselineExactUsd: decimalString(user.baseline),
     capMultiple: input.capMultiple,
@@ -553,6 +567,7 @@ export async function calculateFundedRedistributionV2(input: FundedRedistributio
     selectedPreviewHash: input.selectedPreviewHash,
     minorUnitScale: scale,
     capMultiple: input.capMultiple,
+    currency,
     totals,
     users,
     sourceDispositions: sourceDispositions.sort(
@@ -560,5 +575,5 @@ export async function calculateFundedRedistributionV2(input: FundedRedistributio
     ),
     invariantChecks,
   }
-  return { ...hashInput, hashInput, resultHash: await sha256Hex(hashInput) }
+  return { ...hashInput, currency, hashInput, resultHash: await sha256Hex(hashInput) }
 }
