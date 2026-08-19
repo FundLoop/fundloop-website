@@ -1,10 +1,12 @@
 "use client"
 
 import { useState } from "react"
-import { ArrowRight, Megaphone, Sparkles } from "lucide-react"
+import { ArrowRight, DollarSign, Megaphone, Sparkles, TrendingUp, Users, Zap } from "lucide-react"
 import { Link } from "@/i18n/navigation"
 import { Button } from "@/components/ui/button"
+import { Slider } from "@/components/ui/slider"
 import { SectionEyebrow, SectionTitle, SectionBody } from "@/components/marketing/page-chrome"
+import { useFounderCalculator } from "@/components/marketing/founder-calculator-context"
 
 export type FounderGrowthMathProps = {
   eyebrow?: string
@@ -15,9 +17,35 @@ export type FounderGrowthMathProps = {
 export function FounderGrowthMathPanel({
   eyebrow = "Growth Economics",
   title = "The Math: Why Founders Join FundLoop Over Running Ads",
-  body = "Compare redirecting a standard $1,000 monthly ad budget into FundLoop's value-sharing ecosystem vs. paying traditional ad platforms.",
+  body = "Compare redirecting your monthly ad budget into FundLoop's value-sharing ecosystem vs. paying traditional ad platforms.",
 }: FounderGrowthMathProps) {
   const [activeTab, setActiveTab] = useState<"comparison" | "steps">("comparison")
+
+  const {
+    startingUsers,
+    setStartingUsers,
+    startingMau,
+    setStartingMau,
+    monthlyAdBudget,
+    setMonthlyAdBudget,
+    newUsersFromAds,
+    setNewUsersFromAds,
+    arpu,
+    setArpu,
+    startingMauRate,
+    newActiveUsersFromAds,
+    traditionalTotalMau,
+    traditionalGrowthPct,
+    effectiveCAC,
+    fundLoopGiveBackPerStartingUser,
+    fundLoopReach,
+    fundLoopVisits,
+    fundLoopSignups,
+    fundLoopTotalUsers,
+    fundLoopMauRate,
+    fundLoopTotalMau,
+    fundLoopGrowthPct,
+  } = useFounderCalculator()
 
   return (
     <div className="rounded-[2.5rem] border border-[color:var(--marketing-line)] bg-[linear-gradient(145deg,rgba(255,248,238,0.92),rgba(244,203,141,0.18))] p-6 shadow-[0_28px_90px_rgba(15,23,23,0.1)] dark:bg-[linear-gradient(145deg,rgba(14,24,23,0.96),rgba(239,139,87,0.09))] sm:p-10 lg:p-12">
@@ -56,6 +84,136 @@ export function FounderGrowthMathPanel({
         </div>
       </div>
 
+      {/* Interactive Sliders Grid */}
+      <div className="mt-10 rounded-3xl border border-[color:var(--marketing-line)] bg-white/60 p-6 dark:bg-white/[0.03]">
+        <div className="flex flex-col justify-between gap-2 sm:flex-row sm:items-center">
+          <h4 className="text-xs font-bold uppercase tracking-wider text-[var(--marketing-ink)]">
+            Adjust Your Project Parameters
+          </h4>
+          <p className="text-xs text-[var(--marketing-muted-strong)]">
+            Assumption: Active MAU rate increases by <strong className="text-[var(--marketing-accent)]">+10%</strong> (from {(startingMauRate * 100).toFixed(0)}% → {(fundLoopMauRate * 100).toFixed(0)}%) with FundLoop give-back incentives.
+          </p>
+        </div>
+
+        <div className="mt-6 grid gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
+          {/* Slider 1: Starting User Base */}
+          <div className="space-y-2.5">
+            <div className="flex items-center justify-between text-xs">
+              <span className="flex items-center gap-1.5 font-semibold text-[var(--marketing-ink)]">
+                <Users className="h-3.5 w-3.5 text-[var(--marketing-accent)]" />
+                Starting Users
+              </span>
+              <span className="rounded-md bg-[var(--marketing-accent)]/10 px-2 py-0.5 font-mono font-bold text-[var(--marketing-accent)]">
+                {startingUsers.toLocaleString()}
+              </span>
+            </div>
+            <Slider
+              value={[startingUsers]}
+              min={100}
+              max={10000}
+              step={100}
+              onValueChange={(val) => {
+                const nextUsers = val[0] ?? 1000
+                setStartingUsers(nextUsers)
+                if (startingMau > nextUsers) {
+                  setStartingMau(nextUsers)
+                }
+              }}
+              className="py-1.5"
+            />
+            <p className="text-[0.7rem] text-[var(--marketing-muted)]">Total registered user accounts.</p>
+          </div>
+
+          {/* Slider 2: Starting MAU */}
+          <div className="space-y-2.5">
+            <div className="flex items-center justify-between text-xs">
+              <span className="flex items-center gap-1.5 font-semibold text-[var(--marketing-ink)]">
+                <Users className="h-3.5 w-3.5 text-[var(--marketing-accent)]" />
+                Baseline MAU
+              </span>
+              <span className="rounded-md bg-[var(--marketing-accent)]/10 px-2 py-0.5 font-mono font-bold text-[var(--marketing-accent)]">
+                {startingMau.toLocaleString()} ({(startingMauRate * 100).toFixed(0)}%)
+              </span>
+            </div>
+            <Slider
+              value={[startingMau]}
+              min={10}
+              max={startingUsers}
+              step={10}
+              onValueChange={(val) => setStartingMau(val[0] ?? 200)}
+              className="py-1.5"
+            />
+            <p className="text-[0.7rem] text-[var(--marketing-muted)]">Monthly active users before FundLoop.</p>
+          </div>
+
+          {/* Slider 3: Monthly Ad Budget */}
+          <div className="space-y-2.5">
+            <div className="flex items-center justify-between text-xs">
+              <span className="flex items-center gap-1.5 font-semibold text-[var(--marketing-ink)]">
+                <DollarSign className="h-3.5 w-3.5 text-[var(--marketing-accent)]" />
+                Monthly Ad Budget
+              </span>
+              <span className="rounded-md bg-rose-500/10 px-2 py-0.5 font-mono font-bold text-rose-600 dark:text-rose-400">
+                ${monthlyAdBudget.toLocaleString()}
+              </span>
+            </div>
+            <Slider
+              value={[monthlyAdBudget]}
+              min={100}
+              max={10000}
+              step={100}
+              onValueChange={(val) => setMonthlyAdBudget(val[0] ?? 1000)}
+              className="py-1.5"
+            />
+            <p className="text-[0.7rem] text-[var(--marketing-muted)]">Ad spend to be redirected.</p>
+          </div>
+
+          {/* Slider 4: New Users / mo */}
+          <div className="space-y-2.5">
+            <div className="flex items-center justify-between text-xs">
+              <span className="flex items-center gap-1.5 font-semibold text-[var(--marketing-ink)]">
+                <TrendingUp className="h-3.5 w-3.5 text-[var(--marketing-accent)]" />
+                New Users / mo
+              </span>
+              <span className="rounded-md bg-[var(--marketing-accent)]/10 px-2 py-0.5 font-mono font-bold text-[var(--marketing-accent)]">
+                {newUsersFromAds.toLocaleString()}
+              </span>
+            </div>
+            <Slider
+              value={[newUsersFromAds]}
+              min={10}
+              max={2000}
+              step={10}
+              onValueChange={(val) => setNewUsersFromAds(val[0] ?? 200)}
+              className="py-1.5"
+            />
+            <p className="text-[0.7rem] text-[var(--marketing-muted)]">Signups from traditional ads.</p>
+          </div>
+
+          {/* Slider 5: ARPU */}
+          <div className="space-y-2.5">
+            <div className="flex items-center justify-between text-xs">
+              <span className="flex items-center gap-1.5 font-semibold text-[var(--marketing-ink)]">
+                <Zap className="h-3.5 w-3.5 text-[var(--marketing-accent)]" />
+                Monthly ARPU
+              </span>
+              <span className="rounded-md bg-[var(--marketing-accent)]/10 px-2 py-0.5 font-mono font-bold text-[var(--marketing-accent)]">
+                ${arpu} / mo
+              </span>
+            </div>
+            <Slider
+              value={[arpu]}
+              min={5}
+              max={200}
+              step={5}
+              onValueChange={(val) => setArpu(val[0] ?? 50)}
+              className="py-1.5"
+            />
+            <p className="text-[0.7rem] text-[var(--marketing-muted)]">Average revenue per active user.</p>
+          </div>
+        </div>
+      </div>
+
       {/* Main Content Area */}
       {activeTab === "comparison" ? (
         <div className="mt-10 grid gap-8 lg:grid-cols-2">
@@ -74,23 +232,23 @@ export function FounderGrowthMathPanel({
             <div className="mt-6 space-y-4 text-sm">
               <div className="flex justify-between border-b border-[color:var(--marketing-line)] pb-3">
                 <span className="text-[var(--marketing-muted-strong)]">Starting User Base</span>
-                <span className="font-semibold">1,000 total users (200 MAU @ 20%)</span>
+                <span className="font-semibold">{startingUsers.toLocaleString()} total ({startingMau.toLocaleString()} MAU @ {(startingMauRate * 100).toFixed(0)}%)</span>
               </div>
               <div className="flex justify-between border-b border-[color:var(--marketing-line)] pb-3">
                 <span className="text-[var(--marketing-muted-strong)]">Monthly Ad Budget</span>
-                <span className="font-semibold text-rose-600 dark:text-rose-400">$1,000 / month</span>
+                <span className="font-semibold text-rose-600 dark:text-rose-400">${monthlyAdBudget.toLocaleString()} / month</span>
               </div>
               <div className="flex justify-between border-b border-[color:var(--marketing-line)] pb-3">
                 <span className="text-[var(--marketing-muted-strong)]">New Signups Acquired</span>
-                <span className="font-semibold">200 new users</span>
+                <span className="font-semibold">{newUsersFromAds.toLocaleString()} new users</span>
               </div>
               <div className="flex justify-between border-b border-[color:var(--marketing-line)] pb-3">
-                <span className="text-[var(--marketing-muted-strong)]">New Active Users (20% MAU)</span>
-                <span className="font-semibold">+40 active users</span>
+                <span className="text-[var(--marketing-muted-strong)]">New Active Users ({(startingMauRate * 100).toFixed(0)}% MAU)</span>
+                <span className="font-semibold">+{newActiveUsersFromAds.toLocaleString()} active users</span>
               </div>
               <div className="flex justify-between border-b border-[color:var(--marketing-line)] pb-3">
                 <span className="text-[var(--marketing-muted-strong)]">Resulting Growth</span>
-                <span className="font-semibold text-neutral-600 dark:text-neutral-300">+20% growth (240 MAU total)</span>
+                <span className="font-semibold text-neutral-600 dark:text-neutral-300">+{traditionalGrowthPct}% growth ({traditionalTotalMau.toLocaleString()} MAU total)</span>
               </div>
               <div className="flex justify-between pt-1">
                 <span className="text-[var(--marketing-muted-strong)]">Ecosystem Network Effect</span>
@@ -100,7 +258,7 @@ export function FounderGrowthMathPanel({
 
             <div className="mt-8 rounded-2xl bg-neutral-100/80 p-4 text-center dark:bg-neutral-900/60">
               <p className="text-xs uppercase tracking-wider text-[var(--marketing-muted)]">Effective Customer Acquisition</p>
-              <p className="mt-1 font-display text-3xl font-bold text-neutral-700 dark:text-neutral-300">$25.00 <span className="text-sm font-normal text-neutral-500">/ active MAU</span></p>
+              <p className="mt-1 font-display text-3xl font-bold text-neutral-700 dark:text-neutral-300">${effectiveCAC.toFixed(2)} <span className="text-sm font-normal text-neutral-500">/ active MAU</span></p>
               <p className="mt-1 text-xs text-[var(--marketing-muted-strong)]">Value leaves your project and goes to big ad networks.</p>
             </div>
           </div>
@@ -124,23 +282,27 @@ export function FounderGrowthMathPanel({
             <div className="mt-6 space-y-4 text-sm">
               <div className="flex justify-between border-b border-[color:var(--marketing-line)] pb-3">
                 <span className="text-[var(--marketing-muted-strong)]">Redirect Same Budget</span>
-                <span className="font-semibold text-emerald-600 dark:text-emerald-400">$1,000 / month ($5 per MAU)</span>
+                <span className="font-semibold text-emerald-600 dark:text-emerald-400">
+                  ${monthlyAdBudget.toLocaleString()} / month (${fundLoopGiveBackPerStartingUser.toFixed(2)} per MAU)
+                </span>
               </div>
               <div className="flex justify-between border-b border-[color:var(--marketing-line)] pb-3">
                 <span className="text-[var(--marketing-muted-strong)]">FundLoop Verified Reach</span>
-                <span className="font-semibold">10,000 ecosystem users</span>
+                <span className="font-semibold">{fundLoopReach.toLocaleString()} ecosystem users</span>
               </div>
               <div className="flex justify-between border-b border-[color:var(--marketing-line)] pb-3">
                 <span className="text-[var(--marketing-muted-strong)]">Discovery & CTR (70%)</span>
-                <span className="font-semibold text-emerald-600 dark:text-emerald-400">7,000 qualified visits</span>
+                <span className="font-semibold text-emerald-600 dark:text-emerald-400">{fundLoopVisits.toLocaleString()} qualified visits</span>
               </div>
               <div className="flex justify-between border-b border-[color:var(--marketing-line)] pb-3">
                 <span className="text-[var(--marketing-muted-strong)]">New Signups from Network</span>
-                <span className="font-semibold">2,000 new verified users</span>
+                <span className="font-semibold">{fundLoopSignups.toLocaleString()} new verified users</span>
               </div>
               <div className="flex justify-between border-b border-[color:var(--marketing-line)] pb-3">
                 <span className="text-[var(--marketing-muted-strong)]">Enhanced Engagement (MAU Rate)</span>
-                <span className="font-semibold text-[var(--marketing-accent)]">Surges from 20% → 30%</span>
+                <span className="font-semibold text-[var(--marketing-accent)]">
+                  Surges from {(startingMauRate * 100).toFixed(0)}% → {(fundLoopMauRate * 100).toFixed(0)}%
+                </span>
               </div>
               <div className="flex justify-between pt-1">
                 <span className="text-[var(--marketing-muted-strong)]">Instant Affiliate Network</span>
@@ -151,9 +313,11 @@ export function FounderGrowthMathPanel({
             <div className="mt-8 rounded-2xl bg-[radial-gradient(ellipse_at_top,rgba(239,139,87,0.18),transparent_70%)] border border-[var(--marketing-accent)]/30 p-4 text-center">
               <p className="text-xs uppercase tracking-wider text-[var(--marketing-accent)] font-semibold">Total Active Users</p>
               <p className="mt-1 font-display text-4xl font-extrabold text-[var(--marketing-ink)]">
-                900 MAU <span className="text-sm font-semibold text-emerald-600 dark:text-emerald-400">(+350% Growth)</span>
+                {fundLoopTotalMau.toLocaleString()} MAU <span className="text-sm font-semibold text-emerald-600 dark:text-emerald-400">(+{fundLoopGrowthPct}% Growth)</span>
               </p>
-              <p className="mt-1 text-xs text-[var(--marketing-muted-strong)]">3,000 total users × 30% active = 900 active humans rewarding each other.</p>
+              <p className="mt-1 text-xs text-[var(--marketing-muted-strong)]">
+                {fundLoopTotalUsers.toLocaleString()} total users × {(fundLoopMauRate * 100).toFixed(0)}% active = {fundLoopTotalMau.toLocaleString()} active humans rewarding each other.
+              </p>
             </div>
           </div>
         </div>
@@ -164,7 +328,7 @@ export function FounderGrowthMathPanel({
             <p className="font-display text-2xl font-bold text-[var(--marketing-accent)]">01</p>
             <p className="mt-2 text-sm font-semibold uppercase tracking-wider">Your Baseline</p>
             <p className="mt-3 text-xs leading-relaxed text-[var(--marketing-muted-strong)]">
-              You start with 1,000 total users, of which 20% (200) are monthly active users (MAU).
+              You start with {startingUsers.toLocaleString()} total users, of which {(startingMauRate * 100).toFixed(0)}% ({startingMau.toLocaleString()}) are monthly active users (MAU).
             </p>
           </div>
 
@@ -172,7 +336,7 @@ export function FounderGrowthMathPanel({
             <p className="font-display text-2xl font-bold text-[var(--marketing-accent)]">02</p>
             <p className="mt-2 text-sm font-semibold uppercase tracking-wider">Redirect Ad Spend</p>
             <p className="mt-3 text-xs leading-relaxed text-[var(--marketing-muted-strong)]">
-              Instead of paying $1,000/mo to ad platforms, you redirect that $1,000 to reward your active users with $5/mo each.
+              Instead of paying ${monthlyAdBudget.toLocaleString()}/mo to ad platforms, you redirect that ${monthlyAdBudget.toLocaleString()} to reward your active users with ${fundLoopGiveBackPerStartingUser.toFixed(2)}/mo each.
             </p>
           </div>
 
@@ -180,7 +344,7 @@ export function FounderGrowthMathPanel({
             <p className="font-display text-2xl font-bold text-[var(--marketing-accent)]">03</p>
             <p className="mt-2 text-sm font-semibold uppercase tracking-wider">Ecosystem Discovery</p>
             <p className="mt-3 text-xs leading-relaxed text-[var(--marketing-muted-strong)]">
-              FundLoop has 10,000 users. With a 70% click-through rate, 7,000 visit your project and 2,000 sign up.
+              FundLoop has {fundLoopReach.toLocaleString()} users. With a 70% click-through rate, {fundLoopVisits.toLocaleString()} visit your project and {fundLoopSignups.toLocaleString()} sign up.
             </p>
           </div>
 
@@ -188,7 +352,7 @@ export function FounderGrowthMathPanel({
             <p className="font-display text-2xl font-bold text-[var(--marketing-accent)]">04</p>
             <p className="mt-2 text-sm font-semibold uppercase tracking-wider">Conversion Boost</p>
             <p className="mt-3 text-xs leading-relaxed text-[var(--marketing-muted-strong)]">
-              With the FundLoop reward promise, your MAU conversion jumps from 20% to 30%. You now have 3,000 users = 900 active MAUs (+350% growth).
+              With the FundLoop reward promise, your MAU conversion jumps from {(startingMauRate * 100).toFixed(0)}% to {(fundLoopMauRate * 100).toFixed(0)}%. You now have {fundLoopTotalUsers.toLocaleString()} users = {fundLoopTotalMau.toLocaleString()} active MAUs (+{fundLoopGrowthPct}% growth).
             </p>
           </div>
 

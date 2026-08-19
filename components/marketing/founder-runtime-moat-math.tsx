@@ -1,9 +1,9 @@
 "use client"
 
-import { useState } from "react"
 import { Flame, HeartHandshake, ShieldCheck, Sparkles, TrendingUp, Users, Zap } from "lucide-react"
 import { Slider } from "@/components/ui/slider"
 import { SectionEyebrow, SectionTitle, SectionBody } from "@/components/marketing/page-chrome"
+import { useFounderCalculator } from "@/components/marketing/founder-calculator-context"
 
 export type FounderRuntimeMoatMathProps = {
   eyebrow?: string
@@ -14,26 +14,28 @@ export type FounderRuntimeMoatMathProps = {
 export function FounderRuntimeMoatMathPanel({
   eyebrow = "Runtime Economics & Retention",
   title = "Why Projects Stay: The Shared-Upside Competitive Moat",
-  body = "See what happens in steady-state operations when you share 10% of revenue with your monthly active users vs. competing in the extractive SaaS ad treadmill.",
+  body = "See what happens in steady-state operations when you share revenue with your monthly active users vs. competing in the extractive SaaS ad treadmill.",
 }: FounderRuntimeMoatMathProps) {
-  const [mau, setMau] = useState<number>(1000)
-  const [arpu, setArpu] = useState<number>(50)
-  const [sharePct, setSharePct] = useState<number>(10)
-
-  // Calculations
-  const grossRevenue = mau * arpu
-  const giveBackTotal = Math.round(grossRevenue * (sharePct / 100))
-  const giveBackPerUser = (giveBackTotal / mau).toFixed(2)
-  const fundLoopRetained = grossRevenue - giveBackTotal
-
-  // Competitor dynamics: 6% churn rate, standard SaaS CAC ~ 4x monthly ARPU
-  const competitorChurnCount = Math.round(mau * 0.06)
-  const competitorAdSpend = Math.round(competitorChurnCount * (arpu * 4.5))
-  const competitorRetained = Math.max(0, grossRevenue - competitorAdSpend)
-
-  // Advantage
-  const monthlyAdvantage = fundLoopRetained - competitorRetained
-  const annualAdvantage = monthlyAdvantage * 12
+  const {
+    runtimeMau,
+    setRuntimeMau,
+    sharePct,
+    setSharePct,
+    arpu,
+    setArpu,
+    effectiveCAC,
+    competitorChurnRate,
+    competitorChurnCount,
+    competitorAdSpend,
+    grossRevenue,
+    competitorRetained,
+    fundLoopMonth1GrossRevenue,
+    giveBackTotal,
+    giveBackPerUser,
+    fundLoopRetained,
+    monthlyAdvantage,
+    annualAdvantage,
+  } = useFounderCalculator()
 
   return (
     <div className="rounded-[2.5rem] border border-[color:var(--marketing-line)] bg-[linear-gradient(145deg,rgba(255,248,238,0.92),rgba(244,203,141,0.18))] p-6 shadow-[0_28px_90px_rgba(15,23,23,0.1)] dark:bg-[linear-gradient(145deg,rgba(14,24,23,0.96),rgba(239,139,87,0.09))] sm:p-10 lg:p-12">
@@ -54,15 +56,15 @@ export function FounderRuntimeMoatMathPanel({
               Monthly Active Users
             </span>
             <span className="rounded-lg bg-[var(--marketing-accent)]/10 px-2.5 py-1 font-mono font-bold text-[var(--marketing-accent)]">
-              {mau.toLocaleString()} MAU
+              {runtimeMau.toLocaleString()} MAU
             </span>
           </div>
           <Slider
-            value={[mau]}
+            value={[runtimeMau]}
             min={100}
             max={10000}
             step={100}
-            onValueChange={(val) => setMau(val[0] ?? 1000)}
+            onValueChange={(val) => setRuntimeMau(val[0] ?? 1000)}
             className="py-2"
           />
           <p className="text-xs text-[var(--marketing-muted)]">Active users who generate monthly platform volume.</p>
@@ -81,13 +83,13 @@ export function FounderRuntimeMoatMathPanel({
           </div>
           <Slider
             value={[arpu]}
-            min={10}
+            min={5}
             max={200}
             step={5}
             onValueChange={(val) => setArpu(val[0] ?? 50)}
             className="py-2"
           />
-          <p className="text-xs text-[var(--marketing-muted)]">Average monthly net subscription or usage fees per user.</p>
+          <p className="text-xs text-[var(--marketing-muted)]">Synced with Growth Economics ARPU.</p>
         </div>
 
         {/* Slider 3: Share % */}
@@ -109,7 +111,9 @@ export function FounderRuntimeMoatMathPanel({
             onValueChange={(val) => setSharePct(val[0] ?? 10)}
             className="py-2"
           />
-          <p className="text-xs text-[var(--marketing-muted)]">Share of net revenue circulated back to your active participants.</p>
+          <p className="text-xs text-[var(--marketing-muted)]">
+            Drives a dynamic {competitorChurnRate.toFixed(1)}% competitor churn to your project.
+          </p>
         </div>
       </div>
 
@@ -137,12 +141,16 @@ export function FounderRuntimeMoatMathPanel({
               <span className="font-semibold text-neutral-500">$0 (0% give-back)</span>
             </div>
             <div className="flex justify-between border-b border-[color:var(--marketing-line)] pb-3">
-              <span className="text-[var(--marketing-muted-strong)]">Monthly User Churn (~6%)</span>
-              <span className="font-semibold text-rose-600 dark:text-rose-400">-{competitorChurnCount} users lost / mo</span>
+              <span className="text-[var(--marketing-muted-strong)]">Monthly User Churn to your project</span>
+              <span className="font-semibold text-rose-600 dark:text-rose-400">
+                -{competitorChurnCount.toLocaleString()} users lost / mo ({competitorChurnRate.toFixed(1)}%)
+              </span>
             </div>
             <div className="flex justify-between border-b border-[color:var(--marketing-line)] pb-3">
               <span className="text-[var(--marketing-muted-strong)]">Ad Spend to Replace Churn</span>
-              <span className="font-semibold text-rose-600 dark:text-rose-400">-${competitorAdSpend.toLocaleString()} / mo</span>
+              <span className="font-semibold text-rose-600 dark:text-rose-400">
+                -${competitorAdSpend.toLocaleString()} / mo (${effectiveCAC.toFixed(2)} CAC)
+              </span>
             </div>
             <div className="flex justify-between pt-1">
               <span className="text-[var(--marketing-muted-strong)]">User Sentiment & Loyalty</span>
@@ -151,11 +159,13 @@ export function FounderRuntimeMoatMathPanel({
           </div>
 
           <div className="mt-8 rounded-2xl bg-neutral-100/80 p-4 text-center dark:bg-neutral-900/60">
-            <p className="text-xs uppercase tracking-wider text-[var(--marketing-muted)]">Net Retained Founder Profit</p>
+            <p className="text-xs uppercase tracking-wider text-[var(--marketing-muted)]">Net Retained Founder Profit, Month +1</p>
             <p className="mt-1 font-display text-3xl font-bold text-neutral-700 dark:text-neutral-300">
               ${competitorRetained.toLocaleString()} <span className="text-sm font-normal text-neutral-500">/ mo</span>
             </p>
-            <p className="mt-1 text-xs text-[var(--marketing-muted-strong)]">Trapped on the paid ad treadmill just to prevent shrinking.</p>
+            <p className="mt-1 text-xs text-[var(--marketing-muted-strong)]">
+              Trapped on the paid ad treadmill (${competitorAdSpend.toLocaleString()}/mo) just to replace churn.
+            </p>
           </div>
         </div>
 
@@ -177,16 +187,24 @@ export function FounderRuntimeMoatMathPanel({
 
           <div className="mt-6 space-y-4 text-sm">
             <div className="flex justify-between border-b border-[color:var(--marketing-line)] pb-3">
-              <span className="text-[var(--marketing-muted-strong)]">Gross Monthly Revenue</span>
-              <span className="font-semibold">${grossRevenue.toLocaleString()} / mo</span>
+              <span className="text-[var(--marketing-muted-strong)]">Gross Monthly Revenue (Month +1)</span>
+              <span className="font-semibold">${fundLoopMonth1GrossRevenue.toLocaleString()} / mo</span>
             </div>
             <div className="flex justify-between border-b border-[color:var(--marketing-line)] pb-3">
               <span className="text-[var(--marketing-muted-strong)]">Shared with Users ({sharePct}%)</span>
-              <span className="font-semibold text-emerald-600 dark:text-emerald-400">-${giveBackTotal.toLocaleString()} / mo (${giveBackPerUser}/user)</span>
+              <span className="font-semibold text-emerald-600 dark:text-emerald-400">
+                -${giveBackTotal.toLocaleString()} / mo (${giveBackPerUser}/user)
+              </span>
             </div>
             <div className="flex justify-between border-b border-[color:var(--marketing-line)] pb-3">
-              <span className="text-[var(--marketing-muted-strong)]">Churn Deflation Moat</span>
-              <span className="font-semibold text-emerald-600 dark:text-emerald-400">Drop in churn (&gt;50% higher retention)</span>
+              <span className="text-[var(--marketing-muted-strong)]">Monthly User Churn to your project</span>
+              <span className="font-semibold text-emerald-600 dark:text-emerald-400">0% (High retention)</span>
+            </div>
+            <div className="flex justify-between border-b border-[color:var(--marketing-line)] pb-3">
+              <span className="text-[var(--marketing-muted-strong)]">Monthly Growth from Churn Migration</span>
+              <span className="font-semibold text-emerald-600 dark:text-emerald-400">
+                +{competitorChurnCount.toLocaleString()} active users / mo
+              </span>
             </div>
             <div className="flex justify-between border-b border-[color:var(--marketing-line)] pb-3">
               <span className="text-[var(--marketing-muted-strong)]">Churn Replacement Ad Cost</span>
@@ -199,14 +217,16 @@ export function FounderRuntimeMoatMathPanel({
           </div>
 
           <div className="mt-8 rounded-2xl bg-[radial-gradient(ellipse_at_top,rgba(16,185,129,0.15),transparent_70%)] border border-emerald-500/30 p-4 text-center">
-            <p className="text-xs uppercase tracking-wider text-emerald-600 dark:text-emerald-400 font-semibold">Net Retained Founder Profit</p>
+            <p className="text-xs uppercase tracking-wider text-emerald-600 dark:text-emerald-400 font-semibold">
+              Net Retained Founder Profit, Month +1
+            </p>
             <p className="mt-1 font-display text-3xl font-extrabold text-[var(--marketing-ink)]">
               ${fundLoopRetained.toLocaleString()} <span className="text-sm font-semibold text-emerald-600 dark:text-emerald-400">/ mo</span>
             </p>
             <p className="mt-1 text-xs text-[var(--marketing-muted-strong)]">
               {monthlyAdvantage > 0 ? (
                 <span>
-                  <strong>+${monthlyAdvantage.toLocaleString()}/mo</strong> (+${annualAdvantage.toLocaleString()}/yr) more profit than competitor!
+                  <strong>+${monthlyAdvantage.toLocaleString()}/mo</strong> (+${annualAdvantage.toLocaleString()}/yr) more profit than competitor with zero ad spend!
                 </span>
               ) : (
                 <span>Sustainable, aligned human growth without ad dependency.</span>
@@ -224,7 +244,7 @@ export function FounderRuntimeMoatMathPanel({
           </div>
           <h4 className="mt-4 font-semibold text-[var(--marketing-ink)]">01. Churn Deflation</h4>
           <p className="mt-2 text-xs leading-relaxed text-[var(--marketing-muted-strong)]">
-            Traditional SaaS loses 5-8% of users monthly. When your users earn a tangible monthly return on your platform's success, loyalty solidifies and retention soars.
+            Traditional SaaS loses users monthly. When your users earn a tangible monthly return on your platform&apos;s success, loyalty solidifies and retention soars.
           </p>
         </div>
 
