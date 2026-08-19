@@ -40,7 +40,7 @@ export function FounderRuntimeMoatMathPanel({
   } = useFounderCalculator()
 
   return (
-    <div className="rounded-[2.5rem] border border-[color:var(--marketing-line)] bg-[linear-gradient(145deg,rgba(255,248,238,0.92),rgba(244,203,141,0.18))] p-6 shadow-[0_28px_90px_rgba(15,23,23,0.1)] dark:border-white/[0.08] dark:bg-[linear-gradient(145deg,rgba(15,20,28,0.96),rgba(255,120,68,0.06))] dark:shadow-[0_28px_90px_rgba(0,0,0,0.5)] sm:p-10 lg:p-12">
+    <div className="rounded-[2.5rem] border border-[color:var(--marketing-line)] bg-[linear-gradient(145deg,rgba(255,248,238,0.92),rgba(244,203,141,0.18))] p-6 shadow-[0_28px_90px_rgba(15,23,23,0.1)] dark:border-white/[0.12] dark:bg-[radial-gradient(ellipse_at_top_left,rgba(255,120,68,0.12),transparent_50%),radial-gradient(ellipse_at_bottom_right,rgba(52,211,153,0.06),transparent_40%),linear-gradient(145deg,#161e29,#0e131b_50%,#18202c)] dark:shadow-[0_28px_90px_rgba(0,0,0,0.65),inset_0_1px_0_rgba(255,255,255,0.08)] sm:p-10 lg:p-12">
       {/* Header */}
       <div className="flex flex-col justify-between gap-6 lg:flex-row lg:items-end">
         <div className="max-w-3xl space-y-3">
@@ -132,41 +132,47 @@ export function FounderRuntimeMoatMathPanel({
       {/* Side-by-Side Model Cards */}
       <div className="mt-8 grid gap-8 lg:grid-cols-2">
         {/* Competitor Model */}
-        <div className="rounded-[2rem] border border-[color:var(--marketing-line)] bg-white/50 p-6 dark:border-white/[0.08] dark:bg-white/[0.02] sm:p-8">
-          <div className="flex items-center gap-3">
-            <span className="inline-flex h-10 w-10 items-center justify-center rounded-xl bg-rose-500/10 text-rose-600 dark:bg-rose-500/20 dark:text-rose-400">
-              <Flame className="h-5 w-5" />
-            </span>
-            <div>
-              <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[var(--marketing-muted)]">Identical Clone</p>
-              <h3 className="font-display text-2xl font-bold tracking-tight text-[var(--marketing-ink)]">Extractive Competitor</h3>
+        <div className="flex flex-col justify-between rounded-[2rem] border border-[color:var(--marketing-line)] bg-white/50 p-6 dark:border-white/[0.08] dark:bg-white/[0.02] sm:p-8">
+          <div>
+            <div className="flex items-center gap-3">
+              <span className="inline-flex h-10 w-10 items-center justify-center rounded-xl bg-rose-500/10 text-rose-600 dark:bg-rose-500/20 dark:text-rose-400">
+                <Flame className="h-5 w-5" />
+              </span>
+              <div>
+                <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[var(--marketing-muted)]">Identical Clone</p>
+                <h3 className="font-display text-2xl font-bold tracking-tight text-[var(--marketing-ink)]">Extractive Competitor</h3>
+              </div>
             </div>
-          </div>
 
-          <div className="mt-6 space-y-4 text-sm">
-            <div className="flex justify-between border-b border-[color:var(--marketing-line)] pb-3 dark:border-white/[0.08]">
-              <span className="text-[var(--marketing-muted-strong)]">Gross Monthly Revenue</span>
-              <span className="font-semibold">${grossRevenue.toLocaleString()} / mo</span>
-            </div>
-            <div className="flex justify-between border-b border-[color:var(--marketing-line)] pb-3 dark:border-white/[0.08]">
-              <span className="text-[var(--marketing-muted-strong)]">Shared with Users</span>
-              <span className="font-semibold text-neutral-500">$0 (0% give-back)</span>
-            </div>
-            <div className="flex justify-between border-b border-[color:var(--marketing-line)] pb-3 dark:border-white/[0.08]">
-              <span className="text-[var(--marketing-muted-strong)]">Monthly User Churn to your project</span>
-              <span className="font-semibold text-rose-600 dark:text-rose-400">
-                -{competitorChurnCount.toLocaleString()} users lost / mo ({competitorChurnRate.toFixed(1)}%)
-              </span>
-            </div>
-            <div className="flex justify-between border-b border-[color:var(--marketing-line)] pb-3 dark:border-white/[0.08]">
-              <span className="text-[var(--marketing-muted-strong)]">Ad Spend to keep up with your project</span>
-              <span className="font-semibold text-rose-600 dark:text-rose-400">
-                -${competitorAdSpend.toLocaleString()} / mo ({targetUsersToKeepUp.toLocaleString()} users @ ${effectiveCAC.toFixed(2)} CAC)
-              </span>
-            </div>
-            <div className="flex justify-between pt-1">
-              <span className="text-[var(--marketing-muted-strong)]">User Sentiment & Loyalty</span>
-              <span className="font-semibold text-neutral-500">Transactional (Easily poached)</span>
+            <div className="mt-6 space-y-4 text-sm">
+              <div className="flex justify-between border-b border-[color:var(--marketing-line)] pb-3 dark:border-white/[0.08]">
+                <span className="text-[var(--marketing-muted-strong)]">Gross Monthly Revenue</span>
+                <span className="font-semibold">${grossRevenue.toLocaleString()} / mo</span>
+              </div>
+              <div className="flex justify-between border-b border-[color:var(--marketing-line)] pb-3 dark:border-white/[0.08]">
+                <span className="text-[var(--marketing-muted-strong)]">Shared with Users</span>
+                <span className="font-semibold text-neutral-500">$0 (0% give-back)</span>
+              </div>
+              <div className="flex justify-between border-b border-[color:var(--marketing-line)] pb-3 dark:border-white/[0.08]">
+                <span className="text-[var(--marketing-muted-strong)]">Monthly User Churn to your project</span>
+                <span className="font-semibold text-rose-600 dark:text-rose-400">
+                  -{competitorChurnCount.toLocaleString()} users lost / mo ({competitorChurnRate.toFixed(1)}%)
+                </span>
+              </div>
+              <div className="flex justify-between border-b border-[color:var(--marketing-line)] pb-3 dark:border-white/[0.08]">
+                <span className="text-[var(--marketing-muted-strong)]">Monthly Growth from Churn Influx</span>
+                <span className="font-semibold text-neutral-500">0 active users (One-way drain)</span>
+              </div>
+              <div className="flex justify-between border-b border-[color:var(--marketing-line)] pb-3 dark:border-white/[0.08]">
+                <span className="text-[var(--marketing-muted-strong)]">Ad Spend to keep up with your project</span>
+                <span className="font-semibold text-rose-600 dark:text-rose-400">
+                  -${competitorAdSpend.toLocaleString()} / mo ({targetUsersToKeepUp.toLocaleString()} users @ ${effectiveCAC.toFixed(2)} CAC)
+                </span>
+              </div>
+              <div className="flex justify-between pt-1">
+                <span className="text-[var(--marketing-muted-strong)]">User Sentiment & Loyalty</span>
+                <span className="font-semibold text-neutral-500">Transactional (Easily poached)</span>
+              </div>
             </div>
           </div>
 
@@ -182,49 +188,51 @@ export function FounderRuntimeMoatMathPanel({
         </div>
 
         {/* FundLoop Model */}
-        <div className="relative rounded-[2rem] border-2 border-emerald-500/50 bg-white/80 p-6 shadow-xl dark:border-emerald-500/60 dark:bg-white/[0.03] sm:p-8">
-          <div className="absolute -top-3.5 right-6 rounded-full bg-emerald-600 px-3.5 py-1 text-[0.65rem] font-bold uppercase tracking-widest text-white shadow-sm">
-            Compound Moat
-          </div>
+        <div className="relative flex flex-col justify-between rounded-[2rem] border-2 border-emerald-500/50 bg-white/80 p-6 shadow-xl dark:border-emerald-500/60 dark:bg-white/[0.03] sm:p-8">
+          <div>
+            <div className="absolute -top-3.5 right-6 rounded-full bg-emerald-600 px-3.5 py-1 text-[0.65rem] font-bold uppercase tracking-widest text-white shadow-sm">
+              Compound Moat
+            </div>
 
-          <div className="flex items-center gap-3">
-            <span className="inline-flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-500/15 text-emerald-600 dark:text-emerald-400">
-              <ShieldCheck className="h-5 w-5" />
-            </span>
-            <div>
-              <p className="text-xs font-semibold uppercase tracking-[0.2em] text-emerald-600 dark:text-emerald-400">Your Project</p>
-              <h3 className="font-display text-2xl font-bold tracking-tight text-[var(--marketing-ink)]">On FundLoop</h3>
+            <div className="flex items-center gap-3">
+              <span className="inline-flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-500/15 text-emerald-600 dark:text-emerald-400">
+                <ShieldCheck className="h-5 w-5" />
+              </span>
+              <div>
+                <p className="text-xs font-semibold uppercase tracking-[0.2em] text-emerald-600 dark:text-emerald-400">Your Project</p>
+                <h3 className="font-display text-2xl font-bold tracking-tight text-[var(--marketing-ink)]">On FundLoop</h3>
+              </div>
             </div>
-          </div>
 
-          <div className="mt-6 space-y-4 text-sm">
-            <div className="flex justify-between border-b border-[color:var(--marketing-line)] pb-3 dark:border-white/[0.08]">
-              <span className="text-[var(--marketing-muted-strong)]">Gross Monthly Revenue (Month +1)</span>
-              <span className="font-semibold">${fundLoopMonth1GrossRevenue.toLocaleString()} / mo</span>
-            </div>
-            <div className="flex justify-between border-b border-[color:var(--marketing-line)] pb-3 dark:border-white/[0.08]">
-              <span className="text-[var(--marketing-muted-strong)]">Shared with Users ({sharePct}%)</span>
-              <span className="font-semibold text-emerald-600 dark:text-emerald-400">
-                -${giveBackTotal.toLocaleString()} / mo (${giveBackPerUser}/user)
-              </span>
-            </div>
-            <div className="flex justify-between border-b border-[color:var(--marketing-line)] pb-3 dark:border-white/[0.08]">
-              <span className="text-[var(--marketing-muted-strong)]">Monthly User Churn to your project</span>
-              <span className="font-semibold text-emerald-600 dark:text-emerald-400">0% (High retention)</span>
-            </div>
-            <div className="flex justify-between border-b border-[color:var(--marketing-line)] pb-3 dark:border-white/[0.08]">
-              <span className="text-[var(--marketing-muted-strong)]">Monthly Growth from Churn Migration</span>
-              <span className="font-semibold text-emerald-600 dark:text-emerald-400">
-                +{competitorChurnCount.toLocaleString()} active users / mo ({fundLoopMonth1Mau.toLocaleString()} MAU total)
-              </span>
-            </div>
-            <div className="flex justify-between border-b border-[color:var(--marketing-line)] pb-3 dark:border-white/[0.08]">
-              <span className="text-[var(--marketing-muted-strong)]">Churn Replacement Ad Cost</span>
-              <span className="font-semibold text-emerald-600 dark:text-emerald-400">$0 (Word-of-mouth & ecosystem influx)</span>
-            </div>
-            <div className="flex justify-between pt-1">
-              <span className="text-[var(--marketing-muted-strong)]">Organic Competitor Migration</span>
-              <span className="font-semibold text-emerald-600 dark:text-emerald-400">Users migrate to you for fair value</span>
+            <div className="mt-6 space-y-4 text-sm">
+              <div className="flex justify-between border-b border-[color:var(--marketing-line)] pb-3 dark:border-white/[0.08]">
+                <span className="text-[var(--marketing-muted-strong)]">Gross Monthly Revenue (Month +1)</span>
+                <span className="font-semibold">${fundLoopMonth1GrossRevenue.toLocaleString()} / mo</span>
+              </div>
+              <div className="flex justify-between border-b border-[color:var(--marketing-line)] pb-3 dark:border-white/[0.08]">
+                <span className="text-[var(--marketing-muted-strong)]">Shared with Users ({sharePct}%)</span>
+                <span className="font-semibold text-emerald-600 dark:text-emerald-400">
+                  -${giveBackTotal.toLocaleString()} / mo (${giveBackPerUser}/user)
+                </span>
+              </div>
+              <div className="flex justify-between border-b border-[color:var(--marketing-line)] pb-3 dark:border-white/[0.08]">
+                <span className="text-[var(--marketing-muted-strong)]">Monthly User Churn to your project</span>
+                <span className="font-semibold text-emerald-600 dark:text-emerald-400">0% (High retention)</span>
+              </div>
+              <div className="flex justify-between border-b border-[color:var(--marketing-line)] pb-3 dark:border-white/[0.08]">
+                <span className="text-[var(--marketing-muted-strong)]">Monthly Growth from Churn Migration</span>
+                <span className="font-semibold text-emerald-600 dark:text-emerald-400">
+                  +{competitorChurnCount.toLocaleString()} active users / mo ({fundLoopMonth1Mau.toLocaleString()} MAU total)
+                </span>
+              </div>
+              <div className="flex justify-between border-b border-[color:var(--marketing-line)] pb-3 dark:border-white/[0.08]">
+                <span className="text-[var(--marketing-muted-strong)]">Churn Replacement Ad Cost</span>
+                <span className="font-semibold text-emerald-600 dark:text-emerald-400">$0 (Word-of-mouth & ecosystem influx)</span>
+              </div>
+              <div className="flex justify-between pt-1">
+                <span className="text-[var(--marketing-muted-strong)]">Organic Competitor Migration</span>
+                <span className="font-semibold text-emerald-600 dark:text-emerald-400">Users migrate to you for fair value</span>
+              </div>
             </div>
           </div>
 

@@ -184,5 +184,49 @@ Address user UX and styling requests:
 
 - Push commit to `feat/founder-growth-and-moat-calculators`.
 
+## Session v5: Equal Card Heights & Charcoal Gradient Depth in Dark Mode
+
+- **Timestamp:** 2026-08-18T22:28:00Z
+- **Agent:** Antigravity (Gemini 3.7 Flash)
+- **Branch:** `feat/founder-growth-and-moat-calculators`
+- **Head:** `6dae810`
+
+---
+
+### Objective
+
+1. Equalize card heights in the Runtime Moat panel by adding a 6th row (`Monthly Growth from Churn Influx`) to the Extractive Competitor card and standardizing `flex flex-col justify-between`.
+2. Enrich dark mode styling with rich multi-stop charcoal gradient depth on outer panel backgrounds.
+
+---
+
+### Actions Taken
+
+- **Updated `components/marketing/founder-runtime-moat-math.tsx`:**
+  - Added row `"Monthly Growth from Churn Influx"` (`0 active users (One-way drain)`) to Card 1, matching the 6 rows of Card 2.
+  - Set `flex flex-col justify-between h-full` on both model cards for pixel-perfect vertical alignment.
+  - Added charcoal gradient backgrounds in dark mode.
+- **Updated `components/marketing/founder-growth-math.tsx`:**
+  - Added charcoal gradient backgrounds in dark mode.
+- **Updated `app/globals.css`:**
+  - Enriched dark mode surface canvases and glow gradients.
+
+---
+
+### Validation
+
+- `pnpm vitest run tests/founder-calculators.test.tsx` passed (4/4 tests).
+- `pnpm typecheck` passed (0 errors).
+- `pnpm lint` passed (0 warnings).
+- `pnpm build` passed (165 static routes).
+- Verified visually in local browser in both Light and Dark mode using Playwright screenshots.
+
+---
+
+### Next Steps
+
+- Push commit to `feat/founder-growth-and-moat-calculators`.
+
+
 
 
