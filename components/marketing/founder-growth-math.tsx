@@ -48,7 +48,7 @@ export function FounderGrowthMathPanel({
   } = useFounderCalculator()
 
   return (
-    <div className="rounded-[2.5rem] border border-[color:var(--marketing-line)] bg-[linear-gradient(145deg,rgba(255,248,238,0.92),rgba(244,203,141,0.18))] p-6 shadow-[0_28px_90px_rgba(15,23,23,0.1)] dark:border-white/[0.08] dark:bg-[linear-gradient(145deg,rgba(15,20,28,0.96),rgba(255,120,68,0.06))] dark:shadow-[0_28px_90px_rgba(0,0,0,0.5)] sm:p-10 lg:p-12">
+    <div className="rounded-[2.5rem] border border-[color:var(--marketing-line)] bg-[linear-gradient(145deg,rgba(255,248,238,0.92),rgba(244,203,141,0.18))] p-6 shadow-[0_28px_90px_rgba(15,23,23,0.1)] dark:border-white/[0.12] dark:bg-[radial-gradient(ellipse_at_top_left,rgba(255,120,68,0.12),transparent_50%),radial-gradient(ellipse_at_bottom_right,rgba(52,211,153,0.06),transparent_40%),linear-gradient(145deg,#161e29,#0e131b_50%,#18202c)] dark:shadow-[0_28px_90px_rgba(0,0,0,0.65),inset_0_1px_0_rgba(255,255,255,0.08)] sm:p-10 lg:p-12">
       {/* Header */}
       <div className="flex flex-col justify-between gap-6 lg:flex-row lg:items-end">
         <div className="max-w-2xl space-y-3">
