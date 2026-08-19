@@ -313,3 +313,38 @@ Deliver the governance gate framework that proves the 15-domain qualification st
 
 - Commit Task #184 evidence and proceed to Task #170 (Production ledger, opening-balance, and cutover gates).
 
+### session v8: Production ledger, opening-balance, and cutover gates (#170)
+
+- Timestamp: 2026-08-19T06:10:00Z
+- Agent: Antigravity (Gemini 3.1 Pro)
+- Branch: codex/155-goal-3-governance-cutover
+- Head before commit: e5f3ccb
+
+#### Objective
+
+Implement Task #170 by proving Production ledger denial, opening-balance manifest reproducibility, and providing a read-only Production preflight surface for the cutover gates.
+
+#### Actions Taken
+
+- Created `tests/financial-cutover-production-gate.test.ts` with test coverage:
+  - **Production ledger denial**: verified fail-closed production constraint (`deployment_environment<>'production'` and `production_value_flow_enabled=false`) and legacy write boundaries.
+  - **Opening-balance manifest reproducibility**: verified immutable manifest hash generation, evidence hash requirements, and idempotency key uniqueness.
+  - **V2 allocation cutover inventory**: asserted v2 target canonical state linkages (`epoch_project_package`, `epoch_close_package`, `withdrawal_obligation`).
+  - **Read-only Production preflight surface**: added contract tests asserting denial behavior via `isFinancialCutoverEnvironmentEnabled("production") === false`.
+
+#### Validation Notes
+
+- `pnpm vitest run tests/financial-cutover-production-gate.test.ts` passed (6/6 tests).
+- `pnpm typecheck` passed.
+- `pnpm lint` passed.
+- No Supabase, Docker, opening-balance posting, provider, hosted, Production, payout, cutover, or value-flow command was run.
+
+#### Reflections
+
+- The tests explicitly assert the invariants defined in the financial cutover runbook and migrations.
+
+#### Suggested Next Steps
+
+- Commit Task #170 evidence.
+- Execute Task #189 to publish Goal 3 governance and cutover evidence to dev (single PR for the branch).
+
