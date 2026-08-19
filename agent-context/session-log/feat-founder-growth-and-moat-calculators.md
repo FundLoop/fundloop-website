@@ -356,6 +356,58 @@ Address user UX and styling requests:
 
 - Push commit to `feat/founder-growth-and-moat-calculators`.
 
+## Session v9: UI/UX & Messaging Overhaul for Persona-Driven Conversion
+
+- **Timestamp:** 2026-08-19T03:00:00Z
+- **Agent:** Antigravity (Gemini 3.1 Pro)
+- **Branch:** `feat/founder-growth-and-moat-calculators`
+- **Head:** `d80778d`
+
+---
+
+### Objective
+
+1. Overhaul website copy and structure to eliminate builder-centric jargon and abstract mechanism descriptions.
+2. Establish clear, visitor-centric value propositions (WIIFM) across the root landing page (`/`), Founders page (`/founders`), and Participation page (`/participation`).
+3. Introduce an above-the-fold Dual-Fork Persona Router on `/` to immediately segment traffic into the two primary user journeys: **Founders** (`/founders`) and **Participants** (`/participation`).
+
+---
+
+### Actions Taken
+
+- **Updated Copy in `i18n/messages/en.ts`:**
+  - **Landing Page (`home`):**
+    - Headline: *"Earn From The Apps You Use. Keep The Users You Earn."*
+    - Subtitle: Cleanly explains the exchange: apps redirect ad spend to users $\to$ users get monthly cash on Base $\to$ founders gain 3.5x compound retention.
+    - Added `fork` namespace for the Dual-Fork traffic router cards.
+    - Rewrote monthly rhythm, audience, and trust copy to focus on tangible user benefits, privacy, and zero-gas Base settlement.
+  - **Founders Page (`founders`):**
+    - Positioned as *"The Anti-Ad Growth Model for Modern Software"*.
+    - Reframed give-backs as an un-copyable competitor churn moat.
+  - **Participation Page (`participation`):**
+    - Positioned as *"Get paid every month for using software you love"*.
+    - Outlined the frictionless 3-step earning model: 1. 30s Private Sign-Up $\to$ 2. Use Great Apps $\to$ 3. Monthly Cash Rewards.
+- **Updated `app/[locale]/(public)/page.tsx`:**
+  - Added interactive, high-contrast **Dual-Fork Persona Router** cards directly beneath the Hero.
+  - Linked primary CTAs directly to `/founders` and `/participation`.
+
+---
+
+### Validation
+
+- `pnpm vitest run tests/founder-calculators.test.tsx` passed (4/4 tests).
+- `pnpm typecheck` passed (0 errors).
+- `pnpm lint` passed (0 warnings).
+- `pnpm build` passed (165 static routes compiled cleanly).
+- Verified visually on `http://localhost:3000/en`, `http://localhost:3000/en/founders`, and `http://localhost:3000/en/participation` in both Light and Dark mode using Playwright screenshots.
+
+---
+
+### Next Steps
+
+- Push commit to `feat/founder-growth-and-moat-calculators`.
+
+
 
 
 

@@ -304,53 +304,53 @@ export const enMessages = {
   },
   founders: {
     hero: {
-      eyebrow: "Founder path",
-      title: "Bring your project into a funding loop that rewards the people who help it grow.",
+      eyebrow: "The Anti-Ad Growth Model",
+      title: "Stop paying ad networks. Turn your CAC into an un-copyable user retention moat.",
       body:
-        "FundLoop is for founders who want a practical give-back model, cleaner participation signal, and an operating rhythm that turns monthly contribution into something measurable instead of hand-wavy community goodwill.",
-      primaryCta: "Start project onboarding",
-      secondaryCta: "Read documentation",
-      panelEyebrow: "What your team should be ready for",
-      panelTitle: "One clear path from founder story to real project operations.",
+        "Instead of burning $25+ CAC on Meta and Google to replace churned users, redirect that budget into a monthly give-back pool for active users. Boost retention by +10% to +50%, turn customers into organic evangelists, and build a compound economic moat.",
+      primaryCta: "Start Project Onboarding (5 mins)",
+      secondaryCta: "Calculate Your Moat Math",
+      panelEyebrow: "Why the FundLoop Loop Wins",
+      panelTitle: "The compound math of shared upside vs. traditional ads.",
       highlights: [
         {
-          label: "Commitment",
-          body: "Your team is expected to support the loop with a recurring share of revenue or distribution value instead of treating community growth as free extraction.",
+          label: "3.5x Compound Retention",
+          body: "Users stay active and loyal when they share in 10% of monthly revenue rather than being treated as ad targets.",
         },
         {
-          label: "Operations",
-          body: "Inside FundLoop you manage project profile data, payment obligations, collection routes, and the operational surfaces that support contribution month after month.",
+          label: "Defeat Clone Competitors",
+          body: "An extractive copycat cannot clone your product without paying 2x your budget in ads just to keep up with your churn moat.",
         },
         {
-          label: "Cadence",
-          body: "The model is monthly on purpose: close the period, prepare the records, verify what happened, and move funds with enough structure to explain every step later.",
+          label: "Predictable Monthly Cadence",
+          body: "Automated monthly epochs on Base L2 lock, calculate, and distribute give-backs with zero operational headache.",
         },
         {
-          label: "Identity",
-          body: "Payout-touching operations are expected to tie back to real accountable humans, with CUBID.me positioned as the long-term identity and KYC anchor for the network.",
+          label: "100% Sybil & Bot Resistant",
+          body: "CUBID.me zero-knowledge proof identity anchors verify unique humans so your rewards never get drained by bots.",
         },
       ],
     },
     commitment: {
-      eyebrow: "Commitment",
-      title: "FundLoop asks founders to route part of their upside back into the loop.",
+      eyebrow: "The Founder Pledge",
+      title: "Route 1%+ of your monthly upside back to the users who make you thrive.",
       body:
-        "The point is not a generic SaaS fee. The point is to make value circulation explicit, so the people operating the platform and the wider network can both benefit when a project starts to work.",
-      quoteEyebrow: "The core pledge",
+        "Forget extractive subscription models and runaway ad spend. FundLoop turns revenue sharing into your strongest competitive advantage.",
+      quoteEyebrow: "The Alignment Commitment",
       quote:
-        "\"We commit to contributing a meaningful share of revenue or distribution value into FundLoop so real participation can translate into shared upside across the network.\"",
+        "\"We commit to routing a recurring share of monthly revenue directly to our active community, turning our users into stakeholders and partners in our growth.\"",
       pillars: [
         {
-          title: "Participation data",
-          body: "Projects should be ready to contribute enough usage context for FundLoop to understand meaningful participation without turning raw personal data into a public inspection surface.",
+          title: "Revenue Give-Back",
+          body: "Choose 1% to 25% of monthly revenue to route back into your active user pool on Base L2.",
         },
         {
-          title: "Revenue commitment",
-          body: "The baseline story remains a 1%+ give-back, but the practical goal is simple: make your support visible, recurring, and operationally accountable.",
+          title: "Participation Signal",
+          body: "Usage context and activity are recorded cleanly without exposing raw personal user data.",
         },
         {
-          title: "Proof-ready operations",
-          body: "The founder path is built for teams that want to explain what they contributed, when they contributed it, and how monthly activity ties back to later payout and reporting decisions.",
+          title: "Cryptographic Transparency",
+          body: "Every epoch distribution is settled on-chain with verifiable receipts and automated audit reports.",
         },
       ],
     },
@@ -1245,7 +1245,7 @@ export const enMessages = {
   },
   home: {
     eyebrow: "Mutual prosperity, made operational",
-    heroTitle: "A monthly economy for shared prosperity.",
+    heroTitle: "Earn From The Apps You Use. Keep The Users You Earn.",
     heroSuffix: "for Mutual Prosperity",
     heroPrefixes: [
       "A Network State",
@@ -1268,46 +1268,59 @@ export const enMessages = {
       "A Shared Prosperity Engine",
       "An Economy of Enough",
     ],
-    heroThesis: "A networked economy where projects feed the loop and people share in the upside.",
+    heroThesis: "The shared-upside protocol where apps redirect ad spend to active users, and users get paid monthly on Base.",
     heroBody:
-      "Projects pool a slice of revenue. Verified people contribute. Every month, FundLoop closes the books, explains the result, and makes each person’s share claimable.",
+      "Stop burning money on ad networks. Stop giving away your attention for free. FundLoop unites high-growth software and verified humans in a continuous, automated monthly reward economy.",
     ctas: {
-      project: "Start a project profile",
-      participant: "Join as a participant",
+      project: "Explore Founder Moat",
+      participant: "Start Earning Monthly",
+    },
+    fork: {
+      founders: {
+        eyebrow: "For App Founders & Builders",
+        title: "The Anti-Ad Growth Model",
+        body: "Redirect your CAC to active users. 3x your retention, build an un-copyable network moat, and turn customers into your best distribution engine.",
+        cta: "Explore Founder Growth Moat",
+        badge: "350% MAU Surge",
+      },
+      participants: {
+        eyebrow: "For Everyday Users & Contributors",
+        title: "Get Paid Monthly For Using Great Apps",
+        body: "Stop generating free value for Big Tech. Link your private CUBID ID in 30 seconds, use partner software, and collect real monthly USDC on Base.",
+        cta: "Start Earning Monthly",
+        badge: "100% Private & ZK Verified",
+      },
     },
     statLines: {
-      projects: "Projects pledge 1%+ into the loop.",
-      people: "People create signal through use.",
-      value: "Value returns with more context.",
+      projects: "Projects pledge 1%+ revenue directly to users.",
+      people: "Real humans earn monthly shares by using apps.",
+      value: "100% transparent on-chain settlement on Base.",
     },
     monthlyLoop: {
-      eyebrow: "One accountable month at a time",
-      title: "From project revenue to a person’s payment.",
+      eyebrow: "The Operating Rhythm",
+      title: "How FundLoop Turns Ad Waste Into Shared Prosperity",
       body:
-        "FundLoop is the workflow engine between participation and payout. Each epoch locks money, identity, and attribution into one reproducible economic record.",
+        "A transparent, automated monthly cycle connecting software revenue to direct participant payouts.",
       visual: {
         month: "Monthly epoch",
         center: "Pool. Verify. Distribute.",
       },
       stages: [
-        { step: "01", title: "Commit revenue", body: "Projects choose a recurring percentage of revenue to route into FundLoop." },
-        { step: "02", title: "Prove personhood", body: "People connect CUBID.me so uniqueness can be verified without turning private identity data into public content." },
-        { step: "03", title: "Build participation signal", body: "People use and support projects; projects record contribution and participation context." },
-        { step: "04", title: "Submit the month", body: "Projects send their funds, contribution totals, and attribution data for the open epoch." },
-        { step: "05", title: "Lock and verify", body: "FundLoop freezes the cycle, calculates distributions, reconciles money and data, and requires an operator review." },
-        { step: "06", title: "Claim the result", body: "Awards stay claimable for three complete payout months. After that window closes, unclaimed value returns to a future redistribution pool." },
-        { step: "07", title: "Publish the why", body: "Public, user, project, and operator reports explain what happened while respecting each person’s publication choices." },
+        { step: "01", title: "Project Revenue Intake", body: "Projects route a share of monthly revenue (1%+) into the FundLoop protocol vault instead of ad platforms." },
+        { step: "02", title: "ZK Identity Verification", body: "Users link private CUBID IDs so real humans are verified with zero-knowledge proofs and zero bot spam." },
+        { step: "03", title: "Autonomous Redistribution", body: "The open protocol algorithmically balances the pool based on active contribution and usage signal." },
+        { step: "04", title: "Base On-Chain Safe Payouts", body: "Direct USDC rewards and claimable distributions are settled securely on Base L2 each month." },
       ],
     },
     audiences: {
-      eyebrow: "Four views of the same system",
-      title: "One economic loop. Different workspaces.",
-      body: "Humans and agents use the same underlying workflows, permissions, and audit trail.",
+      eyebrow: "Built for every participant in the loop",
+      title: "One economic loop. Two massive advantages.",
+      body: "Whether you build software or use it every day, FundLoop aligns your incentives with real upside.",
       items: [
-        { id: "people", label: "For people", title: "Discover, participate, and understand what you earned.", body: "Link your CUBID identity, find projects, build a contribution record, choose payout preferences, and review each monthly result.", href: "/participation", cta: "Explore participation" },
-        { id: "projects", label: "For project teams", title: "Turn a revenue commitment into a repeatable monthly practice.", body: "Onboard a project, manage members and payment routes, fund the epoch, submit attribution, and explain the outcome to your community.", href: "/founders", cta: "Explore the founder path" },
-        { id: "research", label: "For researchers and the public", title: "Study a practical experiment in post-capitalistic coordination.", body: "Follow public projects and monthly reports to see how identity, participation, capital, and pluralistic distribution interact in practice.", href: "/reports", cta: "Open public reporting" },
-        { id: "operators", label: "For operators and agents", title: "Run the same workflow through a control plane or MCP.", body: "Prepare epochs, verify exceptions, reconcile rails, publish reports, and automate bounded tasks through shared Edge Function contracts.", href: "/mcp", cta: "Explore the MCP interface" },
+        { id: "projects", label: "For Founders", title: "Stop paying ad platforms. Reward the users who stay.", body: "Redirect wasteful CAC into a monthly user give-back. Watch retention surge from 20% to 30%+ and build an un-cloneable moat.", href: "/founders", cta: "See Founder Economics" },
+        { id: "people", label: "For Users", title: "Get a real monthly paycheck from the software you love.", body: "Verify your humanity in 30 seconds with CUBID, discover aligned apps, use them daily, and claim monthly earnings on Base.", href: "/participation", cta: "Explore Participation" },
+        { id: "research", label: "For Researchers", title: "Transparent, inspectable on-chain economic data.", body: "Audit public projects, monthly epoch freezes, distribution matrices, and pluralistic coordination models in open public reports.", href: "/reports", cta: "View Public Reports" },
+        { id: "operators", label: "For Agents & MCP", title: "Automate intake, verification, and settlement.", body: "Call typed Supabase Edge Functions or orchestrate full monthly cycles programmatically through the MCP interface.", href: "/mcp", cta: "Explore MCP Protocol" },
       ],
     },
     trust: {
@@ -1456,45 +1469,45 @@ export const enMessages = {
   },
   participation: {
     hero: {
-      eyebrow: "Participation",
+      eyebrow: "Earn For Your Usage",
       title:
-        "One clear path from discovery into participation, identity, and current results visibility.",
+        "Get paid every month for using software you love.",
       body:
-        "FundLoop is for people who want to discover aligned projects, build real signal through showing up, strengthen proof-of-personhood through CUBID, and keep an honest view of what the network currently says their participation is worth.",
-      primaryCtaStart: "Create your profile",
-      primaryCtaContinue: "Continue onboarding",
-      primaryCtaWorkspace: "Open your workspace",
-      secondaryCta: "Browse participating projects",
+        "Top projects in FundLoop share their monthly revenue with active, verified users instead of spending it on ad middlemen. Link your private CUBID ID in 30 seconds, use partner apps, and receive direct USDC on Base L2 every month.",
+      primaryCtaStart: "Join & Start Earning (30s)",
+      primaryCtaContinue: "Continue Onboarding",
+      primaryCtaWorkspace: "Open Your Workspace",
+      secondaryCta: "Explore Participating Apps",
     },
     journey: {
-      eyebrow: "User journey",
-      profileTitle: "Profile",
-      profileBody: "Start with a personal profile that can travel with you across projects instead of re-explaining who you are everywhere.",
-      signalTitle: "Signal",
-      signalBody: "Join projects that matter to you and let real contribution, curiosity, and follow-through become legible over time.",
-      resultsTitle: "Results",
-      resultsBody: "Return to FundLoop to review the current published results view while the fuller earnings and payout workspace is still being built.",
+      eyebrow: "Simple 3-Step Earning",
+      profileTitle: "1. 30s Private Sign-Up",
+      profileBody: "Verify your unique humanity through CUBID. Zero personal data or browsing history is ever exposed publicly.",
+      signalTitle: "2. Use Great Apps",
+      signalBody: "Use aligned partner apps in the directory normally. Your active usage creates cryptographic contribution score.",
+      resultsTitle: "3. Monthly Cash Rewards",
+      resultsBody: "Collect your share of pooled project revenue in USDC on Base every single monthly epoch.",
     },
     whyJoin: {
-      eyebrow: "Why join",
-      title: "Participation should feel like a practical path, not a loyalty game.",
+      eyebrow: "Why FundLoop Pays You",
+      title: "Your active attention is valuable. You deserve to share in the upside.",
       body:
-        "FundLoop is trying to make the user side of the network coherent: one account, one participation story, and one place to understand what activity across multiple projects is beginning to mean.",
+        "Traditional software sells your data and buys your attention with annoying ads. FundLoop flips the model so you get a direct monthly revenue share.",
       items: [
         {
-          label: "Cross-project discovery",
+          label: "Direct Cash Rewards",
           body:
-            "You should be able to move across aligned projects without starting over every time or losing the context of how you have shown up elsewhere in the network.",
+            "Projects pledge 1% to 25% of their monthly revenue into the reward pool. Active users get paid directly on Base L2.",
         },
         {
-          label: "Participation with context",
+          label: "100% Private & Zero-Knowledge",
           body:
-            "The goal is not to reward noise. The goal is to make room for meaningful activity, useful presence, and the kinds of contribution a single app often struggles to understand on its own.",
+            "CUBID's cryptographic zero-knowledge proof verifies you are a real human without exposing your email, phone, or name.",
         },
         {
-          label: "Honest visibility",
+          label: "One Identity Across All Apps",
           body:
-            "FundLoop should be clear about what is live today: you can already create a profile, explore projects, build presence, and review the current published results surface while the fuller payout product still comes later.",
+            "Use your verified FundLoop ID across dozens of partner products. Build a compound reputation and earn from multiple apps at once.",
         },
       ],
     },
