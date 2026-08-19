@@ -25,7 +25,7 @@ beforeEach(() => {
 
 describe("Founder Marketing Calculators", () => {
   describe("FounderGrowthMathPanel (Cold Start / Acquisition CAC)", () => {
-    it("renders initial side-by-side comparison with key metrics and 5 parameter sliders", () => {
+    it("renders initial side-by-side comparison with symmetrical conclusion metrics and 5 parameter sliders", () => {
       render(<FounderGrowthMathPanel />)
 
       expect(screen.getByText("The Math: Why Founders Join FundLoop Over Running Ads")).toBeDefined()
@@ -40,9 +40,12 @@ describe("Founder Marketing Calculators", () => {
       expect(screen.getByText("Traditional Ad Spend")).toBeDefined()
       expect(screen.getByText("Option B")).toBeDefined()
       expect(screen.getByText("The FundLoop Loop")).toBeDefined()
+
+      // Symmetrical conclusion comparisons
+      expect(screen.getByText("240 MAU")).toBeDefined()
       expect(screen.getByText("900 MAU")).toBeDefined()
       expect(screen.getByText("7,000 qualified visits")).toBeDefined()
-      expect(screen.getByText("$25.00")).toBeDefined()
+      expect(screen.getByText("$25.00 / active MAU")).toBeDefined()
     })
 
     it("switches to step-by-step breakdown view on tab click", () => {
@@ -60,10 +63,11 @@ describe("Founder Marketing Calculators", () => {
   })
 
   describe("FounderRuntimeMoatMathPanel (Steady-State & Retention Moat)", () => {
-    it("renders interactive sliders, dynamic churn migration, CAC replacement, and Month +1 labels", () => {
+    it("renders interactive sliders, linked model callout, dynamic churn, and target ad spend", () => {
       render(<FounderRuntimeMoatMathPanel />)
 
       expect(screen.getByText("Why Projects Stay: The Shared-Upside Competitive Moat")).toBeDefined()
+      expect(screen.getByText("Live Linked Model:")).toBeDefined()
       expect(screen.getByText("Monthly Active Users")).toBeDefined()
       expect(screen.getByText("Average Net Revenue / MAU")).toBeDefined()
       expect(screen.getByText("FundLoop Give-Back Share")).toBeDefined()
@@ -71,9 +75,9 @@ describe("Founder Marketing Calculators", () => {
       expect(screen.getByText("Extractive Competitor")).toBeDefined()
       expect(screen.getByText("On FundLoop")).toBeDefined()
 
-      // Dynamic churn and ad replacement
+      // Dynamic churn and ad spend to keep up
       expect(screen.getAllByText("Monthly User Churn to your project").length).toBeGreaterThan(0)
-      expect(screen.getByText("Ad Spend to Replace Churn")).toBeDefined()
+      expect(screen.getByText("Ad Spend to keep up with your project")).toBeDefined()
       expect(screen.getByText("Monthly Growth from Churn Migration")).toBeDefined()
 
       // Net retained profit Month +1 labels

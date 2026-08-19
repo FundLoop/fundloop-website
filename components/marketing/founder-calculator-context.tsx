@@ -39,6 +39,7 @@ export interface FounderCalculatorState {
   // Runtime Moat Derived
   competitorChurnRate: number
   competitorChurnCount: number
+  targetUsersToKeepUp: number
   competitorAdSpend: number
   grossRevenue: number
   competitorRetained: number
@@ -90,8 +91,13 @@ function useComputeCalculatorState(
     // Competitor churn to your project = half of the FundLoop Give-Back Share (e.g. 10% give back -> 5% churn)
     const competitorChurnRate = sharePct / 2
     const competitorChurnCount = Math.round(runtimeMau * (competitorChurnRate / 100))
-    // Ad Spend to Replace Churn = competitorChurnCount * effectiveCAC
-    const competitorAdSpend = Math.round(competitorChurnCount * effectiveCAC)
+
+    // Target to keep up with your project:
+    // Your project grows to runtimeMau + competitorChurnCount.
+    // Competitor drops to runtimeMau - competitorChurnCount.
+    // To match your project end-state count, competitor must acquire 2 * competitorChurnCount users.
+    const targetUsersToKeepUp = competitorChurnCount * 2
+    const competitorAdSpend = Math.round(targetUsersToKeepUp * effectiveCAC)
     const grossRevenue = runtimeMau * arpu
     const competitorRetained = Math.max(0, grossRevenue - competitorAdSpend)
 
@@ -136,6 +142,7 @@ function useComputeCalculatorState(
 
       competitorChurnRate,
       competitorChurnCount,
+      targetUsersToKeepUp,
       competitorAdSpend,
       grossRevenue,
       competitorRetained,
