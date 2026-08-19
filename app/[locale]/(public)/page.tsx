@@ -52,10 +52,10 @@ export default async function Home({ params }: PageProps) {
             <p className="mt-6 max-w-2xl text-lg leading-8 text-[#dbe3df]">{t("heroBody")}</p>
             <div className="mt-9 flex flex-col gap-3 sm:flex-row">
               <Button asChild size="lg" className="rounded-full bg-[#e06b40] px-7 text-white hover:bg-[#ef7950]">
-                <LocaleLink href="/?onboarding=user">{t("ctas.participant")}<ArrowRight className="h-4 w-4" /></LocaleLink>
+                <LocaleLink href="/participation">{t("ctas.participant")}<ArrowRight className="h-4 w-4" /></LocaleLink>
               </Button>
               <Button asChild size="lg" variant="outline" className="rounded-full border-white/28 bg-white/[0.04] px-7 text-white hover:bg-white/10 hover:text-white">
-                <LocaleLink href="/?onboarding=project">{t("ctas.project")}<ArrowRight className="h-4 w-4" /></LocaleLink>
+                <LocaleLink href="/founders">{t("ctas.project")}<ArrowRight className="h-4 w-4" /></LocaleLink>
               </Button>
             </div>
           </Reveal>
@@ -72,6 +72,107 @@ export default async function Home({ params }: PageProps) {
           </Reveal>
         </div>
       </section>
+
+      {/* Dual-Fork Persona Router (Above-the-Fold Traffic Splitter) */}
+      <MarketingSection className="border-b border-[color:var(--marketing-line)] bg-white/40 py-10 sm:py-14 dark:bg-white/[0.02]">
+        <Reveal>
+          <div className="text-center">
+            <SectionEyebrow>Choose Your Path</SectionEyebrow>
+            <SectionTitle className="mt-3 text-3xl sm:text-4xl">Where do you fit in the loop?</SectionTitle>
+            <SectionBody className="mx-auto mt-3 max-w-xl text-sm sm:text-base">
+              FundLoop connects ambitious software builders with real verified humans in an automated shared-upside economy.
+            </SectionBody>
+          </div>
+
+          <div className="mt-10 grid gap-8 lg:grid-cols-2">
+            {/* Card 1: For App Founders */}
+            <div className="relative flex flex-col justify-between overflow-hidden rounded-3xl border border-[color:var(--marketing-line)] bg-gradient-to-br from-white/90 via-white/70 to-orange-50/50 p-8 shadow-xl transition-all duration-300 hover:border-[#ff7844]/50 dark:border-white/[0.1] dark:from-[#111620] dark:via-[#0c1017] dark:to-[#18110e] dark:hover:border-[#ff7844]/40">
+              <div>
+                <div className="flex items-center justify-between">
+                  <span className="inline-flex rounded-full bg-[#ff7844]/15 px-3.5 py-1 text-xs font-semibold uppercase tracking-wider text-[#ff7844] dark:bg-[#ff7844]/20">
+                    {t("fork.founders.eyebrow")}
+                  </span>
+                  <span className="rounded-full border border-[#34d399]/30 bg-[#34d399]/10 px-3 py-0.5 text-xs font-medium text-[#059669] dark:text-[#34d399]">
+                    {t("fork.founders.badge")}
+                  </span>
+                </div>
+                <h3 className="mt-6 font-display text-2xl font-bold tracking-tight text-[var(--marketing-ink)] sm:text-3xl">
+                  {t("fork.founders.title")}
+                </h3>
+                <p className="mt-4 text-base leading-relaxed text-[var(--marketing-muted-strong)]">
+                  {t("fork.founders.body")}
+                </p>
+                <div className="mt-6 space-y-2.5 text-sm text-[var(--marketing-muted-strong)]">
+                  <div className="flex items-center gap-2.5">
+                    <span className="flex h-5 w-5 items-center justify-center rounded-full bg-[#ff7844]/20 text-[#ff7844]">✓</span>
+                    <span>Eliminate runaway ad spend on Meta & Google</span>
+                  </div>
+                  <div className="flex items-center gap-2.5">
+                    <span className="flex h-5 w-5 items-center justify-center rounded-full bg-[#ff7844]/20 text-[#ff7844]">✓</span>
+                    <span>Compound retention from 20% to 30%+ MAU</span>
+                  </div>
+                  <div className="flex items-center gap-2.5">
+                    <span className="flex h-5 w-5 items-center justify-center rounded-full bg-[#ff7844]/20 text-[#ff7844]">✓</span>
+                    <span>Automated monthly payouts with zero manual ops</span>
+                  </div>
+                </div>
+              </div>
+
+              <div className="mt-8 border-t border-[color:var(--marketing-line)] pt-6">
+                <Button asChild size="lg" className="w-full rounded-2xl bg-[#d45f35] py-6 text-base font-semibold text-white shadow-lg hover:bg-[#e06b40]">
+                  <LocaleLink href="/founders">
+                    {t("fork.founders.cta")}
+                    <ArrowRight className="ml-2 h-5 w-5" />
+                  </LocaleLink>
+                </Button>
+              </div>
+            </div>
+
+            {/* Card 2: For Everyday Users */}
+            <div className="relative flex flex-col justify-between overflow-hidden rounded-3xl border border-[color:var(--marketing-line)] bg-gradient-to-br from-white/90 via-white/70 to-emerald-50/50 p-8 shadow-xl transition-all duration-300 hover:border-[#34d399]/50 dark:border-white/[0.1] dark:from-[#111620] dark:via-[#0c1017] dark:to-[#0c1815] dark:hover:border-[#34d399]/40">
+              <div>
+                <div className="flex items-center justify-between">
+                  <span className="inline-flex rounded-full bg-[#34d399]/15 px-3.5 py-1 text-xs font-semibold uppercase tracking-wider text-[#059669] dark:bg-[#34d399]/20 dark:text-[#34d399]">
+                    {t("fork.participants.eyebrow")}
+                  </span>
+                  <span className="rounded-full border border-[#ff7844]/30 bg-[#ff7844]/10 px-3 py-0.5 text-xs font-medium text-[#ff7844]">
+                    {t("fork.participants.badge")}
+                  </span>
+                </div>
+                <h3 className="mt-6 font-display text-2xl font-bold tracking-tight text-[var(--marketing-ink)] sm:text-3xl">
+                  {t("fork.participants.title")}
+                </h3>
+                <p className="mt-4 text-base leading-relaxed text-[var(--marketing-muted-strong)]">
+                  {t("fork.participants.body")}
+                </p>
+                <div className="mt-6 space-y-2.5 text-sm text-[var(--marketing-muted-strong)]">
+                  <div className="flex items-center gap-2.5">
+                    <span className="flex h-5 w-5 items-center justify-center rounded-full bg-[#34d399]/20 text-[#059669] dark:text-[#34d399]">✓</span>
+                    <span>Get paid monthly for the software you already use</span>
+                  </div>
+                  <div className="flex items-center gap-2.5">
+                    <span className="flex h-5 w-5 items-center justify-center rounded-full bg-[#34d399]/20 text-[#059669] dark:text-[#34d399]">✓</span>
+                    <span>Zero personal tracking — private ZK personhood via CUBID</span>
+                  </div>
+                  <div className="flex items-center gap-2.5">
+                    <span className="flex h-5 w-5 items-center justify-center rounded-full bg-[#34d399]/20 text-[#059669] dark:text-[#34d399]">✓</span>
+                    <span>Direct USDC distributions claimable on Base L2</span>
+                  </div>
+                </div>
+              </div>
+
+              <div className="mt-8 border-t border-[color:var(--marketing-line)] pt-6">
+                <Button asChild size="lg" variant="outline" className="w-full rounded-2xl border-2 border-[color:var(--marketing-line-strong)] bg-white py-6 text-base font-semibold text-[var(--marketing-ink)] shadow-md hover:bg-neutral-50 dark:bg-white/[0.05] dark:text-white dark:hover:bg-white/[0.1]">
+                  <LocaleLink href="/participation">
+                    {t("fork.participants.cta")}
+                    <ArrowRight className="ml-2 h-5 w-5" />
+                  </LocaleLink>
+                </Button>
+              </div>
+            </div>
+          </div>
+        </Reveal>
+      </MarketingSection>
 
       {/* 3D Value Loop Illustration Showcase */}
       <MarketingSection className="border-b border-[color:var(--marketing-line)] bg-neutral-900/5 py-12 dark:bg-white/[0.01]">
