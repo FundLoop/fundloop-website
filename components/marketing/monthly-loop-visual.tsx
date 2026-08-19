@@ -23,9 +23,9 @@ export function MonthlyLoopVisual({ monthLabel, centerLabel, stages }: MonthlyLo
     <div className="relative mx-auto aspect-square w-full max-w-[44rem]" aria-label={centerLabel}>
       <div className="absolute inset-[13%] rounded-full border border-dashed border-white/18 animate-[spin_50s_linear_infinite] motion-reduce:animate-none" />
       <div className="absolute inset-[24%] rounded-full border border-white/12" />
-      <div className="absolute inset-[31%] hidden flex-col items-center justify-center rounded-full bg-[#fff9ef] px-8 text-center text-[#101b1a] shadow-[0_0_100px_rgba(224,107,64,0.2)] lg:flex">
+      <div className="absolute inset-[31%] hidden flex-col items-center justify-center rounded-full bg-[#fff9ef] px-6 py-4 text-center text-[#101b1a] shadow-[0_0_100px_rgba(224,107,64,0.2)] lg:flex">
         <span className="text-[0.62rem] font-semibold uppercase tracking-[0.26em] text-[#a74727]">{monthLabel}</span>
-        <span className="mt-3 font-display text-[clamp(1.7rem,4vw,3.5rem)] leading-[0.9] tracking-[-0.05em]">{centerLabel}</span>
+        <span className="mt-2 max-w-[13rem] font-display text-[clamp(1.1rem,1.8vw,1.65rem)] font-bold leading-[1.1] tracking-[-0.03em]">{centerLabel}</span>
       </div>
       {stages.slice(0, 7).map((stage, index) => (
         <div
