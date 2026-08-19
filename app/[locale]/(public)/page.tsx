@@ -1,4 +1,5 @@
 import type { Metadata } from "next"
+import Image from "next/image"
 import { notFound } from "next/navigation"
 import { getTranslations } from "next-intl/server"
 import { ArrowRight, Bot, Building2, Eye, FlaskConical, LockKeyhole, UserRound } from "lucide-react"
@@ -71,6 +72,39 @@ export default async function Home({ params }: PageProps) {
           </Reveal>
         </div>
       </section>
+
+      {/* 3D Value Loop Illustration Showcase */}
+      <MarketingSection className="border-b border-[color:var(--marketing-line)] bg-neutral-900/5 py-12 dark:bg-white/[0.01]">
+        <Reveal>
+          <div className="relative overflow-hidden rounded-[2.5rem] border border-[color:var(--marketing-line)] bg-white/70 p-4 shadow-xl dark:border-white/[0.1] dark:bg-white/[0.03] sm:p-6 lg:p-8">
+            <div className="relative aspect-[16/9] w-full overflow-hidden rounded-[2rem] bg-neutral-100 dark:bg-neutral-900">
+              <Image
+                src="/images/marketing/hero-loop-light.jpg"
+                alt="FundLoop Mutual Prosperity Value Loop"
+                fill
+                className="object-cover object-center block dark:hidden"
+                sizes="(max-width: 1200px) 100vw, 1200px"
+              />
+              <Image
+                src="/images/marketing/hero-loop-dark.jpg"
+                alt="FundLoop Mutual Prosperity Value Loop"
+                fill
+                className="object-cover object-center hidden dark:block"
+                sizes="(max-width: 1200px) 100vw, 1200px"
+              />
+            </div>
+            <div className="mt-6 flex flex-col justify-between gap-4 px-2 sm:flex-row sm:items-center">
+              <div>
+                <p className="text-xs font-semibold uppercase tracking-wider text-[var(--marketing-accent)]">Continuous Value Circulation</p>
+                <h3 className="font-display text-2xl font-bold tracking-tight text-[var(--marketing-ink)]">A Closed Loop Where Participation Yields Shared Prosperity</h3>
+              </div>
+              <p className="max-w-md text-xs leading-relaxed text-[var(--marketing-muted-strong)]">
+                Projects pool recurring revenue each monthly epoch. Verified human participants generate usage signal, and value returns directly with cryptographic auditability.
+              </p>
+            </div>
+          </div>
+        </Reveal>
+      </MarketingSection>
 
       <MarketingSection className="border-b border-[color:var(--marketing-line)] bg-white/35 dark:bg-white/[0.02]">
         <div className="grid gap-14 lg:grid-cols-[minmax(0,0.72fr)_minmax(0,1.28fr)] lg:gap-24">
