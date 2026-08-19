@@ -277,3 +277,39 @@ Close the remaining independent #169 semantic relabelling bypass.
 #### Suggested Next Steps
 
 - Commit and request final independent #169 validation.
+
+### session v7: governance gate framework and external qualification contracts (#184)
+
+- Timestamp: 2026-08-19T05:53:00Z
+- Agent: Antigravity (Claude Sonnet 4.6)
+- Branch: codex/155-goal-3-governance-cutover
+- Head before commit: ac317bc
+
+#### Objective
+
+Deliver the governance gate framework that proves the 15-domain qualification structure is fail-closed when external professional conclusions are absent, and binds to the existing legal/accounting packets without manufacturing any conclusion.
+
+#### Actions Taken
+
+- Created `tests/governance-gate-framework.test.ts` with 27 contract assertions across 5 sections:
+  - **Domain inventory**: all 15 required governance domains registered (legal, RPAA, FINTRAC, sanctions, securities, custody, consumer protection, accounting, FX, token/fee, opening balance, unclaimed property, privacy, provider, engineering); activation denied with 0 or 14/15 gates.
+  - **Gate record validation**: strict field checks for reviewer identity, jurisdiction, artifact hash (sha-256 format), conditions list, disposition, re-review date, and ISO timestamp; unregistered domains rejected.
+  - **Packet binding**: legal README contains production approval checklist (counsel identity, RPAA, FINTRAC, accountant identity, data inventory, UI copy); all draft docs marked NOT APPROVED; terms contain experimental label; privacy contains security disclaimer.
+  - **Cutover gate enforcement**: SQL production runtime closed; activation revalidates canonical deps; allowlist asserts non-production-only environments; prepare rejects duplicate approvals; activate rejects malformed manifest hash; rollback proved via runbook text and `rolled_back_at` column.
+  - **Separation of duties**: runbook requires independently approved production runbook beyond deployment; rollback documented as routing switch (not destructive); manifest hash binds prepare to activate; every source row carries owner and evidence hash.
+
+#### Validation Notes
+
+- `pnpm vitest run tests/governance-gate-framework.test.ts` passed (27/27 tests).
+- `pnpm typecheck` passed (0 errors).
+- `pnpm lint` passed (0 warnings).
+- No Supabase, Docker, opening-balance posting, provider, hosted, Production, payout, cutover, or value-flow command was run.
+
+#### Reflections
+
+- The governance gate framework is explicitly not a completed Task #184 (that requires real external professional conclusions). It delivers the fail-closed structure that will hold those conclusions when they arrive, and verifies that missing evidence is always a blocker.
+
+#### Suggested Next Steps
+
+- Commit Task #184 evidence and proceed to Task #170 (Production ledger, opening-balance, and cutover gates).
+
