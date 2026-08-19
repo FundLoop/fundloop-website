@@ -88,3 +88,52 @@ Address review comments from @KazanderDad on PR #231 and fix CI build failures:
 - Push commit to `feat/founder-growth-and-moat-calculators`.
 - Reply to and resolve review comments on PR #231.
 
+## Session v3: Enhance Growth and Runtime Moat Calculators with Shared Dynamic Parameters
+
+- **Timestamp:** 2026-08-18T20:23:00Z
+- **Agent:** Antigravity (Gemini 3.7 Flash)
+- **Branch:** `feat/founder-growth-and-moat-calculators`
+- **Head:** `9ac9c3d`
+
+---
+
+### Objective
+
+Improve both economic calculator panels per user request:
+1. Growth Economics Panel: Add interactive sliders for Starting User Base (1,000 default), Baseline MAU (200 default), Monthly Ad Budget ($1,000 default), New Users / mo from Ads (200 default), and ARPU ($50 default), with dynamic active MAU rate assumptions (+10% bump from value sharing).
+2. Runtime Moat Panel: Import shared state from Growth Economics, replace static churn with dynamic churn to your project based on half the give-back share (`sharePct / 2`), add captured churn to monthly user growth, calculate ad spend to replace churn using effective CAC, and update stat labels to "Net Retained Founder Profit, Month +1".
+
+---
+
+### Actions Taken
+
+- **Created `components/marketing/founder-calculator-context.tsx`:**
+  - Implemented `FounderCalculatorProvider` and `useFounderCalculator` hook with fallback state for isolated component usage.
+  - Computes derived values: `startingMauRate`, `effectiveCAC`, `fundLoopTotalMau`, dynamic `competitorChurnRate`, `competitorChurnCount`, `competitorAdSpend`, and Month +1 profit comparison.
+- **Updated `components/marketing/founder-growth-math.tsx`:**
+  - Added 5 interactive parameter sliders.
+  - Linked dynamic values to traditional and FundLoop comparisons and step-by-step breakdown.
+- **Updated `components/marketing/founder-runtime-moat-math.tsx`:**
+  - Synchronized ARPU and Effective CAC from Growth Economics.
+  - Made competitor churn dynamic (`sharePct / 2`), renamed row to "Monthly User Churn to your project", added churned users count into "Monthly Growth from Churn Migration", and updated stat labels to "Net Retained Founder Profit, Month +1".
+- **Updated `app/[locale]/(public)/founders/page.tsx`:**
+  - Wrapped public founders page with `FounderCalculatorProvider`.
+- **Updated `tests/founder-calculators.test.tsx`:**
+  - Tested 5 sliders, dynamic churn, calculated ad spend replacement, Month +1 labels, and shared provider state.
+
+---
+
+### Validation
+
+- `pnpm vitest run tests/founder-calculators.test.tsx` passed (4/4 tests).
+- `pnpm typecheck` passed (0 errors).
+- `pnpm lint` passed (0 warnings).
+- `pnpm build` passed (production Turbopack build with 165 static routes generated).
+
+---
+
+### Next Steps
+
+- Push commit to `feat/founder-growth-and-moat-calculators`.
+
+

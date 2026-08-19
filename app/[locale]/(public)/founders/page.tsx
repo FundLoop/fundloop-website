@@ -8,6 +8,7 @@ import { Reveal } from "@/components/marketing/reveal"
 import { JourneyConfidenceBand, type JourneyConfidenceItem } from "@/components/marketing/journey-confidence-band"
 import { FounderGrowthMathPanel } from "@/components/marketing/founder-growth-math"
 import { FounderRuntimeMoatMathPanel } from "@/components/marketing/founder-runtime-moat-math"
+import { FounderCalculatorProvider } from "@/components/marketing/founder-calculator-context"
 import {
   MarketingPage,
   MarketingSection,
@@ -67,7 +68,8 @@ export default async function FoundersPage({ params }: PageProps) {
 
   return (
     <MarketingPage>
-      <MarketingSection className="pb-12 pt-10 sm:pb-16">
+      <FounderCalculatorProvider>
+        <MarketingSection className="pb-12 pt-10 sm:pb-16">
         <div className="grid gap-8 lg:grid-cols-[minmax(0,1.06fr)_minmax(22rem,0.94fr)]">
           <Reveal>
             <SectionEyebrow>{t("hero.eyebrow")}</SectionEyebrow>
@@ -329,7 +331,8 @@ export default async function FoundersPage({ params }: PageProps) {
             </div>
           </div>
         </Reveal>
-      </MarketingSection>
+        </MarketingSection>
+      </FounderCalculatorProvider>
     </MarketingPage>
   )
 }

@@ -3,6 +3,7 @@ import { render, screen, fireEvent } from "@testing-library/react"
 import { beforeEach, describe, expect, it, vi } from "vitest"
 import { FounderGrowthMathPanel } from "@/components/marketing/founder-growth-math"
 import { FounderRuntimeMoatMathPanel } from "@/components/marketing/founder-runtime-moat-math"
+import { FounderCalculatorProvider } from "@/components/marketing/founder-calculator-context"
 
 vi.mock("@/i18n/navigation", () => ({
   Link: ({ href, children, ...props }: React.AnchorHTMLAttributes<HTMLAnchorElement>) => (
@@ -24,16 +25,24 @@ beforeEach(() => {
 
 describe("Founder Marketing Calculators", () => {
   describe("FounderGrowthMathPanel (Cold Start / Acquisition CAC)", () => {
-    it("renders initial side-by-side comparison with key metrics", () => {
+    it("renders initial side-by-side comparison with key metrics and 5 parameter sliders", () => {
       render(<FounderGrowthMathPanel />)
 
       expect(screen.getByText("The Math: Why Founders Join FundLoop Over Running Ads")).toBeDefined()
+      expect(screen.getByText("Adjust Your Project Parameters")).toBeDefined()
+      expect(screen.getByText("Starting Users")).toBeDefined()
+      expect(screen.getByText("Baseline MAU")).toBeDefined()
+      expect(screen.getAllByText("Monthly Ad Budget").length).toBe(2)
+      expect(screen.getByText("New Users / mo")).toBeDefined()
+      expect(screen.getByText("Monthly ARPU")).toBeDefined()
+
       expect(screen.getByText("Option A")).toBeDefined()
       expect(screen.getByText("Traditional Ad Spend")).toBeDefined()
       expect(screen.getByText("Option B")).toBeDefined()
       expect(screen.getByText("The FundLoop Loop")).toBeDefined()
       expect(screen.getByText("900 MAU")).toBeDefined()
       expect(screen.getByText("7,000 qualified visits")).toBeDefined()
+      expect(screen.getByText("$25.00")).toBeDefined()
     })
 
     it("switches to step-by-step breakdown view on tab click", () => {
@@ -51,18 +60,41 @@ describe("Founder Marketing Calculators", () => {
   })
 
   describe("FounderRuntimeMoatMathPanel (Steady-State & Retention Moat)", () => {
-    it("renders interactive sliders and dynamic financial comparison", () => {
+    it("renders interactive sliders, dynamic churn migration, CAC replacement, and Month +1 labels", () => {
       render(<FounderRuntimeMoatMathPanel />)
 
       expect(screen.getByText("Why Projects Stay: The Shared-Upside Competitive Moat")).toBeDefined()
       expect(screen.getByText("Monthly Active Users")).toBeDefined()
       expect(screen.getByText("Average Net Revenue / MAU")).toBeDefined()
       expect(screen.getByText("FundLoop Give-Back Share")).toBeDefined()
+
       expect(screen.getByText("Extractive Competitor")).toBeDefined()
       expect(screen.getByText("On FundLoop")).toBeDefined()
+
+      // Dynamic churn and ad replacement
+      expect(screen.getAllByText("Monthly User Churn to your project").length).toBeGreaterThan(0)
+      expect(screen.getByText("Ad Spend to Replace Churn")).toBeDefined()
+      expect(screen.getByText("Monthly Growth from Churn Migration")).toBeDefined()
+
+      // Net retained profit Month +1 labels
+      expect(screen.getAllByText("Net Retained Founder Profit, Month +1").length).toBe(2)
+
       expect(screen.getByText("01. Churn Deflation")).toBeDefined()
       expect(screen.getByText("02. Organic Vampire Migration")).toBeDefined()
       expect(screen.getByText("03. Unassailable Reputation Moat")).toBeDefined()
+    })
+
+    it("shares state seamlessly with FounderCalculatorProvider", () => {
+      render(
+        <FounderCalculatorProvider>
+          <FounderGrowthMathPanel />
+          <FounderRuntimeMoatMathPanel />
+        </FounderCalculatorProvider>
+      )
+
+      expect(screen.getByText("The Math: Why Founders Join FundLoop Over Running Ads")).toBeDefined()
+      expect(screen.getByText("Why Projects Stay: The Shared-Upside Competitive Moat")).toBeDefined()
+      expect(screen.getAllByText("Net Retained Founder Profit, Month +1").length).toBe(2)
     })
   })
 })
