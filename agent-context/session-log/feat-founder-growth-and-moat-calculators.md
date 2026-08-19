@@ -136,4 +136,53 @@ Improve both economic calculator panels per user request:
 
 - Push commit to `feat/founder-growth-and-moat-calculators`.
 
+## Session v4: Overhaul Dark Mode Theme, Symmetrical Conclusion Cards & Target Ad Spend
+
+- **Timestamp:** 2026-08-18T21:03:00Z
+- **Agent:** Antigravity (Gemini 3.7 Flash)
+- **Branch:** `feat/founder-growth-and-moat-calculators`
+- **Head:** `ed40939`
+
+---
+
+### Objective
+
+Address user UX and styling requests:
+1. Radically improve the dark mode palette in `app/globals.css` with a high-contrast obsidian slate canvas, crisp typography, and luminous amber/emerald accents.
+2. Update "Ad Spend to keep up with your project" in the competitor card targeting `targetUsersToKeepUp` (replacing churn + keeping pace with your project's month +1 MAU).
+3. Add a dedicated explanatory callout badge in the Runtime Moat panel explaining that baseline parameters are dynamically imported from Growth Economics.
+4. Align Growth Economics conclusion summary boxes so both Option A and Option B prominently and symmetrically compare **Total Active Users & % Growth**, while moving Effective CAC into the Option A metrics table.
+
+---
+
+### Actions Taken
+
+- **Redesigned Dark Mode in `app/globals.css`:**
+  - Modern obsidian slate canvas (`#090c10`), crisp foreground typography (`#f8fafc`), luminous warm brand accents (`#ff7844`), emerald compound growth accents (`#34d399`), and translucent frosted cards.
+- **Updated `components/marketing/founder-growth-math.tsx`:**
+  - Standardized conclusion callout boxes on both Option A (`240 MAU (+20% Growth)`) and Option B (`900 MAU (+350% Growth)`).
+  - Swapped `Effective CAC per Active User` into the Option A metrics table.
+- **Updated `components/marketing/founder-runtime-moat-math.tsx`:**
+  - Renamed row to `"Ad Spend to keep up with your project"` showing total users required (`2 * competitorChurnCount`) to match your project's end-state MAU.
+  - Added a "Live Linked Model" explanatory badge.
+- **Updated `tests/founder-calculators.test.tsx`:**
+  - Verified symmetrical conclusion comparisons, new ad spend labels, and linked model callout.
+
+---
+
+### Validation
+
+- `pnpm vitest run tests/founder-calculators.test.tsx` passed (4/4 tests).
+- `pnpm typecheck` passed (0 errors).
+- `pnpm lint` passed (0 warnings).
+- `pnpm build` passed (165 static routes).
+- Verified visually in local browser in both Light and Dark mode using Playwright.
+
+---
+
+### Next Steps
+
+- Push commit to `feat/founder-growth-and-moat-calculators`.
+
+
 
