@@ -157,13 +157,34 @@ export default async function Home({ params }: PageProps) {
 
       <MarketingSection className="border-y border-[color:var(--marketing-line)] bg-[#101b1a] text-[#fff9ef]">
         <div className="grid gap-14 lg:grid-cols-[minmax(0,0.85fr)_minmax(0,1.15fr)] lg:gap-24">
-          <Reveal>
-            <span className="inline-flex h-14 w-14 items-center justify-center rounded-full border border-white/18 text-[#f5b195]"><LockKeyhole className="h-6 w-6" /></span>
-            <p className="mt-7 text-[0.68rem] font-semibold uppercase tracking-[0.28em] text-[#f5b195]">{t("trust.eyebrow")}</p>
-            <h2 className="mt-5 max-w-2xl font-display text-5xl leading-[0.94] tracking-[-0.05em] sm:text-6xl">{t("trust.title")}</h2>
-            <p className="mt-6 max-w-xl text-lg leading-8 text-[#cbd8d3]">{t("trust.body")}</p>
+          <Reveal className="flex flex-col justify-between">
+            <div>
+              <span className="inline-flex h-14 w-14 items-center justify-center rounded-full border border-white/18 text-[#f5b195]"><LockKeyhole className="h-6 w-6" /></span>
+              <p className="mt-7 text-[0.68rem] font-semibold uppercase tracking-[0.28em] text-[#f5b195]">{t("trust.eyebrow")}</p>
+              <h2 className="mt-5 max-w-2xl font-display text-5xl leading-[0.94] tracking-[-0.05em] sm:text-6xl">{t("trust.title")}</h2>
+              <p className="mt-6 max-w-xl text-lg leading-8 text-[#cbd8d3]">{t("trust.body")}</p>
+            </div>
+
+            <div className="mt-8 overflow-hidden rounded-2xl border border-white/14 bg-white/[0.03] p-2 shadow-2xl">
+              <div className="relative aspect-[16/9] w-full overflow-hidden rounded-xl bg-[#0c1017]">
+                <Image
+                  src="/images/marketing/verified-identity-light.jpg"
+                  alt="FundLoop Verified Human Ecosystem and ZK Identity Network"
+                  fill
+                  className="object-cover object-center block dark:hidden"
+                  sizes="(max-width: 1024px) 100vw, 600px"
+                />
+                <Image
+                  src="/images/marketing/verified-identity-dark.jpg"
+                  alt="FundLoop Verified Human Ecosystem and ZK Identity Network"
+                  fill
+                  className="object-cover object-center hidden dark:block"
+                  sizes="(max-width: 1024px) 100vw, 600px"
+                />
+              </div>
+            </div>
           </Reveal>
-          <div>
+          <div className="flex flex-col justify-center">
             {principles.map((principle, index) => (
               <Reveal key={principle.title} delay={index * 80}>
                 <div className="grid gap-4 border-t border-white/14 py-7 sm:grid-cols-[3rem_minmax(0,1fr)]">
