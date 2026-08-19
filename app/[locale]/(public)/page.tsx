@@ -106,6 +106,69 @@ export default async function Home({ params }: PageProps) {
         </Reveal>
       </MarketingSection>
 
+      {/* 4-Stage Visual Epoch Flow */}
+      <MarketingSection className="border-b border-[color:var(--marketing-line)] bg-white/35 py-12 dark:bg-white/[0.02]">
+        <Reveal>
+          <div className="flex flex-col justify-between gap-6 lg:flex-row lg:items-end">
+            <div>
+              <SectionEyebrow>The Operating Rhythm</SectionEyebrow>
+              <SectionTitle className="mt-4 text-4xl sm:text-5xl">Four Steps to Every Monthly Epoch</SectionTitle>
+              <SectionBody className="mt-4 max-w-2xl">From intake and cryptographic verification to algorithmic redistribution and Base on-chain safe settlement.</SectionBody>
+            </div>
+          </div>
+
+          <div className="mt-10 grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
+            {/* Stage 1 */}
+            <div className="flex flex-col justify-between rounded-3xl border border-[color:var(--marketing-line)] bg-white/60 p-4 shadow-sm dark:border-white/[0.08] dark:bg-white/[0.03]">
+              <div>
+                <div className="relative aspect-square w-full overflow-hidden rounded-2xl bg-neutral-100 dark:bg-neutral-900">
+                  <Image src="/images/marketing/stage1-intake-light.jpg" alt="01 Project Intake & Revenue Pledges" fill className="object-cover block dark:hidden" sizes="(max-width: 768px) 100vw, 300px" />
+                  <Image src="/images/marketing/stage1-intake-dark.jpg" alt="01 Project Intake & Revenue Pledges" fill className="object-cover hidden dark:block" sizes="(max-width: 768px) 100vw, 300px" />
+                </div>
+                <h4 className="mt-4 font-semibold text-[var(--marketing-ink)]">01. Project Intake & Pledges</h4>
+                <p className="mt-1.5 text-xs text-[var(--marketing-muted-strong)] leading-relaxed">Projects route 1%+ recurring revenue into the monthly protocol pool.</p>
+              </div>
+            </div>
+
+            {/* Stage 2 */}
+            <div className="flex flex-col justify-between rounded-3xl border border-[color:var(--marketing-line)] bg-white/60 p-4 shadow-sm dark:border-white/[0.08] dark:bg-white/[0.03]">
+              <div>
+                <div className="relative aspect-square w-full overflow-hidden rounded-2xl bg-neutral-100 dark:bg-neutral-900">
+                  <Image src="/images/marketing/stage2-zk-identity-light.jpg" alt="02 ZK Identity & Verification" fill className="object-cover block dark:hidden" sizes="(max-width: 768px) 100vw, 300px" />
+                  <Image src="/images/marketing/stage2-zk-identity-dark.jpg" alt="02 ZK Identity & Verification" fill className="object-cover hidden dark:block" sizes="(max-width: 768px) 100vw, 300px" />
+                </div>
+                <h4 className="mt-4 font-semibold text-[var(--marketing-ink)]">02. ZK Identity Verification</h4>
+                <p className="mt-1.5 text-xs text-[var(--marketing-muted-strong)] leading-relaxed">Zero-knowledge proof verification filters bots and secures human uniqueness.</p>
+              </div>
+            </div>
+
+            {/* Stage 3 */}
+            <div className="flex flex-col justify-between rounded-3xl border border-[color:var(--marketing-line)] bg-white/60 p-4 shadow-sm dark:border-white/[0.08] dark:bg-white/[0.03]">
+              <div>
+                <div className="relative aspect-square w-full overflow-hidden rounded-2xl bg-neutral-100 dark:bg-neutral-900">
+                  <Image src="/images/marketing/stage3-redistribution-light.jpg" alt="03 Algorithmic Redistribution" fill className="object-cover block dark:hidden" sizes="(max-width: 768px) 100vw, 300px" />
+                  <Image src="/images/marketing/stage3-redistribution-dark.jpg" alt="03 Algorithmic Redistribution" fill className="object-cover hidden dark:block" sizes="(max-width: 768px) 100vw, 300px" />
+                </div>
+                <h4 className="mt-4 font-semibold text-[var(--marketing-ink)]">03. Algorithmic Redistribution</h4>
+                <p className="mt-1.5 text-xs text-[var(--marketing-muted-strong)] leading-relaxed">Mathematical protocol calculation balances and divides pooled value.</p>
+              </div>
+            </div>
+
+            {/* Stage 4 */}
+            <div className="flex flex-col justify-between rounded-3xl border border-[color:var(--marketing-line)] bg-white/60 p-4 shadow-sm dark:border-white/[0.08] dark:bg-white/[0.03]">
+              <div>
+                <div className="relative aspect-square w-full overflow-hidden rounded-2xl bg-neutral-100 dark:bg-neutral-900">
+                  <Image src="/images/marketing/stage4-safe-payouts-light.jpg" alt="04 Base Safe Payouts" fill className="object-cover block dark:hidden" sizes="(max-width: 768px) 100vw, 300px" />
+                  <Image src="/images/marketing/stage4-safe-payouts-dark.jpg" alt="04 Base Safe Payouts" fill className="object-cover hidden dark:block" sizes="(max-width: 768px) 100vw, 300px" />
+                </div>
+                <h4 className="mt-4 font-semibold text-[var(--marketing-ink)]">04. Base On-Chain Settlement</h4>
+                <p className="mt-1.5 text-xs text-[var(--marketing-muted-strong)] leading-relaxed">Multi-sig Safe smart contracts broadcast direct claimable rewards on Base L2.</p>
+              </div>
+            </div>
+          </div>
+        </Reveal>
+      </MarketingSection>
+
       <MarketingSection className="border-b border-[color:var(--marketing-line)] bg-white/35 dark:bg-white/[0.02]">
         <div className="grid gap-14 lg:grid-cols-[minmax(0,0.72fr)_minmax(0,1.28fr)] lg:gap-24">
           <Reveal className="lg:sticky lg:top-28 lg:self-start">

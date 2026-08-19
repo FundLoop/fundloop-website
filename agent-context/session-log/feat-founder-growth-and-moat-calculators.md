@@ -311,6 +311,52 @@ Address user UX and styling requests:
 
 - Push commit to `feat/founder-growth-and-moat-calculators`.
 
+## Session v8: Integrate 4-Stage Monthly Cycle Grid & Founder Dashboard Mockup
+
+- **Timestamp:** 2026-08-19T02:15:00Z
+- **Agent:** Antigravity (Gemini 3.7 Flash)
+- **Branch:** `feat/founder-growth-and-moat-calculators`
+- **Head:** `68d8706`
+
+---
+
+### Objective
+
+1. Generate and integrate all 4-Stage Monthly Cycle Spot Illustrations (01 Intake, 02 ZK Identity, 03 Redistribution, 04 Base Safe Payouts) into a responsive visual epoch grid on the home page (`app/[locale]/(public)/page.tsx`) with Light & Dark mode support.
+2. Integrate the 3D Founder Shared-Upside Dashboard Mockup into the Founders page (`app/[locale]/(public)/founders/page.tsx`) right above the Growth Economics & Moat calculators.
+
+---
+
+### Actions Taken
+
+- **Generated & Saved Visual Assets:**
+  - `public/images/marketing/stage1-intake-light.jpg` & `stage1-intake-dark.jpg`
+  - `public/images/marketing/stage2-zk-identity-light.jpg` & `stage2-zk-identity-dark.jpg`
+  - `public/images/marketing/stage3-redistribution-light.jpg` & `stage3-redistribution-dark.jpg`
+  - `public/images/marketing/stage4-safe-payouts-light.jpg` & `stage4-safe-payouts-dark.jpg`
+  - `public/images/marketing/founder-dashboard-dark.jpg`
+- **Updated `app/[locale]/(public)/page.tsx`:**
+  - Added the "Four Steps to Every Monthly Epoch" visual grid with responsive cards, theme switching, and step descriptions.
+- **Updated `app/[locale]/(public)/founders/page.tsx`:**
+  - Added the "The Founder Shared-Upside Control Plane" 3D dashboard showcase section.
+
+---
+
+### Validation
+
+- `pnpm vitest run tests/founder-calculators.test.tsx` passed (4/4 tests).
+- `pnpm typecheck` passed (0 errors).
+- `pnpm lint` passed (0 warnings).
+- `pnpm build` passed (165 static routes).
+- Verified visually on `http://localhost:3000/en` and `http://localhost:3000/en/founders` in both Light and Dark mode using Playwright screenshots.
+
+---
+
+### Next Steps
+
+- Push commit to `feat/founder-growth-and-moat-calculators`.
+
+
 
 
 
