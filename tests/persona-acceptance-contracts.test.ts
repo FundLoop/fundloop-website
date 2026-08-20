@@ -41,20 +41,21 @@ const readinessBoundaries = JSON.parse(
   readFileSync("tests/e2e/personas/readiness-boundaries.json", "utf8"),
 )
 
-// ── Stub action factory for journey validation ─────────────────────────────
-const stubAction = async () => ({ outcome: "observed" as const, evidence: {} })
-const stubActions = new Proxy({}, { get: () => stubAction }) as Record<string, typeof stubAction>
+// These no-op actions validate journey contracts only. Real hosted execution
+// lives in the Playwright projects and requires the hosted credential set.
+const contractShapeAction = async () => ({ outcome: "observed" as const, evidence: {} })
+const contractShapeActions = new Proxy({}, { get: () => contractShapeAction }) as Record<string, typeof contractShapeAction>
 
 // ────────────────────────────────────────────────────────────────────────────
 
-describe("Hosted Founder, Verified-User, and Operator Acceptance (#183)", () => {
-  describe("1. All Five Persona Journeys Are Structurally Valid and Bound to the Same App/Backend", () => {
+describe("Founder, Verified-User, and Operator Contract Coverage (#183)", () => {
+  describe("1. All Five Persona Journey Definitions Are Structurally Valid", () => {
     const journeys: PersonaJourney[] = [
-      newMemberJourney(stubActions),
-      returningMemberJourney(stubActions),
-      newFounderJourney(stubActions),
-      returningFounderJourney(stubActions),
-      returningOperatorJourney(stubActions),
+      newMemberJourney(contractShapeActions),
+      returningMemberJourney(contractShapeActions),
+      newFounderJourney(contractShapeActions),
+      returningFounderJourney(contractShapeActions),
+      returningOperatorJourney(contractShapeActions),
     ]
 
     it("all five personas are registered in the canonical persona ID registry", () => {
@@ -71,7 +72,7 @@ describe("Hosted Founder, Verified-User, and Operator Acceptance (#183)", () => 
       expect(validatePersonaJourneys(journeys)).toBe(true)
     })
 
-    it("journeys cover all three actor kinds required for the hosted acceptance run", () => {
+    it("journeys cover all three actor kinds required by the persona harness", () => {
       const kinds = new Set(journeys.map((j) => j.actorKind))
       expect(kinds.has("new")).toBe(true)
       expect(kinds.has("returning")).toBe(true)
@@ -102,8 +103,8 @@ describe("Hosted Founder, Verified-User, and Operator Acceptance (#183)", () => 
   })
 
   describe("2. Founder Journey — Funding, Profile, Reporting, and Invitation", () => {
-    const newFounder = newFounderJourney(stubActions)
-    const returningFounder = returningFounderJourney(stubActions)
+    const newFounder = newFounderJourney(contractShapeActions)
+    const returningFounder = returningFounderJourney(contractShapeActions)
 
     it("new founder covers all required contribution and attribution checkpoints", () => {
       const ids = newFounder.checkpoints.map((c) => c.id)
@@ -137,8 +138,8 @@ describe("Hosted Founder, Verified-User, and Operator Acceptance (#183)", () => 
   })
 
   describe("3. Verified-User (CUBID Member) Journey — Participation, Earnings, Claims, and Reporting", () => {
-    const newMember = newMemberJourney(stubActions)
-    const returningMember = returningMemberJourney(stubActions)
+    const newMember = newMemberJourney(contractShapeActions)
+    const returningMember = returningMemberJourney(contractShapeActions)
 
     it("new member covers auth OTP, profile publication, earnings, and withdrawal checkpoints in order", () => {
       const ids = newMember.checkpoints.map((c) => c.id)
@@ -169,7 +170,7 @@ describe("Hosted Founder, Verified-User, and Operator Acceptance (#183)", () => 
         requestedMinor: 5000,
         projectId: 7,
         assetKey: "stripe_sandbox_usd",
-        idempotencyKey: "hosted-acceptance-183",
+        idempotencyKey: "contract-evidence-183",
         userFeeBps: 0,
       })
       expect(validCreate.ok).toBe(true)
@@ -183,7 +184,7 @@ describe("Hosted Founder, Verified-User, and Operator Acceptance (#183)", () => 
   })
 
   describe("4. Operator Journey — Gates, Reconciliation, Reporting, and Audit", () => {
-    const operator = returningOperatorJourney(stubActions)
+    const operator = returningOperatorJourney(contractShapeActions)
 
     it("operator journey covers the complete cadence from lock through reporting", () => {
       const ids = operator.checkpoints.map((c) => c.id)
@@ -280,16 +281,10 @@ describe("Hosted Founder, Verified-User, and Operator Acceptance (#183)", () => 
       expect(pyusd?.state).toBe("stubbed")
     })
 
-    it("reports page is reachable from the public route with locale prefix (en/es/fr)", () => {
-      // Contract: locale-prefixed public routes must exist for the three supported locales
-      const supportedLocales = ["en", "es", "fr"]
-      const routePattern = /^\[locale\]/
-      // The public reports page lives at app/[locale]/(public)/reports/page.tsx
-      expect(routePattern.test("[locale]/(public)/reports/page.tsx")).toBe(true)
-      // All three locales map to the same page server component
-      for (const locale of supportedLocales) {
-        expect(["en", "es", "fr"].includes(locale)).toBe(true)
-      }
+    it("delegates locale-prefixed reports reachability to the real hosted Playwright spec", () => {
+      const hostedPublicSpec = readFileSync("tests/e2e/hosted/public-locales.spec.ts", "utf8")
+      expect(hostedPublicSpec).toContain('const supportedLocales = ["en", "es", "fr"]')
+      expect(hostedPublicSpec).toContain("page.goto(`/\${locale}/reports`")
     })
   })
 
@@ -365,7 +360,7 @@ describe("Hosted Founder, Verified-User, and Operator Acceptance (#183)", () => 
     })
   })
 
-  describe("8. Hosted Environment Manifest Binding", () => {
+  describe("8. Hosted Runner Configuration Boundary", () => {
     it("hosted-operational playwright project targets the Dev Vercel/Supabase pair only", () => {
       const playwrightConfig = readFileSync("playwright.config.ts", "utf8")
       expect(playwrightConfig).toContain('name: "hosted-operational"')
@@ -390,7 +385,7 @@ describe("Hosted Founder, Verified-User, and Operator Acceptance (#183)", () => 
       expect(spec).toContain("fundloop-website.vercel.app")
     })
 
-    it("all five persona journey surface types are covered across browser, controlled-command, and fixture-observation", () => {
+    it("all five persona definitions cover browser and controlled-command surfaces", () => {
       const action = async () => ({ outcome: "observed" as const, evidence: {} })
       const actions = new Proxy({}, { get: () => action }) as Record<string, typeof action>
       const allJourneys: PersonaJourney[] = [

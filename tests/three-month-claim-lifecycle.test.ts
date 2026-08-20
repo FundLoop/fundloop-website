@@ -22,6 +22,18 @@ const reportPublication = readFileSync(
   "supabase/migrations/20260813130000_monthly_report_publication.sql",
   "utf8",
 )
+const claimWindowBoundaryFixture = readFileSync(
+  "supabase/tests/three_month_claim_window_boundary.sql",
+  "utf8",
+)
+const fourEpochLifecycleFixture = readFileSync(
+  "supabase/tests/epoch_allocation_v2_four_epoch_setup.sql",
+  "utf8",
+)
+const allocationRuntimeFix = readFileSync(
+  "supabase/migrations/20260820074000_allocator_v2_persistence_and_concurrency_fix.sql",
+  "utf8",
+)
 
 // ── Pure lifecycle helpers mirroring DB SQL logic ──────────────────────────
 
@@ -42,15 +54,6 @@ function applyFifoPartialClaim(
     need -= take
   }
   return { consumed, fulfilled: need <= 0, remaining: need }
-}
-
-/** Determines whether an obligation's 3-month window is still open */
-function isObligationClaimable(originCycleMonth: string, currentCycleMonth: string): boolean {
-  const origin = new Date(originCycleMonth + "-01")
-  const current = new Date(currentCycleMonth + "-01")
-  const expiry = new Date(origin)
-  expiry.setMonth(expiry.getMonth() + 3)
-  return current < expiry
 }
 
 /** Determines whether a reservation expiry should requeue (timely-request protection) */
@@ -82,14 +85,34 @@ describe("Three-Month Claim and Rollover Lifecycle (#182)", () => {
       expect(allocationPolicyV2).toContain("expiry.period_start=(origin.period_start+interval '3 months')::date")
     })
 
-    it("claimability window: month N+0 through N+2 is open, N+3 is expired", () => {
-      // Obligation created in 2026-01: claimable through 2026-03 (exclusive of 2026-04)
-      expect(isObligationClaimable("2026-01", "2026-01")).toBe(true)
-      expect(isObligationClaimable("2026-01", "2026-02")).toBe(true)
-      expect(isObligationClaimable("2026-01", "2026-03")).toBe(true)
-      // Exactly at +3 months: no longer claimable
-      expect(isObligationClaimable("2026-01", "2026-04")).toBe(false)
-      expect(isObligationClaimable("2026-01", "2026-06")).toBe(false)
+    it("keeps the N+3 target open through period_end and binds both sides of the database boundary", () => {
+      expect(allocationPolicyV2).toContain(
+        "clock_timestamp()<((v_target.period_end+1)::timestamp AT TIME ZONE 'America/Los_Angeles')",
+      )
+      expect(claimWindowBoundaryFixture).toContain("epoch_allocation_v2_claim_window_open")
+      expect(claimWindowBoundaryFixture).toContain("interval '3 months'")
+      expect(fourEpochLifecycleFixture).toContain(
+        "v_preview:=public.epoch_allocation_v2_preview_input('2026-06',1.50,'local')",
+      )
+      expect(allocationRuntimeFix).toContain(
+        "funded_exact_usd,funded_minor,manifest,actor_user_id",
+      )
+      expect(allocationRuntimeFix).toContain("v_funded_exact,v_funded_minor,v_manifest")
+      expect(allocationRuntimeFix).toContain(
+        "source_lot_key,project_id,source_position,rail_key",
+      )
+      expect(allocationRuntimeFix).not.toContain("reserve_harvested_inventory_lot")
+      expect(
+        allocationRuntimeFix.indexOf(
+          "SELECT * INTO v_existing FROM public.epoch_allocation_runs",
+        ),
+      ).toBeLessThan(
+        allocationRuntimeFix.indexOf(
+          "IF v_manifest.status<>'locked' THEN RAISE EXCEPTION 'epoch_allocation_v2_manifest_not_locked'",
+        ),
+      )
+      expect(allocationRuntimeFix.match(/epoch_allocation_v2_preview_stale/g)?.length).toBe(2)
+      expect(allocationRuntimeFix.match(/'currency',v_currency/g)?.length).toBeGreaterThanOrEqual(3)
     })
 
     it("monthly report documents the E-3 expiry rule as a lifecycle guarantee", () => {
