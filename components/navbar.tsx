@@ -68,7 +68,7 @@ export default function Navbar({ navigationContext }: NavbarProps) {
                 "h-10 rounded-full px-4 text-sm font-medium",
                 pathname === link.href
                   ? "bg-black/[0.04] text-[var(--marketing-accent)] dark:bg-white/[0.06]"
-                  : "text-[var(--marketing-muted-strong)] hover:bg-black/[0.04] hover:text-[var(--marketing-ink)] dark:hover:bg-white/[0.06] dark:hover:text-[var(--marketing-paper)]",
+                  : "text-[var(--marketing-muted-strong)] hover:bg-black/[0.04] hover:text-[var(--marketing-ink)] dark:hover:bg-white/[0.06]",
               )}
             >
               <Link href={link.href}>{link.label}</Link>

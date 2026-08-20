@@ -77,7 +77,7 @@ export function ShellAuthControls({ navigationContext, variant, showQuickLinks =
 
   const actionButtonClass =
     variant === "public"
-      ? "rounded-full border border-[color:var(--marketing-line)] bg-[var(--surface-panel)] text-[var(--marketing-ink)] hover:bg-[var(--surface-panel-strong)] dark:text-[var(--marketing-paper)]"
+      ? "rounded-full border border-[color:var(--marketing-line)] bg-[var(--surface-panel)] text-[var(--marketing-ink)] hover:bg-[var(--surface-panel-strong)]"
       : "rounded-full border border-[color:var(--surface-border)] bg-[var(--surface-panel)] text-[var(--text-strong)] hover:bg-[var(--surface-panel-strong)]"
 
   if (!navigationContext.isAuthenticated) {

@@ -97,12 +97,13 @@ function useComputeCalculatorState(
     // Competitor drops to runtimeMau - competitorChurnCount.
     // To match your project end-state count, competitor must acquire 2 * competitorChurnCount users.
     const targetUsersToKeepUp = competitorChurnCount * 2
-    const competitorAdSpend = Math.round(targetUsersToKeepUp * effectiveCAC)
-    const grossRevenue = runtimeMau * arpu
-    const competitorRetained = Math.max(0, grossRevenue - competitorAdSpend)
-
     const fundLoopMonth1Mau = runtimeMau + competitorChurnCount
     const fundLoopMonth1GrossRevenue = fundLoopMonth1Mau * arpu
+    const competitorAdSpend = Math.round(targetUsersToKeepUp * effectiveCAC)
+    // Compare both projects at the same month-one ending MAU. The competitor
+    // buys enough users to catch up, so its revenue must include those users.
+    const grossRevenue = fundLoopMonth1GrossRevenue
+    const competitorRetained = Math.max(0, grossRevenue - competitorAdSpend)
     const giveBackTotal = Math.round(fundLoopMonth1GrossRevenue * (sharePct / 100))
     const giveBackPerUser = fundLoopMonth1Mau > 0 ? (giveBackTotal / fundLoopMonth1Mau).toFixed(2) : "0.00"
     const fundLoopRetained = fundLoopMonth1GrossRevenue - giveBackTotal

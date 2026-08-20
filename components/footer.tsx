@@ -16,7 +16,7 @@ export default async function Footer() {
   }))
 
   return (
-    <footer className="border-t border-[color:var(--marketing-line)] bg-[var(--marketing-paper)] text-[var(--marketing-ink)] dark:bg-[var(--marketing-ink)] dark:text-[var(--marketing-paper)]">
+    <footer className="border-t border-[color:var(--marketing-line)] bg-[var(--marketing-paper)] text-[var(--marketing-ink)]">
       <div className="mx-auto max-w-7xl px-6 py-14 sm:px-8 lg:px-12">
         <div className="grid gap-12 border-b border-[color:var(--marketing-line)] pb-12 lg:grid-cols-[minmax(0,1.2fr)_repeat(3,minmax(0,0.7fr))]">
           <div className="max-w-md">

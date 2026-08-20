@@ -95,7 +95,7 @@ export default async function FoundersPage({ params }: PageProps) {
                 variant="outline"
                 className="rounded-full border-[color:var(--marketing-line-strong)] bg-transparent px-7 hover:bg-black/[0.04] dark:hover:bg-white/[0.06]"
               >
-                <Link href="/documentation">{t("hero.secondaryCta")}</Link>
+                <a href="#growth-math">{t("hero.secondaryCta")}</a>
               </Button>
             </div>
           </Reveal>
@@ -150,7 +150,7 @@ export default async function FoundersPage({ params }: PageProps) {
             <div className="relative aspect-[16/9] w-full overflow-hidden rounded-[2rem] bg-neutral-100 dark:bg-neutral-900">
               <Image
                 src="/images/marketing/founder-dashboard-dark.jpg"
-                alt="FundLoop Founder Shared-Upside Dashboard Mockup"
+                alt={t("dashboardShowcase.alt")}
                 fill
                 className="object-cover object-center"
                 sizes="(max-width: 1200px) 100vw, 1200px"
@@ -158,11 +158,11 @@ export default async function FoundersPage({ params }: PageProps) {
             </div>
             <div className="mt-6 flex flex-col justify-between gap-4 px-2 sm:flex-row sm:items-center">
               <div>
-                <p className="text-xs font-semibold uppercase tracking-wider text-[var(--marketing-accent)]">Real-Time Allocation & Settlement</p>
-                <h3 className="font-display text-2xl font-bold tracking-tight text-[var(--marketing-ink)]">The Founder Shared-Upside Control Plane</h3>
+                <p className="text-xs font-semibold uppercase tracking-wider text-[var(--marketing-accent)]">{t("dashboardShowcase.eyebrow")}</p>
+                <h3 className="font-display text-2xl font-bold tracking-tight text-[var(--marketing-ink)]">{t("dashboardShowcase.title")}</h3>
               </div>
               <p className="max-w-md text-xs leading-relaxed text-[var(--marketing-muted-strong)]">
-                Track revenue pledge splits, active user retention surges, dynamic competitor moats, and Base L2 on-chain settlements in one unified operational interface.
+                {t("dashboardShowcase.body")}
               </p>
             </div>
           </div>
@@ -359,6 +359,22 @@ export default async function FoundersPage({ params }: PageProps) {
           </div>
         </Reveal>
         </MarketingSection>
+
+      <MarketingSection className="pb-24">
+        <Reveal>
+          <div className="relative overflow-hidden rounded-[2.5rem] border border-[color:var(--marketing-line)] bg-white/55 p-4 shadow-xl dark:border-white/[0.1] dark:bg-white/[0.03]">
+            <div className="relative aspect-[16/9] w-full overflow-hidden rounded-[2rem] bg-neutral-100 dark:bg-neutral-900">
+              <Image
+                src="/images/marketing/fundloop-for-projects.png"
+                alt={t("bannerAlt")}
+                fill
+                className="object-cover object-center"
+                sizes="(max-width: 1200px) 100vw, 1200px"
+              />
+            </div>
+          </div>
+        </Reveal>
+      </MarketingSection>
       </FounderCalculatorProvider>
     </MarketingPage>
   )

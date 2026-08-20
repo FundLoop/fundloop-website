@@ -65,7 +65,7 @@ export function JourneyConfidenceBand({
             {items.map((item) => (
               <div key={item.label} className="rounded-[1.5rem] border border-[color:var(--marketing-line)] bg-white/58 p-5 dark:bg-white/[0.04]">
                 <CheckCircle2 className="h-5 w-5 text-[var(--marketing-accent)]" />
-                <p className="mt-4 text-sm font-semibold uppercase tracking-[0.16em] text-[var(--marketing-ink)] dark:text-[var(--marketing-paper)]">
+                <p className="mt-4 text-sm font-semibold uppercase tracking-[0.16em] text-[var(--marketing-ink)]">
                   {item.label}
                 </p>
                 <p className="mt-3 text-sm leading-6 text-[var(--marketing-muted-strong)]">{item.body}</p>

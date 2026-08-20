@@ -32,7 +32,7 @@ export function MobileMenu({ setMobileMenuOpen, mobileMenuOpen, title, eyebrow, 
           size="icon"
           className={
             triggerClassName ??
-            "rounded-full border border-[color:var(--marketing-line)] bg-[rgba(255,248,238,0.72)] text-[var(--marketing-ink)] shadow-sm hover:bg-[rgba(255,248,238,0.92)] lg:hidden dark:bg-[rgba(13,21,21,0.72)] dark:text-[var(--marketing-paper)] dark:hover:bg-[rgba(13,21,21,0.92)]"
+            "rounded-full border border-[color:var(--marketing-line)] bg-[rgba(255,248,238,0.72)] text-[var(--marketing-ink)] shadow-sm hover:bg-[rgba(255,248,238,0.92)] lg:hidden dark:bg-[rgba(13,21,21,0.72)] dark:hover:bg-[rgba(13,21,21,0.92)]"
           }
           onClick={() => setMobileMenuOpen(true)}
         >
@@ -40,7 +40,7 @@ export function MobileMenu({ setMobileMenuOpen, mobileMenuOpen, title, eyebrow, 
         </Button>
       ) : null}
       {mobileMenuOpen ? (
-        <div className="fixed inset-0 z-50 overflow-y-auto bg-[var(--marketing-paper)]/95 p-6 backdrop-blur-xl dark:bg-[var(--marketing-ink)]/95">
+        <div className="fixed inset-0 z-50 overflow-y-auto bg-[var(--marketing-paper)]/95 p-6 backdrop-blur-xl">
           <div className="mb-8 flex items-center justify-between">
             <div>
               <p className="text-[0.68rem] font-semibold uppercase tracking-[0.28em] text-[var(--marketing-muted)]">
