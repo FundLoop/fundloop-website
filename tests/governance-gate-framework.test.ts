@@ -1,6 +1,13 @@
 import { readFileSync } from "node:fs"
 import { describe, expect, it } from "vitest"
 import { validateFinancialCutoverInput, isFinancialCutoverEnvironmentEnabled } from "@/lib/edge-functions/financial-cutover-contract"
+import {
+  FINANCIAL_CUTOVER_GOVERNANCE_DOMAINS as GOVERNANCE_DOMAINS,
+  isFinancialCutoverGovernanceGateComplete as isGovernanceGateComplete,
+  isFinancialCutoverGovernanceUnlocked as isProductionActivationUnlocked,
+  type FinancialCutoverGovernanceDomain as GovernanceDomain,
+  type FinancialCutoverGovernanceGate as GovernanceGateRecord,
+} from "@/lib/governance/financial-cutover-gates"
 
 // ── Source materials under contract ───────────────────────────────────────
 const legalReadme = readFileSync("docs/legal/review-drafts/README.md", "utf8")
@@ -18,72 +25,19 @@ const activationRevalidation = readFileSync(
   "utf8",
 )
 
-// ── Governance gate domain inventory ──────────────────────────────────────
-//
-// Each domain maps to one or more approval gates in the production launch record.
-// The framework here proves the gate *structure* is complete and fail-closed.
-// Actual professional conclusions are external; missing evidence remains a blocker.
-//
-const GOVERNANCE_DOMAINS = [
-  "canadian_legal_counsel",
-  "retail_payment_activities_act",
-  "fintrac_msb_obligations",
-  "sanctions_kyc_kyb",
-  "securities_derivatives",
-  "custody_insolvency",
-  "consumer_protection",
-  "accounting_tax_recognition",
-  "functional_currency_treatment",
-  "token_fx_fee_treatment",
-  "opening_balance_liability",
-  "expiry_unclaimed_property",
-  "privacy_retention",
-  "provider_data_processing",
-  "production_readiness_engineering",
-] as const
-
-type GovernanceDomain = (typeof GOVERNANCE_DOMAINS)[number]
-
-// A gate is pending until all these fields are present with non-empty values
-type GovernanceGateRecord = {
-  domain: GovernanceDomain
-  qualifiedReviewerIdentity: string // name and role of the qualified professional
-  jurisdictionOrStandard: string // e.g. "Ontario, Canada" or "ASPE"
-  artifactHash: string // sha-256 of the approved immutable artifact
-  conditions: string[] // empty array means unconditional approval
-  disposition: string // engineering action taken or confirmed
-  reReviewDate: string // ISO date, must be future or "no-expiry"
-  approvedAt: string // ISO timestamp
-}
-
-function isGovernanceGateComplete(record: Partial<GovernanceGateRecord>): boolean {
-  return (
-    !!record.domain &&
-    GOVERNANCE_DOMAINS.includes(record.domain) &&
-    typeof record.qualifiedReviewerIdentity === "string" &&
-    record.qualifiedReviewerIdentity.trim().length >= 4 &&
-    typeof record.jurisdictionOrStandard === "string" &&
-    record.jurisdictionOrStandard.trim().length >= 2 &&
-    typeof record.artifactHash === "string" &&
-    /^[0-9a-f]{64}$/.test(record.artifactHash) &&
-    Array.isArray(record.conditions) &&
-    typeof record.disposition === "string" &&
-    record.disposition.trim().length >= 4 &&
-    typeof record.reReviewDate === "string" &&
-    record.reReviewDate.trim().length >= 8 &&
-    typeof record.approvedAt === "string" &&
-    /^\d{4}-\d{2}-\d{2}T/.test(record.approvedAt)
-  )
-}
-
-function isProductionActivationUnlocked(gates: Partial<GovernanceGateRecord>[]): boolean {
-  return GOVERNANCE_DOMAINS.every((domain) => {
-    const record = gates.find((g) => g.domain === domain)
-    return !!record && isGovernanceGateComplete(record)
-  })
-}
-
-// ────────────────────────────────────────────────────────────────────────────
+const evaluatedAt = new Date("2026-08-20T12:00:00Z")
+const completeRecord = (domain: GovernanceDomain): GovernanceGateRecord => ({
+  domain,
+  qualifiedReviewerIdentity: "Example Reviewer, CA",
+  jurisdictionOrStandard: "Ontario, Canada",
+  artifactHash: "a".repeat(64),
+  conditions: [],
+  conditionResolutions: [],
+  disposition: "no engineering action required",
+  reReviewDate: "2027-01-01",
+  approvedAt: "2026-08-19T00:00:00Z",
+})
+const allGates = GOVERNANCE_DOMAINS.map(completeRecord)
 
 describe("Governance Gate Framework and External Qualification Contracts (#184)", () => {
   describe("1. Domain Inventory Is Complete and Fail-Closed", () => {
@@ -103,33 +57,12 @@ describe("Governance Gate Framework and External Qualification Contracts (#184)"
     })
 
     it("14 of 15 complete gates still denies production activation", () => {
-      const completeRecord = (domain: GovernanceDomain): GovernanceGateRecord => ({
-        domain,
-        qualifiedReviewerIdentity: "Example Reviewer, CA",
-        jurisdictionOrStandard: "Ontario, Canada",
-        artifactHash: "a".repeat(64),
-        conditions: [],
-        disposition: "no engineering action required",
-        reReviewDate: "2027-01-01",
-        approvedAt: "2026-08-19T00:00:00Z",
-      })
       const fourteenGates = GOVERNANCE_DOMAINS.slice(0, 14).map(completeRecord)
-      expect(isProductionActivationUnlocked(fourteenGates)).toBe(false)
+      expect(isProductionActivationUnlocked(fourteenGates, evaluatedAt)).toBe(false)
     })
 
     it("all 15 complete gates unlocks activation", () => {
-      const completeRecord = (domain: GovernanceDomain): GovernanceGateRecord => ({
-        domain,
-        qualifiedReviewerIdentity: "Example Reviewer, CA",
-        jurisdictionOrStandard: "Ontario, Canada",
-        artifactHash: "a".repeat(64),
-        conditions: [],
-        disposition: "no engineering action required",
-        reReviewDate: "2027-01-01",
-        approvedAt: "2026-08-19T00:00:00Z",
-      })
-      const allGates = GOVERNANCE_DOMAINS.map(completeRecord)
-      expect(isProductionActivationUnlocked(allGates)).toBe(true)
+      expect(isProductionActivationUnlocked(allGates, evaluatedAt)).toBe(true)
     })
   })
 
@@ -140,13 +73,14 @@ describe("Governance Gate Framework and External Qualification Contracts (#184)"
       jurisdictionOrStandard: "Ontario, Canada",
       artifactHash: "b".repeat(64),
       conditions: [],
+      conditionResolutions: [],
       disposition: "terms updated per counsel comments",
       reReviewDate: "2027-01-01",
       approvedAt: "2026-08-19T00:00:00Z",
     }
 
     it("accepts a complete gate record", () => {
-      expect(isGovernanceGateComplete(baseGate)).toBe(true)
+      expect(isGovernanceGateComplete(baseGate, evaluatedAt)).toBe(true)
     })
 
     it("rejects a gate with missing artifact hash", () => {
@@ -172,17 +106,38 @@ describe("Governance Gate Framework and External Qualification Contracts (#184)"
       expect(isGovernanceGateComplete({ ...baseGate, approvedAt: "not-a-date" })).toBe(false)
     })
 
-    it("accepts gates with conditional conclusions (conditions list non-empty)", () => {
+    it("rejects conditional conclusions until every condition has resolution evidence", () => {
       expect(
         isGovernanceGateComplete({
           ...baseGate,
           conditions: ["re-review required if Pay by Bank is added", "sandbox-only until PAD authorization confirmed"],
-        }),
-      ).toBe(true)
+        }, evaluatedAt),
+      ).toBe(false)
+    })
+
+    it("accepts resolved conditions with exact evidence and timestamps", () => {
+      const condition = "sandbox-only until PAD authorization confirmed"
+      expect(isGovernanceGateComplete({
+        ...baseGate,
+        conditions: [condition],
+        conditionResolutions: [{ condition, evidenceHash: "c".repeat(64), resolvedAt: "2026-08-19T10:00:00Z" }],
+      }, evaluatedAt)).toBe(true)
+    })
+
+    it("rejects expired review dates and malformed calendar values", () => {
+      expect(isGovernanceGateComplete({ ...baseGate, reReviewDate: "2026-08-19" }, evaluatedAt)).toBe(false)
+      expect(isGovernanceGateComplete({ ...baseGate, reReviewDate: "2027-02-31" }, evaluatedAt)).toBe(false)
+      expect(isGovernanceGateComplete({ ...baseGate, approvedAt: "2026-02-31T00:00:00Z" }, evaluatedAt)).toBe(false)
     })
 
     it("rejects a gate for an unregistered domain", () => {
       expect(isGovernanceGateComplete({ ...baseGate, domain: "unknown_domain" as GovernanceDomain })).toBe(false)
+    })
+
+    it("fails closed for malformed nested gate JSON", () => {
+      expect(isGovernanceGateComplete(null, evaluatedAt)).toBe(false)
+      expect(isGovernanceGateComplete({ ...baseGate, conditionResolutions: [null] }, evaluatedAt)).toBe(false)
+      expect(isProductionActivationUnlocked([null, ...allGates.slice(1)], evaluatedAt)).toBe(false)
     })
   })
 
@@ -274,6 +229,7 @@ describe("Governance Gate Framework and External Qualification Contracts (#184)"
         runId: 1,
         manifestHash: "e".repeat(64),
         evidenceHash: "f".repeat(64),
+        governanceGates: allGates,
       })
       expect(validActivate.ok).toBe(true)
     })
@@ -290,6 +246,7 @@ describe("Governance Gate Framework and External Qualification Contracts (#184)"
         runId: 1,
         manifestHash: "e".repeat(63), // too short
         evidenceHash: "f".repeat(64),
+        governanceGates: allGates,
       })
       expect(invalidActivate.ok).toBe(false)
     })

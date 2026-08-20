@@ -1,4 +1,8 @@
 import { edgeCommandFailure, edgeCommandSuccess, type EdgeCommandResult } from "./result.ts"
+import {
+  isFinancialCutoverGovernanceUnlocked,
+  type FinancialCutoverGovernanceGate,
+} from "../governance/financial-cutover-gates.ts"
 
 export type FinancialCutoverOpeningBalanceApproval = {
   sourceType: "bookkeeping_credit"
@@ -8,7 +12,7 @@ export type FinancialCutoverOpeningBalanceApproval = {
 
 export type FinancialCutoverInput =
   | { action: "prepare"; idempotencyKey: string; evidenceHash: string; approvedOpeningBalances: FinancialCutoverOpeningBalanceApproval[] }
-  | { action: "activate"; runId: number; manifestHash: string; evidenceHash: string }
+  | { action: "activate"; runId: number; manifestHash: string; evidenceHash: string; governanceGates: FinancialCutoverGovernanceGate[] }
   | { action: "rollback"; runId: number; manifestHash: string; evidenceHash: string }
   | { action: "read"; runId: number }
 
@@ -49,10 +53,17 @@ export function validateFinancialCutoverInput(input: unknown): EdgeCommandResult
       return edgeCommandSuccess({ action: "prepare", idempotencyKey: value.idempotencyKey, evidenceHash: value.evidenceHash, approvedOpeningBalances: approvals })
     }
   }
-  if ((value.action === "activate" || value.action === "rollback") && exact(value, ["action", "runId", "manifestHash", "evidenceHash"]) &&
+  if (value.action === "activate" && exact(value, ["action", "runId", "manifestHash", "evidenceHash", "governanceGates"]) &&
+    Number.isSafeInteger(value.runId) && Number(value.runId) > 0 && typeof value.manifestHash === "string" && hash.test(value.manifestHash) &&
+    typeof value.evidenceHash === "string" && hash.test(value.evidenceHash) && Array.isArray(value.governanceGates) &&
+    isFinancialCutoverGovernanceUnlocked(value.governanceGates)) {
+    return edgeCommandSuccess({ action: "activate", runId: Number(value.runId), manifestHash: value.manifestHash,
+      evidenceHash: value.evidenceHash, governanceGates: value.governanceGates as FinancialCutoverGovernanceGate[] })
+  }
+  if (value.action === "rollback" && exact(value, ["action", "runId", "manifestHash", "evidenceHash"]) &&
     Number.isSafeInteger(value.runId) && Number(value.runId) > 0 && typeof value.manifestHash === "string" && hash.test(value.manifestHash) &&
     typeof value.evidenceHash === "string" && hash.test(value.evidenceHash)) {
-    return edgeCommandSuccess({ action: value.action, runId: Number(value.runId), manifestHash: value.manifestHash, evidenceHash: value.evidenceHash })
+    return edgeCommandSuccess({ action: "rollback", runId: Number(value.runId), manifestHash: value.manifestHash, evidenceHash: value.evidenceHash })
   }
   if (value.action === "read" && exact(value, ["action", "runId"]) && Number.isSafeInteger(value.runId) && Number(value.runId) > 0) {
     return edgeCommandSuccess({ action: "read", runId: Number(value.runId) })

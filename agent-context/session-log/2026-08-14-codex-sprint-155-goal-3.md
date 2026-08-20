@@ -348,3 +348,38 @@ Implement Task #170 by proving Production ledger denial, opening-balance manifes
 - Commit Task #170 evidence.
 - Execute Task #189 to publish Goal 3 governance and cutover evidence to dev (single PR for the branch).
 
+### session v9: repair governance activation and accounting evidence enforcement (#233)
+
+- Timestamp: 2026-08-20T08:38:27Z
+- Agent: Codex
+- Branch: codex/pr233-repair
+- Head before commit: 969c1f1
+
+#### Objective
+
+Repair the four unresolved PR #233 review findings after replaying the branch on current `dev`, without claiming unavailable professional approval or production authority.
+
+#### Actions Taken
+
+- Moved the 15-domain governance gate inventory and evaluator out of a test-only helper into production code used by the `financial-cutover` activation contract.
+- Required exact, unique approval records for every domain; strict real ISO timestamps and dates; non-expired review dates; immutable hashes; and explicit one-to-one resolution evidence for every conditional conclusion.
+- Hardened nested JSON validation so malformed records fail closed instead of throwing, and kept rollback/read paths independent from new activation approval requirements.
+- Required the accounting packet's exact ordered source paths, source roles, runtime evidence paths, runtime controls, and unique evidence paths rather than accepting arbitrary non-empty arrays.
+- Added adversarial tests for missing activation governance evidence, unresolved conditions, expired/malformed dates, malformed nested records, incomplete/relabelled evidence, and duplicate paths.
+- Updated the financial cutover runbook to describe the governance-bound activation payload and clarify that deployment is not professional approval.
+
+#### Validation Notes
+
+- Passed Node 22 full Vitest with extended timeout: 195 files, 1,132 tests.
+- Passed Node 22 lint, TypeScript typecheck, and production build.
+- Passed local production-server smoke: `/en`, `/es`, `/fr`, and `/api/internal/health` returned HTTP 200; the server was stopped afterward.
+- No schema or migration was changed, no local or remote Supabase command was required, and no opening-balance, hosted, production, payout, cutover, or value-flow command was run.
+
+#### Reflections
+
+- The activation boundary now consumes the governance evaluator, but all checked-in legal/accounting packets remain explicitly draft and cannot satisfy professional authority.
+- Production cutover remains independently disabled by the existing environment control.
+
+#### Suggested Next Steps
+
+- Publish the repaired branch, resolve the four review threads with exact evidence, wait for CI, merge to `dev`, and run approved cleanup.
