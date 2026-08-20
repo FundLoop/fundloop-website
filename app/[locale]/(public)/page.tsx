@@ -37,6 +37,8 @@ export default async function Home({ params }: PageProps) {
   const stages = t.raw("monthlyLoop.stages") as MonthlyStage[]
   const audiences = t.raw("audiences.items") as Audience[]
   const principles = t.raw("trust.items") as Principle[]
+  const founderFeatures = t.raw("fork.founders.features") as string[]
+  const participantFeatures = t.raw("fork.participants.features") as string[]
 
   return (
     <MarketingPage className="[--marketing-accent:#d45f35]">
@@ -77,10 +79,10 @@ export default async function Home({ params }: PageProps) {
       <MarketingSection className="border-b border-[color:var(--marketing-line)] bg-white/40 py-10 sm:py-14 dark:bg-white/[0.02]">
         <Reveal>
           <div className="text-center">
-            <SectionEyebrow>Choose Your Path</SectionEyebrow>
-            <SectionTitle className="mt-3 text-3xl sm:text-4xl">Where do you fit in the loop?</SectionTitle>
+            <SectionEyebrow>{t("fork.eyebrow")}</SectionEyebrow>
+            <SectionTitle className="mt-3 text-3xl sm:text-4xl">{t("fork.title")}</SectionTitle>
             <SectionBody className="mx-auto mt-3 max-w-xl text-sm sm:text-base">
-              FundLoop connects ambitious software builders with real verified humans in an automated shared-upside economy.
+              {t("fork.body")}
             </SectionBody>
           </div>
 
@@ -103,18 +105,12 @@ export default async function Home({ params }: PageProps) {
                   {t("fork.founders.body")}
                 </p>
                 <div className="mt-6 space-y-2.5 text-sm text-[var(--marketing-muted-strong)]">
-                  <div className="flex items-center gap-2.5">
-                    <span className="flex h-5 w-5 items-center justify-center rounded-full bg-[#ff7844]/20 text-[#ff7844]">✓</span>
-                    <span>Eliminate runaway ad spend on Meta & Google</span>
-                  </div>
-                  <div className="flex items-center gap-2.5">
-                    <span className="flex h-5 w-5 items-center justify-center rounded-full bg-[#ff7844]/20 text-[#ff7844]">✓</span>
-                    <span>Compound retention from 20% to 30%+ MAU</span>
-                  </div>
-                  <div className="flex items-center gap-2.5">
-                    <span className="flex h-5 w-5 items-center justify-center rounded-full bg-[#ff7844]/20 text-[#ff7844]">✓</span>
-                    <span>Automated monthly payouts with zero manual ops</span>
-                  </div>
+                  {founderFeatures.map((feature) => (
+                    <div key={feature} className="flex items-center gap-2.5">
+                      <span className="flex h-5 w-5 items-center justify-center rounded-full bg-[#ff7844]/20 text-[#ff7844]">✓</span>
+                      <span>{feature}</span>
+                    </div>
+                  ))}
                 </div>
               </div>
 
@@ -146,18 +142,12 @@ export default async function Home({ params }: PageProps) {
                   {t("fork.participants.body")}
                 </p>
                 <div className="mt-6 space-y-2.5 text-sm text-[var(--marketing-muted-strong)]">
-                  <div className="flex items-center gap-2.5">
-                    <span className="flex h-5 w-5 items-center justify-center rounded-full bg-[#34d399]/20 text-[#059669] dark:text-[#34d399]">✓</span>
-                    <span>Get paid monthly for the software you already use</span>
-                  </div>
-                  <div className="flex items-center gap-2.5">
-                    <span className="flex h-5 w-5 items-center justify-center rounded-full bg-[#34d399]/20 text-[#059669] dark:text-[#34d399]">✓</span>
-                    <span>Zero personal tracking — private ZK personhood via CUBID</span>
-                  </div>
-                  <div className="flex items-center gap-2.5">
-                    <span className="flex h-5 w-5 items-center justify-center rounded-full bg-[#34d399]/20 text-[#059669] dark:text-[#34d399]">✓</span>
-                    <span>Direct USDC distributions claimable on Base L2</span>
-                  </div>
+                  {participantFeatures.map((feature) => (
+                    <div key={feature} className="flex items-center gap-2.5">
+                      <span className="flex h-5 w-5 items-center justify-center rounded-full bg-[#34d399]/20 text-[#059669] dark:text-[#34d399]">✓</span>
+                      <span>{feature}</span>
+                    </div>
+                  ))}
                 </div>
               </div>
 
@@ -181,14 +171,14 @@ export default async function Home({ params }: PageProps) {
             <div className="relative aspect-[16/9] w-full overflow-hidden rounded-[2rem] bg-neutral-100 dark:bg-neutral-900">
               <Image
                 src="/images/marketing/hero-loop-light.jpg"
-                alt="FundLoop Mutual Prosperity Value Loop"
+                alt={t("valueLoopShowcase.alt")}
                 fill
                 className="object-cover object-center block dark:hidden"
                 sizes="(max-width: 1200px) 100vw, 1200px"
               />
               <Image
                 src="/images/marketing/hero-loop-dark.jpg"
-                alt="FundLoop Mutual Prosperity Value Loop"
+                alt={t("valueLoopShowcase.alt")}
                 fill
                 className="object-cover object-center hidden dark:block"
                 sizes="(max-width: 1200px) 100vw, 1200px"
@@ -196,11 +186,11 @@ export default async function Home({ params }: PageProps) {
             </div>
             <div className="mt-6 flex flex-col justify-between gap-4 px-2 sm:flex-row sm:items-center">
               <div>
-                <p className="text-xs font-semibold uppercase tracking-wider text-[var(--marketing-accent)]">Continuous Value Circulation</p>
-                <h3 className="font-display text-2xl font-bold tracking-tight text-[var(--marketing-ink)]">A Closed Loop Where Participation Yields Shared Prosperity</h3>
+                <p className="text-xs font-semibold uppercase tracking-wider text-[var(--marketing-accent)]">{t("valueLoopShowcase.eyebrow")}</p>
+                <h3 className="font-display text-2xl font-bold tracking-tight text-[var(--marketing-ink)]">{t("valueLoopShowcase.title")}</h3>
               </div>
               <p className="max-w-md text-xs leading-relaxed text-[var(--marketing-muted-strong)]">
-                Projects pool recurring revenue each monthly epoch. Verified human participants generate usage signal, and value returns directly with cryptographic auditability.
+                {t("valueLoopShowcase.body")}
               </p>
             </div>
           </div>
@@ -212,9 +202,9 @@ export default async function Home({ params }: PageProps) {
         <Reveal>
           <div className="flex flex-col justify-between gap-6 lg:flex-row lg:items-end">
             <div>
-              <SectionEyebrow>The Operating Rhythm</SectionEyebrow>
-              <SectionTitle className="mt-4 text-4xl sm:text-5xl">Four Steps to Every Monthly Epoch</SectionTitle>
-              <SectionBody className="mt-4 max-w-2xl">From intake and cryptographic verification to algorithmic redistribution and Base on-chain safe settlement.</SectionBody>
+              <SectionEyebrow>{t("epochShowcase.eyebrow")}</SectionEyebrow>
+              <SectionTitle className="mt-4 text-4xl sm:text-5xl">{t("epochShowcase.title")}</SectionTitle>
+              <SectionBody className="mt-4 max-w-2xl">{t("epochShowcase.body")}</SectionBody>
             </div>
           </div>
 
@@ -223,11 +213,11 @@ export default async function Home({ params }: PageProps) {
             <div className="flex flex-col justify-between rounded-3xl border border-[color:var(--marketing-line)] bg-white/60 p-4 shadow-sm dark:border-white/[0.08] dark:bg-white/[0.03]">
               <div>
                 <div className="relative aspect-square w-full overflow-hidden rounded-2xl bg-neutral-100 dark:bg-neutral-900">
-                  <Image src="/images/marketing/stage1-intake-light.jpg" alt="01 Project Intake & Revenue Pledges" fill className="object-cover block dark:hidden" sizes="(max-width: 768px) 100vw, 300px" />
-                  <Image src="/images/marketing/stage1-intake-dark.jpg" alt="01 Project Intake & Revenue Pledges" fill className="object-cover hidden dark:block" sizes="(max-width: 768px) 100vw, 300px" />
+                  <Image src="/images/marketing/stage1-intake-light.jpg" alt={t("epochShowcase.steps.intake.title")} fill className="object-cover block dark:hidden" sizes="(max-width: 768px) 100vw, 300px" />
+                  <Image src="/images/marketing/stage1-intake-dark.jpg" alt={t("epochShowcase.steps.intake.title")} fill className="object-cover hidden dark:block" sizes="(max-width: 768px) 100vw, 300px" />
                 </div>
-                <h4 className="mt-4 font-semibold text-[var(--marketing-ink)]">01. Project Intake & Pledges</h4>
-                <p className="mt-1.5 text-xs text-[var(--marketing-muted-strong)] leading-relaxed">Projects route 1%+ recurring revenue into the monthly protocol pool.</p>
+                <h4 className="mt-4 font-semibold text-[var(--marketing-ink)]">{t("epochShowcase.steps.intake.title")}</h4>
+                <p className="mt-1.5 text-xs text-[var(--marketing-muted-strong)] leading-relaxed">{t("epochShowcase.steps.intake.body")}</p>
               </div>
             </div>
 
@@ -235,11 +225,11 @@ export default async function Home({ params }: PageProps) {
             <div className="flex flex-col justify-between rounded-3xl border border-[color:var(--marketing-line)] bg-white/60 p-4 shadow-sm dark:border-white/[0.08] dark:bg-white/[0.03]">
               <div>
                 <div className="relative aspect-square w-full overflow-hidden rounded-2xl bg-neutral-100 dark:bg-neutral-900">
-                  <Image src="/images/marketing/stage2-zk-identity-light.jpg" alt="02 ZK Identity & Verification" fill className="object-cover block dark:hidden" sizes="(max-width: 768px) 100vw, 300px" />
-                  <Image src="/images/marketing/stage2-zk-identity-dark.jpg" alt="02 ZK Identity & Verification" fill className="object-cover hidden dark:block" sizes="(max-width: 768px) 100vw, 300px" />
+                  <Image src="/images/marketing/stage2-zk-identity-light.jpg" alt={t("epochShowcase.steps.identity.title")} fill className="object-cover block dark:hidden" sizes="(max-width: 768px) 100vw, 300px" />
+                  <Image src="/images/marketing/stage2-zk-identity-dark.jpg" alt={t("epochShowcase.steps.identity.title")} fill className="object-cover hidden dark:block" sizes="(max-width: 768px) 100vw, 300px" />
                 </div>
-                <h4 className="mt-4 font-semibold text-[var(--marketing-ink)]">02. ZK Identity Verification</h4>
-                <p className="mt-1.5 text-xs text-[var(--marketing-muted-strong)] leading-relaxed">Zero-knowledge proof verification filters bots and secures human uniqueness.</p>
+                <h4 className="mt-4 font-semibold text-[var(--marketing-ink)]">{t("epochShowcase.steps.identity.title")}</h4>
+                <p className="mt-1.5 text-xs text-[var(--marketing-muted-strong)] leading-relaxed">{t("epochShowcase.steps.identity.body")}</p>
               </div>
             </div>
 
@@ -247,11 +237,11 @@ export default async function Home({ params }: PageProps) {
             <div className="flex flex-col justify-between rounded-3xl border border-[color:var(--marketing-line)] bg-white/60 p-4 shadow-sm dark:border-white/[0.08] dark:bg-white/[0.03]">
               <div>
                 <div className="relative aspect-square w-full overflow-hidden rounded-2xl bg-neutral-100 dark:bg-neutral-900">
-                  <Image src="/images/marketing/stage3-redistribution-light.jpg" alt="03 Algorithmic Redistribution" fill className="object-cover block dark:hidden" sizes="(max-width: 768px) 100vw, 300px" />
-                  <Image src="/images/marketing/stage3-redistribution-dark.jpg" alt="03 Algorithmic Redistribution" fill className="object-cover hidden dark:block" sizes="(max-width: 768px) 100vw, 300px" />
+                  <Image src="/images/marketing/stage3-redistribution-light.jpg" alt={t("epochShowcase.steps.redistribution.title")} fill className="object-cover block dark:hidden" sizes="(max-width: 768px) 100vw, 300px" />
+                  <Image src="/images/marketing/stage3-redistribution-dark.jpg" alt={t("epochShowcase.steps.redistribution.title")} fill className="object-cover hidden dark:block" sizes="(max-width: 768px) 100vw, 300px" />
                 </div>
-                <h4 className="mt-4 font-semibold text-[var(--marketing-ink)]">03. Algorithmic Redistribution</h4>
-                <p className="mt-1.5 text-xs text-[var(--marketing-muted-strong)] leading-relaxed">Mathematical protocol calculation balances and divides pooled value.</p>
+                <h4 className="mt-4 font-semibold text-[var(--marketing-ink)]">{t("epochShowcase.steps.redistribution.title")}</h4>
+                <p className="mt-1.5 text-xs text-[var(--marketing-muted-strong)] leading-relaxed">{t("epochShowcase.steps.redistribution.body")}</p>
               </div>
             </div>
 
@@ -259,11 +249,11 @@ export default async function Home({ params }: PageProps) {
             <div className="flex flex-col justify-between rounded-3xl border border-[color:var(--marketing-line)] bg-white/60 p-4 shadow-sm dark:border-white/[0.08] dark:bg-white/[0.03]">
               <div>
                 <div className="relative aspect-square w-full overflow-hidden rounded-2xl bg-neutral-100 dark:bg-neutral-900">
-                  <Image src="/images/marketing/stage4-safe-payouts-light.jpg" alt="04 Base Safe Payouts" fill className="object-cover block dark:hidden" sizes="(max-width: 768px) 100vw, 300px" />
-                  <Image src="/images/marketing/stage4-safe-payouts-dark.jpg" alt="04 Base Safe Payouts" fill className="object-cover hidden dark:block" sizes="(max-width: 768px) 100vw, 300px" />
+                  <Image src="/images/marketing/stage4-safe-payouts-light.jpg" alt={t("epochShowcase.steps.settlement.title")} fill className="object-cover block dark:hidden" sizes="(max-width: 768px) 100vw, 300px" />
+                  <Image src="/images/marketing/stage4-safe-payouts-dark.jpg" alt={t("epochShowcase.steps.settlement.title")} fill className="object-cover hidden dark:block" sizes="(max-width: 768px) 100vw, 300px" />
                 </div>
-                <h4 className="mt-4 font-semibold text-[var(--marketing-ink)]">04. Base On-Chain Settlement</h4>
-                <p className="mt-1.5 text-xs text-[var(--marketing-muted-strong)] leading-relaxed">Multi-sig Safe smart contracts broadcast direct claimable rewards on Base L2.</p>
+                <h4 className="mt-4 font-semibold text-[var(--marketing-ink)]">{t("epochShowcase.steps.settlement.title")}</h4>
+                <p className="mt-1.5 text-xs text-[var(--marketing-muted-strong)] leading-relaxed">{t("epochShowcase.steps.settlement.body")}</p>
               </div>
             </div>
           </div>
@@ -369,6 +359,22 @@ export default async function Home({ params }: PageProps) {
           <div className="mt-9 flex flex-col gap-3 sm:flex-row">
             <Button asChild size="lg" className="rounded-full bg-[var(--marketing-accent)] px-7 text-white hover:bg-[color:var(--marketing-accent)]/90"><LocaleLink href="/participation">{t("closing.participant")}<ArrowRight className="h-4 w-4" /></LocaleLink></Button>
             <Button asChild size="lg" variant="outline" className="rounded-full border-[color:var(--marketing-line-strong)] bg-transparent px-7"><LocaleLink href="/documentation">{t("closing.documentation")}</LocaleLink></Button>
+          </div>
+        </Reveal>
+      </MarketingSection>
+
+      <MarketingSection className="pb-24">
+        <Reveal>
+          <div className="relative overflow-hidden rounded-[2.5rem] border border-[color:var(--marketing-line)] bg-white/55 p-4 shadow-xl dark:border-white/[0.1] dark:bg-white/[0.03]">
+            <div className="relative aspect-[16/9] w-full overflow-hidden rounded-[2rem] bg-neutral-100 dark:bg-neutral-900">
+              <Image
+                src="/images/marketing/fundloop-for-all.png"
+                alt={t("bannerAlt")}
+                fill
+                className="object-cover object-center"
+                sizes="(max-width: 1200px) 100vw, 1200px"
+              />
+            </div>
           </div>
         </Reveal>
       </MarketingSection>

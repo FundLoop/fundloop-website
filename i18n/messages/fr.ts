@@ -314,6 +314,28 @@ export const frMessages = {
         },
       ],
     },
+    dashboardShowcase: { alt: "Concept du tableau de bord opérationnel FundLoop", eyebrow: "Visibilité sur allocation et paiement", title: "Le plan de contrôle de valeur partagée pour fondateurs", body: "Suivez engagements modélisés, hypothèses de rétention, comparaisons et statut de paiement gouverné dans une même vue." },
+    bannerAlt: "FundLoop pour les projets",
+    calculators: {
+      growth: {
+        eyebrow: "Économie de croissance", title: "Le calcul : pourquoi choisir FundLoop plutôt que la publicité", body: "Comparez un budget mensuel redirigé vers un modèle de valeur partagée avec des dépenses publicitaires classiques.",
+        tabs: { comparison: "Comparaison", steps: "Détail étape par étape" },
+        controls: { title: "Ajustez les paramètres du projet", assumption: "Hypothèse : le taux MAU augmente de <strong>10 points</strong> (de {from}% à {to}%) avec des incitations give-back.", startingUsers: "Utilisateurs initiaux", startingUsersHelp: "Nombre total de comptes inscrits.", baselineMau: "MAU initial", baselineMauHelp: "Utilisateurs actifs mensuels avant FundLoop.", adBudget: "Budget publicitaire mensuel", adBudgetHelp: "Dépenses disponibles à rediriger.", newUsers: "Nouveaux utilisateurs / mois", newUsersHelp: "Inscriptions issues de la publicité.", arpu: "ARPU mensuel", arpuHelp: "Revenu moyen par utilisateur actif." },
+        moneyPerMonth: "{amount, number} $ / mois", users: "{count, number} nouveaux utilisateurs", activeUsersPlus: "+{count, number} utilisateurs actifs", cacValue: "{amount} $ / MAU actif", totalActiveUsers: "Utilisateurs actifs totaux", mauValue: "{count, number} MAU", growthValue: "(+{percent}% de croissance)", qualifiedVisits: "{count, number} visites qualifiées",
+        traditional: { eyebrow: "Option A", title: "Dépenses publicitaires classiques", startingBase: "Base initiale", startingBaseValue: "{total, number} au total ({mau, number} MAU à {rate}%)", adBudget: "Budget mensuel", newSignups: "Inscriptions acquises", newActive: "Nouveaux actifs ({rate}% MAU)", effectiveCac: "CAC effectif par actif", networkEffect: "Effet réseau", networkEffectValue: "Aucun (pas de promotion croisée)", summary: "Sur {users, number} utilisateurs, la publicité ajoute seulement {active, number} actifs à {cac} $ par utilisateur." },
+        fundloop: { badge: "Alternative modélisée", eyebrow: "Option B", title: "La boucle FundLoop", redirectBudget: "Rediriger le même budget", redirectBudgetValue: "{amount, number} $ / mois ({perUser} $ par MAU)", reach: "Portée vérifiée modélisée", reachValue: "{count, number} utilisateurs de l’écosystème", discovery: "Découverte modélisée (70%)", signups: "Nouvelles inscriptions du réseau", signupsValue: "{count, number} nouveaux utilisateurs vérifiés", engagement: "Engagement modélisé (taux MAU)", engagementValue: "Passe de {from}% à {to}%", affiliateNetwork: "Réseau affilié", affiliateNetworkValue: "Les projets FundLoop peuvent devenir partenaires", summary: "{users, number} utilisateurs à {rate}% actifs donnent {active, number} participants actifs dans ce modèle." },
+        steps: { baselineTitle: "Votre base", baselineBody: "Commencez avec {users, number} utilisateurs ; {rate}% ({mau, number}) sont actifs chaque mois.", redirectTitle: "Rediriger la publicité", redirectBody: "Au lieu de payer {amount, number} $ par mois aux plateformes, modélisez {perUser} $ par actif en give-back.", discoveryTitle: "Découverte", discoveryBody: "Le modèle suppose {reach, number} personnes joignables ; {visits, number} visitent et {signups, number} s’inscrivent.", conversionTitle: "Modèle de conversion", conversionBody: "Le modèle fait passer le taux MAU de {from}% à {to}% : {users, number} utilisateurs produisent {mau, number} MAU (+{growth}%).", networkTitle: "Multiplicateur réseau", networkBody: "Les participants peuvent découvrir d’autres projets et créer des occasions de distribution mutuelle." },
+        summary: { title: "Redirigez l’acquisition vers une vraie participation.", body: "Examinez les hypothèses puis commencez l’onboarding si le modèle convient.", cta: "Commencer l’onboarding projet" },
+      },
+      runtime: {
+        eyebrow: "Économie et rétention", title: "Pourquoi les projets restent : le moat de valeur partagée", body: "Comparez l’économie stable d’un projet avec give-back modélisé à celle d’un concurrent identique.", linkedModel: "<strong>Modèle lié :</strong> ARPU ({arpu} $/mois) et CAC effectif ({cac} $/utilisateur) viennent du modèle précédent.",
+        controls: { mau: "Utilisateurs actifs mensuels", mauHelp: "Utilisateurs qui génèrent le volume mensuel.", arpu: "Revenu net moyen / MAU", arpuHelp: "Lié à l’ARPU du modèle précédent.", share: "Part give-back modélisée", shareHelp: "Modélise {rate}% de migration depuis le concurrent." },
+        grossRevenue: "Revenu mensuel brut", grossRevenueMonthOne: "Revenu mensuel brut (mois +1)", sharedWithUsers: "Partagé avec les utilisateurs", monthlyChurn: "Migration mensuelle vers votre projet", monthlyGrowth: "Croissance mensuelle par migration", netProfit: "Bénéfice net retenu, mois +1",
+        competitor: { eyebrow: "Clone identique", title: "Concurrent extractif", noGiveBack: "0 $ (0% give-back)", churnValue: "-{count, number} utilisateurs / mois ({rate}%)", growthValue: "0 actif (drain à sens unique)", adSpend: "Dépenses pour suivre le rythme", adSpendValue: "-{amount, number} $ / mois ({users, number} utilisateurs à {cac} $ de CAC)", loyalty: "Sentiment et fidélité", loyaltyValue: "Transactionnel et facile à déplacer", summary: "Nécessite {users, number} utilisateurs et {amount, number} $/mois de publicité pour égaler {mau, number} MAU." },
+        fundloop: { badge: "Modèle de moat composé", eyebrow: "Votre projet", title: "Sur FundLoop", sharedWithUsers: "Part modélisée ({percent}%)", churnValue: "0% de churn modélisé", growthValue: "+{count, number} actifs / mois ({mau, number} MAU au total)", adCost: "Coût publicitaire de remplacement", adCostValue: "0 $ dans ce modèle", migration: "Migration organique", migrationValue: "Les utilisateurs peuvent migrer vers une valeur plus juste", advantage: "<strong>+{monthly, number} $/mois</strong> (+{annual, number} $/an) face au concurrent modélisé.", sustainable: "Croissance alignée sans dépendance publicitaire." },
+        moats: { churnTitle: "01. Déflation du churn", churnBody: "Partager la réussite renforce la fidélité et la rétention dans le modèle.", migrationTitle: "02. Migration organique", migrationBody: "À fonctionnalités égales, une valeur partagée crédible peut motiver une migration organique.", reputationTitle: "03. Moat de réputation", reputationBody: "Un concurrent peut copier les fonctions ou dépenser plus, mais pas copier immédiatement une communauté alignée." },
+      },
+    },
     commitment: {
       eyebrow: "Engagement",
       title: "FundLoop demande aux fondateurs de renvoyer une partie de leur upside dans la boucle.",
@@ -1255,11 +1277,19 @@ export const frMessages = {
     heroThesis:
       "Une économie en réseau où les projets alimentent la boucle et où les personnes partagent la valeur créée.",
     heroBody:
-      "Les projets mettent en commun une part de leurs revenus. Des personnes vérifiées contribuent. Chaque mois, FundLoop clôture les comptes, explique le résultat et rend la part de chacun réclamable.",
+      "Les projets enregistrent leurs engagements et des personnes vérifiées contribuent. FundLoop prépare des résultats révisables ; le paiement direct reste désactivé jusqu’à validation des contrôles opérationnels et de gouvernance.",
     ctas: {
       project: "Créer un profil projet",
       participant: "Rejoindre comme participant",
     },
+    fork: {
+      eyebrow: "Choisissez votre parcours", title: "Où vous situez-vous dans la boucle ?", body: "FundLoop relie équipes logicielles et participants vérifiés dans un modèle transparent de valeur partagée.",
+      founders: { eyebrow: "Pour fondateurs et builders", title: "Un modèle de croissance au-delà de la publicité", body: "Modélisez la redirection du CAC vers les utilisateurs actifs, explorez la rétention et préparez un workflow mensuel gouverné.", cta: "Explorer le parcours fondateur", badge: "Modèle interactif", features: ["Modéliser des dépenses d’acquisition redirigées", "Explorer les hypothèses de rétention et de MAU", "Préparer un workflow mensuel gouverné"] },
+      participants: { eyebrow: "Pour les participants", title: "Construisez un historique de participation vérifié", body: "Créez un profil privé, découvrez des logiciels alignés et consultez les résultats publiés pendant que le paiement direct reste en développement.", cta: "Explorer la participation", badge: "Privé et vérifié", features: ["Découvrir des projets et créer un vrai signal", "Utiliser une preuve privée via CUBID", "Consulter les résultats sans promesse de paiement"] },
+    },
+    bannerAlt: "Vue d’ensemble de FundLoop",
+    valueLoopShowcase: { alt: "Boucle de prospérité mutuelle FundLoop", eyebrow: "Circulation continue de la valeur", title: "Une boucle fermée conçue pour la prospérité partagée", body: "Les projets peuvent engager de la valeur, les participants vérifiés créent du signal et chaque résultat reste auditable avant toute autorisation de paiement." },
+    epochShowcase: { eyebrow: "Cadence opérationnelle", title: "Quatre étapes par époque mensuelle", body: "De l’intake et l’identité au calcul, puis à une frontière de paiement fermée jusqu’à autorisation.", steps: { intake: { title: "01. Intake et engagements", body: "Les projets enregistrent des engagements récurrents pour le fonds mensuel." }, identity: { title: "02. Identité ZK", body: "La preuve de personne privée aide à filtrer bots et doublons." }, redistribution: { title: "03. Calcul gouverné", body: "Un calcul versionné répartit la valeur et produit des preuves révisables." }, settlement: { title: "04. Paiement Base sous contrôle", body: "Le paiement on-chain reste désactivé jusqu’à satisfaction des contrôles opérationnels et de gouvernance." } } },
     statLines: {
       projects: "Les projets consacrent 1 % ou plus à la boucle.",
       people: "Les personnes créent du signal par l’usage.",
@@ -1267,8 +1297,8 @@ export const frMessages = {
     },
     monthlyLoop: {
       eyebrow: "Un mois responsable à la fois",
-      title: "Du revenu du projet au paiement d’une personne.",
-      body: "FundLoop est le moteur de workflow entre participation et paiement. Chaque époque verrouille argent, identité et attribution dans un registre économique reproductible.",
+      title: "De l’engagement du projet à un résultat révisable.",
+      body: "FundLoop relie participation, vérification et calcul. Chaque époque produit un registre économique reproductible avant tout paiement autorisé.",
       visual: { month: "Époque mensuelle", center: "Mutualiser. Vérifier. Distribuer." },
       stages: [
         { step: "01", title: "Engager des revenus", body: "Les projets choisissent un pourcentage récurrent de leurs revenus à verser dans FundLoop." },
@@ -1276,7 +1306,7 @@ export const frMessages = {
         { step: "03", title: "Construire le signal", body: "Les personnes utilisent et soutiennent les projets ; les projets consignent le contexte de contribution et de participation." },
         { step: "04", title: "Soumettre le mois", body: "Les projets envoient les fonds, les totaux de contribution et les données d’attribution pour l’époque ouverte." },
         { step: "05", title: "Verrouiller et vérifier", body: "FundLoop fige le cycle, calcule les distributions, rapproche argent et données, puis exige une revue opérateur." },
-        { step: "06", title: "Réclamer le résultat", body: "Les allocations restent réclamables pendant trois mois de paiement complets. À la clôture de ce délai, la valeur non réclamée retourne dans un futur fonds de redistribution." },
+        { step: "06", title: "Examiner le résultat", body: "Les allocations calculées restent des résultats révisables ; le paiement direct n’est pas présenté comme disponible avant validation de tous les contrôles." },
         { step: "07", title: "Publier l’explication", body: "Les rapports publics, personnels, projet et opérateur expliquent le résultat tout en respectant les choix de publication." },
       ],
     },
@@ -1285,7 +1315,7 @@ export const frMessages = {
       title: "Une boucle économique. Des espaces distincts.",
       body: "Humains et agents utilisent les mêmes workflows, permissions et traces d’audit.",
       items: [
-        { id: "people", label: "Pour les personnes", title: "Découvrez, participez et comprenez vos gains.", body: "Liez votre identité CUBID, trouvez des projets, construisez un historique de contribution, choisissez vos préférences de paiement et examinez chaque résultat mensuel.", href: "/participation", cta: "Explorer la participation" },
+        { id: "people", label: "Pour les personnes", title: "Découvrez, participez et comprenez les résultats publiés.", body: "Liez votre identité CUBID, trouvez des projets, construisez un historique de contribution et examinez les résultats mensuels sans promesse de paiement actif.", href: "/participation", cta: "Explorer la participation" },
         { id: "projects", label: "Pour les équipes projet", title: "Transformez un engagement de revenus en pratique mensuelle.", body: "Intégrez un projet, gérez membres et routes de paiement, financez l’époque, soumettez l’attribution et expliquez le résultat à votre communauté.", href: "/founders", cta: "Explorer le parcours fondateur" },
         { id: "research", label: "Pour la recherche et le public", title: "Étudiez une expérience concrète de coordination post-capitaliste.", body: "Suivez les projets et rapports publics pour observer comment identité, participation, capital et distribution pluraliste interagissent en pratique.", href: "/reports", cta: "Ouvrir les rapports publics" },
         { id: "operators", label: "Pour opérateurs et agents", title: "Exécutez le même workflow par un poste de contrôle ou MCP.", body: "Préparez les époques, vérifiez les exceptions, rapprochez les rails, publiez des rapports et automatisez des tâches bornées via des contrats Edge Function partagés.", href: "/mcp", cta: "Explorer l’interface MCP" },
@@ -1434,6 +1464,7 @@ export const frMessages = {
     },
   },
   participation: {
+    bannerAlt: "FundLoop pour les participants",
     hero: {
       eyebrow: "Participation",
       title:

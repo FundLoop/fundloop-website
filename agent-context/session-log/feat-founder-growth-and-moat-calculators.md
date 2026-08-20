@@ -86,6 +86,7 @@ Address review comments from @KazanderDad on PR #231 and fix CI build failures:
 ### Next Steps
 
 - Push commit to `feat/founder-growth-and-moat-calculators`.
+
 - Reply to and resolve review comments on PR #231.
 
 ## Session v3: Enhance Growth and Runtime Moat Calculators with Shared Dynamic Parameters
@@ -412,5 +413,42 @@ Address user UX and styling requests:
 
 
 
+## Session v10: Review Repair, Honest Claims, and Locale Parity
 
+- **Timestamp:** 2026-08-20T06:37:31Z
+- **Agent:** Codex
+- **Branch:** `feat/founder-growth-and-moat-calculators`
+- **Head:** `bac1023`
 
+---
+
+### Objective
+
+Resolve the actionable review findings on PR #231 before synchronizing it with `dev`: restore dark-mode contrast, correct the competitor comparison, make the calculator CTA functional, localize the added public UI, and replace unsupported live-payout language with explicit model and readiness boundaries.
+
+### Actions Taken
+
+- Removed the marketing paper/ink double inversion from navigation and shared marketing components so the existing dark-theme tokens retain readable contrast.
+- Corrected the runtime comparison so both projects use the same ending MAU and gross revenue before their different cost structures are applied.
+- Changed the founder calculator CTA to target the calculator section on the current page.
+- Moved calculator, showcase, persona, value-loop, and epoch copy into the English, Spanish, and French message catalogs.
+- Narrowed public claims to modelled economics, published results, and gated settlement; the site no longer presents direct USDC payouts as live.
+- Added the three supplied persona banner assets to their corresponding public pages.
+- Expanded calculator tests to cover translations and equal gross revenue in the competitor model.
+
+### Tests and Validation
+
+- `PATH=/opt/homebrew/opt/node@22/bin:$PATH pnpm vitest run tests/founder-calculators.test.tsx --reporter=dot` passed (5 tests).
+- `PATH=/opt/homebrew/opt/node@22/bin:$PATH pnpm typecheck` passed.
+- `PATH=/opt/homebrew/opt/node@22/bin:$PATH pnpm lint` passed with zero warnings.
+- `git diff --check` passed.
+- Full test, build, check, and browser smoke gates remain scheduled after rebasing this repair onto current `origin/dev`.
+
+### Reflections
+
+- Prior validation used the machine's default Node 24 even though the repository requires Node 22; repair validation now pins the installed Node 22 binary.
+- Hosted settlement acceptance cannot be inferred from marketing pages or local rendering. Copy now distinguishes current published visibility from future credential- and governance-gated settlement.
+
+### Suggested Next Steps
+
+- Commit the repair, rebase PR #231 on current `origin/dev`, run the complete local gates and Playwright smoke tests, then push and resolve the review threads with commit evidence.

@@ -39,7 +39,7 @@ export default function UseCasesDropdown({ triggerClassName, open: controlledOpe
             "text-sm font-medium",
             isActive
               ? "text-[var(--marketing-accent)]"
-              : "text-[var(--marketing-muted-strong)] hover:text-[var(--marketing-ink)] dark:hover:text-[var(--marketing-paper)]",
+              : "text-[var(--marketing-muted-strong)] hover:text-[var(--marketing-ink)]",
             triggerClassName,
           )}
         >

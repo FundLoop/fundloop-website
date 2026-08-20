@@ -26,7 +26,7 @@ const toneClasses = {
     "border-[color:color-mix(in_srgb,var(--marketing-accent)_38%,transparent)] bg-[color:color-mix(in_srgb,var(--marketing-accent)_14%,transparent)] text-[var(--marketing-ink)]",
   moss:
     "border-[color:color-mix(in_srgb,var(--marketing-moss)_38%,transparent)] bg-[color:color-mix(in_srgb,var(--marketing-moss)_14%,transparent)] text-[var(--marketing-ink)]",
-  ink: "border-[color:var(--marketing-line-strong)] bg-[var(--marketing-panel-strong)] text-[var(--marketing-ink)] dark:text-[var(--marketing-paper)]",
+  ink: "border-[color:var(--marketing-line-strong)] bg-[var(--marketing-panel-strong)] text-[var(--marketing-ink)]",
 } as const
 
 const dotClasses = {

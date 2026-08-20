@@ -1,5 +1,6 @@
 import Link from "next/link"
 import type { Metadata } from "next"
+import Image from "next/image"
 import { getTranslations } from "next-intl/server"
 import { ArrowRight, ExternalLink } from "lucide-react"
 import { Link as LocaleLink } from "@/i18n/navigation"
@@ -257,6 +258,22 @@ export default async function ParticipationPage({ params }: PageProps) {
               >
                 <LocaleLink href="/projects">{t("closing.findProject")}</LocaleLink>
               </Button>
+            </div>
+          </div>
+        </Reveal>
+      </MarketingSection>
+
+      <MarketingSection className="pb-24">
+        <Reveal>
+          <div className="relative overflow-hidden rounded-[2.5rem] border border-[color:var(--marketing-line)] bg-white/60 p-4 shadow-xl dark:border-white/[0.1] dark:bg-white/[0.03]">
+            <div className="relative aspect-[16/9] w-full overflow-hidden rounded-[2rem] bg-neutral-100 dark:bg-neutral-900">
+              <Image
+                src="/images/marketing/fundloop-for-users.png"
+                alt={t("bannerAlt")}
+                fill
+                className="object-cover object-center"
+                sizes="(max-width: 1200px) 100vw, 1200px"
+              />
             </div>
           </div>
         </Reveal>
