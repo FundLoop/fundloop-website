@@ -1,11 +1,24 @@
 import { describe, expect, it } from "vitest"
 import { isFinancialCutoverEnvironmentEnabled, validateFinancialCutoverInput } from "@/lib/edge-functions/financial-cutover-contract"
+import { FINANCIAL_CUTOVER_GOVERNANCE_DOMAINS } from "@/lib/governance/financial-cutover-gates"
+
+const governanceGates = FINANCIAL_CUTOVER_GOVERNANCE_DOMAINS.map((domain) => ({
+  domain,
+  qualifiedReviewerIdentity: "Example Reviewer, CA",
+  jurisdictionOrStandard: "Ontario, Canada",
+  artifactHash: "f".repeat(64),
+  conditions: [],
+  conditionResolutions: [],
+  disposition: "no engineering action required",
+  reReviewDate: "no-expiry",
+  approvedAt: "2026-08-19T00:00:00Z",
+}))
 
 describe("financial cutover contract", () => {
   it("accepts exact prepare, activate, rollback, and read commands", () => {
     expect(validateFinancialCutoverInput({ action: "prepare", idempotencyKey: "cutover-fixture-1", evidenceHash: "a".repeat(64),
       approvedOpeningBalances: [{ sourceType: "bookkeeping_credit", sourceId: "42", evidenceHash: "b".repeat(64) }] }).ok).toBe(true)
-    expect(validateFinancialCutoverInput({ action: "activate", runId: 7, manifestHash: "c".repeat(64), evidenceHash: "d".repeat(64) }).ok).toBe(true)
+    expect(validateFinancialCutoverInput({ action: "activate", runId: 7, manifestHash: "c".repeat(64), evidenceHash: "d".repeat(64), governanceGates }).ok).toBe(true)
     expect(validateFinancialCutoverInput({ action: "rollback", runId: 7, manifestHash: "c".repeat(64), evidenceHash: "e".repeat(64) }).ok).toBe(true)
     expect(validateFinancialCutoverInput({ action: "read", runId: 7 }).ok).toBe(true)
   })
@@ -15,7 +28,8 @@ describe("financial cutover contract", () => {
     expect(validateFinancialCutoverInput({ action: "prepare", idempotencyKey: "cutover-fixture-1", evidenceHash: "a".repeat(64),
       approvedOpeningBalances: [approval, approval] }).ok).toBe(false)
     expect(validateFinancialCutoverInput({ action: "activate", runId: 7, manifestHash: "c".repeat(64), evidenceHash: "d".repeat(64),
-      deploymentEnvironment: "local", actorUserId: "00000000-0000-4000-8000-000000000001" }).ok).toBe(false)
+      governanceGates, deploymentEnvironment: "local", actorUserId: "00000000-0000-4000-8000-000000000001" }).ok).toBe(false)
+    expect(validateFinancialCutoverInput({ action: "activate", runId: 7, manifestHash: "c".repeat(64), evidenceHash: "d".repeat(64) }).ok).toBe(false)
     expect(validateFinancialCutoverInput({ action: "prepare", idempotencyKey: "short", evidenceHash: "a".repeat(64), approvedOpeningBalances: [] }).ok).toBe(false)
   })
 

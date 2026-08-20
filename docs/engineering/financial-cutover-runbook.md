@@ -42,7 +42,7 @@ The prepare command calculates old/new minor-unit totals and records explicit so
 
 ## Activate locally or in an authorized non-production environment
 
-Invoke `financial-cutover` with `action=activate`, the prepared run ID, exact manifest hash, and activation evidence hash. The database takes one transaction-scoped advisory lock and then:
+Invoke `financial-cutover` with `action=activate`, the prepared run ID, exact manifest hash, activation evidence hash, and one current approval record for every domain in `FINANCIAL_CUTOVER_GOVERNANCE_DOMAINS`. The Edge contract rejects missing, duplicate, malformed, expired, future-dated, or conditionally unresolved governance records before the database command can run. A conditional conclusion requires a matching resolution record and immutable evidence hash; deployment itself is never approval. The database then takes one transaction-scoped advisory lock and:
 
 1. rejects production, a changed manifest, or any remaining blocker;
 2. posts each approved exact-cent opening credit through `post_neutral_ledger_transaction`;

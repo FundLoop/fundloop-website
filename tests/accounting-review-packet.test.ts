@@ -99,4 +99,18 @@ describe("accountant/bookkeeping review packet", () => {
     digest.packetSha256 = "f".repeat(64)
     expect(() => verifyAccountingReviewPacket({ packet: digest, repoRoot })).toThrow("self digest mismatch")
   })
+
+  it("rejects incomplete, duplicated, or relabelled evidence inventories", () => {
+    const missingSource = load("accounting-review-packet.json")
+    missingSource.sourceArtifacts.pop()
+    expect(() => verifyAccountingReviewPacket({ packet: missingSource, repoRoot })).toThrow("source evidence paths")
+
+    const relabelledControl = load("accounting-review-packet.json")
+    relabelledControl.runtimeEvidence[0].control = "some runtime control"
+    expect(() => verifyAccountingReviewPacket({ packet: relabelledControl, repoRoot })).toThrow("runtime control inventory")
+
+    const duplicatePath = load("accounting-review-packet.json")
+    duplicatePath.runtimeEvidence[1].path = duplicatePath.runtimeEvidence[0].path
+    expect(() => verifyAccountingReviewPacket({ packet: duplicatePath, repoRoot })).toThrow("runtime evidence paths")
+  })
 })

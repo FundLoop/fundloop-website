@@ -11,6 +11,38 @@ export const REQUIRED_ACCOUNTING_DECISIONS = [
   "refunds-disputes-reserves-and-losses", "opening-balances-and-cutover",
   "reconciliation-close-and-retention", "retention-and-unclaimed-property",
 ]
+export const REQUIRED_ACCOUNTING_SOURCE_ROLES = [
+  "recognition-alternatives",
+  "neutral-ledger-boundary",
+  "treasury-allocation-architecture",
+  "balanced-native-functional-example",
+  "qualified-reviewer-template",
+]
+export const REQUIRED_ACCOUNTING_SOURCE_PATHS = [
+  "docs/legal/review-drafts/accounting-recognition-memo.md",
+  "docs/engineering/neutral-ledger-foundations.md",
+  "docs/engineering/settlement-backed-epoch-treasury.md",
+  "docs/accounting/review-drafts/accounting-review-example.json",
+  "docs/accounting/review-drafts/accountant-decision-template.md",
+]
+export const REQUIRED_ACCOUNTING_RUNTIME_CONTROLS = [
+  "balanced neutral ledger",
+  "source-linked FX and fee preparation",
+  "conditional funded allocation",
+  "claim, hold, expiry, and payout boundary",
+  "opening-balance and cutover denial",
+  "persisted EUR source lineage and reversal fixture",
+  "E-3 claim, harvest, carry, and cap proof",
+]
+export const REQUIRED_ACCOUNTING_RUNTIME_PATHS = [
+  "supabase/migrations/20260809020000_neutral_ledger_foundations.sql",
+  "supabase/migrations/20260809150000_epoch_financial_prep.sql",
+  "supabase/migrations/20260809160000_epoch_funded_allocation.sql",
+  "supabase/migrations/20260809180000_withdrawal_obligation_control_plane.sql",
+  "supabase/migrations/20260810160000_financial_cutover_control_plane.sql",
+  "supabase/tests/stripe_pay_by_bank_intake.sql",
+  "supabase/tests/epoch_allocation_v2_four_epoch_lifecycle.sql",
+]
 const sha256 = (bytes) => createHash("sha256").update(bytes).digest("hex")
 const canonical = (value) => Array.isArray(value) ? value.map(canonical) : value && typeof value === "object"
   ? Object.fromEntries(Object.keys(value).sort().map((key) => [key, canonical(value[key])])) : value
@@ -97,8 +129,13 @@ export function verifyAccountingReviewPacket({ packet, repoRoot }) {
   exactKeys(packet.reviewer, ["name", "designation", "engagementReference"], "accounting reviewer")
   assert(Object.values(packet.reviewer).every((value) => value === null) && packet.decisions === null && packet.conditions === null && packet.decidedAt === null, "accounting packet cannot fabricate a professional conclusion")
   assert(packet.engineeringDisposition === "cutover_blocked_pending_qualified_accountant", "accounting packet must block cutover")
+  assert(JSON.stringify(packet.sourceArtifacts.map((item) => item.path)) === JSON.stringify(REQUIRED_ACCOUNTING_SOURCE_PATHS), "accounting source evidence paths are incomplete, duplicated, or reordered")
+  assert(JSON.stringify(packet.sourceArtifacts.map((item) => item.role)) === JSON.stringify(REQUIRED_ACCOUNTING_SOURCE_ROLES), "accounting source evidence inventory is incomplete, duplicated, or reordered")
+  assert(JSON.stringify(packet.runtimeEvidence.map((item) => item.path)) === JSON.stringify(REQUIRED_ACCOUNTING_RUNTIME_PATHS), "accounting runtime evidence paths are incomplete, duplicated, or reordered")
+  assert(JSON.stringify(packet.runtimeEvidence.map((item) => item.control)) === JSON.stringify(REQUIRED_ACCOUNTING_RUNTIME_CONTROLS), "accounting runtime control inventory is incomplete, duplicated, or reordered")
   for (const [groupName, group] of [["source", packet.sourceArtifacts], ["runtime", packet.runtimeEvidence]]) {
     assert(Array.isArray(group) && group.length > 0, `${groupName} evidence is required`)
+    assert(new Set(group.map((item) => item.path)).size === group.length, `${groupName} evidence paths must be unique`)
     for (const item of group) {
       exactKeys(item, ["path", groupName === "source" ? "role" : "control", "sha256"], `${groupName} evidence`)
       assert(typeof item.path === "string" && !item.path.includes("..") && /^[0-9a-f]{64}$/.test(item.sha256), `invalid ${groupName} evidence`)
