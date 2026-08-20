@@ -463,5 +463,36 @@
 - Next steps:
   - Push Goal 2 integrated-evidence branch with Tasks #182 and #183, update issue statuses, and advance to Task #188 (Goal 2 publication to dev).
 
+### session v34: repair claim-window and persona evidence for PR #232 (#182, #183)
 
-
+- Timestamp: 2026-08-20T07:18:36Z
+- Agent: Codex
+- Branch: `codex/155-goal-2-integrated-evidence`
+- Head before commit: `4a6dfb2`
+- Objective: address PR #232 review findings by proving the N+3 claim-window boundary against the real database function and limiting hosted acceptance claims to evidence the available environment can actually produce.
+- Actions:
+  - Replaced the incorrect pure JavaScript N+3 expiry model with a transactional SQL fixture that calls `epoch_allocation_v2_preview_input` and confirms the target cycle remains open through its `period_end` boundary.
+  - Bound lifecycle contract coverage to both the new open-boundary fixture and the existing post-window four-epoch database fixture.
+  - Added a forward migration restoring the v2 allocation lock's persisted manifest, source, cohort, and harvested-pool shapes after the broader local database suite exposed drift in the logical-isolation function replacement.
+  - Restored result-recording idempotency by returning an existing hash-matching run before enforcing the `locked` status required only for a new run.
+  - Revalidated the selected allocation preview after acquiring obligation row locks so a concurrent claim cannot make a previously selected harvest snapshot stale while the lock waits.
+  - Normalized preview source `currency` fields to the allocation reporting currency while retaining native asset identity separately, matching the calculator's logical-isolation contract.
+  - Renamed the five-persona Vitest suite to `persona-acceptance-contracts.test.ts` and documented that its no-op actions validate journey contract shape, not hosted execution.
+  - Added a credential-free hosted Playwright spec that requests the real English, Spanish, and French public reports routes and requires successful, visible rendering.
+  - Kept authenticated five-persona hosted acceptance explicitly unclaimed because the required hosted Supabase, operator, E2E-secret, and protection-bypass credentials are unavailable in this environment.
+- Validation:
+  - `pnpm exec vitest run tests/three-month-claim-lifecycle.test.ts` passed (`30/30`).
+  - `pnpm exec vitest run tests/persona-acceptance-contracts.test.ts` passed (`43/43`).
+  - `pnpm exec vitest run tests/database-test-runner.test.ts` passed (`7/7`).
+  - `pnpm typecheck`, `pnpm lint`, Playwright hosted-project discovery, and `git diff --check` passed.
+  - Fresh local Supabase reset and the new N+3 boundary fixture passed; the targeted four-epoch race/lifecycle and Stripe pay-by-bank SQL paths passed.
+  - Full Node 22 `pnpm test:db` passed (`22/22`) from the active repaired checkout; the coordinated stack was stopped with zero FundLoop containers or `5532x` listeners afterward.
+  - The standard 5-second full Vitest run hit seven load-sensitive timeouts; all five affected files passed in isolation (`27/27`), and the full suite passed with a 15-second ceiling (`1,077/1,077` across 191 files).
+  - Node 22 `pnpm typecheck` and `pnpm build` passed after the full test run.
+  - Local production browser requests reached all three reports routes but returned server errors because the required Supabase admin environment variables are unavailable locally; no local reports-rendering acceptance is claimed.
+  - Real hosted public-route smoke remains pending until the repaired Vercel preview with its configured environment is available.
+- Reflections:
+  - Contract-shape coverage is useful evidence but must remain distinct from authenticated hosted journey execution.
+  - The claim-window boundary is sensitive to the target cycle's actual `period_end`, so the database function and fixtures are the authoritative proof.
+- Next steps:
+  - Re-run final repository gates, publish the repaired branch, resolve all review threads, and run the public-locale spec against the exact Vercel preview.
