@@ -11,7 +11,7 @@ The four primary audiences are:
 - researchers and the public following the practical design of post-capitalistic, decentralized coordination; and
 - internal operators and agents preparing epochs, reconciling money and data, publishing reports, and working through MCP.
 
-See the [target architecture](docs/engineering/target-state-architecture.md) and the [2026-08-11 capability review](docs/engineering/capability-review-2026-08-11.md) for the intended system and an evidence-based account of what is and is not currently usable.
+See the [target architecture](docs/engineering/target-state-architecture.md) and the [2026-08-20 Dev capability review](docs/engineering/capability-review-2026-08-20.md) for the intended system and an evidence-based account of what is and is not currently usable.
 
 ## Stack
 

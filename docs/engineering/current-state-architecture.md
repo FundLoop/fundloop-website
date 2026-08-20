@@ -9,7 +9,7 @@ Related planning docs:
 - [Target-State Architecture](./target-state-architecture.md)
 - [Archived Sessions 1-52 Roadmap](../../agent-context/todo-1-through-52.md)
 - [MCP TODO Roadmap](../../agent-context/todo-mcp.md)
-- [2026-08-11 Capability Review](./capability-review-2026-08-11.md)
+- [2026-08-20 Dev Capability Review](./capability-review-2026-08-20.md)
 
 ## 2026-08-11 status note
 

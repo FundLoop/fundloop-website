@@ -1,6 +1,6 @@
 import { createHash } from "node:crypto"
 import { readFileSync, writeFileSync } from "node:fs"
-import { dirname, resolve } from "node:path"
+import { dirname, isAbsolute, relative, resolve, sep } from "node:path"
 import { fileURLToPath } from "node:url"
 
 export const ACCOUNTING_DRAFT_BANNER = "DRAFT - NOT APPROVED - NOT EFFECTIVE"
@@ -54,6 +54,14 @@ const assert = (condition, message) => { if (!condition) throw new Error(message
 const exactKeys = (value, keys, label) => {
   assert(value && typeof value === "object" && !Array.isArray(value), `${label} must be an object`)
   assert(JSON.stringify(Object.keys(value).sort()) === JSON.stringify([...keys].sort()), `${label} has unknown or missing fields`)
+}
+const evidencePath = (repoRoot, path, label = "evidence") => {
+  assert(typeof path === "string" && !isAbsolute(path), `${label} path must be repository-relative`)
+  const root = resolve(repoRoot)
+  const resolved = resolve(root, path)
+  const fromRoot = relative(root, resolved)
+  assert(fromRoot.length > 0 && fromRoot !== ".." && !fromRoot.startsWith(`..${sep}`) && !isAbsolute(fromRoot), `${label} path escapes repository root`)
+  return resolved
 }
 const signed = (posting, field) => BigInt(posting[field]) * (posting.side === "debit" ? 1n : -1n)
 const EVENT_IDS = ["settled-receipt", "review-fee-split", "reverse-review-fee-split", "reverse-settled-receipt"]
@@ -138,25 +146,26 @@ export function verifyAccountingReviewPacket({ packet, repoRoot }) {
     assert(new Set(group.map((item) => item.path)).size === group.length, `${groupName} evidence paths must be unique`)
     for (const item of group) {
       exactKeys(item, ["path", groupName === "source" ? "role" : "control", "sha256"], `${groupName} evidence`)
-      assert(typeof item.path === "string" && !item.path.includes("..") && /^[0-9a-f]{64}$/.test(item.sha256), `invalid ${groupName} evidence`)
+      const resolvedEvidencePath = evidencePath(repoRoot, item.path, `${groupName} evidence`)
+      assert(!item.path.includes("..") && /^[0-9a-f]{64}$/.test(item.sha256), `invalid ${groupName} evidence`)
       const description = groupName === "source" ? item.role : item.control
       assert(typeof description === "string" && description.trim() === description && description.length > 0, `invalid ${groupName} evidence description`)
-      assert(sha256(readFileSync(resolve(repoRoot, item.path))) === item.sha256, `evidence digest mismatch: ${item.path}`)
+      assert(sha256(readFileSync(resolvedEvidencePath)) === item.sha256, `evidence digest mismatch: ${item.path}`)
       if (item.path.startsWith("docs/accounting/review-drafts/") && item.path.endsWith(".md")) {
-        assert(readFileSync(resolve(repoRoot, item.path), "utf8").startsWith(`# ${ACCOUNTING_DRAFT_BANNER}\n`), `missing accounting draft banner: ${item.path}`)
+        assert(readFileSync(resolvedEvidencePath, "utf8").startsWith(`# ${ACCOUNTING_DRAFT_BANNER}\n`), `missing accounting draft banner: ${item.path}`)
       }
     }
   }
   const examplePath = packet.sourceArtifacts.find((item) => item.role === "balanced-native-functional-example")?.path
   assert(examplePath, "accounting example is missing")
-  verifyAccountingReviewExample(JSON.parse(readFileSync(resolve(repoRoot, examplePath), "utf8")))
+  verifyAccountingReviewExample(JSON.parse(readFileSync(evidencePath(repoRoot, examplePath, "accounting example"), "utf8")))
   assert(accountingPacketDigest(packet) === packet.packetSha256, "accounting packet self digest mismatch")
   return { ok: true, packetId: packet.packetId, packetSha256: packet.packetSha256 }
 }
 
 export function writeAccountingReviewPacket({ packetPath, repoRoot }) {
   const packet = JSON.parse(readFileSync(packetPath, "utf8"))
-  for (const group of [packet.sourceArtifacts, packet.runtimeEvidence]) for (const item of group) item.sha256 = sha256(readFileSync(resolve(repoRoot, item.path)))
+  for (const group of [packet.sourceArtifacts, packet.runtimeEvidence]) for (const item of group) item.sha256 = sha256(readFileSync(evidencePath(repoRoot, item.path)))
   packet.packetSha256 = accountingPacketDigest(packet)
   writeFileSync(packetPath, `${JSON.stringify(packet, null, 2)}\n`)
   return verifyAccountingReviewPacket({ packet, repoRoot })
