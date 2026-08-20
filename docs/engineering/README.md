@@ -13,7 +13,7 @@ Current high-signal docs:
 
 - [Allocation Architecture](./allocation.md)
 - [Backgrounder for Agents](./backgrounder-for-agents.md)
-- [Capability Review — 2026-08-11](./capability-review-2026-08-11.md)
+- [Dev Capability Review — 2026-08-20](./capability-review-2026-08-20.md)
 - [Beta Runtime Guardrails](./beta-guardrails.md)
 - [Current-State Architecture](./current-state-architecture.md)
 - [CUBID Identity and Snapshot Model](./cubid-identity.md)

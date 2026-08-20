@@ -88,7 +88,7 @@ The management API proves function names, versions, status, and update times. It
 
 ## Capability state
 
-The canonical local capability classifications remain in [the Feature #118 operational validation record](./feature-118-operational-validation.md) and its [machine-readable matrix](../../tests/e2e/operational/feature-118-capability-matrix.json). The pre-merge [capability review](./capability-review-2026-08-11.md) describes `2b87b9c`, not this candidate, and cannot certify merged Dev.
+The canonical local capability classifications remain in [the Feature #118 operational validation record](./feature-118-operational-validation.md) and its [machine-readable matrix](../../tests/e2e/operational/feature-118-capability-matrix.json). The [2026-08-20 Dev capability review](./capability-review-2026-08-20.md) records the later promoted baseline and its still-open hosted and professional blockers; it does not certify Production or value flow.
 
 | Capability | Strongest state supported at this snapshot | Evidence and boundary |
 | --- | --- | --- |

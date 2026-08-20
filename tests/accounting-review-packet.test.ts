@@ -113,4 +113,14 @@ describe("accountant/bookkeeping review packet", () => {
     duplicatePath.runtimeEvidence[1].path = duplicatePath.runtimeEvidence[0].path
     expect(() => verifyAccountingReviewPacket({ packet: duplicatePath, repoRoot })).toThrow("runtime evidence paths")
   })
+
+  it("rejects absolute and repository-escaping evidence paths", () => {
+    const absolute = load("accounting-review-packet.json")
+    absolute.sourceArtifacts[0].path = "/tmp/accounting-evidence.md"
+    expect(() => verifyAccountingReviewPacket({ packet: absolute, repoRoot })).toThrow(/source evidence paths|repository-relative/)
+
+    const escaping = load("accounting-review-packet.json")
+    escaping.runtimeEvidence[0].path = "../outside.sql"
+    expect(() => verifyAccountingReviewPacket({ packet: escaping, repoRoot })).toThrow(/runtime evidence paths|escapes repository root/)
+  })
 })
