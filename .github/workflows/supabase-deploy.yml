@@ -138,7 +138,11 @@ jobs:
               db_url="${DEV_SUPABASE_SESSION_POOLER_URL}"
               ;;
             main)
-              db_url="${MAIN_SUPABASE_SESSION_POOLER_URL}"
+              if [[ "${mode}" == "dry-run" ]]; then
+                db_url="${MAIN_SUPABASE_SESSION_POOLER_URL:-${DEV_SUPABASE_SESSION_POOLER_URL}}"
+              else
+                db_url="${MAIN_SUPABASE_SESSION_POOLER_URL}"
+              fi
               ;;
             *)
               echo "::error::Unsupported Supabase deploy target '${target_environment}'. Expected dev or main."
@@ -203,7 +207,7 @@ jobs:
               supabase_db_url="${DEV_SUPABASE_SESSION_POOLER_URL}"
               ;;
             main)
-              supabase_db_url="${MAIN_SUPABASE_SESSION_POOLER_URL}"
+              supabase_db_url="${MAIN_SUPABASE_SESSION_POOLER_URL:-${DEV_SUPABASE_SESSION_POOLER_URL}}"
               ;;
             *)
               echo "::error::Unsupported Supabase dry-run target '${TARGET_ENVIRONMENT}'. Expected dev or main."
