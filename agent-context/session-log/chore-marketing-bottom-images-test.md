@@ -38,6 +38,27 @@
 
 ---
 
-#### Suggested Next Steps
+### session v2: Strengthen Route Wiring Assertions
 
-- Merge into `dev`.
+- **Timestamp:** 2026-08-21T21:52:00Z
+- **Agent:** Antigravity (Gemini 3.7 Flash)
+- **Branch:** `chore/marketing-bottom-images-test`
+- **Head:** `cb5da4d`
+
+---
+
+#### Objective
+
+1. Address code review feedback on `tests/marketing-images.test.ts` to assert that each route (`page.tsx`, `founders/page.tsx`, `participation/page.tsx`) explicitly references its corresponding image path.
+
+---
+
+#### Actions Taken
+
+- Updated `tests/marketing-images.test.ts` to assert page content source wiring in addition to static asset existence.
+
+---
+
+#### Validation Notes
+
+- `pnpm vitest run tests/marketing-images.test.ts` passed (`3/3` tests).
