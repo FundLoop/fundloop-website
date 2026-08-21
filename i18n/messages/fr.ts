@@ -2181,4 +2181,11 @@ export const frMessages = {
       terms: "Conditions d’utilisation",
     },
   },
+  prototypeBadge: {
+    label: "Prototype",
+    title: "Avis de prototype",
+    body: "Cette page est en cours de développement. Merci de votre patience si des éléments ne fonctionnent pas. N'hésitez pas à envoyer un message à support@firebelly.xyz pour nous faire part de vos remarques ou suggestions.",
+    contactUs: "Envoyer un e-mail à support@firebelly.xyz",
+    close: "Fermer l'avis",
+  },
 } as const
