@@ -52,3 +52,42 @@ Address all automated code review findings on PR #236:
 #### Suggested Next Steps
 
 - Push branch and merge into `dev` to update PR #236.
+
+### session v2: Scope Identity Artifact Uniqueness to Monthly Cycles
+
+- **Timestamp:** 2026-08-21T20:23:00Z
+- **Agent:** Antigravity (Gemini 3.7 Flash)
+- **Branch:** `fix/pr-236-review-comments`
+- **Head:** `e8f3ab7`
+
+---
+
+#### Objective
+
+1. Preserve historical monthly cycle identity artifacts and foreign key linkages when identical identity files are reused across different monthly cycles.
+2. Add forward migration `20260821210000_zkas_identity_artifacts_cycle_scope.sql` replacing global artifact hash uniqueness with `(month, artifact_hash)` and `(month, object_path)` composite uniqueness.
+
+---
+
+#### Actions Taken
+
+- **Created `supabase/migrations/20260821210000_zkas_identity_artifacts_cycle_scope.sql`:**
+  - Replaces global uniqueness on `artifact_hash` and `object_path` with per-cycle composite uniqueness `(month, artifact_hash)` and `(month, object_path)`.
+- **Updated `app/actions/zkas-actions.ts`:**
+  - Scoped identity artifact lookup and deduplication to the active `month`, ensuring separate cycles maintain distinct immutable identity records even when artifact contents match.
+
+---
+
+#### Validation Notes
+
+- `pnpm typecheck` passed (0 errors).
+- `pnpm lint` passed with `--max-warnings=0`.
+- `pnpm test` passed (`198/198` test files, `1143/1143` tests).
+- `pnpm build` completed successfully.
+
+---
+
+#### Suggested Next Steps
+
+- Push updates to PR #237 and merge into `dev`.
+

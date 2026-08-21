@@ -491,11 +491,12 @@ export async function uploadZkasIdentityArtifact(formData: FormData): Promise<vo
   const { data: existingByHash } = await supabase
     .from("zkas_identity_artifacts")
     .select("id, month, status")
+    .eq("month", month)
     .eq("artifact_hash", artifactHash)
     .maybeSingle()
 
   if (existingByHash) {
-    if (existingByHash.month === month && existingByHash.status === "approved") {
+    if (existingByHash.status === "approved") {
       const { error: updateError } = await supabase
         .from("zkas_identity_artifacts")
         .update({
@@ -531,7 +532,6 @@ export async function uploadZkasIdentityArtifact(formData: FormData): Promise<vo
     const { error: updateError } = await supabase
       .from("zkas_identity_artifacts")
       .update({
-        month,
         monthly_cycle_id: monthlyCycleId,
         file_name: file.name,
         object_path: objectPath,
