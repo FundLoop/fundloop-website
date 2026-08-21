@@ -18,35 +18,42 @@ const mockProps = {
   participantCta: "This is me, I'd like to participate and build monthly reward eligibility",
   nodes: {
     people: {
-      title: "People",
-      body: "A community of supporters driving change and usage.",
+      title: "People participate in projects",
+      body: "Users discover aligned apps, engage regularly, and build verified activity records with private CUBID stamps.",
     },
     participation: {
-      title: "Participation",
-      body: "Engage, verify identity, match, and contribute.",
+      title: "Projects collect revenue",
+      body: "Software products grow sustainable platform usage and collect customer subscriptions and fees.",
     },
     projects: {
-      title: "Projects",
-      body: "Mission-driven projects pooling 1% monthly revenue.",
+      title: "Projects reward community through FundLoop",
+      body: "Projects pool a percentage of monthly revenue into a transparent, governed redistribution cycle.",
     },
     fundloop: {
-      title: "FundLoop",
-      body: "Capital recycled and distributed back to active users.",
+      title: "People get paid",
+      body: "Verified active community members receive transparent, proportional monthly reward distributions.",
     },
   },
 }
 
 describe("WhatIsFundLoopVisual", () => {
-  it("renders all four loop nodes and protocol hub", () => {
+  it("renders all four continuous loop stages and protocol hub without 01-04 numbering", () => {
     render(<WhatIsFundLoopVisual {...mockProps} />)
 
-    expect(screen.getByText("People")).toBeDefined()
-    expect(screen.getByText("Participation")).toBeDefined()
-    expect(screen.getByText("Projects")).toBeDefined()
-    expect(screen.getAllByText("FundLoop").length).toBeGreaterThan(0)
+    expect(screen.getByText("People participate in projects")).toBeDefined()
+    expect(screen.getByText("Projects collect revenue")).toBeDefined()
+    expect(screen.getByText("Projects reward community through FundLoop")).toBeDefined()
+    expect(screen.getByText("People get paid")).toBeDefined()
+    expect(screen.getByText("FundLoop Continuous Coordination")).toBeDefined()
+
+    // Assert that numeric 01-04 step tags are removed
+    expect(screen.queryByText(/Step 01/i)).toBeNull()
+    expect(screen.queryByText(/Step 02/i)).toBeNull()
+    expect(screen.queryByText(/Step 03/i)).toBeNull()
+    expect(screen.queryByText(/Step 04/i)).toBeNull()
   })
 
-  it("renders both dynamic CTAs with correct onboarding target links", () => {
+  it("renders both onboarding CTA links", () => {
     render(<WhatIsFundLoopVisual {...mockProps} />)
 
     const participantLink = screen.getByText(mockProps.participantCta).closest("a")
@@ -58,14 +65,24 @@ describe("WhatIsFundLoopVisual", () => {
     expect(projectLink?.getAttribute("href")).toBe("/?onboarding=project")
   })
 
-  it("handles mouse enter and leave on project and participant sides", () => {
+  it("correlates hover focus to participant and project steps", () => {
     render(<WhatIsFundLoopVisual {...mockProps} />)
 
-    const projectNode = screen.getByText("Projects").closest("div")
+    const participantNode = screen.getByText("People participate in projects").closest("div")
+    const projectNode = screen.getByText("Projects collect revenue").closest("div")
+
+    expect(participantNode).toBeDefined()
     expect(projectNode).toBeDefined()
+
+    if (participantNode) {
+      fireEvent.mouseEnter(participantNode)
+      expect(screen.getByText("Participant Focus")).toBeDefined()
+      fireEvent.mouseLeave(participantNode)
+    }
 
     if (projectNode) {
       fireEvent.mouseEnter(projectNode)
+      expect(screen.getByText("Project Focus")).toBeDefined()
       fireEvent.mouseLeave(projectNode)
     }
   })

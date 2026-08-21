@@ -1297,26 +1297,45 @@ export const frMessages = {
         body: "Une boucle économique continue reliant les projets qui mutualisent leurs revenus aux personnes vérifiées participant à leur croissance.",
         projectLabel: "Projets & Entreprises",
         participantLabel: "Personnes & Participants",
+        loopBadge: "Boucle de valeur continue",
         ctas: {
           projectHover: "C'est moi, je dirige une entreprise qui souhaite participer",
           participantHover: "C'est moi, j'aimerais participer et accéder aux récompenses mensuelles",
+          defaultProject: "Je suis un projet / fondateur",
+          defaultParticipant: "Je suis un participant / utilisateur",
         },
         nodes: {
+          step1: {
+            title: "Les personnes participent aux projets",
+            body: "Les utilisateurs découvrent des applications alignées, s'engagent et créent une activité vérifiée via des tampons CUBID privés.",
+          },
+          step2: {
+            title: "Les projets collectent des revenus",
+            body: "Les produits logiciels développent une utilisation durable et collectent des abonnements et frais clients.",
+          },
+          step3: {
+            title: "Les projets récompensent la communauté via FundLoop",
+            body: "Les projets mutualisent un pourcentage mensuel de leurs revenus dans un cycle de redistribution transparent et gouverné.",
+          },
+          step4: {
+            title: "Les personnes sont rémunérées",
+            body: "Les membres actifs et vérifiés de la communauté reçoivent des distributions de récompenses transparentes et proportionnelles.",
+          },
           people: {
-            title: "Personnes",
-            body: "Une communauté de soutiens stimulant l'adoption et l'usage.",
+            title: "Les personnes participent aux projets",
+            body: "Les utilisateurs découvrent des applications alignées, s'engagent et créent une activité vérifiée via des tampons CUBID privés.",
           },
           participation: {
-            title: "Participation",
-            body: "Interagissez, vérifiez l'identité, connectez-vous et contribuez.",
+            title: "Les projets collectent des revenus",
+            body: "Les produits logiciels développent une utilisation durable et collectent des abonnements et frais clients.",
           },
           projects: {
-            title: "Projets",
-            body: "Des projets engagés versant 1 % de leurs revenus mensuels.",
+            title: "Les projets récompensent la communauté via FundLoop",
+            body: "Les projets mutualisent un pourcentage mensuel de leurs revenus dans un cycle de redistribution transparent et gouverné.",
           },
           fundloop: {
-            title: "FundLoop",
-            body: "Capital recyclé et redistribué aux utilisateurs actifs.",
+            title: "Les personnes sont rémunérées",
+            body: "Les membres actifs et vérifiés de la communauté reçoivent des distributions de récompenses transparentes et proportionnelles.",
           },
         },
       },

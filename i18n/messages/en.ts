@@ -1347,26 +1347,45 @@ export const enMessages = {
         body: "A continuous economic loop connecting projects pooling revenue with verified people participating in their growth.",
         projectLabel: "Projects & Companies",
         participantLabel: "People & Participants",
+        loopBadge: "Continuous Value Loop",
         ctas: {
           projectHover: "This is me, I run a company which would like to participate",
           participantHover: "This is me, I'd like to participate and build monthly reward eligibility",
+          defaultProject: "I'm a Project / Founder",
+          defaultParticipant: "I'm a Participant / User",
         },
         nodes: {
+          step1: {
+            title: "People participate in projects",
+            body: "Users discover aligned apps, engage regularly, and build verified activity records with private CUBID stamps.",
+          },
+          step2: {
+            title: "Projects collect revenue",
+            body: "Software products grow sustainable platform usage and collect customer subscriptions and fees.",
+          },
+          step3: {
+            title: "Projects reward community through FundLoop",
+            body: "Projects pool a percentage of monthly revenue into a transparent, governed redistribution cycle.",
+          },
+          step4: {
+            title: "People get paid",
+            body: "Verified active community members receive transparent, proportional monthly reward distributions.",
+          },
           people: {
-            title: "People",
-            body: "A community of supporters driving change and usage.",
+            title: "People participate in projects",
+            body: "Users discover aligned apps, engage regularly, and build verified activity records with private CUBID stamps.",
           },
           participation: {
-            title: "Participation",
-            body: "Engage, verify identity, match, and contribute.",
+            title: "Projects collect revenue",
+            body: "Software products grow sustainable platform usage and collect customer subscriptions and fees.",
           },
           projects: {
-            title: "Projects",
-            body: "Mission-driven projects pooling 1% monthly revenue.",
+            title: "Projects reward community through FundLoop",
+            body: "Projects pool a percentage of monthly revenue into a transparent, governed redistribution cycle.",
           },
           fundloop: {
-            title: "FundLoop",
-            body: "Capital recycled and distributed back to active users.",
+            title: "People get paid",
+            body: "Verified active community members receive transparent, proportional monthly reward distributions.",
           },
         },
       },
