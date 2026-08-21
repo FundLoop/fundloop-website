@@ -1299,7 +1299,7 @@ export const frMessages = {
         participantLabel: "Personnes & Participants",
         ctas: {
           projectHover: "C'est moi, je dirige une entreprise qui souhaite participer",
-          participantHover: "C'est moi, j'aimerais participer et recevoir un revenu mensuel",
+          participantHover: "C'est moi, j'aimerais participer et accéder aux récompenses mensuelles",
         },
         nodes: {
           people: {

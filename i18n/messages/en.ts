@@ -1349,7 +1349,7 @@ export const enMessages = {
         participantLabel: "People & Participants",
         ctas: {
           projectHover: "This is me, I run a company which would like to participate",
-          participantHover: "This is me, I'd like to participate and get a monthly income",
+          participantHover: "This is me, I'd like to participate and build monthly reward eligibility",
         },
         nodes: {
           people: {
