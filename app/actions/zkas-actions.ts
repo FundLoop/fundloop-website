@@ -487,18 +487,85 @@ export async function uploadZkasIdentityArtifact(formData: FormData): Promise<vo
 
   const supabase = getAdminSupabaseClient()
   const monthlyCycleId = await getOrCreateMonthlyCycleIdForMonth(month, actor.userId)
-  const { data: existing } = await supabase
+
+  const { data: existingByHash } = await supabase
+    .from("zkas_identity_artifacts")
+    .select("id, month, status")
+    .eq("artifact_hash", artifactHash)
+    .maybeSingle()
+
+  if (existingByHash) {
+    if (existingByHash.month === month && existingByHash.status === "approved") {
+      const { error: updateError } = await supabase
+        .from("zkas_identity_artifacts")
+        .update({
+          file_name: file.name,
+          provider,
+          note,
+          monthly_cycle_id: monthlyCycleId,
+          uploaded_by_user_id: actor.userId,
+        })
+        .eq("id", existingByHash.id)
+
+      if (updateError) {
+        throw new Error(updateError.message)
+      }
+
+      revalidatePath("/admin/zkas/uploads")
+      revalidateMonthlyCycleZkasPaths(month)
+      return
+    }
+
+    const { data: existingApproved } = await supabase
+      .from("zkas_identity_artifacts")
+      .select("id")
+      .eq("month", month)
+      .eq("status", "approved")
+      .neq("id", existingByHash.id)
+      .maybeSingle()
+
+    if (existingApproved) {
+      await supabase.from("zkas_identity_artifacts").update({ status: "archived" }).eq("id", existingApproved.id)
+    }
+
+    const { error: updateError } = await supabase
+      .from("zkas_identity_artifacts")
+      .update({
+        month,
+        monthly_cycle_id: monthlyCycleId,
+        file_name: file.name,
+        object_path: objectPath,
+        provider,
+        note,
+        status: "approved",
+        uploaded_by_user_id: actor.userId,
+      })
+      .eq("id", existingByHash.id)
+
+    if (updateError) {
+      if (existingApproved) {
+        await supabase.from("zkas_identity_artifacts").update({ status: "approved" }).eq("id", existingApproved.id)
+      }
+      throw new Error(updateError.message)
+    }
+
+    revalidatePath("/admin/zkas/uploads")
+    revalidateMonthlyCycleZkasPaths(month)
+    return
+  }
+
+  const { data: existingApproved } = await supabase
     .from("zkas_identity_artifacts")
     .select("id")
     .eq("month", month)
     .eq("status", "approved")
     .maybeSingle()
 
-  if (existing) {
-    await supabase.from("zkas_identity_artifacts").update({ status: "archived" }).eq("id", existing.id)
+  if (existingApproved) {
+    await supabase.from("zkas_identity_artifacts").update({ status: "archived" }).eq("id", existingApproved.id)
   }
 
-  const { error } = await supabase
+  const { error: insertError } = await supabase
     .from("zkas_identity_artifacts")
     .insert({
       month,
@@ -512,8 +579,11 @@ export async function uploadZkasIdentityArtifact(formData: FormData): Promise<vo
       status: "approved",
     })
 
-  if (error) {
-    throw new Error(error.message)
+  if (insertError) {
+    if (existingApproved) {
+      await supabase.from("zkas_identity_artifacts").update({ status: "approved" }).eq("id", existingApproved.id)
+    }
+    throw new Error(insertError.message)
   }
 
   revalidatePath("/admin/zkas/uploads")
@@ -650,7 +720,9 @@ export async function createZkasRunDraft(formData: FormData): Promise<void> {
     }
 
     const payments = await getConfirmedPaymentsForMonth(month)
-    const usdPool = payments.reduce((total, payment) => total + Number(payment.payment_amount), 0)
+    const selectedProjectIds = new Set((datasets ?? []).map((dataset) => dataset.project_id))
+    const eligiblePayments = payments.filter((payment) => selectedProjectIds.has(payment.project_id))
+    const usdPool = eligiblePayments.reduce((total, payment) => total + Number(payment.payment_amount), 0)
     const identityArtifact = await getApprovedIdentityArtifact(month)
     const monthlyCycleId = await getOrCreateMonthlyCycleIdForMonth(month, actor.userId)
     const [{ error: datasetCycleError }, { error: artifactCycleError }] = await Promise.all([
@@ -695,7 +767,7 @@ export async function createZkasRunDraft(formData: FormData): Promise<void> {
       file_hash: dataset.file_hash,
       row_count: dataset.row_count,
     }))
-    const runPaymentsPayload = payments.map((payment) => ({
+    const runPaymentsPayload = eligiblePayments.map((payment) => ({
       run_id: run.id,
       payment_id: payment.id,
       project_id: payment.project_id,

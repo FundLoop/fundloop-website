@@ -1,0 +1,54 @@
+# Session Log: fix/pr-236-review-comments
+
+### session v1: Address PR 236 Code Review Comments
+
+- **Timestamp:** 2026-08-21T20:16:00Z
+- **Agent:** Antigravity (Gemini 3.7 Flash)
+- **Branch:** `fix/pr-236-review-comments`
+- **Head:** `4b26610`
+
+---
+
+#### Objective
+
+Address all automated code review findings on PR #236:
+1. **Limit the allocation pool to selected projects (`app/actions/zkas-actions.ts`)**: Filter confirmed payments to only include projects with selected approved datasets when generating run drafts, ensuring `usd_pool` and `zkas_run_payments` reflect only the selected cohorts.
+2. **Conserve the pool when rounding allocations (`zkas/engine/zkas_engine/runner.py`)**: Allocate integer micro-units using the deterministic largest-remainder (Hamilton / Hare-Niemeyer) method so total allocated USD always strictly equals `usd_pool`.
+3. **Atomic & Idempotent Identity Artifact Replacement (`app/actions/zkas-actions.ts`)**: Make identical identity artifact re-uploads idempotent without tripping `artifact_hash` uniqueness constraints or unsetting approved status, and safely roll back archived status if new artifact insertion fails.
+
+---
+
+#### Actions Taken
+
+- **Updated `app/actions/zkas-actions.ts`:**
+  - In `createZkasRunDraft`, filtered confirmed monthly payments by `selectedProjectIds` from the selected datasets before computing `usdPool` and building `runPaymentsPayload`.
+  - In `uploadZkasIdentityArtifact`, checked for existing records by `artifact_hash`. If an identical artifact already exists with `status: "approved"`, performed an idempotent metadata update. If replacing an artifact with a new hash, guarded the transition and rolled back previous approved artifact status if insertion/update errors occur.
+- **Updated `zkas/engine/zkas_engine/runner.py`:**
+  - Converted `usd_pool` to integer micro-units (`10^6`). Computed base integer allocations via floor division and tracked fractional remainders. Deterministically distributed remaining micro-units to highest remainder users, tie-breaking by `zkas_user_id` order.
+- **Updated `zkas/engine/tests/test_runner.py`:**
+  - Added unit test `test_remainder_conservation_non_divisible_pool` asserting exact pool conservation ($1 divided across 6 users producing exact sum $1.000000 with 4 allocations of 0.166667 and 2 allocations of 0.166666).
+
+---
+
+#### Validation Notes
+
+- `PYTHONPATH=zkas/engine python3 -m unittest discover -s zkas/engine/tests` passed (`2/2` tests).
+- `pnpm typecheck` passed with 0 errors.
+- `pnpm lint` passed with `--max-warnings=0`.
+- `pnpm test` passed (`198/198` test files, `1143/1143` tests).
+- `pnpm build` completed successfully (165 routes).
+- `pnpm --dir contracts test` passed (17 tests).
+
+---
+
+#### Reflections
+
+- Proportional distribution across integer micro-units prevents micro-dollar inflation or drift across large recipient distributions while maintaining full determinism across runner instances.
+- Ensuring run drafts only encompass payments from projects present in approved datasets guarantees that unrepresented project funds are not improperly commingled into partial runs.
+- Idempotent identity artifact uploads prevent operator retry loops from corrupting the single approved artifact constraint.
+
+---
+
+#### Suggested Next Steps
+
+- Push branch and merge into `dev` to update PR #236.
