@@ -15,7 +15,7 @@ const mockProps = {
   projectLabel: "Projects & Companies",
   participantLabel: "People & Participants",
   projectCta: "This is me, I run a company which would like to participate",
-  participantCta: "This is me, I'd like to participate and get a monthly income",
+  participantCta: "This is me, I'd like to participate and build monthly reward eligibility",
   nodes: {
     people: {
       title: "People",
