@@ -147,6 +147,8 @@ export default async function ProjectsPage({ params, searchParams }: PageProps) 
             body={t("loopVisual.body")}
             cta={t("loopVisual.cta")}
             center={t("loopVisual.center")}
+            centerSubtext={t("loopVisual.centerSubtext")}
+            stageLabel={t("loopVisual.stageLabel")}
             nodes={{
               reward: t.raw("loopVisual.nodes.reward") as { step: string; title: string; body: string },
               visibility: t.raw("loopVisual.nodes.visibility") as { step: string; title: string; body: string },

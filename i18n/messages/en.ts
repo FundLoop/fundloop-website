@@ -1597,6 +1597,8 @@ export const enMessages = {
       body: "FundLoop helps people participate meaningfully in projects that matter and share in the mutual upside.",
       cta: "Start Your Participant Journey",
       center: "People-Powered Impact",
+      centerSubtext: "CUBID Verified • Governed Monthly Distribution",
+      stageLabel: "Stage {num} of 4",
       nodes: {
         find: {
           step: "01",
@@ -1764,6 +1766,8 @@ export const enMessages = {
       body: "FundLoop helps projects reward real usage, gain qualified discovery, attract contributors, and build a sustainable revenue loop.",
       cta: "Start Project Onboarding",
       center: "Grow Your Project",
+      centerSubtext: "10,000+ Reach • Governed Settlement",
+      stageLabel: "Stage {num} of 4",
       nodes: {
         reward: {
           step: "01",

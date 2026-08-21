@@ -1,7 +1,7 @@
 "use client"
 
 import { useState } from "react"
-import { ArrowRight, Coins, Compass, HeartHandshake, Repeat, ShieldCheck, Sparkles, UserPlus } from "lucide-react"
+import { ArrowRight, Coins, Compass, HeartHandshake, Repeat, ShieldCheck, Sparkles } from "lucide-react"
 import { Link } from "@/i18n/navigation"
 import { cn } from "@/lib/utils"
 
@@ -17,6 +17,8 @@ export type FundloopForUsersVisualProps = {
   body: string
   cta: string
   center: string
+  centerSubtext?: string
+  stageLabel?: string
   nodes: {
     find: NodeInfo
     signup: NodeInfo
@@ -31,6 +33,8 @@ export function FundloopForUsersVisual({
   body,
   cta,
   center,
+  centerSubtext = "CUBID Verified • Governed Monthly Distribution",
+  stageLabel = "Stage {num} of 4",
   nodes,
 }: FundloopForUsersVisualProps) {
   const [activeStep, setActiveStep] = useState<number | null>(null)
@@ -67,6 +71,7 @@ export function FundloopForUsersVisual({
         {stepsList.map((item, index) => {
           const Icon = item.icon
           const isHovered = activeStep === index
+          const formattedStage = stageLabel.replace("{num}", String(item.num))
 
           return (
             <div
@@ -100,7 +105,7 @@ export function FundloopForUsersVisual({
 
               {/* Connecting Flow Arrow indicator */}
               <div className="mt-6 flex items-center gap-1.5 text-[0.7rem] font-semibold uppercase tracking-widest text-[#34d399]">
-                <span>Stage {item.num} of 4</span>
+                <span>{formattedStage}</span>
                 <ArrowRight className="h-3.5 w-3.5" />
               </div>
             </div>
@@ -116,7 +121,7 @@ export function FundloopForUsersVisual({
           </span>
           <div>
             <p className="text-sm font-semibold text-white">{center}</p>
-            <p className="text-xs text-[#a0b0a8]">CUBID Verified • Governed Monthly Distribution</p>
+            <p className="text-xs text-[#a0b0a8]">{centerSubtext}</p>
           </div>
         </div>
 
