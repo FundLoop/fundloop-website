@@ -9,7 +9,6 @@ import { Button } from "@/components/ui/button"
 import { MarketingPage, MarketingSection, SectionBody, SectionEyebrow, SectionTitle } from "@/components/marketing/page-chrome"
 import { Reveal } from "@/components/marketing/reveal"
 import { MonthlyLoopVisual } from "@/components/marketing/monthly-loop-visual"
-import { WhatIsFundLoopVisual } from "@/components/marketing/what-is-fundloop-visual"
 
 type MonthlyStage = { step: string; title: string; body: string }
 type Audience = { id: "people" | "projects" | "research" | "operators"; label: string; title: string; body: string; href: string; cta: string }
@@ -40,12 +39,6 @@ export default async function Home({ params }: PageProps) {
   const principles = t.raw("trust.items") as Principle[]
   const founderFeatures = t.raw("fork.founders.features") as string[]
   const participantFeatures = t.raw("fork.participants.features") as string[]
-  const whatIsFundLoopNodes = {
-    people: t.raw("fork.whatIsFundLoop.nodes.people") as { title: string; body: string },
-    participation: t.raw("fork.whatIsFundLoop.nodes.participation") as { title: string; body: string },
-    projects: t.raw("fork.whatIsFundLoop.nodes.projects") as { title: string; body: string },
-    fundloop: t.raw("fork.whatIsFundLoop.nodes.fundloop") as { title: string; body: string },
-  }
 
   return (
     <MarketingPage className="[--marketing-accent:#d45f35]">
@@ -93,31 +86,18 @@ export default async function Home({ params }: PageProps) {
             </SectionBody>
           </div>
 
-          <WhatIsFundLoopVisual
-            projectLabel={t("fork.whatIsFundLoop.projectLabel")}
-            participantLabel={t("fork.whatIsFundLoop.participantLabel")}
-            projectCta={t("fork.whatIsFundLoop.ctas.projectHover")}
-            participantCta={t("fork.whatIsFundLoop.ctas.participantHover")}
-            nodes={whatIsFundLoopNodes}
-            actionBar={{
-              participantFocus: {
-                title: t("fork.whatIsFundLoop.actionBar.participantFocus.title"),
-                body: t("fork.whatIsFundLoop.actionBar.participantFocus.body"),
-              },
-              projectFocus: {
-                title: t("fork.whatIsFundLoop.actionBar.projectFocus.title"),
-                body: t("fork.whatIsFundLoop.actionBar.projectFocus.body"),
-              },
-              defaultFocus: {
-                title: t("fork.whatIsFundLoop.actionBar.defaultFocus.title"),
-                body: t("fork.whatIsFundLoop.actionBar.defaultFocus.body"),
-              },
-            }}
-            nextLabel={t("fork.whatIsFundLoop.nextLabel")}
-            loopsToStartLabel={t("fork.whatIsFundLoop.loopsToStartLabel")}
-            protocolBadge={t("fork.whatIsFundLoop.protocolBadge")}
-            cubidVerifiedBadge={t("fork.whatIsFundLoop.cubidVerified")}
-          />
+          <div className="relative mx-auto mt-10 max-w-5xl overflow-hidden rounded-[2.5rem] border border-[color:var(--marketing-line)] bg-white/70 p-4 shadow-xl dark:border-white/[0.1] dark:bg-white/[0.03] sm:p-6 lg:p-8">
+            <div className="relative aspect-[16/9] w-full overflow-hidden rounded-[2rem] bg-neutral-100 dark:bg-neutral-900">
+              <Image
+                src="/images/marketing/what-is-fundloop.png"
+                alt={t("fork.whatIsFundLoop.imageAlt")}
+                fill
+                className="object-cover object-center"
+                sizes="(max-width: 1200px) 100vw, 1200px"
+                priority
+              />
+            </div>
+          </div>
 
           <div className="mt-16 text-center">
             <SectionTitle className="mt-3 text-3xl sm:text-4xl">{t("fork.title")}</SectionTitle>
