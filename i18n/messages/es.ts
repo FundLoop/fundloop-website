@@ -96,6 +96,12 @@ export const esMessages = {
   },
   shell: {
     brandTagline: "Prosperidad mutua en red",
+    inauguralBanner: {
+      badge: "Cohorte inaugural",
+      message: "Buscamos proyectos inaugurales para la Época 1",
+      cta: "Postularse",
+      dismiss: "Descartar anuncio",
+    },
     nav: {
       primary: {
         founders: "Fundadores",
