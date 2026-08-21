@@ -1289,7 +1289,37 @@ export const frMessages = {
       participant: "Rejoindre comme participant",
     },
     fork: {
-      eyebrow: "Choisissez votre parcours", title: "Où vous situez-vous dans la boucle ?", body: "FundLoop relie équipes logicielles et participants vérifiés dans un modèle transparent de valeur partagée.",
+      eyebrow: "Choisissez votre parcours",
+      title: "Où vous situez-vous dans la boucle ?",
+      body: "FundLoop relie équipes logicielles et participants vérifiés dans un modèle transparent de valeur partagée.",
+      whatIsFundLoop: {
+        title: "Qu'est-ce que le Fund Loop ?",
+        body: "Une boucle économique continue reliant les projets qui mutualisent leurs revenus aux personnes vérifiées participant à leur croissance.",
+        projectLabel: "Projets & Entreprises",
+        participantLabel: "Personnes & Participants",
+        ctas: {
+          projectHover: "C'est moi, je dirige une entreprise qui souhaite participer",
+          participantHover: "C'est moi, j'aimerais participer et recevoir un revenu mensuel",
+        },
+        nodes: {
+          people: {
+            title: "Personnes",
+            body: "Une communauté de soutiens stimulant l'adoption et l'usage.",
+          },
+          participation: {
+            title: "Participation",
+            body: "Interagissez, vérifiez l'identité, connectez-vous et contribuez.",
+          },
+          projects: {
+            title: "Projets",
+            body: "Des projets engagés versant 1 % de leurs revenus mensuels.",
+          },
+          fundloop: {
+            title: "FundLoop",
+            body: "Capital recyclé et redistribué aux utilisateurs actifs.",
+          },
+        },
+      },
       founders: { eyebrow: "Pour fondateurs et builders", title: "Un modèle de croissance au-delà de la publicité", body: "Modélisez la redirection du CAC vers les utilisateurs actifs, explorez la rétention et préparez un workflow mensuel gouverné.", cta: "Explorer le parcours fondateur", badge: "Modèle interactif", features: ["Modéliser des dépenses d’acquisition redirigées", "Explorer les hypothèses de rétention et de MAU", "Préparer un workflow mensuel gouverné"] },
       participants: { eyebrow: "Pour les participants", title: "Construisez un historique de participation vérifié", body: "Créez un profil privé, découvrez des logiciels alignés et consultez les résultats publiés pendant que le paiement direct reste en développement.", cta: "Explorer la participation", badge: "Privé et vérifié", features: ["Découvrir des projets et créer un vrai signal", "Utiliser une preuve privée via CUBID", "Consulter les résultats sans promesse de paiement"] },
     },

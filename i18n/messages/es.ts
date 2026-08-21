@@ -1289,7 +1289,37 @@ export const esMessages = {
       participant: "Unirse como participante",
     },
     fork: {
-      eyebrow: "Elige tu camino", title: "¿Dónde encajas en el loop?", body: "FundLoop conecta a equipos de software con participantes verificados mediante un modelo transparente de upside compartido.",
+      eyebrow: "Elige tu camino",
+      title: "¿Dónde encajas en el loop?",
+      body: "FundLoop conecta a equipos de software con participantes verificados mediante un modelo transparente de upside compartido.",
+      whatIsFundLoop: {
+        title: "¿Qué es el Fund Loop?",
+        body: "Un ciclo económico continuo que conecta proyectos que aportan ingresos con personas verificadas que participan en su crecimiento.",
+        projectLabel: "Proyectos y empresas",
+        participantLabel: "Personas y participantes",
+        ctas: {
+          projectHover: "Este soy yo, dirijo una empresa a la que le gustaría participar",
+          participantHover: "Este soy yo, me gustaría participar y recibir ingresos mensuales",
+        },
+        nodes: {
+          people: {
+            title: "Personas",
+            body: "Una comunidad de seguidores que impulsa el cambio y el uso.",
+          },
+          participation: {
+            title: "Participación",
+            body: "Interactúa, verifica identidad, conecta y contribuye.",
+          },
+          projects: {
+            title: "Proyectos",
+            body: "Proyectos con propósito que aportan el 1 % de ingresos mensuales.",
+          },
+          fundloop: {
+            title: "FundLoop",
+            body: "Capital reciclado y distribuido a usuarios activos.",
+          },
+        },
+      },
       founders: { eyebrow: "Para fundadores y builders", title: "Un modelo de crecimiento más allá de los anuncios", body: "Modela cómo redirigir CAC hacia usuarios activos, explora la retención y prepara un flujo mensual gobernado.", cta: "Explorar el camino fundador", badge: "Modelo interactivo", features: ["Modelar gasto de adquisición redirigido", "Explorar supuestos de retención y MAU", "Preparar un flujo mensual gobernado"] },
       participants: { eyebrow: "Para participantes", title: "Construye un registro verificado de participación", body: "Crea un perfil privado, descubre software alineado y revisa resultados publicados mientras el pago directo sigue en desarrollo.", cta: "Explorar participación", badge: "Privado y verificado", features: ["Descubrir proyectos y crear señal real", "Usar prueba privada mediante CUBID", "Revisar resultados actuales sin promesa de pago"] },
     },

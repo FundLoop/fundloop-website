@@ -1342,6 +1342,34 @@ export const enMessages = {
       eyebrow: "Choose your path",
       title: "Where do you fit in the loop?",
       body: "FundLoop connects software builders and verified participants through a transparent shared-upside model.",
+      whatIsFundLoop: {
+        title: "What is the Fund Loop?",
+        body: "A continuous economic loop connecting projects pooling revenue with verified people participating in their growth.",
+        projectLabel: "Projects & Companies",
+        participantLabel: "People & Participants",
+        ctas: {
+          projectHover: "This is me, I run a company which would like to participate",
+          participantHover: "This is me, I'd like to participate and get a monthly income",
+        },
+        nodes: {
+          people: {
+            title: "People",
+            body: "A community of supporters driving change and usage.",
+          },
+          participation: {
+            title: "Participation",
+            body: "Engage, verify identity, match, and contribute.",
+          },
+          projects: {
+            title: "Projects",
+            body: "Mission-driven projects pooling 1% monthly revenue.",
+          },
+          fundloop: {
+            title: "FundLoop",
+            body: "Capital recycled and distributed back to active users.",
+          },
+        },
+      },
       founders: {
         eyebrow: "For App Founders & Builders",
         title: "Model Growth Beyond Ads",
