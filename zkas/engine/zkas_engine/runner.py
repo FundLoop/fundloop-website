@@ -85,15 +85,46 @@ def run_manifest(manifest: dict[str, Any]) -> dict[str, Any]:
             existing.row_count += 1
 
     total_score = sum((entry.total_score for entry in aggregates.values()), Decimal("0"))
+    SCALE = Decimal("1000000")
+    total_pool_micros = int((usd_pool * SCALE).quantize(Decimal("1"), rounding=ROUND_HALF_UP))
+
+    sorted_user_ids = sorted(aggregates.keys())
+    eligible_user_ids = [uid for uid in sorted_user_ids if aggregates[uid].total_score > 0]
+
+    user_micros: dict[str, int] = {}
+    if eligible_user_ids and total_score > 0 and total_pool_micros > 0:
+        base_allocations: dict[str, int] = {}
+        remainders: list[tuple[Decimal, str]] = []
+        allocated_micros = 0
+
+        for uid in eligible_user_ids:
+            score = aggregates[uid].total_score
+            exact_micros = (Decimal(total_pool_micros) * score) / total_score
+            base_micro = int(exact_micros)
+            base_allocations[uid] = base_micro
+            allocated_micros += base_micro
+            remainders.append((exact_micros - Decimal(base_micro), uid))
+
+        remaining_micros = total_pool_micros - allocated_micros
+        # Distribute remaining micro-units to users with largest fractional remainder.
+        # Tie-breaker: deterministic ascending order of zkas_user_id.
+        remainders.sort(key=lambda item: (-item[0], item[1]))
+
+        for i in range(remaining_micros):
+            bonus_uid = remainders[i][1]
+            base_allocations[bonus_uid] += 1
+
+        for uid in eligible_user_ids:
+            user_micros[uid] = base_allocations[uid]
+
     rows: list[dict[str, Any]] = []
     total_allocated = Decimal("0")
 
-    for zkas_user_id in sorted(aggregates.keys()):
+    for zkas_user_id in sorted_user_ids:
         entry = aggregates[zkas_user_id]
         eligible = entry.total_score > 0
-        allocation = Decimal("0")
-        if eligible and total_score > 0:
-            allocation = (usd_pool * entry.total_score / total_score).quantize(Decimal("0.000001"), rounding=ROUND_HALF_UP)
+        micros = user_micros.get(zkas_user_id, 0)
+        allocation = (Decimal(micros) / SCALE).quantize(Decimal("0.000001"))
 
         total_allocated += allocation
         row_hash = hashlib.sha256(f"{zkas_user_id}:{entry.total_score}:{allocation}".encode("utf-8")).hexdigest()
