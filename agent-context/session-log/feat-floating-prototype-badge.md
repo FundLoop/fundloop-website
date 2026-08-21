@@ -43,6 +43,32 @@
 
 ---
 
-#### Suggested Next Steps
+### session v2: Address Stacking Order and Localized Button Accessible Name
 
-- Push branch and open PR into `dev`.
+- **Timestamp:** 2026-08-21T22:54:00Z
+- **Agent:** Antigravity (Gemini 3.7 Flash)
+- **Branch:** `feat/floating-prototype-badge`
+- **Head:** `365c726`
+
+---
+
+#### Objective
+
+1. Keep the prototype badge behind full-screen mobile navigation sheets and modals by adjusting stacking context to `z-40`.
+2. Localize the collapsed button's `aria-label` via `t("openNotice")` across English, Spanish, and French message catalogs.
+
+---
+
+#### Actions Taken
+
+- Updated `components/floating-prototype-badge.tsx` container class to `z-40` and used `t("openNotice")` for the collapsed button.
+- Updated `i18n/messages/en.ts`, `es.ts`, and `fr.ts` with `openNotice` strings.
+- Updated `tests/floating-prototype-badge.test.tsx`.
+
+---
+
+#### Validation Notes
+
+- `pnpm vitest run tests/floating-prototype-badge.test.tsx` passed (`3/3` tests).
+- `pnpm typecheck` passed (0 errors).
+- `pnpm lint` passed with 0 warnings.
