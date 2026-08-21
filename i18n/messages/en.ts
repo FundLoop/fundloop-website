@@ -1346,6 +1346,33 @@ export const enMessages = {
         title: "What is the Fund Loop?",
         body: "A continuous cycle where people participate in verified software, projects share revenue, and community members receive transparent monthly rewards.",
         imageAlt: "What is FundLoop - A continuous cycle of value creation and money flow between projects and people",
+        tagline: "A continuous cycle of value creation and community reward.",
+        subtagline: "Capital · Impact · Community",
+        stages: {
+          people: {
+            title: "People",
+            subtitle: "Participate in projects",
+          },
+          projectsRevenue: {
+            title: "Projects",
+            subtitle: "Collect platform revenue",
+          },
+          projectsReward: {
+            title: "Projects",
+            subtitle: "Share 1% into FundLoop pool",
+          },
+          peopleRewards: {
+            title: "People",
+            subtitle: "Earn credited rewards (governed)",
+          },
+        },
+        center: {
+          cubidLabel: "CUBID",
+          cubidDesc: "Verified Identity & Proof of Personhood",
+          allocatorLabel: "Allocator",
+          allocatorDesc: "Governed Value Redistribution",
+        },
+        moneyFlow: "Flow of funds",
       },
       founders: {
         eyebrow: "Founder track",
