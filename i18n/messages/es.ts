@@ -1360,13 +1360,13 @@ export const esMessages = {
       founders: {
         eyebrow: "Track para fundadores",
         title: "Para fundadores y equipos de desarrollo",
-        body: "Explora cómo funciona FundLoop para fundadores: redirige el gasto publicitario tradicional hacia pools de valor compartido, alinea a tu comunidad con el uso real y ejecuta distribuciones mensuales automatizadas con total auditabilidad.",
+        body: "Explora cómo funciona FundLoop para fundadores: redirige el gasto publicitario tradicional hacia pools de valor compartido, alinea a tu comunidad con el uso real y prepárate para flujos de liquidación mensual gobernados con total auditabilidad.",
         cta: "Explorar cómo funciona para fundadores",
         badge: "Beneficios para fundadores",
         features: [
           "Explora los beneficios de aportar el 1 % de ingresos a recompensas para usuarios orgánicos",
           "Descubre cómo el valor compartido convierte a usuarios pasivos en embajadores activos",
-          "Comprende el ciclo mensual automatizado y la atribución transparente",
+          "Prepárate para un ciclo mensual gobernado y una atribución transparente",
         ],
       },
       participants: {
