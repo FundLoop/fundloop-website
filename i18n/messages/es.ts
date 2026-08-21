@@ -1294,68 +1294,8 @@ export const esMessages = {
       body: "FundLoop conecta a equipos de software con participantes verificados mediante un modelo transparente de upside compartido.",
       whatIsFundLoop: {
         title: "¿Qué es el Fund Loop?",
-        body: "Un ciclo económico continuo que conecta proyectos que aportan ingresos con personas verificadas que participan en su crecimiento.",
-        projectLabel: "Proyectos y empresas",
-        participantLabel: "Personas y participantes",
-        loopBadge: "Loop continuo de valor",
-        nextLabel: "Siguiente",
-        loopsToStartLabel: "Vuelve al inicio",
-        protocolBadge: "Coordinación continua de FundLoop",
-        cubidVerified: "CUBID verificado",
-        ctas: {
-          projectHover: "Este soy yo, dirijo una empresa a la que le gustaría participar",
-          participantHover: "Este soy yo, me gustaría participar y optar a recompensas mensuales",
-          defaultProject: "Soy un proyecto / fundador",
-          defaultParticipant: "Soy un participante / usuario",
-        },
-        actionBar: {
-          participantFocus: {
-            title: "Enfoque de participante",
-            body: "Participa en proyectos verificados y opta a asignaciones de recompensas mensuales.",
-          },
-          projectFocus: {
-            title: "Enfoque de proyecto",
-            body: "Aporta el 1 % de tus ingresos, atrae usuarios orgánicos y alinea a tu comunidad.",
-          },
-          defaultFocus: {
-            title: "Elige tu rol en el loop",
-            body: "Pasa el cursor sobre cualquier etapa para explorar esa fase o elige tu camino.",
-          },
-        },
-        nodes: {
-          step1: {
-            title: "Las personas participan en proyectos",
-            body: "Los usuarios descubren aplicaciones alineadas, interactúan y crean actividad verificada mediante sellos privados de CUBID.",
-          },
-          step2: {
-            title: "Los proyectos generan ingresos",
-            body: "Los productos de software aumentan el uso sostenible de su plataforma y recaudan suscripciones y tarifas.",
-          },
-          step3: {
-            title: "Los proyectos recompensan a la comunidad mediante FundLoop",
-            body: "Los proyectos aportan un porcentaje mensual de ingresos a un ciclo transparente y gobernado de redistribución.",
-          },
-          step4: {
-            title: "Las personas obtienen recompensas acreditadas",
-            body: "Los miembros activos y verificados generan asignaciones transparentes de recompensas acreditadas sujetas a gobernanza.",
-          },
-          people: {
-            title: "Las personas participan en proyectos",
-            body: "Los usuarios descubren aplicaciones alineadas, interactúan y crean actividad verificada mediante sellos privados de CUBID.",
-          },
-          participation: {
-            title: "Los proyectos generan ingresos",
-            body: "Los productos de software aumentan el uso sostenible de su plataforma y recaudan suscripciones y tarifas.",
-          },
-          projects: {
-            title: "Los proyectos recompensan a la comunidad mediante FundLoop",
-            body: "Los proyectos aportan un porcentaje mensual de ingresos a un ciclo transparente y gobernado de redistribución.",
-          },
-          fundloop: {
-            title: "Las personas obtienen recompensas acreditadas",
-            body: "Los miembros activos y verificados generan asignaciones transparentes de recompensas acreditadas sujetas a gobernanza.",
-          },
-        },
+        body: "Un ciclo continuo donde las personas participan en software verificado, los proyectos comparten ingresos y los miembros de la comunidad reciben recompensas mensuales transparentes.",
+        imageAlt: "Qué es FundLoop - Un ciclo continuo de creación de valor y flujo de fondos entre proyectos y personas",
       },
       founders: {
         eyebrow: "Track para fundadores",

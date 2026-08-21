@@ -1294,68 +1294,8 @@ export const frMessages = {
       body: "FundLoop relie équipes logicielles et participants vérifiés dans un modèle transparent de valeur partagée.",
       whatIsFundLoop: {
         title: "Qu'est-ce que le Fund Loop ?",
-        body: "Une boucle économique continue reliant les projets qui mutualisent leurs revenus aux personnes vérifiées participant à leur croissance.",
-        projectLabel: "Projets & Entreprises",
-        participantLabel: "Personnes & Participants",
-        loopBadge: "Boucle de valeur continue",
-        nextLabel: "Suivant",
-        loopsToStartLabel: "Revient au début",
-        protocolBadge: "Coordination continue FundLoop",
-        cubidVerified: "Vérifié CUBID",
-        ctas: {
-          projectHover: "C'est moi, je dirige une entreprise qui souhaite participer",
-          participantHover: "C'est moi, j'aimerais participer et accéder aux récompenses mensuelles",
-          defaultProject: "Je suis un projet / fondateur",
-          defaultParticipant: "Je suis un participant / utilisateur",
-        },
-        actionBar: {
-          participantFocus: {
-            title: "Focus participant",
-            body: "Participez aux projets vérifiés et devenez éligible aux allocations de récompenses mensuelles.",
-          },
-          projectFocus: {
-            title: "Focus projet",
-            body: "Mutualisez 1 % de vos revenus, attirez des utilisateurs organiques et renforcez l'alignement communautaire.",
-          },
-          defaultFocus: {
-            title: "Choisissez votre rôle dans la boucle",
-            body: "Survolez une étape pour explorer chaque phase ou choisissez votre parcours.",
-          },
-        },
-        nodes: {
-          step1: {
-            title: "Les personnes participent aux projets",
-            body: "Les utilisateurs découvrent des applications alignées, s'engagent et créent une activité vérifiée via des tampons CUBID privés.",
-          },
-          step2: {
-            title: "Les projets collectent des revenus",
-            body: "Les produits logiciels développent une utilisation durable et collectent des abonnements et frais clients.",
-          },
-          step3: {
-            title: "Les projets récompensent la communauté via FundLoop",
-            body: "Les projets mutualisent un pourcentage mensuel de leurs revenus dans un cycle de redistribution transparent et gouverné.",
-          },
-          step4: {
-            title: "Les personnes cumulent des récompenses créditées",
-            body: "Les membres actifs et vérifiés obtiennent des allocations de récompenses transparentes et créditées, soumises à gouvernance.",
-          },
-          people: {
-            title: "Les personnes participent aux projets",
-            body: "Les utilisateurs découvrent des applications alignées, s'engagent et créent une activité vérifiée via des tampons CUBID privés.",
-          },
-          participation: {
-            title: "Les projets collectent des revenus",
-            body: "Les produits logiciels développent une utilisation durable et collectent des abonnements et frais clients.",
-          },
-          projects: {
-            title: "Les projets récompensent la communauté via FundLoop",
-            body: "Les projets mutualisent un pourcentage mensuel de leurs revenus dans un cycle de redistribution transparent et gouverné.",
-          },
-          fundloop: {
-            title: "Les personnes cumulent des récompenses créditées",
-            body: "Les membres actifs et vérifiés obtiennent des allocations de récompenses transparentes et créditées, soumises à gouvernance.",
-          },
-        },
+        body: "Un cycle continu où les personnes participent aux logiciels vérifiés, les projets partagent leurs revenus et les membres de la communauté reçoivent des récompenses mensuelles transparentes.",
+        imageAlt: "Qu'est-ce que FundLoop - Un cycle continu de création de valeur et de flux financier entre projets et participants",
       },
       founders: {
         eyebrow: "Parcours fondateur",

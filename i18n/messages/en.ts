@@ -1344,68 +1344,8 @@ export const enMessages = {
       body: "FundLoop connects software builders and verified participants through a transparent shared-upside model.",
       whatIsFundLoop: {
         title: "What is the Fund Loop?",
-        body: "A continuous economic loop connecting projects pooling revenue with verified people participating in their growth.",
-        projectLabel: "Projects & Companies",
-        participantLabel: "People & Participants",
-        loopBadge: "Continuous Value Loop",
-        nextLabel: "Next",
-        loopsToStartLabel: "Loops to Start",
-        protocolBadge: "FundLoop Continuous Coordination",
-        cubidVerified: "CUBID Verified",
-        ctas: {
-          projectHover: "This is me, I run a company which would like to participate",
-          participantHover: "This is me, I'd like to participate and build monthly reward eligibility",
-          defaultProject: "I'm a Project / Founder",
-          defaultParticipant: "I'm a Participant / User",
-        },
-        actionBar: {
-          participantFocus: {
-            title: "Participant Focus",
-            body: "Participate in verified projects and build eligibility for monthly distributions.",
-          },
-          projectFocus: {
-            title: "Project Focus",
-            body: "Pool 1% of revenue, attract high-intent organic users, and grow community alignment.",
-          },
-          defaultFocus: {
-            title: "Choose Your Role in the Loop",
-            body: "Hover any step above to explore that phase, or select your path to get started.",
-          },
-        },
-        nodes: {
-          step1: {
-            title: "People participate in projects",
-            body: "Users discover aligned apps, engage regularly, and build verified activity records with private CUBID stamps.",
-          },
-          step2: {
-            title: "Projects collect revenue",
-            body: "Software products grow sustainable platform usage and collect customer subscriptions and fees.",
-          },
-          step3: {
-            title: "Projects reward community through FundLoop",
-            body: "Projects pool a percentage of monthly revenue into a transparent, governed redistribution cycle.",
-          },
-          step4: {
-            title: "People earn credited rewards",
-            body: "Verified active community members build transparent, credited reward allocations subject to operational governance.",
-          },
-          people: {
-            title: "People participate in projects",
-            body: "Users discover aligned apps, engage regularly, and build verified activity records with private CUBID stamps.",
-          },
-          participation: {
-            title: "Projects collect revenue",
-            body: "Software products grow sustainable platform usage and collect customer subscriptions and fees.",
-          },
-          projects: {
-            title: "Projects reward community through FundLoop",
-            body: "Projects pool a percentage of monthly revenue into a transparent, governed redistribution cycle.",
-          },
-          fundloop: {
-            title: "People earn credited rewards",
-            body: "Verified active community members build transparent, credited reward allocations subject to operational governance.",
-          },
-        },
+        body: "A continuous cycle where people participate in verified software, projects share revenue, and community members receive transparent monthly rewards.",
+        imageAlt: "What is FundLoop - A continuous cycle of value creation and money flow between projects and people",
       },
       founders: {
         eyebrow: "Founder track",
