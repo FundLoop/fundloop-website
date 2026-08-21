@@ -1,0 +1,8 @@
+[project]
+name = "fundloop-zkas-engine"
+version = "0.1.0"
+description = "Local zkActivitySum execution engine for FundLoop"
+requires-python = ">=3.11"
+
+[tool.pytest.ini_options]
+pythonpath = ["."]

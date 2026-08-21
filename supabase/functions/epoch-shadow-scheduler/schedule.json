@@ -1,0 +1,11 @@
+{
+  "version": 1,
+  "cron": "*/5 * * * *",
+  "timezone": "UTC",
+  "function": "epoch-shadow-scheduler",
+  "method": "POST",
+  "secretHeader": "x-fundloop-cron-secret",
+  "secretEnvironmentVariable": "FUNDLOOP_EPOCH_SCHEDULER_SECRET",
+  "deploymentEnvironments": ["local", "development", "dev", "preview", "test"],
+  "productionEnabled": false
+}

@@ -1,0 +1,903 @@
+import "server-only"
+
+import type { ManagedProjectSummary, NavigationContext } from "@/lib/navigation-context"
+import { getAdminSupabaseClient } from "@/lib/supabase-admin"
+import { createServerSupabaseClient } from "@/lib/supabase-server"
+
+export type FounderWorkspaceWarning = {
+  scope: string
+  message: string
+}
+
+export type FounderWorkspaceProject = {
+  id: number
+  slug: string | null
+  name: string
+  description: string | null
+  logoUrl: string | null
+  isPublic: boolean
+  status: string | null
+  setup: {
+    hasSlug: boolean
+    hasContributionRate: boolean
+    hasDefaultReportingCurrency: boolean
+    contributionPercentage: number | null
+    defaultReportingCurrencyCode: string
+    hasDefaultPaymentMethod: boolean
+    enabledPaymentMethodCount: number
+    isReady: boolean
+    missingItems: string[]
+  }
+  payments: {
+    paymentCount: number
+    draftCount: number
+    pendingCount: number
+    awaitingConfirmationCount: number
+    confirmedCount: number
+    totalRevenue: number
+    totalContributionAmount: number
+    latestPeriodLabel: string | null
+  }
+  contributionCycles: FounderContributionCycle[]
+  monthlyContribution: {
+    currentSubmission: FounderMonthlyContributionSubmission | null
+    openCycles: FounderOpenMonthlyCycle[]
+    canSubmit: boolean
+    blockedReason: "missing_commitment" | "no_open_cycle" | null
+  }
+  attribution: {
+    datasetCount: number
+    approvedDatasetCount: number
+    issueCount: number
+    latestDatasetStatus: string | null
+    latestDatasetMonth: string | null
+    latestDatasetRowCount: number | null
+    mvpDatasetCount: number
+    latestMvpDatasetStatus: string | null
+    latestMvpDatasetCycleKey: string | null
+    latestMvpDatasetRowCount: number | null
+    currentDataset: FounderAttributionDatasetSubmission | null
+    recentMvpSubmissions: FounderAttributionDatasetSubmission[]
+    recentSubmissions: FounderAttributionSubmission[]
+  }
+  reporting: {
+    latestPublishedMonth: string | null
+    activeUserCount: number | null
+    publishedUserCount: number | null
+    attributedPayoutUsd: number | null
+    contributedAmountUsd: number | null
+  }
+  growth: {
+    latestMonthLabel: string | null
+    monthlyRevenue: number | null
+    contributedAmount: number | null
+    uniqueUserCount: number | null
+    actualPercentage: number | null
+    pledgedPercentage: number | null
+  }
+  team: {
+    memberCount: number
+    adminCount: number
+  }
+}
+
+export type FounderContributionCycleStatus = "draft" | "needs_submission" | "awaiting_confirmation" | "confirmed" | "mixed"
+
+export type FounderContributionCycle = {
+  cycleKey: string
+  periodLabel: string
+  paymentCount: number
+  revenue: number
+  contributionAmount: number
+  draftCount: number
+  pendingCount: number
+  awaitingConfirmationCount: number
+  confirmedCount: number
+  status: FounderContributionCycleStatus
+}
+
+export type FounderOpenMonthlyCycle = {
+  id: number
+  cycleKey: string
+  periodStart: string
+  periodEnd: string
+  status: string
+}
+
+export type FounderMonthlyContributionSubmission = {
+  id: number
+  cycleId: number
+  cycleKey: string
+  periodStart: string
+  periodEnd: string
+  sourceCurrency: string
+  sourceAmount: number
+  usdEquivalentAmount: number
+  commitmentPercentage: number
+  calculatedContributionAmount: number
+  sourceReference: string | null
+  notes: string | null
+  status: string
+  submittedAt: string
+  updatedAt: string
+}
+
+export type FounderAttributionSubmission = {
+  id: number
+  month: string
+  fileName: string
+  rowCount: number
+  status: string
+  issueCount: number
+  createdAt: string
+}
+
+export type FounderAttributionDatasetSubmission = {
+  id: number
+  cycleId: number
+  cycleKey: string
+  status: string
+  rowCount: number
+  totalAttributionPoints: number
+  note: string | null
+  proofType: string | null
+  verificationStatus: string | null
+  submittedAt: string
+  updatedAt: string
+}
+
+export type FounderWorkspaceHome = {
+  hasProjects: boolean
+  projects: FounderWorkspaceProject[]
+  totals: {
+    projectCount: number
+    readyProjectCount: number
+    needsSetupProjectCount: number
+    enabledPaymentMethodCount: number
+    totalRevenue: number
+    totalContributionAmount: number
+    pendingPaymentCount: number
+    confirmedPaymentCount: number
+    datasetCount: number
+    latestPublishedMonth: string | null
+  }
+  warnings: FounderWorkspaceWarning[]
+}
+
+type ProjectDetailRow = {
+  id: number
+  slug: string | null
+  name: string
+  description: string | null
+  logo_url: string | null
+  is_public: boolean | null
+  status: string | null
+  payment_percentage: number | null
+  default_reporting_currency_code: string
+  default_payment_method_id: number | null
+}
+
+type PaymentRow = {
+  project_id: number
+  period_start: string | null
+  period_end: string | null
+  revenue: number | null
+  payment_amount: number | null
+  ref_payment_statuses: { code: string | null } | { code: string | null }[] | null
+}
+
+type PaymentMethodRow = {
+  project_id: number
+  id: number
+  is_enabled: boolean | null
+}
+
+type ParticipantRow = {
+  project_id: number
+  is_admin: boolean | null
+}
+
+type ZkasDatasetRow = {
+  id: number
+  project_id: number
+  month: string
+  file_name: string
+  status: string
+  row_count: number | null
+  validation_summary: unknown
+  created_at: string
+}
+
+type ZkasRunSummaryRow = {
+  project_id: number
+  run_id: number
+  active_user_count: number | null
+  published_user_count: number | null
+  attributed_payout_usd: number | null
+  contributed_amount_usd: number | null
+  created_at: string
+}
+
+type ZkasRunRow = {
+  id: number
+  month: string
+  published_at: string | null
+}
+
+type ProjectStatsMonthlyRow = {
+  project_id: number
+  year: number
+  month: number
+  monthly_revenue: number | null
+  contributed_amount: number | null
+  unique_user_count: number | null
+  actual_percentage: number | null
+  pledged_percentage: number | null
+}
+
+type MonthlyCycleRow = {
+  id: number
+  cycle_key: string
+  period_start: string
+  period_end: string
+  status: string
+}
+
+type ProjectMonthlyContributionSubmissionRow = {
+  id: number
+  project_id: number
+  monthly_cycle_id: number
+  period_start: string
+  period_end: string
+  source_currency_code: string
+  source_amount: number
+  usd_equivalent_amount: number
+  commitment_percentage: number
+  calculated_contribution_amount: number
+  source_reference: string | null
+  notes: string | null
+  status: string
+  submitted_at: string
+  updated_at: string
+  monthly_cycles: { cycle_key: string | null } | { cycle_key: string | null }[] | null
+}
+
+type ProjectAttributionDatasetRow = {
+  id: number
+  project_id: number
+  monthly_cycle_id: number
+  status: string
+  row_count: number
+  total_attribution_points: number
+  note: string | null
+  proof_type: string | null
+  verification_status: string | null
+  submitted_at: string
+  updated_at: string
+  monthly_cycles: { cycle_key: string | null } | { cycle_key: string | null }[] | null
+}
+
+type SupabaseReadResult<T> = {
+  data: T | null
+  error: { message?: string } | null
+}
+
+function warningFromError(scope: string, error: { message?: string } | null | undefined): FounderWorkspaceWarning | null {
+  if (!error) {
+    return null
+  }
+
+  return {
+    scope,
+    message: error.message ?? "Founder workspace data could not be loaded.",
+  }
+}
+
+async function readFounderData<T>(
+  scope: string,
+  query: PromiseLike<SupabaseReadResult<T>>,
+  warnings: FounderWorkspaceWarning[],
+  fallback: T,
+): Promise<T> {
+  try {
+    const { data, error } = await query
+    const warning = warningFromError(scope, error)
+    if (warning) {
+      warnings.push(warning)
+      return fallback
+    }
+
+    return data ?? fallback
+  } catch (error) {
+    warnings.push({
+      scope,
+      message: error instanceof Error ? error.message : "Founder workspace data could not be loaded.",
+    })
+    return fallback
+  }
+}
+
+function numberValue(value: number | null | undefined): number {
+  return Number(value ?? 0)
+}
+
+function statusCode(payment: PaymentRow): string {
+  const status = Array.isArray(payment.ref_payment_statuses) ? payment.ref_payment_statuses[0] : payment.ref_payment_statuses
+  return status?.code ?? "unknown"
+}
+
+function periodLabel(payment: PaymentRow | null): string | null {
+  if (!payment?.period_start && !payment?.period_end) {
+    return null
+  }
+
+  if (payment.period_start && payment.period_end) {
+    return `${payment.period_start} - ${payment.period_end}`
+  }
+
+  return payment.period_end ?? payment.period_start
+}
+
+function cycleKeyForPayment(payment: PaymentRow): string {
+  const dateValue = payment.period_end ?? payment.period_start
+  return dateValue?.slice(0, 7) ?? "unknown"
+}
+
+function periodLabelForCycle(payments: PaymentRow[], cycleKey: string) {
+  const sorted = sortByDateDescending(payments, (payment) => payment.period_end ?? payment.period_start)
+  return periodLabel(sorted[0] ?? null) ?? cycleKey
+}
+
+function cycleStatus(input: {
+  draftCount: number
+  pendingCount: number
+  awaitingConfirmationCount: number
+  confirmedCount: number
+  paymentCount: number
+}): FounderContributionCycleStatus {
+  if (input.paymentCount > 0 && input.confirmedCount === input.paymentCount) {
+    return "confirmed"
+  }
+
+  if (input.awaitingConfirmationCount > 0) {
+    return "awaiting_confirmation"
+  }
+
+  if (input.pendingCount > 0) {
+    return "needs_submission"
+  }
+
+  if (input.draftCount === input.paymentCount) {
+    return "draft"
+  }
+
+  return "mixed"
+}
+
+function buildContributionCycles(payments: PaymentRow[]): FounderContributionCycle[] {
+  const paymentsByCycle = new Map<string, PaymentRow[]>()
+
+  for (const payment of payments) {
+    const cycleKey = cycleKeyForPayment(payment)
+    const cyclePayments = paymentsByCycle.get(cycleKey)
+    if (cyclePayments) {
+      cyclePayments.push(payment)
+    } else {
+      paymentsByCycle.set(cycleKey, [payment])
+    }
+  }
+
+  return Array.from(paymentsByCycle.entries())
+    .map(([cycleKey, cyclePayments]) => {
+      const draftCount = cyclePayments.filter((payment) => statusCode(payment) === "draft").length
+      const pendingCount = cyclePayments.filter((payment) => statusCode(payment) === "pending").length
+      const awaitingConfirmationCount = cyclePayments.filter((payment) => statusCode(payment) === "awaiting_confirmation").length
+      const confirmedCount = cyclePayments.filter((payment) => statusCode(payment) === "confirmed").length
+
+      return {
+        cycleKey,
+        periodLabel: periodLabelForCycle(cyclePayments, cycleKey),
+        paymentCount: cyclePayments.length,
+        revenue: cyclePayments.reduce((sum, payment) => sum + numberValue(payment.revenue), 0),
+        contributionAmount: cyclePayments.reduce((sum, payment) => sum + numberValue(payment.payment_amount), 0),
+        draftCount,
+        pendingCount,
+        awaitingConfirmationCount,
+        confirmedCount,
+        status: cycleStatus({
+          draftCount,
+          pendingCount,
+          awaitingConfirmationCount,
+          confirmedCount,
+          paymentCount: cyclePayments.length,
+        }),
+      }
+    })
+    .sort((left, right) => right.cycleKey.localeCompare(left.cycleKey))
+}
+
+function cycleKeyForSubmission(submission: ProjectMonthlyContributionSubmissionRow): string {
+  const cycle = Array.isArray(submission.monthly_cycles) ? submission.monthly_cycles[0] : submission.monthly_cycles
+  return cycle?.cycle_key ?? submission.period_end.slice(0, 7)
+}
+
+function normalizeMonthlyContributionSubmission(
+  submission: ProjectMonthlyContributionSubmissionRow,
+): FounderMonthlyContributionSubmission {
+  return {
+    id: submission.id,
+    cycleId: submission.monthly_cycle_id,
+    cycleKey: cycleKeyForSubmission(submission),
+    periodStart: submission.period_start,
+    periodEnd: submission.period_end,
+    sourceCurrency: submission.source_currency_code,
+    sourceAmount: numberValue(submission.source_amount),
+    usdEquivalentAmount: numberValue(submission.usd_equivalent_amount),
+    commitmentPercentage: numberValue(submission.commitment_percentage),
+    calculatedContributionAmount: numberValue(submission.calculated_contribution_amount),
+    sourceReference: submission.source_reference,
+    notes: submission.notes,
+    status: submission.status,
+    submittedAt: submission.submitted_at,
+    updatedAt: submission.updated_at,
+  }
+}
+
+function cycleKeyForAttributionDataset(dataset: ProjectAttributionDatasetRow): string {
+  const cycle = Array.isArray(dataset.monthly_cycles) ? dataset.monthly_cycles[0] : dataset.monthly_cycles
+  return cycle?.cycle_key ?? "unknown"
+}
+
+function normalizeAttributionDataset(dataset: ProjectAttributionDatasetRow): FounderAttributionDatasetSubmission {
+  return {
+    id: dataset.id,
+    cycleId: dataset.monthly_cycle_id,
+    cycleKey: cycleKeyForAttributionDataset(dataset),
+    status: dataset.status,
+    rowCount: dataset.row_count,
+    totalAttributionPoints: numberValue(dataset.total_attribution_points),
+    note: dataset.note,
+    proofType: dataset.proof_type,
+    verificationStatus: dataset.verification_status,
+    submittedAt: dataset.submitted_at,
+    updatedAt: dataset.updated_at,
+  }
+}
+
+function statMonthLabel(stat: ProjectStatsMonthlyRow | null): string | null {
+  if (!stat) {
+    return null
+  }
+
+  return `${stat.year}-${String(stat.month).padStart(2, "0")}`
+}
+
+function datasetIssueCount(dataset: Pick<ZkasDatasetRow, "validation_summary">): number {
+  const summary = dataset.validation_summary
+  if (!summary || typeof summary !== "object") {
+    return 0
+  }
+
+  const issueCounts = (summary as { issueCounts?: { errors?: number; warnings?: number } }).issueCounts
+  return Number(issueCounts?.errors ?? 0) + Number(issueCounts?.warnings ?? 0)
+}
+
+function sortByDateDescending<T>(rows: T[], readDate: (row: T) => string | null | undefined): T[] {
+  return [...rows].sort((left, right) => new Date(readDate(right) ?? 0).getTime() - new Date(readDate(left) ?? 0).getTime())
+}
+
+function groupRowsByProjectId<TRow extends { project_id: number | null | undefined }>(rows: TRow[]) {
+  const rowsByProjectId = new Map<number, TRow[]>()
+
+  for (const row of rows) {
+    if (row.project_id === null || row.project_id === undefined) {
+      continue
+    }
+
+    const existingRows = rowsByProjectId.get(row.project_id)
+    if (existingRows) {
+      existingRows.push(row)
+    } else {
+      rowsByProjectId.set(row.project_id, [row])
+    }
+  }
+
+  return rowsByProjectId
+}
+
+export function buildFounderWorkspaceHome({
+  managedProjects,
+  projectRows,
+  payments,
+  paymentMethods,
+  participants,
+  datasets,
+  runSummaries,
+  runs,
+  stats,
+  monthlyCycles,
+  contributionSubmissions,
+  attributionDatasets = [],
+  warnings,
+}: {
+  managedProjects: ManagedProjectSummary[]
+  projectRows: ProjectDetailRow[]
+  payments: PaymentRow[]
+  paymentMethods: PaymentMethodRow[]
+  participants: ParticipantRow[]
+  datasets: ZkasDatasetRow[]
+  runSummaries: ZkasRunSummaryRow[]
+  runs: ZkasRunRow[]
+  stats: ProjectStatsMonthlyRow[]
+  monthlyCycles: MonthlyCycleRow[]
+  contributionSubmissions: ProjectMonthlyContributionSubmissionRow[]
+  attributionDatasets?: ProjectAttributionDatasetRow[]
+  warnings: FounderWorkspaceWarning[]
+}): FounderWorkspaceHome {
+  const projectRowById = new Map(projectRows.map((project) => [project.id, project]))
+  const runById = new Map(runs.map((run) => [run.id, run]))
+  const paymentsByProjectId = groupRowsByProjectId(payments)
+  const paymentMethodsByProjectId = groupRowsByProjectId(paymentMethods)
+  const participantsByProjectId = groupRowsByProjectId(participants)
+  const datasetsByProjectId = groupRowsByProjectId(datasets)
+  const runSummariesByProjectId = groupRowsByProjectId(runSummaries)
+  const statsByProjectId = groupRowsByProjectId(stats)
+  const contributionSubmissionsByProjectId = groupRowsByProjectId(contributionSubmissions)
+  const attributionDatasetsByProjectId = groupRowsByProjectId(attributionDatasets)
+  const openCycles = monthlyCycles
+    .filter((cycle) => cycle.status === "open")
+    .map((cycle) => ({
+      id: cycle.id,
+      cycleKey: cycle.cycle_key,
+      periodStart: cycle.period_start,
+      periodEnd: cycle.period_end,
+      status: cycle.status,
+    }))
+    .sort((left, right) => right.cycleKey.localeCompare(left.cycleKey))
+  const projects = managedProjects.map((managedProject) => {
+    const project = projectRowById.get(managedProject.id)
+    const projectPayments = paymentsByProjectId.get(managedProject.id) ?? []
+    const projectPaymentMethods = paymentMethodsByProjectId.get(managedProject.id) ?? []
+    const projectParticipants = participantsByProjectId.get(managedProject.id) ?? []
+    const projectDatasets = sortByDateDescending(
+      datasetsByProjectId.get(managedProject.id) ?? [],
+      (dataset) => dataset.created_at,
+    )
+    const projectRunSummaries = sortByDateDescending(
+      runSummariesByProjectId.get(managedProject.id) ?? [],
+      (summary) => runById.get(summary.run_id)?.published_at ?? summary.created_at,
+    )
+    const projectStats = [...(statsByProjectId.get(managedProject.id) ?? [])].sort(
+      (left, right) => right.year - left.year || right.month - left.month,
+    )
+    const projectContributionSubmissions = sortByDateDescending(
+      contributionSubmissionsByProjectId.get(managedProject.id) ?? [],
+      (submission) => submission.updated_at,
+    )
+    const projectAttributionDatasets = sortByDateDescending(
+      attributionDatasetsByProjectId.get(managedProject.id) ?? [],
+      (dataset) => dataset.updated_at,
+    )
+    const enabledPaymentMethodCount = projectPaymentMethods.filter((method) => method.is_enabled === true).length
+    const hasDefaultPaymentMethod =
+      project?.default_payment_method_id !== null &&
+      project?.default_payment_method_id !== undefined &&
+      projectPaymentMethods.some((method) => method.id === project.default_payment_method_id && method.is_enabled === true)
+    const hasContributionRate = numberValue(project?.payment_percentage) > 0
+    const hasDefaultReportingCurrency = Boolean(project?.default_reporting_currency_code)
+    const missingItems = [
+      managedProject.slug ? null : "slug",
+      hasContributionRate ? null : "contribution_rate",
+      hasDefaultReportingCurrency ? null : "default_reporting_currency",
+      enabledPaymentMethodCount > 0 ? null : "payment_method",
+      hasDefaultPaymentMethod ? null : "default_payment_method",
+    ].filter((item): item is string => Boolean(item))
+    const latestDataset = projectDatasets[0] ?? null
+    const latestRunSummary = projectRunSummaries[0] ?? null
+    const latestRun = latestRunSummary ? runById.get(latestRunSummary.run_id) : null
+    const latestStat = projectStats[0] ?? null
+    const contributionCycles = buildContributionCycles(projectPayments)
+    const currentSubmission = projectContributionSubmissions[0]
+      ? normalizeMonthlyContributionSubmission(projectContributionSubmissions[0])
+      : null
+    const currentAttributionDataset = projectAttributionDatasets[0] ? normalizeAttributionDataset(projectAttributionDatasets[0]) : null
+    const blockedReason: FounderWorkspaceProject["monthlyContribution"]["blockedReason"] = !hasContributionRate
+      ? "missing_commitment"
+      : openCycles.length === 0
+        ? "no_open_cycle"
+        : null
+
+    return {
+      id: managedProject.id,
+      slug: managedProject.slug,
+      name: project?.name ?? managedProject.name,
+      description: project?.description ?? null,
+      logoUrl: project?.logo_url ?? null,
+      isPublic: project?.is_public === true,
+      status: project?.status ?? null,
+      setup: {
+        hasSlug: Boolean(managedProject.slug),
+        hasContributionRate,
+        hasDefaultReportingCurrency,
+        contributionPercentage: project?.payment_percentage ?? null,
+        defaultReportingCurrencyCode: project?.default_reporting_currency_code ?? "USD",
+        hasDefaultPaymentMethod,
+        enabledPaymentMethodCount,
+        isReady: missingItems.length === 0,
+        missingItems,
+      },
+      payments: {
+        paymentCount: projectPayments.length,
+        draftCount: projectPayments.filter((payment) => statusCode(payment) === "draft").length,
+        pendingCount: projectPayments.filter((payment) => statusCode(payment) === "pending").length,
+        awaitingConfirmationCount: projectPayments.filter((payment) => statusCode(payment) === "awaiting_confirmation").length,
+        confirmedCount: projectPayments.filter((payment) => statusCode(payment) === "confirmed").length,
+        totalRevenue: projectPayments.reduce((sum, payment) => sum + numberValue(payment.revenue), 0),
+        totalContributionAmount: projectPayments.reduce((sum, payment) => sum + numberValue(payment.payment_amount), 0),
+        latestPeriodLabel: periodLabel(sortByDateDescending(projectPayments, (payment) => payment.period_end ?? payment.period_start)[0] ?? null),
+      },
+      contributionCycles,
+      monthlyContribution: {
+        currentSubmission,
+        openCycles,
+        canSubmit: blockedReason === null,
+        blockedReason,
+      },
+      attribution: {
+        datasetCount: projectDatasets.length,
+        approvedDatasetCount: projectDatasets.filter((dataset) => ["approved", "included"].includes(dataset.status)).length,
+        issueCount: projectDatasets.reduce((sum, dataset) => sum + datasetIssueCount(dataset), 0),
+        latestDatasetStatus: latestDataset?.status ?? null,
+        latestDatasetMonth: latestDataset?.month ?? null,
+        latestDatasetRowCount: latestDataset?.row_count ?? null,
+        mvpDatasetCount: projectAttributionDatasets.length,
+        latestMvpDatasetStatus: currentAttributionDataset?.status ?? null,
+        latestMvpDatasetCycleKey: currentAttributionDataset?.cycleKey ?? null,
+        latestMvpDatasetRowCount: currentAttributionDataset?.rowCount ?? null,
+        currentDataset: currentAttributionDataset,
+        recentMvpSubmissions: projectAttributionDatasets.slice(0, 5).map(normalizeAttributionDataset),
+        recentSubmissions: projectDatasets.slice(0, 5).map((dataset) => ({
+          id: dataset.id,
+          month: dataset.month,
+          fileName: dataset.file_name,
+          rowCount: dataset.row_count ?? 0,
+          status: dataset.status,
+          issueCount: datasetIssueCount(dataset),
+          createdAt: dataset.created_at,
+        })),
+      },
+      reporting: {
+        latestPublishedMonth: latestRun?.published_at ? latestRun.month : null,
+        activeUserCount: latestRunSummary?.active_user_count ?? null,
+        publishedUserCount: latestRunSummary?.published_user_count ?? null,
+        attributedPayoutUsd: latestRunSummary?.attributed_payout_usd ?? null,
+        contributedAmountUsd: latestRunSummary?.contributed_amount_usd ?? null,
+      },
+      growth: {
+        latestMonthLabel: statMonthLabel(latestStat),
+        monthlyRevenue: latestStat?.monthly_revenue ?? null,
+        contributedAmount: latestStat?.contributed_amount ?? null,
+        uniqueUserCount: latestStat?.unique_user_count ?? null,
+        actualPercentage: latestStat?.actual_percentage ?? null,
+        pledgedPercentage: latestStat?.pledged_percentage ?? null,
+      },
+      team: {
+        memberCount: projectParticipants.length,
+        adminCount: projectParticipants.filter((participant) => participant.is_admin === true).length,
+      },
+    }
+  })
+
+  return {
+    hasProjects: projects.length > 0,
+    projects,
+    totals: {
+      projectCount: projects.length,
+      readyProjectCount: projects.filter((project) => project.setup.isReady).length,
+      needsSetupProjectCount: projects.filter((project) => !project.setup.isReady).length,
+      enabledPaymentMethodCount: projects.reduce((sum, project) => sum + project.setup.enabledPaymentMethodCount, 0),
+      totalRevenue: projects.reduce((sum, project) => sum + project.payments.totalRevenue, 0),
+      totalContributionAmount: projects.reduce((sum, project) => sum + project.payments.totalContributionAmount, 0),
+      pendingPaymentCount: projects.reduce(
+        (sum, project) => sum + project.payments.pendingCount + project.payments.awaitingConfirmationCount,
+        0,
+      ),
+      confirmedPaymentCount: projects.reduce((sum, project) => sum + project.payments.confirmedCount, 0),
+      datasetCount: projects.reduce((sum, project) => sum + project.attribution.datasetCount, 0),
+      latestPublishedMonth: projects.reduce<string | null>((latestMonth, project) => {
+        const projectLatestMonth = project.reporting.latestPublishedMonth
+        if (!projectLatestMonth) {
+          return latestMonth
+        }
+
+        return latestMonth === null || projectLatestMonth > latestMonth ? projectLatestMonth : latestMonth
+      }, null),
+    },
+    warnings,
+  }
+}
+
+export function findFounderWorkspaceProject(home: FounderWorkspaceHome, slug: string): FounderWorkspaceProject | null {
+  return home.projects.find((project) => project.slug === slug) ?? null
+}
+
+function getFounderSupabaseClient() {
+  try {
+    return getAdminSupabaseClient()
+  } catch {
+    return null
+  }
+}
+
+export async function getFounderWorkspaceHome(navigationContext: NavigationContext): Promise<FounderWorkspaceHome> {
+  const warnings: FounderWorkspaceWarning[] = []
+  const managedProjects = navigationContext.managedProjects
+
+  if (managedProjects.length === 0) {
+    return buildFounderWorkspaceHome({
+      managedProjects,
+      projectRows: [],
+      payments: [],
+      paymentMethods: [],
+      participants: [],
+      datasets: [],
+      runSummaries: [],
+      runs: [],
+      stats: [],
+      monthlyCycles: [],
+      contributionSubmissions: [],
+      attributionDatasets: [],
+      warnings,
+    })
+  }
+
+  const supabase = getFounderSupabaseClient() ?? (await createServerSupabaseClient())
+  const projectIds = managedProjects.map((project) => project.id)
+
+  const [
+    projectRows,
+    payments,
+    paymentMethods,
+    participants,
+    datasets,
+    runSummaries,
+    stats,
+    monthlyCycles,
+    contributionSubmissions,
+    attributionDatasets,
+  ] = await Promise.all([
+    readFounderData<ProjectDetailRow[]>(
+      "projects",
+      supabase
+        .from("projects")
+        .select("id, slug, name, description, logo_url, is_public, status, payment_percentage, default_reporting_currency_code, default_payment_method_id")
+        .in("id", projectIds)
+        .is("deleted_at", null)
+        .returns<ProjectDetailRow[]>(),
+      warnings,
+      [],
+    ),
+    readFounderData<PaymentRow[]>(
+      "payments",
+      supabase
+        .from("payments")
+        .select("project_id, period_start, period_end, revenue, payment_amount, ref_payment_statuses(code)")
+        .in("project_id", projectIds)
+        .is("deleted_at", null)
+        .returns<PaymentRow[]>(),
+      warnings,
+      [],
+    ),
+    readFounderData<PaymentMethodRow[]>(
+      "payment-methods",
+      supabase
+        .from("payment_methods")
+        .select("project_id, id, is_enabled")
+        .in("project_id", projectIds)
+        .returns<PaymentMethodRow[]>(),
+      warnings,
+      [],
+    ),
+    readFounderData<ParticipantRow[]>(
+      "participants",
+      supabase.from("participants").select("project_id, is_admin").in("project_id", projectIds).returns<ParticipantRow[]>(),
+      warnings,
+      [],
+    ),
+    readFounderData<ZkasDatasetRow[]>(
+      "zkas-datasets",
+      supabase
+        .from("zkas_datasets")
+        .select("id, project_id, month, file_name, status, row_count, validation_summary, created_at")
+        .in("project_id", projectIds)
+        .order("created_at", { ascending: false })
+        .returns<ZkasDatasetRow[]>(),
+      warnings,
+      [],
+    ),
+    readFounderData<ZkasRunSummaryRow[]>(
+      "zkas-run-summaries",
+      supabase
+        .from("zkas_run_project_summaries")
+        .select("project_id, run_id, active_user_count, published_user_count, attributed_payout_usd, contributed_amount_usd, created_at")
+        .in("project_id", projectIds)
+        .returns<ZkasRunSummaryRow[]>(),
+      warnings,
+      [],
+    ),
+    readFounderData<ProjectStatsMonthlyRow[]>(
+      "growth",
+      supabase
+        .from("project_stats_monthly")
+        .select("project_id, year, month, monthly_revenue, contributed_amount, unique_user_count, actual_percentage, pledged_percentage")
+        .in("project_id", projectIds)
+        .returns<ProjectStatsMonthlyRow[]>(),
+      warnings,
+      [],
+    ),
+    readFounderData<MonthlyCycleRow[]>(
+      "monthly-cycles",
+      supabase
+        .from("monthly_cycles")
+        .select("id, cycle_key, period_start, period_end, status")
+        .order("cycle_key", { ascending: false })
+        .limit(12)
+        .returns<MonthlyCycleRow[]>(),
+      warnings,
+      [],
+    ),
+    readFounderData<ProjectMonthlyContributionSubmissionRow[]>(
+      "project-monthly-contribution-submissions",
+      supabase
+        .from("project_monthly_contribution_submissions")
+        .select(
+          "id, project_id, monthly_cycle_id, period_start, period_end, source_currency_code, source_amount, usd_equivalent_amount, commitment_percentage, calculated_contribution_amount, source_reference, notes, status, submitted_at, updated_at, monthly_cycles(cycle_key)",
+        )
+        .in("project_id", projectIds)
+        .order("updated_at", { ascending: false })
+        .returns<ProjectMonthlyContributionSubmissionRow[]>(),
+      warnings,
+      [],
+    ),
+    readFounderData<ProjectAttributionDatasetRow[]>(
+      "project-attribution-datasets",
+      supabase
+        .from("project_attribution_datasets")
+        .select(
+          "id, project_id, monthly_cycle_id, status, row_count, total_attribution_points, note, proof_type, verification_status, submitted_at, updated_at, monthly_cycles(cycle_key)",
+        )
+        .in("project_id", projectIds)
+        .order("updated_at", { ascending: false })
+        .returns<ProjectAttributionDatasetRow[]>(),
+      warnings,
+      [],
+    ),
+  ])
+
+  const runIds = Array.from(new Set(runSummaries.map((summary) => summary.run_id)))
+  const runs =
+    runIds.length > 0
+      ? await readFounderData<ZkasRunRow[]>(
+          "zkas-runs",
+          supabase.from("zkas_runs").select("id, month, published_at").in("id", runIds).returns<ZkasRunRow[]>(),
+          warnings,
+          [],
+        )
+      : []
+
+  return buildFounderWorkspaceHome({
+    managedProjects,
+    projectRows,
+    payments,
+    paymentMethods,
+    participants,
+    datasets,
+    runSummaries,
+    runs,
+    stats,
+    monthlyCycles,
+    contributionSubmissions,
+    attributionDatasets,
+    warnings,
+  })
+}

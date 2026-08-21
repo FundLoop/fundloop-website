@@ -1,0 +1,12 @@
+{
+  "contractVersion": "fundloop.retired-edge-functions/v1",
+  "functions": [
+    {
+      "name": "monthly-cycle-payout-intents-create",
+      "environments": ["dev"],
+      "owner": "FundLoop release engineering",
+      "deleteAfter": "2026-08-12T00:00:00Z",
+      "deletionCondition": "Withdrawal obligations and project-scoped reservations are served by user-withdrawal-request-create; no active source directory or caller remains."
+    }
+  ]
+}

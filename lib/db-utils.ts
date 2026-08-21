@@ -1,9 +1,14 @@
-import { createClientComponentClient } from "@supabase/auth-helpers-nextjs"
+import { getSupabaseBrowserClient } from "@/lib/supabase"
 import type { Database } from "@/types/supabase"
 
 // Create a Supabase client
 const createClient = () => {
-  return createClientComponentClient<Database>()
+  return getSupabaseBrowserClient()
+}
+
+function getUntypedTableClient(table: string) {
+  const supabase = createClient()
+  return supabase.from(table as never) as any
 }
 
 // Get the current user's ID
@@ -15,7 +20,6 @@ export async function getCurrentUserId() {
 
 // Update with tracking (adds updated_by field)
 export async function updateWithTracking(table: string, id: number | string, data: any, idField = "id") {
-  const supabase = createClient()
   const userId = await getCurrentUserId()
 
   // Add updated_by field to data
@@ -26,15 +30,17 @@ export async function updateWithTracking(table: string, id: number | string, dat
   }
 
   // Perform the update
-  const { data: result, error } = await supabase.from(table).update(dataWithTracking).eq(idField, id).select()
+  const { data: result, error } = await getUntypedTableClient(table).update(dataWithTracking).eq(idField, id).select()
 
-  if (error) throw error
+  if (error) {
+    throw error
+  }
+
   return result
 }
 
 // Soft delete function
 export async function softDelete(table: string, id: number | string, idField = "id") {
-  const supabase = createClient()
   const userId = await getCurrentUserId()
 
   // Get the appropriate status field for the table
@@ -48,9 +54,12 @@ export async function softDelete(table: string, id: number | string, idField = "
   }
 
   // Perform the soft delete
-  const { data, error } = await supabase.from(table).update(softDeleteData).eq(idField, id).select()
+  const { data, error } = await getUntypedTableClient(table).update(softDeleteData).eq(idField, id).select()
 
-  if (error) throw error
+  if (error) {
+    throw error
+  }
+
   return data
 }
 
@@ -72,7 +81,6 @@ function getStatusField(table: string): string {
 
 // Function to restore a soft-deleted record
 export async function restoreRecord(table: string, id: number | string, idField = "id") {
-  const supabase = createClient()
   const userId = await getCurrentUserId()
 
   // Get the appropriate status field for the table
@@ -86,8 +94,11 @@ export async function restoreRecord(table: string, id: number | string, idField 
   }
 
   // Perform the restoration
-  const { data, error } = await supabase.from(table).update(restoreData).eq(idField, id).select()
+  const { data, error } = await getUntypedTableClient(table).update(restoreData).eq(idField, id).select()
 
-  if (error) throw error
+  if (error) {
+    throw error
+  }
+
   return data
 }

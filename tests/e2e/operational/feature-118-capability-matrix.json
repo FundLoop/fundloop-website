@@ -1,0 +1,155 @@
+{
+  "schemaVersion": 1,
+  "featureIssue": 118,
+  "taskIssue": 144,
+  "productionValueFlowEnabled": false,
+  "capabilities": [
+    {
+      "id": "policy-user-review-acknowledgement",
+      "state": "local-real",
+      "personas": ["new-member", "returning-member"],
+      "evidence": ["tests/e2e/local/review-policy-consent.spec.ts", "supabase/tests/review_policy_controls.sql", "tests/review-policy-gates.test.ts"],
+      "highRisk": ["wrong-document-hash", "production-preview-override", "material-version-reacceptance", "missing-no-refund-no-escrow-best-effort-review-disclosure"]
+    },
+    {
+      "id": "policy-project-review-acknowledgement",
+      "state": "local-real",
+      "personas": ["new-founder", "returning-founder"],
+      "evidence": ["tests/e2e/local/review-policy-consent.spec.ts", "tests/review-policy-gates.test.ts", "supabase/tests/review_policy_controls.sql"],
+      "highRisk": ["funding-without-current-terms", "production-draft-exposure", "missing-no-refund-no-escrow-best-effort-review-disclosure"]
+    },
+    {
+      "id": "profile-private-publication-consent",
+      "state": "local-real",
+      "personas": ["new-member", "new-founder"],
+      "evidence": ["tests/e2e/local/review-policy-consent.spec.ts", "tests/privacy-preview-surfaces.test.ts"],
+      "highRisk": ["preselected-public-profile", "production-review-discovery", "withdrawal-residue"]
+    },
+    {
+      "id": "project-invitation-consented-sharing",
+      "state": "local-real",
+      "personas": ["new-founder", "returning-founder", "returning-member"],
+      "evidence": ["supabase/tests/project_invitation_review_sharing.sql", "tests/project-invitation-contract.test.ts"],
+      "highRisk": ["pending-membership", "cross-project-sharing", "multi-invitation-revoke-residue"]
+    },
+    {
+      "id": "founder-package-settlement-review",
+      "state": "local-real",
+      "personas": ["new-founder", "returning-founder", "returning-operator"],
+      "evidence": ["supabase/tests/epoch_project_packages.sql", "tests/epoch-project-package-review.test.tsx"],
+      "highRisk": ["unsettled-package-approval", "forged-decision-time", "missing-email-delivery"]
+    },
+    {
+      "id": "founder-reconciliation-approve-optout-report",
+      "state": "local-real",
+      "personas": ["new-founder", "returning-founder"],
+      "evidence": ["supabase/tests/epoch_project_packages.sql", "docs/engineering/settlement-backed-epoch-treasury.md"],
+      "highRisk": ["silent-approval-before-deadline", "rollover-lineage-loss", "privacy-threshold-leak"]
+    },
+    {
+      "id": "cubid-remediation-and-score-lock",
+      "state": "local-real",
+      "personas": ["new-member", "returning-member", "returning-operator"],
+      "evidence": ["tests/cubid-read-model.test.ts", "supabase/tests/epoch_financial_prep.sql"],
+      "highRisk": ["stale-score", "missing-identity", "score-version-drift"]
+    },
+    {
+      "id": "withdrawal-partial-queue-fee-settlement",
+      "state": "local-real",
+      "personas": ["new-member", "returning-member", "returning-operator"],
+      "evidence": ["supabase/tests/withdrawal_obligation_control_plane.sql", "tests/e2e/local/withdrawal-obligation-control-plane.spec.ts"],
+      "highRisk": ["cross-project-inventory", "double-reservation", "fee-nonconservation", "stale-epoch-queue"]
+    },
+    {
+      "id": "operator-twelve-stage-shadow-run",
+      "state": "local-real",
+      "personas": ["returning-operator"],
+      "evidence": ["supabase/tests/epoch_shadow_state_machine.sql", "tests/epoch-shadow-scheduler.test.ts"],
+      "highRisk": ["missing-hard-gate", "override-scope", "scheduler-idempotency", "expired-claim-lease"]
+    },
+    {
+      "id": "operator-fx-review-and-source-order",
+      "state": "local-real",
+      "personas": ["returning-operator"],
+      "evidence": ["supabase/tests/epoch_financial_prep.sql", "tests/epoch-financial-prep-contract.test.ts"],
+      "highRisk": ["fallback-before-primary-exhaustion", "stale-observation", "depeg"]
+    },
+    {
+      "id": "operator-allocation-rerun-and-close",
+      "state": "local-real",
+      "personas": ["returning-operator"],
+      "evidence": ["supabase/tests/epoch_funded_allocation.sql", "supabase/tests/epoch_allocation_close.sql", "tests/funded-redistribution-calculator.test.ts"],
+      "highRisk": ["changed-rerun-hash", "source-nonconservation", "root-review-reload", "privacy-threshold-leak"]
+    },
+    {
+      "id": "base-usdc-intake-and-safe-payout",
+      "state": "local-real",
+      "personas": ["new-founder", "returning-member", "returning-operator"],
+      "evidence": ["contracts/test/FundLoopBaseIntakeV2.js", "contracts/test/FundLoopSafePayoutModule.js", "supabase/tests/base_safe_payout_control_plane.sql"],
+      "highRisk": ["wrong-token", "safe-owner-bypass", "paymaster-depletion", "replacement", "reorg"]
+    },
+    {
+      "id": "base-usdt-review-route",
+      "state": "stubbed",
+      "personas": ["new-founder", "returning-member"],
+      "evidence": ["contracts/test/FundLoopBaseIntakeV2.js"],
+      "pendingReason": "No reviewed Base Sepolia issuer-address evidence; local mock only.",
+      "highRisk": ["arbitrary-token-activation", "provider-address-drift"]
+    },
+    {
+      "id": "base-pyusd-review-route",
+      "state": "stubbed",
+      "personas": ["new-founder", "returning-member"],
+      "evidence": ["contracts/test/FundLoopBaseIntakeV2.js"],
+      "pendingReason": "No reviewed Base Sepolia issuer-address evidence; local mock only.",
+      "highRisk": ["arbitrary-token-activation", "provider-address-drift"]
+    },
+    {
+      "id": "stripe-connect-usd-cad-payout",
+      "state": "sandbox-real",
+      "personas": ["returning-member", "returning-operator"],
+      "evidence": ["supabase/tests/stripe_connect_payout_control_plane.sql", "docs/engineering/settlement-backed-epoch-treasury.md"],
+      "highRisk": ["provider-local-ack-gap", "webhook-out-of-order", "duplicate-webhook", "fee-inventory-reuse"]
+    },
+    {
+      "id": "stripe-bank-transfer-usd-cad-intake",
+      "state": "pending",
+      "personas": ["new-founder", "returning-founder", "returning-operator"],
+      "evidence": ["supabase/tests/stripe_bank_transfer_intake.sql"],
+      "pendingReason": "FundLoop Stripe sandbox exposes no customer_balance bank-transfer currencies; local contracts remain fail-closed.",
+      "highRisk": ["unsupported-currency", "unsigned-webhook", "duplicate-event", "provider-capability-absence"]
+    },
+    {
+      "id": "stripe-canadian-pad-intake",
+      "state": "local-real",
+      "personas": ["new-founder", "returning-founder", "returning-operator"],
+      "evidence": ["supabase/tests/stripe_acss_debit_intake.sql", "docs/engineering/stripe-canadian-pad-intake.md"],
+      "pendingReason": "Real hosted PAD remains unavailable unless the canonical test account and dedicated payment-method configuration both report active capability; production and USD remain disabled.",
+      "highRisk": ["premature-settlement", "mandate-reuse", "unsigned-webhook", "authoritative-refetch-mismatch", "refund-dispute-double-reversal"]
+    },
+    {
+      "id": "stripe-eur-gbp-pay-by-bank-intake",
+      "state": "local-real",
+      "personas": ["new-founder", "returning-founder", "returning-operator"],
+      "evidence": ["supabase/tests/stripe_pay_by_bank_intake.sql", "docs/engineering/stripe-pay-by-bank-intake.md"],
+      "pendingReason": "Real hosted Pay by Bank remains unavailable unless the exact test merchant capability and dynamic payment-method configuration are active; private previews and production remain disabled.",
+      "highRisk": ["unsupported-merchant-country", "private-preview-bypass", "unsigned-webhook", "authoritative-refetch-mismatch", "partial-refund-residue"]
+    },
+    {
+      "id": "hosted-remote-safe-public-smoke",
+      "state": "pending",
+      "personas": [],
+      "evidence": ["tests/e2e/hosted/operational-mvp.spec.ts"],
+      "pendingReason": "Requires an explicitly selected hosted Preview/dev target and credentials; no hosted mutation is inferred from local approval.",
+      "highRisk": ["wrong-host", "wrong-supabase-project", "false-provider-label"]
+    },
+    {
+      "id": "production-policy-and-accounting-activation",
+      "state": "pending",
+      "personas": [],
+      "evidence": ["docs/engineering/financial-cutover-runbook.md"],
+      "pendingReason": "Counsel and accountant/bookkeeper approvals are intentionally deferred until production promotion.",
+      "highRisk": ["effective-draft-policy", "definitive-posting-without-approval", "production-value-flow"]
+    }
+  ]
+}

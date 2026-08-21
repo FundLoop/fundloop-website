@@ -1,275 +1,92 @@
 "use client"
 
-import { useEffect, useState } from "react"
-import Link from "next/link"
-import { usePathname, useRouter } from "next/navigation"
-import { supabase } from "@/lib/supabase"
+import { useState } from "react"
+import { useTranslations } from "next-intl"
+import { CircleDollarSign } from "lucide-react"
+import { Link, usePathname } from "@/i18n/navigation"
 import { Button } from "@/components/ui/button"
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-  DropdownMenuSeparator,
-} from "@/components/ui/dropdown-menu"
-import { ThemeToggle } from "@/components/theme-toggle"
-import { AuthModal } from "@/components/auth-modal"
-import ResourcesDropdown from "@/components/resources-dropdown"
-import { CircleDollarSign, ChevronDown, User, Settings, LogOut } from "lucide-react"
 import { MobileMenu } from "@/components/mobile-menu"
-import { toast } from "@/components/ui/use-toast"
-import { Modal } from "@/components/modal"
-import UserSignupFlow from "@/components/user-signup-flow"
+import { ShellAuthControls } from "@/components/shell-auth-controls"
+import type { NavigationContext } from "@/lib/navigation-context"
+import { publicPrimaryLinks } from "@/lib/public-site"
+import { cn } from "@/lib/utils"
 
-export default function Navbar() {
-  const [session, setSession] = useState<any>(null)
-  const [user, setUser] = useState<any>(null)
-  const [loading, setLoading] = useState(true)
-  const [showAuthModal, setShowAuthModal] = useState(false)
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
-  const [signupStep, setSignupStep] = useState<number>(5)
-  const [welcomeOpen, setWelcomeOpen] = useState(false)
+type NavbarProps = {
+  navigationContext: NavigationContext
+}
 
+export default function Navbar({ navigationContext }: NavbarProps) {
+  const t = useTranslations("shell")
   const pathname = usePathname()
-  const router = useRouter()
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
 
-  useEffect(() => {
-    const fetchUser = async () => {
-      const { data } = await supabase.auth.getSession()
-      const activeSession = data.session
-      setSession(activeSession)
+  const topLevelLinks = publicPrimaryLinks.map((link) => ({
+    ...link,
+    label: t(`nav.primary.${link.id}`),
+  }))
 
-      if (activeSession?.user?.id) {
-        const { data: userData } = await supabase
-          .from("users")
-          .select("full_name, avatar_url, signup_step, signin_count")
-          .eq("user_id", activeSession.user.id)
-          .single()
-
-        if (userData) {
-          setUser({ full_name: userData.full_name, avatar_url: userData.avatar_url })
-          setSignupStep(userData.signup_step ?? 1)
-          const newCount = (userData.signin_count ?? 0) + 1
-          await supabase
-            .from("users")
-            .update({ signin_count: newCount })
-            .eq("user_id", activeSession.user.id)
-          if (userData.signup_step === null || userData.signup_step < 5) {
-            setWelcomeOpen(true)
-          } else {
-            handleSigninActions(newCount, activeSession.user.id)
-          }
+  const mobileSections = [
+    {
+      title: t("mobile.public"),
+      links: topLevelLinks,
+    },
+    navigationContext.isAuthenticated
+      ? {
+          title: t("mobile.workspace"),
+          links: [
+            { href: "/workspace", label: t("nav.workspace") },
+            ...(navigationContext.hasFounderAccess ? [{ href: "/founder", label: t("nav.founder") }] : []),
+            ...(navigationContext.hasAdminAccess ? [{ href: "/admin", label: t("nav.admin") }] : []),
+            { href: "/workspace/account", label: t("nav.account") },
+          ],
         }
-      } else {
-        setUser(null)
-      }
-
-      setLoading(false)
-    }
-
-    fetchUser()
-
-    const {
-      data: { subscription },
-    } = supabase.auth.onAuthStateChange(async (_, newSession) => {
-      setSession(newSession)
-      if (newSession?.user?.id) {
-        const { data } = await supabase
-          .from("users")
-          .select("full_name, avatar_url, signup_step, signin_count")
-          .eq("user_id", newSession.user.id)
-          .single()
-
-        if (data) {
-          setUser({ full_name: data.full_name, avatar_url: data.avatar_url })
-          setSignupStep(data.signup_step ?? 1)
-          const newCount = (data.signin_count ?? 0) + 1
-          await supabase
-            .from("users")
-            .update({ signin_count: newCount })
-            .eq("user_id", newSession.user.id)
-          if (data.signup_step === null || data.signup_step < 5) {
-            setWelcomeOpen(true)
-          } else {
-            handleSigninActions(newCount, newSession.user.id)
-          }
-        }
-      } else {
-        setUser(null)
-      }
-    })
-
-    return () => subscription.unsubscribe()
-  }, [])
-
-  const handleSignOut = async () => {
-    await supabase.auth.signOut()
-    setSession(null)
-    setUser(null)
-    router.refresh()
-  }
-
-  const handleSigninActions = async (count: number, userId: string) => {
-    if (count === 2) {
-      toast({
-        title: "Welcome back",
-        description: "Please review your profile information",
-      })
-      router.push("/my-profile")
-    }
-
-    if (count === 3) {
-      const { data } = await supabase
-        .from("invitation_codes")
-        .select("usage_count")
-        .eq("created_by", userId)
-      const invited = data?.some((c) => (c as any).usage_count > 0)
-      if (!invited) {
-        toast({
-          title: "Invite friends",
-          description: "Share your invite code with others!",
-        })
-        router.push("/my-profile")
-      }
-    }
-
-    if (count === 6) {
-      const missing: string[] = []
-      const { data: profile } = await supabase
-        .from("users")
-        .select("avatar_url")
-        .eq("user_id", userId)
-        .single()
-      if (!profile?.avatar_url) missing.push("profile picture")
-
-      const { count: projectCount } = await supabase
-        .from("participants")
-        .select("id", { count: "exact", head: true })
-        .eq("user_id", userId)
-      if (!projectCount || projectCount === 0) missing.push("project membership")
-
-      const { data: codes } = await supabase
-        .from("invitation_codes")
-        .select("usage_count")
-        .eq("created_by", userId)
-      const used = codes?.some((c) => (c as any).usage_count > 0)
-      if (!used) missing.push("invite code usage")
-
-      if (missing.length > 0) {
-        toast({
-          title: "Complete your profile",
-          description: `Please add: ${missing.join(", ")}`,
-        })
-        router.push("/my-profile")
-      }
-    }
-  }
-
-  const navLinks = [
-    { label: "Projects", href: "/projects" },
-    { label: "Users", href: "/users" },
-    { label: "Analytics", href: "/analytics" },
-    { label: "About", href: "/about" },
-    { label: "Blog", href: "/blog" },
-  ]
+      : null,
+  ].filter(Boolean) as { title: string; links: { href: string; label: string }[] }[]
 
   return (
-    <>
-      <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur">
-        <div className="container flex h-16 items-center justify-between px-4">
-          <Link href="/" className="flex items-center gap-2">
-            <CircleDollarSign className="h-6 w-6 text-emerald-600" />
-            <span className="font-bold text-xl hidden sm:inline">FundLoop</span>
-          </Link>
-
-          <div className="hidden md:flex items-center gap-6">
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="ghost" className="text-sm font-medium">
-                  Explore <ChevronDown className="h-4 w-4 ml-1" />
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent>
-                {navLinks.slice(0, 3).map((link) => (
-                  <DropdownMenuItem key={link.href} asChild>
-                    <Link href={link.href}>{link.label}</Link>
-                  </DropdownMenuItem>
-                ))}
-              </DropdownMenuContent>
-            </DropdownMenu>
-
-            {navLinks.slice(3).map((link) => (
-              <Link
-                key={link.href}
-                href={link.href}
-                className={`text-sm font-medium ${
-                  pathname === link.href ? "text-emerald-600" : "text-muted-foreground hover:text-foreground"
-                }`}
-              >
-                {link.label}
-              </Link>
-            ))}
-
-            <ResourcesDropdown />
+    <header className="sticky top-0 z-50 w-full px-3 py-3 sm:px-4">
+      <div className="mx-auto flex h-16 w-full max-w-7xl items-center justify-between rounded-full border border-[color:var(--marketing-line)] bg-[rgba(255,248,238,0.74)] px-3 shadow-[0_12px_40px_rgba(15,23,23,0.08)] backdrop-blur-xl dark:bg-[rgba(13,21,21,0.74)]">
+        <Link href="/" className="flex items-center gap-3 rounded-full px-2 py-1">
+          <span className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-[color:var(--marketing-line)] bg-[rgba(204,92,44,0.14)] text-[var(--marketing-accent)]">
+            <CircleDollarSign className="h-5 w-5" />
+          </span>
+          <div className="hidden sm:block">
+            <p className="font-display text-2xl leading-none tracking-[-0.04em]">FundLoop</p>
+            <p className="mt-1 text-[0.6rem] font-semibold uppercase tracking-[0.28em] text-[var(--marketing-muted)]">
+              {t("brandTagline")}
+            </p>
           </div>
+        </Link>
 
-          <div className="flex items-center gap-2">
-            <ThemeToggle />
+        <nav className="hidden items-center gap-1 rounded-full border border-[color:var(--marketing-line)] bg-white/55 px-2 py-1 dark:bg-white/[0.03] lg:flex">
+          {topLevelLinks.map((link) => (
+            <Button
+              key={link.href}
+              asChild
+              variant="ghost"
+              className={cn(
+                "h-10 rounded-full px-4 text-sm font-medium",
+                pathname === link.href
+                  ? "bg-black/[0.04] text-[var(--marketing-accent)] dark:bg-white/[0.06]"
+                  : "text-[var(--marketing-muted-strong)] hover:bg-black/[0.04] hover:text-[var(--marketing-ink)] dark:hover:bg-white/[0.06]",
+              )}
+            >
+              <Link href={link.href}>{link.label}</Link>
+            </Button>
+          ))}
+        </nav>
 
-            {!session ? (
-              <Button className="bg-emerald-600 text-white hover:bg-emerald-700" onClick={() => setShowAuthModal(true)}>
-                Authenticate
-              </Button>
-            ) : (
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" className="h-8 w-8 p-0 rounded-full">
-                    <Avatar className="h-8 w-8">
-                      <AvatarImage src={user?.avatar_url || "/placeholder.svg"} />
-                      <AvatarFallback>{user?.full_name?.substring(0, 2) || "U"}</AvatarFallback>
-                    </Avatar>
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="w-56">
-                  <div className="px-3 py-2">
-                    <p className="text-sm font-medium">{user?.full_name || "User"}</p>
-                    <p className="text-xs text-muted-foreground">{session?.user?.email}</p>
-                  </div>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem asChild>
-                    <Link href="/my-profile">
-                      <User className="mr-2 h-4 w-4" />
-                      My Profile
-                    </Link>
-                  </DropdownMenuItem>
-                  <DropdownMenuItem asChild>
-                    <Link href="/settings">
-                      <Settings className="mr-2 h-4 w-4" />
-                      Settings
-                    </Link>
-                  </DropdownMenuItem>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem onClick={handleSignOut}>
-                    <LogOut className="mr-2 h-4 w-4" />
-                    Log out
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
-            )}
-
-            {/* Mobile hamburger icon */}
-            <MobileMenu setMobileMenuOpen={setMobileMenuOpen} />
-          </div>
+        <div className="flex items-center gap-2">
+          <ShellAuthControls navigationContext={navigationContext} variant="public" showQuickLinks />
+          <MobileMenu
+            setMobileMenuOpen={setMobileMenuOpen}
+            mobileMenuOpen={mobileMenuOpen}
+            title="FundLoop"
+            eyebrow={t("mobile.navigate")}
+            sections={mobileSections}
+          />
         </div>
-      </header>
-
-      {/* Mobile menu modal */}
-      <MobileMenu mobileMenuOpen={mobileMenuOpen} setMobileMenuOpen={setMobileMenuOpen} navLinks={navLinks} />
-      <AuthModal open={showAuthModal} onClose={() => setShowAuthModal(false)} />
-      <Modal title="Welcome" isOpen={welcomeOpen} onClose={() => setWelcomeOpen(false)} size="lg">
-        <UserSignupFlow onClose={() => setWelcomeOpen(false)} />
-      </Modal>
-    </>
+      </div>
+    </header>
   )
 }

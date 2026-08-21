@@ -1,0 +1,2845 @@
+### session v1: Preserve the approved epoch treasury decision record (#119)
+
+- Timestamp: 2026-08-08T15:55:22Z
+- Agent: Codex
+- Branch: codex/118-epoch-treasury
+- Head: 9c78484ac45fc880336e1c8d22b0eba602147321
+
+#### Objective
+
+Preserve the completed settlement-backed epoch treasury interview as a durable,
+published decision record so subsequent architecture and implementation work does
+not depend on the conversation transcript.
+
+#### Actions Taken
+
+- Recorded the confirmed monthly cutoff, settlement attribution, treasury, rail,
+  asset, fee, FX, allocation, payout, expiry, Cubid, legal, privacy, and consent
+  decisions in the Feature definition.
+- Kept unresolved legal, custody, provider, control, migration, and reporting
+  choices visibly separated under Open decisions.
+- Recorded the published Feature #118 hierarchy, native dependency plan, and
+  GitHub issue mapping.
+- Corrected stale pre-publication status text and replaced pre-payout user-liability
+  wording with the approved conditional-award ownership boundary.
+
+#### Validation Notes
+
+- Passed: `git diff --check` for the decision and issue-tree artifacts.
+- Reviewed the Markdown structure, internal file references, published issue link,
+  confirmed/open-decision separation, and Feature publication record.
+- Code and automated product tests are not applicable because Task #119 is a
+  documentation-only product-decision preservation task.
+
+#### Reflections
+
+- The legal/accounting approval gate must resolve recognition and ownership before
+  the canonical ledger implementation begins.
+- Native blockers keep the full vetted tree visible without implying that later
+  financial Tasks are currently executable.
+
+#### Suggested Next Steps
+
+- Independently validate Task #119 and move it to `In Review` if the decision
+  artifact is complete and internally consistent.
+- Continue with architecture Task #120 in the same Feature worktree.
+
+### session v2: Link the decision record from its coordinating issues (#119)
+
+- Timestamp: 2026-08-08T15:58:58Z
+- Agent: Codex
+- Branch: codex/118-epoch-treasury
+- Head: 14ec68b
+
+#### Objective
+
+Close the independent validator finding that the parent Feature and architecture
+Task did not provide clickable reverse links to the approved decision artifact.
+
+#### Actions Taken
+
+- Added an idempotently marked Decision Artifact section to live Feature #118.
+- Added the same branch-qualified artifact link to live architecture Task #120.
+- Kept the Feature branch unpublished so the orchestrator can batch implementation
+  and validation before the eventual PR; the issue text states when the link becomes
+  browsable.
+
+#### Validation Notes
+
+- Verified both live issue bodies contain the `decision-artifact:feature-118:v1`
+  marker and the exact durable artifact path.
+- Passed: `git diff --check` for this session-log update.
+- Product code, schema, UI, and tests remain unchanged.
+
+#### Reflections
+
+- Reverse linkage is part of the Task acceptance contract even when the repository
+  artifact already links outward to the Feature.
+
+#### Suggested Next Steps
+
+- Rerun independent validation for Task #119 against commits `14ec68b` and this
+  validator-fix commit.
+- Move #119 to `In Review` only after the validator passes.
+
+### session v3: Finalize the settlement-backed architecture and threat model (#120)
+
+- Timestamp: 2026-08-08T16:29:13Z
+- Agent: Codex
+- Branch: codex/118-epoch-treasury
+- Head: d1ac8f8
+
+#### Objective
+
+Turn the approved Feature decisions and repository baseline into implementation-
+ready accounting, custody, migration, command/event, control, threat, and validation
+contracts without implementing production financial behavior.
+
+#### Actions Taken
+
+- Finalized the twelve-stage epoch, settlement-only cash-flow, fixed monthly FX,
+  fee, custody, conditional-award, payout, reconciliation, and close architecture.
+- Kept pre-processing awards in an immutable memorandum subledger and reserved live
+  economic classification for Task #121 professional approval.
+- Added a decision register that separates locked engineering contracts from Stripe,
+  Safe, FX, Cubid, reporting, migration, and legal launch gates.
+- Defined versioned command/event envelopes for external events, ledger posting,
+  stage attempts, conditional awards, and payout execution.
+- Mapped every existing monthly-cycle, payment, package, allocation, credit,
+  withdrawal, payout, preference, and intake-contract surface to an additive,
+  shadow-first migration disposition.
+- Added a repository-grounded threat model covering privileged commands, provider
+  events, ledger integrity, reservation races, signer theft, and privacy boundaries.
+- Recorded public experimental-warning acceptance and independently enforced Safe
+  limits of $20 per payout, $500 rolling daily, and $5,000 per epoch.
+- Applied Supabase/Postgres guidance for exact types, retained references, indexed
+  foreign keys, RLS, least privilege, short transactions, advisory locks,
+  consistent lock order, partial/composite indexes, and `SKIP LOCKED` workers.
+
+#### Validation Notes
+
+- Rendered all three Mermaid diagrams locally; each reported `Render status: ok`.
+- Inspected full-page Playwright screenshots for the target architecture, epoch
+  state machine, and threat-boundary diagrams after changing dense flows to a
+  top-down layout.
+- Passed Markdown whitespace, required-section, internal-link, and repository
+  evidence-path checks. Stripe, Base, and Safe references returned HTTP 200; the
+  official FTC guidance URL rejected the automated request with HTTP 403 and was
+  retained as a valid bot-protected primary reference.
+- Product tests and Supabase migration tests are not applicable because Task #120
+  changes architecture documentation only.
+
+#### Reflections
+
+- The neutral ledger foundation can be specified precisely without claiming an
+  accountant-approved revenue or payable presentation.
+- The experimental warning communicates product maturity but is never a substitute
+  for settlement, identity, sanctions, reconciliation, or allocation controls.
+- Enforcing signer limits inside the Safe/module is essential; database counters
+  alone cannot contain a stolen application signer.
+
+#### Suggested Next Steps
+
+- Independently validate Task #120 and move it to `In Review` only on pass.
+- Obtain Task #121 counsel/accountant approval before any Goal 1 implementation.
+
+### session v4: Prepare the Feature #118 PR version checkpoint
+
+- Timestamp: 2026-08-08T16:35:28Z
+- Agent: Codex
+- Branch: codex/118-epoch-treasury
+- Head: e1339d8
+
+#### Objective
+
+Prepare the validated #119-#120 documentation batch for its first pull request into
+`dev` using the repository's feature-PR version convention.
+
+#### Actions Taken
+
+- Ran the repository version helper against `origin/dev` after the scoped Task
+  commits.
+- Bumped the application patch version from `0.1.1` to `0.1.2`.
+- Confirmed the lockfile remained unchanged after its lockfile-only refresh.
+- Preserved the one-Task-per-commit history and isolated this publish checkpoint in
+  its own commit.
+
+#### Validation Notes
+
+- Verified `package.json` is `0.1.2`, exactly one patch above `origin/dev`.
+- Passed: `git diff --check` for the manifest and session-log update.
+- The helper applied the correct version and refreshed the unchanged lockfile, then
+  hit its known inherited-stdio `null.trim()` error; the resulting files were
+  inspected directly rather than treating the post-write helper exception as a
+  successful command result.
+- Full Node 22 `CI=1 pnpm check` runs after this checkpoint commit and before push.
+
+#### Reflections
+
+- The helper's post-refresh exception is packaging-tool debt, not part of the
+  Feature architecture scope; the manifest outcome remains deterministic and
+  reviewable.
+
+#### Suggested Next Steps
+
+- Commit the version checkpoint, run the full Node 22 gate, and publish one Feature
+  PR to `dev` with #119 and #120 linked.
+- Leave #121 and all dependent product Goals blocked pending professional approval.
+
+### session v5: Record Feature #118 publication validation
+
+- Timestamp: 2026-08-08T16:42:18Z
+- Agent: Codex
+- Branch: codex/118-epoch-treasury
+- Head: 6ad9df6
+
+#### Objective
+
+Record reproducible Node 22 validation evidence for the independently validated
+#119-#120 documentation batch before publishing its pull request to `dev`.
+
+#### Actions Taken
+
+- Ran lint, type checking, production build, and the complete Vitest suite with the
+  repository's Node 22 baseline.
+- Used an explicit single-worker fork pool for Vitest after the aggregate `pnpm
+  check` invocation stalled during its default test-runner startup.
+- Kept the validation-record update isolated from the Task implementation commits.
+
+#### Validation Notes
+
+- Passed: `PATH=/opt/homebrew/opt/node@22/bin:$PATH CI=1 pnpm lint`.
+- Passed: `PATH=/opt/homebrew/opt/node@22/bin:$PATH CI=1 pnpm typecheck`.
+- Passed: `PATH=/opt/homebrew/opt/node@22/bin:$PATH CI=1 pnpm build`.
+- Passed: `PATH=/opt/homebrew/opt/node@22/bin:$PATH CI=1 pnpm exec vitest run
+  --pool=forks --maxWorkers=1 --reporter=verbose` with 118 test files and 537 tests.
+- The default test phase inside `CI=1 pnpm check` stalled without spawning workers;
+  its component gates were therefore run separately and completed successfully.
+
+#### Reflections
+
+- Explicit worker configuration provides a deterministic local proof while the
+  existing aggregate-runner startup issue remains separate repository tooling debt.
+
+#### Suggested Next Steps
+
+- Publish the branch and open a draft Feature PR to `dev`.
+- Keep Task #121 and its dependent implementation work blocked until the required
+  counsel and accountant evidence is available.
+
+### session v6: Resolve PR #145 architecture review findings
+
+- Timestamp: 2026-08-08T16:52:30Z
+- Agent: Codex
+- Branch: codex/118-epoch-treasury
+- Head: 90d0085
+
+#### Objective
+
+Remove implementation ambiguity identified by the Copilot and Codex reviews without
+changing the approved Feature economics or stage order.
+
+#### Actions Taken
+
+- Defined the project-fee basis as one aggregated `project x rail x epoch`
+  assessment with one percentage calculation and one clamp.
+- Aligned privileged carryover execution with the canonical state machine: after
+  reconciliation, valuation, and fee processing, but before locking and allocation.
+- Standardized every limited-signer velocity reference to `$500 per rolling 24-hour
+  window`.
+- Expanded the withdrawal migration evidence reference to its full repository path.
+
+#### Validation Notes
+
+- Passed: `git diff --check`.
+- Verified no `rolling-day`, `rolling day`, or bare `rolling 24 hours` wording remains
+  in the Feature artifacts.
+- Rechecked the project-fee and carryover clauses against the approved Feature
+  decision record and canonical state order.
+
+#### Reflections
+
+- Epoch-level fee aggregation and pre-allocation carryover both affect value
+  conservation; keeping those contracts singular prevents divergent implementations.
+
+#### Suggested Next Steps
+
+- Commit and push the review fixes, reply to and resolve all five review threads,
+  then wait for the post-fix hosted checks.
+- Do not request another Copilot or Codex review; the existing review records remain
+  the authoritative gates.
+
+### session v7: Prepare the Canadian legal and accounting review packet
+
+- Timestamp: 2026-08-08T19:46:34Z
+- Agent: Codex
+- Branch: codex/118-canada-review-drafts
+- Head: b4bbce3
+
+#### Objective
+
+Prepare Task #121's repository-grounded Canadian review materials while treating
+qualified counsel and accountant approval as non-bypassable production gates rather
+than blockers to neutral local and `dev` implementation.
+
+#### Actions Taken
+
+- Recorded Fundloop Canada Inc., Ontario incorporation, and an initial Canada-only
+  project/user scope as review assumptions rather than approved legal conclusions.
+- Reframed Task #121 as a documentation packet, independently re-vetted it, and kept
+  all live Terms, acceptance UX, provider activation, schema, and value-flow changes
+  outside this Task.
+- Added visibly non-effective Terms and Privacy Notice drafts, a repository-grounded
+  current/planned data-flow inventory, and an accounting-recognition alternatives
+  memo with linked authoritative sources.
+- Preserved the requested ownership, refund, escrow, payout, profile, and invitation
+  product intent while flagging non-waivable law, RPAA, FINTRAC, consumer, privacy,
+  securities, tax, and accounting classifications for professional review.
+- Added one production approval checklist covering professional sign-off, provider
+  topology and data-transfer evidence, effective policy versions, runtime acceptance
+  controls, and deployment revalidation.
+- Updated the Feature architecture, engineering index, and sprint definition so the
+  review packet can unblock neutral implementation only after independent validation.
+
+#### Validation Notes
+
+- Passed: exact `DRAFT - NOT APPROVED - NOT EFFECTIVE` marker check on every core
+  review artifact.
+- Passed: all local packet links and cited repository evidence paths exist.
+- Passed: all 19 authoritative external source links returned HTTP 200 after replacing
+  moved Supabase and CRA links with their current canonical locations.
+- Passed: Mermaid render with `Render status: ok`; visually inspected the full flow
+  map and an isolated high-resolution diagram capture using Playwright.
+- Passed: `git diff --check`.
+- UI evidence: not applicable; this Task changes review documentation only and does
+  not add an effective policy surface or product behavior.
+
+#### Reflections
+
+- Contract labels such as ownership and non-escrow language do not by themselves
+  determine the platform's Canadian payments, AML, consumer, insolvency, tax, or
+  accounting classification; production approval must review actual operational
+  functions and user expectations.
+- The product's fixed monthly allocation rate can remain a reproducible management
+  subledger convention without being presented as an approved statutory FX policy.
+
+#### Suggested Next Steps
+
+- Commit Task #121, attach implementation evidence to the issue, and run the
+  independent issue-validator before moving it to `In Review`.
+- After validation, begin the neutral ledger foundation while keeping production
+  receipt, allocation, payout, and effective policies blocked on the approval packet.
+
+### session v8: Add non-effective Terms preview and acknowledgement gates (#123)
+
+- Timestamp: 2026-08-08T18:24:00-04:00
+- Agent: Codex
+- Branch: codex/118-canada-review-drafts
+- Head: 3378182cb310e5027ac350d9dc7f9022ca19e6f2
+
+#### Objective
+
+Provide auditable Terms versioning and acknowledgement mechanics for local and
+`dev` testing without publishing effective Terms or enabling production value flow.
+
+#### Actions Taken
+
+- Replaced the public Terms copy with a prominently labelled Canadian review
+  preview whose title, metadata, and body all preserve the exact
+  `DRAFT - NOT APPROVED - NOT EFFECTIVE` boundary.
+- Added immutable review-document metadata and runtime helpers that fail closed in
+  production and cannot treat a `review` document as effective, even when approval
+  environment flags are accidentally present.
+- Added forward-only legal-document and acceptance-record tables, self-select RLS,
+  service-role-only writes, an approval/effective-date constraint, and a typed Edge
+  Function acknowledgement command.
+- Added separate project-actor and user acknowledgement evidence for the simulated
+  project-funding and payout boundaries. Both existing UI actions remain disabled
+  until the current review draft is acknowledged for the page session; production
+  remains locked because review acknowledgement is disabled by default there.
+- Kept profile publication and project-membership consent outside this Task.
+
+#### Validation Notes
+
+- Passed: `PATH=/opt/homebrew/opt/node@22/bin:$PATH CI=1 pnpm lint`.
+- Passed: `PATH=/opt/homebrew/opt/node@22/bin:$PATH CI=1 pnpm typecheck`.
+- Passed: focused Vitest run for review metadata, production gates, schema/RLS,
+  route boundaries, and the existing withdrawal component: 4 files, 10 tests.
+- Passed: `git diff --check`.
+- Playwright loaded `/en/terms` with zero console errors and confirmed the exact
+  non-effective banner, immutable identifier/hash, localized links, and unresolved
+  production gates. Captured and visually inspected 1440x900 and 390x844 viewport
+  evidence under `output/playwright/issue-123/`.
+
+#### Reflections
+
+- A review acknowledgement is useful test evidence only; it is intentionally
+  recorded as `review`, explicitly carries no legal effect, and unlocks no live
+  value flow.
+- Effective publication needs a separately approved immutable version plus
+  professional approval and launch evidence; no such version is seeded here.
+
+#### Suggested Next Steps
+
+- Independently validate Task #123 before moving it to `In Review`.
+- Implement Task #124's separate Privacy Notice preview and public-profile consent
+  record without bundling it into Terms acknowledgement.
+
+### session v9: Add Privacy preview and explicit profile publication (#124)
+
+- Timestamp: 2026-08-08T18:31:00-04:00
+- Agent: Codex
+- Branch: codex/118-canada-review-drafts
+- Head: 57ae8b1
+
+#### Objective
+
+Provide a truthful local/dev Privacy Notice preview and make public profile
+publication a separate, affirmative, prospectively withdrawable choice while
+keeping every profile private without current evidence.
+
+#### Actions Taken
+
+- Replaced the public Privacy page with a prominently non-effective Canadian review
+  preview covering the verified data categories, recipient classes, public-chain
+  exposure, cross-border processing, safeguards, and unresolved provider, authority,
+  retention, rights, and incident-response questions.
+- Added an immutable Privacy review version and append-only profile-publication
+  choice records containing user, document/hash/status, field scope, locale,
+  timestamp, action, and source surface.
+- Added a typed, authenticated Edge command and service-role-only atomic database
+  command. Grant updates only the named public fields; withdrawal immediately turns
+  off profile and field visibility while retaining the neutral audit record.
+- Added an unselected affirmative account control that is separate from Terms and
+  membership. The same surface offers prospective withdrawal and labels both
+  actions as review-only.
+- Hardened public discovery to require the latest recorded choice to be `grant` in
+  addition to existing active/private-field checks. Production returns no review-
+  published profiles, and deployed Edge review commands require an explicit
+  non-production preview configuration.
+- Updated generated Supabase types for the new table and RPC contracts.
+
+#### Validation Notes
+
+- Passed: `PATH=/opt/homebrew/opt/node@22/bin:$PATH CI=1 pnpm lint`.
+- Passed: `PATH=/opt/homebrew/opt/node@22/bin:$PATH CI=1 pnpm typecheck`.
+- Passed: focused Vitest for opt-in/withdraw UI, contract validation, private
+  defaults, latest-choice discovery, RLS/command boundaries, preview content, and
+  production fail-closed behavior: 6 files, 15 tests.
+- Passed: `git diff --check`.
+- Playwright loaded `/en/privacy` with zero console errors and confirmed the exact
+  review banner, immutable document evidence, localized links, privacy inventory,
+  optional-choice copy, and unresolved production gates. Captured and visually
+  inspected 1440x900 and 390x844 evidence under `output/playwright/issue-124/`.
+
+#### Reflections
+
+- The legacy `users.is_public` flag is no longer sufficient for discovery: a
+  current append-only publication grant is required, so withdrawal cannot expose a
+  stale earlier choice.
+- The review choice intentionally does not settle lawful basis or retention; it
+  proves product mechanics while the professional production decision stays open.
+
+#### Suggested Next Steps
+
+- Independently validate Task #124 before moving it to `In Review` or unblocking
+  invitation Task #125.
+- Run the broadest practical local batch validation for #123 and #124 before the
+  orchestrator publishes the Feature branch.
+
+### session v10: Enforce Terms acknowledgement at protected commands (#123)
+
+- Timestamp: 2026-08-08T18:59:39-04:00
+- Agent: Codex
+- Branch: codex/118-canada-review-drafts
+- Head: 5ea6e72a90af
+
+#### Objective
+
+Close the independent validation findings for Task #123 by making the current
+review Terms acknowledgement a server-owned precondition rather than a React-only
+gate, while preserving the non-effective local/dev boundary.
+
+#### Actions Taken
+
+- Added an exact-document acknowledgement guard that checks actor, immutable
+  identifier, content hash, locale, review status, capacity, and source surface.
+- Applied that guard before both project payment-draft creation and user withdrawal
+  request creation, so direct command callers cannot bypass the UI checkbox.
+- Added founder and user command tests proving rejection before acknowledgement and
+  successful continuation after acknowledgement.
+- Normalized the Task #123 files to one newline at EOF to remove validation noise.
+
+#### Validation Notes
+
+- Passed: Node 22 lint and typecheck.
+- Passed: focused policy/workflow suite as part of 9 files and 32 tests.
+- Passed: fresh disposable local Supabase migration replay through
+  `20260808230000_review_policy_versions_and_acceptances.sql`.
+- Passed: real SQL/RLS/RPC assertions for valid recording, invalid document/hash
+  rejection, authenticated self-read, cross-user denial, and direct-write denial.
+- Passed: full Node 22 `CI=1 pnpm check` with 124 files and 554 tests plus production
+  build.
+- Passed: `git diff --check` with no EOF warnings.
+
+#### Reflections
+
+- The protected commands now own the invariant. UI state is only feedback and can
+  no longer authorize a payment draft or withdrawal request by itself.
+- The recorded acknowledgement remains `review` evidence only and activates no
+  production value flow.
+
+#### Suggested Next Steps
+
+- Commit the #123 validation fixes and update its implementation evidence.
+- Complete the #124 consent browser smoke and issue-scoped validation commit.
+
+### session v11: Fail closed and prove profile publication consent (#124)
+
+- Timestamp: 2026-08-08T19:01:00-04:00
+- Agent: Codex
+- Branch: codex/118-canada-review-drafts
+- Head: a70b232
+
+#### Objective
+
+Close the independent validation findings for Task #124 by making review-profile
+discovery unconditionally unavailable in production, preserving private onboarding,
+and proving grant/withdrawal behavior through the real local stack and browser.
+
+#### Actions Taken
+
+- Made the public preview helper reject production even when the public review flag
+  is set; only an explicitly identified preview deployment can use that flag with a
+  production-mode build.
+- Forced user onboarding publication to write every profile and field visibility
+  flag as private. Optional publication remains available only through the separate,
+  unselected account choice.
+- Changed consent ordering to use `clock_timestamp()` so rapid append-only choices
+  have an unambiguous latest action, including inside one transaction.
+- Added a reusable local SQL assertion covering Terms and Privacy RPC/RLS controls,
+  and a Playwright workflow covering no-consent privacy, grant/discovery, and
+  withdrawal/removal.
+- Normalized the remaining Task #124 files to one newline at EOF.
+
+#### Validation Notes
+
+- Passed: fresh disposable Supabase reset applied all migrations and seed, including
+  `20260808233000_profile_publication_consents.sql`.
+- Passed: SQL assertions for grant, invalid document/hash rejection, discoverability,
+  explicit latest withdrawal, removal, self-read, cross-user denial, and direct-write
+  denial. The same script also re-proved the #123 controls.
+- Passed: local Playwright consent workflow, 1 test in 3.5 seconds, through the real
+  account control, Edge command, RPC, public directory, and cleanup.
+- Passed: Node 22 lint, typecheck, focused 9-file/32-test suite, and full `CI=1 pnpm
+  check` with 124 files/554 tests plus production build.
+- Passed: `git diff --check` with all prior EOF warnings removed.
+
+#### Reflections
+
+- Onboarding and publication are now structurally separate: completing onboarding
+  cannot make a profile public, even if a caller sends public visibility values.
+- The local browser smoke required one seeded public-project participation because
+  the existing directory intentionally lists only participating users; consent alone
+  still does not bypass that product rule.
+
+#### Suggested Next Steps
+
+- Commit the #124 validation fixes and update both issue evidence comments.
+- Keep #123 and #124 In Progress for independent revalidation; do not start #125.
+
+### session v12: Make onboarding visibly and persistently private (#124)
+
+- Timestamp: 2026-08-08T19:12:06-04:00
+- Agent: Codex
+- Branch: codex/118-canada-review-drafts
+- Head: a09af219551c
+
+#### Objective
+
+Close the remaining Task #124 revalidation finding by aligning onboarding UI,
+defaults, legacy payload handling, and completion language with the private backend
+behavior and separate account publication choice.
+
+#### Actions Taken
+
+- Changed new onboarding defaults to the private preset and made payload merging
+  coerce retired public/limited inputs and every legacy visibility flag to private.
+- Removed public/limited presets and per-field publication switches from onboarding.
+  The visibility step now explains that completion activates only a private workspace
+  profile and points to the separate, unselected Account > Profile choice.
+- Replaced user-facing publish/live/discoverability claims in onboarding completion,
+  preview, resume, toast, and join-card copy with explicit private-setup language.
+- Extended unit, contract, command, and local Playwright coverage across a legacy
+  draft containing every visibility flag set to true.
+
+#### Validation Notes
+
+- Passed: focused Vitest run, 4 files and 21 tests.
+- Passed: Node 22 typecheck and lint.
+- Passed: fresh disposable local Supabase migration/seed replay.
+- Passed: local Playwright, 1 test in 8.3 seconds. The browser inspected the actual
+  private onboarding visibility screen, completed a legacy-public draft through the
+  real Edge command, verified every stored visibility flag remained false, verified
+  the separate account checkbox was unselected, then proved grant/discovery and
+  withdrawal/removal.
+- Passed: `git diff --check`.
+
+#### Reflections
+
+- Silently overriding public-looking inputs was fail-safe but misleading. The UI and
+  stored draft contract now express the same private invariant as the publish command.
+- Legacy payload fields remain accepted for compatibility, but they cannot restore
+  retired onboarding publication behavior.
+
+#### Suggested Next Steps
+
+- Commit this narrow #124 fix and attach the updated implementation evidence.
+- Keep #124 In Progress for independent revalidation and leave #123/#125 unchanged.
+
+### session v13: Add consented project invitation review sharing (#125)
+
+- Timestamp: 2026-08-08T19:37:16-04:00
+- Agent: Codex
+- Branch: codex/118-canada-review-drafts
+- Head: 420d6321a5b9
+
+#### Objective
+
+Implement Task #125 as a local/dev-only invitation review workflow in which a
+pending token grants no access, exact non-effective disclosure evidence is recorded
+atomically before membership, and only founder-selected profile fields become
+visible to accepted participants.
+
+#### Actions Taken
+
+- Added a forward migration for approved sharing fields, immutable Privacy review
+  document snapshots, append-only accept/decline/revoke/expiry evidence, atomic
+  acceptance, revocation, and a participant-scoped approved-field read model.
+- Replaced the legacy accept boundary with typed inspect, acknowledged accept,
+  decline, and revoke Edge commands; direct acceptance fails closed outside the
+  enabled local/dev review runtime.
+- Updated founder and invitee surfaces with field selection, safe persisted status,
+  the prominent `DRAFT - NOT APPROVED - NOT EFFECTIVE` disclosure, an initially
+  unselected checkbox, and explicit decline/revoke actions.
+- Removed public participant-profile projection from project detail. Authenticated
+  project participants now receive only fields authorized by accepted invitation
+  evidence; unrelated and pre-acceptance viewers receive no member profiles.
+- Regenerated Supabase types and extended contract, command, migration, component,
+  SQL/RLS, and persona-browser coverage.
+
+#### Validation Notes
+
+- Passed: disposable local Supabase reset applying every migration and seed.
+- Passed: real SQL/RLS/RPC assertions for pending denial, direct evidence-write
+  denial, invalid document/hash atomic rejection, accepted membership and evidence,
+  approved-field reads, unrelated/cross-user denial, decline, expiry, and revocation.
+- Passed: focused Vitest, 5 files and 25 tests; Node 22 lint and typecheck.
+- Passed: returning-founder Playwright journey and invitation checkpoint against
+  the real local app, Auth, Edge commands, and database; cleanup was clean. Its later
+  operator-distribution checkpoint remains intentionally expected-pending.
+- Captured and visually inspected invitation review evidence at 1440x900 and 390x844
+  under `output/playwright/persona-harness/persona-20260808T233513241Z-01cfcd93/`.
+- Passed: full Node 22 `CI=1 pnpm check` with 125 files/560 tests and production build.
+- Passed: `git diff --check`.
+
+#### Reflections
+
+- Invitation possession is only a lookup capability; verified email plus exact
+  affirmative acknowledgement is the atomic membership boundary.
+- Keeping field choice on each invitation makes project sharing narrower than public
+  profile publication and leaves production activation blocked on later professional
+  approval.
+
+#### Suggested Next Steps
+
+- Commit Task #125 and attach the local migration, SQL/RLS, browser, visual, and full
+  check evidence to the issue while leaving it In Progress for independent validation.
+- Stop the disposable Edge runtime and Supabase stack; do not open the Feature PR yet.
+
+### session v14: Close invitation lifecycle residue findings (#125)
+
+- Timestamp: 2026-08-08T19:51:15-04:00
+- Agent: Codex
+- Branch: codex/118-canada-review-drafts
+- Head: 78e69358b7d5
+
+#### Objective
+
+Close the independent validation findings for Task #125 by failing review sharing
+reads closed in production, tracking organization-membership provenance through
+accept/revoke, and making every list/create-triggered expiry append evidence.
+
+#### Actions Taken
+
+- Added a forward lifecycle migration that records whether acceptance created,
+  reactivated, or left unchanged an organization membership, including the prior
+  inactive/deleted state needed for exact restoration.
+- Updated revocation to remove invitation-created membership only when no other
+  accepted invitation still needs it, restore independently pre-existing inactive
+  membership, remove project participation, and leave append-only evidence intact.
+- Added a security-definer expiry command that locks and expires pending invitations
+  together with versioned `expire` evidence; create/list commands no longer update
+  invitation status directly.
+- Bound the project member-profile read path to the production fail-closed review
+  helper and added an explicit production-mode test.
+- Extended SQL and persona browser coverage through accept-then-revoke to prove no
+  invitation-created participant, organization membership, or shared-profile residue.
+
+#### Validation Notes
+
+- Passed: two fresh disposable Supabase resets applying all migrations and seed.
+- Passed: executable SQL/RLS/RPC assertions for atomic expiry evidence, zero revoke
+  residue, and exact restoration of independently pre-existing inactive membership.
+- Passed: focused Vitest, 6 files and 29 tests; production read test included.
+- Passed: returning-founder Playwright spec through real accept then revoke commands;
+  invitation-created residue was absent and harness cleanup was clean. The aggregate
+  remains intentionally incomplete only for the existing operator-distribution
+  expected-pending checkpoint.
+- Passed: Node 22 lint, typecheck, and full `CI=1 pnpm check` with 125 files/562 tests
+  plus production build.
+- Passed: `git diff --check`.
+
+#### Reflections
+
+- Membership provenance must capture prior state, not only ownership: reactivation
+  is reversible without erasing an independent relationship.
+- Expiry is a lifecycle event, so the status transition and evidence append belong in
+  one database transaction regardless of which surface discovers the stale row.
+
+#### Suggested Next Steps
+
+- Commit this narrow #125 validation fix and update the issue evidence while keeping
+  it In Progress for the next independent validator pass.
+- Stop the disposable Edge and Supabase services; do not open a PR.
+
+### session v15: Aggregate invitation access provenance (#125)
+
+- Timestamp: 2026-08-08T20:04:07-04:00
+- Agent: Codex
+- Branch: codex/118-canada-review-drafts
+- Head: 67a968ae0599
+
+#### Objective
+
+Close the remaining Task #125 validation gap by making invitation-created
+organization membership and project participation ownership aggregate across every
+accepted invitation, independent of revoke order.
+
+#### Actions Taken
+
+- Added service-owned aggregate provenance tables keyed by organization/user and
+  project/user, with the exact prior membership and participant state needed for
+  reversible cleanup.
+- Updated acceptance to lock aggregate access keys, snapshot provenance once, and
+  preserve that original ownership when later invitations encounter already-active
+  membership or participation.
+- Updated revocation to retain access while another accepted invitation supports it,
+  recalculate project-admin access from remaining invitations and the original
+  participant, and delete or restore access only after the final supporting revoke.
+- Added safe backfill behavior for any already-accepted review rows: existing access
+  is treated as independent rather than destructively claimed by the migration.
+- Extended executable SQL coverage for earlier-first/final-later revoke ordering,
+  aggregate provenance retention/removal, admin-role recalculation, final zero
+  residue, and exact preservation of an independent favorite participant.
+
+#### Validation Notes
+
+- Passed: fresh disposable Supabase reset applying every migration and seed.
+- Passed: executable SQL/RLS/RPC suite on the first run, including multi-invitation
+  revoke ordering and independent participant restoration.
+- Passed: generated Supabase types and Node 22 typecheck.
+- Passed: focused one-worker Vitest, 6 files and 30 tests.
+- Passed: returning-founder Playwright accept-then-revoke workflow and clean fixture
+  cleanup; the aggregate remains intentionally incomplete only for the existing
+  operator-distribution expected-pending checkpoint.
+- Passed: Node 22 lint and full `CI=1 pnpm check` with 125 files/563 tests plus
+  production build.
+- Passed: `git diff --check`.
+
+#### Reflections
+
+- Per-invitation provenance cannot decide final ownership because revoke order may
+  end on an invitation that observed access as unchanged. The resource-level
+  aggregate must outlive each individual accepted invitation.
+- Recalculating participant admin status on intermediate revoke avoids retaining an
+  admin grant after only member invitations remain.
+
+#### Suggested Next Steps
+
+- Commit this narrow aggregate-provenance fix and attach the replay, SQL ordering,
+  browser cleanup, and full-check evidence to #125.
+- Keep #125 In Progress for independent revalidation; do not open a PR.
+
+### session v16: Service-owned review-sharing reads (#125)
+
+- Timestamp: 2026-08-09T00:16:00-04:00
+- Agent: Codex
+- Branch: codex/118-canada-review-drafts
+- Head: 01947eae999f
+
+#### Objective
+
+Close the remaining Task #125 validation gap by denying browser-authenticated access
+to the shared-profile RPC and routing local review reads through a production-gated,
+service-owned Edge command.
+
+#### Actions Taken
+
+- Replaced the browser-callable shared-profile RPC with a service-role-only,
+  actor-scoped function that independently verifies project membership.
+- Added the typed `project-member-shared-profiles-read` Edge contract, command, and
+  server invoker with an unconditional production fail-closed gate.
+- Routed the project read model through the Edge command while retaining the app's
+  existing preview gate and approved-field normalization.
+- Deduplicated overlapping accepted invitations into one project-member row by
+  selecting the latest accepted invitation per member.
+- Extended migration, production-gate, command, executable SQL, and returning-founder
+  browser coverage for direct-RPC denial and the allowed local Edge read path.
+
+#### Validation Notes
+
+- Passed: fresh disposable Supabase reset applying all migrations and seed.
+- Passed: executable SQL/RLS/RPC suite, including authenticated direct-RPC denial,
+  service-role actor scoping, pre-acceptance denial, accepted reads, and revoke cleanup.
+- Passed: focused one-worker Vitest, 7 files and 34 tests; production and crafted-input
+  command denial included.
+- Passed: returning-founder Playwright workflow through accepted invitation, Edge-backed
+  project discovery, visible member data, revoke cleanup, and clean fixture cleanup.
+  The aggregate remains intentionally incomplete only for the existing
+  operator-distribution expected-pending checkpoint.
+- Passed: Node 22 lint, typecheck, and full `CI=1 pnpm check` with 126 files/567 tests
+  plus production build.
+- Passed: `git diff --check`.
+
+#### Reflections
+
+- RLS alone is insufficient for review sharing when a browser may call an executable
+  RPC directly; the database permission boundary and Edge deployment gate must agree.
+- Binding the actor identifier to the authenticated Edge user prevents crafted input
+  from turning service-role execution into a cross-project read primitive.
+
+#### Suggested Next Steps
+
+- Commit this narrow read-boundary fix and attach replay, permission, Edge-command,
+  browser, and full-check evidence to #125.
+- Keep #125 In Progress for independent revalidation; stop local services and do not
+  open a PR.
+
+### session v17: Production-safe policy routes (#122)
+
+- Timestamp: 2026-08-09T00:28:00-04:00
+- Agent: Codex
+- Branch: codex/118-canada-review-drafts
+- Head: 73887f5458b8
+
+#### Objective
+
+Close the integrated Goal #122 route-level production leak by ensuring the public
+Terms and Privacy routes expose no review draft content or metadata when the review
+preview gate is closed.
+
+#### Actions Taken
+
+- Added early production-safe unavailable branches to the Terms and Privacy pages,
+  before any draft document identifiers, hashes, versions, banners, or body render.
+- Added production-safe route metadata while preserving the exact local/dev review
+  banner, immutable document metadata, and non-effective draft content.
+- Added executable route tests for production response and metadata absence, local/dev
+  draft rendering, and unavailable Terms acknowledgement controls in production.
+
+#### Validation Notes
+
+- Passed: focused policy route and gate Vitest, 4 files and 11 tests.
+- Passed: Node 22 lint and typecheck.
+- Passed: Node 22 full `CI=1 pnpm check` with 127 files/570 tests plus production build.
+- Passed: production HTTP smoke for `/en/terms` and `/en/privacy` with a hostile preview
+  override; both returned the unavailable placeholder and none of the banner, document
+  IDs, hashes, or representative draft body text.
+- Passed: `git diff --check`.
+
+#### Reflections
+
+- Disabling acknowledgement commands is not enough when a public route can still leak
+  the draft itself; content rendering and metadata generation need the same early gate.
+- A neutral unavailable page keeps navigation intact without suggesting that review
+  text is approved, effective, or published.
+
+#### Suggested Next Steps
+
+- Commit this narrow Goal #122 route fix and attach focused, full-check, and production
+  HTTP evidence to the Goal.
+- Leave Goal #122 Ready for independent integrated revalidation; do not open a PR.
+
+### session v18: PR review privacy and invitation boundary fixes
+
+- Timestamp: 2026-08-09T00:47:00-04:00
+- Agent: Codex
+- Branch: codex/118-canada-review-drafts
+- Head: 4181d8860222
+
+#### Objective
+
+Address the three actionable automated review findings on PR #146 without widening
+the review-only policy scope or enabling any production policy or value flow.
+
+#### Actions Taken
+
+- Restored the active-user join/filter before a participant can receive private or
+  inactive project access and trigger member-sharing reads.
+- Added a forward migration that returns the latest granted publication field set
+  with each discoverable user and shaped directory/profile output to those exact
+  fields. Full names, contribution details, creation timestamps, and Cubid status or
+  score remain unavailable because they are outside the consent contract.
+- Replaced stale-invitation decline behavior with an atomic locked decision that
+  records expiry status and evidence when the deadline has already passed.
+- Updated generated Supabase function types plus focused contract and executable SQL
+  assertions for the corrected boundaries.
+
+#### Validation Notes
+
+- Passed: fresh local Supabase reset with all migrations and canonical seed.
+- Passed: executable review-policy SQL, including exact consent-field propagation.
+- Passed: executable invitation SQL, including direct stale decline producing expiry
+  status/evidence and no decline evidence.
+- Passed: focused Vitest, 3 files and 10 tests.
+- Passed: Node 22 `CI=1 pnpm check` with 127 files/571 tests, lint, typecheck, and
+  production build generating 162 pages.
+- Passed: `git diff --check`.
+
+#### Reflections
+
+- A consent record must constrain every downstream read field, not merely authorize
+  discovery of the row.
+- Lifecycle commands must derive expiry under the same row lock as the requested
+  transition so direct callers cannot change the audit result through call ordering.
+
+#### Suggested Next Steps
+
+- Commit and push the review fixes, reply to and resolve each addressed review thread,
+  then wait for the remaining requested review and post-push CI without rerequesting.
+
+### session v19: Copilot invitation boundary follow-up
+
+- Timestamp: 2026-08-09T00:56:00-04:00
+- Agent: Codex
+- Branch: codex/118-canada-review-drafts
+- Head: a294136
+
+#### Objective
+
+Address the remaining actionable Copilot review threads on PR #146 while keeping all
+review-only invitation and sharing behavior unavailable in production.
+
+#### Actions Taken
+
+- Added the same unconditional production fail-closed runtime gate to invitation
+  inspection before payload parsing, authentication, or service-role RPC execution.
+- Tightened the forward member-sharing read model so inactive or soft-deleted subjects
+  are excluded and inactive or soft-deleted viewers cannot retrieve shared profiles.
+- Prevented zero-field invitation submission in the founder UI, deduplicated checkbox
+  updates, and added an explicit field-selection message.
+- Added focused UI/source-contract tests and executable SQL assertions for inactive
+  shared-profile subjects and viewers.
+
+#### Validation Notes
+
+- Passed: fresh local Supabase reset applying all migrations and canonical seed.
+- Passed: executable review-policy and invitation SQL suites, including inactive
+  subject/viewer denial.
+- Passed: focused one-worker Vitest, 4 files and 20 tests.
+- Passed: Node 22 `CI=1 pnpm check` with 127 files/573 tests, lint, typecheck, and
+  production build generating 162 pages.
+- Passed: `git diff --check`; local Supabase stopped afterward.
+
+#### Reflections
+
+- Read-only review endpoints require the same deployment boundary as writes because
+  policy metadata and selected profile fields are still protected review data.
+- Enforcing a non-empty field set at both the UI and command contract gives founders
+  immediate feedback without weakening the backend invariant.
+
+#### Suggested Next Steps
+
+- Commit and push this narrow follow-up, reply to and resolve all four Copilot threads,
+  then wait for post-push CI and merge under the normal non-squash policy if green.
+
+### session v20: Base stablecoin intake V2 (#132)
+
+- Timestamp: 2026-08-09T01:02:03-04:00
+- Agent: Codex
+- Branch: codex/130-settlement-packages
+- Head: f5b7e0a
+
+#### Objective
+
+Implement a versioned, non-production Base receipt boundary for the curated USDC,
+USDT, and PYUSD slots with exact separated-treasury reconciliation.
+
+#### Actions Taken
+
+- Added `FundLoopBaseIntakeV2` with constructor-bound token slots, project fee
+  snapshots, gross/fee/net conservation, separated platform and epoch transfers and
+  events, owner-only configuration, pause control, and duplicate receipt protection.
+- Added a guarded local/Base Sepolia deployment script and disabled tracked manifest;
+  mainnet and every non-local/dev/test environment remain unavailable.
+- Added forward Base deployment, asset, fee-version, receipt, and append-only
+  reconciliation schema with service-only typed RPCs and Edge commands.
+- Derived confirmation, exact, mismatch, reorg, and replacement states from trusted
+  receipt/block/treasury evidence rather than caller status.
+- Added local Hardhat, contract, RLS/RPC, deployment, and integrated ledger evidence,
+  regenerated Supabase types, and documented the issuer-verification production gate.
+
+#### Validation Notes
+
+- Passed: guarded local chain deployment on 31337 and explicit production deployment
+  refusal; Base Sepolia was skipped because no authorized RPC/private key is present.
+- Passed: Hardhat 8/8 tests, including four V2 local wallet/adversarial cases.
+- Passed: fresh local Supabase reset plus neutral ledger, epoch shadow, external shadow
+  reconciliation, and Base V2 SQL suites.
+- Passed: focused Vitest with 3 files/23 tests and full Node 22 `CI=1 pnpm check`
+  with 134 files/614 tests, lint, typecheck, and production build.
+- Passed: `git diff --check`; no browser surface changed, so browser evidence is N/A.
+- Attempted standalone Deno type-checking; it remains unavailable because the existing
+  shared command runtime is untyped under strict Deno checking. The new functions follow
+  the established runtime pattern and are covered by source-contract and app type tests.
+
+#### Reflections
+
+- A symbol allowlist is insufficient without constructor-bound addresses, deployment
+  matching, and a disabled tracked manifest.
+- Reorg and replacement evidence must remain append-only while the latest read model
+  is derived, and exact treasury amounts must be independently observed.
+
+#### Suggested Next Steps
+
+- Commit #132 and attach local-chain, migration, SQL/RLS/RPC, focused, and full-check
+  evidence for independent validation.
+- Keep #131 blocked on Stripe sandbox authorization and leave #133 untouched/Ready.
+
+### session v21: Base provider and trusted observation integrity (#132)
+
+- Timestamp: 2026-08-09T01:23:42-04:00
+- Agent: Codex
+- Branch: codex/130-settlement-packages
+- Head: 07b7316
+
+#### Objective
+
+Close the #132 validation gaps in provider-address activation, Base Sepolia execution,
+deployment audit state, and independently observed reconciliation.
+
+#### Actions Taken
+
+- Required explicit local fixture mode and labelled local mock tokens accordingly; bound
+  Base Sepolia USDC to Circle evidence while leaving unverified USDT/PYUSD disabled.
+- Added contract and forward database invariants preventing an unverified token from
+  becoming active, plus paused/enabled/provider-evidence deployment audit inputs.
+- Added executable Hardhat Base Sepolia configuration with clear missing test credential
+  errors and retained unconditional production deployment refusal.
+- Reduced the Edge request to `receiptId` only. A trusted viem observer now reads the
+  transaction receipt/current block, validates the V2 event, and totals exact ERC-20
+  transfers to both treasuries before service-only reconciliation.
+- Added trusted replacement resolver configuration and append-only observation-source/
+  event-match evidence; caller-crafted hashes and amounts cannot cross the Edge contract.
+
+#### Validation Notes
+
+- Passed: Hardhat 9/9, including real local receipt to trusted viem transfer-log evidence
+  and unverified-provider activation denial.
+- Passed: guarded local fixture deploy; missing Base Sepolia credentials fail clearly;
+  production deployment remains denied.
+- Passed: fresh local replay and all four integrated SQL suites, including adversarial
+  provider evidence and authenticated crafted reconciliation denial.
+- Passed: focused Vitest 3 files/23 tests and full Node 22 check with 134 files/614 tests,
+  lint, typecheck, and production build.
+- Passed: `git diff --check`; UI unchanged, browser N/A.
+
+#### Suggested Next Steps
+
+- Commit the narrow validation follow-up, update #132 evidence, and return for independent
+  revalidation without changing #131/#133 or opening a PR.
+
+### session v22: Local fixture chain binding (#132)
+
+- Timestamp: 2026-08-09T01:32:13-04:00
+- Agent: Codex
+- Branch: codex/130-settlement-packages
+- Head: 2df1cfa
+
+#### Objective
+
+Ensure local mock-provider evidence can activate assets only on the disposable Hardhat
+chain and never on Base Sepolia or Base mainnet chain IDs.
+
+#### Actions Taken
+
+- Added a forward replacement of the asset-activation trigger requiring the exact
+  `(deployment_environment='local', chain_id=31337)` tuple for `local_fixture_only`.
+- Added adversarial local+84532 and local+8453 asset activation probes.
+- Added deferred deployment activation/unpause probes proving a fixture-less deployment
+  on either Base chain ID cannot bypass the asset invariant.
+
+#### Validation Notes
+
+- Passed: fresh local Supabase reset with the forward migration.
+- Passed: all four integrated SQL suites, including both new Base chain adversarial cases.
+- Passed: focused Base Vitest (1 file/12 tests), typecheck, lint, and `git diff --check`.
+- Passed: full Node 22 `CI=1 pnpm check` with 134 files/614 tests and production build.
+
+#### Suggested Next Steps
+
+- Commit the narrow forward-only fix and return #132 for independent revalidation.
+
+### session v23: Base intake review input integrity (#132)
+
+- Timestamp: 2026-08-09T01:53:11-04:00
+- Agent: Codex
+- Branch: codex/130-settlement-packages
+- Head: 7e680ab
+
+#### Objective
+
+Address the actionable PR #148 review findings without changing the approved Base intake
+scope or weakening its trusted-observation boundary.
+
+#### Actions Taken
+
+- Accepted checksum-style uppercase hexadecimal characters in EVM addresses and hashes;
+  the database command continues to persist canonical lowercase values.
+- Compared platform and epoch treasury addresses case-insensitively so capitalization
+  cannot alias the same treasury.
+- Added a forward-only reconciliation wrapper whose `IS DISTINCT FROM` guard rejects
+  missing, null, and incorrect observation sources before invoking the prior trusted
+  implementation.
+- Added focused TypeScript and executable SQL adversarial coverage for the review cases.
+
+#### Validation Notes
+
+- Passed: fresh local Supabase replay through the new forward migration.
+- Passed: all four integrated SQL suites, including missing/null/wrong source denial and
+  the existing `trusted_viem_v1` reconciliation lifecycle.
+- Passed: focused Base intake Vitest (1 file/13 tests).
+- Passed: lint, typecheck, and `git diff --check`.
+- Passed: full Node 22 `CI=1 pnpm check` with 134 files/615 tests and the 162-route
+  production build.
+
+#### Suggested Next Steps
+
+- Commit and push this single review-fix checkpoint, then let the coordinating agent
+  reply to and resolve the already-inspected PR threads without requesting rereview.
+
+### session v24: Base receipt identity and fee history review fixes (#132)
+
+- Timestamp: 2026-08-09T02:08:47-04:00
+- Agent: Codex
+- Branch: codex/130-settlement-packages
+- Head: 45f5e7e
+
+#### Objective
+
+Close the four unprompted Codex review findings on PR #148 while preserving the local-only,
+fail-closed settlement-package boundary.
+
+#### Actions Taken
+
+- Locked deployment environment, chain, contract, and treasury identity coordinates while
+  any asset remains enabled; pause and activation state remain independently operable.
+- Added monotonic onchain project-fee versions to configuration and receipt events, then
+  resolved the exact historical project/version/rate tuple in the receipt command.
+- Persisted bytes32 receipt references and added per-deployment uniqueness alongside the
+  existing transaction/log uniqueness boundary.
+- Bound the trusted observer to the exact BaseReceipt contract log index and indexed receipt
+  reference, returning explicit observed identity evidence rather than scanning any matching
+  receipt event in the transaction.
+- Persisted the authoritative transaction-receipt block number and derived confirmations from
+  it; stored/observed block disagreement and wrong log/reference evidence now remain mismatch.
+- Preserved provisional legacy rows as nullable, append-only records while the Edge command
+  fails closed when their new identity evidence is absent.
+- Regenerated Supabase types and documented the identity, fee-history, and coordinate-lock rules.
+
+#### Validation Notes
+
+- Passed: fresh local Supabase reset through the forward migration and all four integrated SQL
+  suites, including coordinate mutation, duplicate log/reference, historical fee, and low-block
+  adversarial probes.
+- Passed: Hardhat 10/10, including a real local receipt observed at the exact log/reference and
+  after a subsequent fee-version change.
+- Passed: focused Base Vitest (1 file/13 tests), lint, typecheck, and `git diff --check`.
+- Passed: full Node 22 `CI=1 pnpm check` with 134 files/615 tests and the 162-route production build.
+
+#### Suggested Next Steps
+
+- Commit and push the complete four-thread review batch, then let the coordinating agent reply
+  to and resolve the threads without requesting another review.
+
+### session v25: Stripe bank-transfer sandbox intake (#131)
+
+- Timestamp: 2026-08-09T09:32:00-04:00
+- Agent: Codex
+- Branch: codex/130-settlement-packages
+- Head: fe211a6
+
+#### Objective
+
+Implement the local/dev Stripe USD bank-transfer command, webhook, reconciliation, and founder
+review surfaces for #131 while preserving production fail-closed behavior and documenting the
+provider-blocked USD success path and unsupported CAD presentment truthfully.
+
+#### Actions Taken
+
+- Added the current Stripe SDK, a typed Customer Balance push-transfer adapter, authenticated
+  intent/status Edge commands, and raw-body signed webhook verification with authoritative
+  PaymentIntent, charge/dispute, and Stripe balance reads.
+- Added forward-only intent, immutable webhook/evidence, balance snapshot, custody-route, and
+  clearing-sweep schema; service-only commands enforce environment, Terms, project-admin,
+  amount, account, ordering, replay, RLS, append-only, and production-denial boundaries.
+- Bound exact USD availability to neutral-ledger posting, external funding application, and
+  conserved shadow journal evidence; full refund or lost-dispute evidence reverses the linked
+  transaction without mutating legacy payment state.
+- Separated presentment and provider-balance settlement currencies. Cross-currency USD-to-CAD
+  settlement evidence is retained but cannot unlock USD custody or shadow posting.
+- Added founder UI for USD sandbox instructions, pending evidence, sweep state, and explicit CAD
+  unavailability. Non-2xx typed Edge failures now preserve safe provider guidance for the UI.
+- Documented Stripe's USD-only bank-transfer presentment support for this path, the Fundloop
+  sandbox Bank Transfers activation blocker, credential handling, and validation workflow.
+
+#### Validation Notes
+
+- Passed: three fresh local Supabase migration/seed replays during development and the final
+  executable Stripe SQL suite, including production/CAD/direct-write denial, availability,
+  replay/conflict, ordering, mismatch, refund reversal, legacy non-mutation, and sweep pending.
+- Passed: all five integrated neutral-ledger, epoch, external reconciliation, Base V2, and Stripe
+  SQL suites.
+- Passed: real Stripe CLI signed event delivery through the local Edge runtime with authoritative
+  SDK re-fetch, normalized immutable evidence, and balance snapshot; invalid signature returned
+  400. The real USD instruction call correctly remained blocked because Bank Transfers are not
+  enabled in the Fundloop Stripe sandbox.
+- Passed: focused Vitest (3 files/13 tests), lint, typecheck, and `git diff --check` after the final
+  hardening. The final full Node 22 `CI=1 pnpm check` passed 136 files/624 tests plus the 162-route
+  production build.
+- Passed: final Supabase best-practices audit with least-privilege service access, transaction-level
+  advisory locks, short database-only command transactions, and zero unindexed foreign-key columns
+  across the new Stripe tables.
+- Passed: authenticated founder browser smoke at 1440x900 and 390x844 with zero pre-action console
+  errors, exact review-only/CAD disclosure, a pending $1,280 USD payment, and the Terms gate. Both
+  captures were visually inspected under `output/playwright/issue-131/`.
+
+#### Reflections
+
+- Stripe bank-transfer presentment does not support CAD, and the Fundloop sandbox currently
+  rejects USD funding instructions until Bank Transfers are enabled in Dashboard. Neither gap
+  may be represented as a green provider success fixture.
+- The Canadian sandbox converted a test USD card event into a CAD balance transaction. Treating
+  provider settlement amounts as if they shared the presentment currency would violate monetary
+  conservation; the model now fails closed on that boundary.
+
+#### Suggested Next Steps
+
+- Enable Bank Transfers for the Fundloop Stripe sandbox, rerun the real USD instruction and
+  delayed-availability/reversal/mismatch lifecycle, then independently validate #131. Keep CAD
+  bank transfer and every live/production path disabled pending an approved provider capability.
+
+### session v26: versioned project settlement packages (#133)
+
+- Timestamp: 2026-08-09T17:24:17-04:00
+- Agent: Codex
+- Branch: codex/130-settlement-packages
+- Head: 7b4953a
+
+#### Objective
+
+Implement the local/dev project-package workflow for #133 while the remaining Stripe provider
+activation proof is deferred, preserving a fail-closed production and no-value-flow boundary.
+
+#### Actions Taken
+
+- Added forward-only, append-only package, payment-pairing, funding-source, compliance, CUBID
+  cohort, email-evidence, and founder-decision schema with service-only command boundaries.
+- Added rerunnable pre-cutoff validation, immutable post-cutoff freeze, missing-pair rollover,
+  delivery-relative business deadlines, approve/opt-out/silent-approval decisions, and source-
+  preserving rollover that assesses the project fee once while deferring the base fee.
+- Bound settled Stripe/Base sources, approved attribution datasets, explicit KYB/KYC/sanctions
+  evidence, and the complete valid/whitelisted/greylisted/blacklisted/invalid/outage TTL matrix.
+- Added project-scoped pseudonyms, a privacy-safe approved public report, and a shadow lock-
+  candidate view that admits only fully approved packages while production remains disabled.
+- Added typed browser/server/Edge commands, founder review, operator reconciliation controls,
+  local Mailpit delivery, a public preliminary-report route, and project navigation.
+- Kept compliance inputs pending by default; operators must explicitly record all three passed
+  gates plus a SHA-256 evidence hash and validity time before validation can run.
+- Updated the settlement architecture status and regenerated the canonical Supabase types.
+
+#### Validation Notes
+
+- Passed: multiple fresh local Supabase migration/seed replays and the executable #133 SQL suite,
+  including production/authenticated/direct-write denial, missing-pair rollover, frozen mutation
+  denial, complete CUBID decisions, pseudonym separation, email gating, opt-out provenance,
+  silent approval, public privacy, and lock-candidate admission.
+- Passed: all six integrated neutral-ledger, epoch-shadow, external-reconciliation, Base V2,
+  Stripe intake, and project-package SQL suites.
+- Passed: focused Vitest (3 files/11 tests), lint, typecheck, `git diff --check`, and final
+  Supabase schema lint with no new warning (one pre-existing invitation parameter warning).
+- Passed: full Node 22 `CI=1 pnpm check` with 139 files/635 tests and the 165-route production
+  build.
+- Passed: real local browser flow with Maya OTP auth, frozen founder package at $990, one payment,
+  one settled source, three eligible and three held users; Mailpit accepted the finance recipient
+  email, the accepted timestamp created the deadline, founder approval created one lock candidate,
+  and the public report exposed only seven/three/three/one totals. Desktop 1440x900 and mobile
+  390x844 captures were visually inspected with zero console errors.
+
+#### Reflections
+
+- The Supabase local Edge launcher requires an explicit ignored env file; ordinary parent-shell
+  variables were not forwarded, and the first browser delivery correctly failed closed as
+  production until the explicit local runtime was provided.
+- Stripe provider activation remains separate from the package state machine. No sandbox fixture,
+  production credential, canonical lock, allocation, payable, provider payout, or value flow was
+  enabled by this session.
+
+#### Suggested Next Steps
+
+- Independently validate #133 and move it to In Review only after a passing report.
+- Return to the real #131 Stripe bank-transfer provider lifecycle when the newly approved Stripe
+  access can produce the required sandbox evidence; keep production activation deferred.
+
+### session v27: project-package validator fixes (#133)
+
+- Timestamp: 2026-08-09T17:38:00-04:00
+- Agent: Codex
+- Branch: codex/130-settlement-packages
+- Head: c821ce2
+
+#### Objective
+
+Close the independent #133 validator findings without broadening the production-disabled scope.
+
+#### Actions Taken
+
+- Removed `observedAt` and `decidedAt` from every browser-owned command shape and exact-key
+  allowlist. Edge now derives validation, decision, and silent-finalization timestamps from its
+  server clock; deterministic clock inputs remain reachable only through service-only SQL seams.
+- Added explicit missing-evidence rollover children with reciprocal `rolled_from_package_id` and
+  `rolled_to_package_id` provenance, copied source evidence, and a next-cycle manifest link.
+- Added adversarial contract and executable SQL assertions for forged timestamps and linked
+  missing-list/payment rollover lineage.
+- Repeated the real local founder/email/public flow and retained exact viewport evidence at
+  1440x900 and 390x844 plus a 1440x900 Mailpit delivery capture.
+
+#### Validation Notes
+
+- Passed: fresh local migration/seed replay and executable #133 SQL suite with linked rollover.
+- Passed: focused package Vitest (3 files/11 tests), typecheck, lint, and diff check before the
+  final broad gate.
+- Passed: real Mailpit delivery to `finance@civicmesh.example.com`, server-owned accepted time,
+  founder approval, one approved lock candidate, and privacy-safe public report; browser console
+  errors remained zero.
+- Visually inspected exact viewport artifacts:
+  `founder-desktop-1440x900.png`, `founder-mobile-390x844.png`,
+  `mailpit-delivery-1440x900.png`, `public-desktop-1440x900.png`, and
+  `public-mobile-390x844.png` under ignored `output/playwright/issue-133/`.
+
+#### Suggested Next Steps
+
+- Commit this narrow correction, rerun full Node 22 validation, and request independent #133
+  revalidation at the new exact commit.
+
+### session v28: monthly financial preparation and source provenance (#135)
+
+- Timestamp: 2026-08-09T18:13:48-04:00
+- Agent: Codex
+- Branch: codex/134-funded-redistribution
+- Head: 4c246ca
+
+#### Objective
+
+Implement production-disabled monthly FX, fee, expiry, carryover, and funded-source inputs for
+#135 without calculating allocations, creating payables, calling providers, or moving value.
+
+#### Actions Taken
+
+- Added ranked immutable FX observations, reviewed primary/fallback/manual-after-exhaustion
+  snapshots, exact stablecoin peg checks, Pacific DST helpers, and independent Edge/database
+  production gates.
+- Added versioned fee policies, executable min/max clamps, default 1% project fee, assessed-once
+  protection, 2.5% base fee, exact FX differences, and the invariant that gross equals project
+  fee plus base fee plus distributable principal.
+- Added source-by-source valuation lots retaining package, project, rail, asset, custody, native
+  atomic, exact USD, FX, minor-unit, deterministic-order, Cubid score/max, and eligible-cohort
+  provenance. Each prepared lot is bound to a balanced neutral-ledger transaction using only
+  provisional control classifications.
+- Added three-cycle expiry, reserved-value protection, linked carryover successors, append-only
+  source events, a secret-authenticated non-production harvest scheduler, service-only RPCs,
+  least-privilege table grants, RLS, indexed foreign keys, advisory locks, and `SKIP LOCKED` batch
+  processing.
+- Extended the monthly prep operator page with an exact source/custody review table and explicit
+  non-payable/non-revenue/no-value-flow copy. Updated allocation and treasury architecture,
+  generated Supabase types, local seed routing, strict shared Edge runtime types, and focused
+  contracts/UI tests.
+
+#### Validation Notes
+
+- Passed: repeated fresh local Supabase migration/seed replays and executable #135 SQL with
+  production/authenticated denial, manual-source exhaustion, primary FX, `1.004` depeg pause,
+  fee min/max, no double project fee, balanced neutral journals, native/functional conservation,
+  score-bearing lock candidates, reserved harvest denial, scheduled harvest, linked carryover,
+  and four independent exact `$0.335` sources.
+- Passed: strict Deno checks for both financial-prep Edge functions; focused Vitest 6 files/34
+  tests; lint, typecheck, and diff check.
+- Passed: full Node 22 `CI=1 pnpm check` with 142 files/645 tests and the 165-route production
+  build.
+- Passed: authenticated operator browser smoke with zero console errors. Exact 1440x900 and
+  390x844 artifacts under `output/playwright/issue-135/` were visually inspected; the detailed
+  desktop view shows six source lots, exact totals, linked carryover states, and all four `$0.335`
+  inputs.
+
+#### Reflections
+
+- JavaScript `Number` initially collapsed `1.003000000000000001` onto the allowed boundary. The
+  peg helper now compares the fixed 18-decimal representation exactly and the database remains
+  the authoritative numeric boundary.
+- Fee preparation needed a neutral-ledger link, not only stored arithmetic columns. The final
+  design records balanced provisional controls but deliberately makes no production accounting
+  classification or treasury movement claim.
+
+#### Suggested Next Steps
+
+- Commit #135 separately, post implementation evidence, and request independent validation.
+- If validation passes, move #135 to In Review and continue to #136 allocation calculation while
+  keeping #131 Stripe provider activation parked for the later sandbox-evidence return.
+
+### session v29: enforce FX fallback priority (#135)
+
+- Timestamp: 2026-08-09T18:26:41-04:00
+- Agent: Codex
+- Branch: codex/134-funded-redistribution
+- Head: 0e5135b
+
+#### Objective
+
+Close the independent #135 validator finding that allowed a lower-priority fallback FX source
+to post while a fresh eligible primary source remained available.
+
+#### Actions Taken
+
+- Made fallback selection reject whenever any fresh eligible observation for the same cycle and
+  asset has a better source rank. This enforces the complete ranked hierarchy, including the
+  required rank-1 primary-before-rank-2 fallback rule.
+- Added an executable adversarial fixture with simultaneous fresh rank-1 and rank-2 observations;
+  the fallback must raise `epoch_fx_higher_priority_source_available` before the primary posts.
+- Added focused migration-contract assertions for rank, freshness, and the stable error code.
+
+#### Validation Notes
+
+- Passed: fresh local Supabase migration/seed replay and the complete executable #135 SQL suite,
+  including the new primary/fallback bypass denial and all prior fee, precision, carryover,
+  privilege, and production-boundary cases.
+- The correction changes no UI, generated table/view types, provider integration, allocation,
+  payable, custody, transfer, or production behavior.
+
+#### Suggested Next Steps
+
+- Run the focused and broad Node 22 gates, commit the correction separately, post evidence, and
+  return exact HEAD to independent #135 revalidation.
+
+### session v30: settled Cubid redistribution calculation (#136)
+
+- Timestamp: 2026-08-09T19:00:02-04:00
+- Agent: Codex
+- Branch: codex/134-funded-redistribution
+- Head: b6e3e7f
+
+#### Objective
+
+Lock only approved, reconciled, journal-backed epoch source lots and deterministically calculate
+the score-discount/global-redistribution model under the preserved 3x cap, without creating a
+payable, payout, provider call, production path, or value flow.
+
+#### Actions Taken
+
+- Added the exact-rational `settled_cubid_redistribution_v1` calculator. It derives equal funded
+  project shares, locked score/max initial claims, score-pool contributions, proportional overlap
+  clamps, floored cap-aware retained lots, lowest-current-total-first top-ups, deterministic minor
+  units, source-linked residue, repeatable hashes, and separate exact/canonical evidence.
+- Added an immutable allocation manifest/result schema with source, project, rail, asset, custody,
+  native atomic, FX, ledger, project pseudonym, locked Cubid score/max, and evidence provenance.
+  Locking atomically reserves each source; result recording independently enforces source, pool,
+  award, funded-total, and user-cap conservation.
+- Added authenticated internal-operator Edge lock/calculate/read actions with trusted actor/runtime,
+  exact browser contracts, production denial, RLS, revoked direct writes, service-only RPCs, and an
+  operator prep review with explicit provisional/non-payable/no-provider/no-value-flow copy.
+- Kept `mvp_capped_equalization_v1` compatibility-only and made its calculation command reject
+  cycles that contain journal-backed epoch source lots, preventing the old activity-point path from
+  becoming canonical for funded allocation.
+- Updated allocation, operational MVP, and settlement treasury architecture plus generated
+  Supabase types. Added canonical A+B, four-$100, four-$0.335, material-score-change, deterministic
+  overlap/permutation properties, executable SQL, Edge/contract/UI tests, and exact browser smoke.
+
+#### Validation Notes
+
+- Passed repeated fresh local migration/seed replay and executable allocation SQL: production and
+  empty-cycle denial; approved/journal-backed lock; source reservation; idempotency/conflict;
+  source/award/cap/pool conservation; authenticated RPC denial; and service direct-write denial.
+- Passed a real authenticated Edge calculation from prepared Stripe review evidence through the
+  immutable database result: 9,652 funded minor units, 4,826 retained, 4,826 redistributed, zero
+  residue, and identical replay.
+- Passed focused calculator/contract/migration/UI tests, strict Deno check, lint, and typecheck.
+  Exact 1440x900 and 390x844 production-server browser captures under
+  `output/playwright/issue-136/` were visually inspected; the browser re-ran the calculation through
+  Edge with zero console errors.
+
+#### Reflections
+
+- Canonical retained targets must be bounded by the already-derived canonical initial source
+  capacity. A randomized overlap fixture exposed the otherwise possible attempt to retain a minor
+  unit that canonical source rounding had already assigned to the score pool.
+- Keeping source-pool component rows separate from terminal retained/top-up/residue dispositions
+  makes audit visibility possible without double-counting terminal conservation.
+
+#### Suggested Next Steps
+
+- Run the final fresh replay, all integrated SQL and full Node 22 gate, commit #136 separately, post
+  evidence, stop local services, and request independent issue validation before starting #137.
+
+### session v31: approved provisional awards and close package (#137)
+
+- Timestamp: 2026-08-09T23:17:16-04:00
+- Agent: Codex
+- Branch: codex/134-funded-redistribution
+- Head: 7dda20e
+
+#### Objective
+
+Independently rerun and approve the exact settled allocation, post source-linked provisional award
+controls into the neutral ledger, publish privacy-safe role views and a reproducible close package,
+and stop the shadow state at `payout_readying` without creating payables, ownership, provider calls,
+transfers, production activation, or value flow.
+
+#### Actions Taken
+
+- Added immutable approvals, provisional award controls and source fills, project aggregates, close
+  artifacts, and close packages. Approval independently reruns the persisted allocation and requires
+  exact manifest/result equality before writing the 12-artifact root-hashed close package.
+- Posted each positive retained, redistributed, and returned-residue terminal disposition through
+  source-linked neutral-ledger control accounts. Award rows remain explicitly conditional,
+  `not_payable`, `not_user_owned`, and `review_pending`.
+- Added the `approved_close_package_ready` hard gate and an atomic reviewing-to-`payout_readying`
+  shadow transition. The workflow cannot open payout, create a payable, invoke a provider, or move
+  value, and all command/runtime/database paths fail closed outside local/dev/test.
+- Added authenticated typed Edge approve/read commands, service-only actor-scoped reads, operator,
+  user, founder-project, and public project summaries. Public output applies a cohort threshold and
+  excludes identities, Cubid scores, individual awards, and cross-project membership.
+- Updated canonical allocation, operational, and treasury architecture, generated Supabase types,
+  executable SQL, focused contract/migration/UI tests, and a real local Playwright fixture.
+
+#### Validation Notes
+
+- Passed repeated fresh local Supabase migration/seed replays plus executable #135 and #136/#137
+  SQL: exact rerun/approval, idempotency, 12 artifacts/root, award and ledger conservation,
+  non-payable/non-owned controls, `payout_readying`, RLS/RPC/direct-write denial, production denial,
+  and thresholded public output.
+- Passed strict Deno check and focused Node 22 Vitest: 7 files / 26 tests.
+- Passed real authenticated local Edge and browser flows: calculate, approve, operator close, user
+  conditional award, founder EcoStream aggregate, and unauthenticated privacy-thresholded public
+  summary. Playwright passed 2/2 with zero captured console errors; exact 1440x900 and 390x844
+  artifacts under `output/playwright/issue-137/` were visually inspected.
+- Passed full Node 22 `CI=1 pnpm check`: lint, 149 test files / 673 tests, typecheck, and production
+  build with 165 generated pages. `git diff --check` passed. Local Next, Edge, and Supabase services
+  were stopped after validation.
+
+#### Reflections
+
+- Browser evidence must target the exact project represented by the close package. The seed actor
+  manages both Civic Mesh and EcoStream, while the settled fixture belongs to EcoStream.
+- Public browser assertions should prove sensitive identity absence while retaining explicit privacy
+  copy; banning the phrase `Cubid scores` would incorrectly reject the safe disclosure itself.
+
+#### Suggested Next Steps
+
+- Commit #137 as a distinct reviewable checkpoint, post implementation evidence, and request an
+  independent validator before promoting it to In Review or starting the dependent integrated Goal.
+
+### session v32: close exact-residue, root-approval, artifact, and privacy gaps (#137)
+
+- Timestamp: 2026-08-09T23:43:21-04:00
+- Agent: Codex
+- Branch: codex/134-funded-redistribution
+- Head: 10883ee
+
+#### Objective
+
+Resolve every independent #137 validation blocker without expanding into payout execution:
+separate the required carryover and returned-residue artifacts, actor-bind the exact root,
+source-link all exact fractions, and withhold all public totals below privacy thresholds.
+
+#### Actions Taken
+
+- Extended the pure allocator so each source's terminal retained, top-up, and returned-residue
+  dispositions conserve its exact funded USD independently of canonical minor units. The real
+  `$96.525` fixture now records `$48.2625` retained, `$48.26` top-up, and a source-linked `$0.0025`
+  exact returned residue with zero canonical minor units.
+- Added a forward migration that validates exact terminal source conservation and posts exact USD
+  into the neutral ledger. Zero-minor exact residue remains a real source fill and balanced control,
+  rather than disappearing into aggregate `subMinorExactUsd` evidence.
+- Replaced the artifact inventory with the live twelve classes, keeping separate `carryover` and
+  `returned_residue` artifacts and removing `allocation_result` from the root package. The immutable
+  allocation result remains independently bound by its result hash.
+- Split close into prepare and confirm phases. Preparation leaves the epoch in `reviewing` and
+  displays the exact root; the same authorized actor must confirm that hash into an immutable root
+  approval before hard gates, stage attempt, and `payout_readying` are written.
+- Withheld public epoch/project roots, funded/final/pool/top-up/residue totals, cohort counts, and
+  source counts below the threshold. The public UI now shows only explicit withheld labels.
+
+#### Validation Notes
+
+- Passed fresh forward migration/seed replay and executable #135 plus #136/#137 SQL, including wrong
+  root denial before state change, actor-bound root approval, exact source/ledger conservation,
+  separate artifact inventory, and null public totals/source counts below threshold.
+- Passed the real authenticated Edge and Playwright flow 2/2: calculate, prepare root, visibly review
+  the exact hash, confirm it, then inspect operator/user/founder/public views with zero console errors.
+  Exact desktop/mobile artifacts were visually inspected; the public capture contains no `9652`,
+  root, or source count below threshold.
+- Passed focused Node 22 Vitest: 7 files / 27 tests; strict Deno; lint; typecheck; `git diff --check`.
+- Passed full Node 22 `CI=1 pnpm check`: 149 files / 674 tests and production build / 165 pages.
+  Local Next, Edge, and Supabase were stopped after validation.
+
+#### Reflections
+
+- Canonical source capacity and exact source value are separate ledgers. Exact top-up consumption
+  must be bounded by exact pool provenance, then the serialized terminal remainder must reconcile
+  back to the source to avoid rational-to-decimal truncation loss.
+- A privacy threshold must suppress the values that create the inference, not merely replace the
+  cohort count while leaving exact totals visible.
+
+#### Suggested Next Steps
+
+- Commit this validator-fix batch separately, post corrective evidence, and return exact HEAD to the
+  same independent validator before promoting #137 or beginning #139.
+
+### session v33: resume persisted close-root review (#137)
+
+- Timestamp: 2026-08-09T23:51:40-04:00
+- Agent: Codex
+- Branch: codex/134-funded-redistribution
+- Head: a159818
+
+#### Objective
+
+Make the required exact-root approval resumable after reload or navigation instead of relying on
+ephemeral browser component state.
+
+#### Actions Taken
+
+- Hydrated `root_review_required` package ID and root hash from the operator read model into the
+  close action component.
+- Kept the confirmation action available for persisted prepared packages while continuing to hide
+  it once the package reaches `payout_readying`.
+- Extended the real Playwright flow to reload the admin page after preparation, verify the same
+  persisted root is still visible, and only then submit exact-root confirmation.
+
+#### Validation Notes
+
+- Passed focused close UI/contract tests, Node 22 typecheck, lint, and diff-check.
+- Passed real authenticated Edge + Playwright 2/2 with a deliberate reload between root preparation
+  and confirmation; all operator/user/founder/public assertions and zero-console-error checks passed.
+- Passed full Node 22 `CI=1 pnpm check`: 149 files / 674 tests, typecheck, and production build / 165
+  pages. Local Next, Edge, and Supabase services were stopped.
+
+#### Suggested Next Steps
+
+- Commit this narrow resumability fix, post evidence, and return exact HEAD for final independent
+  #137 validation before moving the issue or beginning #139.
+
+### session v34: unify withdrawal obligations and inventory reservations (#139)
+
+- Timestamp: 2026-08-10T00:27:30-04:00
+- Agent: Codex
+- Branch: codex/134-funded-redistribution
+- Head: efa192b
+
+#### Objective
+
+Replace all-or-nothing legacy withdrawal requests and direct result-derived payout intents with one
+partial, oldest-first, inventory-backed obligation path that queues safely when selected inventory
+is unavailable and remains production fail-closed.
+
+#### Actions Taken
+
+- Added the forward-only withdrawal control-plane migration: obligation and partial-claim balances,
+  project-linked rail/asset inventory, exact native reservations at originating epoch FX, immutable
+  lifecycle evidence, compliance holds, execution-attempt scaffolding, and self-scoped read models.
+- Extended withdrawal requests with one route/destination hash, rail, asset, gross/fee/net minor
+  snapshots, queue target, and reserved/queued/held/paid/cancelled/closed states. Stripe review
+  requests enforce $10, Base review requests $5, and user fees accept exact 0%-100% snapshots.
+- Added atomic oldest-first claims and deterministic inventory locking. Fully backed requests create
+  exactly one draft withdrawal-backed payout intent; depleted selected-asset inventory creates no
+  intent and queues for the next epoch. Reservation expiry keeps the original claim queued.
+- Retired new direct published-result payout intent creation. Added typed user and internal-operator
+  Edge contracts for create/cancel/retry, close-package preparation, holds, and server-timed expiry;
+  client actor, environment, and time inputs cannot cross those boundaries.
+- Reworked the earnings workspace and withdrawal panel for partial amount entry, project-linked
+  inventory visibility, fee snapshots, explicit statuses, cancellation, and no-payout copy. Updated
+  the canonical treasury architecture and generated Supabase types.
+
+#### Validation Notes
+
+- Passed repeated fresh local Supabase migration/seed replays and the executable withdrawal SQL:
+  production/auth/direct-DML denial, oldest-first partial claims, exact Stripe/Base native amounts,
+  $10/$5 thresholds, 0%/100% fees, idempotency conflict, holds, cancellation cleanup, expiry queue,
+  depleted-inventory queue without intent, direct-intent retirement, cross-user RLS, and exact
+  obligation-state conservation.
+- Passed the independent two-session reservation race: one $300 request won, one failed safely,
+  total active claims remained 35,000 of 40,000 minor units, and no credit/inventory was doubled.
+- Passed strict Deno for both Edge functions, focused Node 22 Vitest (6 files / 22 tests), typecheck,
+  lint, and `git diff --check`. Full Node 22 `CI=1 pnpm check` passed 150 files / 677 tests plus the
+  165-page production build. Schema lint has no new warning (one pre-existing invitation parameter).
+- Passed authenticated local Playwright 1/1 with zero console errors. Exact 1440x900 and 390x844
+  captures under `output/playwright/issue-139/` were visually inspected and show partial input,
+  route, project-linked inventory, 0%-100% fee snapshot, and reserved/queued/closed states.
+
+#### Reflections
+
+- Availability and custody inventory are independent constraints: the UI deliberately shows both,
+  and the database may queue an otherwise timely request without manufacturing an unbacked intent.
+- Exact obligation state belongs at the minor-unit claim layer. A partially claimed source can retain
+  an available remainder while its claimed portion is reserved, queued, held, paid, or closed.
+
+#### Suggested Next Steps
+
+- Commit #139 separately, post implementation evidence, stop local services, and send exact HEAD to
+  the independent validator before moving #139 to In Review or beginning its dependent task.
+
+### session v35: close withdrawal validation gaps (#139)
+
+- Timestamp: 2026-08-10T00:44:51-04:00
+- Agent: Codex
+- Branch: codex/134-funded-redistribution
+- Head: 36d8fbc
+
+#### Objective
+
+Close independent-validation gaps by binding each request to one exact project/asset inventory,
+retiring the remaining direct result-to-intent app path, and deriving depleted-inventory rollover
+from the active processing epoch rather than an old obligation source cycle.
+
+#### Actions Taken
+
+- Added a forward migration and `withdrawal_request.v3` command. Project ID is now part of the
+  validated browser contract, immutable request hash/snapshot, eligibility check, and reservation
+  query; same-asset lots from another project cannot satisfy the request.
+- Changed queued-request derivation to use the latest non-closed shadow processing epoch and its
+  next available monthly cycle, with a deterministic next-cycle key when the row is not yet present.
+- Removed the legacy direct-result payout-intent component, typed adapters, Edge handler, command,
+  and success tests. The admin payout page now directs operators to project-scoped user withdrawals.
+- Updated architecture docs, executable SQL, the two-session race, generated Supabase types, unit
+  contracts, and exact desktop/mobile browser evidence.
+
+#### Validation Notes
+
+- Fresh local Supabase migration/seed replay passed. Executable SQL passed project mismatch denial,
+  absence of cross-project reservations, current-epoch rollover (`2026-11` to `2026-12` despite
+  `2026-10` sources), production/auth/direct-write denial, and all prior lifecycle assertions.
+- Two-session concurrency passed with one winner and one safe loser; active claims remained 36,000
+  of 40,000 minor units. Strict Deno passed the remaining withdrawal Edge handler.
+- Focused Node 22 Vitest passed 4 files / 17 tests. Full Node 22 `CI=1 pnpm check` passed lint,
+  148 files / 670 tests, typecheck, and the 165-page production build; `git diff --check` passed.
+- Authenticated Playwright passed 1/1 with zero console errors. Exact 1440x900 and 390x844 captures
+  were regenerated and visually inspected; the project-specific select is clear at both sizes.
+
+#### Reflections
+
+- Asset symbol alone is not a custody scope: project identity must be present at every boundary
+  from option value through request hash and reservation row selection.
+- Rollover is a fulfillment promise made at request time, so it follows the live processing epoch,
+  not the age of earnings used to satisfy the obligation claim.
+
+#### Suggested Next Steps
+
+- Commit this narrow validator fix, post evidence, stop local services, and request independent
+  revalidation before moving #139 to In Review or starting #140.
+
+### session v36: execute review-only Base Safe payouts (#140)
+
+- Timestamp: 2026-08-10T01:36:54-04:00
+- Agent: Codex
+- Branch: codex/134-funded-redistribution
+- Head: dced0f0
+
+#### Objective
+
+Implement an executable, non-production Base Safe/module and paymaster payout boundary that binds
+the recipient net and user-fee transfers, observes real receipts, and permits paid state only after
+exact finalized evidence and a balanced neutral-ledger journal.
+
+#### Actions Taken
+
+- Added a Safe payout module with owner-authorized request hashes, exact token/user/platform
+  destinations, net/fee amounts, epoch, expiry, nonce, replay protection, token allowlist, pause,
+  signer rotation, and independent per-transaction, rolling-day, and epoch limits. Added separate
+  epoch/platform Safe fixtures and a bounded review paymaster budget.
+- Added a guarded deployment script for explicit local fixtures and reviewed Base Sepolia inputs.
+  Production is rejected, Safe enablement remains an owner-threshold action, and no private key or
+  deployed address is tracked.
+- Added a forward-only Supabase control plane for Safe deployments/assets, paymaster budgets,
+  typed execution commands, separately reserved fee inventory, immutable receipt observations,
+  final reconciliation links, and service-only RPC access. Authorization derives the user route,
+  project asset, platform Safe, fee split, gross limits, and gas budget from trusted state.
+- Added a typed internal Edge command and viem adapter. The adapter hashes and executes only the
+  persisted command, observes the exact module event from a real receipt, and cannot run in
+  production. Failed, replaced, and reorged evidence stays unpaid; final exact evidence consumes
+  both inventory legs and posts recipient/platform debits against epoch custody.
+- Added an admin review surface with both Safes, independent limits, net/fee split, command hash,
+  execution, and finality controls. Updated payout/environment/treasury docs and Supabase types.
+
+#### Validation Notes
+
+- Passed fresh local Supabase migration/seed replay and integrated executable SQL for project
+  packages, financial prep, funded allocation, close, withdrawals, and Base payouts. Base probes
+  cover production/auth/direct-DML denial, wrong token/recipient/platform Safe, gross over-limit,
+  depleted paymaster, fee inventory, failed/replaced/reorg evidence, finality denial, exact paid
+  transition, balanced gross journal, and append-only observations.
+- Passed Hardhat 15/15, including a real local epoch Safe transfer split between the recipient and
+  platform Safe, exact viem receipt observation, replay/expiry/revocation/pause/module denial,
+  rolling/epoch limits, and paymaster depletion/rotation. Local guarded deployment passed;
+  production refused; Base Sepolia stopped on absent authorized RPC/key credentials.
+- Passed strict Deno checks, focused Node 22 Vitest (4 files / 8 tests), typecheck, lint, and
+  `git diff --check`. Full Node 22 `CI=1 pnpm check` passed 152 files / 678 tests plus the 165-page
+  production build.
+- Authenticated local Playwright passed 1/1 with zero console errors. Exact 1440x900 and 390x844
+  captures under `output/playwright/issue-140/` were visually inspected and show both Safes,
+  limits, recipient/platform split, reconciled command, and disabled execution controls.
+
+#### Reflections
+
+- The selected user fee is a custody movement, not merely display math: it needs its own inventory
+  reservation, exact Safe destination, gross limits, receipt evidence, and ledger leg.
+- Database counters are defense in depth. The Safe module independently owns the irreversible
+  token, destination, amount, expiry, replay, signer, and cumulative-limit checks.
+
+#### Suggested Next Steps
+
+- Commit #140 separately, post implementation evidence, stop local Supabase, and request
+  independent validation before moving #140 to In Review or beginning #141.
+
+### session v37: close Base Safe validation gaps (#140)
+
+- Timestamp: 2026-08-10T02:00:12-04:00
+- Agent: Codex
+- Branch: codex/134-funded-redistribution
+- Head: fdccda8
+
+#### Objective
+
+Close independent-validation failures in Safe threshold ownership, replacement/reorg provenance,
+and executable gas sponsorship without broadening the non-production boundary.
+
+#### Actions Taken
+
+- Made the epoch Safe the immutable owner of the payout module and sponsorship vault. Deployment
+  configuration now occurs through Safe owner execution; neither the deployer nor limited signer
+  can authorize requests, change tokens/limits, rotate the signer, pause, or change the sponsor.
+  Database deployment evidence enforces the same Safe-owner/module-controller topology.
+- Converted the review paymaster counter into a funded native reimbursement vault. The module is
+  its sole controller; gas budget is part of the exact request hash and event, and recipient token,
+  platform-fee token, and limited-signer reimbursement all succeed or revert atomically. A depleted
+  vault now reverts the payout and leaves token balances unchanged.
+- Preserved original and replacement hashes separately through the typed observer command. The
+  observer now compares prior receipt evidence and records `reorged` when a receipt disappears or
+  changes block, instead of dropping that evidence as an exception.
+- Extended SQL, Hardhat, Vitest, generated types, deployment manifests, and architecture docs for
+  the corrected threshold, sponsorship, replacement, and reorg contracts.
+
+#### Validation Notes
+
+- Fresh local migration/seed replay and executable Base SQL passed, including rejection of a
+  deployer-owned module topology, exact original/replacement hash persistence, reorg evidence,
+  gas-budget observation, all prior lifecycle denials, finality, paid state, and journal balance.
+- Hardhat passed 17/17: Safe-threshold-only policy mutation, real recipient/platform transfers,
+  actual native reimbursement, atomic depleted-vault rollback, and missing-receipt reorg evidence.
+- Focused Node 22 Vitest passed 4 files / 10 tests, including typed original/replacement and reorg
+  propagation. Strict Deno, typecheck, lint, and diff-check passed.
+- Full Node 22 `CI=1 pnpm check` passed 152 files / 680 tests and the 165-page production build.
+  UI layout did not change; the previously inspected exact desktop/mobile evidence remains current.
+
+#### Reflections
+
+- A Safe module is only a threshold control if the Safe owns every policy-changing method; module
+  enablement alone does not protect a deployer-owned authorization surface.
+- A gas budget is operationally meaningful only when the payout transaction consumes it. Keeping
+  the database counter and onchain vault independent provides defense in depth.
+
+#### Suggested Next Steps
+
+- Commit the narrow #140 validation fix, post evidence, stop local Supabase, and request exact-HEAD
+  revalidation before changing status or beginning #141.
+
+### session v38: add Stripe Connect sandbox payout control plane (#141)
+
+- Timestamp: 2026-08-10T02:47:20-04:00
+- Agent: Codex
+- Branch: codex/134-funded-redistribution
+- Head: 3d37714
+
+#### Objective
+
+Implement Stripe-hosted USD/CAD onboarding and a test-mode-only Connect payout lifecycle that
+keeps bank credentials at Stripe, derives every payout from approved FundLoop obligations, and
+marks paid only after trusted provider settlement evidence and a balanced neutral-ledger journal.
+
+#### Actions Taken
+
+- Added a forward-only Stripe Connect control plane for redacted account readiness and requirement
+  history, payout commands, immutable signed-webhook evidence, observations, USD/CAD custody, and
+  service-only typed RPCs. Direct service mutations are denied and all runtime controls fail closed
+  outside local/dev/test/preview environments.
+- Added authenticated hosted Express onboarding/management and an internal payout operator Edge
+  boundary. Both bind a test-mode platform account; the webhook verifies the raw Stripe signature,
+  rejects live-mode and unrelated events, retrieves provider state through the SDK, and preserves
+  payload-bound deduplication and out-of-order evidence without regressing state.
+- Derived gross, fee, net, currency, account, withdrawal, allocation claims, and custody inventory
+  from persisted state. Retry reuses an already-created transfer, requirement changes place the
+  route and obligation on hold, and paid requires exact account/currency/amount evidence before
+  balanced canonical/native ledger posting and atomic claim/reservation reconciliation.
+- Added user account/earnings and operator payout surfaces, typed contracts/invokers/read models,
+  SQL/Vitest/Playwright coverage, exact environment documentation, generated Supabase types, and
+  a sandbox operating runbook. User surfaces retain only country, currency, readiness, and a
+  redacted destination last four; no routing or account numbers enter FundLoop storage.
+
+#### Validation Notes
+
+- Fresh local Supabase migration/seed replay passed. Executable SQL passed USD and CAD lifecycles,
+  exact 2.5% fee derivation, locked-FX native amounts, duplicate/conflicting/out-of-order webhooks,
+  requirement-change holds, failure/remediation, transfer-reusing retry, balanced paid journals,
+  production/auth/direct-write denial, and user-scoped reads.
+- Strict Deno checks passed all three Edge handlers. Focused Node 22 Vitest passed 6 files / 15
+  tests; typecheck, lint, and `git diff --check` passed. Full Node 22 `CI=1 pnpm check` passed lint,
+  158 files / 695 tests, typecheck, and the 165-page production build. Schema lint reported only
+  the pre-existing unused `inspect_project_invitation_review.p_actor_user_id` warning.
+- Authenticated local Playwright passed 1/1 with zero console errors. Exact 1440x900 and 390x844
+  captures under `output/playwright/issue-141/` were visually inspected and show sandbox readiness,
+  redacted destination `6789`, hosted-provider actions, and the settlement-plus-journal paid rule.
+- Official Stripe CLI access to the Fundloop sandbox was verified, but real connected-account
+  creation stopped at Stripe's provider gate because Connect is not enabled for that sandbox. No
+  external account, payout, webhook, live credential, or production value flow was created.
+
+#### Reflections
+
+- A provider retry must distinguish transfer funding from connected-account payout execution;
+  stable but separate idempotency keys plus persisted transfer reuse prevent double funding.
+- Provider settlement is evidence, not authority over FundLoop amounts. Canonical USD, selected
+  user fee, locked FX, custody asset, and allocation claims remain derived and conserved locally.
+
+#### Suggested Next Steps
+
+- Commit #141 separately, post implementation evidence, stop local Supabase, and request exact-HEAD
+  independent validation. Enable Connect on the Fundloop Stripe sandbox before the real hosted
+  onboarding, signed-webhook, and USD/CAD provider checkpoint; keep live mode deferred.
+
+### session v39: conserve Stripe fees and recover provider acknowledgements (#141)
+
+- Timestamp: 2026-08-10T03:04:11-04:00
+- Agent: Codex
+- Branch: codex/134-funded-redistribution
+- Head: 6f1d60e
+
+#### Objective
+
+Close independent-validation gaps in user-fee inventory/journal conservation and Stripe-provider
+success followed by a failed local acknowledgement, while preserving the sandbox-only boundary.
+
+#### Actions Taken
+
+- Added a forward migration with separately source-linked canonical/native fee inventory. Fee
+  reservations reuse held provenance during remediation, remain unavailable to later withdrawals,
+  and become consumed only with the provider-paid reconciliation transition.
+- Added provisional user-fee control and revenue legs to the same balanced settlement journal.
+  Net custody retains exact provider-native/FX evidence while functional debit and credit totals
+  now equal the gross withdrawal; no provider fee asset is falsely transferred out of custody.
+- Made in-flight payout preparation resumable. A provider-created payout whose first local
+  acknowledgement fails is recovered with the same command, transfer, and payout idempotency keys;
+  acknowledgement is itself idempotent and rejects changed provider references.
+- Retried one transient acknowledgement in the adapter, exposed a precise local-commit-pending
+  result if both writes fail, and moved the production runtime denial before any Stripe API access.
+  Updated generated types, executable SQL, focused tests, and the sandbox runbook.
+
+#### Validation Notes
+
+- Fresh local Supabase replay and executable Stripe Connect SQL passed. The $10 gross fixture now
+  proves 975 net plus 25 fee inventory consumed, a $10 balanced journal, the exact 25-cent fee
+  revenue leg, resumable processing, and idempotent repeated provider acknowledgement.
+- Strict Deno checks passed all three Edge handlers. Focused Vitest passed 6 files / 17 tests;
+  typecheck, lint, and diff-check passed. Full Node 22 `CI=1 pnpm check` passed lint, 158 files /
+  697 tests, typecheck, and the 165-page production build.
+- The Stripe sandbox checkpoint remains externally blocked because Connect is not enabled on the
+  Fundloop sandbox. No connected account, provider payout, signed connected-account webhook, live
+  credential, or production value flow was created.
+
+#### Reflections
+
+- A payout fee consumes user entitlement and inventory even when it remains in platform custody;
+  separate source provenance plus fee-control/revenue entries make that disposition explicit.
+- Provider idempotency is only useful if the local state machine can resume the exact command after
+  an acknowledgement fault. Retrying by creating a new local attempt would hide, not solve, the gap.
+
+#### Suggested Next Steps
+
+- Commit the two local fixes and request independent revalidation. Keep #141 In Progress until
+  Connect is enabled and the real hosted onboarding, signed-webhook, and USD/CAD sandbox checkpoint
+  can be executed; continue other non-production Feature #118 work in the meantime.
+
+### session v40: heal Stripe payout acknowledgement through signed webhooks (#141)
+
+- Timestamp: 2026-08-10T03:11:51-04:00
+- Agent: Codex
+- Branch: codex/134-funded-redistribution
+- Head: d8ee487
+
+#### Objective
+
+Ensure a signed Stripe webhook can recover and reconcile a provider payout that succeeded before
+both local acknowledgement writes failed, without requiring an operator retry to arrive first.
+
+#### Actions Taken
+
+- Added exact FundLoop command and transfer identifiers to Stripe payout webhook observations from
+  provider-owned payout metadata after SDK refetch and signature verification.
+- Added a forward-only service RPC wrapper that validates runtime, observation source, account,
+  command, payout, and transfer identity before binding the missing provider references. Conflicting
+  or unknown metadata is rejected; the existing immutable webhook lifecycle then continues normally.
+- Extended executable SQL to omit local submission acknowledgement, ingest the signed in-transit
+  event, prove it healed both provider references, and then reconcile the paid event. Updated static
+  contract coverage, generated Supabase types, and the sandbox recovery runbook.
+
+#### Validation Notes
+
+- Fresh local Supabase migration/seed replay passed through the new recovery migration. Executable
+  Stripe Connect SQL passed, including webhook-first reference healing, repeated acknowledgement,
+  fee inventory conservation, USD/CAD settlement, remediation, and all prior privilege gates.
+- Strict Deno passed the webhook handler. Focused Vitest passed 6 files / 17 tests; typecheck, lint,
+  and diff-check passed. Full Node 22 `CI=1 pnpm check` passed lint, 158 files / 697 tests,
+  typecheck, and the 165-page production build.
+- Real hosted onboarding and payout proof remains externally blocked by the Fundloop sandbox Connect
+  activation state; the new recovery behavior is validated locally with trusted-contract fixtures.
+
+#### Reflections
+
+- Provider metadata is a useful recovery index only after signature verification and authoritative
+  SDK refetch. Treating browser or raw webhook JSON as the same authority would reopen the boundary.
+- Webhook retry and operator retry must converge on one command and one provider payout; neither may
+  depend on winning the race to store the first acknowledgement.
+
+#### Suggested Next Steps
+
+- Commit this narrow recovery fix and request independent local revalidation. Leave #141 In Progress
+  until the Fundloop Stripe sandbox has Connect enabled and the real provider checkpoint can run.
+
+### session v41: close PR #150 review integrity findings
+
+- Timestamp: 2026-08-10T03:51:32-04:00
+- Agent: Codex
+- Branch: codex/134-funded-redistribution
+- Head: 11fa5b7
+
+#### Objective
+
+Address all actionable Copilot and Codex review findings on PR #150 without widening the
+review-only, non-production payout boundary.
+
+#### Actions Taken
+
+- Added a forward migration and typed Base operator checkpoint that reads the module's exact
+  `authorizedRequests` mapping, persists a service-only chain proof, and refuses limited-signer
+  execution until both persisted and current on-chain authorization are true. Updated the admin
+  copy and controls to separate database preparation, Safe threshold authorization, proof, and
+  execution.
+- Replaced the withdrawal v3 command with a project/asset/rail-scoped obligation selector. The
+  request and payout intent now retain USD or CAD from the selected fiat asset, while Base
+  stablecoin obligations retain their canonical USD reporting currency.
+- Normalized Stripe bank-transfer local/development/dev/preview/test gates, switched platform
+  account reads to Stripe's typed `retrieveCurrent()` API, and repaired strict Deno typing and
+  duplicate webhook-field construction across the earlier #131/#133 Edge handlers.
+- Extended SQL, contract, component, and command tests for cross-project obligation isolation,
+  CAD currency, Safe proof mismatch/success, execution denial before proof, review runtimes, and
+  current-platform account lookup. Regenerated canonical Supabase types.
+
+#### Validation Notes
+
+- Fresh local Supabase reset applied all migrations and seed through
+  `20260810150000_review_feedback_integrity.sql`. Withdrawal, Base Safe, Stripe Connect, and Stripe
+  bank-transfer executable SQL passed; the Base wrapper also passed with committed disposable
+  fixtures.
+- Strict Deno passed all fourteen added Edge handlers. Focused Vitest passed 5 files / 22 tests;
+  Hardhat passed 17 / 17; full Node 22 `CI=1 pnpm check` passed lint, 158 files / 702 tests,
+  typecheck, and the 165-page production build. `git diff --check` passed.
+- The authenticated Base operator Playwright checkpoint passed at exact 1440x900 and 390x844 with
+  refreshed screenshots and zero console errors. Initial browser attempts exposed only missing or
+  incompatible local Supabase key configuration; the final run used the current local publishable
+  and secret keys and passed.
+
+#### Reflections
+
+- A database record named "authorized" is not chain authority. The limited signer must remain
+  unusable until the Safe threshold has authorized the exact request hash and the runtime has
+  independently observed that mapping.
+- Project scope must constrain the liability claims themselves, not only the later inventory
+  reservation, or an unrelated project can be locked even when no value is transferred.
+- Stripe SDK v22 exposes `retrieveCurrent()` as the typed no-id platform-account API; it is clearer
+  and safer than relying on the legacy `retrieve(null)` overload.
+
+#### Suggested Next Steps
+
+- Commit and push this review batch, reply to and resolve all eight PR threads, wait for post-push
+  CI, and merge only after the published integration validator is green. Keep #131 and #141
+  In Progress until their real Stripe provider checkpoints can execute.
+
+### session v42: add reversible financial cutover controls (#143)
+
+- Timestamp: 2026-08-10T10:31:04-04:00
+- Agent: Codex
+- Branch: codex/118-operational-readiness
+- Head: 66d599d
+
+#### Objective
+
+Provide a reversible, non-production cutover from legacy monetary projections to canonical funded
+obligations and neutral-ledger liabilities without deleting history, duplicating claims, or enabling
+production value flow.
+
+#### Actions Taken
+
+- Added a forward-only financial cutover control plane that snapshots and hashes legacy payments,
+  monthly cycles, bookkeeping credits, withdrawal requests, and payout intents; records explicit
+  classifications, differences, canonical links, state changes, and the singleton compatibility
+  switch.
+- Added service-only prepare, activate, rollback, and read commands. Activation re-locks all source
+  tables, revalidates source hashes, posts reviewed opening liabilities exactly once, blocks
+  unresolved active credits/requests/intents, switches canonical reads, and makes legacy monetary
+  writes read-only. Rollback preserves all source and canonical evidence.
+- Added the typed Edge boundary, exact runtime and actor derivation, generated schema types, a
+  non-production runbook, architecture links, executable RLS/RPC/conservation tests, and a retained
+  pre-feature migration harness that proves a real representative legacy row upgrades safely.
+
+#### Validation Notes
+
+- Fresh local Supabase replay and the executable financial cutover suite passed. The suite proves
+  blocker classification, exact $12.34 opening-liability conservation, source-drift rejection,
+  idempotent replay, no duplicate obligation, write freeze, rollback retention, production denial,
+  and authenticated/service-role privilege boundaries.
+- The pre-feature harness reset to migration `20260810150000`, inserted a representative $42 legacy
+  bookkeeping credit, applied the cutover migration, and proved it was preserved as an explicit
+  `legacy_unverified` blocker before restoring the current schema.
+- Focused Vitest passed 2 files / 6 tests; strict Deno, TypeScript, lint, and diff-check passed.
+  Schema lint reported only two pre-existing unused-parameter warnings. Full Node 22
+  `CI=1 pnpm check` passed lint, 160 files / 708 tests, typecheck, and the 165-page build.
+
+#### Reflections
+
+- A cutover is safe only if its approval set and source hashes are revalidated while the source
+  tables are locked; a prepared report alone cannot authorize later state after source drift.
+- Reversibility means restoring routing and write policy while retaining both legacy and canonical
+  evidence. Deleting the new liabilities on rollback would make audit recovery less reliable.
+
+#### Suggested Next Steps
+
+- Commit #143 and request independent validation. Keep production activation disabled. After #143
+  passes, implement #144 operational monitoring, alerts, and recovery evidence on this branch.
+
+### session v43: close cutover activation races (#143)
+
+- Timestamp: 2026-08-10T10:45:40-04:00
+- Agent: Codex
+- Branch: codex/118-operational-readiness
+- Head: f071047
+
+#### Objective
+
+Resolve the independent validator's canonical-evidence race, monthly-cycle write-boundary gap, and
+cross-environment singleton inconsistency before promoting the financial cutover task.
+
+#### Actions Taken
+
+- Added a forward migration that locks every legacy and canonical classification dependency before
+  activation, then recomputes package, close, obligation, claim, request, and payout evidence. Any
+  gained, lost, changed, or amount-mismatched verification now rejects the prepared manifest.
+- Wrapped the original activation RPC behind the new revalidation boundary and removed all direct
+  execution privileges from the unchecked implementation. Cross-environment activation now
+  supersedes every other active run and appends actor/evidence-bound supersession events so the
+  singleton and run statuses cannot disagree.
+- Extended the legacy write boundary to `monthly_cycles`, added executable post-prepare package
+  mutation and local-to-dev singleton probes, and expanded static migration coverage.
+
+#### Validation Notes
+
+- Fresh local migration replay passed through `20260810161000`. Executable cutover SQL passed the
+  validator's post-prepare package-link mutation denial, legacy cycle-write denial, and exactly-one
+  active cross-environment transition, alongside all prior conservation/RLS/replay/rollback checks.
+- The representative pre-feature migration harness passed again with both cutover migrations and
+  restored the current schema. Focused Vitest passed 2 files / 7 tests; strict Deno, typecheck, lint,
+  type generation, and diff-check passed.
+- Full Node 22 `CI=1 pnpm check` passed lint, 160 files / 709 tests, typecheck, and the 165-page
+  production build. Production and provider value flow remain disabled.
+
+#### Reflections
+
+- Source-row immutability is insufficient when classification depends on external canonical tables;
+  the decision graph must be locked and re-evaluated as one activation transaction.
+- A singleton pointer is not enough if per-run status can contradict it. Superseding globally and
+  recording immutable events makes the operator and audit views agree.
+
+#### Suggested Next Steps
+
+- Commit this forward fix, post evidence, and request exact-commit revalidation before starting
+  #144. Keep local Supabase only long enough for that validator's executable probes.
+
+### session v44: retain same-environment supersession evidence (#143)
+
+- Timestamp: 2026-08-10T10:52:37-04:00
+- Agent: Codex
+- Branch: codex/118-operational-readiness
+- Head: f180d32
+
+#### Objective
+
+Close the final #143 audit gap by retaining an immutable supersession event when one local cutover
+run replaces another run in the same deployment environment.
+
+#### Actions Taken
+
+- Added a narrow forward wrapper that snapshots all prior active run IDs under the singleton advisory
+  lock before delegating to the already validated activation boundary.
+- After activation, the wrapper appends any missing actor/evidence-bound supersession event exactly
+  once. This covers same-environment replacement while deduplicating events already written for
+  cross-environment replacement.
+- Extended executable SQL with local run A → local run B → dev run C, proving each displaced run is
+  superseded once and the singleton retains exactly one active run. Updated static migration coverage
+  and regenerated Supabase types.
+
+#### Validation Notes
+
+- Fresh local replay through `20260810162000` passed. The complete executable cutover suite passed,
+  including canonical-evidence drift, cycle write retirement, same-environment event retention,
+  cross-environment replacement, conservation, replay, rollback, and privilege checks.
+- Focused Vitest passed 2 files / 7 tests; typecheck, type generation, and diff-check passed. The full
+  Node 22 gate is rerun before this commit is finalized.
+
+#### Reflections
+
+- Capturing prior active IDs before delegation is necessary because the inner transition may validly
+  change their status before an outer audit layer can query them.
+- Supersession evidence should be idempotent by transition kind and run, independent of whether the
+  replacement crosses an environment label.
+
+#### Suggested Next Steps
+
+- Commit and request one final exact-commit revalidation. Promote #143 only after that audit passes,
+  then begin #144 on the same retained branch.
+
+### session v45: operationalize the Feature #118 evidence matrix (#144)
+
+- Timestamp: 2026-08-10T12:41:56-04:00
+- Agent: Codex
+- Branch: codex/118-operational-readiness
+- Head: 5cb308a
+
+#### Objective
+
+Turn the Feature #118 operator and five-persona acceptance surface into one repeatable, fail-closed
+local gate with truthful provider classifications, exact visual evidence, and zero owned residue.
+
+#### Actions Taken
+
+- Added a machine-readable 18-capability matrix that distinguishes local-real, sandbox-real,
+  stubbed, and pending behavior and binds every claim to its evidence owner and high-risk cases.
+- Added the `test:e2e:feature-118` orchestrator. It refuses non-loopback Supabase targets, replays the
+  schema, runs all five personas, the privacy and real Edge-to-Mailpit browser lane, ten SQL suites,
+  focused contracts, Hardhat, the full Node 22 gate, and a final reset with a digest-bound summary.
+- Hardened the persona and local-browser runners with process-group cleanup, bounded diagnostics,
+  runtime-only secrets, exact 1440x900 and 390x844 captures, and stable cold-start navigation.
+- Extended the operator journey through lock, calculation, verification, approval, bookkeeping,
+  observability, and founder/member readback. Removed raw participant UUIDs from the reviewed admin
+  result and payout surfaces.
+- Recorded a deterministic local FX seed, safe disabled-chain synchronization, capability/privacy
+  requirements, operational instructions, and the external Stripe inbound and production gates.
+
+#### Validation Notes
+
+- Canonical run `feature-118-20260810T163447180Z-43f7b007` passed all 18 recorded phases: fresh
+  replay, five personas, two browser checks, ten SQL suites, 18 focused tests, 17 Hardhat tests,
+  full Node 22 check, and the final zero-residue reset.
+- The full gate passed lint, 161 Vitest files / 714 tests, typecheck, and the 165-page production
+  build. Persona and Mailpit screenshots were inspected at exactly 1440x900 and 390x844.
+- Every persona cleanup report was clean with zero owned residue. No production value flow, hosted
+  mutation, remote Supabase write, provider mutation, payable, transfer, or payout was enabled.
+- Stripe Connect USD/CAD payout remains truthfully classified from retained sandbox evidence; Stripe
+  customer-balance USD/CAD intake remains pending, Base USDT/PYUSD remain stubbed, and policy and
+  accounting approvals remain deferred to production.
+
+#### Reflections
+
+- A green operational matrix is trustworthy only when unavailable capabilities remain visibly
+  pending and the summary is bound to the reviewed classification file.
+- Immutable consent and withdrawal evidence must have separate transactional owners; deleting it in
+  persona cleanup would make a clean report misleading.
+- Process-group cleanup is part of test correctness because orphaned Edge or Next processes can make
+  a later run pass against stale runtime state.
+
+#### Suggested Next Steps
+
+- Commit #144 and request independent exact-commit validation before moving it to In Review.
+- Validate integrated Goal #142 after #144 passes. Feature #118 remains externally blocked only by
+  #131 until Stripe enables the required customer-balance bank-transfer capability.
+
+### session v46: expose the proposed Terms disclosure model (#144)
+
+- Timestamp: 2026-08-10T13:02:00-04:00
+- Agent: Codex
+- Branch: codex/118-operational-readiness
+- Head: 0a26f96
+
+#### Objective
+
+Close the independent validator's disclosure-surface gap without presenting unapproved legal or
+accounting conclusions as effective Terms.
+
+#### Actions Taken
+
+- Added the canonical proposed no-refund, no-escrow, discretionary-refund, and best-effort payout
+  model to the local/dev Terms review page under the existing draft/not-effective boundary.
+- Kept refunds, ownership, enforceability, and recognition explicitly unresolved for production and
+  retained counsel/accountant approval as a hard production gate.
+- Added executable route assertions that the review wording is present locally and absent from the
+  production placeholder, and registered omission of those disclosures as a high-risk matrix case.
+- Extended the real authenticated Edge/browser and SQL evidence to record both the project actor on
+  `project_funding_preview` and the user on `payout_preview`, then verify exact persisted capacities.
+- Added bounded Supabase/Mailpit readiness retries to the standalone persona launcher after a clean
+  reset exposed an API health race; target and environment checks remain unchanged.
+
+#### Validation Notes
+
+- Canonical run `feature-118-20260810T192804001Z-28a2b3e3` passed all 18 phases with digest
+  `5627c964c8295344f44b9a0fc7c90edfd1b6605a242a2e17bb064d4734906a85`.
+- The browser lane passed 2/2 with both authenticated acknowledgement capacities, private-profile
+  grant/withdrawal, and real Edge-to-Mailpit delivery. Exact disclosure captures passed visual
+  inspection at 1440x900 and 390x844.
+- SQL passed both acceptance records and all nine remaining control-plane suites. Focused policy and
+  matrix tests, 17 Hardhat tests, lint, typecheck, diff-check, 161 files / 714 tests, and the 165-page
+  production build passed.
+- The canonical legal draft and immutable hash are unchanged; this surface now exposes language
+  already present in `docs/legal/review-drafts/terms-canada.md` rather than inventing a new policy.
+- Production still branches before all draft text and metadata, even with a hostile preview flag.
+
+#### Reflections
+
+- A capability matrix must validate the user-visible disclosure itself, not infer it from a
+  version/hash acknowledgement control.
+- Product intent can be testable before professional approval only when the UI labels it prominently
+  as non-effective and the production route fails closed.
+
+#### Suggested Next Steps
+
+- Commit this narrow validator fix and request exact-commit revalidation of #144.
+
+### session v47: close PR #151 review gaps (#143, #144)
+
+- Timestamp: 2026-08-10T17:13:28-04:00
+- Agent: Codex
+- Branch: codex/118-operational-readiness
+- Head: 2ba5668
+
+#### Objective
+
+Address every actionable PR #151 review thread while preserving the reversible, non-production
+cutover and complete local operational evidence boundary.
+
+#### Actions Taken
+
+- Added a forward canonical-credit compatibility view and a server-owned cutover read-mode helper.
+  The earnings workspace and monthly-cycle payout overview now read canonical obligation amounts and
+  payment state only for an exact active singleton, retain legacy reads only for the exact inactive
+  state, and fail closed with no monetary rows for missing or contradictory state.
+- Removed the broad `monthly_cycles` write guard so typed lifecycle transitions remain inputs to the
+  canonical epoch engine while legacy payment, bookkeeping-credit, withdrawal-request, and payout-
+  intent writes remain retired. Extended executable SQL and architecture documentation accordingly.
+- Restored every local Playwright spec under the `local-wallet` project and separated the operational
+  Mailpit lane. The runner now replays a clean schema and commits each authored SQL fixture before
+  its workflow, waits through Edge cold starts, and stops active child commands without performing a
+  heavy final reset after interruption.
+- Guaranteed desktop viewport restoration after mobile evidence failures, preserved direct local-
+  owner cleanup after REST transport errors, and added a screenshot-pattern/reason invariant.
+- Routed local wagmi reads through the configured Hardhat RPC without unsupported multicall and made
+  token approval wait for receipt finality plus a refreshed allowance before enabling submission.
+- Bound deposit recording to the exact submitted transaction hash so an earlier approval receipt
+  cannot be mistaken for the deposit, and made recording idempotent across receipt-state rerenders.
+- Split allocation and Stripe Connect browser setup into dedicated deterministic fixtures. Added a
+  narrow local-console filter for the known fake Reown endpoints while retaining failures for all
+  product-owned console errors, plus phase-selectable retries for the serialized runner.
+
+#### Validation Notes
+
+- A fresh local Supabase reset applied every migration through
+  `20260810163000_financial_cutover_read_integration.sql`; the executable
+  `financial_cutover_control_plane.sql` suite and both dedicated rollback fixtures passed.
+- Focused Vitest passed 6 files / 26 tests, including the cutover read-mode matrix, migration
+  contract, deposit-receipt race regression, operational matrix, cleanup, viewport, and reporting
+  invariants.
+- The complete `local-wallet` project passed 8/8 browser tests: policy/profile acknowledgement,
+  token approval/deposit/reconciliation and mismatch retry, allocation/root reload and privacy
+  views, withdrawal, Base payout, and Stripe Connect reconciliation. The separate operational lane
+  passed 1/1 with real authenticated Edge-to-Mailpit delivery. Required desktop/mobile captures
+  were retained at 1440x900 and 390x844.
+- Full Node 22 `CI=1 pnpm check` passed: lint, 162 Vitest files / 722 tests, typecheck, and the
+  165-route production build. Runner syntax, documentation links, secret/artifact scans, and
+  `git diff --check` also passed.
+- Local services and child process groups were stopped after the evidence run; production, provider,
+  legal/accounting, canonical cutover, and real-value-flow gates remain fail closed.
+
+#### Reflections
+
+- A cutover is not active merely because writes are blocked; the application read paths must resolve
+  the canonical state through a fail-closed server boundary.
+- Lifecycle state and monetary projections are different write classes. Freezing the former would
+  prevent the canonical epoch engine from receiving its own inputs.
+- Test orchestration must be interruptible: cleanup that starts a new database reset after SIGTERM
+  defeats an operator's attempt to relieve an overloaded workstation.
+
+#### Suggested Next Steps
+
+- Commit and push this review-fix batch, reply to and resolve all six PR threads without requesting
+  rereview, wait for green CI/Vercel/Supabase checks, then merge and run approved cleanup.
+
+### session v48: implement fail-closed Canadian PAD intake (#152)
+
+- Timestamp: 2026-08-11T01:25:00-04:00
+- Agent: Codex
+- Branch: codex/130-multi-rail-bank-intake
+- Head: 1709bbd (pre-commit)
+
+#### Objective
+
+Add a non-production Canadian pre-authorized debit funding rail using Stripe-hosted Checkout while
+keeping Customer Balance bank transfer, USD PAD, production activation, mandate reuse, and real
+value flow fail closed.
+
+#### Actions Taken
+
+- Added typed CAD PAD Checkout/status contracts, a provider adapter, authenticated browser
+  invokers, three strict Edge handlers, and a founder payment panel. Checkout uses an active
+  dynamic payment-method configuration and integration identifier without hard-coded
+  `payment_method_types`, saved methods, or off-session mandate reuse.
+- Added a forward-only Supabase control plane for runtime/capability evidence, a provisional CAD
+  asset/custody route, idempotent prepared commands and provider acknowledgement recovery,
+  append-only signed webhook observations, authoritative session/intent/charge/mandate/balance
+  transaction checks, balanced neutral-ledger posting, one-time reversal, scoped status reads, and
+  service-role-only commands.
+- Extended epoch package funding sources with an exact PAD command reference. The package validator
+  attaches only settled, unreversed custody-backed sources; pending Checkout or processing evidence
+  cannot make a package fundable.
+- Added executable SQL, adapter/contract/component/migration tests, a serial local runner phase,
+  exact desktop/mobile Playwright evidence, generated Supabase types, architecture/testing docs,
+  and the Feature #118 capability matrix entry.
+- Rechecked the canonical `fundloop-canonical` Stripe CLI profile. It is test-only and Canadian, has
+  zero Checkout Sessions, and its active default configuration reports `acss_debit.available=false`
+  and `value=off`; therefore the real provider path truthfully stops before Checkout mutation.
+
+#### Validation Notes
+
+- Fresh local Supabase replay applied every migration through
+  `20260811100000_stripe_acss_debit_intake.sql`. Executable PAD SQL passed production and USD
+  denial, authenticated direct-write denial, idempotent prepare, pending-not-fundable, exact
+  available custody, native/functional balance, package linkage, refund reversal, and replay safety.
+- Strict Deno checks passed for all three new PAD handlers. Focused Vitest passed 4 files / 13 tests;
+  Node 22 full `CI=1 pnpm check` passed 165 files / 731 tests, typecheck, lint, and the 165-route
+  production build.
+- The local founder Playwright spec passed at 1440x900 and 390x844 with zero unexpected console
+  errors. Both retained screenshots were visually inspected and contain no bank, transit, or
+  institution details.
+- Stripe test capability evidence used read-only CLI calls only. No Stripe object, remote database,
+  live credential, production policy, payable, payout, or real value flow was created.
+
+#### Reflections
+
+- A hosted return is merely user-flow completion; custody eligibility needs an independently
+  refetched available balance transaction, exact mandate/session binding, and conserved journal.
+- Provider absence is a valid smoke result only when the implementation proves the denial occurs
+  before provider mutation and deterministic fixtures still exercise every local state transition.
+
+#### Suggested Next Steps
+
+- Commit #152 separately, run independent issue validation, and start #153 only after a passing
+  verdict. Keep PAD unavailable until the canonical test payment-method configuration becomes
+  authoritative; never infer USD eligibility from locale or user input.
+
+### session v49: close Canadian PAD lifecycle validation gaps (#152)
+
+- Timestamp: 2026-08-11T01:55:00-04:00
+- Agent: Codex
+- Branch: codex/130-multi-rail-bank-intake
+- Head: a123cd5 (pre-commit)
+
+#### Objective
+
+Close every independent #152 validation finding without broadening the provider, production, or
+value-flow boundary.
+
+#### Actions Taken
+
+- Added a forward lifecycle-integrity migration that pins the unique Checkout Session,
+  PaymentIntent, Charge, and mandate identities to the prepared PAD command and rejects missing or
+  changed provider identities.
+- Made refund and lost-dispute evidence durable terminal barriers against later settlement. Open
+  disputes now block package eligibility immediately.
+- Added append-only package-source invalidation records. Refund, open-dispute, and lost-dispute
+  evidence marks every already-linked package unsettled while preserving its immutable source
+  evidence; a won dispute can only support a newly validated package.
+- Updated the signed webhook refetch to resolve the unique command-bound Checkout Session for every
+  PaymentIntent, refund, and dispute event rather than accepting a null session comparison.
+- Expanded founder lifecycle copy and disabled terminal-state resume actions. The local browser
+  fixture now retains authorization, pending, reconciled, and reversal evidence at exact desktop
+  and mobile viewports.
+
+#### Validation Notes
+
+- A disposable local Supabase start from no backup applied every migration through
+  `20260811103000_stripe_acss_debit_lifecycle_integrity.sql`.
+- Executable PAD SQL passed package invalidation, terminal-before-settlement denial, open-dispute
+  denial, missing-session denial, provider-identity drift denial, exact posting/reversal, and all
+  prior production/RLS/idempotency checks.
+- Strict Deno passed all three PAD handlers; focused Vitest passed 3 files / 14 tests.
+- Playwright passed 1/1 with zero unexpected product console errors and retained eight captures:
+  authorization, pending, reconciled, and reversal at 1440x900 and 390x844. The captures were
+  dimension-checked and visually inspected.
+
+#### Reflections
+
+- Webhook order cannot be trusted. Terminal negative evidence must be durable independently of the
+  provider timestamp so an older positive event cannot restore custody later.
+- Reversing a ledger entry is insufficient if an immutable package source already consumed it;
+  downstream eligibility needs its own append-only invalidation evidence.
+
+#### Suggested Next Steps
+
+- Run the full Node 22 gate, commit the narrow validator-fix batch, and request independent #152
+  revalidation. Begin #153 only after #152 passes and reaches In Review.
+
+### session v50: implement fail-closed EUR and GBP Pay by Bank intake (#153)
+
+- Timestamp: 2026-08-11T02:28:00-04:00
+- Agent: Codex
+- Branch: codex/130-multi-rail-bank-intake
+- Head: cde2b2b (pre-commit)
+
+#### Objective
+
+Add non-production one-time EUR/GBP Pay by Bank project funding with exact merchant, customer,
+currency, capability, configuration, topology, webhook, custody, ledger, refund, and package gates.
+
+#### Actions Taken
+
+- Added typed Checkout/status contracts, a provider adapter, browser invokers, three Edge handlers,
+  and a founder panel. The UI represents UK and Finland as generally available, keeps France,
+  Germany, and Ireland private-preview gated, and never collects bank credentials.
+- Bound provider discovery to the exact test merchant account, supported merchant country,
+  `pay_by_bank_payments` capability, dynamic payment-method configuration, charge topology,
+  customer country, and EUR/GBP presentment before command persistence or Checkout mutation.
+- Added a forward-only Supabase control plane with provisional EUR/GBP assets and custody, exact
+  source provenance, idempotent command/provider acknowledgement, append-only signed/refetched
+  evidence, RLS/service-only mechanics, and production-disabled runtime constraints.
+- Added balanced neutral-ledger receipt posting and exact refund accounting. Refund-pending
+  invalidates existing package sources; successful full or partial refunds reverse the original
+  receipt, partial residuals receive a separately conserved journal but remain quarantined from
+  allocation, and terminal expiry/refund evidence blocks older settlement.
+- Extended package funding compatibility without weakening Customer Balance, Base, or PAD source
+  shapes. Added the isolated runner phase, executable SQL, focused tests, generated types,
+  architecture/testing docs, and the operational capability-matrix entry.
+
+#### Validation Notes
+
+- Fresh local Supabase replay applied every migration through
+  `20260811110000_stripe_pay_by_bank_intake.sql`. Executable SQL passed production/private-preview
+  denial, authenticated direct-write denial, idempotency, exact merchant/country/session/intent/
+  charge binding, settled custody, fee/native/functional conservation, package provenance,
+  refund-pending invalidation, partial-refund reversal plus 75.00 residual, and terminal expiry
+  before late settlement.
+- Strict Deno passed all three handlers. Focused Vitest passed 4 files / 18 tests. Node 22 full
+  `CI=1 pnpm check` passed 168 files / 750 tests, lint, typecheck, and the 165-route build.
+- Focused Playwright passed 1/1 with zero unexpected console errors. Eight retained captures cover
+  authorization, pending, reconciled, and refund states at exact 1440x900 and 390x844; desktop and
+  mobile captures were visually inspected and contain no sensitive bank data.
+- Read-only canonical Stripe evidence shows Canadian account `acct_1U2VggGR0O1dEuJh` has
+  `pay_by_bank_payments=active`, but its sole active default configuration reports Pay by Bank
+  `available=false` and `value=off`. A follow-up read found zero Checkout Sessions, so the hosted
+  smoke is truthfully expected-pending with zero provider mutation.
+
+#### Reflections
+
+- A generic account capability is insufficient: the dynamic configuration and the exact merchant,
+  charge topology, customer country, and currency must agree before any provider-side mutation.
+- Partial refund correctness needs two ledgers: the original receipt is fully reversed and the
+  remaining provider custody is re-recorded exactly, while allocation eligibility stays closed
+  until a future explicit product contract can safely consume that residual.
+
+#### Suggested Next Steps
+
+- Commit #153 separately and run independent issue validation. If it passes, validate Goal #130 as
+  the integrated three-rail result while keeping Customer Balance unsupported, hosted Pay by Bank
+  expected-pending, and every production/value-flow path disabled.
+
+### session v51: close Pay by Bank validator boundary gaps (#153)
+
+- Timestamp: 2026-08-11T02:42:00-04:00
+- Agent: Codex
+- Branch: codex/130-multi-rail-bank-intake
+- Head: baec6ad (pre-commit)
+
+#### Objective
+
+Close all five independent #153 validation findings while preserving the zero-provider-mutation,
+non-production, no-value-flow boundary.
+
+#### Actions Taken
+
+- Restricted the implemented charge topologies to platform and direct charges. The Edge boundary
+  and a forward database constraint now reject destination/separate paths and reject any mismatch
+  between topology, platform account, and provider account before command creation.
+- Corrected canonical-platform discovery to use Stripe's current-account retrieval form while
+  retaining exact connected-account retrieval for direct charges. Webhooks remain bound to the
+  same platform/direct ownership model.
+- Removed the bare environment private-preview allowlist. France, Germany, and Ireland now remain
+  unconditionally closed until an authoritative merchant-scoped Stripe signal exists.
+- Required the dynamic payment-method configuration to have Pay by Bank as its sole available/on
+  method, preventing cards or unrelated methods from appearing in the hosted session.
+- Changed authoritative refund observation to use cumulative `Charge.amount_refunded`. Added a
+  forward residual-retirement control plane so each later cumulative refund reverses the prior
+  residual before posting the single new balance; a final full refund leaves zero live residual.
+
+#### Validation Notes
+
+- Fresh local replay applied the new forward migration
+  `20260811111000_stripe_pay_by_bank_validator_fixes.sql` cleanly.
+- Executable Pay by Bank SQL passed explicit destination denial, platform/account mismatch denial,
+  private-preview denial even with a hostile true flag, first 25.00 partial refund, cumulative
+  50.00 replacement, final 100.00 refund, zero live residual, and all prior settlement/package/RLS
+  checks.
+- Strict Deno passed all three handlers; focused Vitest passed 4 files / 19 tests; typecheck and
+  diff-check passed before the final full gate.
+
+#### Reflections
+
+- Advertising a topology enum is not implementation. A rail should expose only charge patterns
+  whose provider request, event ownership, custody, and reconciliation are all concretely bound.
+- Refund records are incremental objects, but custody state is cumulative. Residual accounting must
+  replace the prior balance rather than treating every refund object as a new independent balance.
+
+#### Suggested Next Steps
+
+- Rerun the full Node 22 gate, commit this narrow forward fix, and request independent #153
+  revalidation against both the original findings and the new sequential-refund probes.
+
+### session v52: normalize current and cumulative Pay by Bank refunds (#153)
+
+- Timestamp: 2026-08-11T02:51:00-04:00
+- Agent: Codex
+- Branch: codex/130-multi-rail-bank-intake
+- Head: 9210f75 (pre-commit)
+
+#### Objective
+
+Close the remaining independent #153 refund-normalization finding without weakening the
+non-production, signed-webhook, or cumulative custody boundaries.
+
+#### Actions Taken
+
+- Split authoritative Stripe refund evidence into the current `Refund.amount` and cumulative
+  successful `Charge.amount_refunded`, rather than using the cumulative value for every refund
+  lifecycle status.
+- Added a forward-only normalized refund observation table and RPC wrapper. Pending and failed
+  events retain their current refund amount even when cumulative successful refunds are zero;
+  successful events alone pass the cumulative total into residual custody replacement.
+- Extended executable SQL through pending to failed, first partial, second partial, and full refund
+  transitions. The assertions retain both amount dimensions and prove 75.00, 50.00, then zero live
+  residual without double counting.
+- Updated the typed observation contract, focused boundary tests, generated Supabase types, and the
+  Pay by Bank architecture note.
+
+#### Validation Notes
+
+- Fresh local Supabase replay applied `20260811112000_stripe_pay_by_bank_refund_normalization.sql`.
+- Executable Pay by Bank SQL passed, including pending and failed events with current amount 25.00
+  and cumulative successful amount zero, followed by cumulative 25.00, 50.00, and 100.00 success.
+- Strict Deno passed all three Pay by Bank Edge handlers. Focused Vitest passed 3 files / 16 tests.
+
+#### Reflections
+
+- A Stripe Refund object describes one refund attempt, while the Charge describes cumulative
+  successful value. Persisting both prevents failed or pending attempts from corrupting custody
+  while retaining enough evidence to audit each provider lifecycle transition.
+
+#### Suggested Next Steps
+
+- Run the full Node 22 gate, commit this narrow normalization fix, then request independent #153
+  revalidation before promoting the issue or validating Goal #130.
+
+### session v53: enforce monotonic Pay by Bank refund custody (#153)
+
+- Timestamp: 2026-08-11T03:02:00-04:00
+- Agent: Codex
+- Branch: codex/130-multi-rail-bank-intake
+- Head: cc32950 (pre-commit)
+
+#### Objective
+
+Prevent stale or duplicate cumulative refund observations from enlarging or recreating Pay by Bank
+residual custody while retaining replay-safe signed evidence.
+
+#### Actions Taken
+
+- Added a forward refund-ordering migration that serializes each command's refund observations and
+  accepts custody changes only when the cumulative successful-refund total strictly increases.
+- Retained equal or decreasing signed observations in the append-only normalization table with
+  provider event, provider timestamp, payload hash, and canonical command hash, without invoking
+  ledger mutation again.
+- Replaced the overly broad command/refund/status uniqueness rule with exact provider-event
+  idempotency. Exact replay returns the canonical evidence ID; a changed payload for that event
+  fails closed.
+- Added executable regressions for an equal same-refund event, 50.00 to 25.00 out-of-order decrease,
+  stale 50.00 after a full 100.00 refund, and changed-payload conflict.
+
+#### Validation Notes
+
+- Fresh local replay applied `20260811113000_stripe_pay_by_bank_refund_ordering.sql` and the full Pay
+  by Bank executable SQL passed all original plus monotonic-ordering assertions.
+- Strict Deno passed all three Pay by Bank handlers. The full Node 22 `CI=1 pnpm check` passed 168
+  files / 753 tests, lint, typecheck, and the 165-route production build; diff-check passed.
+
+#### Reflections
+
+- Provider delivery order cannot define custody. The monotonic cumulative provider total is the
+  state invariant; event identity remains the audit and replay invariant.
+
+#### Suggested Next Steps
+
+- Run strict Edge/focused/full Node 22 gates, commit, and request another independent #153
+  revalidation before changing issue status.
+
+### session v54: close integrated strict Deno boundary (#130)
+
+- Timestamp: 2026-08-11T03:18:00-04:00
+- Agent: Codex
+- Branch: codex/130-multi-rail-bank-intake
+- Head: 9f6a80d (pre-commit)
+
+#### Objective
+
+Close the sole integrated Goal #130 validation failure without changing any intake behavior.
+
+#### Actions Taken
+
+- Added a deterministic fallback message when the shared JSON parser returns an unsuccessful result
+  without an error string in the Base receipt-record and reconciliation Edge handlers.
+- Kept authentication, runtime, provider observation, RPC, and production boundaries unchanged.
+
+#### Validation Notes
+
+- Strict Deno passed all 12 integrated package and intake handlers: Base receipt/reconciliation,
+  package workflow, Customer Balance, CAD PAD, and EUR/GBP Pay by Bank.
+- Full Node 22 `CI=1 pnpm check` passed 168 files / 753 tests, lint, typecheck, and the
+  165-route production build; diff-check passed.
+
+#### Reflections
+
+- The app TypeScript gate does not cover Deno Edge entrypoints. Integrated Goal validation must keep
+  the strict Edge batch as a separate required gate.
+
+#### Suggested Next Steps
+
+- Run the full Node 22 gate, commit the narrow typing fix, then rerun integrated Goal #130 validation.
+
+### session v55: connect expanded intake rails to funded allocation prep (#134)
+
+- Timestamp: 2026-08-11T03:42:00-04:00
+- Agent: Codex
+- Branch: codex/130-multi-rail-bank-intake
+- Head: 3dfb9e8 (pre-commit)
+
+#### Objective
+
+Close integrated Goal #134's expanded-source gap so every supported reconciled package source can
+reach custody-backed FX, fee processing, and allocation lock candidates.
+
+#### Actions Taken
+
+- Added forward-only Base USDC/USDT/PYUSD financial assets, epoch-treasury custody accounts, and
+  source routes; linked Base deployment assets to those canonical financial assets.
+- Imported CAD PAD and EUR/GBP Pay by Bank custody routes into epoch prep and widened source-lot
+  constraints without enabling production or provider mutations.
+- Replaced the old two-branch prep evidence switch with explicit Customer Balance, Base, CAD PAD,
+  and Pay by Bank validation. Each branch binds project, asset, native amount, canonical provider
+  state, and exact custody route before FX and neutral-ledger fee posting.
+- Added executable Base, CAD PAD, and GBP Pay by Bank paths from reconciled intake through FX,
+  valuation source lot, conserved fee journal, and funded allocation lock candidate. Existing
+  generic allocation and close suites continue to consume those rail-neutral candidates.
+- Updated focused migration coverage and the canonical allocation architecture note.
+
+#### Validation Notes
+
+- Fresh local Supabase replay applied `20260811114000_epoch_multi_rail_financial_prep.sql`.
+- Seven executable SQL suites passed: Base intake, project packages, financial prep, funded
+  allocation, allocation close, CAD PAD, and EUR/GBP Pay by Bank.
+- Focused migration coverage passed 3 files / 17 tests with one worker.
+- Full Node 22 `CI=1 pnpm check` passed lint, 168 files / 754 tests, typecheck, and the
+  165-route production build; diff-check passed.
+
+#### Reflections
+
+- Package admission and allocation preparation are separate trust boundaries. Adding a source kind
+  to package capture is incomplete until prep revalidates its canonical evidence and maps the exact
+  rail/asset/custody dimensions.
+
+#### Suggested Next Steps
+
+- Commit the bounded fix, then rerun integrated Goal #134 validation.
+
+### session v56: bind project payments to one quoted settlement rail (PR #154)
+
+- Timestamp: 2026-08-11T04:49:23-04:00
+- Agent: Codex
+- Branch: codex/130-multi-rail-bank-intake
+- Head: c86dfa3 (pre-commit)
+
+#### Objective
+
+Close the three actionable Codex review findings on PR #154: prevent one project payment from
+settling through multiple Stripe rails, derive foreign-currency Checkout amounts from reviewed
+quotes, and retain terminal CAD PAD evidence that arrives before mandate creation.
+
+#### Actions Taken
+
+- Added append-only, non-production funding quotes that bind a USD payment obligation to an exact
+  CAD, EUR, or GBP source amount. The database derives the foreign minor-unit amount from the
+  reviewed rate; browser and Checkout request contracts cannot supply or override it.
+- Added one immutable settlement-rail claim per payment. Ledger-backed availability claims under a
+  payment-scoped advisory lock, later cross-rail settlement rolls back atomically, and package
+  sources must reproduce the claim, command, quote, and native amount.
+- Preserved failed or canceled CAD PAD evidence when Stripe has not created a mandate, while all
+  nonterminal and settled evidence continues to require and pin the exact mandate identity.
+- Updated downstream SQL fixtures to carry explicit settled-rail claims, regenerated canonical
+  Supabase types, and corrected the CAD PAD, Pay by Bank, and settlement architecture docs.
+
+#### Validation Notes
+
+- Fresh local Supabase replay applied `20260811115000_project_payment_rail_integrity.sql` and seed.
+- Seven executable SQL suites passed: rail integrity, CAD PAD, Pay by Bank, project packages,
+  financial prep, funded allocation, and allocation close.
+- Focused Vitest passed 7 files / 34 tests; strict Deno passed four affected Edge handlers.
+- Full Node 22 `CI=1 pnpm check` passed lint, 169 files / 757 tests, typecheck, and the 165-route
+  production build; diff-check passed.
+
+#### Reflections
+
+- A legacy payment is an obligation, not a presentment-currency amount or a rail-specific receipt.
+  Conversion and settlement ownership therefore need independent immutable evidence before a
+  reconciled provider event can enter allocation.
+
+#### Suggested Next Steps
+
+- Commit and push the review fix, reply to and resolve the three addressed Codex threads, then wait
+  for PR checks without requesting a second Codex review.

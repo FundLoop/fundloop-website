@@ -6,7 +6,7 @@ import { useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { toast } from "@/components/ui/use-toast"
-import { supabase } from "@/lib/supabase"
+import { getSupabaseBrowserClient } from "@/lib/supabase"
 import { Mail } from "lucide-react"
 
 export default function NewsletterSignup() {
@@ -18,6 +18,7 @@ export default function NewsletterSignup() {
     setIsSubmitting(true)
 
     try {
+      const supabase = getSupabaseBrowserClient()
       // Save to Supabase
       const { error } = await supabase
         .from("newsletter_subscribers")

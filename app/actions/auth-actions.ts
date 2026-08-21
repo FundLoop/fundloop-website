@@ -1,30 +1,20 @@
 "use server"
 
-import { createServerClient } from "@supabase/ssr"
-import { cookies } from "next/headers"
 import { revalidatePath } from "next/cache"
+import { createServerSupabaseClient } from "@/lib/supabase-server"
 
-// Create a Supabase client for server actions
-const createClient = () => {
-  const cookieStore = cookies()
-  return createServerClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!, {
-    cookies: {
-      get(name: string) {
-        return cookieStore.get(name)?.value
-      },
-      set(name: string, value: string, options: { path: string; maxAge: number; domain?: string }) {
-        cookieStore.set({ name, value, ...options })
-      },
-      remove(name: string, options: { path: string; domain?: string }) {
-        cookieStore.set({ name, value: "", ...options, maxAge: 0 })
-      },
-    },
-  })
+type UserEmail = {
+  id: number
+  email: string
+  is_primary: boolean
+  is_verified: boolean
+  is_removed: boolean
+  created_at: string | null
 }
 
 // Get the current user's ID from our database
 export async function getCurrentUserId() {
-  const supabase = createClient()
+  const supabase = await createServerSupabaseClient()
 
   const {
     data: { user },
@@ -36,166 +26,78 @@ export async function getCurrentUserId() {
     return null
   }
 
-  const { data, error } = await supabase.from("users").select("id").eq("auth_id", user.id).single()
-
-  if (error) {
-    console.error("Error getting user ID:", error)
-    return null
-  }
-
-  return data.id
+  return user.id
 }
 
 // Add a new email to the user's account
 export async function addEmail(email: string) {
-  const supabase = createClient()
-  const userId = await getCurrentUserId()
-
-  if (!userId) {
-    throw new Error("User not authenticated")
-  }
-
-  // Check if this is the first email (should be primary)
-  const { count, error: countError } = await supabase
-    .from("user_emails")
-    .select("*", { count: "exact", head: true })
-    .eq("user_id", userId)
-    .eq("is_removed", false)
-
-  if (countError) throw countError
-
-  const isPrimary = count === 0
-
-  // Add to our custom table
-  const { data, error } = await supabase
-    .from("user_emails")
-    .insert([
-      {
-        user_id: userId,
-        email,
-        is_primary: isPrimary,
-        is_verified: false,
-      },
-    ])
-    .select()
-    .single()
-
-  if (error) throw error
-
-  // Link identity in Supabase Auth
-  // In a real implementation, this would send a verification email
-  // For now, we'll just link the identity directly
-  try {
-    const { error: linkError } = await supabase.auth.admin.createUser({
-      email,
-      email_confirm: true,
-      user_metadata: { linked_to: userId },
-    })
-
-    if (linkError) throw linkError
-  } catch (error) {
-    // If linking fails, remove the email from our custom table
-    await supabase.from("user_emails").delete().eq("id", data.id)
-
-    throw error
-  }
-
-  revalidatePath("/settings/account")
-  return data
+  void email
+  throw new Error("Additional email identities are not supported by the current database schema.")
 }
 
 // Set an email as primary
 export async function setEmailAsPrimary(emailId: number) {
-  const supabase = createClient()
-  const userId = await getCurrentUserId()
-
-  if (!userId) {
-    throw new Error("User not authenticated")
-  }
-
-  const { error } = await supabase
-    .from("user_emails")
-    .update({ is_primary: true })
-    .eq("id", emailId)
-    .eq("user_id", userId)
-    .eq("is_removed", false)
-
-  if (error) throw error
-
-  revalidatePath("/settings/account")
+  void emailId
+  throw new Error("Multiple email identities are not supported by the current database schema.")
 }
 
 // Remove an email from the user's account
 export async function removeEmail(emailId: number) {
-  const supabase = createClient()
+  const supabase = await createServerSupabaseClient()
   const userId = await getCurrentUserId()
 
   if (!userId) {
     throw new Error("User not authenticated")
   }
 
-  // Check if this is the only email
-  const { count, error: countError } = await supabase
-    .from("user_emails")
-    .select("*", { count: "exact", head: true })
-    .eq("user_id", userId)
-    .eq("is_removed", false)
-
-  if (countError) throw countError
-
-  if (count <= 1) {
-    throw new Error("Cannot remove the only email address")
-  }
-
-  // Get the email address
-  const { data: emailData, error: emailError } = await supabase
-    .from("user_emails")
-    .select("email, is_primary")
-    .eq("id", emailId)
-    .single()
-
-  if (emailError) throw emailError
-
-  // Mark as removed in our custom table
-  const { error } = await supabase
-    .from("user_emails")
-    .update({ is_removed: true })
-    .eq("id", emailId)
-    .eq("user_id", userId)
-
-  if (error) throw error
-
-  // Note: In a real implementation, we would NOT unlink the identity from Supabase Auth
-  // as per the requirements. We're just marking it as removed in our custom table.
-
-  revalidatePath("/settings/account")
+  void emailId
+  void supabase
+  throw new Error("The primary account email cannot be removed from within this app.")
 }
 
 // Get all emails for the current user
-export async function getUserEmails() {
-  const supabase = createClient()
+export async function getUserEmails(): Promise<UserEmail[]> {
+  const supabase = await createServerSupabaseClient()
   const userId = await getCurrentUserId()
 
   if (!userId) {
     throw new Error("User not authenticated")
   }
 
-  const { data, error } = await supabase
-    .from("user_emails")
-    .select("*")
-    .eq("user_id", userId)
-    .eq("is_removed", false)
-    .order("is_primary", { ascending: false })
-    .order("created_at", { ascending: false })
+  const {
+    data: { user },
+    error: authError,
+  } = await supabase.auth.getUser()
+
+  if (authError || !user) {
+    throw authError ?? new Error("User not authenticated")
+  }
+
+  const { data: profile, error } = await supabase.from("users").select("email, created_at").eq("user_id", userId).single()
 
   if (error) throw error
 
-  return data || []
+  const email = user.email ?? profile.email
+
+  if (!email) {
+    return []
+  }
+
+  return [
+    {
+      id: 0,
+      email,
+      is_primary: true,
+      is_verified: Boolean(user.email_confirmed_at),
+      is_removed: false,
+      created_at: profile.created_at,
+    },
+  ]
 }
 
 // Wallet management functions
 export async function getUserWallets() {
-  const supabase = createClient()
+  const supabase = await createServerSupabaseClient()
   const userId = await getCurrentUserId()
 
   if (!userId) {
@@ -216,7 +118,7 @@ export async function getUserWallets() {
 }
 
 export async function addWallet(walletAddress: string, walletType = "ethereum", walletName: string | null = null) {
-  const supabase = createClient()
+  const supabase = await createServerSupabaseClient()
   const userId = await getCurrentUserId()
 
   if (!userId) {
@@ -232,7 +134,7 @@ export async function addWallet(walletAddress: string, walletType = "ethereum", 
 
   if (countError) throw countError
 
-  const isPrimary = count === 0
+  const isPrimary = (count ?? 0) === 0
 
   const { data, error } = await supabase
     .from("wallet_accounts")
@@ -250,12 +152,12 @@ export async function addWallet(walletAddress: string, walletType = "ethereum", 
 
   if (error) throw error
 
-  revalidatePath("/settings/account")
+  revalidatePath("/workspace/account")
   return data
 }
 
 export async function setWalletAsPrimary(walletId: number) {
-  const supabase = createClient()
+  const supabase = await createServerSupabaseClient()
   const userId = await getCurrentUserId()
 
   if (!userId) {
@@ -271,11 +173,11 @@ export async function setWalletAsPrimary(walletId: number) {
 
   if (error) throw error
 
-  revalidatePath("/settings/account")
+  revalidatePath("/workspace/account")
 }
 
 export async function removeWallet(walletId: number) {
-  const supabase = createClient()
+  const supabase = await createServerSupabaseClient()
   const userId = await getCurrentUserId()
 
   if (!userId) {
@@ -291,11 +193,11 @@ export async function removeWallet(walletId: number) {
 
   if (error) throw error
 
-  revalidatePath("/settings/account")
+  revalidatePath("/workspace/account")
 }
 
 export async function updateWalletName(walletId: number, walletName: string) {
-  const supabase = createClient()
+  const supabase = await createServerSupabaseClient()
   const userId = await getCurrentUserId()
 
   if (!userId) {
@@ -311,5 +213,5 @@ export async function updateWalletName(walletId: number, walletName: string) {
 
   if (error) throw error
 
-  revalidatePath("/settings/account")
+  revalidatePath("/workspace/account")
 }

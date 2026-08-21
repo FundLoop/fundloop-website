@@ -1,0 +1,396 @@
+import {
+  PROJECT_CRYPTO_ROUTE_CREATE_FUNCTION,
+  PROJECT_CRYPTO_ROUTE_UPDATE_FUNCTION,
+  PROJECT_ONCHAIN_PAYMENT_SUBMISSION_RECORD_FUNCTION,
+} from "../../../lib/edge-functions/project-payment-operations-contract.ts"
+import {
+  PROJECT_PAYMENT_DRAFTS_CREATE_FUNCTION,
+  validateProjectPaymentDraftsCreateInput,
+} from "../../../lib/edge-functions/project-payment-drafts-create-contract.ts"
+import { edgeCommandFailure, type EdgeCommandResult } from "../../../lib/edge-functions/result.ts"
+import { errorResult, jsonTextResult } from "./protocol.ts"
+import type { McpToolHandlerContext, McpToolRegistry } from "./tools.ts"
+import type { FounderWorkflowReader } from "./founder-reader.ts"
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return Boolean(value && typeof value === "object" && !Array.isArray(value))
+}
+
+function requireProjectSlug(input: unknown) {
+  if (!isRecord(input) || typeof input.projectSlug !== "string" || !input.projectSlug.trim()) {
+    return null
+  }
+
+  return input.projectSlug.trim()
+}
+
+function deriveCycleStatusNextActions(status: Awaited<ReturnType<FounderWorkflowReader["getProjectCycleStatus"]>>) {
+  const actions: string[] = []
+  if (status.routes.enabledCount === 0) {
+    actions.push("Add an enabled contribution route.")
+  }
+  if (status.routes.defaultCount === 0) {
+    actions.push("Choose a default contribution route.")
+  }
+  if (status.payments.awaitingConfirmationCount > 0) {
+    actions.push("Review payments awaiting confirmation.")
+  }
+  if (!status.cycle.status) {
+    actions.push("Confirm the project is attached to an active monthly cycle.")
+  }
+
+  return actions
+}
+
+async function edgeCommandToolResult<TOutput>(
+  context: McpToolHandlerContext,
+  functionName: string,
+  input: unknown,
+) {
+  const result = await context.edge.invoke<unknown, TOutput>(functionName, input, context.auth)
+  if (!result.ok) return edgeCommandFailureToolResult(result)
+  return jsonTextResult(result)
+}
+
+function edgeCommandFailureToolResult(result: Extract<EdgeCommandResult<unknown>, { ok: false }>) {
+  return {
+    ...errorResult(result.error.message),
+    structuredContent: result,
+    errorCode: result.error.code,
+  }
+}
+
+async function paymentDraftCreateToolResult(context: McpToolHandlerContext, input: unknown) {
+  if (!isRecord(input) || typeof input.attemptId !== "string" || !input.attemptId.trim()) {
+    return edgeCommandFailureToolResult(edgeCommandFailure("invalid_payload", "attemptId is required for MCP payment draft creation."))
+  }
+
+  const validation = validateProjectPaymentDraftsCreateInput(input)
+  if (!validation.ok) return edgeCommandFailureToolResult(validation)
+
+  const result = await context.edge.invoke<unknown, unknown>(PROJECT_PAYMENT_DRAFTS_CREATE_FUNCTION, validation.data, context.auth)
+  if (!result.ok) return edgeCommandFailureToolResult(result)
+
+  return jsonTextResult({
+    ok: true,
+    data: summarizePaymentDraftCreateOutput(result.data),
+  })
+}
+
+function summarizePaymentDraftCreateOutput(data: unknown) {
+  const rows = Array.isArray(data) ? data : []
+  const totalPaymentAmount = rows.reduce((sum, row) => {
+    return sum + (isRecord(row) && typeof row.payment_amount === "number" ? row.payment_amount : 0)
+  }, 0)
+  const periods = rows.map((row) => {
+    if (!isRecord(row)) return null
+
+    return {
+      id: typeof row.id === "number" ? row.id : null,
+      periodStart: typeof row.period_start === "string" ? row.period_start : null,
+      periodEnd: typeof row.period_end === "string" ? row.period_end : null,
+      status: typeof row.status_code === "string" ? row.status_code : null,
+      paymentAmount: typeof row.payment_amount === "number" ? row.payment_amount : null,
+    }
+  }).filter(Boolean)
+
+  return {
+    createdCount: rows.length,
+    totalPaymentAmount: Number(totalPaymentAmount.toFixed(2)),
+    periods,
+  }
+}
+
+export function registerFounderMcpTools(registry: McpToolRegistry) {
+  registry.register({
+    definition: {
+      name: "founder.projects.list",
+      title: "List Founder Projects",
+      description: "List projects managed by the authenticated founder or project admin.",
+      annotations: {
+        readOnlyHint: true,
+        destructiveHint: false,
+        openWorldHint: false,
+      },
+      inputSchema: {
+        type: "object",
+        properties: {},
+        additionalProperties: false,
+      },
+      outputSchema: {
+        type: "object",
+        properties: {
+          ok: { type: "boolean" },
+          count: { type: "number", integer: true, minimum: 0 },
+          projects: { type: "array" },
+          emptyState: { type: "string", maxLength: 240 },
+        },
+        required: ["ok", "count", "projects"],
+        additionalProperties: false,
+      },
+    },
+    async handler(_input, context) {
+      if (!context.founderReader) {
+        return { ...errorResult("Founder workflow reader is not configured."), errorCode: "reader_not_configured" }
+      }
+
+      try {
+        const projects = (await context.founderReader.listManagedProjects(context.auth)).map((project) => ({
+          id: project.id,
+          slug: project.slug,
+          name: project.name,
+          setupStatus: project.setupStatus ?? null,
+          nextActions: project.nextActions ?? [],
+        }))
+
+        return jsonTextResult({
+          ok: true,
+          count: projects.length,
+          projects,
+          ...(projects.length === 0 ? { emptyState: "No managed projects are available for this actor." } : {}),
+        })
+      } catch {
+        return {
+          ...errorResult("Founder project list is temporarily unavailable."),
+          errorCode: "workflow_read_failed",
+        }
+      }
+    },
+  })
+
+  registry.register({
+    definition: {
+      name: "founder.project.cycle_status",
+      title: "Read Founder Project Cycle Status",
+      description: "Read monthly contribution, route, and cycle status for one managed founder project.",
+      annotations: {
+        readOnlyHint: true,
+        destructiveHint: false,
+        openWorldHint: false,
+      },
+      inputSchema: {
+        type: "object",
+        properties: {
+          projectSlug: { type: "string", format: "slug", minLength: 1, maxLength: 80 },
+          cycleKey: { type: "string", format: "cycle_key" },
+        },
+        required: ["projectSlug"],
+        additionalProperties: false,
+      },
+      outputSchema: {
+        type: "object",
+        properties: {
+          ok: { type: "boolean" },
+          project: { type: "object" },
+          cycle: { type: "object" },
+          payments: { type: "object" },
+          routes: { type: "object" },
+          nextActions: { type: "array" },
+        },
+        required: ["ok", "project", "cycle", "payments", "routes", "nextActions"],
+        additionalProperties: false,
+      },
+    },
+    async handler(input, context) {
+      if (!context.founderReader) {
+        return { ...errorResult("Founder workflow reader is not configured."), errorCode: "reader_not_configured" }
+      }
+      const projectSlug = requireProjectSlug(input)
+      if (!projectSlug) return { ...errorResult("projectSlug is required."), errorCode: "invalid_payload" }
+      const cycleKey = isRecord(input) && typeof input.cycleKey === "string" ? input.cycleKey.trim() : undefined
+      try {
+        const status = await context.founderReader.getProjectCycleStatus({ projectSlug, cycleKey }, context.auth)
+        const nextActions = deriveCycleStatusNextActions(status)
+
+        return jsonTextResult({
+          ok: true,
+          project: status.project,
+          cycle: status.cycle,
+          payments: status.payments,
+          routes: status.routes,
+          nextActions,
+        })
+      } catch {
+        return {
+          ...errorResult("Founder project cycle status is temporarily unavailable."),
+          errorCode: "workflow_read_failed",
+        }
+      }
+    },
+  })
+
+  registry.register({
+    definition: {
+      name: "founder.project.crypto_route.create",
+      title: "Create Founder Crypto Route",
+      description: "Create a project crypto payment route through the canonical Edge Function command.",
+      annotations: {
+        readOnlyHint: false,
+        destructiveHint: false,
+        openWorldHint: false,
+      },
+      inputSchema: {
+        type: "object",
+        properties: {
+          projectSlug: { type: "string", format: "slug", minLength: 1, maxLength: 80 },
+          chainId: { type: "number", integer: true, minimum: 1, maximum: 2_147_483_647 },
+          chainAssetId: { type: "number", integer: true, minimum: 1, maximum: 2_147_483_647 },
+          intakeContractId: { type: "number", integer: true, minimum: 1, maximum: 2_147_483_647 },
+          label: { type: "string", maxLength: 80 },
+          isDefault: { type: "boolean" },
+        },
+        required: ["projectSlug", "chainId", "chainAssetId", "intakeContractId"],
+        additionalProperties: false,
+      },
+      outputSchema: {
+        type: "object",
+        properties: {
+          ok: { type: "boolean" },
+          data: { type: "object" },
+          error: { type: "object" },
+        },
+        required: ["ok"],
+        additionalProperties: false,
+      },
+    },
+    async handler(input, context) {
+      return edgeCommandToolResult(context, PROJECT_CRYPTO_ROUTE_CREATE_FUNCTION, input)
+    },
+  })
+
+  registry.register({
+    definition: {
+      name: "founder.project.crypto_route.update",
+      title: "Update Founder Crypto Route",
+      description: "Update a project crypto payment route through the canonical Edge Function command.",
+      annotations: {
+        readOnlyHint: false,
+        destructiveHint: false,
+        openWorldHint: false,
+      },
+      inputSchema: {
+        type: "object",
+        properties: {
+          projectSlug: { type: "string", format: "slug", minLength: 1, maxLength: 80 },
+          paymentMethodId: { type: "number", integer: true, minimum: 1, maximum: 2_147_483_647 },
+          chainId: { type: "number", integer: true, minimum: 1, maximum: 2_147_483_647 },
+          chainAssetId: { type: "number", integer: true, minimum: 1, maximum: 2_147_483_647 },
+          intakeContractId: { type: "number", integer: true, minimum: 1, maximum: 2_147_483_647 },
+          label: { type: "string", maxLength: 80 },
+          isDefault: { type: "boolean" },
+        },
+        required: ["projectSlug", "paymentMethodId", "chainId", "chainAssetId", "intakeContractId", "isDefault"],
+        additionalProperties: false,
+      },
+      outputSchema: {
+        type: "object",
+        properties: {
+          ok: { type: "boolean" },
+          data: { type: "object" },
+          error: { type: "object" },
+        },
+        required: ["ok"],
+        additionalProperties: false,
+      },
+    },
+    async handler(input, context) {
+      return edgeCommandToolResult(context, PROJECT_CRYPTO_ROUTE_UPDATE_FUNCTION, input)
+    },
+  })
+
+  registry.register({
+    definition: {
+      name: "founder.project.onchain_receipt.record",
+      title: "Record Founder Onchain Receipt",
+      description: "Record a founder onchain payment receipt through the canonical Edge Function command.",
+      annotations: {
+        readOnlyHint: false,
+        destructiveHint: false,
+        openWorldHint: false,
+      },
+      inputSchema: {
+        type: "object",
+        properties: {
+          projectSlug: { type: "string", format: "slug", minLength: 1, maxLength: 80 },
+          paymentId: { type: "number", integer: true, minimum: 1, maximum: 2_147_483_647 },
+          paymentMethodId: { type: "number", integer: true, minimum: 1, maximum: 2_147_483_647 },
+          chainId: { type: "number", integer: true, minimum: 1, maximum: 2_147_483_647 },
+          chainAssetId: { type: "number", integer: true, minimum: 1, maximum: 2_147_483_647 },
+          intakeContractId: { type: "number", integer: true, minimum: 1, maximum: 2_147_483_647 },
+          txHash: { type: "string", format: "tx_hash" },
+          walletAddress: { type: "string", format: "wallet_address" },
+          amountRaw: { type: "string", minLength: 1, maxLength: 120, pattern: "^\\d+$" },
+          amountDecimal: { type: "string", minLength: 1, maxLength: 80, pattern: "^\\d+(\\.\\d+)?$" },
+          periodId: { type: "number", integer: true, minimum: 0, maximum: 12 },
+          blockNumber: { type: "number", integer: true, minimum: 0 },
+          receipt: { type: "object", maxProperties: 24, maxDepth: 5 },
+          attemptId: { type: "string", format: "attempt_id" },
+        },
+        required: [
+          "projectSlug",
+          "paymentId",
+          "paymentMethodId",
+          "chainId",
+          "chainAssetId",
+          "intakeContractId",
+          "txHash",
+          "walletAddress",
+          "amountRaw",
+          "amountDecimal",
+          "periodId",
+          "receipt",
+        ],
+        additionalProperties: false,
+      },
+      outputSchema: {
+        type: "object",
+        properties: {
+          ok: { type: "boolean" },
+          data: { type: "object" },
+          error: { type: "object" },
+        },
+        required: ["ok"],
+        additionalProperties: false,
+      },
+    },
+    async handler(input, context) {
+      return edgeCommandToolResult(context, PROJECT_ONCHAIN_PAYMENT_SUBMISSION_RECORD_FUNCTION, input)
+    },
+  })
+
+  registry.register({
+    definition: {
+      name: "founder.project.payment_drafts.create",
+      title: "Create Founder Payment Drafts",
+      description: "Create monthly project payment draft rows through the canonical Edge Function command.",
+      annotations: {
+        readOnlyHint: false,
+        destructiveHint: false,
+        openWorldHint: false,
+      },
+      inputSchema: {
+        type: "object",
+        properties: {
+          projectSlug: { type: "string", format: "slug", minLength: 1, maxLength: 80 },
+          attemptId: { type: "string", format: "attempt_id" },
+          payments: { type: "array", maxDepth: 4 },
+        },
+        required: ["projectSlug", "attemptId", "payments"],
+        additionalProperties: false,
+      },
+      outputSchema: {
+        type: "object",
+        properties: {
+          ok: { type: "boolean" },
+          data: { type: "object" },
+          error: { type: "object" },
+        },
+        required: ["ok"],
+        additionalProperties: false,
+      },
+    },
+    async handler(input, context) {
+      return paymentDraftCreateToolResult(context, input)
+    },
+  })
+}

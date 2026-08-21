@@ -2,14 +2,14 @@
 
 import type React from "react"
 
-import { useState, useRef, useEffect } from "react"
+import { useState, useRef, useEffect, useCallback } from "react"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { toast } from "@/components/ui/use-toast"
-import { supabase } from "@/lib/supabase"
-import { ChromeIcon as Google, ArrowLeft } from "lucide-react"
+import { getSupabaseBrowserClient } from "@/lib/supabase"
+import { ArrowLeft, Globe } from "lucide-react"
 import { useRouter } from "next/navigation"
 
 interface FullPageAuthProps {
@@ -19,11 +19,12 @@ interface FullPageAuthProps {
 
 export function AuthModal({ open, onClose }: FullPageAuthProps) {
   const [email, setEmail] = useState("")
-  const [otp, setOtp] = useState("")
   const [loading, setLoading] = useState(false)
   const [otpSent, setOtpSent] = useState(false)
   const [otpDigits, setOtpDigits] = useState(["", "", "", "", "", ""])
   const otpInputs = useRef<(HTMLInputElement | null)[]>([])
+  const verificationInFlight = useRef(false)
+  const lastAutoVerificationKey = useRef<string | null>(null)
   const router = useRouter()
 
   useEffect(() => {
@@ -36,10 +37,12 @@ export function AuthModal({ open, onClose }: FullPageAuthProps) {
     console.log("handleRequestOtp: Started")
     setLoading(true)
     try {
+      const supabase = getSupabaseBrowserClient()
+      const normalizedEmail = email.trim()
       const { error } = await supabase.auth.signInWithOtp({
-        email,
+        email: normalizedEmail,
         options: {
-          emailRedirectTo: `${location.origin}/my-profile`,
+          emailRedirectTo: window.location.href,
         },
       })
       if (error) {
@@ -55,6 +58,7 @@ export function AuthModal({ open, onClose }: FullPageAuthProps) {
         })
         setOtpSent(true)
         setOtpDigits(["", "", "", "", "", ""])
+        lastAutoVerificationKey.current = null
       }
     } catch (error) {
       console.error("Error sending OTP:", error)
@@ -69,13 +73,41 @@ export function AuthModal({ open, onClose }: FullPageAuthProps) {
     }
   }
 
-  const verifyOtp = async () => {
+  const verifyOtp = useCallback(async (options?: { force?: boolean }) => {
     console.log("verifyOtp: Started")
+    if (verificationInFlight.current) {
+      console.log("verifyOtp: Skipped duplicate in-flight attempt")
+      return
+    }
+
     setLoading(true)
+    verificationInFlight.current = true
     try {
+      const supabase = getSupabaseBrowserClient()
+      const normalizedEmail = email.trim()
       const otpCode = otpDigits.join("")
+      const verificationKey = `${normalizedEmail}:${otpCode}`
+
+      if (!options?.force && lastAutoVerificationKey.current === verificationKey) {
+        console.log("verifyOtp: Skipped duplicate code attempt")
+        return
+      }
+
+      if (!normalizedEmail || !/^\d{6}$/.test(otpCode)) {
+        toast({
+          title: "Failed to verify OTP",
+          description: "Enter the six-digit code from your email.",
+          variant: "destructive",
+        })
+        return
+      }
+
+      if (!options?.force) {
+        lastAutoVerificationKey.current = verificationKey
+      }
+
       const { data, error } = await supabase.auth.verifyOtp({
-        email,
+        email: normalizedEmail,
         token: otpCode,
         type: "email",
       })
@@ -86,6 +118,21 @@ export function AuthModal({ open, onClose }: FullPageAuthProps) {
           variant: "destructive",
         })
       } else {
+        const session = data.session ?? (await supabase.auth.getSession()).data.session
+
+        if (!session) {
+          console.warn("verifyOtp: No browser session created", {
+            hasUser: Boolean(data.user),
+            hasSession: Boolean(data.session),
+          })
+          toast({
+            title: "Failed to verify OTP",
+            description: "Verification completed but no browser session was created. Please request a new code and try again.",
+            variant: "destructive",
+          })
+          return
+        }
+
         toast({
           title: "OTP verified",
           description: "You have been signed in successfully",
@@ -101,25 +148,29 @@ export function AuthModal({ open, onClose }: FullPageAuthProps) {
         variant: "destructive",
       })
     } finally {
+      verificationInFlight.current = false
       setLoading(false)
       console.log("verifyOtp: Finished")
     }
-  }
+  }, [email, onClose, router, otpDigits])
 
   useEffect(() => {
     const allDigitsEntered = otpDigits.every((digit) => digit !== "")
-    if (otpSent && allDigitsEntered) {
-      verifyOtp()
+    if (!otpSent || !allDigitsEntered) {
+      return
     }
-  }, [otpDigits, otpSent])
+
+    void verifyOtp()
+  }, [otpDigits, otpSent, verifyOtp])
 
   const handleSignInWithGoogle = async () => {
     setLoading(true)
     try {
+      const supabase = getSupabaseBrowserClient()
       const { error } = await supabase.auth.signInWithOAuth({
         provider: "google",
         options: {
-          redirectTo: `${window.location.origin}/my-profile`,
+          redirectTo: window.location.href,
         },
       })
       if (error) {
@@ -209,7 +260,9 @@ export function AuthModal({ open, onClose }: FullPageAuthProps) {
                     onChange={(e) => handleOtpChange(index, e.target.value)}
                     onKeyDown={(e) => handleKeyDown(index, e)}
                     onPaste={handlePaste}
-                    ref={(el) => (otpInputs.current[index] = el)}
+                    ref={(el) => {
+                      otpInputs.current[index] = el
+                    }}
                     style={{ MozAppearance: "textfield" }}
                   />
                 ))}
@@ -223,7 +276,7 @@ export function AuthModal({ open, onClose }: FullPageAuthProps) {
               <ArrowLeft className="mr-2 h-4 w-4" />
               Back
             </Button>
-            <Button onClick={verifyOtp} disabled={loading}>
+            <Button onClick={() => void verifyOtp({ force: true })} disabled={loading}>
               {loading ? "Verifying..." : "Verify"}
             </Button>
           </div>
@@ -234,7 +287,7 @@ export function AuthModal({ open, onClose }: FullPageAuthProps) {
         )}
         {!otpSent && (
           <Button onClick={handleSignInWithGoogle} disabled={loading} variant="secondary" className="w-full mt-2">
-            <Google className="mr-2 h-4 w-4" />
+            <Globe className="mr-2 h-4 w-4" />
             Sign In with Google
           </Button>
         )}

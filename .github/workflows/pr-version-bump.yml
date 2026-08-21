@@ -1,0 +1,106 @@
+name: Main Version Bump
+
+on:
+  pull_request_review:
+    types:
+      - submitted
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: write
+  pull-requests: read
+
+concurrency:
+  group: main-version-bump-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  approved-main-pr:
+    name: Approved main PR version candidate
+    if: >-
+      github.event_name == 'pull_request_review' &&
+      github.event.review.state == 'approved' &&
+      github.event.pull_request.base.ref == 'main' &&
+      github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out PR branch
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.ref }}
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Set up pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          run_install: false
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Fetch main
+        run: git fetch origin main --depth=1
+
+      - name: Apply release candidate version bump
+        run: node .github/scripts/pr-version-bump.mjs --mode approved-main-pr --base-ref origin/main
+
+      - name: Commit version bump to PR
+        run: |
+          if git diff --quiet; then
+            echo "Version already matches the expected main release candidate."
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add package.json pnpm-lock.yaml
+          git commit -m "chore: bump main release candidate version"
+          git push
+
+  main-push-safety-net:
+    name: Main push version safety net
+    if: >-
+      github.event_name == 'push' &&
+      github.ref == 'refs/heads/main' &&
+      github.actor != 'github-actions[bot]' &&
+      !startsWith(github.event.head_commit.message, 'chore: bump main release candidate version') &&
+      !startsWith(github.event.head_commit.message, 'chore: bump main version')
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out main
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 2
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Set up pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          run_install: false
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Apply missing main version bump
+        run: node .github/scripts/pr-version-bump.mjs --mode main-push --previous-ref HEAD^
+
+      - name: Commit version bump to main
+        run: |
+          if git diff --quiet; then
+            echo "Pushed commits already changed the package version."
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add package.json pnpm-lock.yaml
+          git commit -m "chore: bump main version"
+          git push

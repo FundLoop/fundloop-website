@@ -1,0 +1,311 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://fundloop.app/schemas/production-readiness-manifest-v1.json",
+  "title": "FundLoop production-readiness evidence manifest v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "contractVersion",
+    "manifestId",
+    "generatedAt",
+    "environment",
+    "candidate",
+    "expected",
+    "observed",
+    "deployment",
+    "prerequisites",
+    "githubControls",
+    "runtimeControls",
+    "capabilities",
+    "allocationV2",
+    "approvals",
+    "alerts",
+    "gates"
+  ],
+  "properties": {
+    "contractVersion": { "const": "fundloop.production-readiness/v1" },
+    "manifestId": { "$ref": "#/$defs/nonEmpty" },
+    "generatedAt": { "$ref": "#/$defs/dateTime" },
+    "environment": { "enum": ["dev", "production"] },
+    "candidate": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["repository", "gitSha", "treeSha", "sourceRef", "pullRequest", "applicationDeploymentId"],
+      "properties": {
+        "repository": { "const": "FundLoop/fundloop-website" },
+        "gitSha": { "$ref": "#/$defs/gitSha" },
+        "treeSha": { "$ref": "#/$defs/gitSha" },
+        "sourceRef": { "$ref": "#/$defs/nonEmpty" },
+        "pullRequest": { "type": "integer", "minimum": 1 },
+        "applicationDeploymentId": { "$ref": "#/$defs/nonEmpty" }
+      }
+    },
+    "expected": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["migrationInventory", "functionInventory", "schemaFingerprint"],
+      "properties": {
+        "migrationInventory": { "$ref": "#/$defs/migrationInventory" },
+        "functionInventory": { "$ref": "#/$defs/functionInventory" },
+        "schemaFingerprint": { "$ref": "#/$defs/schemaFingerprint" }
+      }
+    },
+    "observed": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["observedAt", "environment", "projectRef", "applicationDeploymentId", "applicationGitSha", "githubRunId", "githubRunAttempt", "migrationInventory", "functionInventory", "schemaFingerprint"],
+      "properties": {
+        "observedAt": { "$ref": "#/$defs/dateTime" },
+        "environment": { "enum": ["dev", "production"] },
+        "projectRef": { "type": "string", "pattern": "^[a-z]{20}$" },
+        "applicationDeploymentId": { "$ref": "#/$defs/nonEmpty" },
+        "applicationGitSha": { "$ref": "#/$defs/gitSha" },
+        "githubRunId": { "type": "integer", "minimum": 1 },
+        "githubRunAttempt": { "type": "integer", "minimum": 1 },
+        "migrationInventory": { "$ref": "#/$defs/migrationInventory" },
+        "functionInventory": { "$ref": "#/$defs/functionInventory" },
+        "schemaFingerprint": { "$ref": "#/$defs/schemaFingerprint" }
+      }
+    },
+    "deployment": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["githubRunId", "githubRunAttempt", "headSha", "workflowFileSha256", "supabaseCliVersion", "postgresClientVersion", "conclusion", "databaseStep", "functionStep", "startedAt", "completedAt"],
+      "properties": {
+        "githubRunId": { "type": "integer", "minimum": 1 },
+        "githubRunAttempt": { "type": "integer", "minimum": 1 },
+        "headSha": { "$ref": "#/$defs/gitSha" },
+        "workflowFileSha256": { "$ref": "#/$defs/sha256" },
+        "supabaseCliVersion": { "$ref": "#/$defs/nonEmpty" },
+        "postgresClientVersion": { "$ref": "#/$defs/nonEmpty" },
+        "conclusion": { "enum": ["success", "failure", "cancelled", "skipped"] },
+        "databaseStep": { "enum": ["success", "failure", "cancelled", "skipped"] },
+        "functionStep": { "enum": ["success", "failure", "cancelled", "skipped"] },
+        "startedAt": { "$ref": "#/$defs/dateTime" },
+        "completedAt": { "$ref": "#/$defs/dateTime" }
+      }
+    },
+    "prerequisites": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["prerequisiteId", "status", "evidenceSha256", "observedAt"],
+        "properties": {
+          "prerequisiteId": { "$ref": "#/$defs/nonEmpty" },
+          "status": { "enum": ["pass", "fail", "pending"] },
+          "evidenceSha256": { "$ref": "#/$defs/sha256" },
+          "observedAt": { "$ref": "#/$defs/dateTime" }
+        }
+      }
+    },
+    "githubControls": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["observedAt", "baseBranch", "pullRequestRequired", "requiredChecks", "productionEnvironment", "requiredReviewerCount", "adminBypassAllowed"],
+      "properties": {
+        "observedAt": { "$ref": "#/$defs/dateTime" },
+        "baseBranch": { "enum": ["dev", "main"] },
+        "pullRequestRequired": { "const": true },
+        "requiredChecks": {
+          "type": "array",
+          "minItems": 3,
+          "uniqueItems": true,
+          "allOf": [
+            { "contains": { "const": "validate" } },
+            { "contains": { "const": "Supabase fresh-schema replay" } },
+            { "contains": { "const": "Supabase dry-run" } }
+          ],
+          "items": { "$ref": "#/$defs/nonEmpty" }
+        },
+        "productionEnvironment": { "const": "Production" },
+        "requiredReviewerCount": { "type": "integer", "minimum": 1 },
+        "adminBypassAllowed": { "const": false }
+      }
+    },
+    "runtimeControls": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["observedAt", "source", "sourceSha256", "neutralPostingEnabled", "cutoverPrepareEnabled", "cutoverActivationEnabled", "productionValueFlowEnabled"],
+      "properties": {
+        "observedAt": { "$ref": "#/$defs/dateTime" },
+        "source": { "$ref": "#/$defs/nonEmpty" },
+        "sourceSha256": { "$ref": "#/$defs/sha256" },
+        "neutralPostingEnabled": { "type": "boolean" },
+        "cutoverPrepareEnabled": { "type": "boolean" },
+        "cutoverActivationEnabled": { "type": "boolean" },
+        "productionValueFlowEnabled": { "type": "boolean" }
+      }
+    },
+    "capabilities": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["capabilityId", "state", "evidenceSha256", "observedAt", "environment", "subject"],
+        "properties": {
+          "capabilityId": { "$ref": "#/$defs/nonEmpty" },
+          "state": { "enum": ["in-code", "local-real", "sandbox-real", "ci-deployed-dev", "hosted-verified", "production-deployed", "value-flow-enabled", "stubbed", "pending", "unavailable"] },
+          "evidenceSha256": { "$ref": "#/$defs/sha256" },
+          "observedAt": { "$ref": "#/$defs/dateTime" },
+          "environment": { "$ref": "#/$defs/nonEmpty" },
+          "subject": { "$ref": "#/$defs/nonEmpty" }
+        }
+      }
+    },
+    "allocationV2": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["policyVersion", "capMultiple", "previewInputHash", "selectionInputHash", "scoreDiscountSourceHash", "harvestRule", "carryInHash", "carryOutHash", "reportHash", "rootHash"],
+      "properties": {
+        "policyVersion": { "const": "settled_cubid_redistribution_v2" },
+        "capMultiple": { "type": "string", "pattern": "^[0-9]+(\\.[0-9]+)?$" },
+        "previewInputHash": { "$ref": "#/$defs/sha256" },
+        "selectionInputHash": { "$ref": "#/$defs/sha256" },
+        "scoreDiscountSourceHash": { "$ref": "#/$defs/sha256" },
+        "harvestRule": { "const": "exactly-E-minus-3" },
+        "carryInHash": { "$ref": "#/$defs/sha256" },
+        "carryOutHash": { "$ref": "#/$defs/sha256" },
+        "reportHash": { "$ref": "#/$defs/sha256" },
+        "rootHash": { "$ref": "#/$defs/sha256" }
+      }
+    },
+    "approvals": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["approvalType", "status", "artifactSha256", "scopeManifestSha256", "approverRole", "recordedAt", "expiresAt"],
+        "properties": {
+          "approvalType": { "enum": ["code-review", "production-deploy", "legal", "accounting", "privacy-retention", "provider", "opening-balance", "cutover", "go-live", "rollback"] },
+          "status": { "enum": ["approved", "rejected", "pending", "not-required"] },
+          "artifactSha256": { "$ref": "#/$defs/sha256" },
+          "scopeManifestSha256": { "$ref": "#/$defs/sha256" },
+          "approverRole": { "$ref": "#/$defs/nonEmpty" },
+          "recordedAt": { "$ref": "#/$defs/dateTime" },
+          "expiresAt": { "$ref": "#/$defs/dateTime" }
+        }
+      }
+    },
+    "alerts": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["code", "severity", "subject", "firstObservedAt", "owner", "deliveryStatus", "evidenceSha256"],
+        "properties": {
+          "code": { "$ref": "#/$defs/nonEmpty" },
+          "severity": { "enum": ["blocking", "warning", "informational"] },
+          "subject": { "$ref": "#/$defs/nonEmpty" },
+          "firstObservedAt": { "$ref": "#/$defs/dateTime" },
+          "owner": { "$ref": "#/$defs/nonEmpty" },
+          "deliveryStatus": { "enum": ["delivered", "failed", "pending"] },
+          "evidenceSha256": { "$ref": "#/$defs/sha256" }
+        }
+      }
+    },
+    "gates": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["deploy", "parity", "hostedAcceptance", "productionDeploy", "cutover", "goLive"],
+      "properties": {
+        "deploy": { "$ref": "#/$defs/gate" },
+        "parity": { "$ref": "#/$defs/gate" },
+        "hostedAcceptance": { "$ref": "#/$defs/gate" },
+        "productionDeploy": { "$ref": "#/$defs/gate" },
+        "cutover": { "$ref": "#/$defs/gate" },
+        "goLive": { "$ref": "#/$defs/gate" }
+      }
+    }
+  },
+  "$defs": {
+    "nonEmpty": { "type": "string", "minLength": 1 },
+    "dateTime": { "type": "string", "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}(\\.[0-9]+)?(Z|[+-][0-9]{2}:[0-9]{2})$" },
+    "gitSha": { "type": "string", "pattern": "^[0-9a-f]{40}$" },
+    "sha256": { "type": "string", "pattern": "^[0-9a-f]{64}$" },
+    "migrationInventory": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["algorithm", "inventorySha256", "items"],
+      "properties": {
+        "algorithm": { "const": "sha256-raw-bytes-sorted-filename-v1" },
+        "inventorySha256": { "$ref": "#/$defs/sha256" },
+        "items": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["version", "name", "fileSha256"],
+            "properties": {
+              "version": { "type": "string", "pattern": "^[0-9]{14}$" },
+              "name": { "type": "string", "pattern": "^[0-9]{14}_[a-z0-9_]+\\.sql$" },
+              "fileSha256": { "$ref": "#/$defs/sha256" }
+            }
+          }
+        }
+      }
+    },
+    "functionInventory": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["algorithm", "inventorySha256", "items"],
+      "properties": {
+        "algorithm": { "const": "sha256-function-tree-sorted-path-v1" },
+        "inventorySha256": { "$ref": "#/$defs/sha256" },
+        "items": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["name", "sourceSha256", "remoteVersion", "remoteStatus"],
+            "properties": {
+              "name": { "type": "string", "pattern": "^[a-z0-9][a-z0-9-]+$" },
+              "sourceSha256": { "$ref": "#/$defs/sha256" },
+              "remoteVersion": { "type": ["integer", "null"], "minimum": 1 },
+              "remoteStatus": { "enum": ["ACTIVE", "INACTIVE", "MISSING", "NOT_OBSERVED"] }
+            }
+          }
+        }
+      }
+    },
+    "schemaFingerprint": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["algorithm", "postgresMajor", "normalizedSchemaSha256"],
+      "properties": {
+        "algorithm": { "const": "pg17-public-schema-normalized-v2" },
+        "postgresMajor": { "const": 17 },
+        "normalizedSchemaSha256": { "$ref": "#/$defs/sha256" }
+      }
+    },
+    "gate": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["status", "evidenceSha256", "evaluatedAt", "blockers"],
+      "properties": {
+        "status": { "enum": ["pass", "fail", "pending"] },
+        "evidenceSha256": { "$ref": "#/$defs/sha256" },
+        "evaluatedAt": { "$ref": "#/$defs/dateTime" },
+        "blockers": { "type": "array", "uniqueItems": true, "items": { "$ref": "#/$defs/nonEmpty" } }
+      },
+      "allOf": [
+        {
+          "if": { "properties": { "status": { "const": "pass" } }, "required": ["status"] },
+          "then": { "properties": { "blockers": { "type": "array", "maxItems": 0 } } },
+          "else": { "properties": { "blockers": { "type": "array", "minItems": 1 } } }
+        }
+      ]
+    }
+  }
+}

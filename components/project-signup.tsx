@@ -1,46 +1,35 @@
 "use client"
 
-import { useState } from "react"
-import { Modal } from "@/components/modal"
-import ProjectSignupStep1 from "@/components/project-signup-step1"
-import ProjectSignupFlow from "@/components/project-signup-flow"
+import { usePathname, useRouter } from "next/navigation"
+import { ArrowRight } from "lucide-react"
+import { Button } from "@/components/ui/button"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { buildUrl } from "@/lib/url"
 
 export default function ProjectSignup() {
-  const [projectData, setProjectData] = useState<{
-    id: number
-    slug: string
-    name: string
-    website: string
-    description: string
-  } | null>(null)
-  const [openFlow, setOpenFlow] = useState(false)
+  const pathname = usePathname()
+  const router = useRouter()
 
-  const handleSuccess = (data: {
-    id: number
-    slug: string
-    name: string
-    website: string
-    description: string
-  }) => {
-    setProjectData(data)
-    setOpenFlow(true)
+  const openFlow = () => {
+    const nextParams = new URLSearchParams(window.location.search)
+    nextParams.set("onboarding", "project")
+    router.push(buildUrl(pathname, nextParams), { scroll: false })
   }
 
   return (
-    <>
-      <ProjectSignupStep1 onSuccess={handleSuccess} />
-      <Modal
-        title="Continue Project Signup"
-        isOpen={openFlow}
-        onClose={() => setOpenFlow(false)}
-        size="lg"
-      >
-        <ProjectSignupFlow
-          onClose={() => setOpenFlow(false)}
-          initialStep={2}
-          initialProject={projectData || undefined}
-        />
-      </Modal>
-    </>
+    <Card id="project-signup" className="border-emerald-200/80">
+      <CardHeader>
+        <CardTitle className="text-2xl">Join as a Project</CardTitle>
+        <CardDescription>
+          Start with your personal profile, then continue into a saved project draft when you are ready.
+        </CardDescription>
+      </CardHeader>
+      <CardContent>
+        <Button className="w-full gap-2" onClick={openFlow}>
+          Start project onboarding
+          <ArrowRight className="h-4 w-4" />
+        </Button>
+      </CardContent>
+    </Card>
   )
 }

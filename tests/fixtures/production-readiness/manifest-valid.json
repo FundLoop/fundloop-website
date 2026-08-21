@@ -1,0 +1,133 @@
+{
+  "contractVersion": "fundloop.production-readiness/v1",
+  "manifestId": "fixture-dev-7eacafe7",
+  "generatedAt": "2026-08-11T20:30:00-04:00",
+  "environment": "dev",
+  "candidate": {
+    "repository": "FundLoop/fundloop-website",
+    "gitSha": "7eacafe7d1003a7f9e529d4887423d158e017732",
+    "treeSha": "1111111111111111111111111111111111111111",
+    "sourceRef": "refs/heads/dev",
+    "pullRequest": 185,
+    "applicationDeploymentId": "fixture-vercel-deployment"
+  },
+  "expected": {
+    "migrationInventory": {
+      "algorithm": "sha256-raw-bytes-sorted-filename-v1",
+      "inventorySha256": "2795e60e971152b8f05998366962591de6ddbd6ca01fe7b154024dd675035d8c",
+      "items": [
+        { "version": "20260809020000", "name": "20260809020000_neutral_ledger_foundations.sql", "fileSha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb" },
+        { "version": "20260811120000", "name": "20260811120000_epoch_allocation_policy_v2.sql", "fileSha256": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc" }
+      ]
+    },
+    "functionInventory": {
+      "algorithm": "sha256-function-tree-sorted-path-v1",
+      "inventorySha256": "2e5a753a2461ed5741610bf6a48d6fa1981a036c3b66ea2710a0f12bd6338362",
+      "items": [
+        { "name": "epoch-funded-allocation", "sourceSha256": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee", "remoteVersion": null, "remoteStatus": "NOT_OBSERVED" },
+        { "name": "financial-cutover", "sourceSha256": "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff", "remoteVersion": null, "remoteStatus": "NOT_OBSERVED" }
+      ]
+    },
+    "schemaFingerprint": { "algorithm": "pg17-public-schema-normalized-v2", "postgresMajor": 17, "normalizedSchemaSha256": "1212121212121212121212121212121212121212121212121212121212121212" }
+  },
+  "observed": {
+    "observedAt": "2026-08-11T20:30:00-04:00",
+    "environment": "dev",
+    "projectRef": "kyxtqnfnksvcaugxwzuj",
+    "applicationDeploymentId": "fixture-vercel-deployment",
+    "applicationGitSha": "7eacafe7d1003a7f9e529d4887423d158e017732",
+    "githubRunId": 1,
+    "githubRunAttempt": 1,
+    "migrationInventory": {
+      "algorithm": "sha256-raw-bytes-sorted-filename-v1",
+      "inventorySha256": "2795e60e971152b8f05998366962591de6ddbd6ca01fe7b154024dd675035d8c",
+      "items": [
+        { "version": "20260809020000", "name": "20260809020000_neutral_ledger_foundations.sql", "fileSha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb" },
+        { "version": "20260811120000", "name": "20260811120000_epoch_allocation_policy_v2.sql", "fileSha256": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc" }
+      ]
+    },
+    "functionInventory": {
+      "algorithm": "sha256-function-tree-sorted-path-v1",
+      "inventorySha256": "2e5a753a2461ed5741610bf6a48d6fa1981a036c3b66ea2710a0f12bd6338362",
+      "items": [
+        { "name": "epoch-funded-allocation", "sourceSha256": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee", "remoteVersion": 1, "remoteStatus": "ACTIVE" },
+        { "name": "financial-cutover", "sourceSha256": "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff", "remoteVersion": 1, "remoteStatus": "ACTIVE" }
+      ]
+    },
+    "schemaFingerprint": { "algorithm": "pg17-public-schema-normalized-v2", "postgresMajor": 17, "normalizedSchemaSha256": "1212121212121212121212121212121212121212121212121212121212121212" }
+  },
+  "deployment": {
+    "githubRunId": 1,
+    "githubRunAttempt": 1,
+    "headSha": "7eacafe7d1003a7f9e529d4887423d158e017732",
+    "workflowFileSha256": "1313131313131313131313131313131313131313131313131313131313131313",
+    "supabaseCliVersion": "2.113.0",
+    "postgresClientVersion": "17",
+    "conclusion": "success",
+    "databaseStep": "success",
+    "functionStep": "success",
+    "startedAt": "2026-08-11T20:20:00-04:00",
+    "completedAt": "2026-08-11T20:25:00-04:00"
+  },
+  "prerequisites": [
+    { "prerequisiteId": "fresh-replay", "status": "pass", "evidenceSha256": "2929292929292929292929292929292929292929292929292929292929292929", "observedAt": "2026-08-11T20:15:00-04:00" },
+    { "prerequisiteId": "upgrade-rehearsal", "status": "pass", "evidenceSha256": "3030303030303030303030303030303030303030303030303030303030303030", "observedAt": "2026-08-11T20:15:00-04:00" },
+    { "prerequisiteId": "migration-plan-review", "status": "pass", "evidenceSha256": "3131313131313131313131313131313131313131313131313131313131313131", "observedAt": "2026-08-11T20:15:00-04:00" },
+    { "prerequisiteId": "expected-inventory", "status": "pass", "evidenceSha256": "3232323232323232323232323232323232323232323232323232323232323232", "observedAt": "2026-08-11T20:15:00-04:00" },
+    { "prerequisiteId": "required-secret-presence", "status": "pass", "evidenceSha256": "3333333333333333333333333333333333333333333333333333333333333333", "observedAt": "2026-08-11T20:15:00-04:00" },
+    { "prerequisiteId": "provider-runtime-classification", "status": "pass", "evidenceSha256": "3434343434343434343434343434343434343434343434343434343434343434", "observedAt": "2026-08-11T20:15:00-04:00" }
+  ],
+  "githubControls": {
+    "observedAt": "2026-08-11T20:30:00-04:00",
+    "baseBranch": "dev",
+    "pullRequestRequired": true,
+    "requiredChecks": ["validate", "Supabase fresh-schema replay", "Supabase dry-run"],
+    "productionEnvironment": "Production",
+    "requiredReviewerCount": 1,
+    "adminBypassAllowed": false
+  },
+  "runtimeControls": {
+    "observedAt": "2026-08-11T20:30:00-04:00",
+    "source": "public.financial_runtime_controls",
+    "sourceSha256": "1414141414141414141414141414141414141414141414141414141414141414",
+    "neutralPostingEnabled": false,
+    "cutoverPrepareEnabled": false,
+    "cutoverActivationEnabled": false,
+    "productionValueFlowEnabled": false
+  },
+  "capabilities": [
+    { "capabilityId": "allocation-v2", "state": "ci-deployed-dev", "evidenceSha256": "1515151515151515151515151515151515151515151515151515151515151515", "observedAt": "2026-08-11T20:30:00-04:00", "environment": "dev", "subject": "settled_cubid_redistribution_v2" }
+  ],
+  "allocationV2": {
+    "policyVersion": "settled_cubid_redistribution_v2",
+    "capMultiple": "2.0",
+    "previewInputHash": "1616161616161616161616161616161616161616161616161616161616161616",
+    "selectionInputHash": "1717171717171717171717171717171717171717171717171717171717171717",
+    "scoreDiscountSourceHash": "1818181818181818181818181818181818181818181818181818181818181818",
+    "harvestRule": "exactly-E-minus-3",
+    "carryInHash": "1919191919191919191919191919191919191919191919191919191919191919",
+    "carryOutHash": "2020202020202020202020202020202020202020202020202020202020202020",
+    "reportHash": "2121212121212121212121212121212121212121212121212121212121212121",
+    "rootHash": "2222222222222222222222222222222222222222222222222222222222222222"
+  },
+  "approvals": [
+    {
+      "approvalType": "code-review",
+      "status": "approved",
+      "artifactSha256": "3535353535353535353535353535353535353535353535353535353535353535",
+    "scopeManifestSha256": "3e977f2919b9fe7c7b2dc2871b868377c05d8a25c3778090e173ca7773f34d84",
+      "approverRole": "independent-code-reviewer",
+      "recordedAt": "2026-08-11T20:25:30-04:00",
+      "expiresAt": "2026-08-12T20:25:30-04:00"
+    }
+  ],
+  "alerts": [],
+  "gates": {
+    "deploy": { "status": "pass", "evidenceSha256": "2323232323232323232323232323232323232323232323232323232323232323", "evaluatedAt": "2026-08-11T20:30:00-04:00", "blockers": [] },
+    "parity": { "status": "pass", "evidenceSha256": "2424242424242424242424242424242424242424242424242424242424242424", "evaluatedAt": "2026-08-11T20:30:00-04:00", "blockers": [] },
+    "hostedAcceptance": { "status": "pending", "evidenceSha256": "2525252525252525252525252525252525252525252525252525252525252525", "evaluatedAt": "2026-08-11T20:30:00-04:00", "blockers": ["hosted-evidence-required"] },
+    "productionDeploy": { "status": "pending", "evidenceSha256": "2626262626262626262626262626262626262626262626262626262626262626", "evaluatedAt": "2026-08-11T20:30:00-04:00", "blockers": ["production-approval-required"] },
+    "cutover": { "status": "pending", "evidenceSha256": "2727272727272727272727272727272727272727272727272727272727272727", "evaluatedAt": "2026-08-11T20:30:00-04:00", "blockers": ["opening-balance-approval-required"] },
+    "goLive": { "status": "pending", "evidenceSha256": "2828282828282828282828282828282828282828282828282828282828282828", "evaluatedAt": "2026-08-11T20:30:00-04:00", "blockers": ["separate-go-live-approval-required"] }
+  }
+}

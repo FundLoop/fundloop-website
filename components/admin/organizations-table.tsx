@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { createClientComponentClient } from "@supabase/auth-helpers-nextjs"
+import { getSupabaseBrowserClient } from "@/lib/supabase"
 import { Table, TableBody, TableCaption, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -33,8 +33,8 @@ interface Organization {
   id: number
   name: string
   description: string | null
-  status: string
-  created_at: string
+  status: string | null
+  created_at: string | null
   members: {
     id: number
     user_id: string
@@ -45,8 +45,16 @@ interface Organization {
     id: number
     name: string
     description: string
-    status: string
+    status: string | null
   }[]
+}
+
+function getRelatedRecord<T extends Record<string, unknown>>(value: T | T[] | null | undefined): T | null {
+  if (Array.isArray(value)) {
+    return value[0] ?? null
+  }
+
+  return value ?? null
 }
 
 export function OrganizationsTable() {
@@ -59,130 +67,131 @@ export function OrganizationsTable() {
   const [expandedOrgs, setExpandedOrgs] = useState<Record<number, boolean>>({})
   const [selectedOrganization, setSelectedOrganization] = useState<Organization | null>(null)
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false)
+  const [reloadKey, setReloadKey] = useState(0)
   const pageSize = 5
 
-  const supabase = createClientComponentClient()
-
-  const fetchOrganizations = async () => {
-    setLoading(true)
-    try {
-      // Build the query for organizations
-      let query = supabase.from("organizations").select(
-        `
-          id, 
-          name, 
-          description, 
-          status, 
-          created_at
-        `,
-        { count: "exact" },
-      )
-
-      // Apply search filter
-      if (searchTerm) {
-        query = query.ilike("name", `%${searchTerm}%`)
-      }
-
-      // Get count first
-      const { count, error: countError } = await query
-
-      if (countError) throw countError
-
-      setTotalCount(count || 0)
-      setTotalPages(Math.ceil((count || 0) / pageSize))
-
-      // Then get paginated data
-      const { data: orgsData, error } = await query.range((page - 1) * pageSize, page * pageSize - 1).order("name")
-
-      if (error) throw error
-
-      if (!orgsData) {
-        setOrganizations([])
-        return
-      }
-
-      // For each organization, fetch members and projects
-      const orgsWithDetails = await Promise.all(
-        orgsData.map(async (org) => {
-          // Fetch members
-          const { data: membersData, error: membersError } = await supabase
-            .from("organization_members")
-            .select(
-              `
-            id,
-            user_id,
-            role_id,
-            users(full_name),
-            ref_roles!inner(name)
-          `,
-            )
-            .eq("organization_id", org.id)
-            .eq("status", "active")
-
-          if (membersError) throw membersError
-
-          // Fetch projects
-          const { data: projectsData, error: projectsError } = await supabase
-            .from("projects")
-            .select(`
-            id,
-            name,
-            description,
-            status
-          `)
-            .eq("organization_id", org.id)
-
-          if (projectsError) throw projectsError
-
-          // Format the data
-          const members = membersData.map((member) => ({
-            id: member.id,
-            user_id: member.user_id,
-            full_name: member.users?.full_name,
-            role: member.ref_roles.name,
-          }))
-
-          const projects = projectsData || []
-
-          return {
-            ...org,
-            members,
-            projects,
-          }
-        }),
-      )
-
-      setOrganizations(orgsWithDetails)
-    } catch (error) {
-      console.error("Error fetching organizations:", error)
-      toast({
-        title: "Error",
-        description: "Failed to load organizations data",
-        variant: "destructive",
-      })
-    } finally {
-      setLoading(false)
-    }
-  }
+  const getSupabase = () => getSupabaseBrowserClient()
 
   useEffect(() => {
-    fetchOrganizations()
-  }, [page, searchTerm])
+    const loadOrganizations = async () => {
+      const supabase = getSupabase()
+      setLoading(true)
+      try {
+        let query = supabase.from("organizations").select(
+          `
+            id, 
+            name, 
+            description, 
+            status, 
+            created_at
+          `,
+          { count: "exact" },
+        )
 
-  const formatDate = (dateString: string) => {
+        if (searchTerm) {
+          query = query.ilike("name", `%${searchTerm}%`)
+        }
+
+        const { count, error: countError } = await query
+
+        if (countError) throw countError
+
+        setTotalCount(count || 0)
+        setTotalPages(Math.ceil((count || 0) / pageSize))
+
+        const { data: orgsData, error } = await query.range((page - 1) * pageSize, page * pageSize - 1).order("name")
+
+        if (error) throw error
+
+        if (!orgsData) {
+          setOrganizations([])
+          return
+        }
+
+        const orgsWithDetails = await Promise.all(
+          orgsData.map(async (org) => {
+            const { data: membersData, error: membersError } = await supabase
+              .from("organization_members")
+              .select(
+                `
+              id,
+              user_id,
+              role_id,
+              users!organization_members_user_id_fkey(full_name),
+              ref_roles!organization_members_role_id_fkey(name)
+            `,
+              )
+              .eq("organization_id", org.id)
+              .eq("status", "active")
+
+            if (membersError) throw membersError
+
+            const { data: projectsData, error: projectsError } = await supabase
+              .from("projects")
+              .select(`
+              id,
+              name,
+              description,
+              status
+            `)
+              .eq("organization_id", org.id)
+
+            if (projectsError) throw projectsError
+
+            const members = membersData.map((member) => {
+              const user = getRelatedRecord(member.users)
+              const role = getRelatedRecord(member.ref_roles)
+
+              return {
+                id: member.id,
+                user_id: member.user_id,
+                full_name: typeof user?.full_name === "string" ? user.full_name : "Unknown User",
+                role: typeof role?.name === "string" ? role.name : "Unknown Role",
+              }
+            })
+
+            return {
+              ...org,
+              members,
+              projects: projectsData || [],
+            }
+          }),
+        )
+
+        setOrganizations(orgsWithDetails)
+      } catch (error) {
+        console.error("Error fetching organizations:", error)
+        toast({
+          title: "Error",
+          description: "Failed to load organizations data",
+          variant: "destructive",
+        })
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    void loadOrganizations()
+  }, [page, reloadKey, searchTerm])
+
+  const formatDate = (dateString: string | null) => {
+    if (!dateString) {
+      return "Unknown"
+    }
+
     return formatDistanceToNow(new Date(dateString), { addSuffix: true })
   }
 
-  const getStatusBadge = (status: string) => {
+  const getStatusBadge = (status: string | null) => {
     switch (status) {
       case "active":
-        return <Badge variant="success">Active</Badge>
+        return <Badge>Active</Badge>
       case "inactive":
         return <Badge variant="secondary">Inactive</Badge>
       case "deleted":
         return <Badge variant="destructive">Deleted</Badge>
       default:
-        return <Badge variant="outline">{status}</Badge>
+        return <Badge variant="outline">{status || "Unknown"}</Badge>
     }
   }
 
@@ -197,6 +206,7 @@ export function OrganizationsTable() {
     if (!selectedOrganization) return
 
     try {
+      const supabase = getSupabase()
       const { error } = await supabase.rpc("soft_delete_organizations", { p_id: selectedOrganization.id })
 
       if (error) throw error
@@ -205,7 +215,7 @@ export function OrganizationsTable() {
         title: "Organization Deleted",
         description: `${selectedOrganization.name} has been deleted.`,
       })
-      fetchOrganizations()
+      setReloadKey((current) => current + 1)
     } catch (error) {
       console.error("Error deleting organization:", error)
       toast({
@@ -235,7 +245,7 @@ export function OrganizationsTable() {
             />
           </div>
 
-          <Button variant="outline" size="icon" onClick={fetchOrganizations} title="Refresh">
+          <Button variant="outline" size="icon" onClick={() => setReloadKey((current) => current + 1)} title="Refresh">
             <RefreshCw className="h-4 w-4" />
           </Button>
         </div>

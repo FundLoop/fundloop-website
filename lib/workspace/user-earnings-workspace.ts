@@ -1,0 +1,731 @@
+import "server-only"
+
+import type { NavigationContext } from "@/lib/navigation-context"
+import { createServerSupabaseClient } from "@/lib/supabase-server"
+import { getAdminSupabaseClient } from "@/lib/supabase-admin"
+import { readFinancialCutoverMode } from "@/lib/financial-cutover/read-model"
+import type { Database } from "@/types/supabase"
+import { buildUserAssetPreferenceReadiness, type UserAssetPreferenceReadiness } from "@/lib/workspace/user-asset-preferences"
+
+export type UserEarningsWarning = {
+  scope: string
+  message: string
+}
+
+export type UserEarningsPayoutRoute = {
+  id: number
+  label: string
+  rail: Database["public"]["Enums"]["payout_rail"]
+  currencyCode: string
+  status: Database["public"]["Enums"]["payout_route_status"]
+  isDefault: boolean
+}
+
+export type UserEarningsCycle = {
+  key: string
+  cycleStatus: Database["public"]["Enums"]["monthly_cycle_status"] | "unassigned"
+  resultId: number
+  allocationUsd: number
+  aggregateScore: number
+  publishedAt: string
+  payoutIntentId: number | null
+  payoutStatus: Database["public"]["Enums"]["payout_intent_status"] | "not_created"
+  payoutAmountUsd: number | null
+  currencyCode: string
+  rail: Database["public"]["Enums"]["payout_rail"] | null
+  routeLabel: string | null
+  statusReason: string | null
+  batchStatus: Database["public"]["Enums"]["payout_batch_status"] | null
+  reconciliationStatus: Database["public"]["Enums"]["payout_reconciliation_status"] | null
+}
+
+export type UserEarningsCreditAssetFill = {
+  assetType: string
+  assetCode: string
+  sourceAmount: number
+  usdValue: number
+  preferenceRank: number
+  partial: boolean
+  projectId: number | null
+}
+
+export type UserEarningsCreditSourceBreakdown = {
+  projectId: number
+  projectName: string
+  scopedCubidId: string
+  attributionPoints: number
+  totalProjectPoints: number
+  projectPoolUsd: number
+  rawEntitlementUsd: number
+}
+
+export type UserEarningsCredit = {
+  id: number
+  key: string
+  cycleStatus: Database["public"]["Enums"]["monthly_cycle_status"] | "unassigned"
+  sourceResultId: number
+  runId: number
+  usdEquivalentAmount: number
+  currencyCode: string
+  status: "credited" | "voided" | string
+  paymentStatus: "not_paid" | string
+  creditedAt: string
+  assetFills: UserEarningsCreditAssetFill[]
+  sourceBreakdown: UserEarningsCreditSourceBreakdown[]
+  allocationBreakdown: {
+    rawEntitlementUsd: number
+    baselineUsd: number
+    equalizationTopUpUsd: number
+    capMultiple: number
+    capApplied: boolean
+  }
+}
+
+export type UserWithdrawalRequest = {
+  id: string
+  payoutRouteId: number
+  status: "requested" | "reserved" | "queued" | "held" | "paid" | "cancelled" | "closed"
+  requestedUsdAmount: number
+  currencyCode: "USD" | "CAD"
+  creditCount: number
+  requestedAt: string
+  assetKey: string | null
+  feeUsd: number
+  netUsd: number
+  statusReason: string | null
+}
+
+export type UserWithdrawalAssetOption = {
+  assetKey: string
+  symbol: string
+  railKey: "stripe_bank_transfer" | "base_stablecoin"
+  projectId: number
+  availableUsd: number
+  lotCount: number
+}
+
+export type UserEarningsWorkspace = {
+  summary: {
+    resultCount: number
+    creditCount: number
+    payoutIntentCount: number
+    totalCreditedUsd: number
+    totalPublishedAllocationUsd: number
+    totalPayoutIntentUsd: number
+    pendingPayoutUsd: number
+    paidPayoutUsd: number
+    failedPayoutUsd: number
+    draftIntentCount: number
+    readyIntentCount: number
+    activeRouteCount: number
+    hasDefaultRoute: boolean
+    eligibleWithdrawalUsd: number
+    requestedWithdrawalUsd: number
+    withdrawalRequestCount: number
+    nextAction: "add_payout_route" | "wait_for_distribution" | "review_history"
+  }
+  routes: {
+    defaultRoute: UserEarningsPayoutRoute | null
+    all: UserEarningsPayoutRoute[]
+  }
+  assetPreferences: UserAssetPreferenceReadiness
+  credits: UserEarningsCredit[]
+  withdrawalRequests: UserWithdrawalRequest[]
+  withdrawalAssetOptions: UserWithdrawalAssetOption[]
+  cycles: UserEarningsCycle[]
+  pendingDistributions: UserEarningsCycle[]
+  payoutHistory: UserEarningsCycle[]
+  warnings: UserEarningsWarning[]
+  rawResultsHref: "/workspace/reporting"
+}
+
+type SupabaseReadResult<T> = {
+  data: T | null
+  error: { message?: string } | null
+}
+
+type PublishedResultRow = Pick<
+  Database["public"]["Tables"]["zkas_published_user_results"]["Row"],
+  "id" | "monthly_cycle_id" | "allocation_usd" | "aggregate_score" | "published_at" | "run_id"
+>
+
+type CycleRow = Pick<Database["public"]["Tables"]["monthly_cycles"]["Row"], "id" | "cycle_key" | "status">
+
+type RunRow = Pick<Database["public"]["Tables"]["zkas_runs"]["Row"], "id" | "month">
+
+type ProjectRow = Pick<Database["public"]["Tables"]["projects"]["Row"], "id" | "name">
+
+type RouteRow = Pick<
+  Database["public"]["Tables"]["user_payout_routes"]["Row"],
+  "id" | "label" | "rail" | "currency_code" | "status" | "is_default"
+>
+
+type IntentRow = Pick<
+  Database["public"]["Tables"]["payout_intents"]["Row"],
+  "id" | "monthly_cycle_id" | "source_result_id" | "payout_route_id" | "rail" | "amount_usd" | "currency_code" | "status" | "status_reason"
+>
+
+type CreditRow = Pick<
+  Database["public"]["Tables"]["monthly_cycle_bookkeeping_credits"]["Row"],
+  | "id"
+  | "monthly_cycle_id"
+  | "run_id"
+  | "source_result_id"
+  | "usd_equivalent_amount"
+  | "currency_code"
+  | "status"
+  | "payment_status"
+  | "credited_at"
+  | "asset_fills"
+  | "source_breakdown"
+  | "allocation_breakdown"
+>
+
+type BatchItemRow = Pick<
+  Database["public"]["Tables"]["payout_batch_items"]["Row"],
+  "payout_intent_id" | "payout_batch_id" | "status"
+>
+
+type BatchRow = Pick<Database["public"]["Tables"]["payout_batches"]["Row"], "id" | "status">
+
+type ReconciliationRow = Pick<
+  Database["public"]["Tables"]["payout_reconciliation_events"]["Row"],
+  "payout_intent_id" | "status" | "created_at"
+>
+
+type AssetPreferenceRow = Pick<
+  Database["public"]["Tables"]["user_asset_preferences"]["Row"],
+  "id" | "rank" | "asset_type" | "asset_code" | "project_id" | "accepted"
+>
+
+type WithdrawalRequestRow = Pick<Database["public"]["Tables"]["user_withdrawal_requests"]["Row"],
+  "id" | "payout_route_id" | "status" | "requested_usd_amount" | "currency_code" | "requested_at"> &
+  Partial<Pick<Database["public"]["Tables"]["user_withdrawal_requests"]["Row"], "fee_minor" | "net_minor" | "financial_asset_id" | "status_reason">>
+
+type WithdrawalAssetRow = Pick<Database["public"]["Views"]["user_withdrawal_asset_inventory"]["Row"],
+  "asset_key" | "symbol" | "rail_key" | "project_id" | "available_minor" | "lot_count" | "oldest_cycle_id">
+type WithdrawalBalanceRow = Pick<Database["public"]["Views"]["user_withdrawal_obligation_balances"]["Row"], "available_minor">
+
+type WithdrawalCreditRow = Pick<
+  Database["public"]["Tables"]["user_withdrawal_request_credits"]["Row"],
+  "withdrawal_request_id" | "bookkeeping_credit_id"
+>
+
+function warningFromError(scope: string, error: { message?: string } | null | undefined): UserEarningsWarning | null {
+  if (!error) return null
+  return {
+    scope,
+    message: error.message ?? "Earnings data could not be loaded.",
+  }
+}
+
+async function readEarningsData<T>(
+  scope: string,
+  query: PromiseLike<SupabaseReadResult<T>>,
+  warnings: UserEarningsWarning[],
+  fallback: T,
+): Promise<T> {
+  try {
+    const { data, error } = await query
+    const warning = warningFromError(scope, error)
+    if (warning) {
+      warnings.push(warning)
+      return fallback
+    }
+
+    return data ?? fallback
+  } catch (error) {
+    warnings.push({
+      scope,
+      message: error instanceof Error ? error.message : "Earnings data could not be loaded.",
+    })
+    return fallback
+  }
+}
+
+function numberValue(value: number | null | undefined) {
+  return Number(value ?? 0)
+}
+
+function recordValue(value: unknown): Record<string, unknown> {
+  return value && typeof value === "object" && !Array.isArray(value) ? (value as Record<string, unknown>) : {}
+}
+
+function arrayValue(value: unknown): unknown[] {
+  return Array.isArray(value) ? value : []
+}
+
+function stringValue(value: unknown, fallback = "") {
+  return typeof value === "string" ? value : fallback
+}
+
+function booleanValue(value: unknown) {
+  return value === true
+}
+
+function routeLabel(route: RouteRow | undefined | null) {
+  if (!route) return null
+  return route.label.trim().length > 0 ? route.label : route.rail
+}
+
+function normalizeAssetFills(value: unknown): UserEarningsCreditAssetFill[] {
+  return arrayValue(value).map((item) => {
+    const row = recordValue(item)
+    return {
+      assetType: stringValue(row.assetType, "unknown"),
+      assetCode: stringValue(row.assetCode, "USD"),
+      sourceAmount: numberValue(row.sourceAmount as number | null | undefined),
+      usdValue: numberValue(row.usdValue as number | null | undefined),
+      preferenceRank: numberValue(row.preferenceRank as number | null | undefined),
+      partial: booleanValue(row.partial),
+      projectId: typeof row.projectId === "number" ? row.projectId : null,
+    }
+  })
+}
+
+function normalizeSourceBreakdown(value: unknown, projectById: Map<number, ProjectRow>): UserEarningsCreditSourceBreakdown[] {
+  return arrayValue(value).map((item) => {
+    const row = recordValue(item)
+    const projectId = numberValue(row.projectId as number | null | undefined)
+    return {
+      projectId,
+      projectName: projectById.get(projectId)?.name ?? `Project ${projectId}`,
+      scopedCubidId: stringValue(row.scopedCubidId),
+      attributionPoints: numberValue(row.attributionPoints as number | null | undefined),
+      totalProjectPoints: numberValue(row.totalProjectPoints as number | null | undefined),
+      projectPoolUsd: numberValue(row.projectPoolUsd as number | null | undefined),
+      rawEntitlementUsd: numberValue(row.rawEntitlementUsd as number | null | undefined),
+    }
+  })
+}
+
+function normalizeAllocationBreakdown(value: unknown): UserEarningsCredit["allocationBreakdown"] {
+  const row = recordValue(value)
+  return {
+    rawEntitlementUsd: numberValue(row.rawEntitlementUsd as number | null | undefined),
+    baselineUsd: numberValue(row.baselineUsd as number | null | undefined),
+    equalizationTopUpUsd: numberValue(row.equalizationTopUpUsd as number | null | undefined),
+    capMultiple: numberValue(row.capMultiple as number | null | undefined) || 3,
+    capApplied: booleanValue(row.capApplied),
+  }
+}
+
+function mapRoute(route: RouteRow): UserEarningsPayoutRoute {
+  return {
+    id: route.id,
+    label: route.label.trim().length > 0 ? route.label : route.rail,
+    rail: route.rail,
+    currencyCode: route.currency_code,
+    status: route.status,
+    isDefault: route.is_default,
+  }
+}
+
+function resultCycleKey(result: PublishedResultRow, cycleById: Map<number, CycleRow>, runById: Map<number, RunRow>) {
+  if (result.monthly_cycle_id && cycleById.has(result.monthly_cycle_id)) {
+    return cycleById.get(result.monthly_cycle_id)?.cycle_key ?? "Unassigned"
+  }
+  return runById.get(result.run_id)?.month ?? `Run ${result.run_id}`
+}
+
+function buildLatestReconciliationStatusByIntent(reconciliationRows: ReconciliationRow[]) {
+  const latestByIntent = new Map<number, Database["public"]["Enums"]["payout_reconciliation_status"]>()
+  const sortedRows = [...reconciliationRows].sort((left, right) => new Date(right.created_at).getTime() - new Date(left.created_at).getTime())
+
+  for (const row of sortedRows) {
+    if (row.payout_intent_id && !latestByIntent.has(row.payout_intent_id)) {
+      latestByIntent.set(row.payout_intent_id, row.status)
+    }
+  }
+
+  return latestByIntent
+}
+
+function isPendingPayout(status: UserEarningsCycle["payoutStatus"]) {
+  return status === "draft" || status === "ready" || status === "batched" || status === "processing"
+}
+
+function isHistoricalPayout(status: UserEarningsCycle["payoutStatus"]) {
+  return status === "paid" || status === "failed" || status === "cancelled"
+}
+
+export function buildUserEarningsWorkspace({
+  publishedResults,
+  cycles,
+  runs,
+  projects,
+  payoutRoutes,
+  payoutIntents,
+  bookkeepingCredits,
+  batchItems,
+  batches,
+  reconciliationEvents,
+  assetPreferences,
+  withdrawalRequests,
+  withdrawalCredits,
+  withdrawalAssetInventory,
+  withdrawalObligationBalances,
+  financialAssets,
+  warnings,
+}: {
+  publishedResults: PublishedResultRow[]
+  cycles: CycleRow[]
+  runs: RunRow[]
+  projects?: ProjectRow[]
+  payoutRoutes: RouteRow[]
+  payoutIntents: IntentRow[]
+  bookkeepingCredits?: CreditRow[]
+  batchItems: BatchItemRow[]
+  batches: BatchRow[]
+  reconciliationEvents: ReconciliationRow[]
+  assetPreferences?: AssetPreferenceRow[]
+  withdrawalRequests?: WithdrawalRequestRow[]
+  withdrawalCredits?: WithdrawalCreditRow[]
+  withdrawalAssetInventory?: WithdrawalAssetRow[]
+  withdrawalObligationBalances?: WithdrawalBalanceRow[]
+  financialAssets?: Pick<Database["public"]["Tables"]["financial_assets"]["Row"], "id" | "asset_key">[]
+  warnings: UserEarningsWarning[]
+}): UserEarningsWorkspace {
+  const cycleById = new Map(cycles.map((cycle) => [cycle.id, cycle]))
+  const runById = new Map(runs.map((run) => [run.id, run]))
+  const projectById = new Map((projects ?? []).map((project) => [project.id, project]))
+  const routeById = new Map(payoutRoutes.map((route) => [route.id, route]))
+  const intentByResultId = new Map(payoutIntents.filter((intent) => intent.source_result_id).map((intent) => [intent.source_result_id as number, intent]))
+  const batchById = new Map(batches.map((batch) => [batch.id, batch]))
+  const batchItemByIntentId = new Map(batchItems.map((item) => [item.payout_intent_id, item]))
+  const latestReconciliationStatusByIntent = buildLatestReconciliationStatusByIntent(reconciliationEvents)
+  const mappedRoutes = payoutRoutes.map(mapRoute)
+  const defaultRoute = mappedRoutes.find((route) => route.status === "active" && route.isDefault) ?? null
+  const assetPreferenceReadiness = buildUserAssetPreferenceReadiness({ userId: null, rows: assetPreferences ?? [] })
+  const credits = (bookkeepingCredits ?? [])
+    .map((credit): UserEarningsCredit => ({
+      id: credit.id,
+      key: credit.monthly_cycle_id ? (cycleById.get(credit.monthly_cycle_id)?.cycle_key ?? "Unassigned") : "Unassigned",
+      cycleStatus: credit.monthly_cycle_id ? (cycleById.get(credit.monthly_cycle_id)?.status ?? "unassigned") : "unassigned",
+      sourceResultId: credit.source_result_id,
+      runId: credit.run_id,
+      usdEquivalentAmount: numberValue(credit.usd_equivalent_amount),
+      currencyCode: credit.currency_code,
+      status: credit.status,
+      paymentStatus: credit.payment_status,
+      creditedAt: credit.credited_at,
+      assetFills: normalizeAssetFills(credit.asset_fills),
+      sourceBreakdown: normalizeSourceBreakdown(credit.source_breakdown, projectById),
+      allocationBreakdown: normalizeAllocationBreakdown(credit.allocation_breakdown),
+    }))
+    .sort((left, right) => new Date(right.creditedAt).getTime() - new Date(left.creditedAt).getTime())
+  const reservedCreditIds = new Set((withdrawalCredits ?? []).map((row) => row.bookkeeping_credit_id))
+  const withdrawalCreditCounts = new Map<string, number>()
+  for (const row of withdrawalCredits ?? []) {
+    withdrawalCreditCounts.set(row.withdrawal_request_id, (withdrawalCreditCounts.get(row.withdrawal_request_id) ?? 0) + 1)
+  }
+  const mappedWithdrawalRequests: UserWithdrawalRequest[] = (withdrawalRequests ?? []).map((request) => ({
+    id: request.id,
+    payoutRouteId: request.payout_route_id,
+    status: request.status as UserWithdrawalRequest["status"],
+    requestedUsdAmount: numberValue(request.requested_usd_amount),
+    currencyCode: "USD",
+    creditCount: withdrawalCreditCounts.get(request.id) ?? 0,
+    requestedAt: request.requested_at,
+    assetKey: (financialAssets ?? []).find((asset) => asset.id === request.financial_asset_id)?.asset_key ?? null,
+    feeUsd: numberValue(request.fee_minor) / 100,
+    netUsd: numberValue(request.net_minor) / 100,
+    statusReason: request.status_reason ?? null,
+  }))
+  const withdrawalAssetOptions: UserWithdrawalAssetOption[] = (withdrawalAssetInventory ?? []).flatMap((row) =>
+    row.asset_key && row.symbol && row.rail_key && row.project_id && row.available_minor !== null
+      ? [{ assetKey: row.asset_key, symbol: row.symbol, railKey: row.rail_key as UserWithdrawalAssetOption["railKey"],
+          projectId: row.project_id, availableUsd: numberValue(row.available_minor) / 100, lotCount: row.lot_count ?? 0 }]
+      : [])
+  const legacyEligibleWithdrawalUsd = credits.filter((credit) => credit.status === "credited" && credit.paymentStatus === "not_paid" && !reservedCreditIds.has(credit.id))
+    .reduce((sum, credit) => sum + credit.usdEquivalentAmount, 0)
+  const obligationEligibleWithdrawalUsd = (withdrawalObligationBalances ?? []).reduce((sum, row) => sum + numberValue(row.available_minor) / 100, 0)
+  const eligibleWithdrawalUsd = withdrawalObligationBalances === undefined ? legacyEligibleWithdrawalUsd : obligationEligibleWithdrawalUsd
+  const requestedWithdrawalUsd = mappedWithdrawalRequests.reduce((sum, request) => sum + request.requestedUsdAmount, 0)
+
+  const cyclesWithResults = publishedResults
+    .map((result): UserEarningsCycle => {
+      const intent = intentByResultId.get(result.id) ?? null
+      const route = intent?.payout_route_id ? routeById.get(intent.payout_route_id) : null
+      const batchItem = intent ? batchItemByIntentId.get(intent.id) : null
+      const batch = batchItem ? batchById.get(batchItem.payout_batch_id) : null
+
+      return {
+        key: resultCycleKey(result, cycleById, runById),
+        cycleStatus: result.monthly_cycle_id ? (cycleById.get(result.monthly_cycle_id)?.status ?? "unassigned") : "unassigned",
+        resultId: result.id,
+        allocationUsd: numberValue(result.allocation_usd),
+        aggregateScore: numberValue(result.aggregate_score),
+        publishedAt: result.published_at,
+        payoutIntentId: intent?.id ?? null,
+        payoutStatus: intent?.status ?? "not_created",
+        payoutAmountUsd: intent ? numberValue(intent.amount_usd) : null,
+        currencyCode: intent?.currency_code ?? "USD",
+        rail: intent?.rail ?? route?.rail ?? null,
+        routeLabel: routeLabel(route),
+        statusReason: intent?.status_reason ?? null,
+        batchStatus: batch?.status ?? null,
+        reconciliationStatus: intent ? (latestReconciliationStatusByIntent.get(intent.id) ?? null) : null,
+      }
+    })
+    .sort((left, right) => new Date(right.publishedAt).getTime() - new Date(left.publishedAt).getTime())
+
+  const pendingDistributions = cyclesWithResults.filter((cycle) => isPendingPayout(cycle.payoutStatus))
+  const payoutHistory = cyclesWithResults.filter((cycle) => isHistoricalPayout(cycle.payoutStatus))
+  const totalCreditedUsd = credits.filter((credit) => credit.status === "credited").reduce((sum, credit) => sum + credit.usdEquivalentAmount, 0)
+  const hasDefaultRoute = Boolean(defaultRoute)
+  const activeRouteCount = mappedRoutes.filter((route) => route.status === "active").length
+  const totalPayoutIntentUsd = payoutIntents.reduce((sum, intent) => sum + numberValue(intent.amount_usd), 0)
+  const paidPayoutUsd = payoutIntents
+    .filter((intent) => intent.status === "paid")
+    .reduce((sum, intent) => sum + numberValue(intent.amount_usd), 0)
+  const failedPayoutUsd = payoutIntents
+    .filter((intent) => intent.status === "failed")
+    .reduce((sum, intent) => sum + numberValue(intent.amount_usd), 0)
+  const pendingPayoutUsd = payoutIntents
+    .filter((intent) => isPendingPayout(intent.status))
+    .reduce((sum, intent) => sum + numberValue(intent.amount_usd), 0)
+  const draftIntentCount = payoutIntents.filter((intent) => intent.status === "draft").length
+  const readyIntentCount = payoutIntents.filter((intent) => intent.status === "ready").length
+
+  return {
+    summary: {
+      resultCount: publishedResults.length,
+      creditCount: credits.length,
+      payoutIntentCount: payoutIntents.length,
+      totalCreditedUsd,
+      totalPublishedAllocationUsd: publishedResults.reduce((sum, result) => sum + numberValue(result.allocation_usd), 0),
+      totalPayoutIntentUsd,
+      pendingPayoutUsd,
+      paidPayoutUsd,
+      failedPayoutUsd,
+      draftIntentCount,
+      readyIntentCount,
+      activeRouteCount,
+      hasDefaultRoute,
+      eligibleWithdrawalUsd,
+      requestedWithdrawalUsd,
+      withdrawalRequestCount: mappedWithdrawalRequests.length,
+      nextAction: !hasDefaultRoute ? "add_payout_route" : pendingDistributions.length > 0 ? "wait_for_distribution" : "review_history",
+    },
+    routes: {
+      defaultRoute,
+      all: mappedRoutes.sort((left, right) => Number(right.isDefault) - Number(left.isDefault) || left.label.localeCompare(right.label)),
+    },
+    assetPreferences: assetPreferenceReadiness,
+    credits,
+    withdrawalRequests: mappedWithdrawalRequests,
+    withdrawalAssetOptions,
+    cycles: cyclesWithResults,
+    pendingDistributions,
+    payoutHistory,
+    warnings,
+    rawResultsHref: "/workspace/reporting",
+  }
+}
+
+export async function getUserEarningsWorkspace(navigationContext: NavigationContext): Promise<UserEarningsWorkspace> {
+  const warnings: UserEarningsWarning[] = []
+  const user = navigationContext.user
+
+  if (!user) {
+    return buildUserEarningsWorkspace({
+      publishedResults: [],
+      cycles: [],
+      runs: [],
+      payoutRoutes: [],
+      payoutIntents: [],
+      bookkeepingCredits: [],
+      batchItems: [],
+      batches: [],
+      reconciliationEvents: [],
+      assetPreferences: [],
+      withdrawalRequests: [],
+      withdrawalCredits: [],
+      withdrawalAssetInventory: [],
+      withdrawalObligationBalances: [],
+      financialAssets: [],
+      warnings,
+    })
+  }
+
+  const supabase = await createServerSupabaseClient()
+  const admin = getAdminSupabaseClient()
+  const cutoverReadMode = await readFinancialCutoverMode(admin)
+  if (cutoverReadMode === "unavailable") {
+    warnings.push({ scope: "financial-cutover", message: "Canonical earnings read state could not be verified." })
+  }
+  const readCanonicalBookkeepingCredits = async (): Promise<SupabaseReadResult<CreditRow[]>> => {
+    const { data, error } = await admin
+      .from("financial_cutover_canonical_credit_reads")
+      .select("id, monthly_cycle_id, run_id, source_result_id, usd_equivalent_amount, currency_code, status, payment_status, credited_at, asset_fills, source_breakdown, allocation_breakdown")
+      .eq("user_id", user.id)
+      .order("credited_at", { ascending: false })
+    // The view is an inner join over non-null credit and obligation columns;
+    // generated view types remain nullable because Postgres does not expose that proof.
+    return { data: data as unknown as CreditRow[] | null, error }
+  }
+  const bookkeepingCreditRead = cutoverReadMode === "canonical"
+    ? readCanonicalBookkeepingCredits()
+    : cutoverReadMode === "legacy"
+      ? supabase
+          .from("monthly_cycle_bookkeeping_credits")
+          .select("id, monthly_cycle_id, run_id, source_result_id, usd_equivalent_amount, currency_code, status, payment_status, credited_at, asset_fills, source_breakdown, allocation_breakdown")
+          .eq("user_id", user.id)
+          .order("credited_at", { ascending: false })
+      : Promise.resolve({ data: [] as CreditRow[], error: null })
+  const [publishedResults, payoutRoutes, payoutIntents, bookkeepingCredits, assetPreferences, withdrawalRequests, withdrawalAssetInventory, withdrawalObligationBalances, financialAssets] = await Promise.all([
+    readEarningsData<PublishedResultRow[]>(
+      "published-results",
+      supabase
+        .from("zkas_published_user_results")
+        .select("id, monthly_cycle_id, allocation_usd, aggregate_score, published_at, run_id")
+        .eq("user_id", user.id)
+        .order("published_at", { ascending: false }),
+      warnings,
+      [],
+    ),
+    readEarningsData<RouteRow[]>(
+      "payout-routes",
+      supabase
+        .from("user_payout_routes")
+        .select("id, label, rail, currency_code, status, is_default")
+        .eq("user_id", user.id)
+        .order("is_default", { ascending: false })
+        .order("created_at", { ascending: false }),
+      warnings,
+      [],
+    ),
+    readEarningsData<IntentRow[]>(
+      "payout-intents",
+      supabase
+        .from("payout_intents")
+        .select("id, monthly_cycle_id, source_result_id, payout_route_id, rail, amount_usd, currency_code, status, status_reason")
+        .eq("user_id", user.id)
+        .order("updated_at", { ascending: false }),
+      warnings,
+      [],
+    ),
+    readEarningsData<CreditRow[]>(
+      cutoverReadMode === "canonical" ? "canonical-bookkeeping-positions" : "bookkeeping-credits",
+      bookkeepingCreditRead,
+      warnings,
+      [],
+    ),
+    readEarningsData<AssetPreferenceRow[]>(
+      "asset-preferences",
+      supabase
+        .from("user_asset_preferences")
+        .select("id, rank, asset_type, asset_code, project_id, accepted")
+        .eq("user_id", user.id)
+        .order("rank", { ascending: true }),
+      warnings,
+      [],
+    ),
+    readEarningsData<WithdrawalRequestRow[]>(
+      "withdrawal-requests",
+      supabase.from("user_withdrawal_requests")
+        .select("id, payout_route_id, status, requested_usd_amount, currency_code, requested_at, fee_minor, net_minor, financial_asset_id, status_reason")
+        .eq("user_id", user.id)
+        .order("requested_at", { ascending: false }),
+      warnings,
+      [],
+    ),
+    readEarningsData<WithdrawalAssetRow[]>("withdrawal-asset-inventory",
+      supabase.from("user_withdrawal_asset_inventory").select("asset_key,symbol,rail_key,project_id,available_minor,lot_count,oldest_cycle_id").eq("user_id", user.id), warnings, []),
+    readEarningsData<WithdrawalBalanceRow[]>("withdrawal-obligation-balances",
+      supabase.from("user_withdrawal_obligation_balances").select("available_minor").eq("user_id", user.id), warnings, []),
+    readEarningsData<Pick<Database["public"]["Tables"]["financial_assets"]["Row"], "id" | "asset_key">[]>(
+      "withdrawal-financial-assets", supabase.from("financial_assets").select("id,asset_key"), warnings, []),
+  ])
+
+  const cycleIds = Array.from(
+    new Set([
+      ...publishedResults.map((result) => result.monthly_cycle_id).filter((id): id is number => typeof id === "number"),
+      ...payoutIntents.map((intent) => intent.monthly_cycle_id),
+      ...bookkeepingCredits.map((credit) => credit.monthly_cycle_id),
+    ]),
+  )
+  const runIds = Array.from(new Set([...publishedResults.map((result) => result.run_id), ...bookkeepingCredits.map((credit) => credit.run_id)]))
+  const projectIds = Array.from(new Set(bookkeepingCredits.flatMap((credit) => normalizeSourceBreakdown(credit.source_breakdown, new Map()).map((source) => source.projectId))))
+  const intentIds = payoutIntents.map((intent) => intent.id)
+  const withdrawalRequestIds = withdrawalRequests.map((request) => request.id)
+
+  const [cycles, runs, projects, batchItems, reconciliationEvents, withdrawalCredits] = await Promise.all([
+    cycleIds.length > 0
+      ? readEarningsData<CycleRow[]>(
+          "monthly-cycles",
+          supabase.from("monthly_cycles").select("id, cycle_key, status").in("id", cycleIds),
+          warnings,
+          [],
+        )
+      : Promise.resolve([]),
+    runIds.length > 0
+      ? readEarningsData<RunRow[]>("result-runs", supabase.from("zkas_runs").select("id, month").in("id", runIds), warnings, [])
+      : Promise.resolve([]),
+    projectIds.length > 0
+      ? readEarningsData<ProjectRow[]>("source-projects", supabase.from("projects").select("id, name").in("id", projectIds), warnings, [])
+      : Promise.resolve([]),
+    intentIds.length > 0
+      ? readEarningsData<BatchItemRow[]>(
+          "payout-batch-items",
+          supabase.from("payout_batch_items").select("payout_intent_id, payout_batch_id, status").in("payout_intent_id", intentIds),
+          warnings,
+          [],
+        )
+      : Promise.resolve([]),
+    intentIds.length > 0
+      ? readEarningsData<ReconciliationRow[]>(
+          "payout-reconciliation",
+          supabase
+            .from("payout_reconciliation_events")
+            .select("payout_intent_id, status, created_at")
+            .in("payout_intent_id", intentIds)
+            .order("created_at", { ascending: false }),
+          warnings,
+          [],
+        )
+      : Promise.resolve([]),
+    withdrawalRequestIds.length > 0
+      ? readEarningsData<WithdrawalCreditRow[]>(
+          "withdrawal-request-credits",
+          supabase.from("user_withdrawal_request_credits")
+            .select("withdrawal_request_id, bookkeeping_credit_id")
+            .in("withdrawal_request_id", withdrawalRequestIds),
+          warnings,
+          [],
+        )
+      : Promise.resolve([]),
+  ])
+
+  const batchIds = Array.from(new Set(batchItems.map((item) => item.payout_batch_id)))
+  const batches =
+    batchIds.length > 0
+      ? await readEarningsData<BatchRow[]>(
+          "payout-batches",
+          supabase.from("payout_batches").select("id, status").in("id", batchIds),
+          warnings,
+          [],
+        )
+      : []
+
+  return buildUserEarningsWorkspace({
+    publishedResults,
+    cycles,
+    runs,
+    projects,
+    payoutRoutes,
+    payoutIntents,
+    bookkeepingCredits,
+    batchItems,
+    batches,
+    reconciliationEvents,
+    assetPreferences,
+    withdrawalRequests,
+    withdrawalCredits,
+    withdrawalAssetInventory,
+    withdrawalObligationBalances,
+    financialAssets,
+    warnings,
+  })
+}

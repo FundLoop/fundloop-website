@@ -1,0 +1,610 @@
+# FundLoop TODO
+
+> Superseded on 2026-07-20 by GitHub Issues and [FundLoop Project 1](https://github.com/orgs/FundLoop/projects/1).
+>
+> This file is archived historical context for Sessions 1-52. It had no remaining open session-level work at cutover time. Do not add new roadmap items here; create GitHub Issues and add them to Project 1 instead.
+
+This file is the current execution roadmap for bringing FundLoop from the present semi-finished app shell to the target operational architecture described in `docs/engineering/current-state-architecture.md`, `docs/engineering/target-state-architecture.md`, and `docs/engineering/backgrounder-for-agents.md`.
+
+Each item below is intentionally sized to one agentic coding session. The sequence matters. Later work should assume the earlier sessions are complete unless the backlog is deliberately re-planned.
+
+## Execution Rules
+- Always build on feature branches.
+- When starting a task: update the status to "started", set the branch and timestamp started. Reference `docs/engineering/backgrounder-for-agents.md`, `docs/engineering/current-state-architecture.md`, and `docs/engineering/target-state-architecture.md` before starting to build.
+- While building: Make underway commits if needed, always with an accompanying session-log entry. Build unit tests and smoke tests for new features as needed. Smoke test before reporting complete. Do not write in this doc what you actually did, instead write that in the session-log.
+- At the end of each task: update relevant long-lived engineering docs in `docs/engineering/` whenever architecture, route decisions, workflows, or operating assumptions changed.
+- If a todo needs to be split, or if any spillover actions were not completed, then remove those words from your todo and instead create new minor todo at the right place in the document, for example a new `12.1` immediately after todo 12.
+- Once completed, set status to complete, update timestamp completed, ensure all relevant session logs are referenced. 
+
+## Session 01: Replace the old backlog with a release-oriented execution map
+
+- Status: Complete
+- Timestamp started: 2026-04-14T21:54:22Z
+- Timestamp completed: 2026-04-14T21:54:22Z
+- Feature branch: codex/wallet-production-readiness
+- Head: 0f81f15
+- Session-log reference(s): session v34
+
+Turn the architecture docs into a repo-grounded execution plan that the next several agents can follow without re-deriving priorities. This session should tighten `agent-context/` itself: normalize naming, cross-link the backgrounder/current-state/target-state docs, and add a short “how to use this backlog” note for future contributors. The goal is not product code yet. The goal is to make the repo operationally legible so subsequent sessions can work in sequence instead of starting from scratch every time.
+
+## Session 02: Inventory every incomplete, stubbed, or placeholder route
+
+- Status: Complete
+- Timestamp started: 2026-04-14T21:55:18Z
+- Timestamp completed: 2026-04-14T21:55:18Z
+- Feature branch: codex/wallet-production-readiness
+- Head: 889ab9d
+- Session-log reference(s): session v35
+
+Review the route tree and current UI to identify all pages that are unfinished, misleading, redundant, or only half-wired. Produce a route inventory with one disposition per page: finish, merge, redirect, or remove. This should include public pages, settings pages, admin pages, and any thin placeholders that still reflect an earlier website-first mindset. The output should drive the product information architecture so later UX sessions are completing real surfaces rather than polishing pages that should disappear.
+
+## Session 03: Define the target information architecture for users, founders, and operators
+
+- Status: Complete
+- Timestamp started: 2026-04-14T21:57:19Z
+- Timestamp completed: 2026-04-14T21:57:19Z
+- Feature branch: codex/wallet-production-readiness
+- Head: 9f88663
+- Session-log reference(s): session v36
+
+Restructure the app map around the three real personas: regular users, founders/project members, and internal operators. This session should decide the long-term navigation model, top-level route groupings, dashboard entry points, and what belongs under settings versus workspaces. The result should be a stable information architecture document plus initial route-level TODO annotations in the code. It should also identify which current pages remain public marketing content and which need to become production application surfaces.
+
+## Session 04: Introduce a backend-contract layer for Supabase Edge Functions
+
+- Status: Complete
+- Timestamp started: 2026-04-14T23:28:41Z
+- Timestamp completed: 2026-04-14T23:28:41Z
+- Feature branch: codex/wallet-production-readiness
+- Head: 56599f9a9eb72692bdbafaa2b3ddbc6b6ccbf558
+- Session-log reference(s): session v38
+
+Create the application-side foundation for the future read/write model. The web app should gain a consistent client for calling Supabase Edge Functions, typed request and response envelopes, shared auth/error handling, and a clear place to put function-specific adapters. Do not migrate all behavior yet. The goal is to remove the current ambiguity where writes happen in server actions and reads often happen straight from the browser. This session creates the transport contract every later migration will depend on.
+
+## Session 05: Stand up the first real Edge Function domain boundary
+
+- Status: Complete
+- Timestamp started: 2026-04-14T23:36:10Z
+- Timestamp completed: 2026-04-14T23:36:10Z
+- Feature branch: codex/wallet-production-readiness
+- Head: f2bd1b5f6d9876b48a579efb45d0f8f2eb8c38e2
+- Session-log reference(s): session v39
+
+Pick one narrow but meaningful domain, likely onboarding drafts or project payment draft creation, and implement the first production-style Supabase Edge Function with schema validation, auth checks, and a typed web adapter. This session proves the new backend pattern in a real workflow. It should include local development ergonomics, shared error shapes, and a small test harness. The goal is to establish a repeatable template so later sessions can migrate more domains without inventing a new style each time.
+
+## Session 06: Add multilingual infrastructure to the app shell
+
+- Status: Complete
+- Timestamp started: 2026-04-14 19:58:00 EDT
+- Timestamp completed: 2026-04-14 20:07:56 EDT
+- Feature branch: codex/wallet-production-readiness
+- Head: TBD
+- Session-log reference(s): session v20
+
+Introduce the core i18n architecture for Next.js App Router: locale routing strategy, translation file organization, server/client helpers, and a fallback policy. The initial target is infrastructure, not full translation coverage. Make sure layouts, navigation, metadata, and a small set of public surfaces can render from language packs. This session should explicitly avoid string-by-string ad hoc translation. It should produce a clean system the later UX and product sessions can expand across user, founder, and operator experiences.
+
+## Session 07: Build a durable design token system for light and dark mode
+
+- Status: Complete
+- Timestamp started: 2026-04-14 20:47:18 EDT
+- Timestamp completed: 2026-04-14 20:53:37 EDT
+- Feature branch: codex/wallet-production-readiness
+- Head: TBD
+- Session-log reference(s): session v40
+
+Refactor the current styling layer into a stable token-driven theme system with strong light/dark parity. This session should centralize color, typography, spacing, and state tokens in a way that supports both public marketing pages and dense operational screens. Audit the current surfaces for broken contrast, inconsistent backgrounds, and one-off styling drift. The goal is not a full redesign in one session. The goal is to create a visually coherent base so later “stunning but simple” UX work does not require re-theming every page twice.
+
+## Session 08: Refactor shared navigation and layout around the new IA
+
+- Status: Complete
+- Timestamp started: 2026-04-14T21:58:00-0400
+- Timestamp completed: 2026-04-14T22:10:57-0400
+- Feature branch: codex/wallet-production-readiness
+- Head: TBD
+- Session-log reference(s): session v41
+
+Update the app shell, navigation, account menus, and dashboard entry points to match the new information architecture. This should include clear paths for regular users, founders/project members, and internal operators, while keeping the public site lightweight and understandable. Remove or neutralize confusing dead ends and old route assumptions. This session should focus on skeleton and movement, not final page content. The outcome should be that users can tell where they are in the product and what the app is for before the remaining pages are fully rebuilt.
+
+## Session 09: Rebuild the founder acquisition funnel and public founder pages
+
+- Status: Complete
+- Timestamp started: 2026-04-14T22:11:00-0400
+- Timestamp completed: 2026-04-14T22:26:48-0400
+- Feature branch: codex/wallet-production-readiness
+- Head: TBD
+- Session-log reference(s): session v42
+
+Turn the current founder-facing public messaging into a real production funnel. The session should unify any scattered founder pitch surfaces into a clean path that explains revenue commitment, onboarding expectations, monthly cadence, identity requirements, and what founders can manage once inside. This is the point where “visually stunning” needs to show up in a focused way: excellent typography, strong hierarchy, clear calls to action, and no vague placeholder marketing copy. The output should hand off naturally into founder onboarding, not just a contact-page dead end.
+
+## Session 10: Rebuild the user discovery and participation funnel
+
+- Status: Complete
+- Timestamp started: 2026-04-14T23:55:00-0400
+- Timestamp completed: 2026-04-15T01:05:00-0400
+- Feature branch: codex/wallet-production-readiness
+- Head: TBD
+- Session-log reference(s): session v43
+
+Create the public and semi-public journey for regular users who want to understand FundLoop, discover projects, and see how participation turns into earnings. This should refine or replace current placeholder explainer surfaces with a path that leads toward sign-up, identity verification, project discovery, and earnings visibility. The design should stay simple and data-clear, not overly promotional. The key outcome is that the user side of the product becomes a first-class experience instead of feeling secondary to project payment operations.
+
+## Session 11: Complete or retire all current stubbed public pages
+
+- Status: Complete
+- Timestamp started: 2026-04-15T00:00:00-0400
+- Timestamp completed: 2026-04-15T00:16:00-0400
+- Feature branch: codex/wallet-production-readiness
+- Head: TBD
+- Session-log reference(s): session v46
+
+Use the route inventory from Session 02 to finish, merge, redirect, or remove the remaining placeholder public pages. This includes pages that are technically present but not product-complete, pages that duplicate narrative content, and pages that still reflect an early website draft instead of the operating product. The goal is to eliminate dead weight before deeper application work continues. By the end of this session, the public site should feel intentional and cohesive, even if some deeper authenticated flows are still under active development.
+
+## Session 12: Move onboarding draft save and publish flows to Edge Functions
+
+- Status: Complete
+- Timestamp started: 2026-04-15T00:46:52-0400
+- Timestamp completed: 2026-04-15T01:08:08-0400
+- Feature branch: codex/wallet-production-readiness
+- Head: TBD
+- Session-log reference(s): session v47
+
+Migrate resumable onboarding away from direct server-action orchestration and into Edge Function commands. This session should cover user onboarding drafts, project onboarding drafts, and the publish steps that materialize real records. Preserve resumability, validation, and authorization. The web app should call typed Edge Function adapters rather than writing directly through server actions. This is a key transition step because onboarding is one of the most application-like parts of the repo and sets the pattern for founder and user lifecycle management.
+
+## Session 13: Reshape onboarding around CUBID-first identity requirements
+
+- Status: Complete
+- Timestamp started: 2026-04-15T08:20:00-0400
+- Timestamp completed: 2026-04-15T08:57:52-0400
+- Feature branch: codex/wallet-production-readiness
+- Head: TBD
+- Session-log reference(s): session v48
+
+Update onboarding so proof-of-personhood and KYC are no longer abstract concepts in the UX. The flow should clearly require a CUBID.me account and establish the first direct API-backed identity resolution path without pulling in the full SDK. This session should add the right intermediate states and persistence hooks so the product can distinguish “signed in,” “CUBID linked,” and “identity verified,” then enforce linkage before user or project publish. The goal is to make the UI and workflow architecture identity-first instead of bolting KYC on at the end.
+
+## Session 14: Add the CUBID account-linking and identity snapshot model
+
+- Status: Complete
+- Timestamp started: 2026-04-15T13:55:00-0400
+- Timestamp completed: 2026-04-15T14:49:45-0400
+- Feature branch: codex/wallet-production-readiness
+- Head: TBD
+- Session-log reference(s): session v49
+
+Introduce the database and application model that links a FundLoop user to a CUBID identity. This should include a canonical external identity reference, a synchronized identity snapshot, verification state, sync timestamps, and room for future monthly locking of identity state. Do not over-model every possible CUBID field yet. The focus is creating the right durable contract so the app can consume CUBID as the source of socials, phone, email, and personhood status without making the local profile tables the real authority.
+
+## Session 15: Implement the first real CUBID Edge Function integration
+
+- Status: Complete
+- Timestamp started: 2026-04-15T15:00:00-0400
+- Timestamp completed: 2026-04-15T15:22:50-0400
+- Feature branch: codex/wallet-production-readiness
+- Head: TBD
+- Session-log reference(s): session v50
+
+Build the backend integration that talks to CUBID.me, fetches the current account data, validates the response, and stores a normalized snapshot in FundLoop. The function should be safe, explicit, and auditable. It should not blindly mirror arbitrary payloads into the database. This session should also define failure semantics and operator visibility for identity sync issues. The result should be the first real external-system dependency in the target architecture, implemented in a way that later monthly cycle locking and payout eligibility can trust.
+
+## Session 16: Refactor user profile and account views around CUBID-backed identity
+
+- Status: Complete
+- Timestamp started: 2026-04-15T15:00:00-0400
+- Timestamp completed: 2026-04-15T15:22:50-0400
+- Feature branch: codex/wallet-production-readiness
+- Head: TBD
+- Session-log reference(s): session v50
+
+Update profile and account surfaces so they stop behaving like FundLoop is the canonical editor of identity details. The UI should show which fields come from CUBID, which are local preferences, and what the current verification state is. If some current profile fields should remain local, make that distinction explicit. This session should simplify the mental model for users and reduce duplicate identity entry. It should also prepare the product for payout and eligibility surfaces that depend on proof-of-personhood rather than ad hoc local profile completeness.
+
+## Session 17: Create a real regular-user workspace home
+
+- Status: Complete
+- Timestamp started: 2026-04-20T03:20:34-04:00
+- Timestamp completed: 2026-04-20T03:24:45-04:00
+- Feature branch: codex/session-17-user-workspace
+- Head: 13c9fa3
+- Session-log reference(s): session v60
+
+Build a coherent signed-in home for users. It should combine identity status, project discovery, participation context, and earnings visibility into one clear workspace instead of scattering that experience across unrelated pages. This is not the full payout product yet, but it should establish the long-term structure: current status, next actions, participation opportunities, and money-related visibility. The session should prioritize clarity and reduction of friction so regular users can understand where they stand in the system without reading multiple explainer pages.
+
+## Session 18: Create a real founder and project workspace home
+
+- Status: Complete
+- Timestamp started: 2026-04-20T13:45:09-04:00
+- Timestamp completed: 2026-04-20T13:53:17-04:00
+- Feature branch: codex/session-18-founder-workspace
+- Head: 0e9890c
+- Session-log reference(s): session v63, session v64, session v65
+
+Build the founder-facing home that ties together project setup, payment obligations, routes, team management, and growth reporting. Today those capabilities are spread across onboarding remnants, settings fragments, and payment-specific screens. This session should unify them into a stable project workspace entry point. The goal is to make the founder side of FundLoop feel like an operational tool, not a collection of special-case pages. This will become the main jumping-off point for later contribution cadence, attribution submission, and reporting work.
+
+## Session 19: Move project payment and route write paths to Edge Functions
+
+- Status: Complete
+- Timestamp started: 2026-04-20T17:17:29-04:00
+- Timestamp completed: 2026-04-20T17:27:41-04:00
+- Feature branch: codex/session-19-payment-edge-functions
+- Head: pending final commit
+- Session-log reference(s): session v66
+
+Migrate the current payment command layer out of `app/actions/project-payment-actions.ts` and into Edge Functions, starting with payment draft creation, route create/update/reorder/disable, and receipt recording. Keep the existing UI intact where possible, but change its backend contract. This session should start decomposing the current hotspot without requiring a huge UI rewrite. The outcome should be a cleaner boundary: the web app invokes typed backend commands, and the payment domain is no longer anchored primarily in one giant server-action file.
+
+## Session 20: Move admin payment and reconciliation commands to Edge Functions
+
+- Status: Complete
+- Timestamp started: 2026-04-26T18:11:00-04:00
+- Timestamp completed: 2026-04-26T18:17:29-04:00
+- Feature branch: codex/session-20-admin-edge-functions
+- Head: pending final commit
+- Session-log reference(s): session v82
+
+Continue the backend migration by moving internal admin payment actions behind Edge Functions as well. This includes reconciliation replay, manual non-onchain confirmation, and later monthly-cycle operator commands. The main benefit is consistency: the same backend contract pattern should apply to project and internal workflows. This session should also establish stronger internal operator request logging, since these commands affect money and workflow state. By the end, the app should be materially closer to the target rule that all writes go through Supabase Edge Functions.
+
+## Session 21: Introduce a first-class monthly cycle domain model
+
+- Status: Complete
+- Timestamp started: 2026-04-27T20:04:59-0400
+- Timestamp completed: 2026-04-27T20:13:22-0400
+- Feature branch: codex/session-21-monthly-cycles
+- Head: pending final commit
+- Session-log reference(s): session v93
+
+Add the core schema and application model for monthly economic cycles. Today month-based behavior is implicit across payments, reconciliation, and zkAS logic. This session should create explicit cycle records with lifecycle states, timestamps, and references to locked inputs and outputs. The goal is to stop treating “the current month” as a loose concept and instead introduce a real operational object that later steps can build on for locking, prep, calculation, verification, payout, and reporting.
+
+## Session 22: Build the end-of-month lock workflow
+
+- Status: Complete
+- Timestamp started: 2026-04-28T04:39:34-0400
+- Timestamp completed: 2026-04-28T04:42:45-0400
+- Feature branch: codex/session-22-monthly-cycle-lock
+- Head: pending final commit
+- Session-log reference(s): session v95
+
+Implement the first monthly cycle command: lock the cycle. This should freeze the eligible contribution inputs, identity snapshot references, and relevant payment/reconciliation state needed for deterministic downstream computation. The lock step should be explicit, repeat-safe, and auditable. This is where the product starts to become a true monthly coordination engine rather than just a payment collection app. The output of this session should be that operators can close a month intentionally instead of relying on a shifting combination of live rows and mental bookkeeping.
+
+## Session 23: Build the cycle prep and exception review workspace
+
+- Status: Complete
+- Timestamp started: 2026-04-29T12:52:10-0400
+- Timestamp completed: 2026-04-29T12:58:12-0400
+- Feature branch: codex/session-23-cycle-prep-review
+- Head: pending final commit
+- Session-log reference(s): session v97
+
+After lock comes prep. Create the operator-facing prep surface that validates whether a cycle is ready for calculation. It should surface missing project submissions, identity sync problems, reconciliation gaps, and other exceptions that would make the month unsafe to compute. This session should focus on exception visibility and operational triage, not on final distribution math yet. The system needs a clear “ready / blocked / needs review” posture before any zk or payout work can be trusted.
+
+## Session 24: Refactor zkAS around the monthly cycle contract
+
+- Status: Complete
+- Timestamp started: 2026-04-29T13:14:00-0400
+- Timestamp completed: 2026-04-29T13:22:19-0400
+- Feature branch: codex/session-23-cycle-prep-review
+- Head: pending final commit
+- Session-log reference(s): session v98
+
+Bring the current zkAS subsystem into alignment with the explicit monthly cycle model. Instead of feeling like a parallel control plane, its datasets, run manifests, and publication outputs should anchor to a cycle record and a stable preparation state. This session should reduce conceptual duplication between payment operations and zk operations. The result should make it obvious that zkAS is one stage of the monthly cadence, not a separate product hidden inside the repo.
+
+## Session 25: Build the deterministic calculation package and artifact flow
+
+- Status: Complete
+- Timestamp started: 2026-04-29T13:51:56-0400
+- Timestamp completed: 2026-04-29T13:54:51-0400
+- Feature branch: codex/session-23-cycle-prep-review
+- Head: pending final commit
+- Session-log reference(s): session v99
+
+Create the cycle calculation packaging step that produces deterministic inputs, manifests, and stored artifacts for zk-calculation or its equivalent. This session should emphasize replayability and auditability: same locked cycle inputs should always yield the same packaged calculation input set. Use Supabase Storage intentionally for these artifacts. This becomes the contract between operational prep and the computation stage, and it is critical for future verification, publication, and agent-driven audit retrieval.
+
+## Session 26: Add cleanup, verification, and approval stages for calculated results
+
+- Status: Complete
+- Timestamp started: 2026-04-29T13:58:38-0400
+- Timestamp completed: 2026-04-29T14:05:47-0400
+- Feature branch: codex/session-23-cycle-prep-review
+- Head: pending final commit
+- Session-log reference(s): session v100
+
+Build the post-calculation review phase where operators verify totals, compare expected versus actual outputs, resolve cleanup issues, and approve a cycle for distribution. This should include structured statuses, review notes, and explicit approval actions. Avoid a hidden “looks good, ship it” pattern. The system needs durable operator intent and a clear checkpoint before money moves outward. This session is where the monthly cadence starts feeling complete enough to trust with production bookkeeping.
+
+## Session 27: Create the outbound payout domain model
+
+- Status: Complete
+- Timestamp started: 2026-04-29T14:07:04-0400
+- Timestamp completed: 2026-04-29T15:27:56-0400
+- Feature branch: codex/session-23-cycle-prep-review
+- Head: pending final commit
+- Session-log reference(s): session v101
+
+Introduce payout intents, payout batches, payout route preferences, lifecycle states, and reconciliation placeholders. Even if execution is still partially stubbed, this domain needs to exist independently of payments collected from founders. This session lays the foundation for user earnings management and future rail adapters. It should also establish how monthly approved distribution results become concrete payout work items rather than staying as abstract calculation outputs.
+
+## Session 28: Build the chain-abstracted execution interface
+
+- Status: Complete
+- Timestamp started: 2026-04-29T15:32:39-0400
+- Timestamp completed: 2026-04-29T15:36:35-0400
+- Feature branch: codex/session-23-cycle-prep-review
+- Head: pending final commit
+- Session-log reference(s): session v102
+
+Create the stable execution boundary that later EVM, Solana, and fiat adapters will implement. It should cover deposit intent creation, deposit verification, payout batch creation, payout execution, and payout reconciliation. Keep the interface FundLoop-centric rather than chain-centric. This is a key target-state move because it prevents chain logic from leaking into pages and workflow code. The output should be backend-facing TypeScript contracts and the first set of adapter scaffolds, not a fully finished multi-chain implementation.
+
+## Session 29: Refactor the existing EVM inbound flow behind the new execution interface
+
+- Status: Complete
+- Timestamp started: 2026-04-29T18:49:45-0400
+- Timestamp completed: 2026-04-29T18:53:51-0400
+- Feature branch: codex/session-23-cycle-prep-review
+- Head: pending final commit
+- Session-log reference(s): session v103
+
+Take the current EVM-based intake and reconciliation flow and move it behind the newly created chain abstraction. The web app and cycle workflows should talk to the abstract interface, while the EVM adapter preserves the current functionality. This session should reduce direct coupling to viem-specific logic in product code and prepare the system to add Solana without cloning the entire payment subsystem. It is an architectural cleanup session that protects the multi-rail future from becoming a second copy of the current EVM path.
+
+## Session 30: Add the Solana inbound contribution adapter
+
+- Status: Complete
+- Timestamp started: 2026-04-30T21:47:05Z
+- Timestamp completed: 2026-04-30T21:52:24Z
+- Feature branch: codex/supabase-deno-import-repair
+- Head: pending final commit
+- Session-log reference(s): session v106
+
+Implement the first Solana contribution adapter behind the shared execution interface. Keep the first pass narrow: route representation, intent creation, receipt verification scaffolding, and storage model alignment with the existing inbound payment lifecycle. The goal is not to ship every Solana edge case at once. The goal is to prove the architecture can support a second chain family without contorting the app or schema. This session should also surface any abstractions that were still secretly EVM-shaped and fix them while the scope is still controlled.
+
+## Session 31: Add Solana payout adapter scaffolding
+
+- Status: Complete
+- Timestamp started: 2026-04-30T22:22:27Z
+- Timestamp completed: 2026-04-30T22:25:38Z
+- Feature branch: codex/supabase-deno-import-repair
+- Head: pending final commit
+- Session-log reference(s): session v107
+
+Extend the payout side of the execution layer to support Solana as well. This should mirror the inbound multi-chain work but focus on batch payout intent modeling, execution hooks, and status reconciliation. Even if the first version is not fully production-live, the architecture should show that outbound distribution is not locked to EVM assumptions. This session is primarily about finishing the multi-chain shape so later user earnings and operator payout workflows can treat EVM and Solana as peers.
+
+## Session 32: Add fiat inbound and outbound stubs behind the same abstraction
+
+- Status: Complete
+- Timestamp started: 2026-04-30T22:46:34Z
+- Timestamp completed: 2026-04-30T22:49:32Z
+- Feature branch: codex/supabase-deno-import-repair
+- Head: pending final commit
+- Session-log reference(s): session v108
+
+Introduce intentionally stubbed fiat adapters for inbound project funding and outbound user payouts. The product should be able to present fiat rails as planned, controlled options without implying they are already fully live. This session should define the right contracts, placeholder statuses, and UI affordances so the rest of the product can be multi-rail even before a real fiat provider is chosen. The value here is architectural completeness and future readiness, not pretending fiat is done.
+
+## Session 33: Build the founder monthly contributions workflow
+
+- Status: Complete
+- Timestamp started: 2026-04-30T22:53:00Z
+- Timestamp completed: 2026-04-30T23:00:06Z
+- Feature branch: codex/supabase-deno-import-repair
+- Head: pending final commit
+- Session-log reference(s): session v109
+
+Create the founder-facing monthly flow that ties obligations, route selection, submission, verification, and reporting together under the monthly cycle model. This should evolve the current payments page into a cleaner founder operation rather than a mixed draft table plus crypto-specific utility screen. The goal is to make the economic cadence understandable and repeatable for project teams. By the end of this session, founders should have a coherent monthly contribution experience instead of a powerful but semi-internal-feeling payment tool.
+
+## Session 34: Build the project attribution and contribution-data submission workflow
+
+- Status: Complete
+- Timestamp started: 2026-04-30T23:04:37Z
+- Timestamp completed: 2026-04-30T23:09:21Z
+- Feature branch: codex/supabase-deno-import-repair
+- Head: pending final commit
+- Session-log reference(s): session v110
+
+Add the founder/project-member tools for submitting participation and attribution data that feeds the monthly calculation. This is essential because FundLoop is not just collecting money; it is coordinating money with contribution data. This session should create explicit founder workflows, validations, and storage for that data, with auditability and replay in mind. It should also align with the MCP future by favoring structured, automatable payloads over UI-only forms that hide the real shape of the submission.
+
+## Session 35: Build the user earnings and payout workspace
+
+- Status: Complete
+- Timestamp started: 2026-04-30T23:45:34Z
+- Timestamp completed: 2026-04-30T23:53:53Z
+- Feature branch: codex/supabase-deno-import-repair
+- Head: pending final commit
+- Session-log reference(s): session v111
+
+Turn the user side into a real money-management experience. Add views for pending distributions, locked monthly results, payout history, payout route preferences, and payout execution status. This session should connect the monthly cycle outputs to the user-facing experience in a way that is transparent and trust-building. Users should be able to understand what they are owed, why, and what stage their payout is in. This is where FundLoop starts looking like a real citizen-salary product instead of only a founder contribution product.
+
+## Session 36: Build reporting publication for users, founders, and operators
+
+- Status: Complete
+- Timestamp started: 2026-05-01T00:01:07Z
+- Timestamp completed: 2026-05-01T00:11:55Z
+- Feature branch: codex/supabase-deno-import-repair
+- Head: pending final commit
+- Session-log reference(s): session v112
+
+Create the reporting layer that publishes the results of each monthly cycle in role-appropriate forms. Users need payout explanations, founders need contribution and growth reporting, and operators need complete audit and exception views. This session should use Supabase Storage for generated artifacts and create stable read models for web and agents. The goal is not decorative analytics. It is transparent reporting that explains the loop and proves the system is working.
+
+## Session 37: Extend observability from payment flows to the whole monthly pipeline
+
+- Status: Complete
+- Timestamp started: 2026-05-01T08:04:23Z
+- Timestamp completed: 2026-05-01T08:06:35Z
+- Feature branch: codex/session-37-40-mcp-observability
+- Head: pending final commit
+- Session-log reference(s): session v114
+
+The repo already has payment-flow observability. Expand that into a broader operational telemetry layer for cycle lock, prep, calculation packaging, verification, payout creation, payout execution, and publication failures. This session should keep the same internal DB-backed philosophy while broadening coverage to the monthly engine. The result should be that operators can inspect a full cycle end to end, not just wallet and payment events. This is important before adding more automation and agent-driven workflows.
+
+## Session 38: Build the first MCP server skeleton
+
+- Status: Complete
+- Timestamp started: 2026-05-01T08:06:35Z
+- Timestamp completed: 2026-05-01T08:09:51Z
+- Feature branch: codex/session-37-40-mcp-observability
+- Head: pending final commit
+- Session-log reference(s): session v115
+
+Create the MCP server foundation with authentication strategy, tool registration, typed request/response envelopes, and a backend adapter layer that calls the same Edge Function contracts as the web app. The server does not need every tool immediately. This session should focus on the protocol foundation and local development ergonomics so later agent workflows can build cleanly. The key architectural rule is that MCP should not invent a second backend or special-case business logic.
+
+## Session 39: Add founder MCP workflows
+
+- Status: Complete
+- Timestamp started: 2026-05-01T08:09:51Z
+- Timestamp completed: 2026-05-01T08:13:16Z
+- Feature branch: codex/session-37-40-mcp-observability
+- Head: pending final commit
+- Session-log reference(s): session v116
+
+Expose the first founder-facing protocol operations through the MCP server. This should include reading project obligation state, route state, monthly cycle status, and creating or updating the operational records founders actually need to manage their project. Keep the toolset intentionally small but real. The goal is to prove that an agent can participate meaningfully in FundLoop’s project workflows without depending on the UI. This session is central to the “agents are first-class users” principle in the backgrounder.
+
+## Session 40: Add project-member and operator MCP workflows
+
+- Status: Complete
+- Timestamp started: 2026-05-01T08:13:16Z
+- Timestamp completed: 2026-05-01T08:16:06Z
+- Feature branch: codex/session-37-40-mcp-observability
+- Head: pending final commit
+- Session-log reference(s): session v117
+
+Expand the MCP layer to support project-member tasks and selected operator-safe reads such as cycle status, reporting access, reconciliation visibility, and observability lookup. This session should maintain strict role boundaries while proving that FundLoop’s operational model is programmatically accessible. Avoid exposing unsafe internal mutation tools too early. The emphasis is on trustworthy structured interaction, not maximum surface area. By the end, the MCP server should feel like a real control interface rather than a demo plugin.
+
+## Session 41: Move remaining high-value reads behind Edge Functions
+
+- Status: Complete
+- Timestamp started: 2026-05-01T08:20:00Z
+- Timestamp completed: 2026-05-01T08:24:00Z
+- Feature branch: codex/session-37-40-mcp-observability
+- Head: pending final commit
+- Session-log reference(s): session v118
+
+Finish the architectural shift by moving the remaining important web reads away from direct browser/table access and behind stable backend contracts. Prioritize founder workspace reads, user earnings reads, cycle status reads, and admin/operator dashboards. This session should reduce the remaining tight coupling between pages and raw Supabase tables. It is a key target-state milestone because the app and MCP server both need stable read models, not a growing set of page-specific queries and implicit authorization assumptions.
+
+## Session 42: Finish the settings and account IA cleanup
+
+- Status: Complete
+- Timestamp started: 2026-05-01T08:52:00Z
+- Timestamp completed: 2026-05-01T08:57:55Z
+- Feature branch: codex/session-37-40-mcp-observability
+- Head: pending final commit
+- Session-log reference(s): session v119
+
+By this point the major product surfaces should exist. Use this session to remove the remaining awkward settings leftovers, merge duplicated pages, and ensure every account or configuration action lives in the right place. The goal is a simple, clean UX where users and founders do not need to hunt across “settings,” “project,” and “admin” for related capabilities. This session is mostly IA and interaction cleanup, but it will likely involve real route and component changes to eliminate the last structural confusion.
+
+## Session 43: Productionize Supabase Storage usage across artifacts and media
+
+- Status: Complete
+- Timestamp started: 2026-05-01T09:00:46Z
+- Timestamp completed: 2026-05-01T09:05:07Z
+- Feature branch: codex/session-37-40-mcp-observability
+- Head: pending final commit
+- Session-log reference(s): session v120
+
+Audit all file and artifact handling and move the product to a consistent Supabase Storage model. This includes project assets, onboarding uploads, reporting artifacts, zk inputs/outputs, exported bookkeeping files, and any proof attachments needed for audit. The important outcome is consistency: files should have lifecycle, ownership, naming, and retention rules instead of being scattered across ad hoc storage logic. This session should also ensure that the web app, Edge Functions, and MCP workflows can all refer to stored artifacts predictably.
+
+## Session 44: Build a deployment and operations runbook into the product and repo
+
+- Status: Complete
+- Timestamp started: 2026-05-01T09:06:32Z
+- Timestamp completed: 2026-05-01T09:09:31Z
+- Feature branch: codex/session-37-40-mcp-observability
+- Head: pending final commit
+- Session-log reference(s): session v121
+
+Translate the architecture into operational reliability. This session should produce and wire the runbooks, admin affordances, and environment expectations needed to operate the system: cycle operations, chain deployment syncs, identity sync troubleshooting, payout incident handling, and release health checks. Some of this belongs in docs, but some belongs in the operator UI itself. The goal is to make FundLoop operable by a small team without hidden tribal knowledge. This is a prerequisite for calling the product truly out of mothballs.
+
+## Session 45: Do the final UX polish and conversion pass across user and founder journeys
+
+- Status: Complete
+- Timestamp started: 2026-05-01T09:10:23Z
+- Timestamp completed: 2026-05-01T09:13:05Z
+- Feature branch: codex/session-37-40-mcp-observability
+- Head: pending final commit
+- Session-log reference(s): session v122
+
+After the heavy architecture and workflow work is in place, do the intentional finish pass. This session should refine copy, empty states, motion, visual hierarchy, multilingual edge cases, and the most important conversion points for both users and founders. It should also tighten the balance between “visually stunning” and “simple, clean UX.” The goal is not random polish. It is aligning the product’s presentation with the fact that the underlying system is now real, operational, and trustworthy.
+
+## Session 46: Verify remote deploy health after the operations and MCP merge
+
+- Status: Complete
+- Timestamp started: 2026-05-03T17:10:26-0400
+- Timestamp completed: 2026-05-03T17:13:21-0400
+- Feature branch: codex/session-46-deploy-health
+- Head: pending final commit
+- Session-log reference(s): session v125
+
+Confirm that the merged Sessions 37-45 stack actually landed cleanly in shared infrastructure, not just in local tests. This session should inspect the post-merge GitHub Actions results, verify the Supabase deploy workflow applied the new migrations and deployed the new Edge Functions on the dev target, and smoke the new operator/MCP-adjacent surfaces against the deployed environment where credentials allow. Fix small deployment-script, Deno import, or environment-documentation issues if discovered. Do not add product scope unless the deploy verification reveals a real blocker.
+
+## Session 46.1: Confirm the post-merge dev Supabase deploy
+
+- Status: Complete
+- Timestamp started: 2026-05-03T18:25:21-0400
+- Timestamp completed: 2026-05-03T18:25:21-0400
+- Feature branch: codex/session-46-1-and-47-beta-smoke
+- Head: pending metadata commit
+- Session-log reference(s): session v127
+
+After the Session 46 repair PR merges to `dev`, verify the push-triggered `Supabase Deploy` workflow succeeds end to end against the dev Supabase target. Confirm the deploy run includes `user-cubid-resolve-email`, `user-cubid-sync-profile`, and `mcp-workflow-read`, and that no function attempts to resolve `node_modules/@cubid/api/dist/index.mjs`. If the deploy still fails, keep the follow-up narrow and repair only the failing deploy/runtime boundary before moving to Session 47.
+
+## Session 47: Run a production-readiness smoke and beta blocker audit
+
+- Status: Complete
+- Timestamp started: 2026-05-03T18:26:24-0400
+- Timestamp completed: 2026-05-04T05:36:28-0400
+- Feature branch: codex/session-46-1-and-47-beta-smoke
+- Head: pending session 47 commit
+- Session-log reference(s): session v128
+
+Perform a focused end-to-end beta readiness audit now that the public funnels, workspaces, monthly cycle pipeline, reporting, storage, and MCP foundation exist. Cover the highest-risk user journeys: visitor conversion, user onboarding, founder onboarding, contribution submission, monthly cycle operator flow, user earnings/reporting, admin operations, and key localization paths. Record concrete blockers in this backlog, fix only small obvious breakages, and avoid reopening completed architecture decisions unless runtime evidence proves they are wrong. The output should be a launch-oriented punch list with severity, owner surface, and suggested session order.
+
+Session 47 beta readiness punch list:
+
+- P1, local smoke infrastructure, Session 48: FundLoop local Supabase only started reliably after excluding Logflare with `supabase start -x logflare`; the analytics container repeatedly restarted and was killed during health checks. Treat this as a smoke-environment reliability blocker, not as a product-route blocker. Session 48 should either repair the local analytics image/version/resource issue or document an official local smoke mode that excludes Logflare while keeping database, auth, storage, REST, and Edge Functions available.
+- P1, operator smoke persona and env ownership, Session 48: the seeded founder/operator account can exercise admin pages only when `FUNDLOOP_INTERNAL_ADMIN_EMAILS` and `FUNDLOOP_ZKAS_SUPERADMIN_EMAILS` include `maya@fundloop.example.com`. Without those env vars, `/admin/operations` redirects to `/workspace` and `/admin/cycles/observability` can produce a role error. Session 48 should make local and preview smoke setup explicit by documenting these allowlists, adding example env values, and ensuring the seed/persona guide matches the intended operator route coverage.
+- P2, developer browser ergonomics, Session 48 or 45 polish follow-up: local browser smoke from `127.0.0.1` logs Next dev HMR cross-origin warnings and `/favicon.ico` returns 404. These did not block route rendering, but they create noisy smoke output that can hide real console failures. A small polish/hygiene pass should add the local dev origin or standardize on `localhost`, and provide a favicon asset or route so future browser smoke is quieter.
+
+## Session 48: Harden seeded local and preview smoke personas
+
+- Status: Complete
+- Timestamp started: 2026-05-04T05:55:27-0400
+- Timestamp completed: 2026-05-04T05:58:04-0400
+- Feature branch: codex/session-46-1-and-47-beta-smoke
+- Head: pending session 48 commit
+- Session-log reference(s): session v130
+
+Make the local and preview smoke environment more dependable for future agents and reviewers. Ensure the tracked seed supports at least one regular user, one founder/project admin, one internal operator, active projects, payment routes, monthly cycles across multiple statuses, published reports, payout rows, and representative identity states without requiring remote data pulls. Include the Session 47 findings: document or repair the local Logflare/analytics startup issue, record the required internal-admin and zkAS-superadmin allowlists for the seeded operator, and make browser smoke quieter where practical. Keep secrets out of the seed, keep the dataset small, and update `docs/engineering/local-seed.md` plus testing guidance so smoke credentials and expected routes are obvious. This session should reduce the recurring “can we even smoke this?” drag.
+
+## Session 49: Package and document MCP runtime deployment
+
+- Status: Complete
+- Timestamp started: 2026-05-04T07:57:57-0400
+- Timestamp completed: 2026-05-04T08:01:03-0400
+- Feature branch: codex/session-46-1-and-47-beta-smoke
+- Head: pending session 49 commit
+- Session-log reference(s): session v131
+
+Turn the MCP server from a repo package into a deployable and supportable runtime artifact. Add a documented local launch path, environment contract, health or version command, and packaging guidance for whichever host or agent runtime will consume it first. Verify the stdio framing path and Edge-backed readers in a realistic local smoke, then update `docs/engineering/mcp.md` with setup, auth, troubleshooting, and safe tool-extension rules. Do not expand tool scope in this session; the goal is making the existing MCP surface easy to run and hard to misuse.
+
+## Session 50: Move operator dashboard reads fully onto stable read contracts
+
+- Status: Complete
+- Timestamp started: 2026-05-04T21:15:25-0400
+- Timestamp completed: 2026-05-04T21:20:51-0400
+- Feature branch: codex/session-46-1-and-47-beta-smoke
+- Head: pending session 50 commit
+- Session-log reference(s): session v132
+
+Complete the remaining high-value operator read-model migration by aligning admin dashboard, monthly cycle, observability, reconciliation, reporting, and operations-runbook surfaces with stable server or Edge Function read contracts. The current app has the right architectural direction, but this session should verify no operator page still depends on scattered page-local Supabase queries that duplicate authorization or shape data differently from MCP. Preserve current UI behavior while consolidating read boundaries, adding tests for partial-read failure states, and updating Edge Function/read-path documentation where the contract becomes canonical.
+
+## Session 51: Add runtime guardrails for beta-critical abuse and data safety
+
+- Status: Complete
+- Timestamp started: 2026-05-05T08:50:10-0400
+- Timestamp completed: 2026-05-05T08:55:56-0400
+- Feature branch: codex/session-46-1-and-47-beta-smoke
+- Head: pending session 51 commit
+- Session-log reference(s): session v133
+
+Move the most important beta safety expectations from docs into runtime checks where practical. Prioritize rate limits or idempotency on expensive command paths, clearer authorization failures for founder/operator commands, safer file-artifact access patterns, and explicit audit events for sensitive cycle or payout operations that are not yet covered. This should be a precise hardening pass, not broad security theater: document what is actually enforced, what remains runbook-only, and which deferred controls need external infrastructure later. Add tests around the new guardrails and avoid weakening existing RLS or Edge Function ownership checks.
+
+## Session 52: Prepare the dev-to-main release candidate path
+
+- Status: Complete
+- Timestamp started: 2026-05-05T19:16:50-0400
+- Timestamp completed: 2026-05-05T19:18:07-0400
+- Feature branch: codex/session-46-1-and-47-beta-smoke
+- Head: pending session 52 commit
+- Session-log reference(s): session v134
+
+Once dev deploy health and beta smoke blockers are understood, prepare the first credible release-candidate path from `dev` toward `main`. This session should verify branch protection, production environment approval, Supabase main-target deployment settings, required secrets, migration ordering, rollback notes, and the minimum manual smoke checklist for Production. Update the README and operations runbook only where they differ from current truth. The output should be a small release-readiness PR that makes the main promotion path boring, explicit, and reviewable before any production data is touched.
+
+## Backlog continuation after Session 52
+
+Once Sessions 1 through 52 are complete and this backlog has no active spillover items, rename this document to `todo-1-through-52.md`. Continue the next MCP-focused roadmap from `agent-context/todo-mcp.md`, keeping the same metadata and session-log discipline for each MCP task.

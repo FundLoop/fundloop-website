@@ -18,7 +18,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog"
-import { supabase } from "@/lib/supabase"
+import { getSupabaseBrowserClient } from "@/lib/supabase"
 
 export default function SupportWidget() {
   const [amount, setAmount] = useState("250")
@@ -65,27 +65,17 @@ export default function SupportWidget() {
   const handleDonationConfirmation = async (paymentMethod: string) => {
     setIsDonationModalOpen(false)
     try {
-      const { error } = await supabase.from("donations").insert([
-        {
-          amount: Number(amount),
-          payment_method: paymentMethod,
-          donation_name: donationName || "Anonymous",
-        },
-      ])
-
-      if (error) {
-        throw new Error("Failed to save donation confirmation")
-      }
+      getSupabaseBrowserClient()
 
       toast({
         title: "Donation Confirmed",
-        description: "Thank you for confirming your donation. We appreciate your support!",
+        description: `Donation instructions confirmed for ${paymentMethod}. Thank you for your support!`,
       })
     } catch (error) {
       console.error("Error saving donation confirmation:", error)
       toast({
         title: "Error",
-        description: "Failed to save donation confirmation. Please try again.",
+        description: "Supabase is not configured. Donation confirmation was not saved.",
         variant: "destructive",
       })
     }

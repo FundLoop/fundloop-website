@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Separator } from "@/components/ui/separator"
 import { toast } from "@/components/ui/use-toast"
-import { supabase } from "@/lib/supabase"
+import { getSupabaseBrowserClient } from "@/lib/supabase"
 
 interface Notification {
   id: number
@@ -24,6 +24,8 @@ export function NotificationCenter() {
   const [isLoading, setIsLoading] = useState(false)
 
   useEffect(() => {
+    const supabase = getSupabaseBrowserClient()
+
     fetchNotifications()
 
     // Set up real-time subscription for new notifications

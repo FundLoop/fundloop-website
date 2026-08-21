@@ -1,23 +1,21 @@
 #!/usr/bin/env bash
+set -euo pipefail
 
-# Enable pnpm via corepack if available
 if command -v corepack >/dev/null 2>&1; then
   corepack enable
 fi
 
-# Install dependencies
 pnpm install
 
-# Copy environment file if example exists and not already present
 if [ -f .env.example ] && [ ! -f .env.local ]; then
   cp .env.example .env.local
 fi
 
-# Ensure ESLint configuration exists to avoid interactive prompts
-if [ ! -f .eslintrc.json ]; then
-  cat <<'EOF' > .eslintrc.json
-{
-  "extends": "next"
-}
+cat <<'EOF'
+Bootstrap complete.
+
+Next steps:
+  1. Fill in .env.local with your Supabase project values.
+  2. Pull or reset the local database with the Supabase CLI as needed.
+  3. Run pnpm lint, pnpm test, pnpm typecheck, and pnpm build.
 EOF
-fi

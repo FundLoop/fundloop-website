@@ -5,19 +5,19 @@ import { cva, type VariantProps } from "class-variance-authority"
 import { cn } from "@/lib/utils"
 
 const buttonVariants = cva(
-  "inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0",
+  "inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-[calc(var(--radius-lg)+0.125rem)] text-sm font-medium ring-offset-background transition-[background-color,border-color,color,box-shadow,transform] duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0",
   {
     variants: {
       variant: {
-        default: "bg-primary text-primary-foreground hover:bg-primary/90",
+        default:
+          "bg-[var(--interactive-primary)] text-[var(--interactive-primary-foreground)] shadow-[var(--surface-shadow-soft)] hover:bg-[var(--interactive-primary-hover)]",
         destructive:
-          "bg-destructive text-destructive-foreground hover:bg-destructive/90",
+          "bg-[var(--status-danger)] text-white shadow-[var(--surface-shadow-soft)] hover:brightness-105",
         outline:
-          "border border-input bg-background hover:bg-accent hover:text-accent-foreground",
-        secondary:
-          "bg-secondary text-secondary-foreground hover:bg-secondary/80",
-        ghost: "hover:bg-accent hover:text-accent-foreground",
-        link: "text-primary underline-offset-4 hover:underline",
+          "border border-[color:var(--surface-border-strong)] bg-[var(--surface-panel-strong)] text-[var(--text-strong)] shadow-[var(--surface-shadow-soft)] hover:bg-[var(--interactive-secondary)] hover:text-[var(--text-strong)]",
+        secondary: "bg-[var(--interactive-secondary)] text-[var(--text-strong)] hover:bg-[var(--interactive-secondary-hover)]",
+        ghost: "text-[var(--text-base)] hover:bg-[var(--interactive-ghost-hover)] hover:text-[var(--text-strong)]",
+        link: "text-[var(--interactive-primary)] underline-offset-4 hover:underline",
       },
       size: {
         default: "h-10 px-4 py-2",

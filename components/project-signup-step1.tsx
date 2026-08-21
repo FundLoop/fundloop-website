@@ -1,7 +1,7 @@
 "use client"
 
 import { useState } from "react"
-import { createClientComponentClient } from "@supabase/auth-helpers-nextjs"
+import { getSupabaseBrowserClient } from "@/lib/supabase"
 import type { Database } from "@/types/supabase"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
@@ -32,7 +32,7 @@ export default function ProjectSignupStep1({
   const [slugEdited, setSlugEdited] = useState(false)
   const [website, setWebsite] = useState("")
   const [description, setDescription] = useState("")
-  const supabase = createClientComponentClient<Database>()
+  const getSupabase = () => getSupabaseBrowserClient()
 
   const generateSlug = (value: string) =>
     value
@@ -44,6 +44,7 @@ export default function ProjectSignupStep1({
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setIsSubmitting(true)
+    const supabase = getSupabase()
 
     const { data: existing } = await supabase
       .from("projects")
@@ -84,7 +85,7 @@ export default function ProjectSignupStep1({
     toast({ title: "Project registered successfully!" })
     onSuccess({
       id: data.id,
-      slug: data.slug,
+      slug: data.slug ?? slug,
       name: data.name,
       website: data.website || "",
       description: data.description || "",
@@ -179,7 +180,7 @@ export default function ProjectSignupStep1({
               <p className="text-sm text-slate-500 dark:text-slate-400">
                 Our project commits to anonymously sync our users and contribute 1% of our revenue to the FundLoop
                 ecosystem to fund the citizen salary program.{' '}
-                <Link href="/pledge" className="text-emerald-600 hover:underline dark:text-emerald-400">
+                <Link href="/founders#commitment" className="text-emerald-600 hover:underline dark:text-emerald-400">
                   Read the full pledge
                 </Link>
               </p>

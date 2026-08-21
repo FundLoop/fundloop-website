@@ -1,0 +1,475 @@
+name: Supabase Deploy
+
+on:
+  pull_request:
+    branches:
+      - dev
+      - main
+  push:
+    branches:
+      - dev
+      - main
+    paths:
+      - ".github/workflows/supabase-deploy.yml"
+      - ".github/workflows/supabase-drift.yml"
+      - "contracts/lib/**"
+      - "lib/**"
+      - "packages/mcp-server/**"
+      - "types/**"
+      - "package.json"
+      - "pnpm-lock.yaml"
+      - "pnpm-workspace.yaml"
+      - "scripts/classify-supabase-drift-push.mjs"
+      - "scripts/verify-supabase-*.mjs"
+      - "supabase/config.toml"
+      - "supabase/functions/**"
+      - "supabase/migrations/**"
+      - "supabase/retired-functions.json"
+      - "vendor/cubid/**"
+  workflow_dispatch:
+    inputs:
+      target_environment:
+        description: "Supabase target environment"
+        required: true
+        type: choice
+        options:
+          - dev
+          - main
+      mode:
+        description: "Run a dry-run or deploy to the selected Supabase target"
+        required: true
+        default: dry-run
+        type: choice
+        options:
+          - dry-run
+          - deploy
+
+concurrency:
+  group: supabase-${{ github.event_name == 'workflow_dispatch' && inputs.target_environment || github.base_ref || github.ref_name }}
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  scope:
+    name: Classify Supabase change
+    runs-on: ubuntu-latest
+    outputs:
+      should_run: ${{ steps.classify.outputs.should_run }}
+    steps:
+      - name: Checkout full candidate history
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Classify candidate paths
+        id: classify
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          if [[ "${GITHUB_EVENT_NAME}" != "pull_request" ]]; then
+            should_run="true"
+          else
+            should_run="$(
+              git diff --no-renames --name-only \
+                "${{ github.event.pull_request.base.sha }}" \
+                "${{ github.event.pull_request.head.sha }}" \
+                | node scripts/classify-supabase-drift-push.mjs deploy
+            )"
+          fi
+
+          echo "should_run=${should_run}" >> "${GITHUB_OUTPUT}"
+          echo "Supabase execution required: ${should_run}"
+
+  supabase:
+    name: Supabase execution
+    needs: scope
+    if: needs.scope.outputs.should_run == 'true'
+    runs-on: ubuntu-latest
+    environment: ${{ ((github.event_name == 'push' && github.ref_name == 'main') || (github.event_name == 'workflow_dispatch' && inputs.target_environment == 'main' && inputs.mode == 'deploy')) && 'Production' || 'Preview' }}
+    env:
+      DEV_SUPABASE_SESSION_POOLER_URL: ${{ secrets.DEV_SUPABASE_SESSION_POOLER_URL }}
+      MAIN_SUPABASE_SESSION_POOLER_URL: ${{ secrets.MAIN_SUPABASE_SESSION_POOLER_URL }}
+      SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Enable Corepack
+        run: corepack enable
+
+      - name: Setup Supabase CLI
+        uses: supabase/setup-cli@v1
+        with:
+          version: 2.113.0
+
+      - name: Install PostgreSQL client
+        if: github.event_name == 'push' || (github.event_name == 'workflow_dispatch' && inputs.mode == 'deploy')
+        run: |
+          sudo apt-get update
+          sudo apt-get install --yes postgresql-client
+
+      - name: Resolve Supabase target
+        id: target
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          if [[ "${GITHUB_EVENT_NAME}" == "workflow_dispatch" ]]; then
+            target_environment="${{ inputs.target_environment }}"
+            mode="${{ inputs.mode }}"
+          elif [[ "${GITHUB_EVENT_NAME}" == "pull_request" ]]; then
+            target_environment="${GITHUB_BASE_REF}"
+            mode="dry-run"
+          else
+            target_environment="${GITHUB_REF_NAME}"
+            mode="deploy"
+          fi
+
+          case "${target_environment}" in
+            dev)
+              db_url="${DEV_SUPABASE_SESSION_POOLER_URL}"
+              ;;
+            main)
+              if [[ "${mode}" == "dry-run" ]]; then
+                db_url="${MAIN_SUPABASE_SESSION_POOLER_URL:-${DEV_SUPABASE_SESSION_POOLER_URL}}"
+              else
+                db_url="${MAIN_SUPABASE_SESSION_POOLER_URL}"
+              fi
+              ;;
+            *)
+              echo "::error::Unsupported Supabase deploy target '${target_environment}'. Expected dev or main."
+              exit 1
+              ;;
+          esac
+
+          if [[ -z "${db_url}" ]]; then
+            echo "::error::Missing Supabase session pooler URL secret for target '${target_environment}'."
+            exit 1
+          fi
+
+          project_ref="$(
+            DB_URL="${db_url}" node <<'NODE'
+          const url = new URL(process.env.DB_URL)
+          const username = decodeURIComponent(url.username)
+          const match = username.match(/^postgres\.([a-z0-9]{20,})$/)
+          if (!match) {
+            throw new Error("Session pooler URL username must use the postgres.<project-ref> format.")
+          }
+          console.log(match[1])
+          NODE
+          )"
+
+          {
+            echo "target_environment=${target_environment}"
+            echo "mode=${mode}"
+            echo "project_ref=${project_ref}"
+          } >> "${GITHUB_OUTPUT}"
+
+      - name: Report target
+        run: |
+          echo "Supabase target: ${{ steps.target.outputs.target_environment }}"
+          echo "Supabase project ref: ${{ steps.target.outputs.project_ref }}"
+          echo "Mode: ${{ steps.target.outputs.mode }}"
+
+      - name: Setup Deno
+        uses: denoland/setup-deno@v2
+        with:
+          deno-version: v2.7.11
+
+      - name: Install function bundle dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Verify Edge Function module graph
+        run: |
+          set -euo pipefail
+          find supabase/functions -mindepth 2 -maxdepth 2 -name index.ts -print0 \
+            | sort -z \
+            | xargs -0 deno cache --no-check --frozen --config supabase/functions/deno.json
+
+      - name: Dry-run database migrations
+        if: steps.target.outputs.mode == 'dry-run'
+        env:
+          SUPABASE_PROJECT_REF: ${{ steps.target.outputs.project_ref }}
+          TARGET_ENVIRONMENT: ${{ steps.target.outputs.target_environment }}
+        run: |
+          set -euo pipefail
+
+          case "${TARGET_ENVIRONMENT}" in
+            dev)
+              supabase_db_url="${DEV_SUPABASE_SESSION_POOLER_URL}"
+              ;;
+            main)
+              supabase_db_url="${MAIN_SUPABASE_SESSION_POOLER_URL:-${DEV_SUPABASE_SESSION_POOLER_URL}}"
+              ;;
+            *)
+              echo "::error::Unsupported Supabase dry-run target '${TARGET_ENVIRONMENT}'. Expected dev or main."
+              exit 1
+              ;;
+          esac
+
+          encoded_db_url_file="${RUNNER_TEMP}/supabase-db-url"
+          DB_URL="${supabase_db_url}" TARGET_ENVIRONMENT="${TARGET_ENVIRONMENT}" OUTPUT_FILE="${encoded_db_url_file}" node <<'NODE'
+          const { writeFileSync } = require("node:fs")
+          const url = new URL(process.env.DB_URL)
+          const existingOptions = url.searchParams.get("options")
+          const targetOption = `-c app.settings.fundloop_target_environment=${process.env.TARGET_ENVIRONMENT}`
+          const query = []
+          url.searchParams.forEach((value, key) => {
+            if (key !== "options") {
+              query.push(`${encodeURIComponent(key)}=${encodeURIComponent(value)}`)
+            }
+          })
+          const mergedOptions = existingOptions ? `${existingOptions} ${targetOption}` : targetOption
+          query.push(`options=${encodeURIComponent(mergedOptions)}`)
+          url.search = `?${query.join("&")}`
+          writeFileSync(process.env.OUTPUT_FILE, url.toString(), "utf8")
+          NODE
+          supabase_db_url="$(cat "${encoded_db_url_file}")"
+          echo "::add-mask::${supabase_db_url}"
+
+          export PGOPTIONS="-c app.settings.fundloop_target_environment=${TARGET_ENVIRONMENT}"
+          supabase db push --yes --include-all --db-url "$supabase_db_url" --dry-run
+
+          if [[ "${TARGET_ENVIRONMENT}" == "dev" ]]; then
+            SUPABASE_SCHEMA_DB_URL="${supabase_db_url}" \
+              SUPABASE_SCHEMA_DIAGNOSTIC_OUTPUT="${RUNNER_TEMP}/supabase-schema-diagnostic.json" \
+              node scripts/verify-supabase-schema-parity.mjs diagnose
+          fi
+
+      - name: Deploy database migrations
+        if: steps.target.outputs.mode == 'deploy'
+        env:
+          SUPABASE_PROJECT_REF: ${{ steps.target.outputs.project_ref }}
+          TARGET_ENVIRONMENT: ${{ steps.target.outputs.target_environment }}
+        run: |
+          set -euo pipefail
+
+          case "${TARGET_ENVIRONMENT}" in
+            dev)
+              supabase_db_url="${DEV_SUPABASE_SESSION_POOLER_URL}"
+              ;;
+            main)
+              supabase_db_url="${MAIN_SUPABASE_SESSION_POOLER_URL}"
+              ;;
+            *)
+              echo "::error::Unsupported Supabase deploy target '${TARGET_ENVIRONMENT}'. Expected dev or main."
+              exit 1
+              ;;
+          esac
+
+          encoded_db_url_file="${RUNNER_TEMP}/supabase-db-url"
+          DB_URL="${supabase_db_url}" TARGET_ENVIRONMENT="${TARGET_ENVIRONMENT}" OUTPUT_FILE="${encoded_db_url_file}" node <<'NODE'
+          const { writeFileSync } = require("node:fs")
+          const url = new URL(process.env.DB_URL)
+          const existingOptions = url.searchParams.get("options")
+          const targetOption = `-c app.settings.fundloop_target_environment=${process.env.TARGET_ENVIRONMENT}`
+          const query = []
+          url.searchParams.forEach((value, key) => {
+            if (key !== "options") {
+              query.push(`${encodeURIComponent(key)}=${encodeURIComponent(value)}`)
+            }
+          })
+          const mergedOptions = existingOptions ? `${existingOptions} ${targetOption}` : targetOption
+          query.push(`options=${encodeURIComponent(mergedOptions)}`)
+          url.search = `?${query.join("&")}`
+          writeFileSync(process.env.OUTPUT_FILE, url.toString(), "utf8")
+          NODE
+          supabase_db_url="$(cat "${encoded_db_url_file}")"
+          echo "::add-mask::${supabase_db_url}"
+
+          psql "${supabase_db_url}" -v ON_ERROR_STOP=1 -v target_environment="${TARGET_ENVIRONMENT}" <<'SQL'
+          CREATE TABLE IF NOT EXISTS public.supabase_deploy_context (
+            id boolean PRIMARY KEY DEFAULT true CHECK (id),
+            target_environment text NOT NULL CHECK (target_environment IN ('dev', 'main')),
+            updated_at timestamptz NOT NULL DEFAULT now()
+          );
+
+          CREATE TABLE IF NOT EXISTS public.supabase_deploy_migration_evidence (
+            id bigint GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+            contract_version text NOT NULL DEFAULT 'fundloop.migration-deploy-evidence/v1' CHECK (contract_version = 'fundloop.migration-deploy-evidence/v1'),
+            candidate_git_sha text NOT NULL CHECK (candidate_git_sha ~ '^[0-9a-f]{40}$'),
+            actions_run_id bigint NOT NULL CHECK (actions_run_id > 0),
+            run_attempt integer NOT NULL CHECK (run_attempt > 0),
+            deployment_environment text NOT NULL CHECK (deployment_environment IN ('dev', 'main')),
+            project_ref text NOT NULL CHECK (project_ref ~ '^[a-z0-9]{20,}$'),
+            migration_inventory jsonb NOT NULL CHECK (jsonb_typeof(migration_inventory) = 'array'),
+            inventory_sha256 text NOT NULL CHECK (inventory_sha256 ~ '^[0-9a-f]{64}$'),
+            recorded_at timestamptz NOT NULL DEFAULT clock_timestamp(),
+            UNIQUE (candidate_git_sha, actions_run_id, run_attempt, deployment_environment, project_ref)
+          );
+
+          REVOKE ALL ON TABLE public.supabase_deploy_migration_evidence FROM anon, authenticated;
+
+          INSERT INTO public.supabase_deploy_context (id, target_environment, updated_at)
+          VALUES (true, :'target_environment', now())
+          ON CONFLICT (id) DO UPDATE
+          SET
+            target_environment = EXCLUDED.target_environment,
+            updated_at = EXCLUDED.updated_at;
+          SQL
+
+          export PGOPTIONS="-c app.settings.fundloop_target_environment=${TARGET_ENVIRONMENT}"
+
+          evidence_file="${RUNNER_TEMP}/supabase-migration-deploy-evidence.json"
+          SUPABASE_MIGRATION_EVIDENCE_OUTPUT="${evidence_file}" \
+            node scripts/verify-supabase-schema-parity.mjs prepare
+          evidence_inventory="$(node -e 'const fs=require("node:fs"); const v=JSON.parse(fs.readFileSync(process.argv[1],"utf8")); process.stdout.write(JSON.stringify(v.migrations))' "${evidence_file}")"
+          evidence_sha="$(node -e 'const fs=require("node:fs"); const v=JSON.parse(fs.readFileSync(process.argv[1],"utf8")); process.stdout.write(v.inventorySha256)' "${evidence_file}")"
+
+          psql "${supabase_db_url}" -v ON_ERROR_STOP=1 \
+            -v candidate_git_sha="${GITHUB_SHA}" \
+            -v actions_run_id="${GITHUB_RUN_ID}" \
+            -v run_attempt="${GITHUB_RUN_ATTEMPT}" \
+            -v target_environment="${TARGET_ENVIRONMENT}" \
+            -v project_ref="${SUPABASE_PROJECT_REF}" \
+            -v migration_inventory="${evidence_inventory}" \
+            -v inventory_sha256="${evidence_sha}" <<'SQL'
+          INSERT INTO public.supabase_deploy_migration_evidence (
+            contract_version, candidate_git_sha, actions_run_id, run_attempt, deployment_environment,
+            project_ref, migration_inventory, inventory_sha256
+          ) VALUES (
+            'fundloop.migration-deploy-evidence/v1', :'candidate_git_sha', :'actions_run_id'::bigint, :'run_attempt'::integer,
+            :'target_environment', :'project_ref', :'migration_inventory'::jsonb,
+            :'inventory_sha256'
+          );
+          SQL
+
+          supabase db push --yes --include-all --db-url "$supabase_db_url"
+
+          SUPABASE_SCHEMA_DB_URL="${supabase_db_url}" \
+            SUPABASE_SCHEMA_DIAGNOSTIC_OUTPUT="${RUNNER_TEMP}/supabase-schema-diagnostic.json" \
+            SUPABASE_SCHEMA_PARITY_OUTPUT="${RUNNER_TEMP}/supabase-schema-parity.json" \
+            node scripts/verify-supabase-schema-parity.mjs
+
+      - name: Deploy Edge Functions
+        if: steps.target.outputs.mode == 'deploy'
+        env:
+          SUPABASE_PROJECT_REF: ${{ steps.target.outputs.project_ref }}
+          TARGET_ENVIRONMENT: ${{ steps.target.outputs.target_environment }}
+        run: |
+          set -euo pipefail
+
+          node scripts/verify-supabase-function-parity.mjs predeploy
+          supabase functions deploy --project-ref "$SUPABASE_PROJECT_REF" --prune --jobs 1 --yes
+          SUPABASE_PARITY_OUTPUT="${RUNNER_TEMP}/supabase-function-parity.json" \
+            node scripts/verify-supabase-function-parity.mjs postdeploy
+
+      - name: Record safe hosted runtime denial
+        if: steps.target.outputs.mode == 'deploy'
+        env:
+          SUPABASE_PROJECT_REF: ${{ steps.target.outputs.project_ref }}
+          TARGET_ENVIRONMENT: ${{ steps.target.outputs.target_environment }}
+          OBSERVATION_GIT_SHA: ${{ github.sha }}
+          SUPABASE_SAFE_SMOKE_OUTPUT: ${{ runner.temp }}/supabase-safe-runtime-smoke.json
+        run: |
+          set -euo pipefail
+          status_code="$(curl --silent --show-error --output /dev/null --write-out '%{http_code}' \
+            "https://${SUPABASE_PROJECT_REF}.supabase.co/functions/v1/epoch-allocation-close")"
+          if [[ "${status_code}" != "401" ]]; then
+            echo "::error::Expected safe unauthenticated epoch-allocation-close denial (401), received ${status_code}."
+            exit 1
+          fi
+          SUPABASE_SAFE_SMOKE_STATUS_CODE="${status_code}" node scripts/verify-supabase-environment-manifest.mjs record-smoke
+          echo "Safe hosted smoke passed for ${GITHUB_SHA}: epoch-allocation-close denied unauthenticated access."
+
+      - name: Publish immutable environment manifest
+        id: environment_manifest
+        if: steps.target.outputs.mode == 'deploy'
+        env:
+          SUPABASE_SCHEMA_PARITY_OUTPUT: ${{ runner.temp }}/supabase-schema-parity.json
+          SUPABASE_FUNCTION_PARITY_OUTPUT: ${{ runner.temp }}/supabase-function-parity.json
+          SUPABASE_SAFE_SMOKE_OUTPUT: ${{ runner.temp }}/supabase-safe-runtime-smoke.json
+          SUPABASE_ENVIRONMENT_MANIFEST_OUTPUT: ${{ runner.temp }}/supabase-environment-manifest.json
+          SUPABASE_MANIFEST_MODE: deploy
+        run: node scripts/verify-supabase-environment-manifest.mjs compose
+
+      - name: Upload sanitized Supabase parity evidence
+        if: steps.target.outputs.mode == 'deploy'
+        uses: actions/upload-artifact@v4
+        with:
+          name: supabase-parity-${{ steps.target.outputs.target_environment }}-${{ github.sha }}
+          path: |
+            ${{ runner.temp }}/supabase-schema-parity.json
+            ${{ runner.temp }}/supabase-schema-diagnostic.json
+            ${{ runner.temp }}/supabase-function-parity.json
+            ${{ runner.temp }}/supabase-safe-runtime-smoke.json
+          if-no-files-found: error
+          retention-days: 30
+
+      - name: Upload immutable environment manifest
+        if: steps.target.outputs.mode == 'deploy'
+        uses: actions/upload-artifact@v4
+        with:
+          name: environment-manifest-${{ steps.target.outputs.target_environment }}-deploy-${{ steps.environment_manifest.outputs.deployment_sha }}-${{ steps.environment_manifest.outputs.deployment_run_id }}-${{ steps.environment_manifest.outputs.deployment_run_attempt }}-observe-${{ steps.environment_manifest.outputs.observation_sha }}-${{ steps.environment_manifest.outputs.observation_run_id }}-${{ steps.environment_manifest.outputs.observation_run_attempt }}
+          path: ${{ runner.temp }}/supabase-environment-manifest.json
+          if-no-files-found: error
+          retention-days: 90
+
+      - name: Certify completed Supabase deployment
+        if: steps.target.outputs.mode == 'deploy'
+        env:
+          SUPABASE_PROJECT_REF: ${{ steps.target.outputs.project_ref }}
+          TARGET_ENVIRONMENT: ${{ steps.target.outputs.target_environment }}
+          SUPABASE_ENVIRONMENT_MANIFEST_OUTPUT: ${{ runner.temp }}/supabase-environment-manifest.json
+        run: |
+          set -euo pipefail
+
+          case "${TARGET_ENVIRONMENT}" in
+            dev) supabase_db_url="${DEV_SUPABASE_SESSION_POOLER_URL}" ;;
+            main) supabase_db_url="${MAIN_SUPABASE_SESSION_POOLER_URL}" ;;
+            *) echo "::error::Unsupported completion target '${TARGET_ENVIRONMENT}'."; exit 1 ;;
+          esac
+          echo "::add-mask::${supabase_db_url}"
+
+          SUPABASE_SCHEMA_DB_URL="${supabase_db_url}" \
+            node scripts/verify-supabase-environment-manifest.mjs complete
+
+      - name: Upload sanitized Dev schema diagnostic
+        if: ${{ always() && steps.target.outputs.mode == 'dry-run' && steps.target.outputs.target_environment == 'dev' }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: supabase-schema-diagnostic-dev-${{ github.sha }}
+          path: ${{ runner.temp }}/supabase-schema-diagnostic.json
+          if-no-files-found: warn
+          retention-days: 30
+
+  required-check:
+    name: Supabase ${{ github.event_name == 'pull_request' && 'dry-run' || (github.event_name == 'workflow_dispatch' && inputs.mode || 'deploy') }}
+    needs:
+      - scope
+      - supabase
+    if: ${{ always() }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Require execution when Supabase paths changed
+        env:
+          SCOPE_RESULT: ${{ needs.scope.result }}
+          SHOULD_RUN: ${{ needs.scope.outputs.should_run }}
+          SUPABASE_RESULT: ${{ needs.supabase.result }}
+        run: |
+          set -euo pipefail
+
+          if [[ "${SCOPE_RESULT}" != "success" ]]; then
+            echo "::error::Supabase path classification did not succeed (${SCOPE_RESULT})."
+            exit 1
+          fi
+
+          if [[ "${SHOULD_RUN}" == "true" && "${SUPABASE_RESULT}" != "success" ]]; then
+            echo "::error::Required Supabase execution did not succeed (${SUPABASE_RESULT})."
+            exit 1
+          fi
+
+          if [[ "${SHOULD_RUN}" == "false" && "${SUPABASE_RESULT}" != "skipped" ]]; then
+            echo "::error::Out-of-scope Supabase execution was not skipped (${SUPABASE_RESULT})."
+            exit 1
+          fi
+
+          echo "Supabase required check passed (scope=${SHOULD_RUN}, execution=${SUPABASE_RESULT})."

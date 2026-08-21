@@ -1,790 +1,974 @@
 "use client"
 
-import type React from "react"
-
-import { useState, useEffect } from "react"
+import { useEffect, useMemo, useRef, useState } from "react"
+import { useRouter } from "next/navigation"
+import { ArrowLeft, ArrowRight, CheckCircle2, Plus, Trash2 } from "lucide-react"
+import {
+  getOnboardingState,
+} from "@/app/actions/onboarding-actions"
+import { CubidIdentityStep } from "@/components/onboarding/cubid-identity-step"
+import { isResolvedCubidIdentityStatus } from "@/lib/cubid/types"
+import { invokeProjectOnboardingDraftClearBrowser } from "@/lib/edge-functions/project-onboarding-draft-clear"
+import { invokeProjectOnboardingPublishBrowser } from "@/lib/edge-functions/project-onboarding-publish"
+import { invokeProjectOnboardingDraftUpsertBrowser } from "@/lib/edge-functions/project-onboarding-draft-upsert"
+import { invokeUserCubidResolveEmailBrowser } from "@/lib/edge-functions/user-cubid-resolve-email"
+import { getSupabaseBrowserClient } from "@/lib/supabase"
+import {
+  DEFAULT_PROJECT_ONBOARDING_PAYLOAD,
+  createEmptyProjectCryptoPaymentMethod,
+  type ProjectCryptoPaymentMethod,
+  sanitizeProjectSlug,
+  type ProjectOnboardingPayload,
+  type ProjectOnboardingScreen,
+  mergeProjectOnboardingPayload,
+} from "@/lib/onboarding"
 import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
+import { Card, CardContent } from "@/components/ui/card"
 import { Checkbox } from "@/components/ui/checkbox"
-import { toast } from "@/components/ui/use-toast"
-import { UploadIcon as FileUpload, Upload, ArrowLeft, ArrowRight, Check, X } from "lucide-react"
-import { supabase } from "@/lib/supabase"
-import { Tabs, TabsContent } from "@/components/ui/tabs"
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
-import { Badge } from "@/components/ui/badge"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Combobox, type ComboboxOption } from "@/components/ui/combobox"
-import ProjectSignupStep1 from "@/components/project-signup-step1"
+import { toast } from "@/components/ui/use-toast"
+import { OnboardingAuthStep } from "@/components/onboarding/onboarding-auth-step"
+import { OnboardingShell } from "@/components/onboarding/onboarding-shell"
+import { ProjectPreview } from "@/components/onboarding/project-preview"
+import type { ComboboxOption } from "@/components/ui/combobox"
 
-// Sample recommended projects
-const recommendedProjects = [
-  {
-    id: 1,
-    name: "EcoStream",
-    logo: "/placeholder.svg?height=40&width=40",
-    description: "Sustainable video streaming platform with carbon-neutral infrastructure",
-    category: "Media",
-  },
-  {
-    id: 2,
-    name: "Harvest",
-    logo: "/placeholder.svg?height=40&width=40",
-    description: "Farm-to-table marketplace connecting local farmers with consumers",
-    category: "Food",
-  },
-  {
-    id: 3,
-    name: "Nomad Workspace",
-    logo: "/placeholder.svg?height=40&width=40",
-    description: "Global network of sustainable co-working spaces for digital nomads",
-    category: "Workspace",
-  },
-  {
-    id: 4,
-    name: "GreenFinance",
-    logo: "/placeholder.svg?height=40&width=40",
-    description: "Ethical banking and investment platform focused on sustainability",
-    category: "Finance",
-  },
-]
-
-// Contribution skills
-const contributionSkills = [
-  { id: "build", label: "Build", description: "Software development, design, or other creation" },
-  { id: "market", label: "Market", description: "Marketing, promotion, and community outreach" },
-  { id: "manage", label: "Manage", description: "Project management and coordination" },
-  { id: "govern", label: "Govern", description: "Governance, decision-making, and policy" },
-  { id: "operate", label: "Operate", description: "Day-to-day operations and maintenance" },
-  { id: "test", label: "Test", description: "Testing, quality assurance, and feedback" },
-  { id: "research", label: "Research", description: "Research, analysis, and data collection" },
-  { id: "educate", label: "Educate", description: "Education, training, and documentation" },
-  { id: "support", label: "Support", description: "User support and community assistance" },
-]
-
-// Add this function to validate email
-const validateEmail = (email: string) => {
-  const regex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
-  return regex.test(email)
+type ProjectSignupFlowProps = {
+  onClose: () => void
 }
 
-export default function ProjectSignupFlow({
-  onClose,
-  initialStep = 1,
-  initialProject,
-}: {
-  onClose: () => void
-  initialStep?: number
-  initialProject?: {
-    id: number
-    slug: string
-    name: string
-    website: string
-    description: string
+type ReferenceData = {
+  categories: ComboboxOption[]
+  paymentPeriodicities: ComboboxOption[]
+  chains: ComboboxOption[]
+  chainAssets: Array<ComboboxOption & { chainId: string; isNative: boolean }>
+  intakeContracts: Array<ComboboxOption & { chainId: string }>
+}
+
+const PROJECT_SCREEN_ORDER: ProjectOnboardingScreen[] = ["cubid", "basics", "details", "contribution", "review"]
+
+function formatDraftTime(value: string | null | undefined) {
+  if (!value) {
+    return "recently"
   }
-}) {
-  const [step, setStep] = useState(initialStep)
-  const [isSubmitting, setIsSubmitting] = useState(false)
-  const [projectData, setProjectData] = useState({
-    name: initialProject?.name || "",
-    website: initialProject?.website || "",
-    description: initialProject?.description || "",
-    email: "",
-    logo: null as File | null,
-    userName: "", // Add this line
-    detailedDescription: "",
-    categories: [] as string[],
-    paymentMethodId: "",
-    billingEmail: "",
-    billingFrequency: "monthly",
-    payment_percentage: 1.0,
-    payment_periodicityId: "",
-    payment_custom_days: null as number | null,
-    status: "active", // Add status field
-  })
 
-  // User data for skills contribution
-  const [userData, setUserData] = useState({
-    willContribute: false,
-    contributionSkills: [] as string[],
-    contributionDetails: "",
-  })
+  return new Intl.DateTimeFormat(undefined, {
+    dateStyle: "medium",
+    timeStyle: "short",
+  }).format(new Date(value))
+}
 
-  // Reference data
-  const [categories, setCategories] = useState<ComboboxOption[]>([])
-  const [paymentMethods, setPaymentMethods] = useState<ComboboxOption[]>([])
-  const [paymentPeriodicities, setPaymentPeriodicities] = useState<ComboboxOption[]>([])
-  const [loadingReferenceData, setLoadingReferenceData] = useState(true)
+export default function ProjectSignupFlow({ onClose }: ProjectSignupFlowProps) {
+  const router = useRouter()
+  const [loading, setLoading] = useState(true)
+  const [authUserId, setAuthUserId] = useState<string | null>(null)
+  const [authEmail, setAuthEmail] = useState<string | null>(null)
+  const [authStateReady, setAuthStateReady] = useState(false)
+  const [authStateVersion, setAuthStateVersion] = useState(0)
+  const [currentScreen, setCurrentScreen] = useState<ProjectOnboardingScreen>("cubid")
+  const [resumeTargetScreen, setResumeTargetScreen] = useState<ProjectOnboardingScreen>("cubid")
+  const [cubidIdentityStatus, setCubidIdentityStatus] = useState<"unlinked" | "linked" | "verified">("unlinked")
+  const [cubidId, setCubidId] = useState<string | null>(null)
+  const [cubidScore, setCubidScore] = useState<number | null>(null)
+  const [payload, setPayload] = useState<ProjectOnboardingPayload>(DEFAULT_PROJECT_ONBOARDING_PAYLOAD)
+  const [draftTimestamp, setDraftTimestamp] = useState<string | null>(null)
+  const [references, setReferences] = useState<ReferenceData>({
+    categories: [],
+    paymentPeriodicities: [],
+    chains: [],
+    chainAssets: [],
+    intakeContracts: [],
+  })
+  const [saving, setSaving] = useState(false)
+  const [publishing, setPublishing] = useState(false)
+  const [resolvingCubid, setResolvingCubid] = useState(false)
+
+  const autosaveReady = useRef(false)
+  const slugEdited = useRef(false)
+  const currentScreenRef = useRef<ProjectOnboardingScreen>("cubid")
+  const loadStateRequestId = useRef(0)
+  const loadedAuthUserId = useRef<string | null>(null)
+
+  const selectedCategories = useMemo(
+    () =>
+      references.categories
+        .filter((category) => payload.categoryIds.includes(category.value))
+        .map((category) => category.label),
+    [payload.categoryIds, references.categories],
+  )
+
+  const paymentMethodSummaries = useMemo(
+    () =>
+      payload.cryptoPaymentMethods.map((method) => {
+        const chain = references.chains.find((item) => item.value === method.chainId)?.label ?? "Choose a chain"
+        const asset = references.chainAssets.find((item) => item.value === method.chainAssetId)?.label ?? "Choose a token"
+        return `${chain} • ${asset}${method.isDefault ? " • Default" : ""}`
+      }),
+    [payload.cryptoPaymentMethods, references.chainAssets, references.chains],
+  )
 
   useEffect(() => {
-    fetchReferenceData()
+    const supabase = getSupabaseBrowserClient()
+
+    const loadSession = async () => {
+      const {
+        data: { user },
+      } = await supabase.auth.getUser()
+      setAuthUserId(user?.id ?? null)
+      setAuthEmail(user?.email ?? null)
+      setAuthStateReady(true)
+    }
+
+    void loadSession()
+
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((_, session) => {
+      setAuthUserId(session?.user?.id ?? null)
+      setAuthEmail(session?.user?.email ?? null)
+      setAuthStateReady(true)
+      setAuthStateVersion((previous) => previous + 1)
+    })
+
+    return () => subscription.unsubscribe()
   }, [])
 
-  const fetchReferenceData = async () => {
-    try {
-      setLoadingReferenceData(true)
+  useEffect(() => {
+    const fetchReferences = async () => {
+      const supabase = getSupabaseBrowserClient()
+      const [{ data: categories }, { data: periodicities }, { data: chains }, { data: chainAssets }, { data: intakeContracts }] = await Promise.all([
+        supabase.from("ref_categories").select("id, name").order("name"),
+        supabase.from("ref_payment_periodicities").select("id, name, code").order("display_order"),
+        supabase.from("ref_chains").select("id, display_name, network_key").eq("is_active", true).order("display_name"),
+        supabase
+          .from("ref_chain_assets")
+          .select("id, chain_id, symbol, name, is_native")
+          .eq("is_active", true)
+          .order("sort_order"),
+        supabase
+          .from("chain_intake_contracts")
+          .select("id, chain_id, contract_address")
+          .eq("collection_mode", "contract")
+          .eq("is_active", true),
+      ])
 
-      // In a real app, you would fetch from Supabase
-      // For demo purposes, we'll use mock data
-
-      // Fetch categories
-      const { data: categoriesData, error: categoriesError } = await supabase
-        .from("ref_categories")
-        .select("id, name")
-        .order("name")
-
-      if (categoriesError) throw categoriesError
-
-      // Fetch payment methods
-      const { data: paymentMethodsData, error: paymentMethodsError } = await supabase
-        .from("ref_payment_methods")
-        .select("id, name, code, description")
-        .order("display_order")
-
-      if (paymentMethodsError) throw paymentMethodsError
-
-      // Fetch payment periodicities
-      const { data: paymentPeriodicitiesData, error: paymentPeriodicitiesError } = await supabase
-        .from("ref_payment_periodicities")
-        .select("id, name, code")
-        .order("display_order")
-
-      if (paymentPeriodicitiesError) throw paymentPeriodicitiesError
-
-      // Transform data for comboboxes and selects
-      setCategories(categoriesData?.map((item) => ({ value: item.id.toString(), label: item.name })) || [])
-      setPaymentMethods(
-        paymentMethodsData?.map((item) => ({
-          value: item.id.toString(),
+      const periodicityOptions =
+        periodicities?.map((item) => ({
+          value: String(item.id),
           label: item.name,
           code: item.code,
-          description: item.description,
-        })) || [],
-      )
-      setPaymentPeriodicities(
-        paymentPeriodicitiesData?.map((item) => ({
-          value: item.id.toString(),
-          label: item.name,
-          code: item.code,
-        })) || [],
-      )
+        })) ?? []
 
-      // Set default payment periodicity to monthly
-      const monthlyPeriodicity = paymentPeriodicitiesData?.find((item) => item.code === "month")
-      if (monthlyPeriodicity) {
-        setProjectData((prev) => ({ ...prev, payment_periodicityId: monthlyPeriodicity.id.toString() }))
+      setReferences({
+        categories: categories?.map((item) => ({ value: String(item.id), label: item.name })) ?? [],
+        paymentPeriodicities: periodicityOptions,
+        chains:
+          chains?.map((item) => ({
+            value: String(item.id),
+            label: item.display_name ?? item.network_key ?? `Chain ${item.id}`,
+          })) ?? [],
+        chainAssets:
+          chainAssets?.map((item) => ({
+            value: String(item.id),
+            label: `${item.symbol} · ${item.name}`,
+            chainId: String(item.chain_id),
+            isNative: item.is_native ?? false,
+          })) ?? [],
+        intakeContracts:
+          intakeContracts?.map((item) => ({
+            value: String(item.id),
+            label: item.contract_address,
+            chainId: String(item.chain_id),
+          })) ?? [],
+      })
+
+      setPayload((previous) => ({
+        ...previous,
+        paymentPeriodicityId:
+          previous.paymentPeriodicityId ||
+          periodicityOptions.find((option) => option.code === "month")?.value ||
+          periodicityOptions[0]?.value ||
+          "",
+      }))
+    }
+
+    void fetchReferences()
+  }, [])
+
+  useEffect(() => {
+    if (!authStateReady) {
+      return
+    }
+
+    const loadState = async () => {
+      const requestId = loadStateRequestId.current + 1
+      loadStateRequestId.current = requestId
+      setLoading(true)
+      const state = await getOnboardingState()
+
+      if (loadStateRequestId.current !== requestId) {
+        return
       }
 
-      // Set default payment method to bank transfer
-      const bankTransferMethod = paymentMethodsData?.find((item) => item.code === "bank_transfer")
-      if (bankTransferMethod) {
-        setProjectData((prev) => ({ ...prev, paymentMethodId: bankTransferMethod.id.toString() }))
+      setAuthUserId(state.authUserId)
+      setAuthEmail(state.authEmail)
+      setCubidIdentityStatus(state.profile?.cubid_identity_status ?? "unlinked")
+      setCubidId(state.profile?.cubid_id ?? null)
+      setCubidScore(state.profile?.cubid_score ?? null)
+
+      if (!state.authUserId) {
+        loadedAuthUserId.current = null
+        currentScreenRef.current = "cubid"
+        setCurrentScreen("cubid")
+        setPayload(DEFAULT_PROJECT_ONBOARDING_PAYLOAD)
+        autosaveReady.current = false
+        setLoading(false)
+        return
       }
-    } catch (error) {
-      console.error("Error fetching reference data:", error)
+
+      if (state.projectDraft) {
+        const draftPayload = mergeProjectOnboardingPayload(state.projectDraft.payload as Partial<ProjectOnboardingPayload>)
+        const isSameUserRefresh = loadedAuthUserId.current === state.authUserId
+        setPayload(draftPayload)
+        setResumeTargetScreen(
+          PROJECT_SCREEN_ORDER.includes(state.projectDraft.current_screen as ProjectOnboardingScreen)
+            ? (state.projectDraft.current_screen as ProjectOnboardingScreen)
+            : "cubid",
+        )
+        if (!isSameUserRefresh) {
+          currentScreenRef.current = "resume"
+          setCurrentScreen("resume")
+        }
+        setDraftTimestamp(state.projectDraft.updated_at || state.projectDraft.started_at)
+      } else {
+        setPayload((previous) => mergeProjectOnboardingPayload(previous))
+        const nextScreen = currentScreenRef.current === "resume" ? "resume" : "cubid"
+        currentScreenRef.current = nextScreen
+        setCurrentScreen(nextScreen)
+        setResumeTargetScreen("cubid")
+        setDraftTimestamp(null)
+      }
+
+      loadedAuthUserId.current = state.authUserId
+      autosaveReady.current = true
+      setLoading(false)
+    }
+
+    void loadState()
+  }, [authStateReady, authStateVersion])
+
+  useEffect(() => {
+    if (!autosaveReady.current || !authUserId || currentScreen === "resume") {
+      return
+    }
+
+    const timeoutId = window.setTimeout(() => {
+      setSaving(true)
+      void invokeProjectOnboardingDraftUpsertBrowser({
+        currentScreen,
+        payload,
+      })
+        .then((result) => {
+          if (!result.ok) {
+            toast({
+              title: "Could not save project draft",
+              description: result.error.message,
+              variant: "destructive",
+            })
+          }
+        })
+        .finally(() => setSaving(false))
+    }, 600)
+
+    return () => window.clearTimeout(timeoutId)
+  }, [authUserId, currentScreen, payload])
+
+  const updatePayload = (partial: Partial<ProjectOnboardingPayload>) => {
+    setPayload((previous) => mergeProjectOnboardingPayload({ ...previous, ...partial }))
+  }
+
+  const handleResolveCubid = async () => {
+    setResolvingCubid(true)
+    const result = await invokeUserCubidResolveEmailBrowser()
+    setResolvingCubid(false)
+
+    if (!result.ok) {
       toast({
-        title: "Error",
-        description: "Failed to load reference data. Please try again.",
+        title: "Could not link CUBID identity",
+        description: result.error.message,
         variant: "destructive",
       })
-    } finally {
-      setLoadingReferenceData(false)
+      return
     }
+
+    setCubidIdentityStatus(result.data.cubidIdentityStatus)
+    setCubidId(result.data.cubidId)
+    setCubidScore(result.data.cubidScore)
+
+    toast({
+      title: result.data.cubidIdentityStatus === "verified" ? "CUBID verified" : "CUBID linked",
+      description:
+        result.data.cubidIdentityStatus === "verified"
+          ? "Your founder identity is verified with CUBID and ready for project publishing."
+          : "Your founder email is now linked with CUBID. You can continue project onboarding.",
+    })
   }
 
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
-    const { id, value } = e.target
-    setProjectData((prev) => ({ ...prev, [id.replace("project-", "")]: value }))
-  }
+  const toggleCategory = (categoryId: string) => {
+    setPayload((previous) => {
+      const categoryIds = previous.categoryIds.includes(categoryId)
+        ? previous.categoryIds.filter((current) => current !== categoryId)
+        : [...previous.categoryIds, categoryId]
 
-  const handleCategoryToggle = (categoryId: string) => {
-    setProjectData((prev) => {
-      const categories = [...prev.categories]
-      if (categories.includes(categoryId)) {
-        return { ...prev, categories: categories.filter((c) => c !== categoryId) }
-      } else {
-        return { ...prev, categories: [...categories, categoryId] }
+      return {
+        ...previous,
+        categoryIds,
       }
     })
   }
 
-  const createNewCategory = async (categoryName: string) => {
-    try {
-      // Format category name properly
-      const formattedName = categoryName
-        .split(" ")
-        .map((word) => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
-        .join(" ")
+  const upsertCryptoPaymentMethod = (methodId: string, next: Partial<ProjectCryptoPaymentMethod>) => {
+    setPayload((previous) => {
+      const methods = previous.cryptoPaymentMethods.map((method) => {
+        if (method.id !== methodId) {
+          return next.isDefault ? { ...method, isDefault: false } : method
+        }
 
-      // In a real app, you would insert into Supabase
-      const { data, error } = await supabase
-        .from("ref_categories")
-        .insert([{ name: formattedName }])
-        .select()
-
-      if (error) throw error
-
-      if (data && data[0]) {
-        // Add the new category to the options
-        const newCategory = { value: data[0].id.toString(), label: data[0].name }
-        setCategories((prev) => [...prev, newCategory])
-
-        // Add to selected categories
-        handleCategoryToggle(data[0].id.toString())
-      }
-    } catch (error) {
-      console.error("Error creating category:", error)
-      throw error
-    }
-  }
-
-
-  const handleSubmitStep2 = async (e: React.FormEvent) => {
-    e.preventDefault()
-    setIsSubmitting(true)
-
-    try {
-      // Update project in Supabase with detailed description and categories
-      const { error } = await supabase
-        .from("projects")
-        .update({
-          detailed_description: projectData.detailedDescription,
-        })
-        .eq("name", projectData.name) // Using name as a unique identifier for this example
-
-      if (error) throw error
-
-      // Insert project categories
-      if (projectData.categories.length > 0) {
-        const projectCategoriesData = projectData.categories.map((categoryId) => ({
-          project_id: 1, // In a real app, this would be the actual project ID
-          category_id: Number.parseInt(categoryId),
-        }))
-
-        const { error: categoriesError } = await supabase.from("project_categories").insert(projectCategoriesData)
-
-        if (categoriesError) throw categoriesError
-      }
-
-      toast({
-        title: "Project details updated!",
-        description: "Now let's set up your contribution method.",
+        return {
+          ...method,
+          ...next,
+        }
       })
 
-      setStep(3)
-    } catch (error) {
-      console.error("Error updating project details:", error)
-      toast({
-        title: "Error updating project details",
-        description: "There was an error updating your project details. Please try again.",
-        variant: "destructive",
-      })
-    } finally {
-      setIsSubmitting(false)
-    }
-  }
-
-  const handleSubmitStep3 = async (e: React.FormEvent) => {
-    e.preventDefault()
-    setIsSubmitting(true)
-
-    try {
-      // Update project in Supabase with payment method details
-      const { error } = await supabase
-        .from("projects")
-        .update({
-          default_payment_method_id: projectData.paymentMethodId ? Number.parseInt(projectData.paymentMethodId) : null,
-          billing_email: projectData.billingEmail,
-          billing_frequency: projectData.billingFrequency,
-          payment_percentage: projectData.payment_percentage,
-          payment_periodicity_id: projectData.payment_periodicityId
-            ? Number.parseInt(projectData.payment_periodicityId)
-            : null,
-          payment_custom_days: projectData.payment_custom_days,
-        })
-        .eq("name", projectData.name) // Using name as a unique identifier for this example
-
-      if (error) throw error
-
-      toast({
-        title: "Project registration complete!",
-        description: "Welcome to the FundLoop ecosystem. You'll receive onboarding information shortly.",
-      })
-
-      // Close the modal after a short delay
-      setTimeout(() => {
-        onClose()
-      }, 2000)
-    } catch (error) {
-      console.error("Error updating payment details:", error)
-      toast({
-        title: "Error updating payment details",
-        description: "There was an error updating your payment details. Please try again.",
-        variant: "destructive",
-      })
-    } finally {
-      setIsSubmitting(false)
-    }
-  }
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    setIsSubmitting(true)
-
-    try {
-      // In a real implementation, you would:
-      // 1. Create a user record
-      // 2. Create an organization record
-      // 3. Create a project record
-      // 4. Send OTP verification
-
-      // For now, we'll just simulate success
-      setTimeout(() => {
-        setIsSubmitting(false)
-        toast({
-          title: "Project registered successfully!",
-          description: "Welcome to the FundLoop ecosystem. You'll receive onboarding information shortly.",
-        })
-        onClose()
-      }, 1500)
-    } catch (error) {
-      console.error("Error registering project:", error)
-      setIsSubmitting(false)
-      toast({
-        title: "Error",
-        description: "There was an error registering your project. Please try again.",
-        variant: "destructive",
-      })
-    }
-  }
-
-  const handleSkillToggle = (skillId: string) => {
-    setUserData((prev) => {
-      const skills = [...prev.contributionSkills]
-      if (skills.includes(skillId)) {
-        return { ...prev, contributionSkills: skills.filter((s) => s !== skillId) }
-      } else {
-        return { ...prev, contributionSkills: [...skills, skillId] }
+      return {
+        ...previous,
+        cryptoPaymentMethods: methods,
       }
     })
   }
 
-  const handleSubmitStep4 = async (e: React.FormEvent) => {
-    e.preventDefault()
-    setIsSubmitting(true)
+  const addCryptoPaymentMethod = () => {
+    setPayload((previous) => ({
+      ...previous,
+      cryptoPaymentMethods: [
+        ...previous.cryptoPaymentMethods,
+        {
+          ...createEmptyProjectCryptoPaymentMethod(),
+          isDefault: previous.cryptoPaymentMethods.length === 0,
+        },
+      ],
+    }))
+  }
 
-    try {
-      // In a real implementation, you would:
-      // 1. Save user contribution preferences
-      // 2. Update user record with skills and details
+  const removeCryptoPaymentMethod = (methodId: string) => {
+    setPayload((previous) => {
+      const nextMethods = previous.cryptoPaymentMethods.filter((method) => method.id !== methodId)
+      return {
+        ...previous,
+        cryptoPaymentMethods: nextMethods.map((method, index) =>
+          nextMethods.some((current) => current.isDefault) ? method : { ...method, isDefault: index === 0 },
+        ),
+      }
+    })
+  }
 
-      // For now, we'll just simulate success
-      setTimeout(() => {
-        setIsSubmitting(false)
-        toast({
-          title: "Skills contribution preferences saved!",
-          description: "Thank you for your interest in contributing to the FundLoop ecosystem.",
-        })
-        onClose()
-      }, 1500)
-    } catch (error) {
-      console.error("Error saving skills contribution preferences:", error)
-      setIsSubmitting(false)
-      toast({
-        title: "Error",
-        description: "There was an error saving your skills contribution preferences. Please try again.",
-        variant: "destructive",
-      })
+  const getPreviousScreen = () => {
+    const currentIndex = PROJECT_SCREEN_ORDER.indexOf(currentScreen)
+    return currentIndex <= 0 ? "basics" : PROJECT_SCREEN_ORDER[currentIndex - 1]
+  }
+
+  const getNextScreen = () => {
+    const currentIndex = PROJECT_SCREEN_ORDER.indexOf(currentScreen)
+    return PROJECT_SCREEN_ORDER[Math.min(currentIndex + 1, PROJECT_SCREEN_ORDER.length - 1)]
+  }
+
+  const canContinue = () => {
+    switch (currentScreen) {
+      case "cubid":
+        return isResolvedCubidIdentityStatus(cubidIdentityStatus)
+      case "basics":
+        return Boolean(
+          payload.name.trim() &&
+            payload.slug.trim() &&
+            payload.website.trim() &&
+            payload.description.trim() &&
+            payload.contactEmail.trim(),
+        )
+      case "details":
+        return Boolean(payload.detailedDescription.trim() && payload.categoryIds.length > 0)
+      case "contribution":
+        return Boolean(
+          payload.pledgeAccepted &&
+            payload.billingEmail.trim() &&
+            payload.paymentPeriodicityId &&
+            payload.paymentPercentage.trim() &&
+            payload.cryptoPaymentMethods.every(
+              (method) => method.chainId && method.chainAssetId && method.intakeContractId,
+            ) &&
+            (payload.cryptoPaymentMethods.length === 0 || payload.cryptoPaymentMethods.some((method) => method.isDefault)),
+        )
+      case "review":
+        return true
+      default:
+        return true
     }
   }
 
-  if (loadingReferenceData && step > 1) {
-    return <div className="flex justify-center items-center p-8">Loading...</div>
+  const handleStartOver = async () => {
+    setSaving(true)
+    const result = await invokeProjectOnboardingDraftClearBrowser()
+    setSaving(false)
+
+    if (!result.ok) {
+      toast({
+        title: "Could not restart project onboarding",
+        description: result.error.message,
+        variant: "destructive",
+      })
+      return
+    }
+
+    setPayload(DEFAULT_PROJECT_ONBOARDING_PAYLOAD)
+    currentScreenRef.current = "cubid"
+    setCurrentScreen("cubid")
+    setResumeTargetScreen("cubid")
+    setDraftTimestamp(null)
+  }
+
+  const handlePublish = async () => {
+    if (!isResolvedCubidIdentityStatus(cubidIdentityStatus)) {
+      toast({
+        title: "Link CUBID before publishing",
+        description: "Resolve your CUBID identity from the signed-in email before publishing a project.",
+        variant: "destructive",
+      })
+      return
+    }
+
+    setPublishing(true)
+    const result = await invokeProjectOnboardingPublishBrowser()
+    setPublishing(false)
+
+    if (!result.ok) {
+      toast({
+        title: "Could not publish project",
+        description: result.error.message,
+        variant: "destructive",
+      })
+      return
+    }
+
+    router.refresh()
+
+    toast({
+      title: "Project published",
+      description: "Your new FundLoop project is now live.",
+    })
+
+    onClose()
+  }
+
+  const preview = (
+    <div className="space-y-4">
+      <ProjectPreview payload={payload} />
+      <Card className="border-dashed">
+        <CardContent className="space-y-2 p-4 text-sm text-slate-600">
+          <p className="font-medium text-slate-900">Project setup summary</p>
+          <p>Categories: {selectedCategories.length > 0 ? selectedCategories.join(", ") : "Not set yet"}</p>
+          <p>Billing email: {payload.billingEmail || "Not set yet"}</p>
+          <p>Contribution cadence: {payload.billingFrequency || "Not set yet"}</p>
+          <p>
+            Crypto methods: {paymentMethodSummaries.length > 0 ? paymentMethodSummaries.join(", ") : "No preferred crypto methods yet"}
+          </p>
+        </CardContent>
+      </Card>
+    </div>
+  )
+
+  if (loading) {
+    return <div className="p-10 text-sm text-muted-foreground">Loading your project draft...</div>
+  }
+
+  if (!authUserId) {
+    return (
+      <OnboardingShell
+        eyebrow="Project onboarding"
+        title="Sign in to create a project draft"
+        description="Project drafts are saved to your account and only published when you finish the full setup."
+        compact
+      >
+        <OnboardingAuthStep
+          title="Authenticate to continue"
+          description="Once you’re signed in, FundLoop will save each project screen automatically."
+          onAuthenticated={() => setAuthUserId("pending")}
+        />
+      </OnboardingShell>
+    )
+  }
+
+  if (currentScreen === "resume") {
+    return (
+      <OnboardingShell
+        eyebrow="Resume"
+        title="You already have a draft project"
+        description={`It looks like you have a draft project created from ${formatDraftTime(
+          draftTimestamp,
+        )}. Let’s continue where you left off last.`}
+        compact
+        footer={
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <Button variant="outline" onClick={() => void handleStartOver()} disabled={saving}>
+              Start over
+            </Button>
+            <Button
+              onClick={() => {
+                currentScreenRef.current = resumeTargetScreen
+                setCurrentScreen(resumeTargetScreen)
+              }}
+              className="gap-2"
+            >
+              Continue draft
+              <ArrowRight className="h-4 w-4" />
+            </Button>
+          </div>
+        }
+      >
+        <div className="rounded-2xl border border-cyan-200 bg-cyan-50/70 p-4 text-sm text-cyan-900">
+          Your project is still private. Nothing will appear on the public projects pages until you publish.
+        </div>
+      </OnboardingShell>
+    )
   }
 
   return (
-    <Tabs value={`step-${step}`} className="w-full">
-      {/* Step indicators */}
-      <div className="flex items-center justify-between mb-8">
-        <div className="flex items-center w-full">
-          <div
-            className={`flex items-center justify-center w-8 h-8 rounded-full ${
-              step >= 1 ? "bg-emerald-600 text-white" : "bg-slate-200 dark:bg-slate-700"
-            }`}
-          >
-            {step > 1 ? <Check className="h-4 w-4" /> : 1}
-          </div>
-          <div className={`flex-1 h-1 mx-2 ${step >= 2 ? "bg-emerald-600" : "bg-slate-200 dark:bg-slate-700"}`}></div>
-          <div
-            className={`flex items-center justify-center w-8 h-8 rounded-full ${
-              step >= 2 ? "bg-emerald-600 text-white" : "bg-slate-200 dark:bg-slate-700"
-            }`}
-          >
-            {step > 2 ? <Check className="h-4 w-4" /> : 2}
-          </div>
-          <div className={`flex-1 h-1 mx-2 ${step >= 3 ? "bg-emerald-600" : "bg-slate-200 dark:bg-slate-700"}`}></div>
-          <div
-            className={`flex items-center justify-center w-8 h-8 rounded-full ${
-              step >= 3 ? "bg-emerald-600 text-white" : "bg-slate-200 dark:bg-slate-700"
-            }`}
-          >
-            {step > 3 ? <Check className="h-4 w-4" /> : 3}
+    <OnboardingShell
+      eyebrow={`Project setup • ${PROJECT_SCREEN_ORDER.indexOf(currentScreen) + 1}/${PROJECT_SCREEN_ORDER.length}`}
+      title={
+        currentScreen === "cubid"
+          ? "Link your founder identity with CUBID"
+          : currentScreen === "basics"
+          ? "Start with the project essentials"
+          : currentScreen === "details"
+            ? "Describe what this project stands for"
+            : currentScreen === "contribution"
+              ? "Set the contribution and billing details"
+              : "Review and publish your project"
+      }
+      description={
+        currentScreen === "cubid"
+          ? "Project publishing is tied to a real accountable person. Link the signed-in founder email to CUBID before the project can go live."
+          : currentScreen === "basics"
+          ? "Capture the public-facing details that will shape the project preview."
+          : currentScreen === "details"
+            ? "Fill in the richer description, categories, and positioning for this project."
+            : currentScreen === "contribution"
+              ? "Confirm the FundLoop pledge and the practical billing fields required to go live."
+              : "Check the preview and publish only when the project card is ready for others to see."
+      }
+      preview={preview}
+      footer={
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div className="text-sm text-slate-500">{saving ? "Saving your project draft..." : "Every project step is saved automatically."}</div>
+          <div className="flex items-center gap-3">
+            <Button
+              variant="outline"
+              onClick={() => {
+                currentScreenRef.current = getPreviousScreen()
+                setCurrentScreen(getPreviousScreen())
+              }}
+            >
+              <ArrowLeft className="mr-2 h-4 w-4" />
+              Back
+            </Button>
+            {currentScreen === "review" ? (
+              <Button onClick={() => void handlePublish()} disabled={publishing} className="gap-2">
+                <CheckCircle2 className="h-4 w-4" />
+                {publishing ? "Publishing..." : "Publish project"}
+              </Button>
+            ) : (
+              <Button
+                onClick={() => {
+                  currentScreenRef.current = getNextScreen()
+                  setCurrentScreen(getNextScreen())
+                }}
+                disabled={!canContinue()}
+                className="gap-2"
+              >
+                Continue
+                <ArrowRight className="h-4 w-4" />
+              </Button>
+            )}
           </div>
         </div>
-      </div>
-
-      {/* Step 1: Basic Information */}
-      <TabsContent value="step-1" className="mt-0">
-        <ProjectSignupStep1
-          onSuccess={(project) => {
-            setProjectData((prev) => ({
-              ...prev,
-              name: project.name,
-              website: project.website,
-              description: project.description,
-            }))
-            setStep(2)
-          }}
+      }
+    >
+      {currentScreen === "cubid" ? (
+        <CubidIdentityStep
+          email={authEmail}
+          cubidIdentityStatus={cubidIdentityStatus}
+          cubidId={cubidId}
+          cubidScore={cubidScore}
+          resolving={resolvingCubid}
+          onResolve={() => void handleResolveCubid()}
+          title="Founders need a linked CUBID identity before project publish"
+          body="FundLoop treats project publishing as a payout-touching operation. We therefore require the authenticated founder or project member to resolve the signed-in email against CUBID before continuing into the project setup screens."
         />
-      </TabsContent>
+      ) : null}
 
-      {/* Rest of the steps remain the same */}
-      {/* Step 2: Detailed Description and Categories */}
-      <TabsContent value="step-2" className="mt-0">
-        <Card className="w-full">
-          <CardHeader>
-            <CardTitle className="text-2xl">Project Details</CardTitle>
-            <CardDescription>Tell us more about your project and select relevant categories</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <form id="step2-form" onSubmit={handleSubmitStep2} className="space-y-6">
-              <div className="space-y-2">
-                <Label htmlFor="project-detailedDescription">Detailed Description</Label>
-                <Textarea
-                  id="project-detailedDescription"
-                  placeholder="Provide a comprehensive description of your project, its mission, and how it aligns with FundLoop's values"
-                  className="min-h-[150px]"
-                  value={projectData.detailedDescription}
-                  onChange={handleInputChange}
-                  required
-                />
-              </div>
+      {currentScreen === "basics" ? (
+        <div className="space-y-5">
+          <div className="flex items-start gap-3 rounded-2xl border border-amber-500/30 bg-amber-500/10 p-4 text-amber-950 dark:border-amber-400/30 dark:bg-amber-400/10 dark:text-amber-100">
+            <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-amber-500/20 text-xs">
+              ✨
+            </span>
+            <div className="text-sm">
+              <p className="font-semibold text-amber-900 dark:text-amber-200">
+                Inaugural Batch • Epoch 1
+              </p>
+              <p className="mt-0.5 text-amber-800 dark:text-amber-300">
+                Projects onboarding now will be featured as part of the inaugural cohort &ldquo;Epoch 1&rdquo;.
+              </p>
+            </div>
+          </div>
 
-              <div className="space-y-2">
-                <Label>Project Categories (select all that apply)</Label>
-                <div className="grid grid-cols-2 md:grid-cols-3 gap-2 mt-2">
-                  {categories.map((category) => (
-                    <div key={category.value} className="flex items-center space-x-2">
-                      <Checkbox
-                        id={`category-${category.value}`}
-                        checked={projectData.categories.includes(category.value)}
-                        onCheckedChange={() => handleCategoryToggle(category.value)}
-                      />
-                      <label
-                        htmlFor={`category-${category.value}`}
-                        className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
-                      >
-                        {category.label}
-                      </label>
-                    </div>
+          <div className="grid gap-5 md:grid-cols-2">
+            <div className="space-y-2">
+              <Label htmlFor="project-name">Project name</Label>
+              <Input
+                id="project-name"
+                value={payload.name}
+                onChange={(event) => {
+                  const name = event.target.value
+                  updatePayload({
+                    name,
+                    slug: slugEdited.current ? payload.slug : sanitizeProjectSlug(name),
+                  })
+                }}
+                placeholder="FundLoop Studio"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="project-slug">Project slug</Label>
+              <Input
+                id="project-slug"
+                value={payload.slug}
+                onChange={(event) => {
+                  slugEdited.current = true
+                  updatePayload({ slug: sanitizeProjectSlug(event.target.value) })
+                }}
+                placeholder="fundloop-studio"
+              />
+            </div>
+          </div>
+
+          <div className="grid gap-5 md:grid-cols-2">
+            <div className="space-y-2">
+              <Label htmlFor="project-website">Website</Label>
+              <Input
+                id="project-website"
+                value={payload.website}
+                onChange={(event) => updatePayload({ website: event.target.value })}
+                placeholder="https://example.org"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="project-contact-email">Contact email</Label>
+              <Input
+                id="project-contact-email"
+                type="email"
+                value={payload.contactEmail}
+                onChange={(event) => updatePayload({ contactEmail: event.target.value })}
+                placeholder="team@example.org"
+              />
+            </div>
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="project-logo-url">Logo URL</Label>
+            <Input
+              id="project-logo-url"
+              value={payload.logoUrl}
+              onChange={(event) => updatePayload({ logoUrl: event.target.value })}
+              placeholder="https://..."
+            />
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="project-description">Short description</Label>
+            <Textarea
+              id="project-description"
+              rows={4}
+              value={payload.description}
+              onChange={(event) => updatePayload({ description: event.target.value })}
+              placeholder="A short public summary of what this project does and why it matters."
+            />
+          </div>
+        </div>
+      ) : null}
+
+      {currentScreen === "details" ? (
+        <div className="space-y-5">
+          <div className="space-y-2">
+            <Label htmlFor="project-detailed-description">Detailed description</Label>
+            <Textarea
+              id="project-detailed-description"
+              rows={8}
+              value={payload.detailedDescription}
+              onChange={(event) => updatePayload({ detailedDescription: event.target.value })}
+              placeholder="Explain the mission, product, team, and why this project belongs in the FundLoop ecosystem."
+            />
+          </div>
+
+          <div className="space-y-2">
+            <Label>Categories</Label>
+            <div className="flex max-h-48 flex-wrap gap-2 overflow-y-auto rounded-2xl border p-3">
+              {references.categories.map((category) => {
+                const active = payload.categoryIds.includes(category.value)
+                return (
+                  <Button
+                    key={category.value}
+                    type="button"
+                    variant={active ? "default" : "outline"}
+                    size="sm"
+                    onClick={() => toggleCategory(category.value)}
+                  >
+                    {category.label}
+                  </Button>
+                )
+              })}
+            </div>
+          </div>
+        </div>
+      ) : null}
+
+      {currentScreen === "contribution" ? (
+        <div className="space-y-6">
+          <div className="flex items-start gap-3 rounded-2xl border border-emerald-200 bg-emerald-50/70 p-4">
+            <Checkbox
+              id="pledge-accepted"
+              checked={payload.pledgeAccepted}
+              onCheckedChange={(checked) => updatePayload({ pledgeAccepted: checked === true })}
+            />
+            <div className="space-y-1 text-sm">
+              <Label htmlFor="pledge-accepted" className="font-medium text-emerald-950">
+                Our project agrees to the FundLoop 1% pledge
+              </Label>
+              <p className="text-emerald-900">
+                We understand the project will contribute at least 1% of revenue on the cadence configured below.
+              </p>
+            </div>
+          </div>
+
+          <div className="grid gap-5 md:grid-cols-2">
+            <div className="space-y-2">
+              <Label>Contribution cadence</Label>
+              <Select
+                value={payload.paymentPeriodicityId}
+                onValueChange={(value) => updatePayload({ paymentPeriodicityId: value })}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Choose a cadence" />
+                </SelectTrigger>
+                <SelectContent>
+                  {references.paymentPeriodicities.map((periodicity) => (
+                    <SelectItem key={periodicity.value} value={periodicity.value}>
+                      {periodicity.label}
+                    </SelectItem>
                   ))}
-                </div>
-                <div className="mt-2">
-                  <Combobox
-                    options={[]}
-                    value=""
-                    onChange={() => {}}
-                    onCreateOption={createNewCategory}
-                    placeholder="Add a new category"
-                    emptyMessage="Type to add a new category"
-                    createMessage="Add category"
-                  />
-                </div>
-              </div>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="rounded-2xl border border-slate-200 bg-slate-50/60 p-4 text-sm text-slate-600">
+              Projects can optionally configure one or more preferred crypto routes now, or skip and add them later before the first collection cycle.
+            </div>
+          </div>
 
-              <div className="space-y-2">
-                <Label>Selected Categories</Label>
-                <div className="flex flex-wrap gap-2 mt-2">
-                  {projectData.categories.length === 0 ? (
-                    <p className="text-sm text-slate-500 dark:text-slate-400">No categories selected</p>
-                  ) : (
-                    projectData.categories.map((categoryId) => {
-                      const category = categories.find((c) => c.value === categoryId)
-                      return category ? (
-                        <Badge key={categoryId} variant="outline" className="flex items-center gap-1">
-                          {category.label}
+          <div className="grid gap-5 md:grid-cols-2">
+            <div className="space-y-2">
+              <Label htmlFor="project-billing-email">Billing email</Label>
+              <Input
+                id="project-billing-email"
+                type="email"
+                value={payload.billingEmail}
+                onChange={(event) => updatePayload({ billingEmail: event.target.value })}
+                placeholder="billing@example.org"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="project-payment-percentage">Revenue contribution %</Label>
+              <Input
+                id="project-payment-percentage"
+                type="number"
+                min="1"
+                step="0.1"
+                value={payload.paymentPercentage}
+                onChange={(event) => updatePayload({ paymentPercentage: event.target.value })}
+              />
+            </div>
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="project-billing-frequency">Billing frequency label</Label>
+            <Input
+              id="project-billing-frequency"
+              value={payload.billingFrequency}
+              onChange={(event) => updatePayload({ billingFrequency: event.target.value })}
+              placeholder="monthly"
+            />
+          </div>
+
+          <div className="space-y-4 rounded-3xl border p-5">
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <div>
+                <p className="font-medium text-slate-900">Preferred crypto payment methods</p>
+                <p className="text-sm text-slate-600">
+                  Supported routes are curated per chain and tagged to your project ID through the FundLoop intake contract.
+                </p>
+              </div>
+              <Button type="button" variant="outline" size="sm" onClick={addCryptoPaymentMethod}>
+                <Plus className="mr-2 h-4 w-4" />
+                Add crypto method
+              </Button>
+            </div>
+
+            {payload.cryptoPaymentMethods.length === 0 ? (
+              <div className="rounded-2xl border border-dashed p-4 text-sm text-slate-500">
+                No crypto methods configured yet. This step is optional during onboarding.
+              </div>
+            ) : (
+              <div className="space-y-4">
+                {payload.cryptoPaymentMethods.map((method, index) => {
+                  const availableAssets = references.chainAssets.filter((asset) => asset.chainId === method.chainId)
+                  const defaultContract = references.intakeContracts.find((contract) => contract.chainId === method.chainId)
+
+                  return (
+                    <div key={method.id} className="space-y-4 rounded-2xl border p-4">
+                      <div className="flex items-center justify-between gap-3">
+                        <p className="text-sm font-medium text-slate-900">Crypto method {index + 1}</p>
+                        <Button type="button" variant="ghost" size="icon" onClick={() => removeCryptoPaymentMethod(method.id)}>
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </div>
+
+                      <div className="grid gap-5 md:grid-cols-2">
+                        <div className="space-y-2">
+                          <Label>Chain</Label>
+                          <Select
+                            value={method.chainId}
+                            onValueChange={(value) =>
+                              upsertCryptoPaymentMethod(method.id, {
+                                chainId: value,
+                                chainAssetId: "",
+                                intakeContractId:
+                                  references.intakeContracts.find((contract) => contract.chainId === value)?.value ?? "",
+                              })
+                            }
+                          >
+                            <SelectTrigger>
+                              <SelectValue placeholder="Choose a chain" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {references.chains.map((chain) => (
+                                <SelectItem key={chain.value} value={chain.value}>
+                                  {chain.label}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
+
+                        <div className="space-y-2">
+                          <Label>Token</Label>
+                          <Select
+                            value={method.chainAssetId}
+                            onValueChange={(value) =>
+                              upsertCryptoPaymentMethod(method.id, {
+                                chainAssetId: value,
+                                intakeContractId: defaultContract?.value ?? method.intakeContractId,
+                              })
+                            }
+                            disabled={!method.chainId}
+                          >
+                            <SelectTrigger>
+                              <SelectValue placeholder="Choose a token" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {availableAssets.map((asset) => (
+                                <SelectItem key={asset.value} value={asset.value}>
+                                  {asset.label}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
+                      </div>
+
+                      <div className="grid gap-5 md:grid-cols-2">
+                        <div className="space-y-2">
+                          <Label htmlFor={`project-crypto-label-${method.id}`}>Label</Label>
+                          <Input
+                            id={`project-crypto-label-${method.id}`}
+                            value={method.label}
+                            onChange={(event) => upsertCryptoPaymentMethod(method.id, { label: event.target.value })}
+                            placeholder="Base USDC default route"
+                          />
+                        </div>
+
+                        <div className="space-y-2">
+                          <Label>Default route</Label>
                           <Button
                             type="button"
-                            variant="ghost"
-                            size="icon"
-                            className="h-4 w-4 p-0 hover:bg-transparent"
-                            onClick={() => handleCategoryToggle(categoryId)}
+                            variant={method.isDefault ? "default" : "outline"}
+                            onClick={() => upsertCryptoPaymentMethod(method.id, { isDefault: true })}
                           >
-                            <X className="h-3 w-3" />
-                            <span className="sr-only">Remove {category.label}</span>
+                            {method.isDefault ? "Default route" : "Mark as default"}
                           </Button>
-                        </Badge>
-                      ) : null
-                    })
-                  )}
-                </div>
-              </div>
-            </form>
-          </CardContent>
-          <CardFooter className="flex justify-between">
-            <Button type="button" variant="outline" onClick={() => setStep(1)} className="gap-1">
-              <ArrowLeft className="h-4 w-4" />
-              Back
-            </Button>
-            <Button
-              form="step2-form"
-              type="submit"
-              className="bg-gradient-to-r from-emerald-600 to-cyan-600 hover:from-emerald-700 hover:to-cyan-700 gap-1"
-              disabled={isSubmitting || projectData.categories.length === 0}
-            >
-              {isSubmitting ? "Saving..." : "Continue"}
-              <ArrowRight className="h-4 w-4" />
-            </Button>
-          </CardFooter>
-        </Card>
-      </TabsContent>
-
-      {/* Step 3: Payment Method */}
-      <TabsContent value="step-3" className="mt-0">
-        <Card className="w-full">
-          <CardHeader>
-            <CardTitle className="text-2xl">Contribution Method</CardTitle>
-            <CardDescription>Select how you'll contribute 1% of your revenue to the FundLoop ecosystem</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <form id="step3-form" onSubmit={handleSubmitStep3} className="space-y-6">
-              <div className="space-y-4">
-                <Label>Payment Method</Label>
-                <RadioGroup
-                  value={projectData.paymentMethodId}
-                  onValueChange={(value) => setProjectData((prev) => ({ ...prev, paymentMethodId: value }))}
-                  className="space-y-3"
-                >
-                  {paymentMethods.map((method) => (
-                    <div key={method.value} className="flex items-center space-x-2">
-                      <RadioGroupItem value={method.value} id={method.value} />
-                      <Label htmlFor={method.value} className="flex flex-col">
-                        <span>{method.label}</span>
-                        <span className="text-sm font-normal text-slate-500 dark:text-slate-400">
-                          {method.description}
-                        </span>
-                      </Label>
-                    </div>
-                  ))}
-                </RadioGroup>
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="payment-percentage">Revenue Share Percentage</Label>
-                <div className="relative">
-                  <Input
-                    id="payment-percentage"
-                    type="number"
-                    min="1"
-                    step="0.1"
-                    placeholder="1.0"
-                    value={projectData.payment_percentage || 1}
-                    onChange={(e) => {
-                      const value = Number.parseFloat(e.target.value)
-                      if (value < 1) {
-                        toast({
-                          title: "Invalid percentage",
-                          description: "The minimum revenue share percentage is 1%",
-                          variant: "destructive",
-                        })
-                        setProjectData((prev) => ({ ...prev, payment_percentage: 1 }))
-                      } else {
-                        setProjectData((prev) => ({ ...prev, payment_percentage: value }))
-                      }
-                    }}
-                    className="pr-8"
-                  />
-                  <span className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500">%</span>
-                </div>
-                <p className="text-xs text-slate-500 dark:text-slate-400">
-                  The minimum contribution is 1% of your revenue. You can choose to contribute more if you wish.
-                </p>
-              </div>
-
-              <div className="space-y-2">
-                <Label>Payment Periodicity</Label>
-                <Select
-                  value={projectData.payment_periodicityId}
-                  onValueChange={(value) => {
-                    setProjectData((prev) => ({
-                      ...prev,
-                      payment_periodicityId: value,
-                      // Reset custom days if not custom periodicity
-                      payment_custom_days:
-                        value === paymentPeriodicities.find((p) => p.code === "custom")?.value
-                          ? prev.payment_custom_days
-                          : null,
-                    }))
-                  }}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select payment periodicity" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {paymentPeriodicities.map((periodicity) => (
-                      <SelectItem key={periodicity.value} value={periodicity.value}>
-                        {periodicity.label}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-
-              {projectData.payment_periodicityId === paymentPeriodicities.find((p) => p.code === "custom")?.value && (
-                <div className="space-y-2">
-                  <Label htmlFor="custom-days">Custom Period (Days)</Label>
-                  <Input
-                    id="custom-days"
-                    type="number"
-                    min="1"
-                    max="365"
-                    placeholder="30"
-                    value={projectData.payment_custom_days || ""}
-                    onChange={(e) =>
-                      setProjectData((prev) => ({ ...prev, payment_custom_days: Number.parseInt(e.target.value) }))
-                    }
-                  />
-                </div>
-              )}
-
-              <div className="space-y-2">
-                <Label htmlFor="project-billingEmail">Billing Email</Label>
-                <Input
-                  id="project-billingEmail"
-                  type="email"
-                  placeholder="billing@yourproject.com"
-                  value={projectData.billingEmail}
-                  onChange={handleInputChange}
-                  required
-                />
-                <p className="text-xs text-slate-500 dark:text-slate-400">
-                  We'll send invoices and payment receipts to this email address
-                </p>
-              </div>
-            </form>
-          </CardContent>
-          <CardFooter className="flex justify-between">
-            <Button type="button" variant="outline" onClick={() => setStep(2)} className="gap-1">
-              <ArrowLeft className="h-4 w-4" />
-              Back
-            </Button>
-            <Button
-              form="step3-form"
-              type="submit"
-              className="bg-gradient-to-r from-emerald-600 to-cyan-600 hover:from-emerald-700 hover:to-cyan-700"
-              disabled={isSubmitting || !projectData.paymentMethodId}
-            >
-              {isSubmitting ? "Completing Registration..." : "Continue"}
-            </Button>
-          </CardFooter>
-        </Card>
-      </TabsContent>
-
-      {/* Step 4: Skills Contribution */}
-      <TabsContent value="step-4" className="mt-0">
-        <Card className="w-full">
-          <CardHeader>
-            <CardTitle className="text-2xl">Skills Contribution</CardTitle>
-            <CardDescription>
-              Would you like to actively contribute your skills to the FundLoop ecosystem?
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <form id="step4-form" onSubmit={handleSubmitStep4} className="space-y-6">
-              <div className="space-y-4">
-                <div className="flex items-start space-x-2">
-                  <RadioGroup
-                    value={userData.willContribute ? "yes" : "no"}
-                    onValueChange={(value) => setUserData((prev) => ({ ...prev, willContribute: value === "yes" }))}
-                    className="flex flex-col space-y-3"
-                  >
-                    <div className="flex items-center space-x-2">
-                      <RadioGroupItem value="yes" id="contribution-yes" />
-                      <Label htmlFor="contribution-yes">Yes, I'd like to actively contribute my skills</Label>
-                    </div>
-                    <div className="flex items-center space-x-2">
-                      <RadioGroupItem value="no" id="contribution-no" />
-                      <Label htmlFor="contribution-no">No, I prefer to participate passively at this time</Label>
-                    </div>
-                  </RadioGroup>
-                </div>
-
-                {userData.willContribute && (
-                  <>
-                    <div className="space-y-2 pt-4">
-                      <Label>How would you like to contribute? (select all that apply)</Label>
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mt-2">
-                        {contributionSkills.map((skill) => (
-                          <div key={skill.id} className="flex items-start space-x-2">
-                            <Checkbox
-                              id={`skill-${skill.id}`}
-                              checked={userData.contributionSkills.includes(skill.id)}
-                              onCheckedChange={() => handleSkillToggle(skill.id)}
-                              className="mt-1"
-                            />
-                            <div>
-                              <label
-                                htmlFor={`skill-${skill.id}`}
-                                className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
-                              >
-                                {skill.label}
-                              </label>
-                              <p className="text-xs text-slate-500 dark:text-slate-400">{skill.description}</p>
-                            </div>
-                          </div>
-                        ))}
+                        </div>
                       </div>
                     </div>
-
-                    <div className="space-y-2">
-                      <Label htmlFor="user-contributionDetails">
-                        Tell us more about your skills and how you'd like to contribute
-                      </Label>
-                      <Textarea
-                        id="user-contributionDetails"
-                        placeholder="Describe your skills, experience, and how you'd like to contribute to the ecosystem..."
-                        className="min-h-[120px]"
-                        value={userData.contributionDetails}
-                        onChange={(e) => setUserData((prev) => ({ ...prev, contributionDetails: e.target.value }))}
-                        required={userData.willContribute}
-                      />
-                    </div>
-                  </>
-                )}
+                  )
+                })}
               </div>
-            </form>
-          </CardContent>
-          <CardFooter className="flex justify-between">
-            <Button type="button" variant="outline" onClick={() => setStep(3)} className="gap-1">
-              <ArrowLeft className="h-4 w-4" />
-              Back
-            </Button>
-            <Button
-              form="step4-form"
-              type="submit"
-              className="bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-700 hover:to-blue-700"
-              disabled={
-                isSubmitting ||
-                (userData.willContribute && (userData.contributionSkills.length === 0 || !userData.contributionDetails))
-              }
-            >
-              {isSubmitting ? "Completing Registration..." : "Complete Registration"}
-            </Button>
-          </CardFooter>
-        </Card>
-      </TabsContent>
-    </Tabs>
+            )}
+          </div>
+        </div>
+      ) : null}
+
+      {currentScreen === "review" ? (
+        <div className="space-y-6">
+          <div className="rounded-3xl border border-cyan-200 bg-cyan-50/70 p-5">
+            <h3 className="font-semibold text-cyan-950">Ready to publish</h3>
+            <p className="mt-2 text-sm text-cyan-900">
+              Publishing creates the organization, project, category links, and owner memberships in one flow.
+            </p>
+          </div>
+
+          <div className="grid gap-4 md:grid-cols-2">
+            <Card>
+              <CardContent className="space-y-2 p-4 text-sm text-slate-600">
+                <p className="font-medium text-slate-900">Project summary</p>
+                <p>Name: {payload.name}</p>
+                <p>Slug: {payload.slug}</p>
+                <p>Contact: {payload.contactEmail}</p>
+                <p>Categories: {selectedCategories.length > 0 ? selectedCategories.join(", ") : "None selected"}</p>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardContent className="space-y-2 p-4 text-sm text-slate-600">
+                <p className="font-medium text-slate-900">Contribution summary</p>
+                <p>Pledge accepted: {payload.pledgeAccepted ? "Yes" : "No"}</p>
+                <p>Billing email: {payload.billingEmail}</p>
+                <p>Contribution: {payload.paymentPercentage}%</p>
+                <p>
+                  Crypto methods: {paymentMethodSummaries.length > 0 ? paymentMethodSummaries.join(", ") : "None configured yet"}
+                </p>
+              </CardContent>
+            </Card>
+          </div>
+        </div>
+      ) : null}
+    </OnboardingShell>
   )
 }

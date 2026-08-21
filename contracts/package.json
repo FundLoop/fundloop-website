@@ -1,0 +1,18 @@
+{
+  "name": "@fundloop/contracts",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "scripts": {
+    "build": "hardhat compile",
+    "clean": "hardhat clean",
+    "deploy:base-v2": "hardhat run scripts/deploy-base-intake-v2.js",
+    "deploy:base-payout-review": "hardhat run scripts/deploy-base-payout-review.js",
+    "test": "hardhat test"
+  },
+  "devDependencies": {
+    "@nomicfoundation/hardhat-toolbox-viem": "^5.0.0",
+    "@openzeppelin/contracts": "^5.4.0",
+    "hardhat": "^3.0.7"
+  }
+}

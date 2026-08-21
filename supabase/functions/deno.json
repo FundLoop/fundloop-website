@@ -1,0 +1,13 @@
+{
+  "imports": {
+    "@cubid/core": "jsr:@cubid/core@0.1.0",
+    "@modelcontextprotocol/sdk/server/mcp.js": "npm:@modelcontextprotocol/sdk@1.29.0/server/mcp.js",
+    "@modelcontextprotocol/sdk/server/webStandardStreamableHttp.js": "npm:@modelcontextprotocol/sdk@1.29.0/server/webStandardStreamableHttp.js",
+    "@supabase/supabase-js": "npm:@supabase/supabase-js@2.104.0",
+    "viem": "npm:viem@2.48.1",
+    "viem/chains": "npm:viem@2.48.1/chains",
+    "stripe": "npm:stripe@22.4.0",
+    "zod": "npm:zod@4.3.6"
+  },
+  "nodeModulesDir": "auto"
+}

@@ -1,0 +1,134 @@
+{
+  "contractVersion": "fundloop.goal-158-delivery-integrity/v1",
+  "observedAt": "2026-08-13T11:05:00Z",
+  "candidate": {
+    "sprintIssue": 155,
+    "goalIssue": 158,
+    "publicationTaskIssue": 187,
+    "baseBranch": "dev",
+    "certifiedDevGitSha": "ae8c5a38d6740646fa0e7d48f2e820e81a5e8726"
+  },
+  "devDeployment": {
+    "projectRef": "kyxtqnfnksvcaugxwzuj",
+    "githubRunId": "31689293304",
+    "githubRunAttempt": 2,
+    "artifactId": "9177162146",
+    "manifestSha256": "9631ac409cb77afde7a381825dc311e19fe63ef64d9f04429036b61bd75ad81c",
+    "migrations": {
+      "trackedCount": 96,
+      "observedCount": 96,
+      "inventorySha256": "92d51cb1c74e608f3d46e55f8b1b2c3eccfecddad1ae6da9e379d44977e42996"
+    },
+    "schema": {
+      "algorithm": "pg17-public-schema-normalized-v2",
+      "postgresMajor": 17,
+      "expectedSha256": "ed8a9289bac4364102fb212daad390ef47756b3128afc2c01486ecdef4762133",
+      "observedSha256": "ed8a9289bac4364102fb212daad390ef47756b3128afc2c01486ecdef4762133"
+    },
+    "functions": {
+      "expectedCount": 62,
+      "observedCount": 62,
+      "activeCount": 62,
+      "sourceMismatchCount": 0,
+      "inventorySha256": "e91fcf6eb2e4720b4ceccb4f4c9ae6d494fdb659e923ec72b108630f908f4389"
+    },
+    "safeRuntime": {
+      "authenticatedPublicHealthStatus": 200,
+      "healthBodySha256": "c68f0d1bdba4970265331345e2d4dd15eeeadcdb2aa3863a8d0f06f6312ab4c8",
+      "unauthorizedMutationStatus": 401
+    },
+    "valueFlow": {
+      "observedTableCount": 14,
+      "enabledTableCount": 0,
+      "productionValueFlowEnabledCount": 0
+    }
+  },
+  "devDriftObservation": {
+    "githubRunId": "31690575339",
+    "githubRunAttempt": 1,
+    "artifactId": "9177325011",
+    "manifestSha256": "f27b07e875fb005d41c85582f791d4a1b3ab55e904ced913018b759df14900f2",
+    "certifiedDeploymentManifestSha256": "9631ac409cb77afde7a381825dc311e19fe63ef64d9f04429036b61bd75ad81c",
+    "blockingDriftCount": 0
+  },
+  "githubControls": {
+    "requiredChecks": [
+      "validate",
+      "Supabase fresh-schema replay",
+      "Supabase dry-run"
+    ],
+    "requiredCheckAppId": 15368,
+    "exactHeadCheckRunReadback": {
+      "gitSha": "ffeae93d4d1816b1b817300dcf23e7ef28dea32a",
+      "appId": 15368,
+      "names": [
+        "validate",
+        "Supabase fresh-schema replay",
+        "Supabase dry-run"
+      ]
+    },
+    "branches": {
+      "dev": {
+        "pullRequestRequired": true,
+        "requiredApprovingReviewCount": 0,
+        "adminEnforcement": true,
+        "strictChecks": true,
+        "linearHistory": true,
+        "conversationResolution": true,
+        "forcePushAllowed": false,
+        "deletionAllowed": false
+      },
+      "main": {
+        "pullRequestRequired": true,
+        "requiredApprovingReviewCount": 0,
+        "adminEnforcement": true,
+        "strictChecks": true,
+        "linearHistory": true,
+        "conversationResolution": true,
+        "forcePushAllowed": false,
+        "deletionAllowed": false
+      }
+    },
+    "branchReviewNote": "Human review is procedural while FundLoop has one eligible collaborator; enforcing self-review would deadlock protected delivery.",
+    "production": {
+      "environment": "Production",
+      "requiredReviewerLogin": "KazanderDad",
+      "requiredReviewerId": 98373366,
+      "allowedBranch": "main",
+      "adminBypassAllowed": false
+    }
+  },
+  "productionRehearsal": {
+    "githubRunId": "31691571764",
+    "requestedTarget": "main",
+    "requestedMode": "deploy",
+    "sourceBranch": "dev",
+    "approvalBoundaryReached": true,
+    "jobStepsStarted": 0,
+    "approvalSubmitted": false,
+    "branchPolicyRejected": true,
+    "mainRefApprovalPause": "deferred-to-human-release-boundary"
+  },
+  "localValidation": {
+    "nodeVersion": "22.23.2",
+    "supabaseCliVersion": "2.113.0",
+    "focusedTestFiles": 6,
+    "focusedTestsPassed": 127,
+    "freshReplayMigrationCount": 96,
+    "freshReplaySqlSuiteCount": 3,
+    "invalidMigrationSqlstate": "42P01",
+    "fullTestFiles": 177,
+    "fullTestsPassed": 915,
+    "lintPassed": true,
+    "typecheckPassed": true,
+    "buildPassed": true,
+    "generatedPageCount": 165
+  },
+  "authority": {
+    "productionDeploymentApproved": false,
+    "cutoverApproved": false,
+    "goLiveApproved": false,
+    "payoutsEnabled": false,
+    "realValueFlowEnabled": false
+  }
+}

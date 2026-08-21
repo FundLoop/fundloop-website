@@ -1,0 +1,38 @@
+{
+  "contractVersion": "fundloop.public-schema-repair/v1",
+  "environment": "dev",
+  "projectRef": "kyxtqnfnksvcaugxwzuj",
+  "repairMigrationVersion": "20260812130000",
+  "baselineMigrationCount": 94,
+  "baselineMigrationInventorySha256": "40481dbaf772009a793295402a7e07473e269e6502bb2bf77b80776625484f0e",
+  "expectedSha256": "1d9b2700029d53c82d59b077fa52cbed6802120b6755b9821d278ebfd3c50102",
+  "observedSha256": "85f22f916cf59bae1a73519a6790f3233888a4638b8877c5703c156cc1ccda26",
+  "expectedNormalizedLineCount": 13955,
+  "observedNormalizedLineCount": 13956,
+  "expectedObjectCount": 2132,
+  "observedObjectCount": 2133,
+  "enabledProductionValueFlowControlCount": 0,
+  "objectDifferences": [
+    {
+      "objectKeySha256": "8355071b6c97ae9ab87905ec5fa9b19380272cb553a01609cd7ca9e18be26946",
+      "status": "unexpected",
+      "objectType": "POLICY",
+      "reviewedParentObjectKey": "public.cron_logs [TABLE]#1",
+      "observedSha256": "87981dd40bb750e893c42b0bf6d18c369822f7eca1a553c73e926d5afa56ce5b"
+    },
+    {
+      "reviewedObjectKey": "public.monthly_cycles [TABLE]#1",
+      "objectKeySha256": "529f3ee6393455d9f02d0c1e604789b5cc2bc532cfd3d82bc7f3033fc1b4dec4",
+      "status": "changed",
+      "expectedSha256": "80a6464a9a3bf0a02b9acb3b39f4b9f3fc1d993fbeccc0a9fae1318c07ccb900",
+      "observedSha256": "7c83239c7bff5f96c02eee6d04cd7191a001eda66e5fab70033d971d2075c8f8"
+    },
+    {
+      "reviewedObjectKey": "public.payments public_payments_read_all [POLICY]#1",
+      "objectKeySha256": "30f88e1769b79939e5562af320e2d8c0cac198c433d8c6e1fad2044e1a3cb735",
+      "status": "changed",
+      "expectedSha256": "7937c940bae0f36a9f8dd6066ec8d1731e13af06180844e0b160decb0dbc2ec3",
+      "observedSha256": "18cd1c4457a1526a306c7e4a08132006c708d100b011f1805183ab52073c0e88"
+    }
+  ]
+}

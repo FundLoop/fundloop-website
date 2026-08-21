@@ -12,6 +12,7 @@ export function ThemeToggle() {
     <Button
       variant="ghost"
       size="icon"
+      className="rounded-full border border-[color:var(--surface-border)] bg-[var(--surface-panel)] text-[var(--text-base)] shadow-[var(--surface-shadow-soft)] hover:bg-[var(--interactive-secondary)] hover:text-[var(--text-strong)]"
       onClick={() => {
         const newTheme =
           theme === "system"

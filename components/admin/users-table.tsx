@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { createClientComponentClient } from "@supabase/auth-helpers-nextjs"
+import { getSupabaseBrowserClient } from "@/lib/supabase"
 import { Table, TableBody, TableCaption, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -32,11 +32,11 @@ import {
 interface User {
   id: number
   user_id: string
-  full_name: string
+  full_name: string | null
   email: string
-  status: string
-  created_at: string
-  updated_at: string
+  status: string | null
+  created_at: string | null
+  updated_at: string | null
   deleted_at: string | null
 }
 
@@ -50,105 +50,109 @@ export function UsersTable() {
   const [totalCount, setTotalCount] = useState(0)
   const [selectedUser, setSelectedUser] = useState<User | null>(null)
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false)
+  const [reloadKey, setReloadKey] = useState(0)
   const pageSize = 10
 
-  const supabase = createClientComponentClient()
-
-  const fetchUsers = async () => {
-    setLoading(true)
-    try {
-      // Build the query
-      let query = supabase.from("users").select(
-        `
-          id, 
-          user_id, 
-          full_name, 
-          status, 
-          created_at, 
-          updated_at, 
-          deleted_at
-        `,
-        { count: "exact" },
-      )
-
-      // Apply filters
-      if (statusFilter !== "all") {
-        query = query.eq("status", statusFilter)
-      }
-
-      if (searchTerm) {
-        query = query.ilike("full_name", `%${searchTerm}%`)
-      }
-
-      // Get count first
-      const { count, error: countError } = await query
-
-      if (countError) throw countError
-
-      setTotalCount(count || 0)
-      setTotalPages(Math.ceil((count || 0) / pageSize))
-
-      // Then get paginated data
-      const { data, error } = await query
-        .range((page - 1) * pageSize, page * pageSize - 1)
-        .order("created_at", { ascending: false })
-
-      if (error) throw error
-
-      // Now fetch emails from auth.identities
-      const userIds = data.map((user) => user.user_id)
-
-      // Get emails from user_identities view
-      const { data: identitiesData, error: identitiesError } = await supabase
-        .from("user_identities")
-        .select("user_id, email")
-        .in("user_id", userIds)
-
-      if (identitiesError) throw identitiesError
-
-      // Create a map of user_id to email
-      const emailMap: Record<string, string> = {}
-      identitiesData?.forEach((identity) => {
-        emailMap[identity.user_id] = identity.email
-      })
-
-      // Combine the data
-      const usersWithEmail = data.map((user) => ({
-        ...user,
-        email: emailMap[user.user_id] || "No email found",
-      }))
-
-      setUsers(usersWithEmail)
-    } catch (error) {
-      console.error("Error fetching users:", error)
-      toast({
-        title: "Error",
-        description: "Failed to load users data",
-        variant: "destructive",
-      })
-    } finally {
-      setLoading(false)
-    }
-  }
+  const getSupabase = () => getSupabaseBrowserClient()
 
   useEffect(() => {
-    fetchUsers()
-  }, [page, statusFilter, searchTerm])
+    const loadUsers = async () => {
+      const supabase = getSupabase()
+      setLoading(true)
+      try {
+        let query = supabase.from("users").select(
+          `
+            id, 
+            user_id, 
+            full_name, 
+            status, 
+            created_at, 
+            updated_at, 
+            deleted_at
+          `,
+          { count: "exact" },
+        )
 
-  const formatDate = (dateString: string) => {
+        if (statusFilter !== "all") {
+          query = query.eq("status", statusFilter as "active" | "inactive" | "deleted")
+        }
+
+        if (searchTerm) {
+          query = query.ilike("full_name", `%${searchTerm}%`)
+        }
+
+        const { count, error: countError } = await query
+
+        if (countError) throw countError
+
+        setTotalCount(count || 0)
+        setTotalPages(Math.ceil((count || 0) / pageSize))
+
+        const { data, error } = await query
+          .range((page - 1) * pageSize, page * pageSize - 1)
+          .order("created_at", { ascending: false })
+
+        if (error) throw error
+
+        const userIds = data.map((user) => user.user_id)
+        if (userIds.length === 0) {
+          setUsers([])
+          return
+        }
+
+        const { data: identitiesData, error: identitiesError } = await supabase
+          .from("user_identities")
+          .select("user_id, email")
+          .in("user_id", userIds)
+
+        if (identitiesError) throw identitiesError
+
+        const emailMap: Record<string, string> = {}
+        identitiesData?.forEach((identity) => {
+          if (identity.user_id) {
+            emailMap[identity.user_id] = identity.email || "No email found"
+          }
+        })
+
+        setUsers(
+          data.map((user) => ({
+            ...user,
+            email: emailMap[user.user_id] || "No email found",
+          })),
+        )
+      } catch (error) {
+        console.error("Error fetching users:", error)
+        toast({
+          title: "Error",
+          description: "Failed to load users data",
+          variant: "destructive",
+        })
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    void loadUsers()
+  }, [page, reloadKey, searchTerm, statusFilter])
+
+  const formatDate = (dateString: string | null) => {
+    if (!dateString) {
+      return "Unknown"
+    }
+
     return formatDistanceToNow(new Date(dateString), { addSuffix: true })
   }
 
-  const getStatusBadge = (status: string) => {
+  const getStatusBadge = (status: string | null) => {
     switch (status) {
       case "active":
-        return <Badge variant="success">Active</Badge>
+        return <Badge>Active</Badge>
       case "inactive":
         return <Badge variant="secondary">Inactive</Badge>
       case "deleted":
         return <Badge variant="destructive">Deleted</Badge>
       default:
-        return <Badge variant="outline">{status}</Badge>
+        return <Badge variant="outline">{status || "Unknown"}</Badge>
     }
   }
 
@@ -156,6 +160,7 @@ export function UsersTable() {
     if (!selectedUser) return
 
     try {
+      const supabase = getSupabase()
       const { error } = await supabase.rpc("soft_delete_users", { p_id: selectedUser.user_id })
 
       if (error) throw error
@@ -164,7 +169,7 @@ export function UsersTable() {
         title: "User Deleted",
         description: `${selectedUser.full_name} has been deleted.`,
       })
-      fetchUsers()
+      setReloadKey((current) => current + 1)
     } catch (error) {
       console.error("Error deleting user:", error)
       toast({
@@ -211,7 +216,7 @@ export function UsersTable() {
             </SelectContent>
           </Select>
 
-          <Button variant="outline" size="icon" onClick={fetchUsers} title="Refresh">
+          <Button variant="outline" size="icon" onClick={() => setReloadKey((current) => current + 1)} title="Refresh">
             <RefreshCw className="h-4 w-4" />
           </Button>
         </div>

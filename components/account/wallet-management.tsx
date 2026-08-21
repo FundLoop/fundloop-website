@@ -42,9 +42,9 @@ interface WalletAccount {
   wallet_address: string
   wallet_type: string
   wallet_name: string | null
-  is_primary: boolean
-  is_removed: boolean
-  created_at: string
+  is_primary: boolean | null
+  is_removed: boolean | null
+  created_at: string | null
 }
 
 export function WalletManagement() {
