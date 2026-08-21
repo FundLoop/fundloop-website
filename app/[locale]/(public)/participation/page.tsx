@@ -127,6 +127,8 @@ export default async function ParticipationPage({ params }: PageProps) {
             body={t("loopVisual.body")}
             cta={t("loopVisual.cta")}
             center={t("loopVisual.center")}
+            centerSubtext={t("loopVisual.centerSubtext")}
+            stageLabel={t("loopVisual.stageLabel")}
             nodes={{
               find: t.raw("loopVisual.nodes.find") as { step: string; title: string; body: string },
               signup: t.raw("loopVisual.nodes.signup") as { step: string; title: string; body: string },

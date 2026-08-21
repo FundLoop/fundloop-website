@@ -19,6 +19,8 @@ describe("FundloopForUsersVisual", () => {
     body: "FundLoop helps people participate meaningfully in projects that matter.",
     cta: "Start Your Participant Journey",
     center: "People-Powered Impact",
+    centerSubtext: "CUBID Verified • Governed Monthly Distribution",
+    stageLabel: "Stage {num} of 4",
     nodes: {
       find: { step: "01", title: "1. Find projects", body: "Discover aligned apps." },
       signup: { step: "02", title: "2. Sign up", body: "Create your profile." },
@@ -27,13 +29,15 @@ describe("FundloopForUsersVisual", () => {
     },
   }
 
-  it("renders all 4 user steps and action link to user onboarding", () => {
+  it("renders all 4 user steps, center subtext, stage labels, and action link to user onboarding", () => {
     render(<FundloopForUsersVisual {...props} />)
 
     expect(screen.getByText("1. Find projects")).toBeDefined()
     expect(screen.getByText("2. Sign up")).toBeDefined()
     expect(screen.getByText("3. Participate meaningfully")).toBeDefined()
     expect(screen.getByText("4. Get a monthly reward")).toBeDefined()
+    expect(screen.getByText("Stage 1 of 4")).toBeDefined()
+    expect(screen.getByText("CUBID Verified • Governed Monthly Distribution")).toBeDefined()
 
     const link = screen.getByRole("link", { name: new RegExp(props.cta, "i") })
     expect(link.getAttribute("href")).toBe("/?onboarding=user")
@@ -56,6 +60,8 @@ describe("FundloopForProjectsVisual", () => {
     body: "FundLoop helps projects reward real usage and grow retention.",
     cta: "Start Project Onboarding",
     center: "Grow Your Project",
+    centerSubtext: "10,000+ Reach • Governed Settlement",
+    stageLabel: "Stage {num} of 4",
     nodes: {
       reward: { step: "01", title: "1. Reward participation", body: "Reward users." },
       visibility: { step: "02", title: "2. Get visibility", body: "Gain reach." },
@@ -64,13 +70,15 @@ describe("FundloopForProjectsVisual", () => {
     },
   }
 
-  it("renders all 4 project steps and action link to project onboarding", () => {
+  it("renders all 4 project steps, center subtext, stage labels, and action link to project onboarding", () => {
     render(<FundloopForProjectsVisual {...props} />)
 
     expect(screen.getByText("1. Reward participation")).toBeDefined()
     expect(screen.getByText("2. Get visibility")).toBeDefined()
     expect(screen.getByText("3. Get more participants")).toBeDefined()
     expect(screen.getByText("4. Generate more revenue")).toBeDefined()
+    expect(screen.getByText("Stage 1 of 4")).toBeDefined()
+    expect(screen.getByText("10,000+ Reach • Governed Settlement")).toBeDefined()
 
     const link = screen.getByRole("link", { name: new RegExp(props.cta, "i") })
     expect(link.getAttribute("href")).toBe("/?onboarding=project")

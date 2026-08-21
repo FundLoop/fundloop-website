@@ -1507,6 +1507,8 @@ export const frMessages = {
       body: "FundLoop aide les personnes à participer activement à des projets qui comptent et à partager la prospérité mutuelle.",
       cta: "Commencer votre parcours participant",
       center: "Impact citoyen",
+      centerSubtext: "Vérifié par CUBID • Distribution mensuelle gouvernée",
+      stageLabel: "Étape {num} sur 4",
       nodes: {
         find: {
           step: "01",
@@ -1674,6 +1676,8 @@ export const frMessages = {
       body: "FundLoop aide les projets à récompenser l'usage réel, obtenir une visibilité qualifiée, attirer des contributeurs et construire une boucle de revenus durable.",
       cta: "Commencer l'onboarding projet",
       center: "Développez votre projet",
+      centerSubtext: "+10 000 de portée • Règlement gouverné",
+      stageLabel: "Étape {num} sur 4",
       nodes: {
         reward: {
           step: "01",
