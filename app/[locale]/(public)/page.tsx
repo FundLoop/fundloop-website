@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button"
 import { MarketingPage, MarketingSection, SectionBody, SectionEyebrow, SectionTitle } from "@/components/marketing/page-chrome"
 import { Reveal } from "@/components/marketing/reveal"
 import { MonthlyLoopVisual } from "@/components/marketing/monthly-loop-visual"
+import { WhatIsFundLoopVisual } from "@/components/marketing/what-is-fundloop-visual"
 
 type MonthlyStage = { step: string; title: string; body: string }
 type Audience = { id: "people" | "projects" | "research" | "operators"; label: string; title: string; body: string; href: string; cta: string }
@@ -39,6 +40,12 @@ export default async function Home({ params }: PageProps) {
   const principles = t.raw("trust.items") as Principle[]
   const founderFeatures = t.raw("fork.founders.features") as string[]
   const participantFeatures = t.raw("fork.participants.features") as string[]
+  const whatIsFundLoopNodes = {
+    people: t.raw("fork.whatIsFundLoop.nodes.people") as { title: string; body: string },
+    participation: t.raw("fork.whatIsFundLoop.nodes.participation") as { title: string; body: string },
+    projects: t.raw("fork.whatIsFundLoop.nodes.projects") as { title: string; body: string },
+    fundloop: t.raw("fork.whatIsFundLoop.nodes.fundloop") as { title: string; body: string },
+  }
 
   return (
     <MarketingPage className="[--marketing-accent:#d45f35]">
@@ -75,11 +82,26 @@ export default async function Home({ params }: PageProps) {
         </div>
       </section>
 
-      {/* Dual-Fork Persona Router (Above-the-Fold Traffic Splitter) */}
+      {/* Dual-Fork Persona Router & What Is Fund Loop Section */}
       <MarketingSection className="border-b border-[color:var(--marketing-line)] bg-white/40 py-10 sm:py-14 dark:bg-white/[0.02]">
         <Reveal>
           <div className="text-center">
             <SectionEyebrow>{t("fork.eyebrow")}</SectionEyebrow>
+            <SectionTitle className="mt-3 text-3xl sm:text-4xl">{t("fork.whatIsFundLoop.title")}</SectionTitle>
+            <SectionBody className="mx-auto mt-3 max-w-xl text-sm sm:text-base">
+              {t("fork.whatIsFundLoop.body")}
+            </SectionBody>
+          </div>
+
+          <WhatIsFundLoopVisual
+            projectLabel={t("fork.whatIsFundLoop.projectLabel")}
+            participantLabel={t("fork.whatIsFundLoop.participantLabel")}
+            projectCta={t("fork.whatIsFundLoop.ctas.projectHover")}
+            participantCta={t("fork.whatIsFundLoop.ctas.participantHover")}
+            nodes={whatIsFundLoopNodes}
+          />
+
+          <div className="mt-16 text-center">
             <SectionTitle className="mt-3 text-3xl sm:text-4xl">{t("fork.title")}</SectionTitle>
             <SectionBody className="mx-auto mt-3 max-w-xl text-sm sm:text-base">
               {t("fork.body")}
