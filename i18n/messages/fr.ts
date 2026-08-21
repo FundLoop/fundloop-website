@@ -96,6 +96,12 @@ export const frMessages = {
   },
   shell: {
     brandTagline: "Prospérité mutuelle en réseau",
+    inauguralBanner: {
+      badge: "Cohorte inaugurale",
+      message: "Recherche de projets inauguraux pour l'Époque 1",
+      cta: "Postuler",
+      dismiss: "Ignorer l'annonce",
+    },
     nav: {
       primary: {
         founders: "Fondateurs",

@@ -619,6 +619,20 @@ export default function ProjectSignupFlow({ onClose }: ProjectSignupFlowProps) {
 
       {currentScreen === "basics" ? (
         <div className="space-y-5">
+          <div className="flex items-start gap-3 rounded-2xl border border-amber-500/30 bg-amber-500/10 p-4 text-amber-950 dark:border-amber-400/30 dark:bg-amber-400/10 dark:text-amber-100">
+            <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-amber-500/20 text-xs">
+              ✨
+            </span>
+            <div className="text-sm">
+              <p className="font-semibold text-amber-900 dark:text-amber-200">
+                Inaugural Batch • Epoch 1
+              </p>
+              <p className="mt-0.5 text-amber-800 dark:text-amber-300">
+                Projects onboarding now will be featured as part of the inaugural cohort &ldquo;Epoch 1&rdquo;.
+              </p>
+            </div>
+          </div>
+
           <div className="grid gap-5 md:grid-cols-2">
             <div className="space-y-2">
               <Label htmlFor="project-name">Project name</Label>

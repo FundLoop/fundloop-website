@@ -101,6 +101,12 @@ export const enMessages = {
   },
   shell: {
     brandTagline: "Networked mutual prosperity",
+    inauguralBanner: {
+      badge: "Inaugural Cohort",
+      message: "Now onboarding inaugural projects for Epoch 1",
+      cta: "Apply now",
+      dismiss: "Dismiss announcement",
+    },
     nav: {
       primary: {
         founders: "Founders",
