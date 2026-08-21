@@ -1,218 +1,266 @@
 "use client"
 
 import { useState } from "react"
-import { ArrowRight, Building2, CheckCircle2, Coins, Repeat, Sparkles, UserRound, Users } from "lucide-react"
+import { ArrowDown, ArrowLeft, ArrowRight, ArrowUp, Building2, Coins, Repeat, Sparkles, TrendingUp, Users, Wallet } from "lucide-react"
 import { Link } from "@/i18n/navigation"
 import { cn } from "@/lib/utils"
 
-type NodeInfo = {
+export type LoopNodeInfo = {
   title: string
   body: string
 }
 
 export type WhatIsFundLoopVisualProps = {
-  projectLabel: string
-  participantLabel: string
+  projectLabel?: string
+  participantLabel?: string
   projectCta: string
   participantCta: string
   nodes: {
-    people: NodeInfo
-    participation: NodeInfo
-    projects: NodeInfo
-    fundloop: NodeInfo
+    people: LoopNodeInfo
+    participation: LoopNodeInfo
+    projects: LoopNodeInfo
+    fundloop: LoopNodeInfo
+    step1?: LoopNodeInfo
+    step2?: LoopNodeInfo
+    step3?: LoopNodeInfo
+    step4?: LoopNodeInfo
   }
 }
 
 export function WhatIsFundLoopVisual({
-  projectLabel,
-  participantLabel,
+  projectLabel = "Projects & Companies",
+  participantLabel = "People & Participants",
   projectCta,
   participantCta,
   nodes,
 }: WhatIsFundLoopVisualProps) {
-  const [hoveredSide, setHoveredSide] = useState<"project" | "participant" | null>(null)
+  const [hoveredStep, setHoveredStep] = useState<1 | 2 | 3 | 4 | null>(null)
+
+  const step1 = nodes.step1 ?? nodes.people
+  const step2 = nodes.step2 ?? nodes.participation
+  const step3 = nodes.step3 ?? nodes.projects
+  const step4 = nodes.step4 ?? nodes.fundloop
+
+  const isParticipantHovered = hoveredStep === 1 || hoveredStep === 4
+  const isProjectHovered = hoveredStep === 2 || hoveredStep === 3
 
   return (
     <div className="relative mx-auto mt-10 max-w-6xl overflow-hidden rounded-[2.5rem] border border-[color:var(--marketing-line)] bg-gradient-to-b from-[#141d1b] via-[#101b1a] to-[#0c1413] p-6 text-[#fff9ef] shadow-2xl sm:p-10">
-      {/* Background ambient glow highlights based on active hover */}
+      {/* Background ambient glow highlights based on active step hover */}
       <div
         className={cn(
-          "pointer-events-none absolute -left-20 top-1/4 h-96 w-96 rounded-full bg-emerald-500/15 blur-[100px] transition-opacity duration-500",
-          hoveredSide === "participant" ? "opacity-100 scale-110" : "opacity-40",
+          "pointer-events-none absolute -left-20 top-1/4 h-96 w-96 rounded-full bg-emerald-500/15 blur-[100px] transition-all duration-500",
+          isParticipantHovered ? "opacity-100 scale-110" : "opacity-30",
         )}
       />
       <div
         className={cn(
-          "pointer-events-none absolute -right-20 top-1/4 h-96 w-96 rounded-full bg-[#ff7844]/15 blur-[100px] transition-opacity duration-500",
-          hoveredSide === "project" ? "opacity-100 scale-110" : "opacity-40",
+          "pointer-events-none absolute -right-20 top-1/4 h-96 w-96 rounded-full bg-[#ff7844]/15 blur-[100px] transition-all duration-500",
+          isProjectHovered ? "opacity-100 scale-110" : "opacity-30",
         )}
       />
 
-      {/* Main Diagram Area */}
-      <div className="relative grid gap-8 lg:grid-cols-[1fr_auto_1fr] lg:items-center">
-        {/* Left Side: Participant / User Persona Area */}
-        <div
-          onMouseEnter={() => setHoveredSide("participant")}
-          onMouseLeave={() => setHoveredSide((current) => (current === "participant" ? null : current))}
-          className={cn(
-            "relative flex flex-col justify-between rounded-3xl border p-6 sm:p-7 transition-all duration-300",
-            hoveredSide === "participant"
-              ? "border-[#34d399]/60 bg-emerald-950/30 shadow-[0_0_35px_rgba(52,211,153,0.15)] ring-1 ring-[#34d399]/40"
-              : "border-white/10 bg-white/[0.03] hover:border-[#34d399]/40 hover:bg-emerald-950/20",
-          )}
-        >
-          <div className="flex items-center justify-between">
-            <span className="inline-flex items-center gap-2 rounded-full border border-[#34d399]/40 bg-[#34d399]/15 px-3 py-1 text-xs font-semibold uppercase tracking-wider text-[#34d399]">
-              <Users className="h-3.5 w-3.5" />
-              {participantLabel}
-            </span>
-            <span className="text-[0.68rem] font-semibold uppercase tracking-widest text-[#a3b8b0]">
-              Step 01 &amp; 04
-            </span>
-          </div>
-
-          <div className="mt-6 space-y-6">
-            {/* Node 1: People */}
-            <div className="flex items-start gap-4">
-              <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl border border-[#34d399]/30 bg-[#34d399]/15 text-[#34d399]">
-                <UserRound className="h-5 w-5" />
-              </span>
-              <div>
-                <h4 className="font-display text-lg font-bold text-white sm:text-xl">
-                  {nodes.people.title}
-                </h4>
-                <p className="mt-1 text-xs sm:text-sm leading-relaxed text-[#c7d5cf]">
-                  {nodes.people.body}
-                </p>
+      {/* Center Loop Diagram */}
+      <div className="relative">
+        {/* Desktop 2x2 Cyclical Loop Grid */}
+        <div className="grid gap-6 sm:gap-8 lg:grid-cols-2">
+          {/* Step 1: People participate in projects (Top-Left) */}
+          <div
+            onMouseEnter={() => setHoveredStep(1)}
+            onMouseLeave={() => setHoveredStep((curr) => (curr === 1 ? null : curr))}
+            className={cn(
+              "group relative flex flex-col justify-between rounded-3xl border p-6 transition-all duration-300 sm:p-7",
+              hoveredStep === 1
+                ? "border-[#34d399] bg-emerald-950/40 shadow-[0_0_35px_rgba(52,211,153,0.2)] ring-1 ring-[#34d399]"
+                : "border-white/10 bg-white/[0.03] hover:border-[#34d399]/50 hover:bg-emerald-950/20",
+            )}
+          >
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl border border-[#34d399]/40 bg-[#34d399]/15 text-[#34d399] shadow-sm">
+                  <Users className="h-6 w-6" />
+                </span>
+                <span className="rounded-full border border-[#34d399]/30 bg-[#34d399]/10 px-3 py-0.5 text-xs font-semibold text-[#34d399]">
+                  {participantLabel}
+                </span>
+              </div>
+              <div className="hidden lg:flex items-center gap-1 text-xs font-semibold text-[#34d399]/80">
+                <span>Next</span>
+                <ArrowRight className="h-3.5 w-3.5 transition-transform duration-200 group-hover:translate-x-1" />
               </div>
             </div>
 
-            {/* Node 4: Mutual Distribution */}
-            <div className="border-t border-white/10 pt-5 flex items-start gap-4">
-              <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl border border-[#34d399]/30 bg-[#34d399]/15 text-[#34d399]">
-                <Coins className="h-5 w-5" />
-              </span>
-              <div>
-                <h4 className="font-display text-lg font-bold text-white sm:text-xl">
-                  {nodes.fundloop.title}
-                </h4>
-                <p className="mt-1 text-xs sm:text-sm leading-relaxed text-[#c7d5cf]">
-                  {nodes.fundloop.body}
-                </p>
-              </div>
+            <div className="mt-5">
+              <h3 className="font-display text-lg font-bold text-white sm:text-xl">{step1.title}</h3>
+              <p className="mt-2 text-xs sm:text-sm leading-relaxed text-[#c7d5cf]">{step1.body}</p>
             </div>
           </div>
 
-          {/* Dynamic Participant CTA */}
-          <div className="mt-7 pt-5 border-t border-white/10">
-            <Link
-              href="/?onboarding=user"
-              className={cn(
-                "group flex w-full items-center justify-between rounded-2xl px-5 py-4 text-xs sm:text-sm font-semibold transition-all duration-200",
-                hoveredSide === "participant"
-                  ? "bg-[#059669] text-white shadow-lg shadow-emerald-900/40 hover:bg-[#10b981]"
-                  : "border border-[#34d399]/40 bg-[#34d399]/15 text-[#34d399] hover:bg-[#059669] hover:text-white",
-              )}
-            >
-              <span className="flex-1 text-left leading-snug">{participantCta}</span>
-              <ArrowRight className="ml-2 h-4 w-4 shrink-0 transition-transform duration-200 group-hover:translate-x-1" />
-            </Link>
+          {/* Step 2: Projects collect revenue (Top-Right) */}
+          <div
+            onMouseEnter={() => setHoveredStep(2)}
+            onMouseLeave={() => setHoveredStep((curr) => (curr === 2 ? null : curr))}
+            className={cn(
+              "group relative flex flex-col justify-between rounded-3xl border p-6 transition-all duration-300 sm:p-7",
+              hoveredStep === 2
+                ? "border-[#ff7844] bg-orange-950/40 shadow-[0_0_35px_rgba(255,120,68,0.2)] ring-1 ring-[#ff7844]"
+                : "border-white/10 bg-white/[0.03] hover:border-[#ff7844]/50 hover:bg-orange-950/20",
+            )}
+          >
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl border border-[#ff7844]/40 bg-[#ff7844]/15 text-[#ff7844] shadow-sm">
+                  <TrendingUp className="h-6 w-6" />
+                </span>
+                <span className="rounded-full border border-[#ff7844]/30 bg-[#ff7844]/10 px-3 py-0.5 text-xs font-semibold text-[#ff7844]">
+                  {projectLabel}
+                </span>
+              </div>
+              <div className="hidden lg:flex items-center gap-1 text-xs font-semibold text-[#ff7844]/80">
+                <span>Next</span>
+                <ArrowDown className="h-3.5 w-3.5 transition-transform duration-200 group-hover:translate-y-1" />
+              </div>
+            </div>
+
+            <div className="mt-5">
+              <h3 className="font-display text-lg font-bold text-white sm:text-xl">{step2.title}</h3>
+              <p className="mt-2 text-xs sm:text-sm leading-relaxed text-[#dbe3df]">{step2.body}</p>
+            </div>
+          </div>
+
+          {/* Step 4: People get paid (Bottom-Left) */}
+          <div
+            onMouseEnter={() => setHoveredStep(4)}
+            onMouseLeave={() => setHoveredStep((curr) => (curr === 4 ? null : curr))}
+            className={cn(
+              "group relative order-last lg:order-3 flex flex-col justify-between rounded-3xl border p-6 transition-all duration-300 sm:p-7",
+              hoveredStep === 4
+                ? "border-[#34d399] bg-emerald-950/40 shadow-[0_0_35px_rgba(52,211,153,0.2)] ring-1 ring-[#34d399]"
+                : "border-white/10 bg-white/[0.03] hover:border-[#34d399]/50 hover:bg-emerald-950/20",
+            )}
+          >
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl border border-[#34d399]/40 bg-[#34d399]/15 text-[#34d399] shadow-sm">
+                  <Wallet className="h-6 w-6" />
+                </span>
+                <span className="rounded-full border border-[#34d399]/30 bg-[#34d399]/10 px-3 py-0.5 text-xs font-semibold text-[#34d399]">
+                  {participantLabel}
+                </span>
+              </div>
+              <div className="hidden lg:flex items-center gap-1 text-xs font-semibold text-[#34d399]/80">
+                <ArrowUp className="h-3.5 w-3.5 transition-transform duration-200 group-hover:-translate-y-1" />
+                <span>Loops to Start</span>
+              </div>
+            </div>
+
+            <div className="mt-5">
+              <h3 className="font-display text-lg font-bold text-white sm:text-xl">{step4.title}</h3>
+              <p className="mt-2 text-xs sm:text-sm leading-relaxed text-[#c7d5cf]">{step4.body}</p>
+            </div>
+          </div>
+
+          {/* Step 3: Projects reward community through FundLoop (Bottom-Right) */}
+          <div
+            onMouseEnter={() => setHoveredStep(3)}
+            onMouseLeave={() => setHoveredStep((curr) => (curr === 3 ? null : curr))}
+            className={cn(
+              "group relative order-3 lg:order-4 flex flex-col justify-between rounded-3xl border p-6 transition-all duration-300 sm:p-7",
+              hoveredStep === 3
+                ? "border-[#ff7844] bg-orange-950/40 shadow-[0_0_35px_rgba(255,120,68,0.2)] ring-1 ring-[#ff7844]"
+                : "border-white/10 bg-white/[0.03] hover:border-[#ff7844]/50 hover:bg-orange-950/20",
+            )}
+          >
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl border border-[#ff7844]/40 bg-[#ff7844]/15 text-[#ff7844] shadow-sm">
+                  <Coins className="h-6 w-6" />
+                </span>
+                <span className="rounded-full border border-[#ff7844]/30 bg-[#ff7844]/10 px-3 py-0.5 text-xs font-semibold text-[#ff7844]">
+                  {projectLabel}
+                </span>
+              </div>
+              <div className="hidden lg:flex items-center gap-1 text-xs font-semibold text-[#ff7844]/80">
+                <ArrowLeft className="h-3.5 w-3.5 transition-transform duration-200 group-hover:-translate-x-1" />
+                <span>Next</span>
+              </div>
+            </div>
+
+            <div className="mt-5">
+              <h3 className="font-display text-lg font-bold text-white sm:text-xl">{step3.title}</h3>
+              <p className="mt-2 text-xs sm:text-sm leading-relaxed text-[#dbe3df]">{step3.body}</p>
+            </div>
           </div>
         </div>
 
-        {/* Center Hub: The FundLoop Core */}
-        <div className="relative flex flex-col items-center justify-center py-4 lg:py-0">
-          <div className="relative flex h-28 w-28 sm:h-36 sm:w-36 items-center justify-center rounded-full border border-white/20 bg-gradient-to-tr from-[#1a2523] via-[#101b1a] to-[#201c18] shadow-[0_0_50px_rgba(212,95,53,0.15)]">
-            {/* Spinning Outer Ring */}
-            <div className="absolute inset-[-6px] rounded-full border border-dashed border-white/20 animate-[spin_40s_linear_infinite]" />
-            <div className="text-center p-3">
-              <div className="mx-auto flex h-9 w-9 sm:h-11 sm:w-11 items-center justify-center rounded-full border border-[color:var(--marketing-accent)]/50 bg-[color:var(--marketing-accent)]/20 text-[var(--marketing-accent)] shadow-sm">
-                <Repeat className="h-5 w-5 sm:h-6 sm:w-6" />
-              </div>
-              <p className="mt-1 font-display text-sm sm:text-base font-bold tracking-tight text-white">
-                FundLoop
-              </p>
-              <p className="text-[0.55rem] font-semibold uppercase tracking-widest text-[#f5b195]">
-                Protocol
-              </p>
-            </div>
-          </div>
-
-          <div className="mt-3 text-center">
-            <span className="inline-flex items-center gap-1 rounded-full border border-white/10 bg-white/5 px-2.5 py-0.5 text-[0.62rem] font-semibold uppercase tracking-wider text-[#a0b0a8]">
-              <Sparkles className="h-2.5 w-2.5 text-[#f5b195]" />
+        {/* Central Protocol Badge Indicator */}
+        <div className="mt-8 flex items-center justify-center">
+          <div className="inline-flex items-center gap-3 rounded-full border border-white/15 bg-white/[0.05] px-5 py-2 text-xs font-medium text-[#c7d5cf] shadow-inner backdrop-blur-md">
+            <span className="flex h-6 w-6 items-center justify-center rounded-full bg-[color:var(--marketing-accent)]/20 text-[var(--marketing-accent)]">
+              <Repeat className="h-3.5 w-3.5 animate-[spin_12s_linear_infinite]" />
+            </span>
+            <span className="font-display font-semibold text-white">FundLoop Continuous Coordination</span>
+            <span className="inline-flex items-center gap-1 rounded-full bg-white/10 px-2 py-0.5 text-[0.65rem] font-semibold text-[#f5b195]">
+              <Sparkles className="h-2.5 w-2.5" />
               CUBID Verified
             </span>
           </div>
         </div>
 
-        {/* Right Side: Project / Company Persona Area */}
-        <div
-          onMouseEnter={() => setHoveredSide("project")}
-          onMouseLeave={() => setHoveredSide((current) => (current === "project" ? null : current))}
-          className={cn(
-            "relative flex flex-col justify-between rounded-3xl border p-6 sm:p-7 transition-all duration-300",
-            hoveredSide === "project"
-              ? "border-[#ff7844]/60 bg-orange-950/30 shadow-[0_0_35px_rgba(255,120,68,0.15)] ring-1 ring-[#ff7844]/40"
-              : "border-white/10 bg-white/[0.03] hover:border-[#ff7844]/40 hover:bg-orange-950/20",
-          )}
-        >
-          <div className="flex items-center justify-between">
-            <span className="inline-flex items-center gap-2 rounded-full border border-[#ff7844]/40 bg-[#ff7844]/15 px-3 py-1 text-xs font-semibold uppercase tracking-wider text-[#ff7844]">
-              <Building2 className="h-3.5 w-3.5" />
-              {projectLabel}
-            </span>
-            <span className="text-[0.68rem] font-semibold uppercase tracking-widest text-[#d8b8ac]">
-              Step 02 &amp; 03
-            </span>
-          </div>
-
-          <div className="mt-6 space-y-6">
-            {/* Node 2: Participation */}
-            <div className="flex items-start gap-4">
-              <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl border border-[#ff7844]/30 bg-[#ff7844]/15 text-[#ff7844]">
-                <CheckCircle2 className="h-5 w-5" />
-              </span>
-              <div>
-                <h4 className="font-display text-lg font-bold text-white sm:text-xl">
-                  {nodes.participation.title}
-                </h4>
-                <p className="mt-1 text-xs sm:text-sm leading-relaxed text-[#dbe3df]">
-                  {nodes.participation.body}
-                </p>
+        {/* Dynamic Contextual Action Bar Correlated to Hovered Step */}
+        <div className="mt-8 rounded-2xl border border-white/10 bg-black/30 p-4 sm:p-6 transition-all duration-300">
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+            <div className="space-y-1">
+              <div className="flex items-center gap-2">
+                <span className="text-xs font-semibold uppercase tracking-wider text-[#a3b8b0]">
+                  {isParticipantHovered
+                    ? "Participant Focus"
+                    : isProjectHovered
+                      ? "Project Focus"
+                      : "Choose Your Role in the Loop"}
+                </span>
               </div>
+              <p className="text-xs sm:text-sm text-[#c7d5cf]">
+                {isParticipantHovered
+                  ? "Participate in verified projects and build eligibility for monthly distributions."
+                  : isProjectHovered
+                    ? "Pool 1% of revenue, attract high-intent organic users, and grow community alignment."
+                    : "Hover any step above to explore that phase, or select your path to get started."}
+              </p>
             </div>
 
-            {/* Node 3: Projects */}
-            <div className="border-t border-white/10 pt-5 flex items-start gap-4">
-              <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl border border-[#ff7844]/30 bg-[#ff7844]/15 text-[#ff7844]">
-                <Building2 className="h-5 w-5" />
-              </span>
-              <div>
-                <h4 className="font-display text-lg font-bold text-white sm:text-xl">
-                  {nodes.projects.title}
-                </h4>
-                <p className="mt-1 text-xs sm:text-sm leading-relaxed text-[#dbe3df]">
-                  {nodes.projects.body}
-                </p>
-              </div>
-            </div>
-          </div>
+            {/* Action Buttons */}
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+              {/* Participant CTA button */}
+              <Link
+                href="/?onboarding=user"
+                className={cn(
+                  "group flex items-center justify-center gap-2 rounded-xl px-5 py-3 text-xs sm:text-sm font-semibold transition-all duration-200",
+                  isParticipantHovered
+                    ? "bg-[#059669] text-white shadow-lg shadow-emerald-950/60 ring-2 ring-emerald-400 hover:bg-[#10b981]"
+                    : "border border-[#34d399]/40 bg-[#34d399]/15 text-[#34d399] hover:bg-[#059669] hover:text-white",
+                )}
+              >
+                <Users className="h-4 w-4" />
+                <span>{participantCta}</span>
+                <ArrowRight className="h-4 w-4 transition-transform duration-200 group-hover:translate-x-0.5" />
+              </Link>
 
-          {/* Dynamic Project CTA */}
-          <div className="mt-7 pt-5 border-t border-white/10">
-            <Link
-              href="/?onboarding=project"
-              className={cn(
-                "group flex w-full items-center justify-between rounded-2xl px-5 py-4 text-xs sm:text-sm font-semibold transition-all duration-200",
-                hoveredSide === "project"
-                  ? "bg-[#d45f35] text-white shadow-lg shadow-orange-950/50 hover:bg-[#e06b40]"
-                  : "border border-[#ff7844]/40 bg-[#ff7844]/15 text-[#ff7844] hover:bg-[#d45f35] hover:text-white",
-              )}
-            >
-              <span className="flex-1 text-left leading-snug">{projectCta}</span>
-              <ArrowRight className="ml-2 h-4 w-4 shrink-0 transition-transform duration-200 group-hover:translate-x-1" />
-            </Link>
+              {/* Project CTA button */}
+              <Link
+                href="/?onboarding=project"
+                className={cn(
+                  "group flex items-center justify-center gap-2 rounded-xl px-5 py-3 text-xs sm:text-sm font-semibold transition-all duration-200",
+                  isProjectHovered
+                    ? "bg-[#d45f35] text-white shadow-lg shadow-orange-950/60 ring-2 ring-orange-400 hover:bg-[#e06b40]"
+                    : "border border-[#ff7844]/40 bg-[#ff7844]/15 text-[#ff7844] hover:bg-[#d45f35] hover:text-white",
+                )}
+              >
+                <Building2 className="h-4 w-4" />
+                <span>{projectCta}</span>
+                <ArrowRight className="h-4 w-4 transition-transform duration-200 group-hover:translate-x-0.5" />
+              </Link>
+            </div>
           </div>
         </div>
       </div>
