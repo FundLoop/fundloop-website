@@ -1591,6 +1591,35 @@ export const enMessages = {
   },
   participation: {
     bannerAlt: "FundLoop for participants",
+    loopVisual: {
+      eyebrow: "People-Powered Impact",
+      title: "Find projects. Join in. Make an impact. Get rewarded.",
+      body: "FundLoop helps people participate meaningfully in projects that matter and share in the mutual upside.",
+      cta: "Start Your Participant Journey",
+      center: "People-Powered Impact",
+      nodes: {
+        find: {
+          step: "01",
+          title: "1. Find projects",
+          body: "Discover aligned apps and teams that match your values.",
+        },
+        signup: {
+          step: "02",
+          title: "2. Sign up",
+          body: "Create your profile, verify identity with CUBID, and join the network.",
+        },
+        participate: {
+          step: "03",
+          title: "3. Participate meaningfully",
+          body: "Contribute time, feedback, testing, and regular active usage.",
+        },
+        reward: {
+          step: "04",
+          title: "4. Get a monthly reward",
+          body: "Receive monthly shared give-backs for ongoing verified participation.",
+        },
+      },
+    },
     hero: {
       eyebrow: "Participation",
       title:
@@ -1729,6 +1758,35 @@ export const enMessages = {
     },
   },
   projectsDirectory: {
+    loopVisual: {
+      eyebrow: "Growth Through Participation",
+      title: "Reward participation. Grow your project. Repeat.",
+      body: "FundLoop helps projects reward real usage, gain qualified discovery, attract contributors, and build a sustainable revenue loop.",
+      cta: "Start Project Onboarding",
+      center: "Grow Your Project",
+      nodes: {
+        reward: {
+          step: "01",
+          title: "1. Reward participation",
+          body: "Reward the verified people who actively use and champion your product.",
+        },
+        visibility: {
+          step: "02",
+          title: "2. Get visibility",
+          body: "Gain exposure and reach across the 10,000+ verified FundLoop network.",
+        },
+        participants: {
+          step: "03",
+          title: "3. Get more participants",
+          body: "Convert reachable users into engaged community members and active contributors.",
+        },
+        revenue: {
+          step: "04",
+          title: "4. Generate more revenue",
+          body: "Grow user retention, reduce ad spend treadmill, and expand capacity.",
+        },
+      },
+    },
     hero: {
       eyebrow: "Project discovery",
       title: "Explore the public project side of FundLoop without falling into a dead-end directory.",

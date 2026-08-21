@@ -15,6 +15,7 @@ import {
   SectionTitle,
 } from "@/components/marketing/page-chrome"
 import { Reveal } from "@/components/marketing/reveal"
+import { FundloopForProjectsVisual } from "@/components/marketing/fundloop-for-projects-visual"
 
 type PageProps = {
   params: Promise<{ locale: string }>
@@ -136,6 +137,24 @@ export default async function ProjectsPage({ params, searchParams }: PageProps) 
             </div>
           </Reveal>
         </div>
+      </MarketingSection>
+
+      <MarketingSection className="py-2">
+        <Reveal>
+          <FundloopForProjectsVisual
+            eyebrow={t("loopVisual.eyebrow")}
+            title={t("loopVisual.title")}
+            body={t("loopVisual.body")}
+            cta={t("loopVisual.cta")}
+            center={t("loopVisual.center")}
+            nodes={{
+              reward: t.raw("loopVisual.nodes.reward") as { step: string; title: string; body: string },
+              visibility: t.raw("loopVisual.nodes.visibility") as { step: string; title: string; body: string },
+              participants: t.raw("loopVisual.nodes.participants") as { step: string; title: string; body: string },
+              revenue: t.raw("loopVisual.nodes.revenue") as { step: string; title: string; body: string },
+            }}
+          />
+        </Reveal>
       </MarketingSection>
 
       <MarketingSection className="border-y border-[color:var(--marketing-line)] bg-white/34 dark:bg-white/[0.02]">
