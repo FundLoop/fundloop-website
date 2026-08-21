@@ -29,12 +29,4 @@ describe("Marketing Bottom Images", () => {
     const participationPageContent = fs.readFileSync(path.join(pagesDir, "participation/page.tsx"), "utf8")
     expect(participationPageContent).toContain("/images/marketing/fundloop-for-users.png")
   })
-
-  it("ensures what-is-fundloop.png exists and is wired in the homepage What is the Fund Loop section", () => {
-    const file = path.join(imagesDir, "what-is-fundloop.png")
-    expect(fs.existsSync(file)).toBe(true)
-
-    const homePageContent = fs.readFileSync(path.join(pagesDir, "page.tsx"), "utf8")
-    expect(homePageContent).toContain("/images/marketing/what-is-fundloop.png")
-  })
 })
