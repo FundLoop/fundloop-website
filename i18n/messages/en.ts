@@ -1410,13 +1410,13 @@ export const enMessages = {
       founders: {
         eyebrow: "Founder track",
         title: "For App Founders & Builders",
-        body: "Explore how FundLoop works for founders: redirect traditional ad spend into shared-upside pools, align your community around real usage, and run automated monthly distributions with full auditability.",
+        body: "Explore how FundLoop works for founders: redirect traditional ad spend into shared-upside pools, align your community around real usage, and prepare for governed monthly settlement workflows with full auditability.",
         cta: "Explore How FundLoop Works for Founders",
         badge: "Founder Benefits",
         features: [
           "Explore the benefits of pooling 1% monthly revenue into organic user rewards",
           "Discover how shared upside turns passive subscribers into active product champions",
-          "Understand the automated monthly cycle workflow and transparent attribution",
+          "Prepare for a governed monthly cycle workflow and transparent attribution",
         ],
       },
       participants: {

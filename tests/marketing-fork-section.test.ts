@@ -20,7 +20,7 @@ describe("Marketing Fork Section Translations", () => {
   })
 
   it("has localized individual track chip and headings in French", () => {
-    expect(frMessages.home.fork.participants.eyebrow).toBe("Individual track")
+    expect(frMessages.home.fork.participants.eyebrow).toBe("Parcours individuel")
     expect(frMessages.home.fork.participants.title).toBe("Pour les utilisateurs et contributeurs du quotidien")
     expect(frMessages.home.fork.founders.eyebrow).toBe("Parcours fondateur")
   })
