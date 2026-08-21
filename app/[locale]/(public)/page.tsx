@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button"
 import { MarketingPage, MarketingSection, SectionBody, SectionEyebrow, SectionTitle } from "@/components/marketing/page-chrome"
 import { Reveal } from "@/components/marketing/reveal"
 import { MonthlyLoopVisual } from "@/components/marketing/monthly-loop-visual"
+import { WhatIsFundLoopDiagram } from "@/components/marketing/what-is-fundloop-diagram"
 
 type MonthlyStage = { step: string; title: string; body: string }
 type Audience = { id: "people" | "projects" | "research" | "operators"; label: string; title: string; body: string; href: string; cta: string }
@@ -39,6 +40,20 @@ export default async function Home({ params }: PageProps) {
   const principles = t.raw("trust.items") as Principle[]
   const founderFeatures = t.raw("fork.founders.features") as string[]
   const participantFeatures = t.raw("fork.participants.features") as string[]
+
+  const whatIsFundLoopStages = {
+    people: t.raw("fork.whatIsFundLoop.stages.people") as { title: string; subtitle: string },
+    projectsRevenue: t.raw("fork.whatIsFundLoop.stages.projectsRevenue") as { title: string; subtitle: string },
+    projectsReward: t.raw("fork.whatIsFundLoop.stages.projectsReward") as { title: string; subtitle: string },
+    peopleRewards: t.raw("fork.whatIsFundLoop.stages.peopleRewards") as { title: string; subtitle: string },
+  }
+
+  const whatIsFundLoopCenter = {
+    cubidLabel: t("fork.whatIsFundLoop.center.cubidLabel"),
+    cubidDesc: t("fork.whatIsFundLoop.center.cubidDesc"),
+    allocatorLabel: t("fork.whatIsFundLoop.center.allocatorLabel"),
+    allocatorDesc: t("fork.whatIsFundLoop.center.allocatorDesc"),
+  }
 
   return (
     <MarketingPage className="[--marketing-accent:#d45f35]">
@@ -86,18 +101,12 @@ export default async function Home({ params }: PageProps) {
             </SectionBody>
           </div>
 
-          <div className="relative mx-auto mt-10 max-w-5xl overflow-hidden rounded-[2.5rem] border border-[color:var(--marketing-line)] bg-white/70 p-4 shadow-xl dark:border-white/[0.1] dark:bg-white/[0.03] sm:p-6 lg:p-8">
-            <div className="relative aspect-[16/9] w-full overflow-hidden rounded-[2rem] bg-neutral-100 dark:bg-neutral-900">
-              <Image
-                src="/images/marketing/what-is-fundloop.png"
-                alt={t("fork.whatIsFundLoop.imageAlt")}
-                fill
-                className="object-cover object-center"
-                sizes="(max-width: 1200px) 100vw, 1200px"
-                priority
-              />
-            </div>
-          </div>
+          <WhatIsFundLoopDiagram
+            stages={whatIsFundLoopStages}
+            center={whatIsFundLoopCenter}
+            tagline={t("fork.whatIsFundLoop.tagline")}
+            subtagline={t("fork.whatIsFundLoop.subtagline")}
+          />
 
           <div className="mt-16 text-center">
             <SectionTitle className="mt-3 text-3xl sm:text-4xl">{t("fork.title")}</SectionTitle>

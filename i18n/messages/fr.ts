@@ -1296,6 +1296,33 @@ export const frMessages = {
         title: "Qu'est-ce que le Fund Loop ?",
         body: "Un cycle continu où les personnes participent aux logiciels vérifiés, les projets partagent leurs revenus et les membres de la communauté reçoivent des récompenses mensuelles transparentes.",
         imageAlt: "Qu'est-ce que FundLoop - Un cycle continu de création de valeur et de flux financier entre projets et participants",
+        tagline: "Un cycle continu de création de valeur et de récompense communautaire.",
+        subtagline: "Capital · Impact · Communauté",
+        stages: {
+          people: {
+            title: "Personnes",
+            subtitle: "Participent aux projets",
+          },
+          projectsRevenue: {
+            title: "Projets",
+            subtitle: "Collectent des revenus de plateforme",
+          },
+          projectsReward: {
+            title: "Projets",
+            subtitle: "Partagent 1 % dans le pool FundLoop",
+          },
+          peopleRewards: {
+            title: "Personnes",
+            subtitle: "Cumulent des récompenses créditées",
+          },
+        },
+        center: {
+          cubidLabel: "CUBID",
+          cubidDesc: "Identité vérifiée et preuve d'humanité",
+          allocatorLabel: "Allocator",
+          allocatorDesc: "Redistribution gouvernée de la valeur",
+        },
+        moneyFlow: "Flux financier",
       },
       founders: {
         eyebrow: "Parcours fondateur",
