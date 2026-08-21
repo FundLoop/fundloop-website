@@ -9,7 +9,6 @@ import { Button } from "@/components/ui/button"
 import { MarketingPage, MarketingSection, SectionBody, SectionEyebrow, SectionTitle } from "@/components/marketing/page-chrome"
 import { Reveal } from "@/components/marketing/reveal"
 import { MonthlyLoopVisual } from "@/components/marketing/monthly-loop-visual"
-import { WhatIsFundLoopDiagram } from "@/components/marketing/what-is-fundloop-diagram"
 
 type MonthlyStage = { step: string; title: string; body: string }
 type Audience = { id: "people" | "projects" | "research" | "operators"; label: string; title: string; body: string; href: string; cta: string }
@@ -40,20 +39,6 @@ export default async function Home({ params }: PageProps) {
   const principles = t.raw("trust.items") as Principle[]
   const founderFeatures = t.raw("fork.founders.features") as string[]
   const participantFeatures = t.raw("fork.participants.features") as string[]
-
-  const whatIsFundLoopStages = {
-    people: t.raw("fork.whatIsFundLoop.stages.people") as { title: string; subtitle: string },
-    projectsRevenue: t.raw("fork.whatIsFundLoop.stages.projectsRevenue") as { title: string; subtitle: string },
-    projectsReward: t.raw("fork.whatIsFundLoop.stages.projectsReward") as { title: string; subtitle: string },
-    peopleRewards: t.raw("fork.whatIsFundLoop.stages.peopleRewards") as { title: string; subtitle: string },
-  }
-
-  const whatIsFundLoopCenter = {
-    cubidLabel: t("fork.whatIsFundLoop.center.cubidLabel"),
-    cubidDesc: t("fork.whatIsFundLoop.center.cubidDesc"),
-    allocatorLabel: t("fork.whatIsFundLoop.center.allocatorLabel"),
-    allocatorDesc: t("fork.whatIsFundLoop.center.allocatorDesc"),
-  }
 
   return (
     <MarketingPage className="[--marketing-accent:#d45f35]">
@@ -101,12 +86,17 @@ export default async function Home({ params }: PageProps) {
             </SectionBody>
           </div>
 
-          <WhatIsFundLoopDiagram
-            stages={whatIsFundLoopStages}
-            center={whatIsFundLoopCenter}
-            tagline={t("fork.whatIsFundLoop.tagline")}
-            subtagline={t("fork.whatIsFundLoop.subtagline")}
-          />
+          <div className="relative mx-auto mt-10 max-w-5xl overflow-hidden rounded-[2.5rem] border border-[color:var(--marketing-line)] bg-white/70 p-4 shadow-xl dark:border-white/[0.1] dark:bg-white/[0.03] sm:p-6 lg:p-8">
+            <div className="relative aspect-[16/9] w-full overflow-hidden rounded-[2rem] bg-neutral-100 dark:bg-neutral-900">
+              <Image
+                src="/images/marketing/fundloop-for-all.png"
+                alt={t("fork.whatIsFundLoop.imageAlt")}
+                fill
+                className="object-cover object-center"
+                sizes="(max-width: 1200px) 100vw, 1200px"
+              />
+            </div>
+          </div>
 
           <div className="mt-16 text-center">
             <SectionTitle className="mt-3 text-3xl sm:text-4xl">{t("fork.title")}</SectionTitle>
@@ -388,22 +378,6 @@ export default async function Home({ params }: PageProps) {
           <div className="mt-9 flex flex-col gap-3 sm:flex-row">
             <Button asChild size="lg" className="rounded-full bg-[var(--marketing-accent)] px-7 text-white hover:bg-[color:var(--marketing-accent)]/90"><LocaleLink href="/participation">{t("closing.participant")}<ArrowRight className="h-4 w-4" /></LocaleLink></Button>
             <Button asChild size="lg" variant="outline" className="rounded-full border-[color:var(--marketing-line-strong)] bg-transparent px-7"><LocaleLink href="/documentation">{t("closing.documentation")}</LocaleLink></Button>
-          </div>
-        </Reveal>
-      </MarketingSection>
-
-      <MarketingSection className="pb-24">
-        <Reveal>
-          <div className="relative overflow-hidden rounded-[2.5rem] border border-[color:var(--marketing-line)] bg-white/55 p-4 shadow-xl dark:border-white/[0.1] dark:bg-white/[0.03]">
-            <div className="relative aspect-[16/9] w-full overflow-hidden rounded-[2rem] bg-neutral-100 dark:bg-neutral-900">
-              <Image
-                src="/images/marketing/fundloop-for-all.png"
-                alt={t("bannerAlt")}
-                fill
-                className="object-cover object-center"
-                sizes="(max-width: 1200px) 100vw, 1200px"
-              />
-            </div>
           </div>
         </Reveal>
       </MarketingSection>
