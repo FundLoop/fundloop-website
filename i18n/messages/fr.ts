@@ -1360,17 +1360,17 @@ export const frMessages = {
       founders: {
         eyebrow: "Parcours fondateur",
         title: "Pour les fondateurs et créateurs d'applications",
-        body: "Découvrez comment fonctionne FundLoop pour les fondateurs : redirigez les dépenses publicitaires traditionnelles vers des pools de valeur partagée, alignez votre communauté sur l'usage réel et lancez des distributions mensuelles automatisées et auditables.",
+        body: "Découvrez comment fonctionne FundLoop pour les fondateurs : redirigez les dépenses publicitaires traditionnelles vers des pools de valeur partagée, alignez votre communauté sur l'usage réel et préparez-vous à des cycles mensuels de règlement gouvernés et auditables.",
         cta: "Explorer le fonctionnement pour les fondateurs",
         badge: "Avantages fondateurs",
         features: [
           "Découvrez les avantages de mutualiser 1 % de vos revenus en récompenses pour utilisateurs organiques",
           "Découvrez comment le partage de valeur transforme les utilisateurs passifs en défenseurs actifs",
-          "Comprenez le cycle mensuel automatisé et l'attribution transparente",
+          "Préparez-vous à un cycle mensuel gouverné et à une attribution transparente",
         ],
       },
       participants: {
-        eyebrow: "Individual track",
+        eyebrow: "Parcours individuel",
         title: "Pour les utilisateurs et contributeurs du quotidien",
         body: "Découvrez comment fonctionne FundLoop pour les particuliers : découvrez des produits logiciels vérifiés, participez avec une vérification d'identité privée via CUBID et cumulez des récompenses créditées transparentes.",
         cta: "Explorer le fonctionnement pour les particuliers",

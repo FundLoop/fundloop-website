@@ -47,6 +47,34 @@
 
 ---
 
-#### Suggested Next Steps
+### session v2: Address Review Comments on Founder Workflow Copy and French Chip Translation
 
-- Push branch and open PR into `dev`.
+- **Timestamp:** 2026-08-21T21:42:00Z
+- **Agent:** Antigravity (Gemini 3.7 Flash)
+- **Branch:** `feat/fork-panels-copy-update`
+- **Head:** `0337e5b`
+
+---
+
+#### Objective
+
+1. Retain future/governed qualifiers in founder copy ("prepare for governed monthly settlement workflows with full auditability") to avoid promising un-gated live distributions.
+2. Localize French participant chip to `Parcours individuel`.
+
+---
+
+#### Actions Taken
+
+- **Updated `i18n/messages/en.ts`, `i18n/messages/es.ts`, and `i18n/messages/fr.ts`:**
+  - Qualified founder copy across EN, ES, FR.
+  - Translated French participant chip to `Parcours individuel`.
+- **Updated `tests/marketing-fork-section.test.ts`:**
+  - Updated test expectation for French participant chip.
+
+---
+
+#### Validation Notes
+
+- `pnpm vitest run tests/marketing-fork-section.test.ts` passed (`3/3` tests).
+- `pnpm typecheck` passed (0 errors).
+- `pnpm lint` passed with 0 warnings.
