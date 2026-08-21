@@ -1297,26 +1297,45 @@ export const esMessages = {
         body: "Un ciclo económico continuo que conecta proyectos que aportan ingresos con personas verificadas que participan en su crecimiento.",
         projectLabel: "Proyectos y empresas",
         participantLabel: "Personas y participantes",
+        loopBadge: "Loop continuo de valor",
         ctas: {
           projectHover: "Este soy yo, dirijo una empresa a la que le gustaría participar",
           participantHover: "Este soy yo, me gustaría participar y optar a recompensas mensuales",
+          defaultProject: "Soy un proyecto / fundador",
+          defaultParticipant: "Soy un participante / usuario",
         },
         nodes: {
+          step1: {
+            title: "Las personas participan en proyectos",
+            body: "Los usuarios descubren aplicaciones alineadas, interactúan y crean actividad verificada mediante sellos privados de CUBID.",
+          },
+          step2: {
+            title: "Los proyectos generan ingresos",
+            body: "Los productos de software aumentan el uso sostenible de su plataforma y recaudan suscripciones y tarifas.",
+          },
+          step3: {
+            title: "Los proyectos recompensan a la comunidad mediante FundLoop",
+            body: "Los proyectos aportan un porcentaje mensual de ingresos a un ciclo transparente y gobernado de redistribución.",
+          },
+          step4: {
+            title: "Las personas reciben sus pagos",
+            body: "Los miembros verificados y activos de la comunidad reciben distribuciones de recompensas transparentes y proporcionales.",
+          },
           people: {
-            title: "Personas",
-            body: "Una comunidad de seguidores que impulsa el cambio y el uso.",
+            title: "Las personas participan en proyectos",
+            body: "Los usuarios descubren aplicaciones alineadas, interactúan y crean actividad verificada mediante sellos privados de CUBID.",
           },
           participation: {
-            title: "Participación",
-            body: "Interactúa, verifica identidad, conecta y contribuye.",
+            title: "Los proyectos generan ingresos",
+            body: "Los productos de software aumentan el uso sostenible de su plataforma y recaudan suscripciones y tarifas.",
           },
           projects: {
-            title: "Proyectos",
-            body: "Proyectos con propósito que aportan el 1 % de ingresos mensuales.",
+            title: "Los proyectos recompensan a la comunidad mediante FundLoop",
+            body: "Los proyectos aportan un porcentaje mensual de ingresos a un ciclo transparente y gobernado de redistribución.",
           },
           fundloop: {
-            title: "FundLoop",
-            body: "Capital reciclado y distribuido a usuarios activos.",
+            title: "Las personas reciben sus pagos",
+            body: "Los miembros verificados y activos de la comunidad reciben distribuciones de recompensas transparentes y proporcionales.",
           },
         },
       },
