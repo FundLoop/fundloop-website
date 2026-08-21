@@ -93,5 +93,51 @@
 
 ### Suggested Next Steps
 
+- Create cleaned-up visual components for `/participation` and `/projects` inspired by `fundloop-for-users.png` and `fundloop-for-projects.png`.
+
+## Session v3: Add Cleaned-Up Loop Visuals on /participation and /projects
+
+- **Timestamp:** 2026-08-21T17:39:00Z
+- **Agent:** Antigravity (Gemini 3.7 Flash)
+- **Branch:** `feat/inaugural-projects-banner-cta`
+- **Head:** `74f1f6c`
+
+---
+
+### Objective
+
+1. Create a cleaned-up interactive vector component from `fundloop-for-users.png` matching the emerald user color scheme and place it towards the top of [`app/[locale]/(public)/participation/page.tsx`](file:///Volumes/IomegaAPFS/src/fundloop/app/[locale]/(public)/participation/page.tsx).
+2. Create a cleaned-up interactive vector component from `fundloop-for-projects.png` matching the terracotta project color scheme and place it towards the top of [`app/[locale]/(public)/projects/page.tsx`](file:///Volumes/IomegaAPFS/src/fundloop/app/[locale]/(public)/projects/page.tsx).
+3. Provide full multi-language translations across English (`en`), Spanish (`es`), and French (`fr`).
+
+---
+
+### Actions Taken
+
+- **Created `components/marketing/fundloop-for-users-visual.tsx`:**
+  - 4-step loop visual covering *1. Find projects*, *2. Sign up*, *3. Participate meaningfully*, *4. Get a monthly reward* with center protocol hub and direct CTA to `/?onboarding=user`.
+- **Created `components/marketing/fundloop-for-projects-visual.tsx`:**
+  - 4-step loop visual covering *1. Reward participation*, *2. Get visibility*, *3. Get more participants*, *4. Generate more revenue* with center protocol hub and direct CTA to `/?onboarding=project`.
+- **Updated `app/[locale]/(public)/participation/page.tsx` & `app/[locale]/(public)/projects/page.tsx`:**
+  - Embedded the respective loop visuals towards the top of each page.
+- **Updated `i18n/messages/en.ts`, `i18n/messages/es.ts`, and `i18n/messages/fr.ts`:**
+  - Added localized strings for `participation.loopVisual` and `projectsDirectory.loopVisual`.
+- **Created `tests/fundloop-loop-visuals.test.tsx`:**
+  - Unit tests verifying rendering of all steps, titles, badges, and CTA routes.
+
+---
+
+### Validation
+
+- `pnpm vitest run tests/fundloop-loop-visuals.test.tsx tests/what-is-fundloop-visual.test.tsx tests/inaugural-banner.test.tsx` passed (`10/10` tests).
+- `pnpm typecheck` passed (0 errors).
+- `pnpm lint` passed with `--max-warnings=0`.
+- `pnpm build` verified clean Next.js App Router production build across all 165 routes.
+
+---
+
+### Suggested Next Steps
+
 - Open PR from `feat/inaugural-projects-banner-cta` into `dev`.
+
 

@@ -16,6 +16,7 @@ import {
 } from "@/components/marketing/page-chrome"
 import { Reveal } from "@/components/marketing/reveal"
 import { JourneyConfidenceBand, type JourneyConfidenceItem } from "@/components/marketing/journey-confidence-band"
+import { FundloopForUsersVisual } from "@/components/marketing/fundloop-for-users-visual"
 
 type ParticipationItem = {
   step?: string
@@ -116,6 +117,24 @@ export default async function ParticipationPage({ params }: PageProps) {
             </div>
           </Reveal>
         </div>
+      </MarketingSection>
+
+      <MarketingSection className="py-2">
+        <Reveal>
+          <FundloopForUsersVisual
+            eyebrow={t("loopVisual.eyebrow")}
+            title={t("loopVisual.title")}
+            body={t("loopVisual.body")}
+            cta={t("loopVisual.cta")}
+            center={t("loopVisual.center")}
+            nodes={{
+              find: t.raw("loopVisual.nodes.find") as { step: string; title: string; body: string },
+              signup: t.raw("loopVisual.nodes.signup") as { step: string; title: string; body: string },
+              participate: t.raw("loopVisual.nodes.participate") as { step: string; title: string; body: string },
+              reward: t.raw("loopVisual.nodes.reward") as { step: string; title: string; body: string },
+            }}
+          />
+        </Reveal>
       </MarketingSection>
 
       <JourneyConfidenceBand

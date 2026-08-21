@@ -1501,6 +1501,35 @@ export const frMessages = {
   },
   participation: {
     bannerAlt: "FundLoop pour les participants",
+    loopVisual: {
+      eyebrow: "Impact impulsé par les personnes",
+      title: "Trouvez des projets. Participez. Créez un impact. Recevez des récompenses.",
+      body: "FundLoop aide les personnes à participer activement à des projets qui comptent et à partager la prospérité mutuelle.",
+      cta: "Commencer votre parcours participant",
+      center: "Impact citoyen",
+      nodes: {
+        find: {
+          step: "01",
+          title: "1. Trouver des projets",
+          body: "Découvrez des applications et des équipes alignées qui partagent vos valeurs.",
+        },
+        signup: {
+          step: "02",
+          title: "2. S'inscrire",
+          body: "Créez votre profil, vérifiez votre identité avec CUBID et rejoignez le réseau.",
+        },
+        participate: {
+          step: "03",
+          title: "3. Participer utilement",
+          body: "Contribuez par du temps, des retours, des tests et un usage actif régulier.",
+        },
+        reward: {
+          step: "04",
+          title: "4. Récompense mensuelle",
+          body: "Recevez des distributions mensuelles partagées pour votre participation vérifiée continue.",
+        },
+      },
+    },
     hero: {
       eyebrow: "Participation",
       title:
@@ -1639,6 +1668,35 @@ export const frMessages = {
     },
   },
   projectsDirectory: {
+    loopVisual: {
+      eyebrow: "Croissance par la participation",
+      title: "Récompensez la participation. Développez votre projet. Répétez.",
+      body: "FundLoop aide les projets à récompenser l'usage réel, obtenir une visibilité qualifiée, attirer des contributeurs et construire une boucle de revenus durable.",
+      cta: "Commencer l'onboarding projet",
+      center: "Développez votre projet",
+      nodes: {
+        reward: {
+          step: "01",
+          title: "1. Récompenser la participation",
+          body: "Récompensez les utilisateurs vérifiés qui utilisent et soutiennent activement votre produit.",
+        },
+        visibility: {
+          step: "02",
+          title: "2. Obtenir de la visibilité",
+          body: "Gagnez en exposition et en portée auprès des plus de 10 000 utilisateurs vérifiés de FundLoop.",
+        },
+        participants: {
+          step: "03",
+          title: "3. Plus de participants",
+          body: "Convertissez les utilisateurs touchés en membres engagés de la communauté et en contributeurs actifs.",
+        },
+        revenue: {
+          step: "04",
+          title: "4. Générer plus de revenus",
+          body: "Augmentez la rétention, réduisez les dépenses publicitaires continues et développez vos capacités.",
+        },
+      },
+    },
     hero: {
       eyebrow: "Découverte de projets",
       title: "Explorez le côté public des projets FundLoop sans tomber dans un simple annuaire sans suite.",
