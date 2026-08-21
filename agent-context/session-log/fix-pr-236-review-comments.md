@@ -91,3 +91,39 @@ Address all automated code review findings on PR #236:
 
 - Push updates to PR #237 and merge into `dev`.
 
+### session v3: Support Dry-Run Target Resolution for PRs Targeting Main
+
+- **Timestamp:** 2026-08-21T20:34:00Z
+- **Agent:** Antigravity (Gemini 3.7 Flash)
+- **Branch:** `fix/ci-supabase-main-pr-dry-run`
+- **Head:** `801ec39`
+
+---
+
+#### Objective
+
+1. Enable Supabase migration dry-run checks on PRs targeting `main` (`dev -> main`) when `MAIN_SUPABASE_SESSION_POOLER_URL` secret is restricted to `Production` environment deployments.
+2. Allow fallback resolution to `DEV_SUPABASE_SESSION_POOLER_URL` for PR dry-run validation steps.
+
+---
+
+#### Actions Taken
+
+- **Updated `.github/workflows/supabase-deploy.yml`:**
+  - Configured fallback to `DEV_SUPABASE_SESSION_POOLER_URL` during `dry-run` mode target resolution when `MAIN_SUPABASE_SESSION_POOLER_URL` is empty.
+
+---
+
+#### Validation Notes
+
+- `pnpm typecheck` passed (0 errors).
+- `pnpm lint` passed with `--max-warnings=0`.
+- `pnpm test` passed (`198/198` test files, `1143/1143` tests).
+
+---
+
+#### Suggested Next Steps
+
+- Merge into `dev` to verify all CI gates on PR #236.
+
+
