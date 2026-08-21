@@ -2186,6 +2186,7 @@ export const esMessages = {
     title: "Aviso de prototipo",
     body: "Esta página es un trabajo en progreso. Por favor, ten paciencia con nosotros si algo no funciona. Agradeceríamos que envíes una nota a support@firebelly.xyz con cualquier observación o sugerencia.",
     contactUs: "Enviar correo a support@firebelly.xyz",
+    openNotice: "Abrir aviso de prototipo",
     close: "Cerrar aviso",
   },
 } as const

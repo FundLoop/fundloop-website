@@ -9,7 +9,7 @@ export function FloatingPrototypeBadge() {
   const t = useTranslations("prototypeBadge")
 
   return (
-    <div className="fixed bottom-5 right-5 z-50 flex flex-col items-end select-none">
+    <div className="fixed bottom-5 right-5 z-40 flex flex-col items-end select-none">
       {isExpanded ? (
         <div
           role="dialog"
@@ -64,7 +64,7 @@ export function FloatingPrototypeBadge() {
           type="button"
           onClick={() => setIsExpanded(true)}
           aria-expanded={false}
-          aria-label="Open prototype notice"
+          aria-label={t("openNotice")}
           className="group flex items-center gap-2 rounded-full border border-amber-500/40 bg-neutral-950/85 px-3.5 py-1.5 text-xs font-semibold text-amber-300 shadow-xl backdrop-blur-md transition-all duration-200 hover:scale-105 hover:border-amber-400 hover:bg-neutral-900 hover:text-amber-200 hover:shadow-amber-500/10 active:scale-95"
         >
           <span className="relative flex h-2 w-2">
