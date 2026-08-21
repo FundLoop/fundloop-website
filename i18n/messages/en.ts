@@ -2594,4 +2594,11 @@ export const enMessages = {
       terms: "Terms of Service",
     },
   },
+  prototypeBadge: {
+    label: "Prototype",
+    title: "Prototype Notice",
+    body: "This page is a work in progress. Please have patience with us if things break. We would appreciate if you would send a note to support@firebelly.xyz with any observations or suggestions.",
+    contactUs: "Email support@firebelly.xyz",
+    close: "Close notice",
+  },
 } as const

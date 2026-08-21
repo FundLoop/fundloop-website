@@ -8,6 +8,7 @@ import { getMessages, getTranslations, setRequestLocale } from "next-intl/server
 import "../globals.css"
 import { ThemeProvider } from "@/components/theme-provider"
 import { OnboardingModalManager } from "@/components/onboarding-modal-manager"
+import { FloatingPrototypeBadge } from "@/components/floating-prototype-badge"
 import { Web3Provider } from "@/components/web3-provider"
 import { getWalletRuntimeConfig } from "@/lib/onchain/runtime-config"
 import { isValidLocale, routing } from "@/i18n/routing"
@@ -61,6 +62,7 @@ export default async function RootLayout({ children, params }: LayoutProps) {
                 <OnboardingModalManager />
               </Suspense>
               {children}
+              <FloatingPrototypeBadge />
             </ThemeProvider>
           </Web3Provider>
         </NextIntlClientProvider>
