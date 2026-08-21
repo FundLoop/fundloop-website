@@ -99,6 +99,24 @@ export default async function Home({ params }: PageProps) {
             projectCta={t("fork.whatIsFundLoop.ctas.projectHover")}
             participantCta={t("fork.whatIsFundLoop.ctas.participantHover")}
             nodes={whatIsFundLoopNodes}
+            actionBar={{
+              participantFocus: {
+                title: t("fork.whatIsFundLoop.actionBar.participantFocus.title"),
+                body: t("fork.whatIsFundLoop.actionBar.participantFocus.body"),
+              },
+              projectFocus: {
+                title: t("fork.whatIsFundLoop.actionBar.projectFocus.title"),
+                body: t("fork.whatIsFundLoop.actionBar.projectFocus.body"),
+              },
+              defaultFocus: {
+                title: t("fork.whatIsFundLoop.actionBar.defaultFocus.title"),
+                body: t("fork.whatIsFundLoop.actionBar.defaultFocus.body"),
+              },
+            }}
+            nextLabel={t("fork.whatIsFundLoop.nextLabel")}
+            loopsToStartLabel={t("fork.whatIsFundLoop.loopsToStartLabel")}
+            protocolBadge={t("fork.whatIsFundLoop.protocolBadge")}
+            cubidVerifiedBadge={t("fork.whatIsFundLoop.cubidVerified")}
           />
 
           <div className="mt-16 text-center">

@@ -30,10 +30,28 @@ const mockProps = {
       body: "Projects pool a percentage of monthly revenue into a transparent, governed redistribution cycle.",
     },
     fundloop: {
-      title: "People get paid",
-      body: "Verified active community members receive transparent, proportional monthly reward distributions.",
+      title: "People earn credited rewards",
+      body: "Verified active community members build transparent, credited reward allocations subject to operational governance.",
     },
   },
+  actionBar: {
+    participantFocus: {
+      title: "Participant Focus",
+      body: "Participate in verified projects and build eligibility for monthly distributions.",
+    },
+    projectFocus: {
+      title: "Project Focus",
+      body: "Pool 1% of revenue, attract high-intent organic users, and grow community alignment.",
+    },
+    defaultFocus: {
+      title: "Choose Your Role in the Loop",
+      body: "Hover any step above to explore that phase, or select your path to get started.",
+    },
+  },
+  nextLabel: "Next",
+  loopsToStartLabel: "Loops to Start",
+  protocolBadge: "FundLoop Continuous Coordination",
+  cubidVerifiedBadge: "CUBID Verified",
 }
 
 describe("WhatIsFundLoopVisual", () => {
@@ -43,7 +61,7 @@ describe("WhatIsFundLoopVisual", () => {
     expect(screen.getByText("People participate in projects")).toBeDefined()
     expect(screen.getByText("Projects collect revenue")).toBeDefined()
     expect(screen.getByText("Projects reward community through FundLoop")).toBeDefined()
-    expect(screen.getByText("People get paid")).toBeDefined()
+    expect(screen.getByText("People earn credited rewards")).toBeDefined()
     expect(screen.getByText("FundLoop Continuous Coordination")).toBeDefined()
 
     // Assert that numeric 01-04 step tags are removed
@@ -65,7 +83,7 @@ describe("WhatIsFundLoopVisual", () => {
     expect(projectLink?.getAttribute("href")).toBe("/?onboarding=project")
   })
 
-  it("correlates hover focus to participant and project steps", () => {
+  it("correlates hover focus to participant and project steps with localized action bar copy", () => {
     render(<WhatIsFundLoopVisual {...mockProps} />)
 
     const participantNode = screen.getByText("People participate in projects").closest("div")
@@ -77,12 +95,14 @@ describe("WhatIsFundLoopVisual", () => {
     if (participantNode) {
       fireEvent.mouseEnter(participantNode)
       expect(screen.getByText("Participant Focus")).toBeDefined()
+      expect(screen.getByText(mockProps.actionBar.participantFocus.body)).toBeDefined()
       fireEvent.mouseLeave(participantNode)
     }
 
     if (projectNode) {
       fireEvent.mouseEnter(projectNode)
       expect(screen.getByText("Project Focus")).toBeDefined()
+      expect(screen.getByText(mockProps.actionBar.projectFocus.body)).toBeDefined()
       fireEvent.mouseLeave(projectNode)
     }
   })

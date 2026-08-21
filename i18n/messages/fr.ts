@@ -1298,11 +1298,29 @@ export const frMessages = {
         projectLabel: "Projets & Entreprises",
         participantLabel: "Personnes & Participants",
         loopBadge: "Boucle de valeur continue",
+        nextLabel: "Suivant",
+        loopsToStartLabel: "Revient au début",
+        protocolBadge: "Coordination continue FundLoop",
+        cubidVerified: "Vérifié CUBID",
         ctas: {
           projectHover: "C'est moi, je dirige une entreprise qui souhaite participer",
           participantHover: "C'est moi, j'aimerais participer et accéder aux récompenses mensuelles",
           defaultProject: "Je suis un projet / fondateur",
           defaultParticipant: "Je suis un participant / utilisateur",
+        },
+        actionBar: {
+          participantFocus: {
+            title: "Focus participant",
+            body: "Participez aux projets vérifiés et devenez éligible aux allocations de récompenses mensuelles.",
+          },
+          projectFocus: {
+            title: "Focus projet",
+            body: "Mutualisez 1 % de vos revenus, attirez des utilisateurs organiques et renforcez l'alignement communautaire.",
+          },
+          defaultFocus: {
+            title: "Choisissez votre rôle dans la boucle",
+            body: "Survolez une étape pour explorer chaque phase ou choisissez votre parcours.",
+          },
         },
         nodes: {
           step1: {
@@ -1318,8 +1336,8 @@ export const frMessages = {
             body: "Les projets mutualisent un pourcentage mensuel de leurs revenus dans un cycle de redistribution transparent et gouverné.",
           },
           step4: {
-            title: "Les personnes sont rémunérées",
-            body: "Les membres actifs et vérifiés de la communauté reçoivent des distributions de récompenses transparentes et proportionnelles.",
+            title: "Les personnes cumulent des récompenses créditées",
+            body: "Les membres actifs et vérifiés obtiennent des allocations de récompenses transparentes et créditées, soumises à gouvernance.",
           },
           people: {
             title: "Les personnes participent aux projets",
@@ -1334,8 +1352,8 @@ export const frMessages = {
             body: "Les projets mutualisent un pourcentage mensuel de leurs revenus dans un cycle de redistribution transparent et gouverné.",
           },
           fundloop: {
-            title: "Les personnes sont rémunérées",
-            body: "Les membres actifs et vérifiés de la communauté reçoivent des distributions de récompenses transparentes et proportionnelles.",
+            title: "Les personnes cumulent des récompenses créditées",
+            body: "Les membres actifs et vérifiés obtiennent des allocations de récompenses transparentes et créditées, soumises à gouvernance.",
           },
         },
       },

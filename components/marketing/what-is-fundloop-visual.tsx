@@ -25,6 +25,15 @@ export type WhatIsFundLoopVisualProps = {
     step3?: LoopNodeInfo
     step4?: LoopNodeInfo
   }
+  actionBar?: {
+    participantFocus: { title: string; body: string }
+    projectFocus: { title: string; body: string }
+    defaultFocus: { title: string; body: string }
+  }
+  nextLabel?: string
+  loopsToStartLabel?: string
+  protocolBadge?: string
+  cubidVerifiedBadge?: string
 }
 
 export function WhatIsFundLoopVisual({
@@ -33,6 +42,11 @@ export function WhatIsFundLoopVisual({
   projectCta,
   participantCta,
   nodes,
+  actionBar,
+  nextLabel = "Next",
+  loopsToStartLabel = "Loops to Start",
+  protocolBadge = "FundLoop Continuous Coordination",
+  cubidVerifiedBadge = "CUBID Verified",
 }: WhatIsFundLoopVisualProps) {
   const [hoveredStep, setHoveredStep] = useState<1 | 2 | 3 | 4 | null>(null)
 
@@ -43,6 +57,18 @@ export function WhatIsFundLoopVisual({
 
   const isParticipantHovered = hoveredStep === 1 || hoveredStep === 4
   const isProjectHovered = hoveredStep === 2 || hoveredStep === 3
+
+  const actionTitle = isParticipantHovered
+    ? actionBar?.participantFocus.title ?? "Participant Focus"
+    : isProjectHovered
+      ? actionBar?.projectFocus.title ?? "Project Focus"
+      : actionBar?.defaultFocus.title ?? "Choose Your Role in the Loop"
+
+  const actionBody = isParticipantHovered
+    ? actionBar?.participantFocus.body ?? "Participate in verified projects and build eligibility for monthly distributions."
+    : isProjectHovered
+      ? actionBar?.projectFocus.body ?? "Pool 1% of revenue, attract high-intent organic users, and grow community alignment."
+      : actionBar?.defaultFocus.body ?? "Hover any step above to explore that phase, or select your path to get started."
 
   return (
     <div className="relative mx-auto mt-10 max-w-6xl overflow-hidden rounded-[2.5rem] border border-[color:var(--marketing-line)] bg-gradient-to-b from-[#141d1b] via-[#101b1a] to-[#0c1413] p-6 text-[#fff9ef] shadow-2xl sm:p-10">
@@ -85,7 +111,7 @@ export function WhatIsFundLoopVisual({
                 </span>
               </div>
               <div className="hidden lg:flex items-center gap-1 text-xs font-semibold text-[#34d399]/80">
-                <span>Next</span>
+                <span>{nextLabel}</span>
                 <ArrowRight className="h-3.5 w-3.5 transition-transform duration-200 group-hover:translate-x-1" />
               </div>
             </div>
@@ -117,7 +143,7 @@ export function WhatIsFundLoopVisual({
                 </span>
               </div>
               <div className="hidden lg:flex items-center gap-1 text-xs font-semibold text-[#ff7844]/80">
-                <span>Next</span>
+                <span>{nextLabel}</span>
                 <ArrowDown className="h-3.5 w-3.5 transition-transform duration-200 group-hover:translate-y-1" />
               </div>
             </div>
@@ -150,7 +176,7 @@ export function WhatIsFundLoopVisual({
               </div>
               <div className="hidden lg:flex items-center gap-1 text-xs font-semibold text-[#34d399]/80">
                 <ArrowUp className="h-3.5 w-3.5 transition-transform duration-200 group-hover:-translate-y-1" />
-                <span>Loops to Start</span>
+                <span>{loopsToStartLabel}</span>
               </div>
             </div>
 
@@ -182,7 +208,7 @@ export function WhatIsFundLoopVisual({
               </div>
               <div className="hidden lg:flex items-center gap-1 text-xs font-semibold text-[#ff7844]/80">
                 <ArrowLeft className="h-3.5 w-3.5 transition-transform duration-200 group-hover:-translate-x-1" />
-                <span>Next</span>
+                <span>{nextLabel}</span>
               </div>
             </div>
 
@@ -199,10 +225,10 @@ export function WhatIsFundLoopVisual({
             <span className="flex h-6 w-6 items-center justify-center rounded-full bg-[color:var(--marketing-accent)]/20 text-[var(--marketing-accent)]">
               <Repeat className="h-3.5 w-3.5 animate-[spin_12s_linear_infinite]" />
             </span>
-            <span className="font-display font-semibold text-white">FundLoop Continuous Coordination</span>
+            <span className="font-display font-semibold text-white">{protocolBadge}</span>
             <span className="inline-flex items-center gap-1 rounded-full bg-white/10 px-2 py-0.5 text-[0.65rem] font-semibold text-[#f5b195]">
               <Sparkles className="h-2.5 w-2.5" />
-              CUBID Verified
+              {cubidVerifiedBadge}
             </span>
           </div>
         </div>
@@ -213,19 +239,11 @@ export function WhatIsFundLoopVisual({
             <div className="space-y-1">
               <div className="flex items-center gap-2">
                 <span className="text-xs font-semibold uppercase tracking-wider text-[#a3b8b0]">
-                  {isParticipantHovered
-                    ? "Participant Focus"
-                    : isProjectHovered
-                      ? "Project Focus"
-                      : "Choose Your Role in the Loop"}
+                  {actionTitle}
                 </span>
               </div>
               <p className="text-xs sm:text-sm text-[#c7d5cf]">
-                {isParticipantHovered
-                  ? "Participate in verified projects and build eligibility for monthly distributions."
-                  : isProjectHovered
-                    ? "Pool 1% of revenue, attract high-intent organic users, and grow community alignment."
-                    : "Hover any step above to explore that phase, or select your path to get started."}
+                {actionBody}
               </p>
             </div>
 

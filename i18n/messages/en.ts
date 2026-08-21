@@ -1348,11 +1348,29 @@ export const enMessages = {
         projectLabel: "Projects & Companies",
         participantLabel: "People & Participants",
         loopBadge: "Continuous Value Loop",
+        nextLabel: "Next",
+        loopsToStartLabel: "Loops to Start",
+        protocolBadge: "FundLoop Continuous Coordination",
+        cubidVerified: "CUBID Verified",
         ctas: {
           projectHover: "This is me, I run a company which would like to participate",
           participantHover: "This is me, I'd like to participate and build monthly reward eligibility",
           defaultProject: "I'm a Project / Founder",
           defaultParticipant: "I'm a Participant / User",
+        },
+        actionBar: {
+          participantFocus: {
+            title: "Participant Focus",
+            body: "Participate in verified projects and build eligibility for monthly distributions.",
+          },
+          projectFocus: {
+            title: "Project Focus",
+            body: "Pool 1% of revenue, attract high-intent organic users, and grow community alignment.",
+          },
+          defaultFocus: {
+            title: "Choose Your Role in the Loop",
+            body: "Hover any step above to explore that phase, or select your path to get started.",
+          },
         },
         nodes: {
           step1: {
@@ -1368,8 +1386,8 @@ export const enMessages = {
             body: "Projects pool a percentage of monthly revenue into a transparent, governed redistribution cycle.",
           },
           step4: {
-            title: "People get paid",
-            body: "Verified active community members receive transparent, proportional monthly reward distributions.",
+            title: "People earn credited rewards",
+            body: "Verified active community members build transparent, credited reward allocations subject to operational governance.",
           },
           people: {
             title: "People participate in projects",
@@ -1384,8 +1402,8 @@ export const enMessages = {
             body: "Projects pool a percentage of monthly revenue into a transparent, governed redistribution cycle.",
           },
           fundloop: {
-            title: "People get paid",
-            body: "Verified active community members receive transparent, proportional monthly reward distributions.",
+            title: "People earn credited rewards",
+            body: "Verified active community members build transparent, credited reward allocations subject to operational governance.",
           },
         },
       },
