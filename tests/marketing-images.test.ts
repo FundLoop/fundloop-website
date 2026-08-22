@@ -6,12 +6,12 @@ describe("Marketing Bottom Images", () => {
   const imagesDir = path.resolve(process.cwd(), "public/images/marketing")
   const pagesDir = path.resolve(process.cwd(), "app/[locale]/(public)")
 
-  it("ensures fundloop-for-all.png exists and is wired in the homepage", () => {
-    const file = path.join(imagesDir, "fundloop-for-all.png")
+  it("ensures fundloop-for-all-2.png exists and is wired in the homepage", () => {
+    const file = path.join(imagesDir, "fundloop-for-all-2.png")
     expect(fs.existsSync(file)).toBe(true)
 
     const homePageContent = fs.readFileSync(path.join(pagesDir, "page.tsx"), "utf8")
-    expect(homePageContent).toContain("/images/marketing/fundloop-for-all.png")
+    expect(homePageContent).toContain("/images/marketing/fundloop-for-all-2.png")
   })
 
   it("ensures fundloop-for-projects.png exists and is wired in the /founders page", () => {

@@ -1294,7 +1294,7 @@ export const frMessages = {
       body: "FundLoop relie équipes logicielles et participants vérifiés dans un modèle transparent de valeur partagée.",
       whatIsFundLoop: {
         title: "Qu'est-ce que le Fund Loop ?",
-        body: "Un cycle continu où les personnes participent aux logiciels vérifiés, les projets partagent leurs revenus et les membres de la communauté reçoivent des récompenses mensuelles transparentes.",
+        body: "Un cycle continu où les entreprises et projets partagent une partie de leurs revenus avec leurs précieux clients, bénévoles et utilisateurs. FundLoop mutualise les ressources et veille à ce qu'elles parviennent aux bonnes personnes. Les membres de la communauté reçoivent des récompenses mensuelles transparentes.\n\nUne façon de concevoir FundLoop est comme un programme de fidélité cash back pour les utilisateurs. Une autre utilisation potentielle de FundLoop est comme une plateforme gérée de revenu universel de base. Pour les entreprises participantes, FundLoop est un moteur de croissance et potentiellement un remplacement de leur budget marketing.",
         imageAlt: "Qu'est-ce que FundLoop - Un cycle continu de création de valeur et de flux financier entre projets et participants",
         tagline: "Un cycle continu de création de valeur et de récompense communautaire.",
         subtagline: "Capital · Impact · Communauté",
