@@ -81,7 +81,7 @@ export default async function Home({ params }: PageProps) {
           <div className="text-center">
             <SectionEyebrow>{t("fork.eyebrow")}</SectionEyebrow>
             <SectionTitle className="mt-3 text-3xl sm:text-4xl">{t("fork.whatIsFundLoop.title")}</SectionTitle>
-            <SectionBody className="mx-auto mt-3 max-w-xl text-sm sm:text-base">
+            <SectionBody className="mx-auto mt-4 max-w-3xl whitespace-pre-line text-sm leading-relaxed sm:text-base">
               {t("fork.whatIsFundLoop.body")}
             </SectionBody>
           </div>
@@ -89,7 +89,7 @@ export default async function Home({ params }: PageProps) {
           <div className="relative mx-auto mt-10 max-w-5xl overflow-hidden rounded-[2.5rem] border border-[color:var(--marketing-line)] bg-white/70 p-4 shadow-xl dark:border-white/[0.1] dark:bg-white/[0.03] sm:p-6 lg:p-8">
             <div className="relative aspect-[16/9] w-full overflow-hidden rounded-[2rem] bg-neutral-100 dark:bg-neutral-900">
               <Image
-                src="/images/marketing/fundloop-for-all.png"
+                src="/images/marketing/fundloop-for-all-2.png"
                 alt={t("fork.whatIsFundLoop.imageAlt")}
                 fill
                 className="object-cover object-center"

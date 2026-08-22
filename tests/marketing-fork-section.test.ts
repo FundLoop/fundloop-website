@@ -24,4 +24,16 @@ describe("Marketing Fork Section Translations", () => {
     expect(frMessages.home.fork.participants.title).toBe("Pour les utilisateurs et contributeurs du quotidien")
     expect(frMessages.home.fork.founders.eyebrow).toBe("Parcours fondateur")
   })
+
+  it("has updated What is Fund Loop description in English, Spanish, and French", () => {
+    expect(enMessages.home.fork.whatIsFundLoop.body).toContain("A continuous cycle where companies and projects share a portion of their revenue")
+    expect(enMessages.home.fork.whatIsFundLoop.body).toContain("cash back loyalty program for users")
+    expect(enMessages.home.fork.whatIsFundLoop.body).toContain("managed universal basic income platform")
+
+    expect(esMessages.home.fork.whatIsFundLoop.body).toContain("Un ciclo continuo donde las empresas y proyectos comparten una parte de sus ingresos")
+    expect(esMessages.home.fork.whatIsFundLoop.body).toContain("renta básica universal")
+
+    expect(frMessages.home.fork.whatIsFundLoop.body).toContain("Un cycle continu où les entreprises et projets partagent une partie de leurs revenus")
+    expect(frMessages.home.fork.whatIsFundLoop.body).toContain("revenu universel de base")
+  })
 })
