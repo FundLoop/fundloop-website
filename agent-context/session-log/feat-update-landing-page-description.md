@@ -45,6 +45,29 @@
 
 ---
 
-#### Suggested Next Steps
+### session v2: Match 3:2 Aspect Ratio Container to Prevent Image Cropping
 
-- Push branch and open PR into `dev`.
+- **Timestamp:** 2026-08-22T16:27:00Z
+- **Agent:** Antigravity (Gemini 3.7 Flash)
+- **Branch:** `feat/update-landing-page-description`
+- **Head:** `725add1`
+
+---
+
+#### Objective
+
+1. Fix container aspect ratio from `16:9` to `3:2` (`aspect-[3/2]`) with `object-contain object-center` for `fundloop-for-all-2.png` (1536×1024) to ensure the full diagram, top flow icon, and bottom tagline are rendered without cropping.
+
+---
+
+#### Actions Taken
+
+- Updated `app/[locale]/(public)/page.tsx` image container to `aspect-[3/2]` and `object-contain object-center`.
+
+---
+
+#### Validation Notes
+
+- `pnpm vitest run tests/marketing-images.test.ts tests/marketing-fork-section.test.ts` passed (`7/7` tests).
+- `pnpm typecheck` passed (0 errors).
+- `pnpm lint` passed with 0 warnings.
