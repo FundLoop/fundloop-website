@@ -46,7 +46,7 @@ on:
 
 concurrency:
   group: supabase-${{ github.event_name == 'workflow_dispatch' && inputs.target_environment || (github.event.pull_request.number && format('pr-{0}', github.event.pull_request.number)) || github.base_ref || github.ref_name }}
-  cancel-in-progress: true
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 permissions:
   contents: read
