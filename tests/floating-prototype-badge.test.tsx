@@ -24,8 +24,12 @@ describe("FloatingPrototypeBadge", () => {
     const trigger = screen.getByRole("button", { name: /open prototype notice/i })
     expect(trigger).toBeDefined()
     expect(trigger.getAttribute("aria-controls")).toBe("floating-prototype-notice-dialog")
+    const dialog = screen.getByRole("dialog", { hidden: true })
+    expect(dialog).toBeDefined()
+    expect(dialog.getAttribute("id")).toBe("floating-prototype-notice-dialog")
+    expect(dialog.hasAttribute("hidden")).toBe(true)
     expect(screen.getByText("Prototype")).toBeDefined()
-    expect(screen.queryByText(/This page is a work in progress/i)).toBeNull()
+    expect(screen.getByText(/This page is a work in progress/i)).toBeDefined()
     expect(document.activeElement).not.toBe(trigger)
   })
 
@@ -61,7 +65,7 @@ describe("FloatingPrototypeBadge", () => {
 
     fireEvent.click(topCloseButton)
 
-    expect(screen.queryByText(/This page is a work in progress/i)).toBeNull()
+    expect(screen.getByRole("dialog", { hidden: true }).hasAttribute("hidden")).toBe(true)
     const collapsedTrigger = screen.getByRole("button", { name: /open prototype notice/i })
     expect(collapsedTrigger).toBeDefined()
     expect(document.activeElement).toBe(collapsedTrigger)
@@ -78,7 +82,7 @@ describe("FloatingPrototypeBadge", () => {
     expect(document.activeElement).toBe(closeButtons[0])
 
     fireEvent.keyDown(window, { key: "Escape" })
-    expect(screen.queryByText(/This page is a work in progress/i)).toBeNull()
+    expect(screen.getByRole("dialog", { hidden: true }).hasAttribute("hidden")).toBe(true)
     const collapsedTrigger = screen.getByRole("button", { name: /open prototype notice/i })
     expect(collapsedTrigger).toBeDefined()
     expect(document.activeElement).toBe(collapsedTrigger)

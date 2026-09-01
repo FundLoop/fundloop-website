@@ -37,6 +37,33 @@
 
 ---
 
-#### Suggested Next Steps
+### session v2: Persistently Mount Dialog with Hidden Toggle and Hide Redundant Summary on Mobile
 
-- Commit, push, open PR into `dev`, merge, and update release PR #240 description.
+- **Timestamp:** 2026-09-01T19:24:30Z
+- **Agent:** Antigravity (Gemini 3.7 Flash)
+- **Branch:** `fix/brand-capitalization-and-a11y-refinements`
+- **Head:** `06bce7b`
+
+---
+
+#### Objective
+
+1. Keep `floating-prototype-notice-dialog` persistently mounted in the DOM using `hidden` toggles so `aria-controls` targets an always-mounted element.
+2. Hide redundant text summary on small screens (`hidden sm:block`) to prevent screen readers from announcing loop stages twice on mobile.
+3. Update tests in `tests/floating-prototype-badge.test.tsx`.
+
+---
+
+#### Actions Taken
+
+- Updated `components/floating-prototype-badge.tsx` with persistent mounting and `hidden={!isExpanded}`.
+- Updated `app/[locale]/(public)/page.tsx` with `hidden sm:block` on desktop summary line.
+- Updated `tests/floating-prototype-badge.test.tsx`.
+
+---
+
+#### Validation Notes
+
+- `pnpm lint` passed with 0 warnings.
+- `pnpm typecheck` passed (0 errors).
+- `pnpm vitest run tests/marketing-fork-section.test.ts tests/floating-prototype-badge.test.tsx` passed (`9/9`).

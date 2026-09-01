@@ -132,7 +132,7 @@ export default async function Home({ params }: PageProps) {
             </div>
 
             {/* Continuous loop stage summary and accessible flow */}
-            <div className="mt-4 border-t border-[color:var(--marketing-line)] pt-4 text-center sm:mt-6 sm:pt-5">
+            <div className="mt-4 hidden border-t border-[color:var(--marketing-line)] pt-4 text-center sm:mt-6 sm:block sm:pt-5">
               <div className="flex flex-wrap items-center justify-center gap-x-2 gap-y-1 text-xs text-[var(--marketing-muted-strong)]">
                 <span className="font-semibold text-[var(--marketing-ink)]">{whatIsFundLoopStages.people.title}:</span>
                 <span>{whatIsFundLoopStages.people.subtitle}</span>
