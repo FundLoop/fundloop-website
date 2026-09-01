@@ -18,12 +18,14 @@ vi.mock("next-intl", () => ({
 }))
 
 describe("FloatingPrototypeBadge", () => {
-  it("renders collapsed Prototype badge by default", () => {
+  it("renders collapsed Prototype badge by default without stealing initial focus", () => {
     render(<FloatingPrototypeBadge />)
 
-    expect(screen.getByRole("button", { name: /open prototype notice/i })).toBeDefined()
+    const trigger = screen.getByRole("button", { name: /open prototype notice/i })
+    expect(trigger).toBeDefined()
     expect(screen.getByText("Prototype")).toBeDefined()
     expect(screen.queryByText(/This page is a work in progress/i)).toBeNull()
+    expect(document.activeElement).not.toBe(trigger)
   })
 
   it("expands on click to display prototype notice and mailto support link", () => {
@@ -43,29 +45,39 @@ describe("FloatingPrototypeBadge", () => {
     expect(mailLinks.some((link) => link.getAttribute("href")?.includes("mailto:support@firebelly.xyz"))).toBe(true)
   })
 
-  it("collapses back when close button is clicked", () => {
+  it("collapses back and restores focus to trigger when close button is clicked", () => {
     render(<FloatingPrototypeBadge />)
 
-    fireEvent.click(screen.getByRole("button", { name: /open prototype notice/i }))
+    const trigger = screen.getByRole("button", { name: /open prototype notice/i })
+    fireEvent.click(trigger)
     expect(screen.getByText("Prototype Notice")).toBeDefined()
 
     const closeButtons = screen.getAllByRole("button", { name: /close notice/i })
-    fireEvent.click(closeButtons[0])
+    const topCloseButton = closeButtons[0]
+    expect(document.activeElement).toBe(topCloseButton)
+
+    fireEvent.click(topCloseButton)
 
     expect(screen.queryByText(/This page is a work in progress/i)).toBeNull()
-    expect(screen.getByRole("button", { name: /open prototype notice/i })).toBeDefined()
+    const collapsedTrigger = screen.getByRole("button", { name: /open prototype notice/i })
+    expect(collapsedTrigger).toBeDefined()
+    expect(document.activeElement).toBe(collapsedTrigger)
   })
 
-  it("manages focus on open and supports Escape key to close", () => {
+  it("manages focus on open and restores focus when closed via Escape key", () => {
     render(<FloatingPrototypeBadge />)
 
     const trigger = screen.getByRole("button", { name: /open prototype notice/i })
     fireEvent.click(trigger)
 
     expect(screen.getByText("Prototype Notice")).toBeDefined()
+    const closeButtons = screen.getAllByRole("button", { name: /close notice/i })
+    expect(document.activeElement).toBe(closeButtons[0])
 
     fireEvent.keyDown(window, { key: "Escape" })
     expect(screen.queryByText(/This page is a work in progress/i)).toBeNull()
-    expect(screen.getByRole("button", { name: /open prototype notice/i })).toBeDefined()
+    const collapsedTrigger = screen.getByRole("button", { name: /open prototype notice/i })
+    expect(collapsedTrigger).toBeDefined()
+    expect(document.activeElement).toBe(collapsedTrigger)
   })
 })

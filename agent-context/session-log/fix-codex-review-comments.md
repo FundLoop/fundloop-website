@@ -37,6 +37,35 @@
 
 ---
 
-#### Suggested Next Steps
+### session v2: Prevent Initial Mount Focus Stealing, Close Mobile Loop Connector, and Strengthen Test Assertions
 
-- Commit, push, open PR into `dev`, merge, and resolve review threads on PR #240.
+- **Timestamp:** 2026-09-01T19:04:45Z
+- **Agent:** Antigravity (Gemini 3.7 Flash)
+- **Branch:** `fix/codex-review-comments`
+- **Head:** `445a629`
+
+---
+
+#### Objective
+
+1. Prevent `FloatingPrototypeBadge` from stealing focus on initial page mount when `isExpanded` is false (`isInitialMount` guard).
+2. Add circular return connector (`peopleRewards` $\to$ `people`) to close the loop in the mobile diagram presentation.
+3. Add explicit `document.activeElement` assertions in `tests/floating-prototype-badge.test.tsx`.
+4. Assert all 4 loop stages (titles and subtitles) across EN, ES, and FR catalogs in `tests/marketing-fork-section.test.ts`.
+
+---
+
+#### Actions Taken
+
+- Modified `components/floating-prototype-badge.tsx` with `isInitialMount` ref.
+- Updated `app/[locale]/(public)/page.tsx` with return loop connector and updated comment.
+- Updated `tests/floating-prototype-badge.test.tsx` with activeElement checks on mount, expand, and collapse.
+- Updated `tests/marketing-fork-section.test.ts` with comprehensive 4-stage translations coverage for all locales.
+
+---
+
+#### Validation Notes
+
+- `pnpm lint` passed with 0 warnings.
+- `pnpm typecheck` passed (0 errors).
+- `pnpm vitest run tests/floating-prototype-badge.test.tsx tests/marketing-fork-section.test.ts` passed (`9/9`).

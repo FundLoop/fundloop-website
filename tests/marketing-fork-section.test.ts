@@ -38,13 +38,34 @@ describe("Marketing Fork Section Translations", () => {
   })
 
   it("has localized What is Fund Loop diagram stages in English, Spanish, and French", () => {
+    // English
     expect(enMessages.home.fork.whatIsFundLoop.stages.people.title).toBe("People")
+    expect(enMessages.home.fork.whatIsFundLoop.stages.people.subtitle).toBe("Participate in projects")
     expect(enMessages.home.fork.whatIsFundLoop.stages.projectsRevenue.title).toBe("Projects")
+    expect(enMessages.home.fork.whatIsFundLoop.stages.projectsRevenue.subtitle).toBe("Collect platform revenue")
+    expect(enMessages.home.fork.whatIsFundLoop.stages.projectsReward.title).toBe("Projects")
+    expect(enMessages.home.fork.whatIsFundLoop.stages.projectsReward.subtitle).toBe("Share 1% into FundLoop pool")
+    expect(enMessages.home.fork.whatIsFundLoop.stages.peopleRewards.title).toBe("People")
+    expect(enMessages.home.fork.whatIsFundLoop.stages.peopleRewards.subtitle).toBe("Earn credited rewards (governed)")
 
+    // Spanish
     expect(esMessages.home.fork.whatIsFundLoop.stages.people.title).toBe("Personas")
+    expect(esMessages.home.fork.whatIsFundLoop.stages.people.subtitle).toBe("Participan en proyectos")
     expect(esMessages.home.fork.whatIsFundLoop.stages.projectsRevenue.title).toBe("Proyectos")
+    expect(esMessages.home.fork.whatIsFundLoop.stages.projectsRevenue.subtitle).toBe("Generan ingresos de plataforma")
+    expect(esMessages.home.fork.whatIsFundLoop.stages.projectsReward.title).toBe("Proyectos")
+    expect(esMessages.home.fork.whatIsFundLoop.stages.projectsReward.subtitle).toBe("Aportan el 1 % a la pool de FundLoop")
+    expect(esMessages.home.fork.whatIsFundLoop.stages.peopleRewards.title).toBe("Personas")
+    expect(esMessages.home.fork.whatIsFundLoop.stages.peopleRewards.subtitle).toBe("Obtienen recompensas acreditadas")
 
+    // French
     expect(frMessages.home.fork.whatIsFundLoop.stages.people.title).toBe("Personnes")
+    expect(frMessages.home.fork.whatIsFundLoop.stages.people.subtitle).toBe("Participent aux projets")
     expect(frMessages.home.fork.whatIsFundLoop.stages.projectsRevenue.title).toBe("Projets")
+    expect(frMessages.home.fork.whatIsFundLoop.stages.projectsRevenue.subtitle).toBe("Collectent des revenus de plateforme")
+    expect(frMessages.home.fork.whatIsFundLoop.stages.projectsReward.title).toBe("Projets")
+    expect(frMessages.home.fork.whatIsFundLoop.stages.projectsReward.subtitle).toBe("Partagent 1 % dans le pool FundLoop")
+    expect(frMessages.home.fork.whatIsFundLoop.stages.peopleRewards.title).toBe("Personnes")
+    expect(frMessages.home.fork.whatIsFundLoop.stages.peopleRewards.subtitle).toBe("Cumulent des récompenses créditées")
   })
 })

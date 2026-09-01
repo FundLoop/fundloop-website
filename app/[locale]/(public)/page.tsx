@@ -125,9 +125,13 @@ export default async function Home({ params }: PageProps) {
                 <span className="text-xs font-semibold uppercase tracking-wider text-emerald-600 dark:text-emerald-400">{whatIsFundLoopStages.peopleRewards.title}</span>
                 <p className="mt-1 text-sm font-medium text-[var(--marketing-ink)]">{whatIsFundLoopStages.peopleRewards.subtitle}</p>
               </div>
+              <div className="flex items-center justify-center gap-2 pt-1 text-xs font-semibold text-emerald-600 dark:text-emerald-400">
+                <span>↻</span>
+                <span>{whatIsFundLoopStages.peopleRewards.title} → {whatIsFundLoopStages.people.title}</span>
+              </div>
             </div>
 
-            {/* Localized breakdown for Spanish, French, and Assistive Users */}
+            {/* Continuous loop stage summary and accessible flow */}
             <div className="mt-4 border-t border-[color:var(--marketing-line)] pt-4 text-center sm:mt-6 sm:pt-5">
               <div className="flex flex-wrap items-center justify-center gap-x-2 gap-y-1 text-xs text-[var(--marketing-muted-strong)]">
                 <span className="font-semibold text-[var(--marketing-ink)]">{whatIsFundLoopStages.people.title}:</span>
@@ -141,6 +145,7 @@ export default async function Home({ params }: PageProps) {
                 <span className="text-[var(--marketing-line-strong)]">→</span>
                 <span className="font-semibold text-[var(--marketing-ink)]">{whatIsFundLoopStages.peopleRewards.title}:</span>
                 <span>{whatIsFundLoopStages.peopleRewards.subtitle}</span>
+                <span className="text-[var(--marketing-line-strong)]">↺</span>
               </div>
             </div>
           </div>

@@ -9,8 +9,14 @@ export function FloatingPrototypeBadge() {
   const t = useTranslations("prototypeBadge")
   const triggerRef = useRef<HTMLButtonElement>(null)
   const closeButtonRef = useRef<HTMLButtonElement>(null)
+  const isInitialMount = useRef(true)
 
   useEffect(() => {
+    if (isInitialMount.current) {
+      isInitialMount.current = false
+      return
+    }
+
     if (isExpanded) {
       closeButtonRef.current?.focus()
 
