@@ -55,4 +55,17 @@ describe("FloatingPrototypeBadge", () => {
     expect(screen.queryByText(/This page is a work in progress/i)).toBeNull()
     expect(screen.getByRole("button", { name: /open prototype notice/i })).toBeDefined()
   })
+
+  it("manages focus on open and supports Escape key to close", () => {
+    render(<FloatingPrototypeBadge />)
+
+    const trigger = screen.getByRole("button", { name: /open prototype notice/i })
+    fireEvent.click(trigger)
+
+    expect(screen.getByText("Prototype Notice")).toBeDefined()
+
+    fireEvent.keyDown(window, { key: "Escape" })
+    expect(screen.queryByText(/This page is a work in progress/i)).toBeNull()
+    expect(screen.getByRole("button", { name: /open prototype notice/i })).toBeDefined()
+  })
 })

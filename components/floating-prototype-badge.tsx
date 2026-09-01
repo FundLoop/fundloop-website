@@ -1,12 +1,31 @@
 "use client"
 
-import { useState } from "react"
+import { useEffect, useRef, useState } from "react"
 import { useTranslations } from "next-intl"
 import { Mail, Sparkles, X } from "lucide-react"
 
 export function FloatingPrototypeBadge() {
   const [isExpanded, setIsExpanded] = useState(false)
   const t = useTranslations("prototypeBadge")
+  const triggerRef = useRef<HTMLButtonElement>(null)
+  const closeButtonRef = useRef<HTMLButtonElement>(null)
+
+  useEffect(() => {
+    if (isExpanded) {
+      closeButtonRef.current?.focus()
+
+      const handleKeyDown = (event: KeyboardEvent) => {
+        if (event.key === "Escape") {
+          setIsExpanded(false)
+        }
+      }
+
+      window.addEventListener("keydown", handleKeyDown)
+      return () => window.removeEventListener("keydown", handleKeyDown)
+    } else {
+      triggerRef.current?.focus()
+    }
+  }, [isExpanded])
 
   return (
     <div className="fixed bottom-5 right-5 z-40 flex flex-col items-end select-none">
@@ -27,6 +46,7 @@ export function FloatingPrototypeBadge() {
               </h3>
             </div>
             <button
+              ref={closeButtonRef}
               type="button"
               onClick={() => setIsExpanded(false)}
               aria-label={t("close")}
@@ -61,6 +81,7 @@ export function FloatingPrototypeBadge() {
         </div>
       ) : (
         <button
+          ref={triggerRef}
           type="button"
           onClick={() => setIsExpanded(true)}
           aria-expanded={false}
