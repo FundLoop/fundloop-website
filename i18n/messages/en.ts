@@ -1344,7 +1344,7 @@ export const enMessages = {
       body: "FundLoop connects software builders and verified participants through a transparent shared-upside model.",
       whatIsFundLoop: {
         title: "What is the Fund Loop?",
-        body: "A continuous cycle where companies and projects share a portion of their revenue with their valued customers, volunteers and users. Fundloop pools the resources and ensures they reach the right people. Community members receive transparent monthly rewards.\n\nOne way to think of FundLoop is a cash back loyalty program for users. Another potential use of FundLoop is as a managed universal basic income platform. For participating companies FundLoop is a growth engine and potentially a replacement for their marketing budget.",
+        body: "A continuous cycle where companies and projects share a portion of their revenue with their valued customers, volunteers and users. FundLoop pools the resources and ensures they reach the right people. Community members receive transparent monthly rewards.\n\nOne way to think of FundLoop is a cash back loyalty program for users. Another potential use of FundLoop is as a managed universal basic income platform. For participating companies FundLoop is a growth engine and potentially a replacement for their marketing budget.",
         imageAlt: "What is FundLoop - A continuous cycle of value creation and money flow between projects and people",
         tagline: "A continuous cycle of value creation and community reward.",
         subtagline: "Capital · Impact · Community",
