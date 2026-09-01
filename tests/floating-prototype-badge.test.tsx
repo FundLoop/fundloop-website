@@ -23,6 +23,7 @@ describe("FloatingPrototypeBadge", () => {
 
     const trigger = screen.getByRole("button", { name: /open prototype notice/i })
     expect(trigger).toBeDefined()
+    expect(trigger.getAttribute("aria-controls")).toBe("floating-prototype-notice-dialog")
     expect(screen.getByText("Prototype")).toBeDefined()
     expect(screen.queryByText(/This page is a work in progress/i)).toBeNull()
     expect(document.activeElement).not.toBe(trigger)
@@ -34,6 +35,8 @@ describe("FloatingPrototypeBadge", () => {
     const badgeButton = screen.getByRole("button", { name: /open prototype notice/i })
     fireEvent.click(badgeButton)
 
+    const dialog = screen.getByRole("dialog")
+    expect(dialog.getAttribute("id")).toBe("floating-prototype-notice-dialog")
     expect(screen.getByText("Prototype Notice")).toBeDefined()
     expect(
       screen.getByText(
