@@ -1294,34 +1294,60 @@ export const frMessages = {
       body: "FundLoop relie équipes logicielles et participants vérifiés dans un modèle transparent de valeur partagée.",
       whatIsFundLoop: {
         title: "Qu'est-ce que le Fund Loop ?",
-        body: "Une boucle économique continue reliant les projets qui mutualisent leurs revenus aux personnes vérifiées participant à leur croissance.",
-        projectLabel: "Projets & Entreprises",
-        participantLabel: "Personnes & Participants",
-        ctas: {
-          projectHover: "C'est moi, je dirige une entreprise qui souhaite participer",
-          participantHover: "C'est moi, j'aimerais participer et accéder aux récompenses mensuelles",
-        },
-        nodes: {
+        body: "Un cycle continu où les entreprises et projets partagent une partie de leurs revenus avec leurs précieux clients, bénévoles et utilisateurs. FundLoop mutualise les ressources et veille à ce qu'elles parviennent aux bonnes personnes. Les membres de la communauté reçoivent des récompenses mensuelles transparentes.\n\nUne façon de concevoir FundLoop est comme un programme de fidélité cash back pour les utilisateurs. Une autre utilisation potentielle de FundLoop est comme une plateforme gérée de revenu universel de base. Pour les entreprises participantes, FundLoop est un moteur de croissance et potentiellement un remplacement de leur budget marketing.",
+        imageAlt: "Qu'est-ce que FundLoop - Un cycle continu de création de valeur et de flux financier entre projets et participants",
+        tagline: "Un cycle continu de création de valeur et de récompense communautaire.",
+        subtagline: "Capital · Impact · Communauté",
+        stages: {
           people: {
             title: "Personnes",
-            body: "Une communauté de soutiens stimulant l'adoption et l'usage.",
+            subtitle: "Participent aux projets",
           },
-          participation: {
-            title: "Participation",
-            body: "Interagissez, vérifiez l'identité, connectez-vous et contribuez.",
-          },
-          projects: {
+          projectsRevenue: {
             title: "Projets",
-            body: "Des projets engagés versant 1 % de leurs revenus mensuels.",
+            subtitle: "Collectent des revenus de plateforme",
           },
-          fundloop: {
-            title: "FundLoop",
-            body: "Capital recyclé et redistribué aux utilisateurs actifs.",
+          projectsReward: {
+            title: "Projets",
+            subtitle: "Partagent 1 % dans le pool FundLoop",
+          },
+          peopleRewards: {
+            title: "Personnes",
+            subtitle: "Cumulent des récompenses créditées",
           },
         },
+        center: {
+          cubidLabel: "CUBID",
+          cubidDesc: "Identité vérifiée et preuve d'humanité",
+          allocatorLabel: "Allocator",
+          allocatorDesc: "Redistribution gouvernée de la valeur",
+        },
+        moneyFlow: "Flux financier",
       },
-      founders: { eyebrow: "Pour fondateurs et builders", title: "Un modèle de croissance au-delà de la publicité", body: "Modélisez la redirection du CAC vers les utilisateurs actifs, explorez la rétention et préparez un workflow mensuel gouverné.", cta: "Explorer le parcours fondateur", badge: "Modèle interactif", features: ["Modéliser des dépenses d’acquisition redirigées", "Explorer les hypothèses de rétention et de MAU", "Préparer un workflow mensuel gouverné"] },
-      participants: { eyebrow: "Pour les participants", title: "Construisez un historique de participation vérifié", body: "Créez un profil privé, découvrez des logiciels alignés et consultez les résultats publiés pendant que le paiement direct reste en développement.", cta: "Explorer la participation", badge: "Privé et vérifié", features: ["Découvrir des projets et créer un vrai signal", "Utiliser une preuve privée via CUBID", "Consulter les résultats sans promesse de paiement"] },
+      founders: {
+        eyebrow: "Parcours fondateur",
+        title: "Pour les fondateurs et créateurs d'applications",
+        body: "Découvrez comment fonctionne FundLoop pour les fondateurs : redirigez les dépenses publicitaires traditionnelles vers des pools de valeur partagée, alignez votre communauté sur l'usage réel et préparez-vous à des cycles mensuels de règlement gouvernés et auditables.",
+        cta: "Explorer le fonctionnement pour les fondateurs",
+        badge: "Avantages fondateurs",
+        features: [
+          "Découvrez les avantages de mutualiser 1 % de vos revenus en récompenses pour utilisateurs organiques",
+          "Découvrez comment le partage de valeur transforme les utilisateurs passifs en défenseurs actifs",
+          "Préparez-vous à un cycle mensuel gouverné et à une attribution transparente",
+        ],
+      },
+      participants: {
+        eyebrow: "Parcours individuel",
+        title: "Pour les utilisateurs et contributeurs du quotidien",
+        body: "Découvrez comment fonctionne FundLoop pour les particuliers : découvrez des produits logiciels vérifiés, participez avec une vérification d'identité privée via CUBID et cumulez des récompenses créditées transparentes.",
+        cta: "Explorer le fonctionnement pour les particuliers",
+        badge: "Avantages individuels",
+        features: [
+          "Découvrez les avantages d'adopter des applications alignées et de créer du signal vérifié",
+          "Apprenez comment la preuve d'identité privée protège vos données sans fuite",
+          "Comprenez comment sont calculées les allocations mensuelles et les récompenses communautaires",
+        ],
+      },
     },
     bannerAlt: "Vue d’ensemble de FundLoop",
     valueLoopShowcase: { alt: "Boucle de prospérité mutuelle FundLoop", eyebrow: "Circulation continue de la valeur", title: "Une boucle fermée conçue pour la prospérité partagée", body: "Les projets peuvent engager de la valeur, les participants vérifiés créent du signal et chaque résultat reste auditable avant toute autorisation de paiement." },
@@ -2121,5 +2147,13 @@ export const frMessages = {
       cookies: "Politique de cookies",
       terms: "Conditions d’utilisation",
     },
+  },
+  prototypeBadge: {
+    label: "Prototype",
+    title: "Avis de prototype",
+    body: "Cette page est en cours de développement. Merci de votre patience si des éléments ne fonctionnent pas. N'hésitez pas à envoyer un message à support@firebelly.xyz pour nous faire part de vos remarques ou suggestions.",
+    contactUs: "Envoyer un e-mail à support@firebelly.xyz",
+    openNotice: "Ouvrir l'avis de prototype",
+    close: "Fermer l'avis",
   },
 } as const
