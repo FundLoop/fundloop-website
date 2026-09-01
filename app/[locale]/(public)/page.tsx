@@ -105,7 +105,7 @@ export default async function Home({ params }: PageProps) {
             </div>
 
             {/* Mobile-optimized readable continuous loop presentation */}
-            <div className="flex flex-col gap-3 sm:hidden" aria-hidden="true">
+            <div className="flex flex-col gap-3 sm:hidden">
               <div className="rounded-2xl border border-emerald-500/30 bg-emerald-950/20 p-4 text-center">
                 <span className="text-xs font-semibold uppercase tracking-wider text-emerald-600 dark:text-emerald-400">{whatIsFundLoopStages.people.title}</span>
                 <p className="mt-1 text-sm font-medium text-[var(--marketing-ink)]">{whatIsFundLoopStages.people.subtitle}</p>

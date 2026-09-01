@@ -37,6 +37,7 @@ export function FloatingPrototypeBadge() {
     <div className="fixed bottom-5 right-5 z-40 flex flex-col items-end select-none">
       {isExpanded ? (
         <div
+          id="floating-prototype-notice-dialog"
           role="dialog"
           aria-labelledby="prototype-notice-title"
           className="relative w-80 max-w-[calc(100vw-2.5rem)] rounded-2xl border border-amber-500/40 bg-neutral-950/95 p-5 text-neutral-100 shadow-2xl backdrop-blur-xl animate-in fade-in zoom-in-95 duration-200"
@@ -91,6 +92,7 @@ export function FloatingPrototypeBadge() {
           type="button"
           onClick={() => setIsExpanded(true)}
           aria-expanded={false}
+          aria-controls="floating-prototype-notice-dialog"
           aria-label={t("openNotice")}
           className="group flex items-center gap-2 rounded-full border border-amber-500/40 bg-neutral-950/85 px-3.5 py-1.5 text-xs font-semibold text-amber-300 shadow-xl backdrop-blur-md transition-all duration-200 hover:scale-105 hover:border-amber-400 hover:bg-neutral-900 hover:text-amber-200 hover:shadow-amber-500/10 active:scale-95"
         >

@@ -27,6 +27,7 @@ describe("Marketing Fork Section Translations", () => {
 
   it("has updated What is Fund Loop description in English, Spanish, and French", () => {
     expect(enMessages.home.fork.whatIsFundLoop.body).toContain("A continuous cycle where companies and projects share a portion of their revenue")
+    expect(enMessages.home.fork.whatIsFundLoop.body).toContain("FundLoop pools the resources")
     expect(enMessages.home.fork.whatIsFundLoop.body).toContain("cash back loyalty program for users")
     expect(enMessages.home.fork.whatIsFundLoop.body).toContain("managed universal basic income platform")
 
