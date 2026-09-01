@@ -36,4 +36,15 @@ describe("Marketing Fork Section Translations", () => {
     expect(frMessages.home.fork.whatIsFundLoop.body).toContain("Un cycle continu où les entreprises et projets partagent une partie de leurs revenus")
     expect(frMessages.home.fork.whatIsFundLoop.body).toContain("revenu universel de base")
   })
+
+  it("has localized What is Fund Loop diagram stages in English, Spanish, and French", () => {
+    expect(enMessages.home.fork.whatIsFundLoop.stages.people.title).toBe("People")
+    expect(enMessages.home.fork.whatIsFundLoop.stages.projectsRevenue.title).toBe("Projects")
+
+    expect(esMessages.home.fork.whatIsFundLoop.stages.people.title).toBe("Personas")
+    expect(esMessages.home.fork.whatIsFundLoop.stages.projectsRevenue.title).toBe("Proyectos")
+
+    expect(frMessages.home.fork.whatIsFundLoop.stages.people.title).toBe("Personnes")
+    expect(frMessages.home.fork.whatIsFundLoop.stages.projectsRevenue.title).toBe("Projets")
+  })
 })
