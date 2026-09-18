@@ -359,6 +359,7 @@ describe("Supabase delivery parity", () => {
     const confirmedPrune = "supabase functions deploy --project-ref \"$SUPABASE_PROJECT_REF\" --prune --jobs 1 --yes"
     const postdeployReadback = "node scripts/verify-supabase-function-parity.mjs postdeploy"
 
+    expect(workflow).toContain("REVOKE ALL ON TABLE public.supabase_deploy_context FROM anon, authenticated")
     expect(workflow).toContain("verify-supabase-schema-parity.mjs")
     expect(workflow).toContain("deno cache --no-check --frozen --config supabase/functions/deno.json")
     expect(workflow).toContain(predeployGuard)

@@ -43,3 +43,44 @@ The admin UI's delete-user and delete-organization buttons call the soft-delete 
 
 - Full RLS policy migration (reads): public reference/content reads, owner-scoped rows, server-only tables, and admin screens moved to server actions using the admin client.
 - Then continue the Production launch plan (rehearsal, cron_logs handover, deploy).
+
+### session v2: Handle workflow-created supabase_deploy_context
+
+- **Timestamp:** 2026-09-18T22:45:00Z
+- **Agent:** Claude Code (Claude Opus 5)
+- **Branch:** `fix/security-revoke-public-writes`
+- **Head before commit:** `b1ea883`
+
+---
+
+#### Objective
+
+Fix the CI fresh-schema replay failure: `relation "public.supabase_deploy_context" does not exist`.
+
+---
+
+#### Actions Taken
+
+- The table list was taken from Dev, but `supabase_deploy_context` is created by the deploy workflow, not by migrations, so it doesn't exist in a fresh schema. The other 43 tables are all created by migrations.
+- The migration now revokes client access to `supabase_deploy_context` only when it exists.
+- The deploy workflow now runs `REVOKE ALL ON TABLE public.supabase_deploy_context FROM anon, authenticated` right after creating it. Previously only the migration-evidence table was revoked, leaving the target-environment record that migrations read anon-writable on Dev.
+- Added a workflow assertion to `tests/supabase-delivery-parity.test.ts`.
+
+---
+
+#### Validation Notes
+
+- Delivery-parity, deployment-audit and environment-manifest tests: 43/43.
+- The schema-parity script dumps with `--no-privileges` and creates the context table before replay, so it needs no change.
+
+---
+
+#### Reflections
+
+Out-of-band tables are a trap for Dev-derived allowlists: cross-check every name against migrations before hard-coding it.
+
+---
+
+#### Suggested Next Steps
+
+- Confirm the CI fresh-schema replay passes, including `public_client_write_grants.sql`.
