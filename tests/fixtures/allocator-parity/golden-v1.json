@@ -1,0 +1,663 @@
+{
+  "version": "allocator-parity-fixtures.v1",
+  "fixturesSha256": "1d117d1a918a9bda9ca0d99eea0d48d5907b6129495cfd35a33bb31b8b6bb015",
+  "outcomes": [
+    {
+      "id": "size-001",
+      "inputSha256": "26f7e8c0ce00d33243c53ed8addf1c49b8f755d5da05708a2ae970a59f578df7",
+      "ok": true,
+      "manifestHash": "ee283fd22c152a671c1dbf883576a75279fd79492be9964cd866954d98922b52",
+      "selectedPreviewHash": "1eeb6300070151ce3c5cde7a1f521729439b71a991d604324be2bfd5fac8d3ba",
+      "resultHash": "a0c1bdcd7d9e3c96302dccf1fcdd15ed965d5831f739079762d17fab829492d9",
+      "userAllocationsSha256": "f92edc7f20f404f51821e36f8da2ecc020c636c2c9bd51188840e586d5fac46c",
+      "sourceDispositionsSha256": "a0ac1dd5577144b5df66f95899db9be24e50c420889fccf3123d867e32dc5894",
+      "resultSha256": "a36189f47a99f46bf95249ff8301ad1b1afe790f7ed86eb73a1ba3006972bcbc",
+      "userCount": 1,
+      "dispositionCount": 3,
+      "totals": {
+        "currentFundedExactUsd": "6271.05",
+        "currentFundedMinor": "627105",
+        "harvestedUnclaimedMinor": "0",
+        "carryInMinor": "0",
+        "totalInputMinor": "627105",
+        "initialClaimMinor": "620332",
+        "scorePoolMinor": "6773",
+        "topUpMinor": "6773",
+        "carryOutResidueMinor": "0",
+        "finalAllocationMinor": "627105",
+        "subMinorExactUsd": "0"
+      },
+      "invariantsOk": true
+    },
+    {
+      "id": "size-002",
+      "inputSha256": "5470cbc12646ca2ee8a5784fbd7abda7c2be22358dd11a44d545d998dc4f2952",
+      "ok": true,
+      "manifestHash": "c031d5f9303cf7830507e2e08e746b8d9a88c6cf6962f22acf3934e14d87e6fc",
+      "selectedPreviewHash": "2be2dc59cb1afb90dc47eeb53c780187de736eab98ce72f6c48699d66e313611",
+      "resultHash": "a33c8d18c7d43df75cbcdae7e78d8f9936916f71e1de9b7501f3f07ddf092c9f",
+      "userAllocationsSha256": "a03c1a3e04a9052950eba08ea5e11b60e1c97f5b8020700ed9cf8c5c6f8b2938",
+      "sourceDispositionsSha256": "9c1292bf9b8c1c4e1be2b0b18b6179d382936c8c415c72efe46c1675da7c1fa6",
+      "resultSha256": "25f3aa9ad9e0231b46ea6b53907407cbccf988ef320aa8c71e8a83ff354bd438",
+      "userCount": 2,
+      "dispositionCount": 8,
+      "totals": {
+        "currentFundedExactUsd": "7343.32",
+        "currentFundedMinor": "734332",
+        "harvestedUnclaimedMinor": "538086",
+        "carryInMinor": "0",
+        "totalInputMinor": "1272418",
+        "initialClaimMinor": "224302",
+        "scorePoolMinor": "510030",
+        "topUpMinor": "448602",
+        "carryOutResidueMinor": "599514",
+        "finalAllocationMinor": "672904",
+        "subMinorExactUsd": "0"
+      },
+      "invariantsOk": true
+    },
+    {
+      "id": "size-003",
+      "inputSha256": "ed9f166525f39ecca43725475599e88f7facb291fd1427021a4c2f53e6619859",
+      "ok": true,
+      "manifestHash": "58ed3b0f13932781c07a81e3616bb0b40a1881996a4017e4dd9fd1ec214fa969",
+      "selectedPreviewHash": "51a64554335ee27b403b36385c8923894da49c0188173626d167d42c57a584e7",
+      "resultHash": "04d198807ee03584360ea0949bd6ec259b771ba2ae3281346f1ca14abd46ad3a",
+      "userAllocationsSha256": "c65bfa5bebd2afbb672ebc4b1938853c0cbdff08c4ba7d62877d3d6d7a33437b",
+      "sourceDispositionsSha256": "039f0d2c8e68124ac939611c780ecd2a204c27bd604831626fcf3b32abc79997",
+      "resultSha256": "47456bb56f96a238e5a23c7c5b8d71f6bcc1a533e1605139c54449e05539cd87",
+      "userCount": 3,
+      "dispositionCount": 12,
+      "totals": {
+        "currentFundedExactUsd": "7953.78",
+        "currentFundedMinor": "795378",
+        "harvestedUnclaimedMinor": "486812",
+        "carryInMinor": "0",
+        "totalInputMinor": "1282190",
+        "initialClaimMinor": "231797",
+        "scorePoolMinor": "563581",
+        "topUpMinor": "463589",
+        "carryOutResidueMinor": "586804",
+        "finalAllocationMinor": "695386",
+        "subMinorExactUsd": "0"
+      },
+      "invariantsOk": true
+    },
+    {
+      "id": "size-005",
+      "inputSha256": "63dea690a096f58497632bdcbc94f8e9182dd8bb22cd5ff8e092a718fb8cdac1",
+      "ok": true,
+      "manifestHash": "82a59dab975b69dd2229d7c2b3e6fab2744284ae5290355d3c7556876e5415ae",
+      "selectedPreviewHash": "bbc3952fbf2ed79eca351a7c27ce5f7ed3d7ed61af216e3daa7c18855268e5be",
+      "resultHash": "4920277a3667b5ab65561f1875db9c62897402630e043b48f88ffdf899199f59",
+      "userAllocationsSha256": "8fe8b92430d7cb81f94440fb00c34f387b5c0cb95ae38dd1f979ded42bc50362",
+      "sourceDispositionsSha256": "63e510ca80235de1b0eb28c966f938b7b8f71e12aa274b5f6b63c63bfa34c5bb",
+      "resultSha256": "c284e5cedb5bd0e0b2e3d3ab3908db9dddf1b4218a17ca5318badbfc3ae0baad",
+      "userCount": 5,
+      "dispositionCount": 20,
+      "totals": {
+        "currentFundedExactUsd": "13130.77",
+        "currentFundedMinor": "1313077",
+        "harvestedUnclaimedMinor": "720249",
+        "carryInMinor": "0",
+        "totalInputMinor": "2033326",
+        "initialClaimMinor": "610403",
+        "scorePoolMinor": "702674",
+        "topUpMinor": "956768",
+        "carryOutResidueMinor": "466155",
+        "finalAllocationMinor": "1567171",
+        "subMinorExactUsd": "0"
+      },
+      "invariantsOk": true
+    },
+    {
+      "id": "size-010",
+      "inputSha256": "508a414ecdcc4be9cddd8e6f8b5841a5997b817741a07d91b3f49dce1675363d",
+      "ok": false,
+      "error": "funded_allocation_v2_invariant_failed"
+    },
+    {
+      "id": "size-025",
+      "inputSha256": "0df6ea8bd302464c1d5bec1889a2c0c231a661a3df94d732c53e173e91553b02",
+      "ok": false,
+      "error": "funded_allocation_v2_invariant_failed"
+    },
+    {
+      "id": "size-050",
+      "inputSha256": "46c6bac609dd037d48a7e42b7d8fcf163be19df372552b2e3ab81dd128911cdd",
+      "ok": false,
+      "error": "funded_allocation_v2_invariant_failed"
+    },
+    {
+      "id": "size-100",
+      "inputSha256": "30059e680207cd36dd8f3f2d964176a1491092855e185877e52d7f884808953b",
+      "ok": false,
+      "error": "funded_allocation_v2_invariant_failed"
+    },
+    {
+      "id": "size-250",
+      "inputSha256": "a0d0255488fecddfe2b7b7ba7faa178ce0c1d9e7389726c55878ce0e1de6daa4",
+      "ok": false,
+      "error": "funded_allocation_v2_invariant_failed"
+    },
+    {
+      "id": "size-500",
+      "inputSha256": "a524368f208614f4add354c5d15b454acdb56f15200fd1801038d4bf52e76fd2",
+      "ok": false,
+      "error": "funded_allocation_v2_invariant_failed"
+    },
+    {
+      "id": "size-1000",
+      "inputSha256": "77385afc5072297ef1dc3400dc948d259651d0d5e8e6f41ada6406025774be27",
+      "ok": false,
+      "error": "funded_allocation_v2_invariant_failed"
+    },
+    {
+      "id": "size-2500",
+      "inputSha256": "800a0ca5aa20d7bd3915fd30bce606badca5f4e71e981aca1701623822aab688",
+      "ok": false,
+      "error": "funded_allocation_v2_invariant_failed"
+    },
+    {
+      "id": "size-5000",
+      "inputSha256": "477c2454194141aced7475a3c8b3ecafe401097f179bdcda3bd9e81848438bc5",
+      "ok": true,
+      "manifestHash": "8e6c886ce0310ad9f71cf9c17b9a30e4f8d2152db1c4e5be50ab156efbd5e1b4",
+      "selectedPreviewHash": "cb3cc0fe7894d0a7a5817b7df372bf408beabc0472f695fbc8e335ca73924b59",
+      "resultHash": "de41a4c826ac1f6e80d8efad8aaa0e2e4df2a4c129c4df48ef13881fc6df8101",
+      "userAllocationsSha256": "61256514873e7719324d4d4fccba3af8c413059f64e527ec3baa54cab6410c2f",
+      "sourceDispositionsSha256": "f6f2e534649af214ce2045166676f40256e5d5b085b462055b3d3ce39c58a3d6",
+      "resultSha256": "48a4ccd3a39541b250f1a8655d332694fad5a9384597783f85aadf9b81d46ae2",
+      "userCount": 5000,
+      "dispositionCount": 10013,
+      "totals": {
+        "currentFundedExactUsd": "12362.75",
+        "currentFundedMinor": "1236275",
+        "harvestedUnclaimedMinor": "456800",
+        "carryInMinor": "0",
+        "totalInputMinor": "1693075",
+        "initialClaimMinor": "619053",
+        "scorePoolMinor": "617222",
+        "topUpMinor": "1074022",
+        "carryOutResidueMinor": "0",
+        "finalAllocationMinor": "1693075",
+        "subMinorExactUsd": "0"
+      },
+      "invariantsOk": true
+    },
+    {
+      "id": "size-10000",
+      "inputSha256": "a394fa6becf41be37f218e7db86bb7a0588ec3f570be57cac3b140ffa34622fb",
+      "ok": true,
+      "manifestHash": "4469cbf4c281400a1de2c4d14d97653ab9d19ca705129d29dd9bdbe6526e4e42",
+      "selectedPreviewHash": "cf463fbe5141b83935a1c0311ddcb722a95ba345d653bee0224fdcf47f407d25",
+      "resultHash": "e9c8ea08cf1b1fbfef50467c42a29d0087aded5498c7160e4f45e8182c3a059f",
+      "userAllocationsSha256": "365c580452d76741c83b777163d4f389b7ece758bd1c9692ffd227a7b42ed35b",
+      "sourceDispositionsSha256": "1cd1d951b5ac20b0e0f530f2afac06e13c980e0b1acc028aba25b563eb90dbe7",
+      "resultSha256": "5bb974d74e37e6fb36c05af1f27dbbf67f3750d6f9b28b2ef4aa048c637677ba",
+      "userCount": 10000,
+      "dispositionCount": 20007,
+      "totals": {
+        "currentFundedExactUsd": "8556.56",
+        "currentFundedMinor": "855656",
+        "harvestedUnclaimedMinor": "228365",
+        "carryInMinor": "0",
+        "totalInputMinor": "1084021",
+        "initialClaimMinor": "430123",
+        "scorePoolMinor": "425533",
+        "topUpMinor": "653898",
+        "carryOutResidueMinor": "0",
+        "finalAllocationMinor": "1084021",
+        "subMinorExactUsd": "0"
+      },
+      "invariantsOk": true
+    },
+    {
+      "id": "score-zero",
+      "inputSha256": "348bc744ddffcc89e97d23b68be2c6af2ee8270e6bdf5558834869625fc4b881",
+      "ok": true,
+      "manifestHash": "2a216cb6e46c148973509bf5b9cac9d92647cad196c648abc7a29f4759f45864",
+      "selectedPreviewHash": "ec5601d37e0d1c0bb182a04bd5244bf682447cd0dc37db2a2d04ba7acc5149ca",
+      "resultHash": "839548b9366477028fdfa670dcb1a88ff7ae51cd489b0df7f37aa8856071ff42",
+      "userAllocationsSha256": "5c6e6a173cda6b0c712094372a781b0739eaa60ef032dccd16372f1367130b87",
+      "sourceDispositionsSha256": "58dc2ef3bebc59b29533b1a7e427fe2f5943d98ae3365ca21206a66d66575e90",
+      "resultSha256": "49080d73c2c337513e7047e87ec72fb1d7a5ae5edb7030cbbc30ea07a5e2fa39",
+      "userCount": 20,
+      "dispositionCount": 6,
+      "totals": {
+        "currentFundedExactUsd": "7789.11",
+        "currentFundedMinor": "778911",
+        "harvestedUnclaimedMinor": "587692",
+        "carryInMinor": "0",
+        "totalInputMinor": "1366603",
+        "initialClaimMinor": "0",
+        "scorePoolMinor": "778911",
+        "topUpMinor": "0",
+        "carryOutResidueMinor": "1366603",
+        "finalAllocationMinor": "0",
+        "subMinorExactUsd": "0"
+      },
+      "invariantsOk": true
+    },
+    {
+      "id": "score-max",
+      "inputSha256": "363b8bbe7c232a01e8ab318863c98f59c5a2f048bf541236538a0fa8f5841a7c",
+      "ok": false,
+      "error": "funded_allocation_v2_invariant_failed"
+    },
+    {
+      "id": "score-tied",
+      "inputSha256": "6373a51cd36e98009802f784e4fb176367f5a304ae5fea250eb3b5ba7a95f8c3",
+      "ok": false,
+      "error": "funded_allocation_v2_invariant_failed"
+    },
+    {
+      "id": "score-mixed",
+      "inputSha256": "54e6d995000d0ecfe7e7999b31a9ef3e219532a526f253bbb3f0293bfcb5912e",
+      "ok": false,
+      "error": "funded_allocation_v2_invariant_failed"
+    },
+    {
+      "id": "score-sparse",
+      "inputSha256": "35fbc0b0d991dbedd179fa3efc6678f1d03187817e09fc1855e1d7f68f640f43",
+      "ok": false,
+      "error": "funded_allocation_v2_invariant_failed"
+    },
+    {
+      "id": "score-zero-large",
+      "inputSha256": "d0757eb86035dd5dfa596b0aeadca463aa2499a88f055fb6fd78511379dd2edc",
+      "ok": true,
+      "manifestHash": "55ccac419ac2a8b325c7e9861169b25cc6d8aed6b30e55970ff066bf0284f40b",
+      "selectedPreviewHash": "354e3582ea413a2c6189ff14bf48757a6e08f7fe62c01e8f95b515c8dc038b53",
+      "resultHash": "557945448b5828763654bbfa84a0a0be246535844563652ef5ac5051f1b4f718",
+      "userAllocationsSha256": "d874bd069f3ba37fae9178bc3dabe5ecf9d02f216f50cde51907863c2bfa0daf",
+      "sourceDispositionsSha256": "cda90f066452739afef6d54f0b586a7925a3596f0b9ebba503fb91420d5e7df9",
+      "resultSha256": "86117539bb820392a5a72dd747694cb7fb0ba14bee954ed6a0bf72eb0745d05b",
+      "userCount": 400,
+      "dispositionCount": 10,
+      "totals": {
+        "currentFundedExactUsd": "19190.25",
+        "currentFundedMinor": "1919025",
+        "harvestedUnclaimedMinor": "159941",
+        "carryInMinor": "0",
+        "totalInputMinor": "2078966",
+        "initialClaimMinor": "0",
+        "scorePoolMinor": "1919025",
+        "topUpMinor": "0",
+        "carryOutResidueMinor": "2078966",
+        "finalAllocationMinor": "0",
+        "subMinorExactUsd": "0"
+      },
+      "invariantsOk": true
+    },
+    {
+      "id": "score-max-no-pool",
+      "inputSha256": "d666bd83aad649f62518fefb3ec6d6d71776a5fa75eba5c6d4fed8904ac9a905",
+      "ok": false,
+      "error": "funded_allocation_v2_invariant_failed"
+    },
+    {
+      "id": "score-mixed-overlap",
+      "inputSha256": "29f713492eab92dd0bf601e50d531249028794bb080f4e51200726098cc85200",
+      "ok": false,
+      "error": "funded_allocation_v2_invariant_failed"
+    },
+    {
+      "id": "cap-1.00",
+      "inputSha256": "05ed9f421a64a162f51cfce9a7f5794dbd5b5ff1496af4be15f2e7e1ed8f74e3",
+      "ok": false,
+      "error": "funded_allocation_v2_invariant_failed"
+    },
+    {
+      "id": "cap-1.25",
+      "inputSha256": "b6a61f5fc63d91048d9bfe869598cb02617bfd3061589f169162a0e15da4a6bd",
+      "ok": true,
+      "manifestHash": "9c5d85b3d196cd6345d72bf7edca9702d7dd1a58e96e4f70d133f6352ac00a40",
+      "selectedPreviewHash": "20841beb1f4e9a0def0aef078826586acc62f1dc29624cacb11d1cbec4d21838",
+      "resultHash": "cbe21e6d62807327db87f33ee5e8c7641a8ca0c4c39720311bc2d40deae3288c",
+      "userAllocationsSha256": "f88a2db9ead8dec81d408212e69ea5f3986005a4aa2fee5b0c2808c784246980",
+      "sourceDispositionsSha256": "0b475f03412e040a95ddf9120f192866cc44966bdcda91b9da9f94daa11699f5",
+      "resultSha256": "4251da611d6b10b2107a1eb6761ab577b6d9aa00336386808831967b25cc87a3",
+      "userCount": 30,
+      "dispositionCount": 66,
+      "totals": {
+        "currentFundedExactUsd": "6238.24",
+        "currentFundedMinor": "623824",
+        "harvestedUnclaimedMinor": "487432",
+        "carryInMinor": "0",
+        "totalInputMinor": "1111256",
+        "initialClaimMinor": "323651",
+        "scorePoolMinor": "300173",
+        "topUpMinor": "75243",
+        "carryOutResidueMinor": "712362",
+        "finalAllocationMinor": "398894",
+        "subMinorExactUsd": "0"
+      },
+      "invariantsOk": true
+    },
+    {
+      "id": "cap-2.00",
+      "inputSha256": "45a3089dc98693e5bbd420985423403289e963947f116faa34db2a02dac8d7f9",
+      "ok": false,
+      "error": "funded_allocation_v2_invariant_failed"
+    },
+    {
+      "id": "cap-5.50",
+      "inputSha256": "b555425c570b57389b15ce261e894c82c8d435778aad8d8967e030cd69bdad0c",
+      "ok": true,
+      "manifestHash": "430a1a13461fd0ac53b84208e561c91c7e2be7b26afb387996ef7eb5e05961ed",
+      "selectedPreviewHash": "db6812b982aea8f5a013d3b15993039d40f3e974f07765616e01bf338106a746",
+      "resultHash": "098eef416fa446f92c75be3bdfa11fecd2e7a208e1c776a10da7100eaf80023f",
+      "userAllocationsSha256": "547f8a1dcc31eefe2331f776f75b6b779d063f0cffafe0019543d538a4c0d2b3",
+      "sourceDispositionsSha256": "97501ce80024a85927dc2fc36bbbd529b2d19b019f143ceffdf1ddc28af6ad95",
+      "resultSha256": "c64f49a0a80355958ed95c93a5a7173240edd6a9139a80efd929df2a55713257",
+      "userCount": 30,
+      "dispositionCount": 68,
+      "totals": {
+        "currentFundedExactUsd": "8296.79",
+        "currentFundedMinor": "829679",
+        "harvestedUnclaimedMinor": "376094",
+        "carryInMinor": "0",
+        "totalInputMinor": "1205773",
+        "initialClaimMinor": "456612",
+        "scorePoolMinor": "373067",
+        "topUpMinor": "749161",
+        "carryOutResidueMinor": "0",
+        "finalAllocationMinor": "1205773",
+        "subMinorExactUsd": "0"
+      },
+      "invariantsOk": true
+    },
+    {
+      "id": "cap-9.99",
+      "inputSha256": "9d5f4c0fb1845c25a719b1412faaf463110e703b89f41f0f354735b5365138e2",
+      "ok": false,
+      "error": "funded_allocation_v2_invariant_failed"
+    },
+    {
+      "id": "cap-10.00",
+      "inputSha256": "2a9848fa412768b80ec0e8492ceda17d37babc128d38ca9eef1902219e7c7003",
+      "ok": true,
+      "manifestHash": "a9ed6a61ddf7b293f2005dcaadb965b1222e2f0ad375d76e31d50bcde46fe934",
+      "selectedPreviewHash": "bafba475c20d6951f673d71b9a87e25233168c3d9ff7e9ba3d5b03dae3d66449",
+      "resultHash": "5b5a472f6cdcdc71b4f4b7384afcc03e7c18d57e0d89d90b951c119587a4a38a",
+      "userAllocationsSha256": "bb7e280c5d4482a1abbe014e35c53fca8a67b613ddddde4c8f20f5d171771331",
+      "sourceDispositionsSha256": "4286057d43afee7790255144eb1f33ea4700f7db2755dd9cd166f6d7bb837425",
+      "resultSha256": "efa00790fd978b8cc004710ed2d6bc0fb3a1d15d17b5f3808c2abcaf772270af",
+      "userCount": 30,
+      "dispositionCount": 73,
+      "totals": {
+        "currentFundedExactUsd": "9318.68",
+        "currentFundedMinor": "931868",
+        "harvestedUnclaimedMinor": "1146778",
+        "carryInMinor": "945431",
+        "totalInputMinor": "3024077",
+        "initialClaimMinor": "493204",
+        "scorePoolMinor": "438664",
+        "topUpMinor": "2530873",
+        "carryOutResidueMinor": "0",
+        "finalAllocationMinor": "3024077",
+        "subMinorExactUsd": "0"
+      },
+      "invariantsOk": true
+    },
+    {
+      "id": "cap-1.00-large-pool",
+      "inputSha256": "ebd7983fa5068c6ec01079c1e57b292a07d1fd7904dc9fb3c8076426619eaee6",
+      "ok": false,
+      "error": "funded_allocation_v2_invariant_failed"
+    },
+    {
+      "id": "cap-10.00-sparse",
+      "inputSha256": "2dfc39a61bb7a6ad0988113fe491c178464407dc942a1811e90b819dad9bf38c",
+      "ok": false,
+      "error": "funded_allocation_v2_invariant_failed"
+    },
+    {
+      "id": "frac-1",
+      "inputSha256": "b70d60134ffb8f50ad888f0b4bd01a87ff9d3eee986118bf56fca51ece91acde",
+      "ok": true,
+      "manifestHash": "2f8f23ae84d541484287a2dca7e9263ea67ff444030c4d8703e7c433fd34990f",
+      "selectedPreviewHash": "d9f807df554180afe24ac561f18dbe25a5e470bd858b1999a4bcb3e27cfa5a38",
+      "resultHash": "534f01b8203cb1d278db848c7fb0c89756822ca5c19824e31770a139a86e53f6",
+      "userAllocationsSha256": "92fd938f013ff99d6604ad708fb93d84dec8f334065e8aa97e71a94c8ff684a6",
+      "sourceDispositionsSha256": "0bdbf004c402939cf9189b15f99d3d32ae43b732c3c536320c66bc5e76074493",
+      "resultSha256": "828fc5705e9390a80a8915a48c21fe6ce771ac3e50cb3f99da344e49920d1a6d",
+      "userCount": 10,
+      "dispositionCount": 27,
+      "totals": {
+        "currentFundedExactUsd": "11154.087",
+        "currentFundedMinor": "1115407",
+        "harvestedUnclaimedMinor": "277713",
+        "carryInMinor": "0",
+        "totalInputMinor": "1393120",
+        "initialClaimMinor": "468655",
+        "scorePoolMinor": "646752",
+        "topUpMinor": "924465",
+        "carryOutResidueMinor": "0",
+        "finalAllocationMinor": "1393120",
+        "subMinorExactUsd": "0.023"
+      },
+      "invariantsOk": true
+    },
+    {
+      "id": "frac-4",
+      "inputSha256": "b7cc888d1c6402c7067a509e4ef7148c23f01a42f63600f0afac4d6e0dd8a0d8",
+      "ok": true,
+      "manifestHash": "79708895c5507fe3ab91dee0a0ab40d9803f16fa076231e661745b5b21e110d4",
+      "selectedPreviewHash": "f27d6299d19b4b3829b9074f9a2774843c3c53c82eeee10bdedac235cbe7e0bf",
+      "resultHash": "84ed34dc0dc05e6b46add39145b174076f8bbbdf1e532e06337fdcd970fab159",
+      "userAllocationsSha256": "507ddf2058959ddbe69d2061a11ea7df2a6e73633b7a2d8c261f621f82df4b77",
+      "sourceDispositionsSha256": "a01dafe916e137130715029d5608281bb70a95e5190a4b068629ba202453f0dd",
+      "resultSha256": "fc2992fd2316243c1bcdd53c9eaf08af8504b079e050b4b1ef054d34cc5466c8",
+      "userCount": 17,
+      "dispositionCount": 41,
+      "totals": {
+        "currentFundedExactUsd": "17490.895654",
+        "currentFundedMinor": "1749089",
+        "harvestedUnclaimedMinor": "722275",
+        "carryInMinor": "0",
+        "totalInputMinor": "2471364",
+        "initialClaimMinor": "1017412",
+        "scorePoolMinor": "731677",
+        "topUpMinor": "1453952",
+        "carryOutResidueMinor": "0",
+        "finalAllocationMinor": "2471364",
+        "subMinorExactUsd": "0.013977"
+      },
+      "invariantsOk": true
+    },
+    {
+      "id": "frac-8",
+      "inputSha256": "fd216e3bd27c1df8b722b14a172c5a353d3109ec1f722218a699eb956097bc47",
+      "ok": false,
+      "error": "funded_allocation_v2_invariant_failed"
+    },
+    {
+      "id": "scale-0",
+      "inputSha256": "760cdfb3ac17e11a7e4b347bd3efdc9ad8a11b40cc1bec6f00568358a49e4278",
+      "ok": true,
+      "manifestHash": "1252c0cc45a2f6c876d6b283877f890ce60c345240da07a9a4a12206f9866855",
+      "selectedPreviewHash": "ace0742078ce538d723c4047d6fb13c1dd98a74c7950458382d050fe476eb566",
+      "resultHash": "7cea16af4697ad7237b9da852dd8bd72711db71811aec983136a00427fc0f38b",
+      "userAllocationsSha256": "5353e6d869ba807541e5ade4daf775dc4dd76d27823334269641a8c04c7207f7",
+      "sourceDispositionsSha256": "04ef1986706581d899e71d07af8dca83ff02950808bf62cf6aa0021d73c97612",
+      "resultSha256": "f397249edb9d463f987fe45dae08285d57e586d3bb0d897da526ab19255615dd",
+      "userCount": 7,
+      "dispositionCount": 19,
+      "totals": {
+        "currentFundedExactUsd": "39",
+        "currentFundedMinor": "39",
+        "harvestedUnclaimedMinor": "37",
+        "carryInMinor": "0",
+        "totalInputMinor": "76",
+        "initialClaimMinor": "15",
+        "scorePoolMinor": "24",
+        "topUpMinor": "30",
+        "carryOutResidueMinor": "31",
+        "finalAllocationMinor": "45",
+        "subMinorExactUsd": "0"
+      },
+      "invariantsOk": true
+    },
+    {
+      "id": "scale-0-frac",
+      "inputSha256": "b4b6ff6725b6f5f2fdc3b1ee68a8422d49487cd912ca809988793d0083f1aa13",
+      "ok": false,
+      "error": "funded_allocation_v2_invariant_failed"
+    },
+    {
+      "id": "scale-6",
+      "inputSha256": "a5e60d551586c2f1f38bbfdeff12f09a5187e64bfd421af41551af9fd4bc1561",
+      "ok": false,
+      "error": "funded_allocation_v2_invariant_failed"
+    },
+    {
+      "id": "scale-8-frac",
+      "inputSha256": "96ea7eb30bd7cc13a6a4e4d064155f0e4c9b1232ef707bd0836ed203f9dcdace",
+      "ok": true,
+      "manifestHash": "205d930f7cfe40ff16995e9200bb7911dfc9b0d8679a0298773f659613225448",
+      "selectedPreviewHash": "2c3578e7fccf641d017dc5b44bd47fdd0279590382eec1cd80af6eb4cb0e56ed",
+      "resultHash": "2e36604d2cdbed89b41201e126eedfc7379026933b27925a94ff9d9c65b35013",
+      "userAllocationsSha256": "c5a01fcb5082127a1a1eca83cbfe8affc4ea06e5d15b2de84b6ccfa25390a28f",
+      "sourceDispositionsSha256": "22b2f2c60c4cc3a65cc23472075f1cf4ae97dbccc5e281bc9e8c81435f914840",
+      "resultSha256": "a1eda425fa09f7faccedf28addb6966d4bc2050e4dbbe47b2fb51b45d510334f",
+      "userCount": 9,
+      "dispositionCount": 26,
+      "totals": {
+        "currentFundedExactUsd": "2142.0695983686",
+        "currentFundedMinor": "214206959836",
+        "harvestedUnclaimedMinor": "853182765016",
+        "carryInMinor": "0",
+        "totalInputMinor": "1067389724852",
+        "initialClaimMinor": "104373938855",
+        "scorePoolMinor": "109833020981",
+        "topUpMinor": "208747877704",
+        "carryOutResidueMinor": "754267908293",
+        "finalAllocationMinor": "313121816559",
+        "subMinorExactUsd": "0.000000016"
+      },
+      "invariantsOk": true
+    },
+    {
+      "id": "tiny-sources",
+      "inputSha256": "4b495b9a1a8020b7862daa04447b78891d3c773a9c3069d82c6c0a33a960ec42",
+      "ok": false,
+      "error": "funded_allocation_v2_invariant_failed"
+    },
+    {
+      "id": "prime-cohort",
+      "inputSha256": "98c3a7d85d5c08b3f3b43f3c1878753e3158228a55f8545d0dbde1ce5fd3d92b",
+      "ok": false,
+      "error": "funded_allocation_v2_invariant_failed"
+    },
+    {
+      "id": "huge-sources",
+      "inputSha256": "f46a6da03fa0d90229cd44e12f4b027c7e6d81614eb29e9b03ce1d0e867ebd5e",
+      "ok": false,
+      "error": "funded_allocation_v2_invariant_failed"
+    },
+    {
+      "id": "currency-cad",
+      "inputSha256": "469ab5f8835544eef875b1f06a190a82b711896208e3b4ef7874c520e9dd8c6b",
+      "ok": false,
+      "error": "funded_allocation_v2_invariant_failed"
+    },
+    {
+      "id": "currency-eur",
+      "inputSha256": "77311519b73ae0260378cd8126cc34d70f85b86fdfd1d99fd8621e2676735b95",
+      "ok": false,
+      "error": "funded_allocation_v2_invariant_failed"
+    },
+    {
+      "id": "currency-gbp",
+      "inputSha256": "7219660e0edc2b17b39ae0a2bfa48d8ec7435cb44eef97169e9f0fd57d6ff1bf",
+      "ok": false,
+      "error": "funded_allocation_v2_invariant_failed"
+    },
+    {
+      "id": "currency-eur-frac",
+      "inputSha256": "59967ba0ecacb1cb45973519f25e9d2036ad8ccf5fa76c062b12a0675c7bed1f",
+      "ok": false,
+      "error": "funded_allocation_v2_invariant_failed"
+    },
+    {
+      "id": "many-sources",
+      "inputSha256": "ce0f275354fbdcf6ee75897aba3af218d3cd9242c8f061dfc04c9ac30bd2353b",
+      "ok": false,
+      "error": "funded_allocation_v2_invariant_failed"
+    },
+    {
+      "id": "many-pool-sources",
+      "inputSha256": "7df511b3990ed998691b03093bf37d536870d798ac6c075f325152182e4d82bf",
+      "ok": true,
+      "manifestHash": "4519adac9d27d1a10fca41a4d8426076e4d9eff01661d619b1437e48f2b43da5",
+      "selectedPreviewHash": "f5047251ffd7f9730d050d9e23fd87560e51bf19c099afe05ae332a85f3d3899",
+      "resultHash": "de69b8587bea391d4dfc12c86238fe42c5277cb92629236807050d1bab757b21",
+      "userAllocationsSha256": "b24eb820bfbfca3f8fa2cfe421c63dab74be678b0b83a8dc06297ecc2981993e",
+      "sourceDispositionsSha256": "178d9b6635b557f701d9cf310037254e9682cbe6310d06084bd055ecc113b8f7",
+      "resultSha256": "04df5834ab7b4755401ce9efc47de429fae433c2fe4bbf5c54953ecdaf2d87e9",
+      "userCount": 40,
+      "dispositionCount": 111,
+      "totals": {
+        "currentFundedExactUsd": "13356.33",
+        "currentFundedMinor": "1335633",
+        "harvestedUnclaimedMinor": "3565278",
+        "carryInMinor": "4551300",
+        "totalInputMinor": "9452211",
+        "initialClaimMinor": "667720",
+        "scorePoolMinor": "667913",
+        "topUpMinor": "1328345",
+        "carryOutResidueMinor": "7456146",
+        "finalAllocationMinor": "1996065",
+        "subMinorExactUsd": "0"
+      },
+      "invariantsOk": true
+    },
+    {
+      "id": "single-project-overlap",
+      "inputSha256": "a4d1965fd5992cfdf0a2627c69afa143ab80009d831f3f3a0748393fc3a8828b",
+      "ok": true,
+      "manifestHash": "7a913758146ce2f4812d6fc11d595025c9072edd1fd89f6e8a1c752222b1646a",
+      "selectedPreviewHash": "b88dde864da16bc7a29e3e53caec9de8bc117978a73a464c9abf40321dc9bc95",
+      "resultHash": "04378efe4b17632a99c17b173ecc1f9fa6da8d2eecedb5603fcb2f9cf9a058d4",
+      "userAllocationsSha256": "6134e92f5b7f3781c6e98371f2029626488231acae305acde09351bd990fa89d",
+      "sourceDispositionsSha256": "b4c8aedb761142f0e84a6aff1c522bc7c16c45c61630c6ffd093813785e55aa9",
+      "resultSha256": "4add91ec5587279cff68429921179f7130164c7d8f9e852816e7d85d93281a3d",
+      "userCount": 50,
+      "dispositionCount": 107,
+      "totals": {
+        "currentFundedExactUsd": "2407.77",
+        "currentFundedMinor": "240777",
+        "harvestedUnclaimedMinor": "452629",
+        "carryInMinor": "23499",
+        "totalInputMinor": "716905",
+        "initialClaimMinor": "117152",
+        "scorePoolMinor": "123625",
+        "topUpMinor": "234274",
+        "carryOutResidueMinor": "365479",
+        "finalAllocationMinor": "351426",
+        "subMinorExactUsd": "0"
+      },
+      "invariantsOk": true
+    },
+    {
+      "id": "wide-projects",
+      "inputSha256": "decec905af3fdf6d1991663343ce111e1eadbca1d2468a5a1509a4b954959f71",
+      "ok": false,
+      "error": "funded_allocation_v2_invariant_failed"
+    },
+    {
+      "id": "full-overlap",
+      "inputSha256": "94e445a9715badbbb9aa388dfbd796ba12022210bf80b474ce6bc6b84e0afee9",
+      "ok": false,
+      "error": "funded_allocation_v2_invariant_failed"
+    },
+    {
+      "id": "no-pool-sources",
+      "inputSha256": "906cd10fe1d515087e69381cf33ca998865db60d68669e5d82939f99c2b17855",
+      "ok": false,
+      "error": "funded_allocation_v2_invariant_failed"
+    }
+  ]
+}
