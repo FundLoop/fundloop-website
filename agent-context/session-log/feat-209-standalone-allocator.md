@@ -93,3 +93,45 @@ The user chose to pause the standalone repository and develop all allocator work
 - Fix #251, then regenerate the parity file and finish #216.
 - Pin canonical key ordering in the contract.
 - When the allocator is ready to extract, re-seed `FundLoop/fundloop-allocator` from this repo and force-replace its history.
+
+### session v3: Regenerate parity vectors after #251 fix (#216)
+
+- **Timestamp:** 2026-09-18T17:45:00Z
+- **Agent:** Claude Code (Claude Opus 5)
+- **Branch:** `feat/209-standalone-allocator`
+- **Head before commit:** `0d533df` (rebased onto `dev` @ `d27ee13`, which includes #252)
+
+---
+
+#### Objective
+
+Replace the work-in-progress parity vectors with real results now that the #251 calculator fix is on `dev`.
+
+---
+
+#### Actions Taken
+
+- Rebased the branch onto `dev` (`d27ee13`).
+- Confirmed the old `golden-v1.json` now fails (`size-010` is the first mismatch), which proves the harness detects calculator changes.
+- Regenerated `tests/fixtures/allocator-parity/golden-v1.json` with `ALLOCATOR_PARITY_WRITE=1`.
+
+---
+
+#### Validation Notes
+
+- 50/50 fixture outcomes are `ok` with `invariantsOk: true` (previously 17/50).
+- The 17 previously successful outcomes are byte-identical, and `fixturesSha256` and every `inputSha256` are unchanged.
+- `tsc --noEmit` passes; full Vitest 1189/1189.
+
+---
+
+#### Reflections
+
+The harness now gives a real regression baseline: any change to calculator output, including rounding or hash inputs, shows up as a named fixture mismatch.
+
+---
+
+#### Suggested Next Steps
+
+- #216 remains open for the second engine: re-run these vectors against the extracted allocator once #209 extraction starts.
+- Continue with #218 (four-epoch/multi-currency lifecycle) and #219 (zero-PII scans) in this repo.
