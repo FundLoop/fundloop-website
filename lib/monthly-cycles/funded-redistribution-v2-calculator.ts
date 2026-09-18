@@ -192,6 +192,42 @@ function decimalString(value: Fraction, maxScale = 18) {
   return `${negative ? "-" : ""}${whole}${decimals ? `.${decimals}` : ""}`
 }
 
+const EXACT_DECIMAL_SCALE = 18
+const CONSERVED_DISPOSITION_KINDS = new Set<FundedSourceDispositionV2["kind"]>(["initial_claim", "top_up", "carryout_residue"])
+
+// Rows are persisted as numeric(38,18). Truncating each exact value independently can leave a source
+// up to one 1e-18 unit short per row, so hand the shortfall back by largest truncation remainder
+// (ties by row order) until each source's conserved rows sum exactly to its exactUsd.
+function reconcileExactDispositions(
+  sources: Array<{ sourceLotKey: string; exactUsd: string }>,
+  rows: Array<{ disposition: FundedSourceDispositionV2; exact: Fraction }>,
+) {
+  const unit = power10(EXACT_DECIMAL_SCALE)
+  const rowsBySource = new Map<string, Array<{ disposition: FundedSourceDispositionV2; index: number; units: bigint; remainder: Fraction }>>()
+  rows.forEach(({ disposition, exact }, index) => {
+    if (!CONSERVED_DISPOSITION_KINDS.has(disposition.kind)) return
+    const scaled = toMinorFraction(exact, EXACT_DECIMAL_SCALE)
+    const units = floorFraction(scaled)
+    const entry = { disposition, index, units, remainder: subtract(scaled, fraction(units)) }
+    const sourceRows = rowsBySource.get(disposition.sourceLotKey)
+    if (sourceRows) sourceRows.push(entry)
+    else rowsBySource.set(disposition.sourceLotKey, [entry])
+  })
+  for (const source of sources) {
+    const target = toMinorFraction(parseDecimal(source.exactUsd), EXACT_DECIMAL_SCALE)
+    if (target.denominator !== ONE_BIGINT) continue
+    const sourceRows = rowsBySource.get(source.sourceLotKey) ?? []
+    let shortfall = target.numerator - sourceRows.reduce((sum, row) => sum + row.units, ZERO_BIGINT)
+    if (shortfall <= ZERO_BIGINT || shortfall > BigInt(sourceRows.length)) continue
+    for (const row of [...sourceRows].sort((left, right) => compare(right.remainder, left.remainder) || left.index - right.index)) {
+      if (shortfall === ZERO_BIGINT || compare(row.remainder, ZERO) === 0) break
+      row.units += ONE_BIGINT
+      shortfall -= ONE_BIGINT
+    }
+    for (const row of sourceRows) row.disposition.exactUsd = decimalString(fraction(row.units, unit), EXACT_DECIMAL_SCALE)
+  }
+}
+
 function stableCompare(left: string, right: string) {
   return left < right ? -1 : left > right ? 1 : 0
 }
@@ -433,9 +469,14 @@ export async function calculateFundedRedistributionV2(input: FundedRedistributio
   }
 
   const sourceDispositions: FundedSourceDispositionV2[] = []
+  const exactDispositions: Array<{ disposition: FundedSourceDispositionV2; exact: Fraction }> = []
+  const pushExact = (disposition: FundedSourceDispositionV2, exact: Fraction) => {
+    sourceDispositions.push(disposition)
+    exactDispositions.push({ disposition, exact })
+  }
   for (const claim of claims) {
     const canonicalMinor = canonicalInitialByClaim.get(claim.key) ?? ZERO_BIGINT
-    if (canonicalMinor > ZERO_BIGINT || compare(claim.initial, ZERO) > 0) sourceDispositions.push({
+    if (canonicalMinor > ZERO_BIGINT || compare(claim.initial, ZERO) > 0) pushExact({
       sourceLotId: claim.source.sourceLotId,
       sourceLotKey: claim.source.sourceLotKey,
       userId: claim.userId,
@@ -444,7 +485,7 @@ export async function calculateFundedRedistributionV2(input: FundedRedistributio
       canonicalMinor: canonicalMinor.toString(),
       exactUsd: decimalString(claim.initial),
       currency,
-    })
+    }, claim.initial)
   }
   for (const source of projectSources) {
     const canonicalMinor = canonicalScorePoolBySource.get(source.sourceLotKey) ?? ZERO_BIGINT
@@ -470,10 +511,10 @@ export async function calculateFundedRedistributionV2(input: FundedRedistributio
       const availableExact = availableExactPoolBySource.get(source.sourceLotKey) ?? ZERO
       const canonicalExact = fraction(consumed, power10(scale))
       const consumedExact = compare(canonicalExact, availableExact) < 0 ? canonicalExact : availableExact
-      sourceDispositions.push({
+      pushExact({
         sourceLotId: source.sourceLotId, sourceLotKey: source.sourceLotKey, userId: user.userId, projectId: source.projectId,
         kind: "top_up", canonicalMinor: consumed.toString(), exactUsd: decimalString(consumedExact), currency,
-      })
+      }, consumedExact)
       availablePoolBySource.set(source.sourceLotKey, available - consumed)
       availableExactPoolBySource.set(source.sourceLotKey, subtract(availableExact, consumedExact))
       needed -= consumed
@@ -484,11 +525,12 @@ export async function calculateFundedRedistributionV2(input: FundedRedistributio
   for (const source of allSources) {
     const canonicalMinor = availablePoolBySource.get(source.sourceLotKey) ?? ZERO_BIGINT
     const exactUsd = availableExactPoolBySource.get(source.sourceLotKey) ?? ZERO
-    if (canonicalMinor > ZERO_BIGINT || compare(exactUsd, ZERO) > 0) sourceDispositions.push({
+    if (canonicalMinor > ZERO_BIGINT || compare(exactUsd, ZERO) > 0) pushExact({
       sourceLotId: source.sourceLotId, sourceLotKey: source.sourceLotKey, userId: null, projectId: source.projectId,
       kind: "carryout_residue", canonicalMinor: canonicalMinor.toString(), exactUsd: decimalString(exactUsd), currency,
-    })
+    }, exactUsd)
   }
+  reconcileExactDispositions(allSources, exactDispositions)
 
   const users: FundedUserAllocationV2[] = userState.map((user) => ({
     userId: user.userId,
