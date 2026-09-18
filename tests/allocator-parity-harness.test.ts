@@ -10,7 +10,7 @@ import {
   type ParityOutcome,
 } from "./support/allocator-parity-fixtures"
 
-// Golden vectors shared with FundLoop/fundloop-allocator (#216). Regenerate only for an intentional
+// Golden vectors for allocator parity (#216). Regenerate only for an intentional
 // calculator change: ALLOCATOR_PARITY_WRITE=1 pnpm vitest run tests/allocator-parity-harness.test.ts
 const goldenPath = resolve(process.cwd(), "tests/fixtures/allocator-parity/golden-v1.json")
 

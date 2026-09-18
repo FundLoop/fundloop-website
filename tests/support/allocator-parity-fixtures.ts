@@ -1,6 +1,6 @@
 // Deterministic synthetic fixtures for allocator parity (#216).
-// This file is copied byte-for-byte into FundLoop/fundloop-allocator; keep it free of
-// repository-specific imports so both engines consume identical inputs.
+// Kept free of repository-specific imports so it can move unchanged when the allocator is
+// extracted into its own repository (#209).
 import { createHash } from "node:crypto"
 
 export const ALLOCATOR_PARITY_FIXTURE_VERSION = "allocator-parity-fixtures.v1" as const
