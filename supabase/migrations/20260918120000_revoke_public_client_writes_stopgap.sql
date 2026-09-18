@@ -39,7 +39,6 @@ REVOKE INSERT, UPDATE, DELETE, TRUNCATE, REFERENCES, TRIGGER ON TABLE
   public.ref_roles,
   public.ref_skills,
   public.ref_social_platforms,
-  public.supabase_deploy_context,
   public.support_requests,
   public.team_roles,
   public.user_interests,
@@ -50,6 +49,15 @@ REVOKE INSERT, UPDATE, DELETE, TRUNCATE, REFERENCES, TRIGGER ON TABLE
   public.wallet_accounts,
   public.wallet_connections
 FROM anon, authenticated;
+
+-- supabase_deploy_context is created by the deploy workflow, not by migrations, and migrations
+-- read it to decide their target environment. It only exists where the workflow has run.
+DO $$
+BEGIN
+  IF to_regclass('public.supabase_deploy_context') IS NOT NULL THEN
+    REVOKE ALL ON TABLE public.supabase_deploy_context FROM anon, authenticated;
+  END IF;
+END $$;
 
 -- Public forms (newsletter signup and support requests may be submitted signed out).
 GRANT INSERT ON TABLE public.newsletter_subscribers, public.support_requests TO anon, authenticated;
