@@ -306,6 +306,7 @@ jobs:
             UNIQUE (candidate_git_sha, actions_run_id, run_attempt, deployment_environment, project_ref)
           );
 
+          REVOKE ALL ON TABLE public.supabase_deploy_context FROM anon, authenticated;
           REVOKE ALL ON TABLE public.supabase_deploy_migration_evidence FROM anon, authenticated;
 
           INSERT INTO public.supabase_deploy_context (id, target_environment, updated_at)
