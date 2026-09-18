@@ -14,6 +14,10 @@ describe("StripePayByBankPanel", () => {
     render(<StripePayByBankPanel projectSlug="ecostream" payments={[payment]} termsAcknowledged={false}/>)
     expect((await screen.findByText(/FundLoop never receives your bank credentials/i)).textContent).toMatch(/never receives/i)
     expect(screen.getByText(/Returning from Checkout does not fund the project/i).textContent).toMatch(/does not fund/i)
+    expect(screen.getByText(/UK customer path is generally available/i)).toBeTruthy()
+    expect(screen.getByText(/Finland, France, Germany, and Ireland are unavailable/i)).toBeTruthy()
+    expect(screen.getByRole("option", {name: /United Kingdom \(available\)/i})).toBeTruthy()
+    expect(screen.queryByRole("option", {name: /Finland/i})).toBeNull()
     expect((screen.getByRole("button", {name: /Open Pay by Bank Checkout/i}) as HTMLButtonElement).disabled).toBe(true)
   })
 

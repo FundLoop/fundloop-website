@@ -26,7 +26,7 @@ export function StripePayByBankPanel({projectSlug, payments, termsAcknowledged}:
   const [loadingId, setLoadingId] = useState<number | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [currencyCode, setCurrencyCode] = useState<"EUR" | "GBP">("GBP")
-  const [customerCountry, setCustomerCountry] = useState<"GB" | "FI">("GB")
+  const customerCountry = "GB" as const
   useEffect(() => {
     let active = true
     void invokeStripePayByBankStatusBrowser(projectSlug).then((result) => { if (active && result.ok) setStatuses(result.data) })
@@ -48,7 +48,7 @@ export function StripePayByBankPanel({projectSlug, payments, termsAcknowledged}:
     </div></div></CardHeader>
     <CardContent className="space-y-4">
       <div className="rounded-md border border-amber-300 bg-amber-50 p-3 text-sm text-amber-950 dark:border-amber-800 dark:bg-amber-950/30 dark:text-amber-100">
-        <div className="flex gap-2"><AlertTriangle className="mt-0.5 h-4 w-4 shrink-0"/><p><strong>Sandbox and delayed settlement.</strong> Returning from Checkout does not fund the project. Signed Stripe evidence must prove available custody. UK and Finland are generally available; France, Germany, and Ireland remain private-preview gated. Production remains disabled.</p></div>
+        <div className="flex gap-2"><AlertTriangle className="mt-0.5 h-4 w-4 shrink-0"/><p><strong>Sandbox and delayed settlement.</strong> Returning from Checkout does not fund the project. Signed Stripe evidence must prove available custody. The UK customer path is generally available; Finland, France, Germany, and Ireland remain private-preview gated. Production remains disabled.</p></div>
       </div>
       <div className="grid gap-3 sm:grid-cols-2">
         <label className="space-y-1 text-sm"><span className="font-medium">Presentment currency</span>
@@ -56,11 +56,11 @@ export function StripePayByBankPanel({projectSlug, payments, termsAcknowledged}:
             <option value="GBP">GBP</option><option value="EUR">EUR</option>
           </select></label>
         <label className="space-y-1 text-sm"><span className="font-medium">Customer bank country</span>
-          <select className="w-full rounded-md border bg-background px-3 py-2" value={customerCountry} onChange={(event) => setCustomerCountry(event.target.value as "GB"|"FI")}>
-            <option value="GB">United Kingdom (available)</option><option value="FI">Finland (available)</option>
+          <select className="w-full rounded-md border bg-background px-3 py-2" value={customerCountry} disabled>
+            <option value="GB">United Kingdom (available)</option>
           </select></label>
       </div>
-      <p className="text-xs text-slate-500">France, Germany, and Ireland are unavailable unless Stripe enables private preview for the exact merchant account.</p>
+      <p className="text-xs text-slate-500">Finland, France, Germany, and Ireland are unavailable unless Stripe enables private preview for the exact merchant account.</p>
       {eligible.length === 0 ? <p className="text-sm text-slate-500">No draft payment is ready for Pay by Bank authorization.</p> : <div className="space-y-2">{eligible.map((payment) => {
         const status = statuses.find((row) => row.paymentId === payment.id)
         const resumable = !status || ["prepared", "checkout_created", "checkout_completed", "processing"].includes(status.status)

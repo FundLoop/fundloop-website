@@ -38,8 +38,8 @@ test("founder sees privacy-safe fail-closed Pay by Bank funding", async ({page, 
   await expect(panel.getByText("Pay by Bank", {exact: true})).toBeVisible()
   await expect(panel.getByText(/FundLoop never receives your bank credentials/)).toBeVisible()
   await expect(panel.getByText(/Returning from Checkout does not fund the project/)).toBeVisible()
-  await expect(panel.getByText(/UK and Finland are generally available/)).toBeVisible()
-  await expect(panel.getByText(/France, Germany, and Ireland are unavailable/)).toBeVisible()
+  await expect(panel.getByText(/UK customer path is generally available/)).toBeVisible()
+  await expect(panel.getByText(/Finland, France, Germany, and Ireland are unavailable/)).toBeVisible()
   await expect(panel.getByText(/account number|transit number|institution number/i)).toHaveCount(0)
   await mkdir(outputDir, {recursive: true})
   const states = [

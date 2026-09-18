@@ -22,7 +22,7 @@ BEGIN
   BEGIN
     PERFORM public.prepare_stripe_pay_by_bank_command(jsonb_build_object('contractVersion','stripe_pay_by_bank_prepare.v1','deploymentEnvironment','production',
       'actorUserId',v_actor,'projectSlug','nomad-workspaces','paymentId',v_payment,'currencyCode','EUR','expectedAmountMinor','10000',
-      'customerCountry','DE','merchantCountry','CA','chargeTopology','platform','providerAccountId','acct_testbank','platformAccountId','acct_testbank','privatePreviewEnabled',false));
+      'customerCountry','DE','merchantCountry','GB','chargeTopology','platform','providerAccountId','acct_testbank','platformAccountId','acct_testbank','privatePreviewEnabled',false));
   EXCEPTION WHEN OTHERS THEN v_denied:=SQLERRM LIKE '%stripe_pay_by_bank_runtime_disabled%';END;
   IF NOT v_denied THEN RAISE EXCEPTION 'production_prepare_should_fail';END IF;
 
@@ -30,7 +30,7 @@ BEGIN
   BEGIN
     PERFORM public.prepare_stripe_pay_by_bank_command(jsonb_build_object('contractVersion','stripe_pay_by_bank_prepare.v1','deploymentEnvironment','local',
       'actorUserId',v_actor,'projectSlug','nomad-workspaces','paymentId',v_payment,'currencyCode','EUR','expectedAmountMinor','10000',
-      'customerCountry','DE','merchantCountry','CA','chargeTopology','platform','providerAccountId','acct_testbank','platformAccountId','acct_testbank','privatePreviewEnabled',true));
+      'customerCountry','DE','merchantCountry','GB','chargeTopology','platform','providerAccountId','acct_testbank','platformAccountId','acct_testbank','privatePreviewEnabled',true));
   EXCEPTION WHEN OTHERS THEN v_denied:=SQLERRM LIKE '%stripe_pay_by_bank_private_preview_unavailable%';END;
   IF NOT v_denied THEN RAISE EXCEPTION 'private_preview_should_fail';END IF;
 
@@ -38,14 +38,22 @@ BEGIN
   BEGIN
     PERFORM public.prepare_stripe_pay_by_bank_command(jsonb_build_object('contractVersion','stripe_pay_by_bank_prepare.v1','deploymentEnvironment','local',
       'actorUserId',v_actor,'projectSlug','nomad-workspaces','paymentId',v_payment,'currencyCode','EUR','expectedAmountMinor','10000',
-      'customerCountry','FI','merchantCountry','CA','chargeTopology','destination','providerAccountId','acct_testbank','platformAccountId','acct_testbank'));
+      'customerCountry','FI','merchantCountry','GB','chargeTopology','platform','providerAccountId','acct_testbank','platformAccountId','acct_testbank','privatePreviewEnabled',false));
+  EXCEPTION WHEN OTHERS THEN v_denied:=SQLERRM LIKE '%stripe_pay_by_bank_private_preview_unavailable%';END;
+  IF NOT v_denied THEN RAISE EXCEPTION 'finland_private_preview_should_fail';END IF;
+
+  v_denied:=false;
+  BEGIN
+    PERFORM public.prepare_stripe_pay_by_bank_command(jsonb_build_object('contractVersion','stripe_pay_by_bank_prepare.v1','deploymentEnvironment','local',
+      'actorUserId',v_actor,'projectSlug','nomad-workspaces','paymentId',v_payment,'currencyCode','EUR','expectedAmountMinor','10000',
+      'customerCountry','GB','merchantCountry','GB','chargeTopology','destination','providerAccountId','acct_testbank','platformAccountId','acct_testbank'));
   EXCEPTION WHEN OTHERS THEN v_denied:=SQLERRM LIKE '%stripe_pay_by_bank_eligibility_mismatch%';END;
   IF NOT v_denied THEN RAISE EXCEPTION 'unimplemented_topology_should_fail';END IF;
   v_denied:=false;
   BEGIN
     PERFORM public.prepare_stripe_pay_by_bank_command(jsonb_build_object('contractVersion','stripe_pay_by_bank_prepare.v1','deploymentEnvironment','local',
       'actorUserId',v_actor,'projectSlug','nomad-workspaces','paymentId',v_payment,'currencyCode','EUR','expectedAmountMinor','10000',
-      'customerCountry','FI','merchantCountry','CA','chargeTopology','platform','providerAccountId','acct_connected','platformAccountId','acct_testbank'));
+      'customerCountry','GB','merchantCountry','GB','chargeTopology','platform','providerAccountId','acct_connected','platformAccountId','acct_testbank'));
   EXCEPTION WHEN OTHERS THEN v_denied:=SQLERRM LIKE '%stripe_pay_by_bank_topology_account_mismatch%';END;
   IF NOT v_denied THEN RAISE EXCEPTION 'topology_account_mismatch_should_fail';END IF;
 
@@ -54,8 +62,8 @@ BEGIN
     'sourceKey','local_review_fx','observedAt',clock_timestamp()-interval '1 minute','freshnessExpiresAt',clock_timestamp()+interval '1 day','evidenceHash',repeat('c',64)));
 
   v_base:=jsonb_build_object('contractVersion','stripe_pay_by_bank_prepare.v1','deploymentEnvironment','local','actorUserId',v_actor,
-    'projectSlug','nomad-workspaces','paymentId',v_payment,'currencyCode','EUR','expectedAmountMinor','10000','customerCountry','FI',
-    'merchantCountry','CA','chargeTopology','platform','providerAccountId','acct_testbank','platformAccountId','acct_testbank','privatePreviewEnabled',false);
+    'projectSlug','nomad-workspaces','paymentId',v_payment,'currencyCode','EUR','expectedAmountMinor','10000','customerCountry','GB',
+    'merchantCountry','GB','chargeTopology','platform','providerAccountId','acct_testbank','platformAccountId','acct_testbank','privatePreviewEnabled',false);
   v_command:=public.prepare_stripe_pay_by_bank_command(v_base);
   IF v_command<>public.prepare_stripe_pay_by_bank_command(v_base) THEN RAISE EXCEPTION 'prepare_not_idempotent';END IF;
   PERFORM public.acknowledge_stripe_pay_by_bank_checkout(jsonb_build_object('commandId',v_command,'providerAccountId','acct_testbank',
@@ -74,7 +82,7 @@ BEGIN
     'providerCreatedAt','2026-07-10T12:00:00Z','apiVersion','2026-06-24.dahlia','signatureTimestamp',1786352800,'payloadSha256',repeat('2',64),
     'livemode',false,'observationSource','stripe_sdk_v1','capabilityEvidenceHash',repeat('d',64),'evidenceType','settled_available','commandId',v_command,
     'providerCheckoutSessionId','cs_test_bankfixture','providerPaymentIntentId','pi_bankfixture','providerChargeId','ch_bankfixture','providerRefundId',NULL,
-    'providerBalanceTransactionId','txn_bankfixture','currencyCode','EUR','customerCountry','FI','grossAmountMinor','10000','refundAmountMinor',NULL,
+    'providerBalanceTransactionId','txn_bankfixture','currencyCode','EUR','customerCountry','GB','grossAmountMinor','10000','refundAmountMinor',NULL,
     'feeAmountMinor','30','netAmountMinor','9970','balanceStatus','available','paymentMethodType','pay_by_bank'));
   SELECT ledger_transaction_id INTO v_ledger FROM public.stripe_pay_by_bank_evidence WHERE id=v_evidence;
   IF v_ledger IS NULL OR NOT (SELECT available_for_package FROM public.stripe_pay_by_bank_status WHERE command_id=v_command) THEN RAISE EXCEPTION 'settled_should_fund';END IF;
@@ -310,7 +318,7 @@ BEGIN
     'providerCreatedAt','2026-07-11T10:00:00Z','apiVersion','2026-06-24.dahlia','signatureTimestamp',1786432000,'payloadSha256',repeat('3',64),
     'livemode',false,'observationSource','stripe_sdk_v1','capabilityEvidenceHash',repeat('d',64),'evidenceType','refund_pending','commandId',v_command,
     'providerCheckoutSessionId','cs_test_bankfixture','providerPaymentIntentId','pi_bankfixture','providerChargeId','ch_bankfixture','providerRefundId','re_bankfixture',
-    'providerBalanceTransactionId','txn_bankfixture','currencyCode','EUR','customerCountry','FI','grossAmountMinor','10000','refundAmountMinor','2500','cumulativeRefundedAmountMinor','0',
+    'providerBalanceTransactionId','txn_bankfixture','currencyCode','EUR','customerCountry','GB','grossAmountMinor','10000','refundAmountMinor','2500','cumulativeRefundedAmountMinor','0',
     'feeAmountMinor','30','netAmountMinor','9970','balanceStatus','available','paymentMethodType','pay_by_bank'));
   IF (SELECT available_for_package FROM public.stripe_pay_by_bank_status WHERE command_id=v_command)
     OR (SELECT funding_status FROM public.epoch_project_packages WHERE id=v_package)<>'unsettled'
@@ -323,7 +331,7 @@ BEGIN
     'providerCreatedAt','2026-07-11T11:00:00Z','apiVersion','2026-06-24.dahlia','signatureTimestamp',1786435600,'payloadSha256',repeat('a',64),
     'livemode',false,'observationSource','stripe_sdk_v1','capabilityEvidenceHash',repeat('d',64),'evidenceType','refund_failed','commandId',v_command,
     'providerCheckoutSessionId','cs_test_bankfixture','providerPaymentIntentId','pi_bankfixture','providerChargeId','ch_bankfixture','providerRefundId','re_bankfixture',
-    'providerBalanceTransactionId','txn_bankfixture','currencyCode','EUR','customerCountry','FI','grossAmountMinor','10000','refundAmountMinor','2500','cumulativeRefundedAmountMinor','0',
+    'providerBalanceTransactionId','txn_bankfixture','currencyCode','EUR','customerCountry','GB','grossAmountMinor','10000','refundAmountMinor','2500','cumulativeRefundedAmountMinor','0',
     'feeAmountMinor','30','netAmountMinor','9970','balanceStatus','available','paymentMethodType','pay_by_bank'));
   IF NOT EXISTS(SELECT 1 FROM public.stripe_pay_by_bank_refund_observations WHERE command_id=v_command AND provider_refund_id='re_bankfixture'
       AND evidence_type='refund_failed' AND current_refund_amount_minor=2500 AND cumulative_successful_refund_amount_minor=0) THEN
@@ -339,7 +347,7 @@ BEGIN
     'providerCreatedAt','2026-07-11T12:00:00Z','apiVersion','2026-06-24.dahlia','signatureTimestamp',1786439200,'payloadSha256',repeat('5',64),
     'livemode',false,'observationSource','stripe_sdk_v1','capabilityEvidenceHash',repeat('d',64),'evidenceType','refunded','commandId',v_command,
     'providerCheckoutSessionId','cs_test_bankfixture','providerPaymentIntentId','pi_bankfixture','providerChargeId','ch_bankfixture','providerRefundId','re_bankfixture',
-    'providerBalanceTransactionId','txn_bankfixture','currencyCode','EUR','customerCountry','FI','grossAmountMinor','10000','refundAmountMinor','2500','cumulativeRefundedAmountMinor','2500',
+    'providerBalanceTransactionId','txn_bankfixture','currencyCode','EUR','customerCountry','GB','grossAmountMinor','10000','refundAmountMinor','2500','cumulativeRefundedAmountMinor','2500',
     'feeAmountMinor','30','netAmountMinor','9970','balanceStatus','available','paymentMethodType','pay_by_bank'));
   SELECT id INTO v_reversal FROM public.ledger_transactions WHERE reversal_of_transaction_id=v_ledger;
   SELECT e.ledger_transaction_id INTO v_residual FROM public.stripe_pay_by_bank_evidence e WHERE command_id=v_command AND evidence_type='refunded' ORDER BY id DESC LIMIT 1;
@@ -351,7 +359,7 @@ BEGIN
     'providerCreatedAt','2026-07-11T13:00:00Z','apiVersion','2026-06-24.dahlia','signatureTimestamp',1786442800,'payloadSha256',repeat('8',64),
     'livemode',false,'observationSource','stripe_sdk_v1','capabilityEvidenceHash',repeat('d',64),'evidenceType','refunded','commandId',v_command,
     'providerCheckoutSessionId','cs_test_bankfixture','providerPaymentIntentId','pi_bankfixture','providerChargeId','ch_bankfixture','providerRefundId','re_bankfixture2',
-    'providerBalanceTransactionId','txn_bankfixture','currencyCode','EUR','customerCountry','FI','grossAmountMinor','10000','refundAmountMinor','2500','cumulativeRefundedAmountMinor','5000',
+    'providerBalanceTransactionId','txn_bankfixture','currencyCode','EUR','customerCountry','GB','grossAmountMinor','10000','refundAmountMinor','2500','cumulativeRefundedAmountMinor','5000',
     'feeAmountMinor','30','netAmountMinor','9970','balanceStatus','available','paymentMethodType','pay_by_bank'));
   SELECT e.ledger_transaction_id INTO v_second_residual FROM public.stripe_pay_by_bank_evidence e
     WHERE command_id=v_command AND provider_refund_id='re_bankfixture2';
@@ -364,7 +372,7 @@ BEGIN
     'providerCreatedAt','2026-07-11T13:05:00Z','apiVersion','2026-06-24.dahlia','signatureTimestamp',1786443100,'payloadSha256',repeat('b',64),
     'livemode',false,'observationSource','stripe_sdk_v1','capabilityEvidenceHash',repeat('d',64),'evidenceType','refunded','commandId',v_command,
     'providerCheckoutSessionId','cs_test_bankfixture','providerPaymentIntentId','pi_bankfixture','providerChargeId','ch_bankfixture','providerRefundId','re_bankfixture2',
-    'providerBalanceTransactionId','txn_bankfixture','currencyCode','EUR','customerCountry','FI','grossAmountMinor','10000','refundAmountMinor','2500','cumulativeRefundedAmountMinor','5000',
+    'providerBalanceTransactionId','txn_bankfixture','currencyCode','EUR','customerCountry','GB','grossAmountMinor','10000','refundAmountMinor','2500','cumulativeRefundedAmountMinor','5000',
     'feeAmountMinor','30','netAmountMinor','9970','balanceStatus','available','paymentMethodType','pay_by_bank'));
   IF NOT EXISTS(SELECT 1 FROM public.stripe_pay_by_bank_refund_observations WHERE provider_event_id='evt_bankrefunded2replay')
     OR (SELECT count(*) FROM public.stripe_pay_by_bank_evidence e WHERE e.command_id=v_command AND e.evidence_type='refunded'
@@ -377,7 +385,7 @@ BEGIN
     'providerCreatedAt','2026-07-11T13:10:00Z','apiVersion','2026-06-24.dahlia','signatureTimestamp',1786443400,'payloadSha256',repeat('c',64),
     'livemode',false,'observationSource','stripe_sdk_v1','capabilityEvidenceHash',repeat('d',64),'evidenceType','refunded','commandId',v_command,
     'providerCheckoutSessionId','cs_test_bankfixture','providerPaymentIntentId','pi_bankfixture','providerChargeId','ch_bankfixture','providerRefundId','re_bankfixture4',
-    'providerBalanceTransactionId','txn_bankfixture','currencyCode','EUR','customerCountry','FI','grossAmountMinor','10000','refundAmountMinor','2500','cumulativeRefundedAmountMinor','2500',
+    'providerBalanceTransactionId','txn_bankfixture','currencyCode','EUR','customerCountry','GB','grossAmountMinor','10000','refundAmountMinor','2500','cumulativeRefundedAmountMinor','2500',
     'feeAmountMinor','30','netAmountMinor','9970','balanceStatus','available','paymentMethodType','pay_by_bank'));
   IF NOT EXISTS(SELECT 1 FROM public.stripe_pay_by_bank_refund_observations WHERE provider_event_id='evt_bankrefundedstale')
     OR (SELECT count(*) FROM public.stripe_pay_by_bank_evidence e WHERE e.command_id=v_command AND e.evidence_type='refunded'
@@ -390,7 +398,7 @@ BEGIN
     'providerCreatedAt','2026-07-11T14:00:00Z','apiVersion','2026-06-24.dahlia','signatureTimestamp',1786446400,'payloadSha256',repeat('9',64),
     'livemode',false,'observationSource','stripe_sdk_v1','capabilityEvidenceHash',repeat('d',64),'evidenceType','refunded','commandId',v_command,
     'providerCheckoutSessionId','cs_test_bankfixture','providerPaymentIntentId','pi_bankfixture','providerChargeId','ch_bankfixture','providerRefundId','re_bankfixture3',
-    'providerBalanceTransactionId','txn_bankfixture','currencyCode','EUR','customerCountry','FI','grossAmountMinor','10000','refundAmountMinor','5000','cumulativeRefundedAmountMinor','10000',
+    'providerBalanceTransactionId','txn_bankfixture','currencyCode','EUR','customerCountry','GB','grossAmountMinor','10000','refundAmountMinor','5000','cumulativeRefundedAmountMinor','10000',
     'feeAmountMinor','30','netAmountMinor','9970','balanceStatus','available','paymentMethodType','pay_by_bank'));
   IF NOT EXISTS(SELECT 1 FROM public.ledger_transactions WHERE reversal_of_transaction_id=v_second_residual)
     OR EXISTS(SELECT 1 FROM public.stripe_pay_by_bank_evidence e WHERE e.command_id=v_command AND e.evidence_type='refunded'
@@ -405,7 +413,7 @@ BEGIN
     'providerCreatedAt','2026-07-11T15:00:00Z','apiVersion','2026-06-24.dahlia','signatureTimestamp',1786450000,'payloadSha256',repeat('f',64),
     'livemode',false,'observationSource','stripe_sdk_v1','capabilityEvidenceHash',repeat('d',64),'evidenceType','refunded','commandId',v_command,
     'providerCheckoutSessionId','cs_test_bankfixture','providerPaymentIntentId','pi_bankfixture','providerChargeId','ch_bankfixture','providerRefundId','re_bankfixture5',
-    'providerBalanceTransactionId','txn_bankfixture','currencyCode','EUR','customerCountry','FI','grossAmountMinor','10000','refundAmountMinor','5000','cumulativeRefundedAmountMinor','5000',
+    'providerBalanceTransactionId','txn_bankfixture','currencyCode','EUR','customerCountry','GB','grossAmountMinor','10000','refundAmountMinor','5000','cumulativeRefundedAmountMinor','5000',
     'feeAmountMinor','30','netAmountMinor','9970','balanceStatus','available','paymentMethodType','pay_by_bank'));
   IF NOT EXISTS(SELECT 1 FROM public.stripe_pay_by_bank_refund_observations WHERE provider_event_id='evt_bankrefundedafterfull')
     OR EXISTS(SELECT 1 FROM public.stripe_pay_by_bank_evidence e WHERE e.command_id=v_command AND e.evidence_type='refunded'
@@ -418,7 +426,7 @@ BEGIN
       'providerCreatedAt','2026-07-11T15:00:00Z','apiVersion','2026-06-24.dahlia','signatureTimestamp',1786450001,'payloadSha256',repeat('e',64),
       'livemode',false,'observationSource','stripe_sdk_v1','capabilityEvidenceHash',repeat('d',64),'evidenceType','refunded','commandId',v_command,
       'providerCheckoutSessionId','cs_test_bankfixture','providerPaymentIntentId','pi_bankfixture','providerChargeId','ch_bankfixture','providerRefundId','re_bankfixture5',
-      'providerBalanceTransactionId','txn_bankfixture','currencyCode','EUR','customerCountry','FI','grossAmountMinor','10000','refundAmountMinor','5000','cumulativeRefundedAmountMinor','5000',
+      'providerBalanceTransactionId','txn_bankfixture','currencyCode','EUR','customerCountry','GB','grossAmountMinor','10000','refundAmountMinor','5000','cumulativeRefundedAmountMinor','5000',
       'feeAmountMinor','30','netAmountMinor','9970','balanceStatus','available','paymentMethodType','pay_by_bank'));
   EXCEPTION WHEN OTHERS THEN v_denied:=SQLERRM LIKE '%stripe_pay_by_bank_webhook_dedupe_conflict%';END;
   IF NOT v_denied THEN RAISE EXCEPTION 'changed_stale_provider_event_should_conflict';END IF;
@@ -436,7 +444,7 @@ BEGIN
     'providerCreatedAt','2026-07-12T12:00:00Z','apiVersion','2026-06-24.dahlia','signatureTimestamp',1786525600,'payloadSha256',repeat('6',64),
     'livemode',false,'observationSource','stripe_sdk_v1','capabilityEvidenceHash',repeat('d',64),'evidenceType','expired','commandId',v_terminal,
     'providerCheckoutSessionId','cs_test_bankterminal','providerPaymentIntentId',NULL,'providerChargeId',NULL,'providerRefundId',NULL,
-    'providerBalanceTransactionId',NULL,'currencyCode','EUR','customerCountry','FI','grossAmountMinor','10100','refundAmountMinor',NULL,
+    'providerBalanceTransactionId',NULL,'currencyCode','EUR','customerCountry','GB','grossAmountMinor','10100','refundAmountMinor',NULL,
     'feeAmountMinor',NULL,'netAmountMinor',NULL,'balanceStatus',NULL,'paymentMethodType',NULL));
   v_denied:=false;
   BEGIN
@@ -445,7 +453,7 @@ BEGIN
       'providerCreatedAt','2026-07-11T12:00:00Z','apiVersion','2026-06-24.dahlia','signatureTimestamp',1786439201,'payloadSha256',repeat('7',64),
       'livemode',false,'observationSource','stripe_sdk_v1','capabilityEvidenceHash',repeat('d',64),'evidenceType','settled_available','commandId',v_terminal,
       'providerCheckoutSessionId','cs_test_bankterminal','providerPaymentIntentId','pi_bankterminal','providerChargeId','ch_bankterminal','providerRefundId',NULL,
-      'providerBalanceTransactionId','txn_bankterminal','currencyCode','EUR','customerCountry','FI','grossAmountMinor','10100','refundAmountMinor',NULL,
+      'providerBalanceTransactionId','txn_bankterminal','currencyCode','EUR','customerCountry','GB','grossAmountMinor','10100','refundAmountMinor',NULL,
       'feeAmountMinor','30','netAmountMinor','10070','balanceStatus','available','paymentMethodType','pay_by_bank'));
   EXCEPTION WHEN OTHERS THEN v_denied:=SQLERRM LIKE '%stripe_pay_by_bank_terminal_evidence_blocks_settlement%';END;
   IF NOT v_denied THEN RAISE EXCEPTION 'expired_should_block_late_settlement';END IF;
