@@ -1,5 +1,13 @@
 import { describe, expect, it, vi } from "vitest"
+import type { AnchorHTMLAttributes } from "react"
 import { render, screen } from "@testing-library/react"
+
+// next/link pulls in the Next router runtime; this test only asserts rendered text.
+vi.mock("next/link", () => ({
+  default: ({ href, children, ...props }: AnchorHTMLAttributes<HTMLAnchorElement>) => (
+    <a href={typeof href === "string" ? href : ""} {...props}>{children}</a>
+  ),
+}))
 
 vi.mock("@/lib/zkas/auth", () => ({
   requireInternalAdminActor: vi.fn().mockResolvedValue({ userId: "admin-1" }),
