@@ -122,6 +122,8 @@ jobs:
         run: |
           set -euo pipefail
 
+          proxy_database=""
+
           if [[ "${GITHUB_EVENT_NAME}" == "workflow_dispatch" ]]; then
             target_environment="${{ inputs.target_environment }}"
             mode="${{ inputs.mode }}"
@@ -140,6 +142,11 @@ jobs:
             main)
               if [[ "${mode}" == "dry-run" ]]; then
                 db_url="${MAIN_SUPABASE_SESSION_POOLER_URL:-${DEV_SUPABASE_SESSION_POOLER_URL}}"
+                if [[ -z "${MAIN_SUPABASE_SESSION_POOLER_URL:-}" ]]; then
+                  # The Production URL is scoped to the approval-gated Production environment, so
+                  # pull requests cannot reach it. Validate against Dev as a proxy and say so.
+                  proxy_database="dev"
+                fi
               else
                 db_url="${MAIN_SUPABASE_SESSION_POOLER_URL}"
               fi
@@ -171,13 +178,27 @@ jobs:
             echo "target_environment=${target_environment}"
             echo "mode=${mode}"
             echo "project_ref=${project_ref}"
+            echo "proxy_database=${proxy_database}"
           } >> "${GITHUB_OUTPUT}"
+
+          if [[ -n "${proxy_database}" ]]; then
+            echo "::warning title=Production not checked::This dry-run targets main but ran against the ${proxy_database} database because Production credentials are only available to approved Production deployments. It validates migration syntax and ordering, not Production's actual schema or data."
+            {
+              echo "### ⚠️ Supabase dry-run used the ${proxy_database} database as a proxy for Production"
+              echo ""
+              echo "Production credentials are scoped to the approval-gated \`Production\` environment, so pull requests cannot reach the Production database."
+              echo "A green check here means the migrations apply cleanly to **${proxy_database}**. It does **not** verify Production's current schema or data."
+            } >> "${GITHUB_STEP_SUMMARY}"
+          fi
 
       - name: Report target
         run: |
           echo "Supabase target: ${{ steps.target.outputs.target_environment }}"
           echo "Supabase project ref: ${{ steps.target.outputs.project_ref }}"
           echo "Mode: ${{ steps.target.outputs.mode }}"
+          if [[ -n "${{ steps.target.outputs.proxy_database }}" ]]; then
+            echo "Database checked: ${{ steps.target.outputs.proxy_database }} (proxy; Production was NOT checked)"
+          fi
 
       - name: Setup Deno
         uses: denoland/setup-deno@v2
