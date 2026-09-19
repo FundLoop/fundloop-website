@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { getSupabaseBrowserClient } from "@/lib/supabase"
+import { listSuperadminUsers, softDeleteUserAsSuperadmin, type SuperadminUser } from "@/app/actions/superadmin-actions"
 import { Table, TableBody, TableCaption, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -29,16 +29,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog"
 
-interface User {
-  id: number
-  user_id: string
-  full_name: string | null
-  email: string
-  status: string | null
-  created_at: string | null
-  updated_at: string | null
-  deleted_at: string | null
-}
+type User = SuperadminUser
 
 export function UsersTable() {
   const [users, setUsers] = useState<User[]>([])
@@ -53,73 +44,16 @@ export function UsersTable() {
   const [reloadKey, setReloadKey] = useState(0)
   const pageSize = 10
 
-  const getSupabase = () => getSupabaseBrowserClient()
-
   useEffect(() => {
     const loadUsers = async () => {
-      const supabase = getSupabase()
       setLoading(true)
       try {
-        let query = supabase.from("users").select(
-          `
-            id, 
-            user_id, 
-            full_name, 
-            status, 
-            created_at, 
-            updated_at, 
-            deleted_at
-          `,
-          { count: "exact" },
-        )
+        const result = await listSuperadminUsers({ page, pageSize, status: statusFilter, search: searchTerm })
+        if (!result.ok) throw new Error(result.error)
 
-        if (statusFilter !== "all") {
-          query = query.eq("status", statusFilter as "active" | "inactive" | "deleted")
-        }
-
-        if (searchTerm) {
-          query = query.ilike("full_name", `%${searchTerm}%`)
-        }
-
-        const { count, error: countError } = await query
-
-        if (countError) throw countError
-
-        setTotalCount(count || 0)
-        setTotalPages(Math.ceil((count || 0) / pageSize))
-
-        const { data, error } = await query
-          .range((page - 1) * pageSize, page * pageSize - 1)
-          .order("created_at", { ascending: false })
-
-        if (error) throw error
-
-        const userIds = data.map((user) => user.user_id)
-        if (userIds.length === 0) {
-          setUsers([])
-          return
-        }
-
-        const { data: identitiesData, error: identitiesError } = await supabase
-          .from("user_identities")
-          .select("user_id, email")
-          .in("user_id", userIds)
-
-        if (identitiesError) throw identitiesError
-
-        const emailMap: Record<string, string> = {}
-        identitiesData?.forEach((identity) => {
-          if (identity.user_id) {
-            emailMap[identity.user_id] = identity.email || "No email found"
-          }
-        })
-
-        setUsers(
-          data.map((user) => ({
-            ...user,
-            email: emailMap[user.user_id] || "No email found",
-          })),
-        )
+        setTotalCount(result.data.totalCount)
+        setTotalPages(Math.ceil(result.data.totalCount / pageSize))
+        setUsers(result.data.users)
       } catch (error) {
         console.error("Error fetching users:", error)
         toast({
@@ -160,10 +94,8 @@ export function UsersTable() {
     if (!selectedUser) return
 
     try {
-      const supabase = getSupabase()
-      const { error } = await supabase.rpc("soft_delete_users", { p_id: selectedUser.user_id })
-
-      if (error) throw error
+      const result = await softDeleteUserAsSuperadmin(selectedUser.user_id)
+      if (!result.ok) throw new Error(result.error)
 
       toast({
         title: "User Deleted",

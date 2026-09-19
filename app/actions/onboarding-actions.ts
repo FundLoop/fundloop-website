@@ -245,104 +245,27 @@ export async function searchProjectsForTeamMember(query: string): Promise<Onboar
     return { ok: true, data: [] }
   }
 
-  const escaped = normalized.replace(/[%_]/g, "")
-  const { data: projects, error } = await supabase
-    .from("projects")
-    .select("id, name, slug, description, website, email, organization_id")
-    .is("deleted_at", null)
-    .eq("status", "active")
-    .or(`name.ilike.%${escaped}%,slug.ilike.%${escaped}%`)
-    .limit(6)
+  // Project-level contact details only: a prospective team member is not yet a collaborator,
+  // so admin names and personal emails are never returned (enforced by the RPC).
+  const { data: projects, error } = await supabase.rpc("search_projects_for_team_member", { p_query: normalized })
 
   if (error || !projects) {
     return { ok: false, error: error?.message ?? "Failed to search projects" }
   }
 
-  const organizationIds = Array.from(new Set(projects.map((project) => project.organization_id).filter(Boolean))) as number[]
-  const projectIds = projects.map((project) => project.id)
-
-  const [{ data: organizationMembers }, { data: participantRows }, { data: roles }] = await Promise.all([
-    organizationIds.length > 0
-      ? supabase
-          .from("organization_members")
-          .select("organization_id, role_id, user_id")
-          .in("organization_id", organizationIds)
-          .eq("status", "active")
-      : Promise.resolve({ data: [] as Tables<"organization_members">[], error: null }),
-    projectIds.length > 0
-      ? supabase.from("participants").select("project_id, user_id, is_admin").in("project_id", projectIds)
-      : Promise.resolve({ data: [] as Tables<"participants">[], error: null }),
-    supabase.from("ref_roles").select("id, name"),
-  ])
-
-  const relevantUserIds = Array.from(
-    new Set([
-      ...(organizationMembers ?? []).map((member) => member.user_id).filter((userId): userId is string => Boolean(userId)),
-      ...(participantRows ?? []).map((participant) => participant.user_id).filter((userId): userId is string => Boolean(userId)),
-    ]),
-  )
-
-  const { data: users } =
-    relevantUserIds.length > 0
-      ? await supabase.from("users").select("user_id, full_name, email").in("user_id", relevantUserIds)
-      : { data: [] as Pick<Tables<"users">, "user_id" | "full_name" | "email">[] }
-
-  const roleMap = new Map((roles ?? []).map((role) => [role.id, role.name]))
-  const userMap = new Map((users ?? []).map((entry) => [entry.user_id, entry]))
-  const orgContacts = new Map<number, TeamMemberContact[]>()
-  const participantContacts = new Map<number, TeamMemberContact[]>()
-
-  ;(organizationMembers ?? []).forEach((member) => {
-    const roleName = roleMap.get(member.role_id) ?? "Team member"
-    if (!["Founder", "Admin"].includes(roleName)) {
-      return
-    }
-
-    const profile = userMap.get(member.user_id ?? "")
-    const list = orgContacts.get(member.organization_id) ?? []
-    list.push({
-      name: profile?.full_name ?? "Project admin",
-      role: roleName,
-      email: profile?.email ?? null,
-    })
-    orgContacts.set(member.organization_id, list)
-  })
-
-  ;(participantRows ?? []).forEach((participant) => {
-    if (!participant.is_admin) {
-      return
-    }
-
-    const profile = userMap.get(participant.user_id ?? "")
-    const list = participantContacts.get(participant.project_id) ?? []
-    list.push({
-      name: profile?.full_name ?? "Project admin",
-      role: "Project admin",
-      email: profile?.email ?? null,
-    })
-    participantContacts.set(participant.project_id, list)
-  })
-
-  const matches = projects.map<TeamMemberProjectMatch>((project) => {
-    const contacts = [
-      ...(project.organization_id ? orgContacts.get(project.organization_id) ?? [] : []),
-      ...(participantContacts.get(project.id) ?? []),
-    ]
-
-    return {
-      id: project.id,
-      name: project.name,
-      slug: project.slug,
-      description: project.description,
-      website: project.website,
-      contactEmail: project.email,
-      contacts,
-      fallbackMessage:
-        project.email ?? project.website
-          ? "Reach out through the public contact details for this project."
-          : "This project does not yet have a visible contact path. FundLoop support can help route you.",
-    }
-  })
+  const matches = projects.map<TeamMemberProjectMatch>((project) => ({
+    id: project.id,
+    name: project.name,
+    slug: project.slug,
+    description: project.description,
+    website: project.website,
+    contactEmail: project.email,
+    contacts: [],
+    fallbackMessage:
+      project.email ?? project.website
+        ? "Reach out through the public contact details for this project."
+        : "This project does not yet have a visible contact path. FundLoop support can help route you.",
+  }))
 
   return { ok: true, data: matches }
 }

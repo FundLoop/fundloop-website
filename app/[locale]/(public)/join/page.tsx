@@ -42,13 +42,14 @@ export default function JoinPage() {
       setLoading(true)
 
       try {
-        const { data, error } = await supabase
-          .from("invitation_codes")
-          .select("code, created_by, max_uses, usage_count, expires_at")
-          .eq("code", inviteCode)
-          .single()
+        // Invitation codes are server-only; this RPC answers for one exact code.
+        const { data: rows, error } = await supabase.rpc("get_invitation_preview", { p_code: inviteCode })
 
         if (error) throw error
+        const data = rows?.[0]
+        if (!data) {
+          throw new Error("The invitation code is invalid or has expired.")
+        }
         if (data.expires_at && new Date(data.expires_at) < new Date()) {
           throw new Error("This invitation code has expired.")
         }
@@ -56,10 +57,7 @@ export default function JoinPage() {
           throw new Error("This invitation code has reached its maximum number of uses.")
         }
 
-        if (data.created_by) {
-          const { data: userData } = await supabase.from("users").select("full_name").eq("user_id", data.created_by).single()
-          setInviterName(userData?.full_name ?? null)
-        }
+        setInviterName(data.inviter_name ?? null)
       } catch (error) {
         const message = error instanceof Error ? error.message : "The invitation code is invalid or has expired."
         toast({
