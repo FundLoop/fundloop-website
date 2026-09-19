@@ -2,14 +2,22 @@ import { z } from "zod"
 import localManifestJson from "./deployments/local.json" with { type: "json" }
 import previewManifestJson from "./deployments/preview.json" with { type: "json" }
 import productionManifestJson from "./deployments/production.json" with { type: "json" }
+import {
+  deploymentEnvironmentSchema,
+  getDefaultRuntimeEnv,
+  resolveDeploymentEnvironment,
+  type DeploymentEnvironment,
+  type RuntimeEnv,
+} from "./deployment-environment.ts"
 import { isSolanaDepositAddressRoute } from "./route-availability.ts"
 import { SUPPORTED_CHAIN_CONFIGS, SUPPORTED_CHAIN_KEYS, type SupportedChainKey } from "./supported-chains.ts"
+
+export { getDefaultRuntimeEnv, resolveDeploymentEnvironment }
+export type { DeploymentEnvironment, RuntimeEnv }
 
 export const ZERO_ADDRESS = "0x0000000000000000000000000000000000000000"
 export const ZERO_REOWN_PROJECT_ID = "00000000000000000000000000000000"
 export const LOCAL_WALLET_MANIFEST_OVERRIDE_ENV = "NEXT_PUBLIC_FUNDLOOP_LOCAL_WALLET_MANIFEST_JSON"
-
-export type DeploymentEnvironment = "local" | "preview" | "production"
 
 export type WalletRuntimeIssue = {
   code: string
@@ -42,42 +50,6 @@ export type DeploymentAvailability = {
   available: boolean
   reason: string | null
 }
-
-export type RuntimeEnv = Record<string, string | undefined>
-
-function getDenoRuntime() {
-  const runtime = globalThis as typeof globalThis & {
-    Deno?: {
-      env?: {
-        get?: (name: string) => string | undefined
-      }
-    }
-  }
-
-  return typeof globalThis === "object" && globalThis && "Deno" in runtime ? runtime.Deno : undefined
-}
-
-export function getDefaultRuntimeEnv(): RuntimeEnv {
-  if (typeof process !== "undefined" && process?.env) {
-    return process.env as RuntimeEnv
-  }
-
-  const denoRuntime = getDenoRuntime()
-  return new Proxy(
-    {},
-    {
-      get(_target, property) {
-        if (typeof property !== "string") {
-          return undefined
-        }
-
-        return denoRuntime?.env?.get?.(property)
-      },
-    },
-  ) as RuntimeEnv
-}
-
-const deploymentEnvironmentSchema = z.enum(["local", "preview", "production"])
 
 const manifestChainSchema = z.object({
   networkKey: z.enum(SUPPORTED_CHAIN_KEYS),
@@ -179,22 +151,6 @@ function isConfiguredReownProjectId(value: string | undefined) {
 
   const normalized = value.trim()
   return normalized.length > 0 && normalized !== ZERO_REOWN_PROJECT_ID
-}
-
-export function resolveDeploymentEnvironment(env: RuntimeEnv = getDefaultRuntimeEnv()): DeploymentEnvironment {
-  const explicitValue = env.FUNDLOOP_DEPLOYMENT_ENV?.trim().toLowerCase()
-  const parsedExplicit = deploymentEnvironmentSchema.safeParse(explicitValue)
-  if (parsedExplicit.success) {
-    return parsedExplicit.data
-  }
-
-  const vercelValue = env.VERCEL_ENV?.trim().toLowerCase()
-  const parsedVercel = deploymentEnvironmentSchema.safeParse(vercelValue)
-  if (parsedVercel.success) {
-    return parsedVercel.data
-  }
-
-  return "local"
 }
 
 export function getDeploymentManifest(environment: DeploymentEnvironment, env: RuntimeEnv = getDefaultRuntimeEnv()): DeploymentManifest {
