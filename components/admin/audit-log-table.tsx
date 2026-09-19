@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { getSupabaseBrowserClient } from "@/lib/supabase"
+import { listSuperadminAuditLog, type SuperadminAuditLog } from "@/app/actions/superadmin-actions"
 import { Table, TableBody, TableCaption, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -17,16 +17,7 @@ import { Search, RefreshCw } from "lucide-react"
 import { toast } from "@/components/ui/use-toast"
 import { formatDistanceToNow } from "date-fns"
 
-interface AuditLog {
-  id: number
-  table_name: string
-  action: string
-  record_id: number | null
-  user_id: string | null
-  old_data: any | null
-  new_data: any | null
-  created_at: string
-}
+type AuditLog = SuperadminAuditLog
 
 export function AuditLogTable() {
   const [auditLogs, setAuditLogs] = useState<AuditLog[]>([])
@@ -38,45 +29,16 @@ export function AuditLogTable() {
   const [reloadKey, setReloadKey] = useState(0)
   const pageSize = 10
 
-  const getSupabase = () => getSupabaseBrowserClient()
-
   useEffect(() => {
     const loadAuditLogs = async () => {
-      const supabase = getSupabase()
       setLoading(true)
       try {
-        let query = supabase.from("audit_log").select(
-          `
-            id, 
-            table_name, 
-            action, 
-            record_id, 
-            user_id, 
-            old_data, 
-            new_data, 
-            created_at
-          `,
-          { count: "exact" },
-        )
+        const result = await listSuperadminAuditLog({ page, pageSize, search: searchTerm })
+        if (!result.ok) throw new Error(result.error)
 
-        if (searchTerm) {
-          query = query.ilike("table_name", `%${searchTerm}%`)
-        }
-
-        const { count, error: countError } = await query
-
-        if (countError) throw countError
-
-        setTotalCount(count || 0)
-        setTotalPages(Math.ceil((count || 0) / pageSize))
-
-        const { data, error } = await query
-          .range((page - 1) * pageSize, page * pageSize - 1)
-          .order("created_at", { ascending: false })
-
-        if (error) throw error
-
-        setAuditLogs(data || [])
+        setTotalCount(result.data.totalCount)
+        setTotalPages(Math.ceil(result.data.totalCount / pageSize))
+        setAuditLogs(result.data.auditLogs)
       } catch (error) {
         console.error("Error fetching audit logs:", error)
         toast({

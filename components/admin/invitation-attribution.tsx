@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { getSupabaseBrowserClient } from "@/lib/supabase"
+import { listSuperadminInvitationAttribution, type SuperadminInvitationCode } from "@/app/actions/superadmin-actions"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Badge } from "@/components/ui/badge"
@@ -10,84 +10,18 @@ import { toast } from "@/components/ui/use-toast"
 import { format } from "date-fns"
 import type { Database } from "@/types/supabase"
 
-interface InvitationCodeWithUser {
-  code: string
-  created_by: string
-  inviter_name: string
-  usage_count: number
-  max_uses: number | null
-  expires_at: string | null
-  created_at: string
-  invited_users: {
-    user_id: string
-    full_name: string | null
-    created_at: string | null
-  }[]
-}
+type InvitationCodeWithUser = SuperadminInvitationCode
 
 export function InvitationAttribution() {
   const [invitationCodes, setInvitationCodes] = useState<InvitationCodeWithUser[]>([])
   const [loading, setLoading] = useState(true)
-  const getSupabase = () => getSupabaseBrowserClient()
-
   useEffect(() => {
     const loadInvitationCodes = async () => {
-      const supabase = getSupabase()
       try {
         setLoading(true)
-
-        const { data: codesData, error: codesError } = await supabase
-          .from("invitation_codes")
-          .select("*")
-          .order("created_at", { ascending: false })
-
-        if (codesError) throw codesError
-
-        if (!codesData || codesData.length === 0) {
-          setInvitationCodes([])
-          return
-        }
-
-        const creatorIds = codesData.map((code) => code.created_by).filter(Boolean)
-
-        const { data: creatorsData, error: creatorsError } = await supabase
-          .from("users")
-          .select("user_id, full_name")
-          .in("user_id", creatorIds)
-
-        if (creatorsError) throw creatorsError
-
-        const creatorMap = new Map()
-        creatorsData?.forEach((creator) => {
-          creatorMap.set(creator.user_id, creator.full_name)
-        })
-
-        const invitationCodesWithUsers = await Promise.all(
-          codesData.map(async (code) => {
-            const { data: invitedUsers, error: invitedError } = await supabase
-              .from("users")
-              .select("user_id, full_name, created_at")
-              .eq("invited_by_code", code.code)
-              .order("created_at", { ascending: false })
-
-            if (invitedError) {
-              console.error("Error fetching invited users:", invitedError)
-              return {
-                ...code,
-                inviter_name: creatorMap.get(code.created_by) || "Unknown",
-                invited_users: [],
-              }
-            }
-
-            return {
-              ...code,
-              inviter_name: creatorMap.get(code.created_by) || "Unknown",
-              invited_users: invitedUsers || [],
-            }
-          }),
-        )
-
-        setInvitationCodes(invitationCodesWithUsers)
+        const result = await listSuperadminInvitationAttribution()
+        if (!result.ok) throw new Error(result.error)
+        setInvitationCodes(result.data)
       } catch (error) {
         console.error("Error fetching invitation codes:", error)
         toast({

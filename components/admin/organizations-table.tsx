@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { getSupabaseBrowserClient } from "@/lib/supabase"
+import { listSuperadminOrganizations, softDeleteOrganizationAsSuperadmin, type SuperadminOrganization } from "@/app/actions/superadmin-actions"
 import { Table, TableBody, TableCaption, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -29,33 +29,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog"
 
-interface Organization {
-  id: number
-  name: string
-  description: string | null
-  status: string | null
-  created_at: string | null
-  members: {
-    id: number
-    user_id: string
-    full_name: string
-    role: string
-  }[]
-  projects: {
-    id: number
-    name: string
-    description: string
-    status: string | null
-  }[]
-}
-
-function getRelatedRecord<T extends Record<string, unknown>>(value: T | T[] | null | undefined): T | null {
-  if (Array.isArray(value)) {
-    return value[0] ?? null
-  }
-
-  return value ?? null
-}
+type Organization = SuperadminOrganization
 
 export function OrganizationsTable() {
   const [organizations, setOrganizations] = useState<Organization[]>([])
@@ -70,95 +44,16 @@ export function OrganizationsTable() {
   const [reloadKey, setReloadKey] = useState(0)
   const pageSize = 5
 
-  const getSupabase = () => getSupabaseBrowserClient()
-
   useEffect(() => {
     const loadOrganizations = async () => {
-      const supabase = getSupabase()
       setLoading(true)
       try {
-        let query = supabase.from("organizations").select(
-          `
-            id, 
-            name, 
-            description, 
-            status, 
-            created_at
-          `,
-          { count: "exact" },
-        )
+        const result = await listSuperadminOrganizations({ page, pageSize, search: searchTerm })
+        if (!result.ok) throw new Error(result.error)
 
-        if (searchTerm) {
-          query = query.ilike("name", `%${searchTerm}%`)
-        }
-
-        const { count, error: countError } = await query
-
-        if (countError) throw countError
-
-        setTotalCount(count || 0)
-        setTotalPages(Math.ceil((count || 0) / pageSize))
-
-        const { data: orgsData, error } = await query.range((page - 1) * pageSize, page * pageSize - 1).order("name")
-
-        if (error) throw error
-
-        if (!orgsData) {
-          setOrganizations([])
-          return
-        }
-
-        const orgsWithDetails = await Promise.all(
-          orgsData.map(async (org) => {
-            const { data: membersData, error: membersError } = await supabase
-              .from("organization_members")
-              .select(
-                `
-              id,
-              user_id,
-              role_id,
-              users!organization_members_user_id_fkey(full_name),
-              ref_roles!organization_members_role_id_fkey(name)
-            `,
-              )
-              .eq("organization_id", org.id)
-              .eq("status", "active")
-
-            if (membersError) throw membersError
-
-            const { data: projectsData, error: projectsError } = await supabase
-              .from("projects")
-              .select(`
-              id,
-              name,
-              description,
-              status
-            `)
-              .eq("organization_id", org.id)
-
-            if (projectsError) throw projectsError
-
-            const members = membersData.map((member) => {
-              const user = getRelatedRecord(member.users)
-              const role = getRelatedRecord(member.ref_roles)
-
-              return {
-                id: member.id,
-                user_id: member.user_id,
-                full_name: typeof user?.full_name === "string" ? user.full_name : "Unknown User",
-                role: typeof role?.name === "string" ? role.name : "Unknown Role",
-              }
-            })
-
-            return {
-              ...org,
-              members,
-              projects: projectsData || [],
-            }
-          }),
-        )
-
-        setOrganizations(orgsWithDetails)
+        setTotalCount(result.data.totalCount)
+        setTotalPages(Math.ceil(result.data.totalCount / pageSize))
+        setOrganizations(result.data.organizations)
       } catch (error) {
         console.error("Error fetching organizations:", error)
         toast({
@@ -206,10 +101,8 @@ export function OrganizationsTable() {
     if (!selectedOrganization) return
 
     try {
-      const supabase = getSupabase()
-      const { error } = await supabase.rpc("soft_delete_organizations", { p_id: selectedOrganization.id })
-
-      if (error) throw error
+      const result = await softDeleteOrganizationAsSuperadmin(selectedOrganization.id)
+      if (!result.ok) throw new Error(result.error)
 
       toast({
         title: "Organization Deleted",
