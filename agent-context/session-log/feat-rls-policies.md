@@ -5,7 +5,7 @@
 - **Timestamp:** 2026-09-19T02:30:00Z
 - **Agent:** Claude Code (Claude Opus 5)
 - **Branch:** `feat/rls-policies`
-- **Head before commit:** `a29e78a`
+- **Head before commit:** `a29e78a` (rebased onto `44ad908`)
 
 ---
 
@@ -55,8 +55,9 @@ Replace the write-only stopgap (#253) with least-privilege RLS on the 43 legacy 
 
 #### Validation Notes
 
-- `tsc --noEmit` and scoped ESLint pass. Vitest is green after the privacy-surface test update (full run below).
-- The SQL suite runs only in the CI fresh-schema replay (the local Docker VM is unavailable).
+- After rebasing onto `dev` (audit-trigger hotfix plus the test-timeout fixes): Vitest 202/202 files and 1166/1166 tests, `tsc --noEmit`, and full `eslint .` all pass.
+- Local fresh `supabase db reset` applies all migrations. `pnpm test:db`: 25/25 suites, including `legacy_public_rls_policies.sql`, `public_client_write_grants.sql` and `audit_trigger_definer.sql`.
+- `public_client_write_grants.sql` was tightened: no public table without RLS may be client-writable at all, and allowed writes are now covered behaviourally by the RLS suite.
 
 ---
 
