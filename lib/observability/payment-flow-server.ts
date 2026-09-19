@@ -1,7 +1,7 @@
 import "server-only"
 
 import { getAdminSupabaseClient } from "@/lib/supabase-admin"
-import { resolveDeploymentEnvironment, type DeploymentEnvironment } from "@/lib/onchain/runtime-config"
+import { resolveDeploymentEnvironment, type DeploymentEnvironment } from "@/lib/onchain/deployment-environment"
 import { isInternalAdminEmail } from "@/lib/zkas/auth"
 import type { Tables, TablesInsert } from "@/types/supabase"
 import {

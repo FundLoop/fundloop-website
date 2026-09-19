@@ -44,12 +44,12 @@ export async function createStripePayByBankCheckout(provider: StripePayByBankPro
       !input.appOrigin.startsWith("http")) return edgeCommandFailure("invalid_payload", "Pay by Bank adapter input is invalid.")
   const capability = await provider.discoverCapability()
   if (capability.livemode) return edgeCommandFailure("live_mode_denied", "Live-mode Stripe objects are forbidden.")
-  const supportedMerchantCountries = new Set(["AT","AU","BE","BG","CA","CH","CY","CZ","DE","DK","EE","ES","FI","FR","GB","GR","HR","HU","IE","IT","LI","LT","LU","LV","MT","NL","NO","PL","PT","RO","SE","SG","SI","SK","US"])
+  const supportedMerchantCountries = new Set(["DE", "GB"])
   if (!supportedMerchantCountries.has(capability.merchantCountry) || !capability.payByBankActive || !capability.configurationActive ||
       !["platform","direct"].includes(capability.chargeTopology)) {
     return edgeCommandFailure("stripe_pay_by_bank_not_enabled", "Pay by Bank is not enabled in the FundLoop Stripe sandbox configuration.")
   }
-  if (["FR","DE","IE"].includes(input.customerCountry) && !capability.privatePreviewCountries.includes(input.customerCountry)) {
+  if (["FI", "FR", "DE", "IE"].includes(input.customerCountry) && !capability.privatePreviewCountries.includes(input.customerCountry)) {
     return edgeCommandFailure("private_preview_unavailable", "This Pay by Bank customer country requires exact private-preview enablement.")
   }
   const capabilityEvidenceHash = await sha256(JSON.stringify({ accountId: capability.accountId, merchantCountry: capability.merchantCountry,

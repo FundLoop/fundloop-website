@@ -9,7 +9,6 @@ import { Button } from "@/components/ui/button"
 import { MarketingPage, MarketingSection, SectionBody, SectionEyebrow, SectionTitle } from "@/components/marketing/page-chrome"
 import { Reveal } from "@/components/marketing/reveal"
 import { MonthlyLoopVisual } from "@/components/marketing/monthly-loop-visual"
-import { WhatIsFundLoopVisual } from "@/components/marketing/what-is-fundloop-visual"
 
 type MonthlyStage = { step: string; title: string; body: string }
 type Audience = { id: "people" | "projects" | "research" | "operators"; label: string; title: string; body: string; href: string; cta: string }
@@ -40,11 +39,12 @@ export default async function Home({ params }: PageProps) {
   const principles = t.raw("trust.items") as Principle[]
   const founderFeatures = t.raw("fork.founders.features") as string[]
   const participantFeatures = t.raw("fork.participants.features") as string[]
-  const whatIsFundLoopNodes = {
-    people: t.raw("fork.whatIsFundLoop.nodes.people") as { title: string; body: string },
-    participation: t.raw("fork.whatIsFundLoop.nodes.participation") as { title: string; body: string },
-    projects: t.raw("fork.whatIsFundLoop.nodes.projects") as { title: string; body: string },
-    fundloop: t.raw("fork.whatIsFundLoop.nodes.fundloop") as { title: string; body: string },
+
+  const whatIsFundLoopStages = {
+    people: t.raw("fork.whatIsFundLoop.stages.people") as { title: string; subtitle: string },
+    projectsRevenue: t.raw("fork.whatIsFundLoop.stages.projectsRevenue") as { title: string; subtitle: string },
+    projectsReward: t.raw("fork.whatIsFundLoop.stages.projectsReward") as { title: string; subtitle: string },
+    peopleRewards: t.raw("fork.whatIsFundLoop.stages.peopleRewards") as { title: string; subtitle: string },
   }
 
   return (
@@ -88,18 +88,67 @@ export default async function Home({ params }: PageProps) {
           <div className="text-center">
             <SectionEyebrow>{t("fork.eyebrow")}</SectionEyebrow>
             <SectionTitle className="mt-3 text-3xl sm:text-4xl">{t("fork.whatIsFundLoop.title")}</SectionTitle>
-            <SectionBody className="mx-auto mt-3 max-w-xl text-sm sm:text-base">
+            <SectionBody className="mx-auto mt-4 max-w-3xl whitespace-pre-line text-sm leading-relaxed sm:text-base">
               {t("fork.whatIsFundLoop.body")}
             </SectionBody>
           </div>
 
-          <WhatIsFundLoopVisual
-            projectLabel={t("fork.whatIsFundLoop.projectLabel")}
-            participantLabel={t("fork.whatIsFundLoop.participantLabel")}
-            projectCta={t("fork.whatIsFundLoop.ctas.projectHover")}
-            participantCta={t("fork.whatIsFundLoop.ctas.participantHover")}
-            nodes={whatIsFundLoopNodes}
-          />
+          <div className="relative mx-auto mt-10 max-w-5xl overflow-hidden rounded-[2.5rem] border border-[color:var(--marketing-line)] bg-white/70 p-4 shadow-xl dark:border-white/[0.1] dark:bg-white/[0.03] sm:p-6 lg:p-8">
+            <div className="relative hidden aspect-[3/2] w-full overflow-hidden rounded-[2rem] bg-neutral-100 dark:bg-neutral-900 sm:block">
+              <Image
+                src="/images/marketing/fundloop-for-all-2.png"
+                alt={t("fork.whatIsFundLoop.imageAlt")}
+                fill
+                className="object-contain object-center"
+                sizes="(max-width: 1200px) 100vw, 1200px"
+              />
+            </div>
+
+            {/* Mobile-optimized readable continuous loop presentation */}
+            <div className="flex flex-col gap-3 sm:hidden">
+              <div className="rounded-2xl border border-emerald-500/30 bg-emerald-950/20 p-4 text-center">
+                <span className="text-xs font-semibold uppercase tracking-wider text-emerald-600 dark:text-emerald-400">{whatIsFundLoopStages.people.title}</span>
+                <p className="mt-1 text-sm font-medium text-[var(--marketing-ink)]">{whatIsFundLoopStages.people.subtitle}</p>
+              </div>
+              <div className="flex justify-center text-xs font-bold text-[var(--marketing-muted)]">↓</div>
+              <div className="rounded-2xl border border-orange-500/30 bg-orange-950/20 p-4 text-center">
+                <span className="text-xs font-semibold uppercase tracking-wider text-[#d45f35] dark:text-[#ff7844]">{whatIsFundLoopStages.projectsRevenue.title}</span>
+                <p className="mt-1 text-sm font-medium text-[var(--marketing-ink)]">{whatIsFundLoopStages.projectsRevenue.subtitle}</p>
+              </div>
+              <div className="flex justify-center text-xs font-bold text-[var(--marketing-muted)]">↓</div>
+              <div className="rounded-2xl border border-orange-500/30 bg-orange-950/20 p-4 text-center">
+                <span className="text-xs font-semibold uppercase tracking-wider text-[#d45f35] dark:text-[#ff7844]">{whatIsFundLoopStages.projectsReward.title}</span>
+                <p className="mt-1 text-sm font-medium text-[var(--marketing-ink)]">{whatIsFundLoopStages.projectsReward.subtitle}</p>
+              </div>
+              <div className="flex justify-center text-xs font-bold text-[var(--marketing-muted)]">↓</div>
+              <div className="rounded-2xl border border-emerald-500/30 bg-emerald-950/20 p-4 text-center">
+                <span className="text-xs font-semibold uppercase tracking-wider text-emerald-600 dark:text-emerald-400">{whatIsFundLoopStages.peopleRewards.title}</span>
+                <p className="mt-1 text-sm font-medium text-[var(--marketing-ink)]">{whatIsFundLoopStages.peopleRewards.subtitle}</p>
+              </div>
+              <div className="flex items-center justify-center gap-2 pt-1 text-xs font-semibold text-emerald-600 dark:text-emerald-400">
+                <span>↻</span>
+                <span>{whatIsFundLoopStages.peopleRewards.title} → {whatIsFundLoopStages.people.title}</span>
+              </div>
+            </div>
+
+            {/* Continuous loop stage summary and accessible flow */}
+            <div className="mt-4 hidden border-t border-[color:var(--marketing-line)] pt-4 text-center sm:mt-6 sm:block sm:pt-5">
+              <div className="flex flex-wrap items-center justify-center gap-x-2 gap-y-1 text-xs text-[var(--marketing-muted-strong)]">
+                <span className="font-semibold text-[var(--marketing-ink)]">{whatIsFundLoopStages.people.title}:</span>
+                <span>{whatIsFundLoopStages.people.subtitle}</span>
+                <span className="text-[var(--marketing-line-strong)]">→</span>
+                <span className="font-semibold text-[var(--marketing-ink)]">{whatIsFundLoopStages.projectsRevenue.title}:</span>
+                <span>{whatIsFundLoopStages.projectsRevenue.subtitle}</span>
+                <span className="text-[var(--marketing-line-strong)]">→</span>
+                <span className="font-semibold text-[var(--marketing-ink)]">{whatIsFundLoopStages.projectsReward.title}:</span>
+                <span>{whatIsFundLoopStages.projectsReward.subtitle}</span>
+                <span className="text-[var(--marketing-line-strong)]">→</span>
+                <span className="font-semibold text-[var(--marketing-ink)]">{whatIsFundLoopStages.peopleRewards.title}:</span>
+                <span>{whatIsFundLoopStages.peopleRewards.subtitle}</span>
+                <span className="text-[var(--marketing-line-strong)]">↺</span>
+              </div>
+            </div>
+          </div>
 
           <div className="mt-16 text-center">
             <SectionTitle className="mt-3 text-3xl sm:text-4xl">{t("fork.title")}</SectionTitle>
@@ -381,22 +430,6 @@ export default async function Home({ params }: PageProps) {
           <div className="mt-9 flex flex-col gap-3 sm:flex-row">
             <Button asChild size="lg" className="rounded-full bg-[var(--marketing-accent)] px-7 text-white hover:bg-[color:var(--marketing-accent)]/90"><LocaleLink href="/participation">{t("closing.participant")}<ArrowRight className="h-4 w-4" /></LocaleLink></Button>
             <Button asChild size="lg" variant="outline" className="rounded-full border-[color:var(--marketing-line-strong)] bg-transparent px-7"><LocaleLink href="/documentation">{t("closing.documentation")}</LocaleLink></Button>
-          </div>
-        </Reveal>
-      </MarketingSection>
-
-      <MarketingSection className="pb-24">
-        <Reveal>
-          <div className="relative overflow-hidden rounded-[2.5rem] border border-[color:var(--marketing-line)] bg-white/55 p-4 shadow-xl dark:border-white/[0.1] dark:bg-white/[0.03]">
-            <div className="relative aspect-[16/9] w-full overflow-hidden rounded-[2rem] bg-neutral-100 dark:bg-neutral-900">
-              <Image
-                src="/images/marketing/fundloop-for-all.png"
-                alt={t("bannerAlt")}
-                fill
-                className="object-cover object-center"
-                sizes="(max-width: 1200px) 100vw, 1200px"
-              />
-            </div>
           </div>
         </Reveal>
       </MarketingSection>

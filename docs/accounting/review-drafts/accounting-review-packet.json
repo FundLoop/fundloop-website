@@ -21,7 +21,7 @@
     {
       "path": "docs/engineering/settlement-backed-epoch-treasury.md",
       "role": "treasury-allocation-architecture",
-      "sha256": "9bcb254d62ef20d613dbfe86d2374a7d04f1826c1437f2b6ed6eb32b6629f60f"
+      "sha256": "ebb7ef276780cfbd3713b5b4f5e8be81b8068089c8e5473d79e999670d88c513"
     },
     {
       "path": "docs/accounting/review-drafts/accounting-review-example.json",
@@ -63,7 +63,7 @@
     {
       "path": "supabase/tests/stripe_pay_by_bank_intake.sql",
       "control": "persisted EUR source lineage and reversal fixture",
-      "sha256": "097141e7d2094caab3b52f70ce9d99aa60c13499435b55633fe21a06eaa4129d"
+      "sha256": "0c3c842dbddf24ea9b3e5ac43c5cb5228d8d40453e561b4cf93a050243dfa8ed"
     },
     {
       "path": "supabase/tests/epoch_allocation_v2_four_epoch_lifecycle.sql",
@@ -93,5 +93,5 @@
   "conditions": null,
   "decidedAt": null,
   "engineeringDisposition": "cutover_blocked_pending_qualified_accountant",
-  "packetSha256": "c94186608ca26be4f7643693fa16b64a0e4823559cc09b8ed720c3ee4e8820f8"
+  "packetSha256": "20ffcf831989736aec2b03474603b6dc7305f687394332e52f24f9821ccf975e"
 }

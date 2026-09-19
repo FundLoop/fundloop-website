@@ -155,4 +155,57 @@ describe("settled Cubid redistribution v2", () => {
       expect(rerun.hashInput).toEqual(expected.hashInput)
     }
   })
+
+  // #251: non-terminating shares (1/3, 1/7, ...) used to fail exact source conservation.
+  describe("exact conservation with non-terminating shares", () => {
+    const EXACT_UNIT = BigInt(`1${"0".repeat(18)}`)
+    const units = (value: string) => {
+      expect(value).toMatch(/^\d+(?:\.\d{1,18})?$/)
+      const [whole, decimals = ""] = value.split(".")
+      return BigInt(whole) * EXACT_UNIT + BigInt(decimals.padEnd(18, "0"))
+    }
+    const conservedKinds = new Set(["initial_claim", "top_up", "carryout_residue"])
+    const expectExactConservation = (
+      result: Awaited<ReturnType<typeof calculateFundedRedistributionV2>>,
+      sources: Array<{ sourceLotKey: string; exactUsd: string }>,
+    ) => {
+      for (const lot of sources) {
+        const rows = result.sourceDispositions.filter((row) => row.sourceLotKey === lot.sourceLotKey && conservedKinds.has(row.kind))
+        expect(rows.reduce((sum, row) => sum + units(row.exactUsd), BigInt(0)), lot.sourceLotKey).toBe(units(lot.exactUsd))
+      }
+      expect(result.invariantChecks.every((check) => check.ok)).toBe(true)
+    }
+
+    it.each([3, 6, 7, 9, 11])("splits one lot across %i members and conserves it exactly", async (size) => {
+      const projectSources = [source(1, "100")]
+      const cohort = Array.from({ length: size }, (_, index) => member(1, `user-${String(index).padStart(2, "0")}`, "20"))
+      const result = await calculateFundedRedistributionV2(input({ projectSources, redistributionSources: [], cohort }))
+      expect(result.totals.finalAllocationMinor).toBe("10000")
+      expectExactConservation(result, projectSources)
+    })
+
+    it("conserves mixed scores, overlapping cohorts, and pool sources exactly", async () => {
+      const projectSources = [source(1, "100.01", "1"), source(2, "33.33", "2"), source(3, "7", "3")]
+      const redistributionSources = [pool("harvested_unclaimed", "10.07", "4"), pool("carryforward_residue", "3.13", "5")]
+      const cohort = [
+        member(1, "user-a", "7"), member(1, "user-b", "13"), member(1, "user-c", "0"),
+        member(2, "user-a", "11"), member(2, "user-d", "20"), member(2, "user-e", "3"),
+        member(3, "user-b", "19"), member(3, "user-e", "1"), member(3, "user-f", "17"),
+      ]
+      const result = await calculateFundedRedistributionV2(input({ projectSources, redistributionSources, cohort, capMultiple: "1.25" }))
+      expectExactConservation(result, [...projectSources, ...redistributionSources])
+    })
+
+    it("moves each reconciled row by less than one 1e-18 unit from its exact value", async () => {
+      const result = await calculateFundedRedistributionV2(input({
+        projectSources: [source(1, "100")], redistributionSources: [],
+        cohort: Array.from({ length: 7 }, (_, index) => member(1, `user-${index}`, "20")),
+      }))
+      // Exact share is 100/7; every row must be its floor or floor + 1e-18.
+      const floor = (BigInt(100) * EXACT_UNIT) / BigInt(7)
+      const claims = result.sourceDispositions.filter((row) => row.kind === "initial_claim")
+      expect(claims).toHaveLength(7)
+      for (const row of claims) expect([floor, floor + BigInt(1)]).toContain(units(row.exactUsd))
+    })
+  })
 })

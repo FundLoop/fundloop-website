@@ -13985,6 +13985,14 @@ export type Database = {
           },
         ]
       }
+      project_active_members: {
+        Row: {
+          is_admin: boolean | null
+          project_id: number | null
+          user_id: string | null
+        }
+        Relationships: []
+      }
       project_category_count: {
         Row: {
           category_id: number | null
@@ -14019,6 +14027,17 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      public_user_profiles: {
+        Row: {
+          avatar_url: string | null
+          display_name: string | null
+          fields: Json | null
+          location_id: number | null
+          profile_headline: string | null
+          user_id: string | null
+        }
+        Relationships: []
       }
       shadow_financial_reconciliation_observability: {
         Row: {
@@ -14596,6 +14615,16 @@ export type Database = {
         Args: { p_deployment_id: number; p_payout_intent_id: number }
         Returns: Json
       }
+      get_invitation_preview: {
+        Args: { p_code: string }
+        Returns: {
+          code: string
+          expires_at: string
+          inviter_name: string
+          max_uses: number
+          usage_count: number
+        }[]
+      }
       get_public_epoch_project_package: {
         Args: { p_cycle_key: string; p_project_slug: string }
         Returns: {
@@ -15151,6 +15180,17 @@ export type Database = {
       rollback_financial_cutover: {
         Args: { p_actor_user_id: string; p_command: Json }
         Returns: Json
+      }
+      search_projects_for_team_member: {
+        Args: { p_query: string }
+        Returns: {
+          description: string
+          email: string
+          id: number
+          name: string
+          slug: string
+          website: string
+        }[]
       }
       set_epoch_shadow_pause: {
         Args: {

@@ -6,7 +6,7 @@ const input = {projectSlug: "ecostream", paymentId: 7, currencyCode: "GBP" as co
 const adapterInput = {environment: "local", commandId: "00000000-0000-4000-8000-000000000001", projectId: 1, projectSlug: "ecostream",
   paymentId: 7, amountMinor: "2500", currencyCode: "GBP" as const, customerCountry: "GB" as const,
   actorUserId: "actor", paymentMethodConfigurationId: "pmc_test123", appOrigin: "http://127.0.0.1:3000"}
-const capability = {accountId: "acct_test", livemode: false, merchantCountry: "CA", payByBankActive: true,
+const capability = {accountId: "acct_test", livemode: false, merchantCountry: "GB", payByBankActive: true,
   configurationActive: true, chargeTopology: "platform" as const, privatePreviewCountries: []}
 
 describe("Stripe Pay by Bank contract", () => {
@@ -37,9 +37,18 @@ describe("Stripe Pay by Bank contract", () => {
 
   it("denies private-preview countries before mutation without exact enablement", async () => {
     const createCheckoutSession = vi.fn()
-    const result = await createStripePayByBankCheckout({discoverCapability: async () => capability, createCheckoutSession},
-      {...adapterInput, currencyCode: "EUR", customerCountry: "DE"})
-    expect(result).toMatchObject({ok: false, error: {code: "private_preview_unavailable"}})
+    for (const customerCountry of ["FI", "FR", "DE", "IE"] as const) {
+      const result = await createStripePayByBankCheckout({discoverCapability: async () => capability, createCheckoutSession},
+        {...adapterInput, currencyCode: "EUR", customerCountry})
+      expect(result).toMatchObject({ok: false, error: {code: "private_preview_unavailable"}})
+    }
+    expect(createCheckoutSession).not.toHaveBeenCalled()
+  })
+
+  it("denies unsupported merchant countries before mutation", async () => {
+    const createCheckoutSession = vi.fn()
+    const result = await createStripePayByBankCheckout({discoverCapability: async () => ({...capability, merchantCountry: "CA"}), createCheckoutSession}, adapterInput)
+    expect(result).toMatchObject({ok: false, error: {code: "stripe_pay_by_bank_not_enabled"}})
     expect(createCheckoutSession).not.toHaveBeenCalled()
   })
 })

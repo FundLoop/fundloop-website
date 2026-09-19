@@ -125,7 +125,7 @@ BEGIN
   v_current_command:=public.prepare_stripe_pay_by_bank_command(jsonb_build_object(
     'contractVersion','stripe_pay_by_bank_prepare.v1','deploymentEnvironment','local','actorUserId',v_actor,
     'projectSlug','nomad-workspaces','paymentId',v_current_payment,'currencyCode','EUR','expectedAmountMinor','2000',
-    'customerCountry','FI','merchantCountry','CA','chargeTopology','platform','providerAccountId','acct_testbank',
+    'customerCountry','GB','merchantCountry','GB','chargeTopology','platform','providerAccountId','acct_testbank',
     'platformAccountId','acct_testbank','privatePreviewEnabled',false));
   PERFORM public.acknowledge_stripe_pay_by_bank_checkout(jsonb_build_object(
     'commandId',v_current_command,'providerAccountId','acct_testbank','providerCheckoutSessionId','cs_test_fourepochcurrent',
@@ -137,7 +137,7 @@ BEGIN
     'payloadSha256',repeat('3',64),'livemode',false,'observationSource','stripe_sdk_v1','capabilityEvidenceHash',repeat('2',64),
     'evidenceType','settled_available','commandId',v_current_command,'providerCheckoutSessionId','cs_test_fourepochcurrent',
     'providerPaymentIntentId','pi_fourepochcurrent','providerChargeId','ch_fourepochcurrent','providerRefundId',NULL,
-    'providerBalanceTransactionId','txn_fourepochcurrent','currencyCode','EUR','customerCountry','FI','grossAmountMinor','2000',
+    'providerBalanceTransactionId','txn_fourepochcurrent','currencyCode','EUR','customerCountry','GB','grossAmountMinor','2000',
     'refundAmountMinor',NULL,'feeAmountMinor','6','netAmountMinor','1994','balanceStatus','available','paymentMethodType','pay_by_bank'));
   v_current_package:=public.validate_epoch_project_package(jsonb_build_object(
     'deploymentEnvironment','local','actorRole','internal_admin','actorUserId',v_actor,'projectSlug','nomad-workspaces',

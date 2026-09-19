@@ -16,8 +16,10 @@ describe("Privacy review surfaces", () => {
     expect(discovery).toContain('consentedFields.has("avatar")')
     expect(discovery).toContain("fullName: null")
     expect(discovery).toContain("contributionDetails: null")
-    expect(discovery).toContain('.select("user_id, is_admin, users!inner(status)")')
-    expect(discovery).toContain('.eq("users.status", "active")')
+    // Active membership and public profiles come from RLS-safe views, never raw users rows.
+    expect(discovery).toContain('.from("project_active_members").select("user_id, is_admin")')
+    expect(discovery).toContain('.from("public_user_profiles")')
+    expect(discovery).not.toContain('.from("users")')
     const edge = readFileSync("supabase/functions/profile-publication-choice-record/index.ts", "utf8")
     expect(edge).toContain('FUNDLOOP_DEPLOYMENT_ENV") === "production"')
   })
