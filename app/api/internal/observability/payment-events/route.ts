@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server"
-import { resolveDeploymentEnvironment } from "@/lib/onchain/runtime-config"
+import { resolveDeploymentEnvironment } from "@/lib/onchain/deployment-environment"
 import { createServerSupabaseClient } from "@/lib/supabase-server"
 import { parsePaymentFlowEventBatch } from "@/lib/observability/payment-flow"
 import { recordPaymentFlowEvents, resolvePaymentFlowActorRole } from "@/lib/observability/payment-flow-server"
