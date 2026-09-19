@@ -1,26 +1,14 @@
 \set ON_ERROR_STOP on
 
--- Pins the client write surface left by 20260918120000_revoke_public_client_writes_stopgap.sql.
+-- Pins the client write surface: introduced by 20260918120000 (stopgap), tightened by 20260919090000 (RLS).
 
 DO $$
 DECLARE
   v_row record;
-  v_allowed text[] := ARRAY[
-    'anon:newsletter_subscribers:INSERT',
-    'authenticated:newsletter_subscribers:INSERT',
-    'anon:support_requests:INSERT',
-    'authenticated:support_requests:INSERT',
-    'authenticated:organization_invitations:INSERT',
-    'authenticated:organization_invitations:UPDATE',
-    'authenticated:organization_members:INSERT',
-    'authenticated:projects:INSERT',
-    'authenticated:wallet_accounts:INSERT',
-    'authenticated:wallet_accounts:UPDATE',
-    'authenticated:user_notifications:UPDATE'
-  ];
-  v_found text[] := ARRAY[]::text[];
 BEGIN
-  -- Every client-writable table without RLS must be on the allowlist.
+  -- Since 20260919090000 every legacy table has RLS, so no public table without RLS may be
+  -- client-writable at all. Allowed client writes are covered behaviourally by
+  -- legacy_public_rls_policies.sql.
   FOR v_row IN
     SELECT role_name, c.relname, privilege
     FROM pg_class c
@@ -32,17 +20,7 @@ BEGIN
       AND NOT c.relrowsecurity
       AND has_table_privilege(role_name, c.oid, privilege)
   LOOP
-    IF NOT (v_row.role_name || ':' || v_row.relname || ':' || v_row.privilege) = ANY (v_allowed) THEN
-      RAISE EXCEPTION 'unexpected client write privilege: % % on public.%', v_row.role_name, v_row.privilege, v_row.relname;
-    END IF;
-    v_found := v_found || (v_row.role_name || ':' || v_row.relname || ':' || v_row.privilege);
-  END LOOP;
-
-  -- Every intended client write must still be present.
-  FOR v_row IN SELECT unnest(v_allowed) AS entry LOOP
-    IF NOT v_row.entry = ANY (v_found) THEN
-      RAISE EXCEPTION 'expected client write privilege missing: %', v_row.entry;
-    END IF;
+    RAISE EXCEPTION 'client write privilege on a table without RLS: % % on public.%', v_row.role_name, v_row.privilege, v_row.relname;
   END LOOP;
 END $$;
 
