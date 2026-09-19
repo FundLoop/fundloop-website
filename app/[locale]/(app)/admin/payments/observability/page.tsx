@@ -1,5 +1,5 @@
 import Link from "next/link"
-import { formatDistanceToNow } from "date-fns"
+import { formatDistanceToNow } from "date-fns/formatDistanceToNow"
 import { ArrowLeft } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
