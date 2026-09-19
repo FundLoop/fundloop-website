@@ -142,7 +142,7 @@ export async function getPublicProjectsDirectoryData({
 
     const { data: participantRows, error: participantError } =
       projectIds.length > 0
-        ? await supabase.from("participants").select("project_id, user_id, users(status)").in("project_id", projectIds)
+        ? await supabase.from("project_active_members").select("project_id, user_id").in("project_id", projectIds)
         : { data: [], error: null }
 
     if (participantError) {
@@ -151,8 +151,7 @@ export async function getPublicProjectsDirectoryData({
 
     const participantCounts = new Map<number, Set<string>>()
     for (const row of participantRows ?? []) {
-      const participantUser = row.users as { status?: string } | null
-      if (participantUser?.status !== "active") {
+      if (row.project_id == null || row.user_id == null) {
         continue
       }
 
@@ -226,11 +225,7 @@ export const getPublicProjectDetail = cache(async (slug: string): Promise<Public
     }
 
     const [{ data: participantRows, error: participantError }, { data: categoryRow, error: categoryError }] = await Promise.all([
-      supabase
-        .from("participants")
-        .select("user_id, is_admin, users!inner(status)")
-        .eq("project_id", projectRow.id)
-        .eq("users.status", "active"),
+      supabase.from("project_active_members").select("user_id, is_admin").eq("project_id", projectRow.id),
       projectRow.category_id
         ? supabase.from("ref_categories").select("name").eq("id", projectRow.category_id).maybeSingle()
         : Promise.resolve({ data: null, error: null }),
@@ -305,12 +300,8 @@ export async function getPublicUsersDirectoryData({
         .eq("is_public", true)
         .is("deleted_at", null)
         .order("name"),
-      supabase
-        .from("users")
-        .select("user_id, display_name, full_name, profile_headline, avatar_url, contribution_details, created_at, location_id, cubid_identity_status, cubid_score")
-        .eq("status", "active")
-        .eq("is_public", true)
-        .is("deleted_at", null),
+      // Consent-filtered, active, public profiles only; raw users rows are owner-only under RLS.
+      supabase.from("public_user_profiles").select("user_id, display_name, profile_headline, avatar_url, location_id"),
       supabase.rpc("list_discoverable_public_user_ids"),
     ])
 
@@ -358,7 +349,7 @@ export async function getPublicUsersDirectoryData({
     const searchTerm = normalizeSearchTerm(search)
 
     const users = (userRows ?? [])
-      .filter((user) => consentedFieldsByUser.has(user.user_id))
+      .filter((user): user is typeof user & { user_id: string } => user.user_id != null && consentedFieldsByUser.has(user.user_id))
       .map<PublicDiscoveryUser>((user) => {
         const projectIdsForUser = Array.from(participantProjectsByUser.get(user.user_id) ?? [])
         const consentedFields = consentedFieldsByUser.get(user.user_id) ?? new Set<string>()
@@ -425,11 +416,10 @@ export const getPublicUserProfile = cache(async (userId: string): Promise<Public
         : [],
     )
 
+    // The view only returns active, public profiles with a current publication grant.
     const { data: userRow, error: userError } = await supabase
-      .from("users")
-      .select(
-        "user_id, display_name, full_name, profile_headline, avatar_url, contribution_details, created_at, location_id, status, is_public, cubid_identity_status, cubid_score",
-      )
+      .from("public_user_profiles")
+      .select("user_id, display_name, profile_headline, avatar_url, location_id")
       .eq("user_id", userId)
       .maybeSingle()
 
@@ -437,7 +427,7 @@ export const getPublicUserProfile = cache(async (userId: string): Promise<Public
       throw new Error(userError.message)
     }
 
-    if (!userRow || userRow.status !== "active" || userRow.is_public !== true) {
+    if (!userRow?.user_id) {
       return null
     }
 
