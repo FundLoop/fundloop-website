@@ -18,14 +18,18 @@ BEGIN
   END IF;
 END $$;
 
--- Hosted projects grant sequence usage by default; local replay images may not. Mirror the
--- hosted default inside this rolled-back transaction so the test exercises the trigger only.
+-- Hosted projects grant sequence usage and SELECT by default; local replay images may not.
+-- Mirror the hosted defaults inside this rolled-back transaction so the test exercises the trigger only.
 DO $$
 DECLARE
   v_sequence text := pg_get_serial_sequence('public.wallet_accounts', 'id');
 BEGIN
   IF v_sequence IS NOT NULL AND NOT has_sequence_privilege('authenticated', v_sequence, 'USAGE') THEN
     EXECUTE format('GRANT USAGE ON SEQUENCE %s TO authenticated', v_sequence);
+  END IF;
+  -- The primary-wallet triggers run UPDATE ... WHERE user_id = ... as the caller, which needs SELECT.
+  IF NOT has_table_privilege('authenticated', 'public.wallet_accounts', 'SELECT') THEN
+    GRANT SELECT ON TABLE public.wallet_accounts TO authenticated;
   END IF;
 END $$;
 

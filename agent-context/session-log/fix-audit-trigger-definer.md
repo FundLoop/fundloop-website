@@ -38,3 +38,41 @@ The stopgap audit covered direct table calls but not triggers that write elsewhe
 #### Suggested Next Steps
 
 - Merge, then confirm wallet changes work on Dev. The project visibility toggle stays broken until the RLS PR adds the admin-only column update policy.
+
+### session v2: Mirror hosted default grants in the test
+
+- **Timestamp:** 2026-09-19T01:30:00Z
+- **Agent:** Claude Code (Claude Opus 5)
+- **Branch:** `fix/audit-trigger-definer`
+- **Head before commit:** `d291603`
+
+---
+
+#### Objective
+
+The CI replay failed the new suite with `permission denied for table wallet_accounts`.
+
+---
+
+#### Actions Taken
+
+- `ensure_single_primary_wallet` (a trigger that runs as the caller) runs `UPDATE ... WHERE user_id = ...`, which needs SELECT. Hosted projects grant it by default; the CI image does not.
+- Inside its rolled-back transaction, the test now grants SELECT and sequence usage only if missing. The full RLS PR grants SELECT on `wallet_accounts` explicitly.
+
+---
+
+#### Validation Notes
+
+- Awaiting the CI replay.
+
+---
+
+#### Reflections
+
+Environment default privileges keep surfacing: prefer explicit grants in migrations.
+
+---
+
+#### Suggested Next Steps
+
+- Merge after green.
