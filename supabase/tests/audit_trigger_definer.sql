@@ -6,7 +6,8 @@ BEGIN;
 INSERT INTO auth.users (id, aud, role, email, created_at, updated_at)
 VALUES ('20000000-0000-4000-8000-000000000001', 'authenticated', 'authenticated', 'audit-trigger@example.test', now(), now());
 INSERT INTO public.users (user_id, display_name, email, status)
-VALUES ('20000000-0000-4000-8000-000000000001', 'Audit Trigger', 'audit-trigger@example.test', 'active');
+VALUES ('20000000-0000-4000-8000-000000000001', 'Audit Trigger', 'audit-trigger@example.test', 'active')
+ON CONFLICT (user_id) DO UPDATE SET display_name = EXCLUDED.display_name, email = EXCLUDED.email, status = EXCLUDED.status;
 
 DO $$
 BEGIN

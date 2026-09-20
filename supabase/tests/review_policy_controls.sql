@@ -10,7 +10,8 @@ VALUES
 INSERT INTO public.users (user_id, display_name, email, status)
 VALUES
   ('10000000-0000-4000-8000-000000000001', 'Review Policy A', 'review-policy-a@example.test', 'active'),
-  ('10000000-0000-4000-8000-000000000002', 'Review Policy B', 'review-policy-b@example.test', 'active');
+  ('10000000-0000-4000-8000-000000000002', 'Review Policy B', 'review-policy-b@example.test', 'active')
+ON CONFLICT (user_id) DO UPDATE SET display_name = EXCLUDED.display_name, email = EXCLUDED.email, status = EXCLUDED.status;
 
 SET LOCAL ROLE service_role;
 
