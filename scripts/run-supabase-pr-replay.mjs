@@ -10,6 +10,7 @@ const representativeSuites = [
   "supabase/tests/public_client_write_grants.sql",
   "supabase/tests/audit_trigger_definer.sql",
   "supabase/tests/legacy_public_rls_policies.sql",
+  "supabase/tests/auth_user_profile_trigger.sql",
 ]
 
 function localDatabaseUrl() {
