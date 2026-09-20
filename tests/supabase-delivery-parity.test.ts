@@ -363,6 +363,8 @@ describe("Supabase delivery parity", () => {
     expect(workflow).toContain("ALTER TABLE public.supabase_deploy_context ENABLE ROW LEVEL SECURITY")
     expect(workflow).toContain("::warning title=Production not checked::")
     expect(workflow).toContain("proxy_database=${proxy_database}")
+    expect(workflow).toContain("is not a parseable URL")
+    expect(workflow).toContain("username must use the postgres.<project-ref> format")
     expect(workflow).toContain("verify-supabase-schema-parity.mjs")
     expect(workflow).toContain("deno cache --no-check --frozen --config supabase/functions/deno.json")
     expect(workflow).toContain(predeployGuard)
