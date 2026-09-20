@@ -9,7 +9,8 @@ INSERT INTO auth.users (id, aud, role, email, created_at, updated_at) VALUES
 INSERT INTO public.users (user_id, display_name, full_name, email, status, avatar_url, profile_headline) VALUES
   ('20000000-0000-4000-8000-000000000001', 'Founder', 'Founder Secret', 'invite-founder@example.test', 'active', 'founder.png', 'Founder headline'),
   ('20000000-0000-4000-8000-000000000002', 'Member Display', 'Member Secret', 'invite-member@example.test', 'active', 'member.png', 'Member headline'),
-  ('20000000-0000-4000-8000-000000000003', 'Unrelated', 'Unrelated Secret', 'invite-unrelated@example.test', 'active', 'unrelated.png', 'Unrelated headline');
+  ('20000000-0000-4000-8000-000000000003', 'Unrelated', 'Unrelated Secret', 'invite-unrelated@example.test', 'active', 'unrelated.png', 'Unrelated headline')
+ON CONFLICT (user_id) DO UPDATE SET display_name = EXCLUDED.display_name, full_name = EXCLUDED.full_name, email = EXCLUDED.email, status = EXCLUDED.status, avatar_url = EXCLUDED.avatar_url, profile_headline = EXCLUDED.profile_headline;
 INSERT INTO public.organizations (id, name) VALUES (900001, 'Invitation Review Org');
 INSERT INTO public.projects (id, name, description, organization_id, slug) VALUES (900001, 'Invitation Review Project', 'Test', 900001, 'invitation-review-project');
 INSERT INTO public.organization_members (organization_id, user_id, role_id, role_assigned_by, status)

@@ -71,7 +71,8 @@ INSERT INTO "public"."ref_genders" ("id", "name", "display_order") VALUES
   ('1', 'Male', '1'),
   ('2', 'Female', '2'),
   ('3', 'Non-binary', '3'),
-  ('5', 'Prefer not to say', '4');
+  ('5', 'Prefer not to say', '4')
+ON CONFLICT DO NOTHING;
 
 INSERT INTO "public"."ref_locations" ("id", "name", "country", "region", "usage_count", "created_at") VALUES
   ('1', 'New York, USA', 'USA', 'North America', '1', '2025-04-07 04:04:50.58259+00'),
@@ -81,7 +82,8 @@ INSERT INTO "public"."ref_locations" ("id", "name", "country", "region", "usage_
   ('5', 'Sydney, Australia', 'Australia', 'Oceania', '1', '2025-04-07 04:04:50.58259+00'),
   ('6', 'Toronto, Canada', 'Canada', 'North America', '1', '2025-04-07 04:04:50.58259+00'),
   ('7', 'São Paulo, Brazil', 'Brazil', 'South America', '1', '2025-04-07 04:04:50.58259+00'),
-  ('8', 'Mumbai, India', 'India', 'Asia', '1', '2025-04-07 04:04:50.58259+00');
+  ('8', 'Mumbai, India', 'India', 'Asia', '1', '2025-04-07 04:04:50.58259+00')
+ON CONFLICT DO NOTHING;
 
 INSERT INTO "public"."ref_occupations" ("id", "name", "category", "usage_count", "created_at") VALUES
   ('1', 'Software Engineer', 'Technology', '1', '2025-04-07 04:04:50.58259+00'),
@@ -92,7 +94,8 @@ INSERT INTO "public"."ref_occupations" ("id", "name", "category", "usage_count",
   ('6', 'Doctor', 'Healthcare', '1', '2025-04-07 04:04:50.58259+00'),
   ('7', 'Financial Analyst', 'Finance', '1', '2025-04-07 04:04:50.58259+00'),
   ('8', 'Writer', 'Media', '1', '2025-04-07 04:04:50.58259+00'),
-  ('9', 'Community Moderator', NULL, '1', '2025-04-07 05:13:59.728742+00');
+  ('9', 'Community Moderator', NULL, '1', '2025-04-07 05:13:59.728742+00')
+ON CONFLICT DO NOTHING;
 
 INSERT INTO "public"."users" ("user_id", "cubid_id", "full_name", "avatar_url", "birth_year", "gender_id", "location_id", "occupation_id", "will_contribute", "contribution_details", "created_at", "updated_at", "primary_email_identity", "id", "invited_by_code", "updated_by", "deleted_at", "status", "cubid_score", "lifetime_sweat_equity", "is_public", "display_name", "birthdate", "is_pfp_public", "is_name_public", "is_birthyear_public", "is_birthday_public", "is_gender_public", "is_occupation_public", "is_location_public", "email", "age", "bio") VALUES
   ('d014ec60-98c7-4c71-bb09-d9ee1f2d19aa', NULL, 'Moa Lindholm', 'https://api.dicebear.com/9.x/adventurer/svg?seed=Moa', '1991', '2', '2', '4', 't', 'Facilitates design sprints for climate startups and helps new communities onboard into the FundLoop ecosystem.', '2025-05-10 10:16:44.946281+00', '2025-06-10 15:06:11.05774+00', NULL, '41', NULL, NULL, NULL, 'active', '0', '0', 't', 'Moa', NULL, 't', 't', 'f', 'f', 't', 't', 't', 'moa@fundloop.example.com', NULL, 'Product designer focused on community-first climate tools.'),
@@ -134,7 +137,8 @@ INSERT INTO "public"."blog_posts" ("id", "title", "slug", "excerpt", "content", 
   ('16', 'Getting Started', 'getting-started', 'Follow this guide to create your account, set up your profile, and start participating in the FundLoop ecosystem as either a project or a user.', 'This guide walks you through the initial steps for joining FundLoop, whether you''re a project or an individual user. FundLoop is an economic coordination platform where projects contribute 1% of their revenue and users receive a citizen salary in return for verified participation across the ecosystem.\n\n## For Users\n\nTo start receiving a citizen salary:\n\n1. **Create an Account**  \n   Sign up using your email, phone, or connected wallet. Your identity will be managed through Cubid to ensure proof-of-personhood.\n\n2. **Complete Your Profile**  \n   Add a nickname and profile image. These are required for participation in most FundLoop-enabled apps.\n\n3. **Get Validated**  \n   Connect identity credentials through Cubid to begin earning. Higher validation leads to greater eligibility for salary payouts.\n\n4. **Participate in Projects**  \n   Use any FundLoop-enabled app. You must be active in multiple projects to qualify for payouts from the communal pool.\n\n5. **Track Your Rewards**  \n   Your activity, validation score, and salary eligibility can be tracked from your FundLoop dashboard.\n\n## For Projects\n\nTo start contributing and benefiting from FundLoop:\n\n1. **Register Your Project**  \n   Create a project profile with your name, logo, short bio, and website link.\n\n2. **Pledge 1%**  \n   Commit to contributing 1% of your monthly revenue or equivalent in-kind value to the FundLoop pool.\n\n3. **Nominate Users**  \n   Identify your active users and assign fractional values to determine their share of your monthly contribution.\n\n4. **Integrate with the Ecosystem**  \n   Optionally, connect to FundLoop’s API to automate user syncing, revenue reporting, and contribution confirmations.\n\n5. **Monitor Impact**  \n   View dashboards showing your contribution history, user allocations, and impact across the ecosystem.\n\n## What’s Next\n\nOnce you’ve completed the steps above, explore more advanced features such as governance participation, performance tracking, and ecosystem collaborations. FundLoop is designed to reward consistency and alignment—stay engaged and you’ll see increasing benefits over time.', '1', '2025-06-06 17:02:13.00051+00', '2025-06-06 17:02:13.00051+00', '2025-06-06 17:02:13.00051+00', 't', 'Getting Started', 'Step-by-step guide to joining the FundLoop ecosystem', 'https://kyxtqnfnksvcaugxwzuj.supabase.co/storage/v1/object/public/blog-pics//blogpic.jpg', '3'),
   ('24', 'Why Monthly Cadence Matters', 'why-monthly-cadence-matters', 'A practical look at why FundLoop organizes contributions, verification, and reporting around one predictable monthly cycle.', 'FundLoop works best when projects and participants can rely on a shared rhythm.\n\n## One cycle, many decisions\n\nAt the end of each month, projects need to know when revenue commitments lock, contributors need to know when activity is counted, and operators need to know when distribution preparation begins. A fixed cadence reduces ambiguity.\n\n## Why this matters for founders\n\nFounders should not have to guess when to report, when to reconcile, or when a contribution becomes part of a distribution run. A monthly cycle creates clear operational checkpoints for finance, community, and reporting work.\n\n## Why this matters for participants\n\nParticipants need to understand when effort becomes visible and when published results are trustworthy. A visible monthly rhythm helps people build confidence that the system is fair and repeatable.\n\n## What is already true today\n\nFundLoop already models payment tracking, reporting surfaces, and project participation around recurring operational periods. The product is moving toward making that cadence more explicit across every founder and user surface.\n\nA stable cycle is not just bookkeeping. It is one of the things that turns a promise into an operating system.', '41', '2026-04-10 14:30:00+00', '2026-04-10 14:30:00+00', '2026-04-10 14:30:00+00', 'f', NULL, 'Why FundLoop treats the monthly cycle as an operating system, not just a report deadline.', 'https://kyxtqnfnksvcaugxwzuj.supabase.co/storage/v1/object/public/blog-pics//blogpic.jpg', NULL),
   ('25', 'What Contributors Actually Need From a Project Directory', 'what-contributors-actually-need-from-a-project-directory', 'A useful public directory is not just a list of logos. It should tell people where they fit, what a project values, and how participation turns into visible outcomes.', 'A project directory should help people decide where to spend their attention.\n\n## Discovery is not enough\n\nA list of project names and links may look complete, but it does not help a contributor understand whether a project is active, what kind of work it values, or what participation inside that project will feel like.\n\n## The signals that matter\n\nContributors need a few practical signals:\n\n- what the project is trying to build\n- who it is for\n- how it handles participation and contribution visibility\n- whether it is part of a real operational cadence\n\n## What FundLoop is aiming for\n\nFundLoop treats public project pages as trust surfaces. They should help a person move from curiosity to a confident first interaction, and they should help founders communicate their operating model without turning every page into a pitch deck.\n\nThat means the best directory pages are honest, current, and tied to real workflows rather than marketing abstraction.', '37', '2026-04-11 16:00:00+00', '2026-04-11 16:00:00+00', '2026-04-11 16:00:00+00', 'f', NULL, 'Public discovery works when people can tell how a project operates before they commit attention.', 'https://kyxtqnfnksvcaugxwzuj.supabase.co/storage/v1/object/public/blog-pics//blogpic.jpg', NULL),
-  ('26', 'From KYC Friction to Trust Signals', 'from-kyc-friction-to-trust-signals', 'Identity checks only help when they lead to clearer eligibility, cleaner reporting, and better participation expectations for everyone involved.', 'People do not want identity requirements for their own sake. They want to know why the requirement exists and what it unlocks.\n\n## The problem with abstract verification\n\nWhen verification is framed as a box-ticking exercise, it feels like friction. When it is tied to eligibility, reporting integrity, and payout trust, it becomes easier to understand.\n\n## What users need\n\nUsers need to know:\n\n- what information is being verified\n- why the verification matters\n- how it affects access to participation and results visibility\n\n## What founders need\n\nFounders need confidence that reported participation maps to real people, not spam or duplicate identities. They also need a process that does not require them to build identity infrastructure themselves.\n\n## The FundLoop direction\n\nFundLoop is moving toward a model where identity comes from a dedicated external source of truth and the application focuses on participation, coordination, and reporting. That separation keeps the product simpler and makes eligibility easier to explain across the public funnel and the workspace.', '38', '2026-04-12 12:15:00+00', '2026-04-12 12:15:00+00', '2026-04-12 12:15:00+00', 'f', NULL, 'How identity requirements become understandable when they map to real eligibility and reporting needs.', 'https://kyxtqnfnksvcaugxwzuj.supabase.co/storage/v1/object/public/blog-pics//blogpic.jpg', NULL);
+  ('26', 'From KYC Friction to Trust Signals', 'from-kyc-friction-to-trust-signals', 'Identity checks only help when they lead to clearer eligibility, cleaner reporting, and better participation expectations for everyone involved.', 'People do not want identity requirements for their own sake. They want to know why the requirement exists and what it unlocks.\n\n## The problem with abstract verification\n\nWhen verification is framed as a box-ticking exercise, it feels like friction. When it is tied to eligibility, reporting integrity, and payout trust, it becomes easier to understand.\n\n## What users need\n\nUsers need to know:\n\n- what information is being verified\n- why the verification matters\n- how it affects access to participation and results visibility\n\n## What founders need\n\nFounders need confidence that reported participation maps to real people, not spam or duplicate identities. They also need a process that does not require them to build identity infrastructure themselves.\n\n## The FundLoop direction\n\nFundLoop is moving toward a model where identity comes from a dedicated external source of truth and the application focuses on participation, coordination, and reporting. That separation keeps the product simpler and makes eligibility easier to explain across the public funnel and the workspace.', '38', '2026-04-12 12:15:00+00', '2026-04-12 12:15:00+00', '2026-04-12 12:15:00+00', 'f', NULL, 'How identity requirements become understandable when they map to real eligibility and reporting needs.', 'https://kyxtqnfnksvcaugxwzuj.supabase.co/storage/v1/object/public/blog-pics//blogpic.jpg', NULL)
+ON CONFLICT DO NOTHING;
 
 INSERT INTO "public"."invitation_codes" ("code", "created_by", "usage_count", "max_uses", "expires_at", "created_at") VALUES
   ('0e375373225a', 'bfe4a7dd-f698-49e2-a813-2e5af78c7029', '0', '5', NULL, '2025-05-07 03:43:30.404768+00');
@@ -168,7 +172,8 @@ INSERT INTO "public"."ref_invitation_statuses" ("id", "name", "code", "descripti
   ('1', 'Pending', 'pending', 'Invitation has been sent but not yet accepted or declined', '1'),
   ('2', 'Accepted', 'accepted', 'Invitation has been accepted', '2'),
   ('3', 'Declined', 'declined', 'Invitation has been declined', '3'),
-  ('4', 'Expired', 'expired', 'Invitation has expired', '4');
+  ('4', 'Expired', 'expired', 'Invitation has expired', '4')
+ON CONFLICT DO NOTHING;
 
 INSERT INTO "public"."ref_roles" ("id", "name", "display_order") VALUES
   ('2', 'Founder', '2'),
@@ -205,7 +210,8 @@ INSERT INTO "public"."ref_payment_periodicities" ("id", "name", "code", "descrip
   ('3', 'Custom', 'custom', 'Payment periods are calculated based on a custom number of days', '6'),
   ('4', 'Daily', 'day', 'Payment periods are calculated daily', '1'),
   ('5', 'Quartely', 'quarter', 'Payment periods are calculated quarterly', '4'),
-  ('6', 'Annually', 'year', 'Payment periods are calculated annually', '5');
+  ('6', 'Annually', 'year', 'Payment periods are calculated annually', '5')
+ON CONFLICT DO NOTHING;
 
 INSERT INTO "public"."projects" ("id", "name", "description", "detailed_description", "logo_url", "website", "organization_id", "is_public", "created_at", "payment_percentage", "payment_periodicity_id", "payment_custom_days", "default_payment_method_id", "category_id", "updated_at", "updated_by", "deleted_at", "status", "cumulative_revenue", "cumulative_donated", "email", "billing_email", "billing_frequency", "slug") VALUES
   ('12', 'Prime Depth Labs', 'Applied research studio building coordination tools for community-owned networks.', 'Prime Depth Labs prototypes software and governance patterns for digital communities that want to share upside more fairly. The studio experiments with contributor incentives, public accountability, and lightweight coordination tooling.', 'https://images.unsplash.com/photo-1516321318423-f06f85e504b3?q=80&w=2070&auto=format&fit=crop', 'https://primedepth.example.com', NULL, 't', '2025-05-06 08:03:38.034909+00', '1.00', '2', NULL, '4', '1', '2025-06-10 02:59:35.088824+00', NULL, NULL, 'active', '185000', '1850', 'hello@primedepth.example.com', 'finance@primedepth.example.com', 'monthly', 'prime-depth-labs'),
@@ -275,7 +281,8 @@ INSERT INTO "public"."ref_payment_statuses" ("id", "name", "code", "description"
   ('2', 'Pending', 'pending', 'Payment is pending processing', '2'),
   ('3', 'Awaiting Confirmation', 'awaiting_confirmation', 'Payment has been made and is awaiting confirmation', '3'),
   ('4', 'Confirmed', 'confirmed', 'Payment has been confirmed', '4'),
-  ('5', 'Failed', 'failed', 'Payment failed to process', '5');
+  ('5', 'Failed', 'failed', 'Payment failed to process', '5')
+ON CONFLICT DO NOTHING;
 
 INSERT INTO "public"."ref_categories" ("id", "name", "parent_category", "usage_count", "created_at", "updated_at", "updated_by") VALUES
   ('1', 'Technology', NULL, '1', '2025-04-07 04:04:50.58259+00', '2025-04-12 18:03:20.076965+00', NULL),
@@ -294,7 +301,8 @@ INSERT INTO "public"."ref_categories" ("id", "name", "parent_category", "usage_c
   ('12', 'Entertainment', NULL, '0', '2025-04-07 04:04:50.58259+00', '2025-04-12 18:04:56.728269+00', NULL),
   ('13', 'Workspace', NULL, '0', '2025-04-07 04:04:50.58259+00', '2025-04-12 18:04:58.234487+00', NULL),
   ('14', 'Housing', NULL, '0', '2025-04-07 04:04:50.58259+00', '2025-04-12 18:04:58.947843+00', NULL),
-  ('15', 'Art & Culture', NULL, '0', '2025-04-07 04:04:50.58259+00', '2025-04-12 18:05:00.080831+00', NULL);
+  ('15', 'Art & Culture', NULL, '0', '2025-04-07 04:04:50.58259+00', '2025-04-12 18:05:00.080831+00', NULL)
+ON CONFLICT DO NOTHING;
 
 INSERT INTO "public"."project_categories" ("project_id", "category_id") VALUES
   ('1', '1'),
@@ -398,7 +406,8 @@ INSERT INTO "public"."ref_interests" ("id", "name", "category", "usage_count", "
   ('7', 'Arts & Culture', 'Arts', '1', '2025-04-07 04:04:50.58259+00'),
   ('8', 'Sports', 'Sports', '1', '2025-04-07 04:04:50.58259+00'),
   ('9', 'Food & Agriculture', 'Food', '1', '2025-04-07 04:04:50.58259+00'),
-  ('10', 'Travel', 'Travel', '1', '2025-04-07 04:04:50.58259+00');
+  ('10', 'Travel', 'Travel', '1', '2025-04-07 04:04:50.58259+00')
+ON CONFLICT DO NOTHING;
 
 INSERT INTO "public"."ref_notification_types" ("id", "name", "code", "description", "display_order") VALUES
   ('1', 'Invitation', 'invitation', 'Invitation to join an organization', '1'),
@@ -505,7 +514,8 @@ INSERT INTO "public"."ref_skills" ("id", "name", "category", "usage_count", "cre
   ('110', 'Market Research', 'Business & Outreach', '1', '2025-04-25 12:46:49.973149+00'),
   ('111', 'Pitch Deck Creation', 'Business & Outreach', '1', '2025-04-25 12:46:49.973149+00'),
   ('112', 'Grant Application Management', 'Business & Outreach', '1', '2025-04-25 12:46:49.973149+00'),
-  ('113', 'Customer Development', 'Business & Outreach', '1', '2025-04-25 12:46:49.973149+00');
+  ('113', 'Customer Development', 'Business & Outreach', '1', '2025-04-25 12:46:49.973149+00')
+ON CONFLICT DO NOTHING;
 
 INSERT INTO "public"."ref_social_platforms" ("id", "name", "code", "description", "usage_count", "display_order", "is_selectable") VALUES
   ('2', 'Facebook', 'facebook', 'Mainstream global social networking platform.', '0', '2', 'f'),
@@ -534,7 +544,8 @@ INSERT INTO "public"."ref_social_platforms" ("id", "name", "code", "description"
   ('26', 'Douyin', 'douyin', 'The Chinese version of TikTok, developed by ByteDance.', '0', '26', 'f'),
   ('27', 'Clubhouse', 'clubhouse', 'Audio-first social app for live discussions and communities.', '0', '27', 'f'),
   ('1', 'Twitter (X)', 'twitter', 'The platform formerly known as Twitter. Microblogging and social commentary.', '0', '1', 't'),
-  ('8', 'Farcaster', 'farcaster', 'Decentralized social protocol for crypto-native communities.', '0', '8', 't');
+  ('8', 'Farcaster', 'farcaster', 'Decentralized social protocol for crypto-native communities.', '0', '8', 't')
+ON CONFLICT DO NOTHING;
 
 INSERT INTO "public"."team_roles" ("id", "title", "description", "created_at", "required_skills", "location", "tags") VALUES
   ('1', 'Chief Technology Officer (CTO)', 'Leads the technical vision of FundLoop, overseeing architecture, infrastructure, and engineering leadership. Defines the roadmap and ensures scalability, security, and maintainability.', '2025-04-10 05:27:04.735172+00', '{TypeScript,PostgreSQL,Next.js,Supabase,"Distributed Systems",Security}', 'Remote', '{leadership,engineering,core}'),
@@ -550,7 +561,8 @@ INSERT INTO "public"."team_roles" ("id", "title", "description", "created_at", "
   ('11', 'Ecosystem Researcher', 'Surfaces opportunities and competitive intelligence. Tracks innovations in public goods, crypto, and adjacent ecosystems.', '2025-04-10 05:27:04.735172+00', '{Research,Writing,"Data Analysis","Web3 Landscape"}', 'Remote', '{research,strategy,intel}'),
   ('12', 'Technical Writer & Docs Lead', 'Owns and maintains all user and developer documentation, SDK walkthroughs, and onboarding content.', '2025-04-10 05:27:04.735172+00', '{Markdown,Docsify,GitBook,APIs,Communication}', 'Remote', '{writing,developer-relations,docs}'),
   ('13', 'Customer Success Lead', 'Ensures our users (creators, donors, contributors) have a seamless onboarding and support experience.', '2025-04-10 05:27:04.735172+00', '{Support,CRM,"Onboarding Design","Problem Solving"}', 'Remote', '{support,community,growth}'),
-  ('14', 'Operations Manager', 'Manages the internal processes, compliance, finances, OKRs, and daily rhythm of the organization.', '2025-04-10 05:27:04.735172+00', '{Operations,"Project Management",Compliance,Finance}', 'Remote', '{ops,strategy,admin}');
+  ('14', 'Operations Manager', 'Manages the internal processes, compliance, finances, OKRs, and daily rhythm of the organization.', '2025-04-10 05:27:04.735172+00', '{Operations,"Project Management",Compliance,Finance}', 'Remote', '{ops,strategy,admin}')
+ON CONFLICT DO NOTHING;
 
 INSERT INTO "public"."user_skills" ("skill_id", "user_id", "updated_at") VALUES
   ('15', '290eb647-f25f-43f3-bf6b-1e2b2cf25e69', '2025-04-25 19:40:52.633289+00'),

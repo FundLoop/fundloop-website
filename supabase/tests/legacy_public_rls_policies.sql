@@ -14,7 +14,8 @@ INSERT INTO auth.users (id, aud, role, email, created_at, updated_at) VALUES
 INSERT INTO public.users (user_id, full_name, display_name, profile_headline, email, status, is_public) VALUES
   ('30000000-0000-4000-8000-00000000000a', 'Admin Alpha', 'Alpha', 'Secret headline A', 'rls-a@example.test', 'active', false),
   ('30000000-0000-4000-8000-00000000000b', 'Outsider Beta', 'Beta', NULL, 'rls-b@example.test', 'active', false),
-  ('30000000-0000-4000-8000-00000000000c', 'Public Gamma', 'Gamma', 'Unconsented headline', 'rls-c@example.test', 'active', true);
+  ('30000000-0000-4000-8000-00000000000c', 'Public Gamma', 'Gamma', 'Unconsented headline', 'rls-c@example.test', 'active', true)
+ON CONFLICT (user_id) DO UPDATE SET full_name = EXCLUDED.full_name, display_name = EXCLUDED.display_name, profile_headline = EXCLUDED.profile_headline, email = EXCLUDED.email, status = EXCLUDED.status, is_public = EXCLUDED.is_public;
 
 INSERT INTO public.profile_publication_consents
   (user_id, document_version_id, document_identifier, content_hash, document_status, locale, action, fields, source_surface)
