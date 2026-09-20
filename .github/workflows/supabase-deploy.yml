@@ -328,6 +328,7 @@ jobs:
           );
 
           REVOKE ALL ON TABLE public.supabase_deploy_context FROM anon, authenticated;
+          ALTER TABLE public.supabase_deploy_context ENABLE ROW LEVEL SECURITY;
           REVOKE ALL ON TABLE public.supabase_deploy_migration_evidence FROM anon, authenticated;
 
           INSERT INTO public.supabase_deploy_context (id, target_environment, updated_at)

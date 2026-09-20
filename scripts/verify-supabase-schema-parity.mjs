@@ -631,7 +631,7 @@ sql_paths = []
 `, "utf8")
     startAttempted = true
     run("supabase", ["db", "start", "--yes", "--workdir", bootstrapRoot], { env: localEnv })
-    run("psql", [localDbUrl, "-X", "-v", "ON_ERROR_STOP=1", "-c", `CREATE TABLE public.supabase_deploy_context (id boolean PRIMARY KEY DEFAULT true CHECK (id), target_environment text NOT NULL CHECK (target_environment IN ('dev', 'main')), updated_at timestamptz NOT NULL DEFAULT now()); INSERT INTO public.supabase_deploy_context (id, target_environment) VALUES (true, '${targetEnvironment}');`], { env: localEnv })
+    run("psql", [localDbUrl, "-X", "-v", "ON_ERROR_STOP=1", "-c", `CREATE TABLE public.supabase_deploy_context (id boolean PRIMARY KEY DEFAULT true CHECK (id), target_environment text NOT NULL CHECK (target_environment IN ('dev', 'main')), updated_at timestamptz NOT NULL DEFAULT now()); ALTER TABLE public.supabase_deploy_context ENABLE ROW LEVEL SECURITY; INSERT INTO public.supabase_deploy_context (id, target_environment) VALUES (true, '${targetEnvironment}');`], { env: localEnv })
     run("supabase", ["db", "push", "--yes", "--include-all", "--db-url", localDbUrl], { env: localEnv })
 
     const expectedMigrations = expectedMigrationInventory()
@@ -659,7 +659,7 @@ sql_paths = []
       writeFileSync(path.join(baselineSupabase, "config.toml"), `project_id = "${baselineProjectId}"\n\n[db]\nport = ${baselineDbPort}\nmajor_version = 17\nhealth_timeout = "2m"\n\n[db.migrations]\nenabled = true\nschema_paths = []\n\n[db.seed]\nenabled = false\nsql_paths = []\n`, "utf8")
       baselineStartAttempted = true
       run("supabase", ["db", "start", "--yes", "--workdir", baselineRoot], { env: localEnv })
-      run("psql", [baselineLocalDbUrl, "-X", "-v", "ON_ERROR_STOP=1", "-c", `CREATE TABLE public.supabase_deploy_context (id boolean PRIMARY KEY DEFAULT true CHECK (id), target_environment text NOT NULL CHECK (target_environment IN ('dev', 'main')), updated_at timestamptz NOT NULL DEFAULT now()); INSERT INTO public.supabase_deploy_context (id, target_environment) VALUES (true, '${targetEnvironment}');`], { env: localEnv })
+      run("psql", [baselineLocalDbUrl, "-X", "-v", "ON_ERROR_STOP=1", "-c", `CREATE TABLE public.supabase_deploy_context (id boolean PRIMARY KEY DEFAULT true CHECK (id), target_environment text NOT NULL CHECK (target_environment IN ('dev', 'main')), updated_at timestamptz NOT NULL DEFAULT now()); ALTER TABLE public.supabase_deploy_context ENABLE ROW LEVEL SECURITY; INSERT INTO public.supabase_deploy_context (id, target_environment) VALUES (true, '${targetEnvironment}');`], { env: localEnv })
       for (const migration of forwardPendingValidation.observedMigrations) {
         copyFileSync(path.join(process.cwd(), "supabase/migrations", migration.name), path.join(baselineSupabase, "migrations", migration.name))
       }
