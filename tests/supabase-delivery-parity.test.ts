@@ -360,6 +360,7 @@ describe("Supabase delivery parity", () => {
     const postdeployReadback = "node scripts/verify-supabase-function-parity.mjs postdeploy"
 
     expect(workflow).toContain("REVOKE ALL ON TABLE public.supabase_deploy_context FROM anon, authenticated")
+    expect(workflow).toContain("ALTER TABLE public.supabase_deploy_context ENABLE ROW LEVEL SECURITY")
     expect(workflow).toContain("::warning title=Production not checked::")
     expect(workflow).toContain("proxy_database=${proxy_database}")
     expect(workflow).toContain("is not a parseable URL")
