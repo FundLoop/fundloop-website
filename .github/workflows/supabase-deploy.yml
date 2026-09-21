@@ -163,12 +163,35 @@ jobs:
           fi
 
           project_ref="$(
-            DB_URL="${db_url}" node <<'NODE'
-          const url = new URL(process.env.DB_URL)
+            DB_URL="${db_url}" TARGET_ENVIRONMENT="${target_environment}" node <<'NODE'
+          // Secrets are masked in logs, so report what is wrong with the value without printing it.
+          const raw = process.env.DB_URL ?? ""
+          const target = process.env.TARGET_ENVIRONMENT
+          const secretName = target === "main" ? "MAIN_SUPABASE_SESSION_POOLER_URL" : "DEV_SUPABASE_SESSION_POOLER_URL"
+          const hints = []
+          if (raw !== raw.trim()) hints.push("it has leading or trailing whitespace")
+          if (/^['"]|['"]$/.test(raw.trim())) hints.push("it is wrapped in quotes")
+          if (/\s/.test(raw.trim())) hints.push("it contains an internal space or newline")
+          if (/\[|\]/.test(raw)) hints.push("it still contains a [PLACEHOLDER]")
+          if (!/^postgres(ql)?:\/\//.test(raw.trim())) hints.push("it does not start with postgresql://")
+          let url
+          try {
+            url = new URL(raw.trim())
+          } catch {
+            const detail = hints.length > 0 ? ` Likely cause: ${hints.join("; ")}.` : ""
+            throw new Error(`${secretName} is not a parseable URL.${detail} Expected postgresql://postgres.<project-ref>:<url-encoded-password>@<host>:5432/postgres (Supabase session pooler). Special characters in the password must be percent-encoded.`)
+          }
+          // Node accepts these, but they cannot connect; fail here rather than on a vague socket error.
+          if (hints.length > 0) {
+            throw new Error(`${secretName} is malformed: ${hints.join("; ")}. Expected postgresql://postgres.<project-ref>:<url-encoded-password>@<host>:5432/postgres (Supabase session pooler).`)
+          }
           const username = decodeURIComponent(url.username)
           const match = username.match(/^postgres\.([a-z0-9]{20,})$/)
           if (!match) {
-            throw new Error("Session pooler URL username must use the postgres.<project-ref> format.")
+            throw new Error(`${secretName} username must use the postgres.<project-ref> format; got a ${username.length}-character username. Copy the session pooler string (port 5432), not the direct connection.`)
+          }
+          if (url.port && url.port !== "5432") {
+            console.error(`::warning::${secretName} uses port ${url.port}; the session pooler normally listens on 5432.`)
           }
           console.log(match[1])
           NODE
@@ -328,6 +351,7 @@ jobs:
           );
 
           REVOKE ALL ON TABLE public.supabase_deploy_context FROM anon, authenticated;
+          ALTER TABLE public.supabase_deploy_context ENABLE ROW LEVEL SECURITY;
           REVOKE ALL ON TABLE public.supabase_deploy_migration_evidence FROM anon, authenticated;
 
           INSERT INTO public.supabase_deploy_context (id, target_environment, updated_at)
