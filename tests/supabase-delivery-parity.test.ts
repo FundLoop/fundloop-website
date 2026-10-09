@@ -4,7 +4,7 @@ import path from "node:path"
 import { describe, expect, it } from "vitest"
 import { classifyFunctionInventory, compareClosurePaths, expectedFunctionNames, expectedSourceClosure } from "../scripts/verify-supabase-function-parity.mjs"
 import { buildEnvironmentManifest, buildSafeSmokeEvidence } from "../scripts/verify-supabase-environment-manifest.mjs"
-import { bindObservedMigrationDeployEvidence, buildDeployCompletionEvidence, buildMigrationDeployEvidence, buildSchemaDiagnostic, compareExplicitRfc3339Timestamps, expectedMigrationInventory, isExplicitRfc3339Timestamp, libpqConnectionEnvironment, localStackDatabaseUrl, migrationInventorySha256, normalizePublicSchema, stripPlatformManagedObjects, validateDeployCompletionEvidence, validateForwardPendingMigrationHistory, validateMatchingMigrationEvidence, validateMigrationDeployEvidence, validatePendingSchemaRepair } from "../scripts/verify-supabase-schema-parity.mjs"
+import { bindObservedMigrationDeployEvidence, buildDeployCompletionEvidence, buildMigrationDeployEvidence, buildSchemaDiagnostic, compareExplicitRfc3339Timestamps, expectedMigrationInventory, isExplicitRfc3339Timestamp, libpqConnectionEnvironment, localStackDatabaseUrl, migrationInventorySha256, normalizePublicSchema, assertNoPlatformManagedObjects, evaluatePlatformManagedProvenance, platformManagedCandidates, platformManagedProvenanceSql, stripPlatformManagedObjects, validateDeployCompletionEvidence, validateForwardPendingMigrationHistory, validateMatchingMigrationEvidence, validateMigrationDeployEvidence, validatePendingSchemaRepair } from "../scripts/verify-supabase-schema-parity.mjs"
 
 const workflow = readFileSync(".github/workflows/supabase-deploy.yml", "utf8")
 const schemaVerifier = readFileSync("scripts/verify-supabase-schema-parity.mjs", "utf8")
@@ -83,24 +83,55 @@ describe("Supabase delivery parity", () => {
     // No migration creates it, so a fresh replay never has it.
     const platformFunction = "--\n-- Name: rls_auto_enable(); Type: FUNCTION; Schema: public; Owner: -\n--\n\nCREATE FUNCTION public.rls_auto_enable() RETURNS event_trigger\n    LANGUAGE plpgsql\n    AS $$ begin end; $$;\n\n"
     const ourSchema = "--\n-- Name: projects; Type: TABLE; Schema: public; Owner: -\n--\n\nCREATE TABLE public.projects (id bigint NOT NULL);\n"
+    const identity = "public.rls_auto_enable() [FUNCTION]"
 
-    const expected = stripPlatformManagedObjects(ourSchema)
-    const observed = stripPlatformManagedObjects(`${platformFunction}${ourSchema}`)
+    const expected = ourSchema
+    const observed = stripPlatformManagedObjects(`${platformFunction}${ourSchema}`, [identity])
     expect(normalizePublicSchema(observed)).toBe(normalizePublicSchema(expected))
     expect(buildSchemaDiagnostic(expected, observed, { candidateGitSha: "a".repeat(40) }).status).toBe("pass")
 
-    // Only that exact identity is dropped: anything else in public still has to be accounted for,
-    // including an overload of the same name, which the platform does not create.
-    const impostor = stripPlatformManagedObjects(`${platformFunction.replace(/rls_auto_enable/g, "rls_auto_enable_helper")}${ourSchema}`)
-    expect(impostor).toContain("rls_auto_enable_helper")
-    expect(buildSchemaDiagnostic(expected, impostor, { candidateGitSha: "a".repeat(40) }).status).toBe("drift")
+    // An identity on its own never drops anything: the caller passes only verified identities.
+    expect(stripPlatformManagedObjects(`${platformFunction}${ourSchema}`)).toContain("rls_auto_enable")
 
-    const overload = stripPlatformManagedObjects(`${platformFunction.replace("rls_auto_enable()", "rls_auto_enable(text)")}${ourSchema}`)
-    expect(overload).toContain("rls_auto_enable(text)")
-    expect(buildSchemaDiagnostic(expected, overload, { candidateGitSha: "a".repeat(40) }).status).toBe("drift")
+    // Only that exact identity is a candidate — not a similar name, and not an overload of it,
+    // which the platform does not create.
+    expect(platformManagedCandidates(`${platformFunction}${ourSchema}`).map((entry) => entry.identity)).toEqual([identity])
+    expect(platformManagedCandidates(platformFunction.replace(/rls_auto_enable/g, "rls_auto_enable_helper"))).toEqual([])
+    expect(platformManagedCandidates(platformFunction.replace("rls_auto_enable()", "rls_auto_enable(text)"))).toEqual([])
+  })
 
-    // The dump boundary strips, so the fingerprint, the object manifest and the diagnostic agree.
-    expect(schemaVerifier).toContain("stripPlatformManagedObjects(run(\"docker\"")
+  it("verifies the platform's definition before excluding it from the fingerprint", () => {
+    const entry = platformManagedCandidates("-- Name: rls_auto_enable(); Type: FUNCTION; Schema: public; Owner: -\n")[0]!
+    const genuine = `|t|postgres|search_path=pg_catalog|ensure_rls|${entry.definitionSha256}`
+
+    expect(evaluatePlatformManagedProvenance(entry, genuine)).toEqual({ ok: true, definitionSha256: entry.definitionSha256 })
+
+    // A replaced SECURITY DEFINER body, a changed attribute, a missing event trigger, an absent or
+    // ambiguous function: each leaves the object in the comparison, where it reports as drift.
+    expect(evaluatePlatformManagedProvenance(entry, genuine.replace(entry.definitionSha256, "f".repeat(64))).reason).toBe("definition-digest")
+    expect(evaluatePlatformManagedProvenance(entry, genuine.replace("|t|", "|f|")).reason).toBe("security-definer")
+    expect(evaluatePlatformManagedProvenance(entry, genuine.replace("postgres", "attacker")).reason).toBe("owner")
+    expect(evaluatePlatformManagedProvenance(entry, genuine.replace("search_path=pg_catalog", "search_path=public")).reason).toBe("config")
+    expect(evaluatePlatformManagedProvenance(entry, genuine.replace("ensure_rls", "-")).reason).toBe("event-trigger")
+    expect(evaluatePlatformManagedProvenance(entry, "").reason).toBe("not-found")
+    expect(evaluatePlatformManagedProvenance(entry, `${genuine}\n${genuine}`).reason).toBe("ambiguous")
+
+    // The query is pinned to the zero-argument signature in the public schema.
+    const sql = platformManagedProvenanceSql(entry)
+    expect(sql).toContain("pg_get_function_identity_arguments(p.oid) = ''")
+    expect(sql).toContain("proname = 'rls_auto_enable'")
+    expect(sql).toContain("sha256(convert_to(pg_get_functiondef(p.oid), 'UTF8'))")
+  })
+
+  it("fails instead of excluding an identity a migration has started creating", () => {
+    // If our own migrations produce the identity, excluding it would stop parity covering an object
+    // we create, so the fresh replay is asserted to contain none of them.
+    const replay = "--\n-- Name: rls_auto_enable(); Type: FUNCTION; Schema: public; Owner: -\n--\n\nCREATE FUNCTION public.rls_auto_enable() RETURNS event_trigger LANGUAGE plpgsql AS $$ begin end; $$;\n"
+    expect(() => assertNoPlatformManagedObjects(replay, "fresh migration replay")).toThrow(/migration now creates it/)
+    expect(assertNoPlatformManagedObjects("CREATE TABLE public.projects (id bigint);\n", "fresh migration replay")).toContain("CREATE TABLE")
+    expect(schemaVerifier).toContain("dumpExpectedPublicSchema(projectId")
+    // What is excluded is attested, not silently dropped.
+    expect(schemaVerifier).toContain("platformManagedExclusions: observed.exclusions")
   })
 
   it("names the filtered fingerprint as its own algorithm version", () => {

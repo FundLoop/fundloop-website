@@ -145,3 +145,68 @@ fixed name is worse than one that fails loudly, because every downstream consume
 
 - Second deep review pass, then merge once all six conditions hold.
 - Noak approves another Production run after this reaches main.
+
+### session v3: Provenance verification before excluding a platform object
+
+- **Timestamp:** 2026-10-09T16:20:00Z
+- **Agent:** Claude Code (Claude Opus 5)
+- **Branch:** `fix/prod-parity-platform-objects`
+- **Head before commit:** `b9b5e1c`
+
+---
+
+#### Objective
+
+Codex's third finding: matching an identity alone discards the object's definition from both dumps,
+so parity could certify an altered SECURITY DEFINER event-trigger function, or silently omit a
+function a migration starts creating under that name. Correct, and the most serious of the three.
+
+---
+
+#### Actions Taken
+
+- Each allowlist entry is now pinned to the platform's definition digest and catalog attributes:
+  zero-argument signature, SECURITY DEFINER, owner `postgres`, `search_path=pg_catalog`, referenced
+  by the `ensure_rls` event trigger, and `sha256(pg_get_functiondef())` =
+  `dd9ce3fd…f271`, read read-only from Production.
+- `stripPlatformManagedObjects(dump, identities)` now drops only identities the caller passes, so a
+  name match can no longer remove anything by itself. `platformManagedCandidates` finds candidates,
+  `platformManagedProvenanceSql` + `evaluatePlatformManagedProvenance` verify one against the
+  observed catalog, and `dumpObservedPublicSchema` strips only what verified. A candidate that
+  fails any check stays in the comparison, so the fingerprint reports it as drift, and the job logs
+  which check failed.
+- `dumpExpectedPublicSchema` asserts a fresh replay contains none of these identities. If a
+  migration starts creating one, the job fails and the entry has to be removed rather than
+  excluded — otherwise parity would quietly stop covering an object we own.
+- Exclusions are recorded in the parity attestation and the diagnostic as
+  `platformManagedExclusions` (identity, event trigger, verified digest), so what was left out of
+  the fingerprint is stated rather than dropped.
+- Contract doc and deployments doc updated with the verification, the fail-closed behaviour and the
+  re-pinning rule. The digest is a reviewed constant: a platform change fails parity until re-pinned.
+
+---
+
+#### Validation Notes
+
+- Parity suite 24 tests; environment manifest, evidence contract and goal-158 suites 71 tests; all
+  green. Typecheck and lint clean. Workers capped at 2, no full jsdom suite locally.
+- New tests cover each rejection reason (definition digest, security definer, owner, config, event
+  trigger, not-found, ambiguous), that an unverified identity is not stripped, that an overload and
+  a similar name are not candidates, and that a migration-owned identity in the replay throws.
+
+---
+
+#### Reflections
+
+The first version traded a false failure for a blind spot, which is the wrong trade for a check whose
+whole value is that an unexplained object in `public` is a finding. Pinning the digest keeps the
+exclusion narrow and makes a platform change loud instead of invisible. Worth noting the cost: when
+Supabase next changes that function, Production deploys fail until someone re-pins the digest — the
+docs say so, and that is the intended direction to fail.
+
+---
+
+#### Suggested Next Steps
+
+- Second deep review pass over the three fixes, then merge when all six conditions hold.
+- Noak approves another Production run after this reaches main.

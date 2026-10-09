@@ -191,9 +191,18 @@ the project was created: FundLoop Prod (created 2026-04) carries the `ensure_rls
 trigger and its `public.rls_auto_enable` function, FundLoop Dev (created 2025-04) carries
 neither. That is why Prod's first deploy failed parity on drift while Dev's deploys passed.
 
-`stripPlatformManagedObjects` in `scripts/verify-supabase-schema-parity.mjs` drops those
-identities from the public schema dump of both sides, at the dump boundary, so the
-fingerprint, the object manifest and the sanitized diagnostic all describe the same schema.
+`scripts/verify-supabase-schema-parity.mjs` excludes those objects from the public schema
+dump at the dump boundary, so the fingerprint, the object manifest and the sanitized
+diagnostic all describe the same schema. An identity alone is never enough: each candidate
+is verified against the observed catalog — signature, SECURITY DEFINER flag, owner,
+`search_path`, referencing event trigger, and `sha256(pg_get_functiondef())` against a
+pinned digest — and only a verified object is stripped. One that fails any check stays in
+the comparison and parity fails as drift, with the failing check logged. A fresh replay of
+our migrations is asserted to contain none of these identities, so a migration that starts
+creating one makes the job fail rather than quietly stop covering our own object. Each
+exclusion is recorded in the attestation as `platformManagedExclusions` with its verified
+digest.
+
 The list is deliberately narrow — exact identities only — so any other object in `public`,
 whoever created it, still has to be accounted for. Adding to it is a reviewed change:
 establish that the platform owns the object (no migration creates it, and it exists on a
