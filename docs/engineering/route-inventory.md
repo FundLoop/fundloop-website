@@ -107,6 +107,9 @@ This inventory covers every current `page.tsx` and `route.ts` surface under `app
 | Path | Audience | Current state | Evidence / notes | Disposition | Canonical target | Follow-up session |
 | --- | --- | --- | --- | --- | --- | --- |
 | `/admin/superadmin/zkas/runs/[id]/artifacts/[kind]` | Superadmins, internal tooling | Real internal artifact route handler. | Supports artifact retrieval in zkAS review flow. | finish | Operator zkAS artifact delivery endpoint | 24, 43 |
+| `/api/v1/projects` | Third-party clients (RendR, MCP clients), public | Real public read endpoint. | Tokenless list of publicly listed projects, reusing `lib/public-discovery.ts`, with opaque cursor pagination. | finish | Public delegated-access API (#266 stage 1) | 266 |
+| `/api/v1/projects/[projectId]/cycle` | Third-party clients, public | Real public read endpoint. | Tokenless latest closed cycle per project from the anon-readable `epoch_close_public_project_view`, plus network totals. | finish | Public delegated-access API (#266 stage 1) | 266 |
+| `/api/v1/openapi.json` | Third-party clients | Real OpenAPI 3.1 document. | Describes the public surface and declares the planned OAuth security scheme and scopes. | finish | Public delegated-access API (#266 stage 1) | 266 |
 | `/api/internal/e2e/login` | Playwright, non-production automation | Purpose-built internal test helper. | Guarded, non-production auth bootstrap for browser tests. | finish | Internal test-only auth helper | 44 |
 | `/api/internal/observability/payment-events` | Authenticated browser clients | Real internal ingestion endpoint. | Captures client-originated payment-flow observability events. | finish | Internal observability ingestion API | 37 |
 | `/api/internal/payments/reconcile-onchain` | Cron, internal operators | Real internal worker endpoint. | Protected reconciliation trigger for scheduled and manual runs. | finish | Internal payment reconciliation endpoint | 20, 37 |
