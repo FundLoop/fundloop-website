@@ -161,7 +161,7 @@ function verifyEnvironmentManifestCore(manifest) {
   if (manifest.migrations?.orderedInventory?.some((item) => !/^\d{14}$/.test(item.version) || !item.name.startsWith(`${item.version}_`) || !/^[0-9a-f]{64}$/.test(item.fileSha256))) blockers.push("migration-item")
   if (manifest.migrations?.inventorySha256 !== sha256(canonical(manifest.migrations?.orderedInventory ?? []))) blockers.push("migration-digest")
   if (manifest.migrations?.orderedInventory?.some((item, index) => item.version !== manifest.migrations.observedHistory[index])) blockers.push("migration-order")
-  if (manifest.schema?.algorithm !== "pg17-public-schema-normalized-v2" || manifest.schema?.postgresMajor !== 17
+  if (manifest.schema?.algorithm !== "pg17-public-schema-platform-filtered-v3" || manifest.schema?.postgresMajor !== 17
     || !/^[0-9a-f]{64}$/.test(manifest.schema?.expectedSha256 ?? "") || !/^[0-9a-f]{64}$/.test(manifest.schema?.observedSha256 ?? "")) blockers.push("schema-contract")
   if (manifest.schema?.expectedSha256 !== manifest.schema?.observedSha256) blockers.push("schema-digest")
   if (manifest.functions?.count !== manifest.functions?.items?.length || manifest.functions.count < 1) blockers.push("function-count")

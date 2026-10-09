@@ -241,9 +241,12 @@ exact record back and independently recomputes both its file and aggregate diges
 versions without this binding are unverifiable. The verifier also requires every
 public `production_value_flow_enabled` control to remain disabled and compares the
 full normalized `pg_dump --schema-only --schema=public --no-comments` output
-byte-for-byte using the exact `pg17-public-schema-normalized-v2` algorithm. Version 2
-sorts only the unordered role set in `CREATE POLICY ... TO ...`; object names,
-definitions, expressions, and every other schema byte remain covered.
+byte-for-byte using the exact `pg17-public-schema-platform-filtered-v3` algorithm.
+Version 3 sorts the unordered role set in `CREATE POLICY ... TO ...` and drops the
+exact platform-provisioned identities listed in the evidence contract, from both
+sides; object names, definitions, expressions, and every other schema byte remain
+covered. Version 2 is the same normalization over the unfiltered dump, so v2 and v3
+attestations are not comparable.
 
 Ordinary pending forward migrations may pass the Dev PR diagnostic only when remote
 history is the exact byte-bound reviewed prefix, a disposable replay of that prefix

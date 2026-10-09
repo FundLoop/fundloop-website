@@ -69,7 +69,7 @@ describe("Supabase delivery parity", () => {
     expect(classifyFunctionInventory(expected, [{ name: "current" }, { name: "monthly-cycle-payout-intents-create" }], retired, "main").unexplainedExtras).toEqual(["monthly-cycle-payout-intents-create"])
   })
 
-  it("implements the exact pg17-public-schema-normalized-v2 bytes", () => {
+  it("implements the exact pg17 normalized schema bytes", () => {
     expect(normalizePublicSchema("-- header\r\n\\restrict token\r\n\r\nSET statement_timeout = 0;   \r\nCREATE TABLE public.example (); \r\n\\unrestrict token\r\n"))
       .toBe("SET statement_timeout = 0;\nCREATE TABLE public.example ();\n")
     expect(normalizePublicSchema("CREATE TABLE public.example ();\n\n\n")).toBe("CREATE TABLE public.example ();\n")
@@ -89,13 +89,30 @@ describe("Supabase delivery parity", () => {
     expect(normalizePublicSchema(observed)).toBe(normalizePublicSchema(expected))
     expect(buildSchemaDiagnostic(expected, observed, { candidateGitSha: "a".repeat(40) }).status).toBe("pass")
 
-    // Only that identity is dropped: anything else in public still has to be accounted for.
+    // Only that exact identity is dropped: anything else in public still has to be accounted for,
+    // including an overload of the same name, which the platform does not create.
     const impostor = stripPlatformManagedObjects(`${platformFunction.replace(/rls_auto_enable/g, "rls_auto_enable_helper")}${ourSchema}`)
     expect(impostor).toContain("rls_auto_enable_helper")
     expect(buildSchemaDiagnostic(expected, impostor, { candidateGitSha: "a".repeat(40) }).status).toBe("drift")
 
+    const overload = stripPlatformManagedObjects(`${platformFunction.replace("rls_auto_enable()", "rls_auto_enable(text)")}${ourSchema}`)
+    expect(overload).toContain("rls_auto_enable(text)")
+    expect(buildSchemaDiagnostic(expected, overload, { candidateGitSha: "a".repeat(40) }).status).toBe("drift")
+
     // The dump boundary strips, so the fingerprint, the object manifest and the diagnostic agree.
     expect(schemaVerifier).toContain("stripPlatformManagedObjects(run(\"docker\"")
+  })
+
+  it("names the filtered fingerprint as its own algorithm version", () => {
+    // v3 strips platform-provisioned objects before hashing, so it must not be recorded under the
+    // v2 identifier, whose attestations cover the unfiltered dump.
+    expect(schemaVerifier).toContain('algorithm: "pg17-public-schema-platform-filtered-v3"')
+    expect(schemaVerifier).not.toContain("pg17-public-schema-normalized-v2")
+    expect(readFileSync("scripts/verify-supabase-environment-manifest.mjs", "utf8")).toContain("pg17-public-schema-platform-filtered-v3")
+    expect(readFileSync("docs/engineering/production-readiness-manifest.schema.json", "utf8")).toContain("pg17-public-schema-platform-filtered-v3")
+    const contract = readFileSync("docs/engineering/production-readiness-evidence-contract.md", "utf8")
+    expect(contract).toContain("pg17-public-schema-platform-filtered-v3")
+    expect(contract).toContain("public.rls_auto_enable()")
   })
 
   it("uploads the sanitized diagnostic when a deploy fails on drift", () => {
@@ -312,7 +329,7 @@ describe("Supabase delivery parity", () => {
     const manifest = buildEnvironmentManifest({
       schema: {
         environment: evidence.environment, projectRef: evidence.projectRef, candidateGitSha: evidence.candidateGitSha,
-        observedAt: "2026-08-13T00:00:00.000100Z", algorithm: "pg17-public-schema-normalized-v2", postgresMajor: 17,
+        observedAt: "2026-08-13T00:00:00.000100Z", algorithm: "pg17-public-schema-platform-filtered-v3", postgresMajor: 17,
         expectedSha256: "d".repeat(64), observedSha256: "d".repeat(64), migrationInventorySha256: inventorySha256,
         migrationInventory: [migration], migrationHistory: [migration.version], enabledProductionValueFlowControlCount: 0,
         productionValueFlowControlTableCount: 1,

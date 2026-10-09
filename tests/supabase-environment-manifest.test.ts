@@ -23,7 +23,7 @@ const stable = (value: any): string => Array.isArray(value) ? `[${value.map(stab
 const digest = (value: any) => createHash("sha256").update(stable(value)).digest("hex")
 const migrationDigest = createHash("sha256").update(stable([migration])).digest("hex")
 const schema: any = {
-  environment: "dev", projectRef: "a".repeat(20), algorithm: "pg17-public-schema-normalized-v2", postgresMajor: 17,
+  environment: "dev", projectRef: "a".repeat(20), algorithm: "pg17-public-schema-platform-filtered-v3", postgresMajor: 17,
   expectedSha256: "d".repeat(64), observedSha256: "d".repeat(64), migrationInventorySha256: migrationDigest,
   migrationInventory: [migration], migrationHistory: [migration.version], enabledProductionValueFlowControlCount: 0,
   productionValueFlowControlTableCount: 4,
