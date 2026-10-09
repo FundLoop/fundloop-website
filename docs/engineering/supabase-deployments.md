@@ -182,6 +182,33 @@ evidence contract requires a candidate source digest, remote deployment digest o
 equivalent independently readable binding, exact name inventory, and schema
 fingerprint. Missing, extra, inactive, or unverifiable functions block parity.
 
+### Platform-provisioned objects in `public`
+
+The public schema fingerprint compares a hosted project against a fresh replay of
+`supabase/migrations`, so it can only compare objects our migrations create. Supabase
+provisions some of its own objects inside the public schema, and which ones depend on when
+the project was created: FundLoop Prod (created 2026-04) carries the `ensure_rls` event
+trigger and its `public.rls_auto_enable` function, FundLoop Dev (created 2025-04) carries
+neither. That is why Prod's first deploy failed parity on drift while Dev's deploys passed.
+
+`stripPlatformManagedObjects` in `scripts/verify-supabase-schema-parity.mjs` drops those
+identities from the public schema dump of both sides, at the dump boundary, so the
+fingerprint, the object manifest and the sanitized diagnostic all describe the same schema.
+The list is deliberately narrow — exact identities only — so any other object in `public`,
+whoever created it, still has to be accounted for. Adding to it is a reviewed change:
+establish that the platform owns the object (no migration creates it, and it exists on a
+project before any migration ran) before adding an entry.
+
+Table and sequence privileges are outside the fingerprint: the dump is taken with
+`--no-privileges`. Grants made before a project's Postgres 17 upgrade lack the `MAINTAIN`
+bit that `GRANT ALL` now includes, so Dev and Prod differ there without it meaning drift.
+Client-facing privileges are asserted by the RLS policy suite and `pnpm test:db` instead.
+
+When a deploy fails on drift, the sanitized diagnostic is uploaded as
+`supabase-schema-diagnostic-<environment>-failed-<run>-<attempt>`. Object identities in it
+are SHA-256 hashed; `objectType` and `reviewedParentObjectKey` are not, so compare hashes
+against candidate identities rather than expecting to read names out of it.
+
 After deployment, the workflow lists the remote inventory again, requires exactly
 the derived local names with `ACTIVE` status, downloads every deployed source closure
 through `GET /v1/projects/{project-ref}/functions/{slug}/body` on the official
