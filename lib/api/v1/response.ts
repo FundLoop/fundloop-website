@@ -36,8 +36,12 @@ export function requestId() {
   return `fl_req_${randomUUID().replace(/-/g, "")}`
 }
 
+// Token-bound answers must never be stored. A tokenless public read is the same for every caller,
+// so it may be cached at the edge: that is what keeps an unauthenticated endpoint from turning every
+// request into database work.
+export const PUBLIC_READ_CACHE_CONTROL = "public, s-maxage=60, stale-while-revalidate=300"
+
 function baseHeaders(id: string, extra?: Record<string, string>) {
-  // No caching: these answers are per-token or reflect live cycle state.
   return { "Cache-Control": "no-store", "X-Request-Id": id, ...extra }
 }
 
@@ -59,18 +63,13 @@ export function apiError(
   return NextResponse.json({ error }, { status: options?.status ?? statusByCode[code], headers: baseHeaders(id, options?.headers) })
 }
 
-export function insufficientScope(missingScope: string, options?: { requestId?: string }) {
-  return apiError("insufficient_scope", `This token is missing the ${missingScope} scope.`, {
+// Every /api/v1 answer comes through here, so an unknown path or an unsupported method stays inside
+// the same envelope instead of falling through to an HTML 404 or a bare 405.
+export function methodNotAllowed(allowed: readonly string[], options?: { requestId?: string }) {
+  return apiError("not_found", "That method is not supported for this endpoint.", {
     requestId: options?.requestId,
-    // RFC 6750 §3.1: name the scope the resource needs.
-    headers: { "WWW-Authenticate": `Bearer error="insufficient_scope", scope="${missingScope}"` },
-  })
-}
-
-export function rateLimited(retryAfterSeconds: number, options?: { requestId?: string }) {
-  return apiError("rate_limited", "Too many requests for this grant. Retry after the Retry-After interval.", {
-    requestId: options?.requestId,
-    headers: { "Retry-After": String(Math.max(1, Math.ceil(retryAfterSeconds))) },
+    status: 405,
+    headers: { Allow: allowed.join(", ") },
   })
 }
 
@@ -95,8 +94,11 @@ export function decodeCursor(cursor: string | null): Record<string, string | num
 
 export function parseLimit(raw: string | null) {
   if (raw === null || raw.trim() === "") return { ok: true as const, limit: API_V1_DEFAULT_LIMIT }
-  if (!/^\d{1,4}$/.test(raw.trim())) return { ok: false as const, message: "limit must be a positive integer." }
-  const parsed = Number(raw)
+  const trimmed = raw.trim()
+  // Any digit string clamps to the maximum. Refusing a longer one only differed by how many digits
+  // the caller typed: limit=101 and limit=10000 both mean "more than the maximum".
+  if (!/^\d+$/.test(trimmed)) return { ok: false as const, message: "limit must be a positive integer." }
+  const parsed = Number(trimmed)
   if (parsed < 1) return { ok: false as const, message: "limit must be at least 1." }
   return { ok: true as const, limit: Math.min(parsed, API_V1_MAX_LIMIT) }
 }

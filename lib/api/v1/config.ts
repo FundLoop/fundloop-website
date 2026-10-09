@@ -30,13 +30,6 @@ export function sandboxApiBaseUrl(env: EnvLike = process.env) {
   return normalize(env.FUNDLOOP_SANDBOX_API_BASE_URL, SANDBOX_BASE_URL)
 }
 
-// Which environment this deployment is: WondrBot's test credentials and fixtures belong to the
-// sandbox, and the OAuth issuer must match the host serving it.
-export function isSandboxDeployment(env: EnvLike = process.env) {
-  const deployment = env.FUNDLOOP_DEPLOYMENT_ENV?.trim().toLowerCase()
-  return deployment === "dev" || deployment === "local" || deployment === "preview"
-}
-
 export function apiServers(env: EnvLike = process.env) {
   const production = publicApiBaseUrl(env)
   const sandbox = sandboxApiBaseUrl(env)

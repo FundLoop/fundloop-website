@@ -1,7 +1,7 @@
 import "server-only"
 
-import { createServerSupabaseClient } from "@/lib/supabase-server"
 import { loadPublicProjectRef, loadPublicProjectsPage, type PublicDiscoveryProject } from "@/lib/public-discovery"
+import { getPublicReadSupabaseClient } from "@/lib/supabase-public-read"
 import { isEpochClosePreviewEnabled } from "@/lib/monthly-cycles/epoch-close-visibility"
 import { decodeCursor, encodeCursor, isoOrNull, type ApiMeta } from "./response"
 
@@ -26,6 +26,10 @@ export type ApiProject = {
 // Nullable aggregates are deliberate. The public cycle views withhold every count and amount for a
 // cohort below the publication threshold, and a client has to be able to tell a withheld value from
 // a real zero, so null is passed through instead of being coerced.
+//
+// Network-wide totals are deliberately absent. `epoch_close_public_view` is readable by anon, but no
+// FundLoop page renders it, and this API must never publish more than fundloop.org already shows.
+// Exposing it would need its own decision, not a side effect of shipping the project endpoint.
 export type ApiProjectCycle = {
   project_id: string
   cycle_key: string
@@ -33,6 +37,8 @@ export type ApiProjectCycle = {
   // Both public cycle views expose provisional, pre-payout packages only. Stated on every response
   // so a client never mistakes these figures for a settled payout.
   provisional: true
+  // ISO 4217, constant because every amount in these views is canonical USD minor units.
+  currency: "USD"
   root_hash: string | null
   published_cohort_count: number | null
   source_count: number | null
@@ -40,13 +46,6 @@ export type ApiProjectCycle = {
   harvested_unclaimed_usd_minor: string | null
   cap_multiple: string | null
   created_at: string | null
-  network: {
-    status: string
-    published_user_count: number | null
-    funded_usd_minor: string | null
-    final_allocation_usd_minor: string | null
-    returned_residue_usd_minor: string | null
-  } | null
 }
 
 // The monetary columns are numeric(78,0). They are cast to text in the database so the value never
@@ -54,8 +53,6 @@ export type ApiProjectCycle = {
 // and a large enough value would arrive in exponent notation.
 const PROJECT_CYCLE_SELECT =
   "cycle_key, status, root_hash, published_cohort_count, source_count, created_at, funded_minor::text, harvested_unclaimed_minor::text, cap_multiple::text"
-const NETWORK_CYCLE_SELECT =
-  "status, published_user_count, funded_minor::text, final_allocation_minor::text, returned_residue_minor::text"
 
 function toApiProject(project: PublicDiscoveryProject): ApiProject {
   return {
@@ -95,7 +92,9 @@ function parseCursor(raw: string | null) {
   if (raw === null || raw.trim() === "") return { ok: true as const, afterId: null }
   const decoded = decodeCursor(raw)
   const afterId = decoded?.after_id
-  if (typeof afterId !== "number" || !Number.isInteger(afterId) || afterId < 1) return { ok: false as const }
+  // Number.isInteger accepts 1e21, which PostgREST then rejects for a bigint column, so the
+  // request would fail as a 500 instead of being refused as a bad cursor.
+  if (typeof afterId !== "number" || !Number.isSafeInteger(afterId) || afterId < 1) return { ok: false as const }
   return { ok: true as const, afterId }
 }
 
@@ -110,8 +109,8 @@ export async function listPublicProjects(options: { limit: number; cursor: strin
 }
 
 export async function getPublicProjectCycle(projectId: string) {
-  // Resolve against the public project filters so non-public projects stay invisible, by slug and
-  // by numeric id alike.
+  // Resolve against the public project filters so a non-public project stays invisible. The public
+  // id is the slug; see loadPublicProjectRef for why a numeric id is not an alias.
   const project = await loadPublicProjectRef(projectId)
   if (!project) return { ok: false as const, reason: "not_found" as const }
 
@@ -119,9 +118,7 @@ export async function getPublicProjectCycle(projectId: string) {
   // nowhere else. Elsewhere the project exists with no published cycle, which is the honest answer.
   if (!isEpochClosePreviewEnabled()) return { ok: true as const, cycle: null }
 
-  const supabase = await createServerSupabaseClient()
-
-  const projectCycle = await supabase
+  const projectCycle = await getPublicReadSupabaseClient()
     .from("epoch_close_public_project_view")
     .select(PROJECT_CYCLE_SELECT)
     .eq("project_slug", project.slug)
@@ -132,21 +129,12 @@ export async function getPublicProjectCycle(projectId: string) {
   const row = projectCycle.data
   if (!row?.cycle_key) return { ok: true as const, cycle: null }
 
-  // Supabase resolves a failed read instead of throwing, so an unchecked error here would publish a
-  // cycle whose network section is missing for a reason the client cannot see.
-  const networkCycle = await supabase
-    .from("epoch_close_public_view")
-    .select(NETWORK_CYCLE_SELECT)
-    .eq("cycle_key", row.cycle_key)
-    .maybeSingle()
-  if (networkCycle.error) return { ok: false as const, reason: "read_failed" as const }
-  const network = networkCycle.data
-
   const cycle: ApiProjectCycle = {
     project_id: project.slug,
     cycle_key: row.cycle_key,
     status: row.status ?? "unknown",
     provisional: true,
+    currency: "USD",
     root_hash: row.root_hash ?? null,
     published_cohort_count: count(row.published_cohort_count),
     source_count: count(row.source_count),
@@ -154,15 +142,6 @@ export async function getPublicProjectCycle(projectId: string) {
     harvested_unclaimed_usd_minor: minor(row.harvested_unclaimed_minor),
     cap_multiple: decimalText(row.cap_multiple),
     created_at: isoOrNull(row.created_at),
-    network: network
-      ? {
-        status: network.status ?? "unknown",
-        published_user_count: count(network.published_user_count),
-        funded_usd_minor: minor(network.funded_minor),
-        final_allocation_usd_minor: minor(network.final_allocation_minor),
-        returned_residue_usd_minor: minor(network.returned_residue_minor),
-      }
-      : null,
   }
   return { ok: true as const, cycle }
 }

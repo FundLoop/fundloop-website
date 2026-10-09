@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server"
 import { apiServers } from "@/lib/api/v1/config"
+import { requestId } from "@/lib/api/v1/response"
 
 // GET /api/v1/openapi.json — OpenAPI 3.1 for the public surface (#266).
 // Stage 1 documents the two tokenless endpoints. The OAuth security scheme and the /me routes are
@@ -33,8 +34,10 @@ const projectSchema = {
     id: { type: "string", description: "Stable project id (its slug)." },
     name: { type: "string" },
     description: { type: "string" },
-    website: { type: ["string", "null"], format: "uri" },
-    logo_url: { type: ["string", "null"], format: "uri" },
+    // No format: uri. These are stored as whatever the project entered, with no format constraint in
+    // the database, so claiming a format here would let a real page fail its own schema validation.
+    website: { type: ["string", "null"], description: "As entered by the project; not validated as a URL." },
+    logo_url: { type: ["string", "null"], description: "As entered by the project; not validated as a URL." },
     category: { type: ["string", "null"] },
     member_count: { type: "integer", minimum: 0 },
     created_at: { type: ["string", "null"], format: "date-time" },
@@ -58,12 +61,14 @@ const cycleSchema = {
   description:
     "The project's most recent published epoch-close package, or null when none is published. "
     + "These packages are provisional: they are prepared before any payout and no transfer has occurred, "
-    + "which `provisional` states on every response. Aggregates are withheld (null) for cohorts below the publication threshold.",
+    + "which `provisional` states on every response. Aggregates are withheld (null) for cohorts below the publication threshold. "
+    + "Network-wide totals are not part of this surface.",
   properties: {
     project_id: { type: "string" },
     cycle_key: { type: "string", examples: ["2026-08"] },
     status: { type: "string", description: "Stage of the close package, for example payout_readying." },
     provisional: { const: true, description: "Always true: no payout has occurred for the figures in this response." },
+    currency: { const: "USD", description: "ISO 4217 code for every amount in this response." },
     root_hash: { type: ["string", "null"] },
     published_cohort_count: publishedCount,
     source_count: publishedCount,
@@ -71,17 +76,6 @@ const cycleSchema = {
     harvested_unclaimed_usd_minor: amount,
     cap_multiple: { type: ["string", "null"], description: "Decimal string, for example \"3.00\"; null when withheld." },
     created_at: { type: ["string", "null"], format: "date-time" },
-    network: {
-      type: ["object", "null"],
-      description: "Network-wide totals for the same cycle.",
-      properties: {
-        status: { type: "string" },
-        published_user_count: publishedCount,
-        funded_usd_minor: amount,
-        final_allocation_usd_minor: amount,
-        returned_residue_usd_minor: amount,
-      },
-    },
   },
 } as const
 
@@ -98,7 +92,8 @@ const document = {
     description:
       "Read-only API over FundLoop's public project data and, with a delegated token, a person's own award and payout routes. "
       + "Times are ISO-8601 UTC. Money is integer minor units as decimal strings, so no amount passes through a float. "
-      + "Ids are stable strings. A null count or amount means the value is withheld, not zero. "
+      + "Ids are stable strings, and a project's id is its slug. A null count or amount means the value is withheld, not zero. "
+      + "Tokenless reads are cacheable for a short period and are not rate limited yet; a future limit will be announced before it applies. "
       + "Responses are plain text, never HTML.",
   },
   servers: apiServers(),
@@ -135,7 +130,8 @@ const document = {
             },
           },
           422: errorResponse("limit, search or cursor is invalid."),
-          429: errorResponse("Rate limited; see Retry-After."),
+          405: errorResponse("That method is not supported for this endpoint."),
+          500: errorResponse("The projects could not be read."),
         },
       },
     },
@@ -153,7 +149,9 @@ const document = {
             content: { "application/json": { schema: { type: "object", required: ["data"], properties: { data: cycleSchema } } } },
           },
           404: errorResponse("No public project matches that id."),
-          429: errorResponse("Rate limited; see Retry-After."),
+          422: errorResponse("projectId is missing or too long."),
+          405: errorResponse("That method is not supported for this endpoint."),
+          500: errorResponse("The cycle could not be read."),
         },
       },
     },
@@ -183,6 +181,7 @@ const document = {
 
 export function GET() {
   return NextResponse.json(document, {
-    headers: { "Cache-Control": "public, max-age=300", "X-Fundloop-Api-Stage": "1" },
+    // Carries X-Request-Id like every other answer, so one correlation header works across the API.
+    headers: { "Cache-Control": "public, max-age=300", "X-Fundloop-Api-Stage": "1", "X-Request-Id": requestId() },
   })
 }
