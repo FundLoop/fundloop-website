@@ -39,6 +39,29 @@ function normalizePublicSchemaV1(dump) {
   return `${lines.join("\n")}\n`
 }
 
+// Objects the Supabase platform provisions inside the public schema itself. A project created
+// after the platform started installing them carries them (FundLoop Prod, created 2026-04, has the
+// ensure_rls event trigger and its public.rls_auto_enable function); an older project does not
+// (FundLoop Dev, created 2025-04). No migration creates them, and a fresh replay of our migrations
+// never has them, so comparing them reports the platform's own provisioning as drift in our schema.
+// Deliberately narrow: only these exact identities are dropped, from the public schema dump of both
+// sides, so any other object the platform or anyone else adds still has to be accounted for.
+const PLATFORM_MANAGED_PUBLIC_OBJECTS = [/^public\.rls_auto_enable\([^)]*\) \[FUNCTION\]$/]
+
+export function stripPlatformManagedObjects(dump) {
+  const kept = []
+  let dropping = false
+  for (const line of dump.replace(/\r\n?/g, "\n").split("\n")) {
+    const header = line.match(/^-- Name: (.*); Type: (.*); Schema: (.*); Owner: .*$/)
+    if (header) {
+      const identity = `${header[3]}.${header[1]} [${header[2]}]`
+      dropping = PLATFORM_MANAGED_PUBLIC_OBJECTS.some((pattern) => pattern.test(identity))
+    }
+    if (!dropping) kept.push(line)
+  }
+  return kept.join("\n")
+}
+
 function normalizePolicyRoleOrder(line) {
   const match = line.match(/^(CREATE POLICY .+ ON .+ TO )([^;]+?)( (?:USING|WITH CHECK) .+;|;)$/)
   if (!match) return line
@@ -331,7 +354,9 @@ function containerLibpqConnection(projectId, dbUrl) {
 
 function dumpPublicSchemaFromParityContainer(projectId, dbUrl) {
   const connection = containerLibpqConnection(projectId, dbUrl)
-  return run("docker", [...connection.args, "pg_dump", "--schema-only", "--schema=public", "--no-owner", "--no-privileges", "--no-comments"], { encoding: "utf8", env: connection.env })
+  // Stripped at the dump boundary so the fingerprint, the object manifest and the sanitized
+  // diagnostic all describe the same schema: ours.
+  return stripPlatformManagedObjects(run("docker", [...connection.args, "pg_dump", "--schema-only", "--schema=public", "--no-owner", "--no-privileges", "--no-comments"], { encoding: "utf8", env: connection.env }))
 }
 
 function pgDumpVersionFromParityContainer(projectId) {

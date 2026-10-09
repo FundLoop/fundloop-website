@@ -4,7 +4,7 @@ import path from "node:path"
 import { describe, expect, it } from "vitest"
 import { classifyFunctionInventory, compareClosurePaths, expectedFunctionNames, expectedSourceClosure } from "../scripts/verify-supabase-function-parity.mjs"
 import { buildEnvironmentManifest, buildSafeSmokeEvidence } from "../scripts/verify-supabase-environment-manifest.mjs"
-import { bindObservedMigrationDeployEvidence, buildDeployCompletionEvidence, buildMigrationDeployEvidence, buildSchemaDiagnostic, compareExplicitRfc3339Timestamps, expectedMigrationInventory, isExplicitRfc3339Timestamp, libpqConnectionEnvironment, localStackDatabaseUrl, migrationInventorySha256, normalizePublicSchema, validateDeployCompletionEvidence, validateForwardPendingMigrationHistory, validateMatchingMigrationEvidence, validateMigrationDeployEvidence, validatePendingSchemaRepair } from "../scripts/verify-supabase-schema-parity.mjs"
+import { bindObservedMigrationDeployEvidence, buildDeployCompletionEvidence, buildMigrationDeployEvidence, buildSchemaDiagnostic, compareExplicitRfc3339Timestamps, expectedMigrationInventory, isExplicitRfc3339Timestamp, libpqConnectionEnvironment, localStackDatabaseUrl, migrationInventorySha256, normalizePublicSchema, stripPlatformManagedObjects, validateDeployCompletionEvidence, validateForwardPendingMigrationHistory, validateMatchingMigrationEvidence, validateMigrationDeployEvidence, validatePendingSchemaRepair } from "../scripts/verify-supabase-schema-parity.mjs"
 
 const workflow = readFileSync(".github/workflows/supabase-deploy.yml", "utf8")
 const schemaVerifier = readFileSync("scripts/verify-supabase-schema-parity.mjs", "utf8")
@@ -75,6 +75,32 @@ describe("Supabase delivery parity", () => {
     expect(normalizePublicSchema("CREATE TABLE public.example ();\n\n\n")).toBe("CREATE TABLE public.example ();\n")
     expect(normalizePublicSchema("CREATE POLICY example ON public.example FOR SELECT TO authenticated, anon USING (true);\n"))
       .toBe("CREATE POLICY example ON public.example FOR SELECT TO anon, authenticated USING (true);\n")
+  })
+
+  it("compares our schema, not objects the platform provisions into public", () => {
+    // A project created after the platform started installing the ensure_rls event trigger carries
+    // its public.rls_auto_enable function (FundLoop Prod); an older one does not (FundLoop Dev).
+    // No migration creates it, so a fresh replay never has it.
+    const platformFunction = "--\n-- Name: rls_auto_enable(); Type: FUNCTION; Schema: public; Owner: -\n--\n\nCREATE FUNCTION public.rls_auto_enable() RETURNS event_trigger\n    LANGUAGE plpgsql\n    AS $$ begin end; $$;\n\n"
+    const ourSchema = "--\n-- Name: projects; Type: TABLE; Schema: public; Owner: -\n--\n\nCREATE TABLE public.projects (id bigint NOT NULL);\n"
+
+    const expected = stripPlatformManagedObjects(ourSchema)
+    const observed = stripPlatformManagedObjects(`${platformFunction}${ourSchema}`)
+    expect(normalizePublicSchema(observed)).toBe(normalizePublicSchema(expected))
+    expect(buildSchemaDiagnostic(expected, observed, { candidateGitSha: "a".repeat(40) }).status).toBe("pass")
+
+    // Only that identity is dropped: anything else in public still has to be accounted for.
+    const impostor = stripPlatformManagedObjects(`${platformFunction.replace(/rls_auto_enable/g, "rls_auto_enable_helper")}${ourSchema}`)
+    expect(impostor).toContain("rls_auto_enable_helper")
+    expect(buildSchemaDiagnostic(expected, impostor, { candidateGitSha: "a".repeat(40) }).status).toBe("drift")
+
+    // The dump boundary strips, so the fingerprint, the object manifest and the diagnostic agree.
+    expect(schemaVerifier).toContain("stripPlatformManagedObjects(run(\"docker\"")
+  })
+
+  it("uploads the sanitized diagnostic when a deploy fails on drift", () => {
+    expect(workflow).toMatch(/if: \$\{\{ failure\(\) && steps\.target\.outputs\.mode == 'deploy' \}\}/)
+    expect(workflow).toContain("supabase-schema-diagnostic-${{ steps.target.outputs.target_environment }}-failed-")
   })
 
   it("emits bounded, structural schema drift without remote DDL or unknown identifiers", () => {
