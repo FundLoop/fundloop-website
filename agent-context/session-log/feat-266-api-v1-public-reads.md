@@ -89,3 +89,51 @@ My own process error: I ran `tsc` before writing the last test file, so the loca
 #### Suggested Next Steps
 
 - Merge once CI is green, then confirm the dev deploy reaches dev.fundloop.org (`/api/v1/projects` 200, not 307).
+
+### session v3: Review findings on PR #269 (#266 stage 1)
+
+- **Timestamp:** 2026-10-09T15:15:00Z
+- **Agent:** Claude Code (Claude Opus 5)
+- **Branch:** `feat/266-api-v1-public-reads`
+- **Head before commit:** `31a69d1`
+
+---
+
+#### Objective
+
+Codex review left nine findings on PR #269 — one P1 and eight P2 — and `dev` requires conversation resolution, so the merge is blocked until each is addressed. Three were correctness bugs in what the API publishes.
+
+---
+
+#### Actions Taken
+
+- **Provisional cycle data (P1).** Both public views select `WHERE NOT production_enabled AND status = 'payout_readying'`, so every row they can return is a pre-payout figure from shadow mode, and `fundloop.org` shows them on non-production deployments only (`loadPublicProjectEpochClose` is gated). The endpoint published them unconditionally as the "latest closed cycle". New `lib/monthly-cycles/epoch-close-visibility.ts` holds that gate for both callers; the route now answers `data: null` where the website withholds, marks every response `provisional: true`, and the OpenAPI document and route inventory say so.
+- **Monetary precision (P2).** `funded_minor` and friends are `numeric(78,0)` but the generated view types expose `number`, so a value above 2^53 was already rounded before `String()` — and a large enough one stringified in exponent notation and was replaced with `"0"`. The reads now cast in the database (`funded_minor::text`), which postgrest-js 2.104 types as `string`.
+- **Withheld values (P2).** Aggregates are null for cohorts below the publication threshold; `?? 0` and `minor(null) === "0"` reported a real zero-member, zero-funded cycle. The response type, the helpers and the OpenAPI schema now keep every count and amount nullable.
+- **Swallowed database failures (P2).** `getPublicProjectsDirectoryData` catches and returns `{projects: []}`, so a failed read looked like an empty directory. Extracted `loadPublicProjectsDirectory` (throws) with the catching wrapper kept for pages; the API uses the throwing path and answers 500.
+- **Pagination (P2).** New `loadPublicProjectsPage` reads one keyset page: `order("id", desc)`, `limit + 1`, `lt("id", cursor)`, and member counts and categories for that page's rows only. A searched listing still ranges over the filtered directory, because the website matches category names and detailed descriptions in application code and narrowing that to database filters would silently change which projects a search finds.
+- **Project resolution (P2).** New `loadPublicProjectRef` queries by exact slug first, then by numeric id, so a numeric id can no longer shadow a project whose slug is that same string. It also replaces the full-directory load the cycle route did for one project.
+- **Malformed cursors (P2).** `parseCursor` requires a positive integer `after_id`; anything else is 422 instead of silently restarting the list.
+- **Bare `/api` (P2).** `shouldSkipLocaleRouting` now exempts the `/api/` and `/oauth/` prefixes only. Bare `/api` and `/oauth` have no handler, so they keep the locale handling every other unrouted path gets.
+
+---
+
+#### Validation Notes
+
+- `npx tsc --noEmit` clean; `pnpm lint` clean; full `vitest run` green, 1216 tests across 206 files (34 of them on this surface: 26 route tests, 8 new tests for the read path).
+- New `tests/public-discovery-public-api-reads.test.ts` drives the query builder, so the public filters, `order`/`limit + 1`/`lt` keyset, page-scoped member counts, slug-before-id resolution and error propagation are each asserted.
+- Route tests now cover an amount beyond IEEE-754 range surviving as text, withheld nulls staying null, a failed network read answering 500, and provisional figures being withheld on a production deployment.
+- `next build` still cannot run in this worktree (Turbopack rejects the `node_modules` symlink); CI verifies the build.
+
+---
+
+#### Reflections
+
+The P1 was a real contract error, not a naming quibble: the endpoint would have published pre-payout numbers as settled ones, in production, where the website deliberately shows nothing. Mirroring the website's own gate is the rule this surface needs — a public API must publish less than the website, never more.
+
+---
+
+#### Suggested Next Steps
+
+- Resolve the nine threads on #269 with what changed, merge into `dev`, then confirm `/api/v1/projects` answers 200 (not 307) on dev.fundloop.org.
+- Stage 2: the OAuth 2.1 server, validated through the CI fresh-schema replay.

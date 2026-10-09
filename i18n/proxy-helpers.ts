@@ -3,11 +3,11 @@ import { defaultLocale, isValidLocale, localeCookieName } from "./routing"
 
 export function shouldSkipLocaleRouting(pathname: string) {
   // Machine endpoints are never locale-prefixed: the public /api surface (#266), OAuth endpoints
-  // and well-known metadata are fetched by third parties at exact URLs.
+  // and well-known metadata are fetched by third parties at exact URLs. Only the endpoint prefixes
+  // are exempt — bare /api and /oauth have no handler, so they keep the locale handling every other
+  // unrouted path gets.
   return (
-    pathname === "/api" ||
     pathname.startsWith("/api/") ||
-    pathname === "/oauth" ||
     pathname.startsWith("/oauth/") ||
     pathname.startsWith("/.well-known/") ||
     pathname.startsWith("/_next") ||

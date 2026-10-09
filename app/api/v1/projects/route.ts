@@ -24,7 +24,7 @@ export async function GET(request: NextRequest) {
     const result = await listPublicProjects({ limit: limit.limit, cursor: request.nextUrl.searchParams.get("cursor"), search })
     if (!result.ok) {
       return apiError("validation_failed", "cursor is not a cursor from a previous response.", {
-        details: { cursor: "unknown or stale" },
+        details: { cursor: "malformed or from another version of this API" },
         requestId: id,
       })
     }
