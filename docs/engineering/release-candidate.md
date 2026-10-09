@@ -21,8 +21,11 @@ from what GitHub/Supabase operators must configure before production data is tou
 - App CI now runs on pushes to `dev`, pushes to `main`, `codex/**` feature branches, and pull requests.
 - `dev` and `main` are protected for administrators and require PRs, linear history,
   resolved conversations, and the exact three delivery checks.
-- `Production` is restricted to `main`, requires a human approval, and does not
-  allow administrator bypass.
+- `Production` is restricted to `main` and does not allow administrator bypass.
+  **Until FundLoop goes live it requires no human approval**: the required reviewer was
+  removed deliberately, so a Production deploy starts as soon as `main` moves. The
+  requirement is restored at go-live; see
+  [issue #271](https://github.com/FundLoop/fundloop-website/issues/271).
 
 The timestamped [GitHub delivery-control read-back](./github-delivery-controls-2026-08-13.md)
 records the unsafe baseline and the owner/admin API result after configuration.
@@ -72,8 +75,12 @@ The repo cannot read secret values from GitHub or Supabase. Treat this as an ope
 5. Confirm app CI passes on the PR.
 6. Confirm the Supabase Deploy PR dry-run targets `main` and succeeds without remote mutation.
 7. Review migration ordering, Edge Function changes, runtime secret requirements, and smoke results.
-8. Merge the PR into `main` only after the production approval gate and branch protections are active.
-9. Approve the `Production` environment deployment when ready.
+8. Merge the PR into `main` once branch protections and the three delivery checks are satisfied.
+   Until go-live there is no production approval gate to wait for, so **this merge is the decision
+   to deploy to Production** — everything after it is automatic. Make it deliberately, with step 7's
+   review done, not as a formality. ([#271](https://github.com/FundLoop/fundloop-website/issues/271))
+9. Watch the deploy run instead of approving it: the push-triggered run starts on its own. At
+   go-live this step becomes approving the `Production` environment deployment again.
 10. Confirm the push-triggered main Supabase deploy applies migrations and deploys functions successfully.
 11. Regenerate the v1 evidence manifest and require exact migration/function/schema
     parity for the main SHA while `productionValueFlowEnabled=false`.

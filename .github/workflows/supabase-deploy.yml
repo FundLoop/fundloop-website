@@ -143,8 +143,10 @@ jobs:
               if [[ "${mode}" == "dry-run" ]]; then
                 db_url="${MAIN_SUPABASE_SESSION_POOLER_URL:-${DEV_SUPABASE_SESSION_POOLER_URL}}"
                 if [[ -z "${MAIN_SUPABASE_SESSION_POOLER_URL:-}" ]]; then
-                  # The Production URL is scoped to the approval-gated Production environment, so
-                  # pull requests cannot reach it. Validate against Dev as a proxy and say so.
+                  # The Production URL is scoped to the Production environment, which a pull
+                  # request does not run in, so it cannot reach it. Validate against Dev as a
+                  # proxy and say so. (The environment requires no reviewer until go-live, #271;
+                  # the scoping is what keeps a PR off Production, not an approval.)
                   proxy_database="dev"
                 fi
               else
@@ -209,12 +211,14 @@ jobs:
           } >> "${GITHUB_OUTPUT}"
 
           if [[ -n "${proxy_database}" ]]; then
-            echo "::warning title=Production not checked::This dry-run targets main but ran against the ${proxy_database} database because Production credentials are only available to approved Production deployments. It validates migration syntax and ordering, not Production's actual schema or data."
+            echo "::warning title=Production not checked::This dry-run targets main but ran against the ${proxy_database} database, because Production credentials are scoped to the Production environment and a pull request does not run in it. It validates migration syntax and ordering, not Production's actual schema or data."
             {
               echo "### ⚠️ Supabase dry-run used the ${proxy_database} database as a proxy for Production"
               echo ""
-              echo "Production credentials are scoped to the approval-gated \`Production\` environment, so pull requests cannot reach the Production database."
+              echo "Production credentials are scoped to the \`Production\` environment, which a pull request does not run in, so pull requests cannot reach the Production database."
               echo "A green check here means the migrations apply cleanly to **${proxy_database}**. It does **not** verify Production's current schema or data."
+              echo ""
+              echo "Until FundLoop goes live, the \`Production\` environment requires no human approval ([#271](https://github.com/FundLoop/fundloop-website/issues/271)), so merging this PR into \`main\` starts the Production deploy with no further gate. This dry-run is the last look at these migrations before that happens."
             } >> "${GITHUB_STEP_SUMMARY}"
           fi
 

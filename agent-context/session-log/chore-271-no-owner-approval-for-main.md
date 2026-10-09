@@ -72,3 +72,55 @@ quietly.
 - Restore both controls at go-live from the checklist in [#271].
 
 [#271]: https://github.com/FundLoop/fundloop-website/issues/271
+
+### session v2: Codex review — three documents still promised the gate
+
+- **Timestamp:** 2026-10-09T19:52:00Z
+- **Head before commit:** `5d4ffb7`
+
+---
+
+#### Objective
+
+Codex found that removing the gate was not the whole job: other active instructions still told an
+operator the gate existed, which is the same hazard I had flagged for the operations runbook and
+then missed elsewhere.
+
+---
+
+#### Actions Taken
+
+- **`docs/engineering/release-candidate.md`** was the serious one. Its current-state section said
+  `Production` "requires a human approval", and its promotion sequence said to merge only after the
+  approval gate is active and then to approve the environment deployment. An agent or operator
+  following the canonical release path would have waited for a gate that no longer exists. Both are
+  corrected, and step 8 now says what is actually true: **the merge into `main` is the decision to
+  deploy to Production**, because nothing after it asks anyone anything.
+- **The workflow's dry-run output** told the reviewer that Production credentials are "only
+  available to approved Production deployments" and called the environment "approval-gated". That
+  text appears at the exact moment someone is making the final pre-production judgement, so it was
+  the worst place to imply a human barrier still exists. It now says credentials are scoped to an
+  environment a pull request does not run in — which is the real reason a PR cannot reach Production
+  — and states that merging starts the deploy with no further gate.
+- One stale code comment in the same workflow, for the same reason.
+
+Two other matches were left alone deliberately: `docs/legal/review-drafts/terms-canada.md` and
+`docs/engineering/persona-happy-path-harness.md` use "production approval gate" in the go-live
+readiness sense, not the GitHub environment reviewer, and that gate is unchanged. The legal draft is
+also a digest-bound artifact of the counsel packet.
+
+---
+
+#### Validation Notes
+
+- Node project: 1065 tests passing; typecheck clean; workflow YAML parses.
+- (This worktree had no `node_modules` link, so my first `tsc` ran a system binary and "failed"
+  meaninglessly. Linked and re-run.)
+
+---
+
+#### Reflections
+
+Removing a control is easy; removing every statement that the control exists is the actual work. The
+dry-run summary was the sharpest instance, because it is read precisely when someone is deciding
+whether to let a migration reach Production.
