@@ -210,3 +210,66 @@ docs say so, and that is the intended direction to fail.
 
 - Second deep review pass over the three fixes, then merge when all six conditions hold.
 - Noak approves another Production run after this reaches main.
+
+### session v4: The docs I edited are bound into a counsel review packet
+
+- **Timestamp:** 2026-10-09T19:10:00Z
+- **Agent:** Claude Code (Claude Opus 5)
+- **Branch:** `fix/prod-parity-platform-objects`
+- **Head before commit:** `462873f`
+
+---
+
+#### Objective
+
+CI `validate` failed on this branch: `evidence digest mismatch:
+docs/engineering/production-readiness-evidence-contract.md`. I did not know that document was
+digest-bound, so this is a coupling worth recording rather than just fixing.
+
+---
+
+#### What was actually wrong
+
+`docs/legal/review-drafts/counsel-review-packet.json` binds the exact bytes of the documents and
+sources a qualified counsel will review. Two of its bound artifacts are files this branch edits:
+
+- `docs/engineering/production-readiness-evidence-contract.md` (the v3 algorithm definition), and
+- `lib/release-readiness/evidence-manifest.ts` (the validator that now requires v3).
+
+Changing either invalidates its recorded digest, and the packet's own `packetSha256` with it.
+
+The packet is explicitly `DRAFT - NOT APPROVED - NOT EFFECTIVE`, with a null reviewer, null
+decisions and no effective date — the verifier asserts all of that, so a fabricated approval cannot
+be slipped in. Refreshing a bound digest while the packet is in draft is therefore the intended
+workflow: otherwise a bound document could never be corrected before counsel reads it. I refreshed
+only the two digests whose files genuinely changed, and recomputed `packetSha256` with the repo's
+own `counselReviewPacketDigest`, so the canonicalization is the verifier's own rather than my
+approximation of it.
+
+**Worth a human's attention even so:** when counsel does review this packet, they will review the
+new bytes of the evidence contract, which now describe a fingerprint algorithm that excludes
+platform-provisioned objects. That is a real change in what the contract promises, and it is the
+substance of this PR rather than an incidental edit.
+
+---
+
+#### A mistake of my own, recorded because it cost time
+
+I chased three further "failures" in `tests/production-readiness-evidence-contract.test.ts` that
+were an artifact of my own tooling: the scratch Vitest config I was using to avoid jsdom had the
+*oauth* worktree hardcoded as its root, so `@` resolved to another branch's code while the fixtures
+came from this one. The config now derives its root from `process.cwd()`. The lesson is the obvious
+one — a tool that silently points at the wrong tree produces failures that look like code bugs.
+
+---
+
+#### Validation Notes
+
+- Counsel and accounting packet suites pass; the full node project passes: 167 files, 1070 tests.
+- Typecheck and lint clean.
+
+---
+
+#### Suggested Next Steps
+
+- Unchanged: second review pass, then merge.
