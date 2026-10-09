@@ -4,7 +4,7 @@ import path from "node:path"
 import { describe, expect, it } from "vitest"
 import { classifyFunctionInventory, compareClosurePaths, expectedFunctionNames, expectedSourceClosure } from "../scripts/verify-supabase-function-parity.mjs"
 import { buildEnvironmentManifest, buildSafeSmokeEvidence } from "../scripts/verify-supabase-environment-manifest.mjs"
-import { bindObservedMigrationDeployEvidence, buildDeployCompletionEvidence, buildMigrationDeployEvidence, buildSchemaDiagnostic, compareExplicitRfc3339Timestamps, expectedMigrationInventory, isExplicitRfc3339Timestamp, libpqConnectionEnvironment, localStackDatabaseUrl, migrationInventorySha256, normalizePublicSchema, assertNoPlatformManagedObjects, evaluatePlatformManagedProvenance, platformManagedCandidates, platformManagedProvenanceSql, stripPlatformManagedObjects, validateDeployCompletionEvidence, validateForwardPendingMigrationHistory, validateMatchingMigrationEvidence, validateMigrationDeployEvidence, validatePendingSchemaRepair } from "../scripts/verify-supabase-schema-parity.mjs"
+import { bindObservedMigrationDeployEvidence, buildDeployCompletionEvidence, buildMigrationDeployEvidence, buildSchemaDiagnostic, compareExplicitRfc3339Timestamps, expectedMigrationInventory, isExplicitRfc3339Timestamp, libpqConnectionEnvironment, localStackDatabaseUrl, migrationInventorySha256, normalizePublicSchema, assertNoPlatformManagedObjects, evaluatePlatformManagedProvenance, extractDumpSection, extractDumpedFunctionBody, platformManagedCandidates, platformManagedProvenanceSql, stripPlatformManagedObjects, validateDeployCompletionEvidence, validateForwardPendingMigrationHistory, validateMatchingMigrationEvidence, validateMigrationDeployEvidence, validatePendingSchemaRepair } from "../scripts/verify-supabase-schema-parity.mjs"
 
 const workflow = readFileSync(".github/workflows/supabase-deploy.yml", "utf8")
 const schemaVerifier = readFileSync("scripts/verify-supabase-schema-parity.mjs", "utf8")
@@ -102,9 +102,9 @@ describe("Supabase delivery parity", () => {
 
   it("verifies the platform's definition before excluding it from the fingerprint", () => {
     const entry = platformManagedCandidates("-- Name: rls_auto_enable(); Type: FUNCTION; Schema: public; Owner: -\n")[0]!
-    const genuine = `|t|postgres|search_path=pg_catalog|ensure_rls|${entry.definitionSha256}`
+    const genuine = `|t|postgres|search_path=pg_catalog|ensure_rls|${entry.definitionSha256}|${entry.bodySha256}`
 
-    expect(evaluatePlatformManagedProvenance(entry, genuine)).toEqual({ ok: true, definitionSha256: entry.definitionSha256 })
+    expect(evaluatePlatformManagedProvenance(entry, genuine)).toEqual({ ok: true, definitionSha256: entry.definitionSha256, bodySha256: entry.bodySha256 })
 
     // A replaced SECURITY DEFINER body, a changed attribute, a missing event trigger, an absent or
     // ambiguous function: each leaves the object in the comparison, where it reports as drift.
@@ -121,6 +121,55 @@ describe("Supabase delivery parity", () => {
     expect(sql).toContain("pg_get_function_identity_arguments(p.oid) = ''")
     expect(sql).toContain("proname = 'rls_auto_enable'")
     expect(sql).toContain("sha256(convert_to(pg_get_functiondef(p.oid), 'UTF8'))")
+  })
+
+  it("verifies the bytes it is about to remove, not only the live catalog", () => {
+    // The dump and the catalog query are two observations of a mutable database. Without checking
+    // the dumped section itself, a definition altered between them could be removed on the strength
+    // of the other observation.
+    const entry = platformManagedCandidates("-- Name: rls_auto_enable(); Type: FUNCTION; Schema: public; Owner: -\n")[0]!
+    const body = " begin perform 1; end; "
+    const dump = [
+      "--",
+      "-- Name: rls_auto_enable(); Type: FUNCTION; Schema: public; Owner: -",
+      "--",
+      "",
+      "CREATE FUNCTION public.rls_auto_enable() RETURNS event_trigger",
+      "    LANGUAGE plpgsql",
+      `    AS $$${body}$$;`,
+      "",
+    ].join("\n")
+
+    const section = extractDumpSection(dump, entry.identity)
+    expect(section).toContain("CREATE FUNCTION public.rls_auto_enable()")
+    // Exactly the text pg_dump puts between the dollar quotes, which is pg_proc.prosrc verbatim,
+    // so it can be compared with a digest taken from the catalog.
+    expect(extractDumpedFunctionBody(section!)).toBe(body)
+    expect(extractDumpSection(dump, "public.projects [TABLE]")).toBeNull()
+    expect(extractDumpedFunctionBody("CREATE FUNCTION f() RETURNS void LANGUAGE sql;")).toBeNull()
+
+    // The pinned body digest is what both observations have to meet.
+    expect(entry.bodySha256).toMatch(/^[0-9a-f]{64}$/)
+    const genuine = `|t|postgres|search_path=pg_catalog|ensure_rls|${entry.definitionSha256}|${entry.bodySha256}`
+    expect(evaluatePlatformManagedProvenance(entry, genuine)).toMatchObject({ ok: true, bodySha256: entry.bodySha256 })
+    expect(evaluatePlatformManagedProvenance(entry, genuine.replace(entry.bodySha256, "e".repeat(64))).reason).toBe("body-digest")
+
+    // And the dump-side check is wired in, so a mismatch there leaves the object in the comparison.
+    expect(schemaVerifier).toContain("dumpedBodySha256 !== entry.bodySha256")
+    expect(schemaVerifier).toContain("dumped-definition")
+  })
+
+  it("carries its exclusions into the durable environment manifest", () => {
+    // An attestation that omits objects without naming them cannot be audited later, and the
+    // evidence contract promises these are recorded.
+    const manifestVerifier = readFileSync("scripts/verify-supabase-environment-manifest.mjs", "utf8")
+    expect(manifestVerifier).toContain("platformManagedExclusions: schema.platformManagedExclusions ?? []")
+    expect(manifestVerifier).toContain('blockers.push("schema-exclusions")')
+    const manifestSchema = JSON.parse(readFileSync("docs/engineering/production-readiness-manifest.schema.json", "utf8")) as {
+      $defs: { schemaFingerprint: { required: string[]; properties: Record<string, unknown> } }
+    }
+    expect(manifestSchema.$defs.schemaFingerprint.required).toContain("platformManagedExclusions")
+    expect(manifestSchema.$defs.schemaFingerprint.properties.platformManagedExclusions).toBeDefined()
   })
 
   it("fails instead of excluding an identity a migration has started creating", () => {

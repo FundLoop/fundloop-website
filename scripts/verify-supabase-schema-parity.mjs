@@ -60,6 +60,10 @@ const PLATFORM_MANAGED_PUBLIC_OBJECTS = [{
   config: "search_path=pg_catalog",
   eventTrigger: "ensure_rls",
   definitionSha256: "dd9ce3fd3905d621611cf0ea2e7591bada6d61f827445cfa2afe27e69b03f271",
+  // sha256 of pg_proc.prosrc, which is the exact text pg_dump emits between the dollar quotes. The
+  // dumped bytes are checked against this, so a definition altered between the dump and the catalog
+  // query cannot be stripped unverified.
+  bodySha256: "2782e98b348aca7d6f6f73c420fd78d2e094957dd7a52b0483d4c34f29d2a7a1",
 }]
 
 function dumpSectionIdentities(dump) {
@@ -69,6 +73,32 @@ function dumpSectionIdentities(dump) {
     if (header) identities.push(`${header[3]}.${header[1]} [${header[2]}]`)
   }
   return identities
+}
+
+// The lines of one object's dump section, so the caller can verify what it is about to remove.
+export function extractDumpSection(dump, identity) {
+  const lines = dump.replace(/\r\n?/g, "\n").split("\n")
+  const collected = []
+  let inside = false
+  for (const line of lines) {
+    const header = line.match(/^-- Name: (.*); Type: (.*); Schema: (.*); Owner: .*$/)
+    if (header) {
+      inside = `${header[3]}.${header[1]} [${header[2]}]` === identity
+      continue
+    }
+    if (inside) collected.push(line)
+  }
+  return collected.length > 0 ? collected.join("\n") : null
+}
+
+// pg_dump renders a function body inside dollar quotes, verbatim from pg_proc.prosrc.
+export function extractDumpedFunctionBody(section) {
+  const opening = section.match(/\bAS (\$[A-Za-z0-9_]*\$)/)
+  if (!opening) return null
+  const tag = opening[1]
+  const start = section.indexOf(tag, opening.index) + tag.length
+  const end = section.indexOf(tag, start)
+  return end < 0 ? null : section.slice(start, end)
 }
 
 export function platformManagedCandidates(dump) {
@@ -94,20 +124,21 @@ function quoteLiteral(value) {
 }
 
 export function platformManagedProvenanceSql(entry) {
-  return `select format('%s|%s|%s|%s|%s|%s', pg_get_function_identity_arguments(p.oid), p.prosecdef, pg_get_userbyid(p.proowner), coalesce(array_to_string(p.proconfig, ','), '-'), coalesce((select et.evtname from pg_event_trigger et where et.evtfoid = p.oid), '-'), encode(sha256(convert_to(pg_get_functiondef(p.oid), 'UTF8')), 'hex')) from pg_proc p where p.pronamespace = 'public'::regnamespace and p.proname = ${quoteLiteral(entry.name)} and pg_get_function_identity_arguments(p.oid) = ${quoteLiteral(entry.identityArguments)}`
+  return `select format('%s|%s|%s|%s|%s|%s|%s', pg_get_function_identity_arguments(p.oid), p.prosecdef, pg_get_userbyid(p.proowner), coalesce(array_to_string(p.proconfig, ','), '-'), coalesce((select et.evtname from pg_event_trigger et where et.evtfoid = p.oid), '-'), encode(sha256(convert_to(pg_get_functiondef(p.oid), 'UTF8')), 'hex'), encode(sha256(convert_to(p.prosrc, 'UTF8')), 'hex')) from pg_proc p where p.pronamespace = 'public'::regnamespace and p.proname = ${quoteLiteral(entry.name)} and pg_get_function_identity_arguments(p.oid) = ${quoteLiteral(entry.identityArguments)}`
 }
 
 export function evaluatePlatformManagedProvenance(entry, output) {
   const rows = String(output ?? "").split("\n").map((row) => row.trim()).filter((row) => row.length > 0)
   if (rows.length !== 1) return { ok: false, reason: rows.length === 0 ? "not-found" : "ambiguous" }
-  const [identityArguments, securityDefiner, owner, config, eventTrigger, definitionSha256] = rows[0].split("|")
+  const [identityArguments, securityDefiner, owner, config, eventTrigger, definitionSha256, bodySha256] = rows[0].split("|")
   if (identityArguments !== entry.identityArguments) return { ok: false, reason: "signature" }
   if ((securityDefiner === "t") !== entry.securityDefiner) return { ok: false, reason: "security-definer" }
   if (owner !== entry.owner) return { ok: false, reason: "owner" }
   if (config !== entry.config) return { ok: false, reason: "config" }
   if (eventTrigger !== entry.eventTrigger) return { ok: false, reason: "event-trigger" }
   if (definitionSha256 !== entry.definitionSha256) return { ok: false, reason: "definition-digest" }
-  return { ok: true, definitionSha256 }
+  if (bodySha256 !== entry.bodySha256) return { ok: false, reason: "body-digest" }
+  return { ok: true, definitionSha256, bodySha256 }
 }
 
 // Drops only the identities named, each already verified by the caller.
@@ -438,8 +469,23 @@ function dumpObservedPublicSchema(projectId, dbUrl) {
       console.log(`::warning::platform-managed object ${entry.identity} failed provenance (${verdict.reason}); left in the schema comparison`)
       continue
     }
+    // The catalog query and the dump are two observations, so a definition changed between them
+    // could otherwise be removed on the strength of the other one. This checks the bytes actually
+    // being removed against the same reviewed constant.
+    const section = extractDumpSection(dump, entry.identity)
+    const body = section === null ? null : extractDumpedFunctionBody(section)
+    const dumpedBodySha256 = body === null ? null : fingerprint(body)
+    if (dumpedBodySha256 !== entry.bodySha256) {
+      console.log(`::warning::platform-managed object ${entry.identity} failed provenance (dumped-definition); left in the schema comparison`)
+      continue
+    }
     verified.push(entry.identity)
-    exclusions.push({ identity: entry.identity, eventTrigger: entry.eventTrigger, definitionSha256: verdict.definitionSha256 })
+    exclusions.push({
+      identity: entry.identity,
+      eventTrigger: entry.eventTrigger,
+      definitionSha256: verdict.definitionSha256,
+      bodySha256: dumpedBodySha256,
+    })
   }
   return { dump: stripPlatformManagedObjects(dump, verified), exclusions }
 }

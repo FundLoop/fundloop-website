@@ -273,3 +273,57 @@ one — a tool that silently points at the wrong tree produces failures that loo
 #### Suggested Next Steps
 
 - Unchanged: second review pass, then merge.
+
+### session v5: Codex review — verify the bytes, and keep the record durable
+
+- **Timestamp:** 2026-10-09T19:50:00Z
+- **Head before commit:** `bb2bc2c`
+
+---
+
+#### Objective
+
+Two findings, both correct, and the first one is the kind that matters: it described a way for the
+check to pass without ever verifying what it removed.
+
+---
+
+#### Actions Taken
+
+- **Bound verification to the dumped snapshot.** The dump and the catalog query are two observations
+  of a mutable database, so a definition altered between them could be stripped on the strength of
+  the other observation. Each entry now pins `bodySha256` = `sha256(pg_proc.prosrc)`, which is
+  exactly the text pg_dump emits between a function's dollar quotes. `extractDumpSection` and
+  `extractDumpedFunctionBody` pull those bytes out of the dump, and they are compared with the same
+  pinned digest the catalog query is checked against. Both observations must now meet one reviewed
+  constant, and a mismatch leaves the object in the comparison so the fingerprint reports drift.
+- **Carried exclusions into the durable manifest.** `buildEnvironmentManifest` dropped
+  `platformManagedExclusions`, so the immutable manifest did not say what its v3 fingerprint had
+  omitted — directly contradicting the contract I had just written. The field is now propagated, the
+  environment-manifest validator rejects an entry without both digests, and the manifest JSON schema
+  requires it.
+- Contract doc updated with the two-observation rule and the durable record; the counsel packet's
+  digest for that document re-bound, since it is one of its bound artifacts.
+
+---
+
+#### Validation Notes
+
+- Full node project: 167 files, 1072 tests passing. Typecheck and lint clean.
+- New tests cover the section and body extraction, including the cases that return null, the pinned
+  body digest as a rejection reason, and the manifest propagation and schema requirement.
+
+---
+
+#### Reflections
+
+The first finding is worth keeping in mind beyond this PR: I had verified *a* definition, not *the*
+definition. Checking the live catalog felt rigorous because it used a digest, but the bytes being
+removed came from a different read. Verifying the artifact in hand is the only version of this that
+means anything.
+
+---
+
+#### Suggested Next Steps
+
+- Unchanged: second review pass, then merge in HBIC's order.

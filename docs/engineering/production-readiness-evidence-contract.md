@@ -92,26 +92,41 @@ each pinned to the platform's definition digest and catalog attributes:
   absent on older ones, created by no migration and owned by no extension.
   SECURITY DEFINER, owner `postgres`, `search_path=pg_catalog`, referenced by the
   `ensure_rls` event trigger, `sha256(pg_get_functiondef())` =
-  `dd9ce3fd3905d621611cf0ea2e7591bada6d61f827445cfa2afe27e69b03f271`.
+  `dd9ce3fd3905d621611cf0ea2e7591bada6d61f827445cfa2afe27e69b03f271`, and
+  `sha256(pg_proc.prosrc)` =
+  `2782e98b348aca7d6f6f73c420fd78d2e094957dd7a52b0483d4c34f29d2a7a1`.
 
 An identity alone never drops an object, because a name match would hide a replaced
 SECURITY DEFINER body or a function a migration starts creating under the same name.
-Each candidate is verified against the observed catalog first — signature, SECURITY
-DEFINER flag, owner, `search_path`, the referencing event trigger, and the definition
-digest — and only a verified object is stripped. One that fails any check stays in the
-comparison, so the fingerprint reports it as drift, and the job logs which check
-failed. Re-pinning after a platform change is a reviewed change; until it lands,
-parity fails closed.
+Each candidate is verified twice, against both observations:
+
+- the observed catalog — signature, SECURITY DEFINER flag, owner, `search_path`, the
+  referencing event trigger, the definition digest and the body digest; and
+- **the dumped bytes themselves** — the text pg_dump emitted between the function's
+  dollar quotes, which is `pg_proc.prosrc` verbatim, digested and compared with the same
+  pinned `bodySha256`.
+
+The second check exists because the dump and the catalog query are two observations of a
+mutable database. Without it, a definition altered between them could be removed on the
+strength of the other observation, and the fingerprint would pass without the removed
+bytes ever being verified.
+
+Only an object that passes both is stripped. One that fails any check stays in the
+comparison, so the fingerprint reports it as drift, and the job logs which check failed.
+Re-pinning after a platform change is a reviewed change; until it lands, parity fails
+closed.
 
 The expected side is asserted to contain none of these identities. If a fresh replay
 of `supabase/migrations` produces one, a migration now owns that name and the entry
 must be removed rather than excluded, or parity would stop covering an object we
 create.
 
-Every exclusion is recorded in the parity attestation and the environment manifest as
-`platformManagedExclusions`, with the identity, the referencing event trigger and the
-verified definition digest, so what was left out of the fingerprint is stated rather
-than silently dropped.
+Every exclusion is recorded in the parity attestation **and carried into the durable
+environment manifest** as `platformManagedExclusions`, with the identity, the referencing
+event trigger and both verified digests. The environment manifest schema requires the
+field and its validator rejects an entry missing either digest: an attestation that omits
+objects without saying which ones, and without the digests they were checked against,
+cannot be audited after the fact.
 
 An overloaded or differently named object is not on the list and stays in the
 comparison. Adding an entry is a reviewed change that requires establishing that the
