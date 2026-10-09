@@ -95,3 +95,90 @@ against an opaque token removes that whole class of tampering.
 - Stage 3: `/api/v1/me`, `/me/award`, `/me/payout-routes` with scope enforcement against these
   tokens.
 - Regenerate `types/supabase.ts` and drop the cast in `lib/oauth/store.ts`.
+
+### session v2: Reworked to Cubid cross-app access (ID-JAG)
+
+- **Timestamp:** 2026-10-09T18:50:00Z
+- **Agent:** Claude Code (Claude Opus 5)
+- **Branch:** `feat/266-oauth-server`
+- **Head before commit:** `27976f6`
+
+---
+
+#### Objective
+
+Noak chose Cubid cross-app access over per-app OAuth for sibling apps, so FundLoop becomes a
+*resource app*: consent is captured and withdrawn in Cubid Passport, and a requesting client redeems
+an identity assertion grant (ID-JAG) here. Drop the authorization endpoint, the consent page and the
+authorization-code flow with PKCE; keep the token, hash and scope foundation.
+
+---
+
+#### Actions Taken
+
+- **Removed**: `/oauth/authorize`, the consent page, its server actions and components, and the
+  authorization-request and authorization-code tables. All of it remains at `27976f6`, so a single
+  revert restores it if the decision is ever revisited.
+- **`lib/cross-app/id-jag.ts`** — framework-free assertion verification: Web Crypto, `TextEncoder`
+  and an injected `fetch` only, no configuration reads, no database access. Checks `typ`
+  (`oauth-id-jag+jwt`, which is what stops an ID token being redeemed here), RS256, `kid` against
+  the published JWKS, the signature before any claim is trusted, then `iss`, `aud`, `client_id`,
+  `exp`, `iat` and the claimed lifetime. Plus a JWKS cache with a refresh floor.
+- **`POST /oauth/token`** now redeems `urn:ietf:params:oauth:grant-type:jwt-bearer` and nothing else.
+  Records the `jti` before issuing, maps the pairwise subject through `cubid_oidc_subjects`, narrows
+  scope to the assertion and then to the request, and issues a 15-minute access token.
+- **Schema**: `cubid_oidc_subjects` (pairwise subject to user, unique both ways per issuer) and
+  `oauth_assertion_jtis` (primary key on `jti`, so a replay is a constraint violation). Clients are
+  confidential-only with a mandatory secret and carry their Cubid client id explicitly. Tokens are
+  access-only.
+- **Docs**: `docs/engineering/cubid-cross-app-access.md` replaces the authorization-server doc,
+  including why per-app OAuth was dropped and where that code lives. `docs/mcp/auth-and-scopes.md`
+  and the route inventory follow.
+
+---
+
+#### Decisions worth re-reading
+
+- **No refresh tokens.** A client renews by redeeming a fresh assertion, so Cubid re-checks consent
+  on every renewal. Our own refresh token would keep access alive on FundLoop's say-so after a
+  person withdrew consent at Cubid.
+- **An unmapped pairwise subject is a denial, never an account creation**, and the mapping is never
+  inferred from an email address: that would defeat what pairwise subjects are for.
+- **Every assertion denial returns one message**; the specific reason goes to the log only. The
+  exception is an unlinked Cubid identity, which is stated plainly because the person can act on it.
+- **Access-token lifetime is 15 minutes** precisely because the revocation receiver does not exist
+  yet, and that lifetime is currently the only bound on a withdrawn client's access.
+
+---
+
+#### Validation Notes
+
+- 42 tests: the verifier is exercised against **real RS256 signatures from a locally generated
+  key**, not a mocked verifier — wrong `typ`, `alg` confusion including `alg: none`, unknown `kid`,
+  a foreign key, a tampered payload with a genuine signature, issuer/audience/client mismatches,
+  expiry, future `iat`, an over-long claimed lifetime, missing claims, malformed input, and the JWKS
+  cache's floor and outage behaviour. The redemption route is tested the same way, end to end
+  through the real verifier, with only the store and configuration stubbed.
+- Typecheck and lint clean. A test caught a real bug: the RLS loop still named the dropped tables,
+  which would have failed the migration in CI.
+- CI's fresh-schema replay remains the only proof the migration applies; no local stack was started.
+
+---
+
+#### Reflections
+
+Dropping work that was finished and tested is uncomfortable, but the per-app flow was the wrong
+shape for a family of sibling apps: a person would have faced one consent screen per app and had
+nowhere to see them together. What survived is the half that was always going to be ours — token
+issuance, hashing, scope enforcement — and the verifier is better code than the consent page was,
+because it is portable and its failure modes are all enumerated.
+
+The sequencing matters more than the code: without Sign in with Cubid there is no pairwise subject
+to map, so this endpoint verifies assertions perfectly and then has nobody to issue a token for.
+
+---
+
+#### Suggested Next Steps
+
+- The Security Event Token receiver, then Sign in with Cubid and account linking.
+- Ask the Wondr HBIC for the staging issuer, audience and client ids once cubid-monorepo#179 lands.

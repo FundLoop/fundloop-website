@@ -1,37 +1,36 @@
-import { verifyCodeChallenge } from "@/lib/oauth/crypto"
+import { verifyIdJag } from "@/lib/cross-app/id-jag"
+import { crossAppConfig, cubidJwksCache } from "@/lib/cross-app/config"
 import { oauthErrorResponse, oauthTokenResponse } from "@/lib/oauth/errors"
-import { scopeString } from "@/lib/oauth/scopes"
+import { isScopeSubset, parseScopeParam, scopeString, type OAuthScope } from "@/lib/oauth/scopes"
 import {
-  authenticateConfidentialClient,
-  consumeAuthorizationCode,
-  findEnabledClient,
-  findRefreshToken,
-  issueTokenPair,
-  linkRotation,
-  readGrant,
-  revokeGrantFamily,
-  rotateRefreshToken,
+  authenticateClient,
+  findRequestingClient,
+  findUserForCubidSubject,
+  issueAccessToken,
+  noteSubjectSeen,
+  recordAssertionJti,
 } from "@/lib/oauth/store"
 
-// POST /oauth/token — RFC 6749 §4.1.3 (authorization_code) and §6 (refresh_token), OAuth 2.1 rules
-// (#266 stage 2). Form-encoded in, JSON out, never cached.
+// POST /oauth/token — redeems a Cubid identity assertion grant (#266 stage 2).
+//
+// FundLoop is a resource app: consent lives at Cubid, and a requesting client arrives here with an
+// ID-JAG it obtained there. This endpoint verifies the assertion and issues FundLoop's own
+// short-lived access token. There is no authorization code, no PKCE and no refresh token: a client
+// renews by redeeming a fresh assertion, so consent is re-checked at Cubid on every renewal.
+//
+// Contract: cubid-monorepo docs/engineering/oidc-cross-app-access.md, "Redemption".
 export const dynamic = "force-dynamic"
 
-type ClientCredentials = { clientId: string | null; clientSecret: string | null }
+const JWT_BEARER_GRANT = "urn:ietf:params:oauth:grant-type:jwt-bearer"
 
-// RFC 6749 §2.3.1: a confidential client may authenticate with Basic or in the body. A public
-// client sends only client_id.
-function readClientCredentials(request: Request, form: URLSearchParams): ClientCredentials {
+function readClientCredentials(request: Request, form: URLSearchParams) {
   const header = request.headers.get("authorization")
   if (header?.toLowerCase().startsWith("basic ")) {
     try {
       const decoded = Buffer.from(header.slice(6).trim(), "base64").toString("utf8")
       const separator = decoded.indexOf(":")
       if (separator > 0) {
-        return {
-          clientId: decodeURIComponent(decoded.slice(0, separator)),
-          clientSecret: decodeURIComponent(decoded.slice(separator + 1)),
-        }
+        return { clientId: decodeURIComponent(decoded.slice(0, separator)), clientSecret: decodeURIComponent(decoded.slice(separator + 1)) }
       }
     } catch {
       return { clientId: null, clientSecret: null }
@@ -48,101 +47,107 @@ export async function POST(request: Request) {
     return oauthErrorResponse("invalid_request", "The request body must be application/x-www-form-urlencoded.")
   }
 
+  if (form.get("grant_type") !== JWT_BEARER_GRANT) {
+    return oauthErrorResponse("unsupported_grant_type", `The only supported grant type is ${JWT_BEARER_GRANT}.`)
+  }
+
   const { clientId, clientSecret } = readClientCredentials(request, form)
   if (!clientId) return oauthErrorResponse("invalid_client", "Client authentication failed.")
 
-  const client = await findEnabledClient(clientId)
-  // An unknown client and a wrong secret answer identically, so this endpoint cannot be used to
-  // enumerate which client ids exist.
-  if (!client || !(await authenticateConfidentialClient(client, clientSecret))) {
+  const client = await findRequestingClient(clientId)
+  // An unknown client, a disabled one and a wrong secret answer identically, so this endpoint
+  // cannot be used to enumerate which clients exist.
+  if (!client || !authenticateClient(client, clientSecret)) {
     return oauthErrorResponse("invalid_client", "Client authentication failed.")
   }
 
-  const grantType = form.get("grant_type")
-  if (grantType === "authorization_code") return exchangeAuthorizationCode(form, client.client_id)
-  if (grantType === "refresh_token") return exchangeRefreshToken(form, client.client_id)
-  return oauthErrorResponse("unsupported_grant_type", "Supported grant types are authorization_code and refresh_token.")
-}
+  const assertion = form.get("assertion")
+  if (!assertion) return oauthErrorResponse("invalid_request", "assertion is required.")
 
-async function exchangeAuthorizationCode(form: URLSearchParams, clientId: string) {
-  const code = form.get("code")
-  const redirectUri = form.get("redirect_uri")
-  const codeVerifier = form.get("code_verifier")
-  if (!code || !redirectUri || !codeVerifier) {
-    return oauthErrorResponse("invalid_request", "code, redirect_uri and code_verifier are required.")
-  }
+  const config = crossAppConfig()
+  // Unconfigured means there is no issuer to verify against, so there is nothing safe to do.
+  if (!config) return oauthErrorResponse("temporarily_unavailable", "Cross-app access is not configured on this deployment.")
 
-  // Consuming first means a replayed code is already spent by the time any other check runs.
-  const record = await consumeAuthorizationCode(code)
-  if (!record) return oauthErrorResponse("invalid_grant", "The authorization code is invalid, expired or already used.")
+  const jwks = await cubidJwksCache(config).get()
+  if (!jwks) return oauthErrorResponse("temporarily_unavailable", "The issuer's signing keys are unavailable.")
 
-  // §4.1.3: the code is bound to the client and the redirect URI it was issued for. A mismatch here
-  // is a sign the code was obtained by someone else, so the grant is not salvaged.
-  if (record.client_id !== clientId || record.redirect_uri !== redirectUri) {
-    await revokeGrantFamily(record.grant_id, "reuse")
-    return oauthErrorResponse("invalid_grant", "The authorization code was not issued for this client and redirect URI.")
-  }
-
-  if (!verifyCodeChallenge(codeVerifier, record.code_challenge, record.code_challenge_method)) {
-    return oauthErrorResponse("invalid_grant", "The code verifier does not match the challenge.")
-  }
-
-  const grant = await readGrant(record.grant_id)
-  if (!grant || grant.revoked_at) return oauthErrorResponse("invalid_grant", "The grant has been revoked.")
-
-  const issued = await issueTokenPair({
-    grantId: record.grant_id,
-    clientId,
-    userId: record.user_id,
-    scopes: record.scopes,
-    fromCodeId: record.id,
+  let verified = await verifyIdJag(assertion, {
+    jwks,
+    issuer: config.issuer,
+    audience: config.audience,
+    acceptedClientIds: [client.cubid_client_id],
   })
+
+  // An unknown key is the one denial worth retrying: it is what a key rotation looks like. The
+  // cache's own floor stops this from becoming a request amplifier.
+  if (!verified.ok && verified.reason === "unknown_key") {
+    const refreshed = await cubidJwksCache(config).get({ force: true })
+    if (refreshed) {
+      verified = await verifyIdJag(assertion, {
+        jwks: refreshed,
+        issuer: config.issuer,
+        audience: config.audience,
+        acceptedClientIds: [client.cubid_client_id],
+      })
+    }
+  }
+
+  if (!verified.ok) {
+    // The reason is logged, never returned: which check failed is information an attacker can use
+    // to shape the next attempt.
+    console.warn(`[oauth/token] assertion denied for ${client.client_id}: ${verified.reason}`)
+    return oauthErrorResponse("invalid_grant", "The assertion is not valid for this deployment.")
+  }
+
+  const { claims } = verified
+
+  // Scopes: what the client asked for, bounded by what it is registered for and by what the
+  // assertion itself carries. An assertion with no scope claim grants the client's registered set.
+  let granted: OAuthScope[] = client.allowed_scopes
+  if (claims.scope) {
+    const fromAssertion = parseScopeParam(claims.scope)
+    if (!fromAssertion.ok) return oauthErrorResponse("invalid_scope", "The assertion names a scope this app does not offer.")
+    if (!isScopeSubset(fromAssertion.scopes, client.allowed_scopes)) {
+      return oauthErrorResponse("invalid_scope", "The assertion names a scope this client is not registered for.")
+    }
+    granted = fromAssertion.scopes
+  }
+  const requested = form.get("scope")
+  if (requested) {
+    const parsed = parseScopeParam(requested)
+    if (!parsed.ok) return oauthErrorResponse("invalid_scope", "The requested scope is not one this app offers.")
+    if (!isScopeSubset(parsed.scopes, granted)) {
+      return oauthErrorResponse("invalid_scope", "The requested scope is wider than the assertion allows.")
+    }
+    granted = parsed.scopes
+  }
+
+  // Recorded before the token is issued, so a replay cannot win a race against its own first use.
+  const replay = await recordAssertionJti({
+    jti: claims.jti,
+    issuer: claims.iss,
+    clientId: client.client_id,
+    subject: claims.sub,
+    expiresAt: new Date(claims.exp * 1000).toISOString(),
+  })
+  if (!replay.ok) return oauthErrorResponse("invalid_grant", "This assertion has already been redeemed.")
+
+  // The pairwise subject is all we get. Without a mapping there is no FundLoop user to act for, and
+  // inventing one from an assertion is not something this endpoint may do.
+  const userId = await findUserForCubidSubject(claims.iss, claims.sub)
+  if (!userId) {
+    console.warn(`[oauth/token] no FundLoop account is linked to the subject presented by ${client.client_id}`)
+    return oauthErrorResponse("invalid_grant", "No FundLoop account is linked to that Cubid identity. The person needs to sign in with Cubid or link their account first.")
+  }
+
+  const issued = await issueAccessToken({ clientId: client.client_id, userId, scopes: granted, assertionJti: claims.jti })
+  await noteSubjectSeen(claims.iss, claims.sub)
+
   return oauthTokenResponse({
     access_token: issued.accessToken,
     token_type: "Bearer",
     expires_in: issued.expiresIn,
-    refresh_token: issued.refreshToken,
-    scope: scopeString(record.scopes),
-  })
-}
-
-async function exchangeRefreshToken(form: URLSearchParams, clientId: string) {
-  const presented = form.get("refresh_token")
-  if (!presented) return oauthErrorResponse("invalid_request", "refresh_token is required.")
-
-  const record = await findRefreshToken(presented)
-  if (!record || record.client_id !== clientId) {
-    return oauthErrorResponse("invalid_grant", "The refresh token is invalid or expired.")
-  }
-
-  // A rotated token presented again means two parties hold it, so the whole grant goes (RFC 9700).
-  if (record.rotated_to_id !== null) {
-    await revokeGrantFamily(record.grant_id, "reuse")
-    return oauthErrorResponse("invalid_grant", "The refresh token has already been used. The grant has been revoked.")
-  }
-  if (record.revoked_at) return oauthErrorResponse("invalid_grant", "The refresh token has been revoked.")
-
-  const grant = await readGrant(record.grant_id)
-  if (!grant || grant.revoked_at) return oauthErrorResponse("invalid_grant", "The grant has been revoked.")
-
-  // Claim the old token before issuing a new one: if two refreshes race, only one proceeds.
-  const rotation = await rotateRefreshToken(record)
-  if (!rotation.ok) return oauthErrorResponse("invalid_grant", "The refresh token has already been used.")
-
-  // The scopes come from the stored grant, never from the request: a refresh cannot widen access.
-  const issued = await issueTokenPair({
-    grantId: record.grant_id,
-    clientId,
-    userId: record.user_id,
-    scopes: grant.scopes,
-  })
-  await linkRotation(record.id, issued.refreshToken)
-  return oauthTokenResponse({
-    access_token: issued.accessToken,
-    token_type: "Bearer",
-    expires_in: issued.expiresIn,
-    refresh_token: issued.refreshToken,
-    scope: scopeString(grant.scopes),
+    scope: scopeString(granted),
   })
 }
 

@@ -34,9 +34,11 @@ The MCP front door gates broad tool categories. Project/entity ownership still b
 
 ## OAuth Scopes
 
-OAuth 2.1 with PKCE is implemented for third-party delegated access (issue #266, stage 2); see
-[the authorization server doc](../engineering/oauth-authorization-server.md). The scope vocabulary is
-narrow and read-only:
+Delegated access for sibling apps goes through Cubid cross-app access, not a FundLoop OAuth server
+(issue #266, stage 2); see [the cross-app access doc](../engineering/cubid-cross-app-access.md). A
+requesting client obtains an identity assertion grant from Cubid, where the person consents, and
+redeems it at FundLoop for a short-lived FundLoop access token. The scope vocabulary is narrow and
+read-only:
 
 - `profile:read` — which account the token acts for.
 - `awards:read` — that person's own award and allocation history.
@@ -52,15 +54,20 @@ an application.
 Wildcard scopes are not used. Adding a scope is a migration (the `public.oauth_scope` enum) plus a
 change to `lib/oauth/scopes.ts`, because a scope is a promise to a third-party client.
 
-Dynamic client registration (RFC 7591) is not implemented. Clients are registered by an operator, so
-the set of applications that can ask for access stays curated.
+Dynamic client registration (RFC 7591) is not implemented. Requesting clients are registered by an
+operator on both sides, so the set of applications that can ask for access stays curated.
+
+FundLoop runs no authorization endpoint and no consent page: a person grants and withdraws cross-app
+access in Cubid Passport, in one place for every sibling app.
 
 ## Revocation
 
-- `POST /oauth/revoke` (RFC 7009) revokes a delegated grant. Revoking either token of a pair revokes
-  the grant's tokens, which is what a person expects from "disconnect this app".
-- A refresh token presented after it has been rotated revokes the whole grant: a legitimate client
-  never does that, so the token is held by someone else.
+- A person withdraws cross-app access in Cubid Passport. Cubid sends a Security Event Token, and
+  FundLoop revokes that client's tokens for that person on receipt (the receiver is the next piece
+  of stage 2; until it lands, the 15-minute access-token lifetime is the bound).
+- `POST /oauth/revoke` (RFC 7009) lets a client drop its own token.
+- FundLoop issues no refresh tokens: a client renews by redeeming a fresh assertion, so a withdrawn
+  consent stops renewals at the source rather than relying on FundLoop noticing.
 - `update public.oauth_clients set disabled_at = now()` withdraws one application's access entirely.
 - Revoke a user's Supabase session for actor-level compromise.
 - Remove an email from `FUNDLOOP_INTERNAL_ADMIN_EMAILS` to revoke operator MCP access.

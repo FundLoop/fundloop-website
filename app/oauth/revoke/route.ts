@@ -1,5 +1,5 @@
 import { oauthErrorResponse } from "@/lib/oauth/errors"
-import { authenticateConfidentialClient, findEnabledClient, revokeByToken } from "@/lib/oauth/store"
+import { authenticateClient, findRequestingClient, revokeByToken } from "@/lib/oauth/store"
 
 // POST /oauth/revoke — RFC 7009 (#266 stage 2).
 export const dynamic = "force-dynamic"
@@ -15,8 +15,8 @@ export async function POST(request: Request) {
   const clientId = form.get("client_id")
   if (!clientId) return oauthErrorResponse("invalid_client", "Client authentication failed.")
 
-  const client = await findEnabledClient(clientId)
-  if (!client || !(await authenticateConfidentialClient(client, form.get("client_secret")))) {
+  const client = await findRequestingClient(clientId)
+  if (!client || !authenticateClient(client, form.get("client_secret"))) {
     return oauthErrorResponse("invalid_client", "Client authentication failed.")
   }
 

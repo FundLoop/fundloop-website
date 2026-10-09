@@ -1,29 +1,65 @@
-import { beforeEach, describe, expect, it, vi } from "vitest"
-import { codeChallengeFromVerifier } from "@/lib/oauth/crypto"
+import { beforeAll, beforeEach, describe, expect, it, vi } from "vitest"
+import type { JsonWebKeySet } from "@/lib/cross-app/id-jag"
 
-// POST /oauth/token (#266 stage 2). What matters most here is what it refuses, so most of these
-// cases are failures.
+// POST /oauth/token redeeming a Cubid identity assertion (#266 stage 2).
+//
+// The assertions here are really signed by a locally generated key and verified by the real
+// verifier: mocking verification would leave the part that matters untested. Only the database and
+// the configuration are stubbed.
+
+const ISSUER = "https://id.cubid.test"
+const AUDIENCE = "fundloop-resource"
+const CUBID_CLIENT_ID = "cubid_wondrbot"
+const KID = "test-key-1"
+
+let privateKey: CryptoKey
+let jwks: JsonWebKeySet
+const jwksGet = vi.fn()
 
 const store = {
-  findEnabledClient: vi.fn(),
-  authenticateConfidentialClient: vi.fn(),
-  consumeAuthorizationCode: vi.fn(),
-  findRefreshToken: vi.fn(),
-  issueTokenPair: vi.fn(),
-  linkRotation: vi.fn(),
-  readGrant: vi.fn(),
-  revokeGrantFamily: vi.fn(),
-  rotateRefreshToken: vi.fn(),
+  findRequestingClient: vi.fn(),
+  authenticateClient: vi.fn(),
+  findUserForCubidSubject: vi.fn(),
+  noteSubjectSeen: vi.fn(),
+  recordAssertionJti: vi.fn(),
+  issueAccessToken: vi.fn(),
+  revokeTokensForGrant: vi.fn(),
+  revokeByToken: vi.fn(),
 }
 
+const config = { crossAppConfig: vi.fn(), cubidJwksCache: vi.fn(() => ({ get: jwksGet })) }
+
 vi.mock("@/lib/oauth/store", () => store)
+vi.mock("@/lib/cross-app/config", () => config)
 
 const tokenRoute = async () => (await import("@/app/oauth/token/route")).POST
 
-const VERIFIER = "a".repeat(64)
-const CHALLENGE = codeChallengeFromVerifier(VERIFIER)
+function toBase64Url(bytes: Uint8Array) {
+  let binary = ""
+  for (const byte of bytes) binary += String.fromCharCode(byte)
+  return btoa(binary).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "")
+}
 
-function post(body: Record<string, string>, headers: Record<string, string> = {}) {
+async function signAssertion(overrides: Record<string, unknown> = {}, headerOverrides: Record<string, unknown> = {}) {
+  const issuedAt = Math.floor(Date.now() / 1000)
+  const header = { alg: "RS256", kid: KID, typ: "oauth-id-jag+jwt", ...headerOverrides }
+  const payload = {
+    iss: ISSUER,
+    sub: "pairwise-subject",
+    aud: AUDIENCE,
+    client_id: CUBID_CLIENT_ID,
+    jti: "jag_abc",
+    iat: issuedAt,
+    exp: issuedAt + 300,
+    ...overrides,
+  }
+  const encode = (value: Record<string, unknown>) => toBase64Url(new TextEncoder().encode(JSON.stringify(value)))
+  const signingInput = `${encode(header)}.${encode(payload)}`
+  const signature = await crypto.subtle.sign({ name: "RSASSA-PKCS1-v1_5" }, privateKey, new TextEncoder().encode(signingInput))
+  return `${signingInput}.${toBase64Url(new Uint8Array(signature))}`
+}
+
+function redeem(body: Record<string, string>, headers: Record<string, string> = {}) {
   return new Request("https://www.fundloop.org/oauth/token", {
     method: "POST",
     headers: { "Content-Type": "application/x-www-form-urlencoded", ...headers },
@@ -31,188 +67,186 @@ function post(body: Record<string, string>, headers: Record<string, string> = {}
   })
 }
 
-const publicClient = { client_id: "wondrbot", client_type: "public", client_secret_sha256: null, allowed_scopes: ["profile:read"], name: "WondrBot" }
+const GRANT = "urn:ietf:params:oauth:grant-type:jwt-bearer"
 
-function codeRecord(overrides: Record<string, unknown> = {}) {
-  return {
-    id: 11,
-    client_id: "wondrbot",
-    user_id: "user-1",
-    grant_id: 7,
-    redirect_uri: "https://wondrbot.example/callback",
-    scopes: ["profile:read", "awards:read"],
-    code_challenge: CHALLENGE,
-    code_challenge_method: "S256",
-    expires_at: new Date(Date.now() + 60_000).toISOString(),
-    ...overrides,
-  }
-}
+beforeAll(async () => {
+  const pair = await crypto.subtle.generateKey(
+    { name: "RSASSA-PKCS1-v1_5", modulusLength: 2048, publicExponent: new Uint8Array([1, 0, 1]), hash: "SHA-256" },
+    true,
+    ["sign", "verify"],
+  )
+  privateKey = pair.privateKey
+  const exported = (await crypto.subtle.exportKey("jwk", pair.publicKey)) as { kty: string; n: string; e: string }
+  jwks = { keys: [{ kty: exported.kty, n: exported.n, e: exported.e, kid: KID, alg: "RS256" }] }
+})
 
-describe("POST /oauth/token", () => {
+describe("POST /oauth/token (ID-JAG redemption)", () => {
   beforeEach(() => {
     vi.resetModules()
     for (const fn of Object.values(store)) fn.mockReset()
-    store.findEnabledClient.mockResolvedValue(publicClient)
-    store.authenticateConfidentialClient.mockResolvedValue(true)
-    store.readGrant.mockResolvedValue({ id: 7, client_id: "wondrbot", user_id: "user-1", scopes: ["profile:read", "awards:read"], revoked_at: null })
-    store.issueTokenPair.mockResolvedValue({ accessToken: "access-value", refreshToken: "refresh-value", expiresIn: 3600 })
-    store.rotateRefreshToken.mockResolvedValue({ ok: true })
+    jwksGet.mockReset()
+    config.crossAppConfig.mockReset()
+    config.cubidJwksCache.mockClear()
+
+    config.crossAppConfig.mockReturnValue({ issuer: ISSUER, audience: AUDIENCE, jwksUri: `${ISSUER}/jwks` })
+    jwksGet.mockResolvedValue(jwks)
+    store.findRequestingClient.mockResolvedValue({
+      client_id: "wondrbot",
+      cubid_client_id: CUBID_CLIENT_ID,
+      client_secret_sha256: "f".repeat(64),
+      name: "WondrBot",
+      allowed_scopes: ["profile:read", "awards:read"],
+      is_sandbox: false,
+      disabled_at: null,
+    })
+    store.authenticateClient.mockReturnValue(true)
+    store.recordAssertionJti.mockResolvedValue({ ok: true })
+    store.findUserForCubidSubject.mockResolvedValue("user-1")
+    store.issueAccessToken.mockResolvedValue({ accessToken: "fundloop-access", expiresIn: 900 })
+  })
+
+  it("issues a FundLoop access token for a valid assertion", async () => {
+    const response = await (await tokenRoute())(redeem({ grant_type: GRANT, client_id: "wondrbot", client_secret: "s3cret", assertion: await signAssertion() }))
+
+    expect(response.status).toBe(200)
+    expect(response.headers.get("Cache-Control")).toBe("no-store")
+    const body = await response.json()
+    expect(body).toEqual({ access_token: "fundloop-access", token_type: "Bearer", expires_in: 900, scope: "profile:read awards:read" })
+    // No refresh token: the client renews by redeeming a fresh assertion, so Cubid re-checks consent.
+    expect(body.refresh_token).toBeUndefined()
+    expect(store.issueAccessToken).toHaveBeenCalledWith({ clientId: "wondrbot", userId: "user-1", scopes: ["profile:read", "awards:read"], assertionJti: "jag_abc" })
+  })
+
+  it("supports Basic client authentication", async () => {
+    const response = await (await tokenRoute())(
+      redeem({ grant_type: GRANT, assertion: await signAssertion() }, { authorization: `Basic ${Buffer.from("wondrbot:s3cret").toString("base64")}` }),
+    )
+    expect(response.status).toBe(200)
+    expect(store.authenticateClient).toHaveBeenCalledWith(expect.anything(), "s3cret")
+  })
+
+  it("refuses any other grant type", async () => {
+    const response = await (await tokenRoute())(redeem({ grant_type: "authorization_code", client_id: "wondrbot", code: "x" }))
+    expect((await response.json()).error).toBe("unsupported_grant_type")
   })
 
   it("answers an unknown client and a wrong secret identically", async () => {
     const route = await tokenRoute()
+    const assertion = await signAssertion()
 
-    store.findEnabledClient.mockResolvedValue(null)
-    const unknown = await route(post({ grant_type: "authorization_code", client_id: "nope" }))
+    store.findRequestingClient.mockResolvedValue(null)
+    const unknown = await route(redeem({ grant_type: GRANT, client_id: "nope", client_secret: "x", assertion }))
 
-    store.findEnabledClient.mockResolvedValue({ ...publicClient, client_type: "confidential", client_secret_sha256: "f".repeat(64) })
-    store.authenticateConfidentialClient.mockResolvedValue(false)
-    const wrongSecret = await route(post({ grant_type: "authorization_code", client_id: "wondrbot", client_secret: "bad" }))
+    store.findRequestingClient.mockResolvedValue({ client_id: "wondrbot", cubid_client_id: CUBID_CLIENT_ID, client_secret_sha256: "f".repeat(64), allowed_scopes: ["profile:read"], name: "WondrBot", is_sandbox: false, disabled_at: null })
+    store.authenticateClient.mockReturnValue(false)
+    const wrongSecret = await route(redeem({ grant_type: GRANT, client_id: "wondrbot", client_secret: "bad", assertion }))
 
     for (const response of [unknown, wrongSecret]) {
       expect(response.status).toBe(401)
       expect(response.headers.get("WWW-Authenticate")).toContain("Basic")
-      expect(response.headers.get("Cache-Control")).toBe("no-store")
     }
-    // Identical bodies, so the endpoint cannot be used to discover which client ids exist.
     await expect(unknown.json()).resolves.toEqual(await wrongSecret.json())
   })
 
-  it("accepts client credentials from a Basic header", async () => {
-    store.findEnabledClient.mockResolvedValue({ ...publicClient, client_type: "confidential", client_secret_sha256: "f".repeat(64) })
-    store.consumeAuthorizationCode.mockResolvedValue(codeRecord())
-
-    const response = await (await tokenRoute())(
-      post({ grant_type: "authorization_code", code: "code-value", redirect_uri: "https://wondrbot.example/callback", code_verifier: VERIFIER },
-        { authorization: `Basic ${Buffer.from("wondrbot:s3cret").toString("base64")}` }),
-    )
-
-    expect(response.status).toBe(200)
-    expect(store.findEnabledClient).toHaveBeenCalledWith("wondrbot")
-    expect(store.authenticateConfidentialClient).toHaveBeenCalledWith(expect.anything(), "s3cret")
+  it("refuses to verify anything when the deployment is not configured", async () => {
+    // Cubid is not on prod yet, so an unconfigured deployment must not fall back to a default
+    // issuer: there would be nothing trustworthy to check a signature against.
+    config.crossAppConfig.mockReturnValue(null)
+    const response = await (await tokenRoute())(redeem({ grant_type: GRANT, client_id: "wondrbot", client_secret: "s3cret", assertion: await signAssertion() }))
+    expect(response.status).toBe(503)
+    expect((await response.json()).error).toBe("temporarily_unavailable")
+    expect(store.issueAccessToken).not.toHaveBeenCalled()
   })
 
-  it("refuses an unsupported grant type", async () => {
-    const response = await (await tokenRoute())(post({ grant_type: "password", client_id: "wondrbot", username: "a", password: "b" }))
-    expect(response.status).toBe(400)
-    expect((await response.json()).error).toBe("unsupported_grant_type")
+  it("will not issue a token while the issuer's keys are unavailable", async () => {
+    jwksGet.mockResolvedValue(null)
+    const response = await (await tokenRoute())(redeem({ grant_type: GRANT, client_id: "wondrbot", client_secret: "s3cret", assertion: await signAssertion() }))
+    expect(response.status).toBe(503)
+    expect(store.issueAccessToken).not.toHaveBeenCalled()
   })
 
-  it("exchanges a code once and returns a bearer pair", async () => {
-    store.consumeAuthorizationCode.mockResolvedValue(codeRecord())
-
-    const response = await (await tokenRoute())(
-      post({ grant_type: "authorization_code", client_id: "wondrbot", code: "code-value", redirect_uri: "https://wondrbot.example/callback", code_verifier: VERIFIER }),
-    )
-
-    expect(response.status).toBe(200)
-    expect(response.headers.get("Cache-Control")).toBe("no-store")
-    await expect(response.json()).resolves.toEqual({
-      access_token: "access-value",
-      token_type: "Bearer",
-      expires_in: 3600,
-      refresh_token: "refresh-value",
-      scope: "profile:read awards:read",
-    })
-    expect(store.issueTokenPair).toHaveBeenCalledWith(expect.objectContaining({ grantId: 7, userId: "user-1", fromCodeId: 11 }))
-  })
-
-  it("treats an already used, unknown or expired code as invalid_grant", async () => {
-    // The store consumes with a guarded UPDATE, so a second redemption arrives here as null.
-    store.consumeAuthorizationCode.mockResolvedValue(null)
-    const response = await (await tokenRoute())(
-      post({ grant_type: "authorization_code", client_id: "wondrbot", code: "code-value", redirect_uri: "https://wondrbot.example/callback", code_verifier: VERIFIER }),
-    )
-    expect(response.status).toBe(400)
-    expect((await response.json()).error).toBe("invalid_grant")
-  })
-
-  it("revokes the grant when a code is presented by the wrong client or for the wrong redirect", async () => {
+  it("rejects a bad assertion without saying which check failed", async () => {
     const route = await tokenRoute()
-
-    store.consumeAuthorizationCode.mockResolvedValue(codeRecord({ client_id: "someone-else" }))
-    const wrongClient = await route(post({ grant_type: "authorization_code", client_id: "wondrbot", code: "c", redirect_uri: "https://wondrbot.example/callback", code_verifier: VERIFIER }))
-
-    store.consumeAuthorizationCode.mockResolvedValue(codeRecord())
-    const wrongRedirect = await route(post({ grant_type: "authorization_code", client_id: "wondrbot", code: "c", redirect_uri: "https://attacker.example/callback", code_verifier: VERIFIER }))
-
-    for (const response of [wrongClient, wrongRedirect]) {
+    for (const assertion of [
+      await signAssertion({ aud: "another-app" }),
+      await signAssertion({ iss: "https://id.cubid.test.evil" }),
+      await signAssertion({}, { typ: "JWT" }),
+      await signAssertion({ exp: Math.floor(Date.now() / 1000) - 60, iat: Math.floor(Date.now() / 1000) - 600 }),
+      await signAssertion({ client_id: "cubid_someone_else" }),
+    ]) {
+      const response = await route(redeem({ grant_type: GRANT, client_id: "wondrbot", client_secret: "s3cret", assertion }))
       expect(response.status).toBe(400)
-      expect((await response.json()).error).toBe("invalid_grant")
+      const body = await response.json()
+      expect(body.error).toBe("invalid_grant")
+      // One message for every denial: which check failed would help shape the next attempt.
+      expect(body.error_description).toBe("The assertion is not valid for this deployment.")
     }
-    // Either case means the code reached someone it was not issued to, so the grant is not salvaged.
-    expect(store.revokeGrantFamily).toHaveBeenCalledTimes(2)
-    expect(store.revokeGrantFamily).toHaveBeenCalledWith(7, "reuse")
+    expect(store.recordAssertionJti).not.toHaveBeenCalled()
+    expect(store.issueAccessToken).not.toHaveBeenCalled()
   })
 
-  it("requires the PKCE verifier to match the stored challenge", async () => {
-    store.consumeAuthorizationCode.mockResolvedValue(codeRecord())
-    const response = await (await tokenRoute())(
-      post({ grant_type: "authorization_code", client_id: "wondrbot", code: "c", redirect_uri: "https://wondrbot.example/callback", code_verifier: "b".repeat(64) }),
-    )
-    expect(response.status).toBe(400)
-    expect((await response.json()).error_description).toMatch(/verifier/)
-    expect(store.issueTokenPair).not.toHaveBeenCalled()
-  })
+  it("retries once against refreshed keys, which is what a rotation looks like", async () => {
+    const rotated = await signAssertion({}, { kid: "rotated-key" })
+    // First the cache serves a set without that kid, then the forced refresh has it.
+    const rotatedJwks = { keys: [{ ...jwks.keys[0], kid: "rotated-key" }] }
+    jwksGet.mockResolvedValueOnce(jwks).mockResolvedValueOnce(rotatedJwks)
 
-  it("will not exchange a code whose grant was revoked meanwhile", async () => {
-    store.consumeAuthorizationCode.mockResolvedValue(codeRecord())
-    store.readGrant.mockResolvedValue({ id: 7, scopes: ["profile:read"], revoked_at: new Date().toISOString() })
-    const response = await (await tokenRoute())(
-      post({ grant_type: "authorization_code", client_id: "wondrbot", code: "c", redirect_uri: "https://wondrbot.example/callback", code_verifier: VERIFIER }),
-    )
-    expect((await response.json()).error).toBe("invalid_grant")
-    expect(store.issueTokenPair).not.toHaveBeenCalled()
-  })
+    const response = await (await tokenRoute())(redeem({ grant_type: GRANT, client_id: "wondrbot", client_secret: "s3cret", assertion: rotated }))
 
-  it("rotates a refresh token and takes the scopes from the grant, not the request", async () => {
-    store.findRefreshToken.mockResolvedValue({ id: 21, token_type: "refresh", client_id: "wondrbot", user_id: "user-1", grant_id: 7, scopes: ["profile:read"], rotated_to_id: null, expires_at: new Date(Date.now() + 60_000).toISOString(), revoked_at: null })
-
-    const response = await (await tokenRoute())(
-      // An attempt to widen scope on refresh must be ignored.
-      post({ grant_type: "refresh_token", client_id: "wondrbot", refresh_token: "refresh-value", scope: "profile:read awards:read payout-routes:read" }),
-    )
-
+    expect(jwksGet).toHaveBeenCalledWith({ force: true })
     expect(response.status).toBe(200)
-    const body = await response.json()
-    expect(body.scope).toBe("profile:read awards:read")
-    expect(store.issueTokenPair).toHaveBeenCalledWith(expect.objectContaining({ scopes: ["profile:read", "awards:read"] }))
-    // The old token is claimed before the new pair is issued, then linked for reuse detection.
-    expect(store.rotateRefreshToken).toHaveBeenCalled()
-    expect(store.linkRotation).toHaveBeenCalledWith(21, "refresh-value")
   })
 
-  it("revokes the whole grant when a rotated refresh token is presented again", async () => {
-    store.findRefreshToken.mockResolvedValue({ id: 21, token_type: "refresh", client_id: "wondrbot", grant_id: 7, user_id: "user-1", scopes: ["profile:read"], rotated_to_id: 22, expires_at: new Date(Date.now() + 60_000).toISOString(), revoked_at: new Date().toISOString() })
+  it("records the assertion before issuing, and refuses a replay", async () => {
+    store.recordAssertionJti.mockResolvedValue({ ok: false, reason: "replayed" })
+    const response = await (await tokenRoute())(redeem({ grant_type: GRANT, client_id: "wondrbot", client_secret: "s3cret", assertion: await signAssertion() }))
 
-    const response = await (await tokenRoute())(post({ grant_type: "refresh_token", client_id: "wondrbot", refresh_token: "old-value" }))
+    expect(response.status).toBe(400)
+    expect((await response.json()).error_description).toContain("already been redeemed")
+    // Recorded first, so a replay cannot win a race against its own first use.
+    expect(store.recordAssertionJti).toHaveBeenCalled()
+    expect(store.issueAccessToken).not.toHaveBeenCalled()
+  })
+
+  it("will not invent an account for an unlinked Cubid identity", async () => {
+    store.findUserForCubidSubject.mockResolvedValue(null)
+    const response = await (await tokenRoute())(redeem({ grant_type: GRANT, client_id: "wondrbot", client_secret: "s3cret", assertion: await signAssertion() }))
 
     expect(response.status).toBe(400)
     const body = await response.json()
     expect(body.error).toBe("invalid_grant")
-    expect(body.error_description).toMatch(/revoked/)
-    // A legitimate client never presents a rotated token, so two parties hold it (RFC 9700).
-    expect(store.revokeGrantFamily).toHaveBeenCalledWith(7, "reuse")
-    expect(store.issueTokenPair).not.toHaveBeenCalled()
+    // This denial is explicit, because it is actionable: the person has to link their account.
+    expect(body.error_description).toMatch(/sign in with Cubid or link/i)
+    expect(store.issueAccessToken).not.toHaveBeenCalled()
   })
 
-  it("refuses a refresh token belonging to another client, and a lost rotation race", async () => {
+  it("narrows scope to the assertion, then to the request, and never widens", async () => {
     const route = await tokenRoute()
-    const base = { id: 21, token_type: "refresh" as const, user_id: "user-1", grant_id: 7, scopes: ["profile:read"], rotated_to_id: null, expires_at: new Date(Date.now() + 60_000).toISOString(), revoked_at: null }
 
-    store.findRefreshToken.mockResolvedValue({ ...base, client_id: "another-client" })
-    expect((await (await route(post({ grant_type: "refresh_token", client_id: "wondrbot", refresh_token: "r" }))).json()).error).toBe("invalid_grant")
+    // The assertion may carry fewer scopes than the client is registered for.
+    const narrowed = await route(redeem({ grant_type: GRANT, client_id: "wondrbot", client_secret: "s3cret", assertion: await signAssertion({ scope: "profile:read" }) }))
+    expect((await narrowed.json()).scope).toBe("profile:read")
+    expect(store.issueAccessToken).toHaveBeenLastCalledWith(expect.objectContaining({ scopes: ["profile:read"] }))
 
-    store.findRefreshToken.mockResolvedValue({ ...base, client_id: "wondrbot" })
-    store.rotateRefreshToken.mockResolvedValue({ ok: false, reason: "race" })
-    const raced = await route(post({ grant_type: "refresh_token", client_id: "wondrbot", refresh_token: "r" }))
-    expect((await raced.json()).error).toBe("invalid_grant")
-    expect(store.issueTokenPair).not.toHaveBeenCalled()
+    // A request may narrow further.
+    const requested = await route(redeem({ grant_type: GRANT, client_id: "wondrbot", client_secret: "s3cret", scope: "profile:read", assertion: await signAssertion() }))
+    expect((await requested.json()).scope).toBe("profile:read")
+
+    // It may not ask for more than the assertion allows.
+    const widened = await route(redeem({ grant_type: GRANT, client_id: "wondrbot", client_secret: "s3cret", scope: "profile:read awards:read", assertion: await signAssertion({ scope: "profile:read" }) }))
+    expect((await widened.json()).error).toBe("invalid_scope")
+
+    // Nor may an assertion name a scope the client is not registered for.
+    const unregistered = await route(redeem({ grant_type: GRANT, client_id: "wondrbot", client_secret: "s3cret", assertion: await signAssertion({ scope: "payout-routes:read" }) }))
+    expect((await unregistered.json()).error).toBe("invalid_scope")
   })
 
-  it("accepts POST only", async () => {
-    const response = await (await import("@/app/oauth/token/route")).GET()
-    expect(response.status).toBe(405)
-    expect(response.headers.get("Allow")).toBe("POST")
+  it("requires an assertion, and accepts POST only", async () => {
+    const response = await (await tokenRoute())(redeem({ grant_type: GRANT, client_id: "wondrbot", client_secret: "s3cret" }))
+    expect((await response.json()).error).toBe("invalid_request")
+
+    const getResponse = await (await import("@/app/oauth/token/route")).GET()
+    expect(getResponse.status).toBe(405)
+    expect(getResponse.headers.get("Allow")).toBe("POST")
   })
 })

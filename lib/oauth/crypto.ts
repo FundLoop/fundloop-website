@@ -1,15 +1,18 @@
 import { createHash, randomBytes, timingSafeEqual } from "node:crypto"
 
-// Token and PKCE primitives (#266). Nothing here touches the database, so each rule is testable on
-// its own.
+// Token primitives for the FundLoop side of redemption (#266). Nothing here touches the database,
+// so each rule is testable on its own.
+//
+// This file is Node-side and may use node:crypto. The portable half of the flow — assertion and
+// event verification — lives in lib/cross-app/, which uses Web Crypto only so it can be lifted into
+// a shared kit for the other sibling apps.
 
 export const OAUTH_TTL_SECONDS = {
-  // Long enough for a person to read the consent screen and sign in first if they need to.
-  authorizationRequest: 600,
-  // RFC 6749 §4.1.2 recommends a maximum of 10 minutes; one minute is enough for a redirect.
-  authorizationCode: 60,
-  accessToken: 3600,
-  refreshToken: 60 * 60 * 24 * 30,
+  // Deliberately short. A withdrawn consent reaches FundLoop as a Security Event Token, and until
+  // that receiver exists (the next piece of this stage) the only bound on a withdrawn client's
+  // remaining access is this lifetime. A client renews by redeeming a fresh assertion, which
+  // re-checks consent at Cubid, so a short life costs the client nothing but a round trip.
+  accessToken: 900,
 } as const
 
 // 32 bytes of CSPRNG output, base64url, so a token carries 256 bits and survives a URL unescaped.
@@ -29,31 +32,6 @@ export function constantTimeEquals(left: string, right: string): boolean {
   // itself a secret, so comparing lengths first is safe.
   if (leftBytes.length !== rightBytes.length) return false
   return timingSafeEqual(leftBytes, rightBytes)
-}
-
-// RFC 7636 §4.1: 43-128 characters from the unreserved set.
-const VERIFIER_PATTERN = /^[A-Za-z0-9\-._~]{43,128}$/
-// §4.2 S256 challenges are base64url without padding.
-const CHALLENGE_PATTERN = /^[A-Za-z0-9_-]{43,128}$/
-
-export function isValidCodeVerifier(verifier: string): boolean {
-  return VERIFIER_PATTERN.test(verifier)
-}
-
-export function isValidCodeChallenge(challenge: string): boolean {
-  return CHALLENGE_PATTERN.test(challenge)
-}
-
-export function codeChallengeFromVerifier(verifier: string): string {
-  return createHash("sha256").update(verifier, "utf8").digest("base64url")
-}
-
-// S256 only: "plain" is not accepted, so a network observer who sees the challenge cannot derive
-// the verifier.
-export function verifyCodeChallenge(verifier: string, challenge: string, method: string): boolean {
-  if (method !== "S256") return false
-  if (!isValidCodeVerifier(verifier) || !isValidCodeChallenge(challenge)) return false
-  return constantTimeEquals(codeChallengeFromVerifier(verifier), challenge)
 }
 
 export function expiresAt(seconds: number, now: Date = new Date()): string {

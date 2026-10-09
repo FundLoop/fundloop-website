@@ -56,29 +56,7 @@ export function oauthTokenResponse(payload: {
   access_token: string
   token_type: "Bearer"
   expires_in: number
-  refresh_token?: string
   scope: string
 }) {
   return Response.json(payload, { status: 200, headers: noStoreHeaders() })
-}
-
-// RFC 6749 §4.1.2.1: an error goes back to the client's redirect URI only once the client and that
-// URI are known good. Before that, there is nowhere trustworthy to send it, so the authorization
-// endpoint has to show the person an error instead of redirecting.
-export function authorizeErrorRedirect(
-  redirectUri: string,
-  options: { code: OAuthErrorCode; description: string; state?: string | null },
-) {
-  const target = new URL(redirectUri)
-  target.searchParams.set("error", options.code)
-  target.searchParams.set("error_description", options.description)
-  if (options.state) target.searchParams.set("state", options.state)
-  return target
-}
-
-export function authorizeSuccessRedirect(redirectUri: string, options: { code: string; state?: string | null }) {
-  const target = new URL(redirectUri)
-  target.searchParams.set("code", options.code)
-  if (options.state) target.searchParams.set("state", options.state)
-  return target
 }

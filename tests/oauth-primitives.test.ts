@@ -1,17 +1,6 @@
 import { readFileSync } from "node:fs"
 import { describe, expect, it } from "vitest"
-import {
-  OAUTH_TTL_SECONDS,
-  codeChallengeFromVerifier,
-  constantTimeEquals,
-  expiresAt,
-  hasExpired,
-  isValidCodeChallenge,
-  isValidCodeVerifier,
-  randomToken,
-  sha256Hex,
-  verifyCodeChallenge,
-} from "@/lib/oauth/crypto"
+import { OAUTH_TTL_SECONDS, constantTimeEquals, expiresAt, hasExpired, randomToken, sha256Hex } from "@/lib/oauth/crypto"
 import { OAUTH_SCOPES, OAUTH_SCOPE_CONSENT, isScopeSubset, parseScopeParam, scopeString, sortScopes } from "@/lib/oauth/scopes"
 
 const migration = readFileSync("supabase/migrations/20261009120000_oauth_authorization_server.sql", "utf8")
@@ -69,32 +58,10 @@ describe("oauth crypto", () => {
     expect(sha256Hex(token)).not.toContain(token)
 
     // Every column that holds a credential holds a digest of it, enforced by a CHECK.
-    for (const column of ["client_secret_sha256", "request_sha256", "code_sha256", "token_sha256"]) {
+    for (const column of ["client_secret_sha256", "token_sha256"]) {
       expect(migration).toContain(`${column} text`)
       expect(migration).toMatch(new RegExp(`${column}[^,]*~ '\\^\\[0-9a-f\\]\\{64\\}\\$'`))
     }
-  })
-
-  it("verifies a PKCE S256 challenge and refuses plain", () => {
-    const verifier = randomToken(48).slice(0, 64)
-    const challenge = codeChallengeFromVerifier(verifier)
-    expect(isValidCodeVerifier(verifier)).toBe(true)
-    expect(isValidCodeChallenge(challenge)).toBe(true)
-    expect(verifyCodeChallenge(verifier, challenge, "S256")).toBe(true)
-
-    // plain would hand the verifier to anyone who saw the challenge.
-    expect(verifyCodeChallenge(verifier, verifier, "plain")).toBe(false)
-    expect(verifyCodeChallenge(verifier, challenge, "plain")).toBe(false)
-    expect(verifyCodeChallenge(`${verifier}x`, challenge, "S256")).toBe(false)
-    expect(verifyCodeChallenge(verifier, codeChallengeFromVerifier(`${verifier}x`), "S256")).toBe(false)
-  })
-
-  it("enforces the RFC 7636 verifier and challenge shapes", () => {
-    expect(isValidCodeVerifier("short")).toBe(false)
-    expect(isValidCodeVerifier("a".repeat(129))).toBe(false)
-    expect(isValidCodeVerifier("a".repeat(43))).toBe(true)
-    expect(isValidCodeVerifier(`${"a".repeat(42)}!`)).toBe(false)
-    expect(isValidCodeChallenge("a".repeat(42))).toBe(false)
   })
 
   it("compares without leaking a length-independent timing signal", () => {
@@ -105,11 +72,10 @@ describe("oauth crypto", () => {
     expect(constantTimeEquals("", "")).toBe(true)
   })
 
-  it("keeps the short-lived things short-lived", () => {
-    // RFC 6749 §4.1.2 asks for a code lifetime of at most ten minutes.
-    expect(OAUTH_TTL_SECONDS.authorizationCode).toBeLessThanOrEqual(600)
-    expect(OAUTH_TTL_SECONDS.accessToken).toBeLessThanOrEqual(3600)
-    expect(OAUTH_TTL_SECONDS.refreshToken).toBeGreaterThan(OAUTH_TTL_SECONDS.accessToken)
+  it("keeps the access token short-lived", () => {
+    // Until the Security Event Token receiver lands, this lifetime is the only bound on a withdrawn
+    // client's remaining access, and a client renews by redeeming a fresh assertion anyway.
+    expect(OAUTH_TTL_SECONDS.accessToken).toBeLessThanOrEqual(900)
 
     const now = new Date("2026-10-09T12:00:00.000Z")
     expect(expiresAt(60, now)).toBe("2026-10-09T12:01:00.000Z")
@@ -123,7 +89,7 @@ describe("oauth crypto", () => {
 
 describe("oauth schema", () => {
   it("keeps every credential table service-role only with RLS on", () => {
-    for (const table of ["oauth_clients", "oauth_client_redirect_uris", "oauth_grants", "oauth_authorization_requests", "oauth_authorization_codes", "oauth_tokens"]) {
+    for (const table of ["oauth_clients", "oauth_grants", "oauth_assertion_jtis", "cubid_oidc_subjects", "oauth_tokens"]) {
       expect(migration).toContain(`'${table}'`)
     }
     expect(migration).toContain("enable row level security")
@@ -131,16 +97,25 @@ describe("oauth schema", () => {
     expect(migration).toContain("grant select, insert, update, delete on table public.%I to service_role")
   })
 
-  it("requires S256 and rejects a secretless confidential client", () => {
-    expect(migration).toMatch(/code_challenge_method text not null default 'S256' check \(code_challenge_method = 'S256'\)/)
-    expect(migration).toContain("oauth_clients_secret_matches_type")
+  it("admits no client that cannot authenticate, and no token type but access", () => {
+    expect(migration).toContain("oauth_clients_secret_present")
+    expect(migration).toContain("client_type = 'confidential'")
+    // No refresh token: renewal means redeeming a fresh assertion, so consent is re-checked at
+    // Cubid rather than extended here.
+    expect(migration).toContain("check (token_type = 'access')")
+    expect(migration).not.toContain("rotated_to_id")
   })
 
-  it("validates each redirect URI on its own row", () => {
-    // A CHECK cannot contain a subquery, so per-element validation needs its own rows; and https
-    // only, apart from a loopback for native development, with no fragment.
-    expect(migration).toContain("create table public.oauth_client_redirect_uris")
-    expect(migration).toContain("^https://[^#]+$")
-    expect(migration).toContain("127\\.0\\.0\\.1")
+  it("makes a replayed assertion a constraint violation, not a race", () => {
+    expect(migration).toContain("create table public.oauth_assertion_jtis")
+    expect(migration).toContain("jti text not null primary key")
+  })
+
+  it("maps a Cubid pairwise subject to exactly one account, per issuer", () => {
+    // Nothing else in an assertion identifies the person, and the subject must not be inferred from
+    // an email address: that would defeat the pairwise scheme.
+    expect(migration).toContain("create table public.cubid_oidc_subjects")
+    expect(migration).toContain("unique (issuer, subject)")
+    expect(migration).toContain("unique (issuer, user_id)")
   })
 })
