@@ -6,10 +6,8 @@ import {
   apiError,
   decodeCursor,
   encodeCursor,
-  insufficientScope,
   isoOrNull,
   parseLimit,
-  rateLimited,
   requestId,
 } from "@/lib/api/v1/response"
 
@@ -55,19 +53,7 @@ describe("api v1 response contract", () => {
     expect(response.headers.get("X-Request-Id")).toBe(id)
   })
 
-  it("names the missing scope in the message and the challenge", async () => {
-    const response = insufficientScope("payout-routes:read")
-    expect(response.status).toBe(403)
-    expect(response.headers.get("WWW-Authenticate")).toBe('Bearer error="insufficient_scope", scope="payout-routes:read"')
-    const body = (await response.json()) as { error: { message: string } }
-    expect(body.error.message).toContain("payout-routes:read")
-  })
 
-  it("sends Retry-After as whole seconds, at least one", () => {
-    expect(rateLimited(0.2).headers.get("Retry-After")).toBe("1")
-    expect(rateLimited(30).headers.get("Retry-After")).toBe("30")
-    expect(rateLimited(1.2).headers.get("Retry-After")).toBe("2")
-  })
 
   it("round-trips opaque cursors and rejects junk", () => {
     const cursor = encodeCursor({ created_at: "2026-10-09T00:00:00.000Z", id: 42 })

@@ -137,3 +137,80 @@ The P1 was a real contract error, not a naming quibble: the endpoint would have 
 
 - Resolve the nine threads on #269 with what changed, merge into `dev`, then confirm `/api/v1/projects` answers 200 (not 307) on dev.fundloop.org.
 - Stage 2: the OAuth 2.1 server, validated through the CI fresh-schema replay.
+
+### session v4: Second review round on PR #269
+
+- **Timestamp:** 2026-10-09T17:05:00Z
+- **Agent:** Claude Code (Claude Opus 5)
+- **Branch:** `feat/266-api-v1-public-reads`
+- **Head before commit:** `db38ac9`
+
+---
+
+#### Objective
+
+Two reviews landed on the same head: five more Codex findings and an independent Claude deep review.
+Twelve threads, two of them P2. One was a disclosure I had argued against myself.
+
+---
+
+#### Actions Taken
+
+- **Dropped the `network` block.** `epoch_close_public_view` is anon-readable, but nothing in `app/`,
+  `components/` or `lib/` renders it — I verified this rather than taking the finding on trust. So the
+  endpoint was publishing network-wide pre-payout aggregates that fundloop.org never shows, on every
+  preview deployment including the dev.fundloop.org sandbox. That contradicts the one rule this
+  surface has. Exposing network totals deserves its own decision, not a side effect of shipping the
+  project endpoint.
+- **Replaced the application-side page with a database read model.** New migration
+  `20261009130000_api_v1_public_projects_page.sql`: a SECURITY INVOKER function that does the keyset
+  page, the search predicate (the same four fields the website matches, with the caller's `%` and `_`
+  escaped) and the member count in one statement. PostgREST caps every read at 1,000 rows
+  (`supabase/config.toml:96`), so the previous approach silently truncated once the directory passed
+  the cap: a match beyond it could never appear, and member counts assembled from a capped
+  membership read would understate or read zero. This fixes three findings at once and removes the
+  unauthenticated full-table path.
+- **Stateless anon client for public reads** (`lib/supabase-public-read.ts`). The SSR client is bound
+  to the caller's cookies, so a signed-in browser ran these reads as `authenticated`, a token refresh
+  could attach `Set-Cookie` to an API response, and a cookie-varying response cannot be cached.
+- **Cacheable tokenless reads**: `public, s-maxage=60, stale-while-revalidate=300` on both public
+  endpoints, which is what keeps an unauthenticated endpoint from turning every request into database
+  work. The advertised 429 is gone: nothing returns it, and documenting a rate limit that does not
+  exist is a promise the API cannot keep.
+- **Public id is the slug, with no numeric alias.** `epoch_close_public_project_view` keys on the
+  slug, so a slug-less project was listed under a numeric id that could never resolve to its cycle —
+  and the website's own project page cannot render it either. The read model excludes projects
+  without a slug, and `loadPublicProjectRef` resolves slugs only.
+- Cursor keys must be safe integers (`1e21` passed `Number.isInteger` and became a 500); any digit
+  string clamps to the maximum limit rather than 101-9999 clamping and 10000 failing; unknown
+  `/api/v1` paths and unsupported methods answer inside the error envelope
+  (`app/api/v1/[...unmatched]/route.ts`, `methodNotAllowed`); `openapi.json` carries `X-Request-Id`;
+  the cycle payload carries a constant `currency: "USD"`; `website` and `logo_url` lost `format: uri`,
+  which the stored values do not guarantee; the OpenAPI documents 405, 422 and 500.
+- Removed `isSandboxDeployment`, `insufficientScope` and `rateLimited`: no callers, and the sandbox
+  environment list disagreed with `isEpochClosePreviewEnabled`. Stage 2 adds them where they are used.
+
+---
+
+#### Validation Notes
+
+- Typecheck and lint clean. Suites rewritten for the read model and the new behaviours.
+- `types/supabase.ts` does not know the new function, so the RPC call carries one documented cast.
+  Regenerating the types needs a Supabase stack, which this host cannot host right now; CI's
+  fresh-schema replay validates the migration itself.
+- Workers capped at 2 per the host rule; no full jsdom suite locally.
+
+---
+
+#### Reflections
+
+The `network` block is the one worth remembering. I wrote the rule into the module header — never
+publish more than fundloop.org already shows — and then broke it in the same file, because the view
+was anon-readable and the data looked harmless. Readable by anon is not the same as published.
+
+---
+
+#### Suggested Next Steps
+
+- Reply to and resolve all twelve threads, then merge when the six conditions hold.
+- Stage 2 (the OAuth server) resumes after #269 lands; its branch is already cut.

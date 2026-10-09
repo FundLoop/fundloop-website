@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest"
-import { apiServers, isSandboxDeployment, publicApiBaseUrl, sandboxApiBaseUrl } from "@/lib/api/v1/config"
+import { apiServers, publicApiBaseUrl, sandboxApiBaseUrl } from "@/lib/api/v1/config"
 
 describe("public api hosts are configuration", () => {
   it("defaults to the production and sandbox hosts", () => {
@@ -26,13 +26,5 @@ describe("public api hosts are configuration", () => {
     const single = apiServers({ FUNDLOOP_SANDBOX_API_BASE_URL: "https://www.fundloop.org" })
     expect(single).toHaveLength(1)
     expect(single[0].description).toBe("Production")
-  })
-
-  it("knows which deployments are the sandbox", () => {
-    expect(isSandboxDeployment({ FUNDLOOP_DEPLOYMENT_ENV: "dev" })).toBe(true)
-    expect(isSandboxDeployment({ FUNDLOOP_DEPLOYMENT_ENV: "Local" })).toBe(true)
-    expect(isSandboxDeployment({ FUNDLOOP_DEPLOYMENT_ENV: "preview" })).toBe(true)
-    expect(isSandboxDeployment({ FUNDLOOP_DEPLOYMENT_ENV: "main" })).toBe(false)
-    expect(isSandboxDeployment({})).toBe(false)
   })
 })

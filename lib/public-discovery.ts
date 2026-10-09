@@ -2,6 +2,7 @@ import "server-only"
 
 import { cache } from "react"
 import { createServerSupabaseClient } from "@/lib/supabase-server"
+import { getPublicReadSupabaseClient } from "@/lib/supabase-public-read"
 import { canReadInvitationReviewSharing, isReviewPolicyPreviewEnabled } from "@/lib/policies/review-policy"
 import { invokeProjectMemberSharedProfilesReadServer } from "@/lib/edge-functions/project-member-shared-profiles-read-server"
 
@@ -244,9 +245,28 @@ export async function getPublicProjectsDirectoryData(options: {
 
 export type PublicProjectsPage = { projects: PublicDiscoveryProject[]; hasMore: boolean }
 
-// One keyset page of public projects, newest first. The key is the project id: unique, never null,
-// and monotonic with creation, so a cursor always resumes at exactly one place. Only this page's
-// rows, categories and member counts are read, so a listing never costs the whole directory.
+type PublicProjectsPageRow = {
+  id: number
+  slug: string
+  name: string
+  description: string
+  logo_url: string | null
+  website: string | null
+  category_name: string | null
+  created_at: string | null
+  member_count: number | string | null
+}
+
+// One keyset page of public projects for the API (#266), newest first.
+//
+// The paging, the search predicate and the member count all run in api_v1_public_projects_page,
+// because PostgREST caps every read at 1,000 rows: assembling a page in application code silently
+// truncates once the directory passes the cap, so a match beyond it could never appear and a member
+// count built from a capped membership read would understate. The function is SECURITY INVOKER, so
+// anon's own grants and RLS still decide what it can see.
+//
+// Projects without a slug are not listed: the public id is the slug, and a slug-less project can
+// be addressed neither by this API nor by the website's own project page.
 export async function loadPublicProjectsPage(options: {
   limit: number
   afterId?: number | null
@@ -254,103 +274,64 @@ export async function loadPublicProjectsPage(options: {
 }): Promise<PublicProjectsPage> {
   const limit = Math.max(1, Math.trunc(options.limit))
   const afterId = options.afterId && options.afterId > 0 ? options.afterId : null
-  const searchTerm = normalizeSearchTerm(options.search ?? undefined)
+  const search = normalizeSearchTerm(options.search ?? undefined)
 
-  // A search matches category names and detailed descriptions in application code, exactly as the
-  // website does. Pushing it into database filters would quietly change which projects a search
-  // finds, so a searched listing still ranges over the filtered directory.
-  if (searchTerm) {
-    const directory = await loadPublicProjectsDirectory({ search: searchTerm })
-    const ordered = [...directory.projects].sort((left, right) => right.id - left.id)
-    const remaining = afterId === null ? ordered : ordered.filter((project) => project.id < afterId)
-    return { projects: remaining.slice(0, limit), hasMore: remaining.length > limit }
+  // types/supabase.ts predates this function; regenerate it against the migration and drop the
+  // cast (`supabase gen types typescript`). The row type below mirrors the function's RETURNS TABLE.
+  const client = getPublicReadSupabaseClient() as unknown as {
+    rpc: (name: string, args: Record<string, unknown>) => PromiseLike<{ data: PublicProjectsPageRow[] | null; error: { message: string } | null }>
   }
 
-  const supabase = await createServerSupabaseClient()
-  let query = supabase
-    .from("projects")
-    .select(PUBLIC_PROJECT_SELECT)
-    .eq("status", "active")
-    .eq("is_public", true)
-    .is("deleted_at", null)
-    .order("id", { ascending: false })
-    .limit(limit + 1)
-
-  if (afterId !== null) {
-    query = query.lt("id", afterId)
-  }
-
-  const { data: rows, error } = await query
+  const { data, error } = await client.rpc("api_v1_public_projects_page", {
+    p_search: search === "" ? null : search,
+    p_after_id: afterId,
+    // One row beyond the page answers "is there a next page" without a second count query.
+    p_limit: limit + 1,
+  })
 
   if (error) {
     throw new Error(error.message)
   }
 
-  const found = rows ?? []
-  const pageRows = found.slice(0, limit)
-  const projectIds = pageRows.map((row) => row.id)
-  const categoryIds = [...new Set(pageRows.map((row) => row.category_id).filter((value): value is number => value != null))]
-
-  const { data: categories, error: categoriesError } =
-    categoryIds.length > 0 ? await supabase.from("ref_categories").select("id, name").in("id", categoryIds) : { data: [], error: null }
-
-  if (categoriesError) {
-    throw new Error(categoriesError.message)
-  }
-
-  const { data: participantRows, error: participantError } =
-    projectIds.length > 0
-      ? await supabase.from("project_active_members").select("project_id, user_id").in("project_id", projectIds)
-      : { data: [], error: null }
-
-  if (participantError) {
-    throw new Error(participantError.message)
-  }
-
-  const categoryMap = new Map((categories ?? []).map((category) => [category.id, category.name]))
-  const participantCounts = countMembersByProject(participantRows ?? [])
-
+  const rows = data ?? []
   return {
-    projects: pageRows.map((row) =>
-      toDiscoveryProject(
-        row,
-        row.category_id ? categoryMap.get(row.category_id) ?? null : null,
-        participantCounts.get(row.id)?.size ?? 0,
-      ),
-    ),
-    hasMore: found.length > limit,
+    projects: rows.slice(0, limit).map((row) => ({
+      id: row.id,
+      slug: row.slug,
+      name: row.name,
+      description: row.description ?? "",
+      detailedDescription: "",
+      isPublic: true,
+      logoUrl: row.logo_url,
+      website: row.website,
+      categoryId: null,
+      categoryName: row.category_name,
+      createdAt: row.created_at,
+      participantCount: Number(row.member_count ?? 0),
+    })),
+    hasMore: rows.length > limit,
   }
 }
 
-// Resolve one public project by its public id. An exact slug wins: a numeric id must never shadow a
-// project whose slug is that same string. Projects without a slug are listed under their numeric
-// id, so that id still has to resolve.
-export async function loadPublicProjectRef(idOrSlug: string): Promise<{ id: number; slug: string } | null> {
-  const supabase = await createServerSupabaseClient()
-  const publicProjects = () =>
-    supabase.from("projects").select("id, slug").eq("status", "active").eq("is_public", true).is("deleted_at", null)
+// Resolve one public project by its public id, which is its slug. A numeric id is not an alias:
+// `epoch_close_public_project_view` keys on the slug, so a numeric fallback id could be listed but
+// never resolve to its cycle, and the website's own project page is addressed by slug too.
+export async function loadPublicProjectRef(slug: string): Promise<{ id: number; slug: string } | null> {
+  const { data, error } = await getPublicReadSupabaseClient()
+    .from("projects")
+    .select("id, slug")
+    .eq("status", "active")
+    .eq("is_public", true)
+    .is("deleted_at", null)
+    .eq("slug", slug)
+    .limit(1)
+    .maybeSingle()
 
-  const bySlug = await publicProjects().eq("slug", idOrSlug).limit(1).maybeSingle()
-
-  if (bySlug.error) {
-    throw new Error(bySlug.error.message)
+  if (error) {
+    throw new Error(error.message)
   }
 
-  if (bySlug.data) {
-    return { id: bySlug.data.id, slug: bySlug.data.slug ?? String(bySlug.data.id) }
-  }
-
-  if (!/^\d{1,15}$/.test(idOrSlug)) {
-    return null
-  }
-
-  const byId = await publicProjects().eq("id", Number(idOrSlug)).limit(1).maybeSingle()
-
-  if (byId.error) {
-    throw new Error(byId.error.message)
-  }
-
-  return byId.data ? { id: byId.data.id, slug: byId.data.slug ?? String(byId.data.id) } : null
+  return data?.slug ? { id: data.id, slug: data.slug } : null
 }
 
 export const getPublicProjectDetail = cache(async (slug: string): Promise<PublicProjectDetail | null> => {
