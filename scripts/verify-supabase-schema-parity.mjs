@@ -44,21 +44,81 @@ function normalizePublicSchemaV1(dump) {
 // ensure_rls event trigger and its public.rls_auto_enable function); an older project does not
 // (FundLoop Dev, created 2025-04). No migration creates them, and a fresh replay of our migrations
 // never has them, so comparing them reports the platform's own provisioning as drift in our schema.
-// Deliberately narrow: only these exact identities are dropped, from the public schema dump of both
-// sides, so any other object the platform or anyone else adds still has to be accounted for.
-// Zero-argument signature only: an overload such as public.rls_auto_enable(text) is not the
-// platform's object, so it has to stay in the comparison and be accounted for like anything else.
-const PLATFORM_MANAGED_PUBLIC_OBJECTS = [/^public\.rls_auto_enable\(\) \[FUNCTION\]$/]
+//
+// An identity is never enough to drop an object: a replaced SECURITY DEFINER body, or a function a
+// migration starts creating under the same name, would be hidden by a name match. Every entry is
+// therefore pinned to the platform's exact definition digest and catalog attributes, verified
+// against the observed database before anything is stripped, and recorded in the parity evidence.
+// Re-pinning after a platform change is a reviewed change, and until it happens the object stays in
+// the comparison and parity fails loudly.
+const PLATFORM_MANAGED_PUBLIC_OBJECTS = [{
+  identity: "public.rls_auto_enable() [FUNCTION]",
+  name: "rls_auto_enable",
+  identityArguments: "",
+  securityDefiner: true,
+  owner: "postgres",
+  config: "search_path=pg_catalog",
+  eventTrigger: "ensure_rls",
+  definitionSha256: "dd9ce3fd3905d621611cf0ea2e7591bada6d61f827445cfa2afe27e69b03f271",
+}]
 
-export function stripPlatformManagedObjects(dump) {
+function dumpSectionIdentities(dump) {
+  const identities = []
+  for (const line of dump.replace(/\r\n?/g, "\n").split("\n")) {
+    const header = line.match(/^-- Name: (.*); Type: (.*); Schema: (.*); Owner: .*$/)
+    if (header) identities.push(`${header[3]}.${header[1]} [${header[2]}]`)
+  }
+  return identities
+}
+
+export function platformManagedCandidates(dump) {
+  const identities = new Set(dumpSectionIdentities(dump))
+  return PLATFORM_MANAGED_PUBLIC_OBJECTS.filter((entry) => identities.has(entry.identity))
+}
+
+// A fresh replay of our migrations must never contain one of these identities. If it does, a
+// migration now owns that name and the allowlist entry has to go, or parity would stop covering an
+// object we create.
+export function assertNoPlatformManagedObjects(dump, label) {
+  const found = platformManagedCandidates(dump)
+  if (found.length > 0) {
+    throw new Error(`platform-managed identity present in ${label}: ${found.map((entry) => entry.identity).join(", ")}; a migration now creates it, so remove the allowlist entry instead of excluding it`)
+  }
+  return dump
+}
+
+// The values are repo-owned constants, not input, but the literals are quoted anyway so the query
+// cannot be reshaped by editing an allowlist entry.
+function quoteLiteral(value) {
+  return `'${String(value).replace(/'/g, "''")}'`
+}
+
+export function platformManagedProvenanceSql(entry) {
+  return `select format('%s|%s|%s|%s|%s|%s', pg_get_function_identity_arguments(p.oid), p.prosecdef, pg_get_userbyid(p.proowner), coalesce(array_to_string(p.proconfig, ','), '-'), coalesce((select et.evtname from pg_event_trigger et where et.evtfoid = p.oid), '-'), encode(sha256(convert_to(pg_get_functiondef(p.oid), 'UTF8')), 'hex')) from pg_proc p where p.pronamespace = 'public'::regnamespace and p.proname = ${quoteLiteral(entry.name)} and pg_get_function_identity_arguments(p.oid) = ${quoteLiteral(entry.identityArguments)}`
+}
+
+export function evaluatePlatformManagedProvenance(entry, output) {
+  const rows = String(output ?? "").split("\n").map((row) => row.trim()).filter((row) => row.length > 0)
+  if (rows.length !== 1) return { ok: false, reason: rows.length === 0 ? "not-found" : "ambiguous" }
+  const [identityArguments, securityDefiner, owner, config, eventTrigger, definitionSha256] = rows[0].split("|")
+  if (identityArguments !== entry.identityArguments) return { ok: false, reason: "signature" }
+  if ((securityDefiner === "t") !== entry.securityDefiner) return { ok: false, reason: "security-definer" }
+  if (owner !== entry.owner) return { ok: false, reason: "owner" }
+  if (config !== entry.config) return { ok: false, reason: "config" }
+  if (eventTrigger !== entry.eventTrigger) return { ok: false, reason: "event-trigger" }
+  if (definitionSha256 !== entry.definitionSha256) return { ok: false, reason: "definition-digest" }
+  return { ok: true, definitionSha256 }
+}
+
+// Drops only the identities named, each already verified by the caller.
+export function stripPlatformManagedObjects(dump, identities = []) {
+  const dropped = new Set(identities)
+  if (dropped.size === 0) return dump
   const kept = []
   let dropping = false
   for (const line of dump.replace(/\r\n?/g, "\n").split("\n")) {
     const header = line.match(/^-- Name: (.*); Type: (.*); Schema: (.*); Owner: .*$/)
-    if (header) {
-      const identity = `${header[3]}.${header[1]} [${header[2]}]`
-      dropping = PLATFORM_MANAGED_PUBLIC_OBJECTS.some((pattern) => pattern.test(identity))
-    }
+    if (header) dropping = dropped.has(`${header[3]}.${header[1]} [${header[2]}]`)
     if (!dropping) kept.push(line)
   }
   return kept.join("\n")
@@ -356,9 +416,32 @@ function containerLibpqConnection(projectId, dbUrl) {
 
 function dumpPublicSchemaFromParityContainer(projectId, dbUrl) {
   const connection = containerLibpqConnection(projectId, dbUrl)
-  // Stripped at the dump boundary so the fingerprint, the object manifest and the sanitized
-  // diagnostic all describe the same schema: ours.
-  return stripPlatformManagedObjects(run("docker", [...connection.args, "pg_dump", "--schema-only", "--schema=public", "--no-owner", "--no-privileges", "--no-comments"], { encoding: "utf8", env: connection.env }))
+  return run("docker", [...connection.args, "pg_dump", "--schema-only", "--schema=public", "--no-owner", "--no-privileges", "--no-comments"], { encoding: "utf8", env: connection.env })
+}
+
+// The expected side is a fresh replay of our migrations, so it must contain none of these.
+function dumpExpectedPublicSchema(projectId, dbUrl, label) {
+  return assertNoPlatformManagedObjects(dumpPublicSchemaFromParityContainer(projectId, dbUrl), label)
+}
+
+// The observed side may carry them. Each is verified against the observed catalog and then stripped
+// at the dump boundary, so the fingerprint, the object manifest and the sanitized diagnostic all
+// describe the same schema: ours. An object that fails verification is left in, and the fingerprint
+// reports it as drift.
+function dumpObservedPublicSchema(projectId, dbUrl) {
+  const dump = dumpPublicSchemaFromParityContainer(projectId, dbUrl)
+  const verified = []
+  const exclusions = []
+  for (const entry of platformManagedCandidates(dump)) {
+    const verdict = evaluatePlatformManagedProvenance(entry, psqlFromParityContainer(projectId, dbUrl, platformManagedProvenanceSql(entry)))
+    if (!verdict.ok) {
+      console.log(`::warning::platform-managed object ${entry.identity} failed provenance (${verdict.reason}); left in the schema comparison`)
+      continue
+    }
+    verified.push(entry.identity)
+    exclusions.push({ identity: entry.identity, eventTrigger: entry.eventTrigger, definitionSha256: verdict.definitionSha256 })
+  }
+  return { dump: stripPlatformManagedObjects(dump, verified), exclusions }
 }
 
 function pgDumpVersionFromParityContainer(projectId) {
@@ -675,7 +758,7 @@ sql_paths = []
       throw new Error(`Migration history drift: expected=${expectedVersions.join(",")} observed=${observedVersions.join(",")}`)
     }
     let forwardPendingValidation = null
-    let expectedDump = dumpPublicSchemaFromParityContainer(projectId, "postgresql://postgres:postgres@127.0.0.1:5432/postgres")
+    let expectedDump = dumpExpectedPublicSchema(projectId, "postgresql://postgres:postgres@127.0.0.1:5432/postgres", "fresh migration replay")
     if (hasForwardPendingMigrations && !repairIsOnlyPendingMigration) {
       const baselineMigrations = expectedMigrations.slice(0, observedVersions.length)
       const baselineInventorySha256 = migrationInventorySha256(baselineMigrations)
@@ -691,7 +774,7 @@ sql_paths = []
         copyFileSync(path.join(process.cwd(), "supabase/migrations", migration.name), path.join(baselineSupabase, "migrations", migration.name))
       }
       run("supabase", ["db", "push", "--yes", "--include-all", "--db-url", baselineLocalDbUrl, "--workdir", baselineRoot], { env: localEnv })
-      expectedDump = dumpPublicSchemaFromParityContainer(baselineProjectId, "postgresql://postgres:postgres@127.0.0.1:5432/postgres")
+      expectedDump = dumpExpectedPublicSchema(baselineProjectId, "postgresql://postgres:postgres@127.0.0.1:5432/postgres", "reviewed baseline replay")
     }
     let expectedEvidence
     if (!diagnosticMode && !driftMode) {
@@ -712,7 +795,8 @@ sql_paths = []
       ? assertValueFlowDisabledWithQuery((sql) => psqlFromParityContainer(projectId, remoteDbUrl, sql))
       : assertValueFlowDisabled(remoteDbUrl)
 
-    const observedDump = dumpPublicSchemaFromParityContainer(projectId, remoteDumpDbUrl)
+    const observed = dumpObservedPublicSchema(projectId, remoteDumpDbUrl)
+    const observedDump = observed.dump
     const diagnostic = buildSchemaDiagnostic(expectedDump, observedDump, {
       candidateGitSha: process.env.OBSERVATION_GIT_SHA ?? process.env.GITHUB_SHA,
       environment: targetEnvironment,
@@ -725,6 +809,7 @@ sql_paths = []
         ? migrationInventorySha256(expectedMigrations.slice(0, -1))
         : null,
       enabledProductionValueFlowControlCount: valueFlowControls.enabledCount,
+      platformManagedExclusions: observed.exclusions,
     })
     const pendingRepairValidated = diagnostic.status === "drift"
       && validatePendingSchemaRepair(repairManifest, diagnostic, observedVersions, expectedVersions)
@@ -759,6 +844,9 @@ sql_paths = []
       projectRef,
       postgresMajor: 17,
       algorithm: "pg17-public-schema-platform-filtered-v3",
+      // Not discarded silently: the attestation states which platform-provisioned objects were
+      // excluded and the definition digest each one was verified against.
+      platformManagedExclusions: observed.exclusions,
       pgDumpVersion: diagnostic.pgDumpVersion,
       expectedSha256,
       observedSha256,
