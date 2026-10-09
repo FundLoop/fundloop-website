@@ -3,6 +3,8 @@ import { apiData, apiError, requestId } from "@/lib/api/v1/response"
 
 // GET /api/v1/projects/{projectId}/cycle — public, no token (#266).
 // projectId is the project's slug, as returned by /api/v1/projects; a numeric id also resolves.
+// The answer is the latest provisional (pre-payout) epoch-close package the website publishes for
+// this project, or null where there is none to publish.
 export const dynamic = "force-dynamic"
 
 export async function GET(_request: Request, context: { params: Promise<{ projectId: string }> }) {
@@ -20,7 +22,7 @@ export async function GET(_request: Request, context: { params: Promise<{ projec
       }
       return apiError("internal_error", "Cycle status could not be read.", { requestId: id })
     }
-    // A public project with no closed cycle yet is a valid answer, not a 404.
+    // A public project with no published cycle is a valid answer, not a 404.
     return apiData(result.cycle, { requestId: id })
   } catch {
     return apiError("internal_error", "Cycle status could not be read.", { requestId: id })

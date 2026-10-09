@@ -107,7 +107,56 @@ function userMatchesSearch(user: PublicDiscoveryUser, search: string) {
     .includes(search)
 }
 
-export async function getPublicProjectsDirectoryData({
+const PUBLIC_PROJECT_SELECT =
+  "id, slug, name, description, detailed_description, logo_url, website, category_id, created_at"
+
+type PublicProjectRow = {
+  id: number
+  slug: string | null
+  name: string
+  description: string
+  detailed_description: string | null
+  logo_url: string | null
+  website: string | null
+  category_id: number | null
+  created_at: string | null
+}
+
+function toDiscoveryProject(row: PublicProjectRow, categoryName: string | null, participantCount: number): PublicDiscoveryProject {
+  return {
+    id: row.id,
+    slug: row.slug ?? String(row.id),
+    name: row.name,
+    description: row.description ?? "",
+    detailedDescription: row.detailed_description ?? "",
+    isPublic: true,
+    logoUrl: row.logo_url,
+    website: row.website,
+    categoryId: row.category_id,
+    categoryName: row.category_id ? categoryName : null,
+    createdAt: row.created_at,
+    participantCount,
+  }
+}
+
+function countMembersByProject(rows: Array<{ project_id: number | null; user_id: string | null }>) {
+  const counts = new Map<number, Set<string>>()
+  for (const row of rows) {
+    if (row.project_id == null || row.user_id == null) {
+      continue
+    }
+
+    const current = counts.get(row.project_id) ?? new Set<string>()
+    current.add(row.user_id)
+    counts.set(row.project_id, current)
+  }
+
+  return counts
+}
+
+// Throwing variant of the public directory read. The public API (#266) needs a database failure to
+// surface as a 5xx rather than as an empty directory, which a client cannot tell from "no projects".
+export async function loadPublicProjectsDirectory({
   categoryId,
   search,
   sort,
@@ -116,90 +165,192 @@ export async function getPublicProjectsDirectoryData({
   search?: string
   sort?: "recent" | "oldest" | "name"
 }): Promise<PublicProjectsDirectoryData> {
+  const supabase = await createServerSupabaseClient()
+
+  const [{ data: projectRows, error: projectError }, { data: categories, error: categoriesError }] = await Promise.all([
+    supabase
+      .from("projects")
+      .select(PUBLIC_PROJECT_SELECT)
+      .eq("status", "active")
+      .eq("is_public", true)
+      .is("deleted_at", null),
+    supabase.from("ref_categories").select("id, name").order("name"),
+  ])
+
+  if (projectError) {
+    throw new Error(projectError.message)
+  }
+
+  if (categoriesError) {
+    throw new Error(categoriesError.message)
+  }
+
+  const categoryMap = new Map((categories ?? []).map((category) => [category.id, category.name]))
+  const projectIds = (projectRows ?? []).map((project) => project.id)
+
+  const { data: participantRows, error: participantError } =
+    projectIds.length > 0
+      ? await supabase.from("project_active_members").select("project_id, user_id").in("project_id", projectIds)
+      : { data: [], error: null }
+
+  if (participantError) {
+    throw new Error(participantError.message)
+  }
+
+  const participantCounts = countMembersByProject(participantRows ?? [])
+  const searchTerm = normalizeSearchTerm(search)
+
+  const projects = (projectRows ?? [])
+    .filter((project) => (categoryId ? project.category_id === categoryId : true))
+    .map<PublicDiscoveryProject>((project) =>
+      toDiscoveryProject(
+        project,
+        project.category_id ? categoryMap.get(project.category_id) ?? null : null,
+        participantCounts.get(project.id)?.size ?? 0,
+      ),
+    )
+    .filter((project) => projectMatchesSearch(project, searchTerm))
+
+  const sortedProjects = [...projects].sort((left, right) => {
+    if (sort === "oldest") {
+      return new Date(left.createdAt ?? 0).getTime() - new Date(right.createdAt ?? 0).getTime()
+    }
+
+    if (sort === "name") {
+      return left.name.localeCompare(right.name)
+    }
+
+    return new Date(right.createdAt ?? 0).getTime() - new Date(left.createdAt ?? 0).getTime()
+  })
+
+  return {
+    categories: categories ?? [],
+    projects: sortedProjects,
+  }
+}
+
+export async function getPublicProjectsDirectoryData(options: {
+  categoryId?: number | null
+  search?: string
+  sort?: "recent" | "oldest" | "name"
+}): Promise<PublicProjectsDirectoryData> {
   try {
-    const supabase = await createServerSupabaseClient()
-
-    const [{ data: projectRows, error: projectError }, { data: categories, error: categoriesError }] = await Promise.all([
-      supabase
-        .from("projects")
-        .select("id, slug, name, description, detailed_description, logo_url, website, category_id, created_at")
-        .eq("status", "active")
-        .eq("is_public", true)
-        .is("deleted_at", null),
-      supabase.from("ref_categories").select("id, name").order("name"),
-    ])
-
-    if (projectError) {
-      throw new Error(projectError.message)
-    }
-
-    if (categoriesError) {
-      throw new Error(categoriesError.message)
-    }
-
-    const categoryMap = new Map((categories ?? []).map((category) => [category.id, category.name]))
-    const projectIds = (projectRows ?? []).map((project) => project.id)
-
-    const { data: participantRows, error: participantError } =
-      projectIds.length > 0
-        ? await supabase.from("project_active_members").select("project_id, user_id").in("project_id", projectIds)
-        : { data: [], error: null }
-
-    if (participantError) {
-      throw new Error(participantError.message)
-    }
-
-    const participantCounts = new Map<number, Set<string>>()
-    for (const row of participantRows ?? []) {
-      if (row.project_id == null || row.user_id == null) {
-        continue
-      }
-
-      const current = participantCounts.get(row.project_id) ?? new Set<string>()
-      current.add(row.user_id)
-      participantCounts.set(row.project_id, current)
-    }
-
-    const searchTerm = normalizeSearchTerm(search)
-
-    const projects = (projectRows ?? [])
-      .filter((project) => (categoryId ? project.category_id === categoryId : true))
-      .map<PublicDiscoveryProject>((project) => ({
-        id: project.id,
-        slug: project.slug ?? String(project.id),
-        name: project.name,
-        description: project.description ?? "",
-        detailedDescription: project.detailed_description ?? "",
-        isPublic: true,
-        logoUrl: project.logo_url,
-        website: project.website,
-        categoryId: project.category_id,
-        categoryName: project.category_id ? categoryMap.get(project.category_id) ?? null : null,
-        createdAt: project.created_at,
-        participantCount: participantCounts.get(project.id)?.size ?? 0,
-      }))
-      .filter((project) => projectMatchesSearch(project, searchTerm))
-
-    const sortedProjects = [...projects].sort((left, right) => {
-      if (sort === "oldest") {
-        return new Date(left.createdAt ?? 0).getTime() - new Date(right.createdAt ?? 0).getTime()
-      }
-
-      if (sort === "name") {
-        return left.name.localeCompare(right.name)
-      }
-
-      return new Date(right.createdAt ?? 0).getTime() - new Date(left.createdAt ?? 0).getTime()
-    })
-
-    return {
-      categories: categories ?? [],
-      projects: sortedProjects,
-    }
+    return await loadPublicProjectsDirectory(options)
   } catch (error) {
     logPublicDiscoveryError("projects-directory", error)
     return { categories: [], projects: [] }
   }
+}
+
+export type PublicProjectsPage = { projects: PublicDiscoveryProject[]; hasMore: boolean }
+
+// One keyset page of public projects, newest first. The key is the project id: unique, never null,
+// and monotonic with creation, so a cursor always resumes at exactly one place. Only this page's
+// rows, categories and member counts are read, so a listing never costs the whole directory.
+export async function loadPublicProjectsPage(options: {
+  limit: number
+  afterId?: number | null
+  search?: string | null
+}): Promise<PublicProjectsPage> {
+  const limit = Math.max(1, Math.trunc(options.limit))
+  const afterId = options.afterId && options.afterId > 0 ? options.afterId : null
+  const searchTerm = normalizeSearchTerm(options.search ?? undefined)
+
+  // A search matches category names and detailed descriptions in application code, exactly as the
+  // website does. Pushing it into database filters would quietly change which projects a search
+  // finds, so a searched listing still ranges over the filtered directory.
+  if (searchTerm) {
+    const directory = await loadPublicProjectsDirectory({ search: searchTerm })
+    const ordered = [...directory.projects].sort((left, right) => right.id - left.id)
+    const remaining = afterId === null ? ordered : ordered.filter((project) => project.id < afterId)
+    return { projects: remaining.slice(0, limit), hasMore: remaining.length > limit }
+  }
+
+  const supabase = await createServerSupabaseClient()
+  let query = supabase
+    .from("projects")
+    .select(PUBLIC_PROJECT_SELECT)
+    .eq("status", "active")
+    .eq("is_public", true)
+    .is("deleted_at", null)
+    .order("id", { ascending: false })
+    .limit(limit + 1)
+
+  if (afterId !== null) {
+    query = query.lt("id", afterId)
+  }
+
+  const { data: rows, error } = await query
+
+  if (error) {
+    throw new Error(error.message)
+  }
+
+  const found = rows ?? []
+  const pageRows = found.slice(0, limit)
+  const projectIds = pageRows.map((row) => row.id)
+  const categoryIds = [...new Set(pageRows.map((row) => row.category_id).filter((value): value is number => value != null))]
+
+  const { data: categories, error: categoriesError } =
+    categoryIds.length > 0 ? await supabase.from("ref_categories").select("id, name").in("id", categoryIds) : { data: [], error: null }
+
+  if (categoriesError) {
+    throw new Error(categoriesError.message)
+  }
+
+  const { data: participantRows, error: participantError } =
+    projectIds.length > 0
+      ? await supabase.from("project_active_members").select("project_id, user_id").in("project_id", projectIds)
+      : { data: [], error: null }
+
+  if (participantError) {
+    throw new Error(participantError.message)
+  }
+
+  const categoryMap = new Map((categories ?? []).map((category) => [category.id, category.name]))
+  const participantCounts = countMembersByProject(participantRows ?? [])
+
+  return {
+    projects: pageRows.map((row) =>
+      toDiscoveryProject(
+        row,
+        row.category_id ? categoryMap.get(row.category_id) ?? null : null,
+        participantCounts.get(row.id)?.size ?? 0,
+      ),
+    ),
+    hasMore: found.length > limit,
+  }
+}
+
+// Resolve one public project by its public id. An exact slug wins: a numeric id must never shadow a
+// project whose slug is that same string. Projects without a slug are listed under their numeric
+// id, so that id still has to resolve.
+export async function loadPublicProjectRef(idOrSlug: string): Promise<{ id: number; slug: string } | null> {
+  const supabase = await createServerSupabaseClient()
+  const publicProjects = () =>
+    supabase.from("projects").select("id, slug").eq("status", "active").eq("is_public", true).is("deleted_at", null)
+
+  const bySlug = await publicProjects().eq("slug", idOrSlug).limit(1).maybeSingle()
+
+  if (bySlug.error) {
+    throw new Error(bySlug.error.message)
+  }
+
+  if (bySlug.data) {
+    return { id: bySlug.data.id, slug: bySlug.data.slug ?? String(bySlug.data.id) }
+  }
+
+  if (!/^\d{1,15}$/.test(idOrSlug)) {
+    return null
+  }
+
+  const byId = await publicProjects().eq("id", Number(idOrSlug)).limit(1).maybeSingle()
+
+  if (byId.error) {
+    throw new Error(byId.error.message)
+  }
+
+  return byId.data ? { id: byId.data.id, slug: byId.data.slug ?? String(byId.data.id) } : null
 }
 
 export const getPublicProjectDetail = cache(async (slug: string): Promise<PublicProjectDetail | null> => {
