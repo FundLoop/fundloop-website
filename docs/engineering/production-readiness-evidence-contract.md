@@ -66,7 +66,8 @@ a non-null remote version.
 
 ### 2.4 Public-schema fingerprint
 
-`pg17-public-schema-normalized-v2` requires PostgreSQL client major 17 and:
+`pg17-public-schema-platform-filtered-v3` is the current algorithm. It requires
+PostgreSQL client major 17 and:
 
 ```bash
 pg_dump --schema-only --schema=public --no-owner --no-privileges --no-comments "$DATABASE_URL"
@@ -81,6 +82,26 @@ role OIDs), and ending with one LF. Hash those UTF-8 bytes as
 from a fresh replay; observed is generated read-only from the target. Any other
 mismatch is blocking until a reviewed nondeterminism is removed from the algorithm
 itself; do not whitelist an environment's unexplained output.
+
+Version 3 adds one step before hashing: drop the dump section of each object the
+Supabase platform provisions inside the public schema, from both sides. The list is
+exact identities, not patterns over a name:
+
+- `public.rls_auto_enable()` — the event-trigger function behind the platform's
+  `ensure_rls`, present on projects created after the platform began installing it and
+  absent on older ones, created by no migration and owned by no extension.
+
+An overloaded or differently named object is not on the list and stays in the
+comparison, so it still has to be accounted for. Adding an entry is a reviewed change
+that requires establishing that the platform owns the object: no migration creates it,
+and it exists on a project before any migration has run. This is the sanctioned
+"remove the nondeterminism from the algorithm itself" path, not an environment
+whitelist — the strip is identical for expected and observed, on every environment.
+
+Version 2 (`pg17-public-schema-normalized-v2`) is the same normalization over the
+unfiltered dump. A v2 attestation covers every object in the public schema including
+platform-provisioned ones, so v2 and v3 records are not comparable and consumers must
+not treat one as the other. Existing v2 attestations stay as recorded.
 
 ## 3. Deployment binding
 

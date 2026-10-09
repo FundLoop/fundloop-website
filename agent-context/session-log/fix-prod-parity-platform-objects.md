@@ -85,3 +85,63 @@ own. Worth keeping the list narrow — the value of this check is that an unexpl
   is per-run.
 - On that run, verify migration 116 applies, parity passes, and the Edge Functions and evidence
   steps complete.
+
+### session v2: Codex review on PR #270
+
+- **Timestamp:** 2026-10-09T16:10:00Z
+- **Agent:** Claude Code (Claude Opus 5)
+- **Branch:** `fix/prod-parity-platform-objects`
+- **Head before commit:** `5525947`
+
+---
+
+#### Objective
+
+Codex left two findings on #270. Both were right, and the second one mattered more than the first.
+
+---
+
+#### Actions Taken
+
+- **Match only the zero-argument platform function.** The allowlist pattern accepted any argument
+  list, so an overload such as `public.rls_auto_enable(text)` — which the platform does not create —
+  would have been stripped from both dumps and could never be reported. The pattern now matches
+  `public.rls_auto_enable()` exactly, and a test asserts an overload still drifts.
+- **Version the filtered fingerprint.** The attestation still called itself
+  `pg17-public-schema-normalized-v2`, but that identifier is defined in the evidence contract as
+  normalizing the direct `pg_dump` output with every remaining mismatch blocking. Stripping an
+  object before hashing is weaker, so recording it under the same name would have made old
+  full-schema attestations indistinguishable from filtered ones. The emitted algorithm is now
+  `pg17-public-schema-platform-filtered-v3`, and the two validators
+  (`scripts/verify-supabase-environment-manifest.mjs`, `lib/release-readiness/evidence-manifest.ts`),
+  the manifest JSON schema `const`, the contract doc, `supabase-deployments.md`, the fixtures and
+  the tests move with it.
+- The contract doc now defines v3 as v2 plus the strip, lists the exact identity, states what it
+  takes to add one, and records that v2 and v3 attestations are not comparable. The historical
+  `goal-158-delivery-integrity-evidence.json` keeps v2: it attests what was verified at the time.
+- `tests/fixtures/production-readiness/manifest-valid.json`: the approval scope digest covers the
+  algorithm string, so it was recomputed with the repo's own `approvalScopeSha256`.
+
+---
+
+#### Validation Notes
+
+- Affected suites green: parity, environment manifest, production-readiness evidence contract,
+  goal-158 delivery integrity (93 tests). Typecheck clean, lint clean.
+- Local worker count capped at 2; the full jsdom suite is not run locally on this host. CI's
+  `validate` and `Supabase fresh-schema replay` are the evidence.
+
+---
+
+#### Reflections
+
+The versioning finding is the kind worth taking seriously: the code was correct but the evidence it
+emitted claimed a stronger property than it had. An attestation that quietly changes meaning under a
+fixed name is worse than one that fails loudly, because every downstream consumer keeps trusting it.
+
+---
+
+#### Suggested Next Steps
+
+- Second deep review pass, then merge once all six conditions hold.
+- Noak approves another Production run after this reaches main.

@@ -46,7 +46,9 @@ function normalizePublicSchemaV1(dump) {
 // never has them, so comparing them reports the platform's own provisioning as drift in our schema.
 // Deliberately narrow: only these exact identities are dropped, from the public schema dump of both
 // sides, so any other object the platform or anyone else adds still has to be accounted for.
-const PLATFORM_MANAGED_PUBLIC_OBJECTS = [/^public\.rls_auto_enable\([^)]*\) \[FUNCTION\]$/]
+// Zero-argument signature only: an overload such as public.rls_auto_enable(text) is not the
+// platform's object, so it has to stay in the comparison and be accounted for like anything else.
+const PLATFORM_MANAGED_PUBLIC_OBJECTS = [/^public\.rls_auto_enable\(\) \[FUNCTION\]$/]
 
 export function stripPlatformManagedObjects(dump) {
   const kept = []
@@ -756,7 +758,7 @@ sql_paths = []
       environment: targetEnvironment,
       projectRef,
       postgresMajor: 17,
-      algorithm: "pg17-public-schema-normalized-v2",
+      algorithm: "pg17-public-schema-platform-filtered-v3",
       pgDumpVersion: diagnostic.pgDumpVersion,
       expectedSha256,
       observedSha256,
