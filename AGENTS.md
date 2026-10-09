@@ -49,7 +49,14 @@ Agents in this repo must optimize for:
   - keep commits and `agent-context/session-log/` entries separated by session or meaningful checkpoint
   - open PRs from feature branches into `dev`
   - open PRs from `dev` into `main`
-- Do not push feature work directly to `dev` or `main` unless the user explicitly instructs you to do so.
+- Do not push feature work directly to `dev` unless the user explicitly instructs you to do so.
+- Until FundLoop goes live, promoting `dev` to `main` does not need owner approval: open the `dev` to
+  `main` PR and merge it once CI is green. Branch protection and the required status checks still
+  apply, and the `dev` to `main` PR is the review point for anything reaching Production — its
+  `Supabase dry-run` check is the last place a migration is inspected before Production applies it.
+  The owner-approval requirement is restored at go-live; see
+  [issue #271](https://github.com/FundLoop/fundloop-website/issues/271). This does not relax section
+  7: the remote Supabase database still may not be modified without the user's explicit permission.
 - `agent-context/session-log/` contains maintained branch-scoped session logs and must be updated for every commit.
 - At the start of a new session, inventory what is next from:
   - the active roadmap in `agent-context/todo-mcp.md`, the archived `agent-context/todo-1-through-52.md` for historical context, and any relevant `todo.md` files under feature folders

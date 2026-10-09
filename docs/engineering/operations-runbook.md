@@ -19,6 +19,10 @@ Before treating a release as healthy:
 - Confirm Supabase dry-run or deploy targeted the intended `Preview` or `Production` environment.
 - Confirm `dev` and `main` branch protections are active before relying on PR-only promotion.
 - Confirm the `Production` environment has required reviewers before merging a `dev` to `main` release-candidate PR.
+  Suspended until go-live: the required reviewer was removed deliberately, so a Production deploy runs
+  without waiting for approval. Review the release-candidate PR itself instead, and read its
+  `Supabase dry-run` output before merging — nothing else stops a migration reaching Production.
+  See [issue #271](https://github.com/FundLoop/fundloop-website/issues/271).
 - Confirm the Supabase deploy workflow parsed the expected project ref from the correct pooler secret.
 - Confirm function runtime secrets already exist in the target Supabase project.
 - Confirm no remote seeds or remote resets were used as part of the deploy.
