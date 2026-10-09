@@ -51,3 +51,41 @@ Two findings shaped the implementation. `monthly_cycles` has RLS with no policie
 
 - Stage 2: the OAuth 2.1 server. Note `docs/mcp/auth-and-scopes.md` already defers a different scope vocabulary (`fundloop:user.read` and friends), which does not match WondrBot's required `resource:action` shape; that doc needs reconciling with the agreed names.
 - Sandbox decided: `https://dev.fundloop.org`, wired as configuration in `lib/api/v1/config.ts` (HTTPS-only, origin-normalised, feeding the OpenAPI `servers` list). Stage 2's issuer and redirect allowlist read the same module.
+
+### session v2: Fix the config env type that CI typecheck caught
+
+- **Timestamp:** 2026-10-09T19:00:00Z
+- **Agent:** Claude Code (Claude Opus 5)
+- **Branch:** `feat/266-api-v1-public-reads`
+- **Head before commit:** `303d1df`
+
+---
+
+#### Objective
+
+CI `validate` failed typecheck on `tests/api-v1-config.test.ts`: object literals are not assignable to `NodeJS.ProcessEnv`.
+
+---
+
+#### Actions Taken
+
+- `lib/api/v1/config.ts` now takes `EnvLike = Record<string, string | undefined>` instead of `NodeJS.ProcessEnv`, so callers and tests can pass a literal. No behaviour change.
+
+---
+
+#### Validation Notes
+
+- `tsc --noEmit` clean (this time with the test file present) and the config suite passes.
+- `next build` cannot run in this worktree: its `node_modules` is a symlink out of the tree and Turbopack rejects that (`Symlink [project]/node_modules is invalid`). CI installs real dependencies, so the build is verified there.
+
+---
+
+#### Reflections
+
+My own process error: I ran `tsc` before writing the last test file, so the local typecheck never covered it. Run the gates after the final edit, not partway through.
+
+---
+
+#### Suggested Next Steps
+
+- Merge once CI is green, then confirm the dev deploy reaches dev.fundloop.org (`/api/v1/projects` 200, not 307).
