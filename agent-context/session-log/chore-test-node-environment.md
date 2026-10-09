@@ -54,3 +54,22 @@ suites' benefit.
 #### Suggested Next Steps
 
 - None. This stands alone and does not change any suite's behaviour.
+
+---
+
+### session v2: Codex review — the documented exception did not work
+
+- **Timestamp:** 2026-10-09T19:45:00Z
+- **Head before commit:** `f0da634`
+
+Codex pointed out that my documented escape hatch was broken: telling someone to add a DOM-dependent
+`.test.ts` file to the `dom` project's `include` list does not remove it from the `node` project's
+`tests/**/*.test.ts` glob, so it would run in both projects and fail in one — and the guard test
+would flag it as an offender regardless. The procedure I wrote down could not be followed.
+
+The rule is now unconditional: a suite that needs a DOM is a `.test.tsx` file. `.tsx` is a superset,
+so renaming costs nothing. The guard's message says to rename rather than to add an exception, and a
+new assertion keeps the two project globs from overlapping, which is the property that makes the
+rename the only workable remedy.
+
+Validated: full node project 167 files / 1070 tests passing, typecheck and lint clean.

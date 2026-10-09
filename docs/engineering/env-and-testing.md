@@ -195,12 +195,16 @@ suite paid it whether or not it rendered anything: on a memory-constrained machi
 could not finish, with worker startup timing out. The node project's 168 files now run in about 35
 seconds, and the whole suite completes.
 
-A suite that needs a DOM belongs in a `.test.tsx` file. If a `.test.ts` file has to have one, add it
-to the `dom` project's `include` list with a comment saying why, rather than moving the environment
-for everything. `tests/vitest-projects.test.ts` enforces this: it fails if a `.test.ts` file
-references `document`, `window`, `localStorage`, `sessionStorage`, `matchMedia`, `navigator`,
-testing-library or jsdom, so the failure names the cause instead of surfacing as a confusing
-`ReferenceError`.
+A suite that needs a DOM is a `.test.tsx` file. That is the whole rule, and it is deliberately
+unconditional: the two projects select by extension, so adding a `.test.ts` file to the `dom`
+project's `include` list would not remove it from the `node` project's glob — it would run in both,
+and fail in one. Rename it instead; `.tsx` is a superset of `.ts`, so a file with no JSX is
+unaffected.
+
+`tests/vitest-projects.test.ts` enforces this: it fails if a `.test.ts` file references `document`,
+`window`, `localStorage`, `sessionStorage`, `matchMedia`, `navigator`, testing-library or jsdom, and
+says to rename the file, so the failure names its own cause instead of surfacing as a confusing
+`ReferenceError` in whichever project got there first.
 
 
 The local-wallet runner treats a completed CLI reset as necessary but not sufficient readiness. After every reset it makes a bounded service-role PostgREST query for the exact current Base row and `ref_chains` projection (`id`, `network_key`, `ecosystem`, `evm_chain_id`, and `is_active`). Sync commands and SQL fixtures cannot start until that query returns HTTP 200, valid JSON, and the expected active Base/EVM/8453 values. Generic REST responses, missing rows, stale projections, and delayed schema-cache reloads remain classified failures at the timeout boundary.
