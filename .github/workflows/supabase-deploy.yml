@@ -157,6 +157,10 @@ jobs:
               ;;
           esac
 
+          # Secrets are often pasted with a trailing newline. A connection URL never contains
+          # literal whitespace, so strip it rather than failing the deploy on invisible characters.
+          db_url="$(printf '%s' "${db_url}" | tr -d '[:space:]')"
+
           if [[ -z "${db_url}" ]]; then
             echo "::error::Missing Supabase session pooler URL secret for target '${target_environment}'."
             exit 1
@@ -259,6 +263,8 @@ jobs:
               ;;
           esac
 
+          supabase_db_url="$(printf '%s' "${supabase_db_url}" | tr -d '[:space:]')"
+
           encoded_db_url_file="${RUNNER_TEMP}/supabase-db-url"
           DB_URL="${supabase_db_url}" TARGET_ENVIRONMENT="${TARGET_ENVIRONMENT}" OUTPUT_FILE="${encoded_db_url_file}" node <<'NODE'
           const { writeFileSync } = require("node:fs")
@@ -308,6 +314,8 @@ jobs:
               exit 1
               ;;
           esac
+
+          supabase_db_url="$(printf '%s' "${supabase_db_url}" | tr -d '[:space:]')"
 
           encoded_db_url_file="${RUNNER_TEMP}/supabase-db-url"
           DB_URL="${supabase_db_url}" TARGET_ENVIRONMENT="${TARGET_ENVIRONMENT}" OUTPUT_FILE="${encoded_db_url_file}" node <<'NODE'
@@ -473,6 +481,7 @@ jobs:
             main) supabase_db_url="${MAIN_SUPABASE_SESSION_POOLER_URL}" ;;
             *) echo "::error::Unsupported completion target '${TARGET_ENVIRONMENT}'."; exit 1 ;;
           esac
+          supabase_db_url="$(printf '%s' "${supabase_db_url}" | tr -d '[:space:]')"
           echo "::add-mask::${supabase_db_url}"
 
           SUPABASE_SCHEMA_DB_URL="${supabase_db_url}" \
