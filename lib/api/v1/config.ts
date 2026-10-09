@@ -1,0 +1,43 @@
+// Hosts for the public API (#266). Kept as configuration so the sandbox, and later the OAuth
+// issuer and redirect allowlist, move without code changes.
+//
+// Production: https://www.fundloop.org
+// Sandbox:    https://dev.fundloop.org (publicly reachable, backed by the FundLoop Dev project)
+
+const PRODUCTION_BASE_URL = "https://www.fundloop.org"
+const SANDBOX_BASE_URL = "https://dev.fundloop.org"
+
+function normalize(value: string | undefined, fallback: string) {
+  const trimmed = value?.trim()
+  if (!trimmed) return fallback
+  try {
+    const url = new URL(trimmed)
+    if (url.protocol !== "https:") return fallback
+    return url.origin
+  } catch {
+    return fallback
+  }
+}
+
+export function publicApiBaseUrl(env: NodeJS.ProcessEnv = process.env) {
+  return normalize(env.FUNDLOOP_PUBLIC_API_BASE_URL, PRODUCTION_BASE_URL)
+}
+
+export function sandboxApiBaseUrl(env: NodeJS.ProcessEnv = process.env) {
+  return normalize(env.FUNDLOOP_SANDBOX_API_BASE_URL, SANDBOX_BASE_URL)
+}
+
+// Which environment this deployment is: WondrBot's test credentials and fixtures belong to the
+// sandbox, and the OAuth issuer must match the host serving it.
+export function isSandboxDeployment(env: NodeJS.ProcessEnv = process.env) {
+  const deployment = env.FUNDLOOP_DEPLOYMENT_ENV?.trim().toLowerCase()
+  return deployment === "dev" || deployment === "local" || deployment === "preview"
+}
+
+export function apiServers(env: NodeJS.ProcessEnv = process.env) {
+  const production = publicApiBaseUrl(env)
+  const sandbox = sandboxApiBaseUrl(env)
+  const servers = [{ url: `${production}/api/v1`, description: "Production" }]
+  if (sandbox !== production) servers.push({ url: `${sandbox}/api/v1`, description: "Sandbox" })
+  return servers
+}
