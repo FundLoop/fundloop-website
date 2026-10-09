@@ -103,6 +103,10 @@ export function buildEnvironmentManifest({ schema, functions, smoke, context }) 
       expectedSha256: schema.expectedSha256,
       observedSha256: schema.observedSha256,
       postgresMajor: schema.postgresMajor,
+      // What the v3 fingerprint left out, with the digest each exclusion was verified against. The
+      // durable manifest has to state this: an attestation that omits objects without saying which
+      // ones cannot be audited later, and the evidence contract promises it.
+      platformManagedExclusions: schema.platformManagedExclusions ?? [],
     },
     functions: {
       candidateGitSha: functions.candidateGitSha,
@@ -163,6 +167,13 @@ function verifyEnvironmentManifestCore(manifest) {
   if (manifest.migrations?.orderedInventory?.some((item, index) => item.version !== manifest.migrations.observedHistory[index])) blockers.push("migration-order")
   if (manifest.schema?.algorithm !== "pg17-public-schema-platform-filtered-v3" || manifest.schema?.postgresMajor !== 17
     || !/^[0-9a-f]{64}$/.test(manifest.schema?.expectedSha256 ?? "") || !/^[0-9a-f]{64}$/.test(manifest.schema?.observedSha256 ?? "")) blockers.push("schema-contract")
+  // A v3 attestation must say what it excluded, and every entry must carry the digests it was
+  // verified against; an exclusion recorded without them is not evidence of anything.
+  const exclusions = manifest.schema?.platformManagedExclusions
+  if (!Array.isArray(exclusions)) blockers.push("schema-exclusions")
+  else if (exclusions.some((item) => typeof item?.identity !== "string" || item.identity.length === 0
+    || typeof item?.eventTrigger !== "string" || item.eventTrigger.length === 0
+    || !/^[0-9a-f]{64}$/.test(item?.definitionSha256 ?? "") || !/^[0-9a-f]{64}$/.test(item?.bodySha256 ?? ""))) blockers.push("schema-exclusions")
   if (manifest.schema?.expectedSha256 !== manifest.schema?.observedSha256) blockers.push("schema-digest")
   if (manifest.functions?.count !== manifest.functions?.items?.length || manifest.functions.count < 1) blockers.push("function-count")
   if (manifest.functions?.algorithm !== "sha256-function-runtime-closure-sorted-path-v1" || !/^[0-9a-f]{64}$/.test(manifest.functions?.inventorySha256 ?? "")) blockers.push("function-contract")
