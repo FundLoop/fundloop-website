@@ -184,3 +184,74 @@ to that database.
 Every finding here was a document that still described the world as it was before the change. The
 check that would have caught them is the one the reviewer suggested for the restore: grep for the
 control's name, not for the files I remembered touching.
+
+### session v4: Noak revised the decision — approval moves to PR review
+
+- **Timestamp:** 2026-10-10T02:05:00Z
+- **Head before commit:** `3263a87`
+
+---
+
+#### Objective
+
+Noak, directly: "Let's revert #271 and go back to normal standards. I'll manually review PRs to dev.
+However, I don't need to then also approve a downstream CI job, just getting my merge approval is
+enough." Plus two corrections: we require **full** history, not linear history, and the two
+`SUPABASE_ACCESS_TOKEN` secrets are the same org-wide PAT.
+
+---
+
+#### What this changes
+
+The two halves of the original change are now decided differently:
+
+- **Owner approval is back**, as PR review. He reviews and approves every PR, to `dev` and to
+  `main`, and an agent does not merge without it. That is the standard this PR had removed.
+- **The per-run environment approval stays gone**, because approving the same release twice adds
+  nothing. So the `Production` environment keeps no reviewer — not "until go-live" but by design.
+
+That also answers the conflict the deep review raised and HBIC was taking to him: his approval of a
+`dev` to `main` merge **is** the explicit permission section 7 requires for the migrations that
+merge applies to Production. AGENTS.md now says so, and adds that no other route is permitted —
+migrations and function deployments go through CI, never the CLI against a hosted project.
+
+Every document that described the old state was rewritten again: AGENTS.md, README, the
+release-candidate controls list and promotion steps, supabase-deployments.md, the operations runbook
+and the workflow's dry-run summary. Promotion step 8 now says the owner merges, and that an agent
+does not.
+
+---
+
+#### Branch protection corrected
+
+`dev` had `required_linear_history: true`, which is what forced every PR to rebase. Noak: that is
+incorrect — the requirement is full history, which means no squash (already disabled repo-wide) and
+merge commits allowed. Disabled it with a full `PUT`, then read back every field and compared:
+exactly one value changed, `required_linear_history` True to False. Everything else — strict checks
+and the three contexts, admin enforcement, conversation resolution, no force pushes, no deletions —
+is byte-identical.
+
+Worth noting for whoever expects his approval to be *enforced* rather than agreed: it cannot be
+today. `required_approving_review_count` is 0 on both branches, and raising it would deadlock every
+PR, because the `gh` CLI here authenticates as his own account, so he is the author of every PR an
+agent opens and GitHub will not let an author approve their own PR. Until there is a separate
+machine identity, "do not merge without his approval" is a rule in AGENTS.md rather than a branch
+protection setting.
+
+---
+
+#### The shared token is a real exposure
+
+He confirmed both `SUPABASE_ACCESS_TOKEN` secrets are the same org-wide PAT. A `pull_request` run
+selects `Preview`, so **any same-repo pull request holds a token that can manage the Production
+Supabase project**, which is wider than the CI-only path the docs describe. His instruction to route
+all migrations and function deployments through CI is recorded in AGENTS.md; the exposure itself is
+filed separately, because a rule about how agents behave does not constrain what a workflow edit in
+a PR could do.
+
+---
+
+#### Validation Notes
+
+- Node project: 167 files, 1065 tests passing; typecheck clean; workflow YAML parses.
+- Live read-back of `dev` protection recorded above.

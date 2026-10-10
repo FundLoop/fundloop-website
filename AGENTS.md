@@ -50,13 +50,15 @@ Agents in this repo must optimize for:
   - open PRs from feature branches into `dev`
   - open PRs from `dev` into `main`
 - Do not push feature work directly to `dev` or `main` unless the user explicitly instructs you to do so.
-- Until FundLoop goes live, promoting `dev` to `main` does not need owner approval: open the `dev` to
-  `main` PR and merge it once CI is green. Branch protection and the required status checks still
-  apply, and the `dev` to `main` PR is the review point for anything reaching Production — its
-  `Supabase dry-run` check is the last place a migration is inspected before Production applies it.
-  The owner-approval requirement is restored at go-live; see
-  [issue #271](https://github.com/FundLoop/fundloop-website/issues/271). This does not relax section
-  7: the remote Supabase database still may not be modified without the user's explicit permission.
+- Do not merge a PR, into `dev` or into `main`, until the user has reviewed and approved it. He
+  reviews PRs himself, and that approval is the only gate: the `Production` GitHub environment has
+  no separate per-run reviewer, so a merge to `main` starts the Production deploy immediately.
+- His approval of a `dev` to `main` merge **is** the explicit permission section 7 requires for the
+  migrations and Edge Function deployments that merge applies to the remote Production project. No
+  other route to the hosted databases is permitted: migrations and function deployments go through
+  the CI jobs, never through the CLI against a hosted project.
+- Preserve full history. Squash merging is disabled; neither `dev` nor `main` requires linear
+  history, so a PR lands as a merge commit and its individual commits survive.
 - `agent-context/session-log/` contains maintained branch-scoped session logs and must be updated for every commit.
 - At the start of a new session, inventory what is next from:
   - the active roadmap in `agent-context/todo-mcp.md`, the archived `agent-context/todo-1-through-52.md` for historical context, and any relevant `todo.md` files under feature folders

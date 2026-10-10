@@ -145,8 +145,8 @@ jobs:
                 if [[ -z "${MAIN_SUPABASE_SESSION_POOLER_URL:-}" ]]; then
                   # The Production URL is scoped to the Production environment, which a pull
                   # request does not run in, so it cannot reach it. Validate against Dev as a
-                  # proxy and say so. (The environment requires no reviewer until go-live, #271;
-                  # the scoping is what keeps a PR off Production, not an approval.)
+                  # proxy and say so. (The environment has no per-run reviewer, #271;
+                  # the scoping is what keeps a PR off this database, not an approval.)
                   proxy_database="dev"
                 fi
               else
@@ -218,7 +218,7 @@ jobs:
               echo "The Production database URL is a secret of the \`Production\` environment, which a pull request does not run in, so this job could not connect to the Production database."
               echo "A green check here means the migrations apply cleanly to **${proxy_database}**. It does **not** verify Production's current schema or data."
               echo ""
-              echo "Until FundLoop goes live, the \`Production\` environment requires no human approval ([#271](https://github.com/FundLoop/fundloop-website/issues/271)), so merging this PR into \`main\` starts the Production deploy with no further gate. This dry-run is the last look at these migrations before that happens."
+              echo "The \`Production\` environment has no per-run reviewer: the owner's approval of this PR is the gate ([#271](https://github.com/FundLoop/fundloop-website/issues/271)), so merging starts the Production deploy immediately. This dry-run is the last look at these migrations before that happens."
             } >> "${GITHUB_STEP_SUMMARY}"
           fi
 

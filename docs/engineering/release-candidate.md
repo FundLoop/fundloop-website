@@ -20,14 +20,13 @@ from what GitHub/Supabase operators must configure before production data is tou
 - Pushes to `main` deploy migrations and Edge Functions to the main Supabase target through the `Production` GitHub environment.
 - App CI now runs on pushes to `dev`, pushes to `main`, `codex/**` feature branches, and pull requests.
 - `dev` and `main` are protected for administrators and require PRs, resolved conversations, and
-  the exact three delivery checks. Linear history is required on `dev` only; `main` has
-  `required_linear_history` disabled, so a release-candidate PR may be merged with a merge commit
-  while feature branches rebase onto `dev`.
-- `Production` is restricted to `main` and does not allow administrator bypass.
-  **Until FundLoop goes live it requires no human approval**: the required reviewer was
-  removed deliberately, so a Production deploy starts as soon as `main` moves. The
-  requirement is restored at go-live; see
-  [issue #271](https://github.com/FundLoop/fundloop-website/issues/271).
+  the exact three delivery checks. Neither requires linear history and squash merging is disabled
+  repo-wide, because full history is the requirement: a PR lands as a merge commit and its
+  individual commits survive.
+- `Production` is restricted to `main` and does not allow administrator bypass. It has **no
+  per-run reviewer**, deliberately: the owner's approval of the release-candidate PR is the gate,
+  and approving the same release twice adds nothing
+  ([#271](https://github.com/FundLoop/fundloop-website/issues/271)).
 
 The timestamped [GitHub delivery-control read-back](./github-delivery-controls-2026-08-13.md)
 records the unsafe baseline and the owner/admin API result after configuration.
@@ -43,15 +42,13 @@ GitHub API checks on 2026-08-13 confirm:
 - both branches require PRs and enforce protection for administrators; the approval
   count is zero while the repository has only one eligible human, avoiding an
   administrator-enforced self-review deadlock; and
-- `Production` accepts only `main` and has administrator bypass disabled. It has **no required
-  reviewer until go-live**; see the note above and
-  [#271](https://github.com/FundLoop/fundloop-website/issues/271).
+- `Production` accepts only `main` and has administrator bypass disabled, with no per-run
+  reviewer; see the note above.
 
 Re-read these live controls before promotion because checked-in documentation is not
-configuration evidence. Until go-live there is no Production deployment to approve: the deploy
-starts on the merge, so the separate release authority boundary has to be satisfied **before**
-merging rather than at an approval prompt afterwards
-([#271](https://github.com/FundLoop/fundloop-website/issues/271)).
+configuration evidence. There is no Production deployment to approve afterwards: the deploy starts
+on the merge, so the release authority boundary has to be satisfied **before** merging. The owner's
+review of this PR is that boundary.
 
 ## Required Secrets And Runtime Configuration
 
@@ -80,12 +77,10 @@ The repo cannot read secret values from GitHub or Supabase. Treat this as an ope
 5. Confirm app CI passes on the PR.
 6. Confirm the Supabase Deploy PR dry-run targets `main` and succeeds without remote mutation.
 7. Review migration ordering, Edge Function changes, runtime secret requirements, and smoke results.
-8. Merge the PR into `main` once branch protections and the three delivery checks are satisfied.
-   Until go-live there is no production approval gate to wait for, so **this merge is the decision
-   to deploy to Production** — everything after it is automatic. Make it deliberately, with step 7's
-   review done, not as a formality. ([#271](https://github.com/FundLoop/fundloop-website/issues/271))
-9. Watch the deploy run instead of approving it: the push-triggered run starts on its own. At
-   go-live this step becomes approving the `Production` environment deployment again.
+8. The owner reviews the PR and merges it. **That merge is the decision to deploy to Production** —
+   everything after it is automatic, and it is also the explicit permission for the migrations it
+   applies to the remote Production project. An agent does not merge this PR.
+9. Watch the deploy run; there is nothing to approve. The push-triggered run starts on its own.
 10. Confirm the push-triggered main Supabase deploy applies migrations and deploys functions successfully.
 11. Regenerate the v1 evidence manifest and require exact migration/function/schema
     parity for the main SHA while `productionValueFlowEnabled=false`.
