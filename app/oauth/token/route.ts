@@ -1,4 +1,5 @@
 import { verifyIdJag } from "@/lib/cross-app/id-jag"
+import { readClientCredentials } from "@/lib/oauth/client-auth"
 import { crossAppConfig, cubidJwksCache } from "@/lib/cross-app/config"
 import { oauthErrorResponse, oauthTokenResponse } from "@/lib/oauth/errors"
 import { isScopeSubset, parseScopeParam, scopeString, type OAuthScope } from "@/lib/oauth/scopes"
@@ -22,22 +23,6 @@ import {
 export const dynamic = "force-dynamic"
 
 const JWT_BEARER_GRANT = "urn:ietf:params:oauth:grant-type:jwt-bearer"
-
-function readClientCredentials(request: Request, form: URLSearchParams) {
-  const header = request.headers.get("authorization")
-  if (header?.toLowerCase().startsWith("basic ")) {
-    try {
-      const decoded = Buffer.from(header.slice(6).trim(), "base64").toString("utf8")
-      const separator = decoded.indexOf(":")
-      if (separator > 0) {
-        return { clientId: decodeURIComponent(decoded.slice(0, separator)), clientSecret: decodeURIComponent(decoded.slice(separator + 1)) }
-      }
-    } catch {
-      return { clientId: null, clientSecret: null }
-    }
-  }
-  return { clientId: form.get("client_id"), clientSecret: form.get("client_secret") }
-}
 
 export async function POST(request: Request) {
   let form: URLSearchParams

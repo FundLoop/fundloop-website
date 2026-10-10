@@ -98,7 +98,9 @@ describe("oauth schema", () => {
   })
 
   it("admits no client that cannot authenticate, and no token type but access", () => {
-    expect(migration).toContain("oauth_clients_secret_present")
+    // Expressed as NOT NULL rather than a CHECK: a client without a secret is not a state the
+    // table should be able to hold at all.
+    expect(migration).toContain("client_secret_sha256 text not null")
     expect(migration).toContain("client_type = 'confidential'")
     // No refresh token: renewal means redeeming a fresh assertion, so consent is re-checked at
     // Cubid rather than extended here.

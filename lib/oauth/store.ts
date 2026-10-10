@@ -1,7 +1,7 @@
 import "server-only"
 
 import { getAdminSupabaseClient } from "@/lib/supabase-admin"
-import { OAUTH_TTL_SECONDS, constantTimeEquals, expiresAt, randomToken, sha256Hex } from "./crypto"
+import { OAUTH_TTL_SECONDS, constantTimeEquals, expiresAt, hasExpired, randomToken, sha256Hex } from "./crypto"
 import { sortScopes, type OAuthScope } from "./scopes"
 
 // Database access for redeeming a Cubid identity assertion (#266 stage 2).
@@ -10,8 +10,8 @@ import { sortScopes, type OAuthScope } from "./scopes"
 // Replay protection is the database's job: redeeming records the assertion's jti, and a second
 // redemption violates the primary key rather than racing a read.
 //
-// types/supabase.ts predates these tables; regenerate it against the migration and drop the cast
-// below (`supabase gen types typescript`). The row types here mirror the migration exactly.
+// The tables are declared in types/supabase.ts, so every query here is checked against the schema:
+// a renamed column or a changed payload shape fails typechecking rather than at runtime.
 
 export type RequestingClientRecord = {
   client_id: string
@@ -23,19 +23,8 @@ export type RequestingClientRecord = {
   disabled_at: string | null
 }
 
-type MinimalQuery = {
-  select: (columns: string) => MinimalQuery
-  eq: (column: string, value: unknown) => MinimalQuery
-  is: (column: string, value: unknown) => MinimalQuery
-  insert: (values: Record<string, unknown>) => MinimalQuery
-  update: (values: Record<string, unknown>) => MinimalQuery
-  limit: (count: number) => MinimalQuery
-  maybeSingle: () => PromiseLike<{ data: unknown; error: { message: string; code?: string } | null }>
-  then: <T>(resolve: (value: { data: unknown; error: { message: string; code?: string } | null }) => T) => PromiseLike<T>
-}
-
 function oauthDb() {
-  return getAdminSupabaseClient() as unknown as { from: (table: string) => MinimalQuery }
+  return getAdminSupabaseClient()
 }
 
 function fail(scope: string, error: { message: string } | null) {
@@ -54,7 +43,7 @@ export async function findRequestingClient(clientId: string): Promise<Requesting
     .limit(1)
     .maybeSingle()
   fail("find-client", error)
-  return (data as RequestingClientRecord | null) ?? null
+  return data ?? null
 }
 
 export function authenticateClient(client: RequestingClientRecord, presentedSecret: string | null): boolean {
@@ -73,7 +62,7 @@ export async function findUserForCubidSubject(issuer: string, subject: string): 
     .limit(1)
     .maybeSingle()
   fail("find-subject", error)
-  return (data as { user_id: string } | null)?.user_id ?? null
+  return data?.user_id ?? null
 }
 
 export async function noteSubjectSeen(issuer: string, subject: string): Promise<void> {
@@ -109,17 +98,32 @@ async function upsertGrant(input: { clientId: string; userId: string; scopes: OA
   const scopes = sortScopes(input.scopes)
   const existing = await oauthDb()
     .from("oauth_grants")
-    .select("id")
+    .select("id, scopes, revoked_at")
     .eq("client_id", input.clientId)
     .eq("user_id", input.userId)
     .limit(1)
     .maybeSingle()
   fail("read-grant", existing.error)
 
-  const current = existing.data as { id: number } | null
+  const current = existing.data
   if (current) {
     // A fresh assertion means consent is live at Cubid right now, so a locally revoked grant is
     // revived deliberately: Cubid is the authority on consent, not this row.
+    //
+    // Reviving or narrowing it starts a fresh set of tokens. Without this, a token issued under the
+    // earlier authorization would still be tied to this grant id: after a disconnect and reconnect
+    // an old token would act against the new connection, and after a person removed a scope an
+    // already-issued token would keep it until it expired.
+    const narrowed = (current.scopes ?? []).some((scope) => !scopes.includes(scope))
+    if (current.revoked_at !== null || narrowed) {
+      const superseded = await oauthDb()
+        .from("oauth_tokens")
+        .update({ revoked_at: new Date().toISOString() })
+        .eq("grant_id", current.id)
+        .is("revoked_at", null)
+      fail("supersede-tokens", superseded.error)
+    }
+
     const updated = await oauthDb()
       .from("oauth_grants")
       .update({ scopes, revoked_at: null, updated_at: new Date().toISOString() })
@@ -136,7 +140,8 @@ async function upsertGrant(input: { clientId: string; userId: string; scopes: OA
     .select("id")
     .maybeSingle()
   fail("insert-grant", inserted.error)
-  return (inserted.data as { id: number }).id
+  if (!inserted.data) throw new Error("oauth-store:insert-grant: no row returned")
+  return inserted.data.id
 }
 
 export async function issueAccessToken(input: {
@@ -181,16 +186,21 @@ export async function revokeTokensForGrant(clientId: string, userId: string): Pr
   fail("revoke-grant", grant.error)
 }
 
-export async function revokeByToken(token: string): Promise<void> {
+export async function revokeByToken(token: string, clientId: string): Promise<void> {
   const { data, error } = await oauthDb()
     .from("oauth_tokens")
-    .select("client_id, user_id")
+    .select("client_id, user_id, revoked_at, expires_at")
     .eq("token_sha256", sha256Hex(token))
+    .eq("client_id", clientId)
+    .is("revoked_at", null)
     .limit(1)
     .maybeSingle()
   fail("revoke-lookup", error)
-  const record = data as { client_id: string; user_id: string } | null
-  // RFC 7009 §2.2: an unknown token is not an error, so this cannot be used to test for one.
-  if (!record) return
+  const record = data
+  // RFC 7009 §2.2: an unknown token is not an error, so this cannot be used to test for one. A
+  // token belonging to another client, or one already revoked, reaches here as null and is treated
+  // the same way — otherwise a client holding a long-dead token could disconnect a person's current
+  // connection, or probe for another client's tokens.
+  if (!record || hasExpired(record.expires_at)) return
   await revokeTokensForGrant(record.client_id, record.user_id)
 }

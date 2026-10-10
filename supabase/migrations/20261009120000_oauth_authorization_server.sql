@@ -25,7 +25,9 @@ create type public.oauth_scope as enum ('profile:read', 'awards:read', 'payout-r
 create table public.oauth_clients (
   id bigint generated always as identity primary key,
   client_id text not null unique check (client_id ~ '^[a-z0-9][a-z0-9_-]{7,63}$'),
-  client_secret_sha256 text check (client_secret_sha256 ~ '^[0-9a-f]{64}$'),
+  -- Not null, not a CHECK: a client that cannot authenticate cannot redeem, so the absence of a
+  -- secret is not a state this table should be able to hold.
+  client_secret_sha256 text not null check (client_secret_sha256 ~ '^[0-9a-f]{64}$'),
   -- Confidential only. Redemption is a server-to-server call authenticated by the client, and the
   -- Cubid contract refuses a public client for the exchange on the same reasoning.
   client_type text not null default 'confidential' check (client_type = 'confidential'),
@@ -40,9 +42,7 @@ create table public.oauth_clients (
   is_sandbox boolean not null default false,
   disabled_at timestamptz,
   created_at timestamptz not null default now(),
-  updated_at timestamptz not null default now(),
-  -- A client that cannot authenticate cannot redeem, so the secret is not optional.
-  constraint oauth_clients_secret_present check (client_secret_sha256 is not null)
+  updated_at timestamptz not null default now()
 );
 
 -- The local record of a requesting client's standing access for one person. The consent itself lives

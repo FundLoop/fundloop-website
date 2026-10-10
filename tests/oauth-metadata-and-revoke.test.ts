@@ -61,7 +61,26 @@ describe("POST /oauth/revoke", () => {
     const response = await POST(revoke({ client_id: "wondrbot", client_secret: "s3cret", token: "never-issued" }))
     // RFC 7009 §2.2.
     expect(response.status).toBe(200)
-    expect(store.revokeByToken).toHaveBeenCalledWith("never-issued")
+    // §2.1: revocation is bound to the authenticated client, so a token belonging to another client
+    // is looked up as that client's and found to be nobody's.
+    expect(store.revokeByToken).toHaveBeenCalledWith("never-issued", "wondrbot")
+  })
+
+  it("accepts Basic credentials, which the discovery document advertises for this endpoint", async () => {
+    const { POST } = await import("@/app/oauth/revoke/route")
+    const request = new Request("https://www.fundloop.org/oauth/revoke", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/x-www-form-urlencoded",
+        authorization: `Basic ${Buffer.from("wondrbot:s3cret").toString("base64")}`,
+      },
+      body: new URLSearchParams({ token: "issued-token" }).toString(),
+    })
+
+    const response = await POST(request)
+    expect(response.status).toBe(200)
+    expect(store.authenticateClient).toHaveBeenCalledWith(expect.anything(), "s3cret")
+    expect(store.revokeByToken).toHaveBeenCalledWith("issued-token", "wondrbot")
   })
 
   it("requires a token and an authenticated client", async () => {

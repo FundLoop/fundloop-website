@@ -182,3 +182,69 @@ to map, so this endpoint verifies assertions perfectly and then has nobody to is
 
 - The Security Event Token receiver, then Sign in with Cubid and account linking.
 - Ask the Wondr HBIC for the staging issuer, audience and client ids once cubid-monorepo#179 lands.
+
+### session v3: Codex review on #273 — five live findings, eight against deleted code
+
+- **Timestamp:** 2026-10-09T20:05:00Z
+- **Head before commit:** `48fa397`
+
+---
+
+#### Objective
+
+Thirteen findings. Codex reviewed `27976f6`, the per-app OAuth version, so eight describe code the
+ID-JAG rework deleted. The useful work was checking whether each bug *class* survived into the
+replacement rather than reporting the surface as gone.
+
+---
+
+#### Fixed, because they are live on the current head
+
+- **Revocation was not bound to the presenting client.** `/oauth/revoke` authenticated one client
+  and then revoked by token value alone, so any registered client that learned another's token could
+  disconnect that client's grant (RFC 7009 §2.1). The lookup is now scoped to the authenticated
+  client, and an already-revoked or expired row is treated exactly like an unknown token — which
+  also closes a denial of service where a long-dead token could kill a person's current connection.
+- **Basic credentials were advertised but not accepted** on revocation. The discovery document
+  offers `client_secret_basic` for both endpoints; revocation read the form only. `readClientCredentials`
+  is now shared by both endpoints, so a client following discovery is understood by each.
+- **Re-consent handed old credentials authority over a new connection.** Reviving a revoked grant,
+  or narrowing its scopes, left existing token rows tied to the same grant id. Both cases now
+  supersede the grant's live tokens first. Re-redeeming with the same or wider scope does not, since
+  that is ordinary renewal and dropping a client's current token would break requests in flight.
+- **Generated types for all five tables**, with the `unknown` cast and the hand-written query
+  interface gone, so every query in the store is checked against the schema. Writing them exposed a
+  real schema weakness: `client_secret_sha256` was nullable with a `CHECK (… is not null)`, which is
+  a NOT NULL constraint written awkwardly. The column is NOT NULL now and the constraint is gone.
+
+#### Replied, with the class checked in the new code
+
+Refresh-token expiry, rotation-race revocation and refresh scope widening: there are no refresh
+tokens — renewal is a fresh assertion. PKCE-before-consume: the ID-JAG path verifies the assertion
+fully *before* recording the jti, and no failure path revokes anything, so the variant where an
+attacker disconnects a grant without proving possession cannot arise. Consent-action, redirect-binding,
+consent-page refresh and deny-race findings: those surfaces are gone with the consent page.
+
+---
+
+#### Validation Notes
+
+- Full node project: 172 files, 1115 tests. Typecheck and lint clean.
+- New `tests/oauth-store-grants.test.ts` drives the store against a fake client: grant revival and
+  narrowing supersede tokens, ordinary renewal does not, only a digest is stored, and revocation is
+  client-scoped and ignores dead rows.
+
+---
+
+#### Reflections
+
+The two findings worth keeping are the ones about *old credentials after a state change*: a revoked
+token that can still revoke, and a narrowed grant whose broad token keeps working. Both come from
+treating a grant row as a mutable record rather than as a generation, and both are invisible until
+someone asks what a credential issued under the previous state can still do.
+
+---
+
+#### Suggested Next Steps
+
+- Independent deep review, then the SET receiver.
