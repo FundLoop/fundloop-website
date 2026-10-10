@@ -201,10 +201,17 @@ project's `include` list would not remove it from the `node` project's glob — 
 and fail in one. Rename it instead; `.tsx` is a superset of `.ts`, so a file with no JSX is
 unaffected.
 
-`tests/vitest-projects.test.ts` enforces this: it fails if a `.test.ts` file references `document`,
-`window`, `localStorage`, `sessionStorage`, `matchMedia`, `navigator`, testing-library or jsdom, and
-says to rename the file, so the failure names its own cause instead of surfacing as a confusing
-`ReferenceError` in whichever project got there first.
+`tests/vitest-projects.test.ts` enforces this. It parses each `.test.ts` file with the TypeScript
+compiler and fails if the file reads `document`, `window`, `localStorage`, `sessionStorage`,
+`matchMedia` or `navigator`, or imports testing-library or jsdom in any form — static, bare, dynamic
+or `require`. Parsing rather than grepping matters: a text search cannot tell a DOM access from the
+word "window" in a comment, from `"foo//bar"` in a string, or from `${document.title}` inside a
+template literal, and every regex version of this check had a hole of that kind.
+
+There are deliberately **no shadowing exemptions**. A suite that declares a local named `document`
+is flagged, and the remedy is to rename the binding — which reads better anyway. Exempting shadowed
+names is how a real `document.querySelector` could hide behind an unrelated parameter of the same
+name.
 
 
 The local-wallet runner treats a completed CLI reset as necessary but not sufficient readiness. After every reset it makes a bounded service-role PostgREST query for the exact current Base row and `ref_chains` projection (`id`, `network_key`, `ecosystem`, `evm_chain_id`, and `is_active`). Sync commands and SQL fixtures cannot start until that query returns HTTP 200, valid JSON, and the expected active Base/EVM/8453 values. Generic REST responses, missing rows, stale projections, and delayed schema-cache reloads remain classified failures at the timeout boundary.
