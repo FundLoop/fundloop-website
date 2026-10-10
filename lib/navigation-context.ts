@@ -128,7 +128,9 @@ function emptyNavigationContext(): NavigationContext {
     managedProjects: [],
     cubidPassportOrigin: null,
     cubidStampPageId: null,
-    cubidSignInAvailable: false,
+    // Derived, not false: a signed-out visitor is exactly who the sign-in action is for, and this
+    // is the context they get.
+    cubidSignInAvailable: crossAppSignInConfig() !== null,
   }
 }
 

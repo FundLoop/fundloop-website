@@ -10,6 +10,19 @@ describe("locale proxy", () => {
     expect(shouldSkipLocaleRouting("/support")).toBe(false)
   })
 
+  it("lets the Cubid sign-in redirects through unprefixed", () => {
+    // The callback URL is registered at Cubid, which redirects a browser to it exactly. A locale
+    // redirect there loses the authorization code, and the handler only exists at the bare path.
+    expect(shouldSkipLocaleRouting("/auth/cubid/start")).toBe(true)
+    expect(shouldSkipLocaleRouting("/auth/cubid/callback")).toBe(true)
+    // The machine prefixes that were already exempt, as a group.
+    for (const path of ["/oauth/token", "/oauth/security-events", "/.well-known/oauth-authorization-server"]) {
+      expect(shouldSkipLocaleRouting(path)).toBe(true)
+    }
+    // A bare /auth has no handler, so it keeps the locale handling every other unrouted path gets.
+    expect(shouldSkipLocaleRouting("/auth")).toBe(false)
+  })
+
   it("detects unsupported locale prefixes", () => {
     expect(hasUnsupportedLocalePrefix("/de/support")).toBe(true)
     expect(hasUnsupportedLocalePrefix("/en/support")).toBe(false)

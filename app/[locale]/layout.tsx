@@ -9,6 +9,7 @@ import "../globals.css"
 import { ThemeProvider } from "@/components/theme-provider"
 import { OnboardingModalManager } from "@/components/onboarding-modal-manager"
 import { CubidOutcomeNotice } from "@/components/auth/cubid-outcome-notice"
+import { Toaster } from "@/components/ui/toaster"
 import { FloatingPrototypeBadge } from "@/components/floating-prototype-badge"
 import { Web3Provider } from "@/components/web3-provider"
 import { getWalletRuntimeConfig } from "@/lib/onchain/runtime-config"
@@ -68,6 +69,10 @@ export default async function RootLayout({ children, params }: LayoutProps) {
                 <CubidOutcomeNotice />
               </Suspense>
               {children}
+              {/* The only toast renderer, and until now it was mounted nowhere: every toast the
+                  app dispatched — sign-in errors, save confirmations, the Cubid callback outcome —
+                  was discarded without being shown. */}
+              <Toaster />
               <FloatingPrototypeBadge />
             </ThemeProvider>
           </Web3Provider>

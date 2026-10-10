@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from "vitest"
+import { expectSqlOrder, readContractFile } from "./support/sql-text"
 import { executeCubidIdentityDisconnectCommand } from "@/lib/auth/cubid-identity-disconnect-command"
 import {
   normalizeCubidIdentityDisconnectResult,
@@ -93,5 +94,27 @@ describe("the command's contract", () => {
     for (const data of [null, {}, { outcome: "unlinked" }, { outcome: "exploded", revokedClients: 0 }]) {
       expect(normalizeCubidIdentityDisconnectResult({ ok: true, data }).ok).toBe(false)
     }
+  })
+})
+
+describe("the Edge Function's body handling", () => {
+  // Asserted against the source, the way this repository checks its other Edge Functions: the
+  // handler imports a Deno-shaped runtime, so running it under node would test the shim.
+  const source = readContractFile("supabase/functions/cubid-identity-disconnect/index.ts")
+
+  it("refuses a malformed body instead of reading it as an empty one", () => {
+    // This command is destructive. A truncated request must not be interpreted as "no arguments",
+    // which is exactly what a `body.ok ? body.body : {}` fallback did.
+    expect(source).not.toContain("body.ok ? body.body : {}")
+    expect(source).toContain("JSON.parse(raw)")
+    expect(source).toContain('edgeCommandFailure("invalid_payload"')
+  })
+
+  it("still treats a genuinely empty body as no arguments", () => {
+    expect(source).toContain("if (raw.length > 0)")
+  })
+
+  it("authenticates before doing anything destructive", () => {
+    expectSqlOrder(source, "authenticateRequest(request)", "executeCubidIdentityDisconnectCommand")
   })
 })

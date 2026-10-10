@@ -89,3 +89,95 @@ to the two-step journey. That is a product call, so I put it to Noak rather than
    matter, so it is a mechanical-but-not-blind PR of its own rather than something to bury here.
 2. Acceptance 1's open half on #275, once Noak decides.
 3. Terms acceptance at first sign-in, still a counsel question.
+
+### session v2: Codex review on #281 — the flow had never been reachable
+
+- **Timestamp:** 2026-10-10T22:43:28Z
+- **Agent:** Claude Code (Claude Opus 5)
+- **Branch:** `feat/275-sign-in-with-cubid-ui` (PR #281)
+- **Head before commit:** `a1e8315`
+
+---
+
+#### A CI failure I missed before anything else
+
+`validate` was red from the moment I opened #281. The two new `.tsx` tests used top-level
+`await import(...)`, which vitest accepts and `tsc --noEmit` rejects. I ran lint and both test
+projects after adding them and did not re-run typecheck, which is the one gate that catches it.
+
+The obvious fix — a static import — broke the mocks, because `vi.mock` is hoisted above the imports
+and my factories close over ordinary top-level `const`s that do not exist yet at that point. The
+dynamic import had been hiding that. `vi.hoisted` is the construct for it, and both files use it
+now.
+
+---
+
+#### The two P1s, which meant none of this worked
+
+- **`/auth/cubid/*` was being locale-redirected away from its handlers.**
+  `shouldSkipLocaleRouting` exempts `/api/`, `/oauth/` and `/.well-known/` — not `/auth/`. So
+  `/auth/cubid/start` became `/<locale>/auth/cubid/start`, where no handler exists, and the
+  callback URL registered at Cubid would have lost its authorization code the same way. Those
+  routes shipped in #280 and have never been reachable. `/auth/` is exempt now, with the reasoning
+  written where the other prefixes are explained, and `tests/proxy.test.ts` covers both paths plus
+  the bare `/auth`, which keeps the ordinary handling.
+- **Signed-out visitors were told Cubid sign-in was unavailable.** `emptyNavigationContext()`
+  carried my hardcoded `false`, and that is the context every signed-out request gets — exactly the
+  people the action exists for. It derives the flag now, and a test asserts the literal is gone and
+  that both construction sites compute it.
+
+Both were wiring, and neither showed in a test of the pieces. A test per unit and none of the path.
+
+---
+
+#### The five P2s
+
+- **A malformed body ran the destructive unlink.** `parseJsonBody` failing became `{}`, which the
+  no-argument validator accepts. The route parses the body itself now: empty is fine, unparseable is
+  `invalid_payload`.
+- **`unlink_cubid_subject` locked one subject and deleted them all.** The schema allows one mapping
+  per `(issuer, user_id)`, so several issuers are representable, and a concurrent first redemption
+  under an unlocked second mapping could issue a token after the disconnect deleted it. New
+  migration `20261010070000`: every mapping is locked, in `(issuer, subject)` order so two calls
+  cannot take them in opposite orders, and a mapping appearing after the read is a `conflict`
+  rather than a silent delete.
+- **The account page threw where no service-role key is set**, which local and preview deployments
+  support by design. The status read short-circuits when Cubid is unavailable and catches the
+  construction besides.
+- **`expectSqlOrder` proved the wrong thing** for "the lock precedes every read": it searches for
+  the second anchor after the first, so a read added *above* the lock would leave a read below it to
+  satisfy the check. New `expectSqlBeforeEvery` compares against the first occurrence.
+- **No toast renderer was mounted, and there were two stores.** See below.
+
+---
+
+#### One fix that went wider than this PR
+
+`components/ui/use-toast.ts` and `hooks/use-toast.ts` were byte-identical copies of the same
+reducer — two separate in-memory stores, 27 components dispatching into one and 11 into the other —
+and `components/ui/toaster.tsx`, the only renderer, was mounted nowhere and subscribes to the
+second. **Every toast in the application has been invisible**, not only mine.
+
+I collapsed the duplicate into a re-export and mounted the renderer once. That is broader than this
+PR's subject and I would normally leave it alone, but the alternative was shipping a notice that
+says nothing while the auth modal's own toasts stay dead in the same dialog. Flagged for review
+rather than slipped in.
+
+---
+
+#### Tests and Validation
+
+- New: `tests/cubid-unlink-every-issuer-migration.test.ts` (9), `tests/cubid-sign-in-availability.test.ts`
+  (5), the proxy exemptions, and the Edge Function's body handling asserted against its source the
+  way this repository checks its other functions.
+- 189 node files / 1431 tests and 37 dom / 113, all green. Typecheck 0, lint 0 — this time in that
+  order.
+
+---
+
+#### Reflections
+
+Two of the seven were wiring, and the reason I did not catch them is that I tested every piece and
+never the path: the panel renders, the command works, the verifier verifies, and the URL the person
+clicks was being redirected into a 404. The cheap check I skipped was asking "what does the browser
+actually request, and who answers it".

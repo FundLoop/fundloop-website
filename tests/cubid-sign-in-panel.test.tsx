@@ -1,13 +1,17 @@
 import React from "react"
 import { fireEvent, render, screen, waitFor } from "@testing-library/react"
 import { beforeEach, describe, expect, it, vi } from "vitest"
+// vi.mock is hoisted above this import, so the static form still sees the mock.
+import { CubidSignInPanel } from "@/components/account/cubid-sign-in-panel"
 
 // The Sign in with Cubid card on the account page (#275, stage 2c UI).
 
-const disconnect = vi.fn()
+// vi.hoisted, because vi.mock is hoisted above the imports and a factory closing over an ordinary
+// top-level const would run before that const exists. The dynamic-import workaround this replaces
+// kept the mock working and was rejected by tsc.
+const { disconnect } = vi.hoisted(() => ({ disconnect: vi.fn() }))
 vi.mock("@/lib/edge-functions/cubid-identity", () => ({ invokeCubidIdentityDisconnectBrowser: disconnect }))
 
-const { CubidSignInPanel } = await import("@/components/account/cubid-sign-in-panel")
 
 const connected = { available: true, linked: true, linkedAt: "2026-10-01T00:00:00.000Z", lastSeenAt: null }
 const notConnected = { available: true, linked: false, linkedAt: null, lastSeenAt: null }

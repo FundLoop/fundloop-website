@@ -21,6 +21,11 @@ export function readMigration(path: string) {
   return readFileSync(path, "utf8")
 }
 
+/** Any other file a contract test reads — a workflow, an Edge Function, a document. */
+export function readContractFile(path: string) {
+  return readFileSync(path, "utf8")
+}
+
 /**
  * The statements with whole-line comments removed. Use this for every assertion of the form "the
  * SQL does not do X": prose explaining why it does not would otherwise satisfy it.
@@ -77,4 +82,24 @@ export function expectSqlOrder(text: string, first: string, second: string) {
     firstAt,
   )
   return { first: firstAt, second: secondAt }
+}
+
+/**
+ * Asserts `anchor` appears before **every** occurrence of `needle`, and that both appear.
+ *
+ * `expectSqlOrder` deliberately searches for each anchor after the previous one, which proves "then
+ * this happens" — the wrong question for a guarantee like "the lock is taken before any table is
+ * read". There, a read added *above* the lock would leave a later read to satisfy the ordering and
+ * the test would still pass.
+ */
+export function expectSqlBeforeEvery(text: string, anchor: string, needle: string) {
+  const anchorAt = text.indexOf(anchor)
+  const firstNeedleAt = text.indexOf(needle)
+  expect(anchorAt, `not found in the SQL: ${JSON.stringify(anchor)}`).toBeGreaterThanOrEqual(0)
+  expect(firstNeedleAt, `not found in the SQL: ${JSON.stringify(needle)}`).toBeGreaterThanOrEqual(0)
+  expect(
+    anchorAt,
+    `${JSON.stringify(anchor)} must come before the first ${JSON.stringify(needle)}, and does not`,
+  ).toBeLessThan(firstNeedleAt)
+  return { anchorAt, firstNeedleAt }
 }

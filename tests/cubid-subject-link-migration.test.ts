@@ -1,5 +1,12 @@
 import { describe, expect, it } from "vitest"
-import { expectSqlOrder, readMigration, sqlFunctionBody, sqlSlice, statementsOnly } from "./support/sql-text"
+import {
+  expectSqlBeforeEvery,
+  expectSqlOrder,
+  readMigration,
+  sqlFunctionBody,
+  sqlSlice,
+  statementsOnly,
+} from "./support/sql-text"
 import {
   ACCOUNT_PURGED_EVENT,
   CROSS_APP_CONSENT_REVOKED_EVENT,
@@ -102,7 +109,9 @@ describe("serializing every write about one subject", () => {
 
   it("takes it before reading anything", () => {
     for (const body of [linkFunction, replacedReceiver]) {
-      expectSqlOrder(body, SUBJECT_LOCK, "from public.")
+      // Before the *first* read, not merely before some later one: a read added above the lock
+      // would otherwise leave a read below it to satisfy an ordering check.
+      expectSqlBeforeEvery(body, SUBJECT_LOCK, "from public.")
     }
   })
 })

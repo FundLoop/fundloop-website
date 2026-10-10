@@ -23,9 +23,22 @@ export type CubidSignInLinkStatus = {
 
 export async function getCubidSignInLinkStatus(userId: string | null | undefined): Promise<CubidSignInLinkStatus> {
   const available = crossAppSignInConfig() !== null
-  if (!userId) return { available, linked: false, linkedAt: null, lastSeenAt: null }
+  // No user, or nothing to link to: there is nothing to look up, and asking would construct an
+  // admin client that throws where no service-role key is configured — which local and preview
+  // deployments support on purpose. The panel renders nothing in that case anyway.
+  if (!userId || !available) return { available, linked: false, linkedAt: null, lastSeenAt: null }
 
-  const { data, error } = await getAdminSupabaseClient()
+  let admin: ReturnType<typeof getAdminSupabaseClient>
+  try {
+    admin = getAdminSupabaseClient()
+  } catch (error) {
+    // Configured for Cubid but not for the service role is a misconfiguration, not a reason for the
+    // whole account page to fail.
+    console.error(`[cubid-link-status] no admin client: ${error instanceof Error ? error.message : "unknown"}`)
+    return { available, linked: false, linkedAt: null, lastSeenAt: null }
+  }
+
+  const { data, error } = await admin
     .from("cubid_oidc_subjects")
     .select("linked_at, last_seen_at")
     .eq("user_id", userId)

@@ -1,26 +1,31 @@
 import React from "react"
 import { render, waitFor } from "@testing-library/react"
 import { beforeEach, describe, expect, it, vi } from "vitest"
+// vi.mock is hoisted above this import, so the static form still sees the mock.
+import { CubidOutcomeNotice } from "@/components/auth/cubid-outcome-notice"
 
 // What a person is told after coming back from Cubid (#275, stage 2c UI).
 
-const toast = vi.fn()
-const replace = vi.fn()
-let search = new URLSearchParams()
+// vi.hoisted, because vi.mock is hoisted above the imports and a factory closing over an ordinary
+// top-level const would run before that const exists.
+const { toast, replace, state } = vi.hoisted(() => ({
+  toast: vi.fn(),
+  replace: vi.fn(),
+  state: { search: new URLSearchParams() },
+}))
 
 vi.mock("@/components/ui/use-toast", () => ({ toast }))
 vi.mock("next/navigation", () => ({
   useRouter: () => ({ replace }),
   usePathname: () => "/workspace/account",
-  useSearchParams: () => search,
+  useSearchParams: () => state.search,
 }))
 
-const { CubidOutcomeNotice } = await import("@/components/auth/cubid-outcome-notice")
 
 beforeEach(() => {
   toast.mockReset()
   replace.mockReset()
-  search = new URLSearchParams()
+  state.search = new URLSearchParams()
 })
 
 describe("CubidOutcomeNotice", () => {
@@ -31,7 +36,7 @@ describe("CubidOutcomeNotice", () => {
   })
 
   it("explains an outcome and then removes it from the URL", async () => {
-    search = new URLSearchParams("cubid=linked")
+    state.search = new URLSearchParams("cubid=linked")
     render(<CubidOutcomeNotice />)
 
     await waitFor(() => expect(toast).toHaveBeenCalledTimes(1))
@@ -41,13 +46,13 @@ describe("CubidOutcomeNotice", () => {
   })
 
   it("keeps the rest of the query string", async () => {
-    search = new URLSearchParams("tab=identity&cubid=signed-in")
+    state.search = new URLSearchParams("tab=identity&cubid=signed-in")
     render(<CubidOutcomeNotice />)
     await waitFor(() => expect(replace).toHaveBeenCalledWith("/workspace/account?tab=identity", { scroll: false }))
   })
 
   it("tells somebody with an existing account what to do instead of merging it", async () => {
-    search = new URLSearchParams("cubid=email-taken")
+    state.search = new URLSearchParams("cubid=email-taken")
     render(<CubidOutcomeNotice />)
 
     await waitFor(() => expect(toast).toHaveBeenCalled())
@@ -60,7 +65,7 @@ describe("CubidOutcomeNotice", () => {
   it("falls back to a generic refusal for a code it does not know", async () => {
     // The callback sends short codes from a closed list precisely so nothing an issuer or an
     // attacker can influence reaches the screen. An unknown one must not be echoed.
-    search = new URLSearchParams("cubid=<script>alert(1)</script>")
+    state.search = new URLSearchParams("cubid=<script>alert(1)</script>")
     render(<CubidOutcomeNotice />)
 
     await waitFor(() => expect(toast).toHaveBeenCalled())
