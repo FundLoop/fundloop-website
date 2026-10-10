@@ -25,6 +25,16 @@ export type CrossAppReceiverConfig = CubidIssuerConfig & {
   clientId: string
 }
 
+export type CrossAppSignInConfig = CubidIssuerConfig & {
+  /** FundLoop's client id at Cubid — the same client the resource side uses, deliberately. */
+  clientId: string
+  clientSecret: string
+  /** Registered at Cubid exactly, so it is configuration and never derived from the request. */
+  redirectUri: string
+  authorizationEndpoint: string
+  tokenEndpoint: string
+}
+
 export type EnvLike = Record<string, string | undefined>
 
 function trimmed(value: string | undefined) {
@@ -54,6 +64,34 @@ export function crossAppReceiverConfig(env: EnvLike = process.env): CrossAppRece
   const clientId = trimmed(env.FUNDLOOP_CUBID_CLIENT_ID)
   if (!issuer || !clientId) return null
   return { ...issuer, clientId }
+}
+
+// Sign in with Cubid (#275). One Cubid client serves both roles on purpose: Cubid derives the
+// pairwise `sub` from `client_id`, so a second client would mint a different subject for the same
+// person and the mappings this flow writes would never match the subject an identity assertion
+// carries. `FUNDLOOP_CUBID_CLIENT_ID` is therefore shared with the event receiver, while
+// `FUNDLOOP_CROSS_APP_AUDIENCE` stays what it is: the resource audience from the pairing.
+export function crossAppSignInConfig(env: EnvLike = process.env): CrossAppSignInConfig | null {
+  const issuer = issuerConfig(env)
+  const clientId = trimmed(env.FUNDLOOP_CUBID_CLIENT_ID)
+  const clientSecret = trimmed(env.CUBID_OIDC_CLIENT_SECRET)
+  const redirectUri = trimmed(env.FUNDLOOP_CUBID_REDIRECT_URI)
+  if (!issuer || !clientId || !clientSecret || !redirectUri) return null
+  // A redirect URI is matched exactly at Cubid and is where an authorization code is delivered, so
+  // an http one outside loopback would hand codes to the network.
+  const isLocal = /^http:\/\/(127\.0\.0\.1|localhost|\[::1\])(:\d+)?\//.test(redirectUri)
+  if (!redirectUri.startsWith("https://") && !isLocal) return null
+  return {
+    ...issuer,
+    clientId,
+    clientSecret,
+    redirectUri,
+    // The contract publishes these at fixed paths on the issuer ("Required public endpoints"), so
+    // they are derived rather than discovered: sign-in then starts without a network round trip,
+    // and an override exists for a deployment that fronts the issuer differently.
+    authorizationEndpoint: trimmed(env.CUBID_OIDC_AUTHORIZATION_ENDPOINT) ?? `${issuer.issuer}/authorize`,
+    tokenEndpoint: trimmed(env.CUBID_OIDC_TOKEN_ENDPOINT) ?? `${issuer.issuer}/token`,
+  }
 }
 
 let cache: JwksCache | null = null

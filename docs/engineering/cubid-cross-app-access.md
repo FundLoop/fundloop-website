@@ -267,9 +267,12 @@ checks all four of these, the revocation and supersession rules above have no ef
 
 ## Still to build
 
-1. **Sign in with Cubid, and linking an existing email account**, which is what populates
-   `cubid_oidc_subjects`. Until it exists, redemption verifies assertions correctly and then has
-   nobody to issue a token for, so nothing works end to end.
+1. **The Sign in with Cubid UI.** The server side landed in #275 — see
+   [sign-in-with-cubid.md](./sign-in-with-cubid.md) — which is what writes `cubid_oidc_subjects`,
+   without which redemption verifies an assertion correctly and then has nobody to issue a token
+   for. What remains there is the sign-in and connect/disconnect UI, and terms acceptance at first
+   sign-in. Linking also closes the unlinked-subject gap recorded under "Receiving a revocation":
+   `link_cubid_subject` applies every withdrawal already received for the subject it maps.
 2. Two operator steps on the Cubid side: FundLoop registered as a Cubid OIDC resource client (which
    is where `FUNDLOOP_CROSS_APP_AUDIENCE` and `FUNDLOOP_CUBID_CLIENT_ID` come from) and a pairing
    with the requesting client. Registering `security_events_uri` is part of the first: it must be
