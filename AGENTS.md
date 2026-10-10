@@ -49,7 +49,7 @@ Agents in this repo must optimize for:
   - keep commits and `agent-context/session-log/` entries separated by session or meaningful checkpoint
   - open PRs from feature branches into `dev`
   - open PRs from `dev` into `main`
-- Do not push feature work directly to `dev` unless the user explicitly instructs you to do so.
+- Do not push feature work directly to `dev` or `main` unless the user explicitly instructs you to do so.
 - Until FundLoop goes live, promoting `dev` to `main` does not need owner approval: open the `dev` to
   `main` PR and merge it once CI is green. Branch protection and the required status checks still
   apply, and the `dev` to `main` PR is the review point for anything reaching Production — its

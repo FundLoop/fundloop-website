@@ -19,8 +19,10 @@ from what GitHub/Supabase operators must configure before production data is tou
 - Pushes to `dev` deploy migrations and Edge Functions to the dev Supabase target.
 - Pushes to `main` deploy migrations and Edge Functions to the main Supabase target through the `Production` GitHub environment.
 - App CI now runs on pushes to `dev`, pushes to `main`, `codex/**` feature branches, and pull requests.
-- `dev` and `main` are protected for administrators and require PRs, linear history,
-  resolved conversations, and the exact three delivery checks.
+- `dev` and `main` are protected for administrators and require PRs, resolved conversations, and
+  the exact three delivery checks. Linear history is required on `dev` only; `main` has
+  `required_linear_history` disabled, so a release-candidate PR may be merged with a merge commit
+  while feature branches rebase onto `dev`.
 - `Production` is restricted to `main` and does not allow administrator bypass.
   **Until FundLoop goes live it requires no human approval**: the required reviewer was
   removed deliberately, so a Production deploy starts as soon as `main` moves. The
@@ -41,12 +43,15 @@ GitHub API checks on 2026-08-13 confirm:
 - both branches require PRs and enforce protection for administrators; the approval
   count is zero while the repository has only one eligible human, avoiding an
   administrator-enforced self-review deadlock; and
-- `Production` accepts only `main`, has one required human reviewer, and has
-  administrator bypass disabled.
+- `Production` accepts only `main` and has administrator bypass disabled. It has **no required
+  reviewer until go-live**; see the note above and
+  [#271](https://github.com/FundLoop/fundloop-website/issues/271).
 
 Re-read these live controls before promotion because checked-in documentation is not
-configuration evidence. Do not approve a Production deployment until the separate
-release authority boundary is satisfied.
+configuration evidence. Until go-live there is no Production deployment to approve: the deploy
+starts on the merge, so the separate release authority boundary has to be satisfied **before**
+merging rather than at an approval prompt afterwards
+([#271](https://github.com/FundLoop/fundloop-website/issues/271)).
 
 ## Required Secrets And Runtime Configuration
 

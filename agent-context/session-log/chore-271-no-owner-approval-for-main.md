@@ -124,3 +124,63 @@ also a digest-bound artifact of the counsel packet.
 Removing a control is easy; removing every statement that the control exists is the actual work. The
 dry-run summary was the sharpest instance, because it is read precisely when someone is deciding
 whether to let a migration reach Production.
+
+### session v3: Independent deep review on #272
+
+- **Timestamp:** 2026-10-10T01:45:00Z
+- **Head before commit:** `f0adead`
+
+---
+
+#### Actions Taken
+
+- **Three active documents outside the diff still said the gate existed**, and two of them are the
+  references a reader is sent to: `README.md`'s Release Candidate Path, the "Enforced GitHub
+  Controls" list in `release-candidate.md` (which contradicted the new note 20 lines above it), and
+  `supabase-deployments.md`, which README and `edge-functions.md` both link as the current
+  deployment reference. All three now carry the same pre-go-live note and link #271.
+- **`release-candidate.md` also told the operator not to approve a Production deployment** "until
+  the separate release authority boundary is satisfied". There is no deployment to approve, so that
+  boundary now has to be satisfied *before* merging — which is a different instruction, not a
+  reworded one.
+- **Restored "`dev` or `main`" in AGENTS.md section 2.** Dropping `main` went further than Noak's
+  decision: it left nothing forbidding an agent from merging a feature branch straight into `main`,
+  skipping `dev` entirely, since branch protection requires a PR and green checks but not a
+  particular base. The promotion carve-out belongs in the next bullet, where it already is.
+- **Fixed a pre-existing error in the same paragraph**: it claimed both branches require linear
+  history. Only `dev` does; `main` has `required_linear_history` disabled.
+- **#271's restore checklist was incomplete and its command was wrong.** The `PUT` omitted
+  `can_admins_bypass`, which the API defaults to `true` — and it is currently `false`, verified
+  live. Running the command as written would have restored the reviewer while quietly enabling
+  administrator bypass. The corrected checklist includes the flag, a read-back step, and
+  `git grep -n '#271'` as the authority for which notes to remove, so it cannot go stale again.
+
+---
+
+#### Held, pending Noak
+
+The reviewer's P2 that AGENTS.md section 2's note conflicts with section 7 — a merge to `main` now
+applies migrations to the remote Production database, which section 7 forbids without explicit
+permission in the user's most recent prompt. Both cannot be followed at once. HBIC is asking Noak
+whether merge-triggered Production deploys count as permitted; the line stays as it is until he
+answers.
+
+---
+
+#### Escalated, because I cannot resolve it
+
+Both `Production` and `Preview` hold a secret named `SUPABASE_ACCESS_TOKEN`. I can read the names,
+not the values. A `pull_request` run selects `Preview`, so if that token is an account-level PAT
+that can manage the Production project, a same-repo pull request can reach Production through the
+management API — independent of this change, and narrower than the dry-run summary's reasoning
+sounds. Recorded on #271 for someone who can see both values. The summary line now claims only what
+is verifiable: the Production *database URL* is a `Production` secret, so the job could not connect
+to that database.
+
+---
+
+#### Reflections
+
+Every finding here was a document that still described the world as it was before the change. The
+check that would have caught them is the one the reviewer suggested for the restore: grep for the
+control's name, not for the files I remembered touching.

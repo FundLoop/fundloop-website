@@ -215,7 +215,7 @@ jobs:
             {
               echo "### ⚠️ Supabase dry-run used the ${proxy_database} database as a proxy for Production"
               echo ""
-              echo "Production credentials are scoped to the \`Production\` environment, which a pull request does not run in, so pull requests cannot reach the Production database."
+              echo "The Production database URL is a secret of the \`Production\` environment, which a pull request does not run in, so this job could not connect to the Production database."
               echo "A green check here means the migrations apply cleanly to **${proxy_database}**. It does **not** verify Production's current schema or data."
               echo ""
               echo "Until FundLoop goes live, the \`Production\` environment requires no human approval ([#271](https://github.com/FundLoop/fundloop-website/issues/271)), so merging this PR into \`main\` starts the Production deploy with no further gate. This dry-run is the last look at these migrations before that happens."
