@@ -24,8 +24,8 @@ from what GitHub/Supabase operators must configure before production data is tou
   repo-wide, because full history is the requirement: a PR lands as a merge commit and its
   individual commits survive.
 - `Production` is restricted to `main` and does not allow administrator bypass. It has **no
-  per-run reviewer**, deliberately: the owner's approval of the release-candidate PR is the gate,
-  and approving the same release twice adds nothing
+  per-run reviewer**, deliberately: the owner reviews and merges this PR himself, and approving the
+  same release twice adds nothing
   ([#271](https://github.com/FundLoop/fundloop-website/issues/271)).
 
 The timestamped [GitHub delivery-control read-back](./github-delivery-controls-2026-08-13.md)

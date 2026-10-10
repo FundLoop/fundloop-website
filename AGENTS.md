@@ -50,13 +50,18 @@ Agents in this repo must optimize for:
   - open PRs from feature branches into `dev`
   - open PRs from `dev` into `main`
 - Do not push feature work directly to `dev` or `main` unless the user explicitly instructs you to do so.
-- Do not merge a PR, into `dev` or into `main`, until the user has reviewed and approved it. He
-  reviews PRs himself, and that approval is the only gate: the `Production` GitHub environment has
-  no separate per-run reviewer, so a merge to `main` starts the Production deploy immediately.
-- His approval of a `dev` to `main` merge **is** the explicit permission section 7 requires for the
-  migrations and Edge Function deployments that merge applies to the remote Production project. No
-  other route to the hosted databases is permitted: migrations and function deployments go through
-  the CI jobs, never through the CLI against a hosted project.
+- Review is split by target branch, and neither gate is a GitHub setting today, so both are rules
+  here:
+  - **A PR into `dev`** needs the designated review session's approval (the coordinating "HBIC"
+    session) before an agent may merge it. Report the PR as ready once it meets the repo's merge
+    conditions, and wait for that approval.
+  - **A PR into `main`** is reviewed *and merged by the user himself*. An agent does not merge a
+    release-candidate PR, even with CI green and a review in hand.
+- The user's merge of a `dev` to `main` PR **is** the explicit permission section 7 requires for the
+  migrations and Edge Function deployments that merge applies to the remote Production project. The
+  `Production` GitHub environment has no separate per-run reviewer, so that merge starts the deploy
+  immediately. No other route to a hosted database is permitted: migrations and function deployments
+  go through the CI jobs, never through the CLI against a hosted project.
 - Preserve full history. Squash merging is disabled; neither `dev` nor `main` requires linear
   history, so a PR lands as a merge commit and its individual commits survive.
 - `agent-context/session-log/` contains maintained branch-scoped session logs and must be updated for every commit.

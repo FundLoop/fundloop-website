@@ -255,3 +255,20 @@ a PR could do.
 
 - Node project: 167 files, 1065 tests passing; typecheck clean; workflow YAML parses.
 - Live read-back of `dev` protection recorded above.
+
+### session v5: Correction — review is split by target branch
+
+- **Timestamp:** 2026-10-10T02:20:00Z
+
+Noak clarified: he reviews PRs to **`main`**; the coordinating review session reviews PRs to
+**`dev`**. My previous entry had him reviewing every PR into both branches, which was wrong and
+would have stalled every feature branch waiting on him.
+
+`AGENTS.md` now states the split explicitly, with the reason it is written here rather than
+configured: neither gate can be a branch protection setting today, because
+`required_approving_review_count` must stay 0 while every agent-opened PR is authored by his own
+account. README and the release-candidate controls list follow.
+
+This also settles today's merges: #274, #270 and #269 all targeted `dev` and were merged on the
+designated reviewer's verified approval, which is exactly the process this correction describes. I
+had flagged them as possibly premature when the earlier, broader reading arrived; they were not.
