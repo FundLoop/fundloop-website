@@ -278,3 +278,51 @@ About today's merges, stated plainly rather than tidied away: I merged #274, #27
 the time. Under the rule as it now stands I would have reported them ready and left the merge to the
 reviewer. Nothing about those three changes is in doubt — all six conditions held and CI was green
 on each — but the merges were mine, and that is no longer my part to play.
+
+### session v6: Codex review — the evidence contract could not describe the new control
+
+- **Timestamp:** 2026-10-10T03:55:00Z
+
+Four findings, and the second was the one that mattered: with `Production` deliberately having no
+per-run reviewer, the v1 evidence contract became **unsatisfiable**. The schema required
+`requiredReviewerCount >= 1` and the evaluator emitted `protection-missing:production-reviewer` for
+zero, so every truthful manifest would have failed Production certification after a correctly
+authorized merge.
+
+Two rounds ago I argued for leaving that failing deliberately, as a go-live tripwire. That was
+defensible while the zero-reviewer state was temporary. It is now permanent policy, so a
+permanently-failing required certification is just a broken gate, and the contract has to model the
+control that actually exists.
+
+#### What the contract says now
+
+`githubControls.promotionApproval` is required: the pull request number, who reviewed it, who merged
+it, and when. `requiredReviewerCount` may be zero, with the schema explaining why. The evaluator's
+reviewer blocker is replaced by four: a missing pull request, review, merger or merge time.
+
+Stated plainly in the schema and the contract, because it is a real weakening: **the control changed
+from an enforced setting to a recorded human action.** GitHub guaranteed the old one; a person
+attests the new one. That is the same limitation as the review gate itself, and it has the same
+remedy — a separate machine identity would let `required_approving_review_count` be raised and make
+both enforceable again.
+
+#### The other three
+
+- The promotion sequence had the owner reviewing *and* merging, which would have let an operator
+  skip the designated review entirely. Steps 8 and 9 now separate the roles.
+- The runbook still carried "confirm required reviewers" as an imperative with a note underneath
+  saying it no longer applied — an instruction that cannot be followed. Replaced rather than
+  annotated.
+- The controls list was presented as the result of the 2026-08-13 read-back, which records the
+  opposite state: a required reviewer and linear history. New dated artifact
+  `github-delivery-controls-2026-10-10.md` records a live read-back of every value, with the two
+  that look like gaps explained, and both documents' review dates updated.
+
+#### Counsel packet, again
+
+`lib/release-readiness/evidence-manifest.ts` is a digest-bound artifact of the counsel review
+packet, so changing the evaluator invalidated it. Re-bound as before. This time the change is
+substantive rather than editorial: whoever briefs counsel should know the Production control they
+will read about is a recorded merge, not an enforced reviewer.
+
+Validated: 167 files, 1068 tests, typecheck and lint clean.

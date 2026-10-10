@@ -1,6 +1,6 @@
 # Dev To Main Release Candidate Path
 
-Last reviewed: 2026-08-13
+Last reviewed: 2026-10-10
 
 Session 52 records the first credible promotion path from `dev` to `main`. Sprint
 #155 adds the immutable [production-readiness evidence contract](./production-readiness-evidence-contract.md).
@@ -28,8 +28,12 @@ from what GitHub/Supabase operators must configure before production data is tou
   same release twice adds nothing
   ([#271](https://github.com/FundLoop/fundloop-website/issues/271)).
 
-The timestamped [GitHub delivery-control read-back](./github-delivery-controls-2026-08-13.md)
-records the unsafe baseline and the owner/admin API result after configuration.
+Two timestamped read-backs record how these controls were verified, and they do not describe the
+same configuration: [2026-08-13](./github-delivery-controls-2026-08-13.md) records the original
+hardening, when `Production` had a required reviewer and `dev` required linear history, and
+[2026-10-10](./github-delivery-controls-2026-10-10.md) records the current state after both were
+changed deliberately. Read the later one for what is live now; the earlier one is the historical
+baseline, not verification of the bullets above.
 
 ## Enforced GitHub Controls
 
@@ -77,10 +81,13 @@ The repo cannot read secret values from GitHub or Supabase. Treat this as an ope
 5. Confirm app CI passes on the PR.
 6. Confirm the Supabase Deploy PR dry-run targets `main` and succeeds without remote mutation.
 7. Review migration ordering, Edge Function changes, runtime secret requirements, and smoke results.
-8. The owner reviews the PR and merges it. **That merge is the decision to deploy to Production** —
-   everything after it is automatic, and it is also the explicit permission for the migrations it
-   applies to the remote Production project. An agent does not merge this PR.
-9. Watch the deploy run; there is nothing to approve. The push-triggered run starts on its own.
+8. The designated reviewer reviews this PR, as for every PR. Reviewing and merging are separate
+   roles here: skipping the review because the owner will merge would remove the only review this
+   change gets before Production applies it.
+9. The owner merges it. **That merge is the decision to deploy to Production** — everything after it
+   is automatic, and it is also the explicit permission for the migrations it applies to the remote
+   Production project. An agent does not merge this PR, and there is nothing to approve afterwards:
+   the push-triggered run starts on its own. Watch it rather than waiting for a prompt.
 10. Confirm the push-triggered main Supabase deploy applies migrations and deploys functions successfully.
 11. Regenerate the v1 evidence manifest and require exact migration/function/schema
     parity for the main SHA while `productionValueFlowEnabled=false`.

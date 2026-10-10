@@ -104,7 +104,7 @@
     "githubControls": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["observedAt", "baseBranch", "pullRequestRequired", "requiredChecks", "productionEnvironment", "requiredReviewerCount", "adminBypassAllowed"],
+      "required": ["observedAt", "baseBranch", "pullRequestRequired", "requiredChecks", "productionEnvironment", "requiredReviewerCount", "adminBypassAllowed", "promotionApproval"],
       "properties": {
         "observedAt": { "$ref": "#/$defs/dateTime" },
         "baseBranch": { "enum": ["dev", "main"] },
@@ -121,8 +121,24 @@
           "items": { "$ref": "#/$defs/nonEmpty" }
         },
         "productionEnvironment": { "const": "Production" },
-        "requiredReviewerCount": { "type": "integer", "minimum": 1 },
-        "adminBypassAllowed": { "const": false }
+        "requiredReviewerCount": {
+          "description": "Required reviewers configured on the Production environment. Zero is the current, deliberate configuration: the approval is the owner's merge of the release-candidate PR, recorded in promotionApproval, rather than a per-run environment gate.",
+          "type": "integer",
+          "minimum": 0
+        },
+        "adminBypassAllowed": { "const": false },
+        "promotionApproval": {
+          "description": "Who reviewed and who merged the pull request this deployment came from. This is the control that replaced the environment reviewer, so it is a recorded human action rather than an enforced setting.",
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["pullRequest", "reviewedBy", "mergedBy", "mergedAt"],
+          "properties": {
+            "pullRequest": { "type": "integer", "minimum": 1 },
+            "reviewedBy": { "$ref": "#/$defs/nonEmpty" },
+            "mergedBy": { "$ref": "#/$defs/nonEmpty" },
+            "mergedAt": { "$ref": "#/$defs/dateTime" }
+          }
+        }
       }
     },
     "runtimeControls": {

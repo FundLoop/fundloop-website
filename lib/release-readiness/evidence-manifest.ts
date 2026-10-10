@@ -59,6 +59,7 @@ export type ProductionReadinessManifest = {
     requiredChecks: string[]
     productionEnvironment: "Production"
     requiredReviewerCount: number
+    promotionApproval: { pullRequest: number; reviewedBy: string; mergedBy: string; mergedAt: string }
     adminBypassAllowed: boolean
   }
   runtimeControls: {
@@ -243,7 +244,15 @@ export function evaluateProductionReadinessManifest(manifest: ProductionReadines
   if (manifest.githubControls.baseBranch !== expectedBranch) add("protection-branch", deployBlockers)
   if (!manifest.githubControls.pullRequestRequired) add("protection-missing:pull-request", deployBlockers)
   for (const check of REQUIRED_CHECKS) if (!manifest.githubControls.requiredChecks.includes(check)) add(`protection-missing:check:${check}`, deployBlockers)
-  if (manifest.githubControls.requiredReviewerCount < 1) add("protection-missing:production-reviewer", deployBlockers)
+  // The Production environment deliberately has no per-run reviewer: the approval is the owner's
+  // merge of the release-candidate PR. So the evidence is who reviewed and who merged it, which is a
+  // recorded action rather than a configured gate — weaker, and stated as such in the contract.
+  const promotion = manifest.githubControls.promotionApproval
+  if (!promotion || !Number.isInteger(promotion.pullRequest) || promotion.pullRequest < 1) add("promotion-missing:pull-request", deployBlockers)
+  if (!promotion?.reviewedBy) add("promotion-missing:review", deployBlockers)
+  if (!promotion?.mergedBy) add("promotion-missing:merge", deployBlockers)
+  // Format is the schema's job; this only checks that a usable instant is present.
+  if (!promotion?.mergedAt || Number.isNaN(Date.parse(promotion.mergedAt))) add("promotion-missing:merged-at", deployBlockers)
   if (manifest.githubControls.adminBypassAllowed) add("protection-missing:admin-bypass", deployBlockers)
 
   const capabilityIds = new Set(manifest.capabilities.map((capability) => capability.capabilityId))
