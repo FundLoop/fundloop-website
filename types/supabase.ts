@@ -15074,8 +15074,22 @@ export type Database = {
         Args: {
           p_client_id: string
           p_user_id: string
-          p_consented_scopes: Database["public"]["Enums"]["oauth_scope"][]
+          p_assertion_scopes: Database["public"]["Enums"]["oauth_scope"][]
           p_assertion_issued_at: string
+          p_token_sha256: string
+          p_token_scopes: Database["public"]["Enums"]["oauth_scope"][]
+          p_token_expires_at: string
+          p_assertion_jti: string
+        }
+        Returns: {
+          grant_id: number
+          outcome: string
+        }[]
+      }
+      oauth_revoke_grant: {
+        Args: {
+          p_client_id: string
+          p_user_id: string
         }
         Returns: {
           grant_id: number

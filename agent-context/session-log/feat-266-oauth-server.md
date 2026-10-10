@@ -306,3 +306,54 @@ written that reasoning into a thread reply as if it settled the matter. The revi
 contract instead, where absent explicitly means none was requested or allowed. A default that grants
 more than the person consented to is not a default, and my argument for it was exactly the sort that
 sounds careful while quietly widening access.
+
+### session v5: Second deep review on #273 — four P3s, one of them a design correction
+
+- **Timestamp:** 2026-10-10T03:10:00Z
+- **Head before commit:** `7f632d1`
+
+---
+
+#### The one that changed the design
+
+**An assertion's `scope` is a per-exchange request, not a consent envelope.** The contract carries
+it "only when requested and allowed", so it is what the client asked for in that one exchange,
+bounded by the pairing. I had been recording it as "consented scopes" and superseding live tokens
+whenever it narrowed — which means two parallel workers asking for different scopes would revoke
+each other's tokens. Narrowing-based supersession is gone, the parameter is named
+`assertionScopes`, and the doc now states plainly that consent narrowing at Cubid **is not
+observable by a resource app at all**: the contract sends an event on withdrawal, not on a scope
+reduction, so the only bound on a removed scope is the 15-minute token lifetime.
+
+That also retires a fix I made two rounds ago for a finding written against the per-app OAuth model,
+where consent genuinely was captured here. Carrying it into the ID-JAG model turned a real
+protection into a self-inflicted denial of service.
+
+#### The other three
+
+- **The token insert moved inside `oauth_redeem_grant`.** It ran after the locked statement
+  committed, so a wider redemption's token could land after a narrower one's supersession, leaving a
+  live token wider than the grant recording it. The lock now covers the decision and the write.
+- **A 30-second skew margin** on the pre-withdrawal check. `iat` is Cubid's clock and `revoked_at`
+  is ours; an exact comparison trusted that they agree. The margin errs towards refusing.
+- **A withdrawal is recorded even with no grant row.** `revokeTokensForGrant` was two unlocked
+  statements and wrote nothing when no grant existed, so a revocation for a person who never
+  redeemed here vanished — and a later assertion minted *before* that withdrawal would have created
+  a fresh grant and been honoured. New `oauth_revoke_grant` locks, revokes and inserts a revoked row
+  with no scopes when needed; the schema permits an empty scope array only on a revoked grant.
+
+---
+
+#### Validation Notes
+
+- OAuth suites green; full node project green; typecheck and lint clean.
+- The SQL contract tests now assert the insert is inside the locked function, the skew margin, that
+  narrowing no longer triggers supersession, and that a withdrawal is recordable without a grant row.
+
+---
+
+#### Reflections
+
+Three rounds of review on this file and the most damaging bug was not a missing check — it was a
+wrong model of what a field means. I read `scope` as consent because that is what it meant in the
+flow we deleted, and every correct-looking protection I built on top of it inherited the error.

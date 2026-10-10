@@ -94,79 +94,47 @@ export async function recordAssertionJti(input: {
   return { ok: true }
 }
 
-// One statement decides the grant's fate, so two concurrent redemptions cannot interleave their
-// read-compare-write. It also refuses an assertion minted before a withdrawal, which proves consent
-// as of its `iat` and not as of now.
-async function redeemGrant(input: {
-  clientId: string
-  userId: string
-  consentedScopes: OAuthScope[]
-  assertionIssuedAt: Date
-}): Promise<{ ok: true; grantId: number } | { ok: false; reason: "withdrawn" }> {
-  const { data, error } = await oauthDb().rpc("oauth_redeem_grant", {
-    p_client_id: input.clientId,
-    p_user_id: input.userId,
-    p_consented_scopes: sortScopes(input.consentedScopes),
-    p_assertion_issued_at: input.assertionIssuedAt.toISOString(),
-  })
-  fail("redeem-grant", error)
-  const row = data?.[0]
-  if (!row) throw new Error("oauth-store:redeem-grant: no outcome returned")
-  if (row.outcome === "withdrawn") return { ok: false, reason: "withdrawn" }
-  return { ok: true, grantId: row.grant_id }
-}
-
+// One statement decides the grant's fate *and* writes the token, under one lock. The insert cannot
+// live out here: two concurrent redemptions could interleave so that a wider token lands after a
+// narrower redemption's supersession, leaving a live token wider than the grant recording it.
 export async function issueAccessToken(input: {
   clientId: string
   userId: string
-  // What the person consented to, from the assertion. This is what the grant records.
-  consentedScopes: OAuthScope[]
+  // What the assertion carried. Under the Cubid contract this is what the client requested for this
+  // exchange, bounded by the pairing — it is not the person's standing consent, so a smaller value
+  // here never means consent narrowed.
+  assertionScopes: OAuthScope[]
   // What this token carries, which the client may have narrowed for itself.
   scopes: OAuthScope[]
   assertionJti: string
   assertionIssuedAt: Date
 }): Promise<{ ok: true; accessToken: string; expiresIn: number } | { ok: false; reason: "withdrawn" }> {
-  const grant = await redeemGrant({
-    clientId: input.clientId,
-    userId: input.userId,
-    consentedScopes: input.consentedScopes,
-    assertionIssuedAt: input.assertionIssuedAt,
-  })
-  if (!grant.ok) return grant
-  const grantId = grant.grantId
   const accessToken = randomToken()
-  const { error } = await oauthDb().from("oauth_tokens").insert({
-    token_sha256: sha256Hex(accessToken),
-    token_type: "access",
-    client_id: input.clientId,
-    user_id: input.userId,
-    grant_id: grantId,
-    scopes: sortScopes(input.scopes),
-    issued_from_assertion_jti: input.assertionJti,
-    expires_at: expiresAt(OAUTH_TTL_SECONDS.accessToken),
+  const { data, error } = await oauthDb().rpc("oauth_redeem_grant", {
+    p_client_id: input.clientId,
+    p_user_id: input.userId,
+    p_assertion_scopes: sortScopes(input.assertionScopes),
+    p_assertion_issued_at: input.assertionIssuedAt.toISOString(),
+    p_token_sha256: sha256Hex(accessToken),
+    p_token_scopes: sortScopes(input.scopes),
+    p_token_expires_at: expiresAt(OAUTH_TTL_SECONDS.accessToken),
+    p_assertion_jti: input.assertionJti,
   })
-  fail("insert-token", error)
+  fail("redeem-grant", error)
+  const row = data?.[0]
+  if (!row) throw new Error("oauth-store:redeem-grant: no outcome returned")
+  if (row.outcome === "withdrawn") return { ok: false, reason: "withdrawn" }
   return { ok: true, accessToken, expiresIn: OAUTH_TTL_SECONDS.accessToken }
 }
 
 // Used by the revocation endpoint and, next, by the Security Event Token receiver.
+//
+// One locked statement, and it records the withdrawal even when no grant row exists: otherwise a
+// revocation for a person who never redeemed here wrote nothing, and a later assertion minted
+// *before* that withdrawal would create a fresh grant and be honoured.
 export async function revokeTokensForGrant(clientId: string, userId: string): Promise<void> {
-  const now = new Date().toISOString()
-  const tokens = await oauthDb()
-    .from("oauth_tokens")
-    .update({ revoked_at: now })
-    .eq("client_id", clientId)
-    .eq("user_id", userId)
-    .is("revoked_at", null)
-  fail("revoke-tokens", tokens.error)
-
-  const grant = await oauthDb()
-    .from("oauth_grants")
-    .update({ revoked_at: now, updated_at: now })
-    .eq("client_id", clientId)
-    .eq("user_id", userId)
-    .is("revoked_at", null)
-  fail("revoke-grant", grant.error)
+  const { error } = await oauthDb().rpc("oauth_revoke_grant", { p_client_id: clientId, p_user_id: userId })
+  fail("revoke-grant", error)
 }
 
 export async function revokeByToken(token: string, clientId: string): Promise<void> {

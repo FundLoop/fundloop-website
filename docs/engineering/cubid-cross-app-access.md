@@ -62,16 +62,36 @@ client's registered list would grant past the pairing's own limit, since that li
 ceiling an operator keeps here rather than the person's consent. An assertion with no scope is
 refused. The registered list still applies as a ceiling, so an operator can withdraw a scope here
 without waiting for the pairing to change. A client may narrow its own token further with a `scope`
-parameter; that narrows the token only, and is not recorded as the person narrowing consent.
+parameter, which narrows that token only.
+
+**An assertion's `scope` is a per-exchange request, not a consent envelope.** The contract carries
+it "only when requested and allowed", so it reflects what the client asked for in that one exchange,
+bounded by the pairing. A smaller value therefore says nothing about the person's standing consent,
+and FundLoop must not treat it as narrowing: two parallel workers asking for different scopes would
+otherwise revoke each other's tokens. **Consent narrowing at Cubid is not observable here at all** —
+the contract sends a Security Event Token on withdrawal, not on a scope reduction — so the bound on
+a scope the person has removed is the token's 15-minute lifetime, and nothing longer-lived may be
+issued without revisiting that.
 
 **An assertion proves consent as of its `iat`, not as of now.** The contract marks outstanding
 assertions revoked at Cubid on withdrawal, which a resource app cannot observe, so an assertion
 minted before a withdrawal must not revive a revoked grant. `oauth_redeem_grant` refuses one whose
 `iat` is at or before the grant's `revoked_at`.
 
-**The grant decision is one statement.** `oauth_redeem_grant` locks the grant row, decides revival,
-supersession and the recorded scopes, and returns the id. A read-compare-write in application code
-let two concurrent redemptions interleave and leave a live token wider than the grant recording it.
+**A redemption is one statement, including the token.** `oauth_redeem_grant` locks the grant row,
+decides revival, updates the recorded scopes **and inserts the token**, then returns the id. The
+insert has to be inside: with it outside, two concurrent redemptions could interleave so that the
+wider one's token landed after the narrower one's supersession, leaving a live token wider than the
+grant recording it.
+
+**A withdrawal is also one statement, and is recorded even with no grant row.**
+`oauth_revoke_grant` locks, revokes the live tokens and marks the grant — creating a revoked row
+with no scopes if the person never redeemed here. Without that row a revocation for an unknown pair
+wrote nothing, so a later assertion minted *before* the withdrawal would create a fresh grant and be
+honoured. The schema allows an empty scope array only on a revoked grant, for exactly this.
+
+**`iat` and `revoked_at` come from different clocks**, Cubid's and ours, so the pre-withdrawal check
+carries a 30-second margin and errs towards refusing.
 
 **No refresh tokens.** A client renews by redeeming a fresh assertion, which re-checks consent at
 Cubid. Issuing our own refresh token would keep access alive on FundLoop's say-so after a person

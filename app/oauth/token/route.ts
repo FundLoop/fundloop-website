@@ -113,17 +113,18 @@ async function redeem(request: Request) {
   if (!isScopeSubset(fromAssertion.scopes, client.allowed_scopes)) {
     return oauthErrorResponse("invalid_scope", "The assertion names a scope this client is not registered for.")
   }
-  // What the person consented to, which is what the grant records.
-  const consented: OAuthScope[] = fromAssertion.scopes
+  // What this assertion carried. Under the contract this is what the client requested for this
+  // exchange, bounded by the pairing's own limit — not the person's standing consent, so a smaller
+  // value here must never be read as consent narrowing.
+  const assertionScopes: OAuthScope[] = fromAssertion.scopes
 
-  // A client may ask for less than it was granted. That is the client's own choice for this token,
-  // so it narrows the token and must not be mistaken for the person narrowing their consent.
-  let granted: OAuthScope[] = consented
+  // A client may ask for less again at the token endpoint, which narrows this token only.
+  let granted: OAuthScope[] = assertionScopes
   const requested = form.get("scope")
   if (requested) {
     const parsed = parseScopeParam(requested)
     if (!parsed.ok) return oauthErrorResponse("invalid_scope", "The requested scope is not one this app offers.")
-    if (!isScopeSubset(parsed.scopes, consented)) {
+    if (!isScopeSubset(parsed.scopes, assertionScopes)) {
       return oauthErrorResponse("invalid_scope", "The requested scope is wider than the assertion allows.")
     }
     granted = parsed.scopes
@@ -150,7 +151,7 @@ async function redeem(request: Request) {
   const issued = await issueAccessToken({
     clientId: client.client_id,
     userId,
-    consentedScopes: consented,
+    assertionScopes,
     scopes: granted,
     assertionJti: claims.jti,
     assertionIssuedAt: new Date(claims.iat * 1000),

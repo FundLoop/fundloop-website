@@ -118,8 +118,7 @@ describe("POST /oauth/token (ID-JAG redemption)", () => {
     expect(store.issueAccessToken).toHaveBeenCalledWith(expect.objectContaining({
       clientId: "wondrbot",
       userId: "user-1",
-      // What the person consented to, and what this token carries, are recorded separately.
-      consentedScopes: ["profile:read", "awards:read"],
+      assertionScopes: ["profile:read", "awards:read"],
       scopes: ["profile:read", "awards:read"],
       assertionJti: "jag_abc",
       assertionIssuedAt: expect.any(Date),
@@ -302,7 +301,9 @@ describe("POST /oauth/token (ID-JAG redemption)", () => {
     const narrowedToken = await route(redeem({ grant_type: GRANT, client_id: "wondrbot", client_secret: "s3cret", scope: "profile:read", assertion: await signAssertion() }))
     expect(narrowedToken.status).toBe(200)
     expect(store.issueAccessToken).toHaveBeenLastCalledWith(expect.objectContaining({
-      consentedScopes: ["profile:read", "awards:read"],
+      // The assertion's scope and the token's own narrowing are passed separately, and a narrower
+      // token never implies the person narrowed consent.
+      assertionScopes: ["profile:read", "awards:read"],
       scopes: ["profile:read"],
     }))
 

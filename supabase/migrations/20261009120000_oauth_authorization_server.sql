@@ -52,7 +52,12 @@ create table public.oauth_grants (
   id bigint generated always as identity primary key,
   client_id text not null references public.oauth_clients(client_id) on delete cascade,
   user_id uuid not null references auth.users(id) on delete cascade,
-  scopes public.oauth_scope[] not null check (array_length(scopes, 1) between 1 and 16),
+  -- A live grant holds between one and sixteen scopes. A revoked one may hold none: a withdrawal
+  -- has to be recordable for a person who never redeemed here, so the revocation is not lost.
+  scopes public.oauth_scope[] not null check (
+    array_length(scopes, 1) between 1 and 16
+    or (revoked_at is not null and scopes = '{}'::public.oauth_scope[])
+  ),
   granted_at timestamptz not null default now(),
   updated_at timestamptz not null default now(),
   revoked_at timestamptz,
@@ -111,18 +116,26 @@ create index cubid_oidc_subjects_user_idx on public.cubid_oidc_subjects (user_id
 create index oauth_tokens_grant_idx on public.oauth_tokens (grant_id, token_type) where revoked_at is null;
 create index oauth_tokens_expiry_idx on public.oauth_tokens (expires_at) where revoked_at is null;
 
--- One redemption's effect on a grant, in one statement, so two concurrent redemptions cannot
--- interleave their read-compare-write and leave a live token wider than the grant that records it.
+-- One redemption, in one statement: the grant decision *and* the token insert, under one lock.
+--
+-- The token has to be written here rather than by the caller afterwards. With the insert outside,
+-- two concurrent redemptions could interleave so that the wider one's token lands after the
+-- narrower one's supersession, leaving a live token wider than the grant that records it.
 --
 -- It also decides whether the grant may be revived at all. An assertion proves consent only as of
 -- its `iat`: the Cubid contract marks outstanding assertions revoked at Cubid on withdrawal, which
 -- a resource app cannot see, so an assertion minted before a withdrawal would otherwise bring the
--- grant back to life. Such an assertion is refused here instead.
+-- grant back to life. Such an assertion is refused here instead, with a margin for clock skew,
+-- because `iat` comes from Cubid's clock and `revoked_at` from ours.
 create or replace function public.oauth_redeem_grant(
   p_client_id text,
   p_user_id uuid,
-  p_consented_scopes public.oauth_scope[],
-  p_assertion_issued_at timestamptz
+  p_assertion_scopes public.oauth_scope[],
+  p_assertion_issued_at timestamptz,
+  p_token_sha256 text,
+  p_token_scopes public.oauth_scope[],
+  p_token_expires_at timestamptz,
+  p_assertion_jti text
 )
 returns table (grant_id bigint, outcome text)
 language plpgsql
@@ -131,7 +144,7 @@ set search_path = ''
 as $$
 declare
   v_grant public.oauth_grants;
-  v_narrowed boolean;
+  v_skew constant interval := interval '30 seconds';
 begin
   loop
     -- FOR UPDATE serialises every redemption for this client and person.
@@ -142,39 +155,90 @@ begin
 
     begin
       insert into public.oauth_grants (client_id, user_id, scopes)
-      values (p_client_id, p_user_id, p_consented_scopes)
+      values (p_client_id, p_user_id, p_assertion_scopes)
       returning * into v_grant;
-      return query select v_grant.id, 'created'::text;
-      return;
+      exit;
     exception when unique_violation then
       -- Another redemption inserted it first; go back and lock that row instead of failing.
     end;
   end loop;
 
-  if v_grant.revoked_at is not null and p_assertion_issued_at <= v_grant.revoked_at then
-    -- Predates the withdrawal, so it is not evidence that consent is live now.
+  if v_grant.revoked_at is not null and p_assertion_issued_at <= v_grant.revoked_at + v_skew then
+    -- Predates the withdrawal, so it is not evidence that consent is live now. The skew margin
+    -- errs towards refusing, because the two timestamps come from different clocks.
     return query select v_grant.id, 'withdrawn'::text;
     return;
   end if;
 
-  -- Reviving a revoked grant, or recording a narrower consent, starts a fresh set of tokens: a
-  -- credential issued under the previous authorization must not keep acting under this one.
-  v_narrowed := exists (select 1 from unnest(v_grant.scopes) existing where existing <> all (p_consented_scopes));
-  if v_grant.revoked_at is not null or v_narrowed then
+  -- Reviving a revoked grant starts a fresh set of tokens: a credential issued under the previous
+  -- authorization must not keep acting under this one.
+  --
+  -- Narrowing is deliberately *not* a trigger here. Under the contract an assertion's `scope` is
+  -- what the client requested for that exchange, not the person's standing consent, so a client
+  -- asking for less in one call would otherwise revoke the tokens of its own parallel calls.
+  -- Consent narrowing at Cubid is not observable by a resource app; the short token lifetime is
+  -- what bounds it.
+  if v_grant.revoked_at is not null then
     update public.oauth_tokens set revoked_at = now()
       where oauth_tokens.grant_id = v_grant.id and oauth_tokens.revoked_at is null;
   end if;
 
   update public.oauth_grants
-    set scopes = p_consented_scopes, revoked_at = null, updated_at = now()
+    set scopes = p_assertion_scopes, revoked_at = null, updated_at = now()
     where id = v_grant.id;
 
-  return query select v_grant.id, 'updated'::text;
+  insert into public.oauth_tokens (token_sha256, token_type, client_id, user_id, grant_id, scopes, issued_from_assertion_jti, expires_at)
+  values (p_token_sha256, 'access', p_client_id, p_user_id, v_grant.id, p_token_scopes, p_assertion_jti, p_token_expires_at);
+
+  return query select v_grant.id, 'issued'::text;
 end;
 $$;
 
-revoke all on function public.oauth_redeem_grant(text, uuid, public.oauth_scope[], timestamptz) from public, anon, authenticated;
-grant execute on function public.oauth_redeem_grant(text, uuid, public.oauth_scope[], timestamptz) to service_role;
+-- A withdrawal, in one statement, recorded even for a person who never redeemed here.
+--
+-- Without the insert branch, a revocation for an unknown (client, person) pair wrote nothing, so a
+-- later assertion minted *before* that withdrawal would create a fresh grant and be honoured. The
+-- lock makes the token revocation and the grant update one step rather than two racing ones.
+create or replace function public.oauth_revoke_grant(p_client_id text, p_user_id uuid)
+returns table (grant_id bigint, outcome text)
+language plpgsql
+security invoker
+set search_path = ''
+as $$
+declare
+  v_grant public.oauth_grants;
+begin
+  loop
+    select * into v_grant from public.oauth_grants
+      where client_id = p_client_id and user_id = p_user_id
+      for update;
+    exit when found;
+
+    begin
+      insert into public.oauth_grants (client_id, user_id, scopes, revoked_at)
+      values (p_client_id, p_user_id, '{}'::public.oauth_scope[], now())
+      returning * into v_grant;
+      return query select v_grant.id, 'recorded'::text;
+      return;
+    exception when unique_violation then
+      -- A concurrent writer created it; lock that row instead.
+    end;
+  end loop;
+
+  update public.oauth_tokens set revoked_at = now()
+    where oauth_tokens.grant_id = v_grant.id and oauth_tokens.revoked_at is null;
+
+  update public.oauth_grants set revoked_at = coalesce(v_grant.revoked_at, now()), updated_at = now()
+    where id = v_grant.id;
+
+  return query select v_grant.id, 'revoked'::text;
+end;
+$$;
+
+revoke all on function public.oauth_redeem_grant(text, uuid, public.oauth_scope[], timestamptz, text, public.oauth_scope[], timestamptz, text) from public, anon, authenticated;
+grant execute on function public.oauth_redeem_grant(text, uuid, public.oauth_scope[], timestamptz, text, public.oauth_scope[], timestamptz, text) to service_role;
+revoke all on function public.oauth_revoke_grant(text, uuid) from public, anon, authenticated;
+grant execute on function public.oauth_revoke_grant(text, uuid) to service_role;
 
 -- Expired single-use rows are dead weight once they can no longer be redeemed. Scheduling this is
 -- stage 5 work; the function exists so the schedule is a one-liner and the retention rule has one
