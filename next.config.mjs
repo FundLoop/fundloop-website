@@ -14,6 +14,13 @@ const nextConfig = {
   turbopack: {
     root: workspaceRoot,
   },
+  async rewrites() {
+    return [
+      // RFC 8414 fixes this path, and Next's router ignores directories whose names start with a
+      // dot, so the handler lives at /api/oauth/metadata and is served from the well-known path.
+      { source: "/.well-known/oauth-authorization-server", destination: "/api/oauth/metadata" },
+    ]
+  },
 }
 
 export default withNextIntl(nextConfig)

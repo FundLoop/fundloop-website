@@ -6511,6 +6511,183 @@ export type Database = {
           },
         ]
       }
+      cubid_oidc_subjects: {
+        Row: {
+          id: number
+          issuer: string
+          linked_at: string
+          last_seen_at: string | null
+          subject: string
+          user_id: string
+        }
+        Insert: {
+          id?: never
+          issuer: string
+          linked_at?: string
+          last_seen_at?: string | null
+          subject: string
+          user_id: string
+        }
+        Update: {
+          id?: never
+          issuer?: string
+          linked_at?: string
+          last_seen_at?: string | null
+          subject?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      oauth_assertion_jtis: {
+        Row: {
+          client_id: string
+          expires_at: string
+          issuer: string
+          jti: string
+          redeemed_at: string
+          subject: string
+        }
+        Insert: {
+          client_id: string
+          expires_at: string
+          issuer: string
+          jti: string
+          redeemed_at?: string
+          subject: string
+        }
+        Update: {
+          client_id?: string
+          expires_at?: string
+          issuer?: string
+          jti?: string
+          redeemed_at?: string
+          subject?: string
+        }
+        Relationships: []
+      }
+      oauth_clients: {
+        Row: {
+          allowed_scopes: Database["public"]["Enums"]["oauth_scope"][]
+          client_id: string
+          client_secret_sha256: string
+          client_type: string
+          client_uri: string | null
+          created_at: string
+          cubid_client_id: string
+          description: string | null
+          disabled_at: string | null
+          id: number
+          is_sandbox: boolean
+          logo_url: string | null
+          name: string
+          updated_at: string
+        }
+        Insert: {
+          allowed_scopes: Database["public"]["Enums"]["oauth_scope"][]
+          client_id: string
+          client_secret_sha256: string
+          client_type?: string
+          client_uri?: string | null
+          created_at?: string
+          cubid_client_id: string
+          description?: string | null
+          disabled_at?: string | null
+          id?: never
+          is_sandbox?: boolean
+          logo_url?: string | null
+          name: string
+          updated_at?: string
+        }
+        Update: {
+          allowed_scopes?: Database["public"]["Enums"]["oauth_scope"][]
+          client_id?: string
+          client_secret_sha256?: string
+          client_type?: string
+          client_uri?: string | null
+          created_at?: string
+          cubid_client_id?: string
+          description?: string | null
+          disabled_at?: string | null
+          id?: never
+          is_sandbox?: boolean
+          logo_url?: string | null
+          name?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      oauth_grants: {
+        Row: {
+          client_id: string
+          granted_at: string
+          id: number
+          revoked_at: string | null
+          scopes: Database["public"]["Enums"]["oauth_scope"][]
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          client_id: string
+          granted_at?: string
+          id?: never
+          revoked_at?: string | null
+          scopes: Database["public"]["Enums"]["oauth_scope"][]
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          client_id?: string
+          granted_at?: string
+          id?: never
+          revoked_at?: string | null
+          scopes?: Database["public"]["Enums"]["oauth_scope"][]
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      oauth_tokens: {
+        Row: {
+          client_id: string
+          created_at: string
+          expires_at: string
+          grant_id: number
+          id: number
+          issued_from_assertion_jti: string | null
+          revoked_at: string | null
+          scopes: Database["public"]["Enums"]["oauth_scope"][]
+          token_sha256: string
+          token_type: string
+          user_id: string
+        }
+        Insert: {
+          client_id: string
+          created_at?: string
+          expires_at: string
+          grant_id: number
+          id?: never
+          issued_from_assertion_jti?: string | null
+          revoked_at?: string | null
+          scopes: Database["public"]["Enums"]["oauth_scope"][]
+          token_sha256: string
+          token_type?: string
+          user_id: string
+        }
+        Update: {
+          client_id?: string
+          created_at?: string
+          expires_at?: string
+          grant_id?: number
+          id?: never
+          issued_from_assertion_jti?: string | null
+          revoked_at?: string | null
+          scopes?: Database["public"]["Enums"]["oauth_scope"][]
+          token_sha256?: string
+          token_type?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       organization_invitations: {
         Row: {
           created_at: string | null
@@ -14911,6 +15088,32 @@ export type Database = {
         Returns: string
       }
       persona_goal2_schema_readiness: { Args: never; Returns: Json }
+      oauth_redeem_grant: {
+        Args: {
+          p_client_id: string
+          p_user_id: string
+          p_assertion_scopes: Database["public"]["Enums"]["oauth_scope"][]
+          p_assertion_issued_at: string
+          p_token_sha256: string
+          p_token_scopes: Database["public"]["Enums"]["oauth_scope"][]
+          p_token_expires_at: string
+          p_assertion_jti: string
+        }
+        Returns: {
+          grant_id: number
+          outcome: string
+        }[]
+      }
+      oauth_revoke_grant: {
+        Args: {
+          p_client_id: string
+          p_user_id: string
+        }
+        Returns: {
+          grant_id: number
+          outcome: string
+        }[]
+      }
       place_withdrawal_compliance_hold: {
         Args: {
           p_actor_user_id: string
@@ -15280,6 +15483,7 @@ export type Database = {
         | "distribution"
         | "completed"
         | "reporting"
+      oauth_scope: "profile:read" | "awards:read" | "payout-routes:read"
       organization_members_status: "active" | "inactive" | "deleted"
       organizations_status: "active" | "inactive" | "deleted"
       payment_collection_mode: "contract" | "deposit_address"

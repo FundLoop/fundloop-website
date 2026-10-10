@@ -32,22 +32,43 @@ The MCP front door gates broad tool categories. Project/entity ownership still b
 - `operator.*`: internal operator only.
 - `fundloop.edge_command.invoke`: authenticated user plus explicit `FUNDLOOP_MCP_ALLOWED_EDGE_FUNCTIONS` allowlist. Operator/destructive command names require internal-operator access even when allowlisted.
 
-## Deferred OAuth Scopes
+## OAuth Scopes
 
-OAuth 2.1, PKCE, dynamic client registration, and third-party client scopes are deferred until public third-party onboarding is intentional.
+Delegated access for sibling apps goes through Cubid cross-app access, not a FundLoop OAuth server
+(issue #266, stage 2); see [the cross-app access doc](../engineering/cubid-cross-app-access.md). A
+requesting client obtains an identity assertion grant from Cubid, where the person consents, and
+redeems it at FundLoop for a short-lived FundLoop access token. The scope vocabulary is narrow and
+read-only:
 
-When added, scopes should be narrow and map to current actor/tool categories, for example:
+- `profile:read` — which account the token acts for.
+- `awards:read` — that person's own award and allocation history.
+- `payout-routes:read` — which payout routes they have, without any destination detail.
 
-- `fundloop:user.read`
-- `fundloop:founder.read`
-- `fundloop:founder.write`
-- `fundloop:project-member.read`
-- `fundloop:operator.read`
+These replace the `fundloop:*` names sketched here before the server existed. The earlier sketch
+mapped scopes to MCP tool categories, including write and operator categories; the implemented
+vocabulary deliberately does not. A delegated token reads one person's own data and nothing else:
+there is no founder, project-member or operator scope, and no write scope. Those capabilities stay
+behind a FundLoop session, where the actor is a person we can hold accountable, not a token held by
+an application.
 
-Wildcard scopes should not be used.
+Wildcard scopes are not used. Adding a scope is a migration (the `public.oauth_scope` enum) plus a
+change to `lib/oauth/scopes.ts`, because a scope is a promise to a third-party client.
+
+Dynamic client registration (RFC 7591) is not implemented. Requesting clients are registered by an
+operator on both sides, so the set of applications that can ask for access stays curated.
+
+FundLoop runs no authorization endpoint and no consent page: a person grants and withdraws cross-app
+access in Cubid Passport, in one place for every sibling app.
 
 ## Revocation
 
+- A person withdraws cross-app access in Cubid Passport. Cubid sends a Security Event Token, and
+  FundLoop revokes that client's tokens for that person on receipt (the receiver is the next piece
+  of stage 2; until it lands, the 15-minute access-token lifetime is the bound).
+- `POST /oauth/revoke` (RFC 7009) lets a client drop its own token.
+- FundLoop issues no refresh tokens: a client renews by redeeming a fresh assertion, so a withdrawn
+  consent stops renewals at the source rather than relying on FundLoop noticing.
+- `update public.oauth_clients set disabled_at = now()` withdraws one application's access entirely.
 - Revoke a user's Supabase session for actor-level compromise.
 - Remove an email from `FUNDLOOP_INTERNAL_ADMIN_EMAILS` to revoke operator MCP access.
 - Use `FUNDLOOP_MCP_DISABLED_TOOLS` for emergency tool-level mitigation.

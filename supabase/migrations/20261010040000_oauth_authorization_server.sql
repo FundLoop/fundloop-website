@@ -1,0 +1,283 @@
+-- Delegated access through Cubid cross-app access (#266 stage 2).
+--
+-- FundLoop is a *resource app*: a requesting client (WondrBot) obtains an identity assertion grant
+-- (ID-JAG) from Cubid and redeems it here for a FundLoop access token. Consent is captured at Cubid,
+-- in Passport, so FundLoop runs no authorization endpoint and no consent page of its own, and there
+-- is no authorization code and no PKCE challenge to store. The contract is
+-- ~/src/cubid/cubid-monorepo/docs/engineering/oidc-cross-app-access.md.
+--
+-- Design decisions, recorded here because the schema enforces them:
+--   * Scopes are an enum, not free text: the scope vocabulary is a contract, so adding one is a
+--     reviewed migration rather than a row anyone can insert.
+--   * Requesting clients are curated. There is no dynamic registration; an operator inserts a row.
+--   * Nothing bearer-shaped is stored in the clear. Access tokens, refresh tokens and client
+--     secrets are kept as SHA-256 hashes, so a database reader cannot replay them.
+--   * An assertion is single use: its jti is recorded, and the unique constraint is what makes a
+--     replay fail rather than application code checking first.
+--   * A Cubid pairwise subject is the only identifier that arrives in an assertion, so the mapping
+--     from subject to FundLoop user is explicit, and an unmapped subject is a denial.
+--   * Every table is service-role only: RLS is enabled and no privilege is granted to anon or
+--     authenticated, because these rows are the credentials themselves. No audit trigger is
+--     attached: these tables must not be copied into audit_log.
+
+create type public.oauth_scope as enum ('profile:read', 'awards:read', 'payout-routes:read');
+
+create table public.oauth_clients (
+  id bigint generated always as identity primary key,
+  client_id text not null unique check (client_id ~ '^[a-z0-9][a-z0-9_-]{7,63}$'),
+  -- Not null, not a CHECK: a client that cannot authenticate cannot redeem, so the absence of a
+  -- secret is not a state this table should be able to hold.
+  client_secret_sha256 text not null check (client_secret_sha256 ~ '^[0-9a-f]{64}$'),
+  -- Confidential only. Redemption is a server-to-server call authenticated by the client, and the
+  -- Cubid contract refuses a public client for the exchange on the same reasoning.
+  client_type text not null default 'confidential' check (client_type = 'confidential'),
+  name text not null check (length(btrim(name)) between 1 and 120),
+  description text check (length(description) <= 500),
+  logo_url text check (logo_url is null or logo_url ~ '^https://'),
+  client_uri text check (client_uri is null or client_uri ~ '^https://'),
+  -- The `client_id` claim an assertion carries is the client's id *at Cubid*, which need not equal
+  -- its id here, so the accepted value is stored explicitly rather than assumed to match.
+  cubid_client_id text not null unique check (length(btrim(cubid_client_id)) between 1 and 255),
+  allowed_scopes public.oauth_scope[] not null check (array_length(allowed_scopes, 1) between 1 and 16),
+  is_sandbox boolean not null default false,
+  disabled_at timestamptz,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+
+-- The local record of a requesting client's standing access for one person. The consent itself lives
+-- at Cubid; this row is created on the first successful redemption and is what a revocation event
+-- kills, so FundLoop can stop honouring tokens without waiting to ask Cubid anything.
+create table public.oauth_grants (
+  id bigint generated always as identity primary key,
+  client_id text not null references public.oauth_clients(client_id) on delete cascade,
+  user_id uuid not null references auth.users(id) on delete cascade,
+  -- A live grant holds between one and sixteen scopes. A revoked one may hold none: a withdrawal
+  -- has to be recordable for a person who never redeemed here, so the revocation is not lost.
+  scopes public.oauth_scope[] not null check (
+    array_length(scopes, 1) between 1 and 16
+    or (revoked_at is not null and scopes = '{}'::public.oauth_scope[])
+  ),
+  granted_at timestamptz not null default now(),
+  updated_at timestamptz not null default now(),
+  revoked_at timestamptz,
+  unique (client_id, user_id)
+);
+
+-- A Cubid pairwise subject for FundLoop, mapped to the FundLoop user it belongs to. Cubid derives
+-- this subject per resource app and nothing else in an assertion identifies the person, so without a
+-- row here a valid assertion maps to nobody. Rows are written by Sign in with Cubid or by linking an
+-- existing account, never inferred from an email address: inferring it would defeat the pairwise
+-- scheme's purpose, which is that FundLoop cannot correlate a person across sibling apps.
+create table public.cubid_oidc_subjects (
+  id bigint generated always as identity primary key,
+  issuer text not null check (issuer ~ '^https://'),
+  subject text not null check (length(subject) between 1 and 255),
+  user_id uuid not null references auth.users(id) on delete cascade,
+  linked_at timestamptz not null default now(),
+  last_seen_at timestamptz,
+  -- One subject is one person per issuer, and one person holds one subject per issuer.
+  unique (issuer, subject),
+  unique (issuer, user_id)
+);
+
+-- Redeemed assertion identifiers. The insert is the replay check: a second redemption of the same
+-- assertion violates the unique constraint instead of racing a read.
+create table public.oauth_assertion_jtis (
+  jti text not null primary key check (length(jti) between 1 and 255),
+  issuer text not null,
+  client_id text not null references public.oauth_clients(client_id) on delete cascade,
+  subject text not null,
+  redeemed_at timestamptz not null default now(),
+  expires_at timestamptz not null
+);
+
+create table public.oauth_tokens (
+  id bigint generated always as identity primary key,
+  token_sha256 text not null unique check (token_sha256 ~ '^[0-9a-f]{64}$'),
+  -- Access tokens only. A client renews by redeeming a fresh ID-JAG, so consent is re-checked at
+  -- Cubid on every renewal instead of being extended here by a refresh token of our own.
+  token_type text not null default 'access' check (token_type = 'access'),
+  client_id text not null references public.oauth_clients(client_id) on delete cascade,
+  user_id uuid not null references auth.users(id) on delete cascade,
+  grant_id bigint not null references public.oauth_grants(id) on delete cascade,
+  scopes public.oauth_scope[] not null check (array_length(scopes, 1) between 1 and 16),
+  -- The assertion this token was issued against, so a revocation event can be traced to what it
+  -- invalidated.
+  issued_from_assertion_jti text,
+  expires_at timestamptz not null,
+  revoked_at timestamptz,
+  created_at timestamptz not null default now()
+);
+
+create index oauth_grants_user_idx on public.oauth_grants (user_id) where revoked_at is null;
+create index oauth_assertion_jtis_expiry_idx on public.oauth_assertion_jtis (expires_at);
+create index cubid_oidc_subjects_user_idx on public.cubid_oidc_subjects (user_id);
+create index oauth_tokens_grant_idx on public.oauth_tokens (grant_id, token_type) where revoked_at is null;
+create index oauth_tokens_expiry_idx on public.oauth_tokens (expires_at) where revoked_at is null;
+
+-- One redemption, in one statement: the grant decision *and* the token insert, under one lock.
+--
+-- The token has to be written here rather than by the caller afterwards. With the insert outside,
+-- two concurrent redemptions could interleave so that the wider one's token lands after the
+-- narrower one's supersession, leaving a live token wider than the grant that records it.
+--
+-- It also decides whether the grant may be revived at all. An assertion proves consent only as of
+-- its `iat`: the Cubid contract marks outstanding assertions revoked at Cubid on withdrawal, which
+-- a resource app cannot see, so an assertion minted before a withdrawal would otherwise bring the
+-- grant back to life. Such an assertion is refused here instead, with a margin for clock skew,
+-- because `iat` comes from Cubid's clock and `revoked_at` from ours.
+create or replace function public.oauth_redeem_grant(
+  p_client_id text,
+  p_user_id uuid,
+  p_assertion_scopes public.oauth_scope[],
+  p_assertion_issued_at timestamptz,
+  p_token_sha256 text,
+  p_token_scopes public.oauth_scope[],
+  p_token_expires_at timestamptz,
+  p_assertion_jti text
+)
+returns table (grant_id bigint, outcome text)
+language plpgsql
+security invoker
+set search_path = ''
+as $$
+declare
+  v_grant public.oauth_grants;
+  v_skew constant interval := interval '30 seconds';
+begin
+  loop
+    -- FOR UPDATE serialises every redemption for this client and person.
+    select * into v_grant from public.oauth_grants
+      where client_id = p_client_id and user_id = p_user_id
+      for update;
+    exit when found;
+
+    begin
+      insert into public.oauth_grants (client_id, user_id, scopes)
+      values (p_client_id, p_user_id, p_assertion_scopes)
+      returning * into v_grant;
+      exit;
+    exception when unique_violation then
+      -- Another redemption inserted it first; go back and lock that row instead of failing.
+    end;
+  end loop;
+
+  if v_grant.revoked_at is not null and p_assertion_issued_at <= v_grant.revoked_at + v_skew then
+    -- Predates the withdrawal, so it is not evidence that consent is live now. The skew margin
+    -- errs towards refusing, because the two timestamps come from different clocks.
+    return query select v_grant.id, 'withdrawn'::text;
+    return;
+  end if;
+
+  -- Reviving a revoked grant starts a fresh set of tokens: a credential issued under the previous
+  -- authorization must not keep acting under this one.
+  --
+  -- Narrowing is deliberately *not* a trigger here. Under the contract an assertion's `scope` is
+  -- what the client requested for that exchange, not the person's standing consent, so a client
+  -- asking for less in one call would otherwise revoke the tokens of its own parallel calls.
+  -- Consent narrowing at Cubid is not observable by a resource app; the short token lifetime is
+  -- what bounds it.
+  if v_grant.revoked_at is not null then
+    update public.oauth_tokens set revoked_at = now()
+      where oauth_tokens.grant_id = v_grant.id and oauth_tokens.revoked_at is null;
+  end if;
+
+  update public.oauth_grants
+    set scopes = p_assertion_scopes, revoked_at = null, updated_at = now()
+    where id = v_grant.id;
+
+  insert into public.oauth_tokens (token_sha256, token_type, client_id, user_id, grant_id, scopes, issued_from_assertion_jti, expires_at)
+  values (p_token_sha256, 'access', p_client_id, p_user_id, v_grant.id, p_token_scopes, p_assertion_jti, p_token_expires_at);
+
+  return query select v_grant.id, 'issued'::text;
+end;
+$$;
+
+-- A withdrawal, in one statement, recorded even for a person who never redeemed here.
+--
+-- Without the insert branch, a revocation for an unknown (client, person) pair wrote nothing, so a
+-- later assertion minted *before* that withdrawal would create a fresh grant and be honoured. The
+-- lock makes the token revocation and the grant update one step rather than two racing ones.
+create or replace function public.oauth_revoke_grant(p_client_id text, p_user_id uuid)
+returns table (grant_id bigint, outcome text)
+language plpgsql
+security invoker
+set search_path = ''
+as $$
+declare
+  v_grant public.oauth_grants;
+begin
+  loop
+    select * into v_grant from public.oauth_grants
+      where client_id = p_client_id and user_id = p_user_id
+      for update;
+    exit when found;
+
+    begin
+      insert into public.oauth_grants (client_id, user_id, scopes, revoked_at)
+      values (p_client_id, p_user_id, '{}'::public.oauth_scope[], now())
+      returning * into v_grant;
+      return query select v_grant.id, 'recorded'::text;
+      return;
+    exception when unique_violation then
+      -- A concurrent writer created it; lock that row instead.
+    end;
+  end loop;
+
+  update public.oauth_tokens set revoked_at = now()
+    where oauth_tokens.grant_id = v_grant.id and oauth_tokens.revoked_at is null;
+
+  update public.oauth_grants set revoked_at = coalesce(v_grant.revoked_at, now()), updated_at = now()
+    where id = v_grant.id;
+
+  return query select v_grant.id, 'revoked'::text;
+end;
+$$;
+
+revoke all on function public.oauth_redeem_grant(text, uuid, public.oauth_scope[], timestamptz, text, public.oauth_scope[], timestamptz, text) from public, anon, authenticated;
+grant execute on function public.oauth_redeem_grant(text, uuid, public.oauth_scope[], timestamptz, text, public.oauth_scope[], timestamptz, text) to service_role;
+revoke all on function public.oauth_revoke_grant(text, uuid) from public, anon, authenticated;
+grant execute on function public.oauth_revoke_grant(text, uuid) to service_role;
+
+-- Expired single-use rows are dead weight once they can no longer be redeemed. Scheduling this is
+-- stage 5 work; the function exists so the schedule is a one-liner and the retention rule has one
+-- definition. Revoked and expired tokens are kept for 30 days so a revocation is still explicable.
+create or replace function public.oauth_purge_expired()
+returns table (assertion_jtis_deleted bigint, reserved bigint, tokens_deleted bigint)
+language plpgsql
+security invoker
+set search_path = ''
+as $$
+declare
+  v_requests bigint;
+  v_codes bigint;
+  v_tokens bigint;
+begin
+  -- A redeemed jti only has to be remembered until the assertion it names could no longer be
+  -- replayed; Cubid gives them a five-minute lifetime.
+  delete from public.oauth_assertion_jtis where expires_at < now() - interval '1 day';
+  get diagnostics v_requests = row_count;
+  v_codes := 0;
+  delete from public.oauth_tokens where expires_at < now() - interval '30 days' and coalesce(revoked_at, expires_at) < now() - interval '30 days';
+  get diagnostics v_tokens = row_count;
+  return query select v_requests, v_codes, v_tokens;
+end;
+$$;
+
+-- Credentials, not application data: service-role only on every table. RLS is enabled so the hosted
+-- ensure_rls behaviour and our own policy suite agree that no client role can reach them.
+do $$
+declare
+  oauth_table text;
+begin
+  foreach oauth_table in array array['oauth_clients', 'oauth_grants', 'oauth_assertion_jtis', 'cubid_oidc_subjects', 'oauth_tokens']
+  loop
+    execute format('alter table public.%I enable row level security', oauth_table);
+    execute format('revoke all on table public.%I from anon, authenticated', oauth_table);
+    execute format('grant select, insert, update, delete on table public.%I to service_role', oauth_table);
+  end loop;
+end $$;
+
+revoke all on function public.oauth_purge_expired() from public, anon, authenticated;
+grant execute on function public.oauth_purge_expired() to service_role;
