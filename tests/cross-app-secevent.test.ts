@@ -182,6 +182,22 @@ describe("verifySecurityEventToken", () => {
     expect(await verify(token)).toMatchObject({ ok: false, reason: "subject_mismatch" })
   })
 
+  it("refuses a known event type whose payload is missing its required claim", async () => {
+    // Acknowledging this would acknowledge a revocation we then could not apply, and lose it.
+    const token = await sign(header, claims({ events: { [CROSS_APP_CONSENT_REVOKED_EVENT]: { subject: subjectId() } } }))
+    expect(await verify(token)).toMatchObject({ ok: false, reason: "malformed_event" })
+  })
+
+  it("refuses a requesting client id that is present but not a string", async () => {
+    const token = await sign(header, claims({ events: crossAppRevoked({ requesting_client_id: 42 }) }))
+    expect(await verify(token)).toMatchObject({ ok: false, reason: "malformed_event" })
+  })
+
+  it("leaves an unimplemented event type's payload alone, because we do not know its shape", async () => {
+    const token = await sign(header, claims({ events: { "https://schemas.cubid.me/secevent/something-new": {} } }))
+    expect(await verify(token)).toMatchObject({ ok: true })
+  })
+
   it("refuses a token with no events", async () => {
     expect(await verify(await sign(header, claims({ events: {} })))).toMatchObject({ ok: false, reason: "no_events" })
   })

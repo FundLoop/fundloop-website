@@ -26,6 +26,7 @@ const ERROR_CODE_BY_DENIAL: Record<SecurityEventDenial, string> = {
   malformed_subject: "invalid_request",
   subject_mismatch: "invalid_request",
   no_events: "invalid_request",
+  malformed_event: "invalid_request",
   expired: "invalid_request",
   not_yet_valid: "invalid_request",
   too_old: "invalid_request",
@@ -37,18 +38,25 @@ const ERROR_CODE_BY_DENIAL: Record<SecurityEventDenial, string> = {
   wrong_audience: "invalid_audience",
 }
 
-// RFC 8935 §2.3: a failure is a 400 carrying `err` and `description`.
+// RFC 8935 §2.3: a failure is a 400 whose body carries `err` and `description` as JSON, and which
+// MUST state the language those descriptions are written in. Ours are always English, so the value
+// is fixed rather than negotiated against Accept-Language.
+const DESCRIPTION_LANGUAGE = "en-US"
+
 function setError(err: string, description: string, options?: { status?: number; headers?: Record<string, string> }) {
   return Response.json({ err, description }, {
     status: options?.status ?? 400,
-    headers: { "Cache-Control": "no-store", ...options?.headers },
+    headers: { "Cache-Control": "no-store", "Content-Language": DESCRIPTION_LANGUAGE, ...options?.headers },
   })
 }
 
 // Our own unavailability is not the transmitter's error, so it is a 5xx: the delivery stays pending
 // at Cubid and is retried, rather than being acknowledged or marked failed.
 function unavailable(description: string) {
-  return Response.json({ description }, { status: 503, headers: { "Cache-Control": "no-store" } })
+  return Response.json({ description }, {
+    status: 503,
+    headers: { "Cache-Control": "no-store", "Content-Language": DESCRIPTION_LANGUAGE },
+  })
 }
 
 export async function POST(request: Request) {
@@ -60,7 +68,7 @@ export async function POST(request: Request) {
     console.error(`[oauth/security-events] delivery failed: ${error instanceof Error ? error.message : "unknown"}`)
     return Response.json({ description: "The event could not be processed. Please retry." }, {
       status: 500,
-      headers: { "Cache-Control": "no-store" },
+      headers: { "Cache-Control": "no-store", "Content-Language": DESCRIPTION_LANGUAGE },
     })
   }
 }
@@ -87,11 +95,18 @@ async function receive(request: Request) {
   const options = { jwks, issuer: config.issuer, audience: config.clientId }
   let verified = await verifySecurityEventToken(token, options)
 
-  // An unknown key is the one denial worth retrying: it is what a key rotation looks like. The
-  // cache's own refresh floor stops this from becoming a request amplifier aimed at Cubid.
+  // An unknown key is the one denial worth retrying: it is what a key rotation looks like.
   if (!verified.ok && verified.reason === "unknown_key") {
-    const refreshed = await cubidJwksCache(config).get({ force: true })
-    if (refreshed) verified = await verifySecurityEventToken(token, { ...options, jwks: refreshed })
+    const refreshed = await cubidJwksCache(config).refresh()
+    if (refreshed.outcome === "refreshed") {
+      verified = await verifySecurityEventToken(token, { ...options, jwks: refreshed.keys })
+    } else if (!verified.ok) {
+      // Throttled by the refresh floor, or the issuer did not answer. Either way we do not know
+      // whether this key exists, and a 400 would tell Cubid the token is bad on the strength of a
+      // check we could not make. A 5xx leaves the delivery pending for the next retry, by which
+      // time the floor has elapsed.
+      return unavailable("The issuer's signing keys could not be checked. Please retry.")
+    }
   }
 
   if (!verified.ok) {

@@ -224,6 +224,40 @@ describe("createJwksCache", () => {
     expect(fetchImpl).toHaveBeenCalledTimes(2)
   })
 
+  it("says a forced refresh was throttled rather than handing back the keys it already had", async () => {
+    // "This kid does not exist" and "I could not find out" are different answers. Conflating them
+    // makes a token signed by a key rotated in moments ago look definitively invalid.
+    let clock = 1_000_000
+    const fetchImpl = vi.fn(async () => new Response(JSON.stringify(jwks), { status: 200 }))
+    const cache = createJwksCache({
+      jwksUri: `${ISSUER}/jwks`,
+      fetchImpl: fetchImpl as unknown as typeof fetch,
+      minRefreshSeconds: 60,
+      now: () => clock,
+    })
+
+    await cache.get()
+    expect(await cache.refresh()).toEqual({ outcome: "throttled" })
+    expect(fetchImpl).toHaveBeenCalledTimes(1)
+
+    clock += 61_000
+    const refreshed = await cache.refresh()
+    expect(refreshed.outcome).toBe("refreshed")
+    expect(fetchImpl).toHaveBeenCalledTimes(2)
+  })
+
+  it("says a refresh failed rather than passing off the stale set as a fresh answer", async () => {
+    const fetchImpl = vi.fn(async () => new Response("nope", { status: 503 }))
+    const cache = createJwksCache({ jwksUri: `${ISSUER}/jwks`, fetchImpl: fetchImpl as unknown as typeof fetch })
+    expect(await cache.refresh()).toEqual({ outcome: "failed" })
+  })
+
+  it("refreshes on the first call, when there is nothing cached to throttle against", async () => {
+    const fetchImpl = vi.fn(async () => new Response(JSON.stringify(jwks), { status: 200 }))
+    const cache = createJwksCache({ jwksUri: `${ISSUER}/jwks`, fetchImpl: fetchImpl as unknown as typeof fetch })
+    expect((await cache.refresh()).outcome).toBe("refreshed")
+  })
+
   it("keeps serving the last good set when a refresh fails", async () => {
     let clock = 1_000_000
     let fail = false

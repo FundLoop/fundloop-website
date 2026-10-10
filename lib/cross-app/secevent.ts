@@ -64,6 +64,7 @@ export type SecurityEventDenial =
   | "malformed_subject"
   | "subject_mismatch"
   | "no_events"
+  | "malformed_event"
   | "expired"
   | "not_yet_valid"
   | "too_old"
@@ -153,6 +154,14 @@ export async function verifySecurityEventToken(
       if ("error" in eventSubject) return { ok: false, reason: eventSubject.error, detail: eventSubject.detail }
       if (eventSubject.sub !== subject.sub) return { ok: false, reason: "subject_mismatch", detail: type }
     }
+    // An event of a type we know has a payload shape the contract defines, and a delivery that
+    // does not conform to it is malformed — not a valid event there happens to be nothing to do
+    // about. Acknowledging one would lose the revocation it was meant to carry, so it is refused
+    // and retried instead. Types we do not implement are left alone: we do not know their shapes.
+    if (type === CROSS_APP_CONSENT_REVOKED_EVENT && asString(eventClaims.requesting_client_id) === null) {
+      return { ok: false, reason: "malformed_event", detail: `${type} without requesting_client_id` }
+    }
+
     events.push({ type, claims: eventClaims })
   }
   // An event-less SET says nothing. Acknowledging one would hide a transmitter bug; refusing it

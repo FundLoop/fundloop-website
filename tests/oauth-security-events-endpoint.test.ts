@@ -16,9 +16,10 @@ const KID = "test-key-1"
 let privateKey: CryptoKey
 let jwks: JsonWebKeySet
 const jwksGet = vi.fn()
+const jwksRefresh = vi.fn()
 
 const store = { applySecurityEvent: vi.fn() }
-const config = { crossAppReceiverConfig: vi.fn(), cubidJwksCache: vi.fn(() => ({ get: jwksGet })) }
+const config = { crossAppReceiverConfig: vi.fn(), cubidJwksCache: vi.fn(() => ({ get: jwksGet, refresh: jwksRefresh })) }
 
 vi.mock("@/lib/oauth/store", () => store)
 vi.mock("@/lib/cross-app/config", () => config)
@@ -74,6 +75,7 @@ describe("POST /oauth/security-events", () => {
     vi.resetModules()
     store.applySecurityEvent.mockReset()
     jwksGet.mockReset()
+    jwksRefresh.mockReset()
     config.crossAppReceiverConfig.mockReset()
     config.cubidJwksCache.mockClear()
     vi.spyOn(console, "info").mockImplementation(() => {})
@@ -82,6 +84,7 @@ describe("POST /oauth/security-events", () => {
 
     config.crossAppReceiverConfig.mockReturnValue({ issuer: ISSUER, clientId: CLIENT_ID, jwksUri: `${ISSUER}/jwks` })
     jwksGet.mockResolvedValue(jwks)
+    jwksRefresh.mockResolvedValue({ outcome: "failed" })
     store.applySecurityEvent.mockResolvedValue([
       { eventType: CROSS_APP_CONSENT_REVOKED_EVENT, outcome: "revoked", affected: 1 },
     ])
@@ -140,6 +143,8 @@ describe("POST /oauth/security-events", () => {
   it("refuses a token signed by nobody we trust, as an invalid key", async () => {
     const token = await signEvent({}, { kid: "rotated-away" })
     jwksGet.mockResolvedValue(jwks)
+    // A conclusive refresh: the issuer answered, and that kid is genuinely not among its keys.
+    jwksRefresh.mockResolvedValue({ outcome: "refreshed", keys: jwks })
     const { POST } = await receiver()
     const response = await POST(deliver(token))
     expect(response.status).toBe(400)
@@ -149,12 +154,49 @@ describe("POST /oauth/security-events", () => {
 
   it("retries once against refreshed keys, because that is what a rotation looks like", async () => {
     const token = await signEvent({}, { kid: "rotated-in" })
-    jwksGet.mockResolvedValueOnce({ keys: [] }).mockResolvedValueOnce({
-      keys: [{ ...jwks.keys[0], kid: "rotated-in" }],
-    })
+    jwksGet.mockResolvedValue({ keys: [] })
+    jwksRefresh.mockResolvedValue({ outcome: "refreshed", keys: { keys: [{ ...jwks.keys[0], kid: "rotated-in" }] } })
     const { POST } = await receiver()
     expect((await POST(deliver(token))).status).toBe(202)
-    expect(jwksGet).toHaveBeenNthCalledWith(2, { force: true })
+    expect(jwksRefresh).toHaveBeenCalled()
+  })
+
+  it.each([
+    ["throttled by the refresh floor", { outcome: "throttled" }],
+    ["unable to reach the issuer", { outcome: "failed" }],
+  ])("leaves the delivery pending when the keys could not be checked: %s", async (_label, refreshResult) => {
+    // A 400 would tell Cubid this token is bad on the strength of a check we could not make, and
+    // this is exactly the rotation the retry exists for. The next delivery attempt is past the floor.
+    const token = await signEvent({}, { kid: "rotated-in" })
+    jwksRefresh.mockResolvedValue(refreshResult)
+    const { POST } = await receiver()
+    const response = await POST(deliver(token))
+    expect(response.status).toBe(503)
+    expect(store.applySecurityEvent).not.toHaveBeenCalled()
+  })
+
+  it("states the language of its error descriptions, as RFC 8935 requires", async () => {
+    const { POST } = await receiver()
+    const response = await POST(deliver(await signEvent({ iss: "https://id.evil.test" })))
+    expect(response.status).toBe(400)
+    expect(response.headers.get("Content-Language")).toBe("en-US")
+    expect(response.headers.get("Content-Type")).toContain("application/json")
+  })
+
+  it("refuses a known event type whose payload is incomplete, rather than acknowledging it", async () => {
+    const { POST } = await receiver()
+    const response = await POST(
+      deliver(
+        await signEvent({
+          events: {
+            [CROSS_APP_CONSENT_REVOKED_EVENT]: { subject: { format: "iss_sub", iss: ISSUER, sub: SUBJECT } },
+          },
+        }),
+      ),
+    )
+    expect(response.status).toBe(400)
+    expect(await response.json()).toMatchObject({ err: "invalid_request" })
+    expect(store.applySecurityEvent).not.toHaveBeenCalled()
   })
 
   it("names the issuer when the token came from another one", async () => {

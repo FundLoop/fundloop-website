@@ -6621,6 +6621,7 @@ export type Database = {
           client_id: string
           granted_at: string
           id: number
+          last_assertion_issued_at: string | null
           revoked_at: string | null
           scopes: Database["public"]["Enums"]["oauth_scope"][]
           updated_at: string
@@ -6630,6 +6631,7 @@ export type Database = {
           client_id: string
           granted_at?: string
           id?: never
+          last_assertion_issued_at?: string | null
           revoked_at?: string | null
           scopes: Database["public"]["Enums"]["oauth_scope"][]
           updated_at?: string
@@ -6639,6 +6641,7 @@ export type Database = {
           client_id?: string
           granted_at?: string
           id?: never
+          last_assertion_issued_at?: string | null
           revoked_at?: string | null
           scopes?: Database["public"]["Enums"]["oauth_scope"][]
           updated_at?: string
@@ -15124,6 +15127,16 @@ export type Database = {
         Returns: string
       }
       persona_goal2_schema_readiness: { Args: never; Returns: Json }
+      oauth_apply_pending_revocations_for_client: {
+        Args: {
+          p_cubid_client_id: string
+        }
+        Returns: {
+          event_subject: string
+          applied_user_id: string
+          outcome: string
+        }[]
+      }
       oauth_apply_security_event: {
         Args: {
           p_jti: string

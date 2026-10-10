@@ -15,6 +15,7 @@ const KID = "test-key-1"
 let privateKey: CryptoKey
 let jwks: JsonWebKeySet
 const jwksGet = vi.fn()
+const jwksRefresh = vi.fn()
 
 const store = {
   findRequestingClient: vi.fn(),
@@ -27,7 +28,7 @@ const store = {
   revokeByToken: vi.fn(),
 }
 
-const config = { crossAppConfig: vi.fn(), cubidJwksCache: vi.fn(() => ({ get: jwksGet })) }
+const config = { crossAppConfig: vi.fn(), cubidJwksCache: vi.fn(() => ({ get: jwksGet, refresh: jwksRefresh })) }
 
 vi.mock("@/lib/oauth/store", () => store)
 vi.mock("@/lib/cross-app/config", () => config)
@@ -86,11 +87,13 @@ describe("POST /oauth/token (ID-JAG redemption)", () => {
     vi.resetModules()
     for (const fn of Object.values(store)) fn.mockReset()
     jwksGet.mockReset()
+    jwksRefresh.mockReset()
     config.crossAppConfig.mockReset()
     config.cubidJwksCache.mockClear()
 
     config.crossAppConfig.mockReturnValue({ issuer: ISSUER, audience: AUDIENCE, jwksUri: `${ISSUER}/jwks` })
     jwksGet.mockResolvedValue(jwks)
+    jwksRefresh.mockResolvedValue({ outcome: "failed" })
     store.findRequestingClient.mockResolvedValue({
       client_id: "wondrbot",
       cubid_client_id: CUBID_CLIENT_ID,
@@ -195,14 +198,30 @@ describe("POST /oauth/token (ID-JAG redemption)", () => {
 
   it("retries once against refreshed keys, which is what a rotation looks like", async () => {
     const rotated = await signAssertion({}, { kid: "rotated-key" })
-    // First the cache serves a set without that kid, then the forced refresh has it.
+    // The cache serves a set without that kid, then the refresh conclusively has it.
     const rotatedJwks = { keys: [{ ...jwks.keys[0], kid: "rotated-key" }] }
-    jwksGet.mockResolvedValueOnce(jwks).mockResolvedValueOnce(rotatedJwks)
+    jwksRefresh.mockResolvedValue({ outcome: "refreshed", keys: rotatedJwks })
 
     const response = await (await tokenRoute())(redeem({ grant_type: GRANT, client_id: "wondrbot", client_secret: "s3cret", assertion: rotated }))
 
-    expect(jwksGet).toHaveBeenCalledWith({ force: true })
+    expect(jwksRefresh).toHaveBeenCalled()
     expect(response.status).toBe(200)
+  })
+
+  it.each([
+    ["throttled by the refresh floor", { outcome: "throttled" }],
+    ["unable to reach the issuer", { outcome: "failed" }],
+  ])("answers retryably when the keys could not be checked: %s", async (_label, refreshResult) => {
+    // Answering invalid_grant here would tell the client its assertion is bad on the strength of a
+    // check we could not make, during exactly the rotation this retry exists for.
+    const rotated = await signAssertion({}, { kid: "rotated-key" })
+    jwksRefresh.mockResolvedValue(refreshResult)
+
+    const response = await (await tokenRoute())(redeem({ grant_type: GRANT, client_id: "wondrbot", client_secret: "s3cret", assertion: rotated }))
+
+    expect(response.status).toBe(503)
+    expect((await response.json()).error).toBe("temporarily_unavailable")
+    expect(store.issueAccessToken).not.toHaveBeenCalled()
   })
 
   it("records the assertion before issuing, and refuses a replay", async () => {

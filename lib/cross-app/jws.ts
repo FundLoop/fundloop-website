@@ -126,7 +126,23 @@ export async function verifyCompactJws(token: string, options: { jwks: JsonWebKe
 
 // A JWKS cache with a floor between refreshes, so a token naming an unknown kid cannot be used to
 // drive unbounded requests at the issuer, and key rotation is still picked up without a deploy.
-export type JwksCache = { get: (options?: { force?: boolean }) => Promise<JsonWebKeySet | null> }
+//
+// `refresh` exists because "this key does not exist" and "I could not find out" are different
+// answers and a caller has to tell them apart. A forced `get` cannot: inside the refresh floor, or
+// after a failed fetch, it returns the previous set, which looks exactly like a conclusive answer
+// that the kid is unknown. A caller that treats the second case as the first rejects a token signed
+// by a key that was rotated in moments ago.
+export type JwksRefresh =
+  | { outcome: "refreshed"; keys: JsonWebKeySet }
+  /** The refresh floor has not elapsed, so the issuer was not asked. */
+  | { outcome: "throttled" }
+  /** The issuer was asked and did not answer usably. */
+  | { outcome: "failed" }
+
+export type JwksCache = {
+  get: (options?: { force?: boolean }) => Promise<JsonWebKeySet | null>
+  refresh: () => Promise<JwksRefresh>
+}
 
 export function createJwksCache(config: {
   jwksUri: string
@@ -183,19 +199,31 @@ export function createJwksCache(config: {
     return age < ttl ? cached : null
   }
 
+  function fetchOnce() {
+    if (!inFlight) {
+      inFlight = load().finally(() => {
+        inFlight = null
+      })
+    }
+    return inFlight
+  }
+
   return {
     async get(options) {
       const fresh = servableCache(options)
       if (fresh) return fresh
-      if (!inFlight) {
-        inFlight = load().finally(() => {
-          inFlight = null
-        })
-      }
-      const loaded = await inFlight
+      const loaded = await fetchOnce()
       if (loaded) return loaded
       // A failed refresh may serve the previous set only while it is inside the staleness bound.
       return cached && clock() - fetchedAt < maxStale ? cached : null
+    },
+
+    async refresh() {
+      // The floor is what stops a stream of unknown kids becoming a request amplifier aimed at the
+      // issuer. Saying so is better than quietly handing back the keys we already had.
+      if (cached && clock() - fetchedAt < minRefresh) return { outcome: "throttled" }
+      const loaded = await fetchOnce()
+      return loaded ? { outcome: "refreshed", keys: loaded } : { outcome: "failed" }
     },
   }
 }

@@ -115,3 +115,87 @@ that lookup. Both the migration and the engineering doc say so at the point wher
    Cubid staging is cubid-monorepo#179).
 3. Stage 3's bearer validator still has to check all four things stage 2 recorded; the grant's
    `revoked_at` is what this receiver sets, so without check 3 none of this has any effect.
+
+### session v2: Codex review on #279 — six findings, six fixes
+
+- **Timestamp:** 2026-10-10T04:57:45Z
+- **Agent:** Claude Code (Claude Opus 5)
+- **Branch:** `feat/266-security-event-receiver` (PR #279)
+- **Head before commit:** `313b754`
+
+---
+
+#### Objective
+
+Address Codex's first pass on #279. All six were P2 and all six were real; two were security
+correctness, not polish. Two of them also applied to code #273 already merged, which I fixed here
+rather than leaving the same bug half-fixed.
+
+---
+
+#### What each finding was, and what it took
+
+- **A forced JWKS refresh could not say whether it had actually refreshed.** Inside the 60-second
+  floor, or after a failed fetch, `get({force: true})` returned the *previous* key set — which is
+  indistinguishable from a conclusive "that kid does not exist". So a token signed by a key rotated
+  in moments ago was answered with a terminal 400 `invalid_key` on the strength of a check we had
+  not made. The cache now has `refresh()`, returning `refreshed` / `throttled` / `failed`, and both
+  callers answer retryably when the check was inconclusive. The token endpoint from #273 had the
+  identical bug and now answers `temporarily_unavailable` instead of `invalid_grant`.
+- **A late revocation could revoke a grant the person had since re-authorized.** Delivery retries
+  run for most of a day, so: withdraw, reconsent, redeem a fresh assertion, *then* the original
+  event arrives and kills live, legitimate access. Fixed by recording
+  `oauth_grants.last_assertion_issued_at` (the `iat` of the newest assertion redeemed, set
+  monotonically by a replaced `oauth_redeem_grant`) and recording an older event as `superseded`.
+  Both timestamps are Cubid's clock, so they compare with no skew margin; equal timestamps revoke.
+  An `account-purged` event is deliberately exempt: a deleted account cannot consent again, and
+  erring towards keeping access alive for one would be the wrong direction.
+- **A known event type with an incomplete payload was acknowledged.** A signed
+  `cross-app-consent-revoked` with no `requesting_client_id` names nobody to revoke; the SQL
+  classified it `unknown_client` and the route answered 202, losing the revocation. It is now
+  `malformed_event` → `invalid_request` → retried. Unimplemented types are still left alone,
+  because their payload shapes are not ours to police.
+- **RFC 8935 §2.3 requires `Content-Language` on a 400.** I checked the RFC text rather than taking
+  it on faith: it is a MUST, alongside `application/json`. Added, with a fixed `en-US` since the
+  descriptions are always English.
+- **A revocation that arrived before its client was registered stayed unapplied.** Same shape as the
+  unlinked-subject gap, but for clients: registration is an operator insert, and nothing consulted
+  the stored events afterwards, so an assertion predating the withdrawal would have been honoured
+  once the row existed. New `oauth_apply_pending_revocations_for_client(cubid_client_id)`, which
+  registration now runs as its second step; it re-resolves the subject, applies the same ordering
+  guard, and is safe to run again.
+- **`.env.example` listed none of the cross-app variables.** #273 omitted all three and this PR
+  added a fourth. All four are now in the tracked inventory, with a note on the two that are easy to
+  confuse (`FUNDLOOP_CROSS_APP_AUDIENCE` is the resource audience; `FUNDLOOP_CUBID_CLIENT_ID` is our
+  client id at Cubid).
+
+---
+
+#### Tests and Validation
+
+- 24 new cases: throttled/failed/first-call `refresh()` outcomes, both endpoints answering retryably
+  on an inconclusive key check, a conclusive refresh still refusing a genuinely unknown key, the
+  malformed known-event payload at both the verifier and the route, `Content-Language` and
+  `Content-Type` on a 400, and the SQL contract for the ordering guard and the catch-up function.
+- One test asserts the catch-up function's output columns are named apart from the columns it reads.
+  A `RETURNS TABLE` column becomes a plpgsql variable, so `subject` or `user_id` would have made
+  every unqualified read of those columns ambiguous — and that fails at *execution*, not at
+  `create function`, so CI's fresh-schema replay would not have caught it.
+- 181 files, 1293 tests passing; typecheck and lint clean.
+
+---
+
+#### Reflections
+
+Two of these were cases of a function that could not express its own uncertainty: the JWKS cache
+returning keys when it meant "I could not check", and a grant that recorded when we acted but not
+when the person last authorized. Both produced confident wrong answers rather than errors, which is
+the failure mode worth hunting for in the rest of this feature.
+
+---
+
+#### Suggested Next Steps
+
+1. HBIC's Claude deep review, then stage 2c per the design on #275.
+2. When the bearer validator lands (stage 3), `last_assertion_issued_at` is also the field that
+   would let it reason about authorization recency, if that ever becomes useful.

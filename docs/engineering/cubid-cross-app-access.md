@@ -105,7 +105,10 @@ one round trip.
 
 **An unknown `kid` is retried once against refreshed keys**, because that is what a key rotation
 looks like. The JWKS cache has a refresh floor, so a stream of assertions naming unknown keys cannot
-turn this endpoint into a request amplifier aimed at Cubid.
+turn this endpoint into a request amplifier aimed at Cubid. The retry distinguishes a *conclusive*
+refresh from one the floor throttled or the issuer failed: "this key does not exist" and "I could
+not find out" are different answers, and only the first justifies telling the caller its token is
+invalid. The second answers `temporarily_unavailable`, or 503 at the event receiver.
 
 **Unconfigured means refused.** With no issuer or audience configured there is nothing to verify
 against, so redemption answers `temporarily_unavailable` rather than falling back to a default.
@@ -138,13 +141,28 @@ person; a token where they differ is ambiguous, and acting on either would be a 
 | `consent-revoked` | Recorded, nothing else: the contract reserves it for Login with Cubid notices, and cross-app access has its own event |
 | anything else | Recorded as an unimplemented type |
 
+**A late event is ordered against the current authorization.** Delivery retries for most of a day,
+so a withdrawal can arrive after the person has reconsented and the client has redeemed a fresh
+assertion. `oauth_grants.last_assertion_issued_at` records the `iat` of the newest assertion
+redeemed for the grant, and an event issued before it is recorded as `superseded` rather than
+applied. Both timestamps are Cubid's clock, so they compare directly with no skew margin; equal
+timestamps revoke, because ending access is the safe direction. An `account-purged` event is never
+ordered this way: a deleted account cannot consent again.
+
+**A known event type with an incomplete payload is refused, not acknowledged.** A signed
+`cross-app-consent-revoked` without a `requesting_client_id` names no client to revoke, so
+acknowledging it would lose the revocation it was meant to carry. It answers `invalid_request` and
+is retried. Event types FundLoop does not implement are left alone, because their payload shapes are
+not ours to police.
+
 **Every verified event is acknowledged, including the ones with nothing to do.** An unmapped
 subject, an unknown requesting client and an unimplemented event type would never start working on a
 retry, so leaving them pending would end with Cubid marking a delivery failed while FundLoop had in
 fact decided what to do with it. A row in `oauth_security_events` records which it was, with the
-payload verbatim. Only our own failures answer 5xx — unconfigured, unreachable keys, a database
-error — because those are the cases where retrying is exactly right. A token that does not verify
-answers 400 with the RFC 8935 `err` vocabulary.
+payload verbatim. Only our own failures answer 5xx — unconfigured, unreachable keys, a key check
+that could not be completed, a database error — because those are the cases where retrying is
+exactly right. A token that does not verify answers 400 with a registered RFC 8935 `err` value,
+`application/json`, and the `Content-Language` the standard requires on that response.
 
 **A redelivery is idempotent because the `jti` is the primary key.** `oauth_apply_security_event`
 records the receipt and performs every revocation it causes in one statement, so a committed row
@@ -166,10 +184,18 @@ afterwards, an assertion older than the revocation would be honoured. Closing it
 
 ## Operating it
 
-**Registering a requesting client** is an operator insert into `oauth_clients`: `client_id` and
-secret digest for authenticating to FundLoop, `cubid_client_id` for the `client_id` claim an
-assertion carries (the two need not match), and `allowed_scopes`. Set `is_sandbox` for a test
-client. There is no dynamic registration.
+**Registering a requesting client** is two steps, and skipping the second leaves a hole.
+
+First, an operator insert into `oauth_clients`: `client_id` and secret digest for authenticating to
+FundLoop, `cubid_client_id` for the `client_id` claim an assertion carries (the two need not match),
+and `allowed_scopes`. Set `is_sandbox` for a test client. There is no dynamic registration.
+
+Then `select * from public.oauth_apply_pending_revocations_for_client('<cubid_client_id>')`. A
+revocation that arrived before the insert existed could not be applied — there was no local client
+to revoke anything for — and was recorded as `unknown_client`. Without this step, an assertion
+minted before that withdrawal would create a fresh grant against the row that now exists and be
+honoured. The function applies the same ordering guard as live delivery, so a withdrawal the person
+has since reversed is left alone, and it is safe to run again.
 
 **Withdrawing a client** is `update oauth_clients set disabled_at = now()`, after which no assertion
 from it is redeemable. Revoking one person's access is `revokeTokensForGrant`, which the Security

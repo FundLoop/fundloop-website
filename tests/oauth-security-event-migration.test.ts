@@ -17,6 +17,14 @@ const applyFunction = migration.slice(
   migration.indexOf("create or replace function public.oauth_apply_security_event"),
   migration.indexOf("revoke all on function public.oauth_apply_security_event"),
 )
+const redeemFunction = migration.slice(
+  migration.indexOf("create or replace function public.oauth_redeem_grant"),
+  migration.indexOf("-- Applying a received token"),
+)
+const catchUpFunction = migration.slice(
+  migration.indexOf("create or replace function public.oauth_apply_pending_revocations_for_client"),
+  migration.indexOf("revoke all on function public.oauth_apply_pending_revocations_for_client"),
+)
 
 describe("oauth_security_events", () => {
   it("makes the token's own jti the primary key, so a redelivery collides instead of repeating", () => {
@@ -99,6 +107,74 @@ describe("oauth_apply_security_event", () => {
 
   it("runs with an empty search_path, like every other function in this feature", () => {
     expect(applyFunction).toContain("set search_path = ''")
+  })
+})
+
+describe("ordering a late event against the current authorization", () => {
+  it("records when a grant was last authorized, in the issuer's clock", () => {
+    expect(migration).toContain("alter table public.oauth_grants add column last_assertion_issued_at timestamptz")
+    expect(redeemFunction).toContain("last_assertion_issued_at = greatest(")
+  })
+
+  it("never lowers that time, so a late assertion cannot make a stale revocation apply again", () => {
+    expect(redeemFunction).toContain("coalesce(v_grant.last_assertion_issued_at, p_assertion_issued_at)")
+  })
+
+  it("skips a withdrawal the person has since reversed by consenting again", () => {
+    expect(applyFunction).toContain("if v_authorized_at is not null and p_issued_at < v_authorized_at then")
+    expect(applyFunction).toContain("'superseded'")
+  })
+
+  it("compares against a live grant only, so a tombstone is still recorded when there is none", () => {
+    const lookup = applyFunction.slice(
+      applyFunction.indexOf("select last_assertion_issued_at into v_authorized_at"),
+      applyFunction.indexOf(";", applyFunction.indexOf("select last_assertion_issued_at into v_authorized_at")),
+    )
+    expect(lookup).toContain("revoked_at is null")
+  })
+
+  it("does not apply the guard to an account purge, which cannot be superseded", () => {
+    const purgeBranch = applyFunction.slice(
+      applyFunction.indexOf("elsif v_type = c_account_purged"),
+      applyFunction.indexOf("elsif v_type = c_consent_revoked"),
+    )
+    expect(purgeBranch).not.toContain("v_authorized_at")
+  })
+})
+
+describe("oauth_apply_pending_revocations_for_client", () => {
+  it("exists, because a client can be registered after a revocation for it arrived", () => {
+    expect(catchUpFunction).toContain("create or replace function public.oauth_apply_pending_revocations_for_client(p_cubid_client_id text)")
+  })
+
+  it("finds the events by the requesting client id inside the stored payload", () => {
+    expect(catchUpFunction).toContain("e.payload -> c_cross_app_revoked ->> 'requesting_client_id' = p_cubid_client_id")
+  })
+
+  it("resolves the subject again rather than trusting the user recorded at receipt", () => {
+    expect(catchUpFunction).toContain("from public.cubid_oidc_subjects s")
+    expect(catchUpFunction).toContain("coalesce(v_user_id, v_event.recorded_user_id)")
+  })
+
+  it("applies the same ordering guard as live delivery", () => {
+    expect(catchUpFunction).toContain("v_event.issued_at < v_authorized_at")
+    expect(catchUpFunction).toContain("'superseded'::text")
+  })
+
+  it("refuses to run for a Cubid client this deployment does not know", () => {
+    expect(catchUpFunction).toContain("raise exception 'no local client is registered for Cubid client %'")
+  })
+
+  it("names its output columns apart from the columns it reads", () => {
+    // Output columns of a RETURNS TABLE function are plpgsql variables, so `subject` or `user_id`
+    // would make every unqualified read of those columns ambiguous at execution time.
+    expect(catchUpFunction).toContain("returns table (event_subject text, applied_user_id uuid, outcome text)")
+  })
+
+  it("is executable by the service role only", () => {
+    const signature = "public.oauth_apply_pending_revocations_for_client(text)"
+    expect(migration).toContain(`revoke all on function ${signature} from public, anon, authenticated`)
+    expect(migration).toContain(`grant execute on function ${signature} to service_role`)
   })
 })
 
