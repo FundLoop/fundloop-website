@@ -191,7 +191,7 @@ See [Edge Function Contract Pattern](docs/engineering/edge-functions.md), [CUBID
 
 ## Release Candidate Path
 
-The current promotion path is feature branch to `dev`, then `dev` to `main`. App CI and Supabase dry-runs should pass before merging, and main-target Supabase deploys should use the GitHub `Production` environment approval gate.
+The current promotion path is feature branch to `dev`, then `dev` to `main`. App CI and Supabase dry-runs should pass before merging, and main-target Supabase deploys run through the GitHub `Production` environment. Every PR is reviewed by the designated reviewer, who also merges PRs into `dev`; the `dev` to `main` PR is merged by the repository owner. That merge is the only gate, so the Production deploy it triggers runs without a second approval ([#271](https://github.com/FundLoop/fundloop-website/issues/271)), which makes the release-candidate PR the review point for anything reaching Production.
 
 See [Dev To Main Release Candidate Path](docs/engineering/release-candidate.md) for the required branch protections, production environment gate, Supabase secrets, migration/rollback rules, and minimum production smoke checklist.
 

@@ -104,7 +104,7 @@
     {
       "path": "lib/release-readiness/evidence-manifest.ts",
       "control": "production evidence fail-closed evaluator",
-      "sha256": "d31487e02172ce04ff71fafb027c86ba71a187cc62d0d1db6a7c8e697c652a51"
+      "sha256": "e94af84d16337c567372c35d11713f009152b8c0f7136512ee26b43041f93528"
     }
   ],
   "decisions": [
@@ -344,5 +344,5 @@
       ]
     }
   ],
-  "packetSha256": "1ce0b8e95b3b7acfdc9862e7a10f7149cca9804e39c542dee631985a1c7882af"
+  "packetSha256": "29297536062dd91f95ace47be2de3cb9664a04802b19932f8cd0ebcb3e1bfb24"
 }

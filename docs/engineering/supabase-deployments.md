@@ -1,6 +1,6 @@
 # Supabase Remote Deployments
 
-Last reviewed: 2026-08-13
+Last reviewed: 2026-10-10
 
 FundLoop deploys Supabase schema migrations and Edge Functions through the `Supabase Deploy` GitHub Actions workflow.
 
@@ -61,9 +61,13 @@ Live API read-back on 2026-08-13 confirms protected `dev` and `main` branches re
 PRs plus the app, executable replay, and Supabase checks. The approval count remains
 zero while FundLoop has only one eligible collaborator, preventing enforced
 self-review deadlock. `Production`
-is restricted to the exact `main` branch, requires the repository's human reviewer,
-and has administrator bypass disabled. See the timestamped
-[delivery-control evidence](./github-delivery-controls-2026-08-13.md). Re-read live
+is restricted to the exact `main` branch and has administrator bypass disabled, with no per-run
+reviewer: the owner's approval of the release-candidate PR is the gate
+([#271](https://github.com/FundLoop/fundloop-website/issues/271)), so a merge to `main` starts the
+Production deploy immediately. See the timestamped
+[delivery-control evidence](./github-delivery-controls-2026-10-10.md) for the current state, and
+[the 2026-08-13 read-back](./github-delivery-controls-2026-08-13.md) for the original hardening,
+which recorded a required reviewer and linear history before both were changed deliberately. Re-read live
 state before promotion; no document substitutes for current configuration evidence.
 The pre-publication [Goal #158 certification](./goal-158-delivery-integrity-evidence.md)
 binds those controls to the exact certified Dev deployment and drift artifacts.
