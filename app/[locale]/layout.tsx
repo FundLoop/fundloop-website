@@ -1,4 +1,5 @@
 import { Suspense } from "react"
+import { Toaster } from "@/components/ui/toaster"
 import type React from "react"
 import type { Metadata } from "next"
 import { notFound } from "next/navigation"
@@ -62,6 +63,10 @@ export default async function RootLayout({ children, params }: LayoutProps) {
                 <OnboardingModalManager />
               </Suspense>
               {children}
+              {/* The only toast renderer, and it was mounted nowhere: every toast the application
+                  dispatched — sign-in errors, save confirmations, onboarding progress — was
+                  discarded without ever being shown. */}
+              <Toaster />
               <FloatingPrototypeBadge />
             </ThemeProvider>
           </Web3Provider>
