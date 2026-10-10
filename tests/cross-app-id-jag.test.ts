@@ -140,7 +140,7 @@ describe("verifyIdJag", () => {
     expect(await verify(await sign(header, claims({ iat: now - 600, exp: now - 60 })))).toMatchObject({ ok: false, reason: "expired" })
     expect(await verify(await sign(header, claims({ iat: now + 600, exp: now + 900 })))).toMatchObject({ ok: false, reason: "not_yet_valid" })
     // Correctly signed but claiming a longer life than the contract gives: accepting it would widen
-    // the replay window.
+    // the window in which a stolen assertion can be replayed.
     expect(await verify(await sign(header, claims({ iat: now, exp: now + 86_400 })))).toMatchObject({ ok: false, reason: "lifetime_too_long" })
     // A little clock drift is tolerated.
     expect(await verify(await sign(header, claims({ iat: now + 10, exp: now + 310 })))).toMatchObject({ ok: true })

@@ -14,21 +14,21 @@ vi.mock("@/lib/oauth/store", () => store)
 describe("authorization server metadata", () => {
   it("describes a redemption endpoint, not an authorization server", async () => {
     const { GET } = await import("@/app/api/oauth/metadata/route")
-    const document = await GET(new Request("https://dev.fundloop.org/.well-known/oauth-authorization-server")).json()
+    const metadata = await GET(new Request("https://dev.fundloop.org/.well-known/oauth-authorization-server")).json()
 
     // RFC 8414 requires the issuer to match where the document was fetched from, and this app serves
     // more than one host.
-    expect(document.issuer).toBe("https://dev.fundloop.org")
-    expect(document.token_endpoint).toBe("https://dev.fundloop.org/oauth/token")
-    expect(document.grant_types_supported).toEqual(["urn:ietf:params:oauth:grant-type:jwt-bearer"])
+    expect(metadata.issuer).toBe("https://dev.fundloop.org")
+    expect(metadata.token_endpoint).toBe("https://dev.fundloop.org/oauth/token")
+    expect(metadata.grant_types_supported).toEqual(["urn:ietf:params:oauth:grant-type:jwt-bearer"])
 
     // Consent lives at Cubid, so FundLoop advertises no authorization endpoint, no response type and
     // no PKCE method, and never dynamic registration.
-    expect(document.authorization_endpoint).toBeUndefined()
-    expect(document.response_types_supported).toBeUndefined()
-    expect(document.code_challenge_methods_supported).toBeUndefined()
-    expect(document.registration_endpoint).toBeUndefined()
-    const serialized = JSON.stringify(document)
+    expect(metadata.authorization_endpoint).toBeUndefined()
+    expect(metadata.response_types_supported).toBeUndefined()
+    expect(metadata.code_challenge_methods_supported).toBeUndefined()
+    expect(metadata.registration_endpoint).toBeUndefined()
+    const serialized = JSON.stringify(metadata)
     expect(serialized).not.toContain("implicit")
     expect(serialized).not.toContain("authorization_code")
   })
