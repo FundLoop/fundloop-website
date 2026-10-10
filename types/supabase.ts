@@ -6621,6 +6621,7 @@ export type Database = {
           client_id: string
           granted_at: string
           id: number
+          last_assertion_issued_at: string | null
           revoked_at: string | null
           scopes: Database["public"]["Enums"]["oauth_scope"][]
           updated_at: string
@@ -6630,6 +6631,7 @@ export type Database = {
           client_id: string
           granted_at?: string
           id?: never
+          last_assertion_issued_at?: string | null
           revoked_at?: string | null
           scopes: Database["public"]["Enums"]["oauth_scope"][]
           updated_at?: string
@@ -6639,10 +6641,50 @@ export type Database = {
           client_id?: string
           granted_at?: string
           id?: never
+          last_assertion_issued_at?: string | null
           revoked_at?: string | null
           scopes?: Database["public"]["Enums"]["oauth_scope"][]
           updated_at?: string
           user_id?: string
+        }
+        Relationships: []
+      }
+      oauth_security_events: {
+        Row: {
+          audience: string
+          event_time: string | null
+          issued_at: string
+          issuer: string
+          jti: string
+          outcomes: Json
+          payload: Json
+          received_at: string
+          subject: string
+          user_id: string | null
+        }
+        Insert: {
+          audience: string
+          event_time?: string | null
+          issued_at: string
+          issuer: string
+          jti: string
+          outcomes?: Json
+          payload: Json
+          received_at?: string
+          subject: string
+          user_id?: string | null
+        }
+        Update: {
+          audience?: string
+          event_time?: string | null
+          issued_at?: string
+          issuer?: string
+          jti?: string
+          outcomes?: Json
+          payload?: Json
+          received_at?: string
+          subject?: string
+          user_id?: string | null
         }
         Relationships: []
       }
@@ -15088,6 +15130,32 @@ export type Database = {
         Returns: string
       }
       persona_goal2_schema_readiness: { Args: never; Returns: Json }
+      oauth_apply_pending_revocations_for_client: {
+        Args: {
+          p_cubid_client_id: string
+        }
+        Returns: {
+          event_subject: string
+          applied_user_id: string
+          outcome: string
+        }[]
+      }
+      oauth_apply_security_event: {
+        Args: {
+          p_jti: string
+          p_issuer: string
+          p_audience: string
+          p_subject: string
+          p_issued_at: string
+          p_event_time: string | null
+          p_events: Json
+        }
+        Returns: {
+          event_type: string
+          outcome: string
+          affected: number
+        }[]
+      }
       oauth_redeem_grant: {
         Args: {
           p_client_id: string

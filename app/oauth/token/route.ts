@@ -77,14 +77,19 @@ async function redeem(request: Request) {
   // An unknown key is the one denial worth retrying: it is what a key rotation looks like. The
   // cache's own floor stops this from becoming a request amplifier.
   if (!verified.ok && verified.reason === "unknown_key") {
-    const refreshed = await cubidJwksCache(config).get({ force: true })
-    if (refreshed) {
+    const refreshed = await cubidJwksCache(config).refresh()
+    if (refreshed.outcome === "refreshed") {
       verified = await verifyIdJag(assertion, {
-        jwks: refreshed,
+        jwks: refreshed.keys,
         issuer: config.issuer,
         audience: config.audience,
         acceptedClientIds: [client.cubid_client_id],
       })
+    } else if (!verified.ok) {
+      // Throttled by the refresh floor, or the issuer did not answer. We do not know whether this
+      // key exists, and `invalid_grant` would tell the client its assertion is bad on the strength
+      // of a check we could not make. A retryable answer is the honest one.
+      return oauthErrorResponse("temporarily_unavailable", "The issuer's signing keys could not be checked. Please retry.")
     }
   }
 

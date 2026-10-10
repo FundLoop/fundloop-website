@@ -1,0 +1,206 @@
+import { crossAppReceiverConfig, cubidJwksCache } from "@/lib/cross-app/config"
+import { JWS_DENIALS } from "@/lib/cross-app/jws"
+import { verifySecurityEventToken, type SecurityEventDenial } from "@/lib/cross-app/secevent"
+import { applySecurityEvent } from "@/lib/oauth/store"
+
+// POST /oauth/security-events — receives a Cubid Security Event Token (#266 stage 2b).
+//
+// RFC 8417 defines the token, RFC 8935 the push delivery. Registered at Cubid as this client's
+// `security_events_uri`, which is why the path is stable and must stay so.
+//
+// There is no client authentication on this endpoint and there is not meant to be: the contract
+// authenticates the *token*, not the connection, so the signature over the issuer's key is the only
+// thing that makes a request credible. Nothing here acts before that signature verifies, and a
+// request that fails verification changes nothing and reveals nothing about who exists.
+//
+// Contract: cubid-monorepo docs/engineering/oidc-cross-app-access.md, "Security Event Tokens".
+export const dynamic = "force-dynamic"
+
+const SECEVENT_CONTENT_TYPE = "application/secevent+jwt"
+// A real Cubid SET is under 2 KB. This endpoint takes no credential, so anything arriving here is
+// unauthenticated bytes that would otherwise be base64-decoded and JSON-parsed before a signature
+// is checked. The cap is generous enough to survive a larger key id or extra claims.
+const MAX_BODY_BYTES = 16 * 1024
+
+// RFC 8935 §2.4 defines the error codes a receiver may answer with, and nothing wider. A denial
+// that does not map onto one is reported as invalid_request rather than invented.
+const ERROR_CODE_BY_DENIAL: Record<SecurityEventDenial, string> = {
+  malformed: "invalid_request",
+  wrong_type: "invalid_request",
+  missing_claim: "invalid_request",
+  malformed_subject: "invalid_request",
+  subject_mismatch: "invalid_request",
+  no_events: "invalid_request",
+  malformed_event: "invalid_request",
+  malformed_event_time: "invalid_request",
+  expired: "invalid_request",
+  not_yet_valid: "invalid_request",
+  too_old: "invalid_request",
+  unsupported_algorithm: "invalid_key",
+  unknown_key: "invalid_key",
+  bad_signature: "invalid_key",
+  unsupported_critical_header: "invalid_key",
+  wrong_issuer: "invalid_issuer",
+  wrong_audience: "invalid_audience",
+}
+
+// RFC 8935 §2.3: a failure is a 400 whose body carries `err` and `description` as JSON, and which
+// MUST state the language those descriptions are written in. Ours are always English, so the value
+// is fixed rather than negotiated against Accept-Language.
+const DESCRIPTION_LANGUAGE = "en-US"
+
+function setError(err: string, description: string, options?: { status?: number; headers?: Record<string, string> }) {
+  return Response.json({ err, description }, {
+    status: options?.status ?? 400,
+    headers: { "Cache-Control": "no-store", "Content-Language": DESCRIPTION_LANGUAGE, ...options?.headers },
+  })
+}
+
+// Our own unavailability is not the transmitter's error, so it is a 5xx: the delivery stays pending
+// at Cubid and is retried, rather than being acknowledged or marked failed.
+function unavailable(description: string) {
+  return Response.json({ description }, {
+    status: 503,
+    headers: { "Cache-Control": "no-store", "Content-Language": DESCRIPTION_LANGUAGE },
+  })
+}
+
+// The body is read with a cap rather than buffered whole: a declared Content-Length is checked
+// first, and the stream is then read with the same cap so a missing or lying header cannot get
+// past it.
+async function readBoundedBody(request: Request): Promise<{ ok: true; text: string } | { ok: false }> {
+  const declared = Number(request.headers.get("content-length"))
+  if (Number.isFinite(declared) && declared > MAX_BODY_BYTES) return { ok: false }
+
+  const stream = request.body
+  if (!stream) {
+    const text = await request.text()
+    return new TextEncoder().encode(text).length > MAX_BODY_BYTES ? { ok: false } : { ok: true, text }
+  }
+
+  const reader = stream.getReader()
+  const chunks: Uint8Array[] = []
+  let size = 0
+  try {
+    for (;;) {
+      const { done, value } = await reader.read()
+      if (done) break
+      size += value.length
+      if (size > MAX_BODY_BYTES) {
+        // Stop pulling: there is no point receiving the rest of something we will not read.
+        await reader.cancel().catch(() => {})
+        return { ok: false }
+      }
+      chunks.push(value)
+    }
+  } finally {
+    reader.releaseLock()
+  }
+
+  const joined = new Uint8Array(size)
+  let offset = 0
+  for (const chunk of chunks) {
+    joined.set(chunk, offset)
+    offset += chunk.length
+  }
+  return { ok: true, text: new TextDecoder().decode(joined) }
+}
+
+// A denial reached before the signature was checked describes attacker-supplied bytes, so its
+// detail — a `typ`, an `alg`, a `kid` — must not reach the log, where a newline could forge a line
+// an operator reads as a real outcome. The reason alone is what an operator needs there. Details
+// from claim checks are our own strings, and are JSON-encoded and clipped anyway.
+function refusalDetail(reason: string, detail: string | undefined) {
+  if (!detail || (JWS_DENIALS as readonly string[]).includes(reason)) return ""
+  return ` (${JSON.stringify(detail).slice(0, 120)})`
+}
+
+export async function POST(request: Request) {
+  try {
+    return await receive(request)
+  } catch (error) {
+    // A 5xx is the honest answer to an unhandled failure: the event has not been applied, and
+    // acknowledging it would lose the revocation for good.
+    console.error(`[oauth/security-events] delivery failed: ${error instanceof Error ? error.message : "unknown"}`)
+    return Response.json({ description: "The event could not be processed. Please retry." }, {
+      status: 500,
+      headers: { "Cache-Control": "no-store", "Content-Language": DESCRIPTION_LANGUAGE },
+    })
+  }
+}
+
+async function receive(request: Request) {
+  // RFC 8935 §2.1 fixes the media type. Parameters such as a charset are tolerated; a different
+  // type means this is not a SET delivery and nothing here would know how to read it.
+  const contentType = request.headers.get("content-type")?.split(";")[0]?.trim().toLowerCase()
+  if (contentType !== SECEVENT_CONTENT_TYPE) {
+    return setError("invalid_request", `The request body must be ${SECEVENT_CONTENT_TYPE}.`)
+  }
+
+  const body = await readBoundedBody(request)
+  if (!body.ok) {
+    return setError("invalid_request", `The request body must be a Security Event Token of at most ${MAX_BODY_BYTES} bytes.`)
+  }
+  const token = body.text.trim()
+  if (!token) return setError("invalid_request", "The request body must be a Security Event Token.")
+
+  const config = crossAppReceiverConfig()
+  // Unconfigured means there is no issuer to verify against and no audience this token could be
+  // addressed to, so there is nothing safe to do with it.
+  if (!config) return unavailable("Cross-app access is not configured on this deployment.")
+
+  const jwks = await cubidJwksCache(config).get()
+  if (!jwks) return unavailable("The issuer's signing keys are unavailable.")
+
+  const options = { jwks, issuer: config.issuer, audience: config.clientId }
+  let verified = await verifySecurityEventToken(token, options)
+
+  // An unknown key is the one denial worth retrying: it is what a key rotation looks like.
+  if (!verified.ok && verified.reason === "unknown_key") {
+    const refreshed = await cubidJwksCache(config).refresh()
+    if (refreshed.outcome === "refreshed") {
+      verified = await verifySecurityEventToken(token, { ...options, jwks: refreshed.keys })
+    } else if (!verified.ok) {
+      // Throttled by the refresh floor, or the issuer did not answer. Either way we do not know
+      // whether this key exists, and a 400 would tell Cubid the token is bad on the strength of a
+      // check we could not make. A 5xx leaves the delivery pending for the next retry, by which
+      // time the floor has elapsed.
+      return unavailable("The issuer's signing keys could not be checked. Please retry.")
+    }
+  }
+
+  if (!verified.ok) {
+    console.warn(`[oauth/security-events] refused: ${verified.reason}${refusalDetail(verified.reason, verified.detail)}`)
+    return setError(ERROR_CODE_BY_DENIAL[verified.reason], "The Security Event Token was not accepted.")
+  }
+
+  const { claims } = verified
+  const outcomes = await applySecurityEvent({
+    jti: claims.jti,
+    issuer: claims.iss,
+    audience: claims.aud,
+    subject: claims.subject,
+    issuedAt: new Date(claims.iat * 1000),
+    eventTime: claims.timeOfEvent === undefined ? null : new Date(claims.timeOfEvent * 1000),
+    // Only the verified shape is passed on: the events the verifier returned, keyed by type.
+    events: Object.fromEntries(claims.events.map((event) => [event.type, event.claims])),
+  })
+
+  // Every outcome is an acknowledgement, including "nothing to do". An unmapped subject, an unknown
+  // requesting client and an event type we do not implement would never start working on a retry,
+  // and leaving them pending would end with the event marked failed at Cubid while FundLoop had in
+  // fact decided what to do. The row records which it was.
+  console.info(
+    `[oauth/security-events] applied ${claims.jti}: ${outcomes.map((outcome) => `${outcome.eventType ?? "-"}=${outcome.outcome}`).join(", ") || "no outcome"}`,
+  )
+
+  // RFC 8935 §2.2: an accepted SET is answered with 202 and no body.
+  return new Response(null, { status: 202, headers: { "Cache-Control": "no-store" } })
+}
+
+export async function GET() {
+  return setError("invalid_request", "The security event endpoint accepts POST only.", {
+    status: 405,
+    headers: { Allow: "POST" },
+  })
+}

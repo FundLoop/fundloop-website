@@ -62,9 +62,10 @@ access in Cubid Passport, in one place for every sibling app.
 
 ## Revocation
 
-- A person withdraws cross-app access in Cubid Passport. Cubid sends a Security Event Token, and
-  FundLoop revokes that client's tokens for that person on receipt (the receiver is the next piece
-  of stage 2; until it lands, the 15-minute access-token lifetime is the bound).
+- A person withdraws cross-app access in Cubid Passport. Cubid sends a Security Event Token to
+  `POST /oauth/security-events`, and FundLoop revokes that client's grant and tokens for that person
+  on receipt. The 15-minute access-token lifetime is the bound on the gap before that delivery, and
+  on a withdrawal Cubid never manages to deliver.
 - `POST /oauth/revoke` (RFC 7009) lets a client drop its own token.
 - FundLoop issues no refresh tokens: a client renews by redeeming a fresh assertion, so a withdrawn
   consent stops renewals at the source rather than relying on FundLoop noticing.

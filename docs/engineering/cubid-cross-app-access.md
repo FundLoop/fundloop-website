@@ -20,6 +20,7 @@ access token. The issuer-side contract is
 | --- | --- |
 | `POST /oauth/token` | Redeems an ID-JAG: `grant_type=urn:ietf:params:oauth:grant-type:jwt-bearer` |
 | `POST /oauth/revoke` | RFC 7009, for a client dropping its own token |
+| `POST /oauth/security-events` | RFC 8417 Security Event Tokens, RFC 8935 push delivery |
 | `GET /.well-known/oauth-authorization-server` | RFC 8414, describing the redemption endpoint |
 
 Scopes are `profile:read`, `awards:read` and `payout-routes:read`. There is **no** authorization
@@ -97,39 +98,159 @@ carries a 30-second margin and errs towards refusing.
 Cubid. Issuing our own refresh token would keep access alive on FundLoop's say-so after a person
 withdrew consent at Cubid.
 
-**Access tokens live 15 minutes.** Until the Security Event Token receiver lands, that lifetime is
-the only bound on a withdrawn client's remaining access. It is deliberately short for that reason,
-and renewal costs the client one round trip.
+**Access tokens live 15 minutes.** The Security Event Token receiver ends a withdrawn client's
+access as soon as Cubid can tell us; the lifetime is the bound on the gap between the withdrawal and
+that delivery, and on a withdrawal Cubid never manages to deliver at all. Renewal costs the client
+one round trip.
 
 **An unknown `kid` is retried once against refreshed keys**, because that is what a key rotation
 looks like. The JWKS cache has a refresh floor, so a stream of assertions naming unknown keys cannot
-turn this endpoint into a request amplifier aimed at Cubid.
+turn this endpoint into a request amplifier aimed at Cubid. The retry distinguishes a *conclusive*
+refresh from one the floor throttled or the issuer failed: "this key does not exist" and "I could
+not find out" are different answers, and only the first justifies telling the caller its token is
+invalid. The second answers `temporarily_unavailable`, or 503 at the event receiver.
 
 **Unconfigured means refused.** With no issuer or audience configured there is nothing to verify
 against, so redemption answers `temporarily_unavailable` rather than falling back to a default.
 
+## Receiving a revocation
+
+Cubid pushes an RFC 8417 Security Event Token to `POST /oauth/security-events` when a person
+withdraws a cross-app consent, when a pairing or a client is retired, or when a Cubid account is
+deleted. RFC 8935 is the delivery: `Content-Type: application/secevent+jwt`, the compact JWS as the
+whole body, any 2xx an acknowledgement, and retries after 1, 5, 30, 120 and 720 minutes before
+Cubid marks the event failed.
+
+**There is no client authentication on this endpoint, and there is not meant to be.** The contract
+authenticates the token, not the connection, so the signature over a key Cubid publishes is the only
+thing that makes a delivery credible. `lib/cross-app/secevent.ts` checks, before trusting any claim:
+`typ` is `secevent+jwt`, `alg` is RS256, `crit` is absent, `kid` names a published signing key and
+the signature verifies; then `iss` is the configured issuer, `aud` is `FUNDLOOP_CUBID_CLIENT_ID`,
+`sub_id` is an `iss_sub` identifier minted by that same issuer, `events` is a non-empty object of
+objects, and a `toe` that is present is a number no later than `iat`.
+
+A SET carries no `exp`, so the only age bound is on `iat`, and it is deliberately asymmetric. Seven
+days into the past: that is not a freshness check — single use of the `jti` is what stops a replay —
+it only stops a captured token being replayable forever, and it has to stay wide enough for an
+issuer that signs once per event rather than once per attempt. Five minutes into the future, much
+wider than the 30 seconds allowed elsewhere: a re-signed retry cannot fix a clock disagreement, so a
+host lagging the issuer by half a minute would refuse every attempt and lose the revocation after
+the fifth. `not_yet_valid` in the logs means this host's clock, not the issuer's.
+
+**Where the event's own `subject` disagrees with `sub_id`, the token is refused.** Both name a
+person; a token where they differ is ambiguous, and acting on either would be a guess.
+
+| Event | What FundLoop does |
+| --- | --- |
+| `cross-app-consent-revoked` | Revokes that requesting client's grant and live tokens for that person. The client is matched by `requesting_client_id`, its id *at Cubid* |
+| `account-purged` | Revokes every client that holds a grant for that person, and drops the Cubid subject mapping |
+| `consent-revoked` | Recorded, nothing else: the contract reserves it for Login with Cubid notices, and cross-app access has its own event |
+| anything else | Recorded as an unimplemented type |
+
+**Ordering a late revocation — and the known gap.** Delivery retries for most of a day, so a
+withdrawal can arrive after the person reconsented and the client redeemed a fresh assertion.
+Applying that stale withdrawal revokes live, legitimate access.
+
+Ordering it needs the time the *event* happened. The only time a SET carries today is `iat`, and
+Cubid re-signs **every delivery attempt** (`services/oidc/src/clientEvents.ts` calls
+`signSecurityEventToken(event, now)` inside the drain loop), so `iat` is when that attempt was sent:
+always later than the withdrawal and later than any redemption that preceded it. Only `jti` is
+stable across retries. Comparing `iat` would therefore never fire while appearing to protect the
+case it was written for, which is worse than not comparing at all.
+
+So the receiver orders by RFC 8417's optional `toe` claim ("time of event"), verified and stored as
+`oauth_security_events.event_time`, against `oauth_grants.last_assertion_issued_at` — the `iat` of
+the newest assertion redeemed for the grant, recorded monotonically. Both are the issuer's clock, so
+they compare with no skew margin, and equal times revoke because ending access is the safe
+direction. **Cubid does not send `toe` yet**, so `event_time` is null on every delivery and the
+comparison is dormant: a late retry after a reconsent does revoke the re-consented access.
+
+The residual risk is bounded and self-correcting. The client's next renewal redeems a fresh
+assertion, which Cubid mints only if consent is actually live, so access returns within one renewal
+cycle — at most the 15-minute token lifetime, and immediately if the client retries on a 401. What
+is lost is a round trip, not the consent. The fix belongs in the contract: Cubid sets `toe` from the
+outbox row's `created_at`, or signs once at enqueue and resends the same bytes. Nothing on this side
+changes when it does.
+
+An `account-purged` event is never ordered this way, with or without `toe`: a deleted account cannot
+consent again.
+
+**The body is bounded and unverified bytes stay out of the log.** A real SET is under 2 KB; this
+endpoint takes no credential, so the body is read with a 16 KB cap — a declared `Content-Length`
+first, then the stream with the same cap, because the header is a claim and not a measurement.
+Refusal details for the checks that run *before* the signature (`typ`, `alg`, `kid`) are never
+logged: they are attacker-chosen strings, and a newline in one would forge a line an operator reads
+as a real outcome.
+
+**A known event type with an incomplete payload is refused, not acknowledged.** A signed
+`cross-app-consent-revoked` without a `requesting_client_id` names no client to revoke, so
+acknowledging it would lose the revocation it was meant to carry. It answers `invalid_request` and
+is retried. Event types FundLoop does not implement are left alone, because their payload shapes are
+not ours to police.
+
+**Every verified event is acknowledged, including the ones with nothing to do.** An unmapped
+subject, an unknown requesting client and an unimplemented event type would never start working on a
+retry, so leaving them pending would end with Cubid marking a delivery failed while FundLoop had in
+fact decided what to do with it. A row in `oauth_security_events` records which it was, with the
+payload verbatim. Only our own failures answer 5xx — unconfigured, unreachable keys, a key check
+that could not be completed, a database error — because those are the cases where retrying is
+exactly right. A token that does not verify answers 400 with a registered RFC 8935 `err` value,
+`application/json`, and the `Content-Language` the standard requires on that response.
+
+**A redelivery is idempotent because the `jti` is the primary key.** `oauth_apply_security_event`
+records the receipt and performs every revocation it causes in one statement, so a committed row
+means the work happened and a duplicate key means it happened already. Split in two, a crash between
+them would leave an event marked applied with access still live.
+
+**An `account-purged` drops the subject mapping and leaves the FundLoop user alone.** The subject
+identifies nobody at Cubid any more, and left in place it would tell account linking that this
+person is still linked to an account that can never authenticate again. A Cubid deletion is not a
+FundLoop deletion, and this event is not authority for one.
+
+**The gap: a revocation for a subject nobody has linked yet.** For a person FundLoop knows,
+`oauth_revoke_grant` records a withdrawal even with no grant row, which is what stops an assertion
+minted before the withdrawal from reviving access. For an unlinked subject there is nobody to record
+it against, so the event is stored as `unknown_subject` and nothing else. If that subject is linked
+afterwards, an assertion older than the revocation would be honoured. Closing it belongs to linking
+(stage 2c): it must look the subject up in `oauth_security_events` before mapping it, which is what
+`oauth_security_events_subject_idx` is for.
+
 ## Operating it
 
-**Registering a requesting client** is an operator insert into `oauth_clients`: `client_id` and
-secret digest for authenticating to FundLoop, `cubid_client_id` for the `client_id` claim an
-assertion carries (the two need not match), and `allowed_scopes`. Set `is_sandbox` for a test
-client. There is no dynamic registration.
+**Registering a requesting client** is two steps, and skipping the second leaves a hole.
+
+First, an operator insert into `oauth_clients`: `client_id` and secret digest for authenticating to
+FundLoop, `cubid_client_id` for the `client_id` claim an assertion carries (the two need not match),
+and `allowed_scopes`. Set `is_sandbox` for a test client. There is no dynamic registration.
+
+Then `select * from public.oauth_apply_pending_revocations_for_client('<cubid_client_id>')`. A
+revocation that arrived before the insert existed could not be applied — there was no local client
+to revoke anything for — and was recorded as `unknown_client`. Without this step, an assertion
+minted before that withdrawal would create a fresh grant against the row that now exists and be
+honoured. The function applies the same ordering guard as live delivery, so a withdrawal the person
+has since reversed is left alone, and it is safe to run again.
 
 **Withdrawing a client** is `update oauth_clients set disabled_at = now()`, after which no assertion
 from it is redeemable. Revoking one person's access is `revokeTokensForGrant`, which the Security
 Event Token receiver will call.
 
-**Configuration**: `CUBID_OIDC_ISSUER`, `FUNDLOOP_CROSS_APP_AUDIENCE`, and optionally
-`CUBID_OIDC_JWKS_URI` when it is not `{issuer}/jwks`.
+**Configuration**: `CUBID_OIDC_ISSUER`, `FUNDLOOP_CROSS_APP_AUDIENCE` (the resource audience from
+the pairing, which an assertion's `aud` must equal), `FUNDLOOP_CUBID_CLIENT_ID` (FundLoop's own
+client id at Cubid, which a Security Event Token's `aud` must equal — a different value), and
+optionally `CUBID_OIDC_JWKS_URI` when it is not `{issuer}/jwks`.
 
-**Expired rows** are removed by `public.oauth_purge_expired()`. Scheduling it is stage 5.
+**Expired rows** are removed by `public.oauth_purge_expired()`: redeemed assertion ids after a day,
+dead tokens after 30 days, received events after 180 days. Scheduling it is stage 5.
 
 ## The liftable kit
 
 `lib/cross-app/` is framework-free on purpose: Web Crypto, `TextEncoder` and an injected `fetch`
 only, no Node or Deno built-ins, no configuration reads, no database access. It runs unchanged on
-Node, Deno and an edge runtime, so ChainCrew, SmarTrust and MyPayTag can take `id-jag.ts` plus this
-migration as a starting point rather than reimplementing assertion verification four times.
+Node, Deno and an edge runtime, so ChainCrew, SmarTrust and MyPayTag can take `jws.ts`, `id-jag.ts`
+and `secevent.ts` plus these migrations as a starting point rather than reimplementing assertion
+verification and event receipt four times each. `jws.ts` holds what the two verifiers share — the
+signature, the header rules and the JWKS cache — so the half that is easiest to get wrong exists
+once.
 
 `lib/oauth/` is the FundLoop side — token issuance, hashing and the store — and uses `node:crypto`.
 
@@ -146,12 +267,12 @@ checks all four of these, the revocation and supersession rules above have no ef
 
 ## Still to build
 
-1. **The Security Event Token receiver** for `cross-app-consent-revoked`, killing that person's
-   tokens for that client. Also `account-purged`, which the contract sends to every client with an
-   active relationship: ignoring it would leave tokens alive for a deleted Cubid account.
-2. **Sign in with Cubid, and linking an existing email account**, which is what populates
+1. **Sign in with Cubid, and linking an existing email account**, which is what populates
    `cubid_oidc_subjects`. Until it exists, redemption verifies assertions correctly and then has
    nobody to issue a token for, so nothing works end to end.
-3. Two operator steps on the Cubid side: FundLoop registered as a Cubid OIDC resource client (which
-   is where `FUNDLOOP_CROSS_APP_AUDIENCE` comes from) and a pairing with the requesting client.
-4. `types/supabase.ts` predates these tables, so `lib/oauth/store.ts` carries one documented cast.
+2. Two operator steps on the Cubid side: FundLoop registered as a Cubid OIDC resource client (which
+   is where `FUNDLOOP_CROSS_APP_AUDIENCE` and `FUNDLOOP_CUBID_CLIENT_ID` come from) and a pairing
+   with the requesting client. Registering `security_events_uri` is part of the first: it must be
+   HTTPS to a public host, so `https://www.fundloop.org/oauth/security-events`.
+3. Linking must consult `oauth_security_events` for the subject it is about to map, so a revocation
+   that arrived before the link is not forgotten. See "Receiving a revocation" below.
