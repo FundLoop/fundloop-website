@@ -181,3 +181,63 @@ Two of the seven were wiring, and the reason I did not catch them is that I test
 never the path: the panel renders, the command works, the verifier verifies, and the URL the person
 clicks was being redirected into a 404. The cheap check I skipped was asking "what does the browser
 actually request, and who answers it".
+
+### session v3: The toast fix split out, and a local notice instead
+
+- **Timestamp:** 2026-10-10T22:50:23Z
+- **Agent:** Claude Code (Claude Opus 5)
+- **Branch:** `feat/275-sign-in-with-cubid-ui` (PR #281)
+- **Head before commit:** `e61633c`
+
+---
+
+#### Objective
+
+HBIC asked for the toast fix to be its own PR: collapsing the duplicate store and mounting the
+renderer turns on 38 call sites that have never rendered, which is a user-visible change and not
+what #281 is about. Mine to choose how #281 says anything in the meantime.
+
+---
+
+#### The choice
+
+`CubidOutcomeNotice` renders its own banner rather than dispatching a toast. The alternative —
+leave the toast dispatch and wait for the other PR — would have shipped a notice that silently does
+nothing, which is the thing I objected to in the first place.
+
+Keeping it as a banner afterwards is probably right regardless: a sign-in result is worth leaving on
+screen until it is dismissed, which a toast is not. A failure renders as `role="alert"` and a
+success as `role="status"`, so a screen reader announces the one that interrupts and not the one
+that does not.
+
+---
+
+#### Two bugs found while writing it
+
+- **A dismissed notice came back.** The first version wrote the outcome into state from the effect,
+  whose dependencies include `useRouter()`'s return value — a fresh object every render — so any
+  re-render re-raised a notice the person had just dismissed. The dismiss test caught it, which is
+  the test earning its place.
+- **Writing state from an effect is a lint error here**, and the rule is right. The outcome is now
+  captured by `useState`'s initializer on the first render and the effect only cleans the URL. That
+  assumes the component mounts with the parameter present, which the 303 from the callback
+  guarantees; the comment says so, and says it is deliberately not built for the parameter
+  appearing during a soft navigation, because nothing in this flow does that.
+
+---
+
+#### Also recorded
+
+`docs/engineering/sign-in-with-cubid.md` now states that both `/auth/cubid/*` paths must be exempt
+from locale routing, why, and that the routes shipped in #280 without the exemption and were
+unreachable until #281 added it. That is the kind of thing a third route would get wrong the same
+way.
+
+---
+
+#### Tests and Validation
+
+- The notice's test is rewritten for the rendered form: nothing without an outcome, the message, the
+  URL cleanup, the rest of the query string surviving, staying until dismissed, alert versus status,
+  the email-taken copy, and an unknown code not being echoed.
+- 189 node files / 1431 tests and the dom project green; typecheck 0, lint 0.

@@ -38,6 +38,12 @@ hybrid are unsupported there. The request carries `response_type=code`, `scope=o
 profile`, `state`, `nonce`, and an S256 `code_challenge`. There is no consent screen of FundLoop's
 own: consent is hosted in Passport, versioned per client and scope.
 
+**Both paths are exempt from locale routing**, in `i18n/proxy-helpers.ts`. They have to be: the
+handlers exist at the bare paths, and the callback URI is registered at Cubid, which redirects a
+browser to it exactly — a locale redirect there throws the authorization code away. The routes
+shipped in #280 without that exemption and were unreachable until #281 added it, which is worth
+knowing before anyone adds a third one.
+
 `start` keeps the verifier, state and nonce in one short-lived httpOnly cookie, and that cookie is
 the only thing proving a callback belongs to a request this browser started. **This browser is not
 the only writer of its cookie jar**: a sibling host under the registrable domain — `dev.fundloop.org`,
@@ -246,6 +252,11 @@ invariant is the point, and it is enforced in the command rather than the UI.
    goes through the `cubid-identity-disconnect` Edge Function command — **not** a route handler,
    because the recorded exception above covers the callback only — and refuses to remove the only
    way into an account.
+
+   `CubidOutcomeNotice` renders its own banner rather than dispatching a toast. The application's
+   toast store and its renderer are not wired to each other, which is a separate fix with its own
+   PR, and an outcome nobody sees would be worse than none. A sign-in result is also worth keeping
+   on screen until it is dismissed, which a toast would not do.
 2. **Terms acceptance at first sign-in** (#275 acceptance 1), deliberately unimplemented.
    `legal_acceptance_records` is the store, but `policyAcknowledgementSources` is a closed
    vocabulary of two payment surfaces today, and FundLoop's Terms are a *review draft* carrying
