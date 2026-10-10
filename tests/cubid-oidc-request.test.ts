@@ -47,6 +47,16 @@ describe("newSignInRequestState", () => {
   it("will not carry an off-site destination through the round trip", () => {
     expect(newSignInRequestState({ intent: "link", redirectTo: "https://evil.test" }).redirectTo).toBe("/")
   })
+
+  it("records whose link it is, so the callback can require the same account", () => {
+    const state = newSignInRequestState({ intent: "link", redirectTo: "/settings/account", linkingUserId: "user-1" })
+    expect(state.linkingUserId).toBe("user-1")
+  })
+
+  it("does not record an account for a sign-in, which has none yet", () => {
+    const state = newSignInRequestState({ intent: "sign_in", redirectTo: "/", linkingUserId: "user-1" })
+    expect(state.linkingUserId).toBeUndefined()
+  })
 })
 
 describe("authorizationUrl", () => {
@@ -101,6 +111,16 @@ describe("parseSignInRequestState", () => {
   it("re-checks the destination on the way out, not only on the way in", () => {
     const tampered = '{"state":"a","nonce":"b","codeVerifier":"c","intent":"sign_in","redirectTo":"https://evil.test"}'
     expect(parseSignInRequestState(tampered)?.redirectTo).toBe("/")
+  })
+
+  it("keeps the linking account through the round trip", () => {
+    const raw = '{"state":"a","nonce":"b","codeVerifier":"c","intent":"link","linkingUserId":"user-1","redirectTo":"/settings/account"}'
+    expect(parseSignInRequestState(raw)?.linkingUserId).toBe("user-1")
+  })
+
+  it("ignores a linking account on a sign-in, which cannot be bound to one", () => {
+    const raw = '{"state":"a","nonce":"b","codeVerifier":"c","intent":"sign_in","linkingUserId":"user-1","redirectTo":"/"}'
+    expect(parseSignInRequestState(raw)?.linkingUserId).toBeUndefined()
   })
 
   it("defaults an unrecognised intent to signing in, which needs no session", () => {

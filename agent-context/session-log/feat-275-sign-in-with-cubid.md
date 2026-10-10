@@ -107,3 +107,82 @@ receiver, while `FUNDLOOP_CROSS_APP_AUDIENCE` stays the resource audience from t
    second half of that is a counsel question, not an engineering one.
 3. Noak's four decisions on #275 remain open; three of them change little, and the Google provider
    hint needs an answer from Cubid.
+
+### session v2: Codex review on #280 — seven findings, three of them races
+
+- **Timestamp:** 2026-10-10T05:56:13Z
+- **Agent:** Claude Code (Claude Opus 5)
+- **Branch:** `feat/275-sign-in-with-cubid` (PR #280)
+- **Head before commit:** `6b0924d`
+
+---
+
+#### Objective
+
+Address Codex's first pass on #280: three P1 and four P2, all real. Two of the P1s were concurrency
+holes in exactly the thing this PR exists to guarantee.
+
+---
+
+#### The three P1s
+
+- **Linking raced event receipt.** `oauth_apply_security_event` could read "no mapping" while
+  `link_cubid_subject` read "no events"; both then wrote, leaving a linked subject with an
+  unapplied withdrawal — the precise state criterion 7 exists to prevent, reachable by interleaving
+  two functions that each looked correct alone. Both now take a transaction-scoped advisory lock on
+  `('cubid_subject:' || issuer || ':' || subject)` before reading anything, and so does
+  `unlink_cubid_subject`. `oauth_apply_security_event` is replaced in this migration to add it.
+- **A disconnect could be outrun.** Unlinking revoked the live grants and deleted the mapping, but
+  left previously revoked grant rows untouched and unlocked. A redemption that had already read the
+  mapping could resume afterwards and *revive* such a grant, because `oauth_redeem_grant` allows
+  revival for an assertion minted after the recorded `revoked_at` — the right rule for a withdrawal
+  the person reversed at Cubid, the wrong one for an identity they detached here. Two changes:
+  unlinking now locks **every** grant for the person, and `oauth_redeem_grant` refuses when no
+  `cubid_oidc_subjects` row exists, inside its locked statement, returning a new `unlinked`
+  outcome. Codex suggested recording an unlink timestamp; requiring a live mapping is simpler and
+  strictly stronger, since the mapping's absence *is* what disconnecting means.
+- **The Edge Function command boundary.** AGENTS.md §3.2 allows an exception only where an
+  engineering doc explicitly records one, and mine described the implementation without recording
+  it. Now recorded, with scope: the callback's writes only, because establishing the session *is*
+  setting Supabase's cookies on the Next response and an Edge Function cannot do that — and the
+  account creation cannot move alone either, or the compensating deletion ends up on the wrong side
+  of the call with the email address stranded. Disconnecting from settings is explicitly **not**
+  exempt and should be an Edge Function command in the UI follow-up.
+
+---
+
+#### The four P2s
+
+- A throwing `link_cubid_subject` left the created account behind, so the person's next attempt was
+  told the address was in use. Extracted `removeUnreachableAccount` and called it on both paths.
+- A link was bound to whoever was signed in *after* the round trip, so a browser that switched
+  accounts in another tab would attach the identity to the wrong account. The start route now
+  records the initiating user id in the request cookie and the callback refuses a mismatch.
+- `CUBID_OIDC_TOKEN_ENDPOINT` accepted plain http, which would have put the client secret in a
+  Basic header on the wire. One `isHttpsOrLoopback` helper now gates the issuer, the key set, the
+  redirect URI and both endpoint overrides. A test covers `localhost.evil.test`, which a looser
+  prefix check would have allowed.
+- The callback deleted the pending cookie before validating `state`, so an unsolicited callback
+  could erase a live sign-in's state. Validation now comes first, and the cookie is consumed only
+  once the state matches — still before the code is exchanged.
+
+---
+
+#### Tests and Validation
+
+- 21 new cases: the shared subject lock in all three functions and that it is taken before any read;
+  unlinking locking every grant before deleting the mapping; redemption requiring a live mapping
+  inside its lock; the replaced redemption keeping every rule the two earlier reviews settled; the
+  linking account recorded and required; plain-http refused for each endpoint; and the created
+  account removed when linking throws.
+- 186 files, 1394 tests passing; typecheck and lint clean.
+
+---
+
+#### Reflections
+
+Both races came from the same habit: two functions that each check a condition and then act, with
+nothing making the pair atomic. #279 had the same shape and I fixed it there with one locked
+statement; here I wrote a second function that reads what the first one writes and did not ask what
+happens if they interleave. The question to carry forward is not "is this statement atomic" but
+"which other statement reads what this one writes".

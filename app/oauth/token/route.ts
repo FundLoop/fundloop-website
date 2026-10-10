@@ -162,7 +162,10 @@ async function redeem(request: Request) {
     assertionIssuedAt: new Date(claims.iat * 1000),
   })
   if (!issued.ok) {
-    // The assertion predates a withdrawal, so it is not evidence that consent is live.
+    // Either the assertion predates a withdrawal, so it is not evidence that consent is live, or
+    // the person has disconnected Cubid from their FundLoop account and there is no longer an
+    // identity here to issue against. Both answer the same way: the client's route back is a new
+    // authorization at Cubid, and which of the two it was is not its business.
     return oauthErrorResponse("invalid_grant", "Consent for this application was withdrawn. A new authorization is required.")
   }
 

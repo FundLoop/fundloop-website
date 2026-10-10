@@ -17,6 +17,12 @@ export type CubidSignInRequestState = {
   nonce: string
   codeVerifier: string
   intent: "sign_in" | "link"
+  /**
+   * For a link, the account whose settings started it. The callback requires the session to still
+   * be this person: a browser that switched accounts in another tab during the round trip would
+   * otherwise attach the Cubid identity to whichever account happens to be signed in on return.
+   */
+  linkingUserId?: string
   /** Where to send the person afterwards. Same-origin paths only. */
   redirectTo: string
 }
@@ -47,7 +53,11 @@ export function safeRedirectTarget(candidate: string | null, fallback = "/"): st
   return candidate
 }
 
-export function newSignInRequestState(input: { intent: "sign_in" | "link"; redirectTo: string }): CubidSignInRequestState {
+export function newSignInRequestState(input: {
+  intent: "sign_in" | "link"
+  redirectTo: string
+  linkingUserId?: string | null
+}): CubidSignInRequestState {
   return {
     state: randomUrlSafe(),
     nonce: randomUrlSafe(),
@@ -55,6 +65,7 @@ export function newSignInRequestState(input: { intent: "sign_in" | "link"; redir
     // base64url satisfies.
     codeVerifier: randomUrlSafe(),
     intent: input.intent,
+    ...(input.intent === "link" && input.linkingUserId ? { linkingUserId: input.linkingUserId } : {}),
     redirectTo: safeRedirectTarget(input.redirectTo),
   }
 }
@@ -90,11 +101,13 @@ export function parseSignInRequestState(raw: string | undefined): CubidSignInReq
     const codeVerifier = typeof record.codeVerifier === "string" ? record.codeVerifier : null
     const intent = record.intent === "link" ? "link" : "sign_in"
     if (!state || !nonce || !codeVerifier) return null
+    const linkingUserId = typeof record.linkingUserId === "string" ? record.linkingUserId : undefined
     return {
       state,
       nonce,
       codeVerifier,
       intent,
+      ...(intent === "link" && linkingUserId ? { linkingUserId } : {}),
       redirectTo: safeRedirectTarget(typeof record.redirectTo === "string" ? record.redirectTo : null),
     }
   } catch {

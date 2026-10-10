@@ -197,6 +197,15 @@ describe("signing in with a subject nobody has linked", () => {
     expect(establishSession).not.toHaveBeenCalled()
   })
 
+  it("removes the created account when linking fails outright, not only when it refuses", async () => {
+    // A transient database failure would otherwise leave the address taken by an account nobody
+    // can reach, and the person's next attempt would be told the email is in use.
+    rpc.mockRejectedValue(new Error("deadlock detected"))
+
+    await expect(run(await signIdToken())).rejects.toThrow("deadlock detected")
+    expect(deleteUser).toHaveBeenCalledWith(USER_ID)
+  })
+
   it("refuses a subject a purge event has already been received for", async () => {
     rpc.mockResolvedValue({ data: [{ outcome: "purged_subject", revoked_clients: 0 }], error: null })
     expect(await run(await signIdToken())).toEqual({ kind: "purged_subject" })

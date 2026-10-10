@@ -38,14 +38,21 @@ function back(request: Request, redirectTo: string, outcome: string) {
 export async function GET(request: Request) {
   const store = await cookies()
   const pending = parseSignInRequestState(store.get(CUBID_SIGN_IN_COOKIE)?.value)
-  // One authorization request, one use. Clearing it before anything else means a replayed callback
-  // finds nothing to match against, whatever happens below.
-  store.delete({ name: CUBID_SIGN_IN_COOKIE, path: "/auth/cubid" })
 
   const url = new URL(request.url)
   const redirectTo = pending?.redirectTo ?? "/"
 
   if (!pending) return back(request, redirectTo, "expired")
+
+  // The state has to match the copy this browser was given, and that comparison is what makes a
+  // callback forged or replayed elsewhere useless here. It happens *before* the cookie is
+  // consumed: deleting first would let an unsolicited callback, or the slower of two overlapping
+  // sign-ins, erase the request the person is actually in the middle of.
+  const state = url.searchParams.get("state")
+  if (!state || state !== pending.state) return back(request, redirectTo, "expired")
+
+  // Matched, so this request is spent either way: one authorization request, one use.
+  store.delete({ name: CUBID_SIGN_IN_COOKIE, path: "/auth/cubid" })
 
   // RFC 6749 §4.1.2.1: the person declined, or Cubid refused. Not an error of ours.
   const failure = url.searchParams.get("error")
@@ -54,16 +61,19 @@ export async function GET(request: Request) {
   }
 
   const code = url.searchParams.get("code")
-  const state = url.searchParams.get("state")
-  // The state has to match the copy this browser was given, and the comparison is what makes a
-  // callback forged elsewhere useless here.
-  if (!code || !state || state !== pending.state) return back(request, redirectTo, "expired")
+  if (!code) return back(request, redirectTo, "expired")
 
   let currentUserId: string | null = null
   if (pending.intent === "link") {
     const supabase = await createServerSupabaseClient()
     const { data } = await supabase.auth.getUser()
     currentUserId = data.user?.id ?? null
+    // The link belongs to the account whose settings started it. If this browser switched accounts
+    // while the person was at Cubid, attaching the identity to whoever is signed in now would link
+    // the wrong account — so a mismatch is a refusal, not a silent reassignment.
+    if (!currentUserId || currentUserId !== pending.linkingUserId) {
+      return back(request, redirectTo, "session-changed")
+    }
   }
 
   let outcome: CubidSignInOutcome

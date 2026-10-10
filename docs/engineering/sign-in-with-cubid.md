@@ -101,6 +101,34 @@ account always has one; a passkey-only account may not. The refusal should offer
 the way through, which is part of the UI follow-up. (HBIC default, 2026-10-10; Noak can override
 it.)
 
+## Recorded exception to the Edge Function command boundary
+
+`AGENTS.md` §3.2 requires new writes to go through typed Supabase Edge Function commands "unless the
+relevant engineering doc explicitly records a temporary exception". This is that record.
+
+**Scope of the exception.** The OIDC callback (`app/auth/cubid/callback/route.ts`) performs its
+writes in the Next request: `auth.admin.createUser`, the `link_cubid_subject` RPC, the
+`last_seen_at` touch, and the session bridge. Nothing else in this feature is exempt.
+
+**Why it cannot be an Edge Function command.** Establishing the session *is* setting Supabase's auth
+cookies on the response Next is building. An Edge Function cannot write cookies onto another
+service's HTTP response, so the bridge has to run here whatever else moves. The account creation and
+the link cannot then be moved on their own either: if the account were created behind the boundary
+and the bridge failed here, the compensating deletion would be on the wrong side of the call, and
+the email address — the one thing that must not be taken by an unreachable account — would be
+stranded. The sequence is one decision, and splitting it would add a failure mode rather than remove
+one.
+
+**What is not exempt, and should go behind the boundary when it is built.** Disconnecting Cubid from
+account settings is an ordinary authenticated mutation with no cookie semantics: it belongs in a
+typed Edge Function command calling `unlink_cubid_subject`, and the UI follow-up should build it
+that way rather than as another route handler. The same applies to any later surface that links or
+unlinks outside the callback.
+
+**What would end the exception.** A first-party way to mint a Supabase session from a verified
+external identity — a Supabase generic OIDC provider, or a server-side session-issuing API — would
+remove the reason for all of it. Until then this stays, scoped to the callback.
+
 ## Linking, and criterion 7
 
 `public.link_cubid_subject(issuer, subject, user_id)` is the only thing that writes

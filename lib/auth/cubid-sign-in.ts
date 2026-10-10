@@ -194,28 +194,40 @@ export async function completeCubidSignIn(
   const userId = created.data.user?.id
   if (!userId) return { kind: "refused", reason: "account_creation_failed", detail: "no user returned" }
 
-  const linked = await linkSubject(admin, config.issuer, sub, userId, { signedIn: true })
+  let linked: CubidSignInOutcome
+  try {
+    linked = await linkSubject(admin, config.issuer, sub, userId, { signedIn: true })
+  } catch (error) {
+    // A transient database failure must not leave the address taken by an account nobody can
+    // reach: the person's next attempt would be told the email is in use and sent into an
+    // email-recovery flow for an account that was never theirs to recover.
+    await removeUnreachableAccount(admin, userId)
+    throw error
+  }
   if (linked.kind !== "signed_in" && linked.kind !== "linked") {
-    // The account was created moments ago for this subject and could not be linked to it, so it is
-    // unreachable: nobody can sign into it and nothing points at it. Removing it is the only way
-    // not to leave an orphan behind — and a failure to remove it is worth a log line, because then
-    // an address is taken by an account nobody can use.
-    try {
-      const removal = await admin.auth.admin.deleteUser(userId)
-      if (removal.error) {
-        console.error(`[cubid-sign-in] could not remove the unlinked account ${userId}: ${removal.error.message}`)
-      }
-    } catch (error) {
-      console.error(
-        `[cubid-sign-in] could not remove the unlinked account ${userId}: ${error instanceof Error ? error.message : "unknown"}`,
-      )
-    }
+    await removeUnreachableAccount(admin, userId)
     return linked
   }
 
   const session = await dependencies.establishSession({ email })
   if (!session.ok) return { kind: "refused", reason: "session_failed", detail: session.error }
   return { kind: "signed_in", userId, created: true, revokedClients: linked.revokedClients }
+}
+
+// An account created moments ago for a subject that could not then be linked to it is
+// unreachable: nobody can sign into it and nothing points at it. Removing it is the only way not to
+// leave the address taken, and a failure to remove it is worth a log line for exactly that reason.
+async function removeUnreachableAccount(admin: AdminClient, userId: string) {
+  try {
+    const removal = await admin.auth.admin.deleteUser(userId)
+    if (removal.error) {
+      console.error(`[cubid-sign-in] could not remove the unlinked account ${userId}: ${removal.error.message}`)
+    }
+  } catch (error) {
+    console.error(
+      `[cubid-sign-in] could not remove the unlinked account ${userId}: ${error instanceof Error ? error.message : "unknown"}`,
+    )
+  }
 }
 
 async function linkSubject(

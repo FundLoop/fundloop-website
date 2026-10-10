@@ -32,6 +32,14 @@ const unlinkFunction = migration.slice(
   migration.indexOf("create or replace function public.unlink_cubid_subject"),
   migration.indexOf("revoke all on function public.unlink_cubid_subject"),
 )
+// Both already exist and are replaced here, each for one added rule.
+const replacedReceiver = migration.slice(
+  migration.indexOf("create or replace function public.oauth_apply_security_event"),
+  migration.indexOf("create or replace function public.oauth_redeem_grant"),
+)
+const replacedRedeem = migration.slice(migration.indexOf("create or replace function public.oauth_redeem_grant"))
+
+const SUBJECT_LOCK = "pg_catalog.pg_advisory_xact_lock(pg_catalog.hashtextextended('cubid_subject:'"
 
 describe("link_cubid_subject", () => {
   it("names the event types exactly as the verifier does", () => {
@@ -97,6 +105,58 @@ describe("link_cubid_subject", () => {
 
   it("uses no SECURITY DEFINER anywhere, like the rest of this feature", () => {
     expect(statementsOnly(migration)).not.toMatch(/security\s+definer/i)
+  })
+})
+
+describe("serializing every write about one subject", () => {
+  it("takes the same lock in linking, unlinking and event receipt", () => {
+    // Without it the receiver can read "no mapping" while linking reads "no events", and both then
+    // write — leaving a linked subject with an unapplied withdrawal, which is the state criterion 7
+    // exists to prevent.
+    for (const body of [linkFunction, unlinkFunction, replacedReceiver]) {
+      expect(body).toContain(SUBJECT_LOCK)
+    }
+  })
+
+  it("takes it before reading anything", () => {
+    for (const body of [linkFunction, replacedReceiver]) {
+      const lockAt = body.indexOf(SUBJECT_LOCK)
+      const firstRead = body.indexOf("from public.", body.indexOf("begin"))
+      expect(lockAt).toBeGreaterThan(0)
+      expect(lockAt).toBeLessThan(firstRead)
+    }
+  })
+})
+
+describe("making a disconnect final", () => {
+  it("locks every grant the person has, not only the live ones", () => {
+    // A redemption that read the mapping before the unlink could otherwise resume afterwards and
+    // revive an already-revoked grant, because an assertion minted after the stale `revoked_at` is
+    // normally grounds for revival.
+    expect(unlinkFunction).toContain("perform 1 from public.oauth_grants g where g.user_id = p_user_id for update")
+  })
+
+  it("locks them before deleting the mapping", () => {
+    expect(unlinkFunction.indexOf("for update")).toBeLessThan(unlinkFunction.indexOf("delete from public.cubid_oidc_subjects"))
+  })
+
+  it("makes redemption require a live mapping, so a disconnect cannot be outrun", () => {
+    expect(replacedRedeem).toContain("if not exists (select 1 from public.cubid_oidc_subjects s where s.user_id = p_user_id) then")
+    expect(replacedRedeem).toContain("'unlinked'::text")
+  })
+
+  it("checks it inside the locked statement, not before it", () => {
+    const lockAt = replacedRedeem.indexOf("for update")
+    const checkAt = replacedRedeem.indexOf("if not exists (select 1 from public.cubid_oidc_subjects")
+    expect(lockAt).toBeGreaterThan(0)
+    expect(checkAt).toBeGreaterThan(lockAt)
+  })
+
+  it("keeps the rest of the redemption rules it already had", () => {
+    // Replaced for one added rule, so everything the two earlier reviews settled must still be here.
+    expect(replacedRedeem).toContain("last_assertion_issued_at = greatest(")
+    expect(replacedRedeem).toContain("p_assertion_issued_at <= v_grant.revoked_at + v_skew")
+    expect(replacedRedeem).toContain("exception when unique_violation then")
   })
 })
 

@@ -1,5 +1,6 @@
 import { cookies } from "next/headers"
 import { crossAppSignInConfig } from "@/lib/cross-app/config"
+import { createServerSupabaseClient } from "@/lib/supabase-server"
 import {
   authorizationUrl,
   newSignInRequestState,
@@ -24,8 +25,21 @@ export async function GET(request: Request) {
 
   const url = new URL(request.url)
   const intent = url.searchParams.get("intent") === "link" ? "link" : "sign_in"
+
+  // A link belongs to the account that started it. Recording whose it is here is what stops the
+  // identity being attached to a different account if this browser switches accounts in another
+  // tab while the person is away at Cubid.
+  let linkingUserId: string | null = null
+  if (intent === "link") {
+    const supabase = await createServerSupabaseClient()
+    const { data } = await supabase.auth.getUser()
+    linkingUserId = data.user?.id ?? null
+    if (!linkingUserId) return Response.redirect(new URL("/?cubid=not-signed-in", request.url), 303)
+  }
+
   const state = newSignInRequestState({
     intent,
+    linkingUserId,
     redirectTo: safeRedirectTarget(url.searchParams.get("redirect_to"), intent === "link" ? "/settings/account" : "/"),
   })
 

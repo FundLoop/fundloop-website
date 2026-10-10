@@ -109,7 +109,7 @@ export async function issueAccessToken(input: {
   scopes: OAuthScope[]
   assertionJti: string
   assertionIssuedAt: Date
-}): Promise<{ ok: true; accessToken: string; expiresIn: number } | { ok: false; reason: "withdrawn" }> {
+}): Promise<{ ok: true; accessToken: string; expiresIn: number } | { ok: false; reason: "withdrawn" | "unlinked" }> {
   const accessToken = randomToken()
   const { data, error } = await oauthDb().rpc("oauth_redeem_grant", {
     p_client_id: input.clientId,
@@ -125,6 +125,9 @@ export async function issueAccessToken(input: {
   const row = data?.[0]
   if (!row) throw new Error("oauth-store:redeem-grant: no outcome returned")
   if (row.outcome === "withdrawn") return { ok: false, reason: "withdrawn" }
+  // The person disconnected Cubid from their FundLoop account, so there is no identity to issue
+  // against any more, whatever the assertion says.
+  if (row.outcome === "unlinked") return { ok: false, reason: "unlinked" }
   return { ok: true, accessToken, expiresIn: OAUTH_TTL_SECONDS.accessToken }
 }
 

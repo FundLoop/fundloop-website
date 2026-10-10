@@ -42,14 +42,24 @@ function trimmed(value: string | undefined) {
   return text && text.length > 0 ? text : null
 }
 
+// An issuer's endpoint may only be plain http on a loopback host, where there is no network to
+// listen on. Everywhere else http would put a client secret, an authorization code or a key set on
+// the wire.
+function isHttpsOrLoopback(url: string) {
+  if (url.startsWith("https://")) return true
+  return /^http:\/\/(127\.0\.0\.1|localhost|\[::1\])(:\d+)?(\/|$)/.test(url)
+}
+
 function issuerConfig(env: EnvLike): CubidIssuerConfig | null {
   const issuer = trimmed(env.CUBID_OIDC_ISSUER)
   if (!issuer) return null
   // An issuer that is not HTTPS cannot be trusted to sign anything, except on a loopback host while
   // developing against a local Cubid.
-  const isLocal = /^https?:\/\/(127\.0\.0\.1|localhost|\[::1\])(:\d+)?$/.test(issuer)
-  if (!issuer.startsWith("https://") && !isLocal) return null
-  return { issuer, jwksUri: trimmed(env.CUBID_OIDC_JWKS_URI) ?? `${issuer}/jwks` }
+  if (!isHttpsOrLoopback(issuer)) return null
+  const jwksUri = trimmed(env.CUBID_OIDC_JWKS_URI) ?? `${issuer}/jwks`
+  // An override is configuration, but it is also where this app fetches signing keys from.
+  if (!isHttpsOrLoopback(jwksUri)) return null
+  return { issuer, jwksUri }
 }
 
 export function crossAppConfig(env: EnvLike = process.env): CrossAppConfig | null {
@@ -79,19 +89,19 @@ export function crossAppSignInConfig(env: EnvLike = process.env): CrossAppSignIn
   if (!issuer || !clientId || !clientSecret || !redirectUri) return null
   // A redirect URI is matched exactly at Cubid and is where an authorization code is delivered, so
   // an http one outside loopback would hand codes to the network.
-  const isLocal = /^http:\/\/(127\.0\.0\.1|localhost|\[::1\])(:\d+)?\//.test(redirectUri)
-  if (!redirectUri.startsWith("https://") && !isLocal) return null
-  return {
-    ...issuer,
-    clientId,
-    clientSecret,
-    redirectUri,
-    // The contract publishes these at fixed paths on the issuer ("Required public endpoints"), so
-    // they are derived rather than discovered: sign-in then starts without a network round trip,
-    // and an override exists for a deployment that fronts the issuer differently.
-    authorizationEndpoint: trimmed(env.CUBID_OIDC_AUTHORIZATION_ENDPOINT) ?? `${issuer.issuer}/authorize`,
-    tokenEndpoint: trimmed(env.CUBID_OIDC_TOKEN_ENDPOINT) ?? `${issuer.issuer}/token`,
-  }
+  if (!isHttpsOrLoopback(redirectUri)) return null
+
+  // The contract publishes these at fixed paths on the issuer ("Required public endpoints"), so
+  // they are derived rather than discovered: sign-in then starts without a network round trip, and
+  // an override exists for a deployment that fronts the issuer differently.
+  const authorizationEndpoint = trimmed(env.CUBID_OIDC_AUTHORIZATION_ENDPOINT) ?? `${issuer.issuer}/authorize`
+  const tokenEndpoint = trimmed(env.CUBID_OIDC_TOKEN_ENDPOINT) ?? `${issuer.issuer}/token`
+  // The token endpoint receives the client secret in an Authorization header and the authorization
+  // code in the body, so an override gets the same rule as everything else rather than being
+  // trusted for having come from configuration.
+  if (!isHttpsOrLoopback(authorizationEndpoint) || !isHttpsOrLoopback(tokenEndpoint)) return null
+
+  return { ...issuer, clientId, clientSecret, redirectUri, authorizationEndpoint, tokenEndpoint }
 }
 
 let cache: JwksCache | null = null
