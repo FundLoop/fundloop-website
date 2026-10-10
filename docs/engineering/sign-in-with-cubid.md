@@ -95,8 +95,11 @@ account nobody can use.
 
 **Cubid releases `email` only when it has verified it and the person consented.** Without one there
 is no address to create an account against, and sign-in is refused with an explanation rather than
-inventing a placeholder address that looks real in `auth.users` and is not. A Google-federated Cubid
-account always has one; a passkey-only account may not.
+inventing a placeholder address that looks real in `auth.users` and is not — a placeholder would be
+indistinguishable from a real address later, and FundLoop sends real mail. A Google-federated Cubid
+account always has one; a passkey-only account may not. The refusal should offer email sign-in as
+the way through, which is part of the UI follow-up. (HBIC default, 2026-10-10; Noak can override
+it.)
 
 ## Linking, and criterion 7
 
@@ -136,8 +139,11 @@ unavailable rather than broken, which is the normal state until Cubid is deploye
 (cubid-monorepo#179 is the staging rollout).
 
 The redirect URI is matched exactly at Cubid, so it is configuration and never derived from the
-request. Preview deployments get a generated hostname per deployment, so they need either one stable
-preview URL registered or a proxy; that is an open operator decision.
+request. Preview deployments get a generated hostname per deployment, which cannot be registered, so
+**three redirect URIs are registered and no more**: production, the stable development host
+`https://dev.fundloop.org/auth/cubid/callback`, and a loopback one for local work. A Vercel preview
+therefore cannot complete a Cubid sign-in, by design — testing the flow means using the development
+host. (HBIC default, 2026-10-10; Noak can override it.)
 
 ## Still to build
 
@@ -145,12 +151,18 @@ preview URL registered or a proxy; that is an open operator decision.
    `settings/account`. The routes take an `intent=link` already, and disconnecting must refuse to
    leave an account with no way back in — a Cubid-only account cannot disconnect Cubid until it has
    an email method.
-2. **Terms acceptance at first sign-in** (#275 acceptance 1). `legal_acceptance_records` is the
-   store, but `policyAcknowledgementSources` is a closed vocabulary of two payment surfaces today,
-   and FundLoop's Terms are a *review draft* with no legal effect. Adding a sign-in surface to that
-   vocabulary is a small change; deciding what accepting a non-effective document at sign-up means
-   is not, and belongs with the counsel review.
+2. **Terms acceptance at first sign-in** (#275 acceptance 1), deliberately unimplemented.
+   `legal_acceptance_records` is the store, but `policyAcknowledgementSources` is a closed
+   vocabulary of two payment surfaces today, and FundLoop's Terms are a *review draft* carrying
+   "DRAFT - NOT APPROVED - NOT EFFECTIVE" with `noLegalEffect: true`. Adding a sign-in surface to
+   that vocabulary is a small change; deciding what it means for a person to accept a non-effective
+   document as a condition of signing up is not, and it is a question for counsel rather than for
+   engineering. Recording an acceptance that asserts something untrue would be worse than recording
+   none, so this records none until the Terms are effective.
 3. **Discovery** instead of derived endpoints, if the issuer ever moves them.
-4. **A provider hint for Google**, if Cubid's `/authorize` takes one. Acceptance 1 reads as though
-   FundLoop offers the choice, but the login architecture document describes no such parameter, so
-   either Cubid's own login page owns it or we need the parameter's name.
+4. **A provider hint for Google**, if Cubid's `/authorize` takes one. Acceptance 1 on #275 reads as
+   though FundLoop offers the choice, but the login architecture document describes no such
+   parameter. Until Cubid answers, the assumption is that **Cubid's own login page owns that
+   choice** and FundLoop sends no parameter — which is what this implementation does, so a `provider`
+   or `idp_hint` parameter would be additive if one turns out to exist. (HBIC default, 2026-10-10,
+   with the question open to the Cubid side.)
