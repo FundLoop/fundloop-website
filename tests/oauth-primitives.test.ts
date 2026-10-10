@@ -3,7 +3,7 @@ import { describe, expect, it } from "vitest"
 import { OAUTH_TTL_SECONDS, constantTimeEquals, expiresAt, hasExpired, randomToken, sha256Hex } from "@/lib/oauth/crypto"
 import { OAUTH_SCOPES, OAUTH_SCOPE_CONSENT, isScopeSubset, parseScopeParam, scopeString, sortScopes } from "@/lib/oauth/scopes"
 
-const migration = readFileSync("supabase/migrations/20261009120000_oauth_authorization_server.sql", "utf8")
+const migration = readFileSync("supabase/migrations/20261010040000_oauth_authorization_server.sql", "utf8")
 
 describe("oauth scopes", () => {
   it("matches the database enum exactly", () => {

@@ -128,7 +128,7 @@ describe("revokeTokensForGrant", () => {
 })
 
 describe("the grant state machine in SQL", () => {
-  const migration = readFileSync("supabase/migrations/20261009120000_oauth_authorization_server.sql", "utf8")
+  const migration = readFileSync("supabase/migrations/20261010040000_oauth_authorization_server.sql", "utf8")
   const redeem = migration.slice(migration.indexOf("create or replace function public.oauth_redeem_grant"), migration.indexOf("-- A withdrawal, in one statement"))
   const revoke = migration.slice(migration.indexOf("create or replace function public.oauth_revoke_grant"), migration.indexOf("-- Expired single-use rows"))
 

@@ -18,7 +18,7 @@ routes have something to authenticate. Scopes are the three agreed read-only one
 
 #### Actions Taken
 
-- **Migration `20261009120000_oauth_authorization_server.sql`.** Six tables plus a
+- **Migration `20261010040000_oauth_authorization_server.sql`.** Six tables plus a
   `public.oauth_scope` enum. Codes, access tokens, refresh tokens and client secrets are stored as
   SHA-256 digests with a CHECK on each column's shape. RLS on every table and service-role-only
   grants, because these rows are the credentials. Redirect URIs live in their own table so each is
@@ -357,3 +357,21 @@ protection into a self-inflicted denial of service.
 Three rounds of review on this file and the most damaging bug was not a missing check — it was a
 wrong model of what a field means. I read `scope` as consent because that is what it meant in the
 flow we deleted, and every correct-looking protection I built on top of it inherited the error.
+
+### session v6: The migration had to be renumbered after #269 deployed
+
+- **Timestamp:** 2026-10-10T04:10:00Z
+
+`Supabase dry-run` and `Supabase execution` failed at `8b1727f` with migration history drift, and it
+was not a SQL error. This branch's migration was timestamped `20261009120000`, while #269's
+`20261009130000` had already merged and deployed to Dev. The remote history therefore could not be a
+prefix of the expected list — the expected order put `…120000` *before* a migration the remote had
+already applied — so the parity check refused, correctly.
+
+Renamed to `20261010040000_oauth_authorization_server.sql`, after the last applied migration, and
+updated the three files that referenced the old name. The expected list is now the remote history
+plus one pending migration, which is the forward-pending case the verifier is built to validate.
+
+Worth keeping in mind for any long-lived branch: a migration timestamp is only safe while nothing
+else lands ahead of it. Allocate it when the branch is about to merge, not when the work starts, or
+expect to renumber.
