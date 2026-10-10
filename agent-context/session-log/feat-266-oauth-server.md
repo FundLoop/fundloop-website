@@ -248,3 +248,61 @@ someone asks what a credential issued under the previous state can still do.
 #### Suggested Next Steps
 
 - Independent deep review, then the SET receiver.
+
+### session v4: Independent deep review on #273
+
+- **Timestamp:** 2026-10-10T01:35:00Z
+- **Head before commit:** `a5db0c8`
+
+---
+
+#### Objective
+
+Five findings — one P1, one P2, three P3 — from the independent review. The P1 was a consent bypass
+I had defended on a Codex thread an hour earlier, which is worth recording as such.
+
+---
+
+#### Actions Taken
+
+- **P1: an absent `scope` claim granted the client's whole registered list.** I had argued this was
+  a deliberate default. It is not defensible: the Cubid pairing's `allowedScopes` can be narrower
+  than FundLoop's `oauth_clients.allowed_scopes`, or empty, and the contract says the claim appears
+  "only when requested and allowed" — so absent means none, never all. A scope-less assertion is now
+  refused, and the registered list remains only a ceiling. A `scope` that is present but not a
+  string is refused by the verifier rather than read as absent, which was the same bug by another
+  route.
+- **P2: an assertion minted before a withdrawal revived the grant.** An assertion proves consent as
+  of its `iat`; Cubid marks outstanding assertions revoked on withdrawal and a resource app cannot
+  see that. `oauth_redeem_grant` now refuses one whose `iat` is at or before `revoked_at`. The
+  lifetime cap is 300s, the contract's figure, not the 600 I had allowed.
+- **P3: the grant decision was a racy read-compare-write**, and a client narrowing its own request
+  counted as the person narrowing consent. Both are fixed by moving the decision into
+  `oauth_redeem_grant`: it locks the row, handles the concurrent-first-insert case through
+  `unique_violation`, and records the *assertion's* scopes while the token carries the client's own
+  narrowing.
+- **P3: failures after the `jti` was spent.** Bookkeeping (`noteSubjectSeen`) can no longer cost a
+  credential, and any unexpected error answers `server_error` in the OAuth shape instead of Next's
+  generic 500.
+- **P3: the JWKS fetch** now has a 5s deadline, refuses redirects, bounds staleness to an hour so a
+  removed key stops being trusted even while the endpoint fails, and treats `{"keys": []}` as a
+  valid empty set rather than an outage that keeps old keys alive. `crit`, `use` and `alg` on the
+  key are checked.
+- Documented the four checks a future bearer validator must make, since without them none of the
+  revocation work above has any effect.
+
+---
+
+#### Validation Notes
+
+- OAuth suites green (53 + 19 tests across the five files); typecheck and lint clean.
+
+---
+
+#### Reflections
+
+The P1 is the one to remember: I had reasoned my way to "absent means the registered default" and
+written that reasoning into a thread reply as if it settled the matter. The reviewer went to the
+contract instead, where absent explicitly means none was requested or allowed. A default that grants
+more than the person consented to is not a default, and my argument for it was exactly the sort that
+sounds careful while quietly widening access.

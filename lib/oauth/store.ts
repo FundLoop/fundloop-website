@@ -94,63 +94,46 @@ export async function recordAssertionJti(input: {
   return { ok: true }
 }
 
-async function upsertGrant(input: { clientId: string; userId: string; scopes: OAuthScope[] }): Promise<number> {
-  const scopes = sortScopes(input.scopes)
-  const existing = await oauthDb()
-    .from("oauth_grants")
-    .select("id, scopes, revoked_at")
-    .eq("client_id", input.clientId)
-    .eq("user_id", input.userId)
-    .limit(1)
-    .maybeSingle()
-  fail("read-grant", existing.error)
-
-  const current = existing.data
-  if (current) {
-    // A fresh assertion means consent is live at Cubid right now, so a locally revoked grant is
-    // revived deliberately: Cubid is the authority on consent, not this row.
-    //
-    // Reviving or narrowing it starts a fresh set of tokens. Without this, a token issued under the
-    // earlier authorization would still be tied to this grant id: after a disconnect and reconnect
-    // an old token would act against the new connection, and after a person removed a scope an
-    // already-issued token would keep it until it expired.
-    const narrowed = (current.scopes ?? []).some((scope) => !scopes.includes(scope))
-    if (current.revoked_at !== null || narrowed) {
-      const superseded = await oauthDb()
-        .from("oauth_tokens")
-        .update({ revoked_at: new Date().toISOString() })
-        .eq("grant_id", current.id)
-        .is("revoked_at", null)
-      fail("supersede-tokens", superseded.error)
-    }
-
-    const updated = await oauthDb()
-      .from("oauth_grants")
-      .update({ scopes, revoked_at: null, updated_at: new Date().toISOString() })
-      .eq("id", current.id)
-      .select("id")
-      .maybeSingle()
-    fail("update-grant", updated.error)
-    return current.id
-  }
-
-  const inserted = await oauthDb()
-    .from("oauth_grants")
-    .insert({ client_id: input.clientId, user_id: input.userId, scopes })
-    .select("id")
-    .maybeSingle()
-  fail("insert-grant", inserted.error)
-  if (!inserted.data) throw new Error("oauth-store:insert-grant: no row returned")
-  return inserted.data.id
+// One statement decides the grant's fate, so two concurrent redemptions cannot interleave their
+// read-compare-write. It also refuses an assertion minted before a withdrawal, which proves consent
+// as of its `iat` and not as of now.
+async function redeemGrant(input: {
+  clientId: string
+  userId: string
+  consentedScopes: OAuthScope[]
+  assertionIssuedAt: Date
+}): Promise<{ ok: true; grantId: number } | { ok: false; reason: "withdrawn" }> {
+  const { data, error } = await oauthDb().rpc("oauth_redeem_grant", {
+    p_client_id: input.clientId,
+    p_user_id: input.userId,
+    p_consented_scopes: sortScopes(input.consentedScopes),
+    p_assertion_issued_at: input.assertionIssuedAt.toISOString(),
+  })
+  fail("redeem-grant", error)
+  const row = data?.[0]
+  if (!row) throw new Error("oauth-store:redeem-grant: no outcome returned")
+  if (row.outcome === "withdrawn") return { ok: false, reason: "withdrawn" }
+  return { ok: true, grantId: row.grant_id }
 }
 
 export async function issueAccessToken(input: {
   clientId: string
   userId: string
+  // What the person consented to, from the assertion. This is what the grant records.
+  consentedScopes: OAuthScope[]
+  // What this token carries, which the client may have narrowed for itself.
   scopes: OAuthScope[]
   assertionJti: string
-}): Promise<{ accessToken: string; expiresIn: number }> {
-  const grantId = await upsertGrant({ clientId: input.clientId, userId: input.userId, scopes: input.scopes })
+  assertionIssuedAt: Date
+}): Promise<{ ok: true; accessToken: string; expiresIn: number } | { ok: false; reason: "withdrawn" }> {
+  const grant = await redeemGrant({
+    clientId: input.clientId,
+    userId: input.userId,
+    consentedScopes: input.consentedScopes,
+    assertionIssuedAt: input.assertionIssuedAt,
+  })
+  if (!grant.ok) return grant
+  const grantId = grant.grantId
   const accessToken = randomToken()
   const { error } = await oauthDb().from("oauth_tokens").insert({
     token_sha256: sha256Hex(accessToken),
@@ -163,7 +146,7 @@ export async function issueAccessToken(input: {
     expires_at: expiresAt(OAUTH_TTL_SECONDS.accessToken),
   })
   fail("insert-token", error)
-  return { accessToken, expiresIn: OAUTH_TTL_SECONDS.accessToken }
+  return { ok: true, accessToken, expiresIn: OAUTH_TTL_SECONDS.accessToken }
 }
 
 // Used by the revocation endpoint and, next, by the Security Event Token receiver.

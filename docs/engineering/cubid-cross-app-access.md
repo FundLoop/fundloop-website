@@ -34,7 +34,9 @@ endpoint, no consent page, no authorization code, no PKCE and no refresh token.
 3. `iss` equals the configured Cubid issuer, `aud` equals this app's configured audience (a string
    or an array containing it), `client_id` is the Cubid client id of the authenticating client;
 4. `exp` has not passed and `iat` is not in the future, within a small skew, and the assertion does
-   not claim a longer life than the contract gives it.
+   not claim a longer life than the contract's five minutes;
+5. `crit` is absent (we understand no JWS extensions, so naming one is a refusal), the key is
+   published for signing with RS256, and a `scope` claim, if present, is a string.
 
 The `typ` check is what keeps an ID-JAG and an ID token from being interchangeable. Without it a
 requesting client could redeem an ID token it already holds.
@@ -53,6 +55,23 @@ correlate a person. An unmapped subject is a denial, not an account creation.
 
 **A replay is a constraint violation, not a race.** Redeeming records the assertion's `jti` as a
 primary key before the token is issued, so a second redemption fails on the insert.
+
+**Scope comes from the assertion and nowhere else.** An absent `scope` claim means none was
+requested, or the Cubid pairing allows none — it never means "all of them", and reading it as the
+client's registered list would grant past the pairing's own limit, since that list is a separate
+ceiling an operator keeps here rather than the person's consent. An assertion with no scope is
+refused. The registered list still applies as a ceiling, so an operator can withdraw a scope here
+without waiting for the pairing to change. A client may narrow its own token further with a `scope`
+parameter; that narrows the token only, and is not recorded as the person narrowing consent.
+
+**An assertion proves consent as of its `iat`, not as of now.** The contract marks outstanding
+assertions revoked at Cubid on withdrawal, which a resource app cannot observe, so an assertion
+minted before a withdrawal must not revive a revoked grant. `oauth_redeem_grant` refuses one whose
+`iat` is at or before the grant's `revoked_at`.
+
+**The grant decision is one statement.** `oauth_redeem_grant` locks the grant row, decides revival,
+supersession and the recorded scopes, and returns the id. A read-compare-write in application code
+let two concurrent redemptions interleave and leave a live token wider than the grant recording it.
 
 **No refresh tokens.** A client renews by redeeming a fresh assertion, which re-checks consent at
 Cubid. Issuing our own refresh token would keep access alive on FundLoop's say-so after a person
@@ -93,6 +112,17 @@ Node, Deno and an edge runtime, so ChainCrew, SmarTrust and MyPayTag can take `i
 migration as a starting point rather than reimplementing assertion verification four times.
 
 `lib/oauth/` is the FundLoop side — token issuance, hashing and the store — and uses `node:crypto`.
+
+## When a bearer validator lands, it must check four things
+
+Nothing reads `oauth_tokens` yet. Stage 3's `/api/v1/me*` routes will, and unless that validator
+checks all four of these, the revocation and supersession rules above have no effect:
+
+1. the token's own `revoked_at` — supersession sets exactly this;
+2. the token's `expires_at` — issuance is not a substitute for checking it on every request;
+3. the grant's `revoked_at` — a withdrawal revokes the grant, and tokens under it must stop;
+4. `oauth_clients.disabled_at` — a disabled client is refused at `/oauth/token` today, but nothing
+   revokes the tokens it already holds, so the validator is where that is enforced.
 
 ## Still to build
 

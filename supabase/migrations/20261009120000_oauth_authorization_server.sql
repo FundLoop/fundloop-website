@@ -111,6 +111,71 @@ create index cubid_oidc_subjects_user_idx on public.cubid_oidc_subjects (user_id
 create index oauth_tokens_grant_idx on public.oauth_tokens (grant_id, token_type) where revoked_at is null;
 create index oauth_tokens_expiry_idx on public.oauth_tokens (expires_at) where revoked_at is null;
 
+-- One redemption's effect on a grant, in one statement, so two concurrent redemptions cannot
+-- interleave their read-compare-write and leave a live token wider than the grant that records it.
+--
+-- It also decides whether the grant may be revived at all. An assertion proves consent only as of
+-- its `iat`: the Cubid contract marks outstanding assertions revoked at Cubid on withdrawal, which
+-- a resource app cannot see, so an assertion minted before a withdrawal would otherwise bring the
+-- grant back to life. Such an assertion is refused here instead.
+create or replace function public.oauth_redeem_grant(
+  p_client_id text,
+  p_user_id uuid,
+  p_consented_scopes public.oauth_scope[],
+  p_assertion_issued_at timestamptz
+)
+returns table (grant_id bigint, outcome text)
+language plpgsql
+security invoker
+set search_path = ''
+as $$
+declare
+  v_grant public.oauth_grants;
+  v_narrowed boolean;
+begin
+  loop
+    -- FOR UPDATE serialises every redemption for this client and person.
+    select * into v_grant from public.oauth_grants
+      where client_id = p_client_id and user_id = p_user_id
+      for update;
+    exit when found;
+
+    begin
+      insert into public.oauth_grants (client_id, user_id, scopes)
+      values (p_client_id, p_user_id, p_consented_scopes)
+      returning * into v_grant;
+      return query select v_grant.id, 'created'::text;
+      return;
+    exception when unique_violation then
+      -- Another redemption inserted it first; go back and lock that row instead of failing.
+    end;
+  end loop;
+
+  if v_grant.revoked_at is not null and p_assertion_issued_at <= v_grant.revoked_at then
+    -- Predates the withdrawal, so it is not evidence that consent is live now.
+    return query select v_grant.id, 'withdrawn'::text;
+    return;
+  end if;
+
+  -- Reviving a revoked grant, or recording a narrower consent, starts a fresh set of tokens: a
+  -- credential issued under the previous authorization must not keep acting under this one.
+  v_narrowed := exists (select 1 from unnest(v_grant.scopes) existing where existing <> all (p_consented_scopes));
+  if v_grant.revoked_at is not null or v_narrowed then
+    update public.oauth_tokens set revoked_at = now()
+      where oauth_tokens.grant_id = v_grant.id and oauth_tokens.revoked_at is null;
+  end if;
+
+  update public.oauth_grants
+    set scopes = p_consented_scopes, revoked_at = null, updated_at = now()
+    where id = v_grant.id;
+
+  return query select v_grant.id, 'updated'::text;
+end;
+$$;
+
+revoke all on function public.oauth_redeem_grant(text, uuid, public.oauth_scope[], timestamptz) from public, anon, authenticated;
+grant execute on function public.oauth_redeem_grant(text, uuid, public.oauth_scope[], timestamptz) to service_role;
+
 -- Expired single-use rows are dead weight once they can no longer be redeemed. Scheduling this is
 -- stage 5 work; the function exists so the schedule is a one-liner and the retention rule has one
 -- definition. Revoked and expired tokens are kept for 30 days so a revocation is still explicable.

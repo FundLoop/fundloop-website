@@ -39,6 +39,8 @@ export type IdJagDenial =
   | "not_yet_valid"
   | "missing_claim"
   | "lifetime_too_long"
+  | "malformed_scope"
+  | "unsupported_critical_header"
 
 export type IdJagResult =
   | { ok: true; claims: IdJagClaims; keyId: string }
@@ -63,8 +65,9 @@ export type VerifyIdJagOptions = {
 // from being interchangeable, so it is required here.
 const ID_JAG_TYP = "oauth-id-jag+jwt"
 const DEFAULT_CLOCK_SKEW_SECONDS = 30
-// The contract gives assertions a five-minute lifetime; allow a little more and no accident.
-const DEFAULT_MAX_LIFETIME_SECONDS = 600
+// The contract gives assertions a five-minute lifetime. Accepting more would widen the window in
+// which an assertion minted before a withdrawal is still replayable.
+const DEFAULT_MAX_LIFETIME_SECONDS = 300
 
 function base64UrlToBytes(value: string): Uint8Array | null {
   if (!/^[A-Za-z0-9_-]*$/.test(value)) return null
@@ -118,13 +121,19 @@ export async function verifyIdJag(assertion: string, options: VerifyIdJagOptions
   // An ID token must never be accepted here, and an ID-JAG must never pass as one.
   if (header.typ !== ID_JAG_TYP) return { ok: false, reason: "wrong_type", detail: String(header.typ ?? "absent") }
   if (header.alg !== "RS256") return { ok: false, reason: "unsupported_algorithm", detail: String(header.alg ?? "absent") }
+  // RFC 7515 §4.1.11: a `crit` header names extensions the verifier must understand. We understand
+  // none, so any `crit` at all is a refusal rather than something to ignore.
+  if (header.crit !== undefined) return { ok: false, reason: "unsupported_critical_header" }
 
   const keyId = asString(header.kid)
   if (!keyId) return { ok: false, reason: "unknown_key", detail: "no kid" }
   const key = options.jwks.keys.find((candidate) => candidate.kid === keyId)
   // Only a key the issuer currently publishes is acceptable; an embedded key would let the
-  // assertion vouch for itself.
+  // assertion vouch for itself. A key published for encryption, or for another algorithm, is not a
+  // key for verifying this signature.
   if (!key || key.kty !== "RSA") return { ok: false, reason: "unknown_key", detail: keyId }
+  if (key.use !== undefined && key.use !== "sig") return { ok: false, reason: "unknown_key", detail: "key is not for signing" }
+  if (key.alg !== undefined && key.alg !== "RS256") return { ok: false, reason: "unknown_key", detail: "key is not RS256" }
 
   let publicKey: CryptoKey
   try {
@@ -169,6 +178,13 @@ export async function verifyIdJag(assertion: string, options: VerifyIdJagOptions
     return { ok: false, reason: "lifetime_too_long", detail: String(exp - iat) }
   }
 
+  // A `scope` that is present but not a string must not be read as absent: absent means "none was
+  // requested or allowed", and silently treating a malformed claim the same way would let a
+  // hostile or buggy issuer payload pick the caller's default instead of being refused.
+  if (payload.scope !== undefined && asString(payload.scope) === null) {
+    return { ok: false, reason: "malformed_scope" }
+  }
+
   return {
     ok: true,
     keyId,
@@ -197,10 +213,17 @@ export function createJwksCache(config: {
   fetchImpl?: typeof fetch
   ttlSeconds?: number
   minRefreshSeconds?: number
+  /** How long a cached set may still be served once refreshes are failing. */
+  maxStaleSeconds?: number
+  timeoutMs?: number
   now?: () => number
 }): JwksCache {
   const ttl = (config.ttlSeconds ?? 600) * 1000
   const minRefresh = (config.minRefreshSeconds ?? 60) * 1000
+  // A removed key must stop being trusted even while the endpoint is failing, so staleness is
+  // bounded rather than indefinite: after this, no key is served and verification fails closed.
+  const maxStale = (config.maxStaleSeconds ?? 3600) * 1000
+  const timeoutMs = config.timeoutMs ?? 5000
   const clock = config.now ?? (() => Date.now())
   let cached: JsonWebKeySet | null = null
   let fetchedAt = 0
@@ -209,11 +232,21 @@ export function createJwksCache(config: {
   async function load(): Promise<JsonWebKeySet | null> {
     const doFetch = config.fetchImpl ?? fetch
     try {
-      const response = await doFetch(config.jwksUri, { headers: { Accept: "application/json" } })
+      const response = await doFetch(config.jwksUri, {
+        headers: { Accept: "application/json" },
+        // Without a deadline, undici's default 300s timeouts apply and every caller waiting on this
+        // one in-flight promise hangs with it.
+        signal: AbortSignal.timeout(timeoutMs),
+        // The issuer's keys come from the issuer. A redirect would let whoever controls it move the
+        // key set somewhere else.
+        redirect: "manual",
+      })
       if (!response.ok) return null
       const body: unknown = await response.json()
       const keys = (body as JsonWebKeySet | null)?.keys
-      if (!Array.isArray(keys) || keys.length === 0) return null
+      if (!Array.isArray(keys)) return null
+      // An empty set is a valid answer, not a failure: if the issuer has published no keys, nothing
+      // should verify, and the previous keys must not be kept alive by treating it as an outage.
       cached = { keys }
       fetchedAt = clock()
       return cached
@@ -222,19 +255,27 @@ export function createJwksCache(config: {
     }
   }
 
+  function servableCache(options?: { force?: boolean }) {
+    if (!cached) return null
+    const age = clock() - fetchedAt
+    if (age >= maxStale) return null
+    if (options?.force) return age < minRefresh ? cached : null
+    return age < ttl ? cached : null
+  }
+
   return {
     async get(options) {
-      const age = clock() - fetchedAt
-      if (cached && !options?.force && age < ttl) return cached
-      // force only refreshes once the floor has passed; otherwise the stale set is returned and the
-      // caller's verification simply fails on an unknown kid.
-      if (cached && options?.force && age < minRefresh) return cached
+      const fresh = servableCache(options)
+      if (fresh) return fresh
       if (!inFlight) {
         inFlight = load().finally(() => {
           inFlight = null
         })
       }
-      return (await inFlight) ?? cached
+      const loaded = await inFlight
+      if (loaded) return loaded
+      // A failed refresh may serve the previous set only while it is inside the staleness bound.
+      return cached && clock() - fetchedAt < maxStale ? cached : null
     },
   }
 }

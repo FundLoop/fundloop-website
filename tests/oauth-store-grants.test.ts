@@ -1,3 +1,4 @@
+import { readFileSync } from "node:fs"
 import { beforeEach, describe, expect, it, vi } from "vitest"
 import { issueAccessToken, revokeByToken } from "@/lib/oauth/store"
 
@@ -46,60 +47,110 @@ function builder(table: string) {
   return api
 }
 
-vi.mock("@/lib/supabase-admin", () => ({ getAdminSupabaseClient: () => ({ from: (table: string) => builder(table) }) }))
+const rpc = vi.fn()
+
+vi.mock("@/lib/supabase-admin", () => ({
+  getAdminSupabaseClient: () => ({ from: (table: string) => builder(table), rpc: (name: string, args: Record<string, unknown>) => rpc(name, args) }),
+}))
 
 function updatesOn(table: string) {
   return ops.filter((op) => op.table === table && op.kind === "update")
 }
 
-describe("a redemption that revives or narrows a grant", () => {
+describe("a redemption's effect on the grant", () => {
   beforeEach(() => {
     ops.length = 0
     responses.clear()
-    responses.set(key("oauth_grants", "update"), { data: { id: 7 }, error: null })
+    rpc.mockReset()
+    rpc.mockResolvedValue({ data: [{ grant_id: 7, outcome: "updated" }], error: null })
   })
 
-  it("supersedes the old tokens when a revoked grant is revived", async () => {
-    // Cubid is the authority on consent, so a fresh assertion revives the grant — but a token
-    // issued under the earlier authorization must not act against the new connection.
-    responses.set(key("oauth_grants", "select"), { data: { id: 7, scopes: ["profile:read"], revoked_at: "2026-10-01T00:00:00Z" }, error: null })
+  it("hands the whole grant decision to one database call", async () => {
+    // Read-compare-write in application code let two redemptions interleave and leave a live token
+    // wider than the grant recording it, so the decision belongs in one statement.
+    const issuedAt = new Date("2026-10-09T12:00:00.000Z")
+    await issueAccessToken({
+      clientId: "wondrbot",
+      userId: "user-1",
+      consentedScopes: ["profile:read", "awards:read"],
+      scopes: ["profile:read"],
+      assertionJti: "jag_1",
+      assertionIssuedAt: issuedAt,
+    })
 
-    await issueAccessToken({ clientId: "wondrbot", userId: "user-1", scopes: ["profile:read"], assertionJti: "jag_1" })
-
-    const superseded = updatesOn("oauth_tokens").find((op) => op.filters["eq:grant_id"] === 7)
-    expect(superseded).toBeDefined()
-    expect(superseded!.values).toMatchObject({ revoked_at: expect.any(String) })
-    expect(superseded!.filters["is:revoked_at"]).toBeNull()
+    expect(rpc).toHaveBeenCalledWith("oauth_redeem_grant", {
+      p_client_id: "wondrbot",
+      p_user_id: "user-1",
+      // The grant records what the person consented to, not what the client narrowed itself to.
+      p_consented_scopes: ["profile:read", "awards:read"],
+      p_assertion_issued_at: issuedAt.toISOString(),
+    })
   })
 
-  it("supersedes the old tokens when the person removes a scope", async () => {
-    // An access token already issued with awards:read would otherwise keep it until it expired.
-    responses.set(key("oauth_grants", "select"), { data: { id: 7, scopes: ["profile:read", "awards:read"], revoked_at: null }, error: null })
+  it("refuses an assertion that predates a withdrawal", async () => {
+    // An assertion proves consent as of its iat. Cubid marks outstanding assertions revoked on
+    // withdrawal, which a resource app cannot see, so one minted earlier must not revive the grant.
+    rpc.mockResolvedValue({ data: [{ grant_id: 7, outcome: "withdrawn" }], error: null })
 
-    await issueAccessToken({ clientId: "wondrbot", userId: "user-1", scopes: ["profile:read"], assertionJti: "jag_2" })
+    const result = await issueAccessToken({
+      clientId: "wondrbot",
+      userId: "user-1",
+      consentedScopes: ["profile:read"],
+      scopes: ["profile:read"],
+      assertionJti: "jag_2",
+      assertionIssuedAt: new Date("2026-10-01T00:00:00.000Z"),
+    })
 
-    expect(updatesOn("oauth_tokens").some((op) => op.filters["eq:grant_id"] === 7)).toBe(true)
+    expect(result).toEqual({ ok: false, reason: "withdrawn" })
+    // And no token is written.
+    expect(ops.some((op) => op.table === "oauth_tokens" && op.kind === "insert")).toBe(false)
   })
 
-  it("leaves a live grant's tokens alone when nothing was removed", async () => {
-    // Re-redeeming with the same or wider scope is ordinary renewal; dropping the client's current
-    // token for no reason would break requests in flight.
-    responses.set(key("oauth_grants", "select"), { data: { id: 7, scopes: ["profile:read"], revoked_at: null }, error: null })
+  it("stores only a digest, and the token's own narrower scope", async () => {
+    const issued = await issueAccessToken({
+      clientId: "wondrbot",
+      userId: "user-1",
+      consentedScopes: ["profile:read", "awards:read"],
+      scopes: ["profile:read"],
+      assertionJti: "jag_3",
+      assertionIssuedAt: new Date(),
+    })
 
-    await issueAccessToken({ clientId: "wondrbot", userId: "user-1", scopes: ["profile:read", "awards:read"], assertionJti: "jag_3" })
-
-    expect(updatesOn("oauth_tokens").some((op) => op.filters["eq:grant_id"] === 7)).toBe(false)
-  })
-
-  it("stores only a digest of the token it issues", async () => {
-    responses.set(key("oauth_grants", "select"), { data: { id: 7, scopes: ["profile:read"], revoked_at: null }, error: null })
-
-    const issued = await issueAccessToken({ clientId: "wondrbot", userId: "user-1", scopes: ["profile:read"], assertionJti: "jag_4" })
-
+    expect(issued.ok).toBe(true)
     const insert = ops.find((op) => op.table === "oauth_tokens" && op.kind === "insert")!
     expect(insert.values!.token_sha256).toMatch(/^[0-9a-f]{64}$/)
-    expect(JSON.stringify(insert.values)).not.toContain(issued.accessToken)
-    expect(insert.values!.issued_from_assertion_jti).toBe("jag_4")
+    if (issued.ok) expect(JSON.stringify(insert.values)).not.toContain(issued.accessToken)
+    expect(insert.values!.scopes).toEqual(["profile:read"])
+    expect(insert.values!.grant_id).toBe(7)
+    expect(insert.values!.issued_from_assertion_jti).toBe("jag_3")
+  })
+})
+
+describe("the grant state machine in SQL", () => {
+  const migration = readFileSync("supabase/migrations/20261009120000_oauth_authorization_server.sql", "utf8")
+  const fn = migration.slice(migration.indexOf("create or replace function public.oauth_redeem_grant"), migration.indexOf("revoke all on function public.oauth_redeem_grant"))
+
+  it("serialises concurrent redemptions for one client and person", () => {
+    expect(fn).toContain("for update")
+    // A concurrent first redemption loses the insert; it must then lock the winner's row rather
+    // than failing the request.
+    expect(fn).toContain("exception when unique_violation")
+  })
+
+  it("refuses to revive a grant with an assertion older than the withdrawal", () => {
+    expect(fn).toContain("v_grant.revoked_at is not null and p_assertion_issued_at <= v_grant.revoked_at")
+    expect(fn).toContain("'withdrawn'")
+  })
+
+  it("supersedes live tokens when reviving or narrowing, and only then", () => {
+    expect(fn).toContain("existing <> all (p_consented_scopes)")
+    expect(fn).toContain("update public.oauth_tokens set revoked_at = now()")
+    expect(fn).toContain("if v_grant.revoked_at is not null or v_narrowed then")
+  })
+
+  it("is reachable only by the service role", () => {
+    expect(migration).toContain("revoke all on function public.oauth_redeem_grant(text, uuid, public.oauth_scope[], timestamptz) from public, anon, authenticated")
+    expect(migration).toContain("grant execute on function public.oauth_redeem_grant(text, uuid, public.oauth_scope[], timestamptz) to service_role")
   })
 })
 

@@ -15070,6 +15070,18 @@ export type Database = {
         Returns: string
       }
       persona_goal2_schema_readiness: { Args: never; Returns: Json }
+      oauth_redeem_grant: {
+        Args: {
+          p_client_id: string
+          p_user_id: string
+          p_consented_scopes: Database["public"]["Enums"]["oauth_scope"][]
+          p_assertion_issued_at: string
+        }
+        Returns: {
+          grant_id: number
+          outcome: string
+        }[]
+      }
       place_withdrawal_compliance_hold: {
         Args: {
           p_actor_user_id: string

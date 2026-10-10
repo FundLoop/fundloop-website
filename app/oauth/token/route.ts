@@ -25,6 +25,17 @@ export const dynamic = "force-dynamic"
 const JWT_BEARER_GRANT = "urn:ietf:params:oauth:grant-type:jwt-bearer"
 
 export async function POST(request: Request) {
+  try {
+    return await redeem(request)
+  } catch (error) {
+    // Next's generic 500 is not something an OAuth client can parse, and the reason belongs in the
+    // log rather than in the response.
+    console.error(`[oauth/token] redemption failed: ${error instanceof Error ? error.message : "unknown"}`)
+    return oauthErrorResponse("server_error", "The assertion could not be redeemed. Please retry.")
+  }
+}
+
+async function redeem(request: Request) {
   let form: URLSearchParams
   try {
     form = new URLSearchParams(await request.text())
@@ -86,22 +97,33 @@ export async function POST(request: Request) {
 
   const { claims } = verified
 
-  // Scopes: what the client asked for, bounded by what it is registered for and by what the
-  // assertion itself carries. An assertion with no scope claim grants the client's registered set.
-  let granted: OAuthScope[] = client.allowed_scopes
-  if (claims.scope) {
-    const fromAssertion = parseScopeParam(claims.scope)
-    if (!fromAssertion.ok) return oauthErrorResponse("invalid_scope", "The assertion names a scope this app does not offer.")
-    if (!isScopeSubset(fromAssertion.scopes, client.allowed_scopes)) {
-      return oauthErrorResponse("invalid_scope", "The assertion names a scope this client is not registered for.")
-    }
-    granted = fromAssertion.scopes
+  // Scope comes from the assertion and nowhere else.
+  //
+  // An absent `scope` claim means none was requested, or the Cubid pairing allows none — it never
+  // means "all of them". Reading it as this client's registered list would hand out scopes beyond
+  // the pairing's own limit, because that list is a separate ceiling an operator keeps here, not
+  // the person's consent. So an assertion without a scope is refused.
+  if (!claims.scope) {
+    return oauthErrorResponse("invalid_scope", "The assertion carries no scope, so there is nothing to grant. Request the scopes you need when exchanging at Cubid.")
   }
+  const fromAssertion = parseScopeParam(claims.scope)
+  if (!fromAssertion.ok) return oauthErrorResponse("invalid_scope", "The assertion names a scope this app does not offer.")
+  // The registered list is still a ceiling: an operator here can withdraw a scope without waiting
+  // for the pairing to change.
+  if (!isScopeSubset(fromAssertion.scopes, client.allowed_scopes)) {
+    return oauthErrorResponse("invalid_scope", "The assertion names a scope this client is not registered for.")
+  }
+  // What the person consented to, which is what the grant records.
+  const consented: OAuthScope[] = fromAssertion.scopes
+
+  // A client may ask for less than it was granted. That is the client's own choice for this token,
+  // so it narrows the token and must not be mistaken for the person narrowing their consent.
+  let granted: OAuthScope[] = consented
   const requested = form.get("scope")
   if (requested) {
     const parsed = parseScopeParam(requested)
     if (!parsed.ok) return oauthErrorResponse("invalid_scope", "The requested scope is not one this app offers.")
-    if (!isScopeSubset(parsed.scopes, granted)) {
+    if (!isScopeSubset(parsed.scopes, consented)) {
       return oauthErrorResponse("invalid_scope", "The requested scope is wider than the assertion allows.")
     }
     granted = parsed.scopes
@@ -125,8 +147,26 @@ export async function POST(request: Request) {
     return oauthErrorResponse("invalid_grant", "No FundLoop account is linked to that Cubid identity. The person needs to sign in with Cubid or link their account first.")
   }
 
-  const issued = await issueAccessToken({ clientId: client.client_id, userId, scopes: granted, assertionJti: claims.jti })
-  await noteSubjectSeen(claims.iss, claims.sub)
+  const issued = await issueAccessToken({
+    clientId: client.client_id,
+    userId,
+    consentedScopes: consented,
+    scopes: granted,
+    assertionJti: claims.jti,
+    assertionIssuedAt: new Date(claims.iat * 1000),
+  })
+  if (!issued.ok) {
+    // The assertion predates a withdrawal, so it is not evidence that consent is live.
+    return oauthErrorResponse("invalid_grant", "Consent for this application was withdrawn. A new authorization is required.")
+  }
+
+  // Bookkeeping must never cost a credential: the token is issued and the assertion is spent, so a
+  // failure here is logged and the client still gets what it earned.
+  try {
+    await noteSubjectSeen(claims.iss, claims.sub)
+  } catch (error) {
+    console.warn(`[oauth/token] could not record the subject's last use: ${error instanceof Error ? error.message : "unknown"}`)
+  }
 
   return oauthTokenResponse({
     access_token: issued.accessToken,

@@ -157,6 +157,34 @@ describe("verifyIdJag", () => {
     expect(await verify(await sign(header, noAudience))).toMatchObject({ ok: false, reason: "wrong_audience" })
   })
 
+  it("refuses a header it cannot fully understand, and a key published for another purpose", async () => {
+    // RFC 7515 §4.1.11: crit names extensions a verifier must understand. We understand none.
+    expect(await verify(await sign({ ...header, crit: ["exp"] }, claims()))).toMatchObject({ ok: false, reason: "unsupported_critical_header" })
+
+    const encryptionKey = { ...jwks.keys[0], use: "enc" }
+    expect(await verify(await sign(header, claims()), { jwks: { keys: [encryptionKey] } })).toMatchObject({ ok: false, reason: "unknown_key" })
+
+    const otherAlg = { ...jwks.keys[0], alg: "RS512" }
+    expect(await verify(await sign(header, claims()), { jwks: { keys: [otherAlg] } })).toMatchObject({ ok: false, reason: "unknown_key" })
+  })
+
+  it("refuses a scope claim that is present but not a string", async () => {
+    // Reading a malformed claim as absent would let it fall through to the caller's default.
+    for (const scope of [["profile:read"], 42, {}, true]) {
+      expect(await verify(await sign(header, claims({ scope })))).toMatchObject({ ok: false, reason: "malformed_scope" })
+    }
+    // Absent is allowed here; the caller decides what no scope means.
+    const withoutScope = claims()
+    delete (withoutScope as Record<string, unknown>).scope
+    expect(await verify(await sign(header, withoutScope))).toMatchObject({ ok: true })
+  })
+
+  it("caps the claimed lifetime at the contract's five minutes", async () => {
+    const now = Math.floor(Date.now() / 1000)
+    expect(await verify(await sign(header, claims({ iat: now, exp: now + 300 })))).toMatchObject({ ok: true })
+    expect(await verify(await sign(header, claims({ iat: now, exp: now + 301 })))).toMatchObject({ ok: false, reason: "lifetime_too_long" })
+  })
+
   it("refuses anything that is not a JWS", async () => {
     for (const malformed of ["", "not-a-jwt", "a.b", "a.b.c.d", "!!!.###.$$$"]) {
       expect(await verify(malformed)).toMatchObject({ ok: false, reason: "malformed" })
@@ -208,11 +236,58 @@ describe("createJwksCache", () => {
     expect((await cache.get())?.keys[0].kid).toBe(KID)
   })
 
-  it("treats an empty or malformed key set as no key set", async () => {
-    const empty = createJwksCache({ jwksUri: `${ISSUER}/jwks`, fetchImpl: (async () => new Response(JSON.stringify({ keys: [] }), { status: 200 })) as unknown as typeof fetch })
-    expect(await empty.get()).toBeNull()
+  it("honours an emptied key set instead of keeping the old keys alive", async () => {
+    // If the issuer publishes no keys, nothing should verify. Treating that as an outage would keep
+    // a key it had removed — after a compromise, for example — trusted here.
+    let body = JSON.stringify(jwks)
+    let clock = 1_000_000
+    const cache = createJwksCache({
+      jwksUri: `${ISSUER}/jwks`,
+      fetchImpl: (async () => new Response(body, { status: 200 })) as unknown as typeof fetch,
+      ttlSeconds: 1,
+      now: () => clock,
+    })
 
+    expect((await cache.get())?.keys).toHaveLength(1)
+    body = JSON.stringify({ keys: [] })
+    clock += 5_000
+    expect((await cache.get())?.keys).toEqual([])
+  })
+
+  it("treats a malformed body as no answer", async () => {
     const garbage = createJwksCache({ jwksUri: `${ISSUER}/jwks`, fetchImpl: (async () => new Response("<html>", { status: 200 })) as unknown as typeof fetch })
     expect(await garbage.get()).toBeNull()
+  })
+
+  it("stops serving a stale set once the staleness bound passes", async () => {
+    // A removed key must stop being trusted even while the endpoint keeps failing.
+    let clock = 1_000_000
+    let fail = false
+    const cache = createJwksCache({
+      jwksUri: `${ISSUER}/jwks`,
+      fetchImpl: (async () => (fail ? new Response("down", { status: 503 }) : new Response(JSON.stringify(jwks), { status: 200 }))) as unknown as typeof fetch,
+      ttlSeconds: 1,
+      maxStaleSeconds: 60,
+      now: () => clock,
+    })
+
+    await cache.get()
+    fail = true
+    clock += 30_000
+    expect((await cache.get())?.keys).toHaveLength(1)
+    clock += 40_000
+    // Past the bound, verification fails closed rather than on keys nobody has confirmed.
+    expect(await cache.get()).toBeNull()
+  })
+
+  it("gives the fetch a deadline and does not follow redirects", async () => {
+    const fetchImpl = vi.fn(async (_url: string, init?: RequestInit) => {
+      expect(init?.signal).toBeInstanceOf(AbortSignal)
+      expect(init?.redirect).toBe("manual")
+      return new Response(JSON.stringify(jwks), { status: 200 })
+    })
+    const cache = createJwksCache({ jwksUri: `${ISSUER}/jwks`, fetchImpl: fetchImpl as unknown as typeof fetch })
+    expect((await cache.get())?.keys).toHaveLength(1)
+    expect(fetchImpl).toHaveBeenCalledTimes(1)
   })
 })

@@ -51,6 +51,7 @@ async function signAssertion(overrides: Record<string, unknown> = {}, headerOver
     jti: "jag_abc",
     iat: issuedAt,
     exp: issuedAt + 300,
+    scope: "profile:read awards:read",
     ...overrides,
   }
   const encode = (value: Record<string, unknown>) => toBase64Url(new TextEncoder().encode(JSON.stringify(value)))
@@ -102,7 +103,7 @@ describe("POST /oauth/token (ID-JAG redemption)", () => {
     store.authenticateClient.mockReturnValue(true)
     store.recordAssertionJti.mockResolvedValue({ ok: true })
     store.findUserForCubidSubject.mockResolvedValue("user-1")
-    store.issueAccessToken.mockResolvedValue({ accessToken: "fundloop-access", expiresIn: 900 })
+    store.issueAccessToken.mockResolvedValue({ ok: true, accessToken: "fundloop-access", expiresIn: 900 })
   })
 
   it("issues a FundLoop access token for a valid assertion", async () => {
@@ -114,7 +115,15 @@ describe("POST /oauth/token (ID-JAG redemption)", () => {
     expect(body).toEqual({ access_token: "fundloop-access", token_type: "Bearer", expires_in: 900, scope: "profile:read awards:read" })
     // No refresh token: the client renews by redeeming a fresh assertion, so Cubid re-checks consent.
     expect(body.refresh_token).toBeUndefined()
-    expect(store.issueAccessToken).toHaveBeenCalledWith({ clientId: "wondrbot", userId: "user-1", scopes: ["profile:read", "awards:read"], assertionJti: "jag_abc" })
+    expect(store.issueAccessToken).toHaveBeenCalledWith(expect.objectContaining({
+      clientId: "wondrbot",
+      userId: "user-1",
+      // What the person consented to, and what this token carries, are recorded separately.
+      consentedScopes: ["profile:read", "awards:read"],
+      scopes: ["profile:read", "awards:read"],
+      assertionJti: "jag_abc",
+      assertionIssuedAt: expect.any(Date),
+    }))
   })
 
   it("supports Basic client authentication", async () => {
@@ -220,6 +229,59 @@ describe("POST /oauth/token (ID-JAG redemption)", () => {
     expect(store.issueAccessToken).not.toHaveBeenCalled()
   })
 
+  it("refuses an assertion with no scope rather than granting the registered set", async () => {
+    // An absent scope claim means none was requested, or the pairing allows none. Reading it as
+    // this client's registered list would grant past the pairing's own limit.
+    const noScope = await signAssertion({ scope: undefined })
+    const response = await (await tokenRoute())(redeem({ grant_type: GRANT, client_id: "wondrbot", client_secret: "s3cret", assertion: noScope }))
+
+    expect(response.status).toBe(400)
+    const body = await response.json()
+    expect(body.error).toBe("invalid_scope")
+    expect(body.error_description).toMatch(/carries no scope/)
+    expect(store.issueAccessToken).not.toHaveBeenCalled()
+  })
+
+  it("refuses a scope claim that is not a string", async () => {
+    // Treating a malformed claim as absent would hand it the caller's default.
+    for (const scope of [["profile:read"], 42, { scope: "profile:read" }]) {
+      const response = await (await tokenRoute())(
+        redeem({ grant_type: GRANT, client_id: "wondrbot", client_secret: "s3cret", assertion: await signAssertion({ scope }) }),
+      )
+      expect(response.status).toBe(400)
+      expect((await response.json()).error).toBe("invalid_grant")
+    }
+    expect(store.issueAccessToken).not.toHaveBeenCalled()
+  })
+
+  it("refuses an assertion that predates a withdrawal", async () => {
+    store.issueAccessToken.mockResolvedValue({ ok: false, reason: "withdrawn" })
+    const response = await (await tokenRoute())(redeem({ grant_type: GRANT, client_id: "wondrbot", client_secret: "s3cret", assertion: await signAssertion() }))
+
+    expect(response.status).toBe(400)
+    expect((await response.json()).error_description).toMatch(/withdrawn/)
+  })
+
+  it("does not lose the token when bookkeeping fails afterwards", async () => {
+    // The assertion is spent and the token row is live, so a failure here must not cost the client
+    // the credential it earned.
+    store.noteSubjectSeen.mockRejectedValue(new Error("subject table unavailable"))
+    const response = await (await tokenRoute())(redeem({ grant_type: GRANT, client_id: "wondrbot", client_secret: "s3cret", assertion: await signAssertion() }))
+
+    expect(response.status).toBe(200)
+    expect((await response.json()).access_token).toBe("fundloop-access")
+  })
+
+  it("answers an unexpected failure in the OAuth shape, not Next's 500", async () => {
+    store.recordAssertionJti.mockRejectedValue(new Error("connection string postgres://secret@host"))
+    const response = await (await tokenRoute())(redeem({ grant_type: GRANT, client_id: "wondrbot", client_secret: "s3cret", assertion: await signAssertion() }))
+
+    expect(response.status).toBe(500)
+    const body = await response.json()
+    expect(body.error).toBe("server_error")
+    expect(JSON.stringify(body)).not.toContain("postgres://")
+  })
+
   it("narrows scope to the assertion, then to the request, and never widens", async () => {
     const route = await tokenRoute()
 
@@ -235,6 +297,14 @@ describe("POST /oauth/token (ID-JAG redemption)", () => {
     // It may not ask for more than the assertion allows.
     const widened = await route(redeem({ grant_type: GRANT, client_id: "wondrbot", client_secret: "s3cret", scope: "profile:read awards:read", assertion: await signAssertion({ scope: "profile:read" }) }))
     expect((await widened.json()).error).toBe("invalid_scope")
+
+    // The grant records the consent, while the token carries the client's own narrowing.
+    const narrowedToken = await route(redeem({ grant_type: GRANT, client_id: "wondrbot", client_secret: "s3cret", scope: "profile:read", assertion: await signAssertion() }))
+    expect(narrowedToken.status).toBe(200)
+    expect(store.issueAccessToken).toHaveBeenLastCalledWith(expect.objectContaining({
+      consentedScopes: ["profile:read", "awards:read"],
+      scopes: ["profile:read"],
+    }))
 
     // Nor may an assertion name a scope the client is not registered for.
     const unregistered = await route(redeem({ grant_type: GRANT, client_id: "wondrbot", client_secret: "s3cret", assertion: await signAssertion({ scope: "payout-routes:read" }) }))
