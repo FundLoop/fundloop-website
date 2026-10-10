@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server"
 import { apiServers } from "@/lib/api/v1/config"
-import { requestId } from "@/lib/api/v1/response"
+import { methodNotAllowed, requestId } from "@/lib/api/v1/response"
 
 // GET /api/v1/openapi.json — OpenAPI 3.1 for the public surface (#266).
 // Stage 1 documents the two tokenless endpoints. The OAuth security scheme and the /me routes are
@@ -185,3 +185,12 @@ export function GET() {
     headers: { "Cache-Control": "public, max-age=300", "X-Fundloop-Api-Stage": "1", "X-Request-Id": requestId() },
   })
 }
+
+// The document is a GET surface; every other method answers in the API's error envelope.
+const unsupported = () => methodNotAllowed(["GET"])
+
+export const POST = unsupported
+export const PUT = unsupported
+export const PATCH = unsupported
+export const DELETE = unsupported
+export const OPTIONS = unsupported

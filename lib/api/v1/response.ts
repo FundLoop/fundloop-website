@@ -45,11 +45,20 @@ function baseHeaders(id: string, extra?: Record<string, string>) {
   return { "Cache-Control": "no-store", "X-Request-Id": id, ...extra }
 }
 
-export function apiData<T>(data: T, options?: { meta?: ApiMeta; requestId?: string; headers?: Record<string, string>; status?: number }) {
+export function apiData<T>(
+  data: T,
+  options?: { meta?: ApiMeta; requestId?: string; headers?: Record<string, string>; status?: number; cacheable?: boolean },
+) {
   const id = options?.requestId ?? requestId()
   const body: { data: T; meta?: ApiMeta } = { data }
   if (options?.meta) body.meta = options.meta
-  return NextResponse.json(body, { status: options?.status ?? 200, headers: baseHeaders(id, options?.headers) })
+  const headers = options?.cacheable
+    // A shared cache stores the headers with the body, so a request id here would be replayed to
+    // every later hit and could not correlate anything. A cacheable answer carries none, and the
+    // errors that a caller actually needs to report are all no-store.
+    ? { "Cache-Control": PUBLIC_READ_CACHE_CONTROL, ...options?.headers }
+    : baseHeaders(id, options?.headers)
+  return NextResponse.json(body, { status: options?.status ?? 200, headers })
 }
 
 export function apiError(
@@ -78,10 +87,18 @@ export function encodeCursor(value: Record<string, string | number>) {
   return Buffer.from(JSON.stringify(value), "utf8").toString("base64url")
 }
 
+// base64url, canonically: Node's Buffer.from(value, "base64url") discards characters outside the
+// alphabet, so a cursor with punctuation appended decoded to the same payload and was accepted.
+const BASE64URL = /^[A-Za-z0-9_-]+$/
+
 export function decodeCursor(cursor: string | null): Record<string, string | number> | null {
-  if (!cursor) return null
+  if (!cursor || !BASE64URL.test(cursor)) return null
   try {
-    const parsed: unknown = JSON.parse(Buffer.from(cursor, "base64url").toString("utf8"))
+    const decoded = Buffer.from(cursor, "base64url")
+    // Re-encoding must reproduce the cursor exactly, so no second spelling of the same payload is
+    // accepted as a cursor we issued.
+    if (decoded.toString("base64url") !== cursor) return null
+    const parsed: unknown = JSON.parse(decoded.toString("utf8"))
     if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) return null
     const entries = Object.entries(parsed as Record<string, unknown>).filter(
       (entry): entry is [string, string | number] => typeof entry[1] === "string" || typeof entry[1] === "number",
