@@ -76,6 +76,8 @@ describe("a redemption's effect on the grant", () => {
       scopes: ["profile:read"],
       assertionJti: "jag_1",
       assertionIssuedAt: issuedAt,
+      issuer: "https://id.cubid.test",
+      subject: "pairwise-subject",
     })
 
     expect(issued.ok).toBe(true)
@@ -107,9 +109,49 @@ describe("a redemption's effect on the grant", () => {
       scopes: ["profile:read"],
       assertionJti: "jag_2",
       assertionIssuedAt: new Date("2026-10-01T00:00:00.000Z"),
+      issuer: "https://id.cubid.test",
+      subject: "pairwise-subject",
     })
 
     expect(result).toEqual({ ok: false, reason: "withdrawn" })
+  })
+
+  it("reports a disconnected identity as its own outcome, not as a withdrawal", async () => {
+    // The person detached Cubid from their FundLoop account, which is not reversible by consenting
+    // again at Cubid, so the two are worth telling apart in the log even though the client sees one
+    // answer.
+    rpc.mockResolvedValue({ data: [{ grant_id: 7, outcome: "unlinked" }], error: null })
+
+    const result = await issueAccessToken({
+      clientId: "wondrbot",
+      userId: "user-1",
+      assertionScopes: ["profile:read"],
+      scopes: ["profile:read"],
+      assertionJti: "jag_3",
+      assertionIssuedAt: new Date(),
+      issuer: "https://id.cubid.test",
+      subject: "pairwise-subject",
+    })
+
+    expect(result).toEqual({ ok: false, reason: "unlinked" })
+  })
+
+  it("passes the assertion's issuer and subject, so the exact mapping is re-checked", async () => {
+    await issueAccessToken({
+      clientId: "wondrbot",
+      userId: "user-1",
+      assertionScopes: ["profile:read"],
+      scopes: ["profile:read"],
+      assertionJti: "jag_4",
+      assertionIssuedAt: new Date(),
+      issuer: "https://id.cubid.test",
+      subject: "pairwise-subject",
+    })
+
+    expect(rpc).toHaveBeenLastCalledWith(
+      "oauth_redeem_grant",
+      expect.objectContaining({ p_issuer: "https://id.cubid.test", p_subject: "pairwise-subject" }),
+    )
   })
 })
 

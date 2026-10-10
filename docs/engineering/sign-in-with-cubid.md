@@ -38,11 +38,24 @@ hybrid are unsupported there. The request carries `response_type=code`, `scope=o
 profile`, `state`, `nonce`, and an S256 `code_challenge`. There is no consent screen of FundLoop's
 own: consent is hosted in Passport, versioned per client and scope.
 
-`start` keeps the verifier, state and nonce in one short-lived httpOnly cookie scoped to
-`/auth/cubid`. The cookie **is** the trusted copy, so no signing secret is involved: comparing the
-callback's `state` against it is what detects a request this browser did not begin, and tampering
-with your own cookie only breaks your own sign-in. The cookie is cleared before anything else in the
-callback, so a replayed callback finds nothing to match.
+`start` keeps the verifier, state and nonce in one short-lived httpOnly cookie, and that cookie is
+the only thing proving a callback belongs to a request this browser started. **This browser is not
+the only writer of its cookie jar**: a sibling host under the registrable domain — `dev.fundloop.org`,
+or any subdomain that ever exists — can set a cookie with `Domain=.fundloop.org` that www then
+sends. A planted state, nonce and verifier is enough for login CSRF: lure the person to a crafted
+callback and they are signed in as somebody else's Cubid identity. So the cookie is defended twice:
+
+- the **`__Host-` prefix**, which a browser accepts only for a Secure, `Path=/`, `Domain`-less
+  cookie, so a sibling host cannot set that name at all. Local development over http cannot set one,
+  so it falls back to the unprefixed name and reads accept either;
+- an **HMAC signature** over the contents with `FUNDLOOP_CUBID_COOKIE_SECRET`, because a browser
+  that does not enforce the prefix would still accept a planted cookie, and a signature it cannot
+  forge is what makes that cookie useless. Sign-in is unavailable without the secret rather than
+  unsigned, and a secret under 32 characters is refused.
+
+The signature is checked before the contents are parsed. The cookie is consumed once the callback's
+`state` matches the sealed copy — and not before, so an unsolicited callback cannot erase the
+request the person is in the middle of.
 
 `callback` verifies the ID token before trusting any claim — RS256 only, a `kid` the issuer
 publishes, `iss`, `aud` equal to our client id, `azp` where present, lifetime inside the contract's
@@ -88,10 +101,20 @@ which is what the `link` intent requires.
 attempted and a refusal with `email_exists` is what says an account exists — so there is no
 read-then-write race, and no need to reach into the auth schema at all.
 
-**A created account that cannot be linked is removed again.** If `link_cubid_subject` refuses after
-the account was created, nobody can reach that account and nothing points at it; leaving it would
-take the address for good. A failure to remove it is logged, because then the address is held by an
-account nobody can use.
+**A created account that cannot be linked is removed again**, profile row first. If
+`link_cubid_subject` refuses or fails after the account was created, nobody can reach that account
+and nothing points at it; leaving it would take the address for good. The order matters:
+`on_auth_user_created` creates a `public.users` row for every new account and `users_user_id_fkey`
+references `auth.users(id)` with **no ON DELETE**, so deleting the account first fails on the
+constraint and the address stays taken — the cleanup would simply never have worked.
+`tests/e2e/support/supabase-fixtures.ts` tears accounts down in the same order for the same reason.
+A failure to remove it is logged, because then the address really is held by an account nobody can
+use.
+
+**The session is checked against the identity that was resolved, not against the address.** The
+admin API addresses an account by email, but what the flow resolved is a user id, so the id is
+passed to the bridge and compared both to `generateLink`'s user and to the user `verifyOtp` actually
+signed in; a session for anybody else is torn down rather than returned.
 
 **Cubid releases `email` only when it has verified it and the person consented.** Without one there
 is no address to create an account against, and sign-in is refused with an explanation rather than
@@ -150,7 +173,19 @@ the function so a second caller cannot forget it:
 4. those event rows are backfilled with the user id, so they are explicable from both ends.
 
 All of it in one statement, so there is no window where the subject is linked and the withdrawal is
-not. Late withdrawals are ordered by `event_time` (RFC 8417 `toe`) exactly as live delivery is, with
+not.
+
+**Everything that writes about one subject serializes on it.** `link_cubid_subject`,
+`unlink_cubid_subject`, `oauth_apply_security_event` and `oauth_redeem_grant` all take a
+transaction-scoped advisory lock on `(issuer, subject)` before reading anything. Redemption needs it
+as much as the rest: on a client's *first* redemption there is no grant row for a concurrent
+disconnect to have locked, so the row lock alone leaves a window in which the mapping is read from a
+snapshot taken before the delete committed and a token is issued after the disconnect. Redemption
+also checks the **exact** mapping the assertion names rather than "this person has some Cubid
+identity", because a grant row survives an unlink and somebody who disconnected one identity and
+linked another would otherwise have an assertion from the old one honoured. Unlinking has to read
+the mapping before it can know which lock to take, so it re-reads under the lock and refuses if
+anything changed. Late withdrawals are ordered by `event_time` (RFC 8417 `toe`) exactly as live delivery is, with
 the same dormancy while Cubid sends no `toe` — see "Ordering a late revocation" in the cross-app
 document.
 
@@ -161,13 +196,15 @@ not outlive the link to it.
 ## Configuration
 
 `CUBID_OIDC_ISSUER`, `FUNDLOOP_CUBID_CLIENT_ID`, `CUBID_OIDC_CLIENT_SECRET`,
-`FUNDLOOP_CUBID_REDIRECT_URI`, and optionally `CUBID_OIDC_JWKS_URI`,
+`FUNDLOOP_CUBID_REDIRECT_URI`, `FUNDLOOP_CUBID_COOKIE_SECRET`, and optionally `CUBID_OIDC_JWKS_URI`,
 `CUBID_OIDC_AUTHORIZATION_ENDPOINT` and `CUBID_OIDC_TOKEN_ENDPOINT`. Unconfigured means sign-in is
 unavailable rather than broken, which is the normal state until Cubid is deployed
 (cubid-monorepo#179 is the staging rollout).
 
-The redirect URI is matched exactly at Cubid, so it is configuration and never derived from the
-request. Preview deployments get a generated hostname per deployment, which cannot be registered, so
+Every URL is held to the same rule — HTTPS, or a loopback host where there is no network to listen
+on — including the endpoint overrides, because the code exchange sends the client secret to the
+token endpoint. The redirect URI is matched exactly at Cubid, so it is configuration and never
+derived from the request. Preview deployments get a generated hostname per deployment, which cannot be registered, so
 **three redirect URIs are registered and no more**: production, the stable development host
 `https://dev.fundloop.org/auth/cubid/callback`, and a loopback one for local work. A Vercel preview
 therefore cannot complete a Cubid sign-in, by design — testing the flow means using the development

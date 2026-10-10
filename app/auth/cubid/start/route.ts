@@ -5,7 +5,8 @@ import {
   authorizationUrl,
   newSignInRequestState,
   safeRedirectTarget,
-  CUBID_SIGN_IN_COOKIE,
+  sealSignInRequestState,
+  signInCookieName,
   CUBID_SIGN_IN_COOKIE_MAX_AGE_SECONDS,
 } from "@/lib/auth/cubid-oidc-request"
 
@@ -44,12 +45,15 @@ export async function GET(request: Request) {
   })
 
   const store = await cookies()
-  store.set(CUBID_SIGN_IN_COOKIE, JSON.stringify(state), {
+  const isSecure = url.protocol === "https:"
+  store.set(signInCookieName(isSecure), await sealSignInRequestState(state, config.cookieSecret), {
     httpOnly: true,
     // The callback is a top-level navigation from Cubid, which Lax allows and Strict would drop.
     sameSite: "lax",
-    secure: url.protocol === "https:",
-    path: "/auth/cubid",
+    secure: isSecure,
+    // `Path=/` is required by the `__Host-` prefix, which is what stops a sibling host setting this
+    // cookie. The cookie is httpOnly and lives fifteen minutes, so the wider path costs nothing.
+    path: "/",
     maxAge: CUBID_SIGN_IN_COOKIE_MAX_AGE_SECONDS,
   })
 

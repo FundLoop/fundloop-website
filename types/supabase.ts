@@ -15177,6 +15177,8 @@ export type Database = {
           p_token_scopes: Database["public"]["Enums"]["oauth_scope"][]
           p_token_expires_at: string
           p_assertion_jti: string
+          p_issuer: string
+          p_subject: string
         }
         Returns: {
           grant_id: number

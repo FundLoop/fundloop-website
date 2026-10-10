@@ -160,6 +160,8 @@ async function redeem(request: Request) {
     scopes: granted,
     assertionJti: claims.jti,
     assertionIssuedAt: new Date(claims.iat * 1000),
+    issuer: claims.iss,
+    subject: claims.sub,
   })
   if (!issued.ok) {
     // Either the assertion predates a withdrawal, so it is not evidence that consent is live, or

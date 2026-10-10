@@ -186,3 +186,75 @@ nothing making the pair atomic. #279 had the same shape and I fixed it there wit
 statement; here I wrote a second function that reads what the first one writes and did not ask what
 happens if they interleave. The question to carry forward is not "is this statement atomic" but
 "which other statement reads what this one writes".
+
+### session v3: the deep review — a cleanup that never ran, and a lock that was missing
+
+- **Timestamp:** 2026-10-10T06:30:03Z
+- **Agent:** Claude Code (Claude Opus 5)
+- **Branch:** `feat/275-sign-in-with-cubid` (PR #280)
+- **Head before commit:** `7580a77`
+
+---
+
+#### Objective
+
+The independent deep review found three P2s and a P3 on `7580a77`, no P1s. Two of them were cases
+where the code I had written to close a hole did not actually close it.
+
+---
+
+#### What each one was
+
+- **The compensating `deleteUser` could never have worked.** `on_auth_user_created` creates a
+  `public.users` row for every new account, and `users_user_id_fkey` references `auth.users(id)`
+  with **no ON DELETE**, so deleting the account while that row exists fails on the constraint. The
+  address therefore stayed taken and the next attempt got `email_taken` — the exact outcome the
+  cleanup existed to prevent. I verified the constraint in `initial_remote.sql` rather than taking
+  it on trust. Fixed by deleting the profile row first, which is the order
+  `tests/e2e/support/supabase-fixtures.ts` already uses for the same reason. The test now asserts
+  the call order, not just that both calls happen.
+- **`oauth_redeem_grant` was outside the lock.** I had added the advisory lock to linking,
+  unlinking and event receipt but not to redemption, reasoning that the grant row lock would
+  serialize it. On a client's *first* redemption there is no grant row to lock, so the mapping check
+  could read a snapshot from before an unlink committed and issue a token after the disconnect;
+  `account-purged` deletes the mapping the same way. Redemption now takes the same subject lock
+  before anything, and checks the **exact** (issuer, subject, user) mapping rather than "this person
+  has some Cubid identity" — otherwise disconnecting one identity and linking another leaves an
+  assertion from the old one honourable, because the grant row survives an unlink. That needed two
+  new parameters, so the function is dropped and re-created, with its grants re-stated.
+  `unlink_cubid_subject` cannot know which lock to take without reading the mapping first, so it
+  re-reads under the lock and refuses if anything moved.
+- **The pending-request cookie was plantable.** Unsigned and without the `__Host-` prefix, a
+  sibling host under the registrable domain can set `Domain=.fundloop.org` and www will send it —
+  login CSRF, and the only reason it was not account takeover is the `linkingUserId` check added in
+  the previous round. Now both: the `__Host-` prefix on https (unprefixed on http for local
+  development, reads accept either), and an HMAC signature with a new
+  `FUNDLOOP_CUBID_COOKIE_SECRET` that sign-in is unavailable without, refusing a secret under 32
+  characters. The signature is verified before the contents are parsed.
+- **The bridge trusted the address.** It looked the account up by email and never compared what
+  `verifyOtp` signed in against the identity the flow had resolved. It now takes the expected user
+  id, checks it against `generateLink`'s user and against the established session, and signs out
+  rather than returning a session for anybody else.
+
+---
+
+#### Tests and Validation
+
+- The migration test file now asserts its own slices are non-empty first. Three assertions had
+  started passing against an empty string when `create or replace` became `create`, which looks
+  exactly like the SQL changing — the guard makes the real cause obvious.
+- New: the profile deletion and its ordering; the subject lock in redemption and that it precedes
+  the row lock; the exact-mapping check; the drop-and-recreate with re-stated grants; unlinking's
+  re-read under the lock; sealing and opening a request; a planted request with the wrong secret and
+  an edited payload refused; the `__Host-` prefix on https; the cookie secret length floor; the
+  `unlinked` outcome; and the issuer and subject reaching the RPC.
+- 186 files, 1409 tests passing; typecheck and lint clean.
+
+---
+
+#### Reflections
+
+Two of the four were protections I had written and not checked: a deletion that could not succeed,
+and a lock I argued was redundant. The argument was wrong for one case I had not enumerated — the
+first redemption, where the row I was relying on does not exist yet. "Which row am I relying on, and
+when does it not exist" is the question that would have caught it.

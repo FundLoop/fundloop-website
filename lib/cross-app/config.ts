@@ -31,6 +31,8 @@ export type CrossAppSignInConfig = CubidIssuerConfig & {
   clientSecret: string
   /** Registered at Cubid exactly, so it is configuration and never derived from the request. */
   redirectUri: string
+  /** Signs the pending-request cookie. Without it sign-in is unavailable rather than unsigned. */
+  cookieSecret: string
   authorizationEndpoint: string
   tokenEndpoint: string
 }
@@ -86,7 +88,11 @@ export function crossAppSignInConfig(env: EnvLike = process.env): CrossAppSignIn
   const clientId = trimmed(env.FUNDLOOP_CUBID_CLIENT_ID)
   const clientSecret = trimmed(env.CUBID_OIDC_CLIENT_SECRET)
   const redirectUri = trimmed(env.FUNDLOOP_CUBID_REDIRECT_URI)
-  if (!issuer || !clientId || !clientSecret || !redirectUri) return null
+  const cookieSecret = trimmed(env.FUNDLOOP_CUBID_COOKIE_SECRET)
+  if (!issuer || !clientId || !clientSecret || !redirectUri || !cookieSecret) return null
+  // A short secret is a guessable one, and this signature is what stops a sibling host planting a
+  // sign-in request. 32 characters is the same floor the Cubid contract puts on its own internal key.
+  if (cookieSecret.length < 32) return null
   // A redirect URI is matched exactly at Cubid and is where an authorization code is delivered, so
   // an http one outside loopback would hand codes to the network.
   if (!isHttpsOrLoopback(redirectUri)) return null
@@ -101,7 +107,7 @@ export function crossAppSignInConfig(env: EnvLike = process.env): CrossAppSignIn
   // trusted for having come from configuration.
   if (!isHttpsOrLoopback(authorizationEndpoint) || !isHttpsOrLoopback(tokenEndpoint)) return null
 
-  return { ...issuer, clientId, clientSecret, redirectUri, authorizationEndpoint, tokenEndpoint }
+  return { ...issuer, clientId, clientSecret, redirectUri, cookieSecret, authorizationEndpoint, tokenEndpoint }
 }
 
 let cache: JwksCache | null = null

@@ -33,13 +33,29 @@ const unlinkFunction = migration.slice(
   migration.indexOf("revoke all on function public.unlink_cubid_subject"),
 )
 // Both already exist and are replaced here, each for one added rule.
+const REDEEM_START = "create function public.oauth_redeem_grant"
 const replacedReceiver = migration.slice(
   migration.indexOf("create or replace function public.oauth_apply_security_event"),
-  migration.indexOf("create or replace function public.oauth_redeem_grant"),
+  migration.indexOf("drop function if exists public.oauth_redeem_grant"),
 )
-const replacedRedeem = migration.slice(migration.indexOf("create or replace function public.oauth_redeem_grant"))
+const replacedRedeem = migration.slice(migration.indexOf(REDEEM_START))
 
 const SUBJECT_LOCK = "pg_catalog.pg_advisory_xact_lock(pg_catalog.hashtextextended('cubid_subject:'"
+
+// A mis-anchored slice comes back as an empty string, and every `toContain` on it then fails in a
+// way that looks like the SQL changed. Checking the slices are non-trivial first makes the real
+// cause obvious.
+describe("the slices these assertions read", () => {
+  it.each([
+    ["link", linkFunction],
+    ["unlink", unlinkFunction],
+    ["replaced receiver", replacedReceiver],
+    ["replaced redemption", replacedRedeem],
+  ])("found the %s function", (_name, body) => {
+    expect(body.length).toBeGreaterThan(200)
+    expect(body).toContain("language plpgsql")
+  })
+})
 
 describe("link_cubid_subject", () => {
   it("names the event types exactly as the verifier does", () => {
@@ -140,16 +156,37 @@ describe("making a disconnect final", () => {
     expect(unlinkFunction.indexOf("for update")).toBeLessThan(unlinkFunction.indexOf("delete from public.cubid_oidc_subjects"))
   })
 
-  it("makes redemption require a live mapping, so a disconnect cannot be outrun", () => {
-    expect(replacedRedeem).toContain("if not exists (select 1 from public.cubid_oidc_subjects s where s.user_id = p_user_id) then")
+  it("makes redemption require the exact mapping the assertion names", () => {
+    // Not merely "this person has some Cubid identity": somebody who disconnected one identity and
+    // linked another would otherwise have an assertion from the old one honoured, because the grant
+    // row survives an unlink.
+    expect(replacedRedeem).toContain("where s.user_id = p_user_id and s.issuer = p_issuer and s.subject = p_subject")
     expect(replacedRedeem).toContain("'unlinked'::text")
   })
 
-  it("checks it inside the locked statement, not before it", () => {
-    const lockAt = replacedRedeem.indexOf("for update")
-    const checkAt = replacedRedeem.indexOf("if not exists (select 1 from public.cubid_oidc_subjects")
-    expect(lockAt).toBeGreaterThan(0)
-    expect(checkAt).toBeGreaterThan(lockAt)
+  it("takes the subject lock in redemption too, because a first redemption has no row to lock", () => {
+    // The grant row lock cannot serialize a disconnect against a client's *first* redemption: there
+    // is no grant row yet, so the mapping could be read from a pre-delete snapshot.
+    expect(replacedRedeem).toContain(SUBJECT_LOCK)
+    expect(replacedRedeem.indexOf(SUBJECT_LOCK)).toBeLessThan(replacedRedeem.indexOf("for update"))
+  })
+
+  it("is dropped and re-created, because the parameter list changed", () => {
+    expect(migration).toContain("drop function if exists public.oauth_redeem_grant(text, uuid, public.oauth_scope[], timestamptz, text, public.oauth_scope[], timestamptz, text)")
+    // A dropped function loses its grants, so they are re-stated rather than assumed.
+    const signature =
+      "public.oauth_redeem_grant(text, uuid, public.oauth_scope[], timestamptz, text, public.oauth_scope[], timestamptz, text, text, text)"
+    expect(migration).toContain(`revoke all on function ${signature} from public, anon, authenticated`)
+    expect(migration).toContain(`grant execute on function ${signature} to service_role`)
+  })
+
+  it("re-reads the mapping under the lock when unlinking, since the first read cannot be locked", () => {
+    // The lock is keyed on the subject and the subject is only knowable from the mapping, so the
+    // first read is necessarily unlocked. Re-reading under the lock is what makes that harmless.
+    const afterLock = unlinkFunction.slice(unlinkFunction.indexOf(SUBJECT_LOCK))
+    expect(afterLock).toContain("select 1 from public.cubid_oidc_subjects s")
+    expect(afterLock).toContain("s.user_id = p_user_id and s.issuer = v_issuer and s.subject = v_subject")
+    expect(afterLock.indexOf("select 1 from public.cubid_oidc_subjects")).toBeLessThan(afterLock.indexOf("for update"))
   })
 
   it("keeps the rest of the redemption rules it already had", () => {

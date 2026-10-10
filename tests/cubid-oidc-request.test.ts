@@ -3,8 +3,13 @@ import {
   authorizationUrl,
   codeChallengeFor,
   newSignInRequestState,
+  openSignInRequestState,
   parseSignInRequestState,
   safeRedirectTarget,
+  sealSignInRequestState,
+  signInCookieName,
+  CUBID_SIGN_IN_COOKIE,
+  CUBID_SIGN_IN_COOKIE_INSECURE,
 } from "@/lib/auth/cubid-oidc-request"
 
 // One Cubid authorization request (#275, stage 2c). Authorization Code with PKCE is the only grant
@@ -126,5 +131,48 @@ describe("parseSignInRequestState", () => {
   it("defaults an unrecognised intent to signing in, which needs no session", () => {
     const raw = '{"state":"a","nonce":"b","codeVerifier":"c","intent":"something-else","redirectTo":"/"}'
     expect(parseSignInRequestState(raw)?.intent).toBe("sign_in")
+  })
+})
+
+describe("sealing the pending request into a cookie", () => {
+  const secret = "a".repeat(32)
+
+  it("round-trips a sealed request", async () => {
+    const state = newSignInRequestState({ intent: "link", redirectTo: "/settings/account", linkingUserId: "user-1" })
+    expect(await openSignInRequestState(await sealSignInRequestState(state, secret), secret)).toEqual(state)
+  })
+
+  it("refuses a request planted by anyone without the secret", async () => {
+    // A sibling host under the registrable domain can write this browser's cookie jar. A state,
+    // nonce and verifier it chose would be login CSRF: lure the person to a crafted callback and
+    // they are signed in as somebody else's Cubid identity.
+    const planted = newSignInRequestState({ intent: "sign_in", redirectTo: "/" })
+    expect(await openSignInRequestState(await sealSignInRequestState(planted, "b".repeat(32)), secret)).toBeNull()
+  })
+
+  it("refuses a sealed request whose contents were edited", async () => {
+    const state = newSignInRequestState({ intent: "link", redirectTo: "/", linkingUserId: "user-1" })
+    const sealed = await sealSignInRequestState(state, secret)
+    const [, signature] = sealed.split(".")
+    const forged = btoa(JSON.stringify({ ...state, linkingUserId: "somebody-else" }))
+      .replace(/\+/g, "-")
+      .replace(/\//g, "_")
+      .replace(/=+$/, "")
+    expect(await openSignInRequestState(`${forged}.${signature}`, secret)).toBeNull()
+  })
+
+  it("refuses anything that is not a sealed request at all", async () => {
+    for (const raw of [undefined, "", "no-dot", "payload.", ".signature", "not base64!.also not"]) {
+      expect(await openSignInRequestState(raw, secret)).toBeNull()
+    }
+  })
+
+  it("uses the __Host- prefix on https, where a browser enforces it", () => {
+    // The prefix is only accepted for a Secure, Path=/, Domain-less cookie, which is what stops a
+    // sibling host setting this name.
+    expect(signInCookieName(true)).toBe(CUBID_SIGN_IN_COOKIE)
+    expect(CUBID_SIGN_IN_COOKIE.startsWith("__Host-")).toBe(true)
+    // Local development over http cannot set one, so it falls back and reads accept both.
+    expect(signInCookieName(false)).toBe(CUBID_SIGN_IN_COOKIE_INSECURE)
   })
 })

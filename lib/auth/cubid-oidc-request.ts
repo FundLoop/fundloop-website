@@ -1,13 +1,31 @@
 // Building and remembering one Cubid authorization request (#275, stage 2c).
 //
-// The verifier, state and nonce are kept in a short-lived httpOnly cookie rather than in a server
-// store: the cookie *is* the trusted copy, so comparing the callback's `state` against it is what
-// detects a request this browser did not start. Tampering with your own cookie only breaks your own
-// sign-in, so nothing here needs a signing secret.
+// The verifier, state and nonce are kept in a short-lived cookie rather than in a server store, and
+// that cookie is the only thing proving a callback belongs to a request this browser started. It is
+// therefore defended twice over, because *this browser* is not the only writer of its cookie jar:
+// a sibling host under the registrable domain — `dev.fundloop.org`, say, or anything else that ever
+// gets a subdomain — can set a cookie with `Domain=.fundloop.org` that www would then send.
+// Planting a state, nonce and verifier is enough for login CSRF: lure the person to a crafted
+// callback and they are signed in as somebody else's Cubid identity.
+//
+//   * The `__Host-` prefix. A browser only accepts such a cookie when it is Secure, `Path=/`, and
+//     carries no `Domain`, so a sibling host cannot set this name at all. Used on https; local
+//     development over http falls back to the unprefixed name, which is why reads accept both.
+//   * An HMAC signature over the contents, with a server-held secret. A browser that does not
+//     enforce the prefix would still accept a planted cookie, and a signature it cannot forge is
+//     what makes that cookie useless. Sign-in is unavailable without the secret rather than
+//     unsigned.
 //
 // Contract: Authorization Code with PKCE is the only grant Cubid offers for human login.
 
-export const CUBID_SIGN_IN_COOKIE = "fundloop_cubid_oidc"
+/** Used on https, where a browser enforces the prefix's host-only, `Path=/`, Secure rules. */
+export const CUBID_SIGN_IN_COOKIE = "__Host-fundloop_cubid_oidc"
+/** Local development over http, where a `__Host-` cookie cannot be set. */
+export const CUBID_SIGN_IN_COOKIE_INSECURE = "fundloop_cubid_oidc"
+
+export function signInCookieName(isSecure: boolean) {
+  return isSecure ? CUBID_SIGN_IN_COOKIE : CUBID_SIGN_IN_COOKIE_INSECURE
+}
 // Cubid gives an authorization code five minutes; the ceremony in front of it (a passkey, or a
 // Google round trip and a consent screen) is what the rest of this allows for.
 export const CUBID_SIGN_IN_COOKIE_MAX_AGE_SECONDS = 15 * 60
@@ -88,6 +106,60 @@ export async function authorizationUrl(
   }
   for (const [name, value] of Object.entries(parameters)) url.searchParams.set(name, value)
   return url.toString()
+}
+
+function toBase64Url(bytes: Uint8Array) {
+  let binary = ""
+  for (const byte of bytes) binary += String.fromCharCode(byte)
+  return btoa(binary).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "")
+}
+
+function fromBase64Url(value: string): Uint8Array | null {
+  if (!/^[A-Za-z0-9_-]+$/.test(value)) return null
+  const padded = value.replace(/-/g, "+").replace(/_/g, "/") + "=".repeat((4 - (value.length % 4)) % 4)
+  try {
+    const binary = atob(padded)
+    const bytes = new Uint8Array(binary.length)
+    for (let index = 0; index < binary.length; index += 1) bytes[index] = binary.charCodeAt(index)
+    return bytes
+  } catch {
+    return null
+  }
+}
+
+async function hmacKey(secret: string) {
+  return crypto.subtle.importKey("raw", new TextEncoder().encode(secret), { name: "HMAC", hash: "SHA-256" }, false, [
+    "sign",
+    "verify",
+  ])
+}
+
+/** `<payload>.<signature>`, both base64url. The payload is not secret; the signature is the point. */
+export async function sealSignInRequestState(state: CubidSignInRequestState, secret: string) {
+  const payload = toBase64Url(new TextEncoder().encode(JSON.stringify(state)))
+  const signature = await crypto.subtle.sign("HMAC", await hmacKey(secret), new TextEncoder().encode(payload))
+  return `${payload}.${toBase64Url(new Uint8Array(signature))}`
+}
+
+export async function openSignInRequestState(
+  sealed: string | undefined,
+  secret: string,
+): Promise<CubidSignInRequestState | null> {
+  if (!sealed) return null
+  const [payload, signature] = sealed.split(".")
+  if (!payload || !signature) return null
+  const signatureBytes = fromBase64Url(signature)
+  const payloadBytes = fromBase64Url(payload)
+  if (!signatureBytes || !payloadBytes) return null
+  // crypto.subtle.verify compares in constant time, and an unverified payload is never parsed.
+  const valid = await crypto.subtle.verify(
+    "HMAC",
+    await hmacKey(secret),
+    new Uint8Array(signatureBytes).buffer as ArrayBuffer,
+    new TextEncoder().encode(payload),
+  )
+  if (!valid) return null
+  return parseSignInRequestState(new TextDecoder().decode(payloadBytes))
 }
 
 export function parseSignInRequestState(raw: string | undefined): CubidSignInRequestState | null {

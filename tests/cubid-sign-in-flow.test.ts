@@ -31,10 +31,13 @@ const createUser = vi.fn()
 const getUserById = vi.fn()
 const deleteUser = vi.fn()
 
+const profileDelete = vi.fn()
+
 const admin = {
-  from: vi.fn(() => ({
+  from: vi.fn((table: string) => ({
     select: () => ({ eq: () => ({ eq: () => ({ limit: () => ({ maybeSingle: subjects.maybeSingle }) }) }) }),
     update: () => ({ eq: subjectUpdate }),
+    delete: () => ({ eq: (column: string, value: string) => profileDelete({ table, column, value }) }),
   })),
   rpc,
   auth: { admin: { createUser, getUserById, deleteUser } },
@@ -108,7 +111,7 @@ beforeAll(async () => {
 
 beforeEach(() => {
   vi.resetModules()
-  for (const fn of [subjects.maybeSingle, subjectUpdate, rpc, createUser, getUserById, deleteUser, establishSession, jwksGet, jwksRefresh]) {
+  for (const fn of [subjects.maybeSingle, subjectUpdate, profileDelete, rpc, createUser, getUserById, deleteUser, establishSession, jwksGet, jwksRefresh]) {
     fn.mockReset()
   }
   config.crossAppSignInConfig.mockReset()
@@ -133,6 +136,7 @@ beforeEach(() => {
   createUser.mockResolvedValue({ data: { user: { id: USER_ID } }, error: null })
   getUserById.mockResolvedValue({ data: { user: { id: USER_ID, email: "person@example.com" } }, error: null })
   deleteUser.mockResolvedValue({ data: { user: null }, error: null })
+  profileDelete.mockResolvedValue({ error: null })
 })
 
 describe("signing in with a subject this deployment already knows", () => {
@@ -143,7 +147,9 @@ describe("signing in with a subject this deployment already knows", () => {
     expect(outcome).toEqual({ kind: "signed_in", userId: USER_ID, created: false, revokedClients: 0 })
     expect(createUser).not.toHaveBeenCalled()
     expect(rpc).not.toHaveBeenCalled()
-    expect(establishSession).toHaveBeenCalledWith({ email: "person@example.com" })
+    // The address is how the admin API addresses an account; the identity that was resolved is a
+    // user id, and the bridge is given both so the session it establishes can be checked.
+    expect(establishSession).toHaveBeenCalledWith({ email: "person@example.com", expectedUserId: USER_ID })
   })
 
   it("refuses when the mapped account has no address to bridge a session with", async () => {
@@ -195,6 +201,12 @@ describe("signing in with a subject nobody has linked", () => {
     // Otherwise an account nobody can reach is left behind: no session, and nothing pointing at it.
     expect(deleteUser).toHaveBeenCalledWith(USER_ID)
     expect(establishSession).not.toHaveBeenCalled()
+
+    // The profile row has to go first. `on_auth_user_created` creates one for every new account and
+    // `users_user_id_fkey` has no ON DELETE, so deleting the account first fails on the constraint
+    // and the address stays taken — the cleanup would never have worked.
+    expect(profileDelete).toHaveBeenCalledWith({ table: "users", column: "user_id", value: USER_ID })
+    expect(profileDelete.mock.invocationCallOrder[0]).toBeLessThan(deleteUser.mock.invocationCallOrder[0])
   })
 
   it("removes the created account when linking fails outright, not only when it refuses", async () => {

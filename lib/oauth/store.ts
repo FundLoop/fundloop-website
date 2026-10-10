@@ -109,6 +109,10 @@ export async function issueAccessToken(input: {
   scopes: OAuthScope[]
   assertionJti: string
   assertionIssuedAt: Date
+  /** The issuer and the pairwise subject the assertion named, so the exact mapping is re-checked
+   *  under the same lock that linking and unlinking take. */
+  issuer: string
+  subject: string
 }): Promise<{ ok: true; accessToken: string; expiresIn: number } | { ok: false; reason: "withdrawn" | "unlinked" }> {
   const accessToken = randomToken()
   const { data, error } = await oauthDb().rpc("oauth_redeem_grant", {
@@ -120,6 +124,8 @@ export async function issueAccessToken(input: {
     p_token_scopes: sortScopes(input.scopes),
     p_token_expires_at: expiresAt(OAUTH_TTL_SECONDS.accessToken),
     p_assertion_jti: input.assertionJti,
+    p_issuer: input.issuer,
+    p_subject: input.subject,
   })
   fail("redeem-grant", error)
   const row = data?.[0]

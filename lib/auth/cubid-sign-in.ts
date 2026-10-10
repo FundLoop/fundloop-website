@@ -50,8 +50,15 @@ export type SignInDependencies = {
   config?: CrossAppSignInConfig | null
   admin?: AdminClient
   fetchImpl?: typeof fetch
-  /** Sets the session cookies on the response being built. Injected so tests need no Next runtime. */
-  establishSession: (input: { email: string }) => Promise<{ ok: true } | { ok: false; error: string }>
+  /**
+   * Sets the session cookies on the response being built. Injected so tests need no Next runtime.
+   * Takes the resolved user id as well as the address, so the session it establishes can be checked
+   * against the identity that was resolved rather than trusted to follow from the address.
+   */
+  establishSession: (input: {
+    email: string
+    expectedUserId: string
+  }) => Promise<{ ok: true } | { ok: false; error: string }>
   /** The signed-in person, for the linking path. */
   currentUserId?: string | null
 }
@@ -209,7 +216,7 @@ export async function completeCubidSignIn(
     return linked
   }
 
-  const session = await dependencies.establishSession({ email })
+  const session = await dependencies.establishSession({ email, expectedUserId: userId })
   if (!session.ok) return { kind: "refused", reason: "session_failed", detail: session.error }
   return { kind: "signed_in", userId, created: true, revokedClients: linked.revokedClients }
 }
@@ -217,8 +224,18 @@ export async function completeCubidSignIn(
 // An account created moments ago for a subject that could not then be linked to it is
 // unreachable: nobody can sign into it and nothing points at it. Removing it is the only way not to
 // leave the address taken, and a failure to remove it is worth a log line for exactly that reason.
+//
+// The profile row has to go first. `on_auth_user_created` creates a `public.users` row for every
+// new account, and `users_user_id_fkey` references `auth.users(id)` with no ON DELETE, so deleting
+// the account while that row exists fails on the constraint — the deletion would never have worked.
+// `tests/e2e/support/supabase-fixtures.ts` tears accounts down in the same order for the same
+// reason. Nothing else can reference an account this new.
 async function removeUnreachableAccount(admin: AdminClient, userId: string) {
   try {
+    const profile = await admin.from("users").delete().eq("user_id", userId)
+    if (profile.error) {
+      console.error(`[cubid-sign-in] could not remove the profile for ${userId}: ${profile.error.message}`)
+    }
     const removal = await admin.auth.admin.deleteUser(userId)
     if (removal.error) {
       console.error(`[cubid-sign-in] could not remove the unlinked account ${userId}: ${removal.error.message}`)
@@ -277,7 +294,7 @@ async function signInExistingUser(
     .update({ last_seen_at: new Date().toISOString() })
     .eq("user_id", userId)
 
-  const session = await dependencies.establishSession({ email })
+  const session = await dependencies.establishSession({ email, expectedUserId: userId })
   if (!session.ok) return { kind: "refused", reason: "session_failed", detail: session.error }
   return { kind: "signed_in", userId, created: false, revokedClients: 0 }
 }

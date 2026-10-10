@@ -1,6 +1,7 @@
 import { cookies } from "next/headers"
+import { crossAppSignInConfig } from "@/lib/cross-app/config"
 import { completeCubidSignIn, type CubidSignInOutcome } from "@/lib/auth/cubid-sign-in"
-import { CUBID_SIGN_IN_COOKIE, parseSignInRequestState } from "@/lib/auth/cubid-oidc-request"
+import { openSignInRequestState, signInCookieName } from "@/lib/auth/cubid-oidc-request"
 import { establishSupabaseSessionForEmail } from "@/lib/auth/cubid-session-bridge"
 import { createServerSupabaseClient } from "@/lib/supabase-server"
 
@@ -36,10 +37,17 @@ function back(request: Request, redirectTo: string, outcome: string) {
 }
 
 export async function GET(request: Request) {
-  const store = await cookies()
-  const pending = parseSignInRequestState(store.get(CUBID_SIGN_IN_COOKIE)?.value)
-
   const url = new URL(request.url)
+  const config = crossAppSignInConfig()
+  // Without configuration there is no secret to check the pending request with, so there is nothing
+  // here that can be trusted — including the cookie.
+  if (!config) return Response.redirect(new URL("/?cubid=unavailable", request.url), 303)
+
+  const store = await cookies()
+  const cookieName = signInCookieName(url.protocol === "https:")
+  // The signature is checked before the contents are parsed: a sibling host can write this browser's
+  // cookie jar, and a planted request it cannot sign is not a request.
+  const pending = await openSignInRequestState(store.get(cookieName)?.value, config.cookieSecret)
   const redirectTo = pending?.redirectTo ?? "/"
 
   if (!pending) return back(request, redirectTo, "expired")
@@ -52,7 +60,7 @@ export async function GET(request: Request) {
   if (!state || state !== pending.state) return back(request, redirectTo, "expired")
 
   // Matched, so this request is spent either way: one authorization request, one use.
-  store.delete({ name: CUBID_SIGN_IN_COOKIE, path: "/auth/cubid" })
+  store.delete({ name: cookieName, path: "/" })
 
   // RFC 6749 §4.1.2.1: the person declined, or Cubid refused. Not an error of ours.
   const failure = url.searchParams.get("error")

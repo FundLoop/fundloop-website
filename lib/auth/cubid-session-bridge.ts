@@ -15,18 +15,38 @@ import { createServerSupabaseClient } from "@/lib/supabase-server"
 // account first. `generateLink` with `type: "magiclink"` even creates the user when the address is
 // unknown. It is called only for an account the Cubid subject already maps to, or one this request
 // just created for that subject — never because an email matched.
+//
+// The address is how the admin API addresses an account, but it is not the identity that was
+// resolved: the caller resolved a **user id**. So the id is passed in and checked at both steps,
+// and a session for anybody else is torn down rather than returned. The two could only diverge if
+// the address moved between resolution and here, which is exactly the case worth being certain
+// about rather than assuming cannot happen.
 export async function establishSupabaseSessionForEmail(input: {
   email: string
+  expectedUserId: string
 }): Promise<{ ok: true } | { ok: false; error: string }> {
   const admin = getAdminSupabaseClient()
   const link = await admin.auth.admin.generateLink({ type: "magiclink", email: input.email })
   if (link.error) return { ok: false, error: link.error.code ?? link.error.message }
 
+  const linkUserId = link.data.user?.id
+  if (linkUserId && linkUserId !== input.expectedUserId) {
+    // The address now belongs to a different account. Redeeming this link would sign the person in
+    // as somebody else, so it is left unredeemed.
+    return { ok: false, error: "account_mismatch" }
+  }
+
   const tokenHash = link.data.properties?.hashed_token
   if (!tokenHash) return { ok: false, error: "no_hashed_token" }
 
   const supabase = await createServerSupabaseClient()
-  const { error } = await supabase.auth.verifyOtp({ type: "magiclink", token_hash: tokenHash })
+  const { data, error } = await supabase.auth.verifyOtp({ type: "magiclink", token_hash: tokenHash })
   if (error) return { ok: false, error: error.code ?? error.message }
+
+  // The session that was actually established, not the one that was asked for.
+  if (data.user?.id !== input.expectedUserId) {
+    await supabase.auth.signOut()
+    return { ok: false, error: "session_user_mismatch" }
+  }
   return { ok: true }
 }

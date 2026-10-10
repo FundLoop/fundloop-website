@@ -151,6 +151,9 @@ declare
   v_client_id text;
   v_revoked integer := 0;
 begin
+  -- The lock is keyed on the subject, and the subject is only knowable by reading the mapping, so
+  -- this first read is necessarily unlocked. That is made harmless by re-reading under the lock
+  -- below: anything that changed in between is seen there, and nothing has been written yet.
   select s.issuer, s.subject into v_issuer, v_subject
     from public.cubid_oidc_subjects s where s.user_id = p_user_id;
   if v_subject is null then
@@ -158,8 +161,18 @@ begin
     return;
   end if;
 
-  -- The same lock linking and event receipt take, so the three cannot interleave.
+  -- The same lock linking, redemption and event receipt take, so none of them can interleave.
   perform pg_catalog.pg_advisory_xact_lock(pg_catalog.hashtextextended('cubid_subject:' || v_issuer || ':' || v_subject, 0));
+
+  -- Re-read under the lock. If the mapping moved, was replaced, or is already gone, this call is
+  -- acting on a state that no longer exists and must not revoke anybody's grants for it.
+  if not exists (
+    select 1 from public.cubid_oidc_subjects s
+      where s.user_id = p_user_id and s.issuer = v_issuer and s.subject = v_subject
+  ) then
+    return query select 'conflict'::text, 0;
+    return;
+  end if;
 
   -- Every grant, revoked or not: the lock is the point, so a concurrent redemption of any of them
   -- waits for the mapping to be gone.
@@ -320,7 +333,11 @@ begin
 end;
 $$;
 
-create or replace function public.oauth_redeem_grant(
+-- Dropped rather than replaced: it takes the assertion's issuer and subject now, and a new
+-- parameter list is a new function. Nothing but `lib/oauth/store.ts` calls it.
+drop function if exists public.oauth_redeem_grant(text, uuid, public.oauth_scope[], timestamptz, text, public.oauth_scope[], timestamptz, text);
+
+create function public.oauth_redeem_grant(
   p_client_id text,
   p_user_id uuid,
   p_assertion_scopes public.oauth_scope[],
@@ -328,7 +345,9 @@ create or replace function public.oauth_redeem_grant(
   p_token_sha256 text,
   p_token_scopes public.oauth_scope[],
   p_token_expires_at timestamptz,
-  p_assertion_jti text
+  p_assertion_jti text,
+  p_issuer text,
+  p_subject text
 )
 returns table (grant_id bigint, outcome text)
 language plpgsql
@@ -339,6 +358,11 @@ declare
   v_grant public.oauth_grants;
   v_skew constant interval := interval '30 seconds';
 begin
+  -- Serialize with linking, unlinking and event receipt before reading anything, including before
+  -- the grant row is locked: a first redemption has no grant row to lock, so the row lock alone
+  -- leaves a window in which a disconnect commits unseen.
+  perform pg_catalog.pg_advisory_xact_lock(pg_catalog.hashtextextended('cubid_subject:' || p_issuer || ':' || p_subject, 0));
+
   loop
     -- FOR UPDATE serialises every redemption for this client and person.
     select * into v_grant from public.oauth_grants
@@ -356,12 +380,19 @@ begin
     end;
   end loop;
 
-  -- A person who has disconnected Cubid has no mapping, and a grant without one is not revivable:
-  -- `oauth_redeem_grant` otherwise allows revival for any assertion minted after the recorded
-  -- `revoked_at`, which is right for a withdrawal the person reversed at Cubid and wrong for an
-  -- identity they detached here. Checked under the grant's lock, so a redemption that read the
-  -- mapping before an unlink and arrives after it finds the mapping gone.
-  if not exists (select 1 from public.cubid_oidc_subjects s where s.user_id = p_user_id) then
+  -- The exact mapping the assertion names, not merely "this person has some Cubid identity". A
+  -- person who disconnected one identity and linked another would otherwise have an assertion from
+  -- the old one honoured, because a grant row survives an unlink and the newer mapping would
+  -- satisfy a looser check.
+  --
+  -- The row lock above is not enough on its own: on a client's *first* redemption there is no grant
+  -- row for a concurrent unlink to have locked, so without the subject lock at the top of this
+  -- function the mapping could be read from a snapshot taken before the delete committed, and a
+  -- token would be issued after the disconnect. `account-purged` deletes the mapping the same way.
+  if not exists (
+    select 1 from public.cubid_oidc_subjects s
+      where s.user_id = p_user_id and s.issuer = p_issuer and s.subject = p_subject
+  ) then
     return query select v_grant.id, 'unlinked'::text;
     return;
   end if;
@@ -404,3 +435,6 @@ begin
   return query select v_grant.id, 'issued'::text;
 end;
 $$;
+
+revoke all on function public.oauth_redeem_grant(text, uuid, public.oauth_scope[], timestamptz, text, public.oauth_scope[], timestamptz, text, text, text) from public, anon, authenticated;
+grant execute on function public.oauth_redeem_grant(text, uuid, public.oauth_scope[], timestamptz, text, public.oauth_scope[], timestamptz, text, text, text) to service_role;
