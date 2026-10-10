@@ -44,10 +44,10 @@ describe("project invitation commands", () => {
     const roles = query({ data: [{ id: 4 }], error: null })
     const membership = query({ data: { id: 9 }, error: null })
     const existing = query({ data: null, error: null })
-    const document = query({ data: { id: "doc-1", document_identifier: acceptance.policyDocumentId, content_hash: acceptance.policyContentHash, locale: "en-CA", status: "review" }, error: null })
+    const policyDocument = query({ data: { id: "doc-1", document_identifier: acceptance.policyDocumentId, content_hash: acceptance.policyContentHash, locale: "en-CA", status: "review" }, error: null })
     const insertion = query({ data: { id: "inv-1", expires_at: "2026-08-12T00:00:00.000Z" }, error: null })
     const supabase = tableQueue({ projects: [projects], participants: [participants], ref_roles: [roles],
-      organization_members: [membership], legal_document_versions: [document], project_invitations: [existing, insertion] })
+      organization_members: [membership], legal_document_versions: [policyDocument], project_invitations: [existing, insertion] })
 
     const result = await executeProjectInvitationCreate(supabase as never, {
       actorUserId: "founder-1", projectSlug: "civic", email: "member@example.com", role: "member", idempotencyKey: "request-123", sharedProfileFields: [...sharedProfileFields],
