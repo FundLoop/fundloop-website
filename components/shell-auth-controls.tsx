@@ -90,7 +90,11 @@ export function ShellAuthControls({ navigationContext, variant, showQuickLinks =
         >
           {supabaseConfigured ? t("nav.authenticate") : t("nav.authUnavailable")}
         </Button>
-        <AuthModal open={showAuthModal} onClose={() => setShowAuthModal(false)} />
+        <AuthModal
+          open={showAuthModal}
+          onClose={() => setShowAuthModal(false)}
+          cubidSignInAvailable={navigationContext.cubidSignInAvailable}
+        />
       </>
     )
   }
@@ -157,7 +161,11 @@ export function ShellAuthControls({ navigationContext, variant, showQuickLinks =
           <DropdownMenuItem onClick={() => void handleSignOut()}>{t("nav.logout")}</DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
-      <AuthModal open={showAuthModal} onClose={() => setShowAuthModal(false)} />
+      <AuthModal
+        open={showAuthModal}
+        onClose={() => setShowAuthModal(false)}
+        cubidSignInAvailable={navigationContext.cubidSignInAvailable}
+      />
     </div>
   )
 }

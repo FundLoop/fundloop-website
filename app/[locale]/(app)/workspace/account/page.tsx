@@ -1,6 +1,8 @@
 import { redirect } from "next/navigation"
 import { getTranslations } from "next-intl/server"
 import { AccountSettingsPanel } from "@/components/account/account-settings-panel"
+import { CubidSignInPanel } from "@/components/account/cubid-sign-in-panel"
+import { getCubidSignInLinkStatus } from "@/lib/auth/cubid-link-status"
 import { getNavigationContext } from "@/lib/navigation-context"
 import { getUserAssetPreferenceReadiness } from "@/lib/workspace/user-asset-preferences"
 import { StripeConnectPanel } from "@/components/account/stripe-connect-panel"
@@ -19,9 +21,10 @@ export default async function WorkspaceAccountPage({ params }: WorkspaceAccountP
     redirect(`/${locale}/join`)
   }
 
-  const [assetPreferences, stripeConnect] = await Promise.all([
+  const [assetPreferences, stripeConnect, cubidSignIn] = await Promise.all([
     getUserAssetPreferenceReadiness(navigationContext.user?.id),
     getStripeConnectOverview(navigationContext.user?.id),
+    getCubidSignInLinkStatus(navigationContext.user?.id),
   ])
 
   return (
@@ -73,6 +76,6 @@ export default async function WorkspaceAccountPage({ params }: WorkspaceAccountP
         hasCustomPreferences: assetPreferences.hasCustomPreferences,
         rejectsAllProjectTokens: assetPreferences.rejectsAllProjectTokens,
       }}
-    /><StripeConnectPanel initial={stripeConnect} /></div>
+    /><CubidSignInPanel status={cubidSignIn} /><StripeConnectPanel initial={stripeConnect} /></div>
   )
 }

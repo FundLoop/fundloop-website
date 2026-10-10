@@ -52,6 +52,7 @@ function navigationContext(overrides: Partial<NavigationContext["user"]> = {}): 
     managedProjects: [],
     cubidPassportOrigin: "https://passport.cubid.me",
     cubidStampPageId: "123",
+  cubidSignInAvailable: false,
   }
 }
 

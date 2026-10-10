@@ -8,6 +8,7 @@ import { getMessages, getTranslations, setRequestLocale } from "next-intl/server
 import "../globals.css"
 import { ThemeProvider } from "@/components/theme-provider"
 import { OnboardingModalManager } from "@/components/onboarding-modal-manager"
+import { CubidOutcomeNotice } from "@/components/auth/cubid-outcome-notice"
 import { FloatingPrototypeBadge } from "@/components/floating-prototype-badge"
 import { Web3Provider } from "@/components/web3-provider"
 import { getWalletRuntimeConfig } from "@/lib/onchain/runtime-config"
@@ -60,6 +61,11 @@ export default async function RootLayout({ children, params }: LayoutProps) {
             <ThemeProvider attribute="class" defaultTheme="system" enableSystem disableTransitionOnChange>
               <Suspense fallback={null}>
                 <OnboardingModalManager />
+              </Suspense>
+              {/* Reads a `?cubid=` outcome from the sign-in callback. In Suspense because it uses
+                  useSearchParams, which opts a route into dynamic rendering otherwise. */}
+              <Suspense fallback={null}>
+                <CubidOutcomeNotice />
               </Suspense>
               {children}
               <FloatingPrototypeBadge />
