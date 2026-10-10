@@ -210,11 +210,13 @@ async function readBoundedBody(response) {
 }
 
 export async function parseFunctionSourceResponse(response, functionName, expectedPaths) {
-  if (response.redirected || response.status >= 300 && response.status < 400) throw new Error("Remote function download refused redirect")
-  if (response.status !== 200) throw new Error(`Remote function download failed with status ${response.status}`)
+  // Every failure here names the function. Without it, a 500 on one of 64 functions tells the
+  // operator only that "a" download failed, which is what two identical re-runs taught us.
+  if (response.redirected || response.status >= 300 && response.status < 400) throw new Error(`Remote ${functionName} download refused redirect`)
+  if (response.status !== 200) throw new Error(`Remote ${functionName} download failed with status ${response.status}`)
   const contentType = response.headers.get("content-type") ?? ""
   const boundary = multipartBoundary(contentType)
-  if (!boundary || !/^[0-9A-Za-z'()+_,./:=?-]{1,70}$/.test(boundary)) throw new Error("Remote function response has invalid multipart content type")
+  if (!boundary || !/^[0-9A-Za-z'()+_,./:=?-]{1,70}$/.test(boundary)) throw new Error(`Remote ${functionName} response has invalid multipart content type`)
   const body = await readBoundedBody(response)
   const delimiter = Buffer.from(`--${boundary}`)
   const files = new Map()
@@ -287,9 +289,19 @@ export async function verifyDownloadedSource(projectRef, functionName, accessTok
       signal: AbortSignal.timeout(30_000),
     })
   } catch {
-    throw new Error("Remote function source read-back transport failed")
+    throw new Error(`Remote ${functionName} source read-back transport failed`)
   }
-  const files = await parseFunctionSourceResponse(response, functionName, expectedPaths)
+  // Every downstream branch of the parser — an oversized body, a missing or malformed part, an
+  // unsafe path — throws its own message, and naming the function at each one would mean threading
+  // it through helpers that have no other use for it. Wrapping here guarantees the slug appears on
+  // all of them, including any added later, without repeating it inside the parser.
+  let files
+  try {
+    files = await parseFunctionSourceResponse(response, functionName, expectedPaths)
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error)
+    throw new Error(message.includes(functionName) ? message : `Remote ${functionName}: ${message}`)
+  }
   for (const relative of expectedPaths) {
     if (!files.get(relative).equals(readFileSync(path.join(repoRoot, relative)))) throw new Error(`Remote ${functionName} source differs: ${relative}`)
   }

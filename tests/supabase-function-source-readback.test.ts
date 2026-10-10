@@ -307,3 +307,58 @@ describe("Supabase Management API function source read-back", () => {
       .rejects.toThrow("source differs")
   })
 })
+
+describe("read-back failures name the function", () => {
+  // A 500 on one of 64 functions used to report only that "a" download failed, so two identical
+  // re-runs of a failing deploy taught us nothing about which one.
+  const response = (init: { status?: number; headers?: Record<string, string> } = {}) => ({
+    redirected: false,
+    status: init.status ?? 500,
+    headers: { get: (name: string) => (init.headers ?? {})[name.toLowerCase()] ?? null },
+  })
+
+  it("names it on a non-200", async () => {
+    await expect(parseFunctionSourceResponse(response({ status: 500 }) as never, "epoch-allocation-close", []))
+      .rejects.toThrow(/epoch-allocation-close download failed with status 500/)
+  })
+
+  it("names it on a refused redirect", async () => {
+    await expect(parseFunctionSourceResponse({ ...response({ status: 302 }), redirected: true } as never, "mcp", []))
+      .rejects.toThrow(/mcp download refused redirect/)
+  })
+
+  it("names it on an invalid content type", async () => {
+    await expect(parseFunctionSourceResponse(response({ status: 200, headers: { "content-type": "text/html" } }) as never, "stripe-connect-webhook", []))
+      .rejects.toThrow(/stripe-connect-webhook response has invalid multipart content type/)
+  })
+})
+
+describe("every read-back failure carries the slug", () => {
+  // The verification loop walks 64 functions, so a message without the name leaves the operator
+  // where two identical re-runs left us tonight: knowing only that "a" download failed.
+  const multipart = (body: string) => ({
+    redirected: false,
+    status: 200,
+    headers: { get: (name: string) => (name.toLowerCase() === "content-type" ? "multipart/form-data; boundary=abc" : null) },
+    body: { [Symbol.asyncIterator]: async function* () { yield Buffer.from(body, "utf8") } },
+  })
+
+  it("names it when the body is malformed, not only when the status is bad", async () => {
+    await expect(verifyDownloadedSource("a".repeat(20), "monthly-cycle-lock", "token", (async () => multipart("not a multipart body")) as never))
+      .rejects.toThrow(/monthly-cycle-lock/)
+  })
+
+  it("names it on a transport failure", async () => {
+    await expect(verifyDownloadedSource("a".repeat(20), "epoch-financial-prep", "token", (async () => { throw new Error("socket hang up") }) as never))
+      .rejects.toThrow(/epoch-financial-prep source read-back transport failed/)
+  })
+
+  it("does not repeat the slug when the inner message already has it", async () => {
+    const error = await verifyDownloadedSource("a".repeat(20), "mcp", "token", (async () => ({
+      redirected: false,
+      status: 500,
+      headers: { get: () => null },
+    })) as never).catch((caught: Error) => caught)
+    expect((error as Error).message).toBe("Remote mcp download failed with status 500")
+  })
+})
