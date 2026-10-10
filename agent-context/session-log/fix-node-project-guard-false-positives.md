@@ -63,3 +63,39 @@ touches the repo afterwards, so the bar for one is higher than "it catches the c
 #### Suggested Next Steps
 
 - None. Independent of the other open PRs.
+
+### session v2: Codex review — stop grepping, parse
+
+- **Timestamp:** 2026-10-10T03:30:00Z
+
+Four findings, all on the same point, and together they settled the design: a text search cannot
+answer this question. Each hole was individually patchable and the next one would not have been.
+
+- a file-wide shadowing exemption suppressed every `document` reference, so a real
+  `document.querySelector` could hide behind an unrelated parameter of the same name — and
+  `consume(document)` was being read as a declaration;
+- stripping line comments before strings broke on `"foo//bar"` and on a regex literal like `/[//]/`,
+  deleting the DOM access that followed on the same line;
+- removing template literals wholesale hid `${document.title}`, which is executable code;
+- the import check saw only single-line `import ... from` and assigned `require(...)`, so
+  `await import("jsdom")`, a bare `import "@testing-library/jest-dom"` and any multiline import
+  passed.
+
+#### What it does now
+
+It parses each suite with the TypeScript compiler and inspects the AST. Comments and string contents
+are not identifiers, so they cannot match; template interpolations are real nodes, so they are
+inspected; and every module-loading form is a node, so static, bare, dynamic and `require` imports
+are all covered. Property names (`foo.document`, `{ document: 1 }`) are excluded, because those are
+not the global.
+
+There are no shadowing exemptions at all. That is the deliberate answer to the first finding: a
+suite declaring a local `document` is flagged and the remedy is to rename it. That cost one rename
+in `tests/project-invitation-command.test.ts`, which had `const document = query({...})` — the same
+shadowing #273 had, and clearer as `policyDocument`.
+
+#### Validation Notes
+
+- Full node project: 172 files, 1133 tests. Typecheck and lint clean.
+- Scanned every `.test.ts` in the repo with the new rule: none flagged after that one rename.
+- Thirteen cases in the guard's own tests, covering each hole above and each real form.
