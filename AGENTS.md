@@ -54,15 +54,16 @@ Agents in this repo must optimize for:
   stop there. Neither gate below is a GitHub setting today, so both are rules here.
   - **Every PR is reviewed** by the designated review session (the coordinating "HBIC" session),
     whichever branch it targets.
-  - **A PR into `dev` is merged by that reviewer.**
+  - **A PR into `dev` is merged by that reviewer**, with a merge commit.
   - **A PR into `main` is merged by the user himself**, even with CI green and a review in hand.
 - The user's merge of a `dev` to `main` PR **is** the explicit permission section 7 requires for the
   migrations and Edge Function deployments that merge applies to the remote Production project. The
   `Production` GitHub environment has no separate per-run reviewer, so that merge starts the deploy
   immediately. No other route to a hosted database is permitted: migrations and function deployments
   go through the CI jobs, never through the CLI against a hosted project.
-- Preserve full history. Squash merging is disabled; neither `dev` nor `main` requires linear
-  history, so a PR lands as a merge commit and its individual commits survive.
+- Preserve full history. Squash merging is disabled and neither `dev` nor `main` requires linear
+  history, so every PR lands as a merge commit and its individual commits survive. Do not rebase a
+  branch onto its base to make it mergeable; merge the base into it if it needs updating.
 - `agent-context/session-log/` contains maintained branch-scoped session logs and must be updated for every commit.
 - At the start of a new session, inventory what is next from:
   - the active roadmap in `agent-context/todo-mcp.md`, the archived `agent-context/todo-1-through-52.md` for historical context, and any relevant `todo.md` files under feature folders
