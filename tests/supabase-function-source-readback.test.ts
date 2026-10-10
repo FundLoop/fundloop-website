@@ -307,3 +307,28 @@ describe("Supabase Management API function source read-back", () => {
       .rejects.toThrow("source differs")
   })
 })
+
+describe("read-back failures name the function", () => {
+  // A 500 on one of 64 functions used to report only that "a" download failed, so two identical
+  // re-runs of a failing deploy taught us nothing about which one.
+  const response = (init: { status?: number; headers?: Record<string, string> } = {}) => ({
+    redirected: false,
+    status: init.status ?? 500,
+    headers: { get: (name: string) => (init.headers ?? {})[name.toLowerCase()] ?? null },
+  })
+
+  it("names it on a non-200", async () => {
+    await expect(parseFunctionSourceResponse(response({ status: 500 }) as never, "epoch-allocation-close", []))
+      .rejects.toThrow(/epoch-allocation-close download failed with status 500/)
+  })
+
+  it("names it on a refused redirect", async () => {
+    await expect(parseFunctionSourceResponse({ ...response({ status: 302 }), redirected: true } as never, "mcp", []))
+      .rejects.toThrow(/mcp download refused redirect/)
+  })
+
+  it("names it on an invalid content type", async () => {
+    await expect(parseFunctionSourceResponse(response({ status: 200, headers: { "content-type": "text/html" } }) as never, "stripe-connect-webhook", []))
+      .rejects.toThrow(/stripe-connect-webhook response has invalid multipart content type/)
+  })
+})
