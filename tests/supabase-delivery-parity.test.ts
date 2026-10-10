@@ -40,7 +40,7 @@ describe("Supabase delivery parity", () => {
   })
   it("derives the expected function inventory and records the one reviewed retirement", () => {
     const expected = expectedFunctionNames()
-    expect(expected).toHaveLength(64)
+    expect(expected).toHaveLength(65)
     expect(expected).toContain("epoch-funded-allocation")
     expect(expected).toContain("epoch-allocation-close")
     expect(expected).toContain("monthly-report-publication")

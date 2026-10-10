@@ -38,6 +38,12 @@ hybrid are unsupported there. The request carries `response_type=code`, `scope=o
 profile`, `state`, `nonce`, and an S256 `code_challenge`. There is no consent screen of FundLoop's
 own: consent is hosted in Passport, versioned per client and scope.
 
+**Both paths are exempt from locale routing**, in `i18n/proxy-helpers.ts`. They have to be: the
+handlers exist at the bare paths, and the callback URI is registered at Cubid, which redirects a
+browser to it exactly — a locale redirect there throws the authorization code away. The routes
+shipped in #280 without that exemption and were unreachable until #281 added it, which is worth
+knowing before anyone adds a third one.
+
 `start` keeps the verifier, state and nonce in one short-lived httpOnly cookie, and that cookie is
 the only thing proving a callback belongs to a request this browser started. **This browser is not
 the only writer of its cookie jar**: a sibling host under the registrable domain — `dev.fundloop.org`,
@@ -116,13 +122,23 @@ admin API addresses an account by email, but what the flow resolved is a user id
 passed to the bridge and compared both to `generateLink`'s user and to the user `verifyOtp` actually
 signed in; a session for anybody else is torn down rather than returned.
 
-**Cubid releases `email` only when it has verified it and the person consented.** Without one there
-is no address to create an account against, and sign-in is refused with an explanation rather than
-inventing a placeholder address that looks real in `auth.users` and is not — a placeholder would be
-indistinguishable from a real address later, and FundLoop sends real mail. A Google-federated Cubid
-account always has one; a passkey-only account may not. The refusal should offer email sign-in as
-the way through, which is part of the UI follow-up. (HBIC default, 2026-10-10; Noak can override
-it.)
+**Cubid releases `email` only when it has verified it and the person consented, and a new Cubid
+account often has none.** Without an address there is nothing to create a FundLoop account against,
+so sign-in is refused with an explanation rather than inventing a placeholder that looks real in
+`auth.users` and is not.
+
+How common that is was initially misjudged here, and the correction matters. The default was
+recorded on the reasoning that "a Google-federated Cubid account always has one" — but **Cubid has
+no Google sign-in at all**. It is passkey-first: its own specification says "a new user may create a
+CUBID account using only a passkey. No email, phone, or OAuth stamp is required before account
+creation", and the prompt that would later collect one "must not interrupt SIWC relying-party
+redirects" — which is exactly our redirect. So a brand-new Cubid account arriving here with no
+address is the expected case, not an edge one.
+
+The refusal therefore points at the journey that does work, and the UI says so: sign in with an
+email address, then connect Cubid from account settings. Two steps rather than one. Making it one
+step needs FundLoop to collect and verify an address itself after a Cubid sign-in, which is tracked
+on #275 as the open half of acceptance 1. (HBIC default, 2026-10-10; Noak can override it.)
 
 ## Recorded exception to the Edge Function command boundary
 
@@ -210,12 +226,37 @@ derived from the request. Preview deployments get a generated hostname per deplo
 therefore cannot complete a Cubid sign-in, by design — testing the flow means using the development
 host. (HBIC default, 2026-10-10; Noak can override it.)
 
+## The account page
+
+Two Cubid cards sit on `workspace/account`, and they are different things. `AccountSettingsPanel`
+shows the **Cubid Passport API** integration: the identity score, the stamps, `public.users.cubid_id`.
+`CubidSignInPanel` shows whether a Cubid **passkey can sign you in** to FundLoop, from
+`cubid_oidc_subjects`. Keeping them as separate cards is deliberate; merging them would invite the
+conflation this document warns about.
+
+The panel never receives the pairwise subject. `getCubidSignInLinkStatus` returns whether a link
+exists and when, because the subject is Cubid's identifier for this person at this client and has no
+business in a page.
+
+Disconnecting asks first, and says what it costs: it ends the delegated access of every application
+the person approved at Cubid for FundLoop, because access issued against an identity should not
+outlive the link to it. It refuses outright if the account has no other way in. That cannot happen
+today — every FundLoop account has an email address, including one created by Cubid sign-in — but the
+invariant is the point, and it is enforced in the command rather than the UI.
+
 ## Still to build
 
-1. **The UI**: a "Sign in with Cubid" action in the auth modal, and connect/disconnect in
-   `settings/account`. The routes take an `intent=link` already, and disconnecting must refuse to
-   leave an account with no way back in — a Cubid-only account cannot disconnect Cubid until it has
-   an email method.
+1. ~~The UI~~ — landed: a "Sign in with Cubid" action in the auth modal (shown only where the
+   deployment is configured), the `CubidSignInPanel` card on the account page for connecting and
+   disconnecting, and `CubidOutcomeNotice` to say what happened after a round trip. Disconnecting
+   goes through the `cubid-identity-disconnect` Edge Function command — **not** a route handler,
+   because the recorded exception above covers the callback only — and refuses to remove the only
+   way into an account.
+
+   `CubidOutcomeNotice` renders its own banner rather than dispatching a toast. The application's
+   toast store and its renderer are not wired to each other, which is a separate fix with its own
+   PR, and an outcome nobody sees would be worse than none. A sign-in result is also worth keeping
+   on screen until it is dismissed, which a toast would not do.
 2. **Terms acceptance at first sign-in** (#275 acceptance 1), deliberately unimplemented.
    `legal_acceptance_records` is the store, but `policyAcknowledgementSources` is a closed
    vocabulary of two payment surfaces today, and FundLoop's Terms are a *review draft* carrying
@@ -225,9 +266,8 @@ host. (HBIC default, 2026-10-10; Noak can override it.)
    engineering. Recording an acceptance that asserts something untrue would be worse than recording
    none, so this records none until the Terms are effective.
 3. **Discovery** instead of derived endpoints, if the issuer ever moves them.
-4. **A provider hint for Google**, if Cubid's `/authorize` takes one. Acceptance 1 on #275 reads as
-   though FundLoop offers the choice, but the login architecture document describes no such
-   parameter. Until Cubid answers, the assumption is that **Cubid's own login page owns that
-   choice** and FundLoop sends no parameter — which is what this implementation does, so a `provider`
-   or `idp_hint` parameter would be additive if one turns out to exist. (HBIC default, 2026-10-10,
-   with the question open to the Cubid side.)
+4. ~~A provider hint for Google~~ — **settled, and the answer is that there is nothing to send.**
+   Cubid has no Google sign-in and no provider-hint parameter; `/authorize` takes `login_hint`,
+   which narrows the passkey ceremony rather than choosing a provider. FundLoop sends no hint, which
+   is what this implementation already does. Google at Cubid would be a Cubid product request.
+   (Answered 2026-10-10 from Cubid's code and its live login page.)

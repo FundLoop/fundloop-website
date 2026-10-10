@@ -112,7 +112,7 @@ describe("Supabase Management API function source read-back", () => {
 
   it("derives runtime closures for all functions and omits erased Supabase types from admin reconciliation", () => {
     const names = expectedFunctionNames()
-    expect(names).toHaveLength(64)
+    expect(names).toHaveLength(65)
     for (const name of names) expect(expectedSourceClosure(name).length).toBeGreaterThan(0)
     const monthlyReportClosure = expectedSourceClosure("monthly-report-publication")
     expect(monthlyReportClosure).toContain("supabase/functions/monthly-report-publication/index.ts")

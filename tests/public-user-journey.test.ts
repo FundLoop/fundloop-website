@@ -12,6 +12,7 @@ function buildContext(overrides: Partial<NavigationContext> = {}): NavigationCon
     managedProjects: [],
     cubidPassportOrigin: null,
     cubidStampPageId: null,
+  cubidSignInAvailable: false,
     ...overrides,
   }
 }

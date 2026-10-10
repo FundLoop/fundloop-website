@@ -1,5 +1,12 @@
-import { readFileSync } from "node:fs"
 import { describe, expect, it } from "vitest"
+import {
+  expectSqlBeforeEvery,
+  expectSqlOrder,
+  readMigration,
+  sqlFunctionBody,
+  sqlSlice,
+  statementsOnly,
+} from "./support/sql-text"
 import {
   ACCOUNT_PURGED_EVENT,
   CROSS_APP_CONSENT_REVOKED_EVENT,
@@ -11,51 +18,20 @@ import {
 // holds the decisions the SQL encodes, and above all the one the whole criterion is about: mapping a
 // subject applies the withdrawals that arrived before anyone could.
 
-const migration = readFileSync("supabase/migrations/20261010060000_link_cubid_subject.sql", "utf8")
+const migration = readMigration("supabase/migrations/20261010060000_link_cubid_subject.sql")
 
-/**
- * The statements with the commentary removed. An assertion about what the SQL does must not be
- * satisfiable by a comment saying it — that is how a guard gets written that only tests its own
- * prose.
- */
-function statementsOnly(text: string) {
-  return text
-    .split("\n")
-    .filter((line) => !line.trimStart().startsWith("--"))
-    .join("\n")
-}
-const linkFunction = migration.slice(
-  migration.indexOf("create or replace function public.link_cubid_subject"),
-  migration.indexOf("revoke all on function public.link_cubid_subject"),
-)
-const unlinkFunction = migration.slice(
-  migration.indexOf("create or replace function public.unlink_cubid_subject"),
-  migration.indexOf("revoke all on function public.unlink_cubid_subject"),
-)
+
+const linkFunction = sqlFunctionBody(migration, "public.link_cubid_subject", "revoke all on function public.link_cubid_subject")
+const unlinkFunction = sqlFunctionBody(migration, "public.unlink_cubid_subject", "revoke all on function public.unlink_cubid_subject")
 // Both already exist and are replaced here, each for one added rule.
-const REDEEM_START = "create function public.oauth_redeem_grant"
-const replacedReceiver = migration.slice(
-  migration.indexOf("create or replace function public.oauth_apply_security_event"),
-  migration.indexOf("drop function if exists public.oauth_redeem_grant"),
+const replacedReceiver = sqlFunctionBody(
+  migration,
+  "public.oauth_apply_security_event",
+  "drop function if exists public.oauth_redeem_grant",
 )
-const replacedRedeem = migration.slice(migration.indexOf(REDEEM_START))
+const replacedRedeem = sqlFunctionBody(migration, "public.oauth_redeem_grant")
 
 const SUBJECT_LOCK = "pg_catalog.pg_advisory_xact_lock(pg_catalog.hashtextextended('cubid_subject:'"
-
-// A mis-anchored slice comes back as an empty string, and every `toContain` on it then fails in a
-// way that looks like the SQL changed. Checking the slices are non-trivial first makes the real
-// cause obvious.
-describe("the slices these assertions read", () => {
-  it.each([
-    ["link", linkFunction],
-    ["unlink", unlinkFunction],
-    ["replaced receiver", replacedReceiver],
-    ["replaced redemption", replacedRedeem],
-  ])("found the %s function", (_name, body) => {
-    expect(body.length).toBeGreaterThan(200)
-    expect(body).toContain("language plpgsql")
-  })
-})
 
 describe("link_cubid_subject", () => {
   it("names the event types exactly as the verifier does", () => {
@@ -70,20 +46,17 @@ describe("link_cubid_subject", () => {
   })
 
   it("does it in the same statement as the mapping, with no window between them", () => {
-    const insertAt = linkFunction.indexOf("insert into public.cubid_oidc_subjects")
-    const revokeAt = linkFunction.indexOf("perform 1 from public.oauth_revoke_grant")
-    expect(insertAt).toBeGreaterThan(0)
-    expect(revokeAt).toBeGreaterThan(insertAt)
+    const insertAt = expectSqlOrder(linkFunction, "insert into public.cubid_oidc_subjects", "perform 1 from public.oauth_revoke_grant")
     // One function body, so one transaction: a crash between the two cannot leave a linked subject
     // with an unapplied withdrawal.
-    expect(linkFunction.slice(insertAt, revokeAt)).not.toContain("commit")
+    expect(linkFunction.slice(insertAt.first, insertAt.second)).not.toContain("commit")
   })
 
   it("refuses a subject a purge event was already received for", () => {
     expect(linkFunction).toContain("e.payload ? c_account_purged")
     expect(linkFunction).toContain("'purged_subject'::text")
     // Before anything is written.
-    expect(linkFunction.indexOf("'purged_subject'")).toBeLessThan(linkFunction.indexOf("insert into public.cubid_oidc_subjects"))
+    expectSqlOrder(linkFunction, "'purged_subject'", "insert into public.cubid_oidc_subjects")
   })
 
   it("never moves a subject to another person, and never picks the person itself", () => {
@@ -136,10 +109,9 @@ describe("serializing every write about one subject", () => {
 
   it("takes it before reading anything", () => {
     for (const body of [linkFunction, replacedReceiver]) {
-      const lockAt = body.indexOf(SUBJECT_LOCK)
-      const firstRead = body.indexOf("from public.", body.indexOf("begin"))
-      expect(lockAt).toBeGreaterThan(0)
-      expect(lockAt).toBeLessThan(firstRead)
+      // Before the *first* read, not merely before some later one: a read added above the lock
+      // would otherwise leave a read below it to satisfy an ordering check.
+      expectSqlBeforeEvery(body, SUBJECT_LOCK, "from public.")
     }
   })
 })
@@ -153,7 +125,7 @@ describe("making a disconnect final", () => {
   })
 
   it("locks them before deleting the mapping", () => {
-    expect(unlinkFunction.indexOf("for update")).toBeLessThan(unlinkFunction.indexOf("delete from public.cubid_oidc_subjects"))
+    expectSqlOrder(unlinkFunction, "for update", "delete from public.cubid_oidc_subjects")
   })
 
   it("makes redemption require the exact mapping the assertion names", () => {
@@ -167,8 +139,7 @@ describe("making a disconnect final", () => {
   it("takes the subject lock in redemption too, because a first redemption has no row to lock", () => {
     // The grant row lock cannot serialize a disconnect against a client's *first* redemption: there
     // is no grant row yet, so the mapping could be read from a pre-delete snapshot.
-    expect(replacedRedeem).toContain(SUBJECT_LOCK)
-    expect(replacedRedeem.indexOf(SUBJECT_LOCK)).toBeLessThan(replacedRedeem.indexOf("for update"))
+    expectSqlOrder(replacedRedeem, SUBJECT_LOCK, "for update")
   })
 
   it("is dropped and re-created, because the parameter list changed", () => {
@@ -183,10 +154,10 @@ describe("making a disconnect final", () => {
   it("re-reads the mapping under the lock when unlinking, since the first read cannot be locked", () => {
     // The lock is keyed on the subject and the subject is only knowable from the mapping, so the
     // first read is necessarily unlocked. Re-reading under the lock is what makes that harmless.
-    const afterLock = unlinkFunction.slice(unlinkFunction.indexOf(SUBJECT_LOCK))
+    const afterLock = sqlSlice(unlinkFunction, SUBJECT_LOCK)
     expect(afterLock).toContain("select 1 from public.cubid_oidc_subjects s")
     expect(afterLock).toContain("s.user_id = p_user_id and s.issuer = v_issuer and s.subject = v_subject")
-    expect(afterLock.indexOf("select 1 from public.cubid_oidc_subjects")).toBeLessThan(afterLock.indexOf("for update"))
+    expectSqlOrder(afterLock, "select 1 from public.cubid_oidc_subjects", "for update")
   })
 
   it("keeps the rest of the redemption rules it already had", () => {

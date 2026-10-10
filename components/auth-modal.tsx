@@ -9,15 +9,20 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { toast } from "@/components/ui/use-toast"
 import { getSupabaseBrowserClient } from "@/lib/supabase"
-import { ArrowLeft, Globe } from "lucide-react"
+import { ArrowLeft, Globe, KeyRound } from "lucide-react"
 import { useRouter } from "next/navigation"
 
 interface FullPageAuthProps {
   open: boolean
   onClose: () => void
+  /**
+   * Whether this deployment has Cubid sign-in configured. Off by default, because Cubid is not
+   * deployed yet and an action that always fails is worse than no action.
+   */
+  cubidSignInAvailable?: boolean
 }
 
-export function AuthModal({ open, onClose }: FullPageAuthProps) {
+export function AuthModal({ open, onClose, cubidSignInAvailable = false }: FullPageAuthProps) {
   const [email, setEmail] = useState("")
   const [loading, setLoading] = useState(false)
   const [otpSent, setOtpSent] = useState(false)
@@ -163,6 +168,14 @@ export function AuthModal({ open, onClose }: FullPageAuthProps) {
     void verifyOtp()
   }, [otpDigits, otpSent, verifyOtp])
 
+  // A full-page navigation, not a fetch: the flow is an OIDC redirect to Cubid and back to
+  // /auth/cubid/callback, and the pending request has to be a cookie this browser carries with it.
+  const handleSignInWithCubid = () => {
+    setLoading(true)
+    const returnTo = `${window.location.pathname}${window.location.search}`
+    window.location.assign(`/auth/cubid/start?redirect_to=${encodeURIComponent(returnTo)}`)
+  }
+
   const handleSignInWithGoogle = async () => {
     setLoading(true)
     try {
@@ -289,6 +302,12 @@ export function AuthModal({ open, onClose }: FullPageAuthProps) {
           <Button onClick={handleSignInWithGoogle} disabled={loading} variant="secondary" className="w-full mt-2">
             <Globe className="mr-2 h-4 w-4" />
             Sign In with Google
+          </Button>
+        )}
+        {!otpSent && cubidSignInAvailable && (
+          <Button onClick={handleSignInWithCubid} disabled={loading} variant="secondary" className="w-full mt-2" data-testid="cubid-sign-in">
+            <KeyRound className="mr-2 h-4 w-4" />
+            Sign In with Cubid
           </Button>
         )}
       </DialogContent>

@@ -2,6 +2,7 @@ import "server-only"
 
 import { cache } from "react"
 import type { Database } from "@/types/supabase"
+import { crossAppSignInConfig } from "@/lib/cross-app/config"
 import { getCubidPassportOrigin, getCubidWeb2Config } from "@/lib/cubid/config"
 import { buildCubidIdentityReadModel, type CubidIdentityOwnership, type ManagedIdentityField } from "@/lib/cubid/read-model"
 import { getAdminSupabaseClient } from "@/lib/supabase-admin"
@@ -71,6 +72,11 @@ export type NavigationContext = {
   managedProjects: ManagedProjectSummary[]
   cubidPassportOrigin: string | null
   cubidStampPageId: string | null
+  /**
+   * Whether Sign in with Cubid is configured here (#275). Separate from the two above, which belong
+   * to the Cubid Passport API integration: this one is about the OIDC login client.
+   */
+  cubidSignInAvailable: boolean
 }
 
 type ProjectRow = {
@@ -122,6 +128,9 @@ function emptyNavigationContext(): NavigationContext {
     managedProjects: [],
     cubidPassportOrigin: null,
     cubidStampPageId: null,
+    // Derived, not false: a signed-out visitor is exactly who the sign-in action is for, and this
+    // is the context they get.
+    cubidSignInAvailable: crossAppSignInConfig() !== null,
   }
 }
 
@@ -333,5 +342,6 @@ export const getNavigationContext = cache(async (): Promise<NavigationContext> =
     managedProjects,
     cubidPassportOrigin: cubidRuntimeConfig.cubidPassportOrigin,
     cubidStampPageId: cubidRuntimeConfig.cubidStampPageId,
+    cubidSignInAvailable: crossAppSignInConfig() !== null,
   }
 })

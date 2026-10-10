@@ -2,13 +2,18 @@ import { NextRequest } from "next/server"
 import { defaultLocale, isValidLocale, localeCookieName } from "./routing"
 
 export function shouldSkipLocaleRouting(pathname: string) {
-  // Machine endpoints are never locale-prefixed: the public /api surface (#266), OAuth endpoints
-  // and well-known metadata are fetched by third parties at exact URLs. Only the endpoint prefixes
-  // are exempt — bare /api and /oauth have no handler, so they keep the locale handling every other
-  // unrouted path gets.
+  // Machine endpoints are never locale-prefixed: the public /api surface (#266), OAuth endpoints,
+  // the Cubid sign-in redirects (#275) and well-known metadata are fetched or redirected to by
+  // third parties at exact URLs. Only the endpoint prefixes are exempt — bare /api, /oauth and
+  // /auth have no handler, so they keep the locale handling every other unrouted path gets.
+  //
+  // `/auth/` matters twice over: the start route is a link from our own pages, and the callback URL
+  // is registered at Cubid, which will redirect a browser to it exactly. A locale redirect there
+  // loses the authorization code.
   return (
     pathname.startsWith("/api/") ||
     pathname.startsWith("/oauth/") ||
+    pathname.startsWith("/auth/") ||
     pathname.startsWith("/.well-known/") ||
     pathname.startsWith("/_next") ||
     pathname.startsWith("/_vercel") ||
