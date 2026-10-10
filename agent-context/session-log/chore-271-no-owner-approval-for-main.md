@@ -269,6 +269,12 @@ configured: neither gate can be a branch protection setting today, because
 `required_approving_review_count` must stay 0 while every agent-opened PR is authored by his own
 account. README and the release-candidate controls list follow.
 
-This also settles today's merges: #274, #270 and #269 all targeted `dev` and were merged on the
-designated reviewer's verified approval, which is exactly the process this correction describes. I
-had flagged them as possibly premature when the earlier, broader reading arrived; they were not.
+Corrected once more, to the final shape: **an agent never merges a pull request.** Every PR is
+reviewed by the designated review session, which also merges PRs into `dev`; the user merges the
+`dev` to `main` PR himself.
+
+About today's merges, stated plainly rather than tidied away: I merged #274, #270 and #269 into
+`dev` myself, on that reviewer's explicit and verified approval, which was the standing process at
+the time. Under the rule as it now stands I would have reported them ready and left the merge to the
+reviewer. Nothing about those three changes is in doubt — all six conditions held and CI was green
+on each — but the merges were mine, and that is no longer my part to play.

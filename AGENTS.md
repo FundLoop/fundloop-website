@@ -50,13 +50,12 @@ Agents in this repo must optimize for:
   - open PRs from feature branches into `dev`
   - open PRs from `dev` into `main`
 - Do not push feature work directly to `dev` or `main` unless the user explicitly instructs you to do so.
-- Review is split by target branch, and neither gate is a GitHub setting today, so both are rules
-  here:
-  - **A PR into `dev`** needs the designated review session's approval (the coordinating "HBIC"
-    session) before an agent may merge it. Report the PR as ready once it meets the repo's merge
-    conditions, and wait for that approval.
-  - **A PR into `main`** is reviewed *and merged by the user himself*. An agent does not merge a
-    release-candidate PR, even with CI green and a review in hand.
+- **An agent never merges a pull request.** Open it, take it through review, report it as ready, and
+  stop there. Neither gate below is a GitHub setting today, so both are rules here.
+  - **Every PR is reviewed** by the designated review session (the coordinating "HBIC" session),
+    whichever branch it targets.
+  - **A PR into `dev` is merged by that reviewer.**
+  - **A PR into `main` is merged by the user himself**, even with CI green and a review in hand.
 - The user's merge of a `dev` to `main` PR **is** the explicit permission section 7 requires for the
   migrations and Edge Function deployments that merge applies to the remote Production project. The
   `Production` GitHub environment has no separate per-run reviewer, so that merge starts the deploy
