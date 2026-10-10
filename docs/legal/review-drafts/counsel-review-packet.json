@@ -99,12 +99,12 @@
     {
       "path": "docs/engineering/production-readiness-evidence-contract.md",
       "control": "immutable professional approval and production manifest contract",
-      "sha256": "54ba6d718c3bb7ecc7055960e6213d2fecf3638e940018cf6ffebaa8d85dbd04"
+      "sha256": "14e8130a3b1b8ab5fb73a87b04412cba220f40b388b2cd9a27cec90faac6c628"
     },
     {
       "path": "lib/release-readiness/evidence-manifest.ts",
       "control": "production evidence fail-closed evaluator",
-      "sha256": "4f91907e99860754fc3c40cd5341734c3035d70a0ad611618a2af0e5ff64d347"
+      "sha256": "e94af84d16337c567372c35d11713f009152b8c0f7136512ee26b43041f93528"
     }
   ],
   "decisions": [
@@ -344,5 +344,5 @@
       ]
     }
   ],
-  "packetSha256": "4a97a228818e9572fcec5e1a4b7a2d5899587e136daab9e7d5d729672426637b"
+  "packetSha256": "29297536062dd91f95ace47be2de3cb9664a04802b19932f8cd0ebcb3e1bfb24"
 }

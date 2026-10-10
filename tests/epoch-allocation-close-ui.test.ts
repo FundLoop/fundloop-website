@@ -1,5 +1,6 @@
 import { readFileSync } from "node:fs"
 import { describe, expect, it } from "vitest"
+import { isEpochClosePreviewEnabled } from "@/lib/monthly-cycles/epoch-close-visibility"
 
 const operatorPage = readFileSync("app/[locale]/(app)/admin/cycles/[cycleKey]/prep/page.tsx", "utf8")
 const operatorAction = readFileSync("components/admin/epoch-allocation-close-actions.tsx", "utf8")
@@ -7,6 +8,7 @@ const userPage = readFileSync("app/[locale]/(app)/workspace/earnings/page.tsx", 
 const founderPage = readFileSync("app/[locale]/(app)/founder/projects/[slug]/reporting/page.tsx", "utf8")
 const publicPage = readFileSync("app/[locale]/(public)/projects/[slug]/page.tsx", "utf8")
 const readModel = readFileSync("lib/monthly-cycles/epoch-close-review.ts", "utf8")
+const publicApiReadModel = readFileSync("lib/api/v1/public-projects.ts", "utf8")
 
 describe("epoch close role surfaces", () => {
   it("shows separate exact root review and payout-readying approval", () => {
@@ -29,7 +31,13 @@ describe("epoch close role surfaces", () => {
   })
 
   it("returns no close data in production", () => {
-    expect(readModel).toContain('FUNDLOOP_DEPLOYMENT_ENV ?? "production"')
+    // The public cycle views hold provisional, pre-payout packages only, so every surface that can
+    // publish them shares one gate.
+    expect(isEpochClosePreviewEnabled({})).toBe(false)
+    expect(isEpochClosePreviewEnabled({ FUNDLOOP_DEPLOYMENT_ENV: "production" })).toBe(false)
+    expect(isEpochClosePreviewEnabled({ FUNDLOOP_DEPLOYMENT_ENV: "dev" })).toBe(true)
     expect(readModel).toContain("if (!enabled()) return null")
+    expect(readModel).toContain("isEpochClosePreviewEnabled")
+    expect(publicApiReadModel).toContain("if (!isEpochClosePreviewEnabled()) return { ok: true as const, cycle: null }")
   })
 })

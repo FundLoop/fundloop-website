@@ -4,7 +4,7 @@ import path from "node:path"
 import { describe, expect, it } from "vitest"
 import { classifyFunctionInventory, compareClosurePaths, expectedFunctionNames, expectedSourceClosure } from "../scripts/verify-supabase-function-parity.mjs"
 import { buildEnvironmentManifest, buildSafeSmokeEvidence } from "../scripts/verify-supabase-environment-manifest.mjs"
-import { bindObservedMigrationDeployEvidence, buildDeployCompletionEvidence, buildMigrationDeployEvidence, buildSchemaDiagnostic, compareExplicitRfc3339Timestamps, expectedMigrationInventory, isExplicitRfc3339Timestamp, libpqConnectionEnvironment, localStackDatabaseUrl, migrationInventorySha256, normalizePublicSchema, validateDeployCompletionEvidence, validateForwardPendingMigrationHistory, validateMatchingMigrationEvidence, validateMigrationDeployEvidence, validatePendingSchemaRepair } from "../scripts/verify-supabase-schema-parity.mjs"
+import { bindObservedMigrationDeployEvidence, buildDeployCompletionEvidence, buildMigrationDeployEvidence, buildSchemaDiagnostic, compareExplicitRfc3339Timestamps, expectedMigrationInventory, isExplicitRfc3339Timestamp, libpqConnectionEnvironment, localStackDatabaseUrl, migrationInventorySha256, normalizePublicSchema, assertNoPlatformManagedObjects, evaluatePlatformManagedProvenance, extractDumpSection, extractDumpedFunctionBody, platformManagedCandidates, platformManagedProvenanceSql, stripPlatformManagedObjects, validateDeployCompletionEvidence, validateForwardPendingMigrationHistory, validateMatchingMigrationEvidence, validateMigrationDeployEvidence, validatePendingSchemaRepair } from "../scripts/verify-supabase-schema-parity.mjs"
 
 const workflow = readFileSync(".github/workflows/supabase-deploy.yml", "utf8")
 const schemaVerifier = readFileSync("scripts/verify-supabase-schema-parity.mjs", "utf8")
@@ -69,12 +69,135 @@ describe("Supabase delivery parity", () => {
     expect(classifyFunctionInventory(expected, [{ name: "current" }, { name: "monthly-cycle-payout-intents-create" }], retired, "main").unexplainedExtras).toEqual(["monthly-cycle-payout-intents-create"])
   })
 
-  it("implements the exact pg17-public-schema-normalized-v2 bytes", () => {
+  it("implements the exact pg17 normalized schema bytes", () => {
     expect(normalizePublicSchema("-- header\r\n\\restrict token\r\n\r\nSET statement_timeout = 0;   \r\nCREATE TABLE public.example (); \r\n\\unrestrict token\r\n"))
       .toBe("SET statement_timeout = 0;\nCREATE TABLE public.example ();\n")
     expect(normalizePublicSchema("CREATE TABLE public.example ();\n\n\n")).toBe("CREATE TABLE public.example ();\n")
     expect(normalizePublicSchema("CREATE POLICY example ON public.example FOR SELECT TO authenticated, anon USING (true);\n"))
       .toBe("CREATE POLICY example ON public.example FOR SELECT TO anon, authenticated USING (true);\n")
+  })
+
+  it("compares our schema, not objects the platform provisions into public", () => {
+    // A project created after the platform started installing the ensure_rls event trigger carries
+    // its public.rls_auto_enable function (FundLoop Prod); an older one does not (FundLoop Dev).
+    // No migration creates it, so a fresh replay never has it.
+    const platformFunction = "--\n-- Name: rls_auto_enable(); Type: FUNCTION; Schema: public; Owner: -\n--\n\nCREATE FUNCTION public.rls_auto_enable() RETURNS event_trigger\n    LANGUAGE plpgsql\n    AS $$ begin end; $$;\n\n"
+    const ourSchema = "--\n-- Name: projects; Type: TABLE; Schema: public; Owner: -\n--\n\nCREATE TABLE public.projects (id bigint NOT NULL);\n"
+    const identity = "public.rls_auto_enable() [FUNCTION]"
+
+    const expected = ourSchema
+    const observed = stripPlatformManagedObjects(`${platformFunction}${ourSchema}`, [identity])
+    expect(normalizePublicSchema(observed)).toBe(normalizePublicSchema(expected))
+    expect(buildSchemaDiagnostic(expected, observed, { candidateGitSha: "a".repeat(40) }).status).toBe("pass")
+
+    // An identity on its own never drops anything: the caller passes only verified identities.
+    expect(stripPlatformManagedObjects(`${platformFunction}${ourSchema}`)).toContain("rls_auto_enable")
+
+    // Only that exact identity is a candidate — not a similar name, and not an overload of it,
+    // which the platform does not create.
+    expect(platformManagedCandidates(`${platformFunction}${ourSchema}`).map((entry) => entry.identity)).toEqual([identity])
+    expect(platformManagedCandidates(platformFunction.replace(/rls_auto_enable/g, "rls_auto_enable_helper"))).toEqual([])
+    expect(platformManagedCandidates(platformFunction.replace("rls_auto_enable()", "rls_auto_enable(text)"))).toEqual([])
+  })
+
+  it("verifies the platform's definition before excluding it from the fingerprint", () => {
+    const entry = platformManagedCandidates("-- Name: rls_auto_enable(); Type: FUNCTION; Schema: public; Owner: -\n")[0]!
+    const genuine = `|t|postgres|search_path=pg_catalog|ensure_rls|${entry.definitionSha256}|${entry.bodySha256}`
+
+    expect(evaluatePlatformManagedProvenance(entry, genuine)).toEqual({ ok: true, definitionSha256: entry.definitionSha256, bodySha256: entry.bodySha256 })
+
+    // A replaced SECURITY DEFINER body, a changed attribute, a missing event trigger, an absent or
+    // ambiguous function: each leaves the object in the comparison, where it reports as drift.
+    expect(evaluatePlatformManagedProvenance(entry, genuine.replace(entry.definitionSha256, "f".repeat(64))).reason).toBe("definition-digest")
+    expect(evaluatePlatformManagedProvenance(entry, genuine.replace("|t|", "|f|")).reason).toBe("security-definer")
+    expect(evaluatePlatformManagedProvenance(entry, genuine.replace("postgres", "attacker")).reason).toBe("owner")
+    expect(evaluatePlatformManagedProvenance(entry, genuine.replace("search_path=pg_catalog", "search_path=public")).reason).toBe("config")
+    expect(evaluatePlatformManagedProvenance(entry, genuine.replace("ensure_rls", "-")).reason).toBe("event-trigger")
+    expect(evaluatePlatformManagedProvenance(entry, "").reason).toBe("not-found")
+    expect(evaluatePlatformManagedProvenance(entry, `${genuine}\n${genuine}`).reason).toBe("ambiguous")
+
+    // The query is pinned to the zero-argument signature in the public schema.
+    const sql = platformManagedProvenanceSql(entry)
+    expect(sql).toContain("pg_get_function_identity_arguments(p.oid) = ''")
+    expect(sql).toContain("proname = 'rls_auto_enable'")
+    expect(sql).toContain("sha256(convert_to(pg_get_functiondef(p.oid), 'UTF8'))")
+  })
+
+  it("verifies the bytes it is about to remove, not only the live catalog", () => {
+    // The dump and the catalog query are two observations of a mutable database. Without checking
+    // the dumped section itself, a definition altered between them could be removed on the strength
+    // of the other observation.
+    const entry = platformManagedCandidates("-- Name: rls_auto_enable(); Type: FUNCTION; Schema: public; Owner: -\n")[0]!
+    const body = " begin perform 1; end; "
+    const dump = [
+      "--",
+      "-- Name: rls_auto_enable(); Type: FUNCTION; Schema: public; Owner: -",
+      "--",
+      "",
+      "CREATE FUNCTION public.rls_auto_enable() RETURNS event_trigger",
+      "    LANGUAGE plpgsql",
+      `    AS $$${body}$$;`,
+      "",
+    ].join("\n")
+
+    const section = extractDumpSection(dump, entry.identity)
+    expect(section).toContain("CREATE FUNCTION public.rls_auto_enable()")
+    // Exactly the text pg_dump puts between the dollar quotes, which is pg_proc.prosrc verbatim,
+    // so it can be compared with a digest taken from the catalog.
+    expect(extractDumpedFunctionBody(section!)).toBe(body)
+    expect(extractDumpSection(dump, "public.projects [TABLE]")).toBeNull()
+    expect(extractDumpedFunctionBody("CREATE FUNCTION f() RETURNS void LANGUAGE sql;")).toBeNull()
+
+    // The pinned body digest is what both observations have to meet.
+    expect(entry.bodySha256).toMatch(/^[0-9a-f]{64}$/)
+    const genuine = `|t|postgres|search_path=pg_catalog|ensure_rls|${entry.definitionSha256}|${entry.bodySha256}`
+    expect(evaluatePlatformManagedProvenance(entry, genuine)).toMatchObject({ ok: true, bodySha256: entry.bodySha256 })
+    expect(evaluatePlatformManagedProvenance(entry, genuine.replace(entry.bodySha256, "e".repeat(64))).reason).toBe("body-digest")
+
+    // And the dump-side check is wired in, so a mismatch there leaves the object in the comparison.
+    expect(schemaVerifier).toContain("dumpedBodySha256 !== entry.bodySha256")
+    expect(schemaVerifier).toContain("dumped-definition")
+  })
+
+  it("carries its exclusions into the durable environment manifest", () => {
+    // An attestation that omits objects without naming them cannot be audited later, and the
+    // evidence contract promises these are recorded.
+    const manifestVerifier = readFileSync("scripts/verify-supabase-environment-manifest.mjs", "utf8")
+    expect(manifestVerifier).toContain("platformManagedExclusions: schema.platformManagedExclusions ?? []")
+    expect(manifestVerifier).toContain('blockers.push("schema-exclusions")')
+    const manifestSchema = JSON.parse(readFileSync("docs/engineering/production-readiness-manifest.schema.json", "utf8")) as {
+      $defs: { schemaFingerprint: { required: string[]; properties: Record<string, unknown> } }
+    }
+    expect(manifestSchema.$defs.schemaFingerprint.required).toContain("platformManagedExclusions")
+    expect(manifestSchema.$defs.schemaFingerprint.properties.platformManagedExclusions).toBeDefined()
+  })
+
+  it("fails instead of excluding an identity a migration has started creating", () => {
+    // If our own migrations produce the identity, excluding it would stop parity covering an object
+    // we create, so the fresh replay is asserted to contain none of them.
+    const replay = "--\n-- Name: rls_auto_enable(); Type: FUNCTION; Schema: public; Owner: -\n--\n\nCREATE FUNCTION public.rls_auto_enable() RETURNS event_trigger LANGUAGE plpgsql AS $$ begin end; $$;\n"
+    expect(() => assertNoPlatformManagedObjects(replay, "fresh migration replay")).toThrow(/migration now creates it/)
+    expect(assertNoPlatformManagedObjects("CREATE TABLE public.projects (id bigint);\n", "fresh migration replay")).toContain("CREATE TABLE")
+    expect(schemaVerifier).toContain("dumpExpectedPublicSchema(projectId")
+    // What is excluded is attested, not silently dropped.
+    expect(schemaVerifier).toContain("platformManagedExclusions: observed.exclusions")
+  })
+
+  it("names the filtered fingerprint as its own algorithm version", () => {
+    // v3 strips platform-provisioned objects before hashing, so it must not be recorded under the
+    // v2 identifier, whose attestations cover the unfiltered dump.
+    expect(schemaVerifier).toContain('algorithm: "pg17-public-schema-platform-filtered-v3"')
+    expect(schemaVerifier).not.toContain("pg17-public-schema-normalized-v2")
+    expect(readFileSync("scripts/verify-supabase-environment-manifest.mjs", "utf8")).toContain("pg17-public-schema-platform-filtered-v3")
+    expect(readFileSync("docs/engineering/production-readiness-manifest.schema.json", "utf8")).toContain("pg17-public-schema-platform-filtered-v3")
+    const contract = readFileSync("docs/engineering/production-readiness-evidence-contract.md", "utf8")
+    expect(contract).toContain("pg17-public-schema-platform-filtered-v3")
+    expect(contract).toContain("public.rls_auto_enable()")
+  })
+
+  it("uploads the sanitized diagnostic when a deploy fails on drift", () => {
+    expect(workflow).toMatch(/if: \$\{\{ failure\(\) && steps\.target\.outputs\.mode == 'deploy' \}\}/)
+    expect(workflow).toContain("supabase-schema-diagnostic-${{ steps.target.outputs.target_environment }}-failed-")
   })
 
   it("emits bounded, structural schema drift without remote DDL or unknown identifiers", () => {
@@ -286,7 +409,7 @@ describe("Supabase delivery parity", () => {
     const manifest = buildEnvironmentManifest({
       schema: {
         environment: evidence.environment, projectRef: evidence.projectRef, candidateGitSha: evidence.candidateGitSha,
-        observedAt: "2026-08-13T00:00:00.000100Z", algorithm: "pg17-public-schema-normalized-v2", postgresMajor: 17,
+        observedAt: "2026-08-13T00:00:00.000100Z", algorithm: "pg17-public-schema-platform-filtered-v3", postgresMajor: 17,
         expectedSha256: "d".repeat(64), observedSha256: "d".repeat(64), migrationInventorySha256: inventorySha256,
         migrationInventory: [migration], migrationHistory: [migration.version], enabledProductionValueFlowControlCount: 0,
         productionValueFlowControlTableCount: 1,

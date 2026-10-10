@@ -462,6 +462,17 @@ jobs:
           if-no-files-found: error
           retention-days: 30
 
+      - name: Upload sanitized deploy schema diagnostic on failure
+        # The parity verifier writes the sanitized diagnostic and then fails, but the evidence
+        # upload below only runs on success, so a drift failure left nothing to diagnose from.
+        if: ${{ failure() && steps.target.outputs.mode == 'deploy' }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: supabase-schema-diagnostic-${{ steps.target.outputs.target_environment }}-failed-${{ github.run_id }}-${{ github.run_attempt }}
+          path: ${{ runner.temp }}/supabase-schema-diagnostic.json
+          if-no-files-found: warn
+          retention-days: 30
+
       - name: Upload immutable environment manifest
         if: steps.target.outputs.mode == 'deploy'
         uses: actions/upload-artifact@v4

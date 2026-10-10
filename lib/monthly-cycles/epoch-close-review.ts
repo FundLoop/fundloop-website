@@ -1,6 +1,7 @@
 import "server-only"
 
 import { getAdminSupabaseClient } from "@/lib/supabase-admin"
+import { isEpochClosePreviewEnabled } from "@/lib/monthly-cycles/epoch-close-visibility"
 
 export type EpochCloseOperatorRow = {
   cycle_key: string | null
@@ -53,7 +54,7 @@ export type EpochCloseProjectRow = {
 }
 
 function enabled() {
-  return ["local", "development", "dev", "preview", "test"].includes((process.env.FUNDLOOP_DEPLOYMENT_ENV ?? "production").trim().toLowerCase())
+  return isEpochClosePreviewEnabled()
 }
 
 export async function loadEpochCloseOperator(cycleKey: string): Promise<EpochCloseOperatorRow | null> {

@@ -28,7 +28,7 @@
         { "name": "financial-cutover", "sourceSha256": "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff", "remoteVersion": null, "remoteStatus": "NOT_OBSERVED" }
       ]
     },
-    "schemaFingerprint": { "algorithm": "pg17-public-schema-normalized-v2", "postgresMajor": 17, "normalizedSchemaSha256": "1212121212121212121212121212121212121212121212121212121212121212" }
+    "schemaFingerprint": { "algorithm": "pg17-public-schema-platform-filtered-v3", "postgresMajor": 17, "normalizedSchemaSha256": "1212121212121212121212121212121212121212121212121212121212121212", "platformManagedExclusions": [{ "identity": "public.rls_auto_enable() [FUNCTION]", "eventTrigger": "ensure_rls", "definitionSha256": "1313131313131313131313131313131313131313131313131313131313131313", "bodySha256": "1414141414141414141414141414141414141414141414141414141414141414" }] }
   },
   "observed": {
     "observedAt": "2026-08-11T20:30:00-04:00",
@@ -54,7 +54,7 @@
         { "name": "financial-cutover", "sourceSha256": "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff", "remoteVersion": 1, "remoteStatus": "ACTIVE" }
       ]
     },
-    "schemaFingerprint": { "algorithm": "pg17-public-schema-normalized-v2", "postgresMajor": 17, "normalizedSchemaSha256": "1212121212121212121212121212121212121212121212121212121212121212" }
+    "schemaFingerprint": { "algorithm": "pg17-public-schema-platform-filtered-v3", "postgresMajor": 17, "normalizedSchemaSha256": "1212121212121212121212121212121212121212121212121212121212121212", "platformManagedExclusions": [{ "identity": "public.rls_auto_enable() [FUNCTION]", "eventTrigger": "ensure_rls", "definitionSha256": "1313131313131313131313131313131313131313131313131313131313131313", "bodySha256": "1414141414141414141414141414141414141414141414141414141414141414" }] }
   },
   "deployment": {
     "githubRunId": 1,
@@ -116,7 +116,7 @@
       "approvalType": "code-review",
       "status": "approved",
       "artifactSha256": "3535353535353535353535353535353535353535353535353535353535353535",
-    "scopeManifestSha256": "b6774afaa0496c594f54396647be776d4e7ef353b5448f370112e49b324ca7c5",
+    "scopeManifestSha256": "0c1048988b8dde3c69aa66faad6c4abd917a30f4ec67fac840b4f084b20de12f",
       "approverRole": "independent-code-reviewer",
       "recordedAt": "2026-08-11T20:25:30-04:00",
       "expiresAt": "2026-08-12T20:25:30-04:00"

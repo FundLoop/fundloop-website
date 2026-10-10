@@ -186,6 +186,42 @@ evidence contract requires a candidate source digest, remote deployment digest o
 equivalent independently readable binding, exact name inventory, and schema
 fingerprint. Missing, extra, inactive, or unverifiable functions block parity.
 
+### Platform-provisioned objects in `public`
+
+The public schema fingerprint compares a hosted project against a fresh replay of
+`supabase/migrations`, so it can only compare objects our migrations create. Supabase
+provisions some of its own objects inside the public schema, and which ones depend on when
+the project was created: FundLoop Prod (created 2026-04) carries the `ensure_rls` event
+trigger and its `public.rls_auto_enable` function, FundLoop Dev (created 2025-04) carries
+neither. That is why Prod's first deploy failed parity on drift while Dev's deploys passed.
+
+`scripts/verify-supabase-schema-parity.mjs` excludes those objects from the public schema
+dump at the dump boundary, so the fingerprint, the object manifest and the sanitized
+diagnostic all describe the same schema. An identity alone is never enough: each candidate
+is verified against the observed catalog — signature, SECURITY DEFINER flag, owner,
+`search_path`, referencing event trigger, and `sha256(pg_get_functiondef())` against a
+pinned digest — and only a verified object is stripped. One that fails any check stays in
+the comparison and parity fails as drift, with the failing check logged. A fresh replay of
+our migrations is asserted to contain none of these identities, so a migration that starts
+creating one makes the job fail rather than quietly stop covering our own object. Each
+exclusion is recorded in the attestation as `platformManagedExclusions` with its verified
+digest.
+
+The list is deliberately narrow — exact identities only — so any other object in `public`,
+whoever created it, still has to be accounted for. Adding to it is a reviewed change:
+establish that the platform owns the object (no migration creates it, and it exists on a
+project before any migration ran) before adding an entry.
+
+Table and sequence privileges are outside the fingerprint: the dump is taken with
+`--no-privileges`. Grants made before a project's Postgres 17 upgrade lack the `MAINTAIN`
+bit that `GRANT ALL` now includes, so Dev and Prod differ there without it meaning drift.
+Client-facing privileges are asserted by the RLS policy suite and `pnpm test:db` instead.
+
+When a deploy fails on drift, the sanitized diagnostic is uploaded as
+`supabase-schema-diagnostic-<environment>-failed-<run>-<attempt>`. Object identities in it
+are SHA-256 hashed; `objectType` and `reviewedParentObjectKey` are not, so compare hashes
+against candidate identities rather than expecting to read names out of it.
+
 After deployment, the workflow lists the remote inventory again, requires exactly
 the derived local names with `ACTIVE` status, downloads every deployed source closure
 through `GET /v1/projects/{project-ref}/functions/{slug}/body` on the official
@@ -218,9 +254,12 @@ exact record back and independently recomputes both its file and aggregate diges
 versions without this binding are unverifiable. The verifier also requires every
 public `production_value_flow_enabled` control to remain disabled and compares the
 full normalized `pg_dump --schema-only --schema=public --no-comments` output
-byte-for-byte using the exact `pg17-public-schema-normalized-v2` algorithm. Version 2
-sorts only the unordered role set in `CREATE POLICY ... TO ...`; object names,
-definitions, expressions, and every other schema byte remain covered.
+byte-for-byte using the exact `pg17-public-schema-platform-filtered-v3` algorithm.
+Version 3 sorts the unordered role set in `CREATE POLICY ... TO ...` and drops the
+exact platform-provisioned identities listed in the evidence contract, from both
+sides; object names, definitions, expressions, and every other schema byte remain
+covered. Version 2 is the same normalization over the unfiltered dump, so v2 and v3
+attestations are not comparable.
 
 Ordinary pending forward migrations may pass the Dev PR diagnostic only when remote
 history is the exact byte-bound reviewed prefix, a disposable replay of that prefix
