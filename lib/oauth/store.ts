@@ -1,5 +1,6 @@
 import "server-only"
 
+import type { JsonObject } from "@/lib/cross-app/jws"
 import { getAdminSupabaseClient } from "@/lib/supabase-admin"
 import { OAUTH_TTL_SECONDS, constantTimeEquals, expiresAt, hasExpired, randomToken, sha256Hex } from "./crypto"
 import { sortScopes, type OAuthScope } from "./scopes"
@@ -135,6 +136,38 @@ export async function issueAccessToken(input: {
 export async function revokeTokensForGrant(clientId: string, userId: string): Promise<void> {
   const { error } = await oauthDb().rpc("oauth_revoke_grant", { p_client_id: clientId, p_user_id: userId })
   fail("revoke-grant", error)
+}
+
+// Applying a verified Security Event Token (#266 stage 2b).
+//
+// One statement records the receipt and performs every revocation it causes, so a redelivery is an
+// acknowledgement rather than a second revocation: the `jti` row and the revocations commit
+// together, and a duplicate primary key means the work already happened.
+export type SecurityEventOutcome = { eventType: string | null; outcome: string; affected: number }
+
+export async function applySecurityEvent(input: {
+  jti: string
+  issuer: string
+  audience: string
+  subject: string
+  issuedAt: Date
+  /** The verified `events` object, keyed by event type URI. */
+  events: Record<string, JsonObject>
+}): Promise<SecurityEventOutcome[]> {
+  const { data, error } = await oauthDb().rpc("oauth_apply_security_event", {
+    p_jti: input.jti,
+    p_issuer: input.issuer,
+    p_audience: input.audience,
+    p_subject: input.subject,
+    p_issued_at: input.issuedAt.toISOString(),
+    p_events: input.events,
+  })
+  fail("apply-security-event", error)
+  return (data ?? []).map((row) => ({
+    eventType: row.event_type,
+    outcome: row.outcome,
+    affected: row.affected ?? 0,
+  }))
 }
 
 export async function revokeByToken(token: string, clientId: string): Promise<void> {

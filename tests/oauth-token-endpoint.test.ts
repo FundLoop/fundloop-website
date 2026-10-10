@@ -1,5 +1,5 @@
 import { beforeAll, beforeEach, describe, expect, it, vi } from "vitest"
-import type { JsonWebKeySet } from "@/lib/cross-app/id-jag"
+import type { JsonWebKeySet } from "@/lib/cross-app/jws"
 
 // POST /oauth/token redeeming a Cubid identity assertion (#266 stage 2).
 //

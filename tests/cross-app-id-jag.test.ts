@@ -1,5 +1,6 @@
 import { beforeAll, describe, expect, it, vi } from "vitest"
-import { createJwksCache, verifyIdJag, type JsonWebKeySet } from "@/lib/cross-app/id-jag"
+import { verifyIdJag } from "@/lib/cross-app/id-jag"
+import { createJwksCache, type JsonWebKeySet } from "@/lib/cross-app/jws"
 
 // Verified against a locally generated key and a test JWKS, because Cubid is not deployed yet
 // (cubid-monorepo#179 is the staging rollout). The shapes come from the contract's "The assertion".

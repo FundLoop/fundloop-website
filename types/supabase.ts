@@ -6646,6 +6646,42 @@ export type Database = {
         }
         Relationships: []
       }
+      oauth_security_events: {
+        Row: {
+          audience: string
+          issued_at: string
+          issuer: string
+          jti: string
+          outcomes: Json
+          payload: Json
+          received_at: string
+          subject: string
+          user_id: string | null
+        }
+        Insert: {
+          audience: string
+          issued_at: string
+          issuer: string
+          jti: string
+          outcomes?: Json
+          payload: Json
+          received_at?: string
+          subject: string
+          user_id?: string | null
+        }
+        Update: {
+          audience?: string
+          issued_at?: string
+          issuer?: string
+          jti?: string
+          outcomes?: Json
+          payload?: Json
+          received_at?: string
+          subject?: string
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       oauth_tokens: {
         Row: {
           client_id: string
@@ -15088,6 +15124,21 @@ export type Database = {
         Returns: string
       }
       persona_goal2_schema_readiness: { Args: never; Returns: Json }
+      oauth_apply_security_event: {
+        Args: {
+          p_jti: string
+          p_issuer: string
+          p_audience: string
+          p_subject: string
+          p_issued_at: string
+          p_events: Json
+        }
+        Returns: {
+          event_type: string
+          outcome: string
+          affected: number
+        }[]
+      }
       oauth_redeem_grant: {
         Args: {
           p_client_id: string
