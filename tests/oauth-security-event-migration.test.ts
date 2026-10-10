@@ -100,7 +100,7 @@ describe("oauth_apply_security_event", () => {
   })
 
   it("is executable by the service role only", () => {
-    const signature = "public.oauth_apply_security_event(text, text, text, text, timestamptz, jsonb)"
+    const signature = "public.oauth_apply_security_event(text, text, text, text, timestamptz, timestamptz, jsonb)"
     expect(migration).toContain(`revoke all on function ${signature} from public, anon, authenticated`)
     expect(migration).toContain(`grant execute on function ${signature} to service_role`)
   })
@@ -120,9 +120,35 @@ describe("ordering a late event against the current authorization", () => {
     expect(redeemFunction).toContain("coalesce(v_grant.last_assertion_issued_at, p_assertion_issued_at)")
   })
 
-  it("skips a withdrawal the person has since reversed by consenting again", () => {
-    expect(applyFunction).toContain("if v_authorized_at is not null and p_issued_at < v_authorized_at then")
+  it("orders by the event time, not by the delivery time", () => {
+    // The whole point. Cubid re-signs every delivery attempt, so the token's `iat` is always later
+    // than any redemption that preceded it: ordering by it would never fire while looking as though
+    // it did. Ordering is by RFC 8417 `toe`, which Cubid does not send yet.
+    expect(applyFunction).toContain("if p_event_time is not null and v_authorized_at is not null and p_event_time < v_authorized_at then")
     expect(applyFunction).toContain("'superseded'")
+  })
+
+  it("stores the delivery time and the event time as separate things", () => {
+    expect(migration).toContain("issued_at timestamptz not null")
+    expect(migration).toContain("event_time timestamptz")
+    expect(applyFunction).toContain("p_event_time")
+  })
+
+  it("never compares the delivery timestamp against anything, in either function", () => {
+    // A regression guard for exactly the premise error this ordering logic was first built on.
+    for (const body of [applyFunction, catchUpFunction]) {
+      for (const comparison of [/p_issued_at\s*[<>]/, /[<>]\s*p_issued_at/, /\.issued_at\s*[<>]/, /[<>]\s*\w+\.issued_at/]) {
+        expect(body).not.toMatch(comparison)
+      }
+    }
+  })
+
+  it("applies the withdrawal when there is no event time to order by", () => {
+    // `p_event_time is not null` leads the condition, so a null falls through to the revocation
+    // rather than skipping it. Failing open here would mean no withdrawal ever applied.
+    const guard = applyFunction.slice(applyFunction.indexOf("if p_event_time is not null"))
+    expect(guard.indexOf("'superseded'")).toBeLessThan(guard.indexOf("'revoked'"))
+    expect(guard).toContain("else")
   })
 
   it("compares against a live grant only, so a tombstone is still recorded when there is none", () => {
@@ -156,8 +182,9 @@ describe("oauth_apply_pending_revocations_for_client", () => {
     expect(catchUpFunction).toContain("coalesce(v_user_id, v_event.recorded_user_id)")
   })
 
-  it("applies the same ordering guard as live delivery", () => {
-    expect(catchUpFunction).toContain("v_event.issued_at < v_authorized_at")
+  it("applies the same ordering guard as live delivery, from the stored event time", () => {
+    expect(catchUpFunction).toContain("select e.issuer, e.subject, e.user_id as recorded_user_id, e.event_time")
+    expect(catchUpFunction).toContain("if v_event.event_time is not null and v_authorized_at is not null and v_event.event_time < v_authorized_at then")
     expect(catchUpFunction).toContain("'superseded'::text")
   })
 

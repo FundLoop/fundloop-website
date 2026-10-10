@@ -6652,6 +6652,7 @@ export type Database = {
       oauth_security_events: {
         Row: {
           audience: string
+          event_time: string | null
           issued_at: string
           issuer: string
           jti: string
@@ -6663,6 +6664,7 @@ export type Database = {
         }
         Insert: {
           audience: string
+          event_time?: string | null
           issued_at: string
           issuer: string
           jti: string
@@ -6674,6 +6676,7 @@ export type Database = {
         }
         Update: {
           audience?: string
+          event_time?: string | null
           issued_at?: string
           issuer?: string
           jti?: string
@@ -15144,6 +15147,7 @@ export type Database = {
           p_audience: string
           p_subject: string
           p_issued_at: string
+          p_event_time: string | null
           p_events: Json
         }
         Returns: {

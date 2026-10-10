@@ -246,6 +246,51 @@ describe("createJwksCache", () => {
     expect(fetchImpl).toHaveBeenCalledTimes(2)
   })
 
+  it("keeps the floor while the issuer is failing, which is when it matters most", async () => {
+    // Measured from the last *success*, the floor stops applying the moment the issuer starts
+    // failing — so an unauthenticated caller naming unknown kids would get one outbound request to
+    // a struggling endpoint per attempt. It is measured from the attempt instead.
+    let clock = 1_000_000
+    const fetchImpl = vi.fn(async () => new Response("nope", { status: 503 }))
+    const cache = createJwksCache({
+      jwksUri: `${ISSUER}/jwks`,
+      fetchImpl: fetchImpl as unknown as typeof fetch,
+      minRefreshSeconds: 60,
+      now: () => clock,
+    })
+
+    expect((await cache.refresh()).outcome).toBe("failed")
+    clock += 1_000
+    expect((await cache.refresh()).outcome).toBe("throttled")
+    expect(await cache.get()).toBeNull()
+    expect(fetchImpl).toHaveBeenCalledTimes(1)
+
+    clock += 60_000
+    expect((await cache.refresh()).outcome).toBe("failed")
+    expect(fetchImpl).toHaveBeenCalledTimes(2)
+  })
+
+  it("stops asking a failing issuer once the TTL has passed, too", async () => {
+    let clock = 1_000_000
+    let fail = false
+    const fetchImpl = vi.fn(async () => (fail ? new Response("nope", { status: 503 }) : new Response(JSON.stringify(jwks), { status: 200 })))
+    const cache = createJwksCache({
+      jwksUri: `${ISSUER}/jwks`,
+      fetchImpl: fetchImpl as unknown as typeof fetch,
+      ttlSeconds: 10,
+      minRefreshSeconds: 60,
+      now: () => clock,
+    })
+
+    await cache.get()
+    fail = true
+    // Past the TTL, inside the floor: the cached set is served and the issuer is left alone.
+    clock += 11_000
+    expect((await cache.get())?.keys[0].kid).toBe(KID)
+    expect((await cache.get())?.keys[0].kid).toBe(KID)
+    expect(fetchImpl).toHaveBeenCalledTimes(1)
+  })
+
   it("says a refresh failed rather than passing off the stale set as a fresh answer", async () => {
     const fetchImpl = vi.fn(async () => new Response("nope", { status: 503 }))
     const cache = createJwksCache({ jwksUri: `${ISSUER}/jwks`, fetchImpl: fetchImpl as unknown as typeof fetch })
@@ -262,7 +307,15 @@ describe("createJwksCache", () => {
     let clock = 1_000_000
     let fail = false
     const fetchImpl = vi.fn(async () => (fail ? new Response("nope", { status: 503 }) : new Response(JSON.stringify(jwks), { status: 200 })))
-    const cache = createJwksCache({ jwksUri: `${ISSUER}/jwks`, fetchImpl: fetchImpl as unknown as typeof fetch, ttlSeconds: 1, now: () => clock })
+    const cache = createJwksCache({
+      jwksUri: `${ISSUER}/jwks`,
+      fetchImpl: fetchImpl as unknown as typeof fetch,
+      ttlSeconds: 1,
+      // This case is about the TTL, not the attempt floor, which would otherwise be the longer of
+      // the two and decide the outcome on its own.
+      minRefreshSeconds: 0,
+      now: () => clock,
+    })
 
     await cache.get()
     fail = true
@@ -280,6 +333,7 @@ describe("createJwksCache", () => {
       jwksUri: `${ISSUER}/jwks`,
       fetchImpl: (async () => new Response(body, { status: 200 })) as unknown as typeof fetch,
       ttlSeconds: 1,
+      minRefreshSeconds: 0,
       now: () => clock,
     })
 

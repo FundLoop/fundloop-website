@@ -126,10 +126,16 @@ authenticates the token, not the connection, so the signature over a key Cubid p
 thing that makes a delivery credible. `lib/cross-app/secevent.ts` checks, before trusting any claim:
 `typ` is `secevent+jwt`, `alg` is RS256, `crit` is absent, `kid` names a published signing key and
 the signature verifies; then `iss` is the configured issuer, `aud` is `FUNDLOOP_CUBID_CLIENT_ID`,
-`sub_id` is an `iss_sub` identifier minted by that same issuer, and `events` is a non-empty object
-of objects. A SET carries no `exp`, so freshness is an `iat` bound of seven days — generous because
-delivery retries run most of a day, and wide only because single use of the `jti` is what actually
-stops a replay.
+`sub_id` is an `iss_sub` identifier minted by that same issuer, `events` is a non-empty object of
+objects, and a `toe` that is present is a number no later than `iat`.
+
+A SET carries no `exp`, so the only age bound is on `iat`, and it is deliberately asymmetric. Seven
+days into the past: that is not a freshness check — single use of the `jti` is what stops a replay —
+it only stops a captured token being replayable forever, and it has to stay wide enough for an
+issuer that signs once per event rather than once per attempt. Five minutes into the future, much
+wider than the 30 seconds allowed elsewhere: a re-signed retry cannot fix a clock disagreement, so a
+host lagging the issuer by half a minute would refuse every attempt and lose the revocation after
+the fifth. `not_yet_valid` in the logs means this host's clock, not the issuer's.
 
 **Where the event's own `subject` disagrees with `sub_id`, the token is refused.** Both name a
 person; a token where they differ is ambiguous, and acting on either would be a guess.
@@ -141,13 +147,40 @@ person; a token where they differ is ambiguous, and acting on either would be a 
 | `consent-revoked` | Recorded, nothing else: the contract reserves it for Login with Cubid notices, and cross-app access has its own event |
 | anything else | Recorded as an unimplemented type |
 
-**A late event is ordered against the current authorization.** Delivery retries for most of a day,
-so a withdrawal can arrive after the person has reconsented and the client has redeemed a fresh
-assertion. `oauth_grants.last_assertion_issued_at` records the `iat` of the newest assertion
-redeemed for the grant, and an event issued before it is recorded as `superseded` rather than
-applied. Both timestamps are Cubid's clock, so they compare directly with no skew margin; equal
-timestamps revoke, because ending access is the safe direction. An `account-purged` event is never
-ordered this way: a deleted account cannot consent again.
+**Ordering a late revocation — and the known gap.** Delivery retries for most of a day, so a
+withdrawal can arrive after the person reconsented and the client redeemed a fresh assertion.
+Applying that stale withdrawal revokes live, legitimate access.
+
+Ordering it needs the time the *event* happened. The only time a SET carries today is `iat`, and
+Cubid re-signs **every delivery attempt** (`services/oidc/src/clientEvents.ts` calls
+`signSecurityEventToken(event, now)` inside the drain loop), so `iat` is when that attempt was sent:
+always later than the withdrawal and later than any redemption that preceded it. Only `jti` is
+stable across retries. Comparing `iat` would therefore never fire while appearing to protect the
+case it was written for, which is worse than not comparing at all.
+
+So the receiver orders by RFC 8417's optional `toe` claim ("time of event"), verified and stored as
+`oauth_security_events.event_time`, against `oauth_grants.last_assertion_issued_at` — the `iat` of
+the newest assertion redeemed for the grant, recorded monotonically. Both are the issuer's clock, so
+they compare with no skew margin, and equal times revoke because ending access is the safe
+direction. **Cubid does not send `toe` yet**, so `event_time` is null on every delivery and the
+comparison is dormant: a late retry after a reconsent does revoke the re-consented access.
+
+The residual risk is bounded and self-correcting. The client's next renewal redeems a fresh
+assertion, which Cubid mints only if consent is actually live, so access returns within one renewal
+cycle — at most the 15-minute token lifetime, and immediately if the client retries on a 401. What
+is lost is a round trip, not the consent. The fix belongs in the contract: Cubid sets `toe` from the
+outbox row's `created_at`, or signs once at enqueue and resends the same bytes. Nothing on this side
+changes when it does.
+
+An `account-purged` event is never ordered this way, with or without `toe`: a deleted account cannot
+consent again.
+
+**The body is bounded and unverified bytes stay out of the log.** A real SET is under 2 KB; this
+endpoint takes no credential, so the body is read with a 16 KB cap — a declared `Content-Length`
+first, then the stream with the same cap, because the header is a claim and not a measurement.
+Refusal details for the checks that run *before* the signature (`typ`, `alg`, `kid`) are never
+logged: they are attacker-chosen strings, and a newline in one would forge a line an operator reads
+as a real outcome.
 
 **A known event type with an incomplete payload is refused, not acknowledged.** A signed
 `cross-app-consent-revoked` without a `requesting_client_id` names no client to revoke, so

@@ -1,4 +1,5 @@
 import { crossAppReceiverConfig, cubidJwksCache } from "@/lib/cross-app/config"
+import { JWS_DENIALS } from "@/lib/cross-app/jws"
 import { verifySecurityEventToken, type SecurityEventDenial } from "@/lib/cross-app/secevent"
 import { applySecurityEvent } from "@/lib/oauth/store"
 
@@ -16,6 +17,10 @@ import { applySecurityEvent } from "@/lib/oauth/store"
 export const dynamic = "force-dynamic"
 
 const SECEVENT_CONTENT_TYPE = "application/secevent+jwt"
+// A real Cubid SET is under 2 KB. This endpoint takes no credential, so anything arriving here is
+// unauthenticated bytes that would otherwise be base64-decoded and JSON-parsed before a signature
+// is checked. The cap is generous enough to survive a larger key id or extra claims.
+const MAX_BODY_BYTES = 16 * 1024
 
 // RFC 8935 §2.4 defines the error codes a receiver may answer with, and nothing wider. A denial
 // that does not map onto one is reported as invalid_request rather than invented.
@@ -27,6 +32,7 @@ const ERROR_CODE_BY_DENIAL: Record<SecurityEventDenial, string> = {
   subject_mismatch: "invalid_request",
   no_events: "invalid_request",
   malformed_event: "invalid_request",
+  malformed_event_time: "invalid_request",
   expired: "invalid_request",
   not_yet_valid: "invalid_request",
   too_old: "invalid_request",
@@ -59,6 +65,56 @@ function unavailable(description: string) {
   })
 }
 
+// The body is read with a cap rather than buffered whole: a declared Content-Length is checked
+// first, and the stream is then read with the same cap so a missing or lying header cannot get
+// past it.
+async function readBoundedBody(request: Request): Promise<{ ok: true; text: string } | { ok: false }> {
+  const declared = Number(request.headers.get("content-length"))
+  if (Number.isFinite(declared) && declared > MAX_BODY_BYTES) return { ok: false }
+
+  const stream = request.body
+  if (!stream) {
+    const text = await request.text()
+    return new TextEncoder().encode(text).length > MAX_BODY_BYTES ? { ok: false } : { ok: true, text }
+  }
+
+  const reader = stream.getReader()
+  const chunks: Uint8Array[] = []
+  let size = 0
+  try {
+    for (;;) {
+      const { done, value } = await reader.read()
+      if (done) break
+      size += value.length
+      if (size > MAX_BODY_BYTES) {
+        // Stop pulling: there is no point receiving the rest of something we will not read.
+        await reader.cancel().catch(() => {})
+        return { ok: false }
+      }
+      chunks.push(value)
+    }
+  } finally {
+    reader.releaseLock()
+  }
+
+  const joined = new Uint8Array(size)
+  let offset = 0
+  for (const chunk of chunks) {
+    joined.set(chunk, offset)
+    offset += chunk.length
+  }
+  return { ok: true, text: new TextDecoder().decode(joined) }
+}
+
+// A denial reached before the signature was checked describes attacker-supplied bytes, so its
+// detail — a `typ`, an `alg`, a `kid` — must not reach the log, where a newline could forge a line
+// an operator reads as a real outcome. The reason alone is what an operator needs there. Details
+// from claim checks are our own strings, and are JSON-encoded and clipped anyway.
+function refusalDetail(reason: string, detail: string | undefined) {
+  if (!detail || (JWS_DENIALS as readonly string[]).includes(reason)) return ""
+  return ` (${JSON.stringify(detail).slice(0, 120)})`
+}
+
 export async function POST(request: Request) {
   try {
     return await receive(request)
@@ -81,7 +137,11 @@ async function receive(request: Request) {
     return setError("invalid_request", `The request body must be ${SECEVENT_CONTENT_TYPE}.`)
   }
 
-  const token = (await request.text()).trim()
+  const body = await readBoundedBody(request)
+  if (!body.ok) {
+    return setError("invalid_request", `The request body must be a Security Event Token of at most ${MAX_BODY_BYTES} bytes.`)
+  }
+  const token = body.text.trim()
   if (!token) return setError("invalid_request", "The request body must be a Security Event Token.")
 
   const config = crossAppReceiverConfig()
@@ -110,7 +170,7 @@ async function receive(request: Request) {
   }
 
   if (!verified.ok) {
-    console.warn(`[oauth/security-events] refused: ${verified.reason}${verified.detail ? ` (${verified.detail})` : ""}`)
+    console.warn(`[oauth/security-events] refused: ${verified.reason}${refusalDetail(verified.reason, verified.detail)}`)
     return setError(ERROR_CODE_BY_DENIAL[verified.reason], "The Security Event Token was not accepted.")
   }
 
@@ -121,6 +181,7 @@ async function receive(request: Request) {
     audience: claims.aud,
     subject: claims.subject,
     issuedAt: new Date(claims.iat * 1000),
+    eventTime: claims.timeOfEvent === undefined ? null : new Date(claims.timeOfEvent * 1000),
     // Only the verified shape is passed on: the events the verifier returned, keyed by type.
     events: Object.fromEntries(claims.events.map((event) => [event.type, event.claims])),
   })

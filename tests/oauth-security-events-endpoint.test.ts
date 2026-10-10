@@ -103,8 +103,51 @@ describe("POST /oauth/security-events", () => {
     expect(applied.issuer).toBe(ISSUER)
     expect(applied.audience).toBe(CLIENT_ID)
     expect(applied.subject).toBe(SUBJECT)
+    // No `toe` from Cubid today, so nothing to order a late delivery by. Passing the delivery time
+    // as a stand-in would make the ordering guard look active while never firing.
+    expect(applied.eventTime).toBeNull()
     expect(Object.keys(applied.events)).toEqual([CROSS_APP_CONSENT_REVOKED_EVENT])
     expect(applied.events[CROSS_APP_CONSENT_REVOKED_EVENT].requesting_client_id).toBe("cubid_wondrbot")
+  })
+
+  it("passes the event time through when the issuer sends one", async () => {
+    const when = Math.floor(Date.now() / 1000) - 3600
+    const { POST } = await receiver()
+    expect((await POST(deliver(await signEvent({ toe: when })))).status).toBe(202)
+    expect(store.applySecurityEvent.mock.calls[0][0].eventTime).toEqual(new Date(when * 1000))
+  })
+
+  it("refuses a body larger than a Security Event Token could be, before verifying anything", async () => {
+    const { POST } = await receiver()
+    const response = await POST(deliver("x".repeat(17 * 1024)))
+    expect(response.status).toBe(400)
+    expect(await response.json()).toMatchObject({ err: "invalid_request" })
+    expect(store.applySecurityEvent).not.toHaveBeenCalled()
+  })
+
+  it("refuses an oversized body whose Content-Length understates it", async () => {
+    // The header is a claim, not a measurement, so the stream is read with the same cap.
+    const request = new Request("https://www.fundloop.org/oauth/security-events", {
+      method: "POST",
+      headers: { "Content-Type": "application/secevent+jwt", "Content-Length": "10" },
+      body: "x".repeat(17 * 1024),
+    })
+    const { POST } = await receiver()
+    expect((await POST(request)).status).toBe(400)
+    expect(store.applySecurityEvent).not.toHaveBeenCalled()
+  })
+
+  it("never logs an unverified header value, which could forge a log line", async () => {
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => {})
+    const forged = 'x\n[oauth/security-events] applied evt_fake: consent-revoked=revoked'
+    const { POST } = await receiver()
+    await POST(deliver(await signEvent({}, { typ: forged })))
+
+    expect(warn).toHaveBeenCalled()
+    const logged = warn.mock.calls.map((call) => String(call[0])).join("\n")
+    expect(logged).toContain("wrong_type")
+    expect(logged).not.toContain("applied evt_fake")
+    expect(logged).not.toContain(forged)
   })
 
   it("acknowledges an event there was nothing to do for, so delivery is not retried forever", async () => {

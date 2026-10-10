@@ -31,7 +31,10 @@ create table public.oauth_security_events (
   -- row is still explicable after the subject mapping is gone.
   subject text not null,
   user_id uuid references auth.users(id) on delete set null,
+  -- The token's `iat`: when the issuer signed *this delivery attempt*, not when the event happened.
   issued_at timestamptz not null,
+  -- RFC 8417 `toe`, when the event happened, when the issuer provides it. Null today.
+  event_time timestamptz,
   received_at timestamptz not null default now(),
   payload jsonb not null,
   -- One entry per event in the token: what it was and what it did here.
@@ -42,11 +45,19 @@ create index oauth_security_events_subject_idx on public.oauth_security_events (
 create index oauth_security_events_received_idx on public.oauth_security_events (received_at);
 
 -- When a grant was last authorized, in the issuer's own clock: the `iat` of the newest assertion
--- redeemed for it. A Security Event Token can arrive most of a day late (delivery retries run 1, 5,
--- 30, 120 and 720 minutes), so without this there is no way to tell a withdrawal that is still
--- current from one the person has since reversed by consenting again — and the stale one would
--- revoke access that is live and legitimate. `revoked_at` cannot answer it: that is our clock, and
--- it records when we acted, not when the authorization happened.
+-- redeemed for it. `revoked_at` cannot answer that question — it is our clock, and it records when
+-- we acted, not when the authorization happened.
+--
+-- It exists so a late revocation can be ordered against the authorization it would undo: delivery
+-- retries run 1, 5, 30, 120 and 720 minutes, so a withdrawal can arrive long after the person
+-- reversed it by consenting again, and applying the stale one revokes live, legitimate access.
+--
+-- Ordering needs the time the *event* happened, which is RFC 8417's optional `toe` claim. Cubid
+-- re-signs every delivery attempt, so the token's `iat` is when that attempt was sent and is later
+-- than anything it could usefully be compared with; it does not send `toe` yet. So the comparison
+-- below is dormant, and until the contract carries an event time a late retry does revoke
+-- re-consented access. See `docs/engineering/cubid-cross-app-access.md`, "Ordering a late
+-- revocation", for the residual risk and why it is self-correcting.
 alter table public.oauth_grants add column last_assertion_issued_at timestamptz;
 
 -- Replaced to record it. Everything else is the definition from 20261010040000.
@@ -137,6 +148,7 @@ create or replace function public.oauth_apply_security_event(
   p_audience text,
   p_subject text,
   p_issued_at timestamptz,
+  p_event_time timestamptz,
   p_events jsonb
 )
 returns table (event_type text, outcome text, affected integer)
@@ -162,8 +174,8 @@ begin
     where issuer = p_issuer and subject = p_subject;
 
   begin
-    insert into public.oauth_security_events (jti, issuer, audience, subject, user_id, issued_at, payload)
-    values (p_jti, p_issuer, p_audience, p_subject, v_user_id, p_issued_at, p_events);
+    insert into public.oauth_security_events (jti, issuer, audience, subject, user_id, issued_at, event_time, payload)
+    values (p_jti, p_issuer, p_audience, p_subject, v_user_id, p_issued_at, p_event_time, p_events);
   exception when unique_violation then
     -- A committed row means the revocations below already happened, because they commit with it.
     -- A redelivery is therefore an acknowledgement and nothing else.
@@ -196,14 +208,20 @@ begin
       if v_client_id is null then
         v_outcome := 'unknown_client';
       else
-        -- Both timestamps are Cubid's clock — the event's `iat` and the assertion's — so they are
-        -- directly comparable with no skew margin. An event minted before the assertion that
-        -- currently authorizes this grant describes a withdrawal the person has already reversed
-        -- by consenting again, and applying it would revoke live, legitimate access. Equal
-        -- timestamps revoke: erring towards ending access is the safe direction.
+        -- An event that happened before the assertion currently authorizing this grant describes a
+        -- withdrawal the person has since reversed by consenting again, and applying it would
+        -- revoke live, legitimate access. Both times are the issuer's clock — `toe` and the
+        -- assertion's `iat` — so they compare directly with no skew margin, and equal times revoke
+        -- because ending access is the safe direction when the order is genuinely ambiguous.
+        --
+        -- `p_event_time` is null whenever the issuer sends no `toe`, which is every delivery today,
+        -- and then there is nothing to order by and the withdrawal is applied. The token's `iat` is
+        -- deliberately *not* used as a stand-in: it is re-minted on every delivery attempt, so it
+        -- is always later than any redemption that preceded it and the comparison would never fire
+        -- while looking as though it did.
         select last_assertion_issued_at into v_authorized_at from public.oauth_grants
           where client_id = v_client_id and user_id = v_user_id and revoked_at is null;
-        if v_authorized_at is not null and p_issued_at < v_authorized_at then
+        if p_event_time is not null and v_authorized_at is not null and p_event_time < v_authorized_at then
           v_outcome := 'superseded';
         else
           perform 1 from public.oauth_revoke_grant(v_client_id, v_user_id);
@@ -251,8 +269,8 @@ begin
 end;
 $$;
 
-revoke all on function public.oauth_apply_security_event(text, text, text, text, timestamptz, jsonb) from public, anon, authenticated;
-grant execute on function public.oauth_apply_security_event(text, text, text, text, timestamptz, jsonb) to service_role;
+revoke all on function public.oauth_apply_security_event(text, text, text, text, timestamptz, timestamptz, jsonb) from public, anon, authenticated;
+grant execute on function public.oauth_apply_security_event(text, text, text, text, timestamptz, timestamptz, jsonb) to service_role;
 
 -- Catching up a client that was registered *after* a revocation for it arrived.
 --
@@ -289,10 +307,10 @@ begin
   end if;
 
   for v_event in
-    select e.issuer, e.subject, e.user_id as recorded_user_id, e.issued_at
+    select e.issuer, e.subject, e.user_id as recorded_user_id, e.event_time
       from public.oauth_security_events e
       where e.payload -> c_cross_app_revoked ->> 'requesting_client_id' = p_cubid_client_id
-      order by e.issued_at
+      order by e.received_at
   loop
     -- The subject may have been linked since the event was received, so resolve it again rather
     -- than trusting the user recorded at receipt.
@@ -306,9 +324,11 @@ begin
       continue;
     end if;
 
+    -- The same ordering rule as live delivery, and the same dormancy: `event_time` is null until
+    -- the issuer sends `toe`, and a null orders nothing.
     select g.last_assertion_issued_at into v_authorized_at from public.oauth_grants g
       where g.client_id = v_client_id and g.user_id = v_user_id and g.revoked_at is null;
-    if v_authorized_at is not null and v_event.issued_at < v_authorized_at then
+    if v_event.event_time is not null and v_authorized_at is not null and v_event.event_time < v_authorized_at then
       return query select v_event.subject, v_user_id, 'superseded'::text;
       continue;
     end if;

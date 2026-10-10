@@ -212,12 +212,47 @@ describe("verifySecurityEventToken", () => {
     expect(await verify(token)).toMatchObject({ ok: false, reason: "missing_claim" })
   })
 
-  it("refuses a token issued in the future beyond the skew it allows", async () => {
-    const token = await sign(header, claims({ iat: Math.floor(Date.now() / 1000) + 600 }))
+  it("reports the event time when the issuer sends one", async () => {
+    const when = Math.floor(Date.now() / 1000) - 3600
+    const result = await verify(await sign(header, claims({ toe: when })))
+    expect(result.ok).toBe(true)
+    if (!result.ok) return
+    expect(result.claims.timeOfEvent).toBe(when)
+  })
+
+  it("reports no event time when the issuer sends none, which is every delivery today", async () => {
+    const result = await verify(await sign(header, claims()))
+    expect(result.ok).toBe(true)
+    if (!result.ok) return
+    // Cubid builds `iat` only, so there is nothing to order a late delivery by. The receiver must
+    // see undefined rather than fall back to the delivery time.
+    expect(result.claims.timeOfEvent).toBeUndefined()
+  })
+
+  it("refuses an event time that is not a number", async () => {
+    const token = await sign(header, claims({ toe: "2026-10-10T00:00:00Z" }))
+    expect(await verify(token)).toMatchObject({ ok: false, reason: "malformed_event_time" })
+  })
+
+  it("refuses an event that claims to have happened after the token reporting it", async () => {
+    const issuedAt = Math.floor(Date.now() / 1000)
+    const token = await sign(header, claims({ iat: issuedAt, toe: issuedAt + 600 }))
+    expect(await verify(token)).toMatchObject({ ok: false, reason: "malformed_event_time" })
+  })
+
+  it("tolerates a token dated a couple of minutes ahead, because our clock is the likely error", async () => {
+    // Each retry is re-signed, so a retry cannot fix skew: a host lagging the issuer would refuse
+    // every attempt and lose the revocation after the fifth.
+    const token = await sign(header, claims({ iat: Math.floor(Date.now() / 1000) + 120 }))
+    expect(await verify(token)).toMatchObject({ ok: true })
+  })
+
+  it("still refuses a token dated far in the future", async () => {
+    const token = await sign(header, claims({ iat: Math.floor(Date.now() / 1000) + 3600 }))
     expect(await verify(token)).toMatchObject({ ok: false, reason: "not_yet_valid" })
   })
 
-  it("accepts a token that is a day old, because delivery retries for most of one", async () => {
+  it("accepts a token that is a day old, in case the issuer ever signs once per event", async () => {
     const token = await sign(header, claims({ iat: Math.floor(Date.now() / 1000) - 24 * 60 * 60 }))
     expect(await verify(token)).toMatchObject({ ok: true })
   })

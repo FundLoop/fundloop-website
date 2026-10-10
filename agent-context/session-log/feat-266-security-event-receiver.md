@@ -199,3 +199,104 @@ the failure mode worth hunting for in the rest of this feature.
 1. HBIC's Claude deep review, then stage 2c per the design on #275.
 2. When the bearer validator lands (stage 3), `last_assertion_issued_at` is also the field that
    would let it reason about authorization recency, if that ever becomes useful.
+
+### session v3: the deep review — the ordering fix rested on a false premise
+
+- **Timestamp:** 2026-10-10T05:14:56Z
+- **Agent:** Claude Code (Claude Opus 5)
+- **Branch:** `feat/266-security-event-receiver` (PR #279)
+- **Head before commit:** `980915a`
+
+---
+
+#### Objective
+
+The independent deep review found that the `superseded` guard I added for Codex's finding #2 could
+not work, and it was right. Cubid re-signs **every delivery attempt**
+(`services/oidc/src/clientEvents.ts` calls `signSecurityEventToken(event, now)` inside the drain
+loop, and `packages/auth/src/securityEvents.ts` sets `iat` from that), so the token's `iat` is when
+the attempt was sent — always later than the withdrawal and later than any redemption before it.
+Only `jti` is stable across retries. I verified both files in the issuer repository rather than
+taking the finding on trust.
+
+So the guard fired only for an assertion minted after Cubid signed the retry, which never happens.
+It was a no-op that documented a guarantee the token cannot carry — worse than no guard, because the
+next reader would have believed it.
+
+---
+
+#### The choice, of the two HBIC offered
+
+Neither "remove it" nor "make it correct from our side alone": **order by RFC 8417's optional `toe`
+claim**, which is exactly the missing information, and say plainly that Cubid does not send it yet.
+
+Making it correct from this side alone is not possible. The withdrawal time is not in the token and
+cannot be inferred: `received_at` is an upper bound only, and a resource app has no way to ask Cubid
+whether a consent is live. Removing the logic entirely would have thrown away the half that does
+work — `last_assertion_issued_at`, which is correct, monotonic and the thing any event-time
+comparison needs — and would have meant a second migration when the contract changes.
+
+So: `toe` is verified (a number, no later than `iat`) and stored as
+`oauth_security_events.event_time`; the guard compares it and is skipped when it is null, which is
+every delivery today; and the delivery `iat` is never compared against anything. The residual risk
+is documented where it matters, including that it is self-correcting — the client's next renewal
+redeems a fresh assertion, which Cubid mints only if consent is really live, so access returns
+within one renewal cycle.
+
+---
+
+#### The other findings
+
+- **The age bound's reasoning was wrong, and the future bound was dangerous.** With a re-minted
+  `iat`, a legitimate token is seconds old, so "most of a day late" was never true of `iat`. Worse,
+  a retry cannot fix clock skew: a host lagging the issuer by more than 30 seconds refused *every*
+  attempt and lost the revocation after the fifth. The past bound stays at seven days — it is not a
+  freshness check, and it must stay wide enough for the sign-once-per-event behaviour we are asking
+  Cubid for — and the future bound is now 300 seconds, deliberately asymmetric, because `jti` single
+  use is the replay control and this host's clock is the likely error.
+- **The JWKS refresh floor stopped applying exactly when it mattered.** `fetchedAt` only advanced on
+  success, so once the issuer started failing, every non-overlapping call fetched again — the
+  amplifier the floor exists to prevent, aimed at an endpoint already in trouble. Now measured from
+  the attempt (`lastAttemptAt`), applied to both `refresh()` and the after-TTL path of `get()`.
+- **The body was read whole before any check**, on an endpoint that takes no credential. Now a 16 KB
+  cap: the declared `Content-Length` first, then the stream with the same cap, because the header is
+  a claim and not a measurement.
+- **Unverified header values were logged verbatim.** `typ`, `alg` and `kid` are attacker-chosen, and
+  a newline in one forges a line an operator reads as a real revocation outcome. Pre-signature
+  denials now log the reason only; `JWS_DENIALS` is exported as a value so the two cannot drift.
+
+---
+
+#### Tests and Validation
+
+- The migration tests no longer only grep for `superseded`. One asserts the comparison is on
+  `p_event_time`, one asserts a null event time falls through to the revocation rather than skipping
+  it, and one asserts that **neither** function compares `issued_at` against anything — a direct
+  regression guard for the premise error.
+- New verifier cases: `toe` reported, absent `toe` reported as undefined (not as the delivery time),
+  a non-numeric `toe`, a `toe` later than `iat`, a token two minutes ahead accepted, an hour ahead
+  refused.
+- New route cases: the event time passed through as a `Date` and as null, a body over the cap refused
+  before verification, an oversized body whose `Content-Length` understates it, and a forged
+  `typ` containing a fake log line never reaching the log.
+- New cache cases: the floor holds while the issuer is failing, and past the TTL inside the floor the
+  stale set is served without asking again.
+- 181 files, 1316 tests passing; typecheck and lint clean.
+
+---
+
+#### Reflections
+
+I fixed Codex's finding by reading my own comment about what `iat` meant instead of reading the
+issuer's signing code, and then wrote documentation and tests that asserted the comment. The tests
+passed because they tested the text I had written, not the behaviour. When a guard depends on what a
+field means in another system, the test has to pin that meaning — or the check belongs where the
+meaning is defined.
+
+---
+
+#### Suggested Next Steps
+
+1. The contract-change request to Cubid: add `toe` from `oidc_client_events.created_at`, or sign
+   once at enqueue and resend the same bytes. Drafted for HBIC to route via Noak.
+2. Stage 2c per the design on #275, once this merges.

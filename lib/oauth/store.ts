@@ -150,7 +150,10 @@ export async function applySecurityEvent(input: {
   issuer: string
   audience: string
   subject: string
+  /** The token's `iat`: when the issuer signed this delivery attempt. */
   issuedAt: Date
+  /** RFC 8417 `toe`, when the event happened, when the issuer sends it. Null orders nothing. */
+  eventTime: Date | null
   /** The verified `events` object, keyed by event type URI. */
   events: Record<string, JsonObject>
 }): Promise<SecurityEventOutcome[]> {
@@ -160,6 +163,7 @@ export async function applySecurityEvent(input: {
     p_audience: input.audience,
     p_subject: input.subject,
     p_issued_at: input.issuedAt.toISOString(),
+    p_event_time: input.eventTime?.toISOString() ?? null,
     p_events: input.events,
   })
   fail("apply-security-event", error)

@@ -33,10 +33,22 @@ export const CONSENT_REVOKED_EVENT = "https://schemas.cubid.me/secevent/consent-
 export const ACCOUNT_PURGED_EVENT = "https://schemas.openid.net/secevent/risc/event-type/account-purged"
 
 const DEFAULT_CLOCK_SKEW_SECONDS = 30
-// A SET carries no `exp` (RFC 8417 §2.2 advises against one), and delivery retries run 1, 5, 30,
-// 120 and 720 minutes after the first attempt, so a legitimate event can arrive most of a day late
-// and an age bound has to be generous. It exists so a captured event is not replayable forever;
-// single use of its `jti` is what makes a replay a no-op in the meantime.
+// Deliberately much wider than the past-side skew, and not the same number.
+//
+// Cubid re-signs every delivery attempt, so `iat` is always within seconds of the request arriving
+// and a retry cannot fix a clock disagreement: if this host lags the issuer, *every* attempt looks
+// future-dated, and after the five retries the revocation is lost. The cost of being generous here
+// is nothing, because single use of `jti` is the replay control, not freshness. The cost of being
+// strict is losing revocations on a host whose clock drifted by half a minute.
+const DEFAULT_FUTURE_SKEW_SECONDS = 300
+// A SET carries no `exp` (RFC 8417 §2.2 advises against one), so this is the only bound on how old
+// a token may be. It is wide on purpose and is *not* a freshness check: `jti` single use is what
+// makes a replay a no-op, and this only stops a captured token being replayable forever.
+//
+// It has to stay wide enough for the fix we have asked Cubid for. Today each attempt is re-signed,
+// so a legitimate token is seconds old and an hour would do. If the contract moves to signing once
+// at enqueue — which is what would make `toe` ordering meaningful — a legitimate retry becomes up
+// to 12 hours old, and a tight bound would then reject exactly the deliveries that matter.
 const DEFAULT_MAX_AGE_SECONDS = 7 * 24 * 60 * 60
 
 export type SecurityEvent = {
@@ -50,7 +62,17 @@ export type SecurityEventTokenClaims = {
   iss: string
   aud: string
   jti: string
+  /** When the issuer signed *this delivery attempt*. Cubid re-signs every retry, so it is not when
+   *  the event happened and must never be used to order the event against anything. */
   iat: number
+  /**
+   * RFC 8417 §2.2 `toe`, "time of event": when the thing the token reports actually happened.
+   * Optional in the standard, and Cubid does not send it yet (cubid-monorepo
+   * `packages/auth/src/securityEvents.ts` builds `iat` only), so this is normally undefined and
+   * the receiver has nothing to order a late delivery by. See `docs/engineering/
+   * cubid-cross-app-access.md`, "Ordering a late revocation".
+   */
+  timeOfEvent?: number
   /** This app's own Cubid pairwise subject for the person the event is about. */
   subject: string
   events: SecurityEvent[]
@@ -65,6 +87,7 @@ export type SecurityEventDenial =
   | "subject_mismatch"
   | "no_events"
   | "malformed_event"
+  | "malformed_event_time"
   | "expired"
   | "not_yet_valid"
   | "too_old"
@@ -84,7 +107,10 @@ export type VerifySecurityEventTokenOptions = {
    */
   audience: string
   now?: Date
+  /** Tolerance for a token dated in the past. */
   clockSkewSeconds?: number
+  /** Tolerance for a token dated in the future, which is usually this host's clock being wrong. */
+  futureSkewSeconds?: number
   maxAgeSeconds?: number
 }
 
@@ -125,7 +151,8 @@ export async function verifySecurityEventToken(
 
   const nowSeconds = Math.floor((options.now ?? new Date()).getTime() / 1000)
   const skew = options.clockSkewSeconds ?? DEFAULT_CLOCK_SKEW_SECONDS
-  if (iat - skew > nowSeconds) return { ok: false, reason: "not_yet_valid" }
+  const futureSkew = options.futureSkewSeconds ?? DEFAULT_FUTURE_SKEW_SECONDS
+  if (iat - futureSkew > nowSeconds) return { ok: false, reason: "not_yet_valid" }
   if (nowSeconds - iat > (options.maxAgeSeconds ?? DEFAULT_MAX_AGE_SECONDS)) {
     return { ok: false, reason: "too_old", detail: String(nowSeconds - iat) }
   }
@@ -133,6 +160,17 @@ export async function verifySecurityEventToken(
   // something to ignore: the transmitter said when the token stops being valid.
   const exp = asNumber(payload.exp)
   if (exp !== null && exp + skew <= nowSeconds) return { ok: false, reason: "expired" }
+
+  // `toe` is optional, so absent is fine — but present and unusable is not, because the receiver
+  // would otherwise fall back to "unordered" on a claim the issuer meant to be read.
+  let timeOfEvent: number | undefined
+  if (payload.toe !== undefined) {
+    const toe = asNumber(payload.toe)
+    if (toe === null) return { ok: false, reason: "malformed_event_time", detail: "toe is not a number" }
+    // An event cannot have happened after the token reporting it was signed, beyond clock slop.
+    if (toe - skew > iat) return { ok: false, reason: "malformed_event_time", detail: "toe is after iat" }
+    timeOfEvent = toe
+  }
 
   const subject = readIssSubSubject(payload.sub_id, options.issuer)
   if ("error" in subject) return { ok: false, reason: subject.error, detail: subject.detail }
@@ -168,7 +206,7 @@ export async function verifySecurityEventToken(
   // makes the delivery retry and then fail visibly at Cubid.
   if (events.length === 0) return { ok: false, reason: "no_events" }
 
-  return { ok: true, keyId, claims: { iss, aud: options.audience, jti, iat, subject: subject.sub, events } }
+  return { ok: true, keyId, claims: { iss, aud: options.audience, jti, iat, timeOfEvent, subject: subject.sub, events } }
 }
 
 /** The requesting client's id *at Cubid*, from a `cross-app-consent-revoked` event. */

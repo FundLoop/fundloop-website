@@ -17,13 +17,19 @@ export type JsonObject = { [key: string]: JsonValue }
 export type JsonWebKey = { kty: string; kid?: string; alg?: string; use?: string; n?: string; e?: string }
 export type JsonWebKeySet = { keys: JsonWebKey[] }
 
-export type JwsDenial =
-  | "malformed"
-  | "wrong_type"
-  | "unsupported_algorithm"
-  | "unknown_key"
-  | "bad_signature"
-  | "unsupported_critical_header"
+// Every denial reachable before the signature is checked, which makes each of them a judgement
+// about attacker-supplied bytes. Kept as a value so a caller can tell them apart from claim
+// denials — a log line must not repeat unverified header content.
+export const JWS_DENIALS = [
+  "malformed",
+  "wrong_type",
+  "unsupported_algorithm",
+  "unknown_key",
+  "bad_signature",
+  "unsupported_critical_header",
+] as const
+
+export type JwsDenial = (typeof JWS_DENIALS)[number]
 
 export type VerifiedJws = {
   header: JsonObject
@@ -163,10 +169,16 @@ export function createJwksCache(config: {
   const clock = config.now ?? (() => Date.now())
   let cached: JsonWebKeySet | null = null
   let fetchedAt = 0
+  // When the issuer was last *asked*, which is not when it last answered. The floor has to be
+  // measured from the attempt: measured from the last success, it stops applying the moment the
+  // issuer starts failing, which is exactly when an unauthenticated caller naming unknown kids
+  // could turn this into a request amplifier aimed at an endpoint already in trouble.
+  let lastAttemptAt = 0
   let inFlight: Promise<JsonWebKeySet | null> | null = null
 
   async function load(): Promise<JsonWebKeySet | null> {
     const doFetch = config.fetchImpl ?? fetch
+    lastAttemptAt = clock()
     try {
       const response = await doFetch(config.jwksUri, {
         headers: { Accept: "application/json" },
@@ -208,20 +220,33 @@ export function createJwksCache(config: {
     return inFlight
   }
 
+  // `inFlight` only merges calls that overlap; this is what spaces out the ones that do not.
+  function attemptThrottled() {
+    return lastAttemptAt !== 0 && clock() - lastAttemptAt < minRefresh
+  }
+
+  function staleWithinBound() {
+    return cached && clock() - fetchedAt < maxStale ? cached : null
+  }
+
   return {
     async get(options) {
       const fresh = servableCache(options)
       if (fresh) return fresh
+      // Past the TTL but inside the attempt floor: serve what we have rather than ask again. With
+      // the usual configuration the TTL is the longer of the two, so this only bites when the
+      // issuer is failing.
+      if (attemptThrottled()) return staleWithinBound()
       const loaded = await fetchOnce()
       if (loaded) return loaded
       // A failed refresh may serve the previous set only while it is inside the staleness bound.
-      return cached && clock() - fetchedAt < maxStale ? cached : null
+      return staleWithinBound()
     },
 
     async refresh() {
       // The floor is what stops a stream of unknown kids becoming a request amplifier aimed at the
       // issuer. Saying so is better than quietly handing back the keys we already had.
-      if (cached && clock() - fetchedAt < minRefresh) return { outcome: "throttled" }
+      if (attemptThrottled()) return { outcome: "throttled" }
       const loaded = await fetchOnce()
       return loaded ? { outcome: "refreshed", keys: loaded } : { outcome: "failed" }
     },
