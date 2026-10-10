@@ -214,3 +214,67 @@ was anon-readable and the data looked harmless. Readable by anon is not the same
 
 - Reply to and resolve all twelve threads, then merge when the six conditions hold.
 - Stage 2 (the OAuth server) resumes after #269 lands; its branch is already cut.
+
+### session v5: Third review round on PR #269
+
+- **Timestamp:** 2026-10-09T19:58:00Z
+- **Head before commit:** `265a934`
+
+---
+
+#### Objective
+
+Seven findings from Codex's third pass. Two were correctness bugs in things I had already "fixed"
+once, which is the useful part of a third pass.
+
+---
+
+#### Actions Taken
+
+- **The search read model did not preserve the website's match set.** `projectMatchesSearch`
+  concatenates name, description, category name and detailed description with spaces and then calls
+  `includes`, so a term spanning two fields matches on the site. My four independent `ILIKE` clauses
+  required the whole term inside one field: a project named "Alpha" described as "Beta" matches a
+  website search for "alpha beta" and was missing from the API. Now one predicate over
+  `concat_ws(' ', …)` in the same field order, so the claim I made in the previous round is actually
+  true.
+- **Noncanonical cursors were still accepted.** `Buffer.from(value, "base64url")` discards
+  characters outside the alphabet, so appending `!` to a valid cursor decoded to the same payload
+  and returned 200 — the 422 I had just added did not fire. `decodeCursor` now requires the
+  base64url alphabet and that re-encoding reproduces the input exactly.
+- **Request ids were being cached.** A shared cache stores headers with the body, so the first
+  caller's `X-Request-Id` was replayed to every hit for the whole `stale-while-revalidate` window
+  and could not correlate anything. Cacheable answers now carry no request id; every error is
+  `no-store` and still carries one, which is what a caller actually needs to report.
+- **Generated types for the RPC.** Hand-wrote the `api_v1_public_projects_page` entry in
+  `types/supabase.ts`, mirroring the migration's signature and `RETURNS TABLE`, and removed the cast.
+  The call is now typechecked against a declared contract.
+- Unsupported methods on all three v1 routes answer in the envelope rather than Next's empty 405;
+  the catch-all is optional (`[[...unmatched]]`) so the bare `/api/v1` path is covered, which a
+  required catch-all does not match; and `search` and `projectId` lengths are counted in code points
+  so validation matches the published `maxLength`.
+
+---
+
+#### Validation Notes
+
+- Full node project: 171 files, 1119 tests passing. Typecheck and lint clean.
+- New tests: the concatenated search order and single predicate, wildcard escaping, cursors with
+  appended punctuation and whitespace, the absent request id on a cacheable response, 200 vs 201
+  emoji against the character limit, and every unsupported method on every v1 route.
+
+---
+
+#### Reflections
+
+Two of these were second attempts at things I had reported as fixed: the search parity and the
+cursor validation. Both looked right and were wrong in a way only a careful reader would catch —
+per-field matching reads as equivalent to concatenated matching until you think about a term that
+spans a boundary, and `Buffer.from` silently tolerating junk is invisible unless you try it. Worth
+remembering that "I added validation" is not the same as "invalid input is rejected".
+
+---
+
+#### Suggested Next Steps
+
+- Merge in HBIC's order once the conditions hold.

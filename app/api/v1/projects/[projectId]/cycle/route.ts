@@ -1,5 +1,5 @@
 import { getPublicProjectCycle } from "@/lib/api/v1/public-projects"
-import { PUBLIC_READ_CACHE_CONTROL, apiData, apiError, methodNotAllowed, requestId } from "@/lib/api/v1/response"
+import { apiData, apiError, methodNotAllowed, requestId } from "@/lib/api/v1/response"
 
 // GET /api/v1/projects/{projectId}/cycle — public, no token (#266).
 // projectId is the project's slug, as returned by /api/v1/projects.
@@ -10,7 +10,7 @@ export const dynamic = "force-dynamic"
 export async function GET(_request: Request, context: { params: Promise<{ projectId: string }> }) {
   const id = requestId()
   const { projectId } = await context.params
-  if (!projectId || projectId.length > 200) {
+  if (!projectId || Array.from(projectId).length > 200) {
     return apiError("validation_failed", "projectId is required.", { details: { projectId: "required" }, requestId: id })
   }
 
@@ -23,12 +23,18 @@ export async function GET(_request: Request, context: { params: Promise<{ projec
       return apiError("internal_error", "Cycle status could not be read.", { requestId: id })
     }
     // A public project with no published cycle is a valid answer, not a 404.
-    return apiData(result.cycle, { requestId: id, headers: { "Cache-Control": PUBLIC_READ_CACHE_CONTROL } })
+    return apiData(result.cycle, { cacheable: true })
   } catch {
     return apiError("internal_error", "Cycle status could not be read.", { requestId: id })
   }
 }
 
-export async function POST() {
-  return methodNotAllowed(["GET"])
-}
+// Next answers an unexported method with an empty 405, which a client parsing the envelope cannot
+// read, so every method this route does not implement is answered explicitly.
+const unsupported = () => methodNotAllowed(["GET"])
+
+export const POST = unsupported
+export const PUT = unsupported
+export const PATCH = unsupported
+export const DELETE = unsupported
+export const OPTIONS = unsupported

@@ -245,18 +245,6 @@ export async function getPublicProjectsDirectoryData(options: {
 
 export type PublicProjectsPage = { projects: PublicDiscoveryProject[]; hasMore: boolean }
 
-type PublicProjectsPageRow = {
-  id: number
-  slug: string
-  name: string
-  description: string
-  logo_url: string | null
-  website: string | null
-  category_name: string | null
-  created_at: string | null
-  member_count: number | string | null
-}
-
 // One keyset page of public projects for the API (#266), newest first.
 //
 // The paging, the search predicate and the member count all run in api_v1_public_projects_page,
@@ -276,15 +264,9 @@ export async function loadPublicProjectsPage(options: {
   const afterId = options.afterId && options.afterId > 0 ? options.afterId : null
   const search = normalizeSearchTerm(options.search ?? undefined)
 
-  // types/supabase.ts predates this function; regenerate it against the migration and drop the
-  // cast (`supabase gen types typescript`). The row type below mirrors the function's RETURNS TABLE.
-  const client = getPublicReadSupabaseClient() as unknown as {
-    rpc: (name: string, args: Record<string, unknown>) => PromiseLike<{ data: PublicProjectsPageRow[] | null; error: { message: string } | null }>
-  }
-
-  const { data, error } = await client.rpc("api_v1_public_projects_page", {
-    p_search: search === "" ? null : search,
-    p_after_id: afterId,
+  const { data, error } = await getPublicReadSupabaseClient().rpc("api_v1_public_projects_page", {
+    ...(search === "" ? {} : { p_search: search }),
+    ...(afterId === null ? {} : { p_after_id: afterId }),
     // One row beyond the page answers "is there a next page" without a second count query.
     p_limit: limit + 1,
   })

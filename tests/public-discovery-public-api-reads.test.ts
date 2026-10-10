@@ -1,3 +1,4 @@
+import { readFileSync } from "node:fs"
 import { beforeEach, describe, expect, it, vi } from "vitest"
 import { loadPublicProjectRef, loadPublicProjectsPage } from "@/lib/public-discovery"
 
@@ -61,7 +62,9 @@ describe("loadPublicProjectsPage", () => {
 
     const page = await loadPublicProjectsPage({ limit: 2 })
 
-    expect(rpc).toHaveBeenCalledWith("api_v1_public_projects_page", { p_search: null, p_after_id: null, p_limit: 3 })
+    // Absent arguments are omitted rather than passed as null, so the function's own defaults
+    // apply and the call matches the generated signature.
+    expect(rpc).toHaveBeenCalledWith("api_v1_public_projects_page", { p_limit: 3 })
     expect(page.projects.map((project) => project.slug)).toEqual(["e", "d"])
     expect(page.hasMore).toBe(true)
     expect(page.projects[0].participantCount).toBe(3)
@@ -89,6 +92,36 @@ describe("loadPublicProjectsPage", () => {
   it("propagates a failed read instead of answering with an empty page", async () => {
     rpc.mockResolvedValue({ data: null, error: { message: "projects unavailable" } })
     await expect(loadPublicProjectsPage({ limit: 25 })).rejects.toThrow("projects unavailable")
+  })
+})
+
+describe("the search read model", () => {
+  const migration = readFileSync("supabase/migrations/20261009130000_api_v1_public_projects_page.sql", "utf8")
+
+  it("matches the joined fields, in the order the website joins them", () => {
+    // projectMatchesSearch concatenates name, description, category name and detailed description
+    // with spaces and then calls includes, so a term spanning two fields matches on the website. Per
+    // field ILIKE clauses would miss it: "Alpha" described as "Beta" matches a search for
+    // "alpha beta" on the site, and has to match here too.
+    expect(migration).toContain("concat_ws(")
+    const concatenation = migration.slice(migration.indexOf("concat_ws("), migration.indexOf("ilike v_pattern", migration.indexOf("concat_ws(")))
+    const order = ["project.name", "project.description", "category.name", "project.detailed_description"]
+    let cursor = -1
+    for (const field of order) {
+      const at = concatenation.indexOf(field)
+      expect(at).toBeGreaterThan(cursor)
+      cursor = at
+    }
+    // And one predicate, not four.
+    expect(migration.match(/ilike v_pattern/g)).toHaveLength(1)
+  })
+
+  it("escapes the caller's wildcards so they match literally", () => {
+    expect(migration).toContain("replace(replace(replace(v_search, '\\', '\\\\'), '%', '\\%'), '_', '\\_')")
+  })
+
+  it("excludes projects without a slug, which no public id can address", () => {
+    expect(migration).toContain("project.slug is not null")
   })
 })
 

@@ -14386,6 +14386,24 @@ export type Database = {
         Args: { p_actor_user_id: string; p_command: Json }
         Returns: Json
       }
+      api_v1_public_projects_page: {
+        Args: {
+          p_after_id?: number
+          p_limit?: number
+          p_search?: string
+        }
+        Returns: {
+          category_name: string
+          created_at: string
+          description: string
+          id: number
+          logo_url: string
+          member_count: number
+          name: string
+          slug: string
+          website: string
+        }[]
+      }
       apply_external_funding: {
         Args: {
           p_deployment_environment: string

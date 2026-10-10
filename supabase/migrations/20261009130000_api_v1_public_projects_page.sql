@@ -67,12 +67,17 @@ begin
     and (p_after_id is null or project.id < p_after_id)
     and (
       v_pattern is null
-      -- The same fields the website's directory matches, including the category name and the
-      -- detailed description, so the API never searches a narrower set than the site does.
-      or project.name ilike v_pattern
-      or coalesce(project.description, '') ilike v_pattern
-      or coalesce(project.detailed_description, '') ilike v_pattern
-      or coalesce(category.name, '') ilike v_pattern
+      -- Matched against the same fields joined in the same order the website joins them
+      -- (projectMatchesSearch in lib/public-discovery.ts), not field by field. Per-field matching
+      -- would miss a term that spans two fields: a project named "Alpha" described as "Beta"
+      -- matches the website's search for "alpha beta", and must match here too.
+      or concat_ws(
+           ' ',
+           project.name,
+           coalesce(project.description, ''),
+           coalesce(category.name, ''),
+           coalesce(project.detailed_description, '')
+         ) ilike v_pattern
     )
   order by project.id desc
   limit v_limit;

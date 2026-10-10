@@ -65,6 +65,8 @@ describe("GET /api/v1/projects", () => {
     expect(body.meta.next_cursor).toBeNull()
     // Tokenless and identical for every caller, so the edge may absorb repeat traffic.
     expect(response.headers.get("Cache-Control")).toBe("public, s-maxage=60, stale-while-revalidate=300")
+    // And no request id: a shared cache would replay the first caller's id to everyone after them.
+    expect(response.headers.get("X-Request-Id")).toBeNull()
   })
 
   it("asks the database for one page at a time and resumes from the cursor", async () => {
@@ -95,6 +97,10 @@ describe("GET /api/v1/projects", () => {
     // 1e21 is an integer to JavaScript but not a value PostgREST accepts for a bigint, so without
     // this the request failed as a 500 instead of being refused as a bad cursor.
     ["a key beyond the safe integer range", Buffer.from('{"after_id":1e21}', "utf8").toString("base64url")],
+    // Buffer.from(..., "base64url") discards characters outside the alphabet, so without a
+    // canonical check this decoded to the same payload as a valid cursor and was accepted.
+    ["a cursor with punctuation appended", `${Buffer.from('{"after_id":3}', "utf8").toString("base64url")}!`],
+    ["a cursor with whitespace inside it", `${Buffer.from('{"after_id":3}', "utf8").toString("base64url")} `],
   ])("rejects %s instead of restarting the list", async (_label, cursor) => {
     loadPublicProjectsPage.mockResolvedValue({ projects: [project("alpha", 1, "2026-01-01T00:00:00Z")], hasMore: false })
     const response = await (await projectsRoute())(new NextRequest(`https://fundloop.org/api/v1/projects?cursor=${encodeURIComponent(cursor)}`))
@@ -117,17 +123,45 @@ describe("GET /api/v1/projects", () => {
     }
   })
 
-  it("keeps an unsupported method and an unknown path inside the error envelope", async () => {
-    const posted = await (await import("@/app/api/v1/projects/route")).POST()
-    expect(posted.status).toBe(405)
-    expect(posted.headers.get("Allow")).toBe("GET")
-    expect(((await posted.json()) as { error: { code: string; request_id: string } }).error.request_id).toMatch(/^fl_req_[0-9a-f]{32}$/)
+  it("keeps every unsupported method and unknown path inside the error envelope", async () => {
+    // Next answers an unexported method with an empty 405 that a client parsing the envelope
+    // cannot read, so each one is answered explicitly.
+    const projects = await import("@/app/api/v1/projects/route")
+    const cycle = await import("@/app/api/v1/projects/[projectId]/cycle/route")
+    const openapi = await import("@/app/api/v1/openapi.json/route")
+    for (const handler of [
+      projects.POST, projects.PUT, projects.PATCH, projects.DELETE, projects.OPTIONS,
+      cycle.POST, cycle.PUT, cycle.PATCH, cycle.DELETE, cycle.OPTIONS,
+      openapi.POST, openapi.PUT, openapi.PATCH, openapi.DELETE, openapi.OPTIONS,
+    ]) {
+      const response = await handler()
+      expect(response.status).toBe(405)
+      expect(response.headers.get("Allow")).toBe("GET")
+      expect(((await response.json()) as { error: { code: string; request_id: string } }).error.request_id).toMatch(/^fl_req_[0-9a-f]{32}$/)
+    }
 
-    const unknown = await (await import("@/app/api/v1/[...unmatched]/route")).GET()
-    expect(unknown.status).toBe(404)
-    const body = (await unknown.json()) as { error: { code: string; message: string } }
-    expect(body.error.code).toBe("not_found")
-    expect(body.error.message).toContain("openapi.json")
+    // An optional catch-all, so the bare /api/v1 path is covered too: a required one does not match
+    // zero segments and would have fallen through to Next's HTML 404.
+    const unmatched = await import("@/app/api/v1/[[...unmatched]]/route")
+    for (const handler of [unmatched.GET, unmatched.POST, unmatched.PUT, unmatched.PATCH, unmatched.DELETE, unmatched.OPTIONS]) {
+      const response = await handler()
+      expect(response.status).toBe(404)
+      const body = (await response.json()) as { error: { code: string; message: string } }
+      expect(body.error.code).toBe("not_found")
+      expect(body.error.message).toContain("openapi.json")
+    }
+  })
+
+  it("measures the search length in characters, as the published schema does", async () => {
+    loadPublicProjectsPage.mockResolvedValue({ projects: [], hasMore: false })
+    // 200 emoji are 200 characters and 400 UTF-16 units. The OpenAPI maxLength is characters, so
+    // counting units would reject a search the contract allows.
+    const emoji = "🙂".repeat(200)
+    const accepted = await (await projectsRoute())(new NextRequest(`https://fundloop.org/api/v1/projects?search=${encodeURIComponent(emoji)}`))
+    expect(accepted.status).toBe(200)
+
+    const rejected = await (await projectsRoute())(new NextRequest(`https://fundloop.org/api/v1/projects?search=${encodeURIComponent("🙂".repeat(201))}`))
+    expect(rejected.status).toBe(422)
   })
 
   it("answers internal_error without leaking the cause when the read fails", async () => {
