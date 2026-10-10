@@ -79,8 +79,13 @@ export function audienceMatches(value: unknown, expected: string): boolean {
 }
 
 // Verifies the signature and the header, and nothing else: no claim is examined here, because which
-// claims matter depends on what the token is. The caller supplies the `typ` it will accept.
-export async function verifyCompactJws(token: string, options: { jwks: JsonWebKeySet; typ: string }): Promise<JwsResult> {
+// claims matter depends on what the token is. The caller supplies the `typ` it will accept — one
+// value, or several when the artefact's own specification leaves the header optional, in which case
+// `undefined` in the list means "no `typ` header at all".
+export async function verifyCompactJws(
+  token: string,
+  options: { jwks: JsonWebKeySet; typ: string | readonly (string | undefined)[] },
+): Promise<JwsResult> {
   const parts = token.split(".")
   if (parts.length !== 3) return { ok: false, reason: "malformed", detail: "expected three segments" }
 
@@ -92,7 +97,11 @@ export async function verifyCompactJws(token: string, options: { jwks: JsonWebKe
 
   // `typ` is what keeps Cubid's artefacts from being interchangeable: an ID token must never be
   // accepted as an assertion, and an assertion must never be accepted as an event.
-  if (header.typ !== options.typ) return { ok: false, reason: "wrong_type", detail: String(header.typ ?? "absent") }
+  const acceptedTyps = typeof options.typ === "string" ? [options.typ] : options.typ
+  const presentedTyp = typeof header.typ === "string" ? header.typ : undefined
+  if (!acceptedTyps.includes(presentedTyp)) {
+    return { ok: false, reason: "wrong_type", detail: presentedTyp ?? "absent" }
+  }
   if (header.alg !== "RS256") return { ok: false, reason: "unsupported_algorithm", detail: String(header.alg ?? "absent") }
   // RFC 7515 §4.1.11: a `crit` header names extensions the verifier must understand. We understand
   // none, so any `crit` at all is a refusal rather than something to ignore.

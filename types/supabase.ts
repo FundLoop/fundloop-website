@@ -15130,6 +15130,17 @@ export type Database = {
         Returns: string
       }
       persona_goal2_schema_readiness: { Args: never; Returns: Json }
+      link_cubid_subject: {
+        Args: {
+          p_issuer: string
+          p_subject: string
+          p_user_id: string
+        }
+        Returns: {
+          outcome: string
+          revoked_clients: number
+        }[]
+      }
       oauth_apply_pending_revocations_for_client: {
         Args: {
           p_cubid_client_id: string
@@ -15166,6 +15177,8 @@ export type Database = {
           p_token_scopes: Database["public"]["Enums"]["oauth_scope"][]
           p_token_expires_at: string
           p_assertion_jti: string
+          p_issuer: string
+          p_subject: string
         }
         Returns: {
           grant_id: number
@@ -15515,6 +15528,15 @@ export type Database = {
       sync_stripe_connect_account: {
         Args: { p_actor_user_id: string; p_command: Json }
         Returns: Json
+      }
+      unlink_cubid_subject: {
+        Args: {
+          p_user_id: string
+        }
+        Returns: {
+          outcome: string
+          revoked_clients: number
+        }[]
       }
       validate_epoch_project_package: {
         Args: { p_command: Json }
