@@ -44,3 +44,19 @@ answer useful.
 #### Validation Notes
 
 - Full node project: 172 files, 1131 tests. Typecheck and lint clean.
+
+### session v2: Codex review — the parser's own failures needed it too
+
+- **Timestamp:** 2026-10-10T03:35:00Z
+
+Codex pointed out that naming the function at the status check and the content-type check still left
+every branch beyond them generic: an oversized body, a missing or malformed part, an unsafe path.
+Those are exactly the failures a 200-with-bad-body produces, which is a plausible shape for whatever
+Supabase is doing tonight.
+
+Rather than thread `functionName` through helpers that have no other use for it, the call to the
+parser is wrapped and any message that does not already contain the slug is prefixed with it. That
+covers the existing branches and any added later, and a test asserts the slug is not duplicated when
+the inner message already carries it.
+
+Validated: full node project 172 files / 1133 tests, typecheck and lint clean.

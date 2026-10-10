@@ -291,7 +291,17 @@ export async function verifyDownloadedSource(projectRef, functionName, accessTok
   } catch {
     throw new Error(`Remote ${functionName} source read-back transport failed`)
   }
-  const files = await parseFunctionSourceResponse(response, functionName, expectedPaths)
+  // Every downstream branch of the parser — an oversized body, a missing or malformed part, an
+  // unsafe path — throws its own message, and naming the function at each one would mean threading
+  // it through helpers that have no other use for it. Wrapping here guarantees the slug appears on
+  // all of them, including any added later, without repeating it inside the parser.
+  let files
+  try {
+    files = await parseFunctionSourceResponse(response, functionName, expectedPaths)
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error)
+    throw new Error(message.includes(functionName) ? message : `Remote ${functionName}: ${message}`)
+  }
   for (const relative of expectedPaths) {
     if (!files.get(relative).equals(readFileSync(path.join(repoRoot, relative)))) throw new Error(`Remote ${functionName} source differs: ${relative}`)
   }

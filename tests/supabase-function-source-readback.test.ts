@@ -332,3 +332,33 @@ describe("read-back failures name the function", () => {
       .rejects.toThrow(/stripe-connect-webhook response has invalid multipart content type/)
   })
 })
+
+describe("every read-back failure carries the slug", () => {
+  // The verification loop walks 64 functions, so a message without the name leaves the operator
+  // where two identical re-runs left us tonight: knowing only that "a" download failed.
+  const multipart = (body: string) => ({
+    redirected: false,
+    status: 200,
+    headers: { get: (name: string) => (name.toLowerCase() === "content-type" ? "multipart/form-data; boundary=abc" : null) },
+    body: { [Symbol.asyncIterator]: async function* () { yield Buffer.from(body, "utf8") } },
+  })
+
+  it("names it when the body is malformed, not only when the status is bad", async () => {
+    await expect(verifyDownloadedSource("a".repeat(20), "monthly-cycle-lock", "token", (async () => multipart("not a multipart body")) as never))
+      .rejects.toThrow(/monthly-cycle-lock/)
+  })
+
+  it("names it on a transport failure", async () => {
+    await expect(verifyDownloadedSource("a".repeat(20), "epoch-financial-prep", "token", (async () => { throw new Error("socket hang up") }) as never))
+      .rejects.toThrow(/epoch-financial-prep source read-back transport failed/)
+  })
+
+  it("does not repeat the slug when the inner message already has it", async () => {
+    const error = await verifyDownloadedSource("a".repeat(20), "mcp", "token", (async () => ({
+      redirected: false,
+      status: 500,
+      headers: { get: () => null },
+    })) as never).catch((caught: Error) => caught)
+    expect((error as Error).message).toBe("Remote mcp download failed with status 500")
+  })
+})
