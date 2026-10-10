@@ -282,11 +282,26 @@
     "schemaFingerprint": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["algorithm", "postgresMajor", "normalizedSchemaSha256"],
+      "required": ["algorithm", "postgresMajor", "normalizedSchemaSha256", "platformManagedExclusions"],
       "properties": {
-        "algorithm": { "const": "pg17-public-schema-normalized-v2" },
+        "algorithm": { "const": "pg17-public-schema-platform-filtered-v3" },
         "postgresMajor": { "const": 17 },
-        "normalizedSchemaSha256": { "$ref": "#/$defs/sha256" }
+        "normalizedSchemaSha256": { "$ref": "#/$defs/sha256" },
+        "platformManagedExclusions": {
+          "description": "Objects the Supabase platform provisions inside the public schema that this fingerprint excludes, each with the digests it was verified against. An empty array means nothing was excluded.",
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["identity", "eventTrigger", "definitionSha256", "bodySha256"],
+            "properties": {
+              "identity": { "$ref": "#/$defs/nonEmpty" },
+              "eventTrigger": { "$ref": "#/$defs/nonEmpty" },
+              "definitionSha256": { "$ref": "#/$defs/sha256" },
+              "bodySha256": { "$ref": "#/$defs/sha256" }
+            }
+          }
+        }
       }
     },
     "gate": {

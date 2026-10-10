@@ -2,7 +2,18 @@ import { NextRequest } from "next/server"
 import { defaultLocale, isValidLocale, localeCookieName } from "./routing"
 
 export function shouldSkipLocaleRouting(pathname: string) {
-  return pathname.startsWith("/api/internal") || pathname.startsWith("/_next") || pathname.startsWith("/_vercel") || /\.[^/]+$/.test(pathname)
+  // Machine endpoints are never locale-prefixed: the public /api surface (#266), OAuth endpoints
+  // and well-known metadata are fetched by third parties at exact URLs. Only the endpoint prefixes
+  // are exempt — bare /api and /oauth have no handler, so they keep the locale handling every other
+  // unrouted path gets.
+  return (
+    pathname.startsWith("/api/") ||
+    pathname.startsWith("/oauth/") ||
+    pathname.startsWith("/.well-known/") ||
+    pathname.startsWith("/_next") ||
+    pathname.startsWith("/_vercel") ||
+    /\.[^/]+$/.test(pathname)
+  )
 }
 
 export function hasUnsupportedLocalePrefix(pathname: string) {

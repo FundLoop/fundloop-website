@@ -182,6 +182,31 @@ Use the smallest relevant validation first, then broaden before reporting comple
 | Shared preview smoke | Remote-safe E2E lane | `pnpm test:e2e:remote` with non-production remote credentials |
 | Founder/operator/member hosted cadence | Guarded hosted operational lane | `pnpm test:e2e:hosted-operational` with explicit dev credentials and mutation approval |
 
+### Vitest runs in two projects
+
+`vitest.config.ts` defines a `node` project and a `dom` project. `pnpm test` runs both, and
+`--project node` or `--project dom` runs one.
+
+- **node** — every `tests/**/*.test.ts`. No DOM, no setup file.
+- **dom** — every `tests/**/*.test.tsx`, in jsdom with `tests/setup.ts`.
+
+jsdom costs roughly a second of setup per file and a great deal of memory, and before the split every
+suite paid it whether or not it rendered anything: on a memory-constrained machine the full local run
+could not finish, with worker startup timing out. The node project's 168 files now run in about 35
+seconds, and the whole suite completes.
+
+A suite that needs a DOM is a `.test.tsx` file. That is the whole rule, and it is deliberately
+unconditional: the two projects select by extension, so adding a `.test.ts` file to the `dom`
+project's `include` list would not remove it from the `node` project's glob — it would run in both,
+and fail in one. Rename it instead; `.tsx` is a superset of `.ts`, so a file with no JSX is
+unaffected.
+
+`tests/vitest-projects.test.ts` enforces this: it fails if a `.test.ts` file references `document`,
+`window`, `localStorage`, `sessionStorage`, `matchMedia`, `navigator`, testing-library or jsdom, and
+says to rename the file, so the failure names its own cause instead of surfacing as a confusing
+`ReferenceError` in whichever project got there first.
+
+
 The local-wallet runner treats a completed CLI reset as necessary but not sufficient readiness. After every reset it makes a bounded service-role PostgREST query for the exact current Base row and `ref_chains` projection (`id`, `network_key`, `ecosystem`, `evm_chain_id`, and `is_active`). Sync commands and SQL fixtures cannot start until that query returns HTTP 200, valid JSON, and the expected active Base/EVM/8453 values. Generic REST responses, missing rows, stale projections, and delayed schema-cache reloads remain classified failures at the timeout boundary.
 
 The canonical database runner discovers every top-level SQL or shell suite. If a suite emits TAP, the runner validates its plan, numbering, pass status, bailout state, and trailing output rather than trusting process exit alone. Non-TAP SQL is accountable to `psql -X -v ON_ERROR_STOP=1`; non-TAP shell wrappers must be explicitly registered with the setup/assertion/concurrency lifecycle they own. Setup, assertion, and cleanup are collapsed into exactly one top-level TAP result per discovered suite.
